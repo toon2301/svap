@@ -1,0 +1,12 @@
+{
+  "name": "Swaply - Výmenná platforma zručností",
+  "short_name": "Swaply",
+  "description": "Vymeň si zručnosti s ostatnými. Nauč sa niečo nové a nauč ostatných svoje zručnosti.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#9333EA",
+  "orientation": "portrait-primary",
+  "categories": ["education", "social", "productivity"],
+  "lang": "sk"
+}

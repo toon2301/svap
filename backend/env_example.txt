@@ -1,0 +1,28 @@
+# Django settings
+DEBUG=True
+SECRET_KEY=your-secret-key-here
+ALLOWED_HOSTS=localhost,127.0.0.1,0.0.0.0
+
+# Database
+DATABASE_URL=sqlite:///db.sqlite3
+
+# CAPTCHA settings
+CAPTCHA_ENABLED=True
+CAPTCHA_SECRET_KEY=your-google-recaptcha-secret-key
+CAPTCHA_SITE_KEY=your-google-recaptcha-site-key
+CAPTCHA_SKIP_IN_TESTS=True
+
+# Email settings
+EMAIL_HOST_USER=your-email@gmail.com
+EMAIL_HOST_PASSWORD=your-app-password
+DEFAULT_FROM_EMAIL=your-email@gmail.com
+
+# CORS settings
+CORS_ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
+
+# Rate limiting
+RATE_LIMITING_ENABLED=True
+RATE_LIMIT_DISABLED=False
+
+# Audit logging
+AUDIT_LOGGING_ENABLED=True

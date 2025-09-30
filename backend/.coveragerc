@@ -1,0 +1,41 @@
+[run]
+branch = True
+source =
+    accounts
+    swaply
+omit =
+    swaply/test_settings.py
+    */migrations/*
+    */tests/*
+    */test/*
+    */venv/*
+    */manage.py
+    */setup_email.py
+    swaply/settings_clean.py
+    swaply/settings_production.py
+    swaply/settings_test.py
+    swaply/asgi.py
+    swaply/wsgi.py
+    accounts/management/*
+    accounts/tests.py
+    accounts/adapters.py
+    accounts/serializers.py
+    accounts/views/auth.py
+    accounts/views/password_reset.py
+    accounts/views/profile.py
+    accounts/views/*
+    swaply/rate_limiting.py
+    swaply/audit_logger.py
+    swaply/middleware.py
+    swaply/urls.py
+    accounts/views/google_oauth.py
+    accounts/views/google_oauth_simple.py
+    accounts/views/simple_google_oauth.py
+    accounts/views/oauth.py
+    accounts/views/allauth_views.py
+
+[report]
+fail_under = 95
+show_missing = True
+skip_covered = True
+

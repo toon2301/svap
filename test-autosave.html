@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auto-save Test - Swaply</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        button { padding: 10px 15px; margin: 5px; cursor: pointer; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 3px; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Auto-save Test - Swaply</h1>
+    
+    <div class="test-section">
+        <h3>1. Test localStorage</h3>
+        <button onclick="testLocalStorage()">Test localStorage</button>
+        <button onclick="clearStorage()">Vymazať storage</button>
+        <div id="storage-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>2. Test Draft údajov</h3>
+        <button onclick="saveTestDraft()">Uložiť test draft</button>
+        <button onclick="loadTestDraft()">Načítať test draft</button>
+        <div id="draft-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>3. Test Auto-save Hook</h3>
+        <p>Pre testovanie React hook-u otvor <a href="http://localhost:3000/register" target="_blank">registračný formulár</a></p>
+    </div>
+
+    <script>
+        function testLocalStorage() {
+            try {
+                localStorage.setItem('test', 'test-value');
+                const retrieved = localStorage.getItem('test');
+                localStorage.removeItem('test');
+                
+                if (retrieved === 'test-value') {
+                    document.getElementById('storage-result').innerHTML = 
+                        '<div class="success">✅ localStorage funguje správne!</div>';
+                } else {
+                    document.getElementById('storage-result').innerHTML = 
+                        '<div class="error">❌ localStorage nefunguje správne!</div>';
+                }
+            } catch (error) {
+                document.getElementById('storage-result').innerHTML = 
+                    `<div class="error">❌ Chyba localStorage: ${error.message}</div>`;
+            }
+        }
+        
+        function clearStorage() {
+            localStorage.clear();
+            document.getElementById('storage-result').innerHTML = 
+                '<div class="success">✅ Storage vymazaný!</div>';
+        }
+        
+        function saveTestDraft() {
+            const testData = {
+                username: 'testuser',
+                email: 'test@example.com',
+                password: 'TestPassword123',
+                user_type: 'individual'
+            };
+            
+            try {
+                localStorage.setItem('registration_draft', JSON.stringify(testData));
+                document.getElementById('draft-result').innerHTML = 
+                    '<div class="success">✅ Test draft uložený!</div>';
+            } catch (error) {
+                document.getElementById('draft-result').innerHTML = 
+                    `<div class="error">❌ Chyba pri ukladaní: ${error.message}</div>`;
+            }
+        }
+        
+        function loadTestDraft() {
+            try {
+                const saved = localStorage.getItem('registration_draft');
+                if (saved) {
+                    const data = JSON.parse(saved);
+                    document.getElementById('draft-result').innerHTML = 
+                        `<div class="success">✅ Draft načítaný:</div><pre>${JSON.stringify(data, null, 2)}</pre>`;
+                } else {
+                    document.getElementById('draft-result').innerHTML = 
+                        '<div class="error">❌ Žiadny draft nebol nájdený!</div>';
+                }
+            } catch (error) {
+                document.getElementById('draft-result').innerHTML = 
+                    `<div class="error">❌ Chyba pri načítaní: ${error.message}</div>`;
+            }
+        }
+        
+        // Automaticky skontroluj localStorage pri načítaní
+        window.onload = function() {
+            testLocalStorage();
+        };
+    </script>
+</body>
+</html>

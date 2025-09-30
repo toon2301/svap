@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registrácia s CSRF Token</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input, select { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+        button { background: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .error { color: red; margin-top: 10px; }
+        .success { color: green; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <h1>Registrácia s CSRF Token</h1>
+    
+    <div id="message"></div>
+    
+    <form id="registrationForm">
+        <div class="form-group">
+            <label for="username">Používateľské meno:</label>
+            <input type="text" id="username" name="username" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="password">Heslo:</label>
+            <input type="password" id="password" name="password" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="password_confirm">Potvrdenie hesla:</label>
+            <input type="password" id="password_confirm" name="password_confirm" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="user_type">Typ účtu:</label>
+            <select id="user_type" name="user_type" required>
+                <option value="">Vyberte typ</option>
+                <option value="individual">Fyzická osoba</option>
+                <option value="company">Právnická osoba</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="birth_day">Deň narodenia:</label>
+            <input type="number" id="birth_day" name="birth_day" min="1" max="31" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="birth_month">Mesiac narodenia:</label>
+            <input type="number" id="birth_month" name="birth_month" min="1" max="12" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="birth_year">Rok narodenia:</label>
+            <input type="number" id="birth_year" name="birth_year" min="1900" max="2025" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="gender">Pohlavie:</label>
+            <select id="gender" name="gender" required>
+                <option value="">Vyberte pohlavie</option>
+                <option value="male">Muž</option>
+                <option value="female">Žena</option>
+                <option value="other">Iné</option>
+            </select>
+        </div>
+        
+        <button type="submit">Registrovať sa</button>
+    </form>
+
+    <script>
+        let csrfToken = null;
+        
+        // Získaj CSRF token pri načítaní stránky
+        async function getCSRFToken() {
+            try {
+                const response = await fetch('http://192.168.68.103:8000/api/auth/csrf-token/', {
+                    method: 'GET',
+                    credentials: 'include' // Dôležité pre cookies
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    csrfToken = data.csrf_token;
+                    console.log('CSRF token získaný:', csrfToken);
+                } else {
+                    console.error('Chyba pri získavaní CSRF tokenu');
+                }
+            } catch (error) {
+                console.error('Chyba pri získavaní CSRF tokenu:', error);
+            }
+        }
+        
+        // Spracuj registráciu
+        async function handleRegistration(event) {
+            event.preventDefault();
+            
+            if (!csrfToken) {
+                showMessage('Chyba: CSRF token nie je k dispozícii', 'error');
+                return;
+            }
+            
+            const formData = new FormData(event.target);
+            const data = Object.fromEntries(formData.entries());
+            
+            try {
+                const response = await fetch('http://192.168.68.103:8000/api/auth/register/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken // CSRF token v hlavičke
+                    },
+                    credentials: 'include', // Dôležité pre cookies
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    showMessage('Registrácia bola úspešná! Skontrolujte si email.', 'success');
+                    document.getElementById('registrationForm').reset();
+                } else {
+                    showMessage('Chyba pri registrácii: ' + (result.error || 'Neznáma chyba'), 'error');
+                }
+            } catch (error) {
+                showMessage('Chyba pri registrácii: ' + error.message, 'error');
+            }
+        }
+        
+        function showMessage(message, type) {
+            const messageDiv = document.getElementById('message');
+            messageDiv.textContent = message;
+            messageDiv.className = type;
+        }
+        
+        // Inicializácia
+        document.addEventListener('DOMContentLoaded', function() {
+            getCSRFToken();
+            document.getElementById('registrationForm').addEventListener('submit', handleRegistration);
+        });
+    </script>
+</body>
+</html>
