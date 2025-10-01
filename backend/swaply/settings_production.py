@@ -91,6 +91,9 @@ FRONTEND_URL = os.getenv('FRONTEND_URL')
 if not FRONTEND_URL:
     raise ValueError("FRONTEND_URL must be set in production")
 
+# Frontend Root (directory with built static frontend)
+FRONTEND_ROOT = os.path.join(BASE_DIR.parent, 'out')
+
 # Site Domain
 SITE_DOMAIN = os.getenv('SITE_DOMAIN')
 if not SITE_DOMAIN:

@@ -1,73 +1,28 @@
 """
-Production settings pre PythonAnywhere a iné hostingy
+Produkčné nastavenia pre Swaply
 """
 import os
 from pathlib import Path
+from datetime import timedelta
+from .settings import *
 
-# Build paths
+# Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-pythonanywhere-change-this-in-production-12345678')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = [
-    'antonchudjak.pythonanywhere.com',
-    'www.antonchudjak.pythonanywhere.com',
-]
+# SECURITY WARNING: keep the secret key used in production secret!
+SECRET_KEY = os.getenv('SECRET_KEY')
+if not SECRET_KEY:
+    SECRET_KEY = 'fallback-secret-key-for-production'
 
-# Application definition
-INSTALLED_APPS = [
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-    'django.contrib.sites',
-    'rest_framework',
-    'rest_framework.authtoken',
-    'rest_framework_simplejwt',
-    'rest_framework_simplejwt.token_blacklist',
-    'corsheaders',
-    'accounts',
-]
+# ALLOWED_HOSTS - nastavte v .env súbore pre produkciu
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',')
+if not ALLOWED_HOSTS or ALLOWED_HOSTS == ['']:
+    ALLOWED_HOSTS = ['antonchudjak.pythonanywhere.com']
 
-MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',
-    'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
-]
-
-ROOT_URLCONF = 'swaply.urls'
-
-TEMPLATES = [
-    {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.debug',
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
-            ],
-        },
-    },
-]
-
-WSGI_APPLICATION = 'swaply.wsgi.application'
-
-# Database
+# Database - používame SQLite pre jednoduchosť
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
@@ -75,131 +30,131 @@ DATABASES = {
     }
 }
 
-# Password validation
-AUTH_PASSWORD_VALIDATORS = [
-    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
-]
-
-# Internationalization
-LANGUAGE_CODE = 'sk'
-TIME_ZONE = 'Europe/Bratislava'
-USE_I18N = True
-USE_TZ = True
-
-# Static files
+# Static files (CSS, JavaScript, Images)
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
-
-# Frontend files
-FRONTEND_ROOT = os.path.join(BASE_DIR.parent, 'frontend')
 
 # Media files
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
-# Default primary key field type
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+# Security settings
+SECURE_BROWSER_XSS_FILTER = True
+SECURE_CONTENT_TYPE_NOSNIFF = True
+X_FRAME_OPTIONS = 'DENY'
+SECURE_HSTS_SECONDS = 31536000
+SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+SECURE_HSTS_PRELOAD = True
 
-# Custom user model
-AUTH_USER_MODEL = 'accounts.User'
-
-# Sites framework
-SITE_ID = 1
-
-# REST Framework
-REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
-    ),
-    'DEFAULT_PERMISSION_CLASSES': (
-        'rest_framework.permissions.IsAuthenticated',
-    ),
-    'EXCEPTION_HANDLER': 'swaply.middleware.custom_exception_handler',
-}
-
-# JWT Settings
-from datetime import timedelta
-SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
-    'ROTATE_REFRESH_TOKENS': True,
-    'BLACKLIST_AFTER_ROTATION': True,
-}
-
-# CORS Settings
-CORS_ALLOWED_ORIGINS = [
-    'https://antonchudjak.pythonanywhere.com',
-    'https://www.antonchudjak.pythonanywhere.com',
-]
-CORS_ALLOW_CREDENTIALS = True
-
-# CSRF Settings
-CSRF_TRUSTED_ORIGINS = [
-    'https://antonchudjak.pythonanywhere.com',
-    'https://www.antonchudjak.pythonanywhere.com',
-]
-CSRF_COOKIE_SECURE = True
+# HTTPS settings
+SECURE_SSL_REDIRECT = True
 SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
 
-# Cache - LocMemCache pre jednoduchosť
-CACHES = {
-    'default': {
-        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-        'LOCATION': 'swaply-cache'
-    }
-}
+# CORS settings - nastavte v .env súbore pre produkciu
+CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', '').split(',')
+if not CORS_ALLOWED_ORIGINS or CORS_ALLOWED_ORIGINS == ['']:
+    CORS_ALLOWED_ORIGINS = ['https://antonchudjak.pythonanywhere.com']
 
-# Email - console backend pre testovanie
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+# Email settings
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
+EMAIL_PORT = int(os.getenv('EMAIL_PORT', '587'))
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL')
 
-# Logging - zjednodušené
+if not EMAIL_HOST_USER or not EMAIL_HOST_PASSWORD:
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+# Google OAuth credentials
+GOOGLE_OAUTH2_CLIENT_ID = os.getenv('GOOGLE_OAUTH2_CLIENT_ID')
+GOOGLE_OAUTH2_SECRET = os.getenv('GOOGLE_OAUTH2_SECRET')
+
+if not GOOGLE_OAUTH2_CLIENT_ID or not GOOGLE_OAUTH2_SECRET:
+    GOOGLE_OAUTH2_CLIENT_ID = 'dummy-client-id'
+    GOOGLE_OAUTH2_SECRET = 'dummy-secret'
+
+# OAuth Callback URLs
+FRONTEND_CALLBACK_URL = os.getenv('FRONTEND_CALLBACK_URL')
+BACKEND_CALLBACK_URL = os.getenv('BACKEND_CALLBACK_URL')
+
+if not FRONTEND_CALLBACK_URL or not BACKEND_CALLBACK_URL:
+    FRONTEND_CALLBACK_URL = 'https://antonchudjak.pythonanywhere.com/auth/callback'
+    BACKEND_CALLBACK_URL = 'https://antonchudjak.pythonanywhere.com/api/auth/oauth/google/callback/'
+
+# Frontend URL
+FRONTEND_URL = os.getenv('FRONTEND_URL')
+if not FRONTEND_URL:
+    FRONTEND_URL = 'https://antonchudjak.pythonanywhere.com'
+
+# Frontend Root - kde sú buildované frontend súbory
+FRONTEND_ROOT = os.path.join(BASE_DIR.parent, 'out')
+
+# Site Domain
+SITE_DOMAIN = os.getenv('SITE_DOMAIN')
+if not SITE_DOMAIN:
+    SITE_DOMAIN = 'antonchudjak.pythonanywhere.com'
+
+# Logging configuration for production
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
     'formatters': {
-        'simple': {
-            'format': '{levelname} {message}',
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
             'style': '{',
+        },
+        'json': {
+            'format': '{"level": "%(levelname)s", "time": "%(asctime)s", "module": "%(module)s", "message": "%(message)s", "extra": %(extra)s}',
         },
     },
     'handlers': {
-        'console': {
+        'file': {
             'level': 'INFO',
-            'class': 'logging.StreamHandler',
-            'formatter': 'simple',
+            'class': 'logging.FileHandler',
+            'filename': 'logs/swaply.log',
+            'formatter': 'verbose',
+        },
+        'audit_file': {
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            'filename': 'logs/audit.log',
+            'formatter': 'json',
+        },
+        'security_file': {
+            'level': 'WARNING',
+            'class': 'logging.FileHandler',
+            'filename': 'logs/security.log',
+            'formatter': 'json',
         },
     },
     'loggers': {
         'django': {
-            'handlers': ['console'],
+            'handlers': ['file'],
             'level': 'INFO',
             'propagate': True,
         },
         'swaply': {
-            'handlers': ['console'],
+            'handlers': ['file'],
             'level': 'INFO',
             'propagate': True,
         },
         'accounts': {
-            'handlers': ['console'],
+            'handlers': ['file'],
             'level': 'INFO',
             'propagate': True,
         },
+        'audit': {
+            'handlers': ['audit_file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'security': {
+            'handlers': ['security_file'],
+            'level': 'WARNING',
+            'propagate': False,
+        },
     },
 }
-
-# Vypni problematické features pre hosting
-AUDIT_LOGGING_ENABLED = False
-RATE_LIMITING_ENABLED = False
-ACCOUNT_LOCKOUT_ENABLED = False
-CAPTCHA_ENABLED = False
-CSRF_ENFORCE_API = False
-
-# Security headers
-SECURE_SSL_REDIRECT = False  # PythonAnywhere rieši SSL
-SECURE_HSTS_SECONDS = 0  # Vypni HSTS pre testovanie
-X_FRAME_OPTIONS = 'SAMEORIGIN'
