@@ -7,19 +7,19 @@ app_name = 'accounts'
 
 urlpatterns = [
     # Autentifikácia
-    path('auth/csrf-token/', views.get_csrf_token_view, name='get_csrf_token'),
-    path('auth/register/', views.register_view, name='register'),
-    path('auth/login/', views.login_view, name='login'),
-    path('auth/logout/', views.logout_view, name='logout'),
-    path('auth/me/', views.me_view, name='me'),
-    path('auth/verify-email/', views.verify_email_view, name='verify_email'),
-    path('auth/resend-verification/', views.resend_verification_view, name='resend_verification'),
-    path('auth/check-email/<str:email>/', views.check_email_availability_view, name='check_email'),
+    path('csrf-token/', views.get_csrf_token_view, name='get_csrf_token'),
+    path('register/', views.register_view, name='register'),
+    path('login/', views.login_view, name='login'),
+    path('logout/', views.logout_view, name='logout'),
+    path('me/', views.me_view, name='me'),
+    path('verify-email/', views.verify_email_view, name='verify_email'),
+    path('resend-verification/', views.resend_verification_view, name='resend_verification'),
+    path('check-email/<str:email>/', views.check_email_availability_view, name='check_email'),
     
     # Password reset
-    path('auth/password-reset/', password_reset.password_reset_request_view, name='password_reset_request'),
-    path('auth/password-reset/<str:uidb64>/<str:token>/', password_reset.password_reset_confirm_view, name='password_reset_confirm'),
-    path('auth/password-reset-verify/<str:uidb64>/<str:token>/', password_reset.password_reset_verify_token_view, name='password_reset_verify'),
+    path('password-reset/', password_reset.password_reset_request_view, name='password_reset_request'),
+    path('password-reset/<str:uidb64>/<str:token>/', password_reset.password_reset_confirm_view, name='password_reset_confirm'),
+    path('password-reset-verify/<str:uidb64>/<str:token>/', password_reset.password_reset_verify_token_view, name='password_reset_verify'),
     
     # OAuth - Google OAuth bez allauth
     path('oauth/google/login/', google_oauth_simple.google_login_view, name='google_login'),

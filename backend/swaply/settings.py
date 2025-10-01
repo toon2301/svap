@@ -43,7 +43,8 @@ if not SECRET_KEY:
     raise ValueError('SECRET_KEY must be set when DEBUG is False')
 
 # ALLOWED_HOSTS - nastavte v .env súbore pre produkciu
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1,0.0.0.0,192.168.68.103').split(',')
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1,AntonChudjak.pythonanywhere.com').split(',')
+
 
 # Pridaj Cloudflare tunnel domény ak sú dostupné - VYPNUTÉ
 # if os.getenv('USE_CLOUDFLARE_TUNNEL', 'False').lower() == 'true':
