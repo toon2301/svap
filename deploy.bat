@@ -26,12 +26,7 @@ if %errorlevel% neq 0 (
 
 echo.
 echo [3/4] Committing changes...
-git commit -m "Deploy: %date% %time%"
-if %errorlevel% neq 0 (
-    echo ERROR: Git commit failed!
-    pause
-    exit /b 1
-)
+git commit -m "Deploy: %date% %time%" || echo No changes to commit, continuing...
 
 echo.
 echo [4/4] Pushing to GitHub...
