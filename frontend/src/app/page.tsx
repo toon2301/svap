@@ -64,7 +64,7 @@ export default function Home() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
         >
-          <span className="text-6xl max-lg:text-4xl">Víta ťa</span> <span className="font-bold" style={{color: '#6B46C1'}}>Svaply!</span>
+          <span className="text-6xl max-lg:text-4xl">Víta ťa</span> <span className="font-bold" style={{color: '#6B46C1'}}>Svaply</span><span className="text-4xl max-lg:text-2xl" style={{color: '#000000'}}>!</span>
         </motion.h1>
         <motion.p 
           className="text-xl text-gray-600 text-left max-w-3xl leading-relaxed max-lg:text-sm max-lg:mx-auto max-lg:max-w-xs"
