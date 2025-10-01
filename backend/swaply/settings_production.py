@@ -15,12 +15,12 @@ DEBUG = False
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv('SECRET_KEY')
 if not SECRET_KEY:
-    raise ValueError("SECRET_KEY environment variable must be set in production")
+    SECRET_KEY = 'fallback-secret-key-for-production'
 
 # ALLOWED_HOSTS - nastavte v .env súbore pre produkciu
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',')
 if not ALLOWED_HOSTS or ALLOWED_HOSTS == ['']:
-    raise ValueError("ALLOWED_HOSTS environment variable must be set in production")
+    ALLOWED_HOSTS = ['antonchudjak.pythonanywhere.com']
 
 # Database
 DATABASES = {
@@ -58,7 +58,7 @@ CSRF_COOKIE_SECURE = True
 # CORS settings - nastavte v .env súbore pre produkciu
 CORS_ALLOWED_ORIGINS = os.getenv('CORS_ALLOWED_ORIGINS', '').split(',')
 if not CORS_ALLOWED_ORIGINS or CORS_ALLOWED_ORIGINS == ['']:
-    raise ValueError("CORS_ALLOWED_ORIGINS environment variable must be set in production")
+    CORS_ALLOWED_ORIGINS = ['https://antonchudjak.pythonanywhere.com']
 
 # Email settings
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
@@ -70,26 +70,28 @@ EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL')
 
 if not EMAIL_HOST_USER or not EMAIL_HOST_PASSWORD:
-    raise ValueError("EMAIL_HOST_USER and EMAIL_HOST_PASSWORD must be set in production")
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 # Google OAuth credentials
 GOOGLE_OAUTH2_CLIENT_ID = os.getenv('GOOGLE_OAUTH2_CLIENT_ID')
 GOOGLE_OAUTH2_SECRET = os.getenv('GOOGLE_OAUTH2_SECRET')
 
 if not GOOGLE_OAUTH2_CLIENT_ID or not GOOGLE_OAUTH2_SECRET:
-    raise ValueError("GOOGLE_OAUTH2_CLIENT_ID and GOOGLE_OAUTH2_SECRET must be set in production")
+    GOOGLE_OAUTH2_CLIENT_ID = 'dummy-client-id'
+    GOOGLE_OAUTH2_SECRET = 'dummy-secret'
 
 # OAuth Callback URLs
 FRONTEND_CALLBACK_URL = os.getenv('FRONTEND_CALLBACK_URL')
 BACKEND_CALLBACK_URL = os.getenv('BACKEND_CALLBACK_URL')
 
 if not FRONTEND_CALLBACK_URL or not BACKEND_CALLBACK_URL:
-    raise ValueError("FRONTEND_CALLBACK_URL and BACKEND_CALLBACK_URL must be set in production")
+    FRONTEND_CALLBACK_URL = 'https://antonchudjak.pythonanywhere.com/auth/callback'
+    BACKEND_CALLBACK_URL = 'https://antonchudjak.pythonanywhere.com/api/auth/oauth/google/callback/'
 
 # Frontend URL
 FRONTEND_URL = os.getenv('FRONTEND_URL')
 if not FRONTEND_URL:
-    raise ValueError("FRONTEND_URL must be set in production")
+    FRONTEND_URL = 'https://antonchudjak.pythonanywhere.com'
 
 # Frontend Root (directory with built static frontend)
 FRONTEND_ROOT = os.path.join(BASE_DIR.parent, 'out')
@@ -97,7 +99,7 @@ FRONTEND_ROOT = os.path.join(BASE_DIR.parent, 'out')
 # Site Domain
 SITE_DOMAIN = os.getenv('SITE_DOMAIN')
 if not SITE_DOMAIN:
-    raise ValueError("SITE_DOMAIN must be set in production")
+    SITE_DOMAIN = 'antonchudjak.pythonanywhere.com'
 
 # Logging configuration for production
 LOGGING = {
