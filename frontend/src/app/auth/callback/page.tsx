@@ -4,8 +4,8 @@ export const dynamic = 'force-dynamic';
 
 import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { api } from '@/lib/api';
-import { setAuthTokens } from '@/utils/auth';
+import { api } from '../../../lib/api';
+import { setAuthTokens } from '../../../utils/auth';
 
 function OAuthCallbackContent() {
   const searchParams = useSearchParams();

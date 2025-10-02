@@ -3,8 +3,8 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
-import { api, endpoints } from '@/lib/api';
-import { setAuthTokens } from '@/utils/auth';
+import { api, endpoints } from '../lib/api';
+import { setAuthTokens } from '../utils/auth';
 
 interface LoginData {
   email: string;

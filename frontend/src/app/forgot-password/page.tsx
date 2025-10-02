@@ -3,7 +3,7 @@
 import { useState, lazy, Suspense } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
-import { api } from '@/lib/api';
+import { api } from '../../lib/api';
 
 // Lazy load particle efekt
 const ParticlesBackground = lazy(() => import('../../components/ParticlesBackground'));

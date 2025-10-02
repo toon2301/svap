@@ -4,8 +4,8 @@
 import { useState, lazy, Suspense, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
-import { isAuthenticated } from '@/utils/auth';
-import LoginForm from '@/components/LoginForm';
+import { isAuthenticated } from '../utils/auth';
+import LoginForm from '../components/LoginForm';
 
 // Lazy load komponenty - načítavajú sa len keď sú potrebné
 const ParticlesBackground = lazy(() => import('../components/ParticlesBackground'));

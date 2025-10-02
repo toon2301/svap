@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { User } from '@/types';
+import { User } from '../../../types';
 import { 
   Cog6ToothIcon,
   BellIcon,

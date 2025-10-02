@@ -3,9 +3,9 @@
 import { useState, Suspense, lazy, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
-import { api, endpoints } from '@/lib/api';
-import { setAuthTokens } from '@/utils/auth';
-import { useAutoSave } from '@/hooks/useFormValidation';
+import { api, endpoints } from '../lib/api';
+import { setAuthTokens } from '../utils/auth';
+import { useAutoSave } from '../hooks/useFormValidation';
 // import { logMobileDebugInfo, checkNetworkConnectivity } from '@/utils/mobileDebug';
 
 // Lazy load particle efekt

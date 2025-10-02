@@ -3,9 +3,9 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
-import { isAuthenticated, clearAuthTokens } from '@/utils/auth';
-import { api, endpoints } from '@/lib/api';
-import { User } from '@/types';
+import { isAuthenticated, clearAuthTokens } from '../../utils/auth';
+import { api, endpoints } from '../../lib/api';
+import type { User } from '../../types';
 
 // Import modules
 import Sidebar from './Sidebar';
