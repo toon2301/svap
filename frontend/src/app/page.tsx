@@ -93,7 +93,7 @@ export default function Home() {
           transition={{ duration: 0.6, delay: 1.2 }}
       >
         <div className="flex justify-center">
-          <div className="max-w-full max-lg:px-4" style={{paddingTop: '80px', paddingBottom: '80px'}}>
+          <div className="max-w-full max-lg:px-4" style={{paddingTop: '20px', paddingBottom: '20px'}}>
             <div className="flex flex-wrap justify-center gap-6 text-center max-lg:gap-3">
               <a href="#" className="text-gray-600 hover:text-purple-800 transition-colors max-lg:text-sm">Ako to funguje</a>
               <a href="#" className="text-gray-600 hover:text-purple-800 transition-colors max-lg:text-sm">Pre jednotlivcov</a>

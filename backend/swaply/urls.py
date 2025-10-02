@@ -18,8 +18,7 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
-from django.http import JsonResponse, HttpResponse
-from django.views.generic import TemplateView
+from django.http import JsonResponse
 from rest_framework_simplejwt.views import TokenRefreshView, TokenObtainPairView
 import os
 
@@ -33,49 +32,9 @@ def api_root(request):
             'users': '/api/users/'}
     })
 
-def serve_frontend(request, path=''):
-    """Serve frontend files"""
-    frontend_root = getattr(settings, 'FRONTEND_ROOT', None)
-    if not frontend_root:
-        return HttpResponse('Frontend not configured', status=404)
-    
-    # Default to index.html for root and unknown paths
-    if not path or path == '/':
-        path = 'index.html'
-    
-    # Remove leading slash
-    path = path.lstrip('/')
-    
-    # Build full file path
-    file_path = os.path.join(frontend_root, path)
-    
-    # Check if file exists
-    if os.path.exists(file_path) and os.path.isfile(file_path):
-        with open(file_path, 'rb') as f:
-            content = f.read()
-        
-        # Set appropriate content type
-        if path.endswith('.html'):
-            content_type = 'text/html'
-        elif path.endswith('.js'):
-            content_type = 'application/javascript'
-        elif path.endswith('.css'):
-            content_type = 'text/css'
-        elif path.endswith('.json'):
-            content_type = 'application/json'
-        else:
-            content_type = 'application/octet-stream'
-        
-        return HttpResponse(content, content_type=content_type)
-    else:
-        # For SPA, serve index.html for unknown routes
-        index_path = os.path.join(frontend_root, 'index.html')
-        if os.path.exists(index_path):
-            with open(index_path, 'rb') as f:
-                content = f.read()
-            return HttpResponse(content, content_type='text/html')
-        else:
-            return HttpResponse('Frontend not found', status=404)
+"""
+Pre Railway a oddelený frontend už Django neservuje frontendové HTML.
+"""
 
 urlpatterns = [
     # API endpoints
@@ -87,9 +46,8 @@ urlpatterns = [
     # Admin
     path('admin/', admin.site.urls),
     
-    # Frontend - catch all for SPA
-    path('', serve_frontend, name='frontend'),
-    path('<path:path>', serve_frontend, name='frontend_catch_all'),
+    # Root môže vracať jednoduchý JSON/info, frontend bude žiť na inej doméne
+    path('', api_root, name='root'),
     
     # Django allauth URLs - DOČASNE VYPNUTÉ
     # path('accounts/', include('allauth.urls')),

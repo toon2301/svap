@@ -50,7 +50,7 @@ SECURE_HSTS_SECONDS = 31536000
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
 
-# HTTPS settings
+# HTTPS settings (Railway má SSL pred reverse proxy)
 SECURE_SSL_REDIRECT = True
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
@@ -93,8 +93,8 @@ FRONTEND_URL = os.getenv('FRONTEND_URL')
 if not FRONTEND_URL:
     FRONTEND_URL = 'https://antonchudjak.pythonanywhere.com'
 
-# Frontend Root (directory with built static frontend)
-FRONTEND_ROOT = os.path.join(BASE_DIR.parent, 'out')
+# Frontend Root nie je potrebný pri oddelenom hostingu frontendu (Next.js na Railway)
+FRONTEND_ROOT = os.getenv('FRONTEND_ROOT', '')
 
 # Site Domain
 SITE_DOMAIN = os.getenv('SITE_DOMAIN')

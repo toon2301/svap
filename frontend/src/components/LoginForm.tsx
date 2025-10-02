@@ -263,23 +263,27 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
     <motion.div 
       className="bg-white rounded-2xl shadow-xl border border-gray-200"
       style={{
-        width: isMobile ? '100%' : '700px',
-        maxWidth: isMobile ? '600px' : '700px',
-        marginLeft: isMobile ? '0' : '64px'
+        width: isMobile ? '100%' : '500px',
+        maxWidth: isMobile ? '600px' : '500px',
+        marginLeft: isMobile ? '0' : '50px'
       }}
       initial={{ opacity: 0, x: 50 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.8, delay: 0.6, ease: "easeOut" }}
     >
       <div style={{
-        marginLeft: isMobile ? '24px' : '40px', 
-        marginRight: isMobile ? '24px' : '40px', 
-        marginTop: '30px', 
-        marginBottom: '30px'
+        marginLeft: isMobile ? '24px' : '30px', 
+        marginRight: isMobile ? '24px' : '30px', 
+        marginTop: isMobile ? '30px' : '24px', 
+        marginBottom: isMobile ? '30px' : '24px'
       }}>
         
         <motion.h1 
-          className="text-4xl font-medium mb-16 text-center tracking-wider max-lg:text-2xl max-lg:mb-8 text-black"
+          className="text-3xl font-medium mb-12 text-center tracking-wider max-lg:text-2xl max-lg:mb-8 text-black"
+          style={{
+            fontSize: isMobile ? '24px' : '28px',
+            marginBottom: isMobile ? '32px' : '24px'
+          }}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.6, ease: "easeOut" }}
@@ -352,7 +356,10 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
         )}
 
         <motion.form 
-          className="space-y-6 max-lg:space-y-4"
+          className="space-y-5 max-lg:space-y-4"
+          style={{
+            gap: isMobile ? '24px' : '20px'
+          }}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.8 }}
@@ -365,7 +372,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: 0.9 }}
           >
-            <label htmlFor="login-email" className="block text-lg font-normal text-gray-600 mb-2 max-lg:text-base max-lg:mb-1">
+            <label htmlFor="login-email" className="block text-base font-normal text-gray-600 mb-2 max-lg:text-base max-lg:mb-1">
               Email
             </label>
             <input
@@ -375,7 +382,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
               value={loginData.email}
               onChange={handleLoginInputChange}
               onKeyDown={(e) => handleKeyDown(e, 'email')}
-              className={`w-full px-16 py-12 text-xl border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all ${
+              className={`w-full px-4 py-3 text-lg border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all ${
                 loginErrors.email ? 'border-red-500' : 'border-gray-300'
               }`}
               placeholder="Email.."
@@ -388,10 +395,10 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
               style={{
                 paddingLeft: '12px', 
                 paddingRight: '12px', 
-                paddingTop: '16px', 
-                paddingBottom: '16px',
-                minHeight: '60px',
-                fontSize: 'clamp(16px, 4vw, 20px)'
+                paddingTop: isMobile ? '16px' : '12px', 
+                paddingBottom: isMobile ? '16px' : '12px',
+                minHeight: isMobile ? '60px' : '48px',
+                fontSize: isMobile ? 'clamp(16px, 4vw, 20px)' : '16px'
               }}
             />
             <div id="email-help" className="sr-only">
@@ -409,7 +416,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: 1.0 }}
           >
-            <label htmlFor="login-password" className="block text-lg font-normal text-gray-600 mb-2 max-lg:text-base max-lg:mb-1">
+            <label htmlFor="login-password" className="block text-base font-normal text-gray-600 mb-2 max-lg:text-base max-lg:mb-1">
               Heslo
             </label>
             <div className="relative">
@@ -420,7 +427,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
                 value={loginData.password}
                 onChange={handleLoginInputChange}
                 onKeyDown={(e) => handleKeyDown(e, 'password')}
-                className={`w-full px-16 py-12 text-xl border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all ${
+                className={`w-full px-4 py-3 text-lg border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all ${
                   loginErrors.password ? 'border-red-500' : 'border-gray-300'
                 }`}
                 placeholder="••••••••"
@@ -433,10 +440,10 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
                 style={{
                   paddingLeft: '12px', 
                   paddingRight: '12px', 
-                  paddingTop: '16px', 
-                  paddingBottom: '16px',
-                  minHeight: '60px',
-                  fontSize: 'clamp(16px, 4vw, 20px)'
+                  paddingTop: isMobile ? '16px' : '12px', 
+                  paddingBottom: isMobile ? '16px' : '12px',
+                  minHeight: isMobile ? '60px' : '48px',
+                  fontSize: isMobile ? 'clamp(16px, 4vw, 20px)' : '16px'
                 }}
               />
                 <button
@@ -477,16 +484,16 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
             disabled={isLoginLoading}
             aria-label="Prihlásiť sa do aplikácie"
             aria-describedby="login-button-help"
-            className={`w-full text-white px-12 rounded-lg font-semibold text-3xl transition-all max-lg:px-6 max-lg:py-3 max-lg:text-lg ${
+            className={`w-full text-white px-6 py-4 rounded-lg font-semibold text-xl transition-all max-lg:px-6 max-lg:py-3 max-lg:text-lg ${
               isLoginLoading ? 'cursor-not-allowed' : 'cursor-pointer'
             }`}
             style={{
               backgroundColor: isLoginLoading ? '#A855F7' : '#7C3AED',
               opacity: isLoginLoading ? 0.8 : 1,
               boxShadow: '0 4px 15px rgba(139, 92, 246, 0.3)',
-              marginTop: '24px',
-              paddingTop: '20px',
-              paddingBottom: '20px'
+              marginTop: isMobile ? '24px' : '20px',
+              paddingTop: isMobile ? '20px' : '16px',
+              paddingBottom: isMobile ? '20px' : '16px'
             }}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -579,13 +586,13 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
           </div>
         </motion.div>
 
-        <div className="text-center" style={{marginTop: '16px'}}>
-          <p className="text-xl text-gray-500 max-lg:text-sm" style={{marginBottom: '12px'}}>
+        <div className="text-center" style={{marginTop: isMobile ? '16px' : '12px'}}>
+          <p className="text-lg text-gray-500 max-lg:text-sm" style={{marginBottom: isMobile ? '12px' : '8px', fontSize: isMobile ? '20px' : '16px'}}>
             <a href="/forgot-password" className="text-purple-700 hover:text-purple-600 font-medium transition-colors max-lg:text-base">
               Zabudli ste heslo?
             </a>
           </p>
-          <p className="text-2xl text-gray-600 max-lg:text-base">
+          <p className="text-xl text-gray-600 max-lg:text-base" style={{fontSize: isMobile ? '24px' : '18px'}}>
             Nemáte účet?{' '}
             <a href="/register" className="text-purple-800 font-semibold hover:text-purple-900">
               Registrovať sa

@@ -1,1 +1,0 @@
-self.__SSG_MANIFEST=new Set(["\u002Freset-password\u002F[uidb64]\u002F[token]"]);self.__SSG_MANIFEST_CB&&self.__SSG_MANIFEST_CB()
