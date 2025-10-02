@@ -8,3 +8,6 @@ yarn-error.log*
 .parcel-cache
 .DS_Store
 *.tsbuildinfo
+.npm
+.npm-cache
+node_modules/.cache
