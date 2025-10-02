@@ -101,62 +101,54 @@ SITE_DOMAIN = os.getenv('SITE_DOMAIN')
 if not SITE_DOMAIN:
     SITE_DOMAIN = 'antonchudjak.pythonanywhere.com'
 
-# Logging configuration for production
+# Logging configuration for production (Railway): log to stdout
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
     'formatters': {
-        'verbose': {
-            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+        'simple': {
+            'format': '{levelname} {message}',
             'style': '{',
         },
         'json': {
-            'format': '{"level": "%(levelname)s", "time": "%(asctime)s", "module": "%(module)s", "message": "%(message)s", "extra": %(extra)s}',
+            'format': '{"level": "%(levelname)s", "time": "%(asctime)s", "module": "%(module)s", "message": "%(message)s"}',
         },
     },
     'handlers': {
-        'file': {
+        'console': {
             'level': 'INFO',
-            'class': 'logging.FileHandler',
-            'filename': 'logs/swaply.log',
-            'formatter': 'verbose',
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple',
         },
-        'audit_file': {
+        'console_json': {
             'level': 'INFO',
-            'class': 'logging.FileHandler',
-            'filename': 'logs/audit.log',
-            'formatter': 'json',
-        },
-        'security_file': {
-            'level': 'WARNING',
-            'class': 'logging.FileHandler',
-            'filename': 'logs/security.log',
+            'class': 'logging.StreamHandler',
             'formatter': 'json',
         },
     },
     'loggers': {
         'django': {
-            'handlers': ['file'],
+            'handlers': ['console'],
             'level': 'INFO',
             'propagate': True,
         },
         'swaply': {
-            'handlers': ['file'],
+            'handlers': ['console'],
             'level': 'INFO',
             'propagate': True,
         },
         'accounts': {
-            'handlers': ['file'],
+            'handlers': ['console'],
             'level': 'INFO',
             'propagate': True,
         },
         'audit': {
-            'handlers': ['audit_file'],
+            'handlers': ['console_json'],
             'level': 'INFO',
             'propagate': False,
         },
         'security': {
-            'handlers': ['security_file'],
+            'handlers': ['console_json'],
             'level': 'WARNING',
             'propagate': False,
         },
