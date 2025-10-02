@@ -28,8 +28,8 @@ const nextConfig = {
 
   compress: true,
 
-  // Statický export
-  output: 'export',
+  // Server-side rendering pre Railway
+  // output: 'export', // Zakomentované pre Railway deployment
 };
 
 module.exports = nextConfig;
