@@ -4,7 +4,8 @@ Produkčné nastavenia pre Swaply
 import os
 from pathlib import Path
 from datetime import timedelta
-from .settings import *
+from swaply.settings_production import *
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -97,7 +98,6 @@ SITE_DOMAIN = os.getenv('SITE_DOMAIN')
 if not SITE_DOMAIN:
     SITE_DOMAIN = 'antonchudjak.pythonanywhere.com'
 
-# Logging configuration for production
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -107,52 +107,39 @@ LOGGING = {
             'style': '{',
         },
         'json': {
-            'format': '{"level": "%(levelname)s", "time": "%(asctime)s", "module": "%(module)s", "message": "%(message)s", "extra": %(extra)s}',
+            'format': '{"level": "%(levelname)s", "time": "%(asctime)s", "module": "%(module)s", "message": "%(message)s"}',
         },
     },
     'handlers': {
-        'file': {
+        'console_verbose': {
             'level': 'INFO',
-            'class': 'logging.FileHandler',
-            'filename': 'logs/swaply.log',
+            'class': 'logging.StreamHandler',
             'formatter': 'verbose',
         },
-        'audit_file': {
+        'console_json': {
             'level': 'INFO',
-            'class': 'logging.FileHandler',
-            'filename': 'logs/audit.log',
-            'formatter': 'json',
-        },
-        'security_file': {
-            'level': 'WARNING',
-            'class': 'logging.FileHandler',
-            'filename': 'logs/security.log',
+            'class': 'logging.StreamHandler',
             'formatter': 'json',
         },
     },
     'loggers': {
         'django': {
-            'handlers': ['file'],
+            'handlers': ['console_verbose'],
             'level': 'INFO',
             'propagate': True,
         },
         'swaply': {
-            'handlers': ['file'],
-            'level': 'INFO',
-            'propagate': True,
-        },
-        'accounts': {
-            'handlers': ['file'],
+            'handlers': ['console_verbose'],
             'level': 'INFO',
             'propagate': True,
         },
         'audit': {
-            'handlers': ['audit_file'],
+            'handlers': ['console_json'],
             'level': 'INFO',
             'propagate': False,
         },
         'security': {
-            'handlers': ['security_file'],
+            'handlers': ['console_json'],
             'level': 'WARNING',
             'propagate': False,
         },
