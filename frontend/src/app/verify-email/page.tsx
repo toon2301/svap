@@ -5,8 +5,8 @@ export const dynamic = 'force-dynamic';
 import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { api, endpoints } from '../../lib/api';
-import { setAuthTokens } from '../../utils/auth';
+import { api, endpoints } from '@/lib/api';
+import { setAuthTokens } from '@/utils/auth';
 
 interface VerificationStatus {
   status: 'loading' | 'success' | 'error';
