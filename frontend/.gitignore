@@ -20,6 +20,10 @@
 # production
 /build
 
+# ensure lib is tracked
+!src/lib/
+!src/lib/**
+
 # misc
 .DS_Store
 *.pem
