@@ -14,7 +14,7 @@
     {
       "name": "frontend",
       "rootDirectory": "frontend",
-      "buildCommand": "rm -rf node_modules .next .cache && npm ci --cache .npm-cache && npm run build",
+      "buildCommand": "npm install --no-optional --no-audit --no-fund && npm run build",
       "startCommand": "npm run start -p $PORT",
       "ports": ["$PORT"]
     }
