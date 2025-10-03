@@ -33,7 +33,22 @@ const nextConfig = {
   },
 
   env: {
-    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api',
+    // V produkcii nech front volá relatívne /api (proxy/ingress sa postará)
+    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || '/api',
+  },
+
+  async rewrites() {
+    // Proxy len ak beží front a backend pod jednou doménou (Railway multi-service)
+    const backendOrigin = process.env.BACKEND_ORIGIN;
+    if (!backendOrigin) {
+      return [];
+    }
+    return [
+      {
+        source: '/api/:path*',
+        destination: `${backendOrigin}/api/:path*`,
+      },
+    ];
   },
 
   compress: true,

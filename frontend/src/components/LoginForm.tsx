@@ -132,8 +132,10 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
     setLoginErrors({});
 
     try {
-      // Priamo presmeruj na Google login endpoint
-      const googleLoginUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api'}/oauth/google/login/`;
+      // Priamo presmeruj na Google login endpoint s explicitným callback parametrom
+      const baseApi = process.env.NEXT_PUBLIC_API_URL || '/api';
+      const callbackUrl = `${window.location.origin}/auth/callback`; // bez trailing slash
+      const googleLoginUrl = `${baseApi}/oauth/google/login/?callback=${encodeURIComponent(callbackUrl)}`;
       
       // Otvor Google OAuth v novom okne
       const popup = window.open(
