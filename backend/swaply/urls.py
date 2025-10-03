@@ -22,6 +22,7 @@ from django.http import JsonResponse
 from rest_framework_simplejwt.views import TokenRefreshView, TokenObtainPairView
 import os
 from accounts.views import update_profile_view
+from accounts.views import google_oauth_simple
 
 def api_root(request):
     """Root API endpoint"""
@@ -43,6 +44,9 @@ urlpatterns = [
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('api/auth/', include('accounts.urls')),
+    # Alias routy pre Google OAuth, aby fungovalo aj /api/oauth/... (bez /auth)
+    path('api/oauth/google/login/', google_oauth_simple.google_login_view, name='api_google_login'),
+    path('api/oauth/google/callback/', google_oauth_simple.google_callback_view, name='api_google_callback'),
     # Priama route pre profil (vyžadované testami)
     path('api/profile/', update_profile_view, name='api_profile'),
     
