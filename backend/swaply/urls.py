@@ -47,6 +47,9 @@ urlpatterns = [
     # Alias routy pre Google OAuth, aby fungovalo aj /api/oauth/... (bez /auth)
     path('api/oauth/google/login/', google_oauth_simple.google_login_view, name='api_google_login'),
     path('api/oauth/google/callback/', google_oauth_simple.google_callback_view, name='api_google_callback'),
+    # Kompatibilitné aliasy podľa nastavení v Google Console (bez "/oauth/")
+    path('api/auth/google/login/', google_oauth_simple.google_login_view, name='api_google_login_compat'),
+    path('api/auth/google/callback/', google_oauth_simple.google_callback_view, name='api_google_callback_compat'),
     # Priama route pre profil (vyžadované testami)
     path('api/profile/', update_profile_view, name='api_profile'),
     
