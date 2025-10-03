@@ -168,10 +168,10 @@ function VerifyEmailContent() {
               Váš email bol úspešne overený. Teraz sa môžete prihlásiť do svojho účtu.
             </p>
             <a
-              href="/dashboard"
+              href="/"
               className="inline-block bg-purple-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-purple-700 transition-colors"
             >
-              Prejsť na dashboard
+              Prihlásiť sa
             </a>
           </motion.div>
         )}

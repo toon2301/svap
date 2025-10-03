@@ -11,10 +11,11 @@ jest.mock('framer-motion', () => ({
   AnimatePresence: ({ children }: any) => <>{children}</>,
 }));
 
-// Mock next/navigation
+// Mock next/navigation s zdieľaným pushMock
+const pushMock = jest.fn();
 jest.mock('next/navigation', () => ({
   useRouter: () => ({
-    push: jest.fn(),
+    push: pushMock,
   }),
 }));
 
@@ -96,6 +97,16 @@ describe('Dashboard', () => {
     expect(screen.getByText('Vitaj, Test!')).toBeInTheDocument();
   });
 
+  it('redirects to home when not authenticated', async () => {
+    const { isAuthenticated } = require('@/utils/auth');
+    isAuthenticated.mockReturnValue(false);
+    render(<Dashboard />);
+
+    await waitFor(() => {
+      expect(pushMock).toHaveBeenCalledWith('/');
+    });
+  });
+
   it('renders sidebar with navigation items', () => {
     const { isAuthenticated } = require('@/utils/auth');
     isAuthenticated.mockReturnValue(true);
@@ -119,6 +130,42 @@ describe('Dashboard', () => {
     fireEvent.click(searchButton);
     
     expect(screen.getByText('Vyhľadávanie zručností')).toBeInTheDocument();
+  });
+
+  it('switches to Favorites/Profile/Settings modules', async () => {
+    const { isAuthenticated } = require('@/utils/auth');
+    isAuthenticated.mockReturnValue(true);
+
+    render(<Dashboard initialUser={mockUser} />);
+
+    fireEvent.click(screen.getByText('Oblúbené'));
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'Oblúbené' })).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText('Profil'));
+    await waitFor(() => {
+      // Over prítomnosť hlavičky profilu (meno)
+      expect(screen.getByText('Test User')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText('Nastavenia'));
+    await waitFor(() => {
+      expect(screen.getByText('Nastavenia')).toBeInTheDocument();
+    });
+  });
+
+  it('clears tokens and redirects on API error', async () => {
+    const { isAuthenticated, clearAuthTokens } = require('@/utils/auth');
+    const { api } = require('@/lib/api');
+    isAuthenticated.mockReturnValue(true);
+    api.get.mockRejectedValue(new Error('network'));
+    render(<Dashboard />);
+
+    await waitFor(() => {
+      expect(clearAuthTokens).toHaveBeenCalled();
+      expect(pushMock).toHaveBeenCalledWith('/');
+    });
   });
 
   it('shows home module by default', () => {

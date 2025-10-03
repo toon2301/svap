@@ -66,9 +66,10 @@ export default function SettingsModule({ user }: SettingsModuleProps) {
                     ? 'bg-white text-purple-700 shadow-sm'
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
+                aria-label={tab.label}
               >
                 <Icon className="w-4 h-4 mr-2" />
-                {tab.label}
+                <span aria-hidden={activeTab === tab.id}>{tab.label}</span>
               </button>
             );
           })}
@@ -134,7 +135,7 @@ export default function SettingsModule({ user }: SettingsModuleProps) {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <label className="text-sm font-medium text-gray-700">
+                  <label htmlFor="profileVisibility" className="text-sm font-medium text-gray-700">
                     Viditeľnosť profilu
                   </label>
                   <p className="text-xs text-gray-500">
@@ -142,6 +143,7 @@ export default function SettingsModule({ user }: SettingsModuleProps) {
                   </p>
                 </div>
                 <select 
+                  id="profileVisibility"
                   value={settings.profileVisibility}
                   onChange={(e) => handleSettingChange('profileVisibility', e.target.value)}
                   className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
@@ -153,7 +155,7 @@ export default function SettingsModule({ user }: SettingsModuleProps) {
 
               <div className="flex items-center justify-between">
                 <div>
-                  <label className="text-sm font-medium text-gray-700">
+                  <label htmlFor="showEmail" className="text-sm font-medium text-gray-700">
                     Zobraziť email
                   </label>
                   <p className="text-xs text-gray-500">
@@ -161,6 +163,7 @@ export default function SettingsModule({ user }: SettingsModuleProps) {
                   </p>
                 </div>
                 <input
+                  id="showEmail"
                   type="checkbox"
                   checked={settings.showEmail}
                   onChange={(e) => handleSettingChange('showEmail', e.target.checked)}
@@ -170,7 +173,7 @@ export default function SettingsModule({ user }: SettingsModuleProps) {
 
               <div className="flex items-center justify-between">
                 <div>
-                  <label className="text-sm font-medium text-gray-700">
+                  <label htmlFor="showPhone" className="text-sm font-medium text-gray-700">
                     Zobraziť telefón
                   </label>
                   <p className="text-xs text-gray-500">
@@ -178,6 +181,7 @@ export default function SettingsModule({ user }: SettingsModuleProps) {
                   </p>
                 </div>
                 <input
+                  id="showPhone"
                   type="checkbox"
                   checked={settings.showPhone}
                   onChange={(e) => handleSettingChange('showPhone', e.target.checked)}

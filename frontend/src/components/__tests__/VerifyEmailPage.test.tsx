@@ -9,6 +9,7 @@ import { api } from '@/lib/api';
 // Mock Next.js navigation
 jest.mock('next/navigation', () => ({
   useSearchParams: jest.fn(),
+  useRouter: () => ({ push: jest.fn() }),
 }));
 
 // Mock API

@@ -449,8 +449,6 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  aria-label={showPassword ? "Skryť heslo" : "Zobraziť heslo"}
-                  aria-describedby="password-toggle-help"
                   tabIndex={-1}
                   className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 rounded"
                 >
@@ -465,9 +463,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
                     </svg>
                   )}
                 </button>
-                <div id="password-toggle-help" className="sr-only">
-                  Tlačidlo pre zobrazenie alebo skrytie hesla
-                </div>
+                
             </div>
             <div id="password-help" className="sr-only">
               Zadajte svoje heslo pre prihlásenie do aplikácie
@@ -482,8 +478,6 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
           <motion.button
             type="submit"
             disabled={isLoginLoading}
-            aria-label="Prihlásiť sa do aplikácie"
-            aria-describedby="login-button-help"
             className={`w-full text-white px-6 py-4 rounded-lg font-semibold text-xl transition-all max-lg:px-6 max-lg:py-3 max-lg:text-lg ${
               isLoginLoading ? 'cursor-not-allowed' : 'cursor-pointer'
             }`}
@@ -514,9 +508,6 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
               {isLoginLoading ? 'Prihlasujem sa...' : 'Prihlásiť sa'}
             </div>
           </motion.button>
-          <div id="login-button-help" className="sr-only">
-            Kliknite pre prihlásenie do aplikácie pomocou emailu a hesla
-          </div>
         </motion.form>
         
         {/* Google prihlásenie */}

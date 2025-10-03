@@ -11,6 +11,7 @@ omit =
     */venv/*
     */manage.py
     */setup_email.py
+    */setup_redis.py
     swaply/settings_clean.py
     swaply/settings_production.py
     swaply/settings_test.py

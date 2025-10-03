@@ -622,14 +622,10 @@ export default function RegisterForm() {
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      aria-label={showPassword ? "Skryť heslo" : "Zobraziť heslo"}
-                      aria-describedby="password-toggle-help"
                       tabIndex={-1}
                       className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 rounded"
                     >
-                      <div id="password-toggle-help" className="sr-only">
-                        Tlačidlo pre zobrazenie alebo skrytie hesla
-                      </div>
+                    
                       {showPassword ? (
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
@@ -667,6 +663,7 @@ export default function RegisterForm() {
                     <button
                       type="button"
                       onClick={() => setShowPasswordConfirm(!showPasswordConfirm)}
+                      aria-label={showPasswordConfirm ? 'Skryť heslo' : 'Zobraziť heslo'}
                       className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
                     >
                       {showPasswordConfirm ? (
@@ -858,8 +855,6 @@ export default function RegisterForm() {
               <motion.button
                 type="submit"
                 disabled={isLoading}
-                aria-label="Registrovať sa do aplikácie"
-                aria-describedby="submit-button-help"
                 className={`w-full text-white px-6 py-4 rounded-lg font-semibold text-xl transition-all ${
                   isLoading ? 'cursor-not-allowed' : 'cursor-pointer hover:shadow-lg'
                 }`}
@@ -889,9 +884,6 @@ export default function RegisterForm() {
                   {getButtonText()}
                 </div>
               </motion.button>
-              <div id="submit-button-help" className="sr-only">
-                Kliknite pre registráciu do aplikácie pomocou vyplnených údajov
-              </div>
             </motion.form>
             )}
 

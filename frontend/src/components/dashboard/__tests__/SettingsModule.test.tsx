@@ -85,7 +85,7 @@ describe('SettingsModule', () => {
     const notificationsTab = screen.getByText('Upozornenia');
     fireEvent.click(notificationsTab);
     
-    expect(screen.getByText('Upozornenia')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Upozornenia' })).toBeInTheDocument();
     expect(screen.getByText('Email upozornenia')).toBeInTheDocument();
     expect(screen.getByText('Push upozornenia')).toBeInTheDocument();
   });
@@ -96,7 +96,7 @@ describe('SettingsModule', () => {
     const securityTab = screen.getByText('Bezpečnosť');
     fireEvent.click(securityTab);
     
-    expect(screen.getByText('Bezpečnosť')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Bezpečnosť' })).toBeInTheDocument();
     expect(screen.getByText('Dvojfaktorová autentifikácia')).toBeInTheDocument();
     expect(screen.getByText('Zmeniť heslo')).toBeInTheDocument();
   });
