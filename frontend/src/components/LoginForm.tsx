@@ -452,7 +452,11 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   tabIndex={-1}
-                  className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 rounded"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 rounded flex items-center justify-center"
+                  style={{
+                    height: isMobile ? '60px' : '48px',
+                    width: '48px'
+                  }}
                 >
                   {showPassword ? (
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
