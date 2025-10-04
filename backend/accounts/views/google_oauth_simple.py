@@ -35,12 +35,16 @@ def google_login_view(request):
                 'error': 'Google OAuth Client ID nie je nastavený'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
-        # Dynamicky získaj URL-ky z nastavení (umožni override cez query param "callback")
+        # Frontend callback môže prísť v query parameteri `callback`, inak fallback na settings
         frontend_callback = request.GET.get(
             'callback',
             getattr(settings, 'FRONTEND_CALLBACK_URL', 'http://localhost:3000/auth/callback')
         )
-        backend_callback = getattr(settings, 'BACKEND_CALLBACK_URL', 'http://localhost:8000/api/oauth/google/callback/')
+
+        # Zostav redirect_uri dynamicky podľa aktuálnej hostiteľskej domény
+        # Prioritne používame alias route /api/oauth/google/callback/
+        callback_path = '/api/oauth/google/callback/'
+        backend_callback = request.build_absolute_uri(callback_path)
         
         # Vytvor Google OAuth URL
         params = {
@@ -92,7 +96,9 @@ def google_callback_view(request):
         
         # Vymen authorization code za access token
         token_url = 'https://oauth2.googleapis.com/token'
-        backend_callback = getattr(settings, 'BACKEND_CALLBACK_URL', 'http://localhost:8000/api/oauth/google/callback/')
+        # Musí presne zodpovedať redirect_uri použitému v login kroku
+        callback_path = '/api/oauth/google/callback/'
+        backend_callback = request.build_absolute_uri(callback_path)
         token_data = {
             'client_id': client_id,
             'client_secret': client_secret,
