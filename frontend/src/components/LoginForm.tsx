@@ -133,7 +133,9 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
 
     try {
       // Priamo presmeruj na Google login endpoint s explicitným callback parametrom
-      const baseApi = process.env.NEXT_PUBLIC_API_URL || '/api';
+      // V produkcii preferuj explicitný backend origin, aby sme obišli proxy
+      const backendOrigin = process.env.NEXT_PUBLIC_BACKEND_ORIGIN || '';
+      const baseApi = backendOrigin ? `${backendOrigin}/api` : (process.env.NEXT_PUBLIC_API_URL || '/api');
       const callbackUrl = `${window.location.origin}/auth/callback`; // bez trailing slash
       const googleLoginUrl = `${baseApi}/oauth/google/login/?callback=${encodeURIComponent(callbackUrl)}`;
       

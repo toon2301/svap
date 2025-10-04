@@ -38,17 +38,13 @@ const nextConfig = {
   },
 
   async rewrites() {
-    // Proxy len ak beží front a backend pod jednou doménou (Railway multi-service)
-    const backendOrigin = process.env.BACKEND_ORIGIN;
-    if (!backendOrigin) {
+    // V produkcii vypni proxy, aby nevznikol self-proxy loop a header overflow
+    if (process.env.NODE_ENV === 'production') {
       return [];
     }
-    return [
-      {
-        source: '/api/:path*',
-        destination: `${backendOrigin}/api/:path*`,
-      },
-    ];
+    const backendOrigin = process.env.BACKEND_ORIGIN;
+    if (!backendOrigin) return [];
+    return [{ source: '/api/:path*', destination: `${backendOrigin}/api/:path*` }];
   },
 
   compress: true,
