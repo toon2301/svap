@@ -59,9 +59,14 @@ def google_login_view(request):
             'state': frontend_callback
         }
         
+        # Debug log - zobraz callback URL
+        logger.info(f"Google OAuth callback URL: {backend_callback}")
+        
         # URL encode parametre
         query_string = urllib.parse.urlencode(params)
         auth_url = f"https://accounts.google.com/o/oauth2/v2/auth?{query_string}"
+        
+        logger.info(f"Google OAuth auth URL: {auth_url}")
         
         return HttpResponseRedirect(auth_url)
         
