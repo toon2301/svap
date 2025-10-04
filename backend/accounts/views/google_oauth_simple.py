@@ -29,7 +29,8 @@ def google_login_view(request):
         # Získaj Google OAuth credentials z environment premenných
         client_id = getattr(settings, 'GOOGLE_OAUTH2_CLIENT_ID', None)
         
-        if not client_id:
+        # Odmietni prázdne alebo placeholder hodnoty
+        if not client_id or client_id.strip() in {'', 'dummy-client-id', 'your-google-client-id'}:
             logger.error("Google OAuth Client ID nie je nastavený v settings")
             return Response({
                 'error': 'Google OAuth Client ID nie je nastavený'
@@ -90,7 +91,8 @@ def google_callback_view(request):
         client_id = getattr(settings, 'GOOGLE_OAUTH2_CLIENT_ID', None)
         client_secret = getattr(settings, 'GOOGLE_OAUTH2_SECRET', None)
         
-        if not client_id or not client_secret:
+        if (not client_id or client_id.strip() in {'', 'dummy-client-id', 'your-google-client-id'}) or \
+           (not client_secret or client_secret.strip() in {'', 'dummy-secret', 'your-google-client-secret'}):
             logger.error("Google OAuth credentials not configured")
             return redirect(f'{frontend_callback}?error=google_credentials_not_configured')
         
