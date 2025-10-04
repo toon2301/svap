@@ -42,8 +42,8 @@ def google_login_view(request):
         )
 
         # Zostav redirect_uri dynamicky podľa aktuálnej hostiteľskej domény
-        # Prioritne používame alias route /api/oauth/google/callback/
-        callback_path = '/api/oauth/google/callback/'
+        # Použi cestu, ktorú máš v Google Console: /api/auth/google/callback (bez trailing '/')
+        callback_path = '/api/auth/google/callback'
         backend_callback = request.build_absolute_uri(callback_path)
         
         # Vytvor Google OAuth URL
@@ -97,7 +97,7 @@ def google_callback_view(request):
         # Vymen authorization code za access token
         token_url = 'https://oauth2.googleapis.com/token'
         # Musí presne zodpovedať redirect_uri použitému v login kroku
-        callback_path = '/api/oauth/google/callback/'
+        callback_path = '/api/auth/google/callback'
         backend_callback = request.build_absolute_uri(callback_path)
         token_data = {
             'client_id': client_id,
