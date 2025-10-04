@@ -11,7 +11,6 @@ from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import get_user_model
-from django.db import IntegrityError
 import logging
 import urllib.parse
 import os
@@ -121,11 +120,7 @@ def google_callback_view(request):
         logger.info(f"Code: {code[:10]}...")
         logger.info(f"Redirect URI: {token_data['redirect_uri']}")
         
-        try:
-            token_response = requests.post(token_url, data=token_data, timeout=10)
-        except requests.RequestException as req_err:
-            logger.error(f"Token request exception: {str(req_err)}")
-            return redirect(f"{frontend_callback}?error=token_request_exception")
+        token_response = requests.post(token_url, data=token_data)
         if token_response.status_code != 200:
             logger.error(f"Token exchange failed: Status {token_response.status_code}")
             logger.error(f"Response: {token_response.text}")
@@ -149,15 +144,10 @@ def google_callback_view(request):
         
         # Získaj používateľské údaje
         user_info_url = 'https://www.googleapis.com/oauth2/v2/userinfo'
-        try:
-            user_info_response = requests.get(
-                user_info_url,
-                headers={'Authorization': f'Bearer {access_token}'},
-                timeout=10
-            )
-        except requests.RequestException as req_err:
-            logger.error(f"User info request exception: {str(req_err)}")
-            return redirect(f"{frontend_callback}?error=user_info_request_exception")
+        user_info_response = requests.get(
+            user_info_url,
+            headers={'Authorization': f'Bearer {access_token}'}
+        )
         
         if user_info_response.status_code != 200:
             logger.error(f"User info request failed: {user_info_response.text}")
@@ -174,38 +164,28 @@ def google_callback_view(request):
         try:
             user = User.objects.get(email=email)
         except User.DoesNotExist:
-            # Vytvor nového používateľa s unikátnym username
-            base_username = email.split('@')[0] or 'user'
-            username = base_username
+            # Vytvor nového používateľa
+            username = email.split('@')[0]
+            # Zabezpeč, že username je unikátne
             counter = 1
+            original_username = username
             while User.objects.filter(username=username).exists():
-                username = f"{base_username}{counter}"
+                username = f"{original_username}{counter}"
                 counter += 1
-            try:
-                user = User.objects.create_user(
-                    username=username,
-                    email=email,
-                    first_name=user_info.get('given_name', ''),
-                    last_name=user_info.get('family_name', ''),
-                    is_active=True
-                )
-                logger.info(f"Created new user via Google OAuth: {email}")
-            except IntegrityError as ie:
-                # Ak došlo k race condition na unique email/username, skúste načítať existujúceho
-                logger.warning(f"IntegrityError on user create, retrying get by email: {str(ie)}")
-                try:
-                    user = User.objects.get(email=email)
-                except User.DoesNotExist:
-                    logger.error("User create failed and user not found on retry")
-                    return redirect(f"{frontend_callback}?error=user_create_failed")
+            
+            user = User.objects.create_user(
+                username=username,
+                email=email,
+                first_name=user_info.get('given_name', ''),
+                last_name=user_info.get('family_name', ''),
+                is_active=True  # Aktivuj používateľa
+            )
+            
+            logger.info(f"Created new user via Google OAuth: {email}")
         
         # Generuj JWT tokeny
-        try:
-            refresh = RefreshToken.for_user(user)
-            access_token_jwt = refresh.access_token
-        except Exception as token_err:
-            logger.error(f"JWT generation failed: {str(token_err)}")
-            return redirect(f"{frontend_callback}?error=token_generation_failed")
+        refresh = RefreshToken.for_user(user)
+        access_token_jwt = refresh.access_token
         
         # Vytvor redirect URL s tokenmi
         redirect_url = (
