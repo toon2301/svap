@@ -45,6 +45,20 @@ if not SECRET_KEY:
 # ALLOWED_HOSTS - nastavte v .env súbore pre produkciu
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1,AntonChudjak.pythonanywhere.com').split(',')
 
+# Automaticky pridaj host pre Railway podľa BACKEND_ORIGIN alebo Railway env
+_backend_origin = os.getenv('BACKEND_ORIGIN', '')
+if _backend_origin:
+    try:
+        parsed_backend = urlparse(_backend_origin)
+        if parsed_backend.hostname and parsed_backend.hostname not in ALLOWED_HOSTS:
+            ALLOWED_HOSTS.append(parsed_backend.hostname)
+    except Exception:
+        pass
+
+# Pri detekcii Railway prostredia povoľ aj subdomény railway.app
+if os.getenv('RAILWAY_ENVIRONMENT_ID') and '.railway.app' not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append('.railway.app')
+
 
 # Pridaj Cloudflare tunnel domény ak sú dostupné - VYPNUTÉ
 # if os.getenv('USE_CLOUDFLARE_TUNNEL', 'False').lower() == 'true':
