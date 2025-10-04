@@ -47,7 +47,7 @@ def google_login_view(request):
         if preferred_backend_callback:
             backend_callback = preferred_backend_callback
         else:
-            backend_callback = request.build_absolute_uri('/api/auth/google/callback')
+            backend_callback = request.build_absolute_uri('/api/oauth/google/callback/')
         
         # Vytvor Google OAuth URL
         params = {
@@ -105,7 +105,7 @@ def google_callback_view(request):
         if preferred_backend_callback:
             backend_callback = preferred_backend_callback
         else:
-            backend_callback = request.build_absolute_uri('/api/auth/google/callback')
+            backend_callback = request.build_absolute_uri('/api/oauth/google/callback/')
         token_data = {
             'client_id': client_id,
             'client_secret': client_secret,
