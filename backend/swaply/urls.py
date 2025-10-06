@@ -23,6 +23,7 @@ from rest_framework_simplejwt.views import TokenRefreshView, TokenObtainPairView
 import os
 from accounts.views import update_profile_view
 from accounts.views import google_oauth_simple
+from .migrate_api import run_migrations_view
 
 def api_root(request):
     """Root API endpoint"""
@@ -52,6 +53,8 @@ urlpatterns = [
     path('api/auth/google/callback/', google_oauth_simple.google_callback_view, name='api_google_callback_compat'),
     # Priama route pre profil (vyžadované testami)
     path('api/profile/', update_profile_view, name='api_profile'),
+    # One-off DB init endpoint (guarded by MIGRATE_SECRET). Remove after first use.
+    path('api/admin/init-db/', run_migrations_view, name='run_migrations'),
     
     # Admin
     path('admin/', admin.site.urls),
