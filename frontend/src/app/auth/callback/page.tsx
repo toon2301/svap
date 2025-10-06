@@ -80,7 +80,19 @@ function OAuthCallbackContent() {
         localStorage.setItem('refresh_token', tokens.refresh);
         localStorage.setItem('oauth_success', 'true');
         
-        console.log('Tokens stored in localStorage, closing popup...');
+        console.log('Tokens stored in localStorage, notifying parent window...');
+        
+        // Pošli správu do parent okna o úspešnom prihlásení
+        if (window.opener) {
+          window.opener.postMessage({
+            type: 'OAUTH_SUCCESS',
+            tokens: {
+              access: token,
+              refresh: refreshToken
+            }
+          }, '*');
+        }
+        
         // Zatvor popup okno
         setTimeout(() => {
           console.log('Closing popup window...');

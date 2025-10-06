@@ -152,7 +152,34 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
         return;
       }
 
-      // Kontrola či sa popup zatvoril a spracuj výsledok
+      // Počúvaj na správy z popup okna
+      const handleMessage = (event: MessageEvent) => {
+        console.log('Received message from popup:', event.data);
+        
+        if (event.data.type === 'OAUTH_SUCCESS') {
+          console.log('OAuth success message received');
+          clearInterval(checkClosed);
+          
+          // Ulož tokeny pomocou setAuthTokens
+          setAuthTokens({
+            access: event.data.tokens.access,
+            refresh: event.data.tokens.refresh
+          });
+          
+          setIsGoogleLoading(false);
+          router.push('/dashboard');
+        } else if (event.data.type === 'OAUTH_ERROR') {
+          console.log('OAuth error message received:', event.data.error);
+          clearInterval(checkClosed);
+          setIsGoogleLoading(false);
+          setLoginErrors({ general: event.data.error });
+        }
+      };
+      
+      // Pridaj event listener pre správy z popup okna
+      window.addEventListener('message', handleMessage);
+      
+      // Kontrola či sa popup zatvoril (fallback)
       const checkClosed = setInterval(async () => {
         try {
           // Bezpečne skontroluj, či je popup zatvorený
@@ -165,16 +192,17 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
           }
           
           if (popupClosed) {
-            console.log('Popup closed, checking for OAuth success...');
+            console.log('Popup closed without message, checking localStorage...');
             clearInterval(checkClosed);
+            window.removeEventListener('message', handleMessage);
             
-            // Skontroluj, či sa tokeny uložili do localStorage
+            // Fallback: skontroluj localStorage
             const accessToken = localStorage.getItem('access_token');
             const refreshToken = localStorage.getItem('refresh_token');
             const oauthSuccess = localStorage.getItem('oauth_success');
             
             if (accessToken && refreshToken && oauthSuccess === 'true') {
-              console.log('OAuth success detected via localStorage');
+              console.log('OAuth success detected via localStorage fallback');
               
               // Ulož tokeny pomocou setAuthTokens
               setAuthTokens({
