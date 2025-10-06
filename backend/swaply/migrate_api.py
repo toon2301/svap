@@ -21,7 +21,8 @@ def run_migrations_view(request):
         return JsonResponse({"error": "forbidden"}, status=403)
 
     try:
-        call_command("migrate", interactive=False, verbosity=1)
+        # Spusti robustný init prikaz (obsahuje kontrolu a re-aplikáciu accounts migrácií)
+        call_command("init_db")
         return JsonResponse({"status": "ok"})
     except Exception as exc:
         return JsonResponse({"error": str(exc)}, status=500)

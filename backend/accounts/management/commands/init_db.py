@@ -31,9 +31,25 @@ class Command(BaseCommand):
                         self.style.SUCCESS('✓ Tabuľka accounts_user existuje')
                     )
                 else:
-                    self.stdout.write(
-                        self.style.ERROR('✗ Tabuľka accounts_user neexistuje')
-                    )
+                    self.stdout.write(self.style.WARNING('✗ Tabuľka accounts_user neexistuje – opravujem migrácie pre app accounts'))
+
+                    # Ak migrácie hlásia "No migrations to apply" ale tabuľka chýba,
+                    # odfakeujeme migrácie appky accounts na zero a následne ich re-aplikujeme.
+                    call_command('migrate', 'accounts', 'zero', fake=True, verbosity=1, interactive=False)
+                    call_command('migrate', 'accounts', verbosity=2, interactive=False)
+
+                    # Re-check
+                    cursor.execute("""
+                        SELECT EXISTS (
+                            SELECT FROM information_schema.tables 
+                            WHERE table_name = 'accounts_user'
+                        );
+                    """)
+                    exists_after = cursor.fetchone()[0]
+                    if exists_after:
+                        self.stdout.write(self.style.SUCCESS('✓ Tabuľka accounts_user bola vytvorená'))
+                    else:
+                        self.stdout.write(self.style.ERROR('✗ Nepodarilo sa vytvoriť tabuľku accounts_user'))
                     
         except Exception as e:
             self.stdout.write(
