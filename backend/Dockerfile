@@ -2,6 +2,11 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
+# Runtime env
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    DJANGO_SETTINGS_MODULE=swaply.settings_production
+
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
     postgresql-client \
@@ -24,5 +29,5 @@ USER appuser
 # Expose port
 EXPOSE 8000
 
-# Run Django development server
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+# Start: run migrations then start gunicorn (Railway provides $PORT)
+CMD ["sh", "-c", "python manage.py migrate --noinput && python manage.py collectstatic --noinput && gunicorn swaply.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers=3"]
