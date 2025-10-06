@@ -1,4 +1,0 @@
-{
-  "buildCommand": "rm -rf package-lock.json && npm install && npm run build",
-  "startCommand": "next start -p $PORT"
-}

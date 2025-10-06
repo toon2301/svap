@@ -14,10 +14,11 @@
     {
       "name": "frontend",
       "rootDirectory": "frontend",
-      "buildCommand": "rm -rf node_modules package-lock.json .next && npm install && npm run build",
+      "buildCommand": "npm install && npm run build",
       "startCommand": "next start -p $PORT",
       "env": {
-        "NEXT_PUBLIC_API_URL": "/api"
+        "NEXT_PUBLIC_API_URL": "/api",
+        "NEXT_PUBLIC_BACKEND_ORIGIN": "https://exemplary-tranquility-svap.up.railway.app"
       },
       "ports": ["$PORT"]
     }
