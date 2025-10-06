@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 from datetime import timedelta
 from .settings import *
+from urllib.parse import urlparse
 
 LOG_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'logs')
 os.makedirs(LOG_DIR, exist_ok=True)
@@ -25,17 +26,43 @@ ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',')
 if not ALLOWED_HOSTS or ALLOWED_HOSTS == ['']:
     ALLOWED_HOSTS = ['antonchudjak.pythonanywhere.com']
 
-# Database
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('DB_NAME'),
-        'USER': os.getenv('DB_USER'),
-        'PASSWORD': os.getenv('DB_PASSWORD'),
-        'HOST': os.getenv('DB_HOST', 'localhost'),
-        'PORT': os.getenv('DB_PORT', '5432'),
+# Database – preferuj DATABASE_URL, inak fallback na sqlite
+db_url = os.getenv('DATABASE_URL')
+if db_url:
+    parsed = urlparse(db_url)
+    if parsed.scheme in ('postgres', 'postgresql'):
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.postgresql',
+                'NAME': (parsed.path[1:] or ''),
+                'USER': parsed.username or '',
+                'PASSWORD': parsed.password or '',
+                'HOST': parsed.hostname or '',
+                'PORT': str(parsed.port or ''),
+            }
+        }
+    elif parsed.scheme == 'sqlite':
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.sqlite3',
+                'NAME': parsed.path if parsed.path else BASE_DIR / 'db.sqlite3',
+            }
+        }
+    else:
+        # Neznáma schéma -> fallback na sqlite
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.sqlite3',
+                'NAME': BASE_DIR / 'db.sqlite3',
+            }
+        }
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
     }
-}
 
 # Static files (CSS, JavaScript, Images)
 STATIC_URL = '/static/'
