@@ -14,11 +14,12 @@
     {
       "name": "frontend",
       "rootDirectory": "frontend",
-      "buildCommand": "npm install && npm run build",
-      "startCommand": "next start -p $PORT",
+      "buildCommand": "npm install",
+      "startCommand": "npm run build && npm start",
       "env": {
         "NEXT_PUBLIC_API_URL": "/api",
-        "NEXT_PUBLIC_BACKEND_ORIGIN": "https://exemplary-tranquility-svap.up.railway.app"
+        "NEXT_PUBLIC_BACKEND_ORIGIN": "https://exemplary-tranquility-svap.up.railway.app",
+        "PORT": "3000"
       },
       "ports": ["$PORT"]
     }
