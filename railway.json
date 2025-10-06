@@ -14,7 +14,7 @@
     {
       "name": "frontend",
       "rootDirectory": "frontend",
-      "buildCommand": "rm -rf node_modules/.cache .next && npm ci && npm run build",
+      "buildCommand": "rm -rf node_modules/.cache .next && npm install && npm run build",
       "startCommand": "next start -p $PORT",
       "env": {
         "NEXT_PUBLIC_API_URL": "/api"
