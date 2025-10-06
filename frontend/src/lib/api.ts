@@ -3,11 +3,24 @@ import Cookies from 'js-cookie';
 
 // API URL konfigurácia - používa environment premenné
 const getApiUrl = () => {
-  // Ak je nastavené v environment, použij to
-  if (process.env.NEXT_PUBLIC_API_URL) {
-    return process.env.NEXT_PUBLIC_API_URL;
+  const explicitApi = process.env.NEXT_PUBLIC_API_URL;
+  const backendOrigin = process.env.NEXT_PUBLIC_BACKEND_ORIGIN;
+
+  // Ak je explicitná absolútna API URL, použij ju (https://...)
+  if (explicitApi && /^https?:\/\//.test(explicitApi)) {
+    return explicitApi;
   }
-  
+
+  // Preferuj BACKEND_ORIGIN, ak je k dispozícii (oddelený frontend/backend)
+  if (backendOrigin) {
+    return `${backendOrigin}/api`;
+  }
+
+  // Inak použi explicitnú (môže byť relatívna, napr. '/api')
+  if (explicitApi) {
+    return explicitApi;
+  }
+
   // Fallback pre development
   return 'http://localhost:8000/api';
 };
