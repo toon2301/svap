@@ -56,6 +56,7 @@ def google_login_view(request):
             'scope': 'openid email profile',
             'response_type': 'code',
             'access_type': 'online',
+            'prompt': 'select_account',
             'state': frontend_callback
         }
         
