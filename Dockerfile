@@ -1,7 +1,11 @@
-# Opravený Dockerfile
+# Dockerfile pre Django backend v podpriečinku backend/
 FROM python:3.11-slim
 
-# Inštalácia systémových závislostí, ktoré ste mali v logoch
+# Nastavíme premenné prostredia
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
+
+# Inštalácia systémových závislostí
 RUN apt-get update && apt-get install -y \
     postgresql-client \
     build-essential \
@@ -11,16 +15,17 @@ RUN apt-get update && apt-get install -y \
 # Nastavenie pracovného adresára
 WORKDIR /app
 
-# Skopíruj iba súbor s požiadavkami ako prvý, aby sa využil Docker cache
+# Skopírujeme requirements.txt z backend priečinka
 COPY backend/requirements.txt .
 
 # Inštalácia Python závislostí
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Skopírovanie celého kódu aplikácie z priečinka backend do /app
+# Skopírujeme celý obsah backend priečinka do /app
 COPY backend/ .
 
-# Spustenie Gunicorn servera s premennými od Railway
-# Používame "shell" formu CMD, aby sa správne načítala premenná $PORT
+# Spustenie Gunicorn servera
 CMD gunicorn swaply.wsgi:application --bind 0.0.0.0:$PORT --workers=3
+
+
 
