@@ -164,7 +164,13 @@ class EmailVerification(models.Model):
     
     def send_verification_email(self, request=None):
         """Odoslanie verifikačného emailu"""
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        logger.info(f"📧 DEBUG EMAIL: Starting email send for user {self.user.email}")
+        
         verification_url = self.get_verification_url(request)
+        logger.info(f"📧 DEBUG EMAIL: Verification URL: {verification_url}")
         
         subject = 'Potvrdenie registrácie - Swaply'
         message = f'''
@@ -181,7 +187,19 @@ S pozdravom,
 Tím Swaply
         '''
         
+        logger.info(f"📧 DEBUG EMAIL: Email subject: {subject}")
+        logger.info(f"📧 DEBUG EMAIL: From email: {settings.DEFAULT_FROM_EMAIL}")
+        logger.info(f"📧 DEBUG EMAIL: To email: {self.user.email}")
+        
+        logger.info(f"📧 DEBUG EMAIL: EMAIL_BACKEND: {settings.EMAIL_BACKEND}")
+        if hasattr(settings, 'EMAIL_HOST'):
+            logger.info(f"📧 DEBUG EMAIL: EMAIL_HOST: {settings.EMAIL_HOST}")
+            logger.info(f"📧 DEBUG EMAIL: EMAIL_PORT: {settings.EMAIL_PORT}")
+            logger.info(f"📧 DEBUG EMAIL: EMAIL_USE_TLS: {settings.EMAIL_USE_TLS}")
+            logger.info(f"📧 DEBUG EMAIL: EMAIL_HOST_USER: {settings.EMAIL_HOST_USER}")
+        
         try:
+            logger.info("📧 DEBUG EMAIL: Calling send_mail()...")
             result = send_mail(
                 subject=subject,
                 message=message,
@@ -189,10 +207,14 @@ Tím Swaply
                 recipient_list=[self.user.email],
                 fail_silently=False,
             )
+            logger.info(f"📧 DEBUG EMAIL: send_mail() returned: {result}")
+            logger.info("📧 DEBUG EMAIL: Email sent successfully! ✅")
             return True
         except Exception as e:
-            import logging
-            logging.getLogger(__name__).error(f"Chyba pri odosielaní emailu: {e}")
+            logger.error(f"📧 DEBUG EMAIL: Exception during send_mail(): {e}")
+            logger.error(f"Chyba pri odosielaní emailu: {e}")
+            import traceback
+            logger.error(f"📧 DEBUG EMAIL: Traceback: {traceback.format_exc()}")
             return False
     
     def get_verification_url(self, request=None):

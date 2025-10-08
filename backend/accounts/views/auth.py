@@ -124,18 +124,26 @@ def register_view(request):
         }, status=status.HTTP_200_OK)
     
     # Pre POST požiadavky spracuj registráciu
+    logger.info("📝 DEBUG REGISTRATION: Starting registration process")
+    
     serializer = UserRegistrationSerializer(data=request.data, context={'request': request})
     
     if serializer.is_valid():
+        logger.info("📝 DEBUG REGISTRATION: Serializer is valid")
         try:
             with transaction.atomic():
+                logger.info("📝 DEBUG REGISTRATION: Entering transaction")
+                
                 user = serializer.save()
+                logger.info(f"📝 DEBUG REGISTRATION: User created - {user.email}")
                 
                 # Log úspešnú registráciu
                 ip_address = request.META.get('REMOTE_ADDR')
                 user_agent = request.META.get('HTTP_USER_AGENT')
                 log_registration_success(user, ip_address, user_agent)
+                logger.info("📝 DEBUG REGISTRATION: Registration logged successfully")
                 
+                logger.info("📝 DEBUG REGISTRATION: Transaction completed, returning response")
                 return Response({
                     'message': 'Registrácia bola úspešná. Skontrolujte si email a potvrďte registráciu.',
                     'user': UserProfileSerializer(user).data,
@@ -144,11 +152,15 @@ def register_view(request):
                 
         except Exception as e:
             # Log error for debugging but don't expose details to client
+            logger.error(f"📝 DEBUG REGISTRATION: Exception occurred - {str(e)}")
             logger.error(f"Registration error: {str(e)}")
+            import traceback
+            logger.error(f"📝 DEBUG REGISTRATION: Traceback - {traceback.format_exc()}")
             return Response({
                 'error': 'Chyba pri vytváraní účtu'
             }, status=status.HTTP_400_BAD_REQUEST)
     
+    logger.error(f"📝 DEBUG REGISTRATION: Serializer invalid - {serializer.errors}")
     return Response({
         'error': 'Neplatné údaje',
         'details': serializer.errors
