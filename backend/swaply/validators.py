@@ -229,48 +229,79 @@ class CAPTCHAValidator:
     @classmethod
     def validate_captcha(cls, captcha_token):
         """Validuje CAPTCHA token cez Google reCAPTCHA API"""
+        # DEBUG: Log CAPTCHA settings
+        logger.info(f"🔍 DEBUG CAPTCHA: Starting validation")
+        logger.info(f"🔍 DEBUG CAPTCHA: CAPTCHA_ENABLED = {getattr(settings, 'CAPTCHA_ENABLED', True)}")
+        logger.info(f"🔍 DEBUG CAPTCHA: CAPTCHA_VERIFY_URL = {getattr(settings, 'CAPTCHA_VERIFY_URL', 'NOT SET')}")
+        
+        secret_key = getattr(settings, 'CAPTCHA_SECRET_KEY', 'NOT SET')
+        logger.info(f"🔍 DEBUG CAPTCHA: CAPTCHA_SECRET_KEY = {secret_key[:15]}... (first 15 chars)")
+        
         # Skontroluj, či je CAPTCHA povolená
         if not getattr(settings, 'CAPTCHA_ENABLED', True):
+            logger.info(f"🔍 DEBUG CAPTCHA: CAPTCHA is disabled, skipping validation")
             return True
         
         # V testoch preskoč validáciu ak je to povolené
         if getattr(settings, 'CAPTCHA_SKIP_IN_TESTS', True):
             import sys
             if 'pytest' in sys.modules or 'test' in sys.argv:
+                logger.info(f"🔍 DEBUG CAPTCHA: Running in tests, skipping validation")
                 return True
         
         if not captcha_token:
+            logger.error(f"🔍 DEBUG CAPTCHA: Token is empty!")
             raise ValidationError(_('CAPTCHA je povinná'))
+        
+        logger.info(f"🔍 DEBUG CAPTCHA: Token received (length: {len(captcha_token)})")
+        logger.info(f"🔍 DEBUG CAPTCHA: Token first 50 chars: {captcha_token[:50]}...")
         
         # Validuj token cez Google API
         try:
+            verify_data = {
+                'secret': settings.CAPTCHA_SECRET_KEY,
+                'response': captcha_token
+            }
+            
+            logger.info(f"🔍 DEBUG CAPTCHA: Sending verification request to Google API...")
+            
             response = requests.post(
                 settings.CAPTCHA_VERIFY_URL,
-                data={
-                    'secret': settings.CAPTCHA_SECRET_KEY,
-                    'response': captcha_token
-                },
+                data=verify_data,
                 timeout=10
             )
             
+            logger.info(f"🔍 DEBUG CAPTCHA: Google API response status: {response.status_code}")
+            
             result = response.json()
+            logger.info(f"🔍 DEBUG CAPTCHA: Google API response: {result}")
             
             if not result.get('success', False):
+                error_codes = result.get('error-codes', [])
+                logger.error(f"🔍 DEBUG CAPTCHA: Validation FAILED!")
+                logger.error(f"🔍 DEBUG CAPTCHA: Error codes: {error_codes}")
+                logger.error(f"🔍 DEBUG CAPTCHA: Full response: {result}")
                 logger.warning(f"CAPTCHA validation failed: {result}")
                 raise ValidationError(_('CAPTCHA validácia zlyhala'))
             
             # Kontrola skóre (pre reCAPTCHA v3)
             score = result.get('score', 1.0)
+            logger.info(f"🔍 DEBUG CAPTCHA: Score: {score}")
+            
             if score < 0.5:
+                logger.error(f"🔍 DEBUG CAPTCHA: Score too low: {score}")
                 logger.warning(f"CAPTCHA score too low: {score}")
                 raise ValidationError(_('CAPTCHA skóre je príliš nízke'))
             
+            logger.info(f"🔍 DEBUG CAPTCHA: Validation SUCCESS! ✅")
             return True
             
         except requests.RequestException as e:
+            logger.error(f"🔍 DEBUG CAPTCHA: Request exception: {e}")
             logger.error(f"CAPTCHA API request failed: {e}")
             raise ValidationError(_('Chyba pri validácii CAPTCHA'))
         except Exception as e:
+            logger.error(f"🔍 DEBUG CAPTCHA: General exception: {e}")
             logger.error(f"CAPTCHA validation error: {e}")
             raise ValidationError(_('Neplatná CAPTCHA'))
 
