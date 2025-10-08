@@ -22,7 +22,7 @@ export default function ReCaptchaProvider({ children }: ReCaptchaProviderProps) 
 
   return (
     <GoogleReCaptchaProvider
-      reCaptchaSiteKey={reCaptchaSiteKey}
+      reCaptchaKey={reCaptchaSiteKey}
       scriptProps={{
         async: true,
         defer: true,
