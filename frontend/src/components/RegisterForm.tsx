@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, Suspense, lazy, useEffect } from 'react';
+import { useState, Suspense, lazy, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
+import { useGoogleReCaptcha } from 'react-google-recaptcha-v3';
 import { api, endpoints } from '@/lib/api';
 import { setAuthTokens } from '@/utils/auth';
 import { useAutoSave } from '@/hooks/useFormValidation';
@@ -32,6 +33,7 @@ interface FormErrors {
 
 export default function RegisterForm() {
   const router = useRouter();
+  const { executeRecaptcha } = useGoogleReCaptcha();
   const [formData, setFormData] = useState<FormData>({
     username: '',
     email: '',
@@ -301,31 +303,58 @@ export default function RegisterForm() {
     setIsLoading(true);
     setErrors({});
 
-    // Mobile connectivity check - dočasne vypnuté pre testovanie
-    // if (window.innerWidth <= 768) {
-    //   const isConnected = await checkNetworkConnectivity();
-    //   if (!isConnected) {
-    //     setErrors({ general: 'Nie je možné sa pripojiť k serveru. Skontrolujte internetové pripojenie.' });
-    //     setIsLoading(false);
-    //     return;
-    //   }
-    // }
-
-    // Vyčistenie prázdnych polí pred odoslaním, ale zachovanie povinných polí
-    const cleanedData = Object.fromEntries(
-      Object.entries(formData).filter(([key, value]) => {
-        // Zachovaj povinné polia aj keď sú prázdne
-        const requiredFields = ['username', 'email', 'password', 'password_confirm', 'user_type', 'birth_day', 'birth_month', 'birth_year', 'gender'];
-        if (requiredFields.includes(key)) {
-          return true;
-        }
-        // Pre ostatné polia odstráň prázdne hodnoty
-        return value !== '';
-      })
-    );
-
     try {
-      const response = await api.post(endpoints.auth.register, cleanedData);
+      // Získaj reCAPTCHA token
+      let captchaToken = '';
+      if (executeRecaptcha) {
+        try {
+          captchaToken = await executeRecaptcha('register');
+        } catch (captchaError) {
+          console.error('reCAPTCHA error:', captchaError);
+          setErrors({ general: 'Chyba pri overovaní reCAPTCHA. Skúste to znova.' });
+          setIsLoading(false);
+          return;
+        }
+      } else {
+        console.warn('reCAPTCHA nie je k dispozícii');
+        // V development mode môžeme pokračovať bez CAPTCHA
+        if (process.env.NODE_ENV === 'production') {
+          setErrors({ general: 'reCAPTCHA nie je dostupná. Obnovte stránku.' });
+          setIsLoading(false);
+          return;
+        }
+      }
+
+      // Mobile connectivity check - dočasne vypnuté pre testovanie
+      // if (window.innerWidth <= 768) {
+      //   const isConnected = await checkNetworkConnectivity();
+      //   if (!isConnected) {
+      //     setErrors({ general: 'Nie je možné sa pripojiť k serveru. Skontrolujte internetové pripojenie.' });
+      //     setIsLoading(false);
+      //     return;
+      //   }
+      // }
+
+      // Vyčistenie prázdnych polí pred odoslaním, ale zachovanie povinných polí
+      const cleanedData = Object.fromEntries(
+        Object.entries(formData).filter(([key, value]) => {
+          // Zachovaj povinné polia aj keď sú prázdne
+          const requiredFields = ['username', 'email', 'password', 'password_confirm', 'user_type', 'birth_day', 'birth_month', 'birth_year', 'gender'];
+          if (requiredFields.includes(key)) {
+            return true;
+          }
+          // Pre ostatné polia odstráň prázdne hodnoty
+          return value !== '';
+        })
+      );
+
+      // Pridaj CAPTCHA token do dát
+      const dataWithCaptcha = {
+        ...cleanedData,
+        captcha_token: captchaToken
+      };
+
+      const response = await api.post(endpoints.auth.register, dataWithCaptcha);
       
       console.log('Registrácia úspešná:', response.data);
       // Zobrazenie úspešnej hlášky
