@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { api, endpoints } from '@/lib/api';
 import { setAuthTokens } from '@/utils/auth';
 import { useAutoSave } from '@/hooks/useFormValidation';
+import { fetchCsrfToken } from '@/utils/csrf';
 // import { logMobileDebugInfo, checkNetworkConnectivity } from '@/utils/mobileDebug';
 
 // Lazy load particle efekt
@@ -82,6 +83,11 @@ export default function RegisterForm() {
       setFormData(savedDraft);
       // Žiadne hlášenie - funguje ticho v pozadí
     }
+    
+    // Získaj CSRF token z backendu
+    fetchCsrfToken().catch(err => {
+      console.error('Nepodarilo sa získať CSRF token:', err);
+    });
     
     return () => window.removeEventListener('resize', checkMobile);
   }, [loadDraft]);

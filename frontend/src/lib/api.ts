@@ -27,6 +27,12 @@ const getApiUrl = () => {
 
 const API_URL = getApiUrl();
 
+// Utility funkcia na získanie CSRF tokenu z cookies
+const getCsrfToken = (): string | undefined => {
+  // Django štandardne používa cookie s názvom 'csrftoken'
+  return Cookies.get('csrftoken');
+};
+
 // Create axios instance
 export const api = axios.create({
   baseURL: API_URL,
@@ -34,15 +40,27 @@ export const api = axios.create({
     'Content-Type': 'application/json',
   },
   timeout: 30000, // 30 sekúnd timeout pre mobile
+  withCredentials: true, // Povoliť posielanie cookies pre CSRF
 });
 
-// Request interceptor to add auth token
+// Request interceptor to add auth token and CSRF token
 api.interceptors.request.use(
   (config) => {
+    // Pridaj JWT auth token ak existuje
     const token = Cookies.get('access_token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    
+    // Pridaj CSRF token pre POST/PUT/PATCH/DELETE requesty
+    const method = config.method?.toUpperCase();
+    if (method && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
+      const csrfToken = getCsrfToken();
+      if (csrfToken) {
+        config.headers['X-CSRFToken'] = csrfToken;
+      }
+    }
+    
     return config;
   },
   (error) => {
@@ -97,6 +115,7 @@ export const endpoints = {
     resendVerification: '/auth/resend-verification/',
     oauthCallback: '/oauth/callback/',
     googleLoginUrl: '/oauth/google/login-url/',
+    csrfToken: '/auth/csrf-token/',
   },
   // Dashboard
   dashboard: {
