@@ -68,10 +68,14 @@ export default function Dashboard({ initialUser }: DashboardProps) {
     setActiveModule(moduleId);
   };
 
+  const handleUserUpdate = (updatedUser: User) => {
+    setUser(updatedUser);
+  };
+
   const renderModule = () => {
     switch (activeModule) {
       case 'profile':
-        return <ProfileModule user={user!} />;
+        return <ProfileModule user={user!} onUserUpdate={handleUserUpdate} />;
       default:
         return (
           <div className="text-center py-20">

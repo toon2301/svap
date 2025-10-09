@@ -36,7 +36,8 @@ def update_profile_view(request):
     serializer = UserProfileSerializer(
         request.user, 
         data=request.data, 
-        partial=request.method == 'PATCH'
+        partial=request.method == 'PATCH',
+        context={'request': request}
     )
     
     if serializer.is_valid():
@@ -56,9 +57,11 @@ def update_profile_view(request):
             user_agent = request.META.get('HTTP_USER_AGENT')
             log_profile_update(request.user, changes, ip_address, user_agent)
         
+        # Vráť aktualizované údaje s plnou URL avatara
+        response_serializer = UserProfileSerializer(request.user, context={'request': request})
         return Response({
             'message': 'Profil bol úspešne aktualizovaný',
-            'user': serializer.data
+            'user': response_serializer.data
         }, status=status.HTTP_200_OK)
     
     return Response({

@@ -8,7 +8,8 @@ export interface User {
   user_type: 'individual' | 'company' | 'school';
   phone?: string;
   bio?: string;
-  avatar?: string;
+  avatar?: string; // relative or absolute path (writeable)
+  avatar_url?: string; // absolute URL for display
   location?: string;
   company_name?: string;
   website?: string;

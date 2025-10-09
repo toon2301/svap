@@ -246,7 +246,7 @@ def logout_view(request):
 @permission_classes([IsAuthenticated])
 def me_view(request):
     """Získanie informácií o aktuálnom používateľovi"""
-    serializer = UserProfileSerializer(request.user)
+    serializer = UserProfileSerializer(request.user, context={'request': request})
     
     # Pre OAuth callback - vrátime aj tokeny
     if request.GET.get('with_tokens') == 'true':

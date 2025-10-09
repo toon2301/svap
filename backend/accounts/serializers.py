@@ -176,17 +176,33 @@ class UserLoginSerializer(serializers.Serializer):
 
 class UserProfileSerializer(serializers.ModelSerializer):
     """Serializátor pre profil používateľa"""
+    # avatar ostáva zapisovateľné (ImageField na modeli)
+    # avatar_url poskytuje plnú URL pre klienta
+    avatar_url = serializers.SerializerMethodField()
     
     class Meta:
         model = User
         fields = [
             'id', 'username', 'email', 'first_name', 'last_name',
-            'user_type', 'phone', 'bio', 'avatar', 'location',
+            'user_type', 'phone', 'bio', 'avatar', 'avatar_url', 'location',
             'company_name', 'website', 'linkedin', 'facebook',
             'instagram', 'is_verified', 'is_public', 'created_at',
             'updated_at', 'profile_completeness', 'birth_date', 'gender'
         ]
         read_only_fields = ['id', 'is_verified', 'created_at', 'updated_at', 'profile_completeness']
+
+    def get_avatar_url(self, obj):
+        """Vráti plnú URL k avataru (ak existuje)."""
+        try:
+            if obj.avatar and hasattr(obj.avatar, 'url'):
+                request = self.context.get('request')
+                url = obj.avatar.url
+                if request:
+                    return request.build_absolute_uri(url)
+                return url
+        except Exception:
+            return None
+        return None
 
     def validate_first_name(self, value):
         """Validácia mena"""
