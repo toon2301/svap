@@ -8,8 +8,8 @@ import {
   HeartIcon, 
   UserIcon, 
   Cog6ToothIcon,
-  Bars3Icon,
-  XMarkIcon
+  XMarkIcon,
+  ArrowRightOnRectangleIcon
 } from '@heroicons/react/24/outline';
 
 export interface SidebarItem {
@@ -22,6 +22,7 @@ export interface SidebarItem {
 interface SidebarProps {
   activeItem: string;
   onItemClick: (itemId: string) => void;
+  onLogout: () => void;
   isMobile?: boolean;
   isOpen?: boolean;
   onClose?: () => void;
@@ -58,21 +59,16 @@ const sidebarItems: SidebarItem[] = [
 export default function Sidebar({ 
   activeItem, 
   onItemClick, 
+  onLogout,
   isMobile = false, 
   isOpen = false, 
   onClose 
 }: SidebarProps) {
-  const [isHamburgerOpen, setIsHamburgerOpen] = useState(false);
-
   const handleItemClick = (itemId: string) => {
     onItemClick(itemId);
     if (isMobile && onClose) {
       onClose();
     }
-  };
-
-  const toggleHamburger = () => {
-    setIsHamburgerOpen(!isHamburgerOpen);
   };
 
   const sidebarContent = (
@@ -114,30 +110,15 @@ export default function Sidebar({
         })}
       </nav>
 
-      {/* Hamburger Menu for Future Features */}
+      {/* Logout Button */}
       <div className="p-4 border-t border-gray-200">
         <button
-          onClick={toggleHamburger}
-          className="w-full flex items-center px-3 py-2.5 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
+          onClick={onLogout}
+          className="w-full flex items-center px-3 py-2.5 text-sm font-medium text-red-600 rounded-lg hover:bg-red-50 transition-colors"
         >
-          <Bars3Icon className="w-5 h-5 mr-3 text-gray-500" />
-          Ďalšie funkcie
+          <ArrowRightOnRectangleIcon className="w-5 h-5 mr-3 text-red-500" />
+          Odhlásiť sa
         </button>
-        
-        <AnimatePresence>
-          {isHamburgerOpen && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className="mt-2 space-y-1"
-            >
-              <div className="px-3 py-2 text-xs text-gray-500 bg-gray-50 rounded">
-                Prichádzajúce funkcie...
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </div>
     </div>
   );
@@ -158,11 +139,11 @@ export default function Sidebar({
             
             {/* Mobile Sidebar */}
             <motion.div
-              initial={{ x: -300 }}
+              initial={{ x: -384 }}
               animate={{ x: 0 }}
-              exit={{ x: -300 }}
+              exit={{ x: -384 }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed left-0 top-0 h-full w-64 z-50"
+              className="fixed left-0 top-0 h-full w-96 z-50"
             >
               {sidebarContent}
             </motion.div>
@@ -173,7 +154,7 @@ export default function Sidebar({
   }
 
   return (
-    <div className="w-64 h-full">
+    <div className="w-96 h-full">
       {sidebarContent}
     </div>
   );

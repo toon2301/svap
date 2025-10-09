@@ -8,6 +8,7 @@ import type { User } from '../../types';
 
 // Import modules
 import Sidebar from './Sidebar';
+import ProfileModule from './modules/ProfileModule';
 
 // Import icons
 import { Bars3Icon, ArrowRightOnRectangleIcon } from '@heroicons/react/24/outline';
@@ -20,6 +21,7 @@ export default function Dashboard({ initialUser }: DashboardProps) {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(initialUser || null);
   const [isLoading, setIsLoading] = useState(!initialUser);
+  const [activeModule, setActiveModule] = useState('home');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
@@ -63,8 +65,25 @@ export default function Dashboard({ initialUser }: DashboardProps) {
   };
 
   const handleModuleChange = (moduleId: string) => {
-    // Pre budúce funkcie - zatiaľ len placeholder
-    console.log('Selected module:', moduleId);
+    setActiveModule(moduleId);
+  };
+
+  const renderModule = () => {
+    switch (activeModule) {
+      case 'profile':
+        return <ProfileModule user={user!} />;
+      default:
+        return (
+          <div className="text-center py-20">
+            <h2 className="text-2xl font-semibold text-gray-600 mb-4">
+              Vitaj v Swaply!
+            </h2>
+            <p className="text-gray-500">
+              Vyber si sekciu z ľavej navigácie pre pokračovanie.
+            </p>
+          </div>
+        );
+    }
   };
 
   if (isLoading) {
@@ -87,8 +106,9 @@ export default function Dashboard({ initialUser }: DashboardProps) {
       {/* Desktop Sidebar */}
       <div className="hidden lg:block">
         <Sidebar
-          activeItem=""
+          activeItem={activeModule}
           onItemClick={handleModuleChange}
+          onLogout={handleLogout}
         />
       </div>
 
@@ -102,19 +122,15 @@ export default function Dashboard({ initialUser }: DashboardProps) {
             <Bars3Icon className="w-6 h-6 text-gray-600" />
           </button>
           <h1 className="text-xl font-bold text-purple-800">Swaply</h1>
-          <button
-            onClick={handleLogout}
-            className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
-          >
-            <ArrowRightOnRectangleIcon className="w-6 h-6 text-gray-600" />
-          </button>
+          <div className="w-10"></div>
         </div>
       </div>
 
       {/* Mobile Sidebar */}
       <Sidebar
-        activeItem=""
+        activeItem={activeModule}
         onItemClick={handleModuleChange}
+        onLogout={handleLogout}
         isMobile={true}
         isOpen={isMobileMenuOpen}
         onClose={() => setIsMobileMenuOpen(false)}
@@ -131,30 +147,13 @@ export default function Dashboard({ initialUser }: DashboardProps) {
                   Vitaj, {user.first_name}!
                 </div>
               </div>
-              
-              <div className="flex items-center space-x-4">
-                <button
-                  onClick={handleLogout}
-                  className="flex items-center px-4 py-2 text-gray-700 hover:text-red-600 transition-colors"
-                >
-                  <ArrowRightOnRectangleIcon className="w-4 h-4 mr-2" />
-                  Odhlásiť sa
-                </button>
-              </div>
             </div>
           </div>
         </div>
 
         {/* Content Area */}
         <main className="p-6 lg:p-8">
-          <div className="text-center py-20">
-            <h2 className="text-2xl font-semibold text-gray-600 mb-4">
-              Vitaj v Swaply!
-            </h2>
-            <p className="text-gray-500">
-              Vyber si sekciu z ľavej navigácie pre pokračovanie.
-            </p>
-          </div>
+          {renderModule()}
         </main>
       </div>
     </div>
