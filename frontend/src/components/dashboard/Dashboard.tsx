@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { isAuthenticated, clearAuthTokens } from '../../utils/auth';
 import { api, endpoints } from '../../lib/api';
@@ -9,11 +8,6 @@ import type { User } from '../../types';
 
 // Import modules
 import Sidebar from './Sidebar';
-import HomeModule from './modules/HomeModule';
-import SearchModule from './modules/SearchModule';
-import FavoritesModule from './modules/FavoritesModule';
-import ProfileModule from './modules/ProfileModule';
-import SettingsModule from './modules/SettingsModule';
 
 // Import icons
 import { Bars3Icon, ArrowRightOnRectangleIcon } from '@heroicons/react/24/outline';
@@ -26,7 +20,6 @@ export default function Dashboard({ initialUser }: DashboardProps) {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(initialUser || null);
   const [isLoading, setIsLoading] = useState(!initialUser);
-  const [activeModule, setActiveModule] = useState('home');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
@@ -70,24 +63,8 @@ export default function Dashboard({ initialUser }: DashboardProps) {
   };
 
   const handleModuleChange = (moduleId: string) => {
-    setActiveModule(moduleId);
-  };
-
-  const renderModule = () => {
-    switch (activeModule) {
-      case 'home':
-        return <HomeModule user={user!} />;
-      case 'search':
-        return <SearchModule />;
-      case 'favorites':
-        return <FavoritesModule />;
-      case 'profile':
-        return <ProfileModule user={user!} />;
-      case 'settings':
-        return <SettingsModule user={user!} />;
-      default:
-        return <HomeModule user={user!} />;
-    }
+    // Pre budúce funkcie - zatiaľ len placeholder
+    console.log('Selected module:', moduleId);
   };
 
   if (isLoading) {
@@ -110,7 +87,7 @@ export default function Dashboard({ initialUser }: DashboardProps) {
       {/* Desktop Sidebar */}
       <div className="hidden lg:block">
         <Sidebar
-          activeItem={activeModule}
+          activeItem=""
           onItemClick={handleModuleChange}
         />
       </div>
@@ -136,7 +113,7 @@ export default function Dashboard({ initialUser }: DashboardProps) {
 
       {/* Mobile Sidebar */}
       <Sidebar
-        activeItem={activeModule}
+        activeItem=""
         onItemClick={handleModuleChange}
         isMobile={true}
         isOpen={isMobileMenuOpen}
@@ -170,17 +147,14 @@ export default function Dashboard({ initialUser }: DashboardProps) {
 
         {/* Content Area */}
         <main className="p-6 lg:p-8">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={activeModule}
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.3 }}
-            >
-              {renderModule()}
-            </motion.div>
-          </AnimatePresence>
+          <div className="text-center py-20">
+            <h2 className="text-2xl font-semibold text-gray-600 mb-4">
+              Vitaj v Swaply!
+            </h2>
+            <p className="text-gray-500">
+              Vyber si sekciu z ľavej navigácie pre pokračovanie.
+            </p>
+          </div>
         </main>
       </div>
     </div>
