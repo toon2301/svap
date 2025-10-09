@@ -425,20 +425,20 @@ export default function RegisterForm() {
           className="bg-white rounded-2xl shadow-xl border border-gray-200"
           style={{
             width: isMobile ? '100%' : '100%',
-            maxWidth: isMobile ? '600px' : '672px'
+            maxWidth: isMobile ? '600px' : '580px'
           }}
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
         >
           <div style={{
-            marginLeft: isMobile ? '24px' : '40px', 
-            marginRight: isMobile ? '24px' : '40px', 
-            marginTop: '30px', 
-            marginBottom: '30px'
+            marginLeft: isMobile ? '24px' : '32px', 
+            marginRight: isMobile ? '24px' : '32px', 
+            marginTop: '24px', 
+            marginBottom: '24px'
           }}>
             <motion.h1 
-              className="text-4xl font-medium text-center mb-8 text-black tracking-wider max-lg:text-2xl max-lg:mb-8"
+              className="text-3xl font-medium text-center mb-6 text-black tracking-wider max-lg:text-2xl max-lg:mb-8"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.2 }}
@@ -478,14 +478,14 @@ export default function RegisterForm() {
             {!registrationSuccess && (
               <motion.form 
                 onSubmit={handleSubmit}
-                className="space-y-6 max-lg:space-y-4"
+                className="space-y-4 max-lg:space-y-4"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.5, delay: 0.4 }}
               >
               {/* Typ účtu */}
               <div>
-                <label className="block text-lg font-normal text-gray-600 mb-2 max-lg:text-base max-lg:mb-1">
+                <label className="block text-base font-normal text-gray-600 mb-1.5 max-lg:text-base max-lg:mb-1">
                   Typ účtu
                 </label>
                 <select
@@ -518,7 +518,7 @@ export default function RegisterForm() {
               {/* Prihlasovacie údaje */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="username" className="block text-lg font-normal text-gray-600 mb-2 max-lg:text-base max-lg:mb-1">
+                  <label htmlFor="username" className="block text-base font-normal text-gray-600 mb-1.5 max-lg:text-base max-lg:mb-1">
                     Používateľské meno *
                   </label>
                   <input
@@ -551,7 +551,7 @@ export default function RegisterForm() {
                 </div>
 
                 <div>
-                  <label htmlFor="email" className="block text-lg font-normal text-gray-600 mb-2 max-lg:text-base max-lg:mb-1">
+                  <label htmlFor="email" className="block text-base font-normal text-gray-600 mb-1.5 max-lg:text-base max-lg:mb-1">
                     Email *
                   </label>
                   <input
@@ -628,7 +628,7 @@ export default function RegisterForm() {
               {/* Heslá */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="password" className="block text-lg font-normal text-gray-600 mb-2 max-lg:text-base max-lg:mb-1">
+                  <label htmlFor="password" className="block text-base font-normal text-gray-600 mb-1.5 max-lg:text-base max-lg:mb-1">
                     Heslo *
                   </label>
                   <div className="relative">
@@ -658,7 +658,7 @@ export default function RegisterForm() {
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
                       tabIndex={-1}
-                      className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 rounded"
+                      className="absolute right-2 top-1/3 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 rounded"
                     >
                     
                       {showPassword ? (
@@ -679,7 +679,7 @@ export default function RegisterForm() {
                 </div>
 
                 <div>
-                  <label htmlFor="password_confirm" className="block text-lg font-normal text-gray-600 mb-2 max-lg:text-base max-lg:mb-1">
+                  <label htmlFor="password_confirm" className="block text-base font-normal text-gray-600 mb-1.5 max-lg:text-base max-lg:mb-1">
                     Potvrdenie hesla *
                   </label>
                   <div className="relative">
@@ -699,7 +699,7 @@ export default function RegisterForm() {
                       type="button"
                       onClick={() => setShowPasswordConfirm(!showPasswordConfirm)}
                       aria-label={showPasswordConfirm ? 'Skryť heslo' : 'Zobraziť heslo'}
-                      className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                      className="absolute right-2 top-1/3 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
                     >
                       {showPasswordConfirm ? (
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -723,7 +723,7 @@ export default function RegisterForm() {
 
               {/* Dátum narodenia */}
               <div>
-                <label className="block text-lg font-normal text-gray-600 mb-2 max-lg:text-base max-lg:mb-1">
+                <label className="block text-base font-normal text-gray-600 mb-1.5 max-lg:text-base max-lg:mb-1">
                   Dátum narodenia *
                 </label>
                 <div className="grid grid-cols-3 gap-4">
@@ -812,7 +812,7 @@ export default function RegisterForm() {
 
               {/* Pohlavie */}
               <div>
-                <label htmlFor="gender" className="block text-lg font-normal text-gray-600 mb-2 max-lg:text-base max-lg:mb-1">
+                <label htmlFor="gender" className="block text-base font-normal text-gray-600 mb-1.5 max-lg:text-base max-lg:mb-1">
                   Pohlavie *
                 </label>
                 <select
@@ -844,12 +844,12 @@ export default function RegisterForm() {
               {/* Pre firmy */}
               {formData.user_type === 'company' && (
                 <div className="space-y-4 p-4 bg-purple-50 rounded-lg">
-                  <h3 className="text-lg font-normal text-purple-700 mb-2 max-lg:text-base max-lg:mb-1">
+                  <h3 className="text-base font-normal text-purple-700 mb-2 max-lg:text-base max-lg:mb-1">
                     Informácie o firme
                   </h3>
                   
                   <div>
-                    <label htmlFor="company_name" className="block text-lg font-normal text-gray-600 mb-2 max-lg:text-base max-lg:mb-1">
+                    <label htmlFor="company_name" className="block text-base font-normal text-gray-600 mb-1.5 max-lg:text-base max-lg:mb-1">
                       Názov firmy *
                     </label>
                     <input
@@ -870,7 +870,7 @@ export default function RegisterForm() {
                   </div>
 
                   <div>
-                    <label className="block text-lg font-normal text-gray-600 mb-2 max-lg:text-base max-lg:mb-1">
+                    <label className="block text-base font-normal text-gray-600 mb-1.5 max-lg:text-base max-lg:mb-1">
                       Webstránka
                     </label>
                     <input
@@ -890,15 +890,13 @@ export default function RegisterForm() {
               <motion.button
                 type="submit"
                 disabled={isLoading}
-                className={`w-full text-white px-6 py-4 rounded-lg font-semibold text-xl transition-all ${
+                className={`w-full text-white px-6 py-3 rounded-lg font-semibold text-lg transition-all max-lg:text-xl max-lg:py-4 ${
                   isLoading ? 'cursor-not-allowed' : 'cursor-pointer hover:shadow-lg'
                 }`}
                 style={{
                   ...getButtonStyle(),
                   boxShadow: '0 4px 15px rgba(139, 92, 246, 0.3)',
-                  marginTop: '24px',
-                  paddingTop: '20px',
-                  paddingBottom: '20px'
+                  marginTop: '20px'
                 }}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -941,7 +939,7 @@ export default function RegisterForm() {
               </motion.div>
             ) : (
               <div className="text-center" style={{marginTop: '16px'}}>
-                <p className="text-2xl text-gray-600 max-lg:text-base">
+                <p className="text-base text-gray-600 max-lg:text-base">
                   Už máte účet?{' '}
                   <a 
                     href="/" 
