@@ -359,16 +359,14 @@ CAPTCHA_VERIFY_URL = 'https://www.google.com/recaptcha/api/siteverify'
 CAPTCHA_SKIP_IN_TESTS = env_bool('CAPTCHA_SKIP_IN_TESTS', True)
 
 # Email settings
-# FORCE console backend for development - TODO: Change for production
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-
-# Commented out for development - uncomment when setting up SendGrid/Mailgun
-# EMAIL_BACKEND = os.getenv('EMAIL_BACKEND')
-# if not EMAIL_BACKEND:
-#     if DEBUG or 'test' in sys.argv:
-#         EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-#     else:
-#         EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+# Allow explicit override via env even in DEBUG
+EMAIL_BACKEND = os.getenv('EMAIL_BACKEND')
+if not EMAIL_BACKEND:
+    # Pre testovanie použijeme console backend
+    if DEBUG or 'test' in sys.argv:
+        EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+    else:
+        EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 
 # SMTP defaults if SMTP backend selected
 if EMAIL_BACKEND.endswith('smtp.EmailBackend'):
