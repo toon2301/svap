@@ -2,9 +2,8 @@
 
 import React from 'react';
 import { User } from '../../../types';
-import ProfileHeader from './profile/ProfileHeader';
-import ProfileContent from './profile/ProfileContent';
-import ProfileStats from './profile/ProfileStats';
+import UserAvatar from './profile/UserAvatar';
+import UserInfo from './profile/UserInfo';
 
 interface ProfileModuleProps {
   user: User;
@@ -12,17 +11,9 @@ interface ProfileModuleProps {
 
 export default function ProfileModule({ user }: ProfileModuleProps) {
   return (
-    <div className="max-w-4xl mx-auto">
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-        {/* Profile Header */}
-        <ProfileHeader user={user} />
-        
-        {/* Profile Stats */}
-        <ProfileStats user={user} />
-        
-        {/* Profile Content */}
-        <ProfileContent user={user} />
-      </div>
+    <div className="max-w-2xl mx-auto">
+      <UserAvatar user={user} size="large" />
+      <UserInfo user={user} />
     </div>
   );
 }

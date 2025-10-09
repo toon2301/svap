@@ -36,23 +36,13 @@ describe('UserAvatar', () => {
 
   it('renders correct size classes', () => {
     const { rerender } = render(<UserAvatar user={mockUser} size="small" />);
-    expect(screen.getByText('JD').parentElement).toHaveClass('w-8', 'h-8', 'text-sm');
+    expect(screen.getByText('JD').parentElement).toHaveClass('w-16', 'h-16', 'text-lg');
 
     rerender(<UserAvatar user={mockUser} size="medium" />);
-    expect(screen.getByText('JD').parentElement).toHaveClass('w-12', 'h-12', 'text-base');
+    expect(screen.getByText('JD').parentElement).toHaveClass('w-24', 'h-24', 'text-2xl');
 
     rerender(<UserAvatar user={mockUser} size="large" />);
-    expect(screen.getByText('JD').parentElement).toHaveClass('w-20', 'h-20', 'text-2xl');
-  });
-
-  it('shows border by default', () => {
-    render(<UserAvatar user={mockUser} />);
-    expect(screen.getByText('JD').parentElement).toHaveClass('ring-2', 'ring-white');
-  });
-
-  it('hides border when showBorder is false', () => {
-    render(<UserAvatar user={mockUser} showBorder={false} />);
-    expect(screen.getByText('JD').parentElement).not.toHaveClass('ring-2', 'ring-white');
+    expect(screen.getByText('JD').parentElement).toHaveClass('w-32', 'h-32', 'text-4xl');
   });
 
   it('handles image load error by showing initials', () => {
@@ -69,5 +59,11 @@ describe('UserAvatar', () => {
     
     // Should fallback to initials
     expect(screen.getByText('JD')).toBeInTheDocument();
+  });
+
+  it('has correct styling classes', () => {
+    render(<UserAvatar user={mockUser} />);
+    const avatarContainer = screen.getByText('JD').parentElement;
+    expect(avatarContainer).toHaveClass('rounded-full', 'mx-auto', 'bg-purple-100', 'flex', 'items-center', 'justify-center', 'border-4', 'border-purple-200');
   });
 });

@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import ProfileModule from '../ProfileModule';
-import { User } from '../../../../types';
+import ProfileCard from '../ProfileCard';
+import { User } from '../../../../../types';
 
 const mockUser: User = {
   id: 1,
@@ -16,22 +16,27 @@ const mockUser: User = {
   location: null
 };
 
-describe('ProfileModule', () => {
+describe('ProfileCard', () => {
   it('renders without crashing', () => {
-    render(<ProfileModule user={mockUser} />);
+    render(<ProfileCard user={mockUser} />);
+    expect(screen.getByText('John Doe')).toBeInTheDocument();
+  });
+
+  it('renders UserAvatar component', () => {
+    render(<ProfileCard user={mockUser} />);
     expect(screen.getByText('JD')).toBeInTheDocument(); // UserAvatar initials
   });
 
-  it('renders ProfileCard component', () => {
-    render(<ProfileModule user={mockUser} />);
-    expect(screen.getByText('JD')).toBeInTheDocument(); // UserAvatar initials
+  it('renders UserInfo component', () => {
+    render(<ProfileCard user={mockUser} />);
+    // UserInfo now only shows location if available
     expect(screen.queryByText('test@example.com')).not.toBeInTheDocument();
   });
 
   it('has correct container styling', () => {
-    const { container } = render(<ProfileModule user={mockUser} />);
-    const mainContainer = container.querySelector('.max-w-2xl');
-    expect(mainContainer).toHaveClass('mx-auto');
+    const { container } = render(<ProfileCard user={mockUser} />);
+    const cardContainer = container.querySelector('.bg-white');
+    expect(cardContainer).toHaveClass('rounded-lg', 'shadow-sm', 'border', 'border-gray-200', 'p-8');
   });
 
   it('handles user with profile picture', () => {
@@ -40,14 +45,14 @@ describe('ProfileModule', () => {
       profile_picture: 'https://example.com/avatar.jpg'
     };
     
-    render(<ProfileModule user={userWithPicture} />);
+    render(<ProfileCard user={userWithPicture} />);
     const img = screen.getByAltText('John Doe');
     expect(img).toBeInTheDocument();
   });
 
   it('handles user with location', () => {
     const userWithLocation = { ...mockUser, location: 'Bratislava' };
-    render(<ProfileModule user={userWithLocation} />);
+    render(<ProfileCard user={userWithLocation} />);
     expect(screen.getByText('📍 Bratislava')).toBeInTheDocument();
   });
 });

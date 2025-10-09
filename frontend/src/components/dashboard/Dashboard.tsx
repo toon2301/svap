@@ -138,21 +138,8 @@ export default function Dashboard({ initialUser }: DashboardProps) {
 
       {/* Main Content */}
       <div className="flex-1 lg:ml-0">
-        {/* Desktop Header */}
-        <div className="hidden lg:block bg-white border-b border-gray-200">
-          <div className="px-6 py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <div className="text-sm text-gray-700">
-                  Vitaj, {user.first_name}!
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
         {/* Content Area */}
-        <main className="p-6 lg:p-8">
+        <main className="p-6 lg:p-8 lg:pt-8">
           {renderModule()}
         </main>
       </div>

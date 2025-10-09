@@ -1,30 +1,40 @@
-import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { useRouter } from 'next/navigation';
+import '@testing-library/jest-dom';
 import Dashboard from '../Dashboard';
-import { User } from '../../../types';
+import { User } from '@/types';
 
-// Mock next/navigation
+// Mock framer-motion
+jest.mock('framer-motion', () => ({
+  motion: {
+    div: ({ children, ...props }: any) => <div {...props}>{children}</div>,
+  },
+  AnimatePresence: ({ children }: any) => <>{children}</>,
+}));
+
+// Mock next/navigation s zdieľaným pushMock
+const pushMock = jest.fn();
 jest.mock('next/navigation', () => ({
-  useRouter: jest.fn(),
+  useRouter: () => ({
+    push: pushMock,
+  }),
 }));
 
 // Mock auth utils
-jest.mock('../../../utils/auth', () => ({
+jest.mock('@/utils/auth', () => ({
   isAuthenticated: jest.fn(() => true),
   clearAuthTokens: jest.fn(),
 }));
 
 // Mock API
-jest.mock('../../../lib/api', () => ({
+jest.mock('@/lib/api', () => ({
   api: {
     get: jest.fn(),
     post: jest.fn(),
   },
   endpoints: {
     auth: {
-      me: '/api/auth/me',
-      logout: '/api/auth/logout',
+      me: '/auth/me/',
+      logout: '/auth/logout/',
     },
   },
 }));
@@ -33,39 +43,74 @@ const mockUser: User = {
   id: 1,
   username: 'testuser',
   email: 'test@example.com',
-  first_name: 'John',
-  last_name: 'Doe',
+  first_name: 'Test',
+  last_name: 'User',
+  user_type: 'individual',
   is_verified: true,
-  date_joined: '2023-01-01T00:00:00Z',
-  profile_picture: null,
-  bio: null,
-  location: null
+  is_public: true,
+  created_at: '2023-01-01T00:00:00Z',
+  updated_at: '2023-01-01T00:00:00Z',
+  profile_completeness: 75,
 };
-
-const mockPush = jest.fn();
 
 describe('Dashboard', () => {
   beforeEach(() => {
-    (useRouter as jest.Mock).mockReturnValue({
-      push: mockPush,
-    });
-  });
-
-  afterEach(() => {
     jest.clearAllMocks();
   });
 
   it('renders loading state initially', () => {
+    const { isAuthenticated } = require('@/utils/auth');
+    isAuthenticated.mockReturnValue(true);
+    
     render(<Dashboard />);
+    
     expect(screen.getByText('Načítavam dashboard...')).toBeInTheDocument();
   });
 
-  it('renders with initial user', () => {
-    render(<Dashboard initialUser={mockUser} />);
-    expect(screen.getByText('Vitaj, John!')).toBeInTheDocument();
+  it('renders dashboard with user data', async () => {
+    const { isAuthenticated } = require('@/utils/auth');
+    const { api } = require('@/lib/api');
+    
+    isAuthenticated.mockReturnValue(true);
+    api.get.mockResolvedValue({ data: mockUser });
+    
+    render(<Dashboard />);
+    
+    await waitFor(() => {
+      expect(screen.getByText('Vitaj v Swaply!')).toBeInTheDocument();
+    });
   });
 
-  it('renders navigation items', () => {
+  it('renders with initial user data', async () => {
+    // Mock API call (aj keď sa nemal volať)
+    const api = require('@/lib/api').api;
+    jest.spyOn(api, 'get').mockResolvedValue({ data: mockUser });
+    
+    render(<Dashboard initialUser={mockUser} />);
+    
+    // Počkaj na dokončenie useEffect a renderovanie obsahu
+    await waitFor(() => {
+      expect(screen.getByText('Vitaj v Swaply!')).toBeInTheDocument();
+    });
+    
+    // Kontroluj, že sa zobrazuje používateľovo meno v hlavičke
+    expect(screen.getByText('Vitaj, Test!')).toBeInTheDocument();
+  });
+
+  it('redirects to home when not authenticated', async () => {
+    const { isAuthenticated } = require('@/utils/auth');
+    isAuthenticated.mockReturnValue(false);
+    render(<Dashboard />);
+
+    await waitFor(() => {
+      expect(pushMock).toHaveBeenCalledWith('/');
+    });
+  });
+
+  it('renders sidebar with navigation items', () => {
+    const { isAuthenticated } = require('@/utils/auth');
+    isAuthenticated.mockReturnValue(true);
+    
     render(<Dashboard initialUser={mockUser} />);
     
     expect(screen.getByText('Nástenka')).toBeInTheDocument();
@@ -73,42 +118,112 @@ describe('Dashboard', () => {
     expect(screen.getByText('Oblúbené')).toBeInTheDocument();
     expect(screen.getByText('Profil')).toBeInTheDocument();
     expect(screen.getByText('Nastavenia')).toBeInTheDocument();
+  });
+
+  it('switches modules when sidebar items are clicked', () => {
+    const { isAuthenticated } = require('@/utils/auth');
+    isAuthenticated.mockReturnValue(true);
+    
+    render(<Dashboard initialUser={mockUser} />);
+    
+    const searchButton = screen.getByText('Vyhľadávanie');
+    fireEvent.click(searchButton);
+    
+    expect(screen.getByText('Vyhľadávanie zručností')).toBeInTheDocument();
+  });
+
+  it('switches to Favorites/Profile/Settings modules', async () => {
+    const { isAuthenticated } = require('@/utils/auth');
+    isAuthenticated.mockReturnValue(true);
+
+    render(<Dashboard initialUser={mockUser} />);
+
+    fireEvent.click(screen.getByText('Oblúbené'));
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: 'Oblúbené' })).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText('Profil'));
+    await waitFor(() => {
+      // Over prítomnosť hlavičky profilu (meno)
+      expect(screen.getByText('Test User')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText('Nastavenia'));
+    await waitFor(() => {
+      expect(screen.getByText('Nastavenia')).toBeInTheDocument();
+    });
+  });
+
+  it('clears tokens and redirects on API error', async () => {
+    const { isAuthenticated, clearAuthTokens } = require('@/utils/auth');
+    const { api } = require('@/lib/api');
+    isAuthenticated.mockReturnValue(true);
+    api.get.mockRejectedValue(new Error('network'));
+    render(<Dashboard />);
+
+    await waitFor(() => {
+      expect(clearAuthTokens).toHaveBeenCalled();
+      expect(pushMock).toHaveBeenCalledWith('/');
+    });
+  });
+
+  it('shows home module by default', () => {
+    const { isAuthenticated } = require('@/utils/auth');
+    isAuthenticated.mockReturnValue(true);
+    
+    render(<Dashboard initialUser={mockUser} />);
+    
+    expect(screen.getByText('Vitaj v Swaply!')).toBeInTheDocument();
+  });
+
+  it('renders mobile menu button on mobile', () => {
+    const { isAuthenticated } = require('@/utils/auth');
+    isAuthenticated.mockReturnValue(true);
+    
+    // Mock window.innerWidth for mobile
+    Object.defineProperty(window, 'innerWidth', {
+      writable: true,
+      configurable: true,
+      value: 768,
+    });
+    
+    render(<Dashboard initialUser={mockUser} />);
+    
+    // Check for mobile menu button (hamburger icon)
+    const mobileMenuButton = document.querySelector('button svg');
+    expect(mobileMenuButton).toBeInTheDocument();
+  });
+
+  it('opens mobile menu when hamburger is clicked', () => {
+    const { isAuthenticated } = require('@/utils/auth');
+    isAuthenticated.mockReturnValue(true);
+    
+    render(<Dashboard initialUser={mockUser} />);
+    
+    const mobileMenuButton = document.querySelector('button svg');
+    fireEvent.click(mobileMenuButton!.closest('button')!);
+    
+    // Mobile sidebar should be visible
+    const mobileSidebar = document.querySelector('.fixed.left-0');
+    expect(mobileSidebar).toBeInTheDocument();
+  });
+
+  it('renders logout button', () => {
+    const { isAuthenticated } = require('@/utils/auth');
+    isAuthenticated.mockReturnValue(true);
+    
+    render(<Dashboard initialUser={mockUser} />);
+    
     expect(screen.getByText('Odhlásiť sa')).toBeInTheDocument();
   });
 
-  it('switches to profile module when profile is clicked', async () => {
-    render(<Dashboard initialUser={mockUser} />);
+  it('calls logout when logout button is clicked', async () => {
+    const { isAuthenticated } = require('@/utils/auth');
+    const { api } = require('@/lib/api');
+    const { clearAuthTokens } = require('@/utils/auth');
     
-    const profileButton = screen.getByText('Profil');
-    fireEvent.click(profileButton);
-    
-    await waitFor(() => {
-      expect(screen.getByText('John Doe')).toBeInTheDocument();
-    });
-  });
-
-  it('shows default content when home is clicked', async () => {
-    render(<Dashboard initialUser={mockUser} />);
-    
-    // First click profile to change state
-    const profileButton = screen.getByText('Profil');
-    fireEvent.click(profileButton);
-    
-    await waitFor(() => {
-      expect(screen.getByText('John Doe')).toBeInTheDocument();
-    });
-    
-    // Then click home
-    const homeButton = screen.getByText('Nástenka');
-    fireEvent.click(homeButton);
-    
-    await waitFor(() => {
-      expect(screen.getByText('Vitaj v Swaply!')).toBeInTheDocument();
-    });
-  });
-
-  it('handles logout', async () => {
-    const { api } = require('../../../lib/api');
+    isAuthenticated.mockReturnValue(true);
     api.post.mockResolvedValue({});
     
     render(<Dashboard initialUser={mockUser} />);
@@ -117,42 +232,19 @@ describe('Dashboard', () => {
     fireEvent.click(logoutButton);
     
     await waitFor(() => {
-      expect(api.post).toHaveBeenCalledWith('/api/auth/logout', {
+      expect(api.post).toHaveBeenCalledWith('/auth/logout/', {
         refresh: null,
       });
+      expect(clearAuthTokens).toHaveBeenCalled();
     });
   });
 
-  it('toggles mobile menu', () => {
+  it('shows user welcome message', () => {
+    const { isAuthenticated } = require('@/utils/auth');
+    isAuthenticated.mockReturnValue(true);
+    
     render(<Dashboard initialUser={mockUser} />);
     
-    const menuButton = screen.getByRole('button', { name: /menu/i });
-    fireEvent.click(menuButton);
-    
-    // Mobile sidebar should be open
-    expect(screen.getByText('Nástenka')).toBeInTheDocument();
-  });
-
-  it('renders user avatar in profile', async () => {
-    render(<Dashboard initialUser={mockUser} />);
-    
-    const profileButton = screen.getByText('Profil');
-    fireEvent.click(profileButton);
-    
-    await waitFor(() => {
-      expect(screen.getByText('JD')).toBeInTheDocument(); // UserAvatar initials
-    });
-  });
-
-  it('has correct responsive classes', () => {
-    const { container } = render(<Dashboard initialUser={mockUser} />);
-    
-    // Desktop sidebar should be hidden on mobile
-    const desktopSidebar = container.querySelector('.hidden.lg\\:block');
-    expect(desktopSidebar).toBeInTheDocument();
-    
-    // Mobile header should be hidden on desktop
-    const mobileHeader = container.querySelector('.lg\\:hidden');
-    expect(mobileHeader).toBeInTheDocument();
+    expect(screen.getByText('Vitaj, Test!')).toBeInTheDocument();
   });
 });
