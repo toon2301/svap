@@ -81,6 +81,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
     'django_filters',
+    'storages',
     
     # Django allauth (len pre Google OAuth) - DOČASNE VYPNUTÉ
     # 'allauth',
