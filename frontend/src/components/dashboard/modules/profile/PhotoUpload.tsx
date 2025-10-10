@@ -42,7 +42,7 @@ export default function PhotoUpload({ onPhotoSelect, isUploading = false }: Phot
       <button
         onClick={handleClick}
         disabled={isUploading}
-        className="absolute bottom-0 right-0 bg-purple-600 hover:bg-purple-700 text-white p-2 rounded-full shadow-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        className="bg-purple-600 hover:bg-purple-700 text-white p-2 rounded-full shadow-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         title="Pridať fotku"
       >
         {isUploading ? (

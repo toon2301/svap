@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { User } from '../../../../types';
 import PhotoUpload from './PhotoUpload';
 
@@ -18,6 +18,7 @@ const sizeClasses = {
 };
 
 export default function UserAvatar({ user, size = 'large', onPhotoUpload, isUploading = false }: UserAvatarProps) {
+  const [imageError, setImageError] = useState(false);
   const getInitials = (firstName: string, lastName: string): string => {
     return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
   };
@@ -34,22 +35,18 @@ export default function UserAvatar({ user, size = 'large', onPhotoUpload, isUplo
   console.log('UserAvatar - user.avatar_url:', user.avatar_url);
   console.log('UserAvatar - avatarUrl with cache-busting:', avatarUrl);
 
-  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
-    const target = e.target as HTMLImageElement;
-    target.style.display = 'none';
-    const parent = target.parentElement;
-    if (parent) {
-      parent.innerHTML = `
-        <div class="${sizeClass} rounded-full mx-auto bg-purple-100 flex items-center justify-center border-4 border-purple-200">
-          <span class="font-bold text-purple-600">${initials}</span>
-        </div>
-      `;
-    }
+  const handleImageError = () => {
+    setImageError(true);
   };
+
+  useEffect(() => {
+    // Reset error flag when avatar URL changes (e.g., after successful upload)
+    setImageError(false);
+  }, [rawUrl]);
 
   return (
     <div className="mb-6 relative inline-block">
-      {avatarUrl ? (
+      {avatarUrl && !imageError ? (
         <img
           src={avatarUrl}
           alt={`${user.first_name} ${user.last_name}`}
