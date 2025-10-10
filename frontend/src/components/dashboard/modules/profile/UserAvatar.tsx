@@ -66,7 +66,9 @@ export default function UserAvatar({ user, size = 'large', onPhotoUpload, isUplo
       )}
       
       {onPhotoUpload && (
-        <PhotoUpload onPhotoSelect={onPhotoUpload} isUploading={isUploading} />
+        <div className="absolute bottom-0 right-0 z-10">
+          <PhotoUpload onPhotoSelect={onPhotoUpload} isUploading={isUploading} />
+        </div>
       )}
     </div>
   );
