@@ -10,9 +10,10 @@ import type { User } from '../../types';
 import Sidebar from './Sidebar';
 import RightSidebar from './RightSidebar';
 import ProfileModule from './modules/ProfileModule';
-
-// Import icons
-import { Bars3Icon, ArrowRightOnRectangleIcon } from '@heroicons/react/24/outline';
+import SearchModule from './modules/SearchModule';
+import CreateModule from './modules/CreateModule';
+import MessagesModule from './modules/MessagesModule';
+import MobileTopNav from './MobileTopNav';
 
 interface DashboardProps {
   initialUser?: User;
@@ -103,6 +104,13 @@ export default function Dashboard({ initialUser }: DashboardProps) {
             onEditProfileClick={handleRightSidebarToggle}
           />
         );
+      case 'search':
+        return <SearchModule />;
+      case 'create':
+        return <CreateModule />;
+      case 'messages':
+        return <MessagesModule />;
+      case 'home':
       default:
         return (
           <div className="text-center py-20">
@@ -110,7 +118,7 @@ export default function Dashboard({ initialUser }: DashboardProps) {
               Vitaj v Swaply!
             </h2>
             <p className="text-gray-500">
-              Vyber si sekciu z ľavej navigácie pre pokračovanie.
+              Vyber si sekciu z navigácie pre pokračovanie.
             </p>
           </div>
         );
@@ -143,19 +151,12 @@ export default function Dashboard({ initialUser }: DashboardProps) {
         />
       </div>
 
-      {/* Mobile Header */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 z-30 bg-white border-b border-gray-200">
-        <div className="flex items-center justify-between px-4 py-3">
-          <button
-            onClick={() => setIsMobileMenuOpen(true)}
-            className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
-          >
-            <Bars3Icon className="w-6 h-6 text-gray-600" />
-          </button>
-          <h1 className="text-xl font-bold text-purple-800">Swaply</h1>
-          <div className="w-10"></div>
-        </div>
-      </div>
+      {/* Mobile Top Navigation */}
+      <MobileTopNav 
+        activeItem={activeModule}
+        onItemClick={handleModuleChange}
+        onMenuClick={() => setIsMobileMenuOpen(true)}
+      />
 
       {/* Mobile Sidebar */}
       <Sidebar
@@ -170,7 +171,7 @@ export default function Dashboard({ initialUser }: DashboardProps) {
       {/* Main Content */}
       <div className="flex-1 lg:ml-0 flex">
         {/* Content Area */}
-        <main className="flex-1 p-6 lg:p-8 lg:pt-8">
+        <main className="flex-1 p-6 pt-20 lg:p-8 lg:pt-8">
           {renderModule()}
         </main>
         

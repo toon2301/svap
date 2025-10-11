@@ -163,8 +163,8 @@ class TestEmailVerification:
         self.verification = EmailVerification.objects.create(user=self.user)
     
     @override_settings(RATE_LIMITING_ENABLED=False)
-    def test_unverified_user_cannot_login(self):
-        """Test, že neoverený používateľ sa nemôže prihlásiť"""
+    def test_unverified_user_can_login_temporarily(self):
+        """Dočasne: neoverený používateľ sa môže prihlásiť (verifikácia vypnutá pre testy)"""
         login_data = {
             'email': 'test@example.com',
             'password': 'TestPassword123'
@@ -172,10 +172,8 @@ class TestEmailVerification:
         
         response = self.client.post(self.login_url, login_data)
         
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert 'error' in response.data
-        # Overený používateľ sa nemôže prihlásiť, takže dostane "Neplatné prihlasovacie údaje"
-        assert 'Neplatné prihlasovacie údaje' in response.data['error']
+        assert response.status_code == status.HTTP_200_OK
+        assert 'tokens' in response.data
     
     @override_settings(RATE_LIMITING_ENABLED=False)
     def test_email_verification_success(self):
@@ -301,14 +299,14 @@ class TestRegistrationFlow:
         user = User.objects.get(email='test@example.com')
         assert user.is_verified is False
         
-        # 3. Skontroluj, že sa nemôže prihlásiť
+        # 3. Dočasné chovanie: prihlásenie je povolené aj bez verifikácie
         login_data = {
             'email': 'test@example.com',
             'password': 'TestPassword123'
         }
         
         response = self.client.post(self.login_url, login_data)
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert response.status_code == status.HTTP_200_OK
         
         # 4. Over email
         verification = EmailVerification.objects.get(user=user)

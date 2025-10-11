@@ -1,4 +1,5 @@
 import os
+import json
 from io import BytesIO
 
 import pytest
@@ -87,20 +88,25 @@ class TestAvatarUploadIntegration(APITestCase):
         url = r.data['user'].get('avatar_url')
         assert url and url.startswith('http://testserver/')
 
-    def test_handles_storage_save_failure_gracefully(self, monkeypatch):
+    def test_handles_storage_save_failure_gracefully(self):
         # Simulate storage (e.g., S3) failure by forcing default_storage.save to raise
         from django.core.files import storage as django_storage
+        from unittest.mock import patch
 
-        def fail_save(name, content):
+        def fail_save(name, content, *args, **kwargs):
             raise Exception('Simulated storage failure')
 
-        monkeypatch.setattr(django_storage.default_storage, 'save', fail_save, raising=True)
-
-        file = generate_image_file('JPEG', 'avatar.jpg')
-        r = self.client.patch(self.url, {'avatar': file}, format='multipart')
-        # Our global middleware should convert unexpected exceptions to a 500 with JSON body
-        assert r.status_code == 500
-        assert 'error' in r.data
+        with patch.object(django_storage.default_storage, 'save', side_effect=fail_save):
+            file = generate_image_file('JPEG', 'avatar.jpg')
+            r = self.client.patch(self.url, {'avatar': file}, format='multipart')
+            # Our global middleware should convert unexpected exceptions to a 500 with JSON body
+            assert r.status_code == 500
+            # Support both DRF Response (.data) and Django JsonResponse (.content)
+            try:
+                payload = r.data
+            except AttributeError:
+                payload = json.loads(r.content.decode('utf-8'))
+            assert 'error' in payload
 
     def test_replaces_old_avatar_and_deletes_file(self):
         first = generate_image_file('JPEG', 'first.jpg', color=(0, 255, 0))

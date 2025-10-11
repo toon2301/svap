@@ -59,6 +59,25 @@ def test_database_url_sqlite_branch(monkeypatch):
     assert mod.DATABASES['default']['ENGINE'] == 'django.db.backends.sqlite3'
 
 
+def test_allowed_hosts_from_backend_origin(monkeypatch):
+    mod = load_settings_with_env(monkeypatch, {
+        'DEBUG': 'True',
+        'SECRET_KEY': 'dev',
+        'BACKEND_ORIGIN': 'https://api.example.com',
+    })
+    assert 'api.example.com' in mod.ALLOWED_HOSTS
+
+
+def test_logging_stdout_mode(monkeypatch):
+    mod = load_settings_with_env(monkeypatch, {
+        'DEBUG': 'False',
+        'SECRET_KEY': 'prod',
+        'LOG_TO_STDOUT': '1',
+    })
+    # expect logger config switched to stdout simple/json handlers
+    assert 'console_json' in mod.LOGGING.get('handlers', {})
+
+
 def test_missing_secret_key_raises_in_prod(monkeypatch):
     # Ak nie je SECRET_KEY a DEBUG=False, settings.py by mal vyhodiť ValueError
     with pytest.raises(ValueError):

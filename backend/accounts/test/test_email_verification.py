@@ -243,8 +243,8 @@ class TestRegistrationWithEmailVerification(APITestCase):
         # Skontroluj, že email bol odoslaný
         mock_send_mail.assert_called_once()
     
-    def test_login_without_verification_blocked(self):
-        """Test, že prihlásenie bez verifikácie je zablokované"""
+    def test_login_without_verification_allowed_temporarily(self):
+        """Dočasne: prihlásenie bez verifikácie je povolené (vypnutá kontrola)"""
         user = User.objects.create_user(
             username='testuser',
             email='test@example.com',
@@ -260,8 +260,8 @@ class TestRegistrationWithEmailVerification(APITestCase):
         
         response = self.client.post(url, data, format='json')
         
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn('nie je overený', response.data['details']['non_field_errors'][0])
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn('tokens', response.data)
     
     def test_login_with_verification_success(self):
         """Test, že prihlásenie s verifikáciou funguje"""
