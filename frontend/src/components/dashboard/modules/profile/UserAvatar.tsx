@@ -9,6 +9,7 @@ interface UserAvatarProps {
   size?: 'small' | 'medium' | 'large';
   onPhotoUpload?: (file: File) => void;
   isUploading?: boolean;
+  onAvatarClick?: () => void; // open actions modal when avatar exists
 }
 
 const sizeClasses = {
@@ -17,7 +18,7 @@ const sizeClasses = {
   large: 'w-48 h-48 text-6xl'
 };
 
-export default function UserAvatar({ user, size = 'large', onPhotoUpload, isUploading = false }: UserAvatarProps) {
+export default function UserAvatar({ user, size = 'large', onPhotoUpload, isUploading = false, onAvatarClick }: UserAvatarProps) {
   const [imageError, setImageError] = useState(false);
   const getInitials = (firstName: string, lastName: string): string => {
     return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
@@ -44,15 +45,19 @@ export default function UserAvatar({ user, size = 'large', onPhotoUpload, isUplo
     setImageError(false);
   }, [rawUrl]);
 
+  const hasAvatar = Boolean(avatarUrl && !imageError);
+
   return (
     <div className="mb-6 relative inline-block">
-      {avatarUrl && !imageError ? (
+      {hasAvatar ? (
         <img
           src={avatarUrl}
           alt={`${user.first_name} ${user.last_name}`}
           className={`${sizeClass} rounded-full mx-auto object-cover border-4 border-purple-100`}
           onError={handleImageError}
           key={avatarUrl}
+          onClick={onAvatarClick}
+          style={{ cursor: onAvatarClick ? 'pointer' : 'default' }}
         />
       ) : (
         <div className={`${sizeClass} rounded-full mx-auto bg-purple-100 flex items-center justify-center border-4 border-purple-200`}>
@@ -62,7 +67,8 @@ export default function UserAvatar({ user, size = 'large', onPhotoUpload, isUplo
         </div>
       )}
       
-      {onPhotoUpload && (
+      {/* Show upload icon only when user has no avatar */}
+      {!hasAvatar && onPhotoUpload && (
         <div className="absolute bottom-0 right-0 z-10">
           <PhotoUpload onPhotoSelect={onPhotoUpload} isUploading={isUploading} />
         </div>

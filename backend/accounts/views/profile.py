@@ -6,6 +6,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth import get_user_model
+from django.core.files.storage import default_storage
 
 from swaply.rate_limiting import api_rate_limit
 from swaply.audit_logger import log_profile_update
@@ -33,6 +34,9 @@ def update_profile_view(request):
         'instagram': request.user.instagram,
     }
     
+    # Zachyť aktuálny avatar pred uložením (pre prípadné zmazanie po update)
+    old_avatar_name = getattr(getattr(request.user, 'avatar', None), 'name', None)
+
     serializer = UserProfileSerializer(
         request.user, 
         data=request.data, 
@@ -42,6 +46,17 @@ def update_profile_view(request):
     
     if serializer.is_valid():
         serializer.save()
+
+        # Ak sa menil avatar, zmaž starý súbor z úložiska
+        try:
+            if 'avatar' in serializer.validated_data:
+                new_avatar_name = getattr(getattr(request.user, 'avatar', None), 'name', None)
+                # Zmaž, ak existoval starý a líši sa od nového (alebo bol nový odstránený)
+                if old_avatar_name and old_avatar_name != new_avatar_name:
+                    default_storage.delete(old_avatar_name)
+        except Exception:
+            # Bez zablokovania requestu – logovanie by išlo sem, ak by sme ho chceli
+            pass
         
         # Log zmeny profilu
         changes = {}

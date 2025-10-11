@@ -15,6 +15,7 @@ export default function ProfileModule({ user, onUserUpdate }: ProfileModuleProps
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string>('');
   const [uploadSuccess, setUploadSuccess] = useState(false);
+  const [isActionsOpen, setIsActionsOpen] = useState(false);
 
   const handlePhotoUpload = async (file: File) => {
     setIsUploading(true);
@@ -51,13 +52,39 @@ export default function ProfileModule({ user, onUserUpdate }: ProfileModuleProps
     }
   };
 
+  const handleAvatarClick = () => {
+    // Open actions only if avatar exists
+    if (user.avatar || user.avatar_url) {
+      setIsActionsOpen(true);
+    }
+  };
+
+  const handleRemoveAvatar = async () => {
+    try {
+      setIsUploading(true);
+      setUploadError('');
+      // Clear avatar by sending JSON null
+      const response = await api.patch('/auth/profile/', { avatar: null });
+      if (onUserUpdate && response.data.user) {
+        onUserUpdate(response.data.user);
+      }
+      setIsActionsOpen(false);
+    } catch (e: any) {
+      setUploadError(e.response?.data?.error || 'Nepodarilo sa odstrániť fotku. Skúste znova.');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   return (
+    <>
     <div className="max-w-2xl mx-auto">
       <UserAvatar 
         user={user} 
         size="large" 
         onPhotoUpload={handlePhotoUpload}
         isUploading={isUploading}
+        onAvatarClick={handleAvatarClick}
       />
       <UserInfo user={user} />
       
@@ -75,5 +102,45 @@ export default function ProfileModule({ user, onUserUpdate }: ProfileModuleProps
         </div>
       )}
     </div>
+    {isActionsOpen && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="absolute inset-0 bg-black/30" onClick={() => setIsActionsOpen(false)} aria-hidden="true" />
+        <div className="relative w-full max-w-sm rounded-2xl bg-white p-4 shadow-xl">
+          <div className="text-lg font-medium text-gray-900 mb-3">Fotka profilu</div>
+          <div className="space-y-2">
+            <button
+              onClick={() => {
+                setIsActionsOpen(false);
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = 'image/*';
+                input.onchange = (e: any) => {
+                  const file = e.target.files?.[0];
+                  if (file) handlePhotoUpload(file);
+                };
+                input.click();
+              }}
+              className="w-full px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700"
+            >
+              Zmeniť fotku
+            </button>
+            <button
+              onClick={handleRemoveAvatar}
+              className="w-full px-4 py-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100"
+              disabled={isUploading}
+            >
+              Odstrániť fotku
+            </button>
+            <button
+              onClick={() => setIsActionsOpen(false)}
+              className="w-full px-4 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200"
+            >
+              Zrušiť
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 }
