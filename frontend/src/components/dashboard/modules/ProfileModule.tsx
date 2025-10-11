@@ -105,7 +105,7 @@ export default function ProfileModule({ user, onUserUpdate }: ProfileModuleProps
     {isActionsOpen && (
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
         <div className="absolute inset-0 bg-transparent" onClick={() => setIsActionsOpen(false)} aria-hidden="true" />
-        <div className="relative w-full max-w-xl rounded-2xl bg-white p-6 shadow-xl">
+        <div className="relative w-full max-w-lg rounded-2xl bg-white px-6 py-8 shadow-xl min-h-[220px]">
           <div className="text-lg font-medium text-gray-900 mb-3">Fotka profilu</div>
           <div className="space-y-2">
             <button

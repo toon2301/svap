@@ -26,6 +26,16 @@ const getApiUrl = () => {
 };
 
 const API_URL = getApiUrl();
+let RUNTIME_API_URL = API_URL;
+// Allow dev-time runtime override based on sessionStorage
+if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
+  try {
+    const saved = window.sessionStorage.getItem('API_BASE_URL');
+    if (saved && /^https?:\/\//.test(saved)) {
+      RUNTIME_API_URL = saved;
+    }
+  } catch {}
+}
 
 // Utility funkcia na získanie CSRF tokenu z cookies
 const getCsrfToken = (): string | undefined => {
@@ -35,7 +45,7 @@ const getCsrfToken = (): string | undefined => {
 
 // Create axios instance
 export const api = axios.create({
-  baseURL: API_URL,
+  baseURL: RUNTIME_API_URL,
   headers: {
     'Content-Type': 'application/json',
   },

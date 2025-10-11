@@ -22,6 +22,15 @@ const getApiUrl = () => {
     return explicitApi;
   }
 
+  // Optional runtime override cez sessionStorage (len dev)
+  if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
+    try {
+      const saved = window.sessionStorage.getItem('API_BASE_URL');
+      if (saved && /^https?:\/\//.test(saved)) {
+        return `${saved}/auth`.replace(/\/$/, '') // will be used below anyway
+      }
+    } catch {}
+  }
   return 'http://localhost:8000/api';
 };
 
