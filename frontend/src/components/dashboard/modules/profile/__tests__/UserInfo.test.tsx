@@ -9,11 +9,16 @@ const mockUser: User = {
   email: 'test@example.com',
   first_name: 'John',
   last_name: 'Doe',
+  user_type: 'individual',
   is_verified: true,
-  date_joined: '2023-01-01T00:00:00Z',
-  profile_picture: null,
-  bio: null,
-  location: null
+  is_public: true,
+  created_at: '2023-01-01T00:00:00Z',
+  updated_at: '2023-01-01T00:00:00Z',
+  profile_completeness: 50,
+  bio: undefined,
+  location: undefined,
+  avatar: undefined,
+  avatar_url: undefined,
 };
 
 describe('UserInfo', () => {

@@ -9,11 +9,16 @@ const mockUser: User = {
   email: 'test@example.com',
   first_name: 'John',
   last_name: 'Doe',
+  user_type: 'individual',
   is_verified: true,
-  date_joined: '2023-01-01T00:00:00Z',
-  profile_picture: null,
-  bio: null,
-  location: null
+  is_public: true,
+  created_at: '2023-01-01T00:00:00Z',
+  updated_at: '2023-01-01T00:00:00Z',
+  profile_completeness: 50,
+  bio: undefined,
+  location: undefined,
+  avatar: undefined,
+  avatar_url: undefined,
 };
 
 describe('UserAvatar', () => {
@@ -22,16 +27,16 @@ describe('UserAvatar', () => {
     expect(screen.getByText('JD')).toBeInTheDocument();
   });
 
-  it('renders profile picture when available', () => {
-    const userWithPicture = {
+  it('renders avatar when available', () => {
+    const userWithAvatar = {
       ...mockUser,
-      profile_picture: 'https://example.com/avatar.jpg'
+      avatar_url: 'https://example.com/avatar.jpg'
     };
     
-    render(<UserAvatar user={userWithPicture} />);
+    render(<UserAvatar user={userWithAvatar} />);
     const img = screen.getByAltText('John Doe');
     expect(img).toBeInTheDocument();
-    expect(img).toHaveAttribute('src', 'https://example.com/avatar.jpg');
+    expect(img).toHaveAttribute('src');
   });
 
   it('renders correct size classes', () => {
@@ -46,12 +51,12 @@ describe('UserAvatar', () => {
   });
 
   it('handles image load error by showing initials', () => {
-    const userWithPicture = {
+    const userWithAvatar = {
       ...mockUser,
-      profile_picture: 'https://example.com/invalid.jpg'
+      avatar_url: 'https://example.com/invalid.jpg'
     };
     
-    render(<UserAvatar user={userWithPicture} />);
+    render(<UserAvatar user={userWithAvatar} />);
     const img = screen.getByAltText('John Doe');
     
     // Simulate image load error

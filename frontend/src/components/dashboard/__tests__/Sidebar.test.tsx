@@ -31,7 +31,6 @@ describe('Sidebar', () => {
     expect(screen.getByText('Oblúbené')).toBeInTheDocument();
     expect(screen.getByText('Profil')).toBeInTheDocument();
     expect(screen.getByText('Nastavenia')).toBeInTheDocument();
-    expect(screen.getByText('Ďalšie funkcie')).toBeInTheDocument();
   });
 
   it('highlights active item', () => {
@@ -113,10 +112,10 @@ describe('Sidebar', () => {
     expect(mockOnClose).toHaveBeenCalled();
   });
 
-  it('renders hamburger menu section', () => {
+  it('renders logout button', () => {
     render(<Sidebar {...defaultProps} />);
     
-    expect(screen.getByText('Ďalšie funkcie')).toBeInTheDocument();
+    expect(screen.getByText('Odhlásiť sa')).toBeInTheDocument();
   });
 
   it('shows Swaply logo', () => {

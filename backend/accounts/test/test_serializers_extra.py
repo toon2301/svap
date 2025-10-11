@@ -109,13 +109,13 @@ class TestBioAnd2FAFlows(APITestCase):
         from accounts.models import UserProfile
         import pyotp
         user = User.objects.create_user(username='mfa', email='mfa@example.com', password='StrongPass123', is_verified=True)
-        UserProfile.objects.create(user=user, mfa_enabled=True, mfa_secret=pyotp.random_base32())
+        secret = pyotp.random_base32()
+        UserProfile.objects.create(user=user, mfa_enabled=True, mfa_secret=secret)
         url = reverse('accounts:login')
         # Bez TOTP
         r = self.client.post(url, {'email': 'mfa@example.com', 'password': 'StrongPass123'}, format='json')
         assert r.status_code == status.HTTP_400_BAD_REQUEST
         # S TOTP
-        secret = user.profile.mfa_secret
         totp = pyotp.TOTP(secret)
         code = totp.now()
         r2 = self.client.post(url, {'email': 'mfa@example.com', 'password': 'StrongPass123', 'totp': code}, format='json')

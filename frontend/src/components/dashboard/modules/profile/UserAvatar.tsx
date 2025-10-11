@@ -31,10 +31,6 @@ export default function UserAvatar({ user, size = 'large', onPhotoUpload, isUplo
   const rawUrl: string | undefined = (user.avatar_url as string | undefined) || (user.avatar as string | undefined);
   // Pridaj timestamp pre cache-busting
   const avatarUrl: string | undefined = rawUrl ? `${rawUrl}?t=${new Date().getTime()}` : undefined;
-  
-  console.log('UserAvatar - user.avatar:', user.avatar);
-  console.log('UserAvatar - user.avatar_url:', user.avatar_url);
-  console.log('UserAvatar - avatarUrl with cache-busting:', avatarUrl);
 
   const handleImageError = () => {
     setImageError(true);
