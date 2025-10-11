@@ -247,7 +247,7 @@ SIMPLE_JWT = {
 # CORS settings - nastavte v .env súbore pre produkciu (IP adresa pre mobile testovanie)
 CORS_ALLOWED_ORIGINS = os.getenv(
     'CORS_ALLOWED_ORIGINS',
-    'http://localhost:3000,http://127.0.0.1:3000,http://192.168.68.103:3000'
+    'http://localhost:3000,http://127.0.0.1:3000'
 ).split(',')
 
 # Pridaj Cloudflare tunnel domény ak sú dostupné - VYPNUTÉ

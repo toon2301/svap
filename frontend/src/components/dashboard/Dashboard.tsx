@@ -8,6 +8,7 @@ import type { User } from '../../types';
 
 // Import modules
 import Sidebar from './Sidebar';
+import RightSidebar from './RightSidebar';
 import ProfileModule from './modules/ProfileModule';
 
 // Import icons
@@ -21,7 +22,14 @@ export default function Dashboard({ initialUser }: DashboardProps) {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(initialUser || null);
   const [isLoading, setIsLoading] = useState(!initialUser);
-  const [activeModule, setActiveModule] = useState('home');
+  const [activeModule, setActiveModule] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('activeModule') || 'home';
+    }
+    return 'home';
+  });
+  const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(false);
+  const [activeRightItem, setActiveRightItem] = useState('edit-profile');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
@@ -66,6 +74,19 @@ export default function Dashboard({ initialUser }: DashboardProps) {
 
   const handleModuleChange = (moduleId: string) => {
     setActiveModule(moduleId);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('activeModule', moduleId);
+    }
+    // Zatvor pravú navigáciu keď sa zmení hlavná sekcia
+    setIsRightSidebarOpen(false);
+  };
+
+  const handleRightSidebarToggle = () => {
+    setIsRightSidebarOpen(!isRightSidebarOpen);
+  };
+
+  const handleRightItemClick = (itemId: string) => {
+    setActiveRightItem(itemId);
   };
 
   const handleUserUpdate = (updatedUser: User) => {
@@ -75,7 +96,13 @@ export default function Dashboard({ initialUser }: DashboardProps) {
   const renderModule = () => {
     switch (activeModule) {
       case 'profile':
-        return <ProfileModule user={user!} onUserUpdate={handleUserUpdate} />;
+        return (
+          <ProfileModule 
+            user={user!} 
+            onUserUpdate={handleUserUpdate}
+            onEditProfileClick={handleRightSidebarToggle}
+          />
+        );
       default:
         return (
           <div className="text-center py-20">
@@ -141,11 +168,20 @@ export default function Dashboard({ initialUser }: DashboardProps) {
       />
 
       {/* Main Content */}
-      <div className="flex-1 lg:ml-0">
+      <div className="flex-1 lg:ml-0 flex">
         {/* Content Area */}
-        <main className="p-6 lg:p-8 lg:pt-8">
+        <main className="flex-1 p-6 lg:p-8 lg:pt-8">
           {renderModule()}
         </main>
+        
+        {/* Right Sidebar */}
+        <RightSidebar
+          isOpen={isRightSidebarOpen}
+          onClose={() => setIsRightSidebarOpen(false)}
+          activeItem={activeRightItem}
+          onItemClick={handleRightItemClick}
+          isMobile={false}
+        />
       </div>
     </div>
   );

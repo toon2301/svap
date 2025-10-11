@@ -15,7 +15,7 @@ const nextConfig = {
   },
   
   images: {
-    domains: ['localhost', '127.0.0.1', '192.168.68.103'],
+    domains: ['localhost', '127.0.0.1'],
     remotePatterns: [
       {
         protocol: 'http',
@@ -25,7 +25,7 @@ const nextConfig = {
       },
       {
         protocol: 'http',
-        hostname: '192.168.68.103',
+        hostname: '127.0.0.1',
         port: '8000',
         pathname: '/media/**',
       },

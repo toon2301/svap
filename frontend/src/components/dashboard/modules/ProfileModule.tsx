@@ -10,9 +10,10 @@ import { api } from '../../../lib/api';
 interface ProfileModuleProps {
   user: User;
   onUserUpdate?: (updatedUser: User) => void;
+  onEditProfileClick?: () => void;
 }
 
-export default function ProfileModule({ user, onUserUpdate }: ProfileModuleProps) {
+export default function ProfileModule({ user, onUserUpdate, onEditProfileClick }: ProfileModuleProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string>('');
   const [uploadSuccess, setUploadSuccess] = useState(false);
@@ -95,8 +96,11 @@ export default function ProfileModule({ user, onUserUpdate }: ProfileModuleProps
         />
         <button
           onClick={() => {
-            // TODO: Implementovať navigáciu na úpravu profilu
-            console.log('Upraviť profil');
+            if (onEditProfileClick) {
+              onEditProfileClick();
+            } else {
+              console.log('Upraviť profil');
+            }
           }}
           className="px-12 py-2 bg-purple-100 text-purple-800 border border-purple-200 rounded-lg transition-colors hover:bg-purple-200"
         >

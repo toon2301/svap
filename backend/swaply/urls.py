@@ -24,6 +24,8 @@ import os
 from accounts.views import update_profile_view
 from accounts.views import google_oauth_simple
 from .migrate_api import run_migrations_view
+from accounts.views import update_profile_view, google_oauth_simple, get_csrf_token_view
+
 
 def api_root(request):
     """Root API endpoint"""
@@ -61,7 +63,7 @@ urlpatterns = [
     
     # Root môže vracať jednoduchý JSON/info, frontend bude žiť na inej doméne
     path('', api_root, name='root'),
-    
+    path('api/csrf-token/', get_csrf_token_view, name='api_csrf_token_alias'),
     # Django allauth URLs - DOČASNE VYPNUTÉ
     # path('accounts/', include('allauth.urls')),
 ]
