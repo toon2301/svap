@@ -19,6 +19,7 @@
     "@tsparticles/react": "^3.0.0",
     "@tsparticles/slim": "^3.9.1",
     "axios": "^1.6.2",
+    "cssom": "^0.5.0",
     "framer-motion": "^10.16.16",
     "js-cookie": "^3.0.5",
     "next": "^14.2.33",

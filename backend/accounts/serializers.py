@@ -148,9 +148,10 @@ class UserLoginSerializer(serializers.Serializer):
                 raise serializers.ValidationError('Neplatné prihlasovacie údaje.')
             if not user.is_active:
                 raise serializers.ValidationError('Účet je deaktivovaný.')
-            # TODO: Zapnúť späť pre produkciu s SendGrid/Mailgun
-            # if not user.is_verified:
-            #     raise serializers.ValidationError('Účet nie je overený. Skontrolujte si email a kliknite na verifikačný odkaz.')
+            # Overenie emailu – dá sa vypnúť cez ALLOW_UNVERIFIED_LOGIN (pre test/dev)
+            if not getattr(settings, 'ALLOW_UNVERIFIED_LOGIN', False):
+                if not getattr(user, 'is_verified', False):
+                    raise serializers.ValidationError('Účet nie je overený. Skontrolujte si email a kliknite na verifikačný odkaz.')
             # 2FA: ak má používateľ zapnuté 2FA, vyžaduj TOTP
             if getattr(getattr(user, 'profile', None), 'mfa_enabled', False):
                 totp_code = (self.initial_data.get('totp') or '').strip()

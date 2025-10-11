@@ -515,6 +515,10 @@ AUDIT_LOGGING_ENABLED = env_bool('AUDIT_LOGGING_ENABLED', True)
 # Account lockout feature flag (v testoch vypnuté)
 ACCOUNT_LOCKOUT_ENABLED = env_bool('ACCOUNT_LOCKOUT_ENABLED', True)
 
+# Povoliť prihlásenie aj bez overeného emailu (do produkčného spustenia)
+# Predvolene povolené - dá sa vypnúť cez env premennu ALLOW_UNVERIFIED_LOGIN=false
+ALLOW_UNVERIFIED_LOGIN = env_bool('ALLOW_UNVERIFIED_LOGIN', True)
+
 # Django allauth settings
 ACCOUNT_LOGIN_METHODS = {'email'}
 ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']
