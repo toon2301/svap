@@ -104,8 +104,8 @@ export default function ProfileModule({ user, onUserUpdate }: ProfileModuleProps
     </div>
     {isActionsOpen && (
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div className="absolute inset-0 bg-black/30" onClick={() => setIsActionsOpen(false)} aria-hidden="true" />
-        <div className="relative w-full max-w-sm rounded-2xl bg-white p-4 shadow-xl">
+        <div className="absolute inset-0 bg-transparent" onClick={() => setIsActionsOpen(false)} aria-hidden="true" />
+        <div className="relative w-full max-w-xl rounded-2xl bg-white p-6 shadow-xl">
           <div className="text-lg font-medium text-gray-900 mb-3">Fotka profilu</div>
           <div className="space-y-2">
             <button
@@ -120,13 +120,13 @@ export default function ProfileModule({ user, onUserUpdate }: ProfileModuleProps
                 };
                 input.click();
               }}
-              className="w-full px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700"
+              className="w-full px-4 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200"
             >
               Zmeniť fotku
             </button>
             <button
               onClick={handleRemoveAvatar}
-              className="w-full px-4 py-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100"
+              className="w-full px-4 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200"
               disabled={isUploading}
             >
               Odstrániť fotku
