@@ -28,9 +28,9 @@ export default function UserAvatar({ user, size = 'large', onPhotoUpload, isUplo
   const sizeClass = sizeClasses[size];
   
   // Preferuj plnú URL z backendu; fallback na relative path
-  const rawUrl = user.avatar_url || user.avatar || null;
+  const rawUrl: string | undefined = (user.avatar_url as string | undefined) || (user.avatar as string | undefined);
   // Pridaj timestamp pre cache-busting
-  const avatarUrl = rawUrl ? `${rawUrl}?t=${new Date().getTime()}` : null;
+  const avatarUrl: string | undefined = rawUrl ? `${rawUrl}?t=${new Date().getTime()}` : undefined;
   
   console.log('UserAvatar - user.avatar:', user.avatar);
   console.log('UserAvatar - user.avatar_url:', user.avatar_url);
@@ -51,7 +51,7 @@ export default function UserAvatar({ user, size = 'large', onPhotoUpload, isUplo
     <div className="mb-6 relative inline-block">
       {hasAvatar ? (
         <img
-          src={avatarUrl}
+          src={avatarUrl!}
           alt={`${user.first_name} ${user.last_name}`}
           className={`${sizeClass} rounded-full mx-auto object-cover border-4 border-purple-100`}
           onError={handleImageError}
