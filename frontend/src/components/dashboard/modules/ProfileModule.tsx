@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { User } from '../../../types';
 import UserAvatar from './profile/UserAvatar';
 import UserInfo from './profile/UserInfo';
@@ -16,6 +17,11 @@ export default function ProfileModule({ user, onUserUpdate }: ProfileModuleProps
   const [uploadError, setUploadError] = useState<string>('');
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [isActionsOpen, setIsActionsOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handlePhotoUpload = async (file: File) => {
     setIsUploading(true);
@@ -79,13 +85,33 @@ export default function ProfileModule({ user, onUserUpdate }: ProfileModuleProps
   return (
     <>
     <div className="max-w-2xl mx-auto">
-      <UserAvatar 
-        user={user} 
-        size="large" 
-        onPhotoUpload={handlePhotoUpload}
-        isUploading={isUploading}
-        onAvatarClick={handleAvatarClick}
-      />
+      <div className="flex items-center gap-6 mb-6">
+        <UserAvatar 
+          user={user} 
+          size="large" 
+          onPhotoUpload={handlePhotoUpload}
+          isUploading={isUploading}
+          onAvatarClick={handleAvatarClick}
+        />
+        <button
+          onClick={() => {
+            // TODO: Implementovať navigáciu na úpravu profilu
+            console.log('Upraviť profil');
+          }}
+          className="px-12 py-2 bg-purple-100 text-purple-800 border border-purple-200 rounded-lg transition-colors hover:bg-purple-200"
+        >
+          Upraviť profil
+        </button>
+        <button
+          onClick={() => {
+            // TODO: Implementovať navigáciu na zručnosti
+            console.log('Zručnosti');
+          }}
+          className="px-12 py-2 bg-purple-100 text-purple-800 border border-purple-200 rounded-lg transition-colors hover:bg-purple-200"
+        >
+          Zručnosti
+        </button>
+      </div>
       <UserInfo user={user} />
       
       {/* Success message */}
@@ -102,44 +128,46 @@ export default function ProfileModule({ user, onUserUpdate }: ProfileModuleProps
         </div>
       )}
     </div>
-    {isActionsOpen && (
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div className="absolute inset-0 bg-transparent" onClick={() => setIsActionsOpen(false)} aria-hidden="true" />
-        <div className="relative w-full max-w-lg rounded-2xl bg-white px-6 py-8 shadow-xl min-h-[220px]">
-          <div className="text-lg font-medium text-gray-900 mb-3">Fotka profilu</div>
-          <div className="space-y-2">
-            <button
-              onClick={() => {
-                setIsActionsOpen(false);
-                const input = document.createElement('input');
-                input.type = 'file';
-                input.accept = 'image/*';
-                input.onchange = (e: any) => {
-                  const file = e.target.files?.[0];
-                  if (file) handlePhotoUpload(file);
-                };
-                input.click();
-              }}
-              className="w-full px-4 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200"
-            >
-              Zmeniť fotku
-            </button>
-            <button
-              onClick={handleRemoveAvatar}
-              className="w-full px-4 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200"
-              disabled={isUploading}
-            >
-              Odstrániť fotku
-            </button>
-            <button
-              onClick={() => setIsActionsOpen(false)}
-              className="w-full px-4 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200"
-            >
-              Zrušiť
-            </button>
+    {mounted && isActionsOpen && createPortal(
+      <div className="fixed inset-0 z-50 flex items-center justify-center">
+        <div className="absolute inset-0 bg-black bg-opacity-50" onClick={() => setIsActionsOpen(false)} aria-hidden="true" />
+        <div className="relative z-10 w-[32rem] max-w-[90vw] mx-4">
+          <div className="rounded-2xl bg-white shadow-xl overflow-hidden">
+            <div className="py-6 px-2 space-y-3">
+              <button
+                onClick={() => {
+                  setIsActionsOpen(false);
+                  const input = document.createElement('input');
+                  input.type = 'file';
+                  input.accept = 'image/*';
+                  input.onchange = (e: any) => {
+                    const file = e.target.files?.[0];
+                    if (file) handlePhotoUpload(file);
+                  };
+                  input.click();
+                }}
+                className="w-full py-4 text-lg rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200"
+              >
+                Zmeniť fotku
+              </button>
+              <button
+                onClick={handleRemoveAvatar}
+                className="w-full py-4 text-lg rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200"
+                disabled={isUploading}
+              >
+                Odstrániť fotku
+              </button>
+              <button
+                onClick={() => setIsActionsOpen(false)}
+                className="w-full py-4 text-lg rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200"
+              >
+                Zrušiť
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+      </div>,
+      document.body
     )}
     </>
   );

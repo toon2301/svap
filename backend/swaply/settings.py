@@ -552,8 +552,8 @@ GOOGLE_OAUTH2_SECRET = os.getenv('GOOGLE_OAUTH2_SECRET', '')
 FRONTEND_CALLBACK_URL = os.getenv('FRONTEND_CALLBACK_URL', 'http://localhost:3000/auth/callback/')
 BACKEND_CALLBACK_URL = os.getenv('BACKEND_CALLBACK_URL', 'http://localhost:8000/api/oauth/google/callback/')
 
-# Frontend URL pre CORS - používa IP adresu pre mobile testovanie
-FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://192.168.68.103:3000')
+# Frontend URL pre CORS - používa localhost pre lokálny vývoj, IP adresu pre mobile testovanie
+FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:3000')
 
 # Cloudflare Tunnel URLs (pre development s tunnel) - VYPNUTÉ
 # if os.getenv('USE_CLOUDFLARE_TUNNEL', 'False').lower() == 'true':
