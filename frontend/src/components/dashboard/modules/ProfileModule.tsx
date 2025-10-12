@@ -86,37 +86,79 @@ export default function ProfileModule({ user, onUserUpdate, onEditProfileClick }
   return (
     <>
     <div className="max-w-2xl mx-auto">
-      <div className="flex items-center gap-6 mb-6">
-        <UserAvatar 
-          user={user} 
-          size="large" 
-          onPhotoUpload={handlePhotoUpload}
-          isUploading={isUploading}
-          onAvatarClick={handleAvatarClick}
-        />
-        <button
-          onClick={() => {
-            if (onEditProfileClick) {
-              onEditProfileClick();
-            } else {
-              console.log('Upraviť profil');
-            }
-          }}
-          className="px-12 py-2 bg-purple-100 text-purple-800 border border-purple-200 rounded-lg transition-colors hover:bg-purple-200"
-        >
-          Upraviť profil
-        </button>
-        <button
-          onClick={() => {
-            // TODO: Implementovať navigáciu na zručnosti
-            console.log('Zručnosti');
-          }}
-          className="px-12 py-2 bg-purple-100 text-purple-800 border border-purple-200 rounded-lg transition-colors hover:bg-purple-200"
-        >
-          Zručnosti
-        </button>
+      {/* Mobile layout */}
+      <div className="lg:hidden">
+        <div className="mb-4">
+          {/* Avatar v ľavom hornom rohu */}
+          <div>
+            <UserAvatar 
+              user={user} 
+              size="medium" 
+              onPhotoUpload={handlePhotoUpload}
+              isUploading={isUploading}
+              onAvatarClick={handleAvatarClick}
+            />
+            {/* Tlačidlá POD fotkou, vedľa seba */}
+            <div className="flex gap-2 mt-1">
+              <button
+                onClick={() => {
+                  if (onEditProfileClick) {
+                    onEditProfileClick();
+                  } else {
+                    console.log('Upraviť profil');
+                  }
+                }}
+                className="flex-1 px-3 py-1.5 text-xs bg-purple-100 text-purple-800 border border-purple-200 rounded-lg transition-colors hover:bg-purple-200"
+              >
+                Upraviť profil
+              </button>
+              <button
+                onClick={() => {
+                  console.log('Zručnosti');
+                }}
+                className="flex-1 px-3 py-1.5 text-xs bg-purple-100 text-purple-800 border border-purple-200 rounded-lg transition-colors hover:bg-purple-200"
+              >
+                Zručnosti
+              </button>
+            </div>
+          </div>
+        </div>
+        <UserInfo user={user} />
       </div>
-      <UserInfo user={user} />
+
+      {/* Desktop layout */}
+      <div className="hidden lg:block">
+        <div className="flex items-center gap-6 mb-6">
+          <UserAvatar 
+            user={user} 
+            size="large" 
+            onPhotoUpload={handlePhotoUpload}
+            isUploading={isUploading}
+            onAvatarClick={handleAvatarClick}
+          />
+          <button
+            onClick={() => {
+              if (onEditProfileClick) {
+                onEditProfileClick();
+              } else {
+                console.log('Upraviť profil');
+              }
+            }}
+            className="px-12 py-2 bg-purple-100 text-purple-800 border border-purple-200 rounded-lg transition-colors hover:bg-purple-200"
+          >
+            Upraviť profil
+          </button>
+          <button
+            onClick={() => {
+              console.log('Zručnosti');
+            }}
+            className="px-12 py-2 bg-purple-100 text-purple-800 border border-purple-200 rounded-lg transition-colors hover:bg-purple-200"
+          >
+            Zručnosti
+          </button>
+        </div>
+        <UserInfo user={user} />
+      </div>
       
       {/* Success message */}
       {uploadSuccess && (

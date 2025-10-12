@@ -5,26 +5,26 @@ import {
   MagnifyingGlassIcon, 
   PlusCircleIcon,
   ChatBubbleLeftRightIcon,
-  Bars3Icon 
+  BellIcon 
 } from '@heroicons/react/24/outline';
 
 interface MobileTopNavProps {
   activeItem: string;
   onItemClick: (itemId: string) => void;
-  onMenuClick: () => void;
 }
 
-export default function MobileTopNav({ activeItem, onItemClick, onMenuClick }: MobileTopNavProps) {
+export default function MobileTopNav({ activeItem, onItemClick }: MobileTopNavProps) {
   const navItems = [
     { id: 'home', icon: HomeIcon, label: 'Domov' },
     { id: 'search', icon: MagnifyingGlassIcon, label: 'Hľadať' },
     { id: 'create', icon: PlusCircleIcon, label: 'Pridať', isSpecial: true },
     { id: 'messages', icon: ChatBubbleLeftRightIcon, label: 'Správy' },
+    { id: 'notifications', icon: BellIcon, label: 'Upozornenia' },
   ];
 
   return (
-    <div className="lg:hidden fixed top-0 left-0 right-0 z-30 bg-white border-b border-gray-200 shadow-sm">
-      <div className="flex items-center justify-between px-2 py-2">
+    <div className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-gray-200 shadow-lg">
+      <div className="flex items-center justify-between px-2 py-3">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = activeItem === item.id;
@@ -68,15 +68,6 @@ export default function MobileTopNav({ activeItem, onItemClick, onMenuClick }: M
             </button>
           );
         })}
-        
-        {/* Hamburger menu */}
-        <button
-          onClick={onMenuClick}
-          className="flex flex-col items-center justify-center p-2 rounded-lg text-gray-600 hover:text-purple-600 hover:bg-gray-50 transition-all"
-          aria-label="Menu"
-        >
-          <Bars3Icon className="w-6 h-6" strokeWidth={2} />
-        </button>
       </div>
     </div>
   );

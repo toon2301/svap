@@ -13,7 +13,9 @@ import ProfileModule from './modules/ProfileModule';
 import SearchModule from './modules/SearchModule';
 import CreateModule from './modules/CreateModule';
 import MessagesModule from './modules/MessagesModule';
+import NotificationsModule from './modules/NotificationsModule';
 import MobileTopNav from './MobileTopNav';
+import MobileTopBar from './MobileTopBar';
 
 interface DashboardProps {
   initialUser?: User;
@@ -110,6 +112,8 @@ export default function Dashboard({ initialUser }: DashboardProps) {
         return <CreateModule />;
       case 'messages':
         return <MessagesModule />;
+      case 'notifications':
+        return <NotificationsModule />;
       case 'home':
       default:
         return (
@@ -151,11 +155,15 @@ export default function Dashboard({ initialUser }: DashboardProps) {
         />
       </div>
 
-      {/* Mobile Top Navigation */}
+      {/* Mobile Top Bar */}
+      <MobileTopBar 
+        onMenuClick={() => setIsMobileMenuOpen(true)}
+      />
+
+      {/* Mobile Bottom Navigation */}
       <MobileTopNav 
         activeItem={activeModule}
         onItemClick={handleModuleChange}
-        onMenuClick={() => setIsMobileMenuOpen(true)}
       />
 
       {/* Mobile Sidebar */}
@@ -171,7 +179,7 @@ export default function Dashboard({ initialUser }: DashboardProps) {
       {/* Main Content */}
       <div className="flex-1 lg:ml-0 flex">
         {/* Content Area */}
-        <main className="flex-1 p-6 pt-20 lg:p-8 lg:pt-8">
+        <main className="flex-1 p-6 pt-16 pb-24 lg:p-8 lg:pt-8">
           {renderModule()}
         </main>
         
