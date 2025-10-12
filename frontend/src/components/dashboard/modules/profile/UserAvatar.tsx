@@ -44,7 +44,7 @@ export default function UserAvatar({ user, size = 'large', onPhotoUpload, isUplo
   const hasAvatar = Boolean(avatarUrl && !imageError);
 
   return (
-    <div className="mb-6 relative inline-block">
+    <div className="relative inline-block">
       {hasAvatar ? (
         <img
           src={avatarUrl!}

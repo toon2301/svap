@@ -104,6 +104,7 @@ export default function Dashboard({ initialUser }: DashboardProps) {
             user={user!} 
             onUserUpdate={handleUserUpdate}
             onEditProfileClick={handleRightSidebarToggle}
+            isEditMode={isRightSidebarOpen}
           />
         );
       case 'search':

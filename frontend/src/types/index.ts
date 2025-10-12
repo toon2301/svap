@@ -16,6 +16,7 @@ export interface User {
   linkedin?: string;
   facebook?: string;
   instagram?: string;
+  gender?: string;
   is_verified: boolean;
   is_public: boolean;
   created_at: string;
