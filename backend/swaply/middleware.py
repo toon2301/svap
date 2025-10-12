@@ -161,6 +161,11 @@ class EnforceCSRFMiddleware(MiddlewareMixin):
             return None
         # Vynucujeme iba pre metódy, ktoré modifikujú stav – validáciu nech robí CsrfViewMiddleware (form token alebo header)
         if request.method in ("POST", "PUT", "PATCH", "DELETE"):
+            # Ak je povolené preskočiť CSRF pri JWT, a je prítomný Authorization: Bearer token, CSRF nekontroluj
+            if getattr(settings, 'CSRF_SKIP_FOR_JWT', False):
+                auth_header = request.META.get('HTTP_AUTHORIZATION', '')
+                if auth_header.startswith('Bearer '):
+                    return None
             # Pre API akceptuj CSRF token z hlavičky alebo cookies
             header_token = (
                 request.META.get('HTTP_X_CSRFTOKEN') or request.META.get('HTTP_X_CSRF_TOKEN')

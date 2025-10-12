@@ -326,6 +326,9 @@ if DEBUG:
     CSRF_ENFORCE_API = env_bool('CSRF_ENFORCE_API', True) and not ('test' in sys.argv or 'pytest' in sys.modules)
 else:
     CSRF_ENFORCE_API = True
+
+# Pri JWT (Authorization: Bearer ...) nie je CSRF potrebné – voliteľne vypnuteľné
+CSRF_SKIP_FOR_JWT = env_bool('CSRF_SKIP_FOR_JWT', True)
 SECURE_SSL_REDIRECT = env_bool('SECURE_SSL_REDIRECT', not DEBUG)
 SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
 SECURE_HSTS_SECONDS = 31536000 if not DEBUG else 0
