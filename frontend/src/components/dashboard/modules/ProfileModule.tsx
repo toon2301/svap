@@ -33,11 +33,9 @@ export default function ProfileModule({ user, onUserUpdate, onEditProfileClick }
       const formData = new FormData();
       formData.append('avatar', file);
 
-      const response = await api.patch('/auth/profile/', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
+      // DÔLEŽITÉ: Neposielaj Content-Type header manuálne!
+      // Axios ho nastaví automaticky s boundary pre multipart/form-data
+      const response = await api.patch('/auth/profile/', formData);
 
       // Aktualizuj používateľa s novou fotkou
       console.log('Upload response:', response.data);
