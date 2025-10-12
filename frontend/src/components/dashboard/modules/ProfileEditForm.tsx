@@ -331,7 +331,6 @@ export default function ProfileEditForm({ user, onUserUpdate, onEditProfileClick
                   onPhotoUpload={handlePhotoUpload}
                   isUploading={isUploading}
                   onAvatarClick={handleAvatarClick}
-                  showUploadIcon={false}
                 />
               </div>
               <div className="px-2 space-y-3 pb-6">
