@@ -46,9 +46,7 @@ const getCsrfToken = (): string | undefined => {
 // Create axios instance
 export const api = axios.create({
   baseURL: RUNTIME_API_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  // Nešpecifikuj globálny Content-Type; nech Axios vyberie podľa typu dát
   timeout: 30000, // 30 sekúnd timeout pre mobile
   withCredentials: true, // Povoliť posielanie cookies pre CSRF
 });
@@ -56,6 +54,25 @@ export const api = axios.create({
 // Request interceptor to add auth token and CSRF token
 api.interceptors.request.use(
   (config) => {
+    // Ak posielame FormData (upload súboru), odstráň Content-Type, aby Axios pridal multipart boundary
+    const isFormData = typeof FormData !== 'undefined' && config.data instanceof FormData;
+    if (isFormData) {
+      if (config.headers) {
+        // Normalize to plain object to manipulate header keys
+        const headers: Record<string, any> = (config.headers as any);
+        delete headers['Content-Type'];
+        delete headers['content-type'];
+      }
+    } else {
+      // Pre JSON požiadavky nastav Content-Type len ak nie je nastavený
+      if (config.headers) {
+        const headers: Record<string, any> = (config.headers as any);
+        if (!('Content-Type' in headers) && !('content-type' in headers)) {
+          headers['Content-Type'] = 'application/json';
+        }
+      }
+    }
+
     // Pridaj JWT auth token ak existuje
     const token = Cookies.get('access_token');
     if (token) {

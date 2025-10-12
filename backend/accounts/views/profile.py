@@ -2,7 +2,8 @@
 Profile views pre Swaply
 """
 from rest_framework import status
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, parser_classes
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.contrib.auth import get_user_model
@@ -17,6 +18,7 @@ User = get_user_model()
 
 
 @api_view(['PUT', 'PATCH'])
+@parser_classes([MultiPartParser, FormParser, JSONParser])
 @permission_classes([IsAuthenticated])
 @api_rate_limit
 def update_profile_view(request):
