@@ -188,10 +188,11 @@ export default function ProfileEditForm({ user, onUserUpdate, onEditProfileClick
         
         {/* Meno */}
         <div className="mb-4">
-          <label className="block text-base font-medium text-gray-700 mb-2">
+          <label htmlFor="first_name" className="block text-base font-medium text-gray-700 mb-2">
             Meno
           </label>
           <input
+            id="first_name"
             type="text"
             value={firstName}
             onChange={(e) => setFirstName(e.target.value)}
@@ -210,11 +211,12 @@ export default function ProfileEditForm({ user, onUserUpdate, onEditProfileClick
         
         {/* Bio */}
         <div className="mb-4">
-          <label className="block text-base font-medium text-gray-700 mb-2">
+          <label htmlFor="bio" className="block text-base font-medium text-gray-700 mb-2">
             Bio
           </label>
           <div className="relative">
             <textarea
+              id="bio"
               value={bio}
               onChange={(e) => setBio(e.target.value)}
               onBlur={handleBioSave}
@@ -236,10 +238,11 @@ export default function ProfileEditForm({ user, onUserUpdate, onEditProfileClick
         
         {/* Web */}
         <div className="mb-4">
-          <label className="block text-base font-medium text-gray-700 mb-2">
+          <label htmlFor="website" className="block text-base font-medium text-gray-700 mb-2">
             Web
           </label>
           <input
+            id="website"
             type="url"
             value={website}
             onChange={(e) => setWebsite(e.target.value)}
@@ -268,6 +271,7 @@ export default function ProfileEditForm({ user, onUserUpdate, onEditProfileClick
           </label>
           <div className="relative">
             <select
+              id="gender"
               value={gender}
               onChange={(e) => handleGenderChange(e.target.value)}
               className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent appearance-none cursor-pointer"

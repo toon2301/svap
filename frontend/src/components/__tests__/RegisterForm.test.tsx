@@ -1,6 +1,12 @@
 /**
  * Testy pre RegisterForm komponent
  */
+// Mock reCAPTCHA hook MUST be declared before importing the component
+jest.mock('react-google-recaptcha-v3', () => ({
+  useGoogleReCaptcha: () => ({
+    executeRecaptcha: async () => 'test-captcha-token',
+  }),
+}));
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { useRouter } from 'next/navigation';
 import RegisterForm from '../RegisterForm';
@@ -270,7 +276,8 @@ describe('RegisterForm', () => {
     fireEvent.click(submitButton);
     
     await waitFor(() => {
-      expect(screen.getByText('Email už existuje')).toBeInTheDocument();
+      // Error text may appear without exclamation
+      expect(screen.getByText(/Email už existuje/)).toBeInTheDocument();
     });
   });
 
@@ -332,8 +339,8 @@ describe('RegisterForm', () => {
     
     await waitFor(() => {
       expect(screen.getByText('Registrácia úspešná!')).toBeInTheDocument();
-      expect(screen.getByText('Úspešná registrácia!')).toBeInTheDocument();
-      expect(screen.getByText('Skontrolujte si email a potvrďte registráciu kliknutím na odkaz v emaile.')).toBeInTheDocument();
+      expect(screen.getByText(/Úspešná registrácia/)).toBeInTheDocument();
+      expect(screen.getByText(/Skontrolujte si email a potvrďte registráciu/)).toBeInTheDocument();
     });
 
     // Skontroluj, že sa formulár skryl

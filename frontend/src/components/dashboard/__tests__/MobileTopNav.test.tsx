@@ -8,17 +8,15 @@ jest.mock('@heroicons/react/24/outline', () => ({
   MagnifyingGlassIcon: () => <div>SearchIcon</div>,
   PlusCircleIcon: () => <div>PlusIcon</div>,
   ChatBubbleLeftRightIcon: () => <div>MessagesIcon</div>,
-  Bars3Icon: () => <div>MenuIcon</div>,
+  BellIcon: () => <div>BellIcon</div>,
 }));
 
 describe('MobileTopNav', () => {
   const mockOnItemClick = jest.fn();
-  const mockOnMenuClick = jest.fn();
 
   const defaultProps = {
     activeItem: 'home',
     onItemClick: mockOnItemClick,
-    onMenuClick: mockOnMenuClick,
   };
 
   beforeEach(() => {
@@ -32,7 +30,7 @@ describe('MobileTopNav', () => {
     expect(screen.getByLabelText('Hľadať')).toBeInTheDocument();
     expect(screen.getByLabelText('Pridať')).toBeInTheDocument();
     expect(screen.getByLabelText('Správy')).toBeInTheDocument();
-    expect(screen.getByLabelText('Menu')).toBeInTheDocument();
+    expect(screen.getByLabelText('Upozornenia')).toBeInTheDocument();
   });
 
   it('calls onItemClick when nav item is clicked', () => {
@@ -44,13 +42,12 @@ describe('MobileTopNav', () => {
     expect(mockOnItemClick).toHaveBeenCalledWith('home');
   });
 
-  it('calls onMenuClick when menu button is clicked', () => {
+  // Menu button has been replaced by notifications; ensure notifications is clickable
+  it('calls onItemClick when notifications button is clicked', () => {
     render(<MobileTopNav {...defaultProps} />);
-    
-    const menuButton = screen.getByLabelText('Menu');
-    fireEvent.click(menuButton);
-    
-    expect(mockOnMenuClick).toHaveBeenCalled();
+    const notifButton = screen.getByLabelText('Upozornenia');
+    fireEvent.click(notifButton);
+    expect(mockOnItemClick).toHaveBeenCalledWith('notifications');
   });
 
   it('highlights active item', () => {

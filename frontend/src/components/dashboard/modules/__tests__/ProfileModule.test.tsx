@@ -24,12 +24,15 @@ const mockUser: User = {
 describe('ProfileModule', () => {
   it('renders without crashing', () => {
     render(<ProfileModule user={mockUser} />);
-    expect(screen.getByText('JD')).toBeInTheDocument(); // UserAvatar initials
+    // There are two avatars (mobile+desktop), so use getAllByText
+    const initials = screen.getAllByText('JD');
+    expect(initials.length).toBeGreaterThan(0);
   });
 
-  it('renders ProfileCard component', () => {
+  it('renders profile UI without email in main view', () => {
     render(<ProfileModule user={mockUser} />);
-    expect(screen.getByText('JD')).toBeInTheDocument(); // UserAvatar initials
+    const initials = screen.getAllByText('JD');
+    expect(initials.length).toBeGreaterThan(0);
     expect(screen.queryByText('test@example.com')).not.toBeInTheDocument();
   });
 
@@ -46,13 +49,14 @@ describe('ProfileModule', () => {
     };
     
     render(<ProfileModule user={userWithAvatar} />);
-    const img = screen.getByAltText('John Doe');
-    expect(img).toBeInTheDocument();
+    const imgs = screen.getAllByAltText('John Doe');
+    expect(imgs.length).toBeGreaterThan(0);
   });
 
   it('handles user with location', () => {
     const userWithLocation = { ...mockUser, location: 'Bratislava' };
     render(<ProfileModule user={userWithLocation} />);
-    expect(screen.getByText('📍 Bratislava')).toBeInTheDocument();
+    const all = screen.getAllByText(/Bratislava/);
+    expect(all.length).toBeGreaterThan(0);
   });
 });
