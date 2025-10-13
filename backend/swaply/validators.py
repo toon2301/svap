@@ -310,6 +310,7 @@ def validate_image_file(value):
     """Validátor pre obrázkové súbory"""
     import os
     from django.core.exceptions import ValidationError
+    from .image_moderation import check_image_safety
     
     # Kontrola veľkosti súboru (max 5MB)
     if value.size > 5 * 1024 * 1024:
@@ -322,4 +323,18 @@ def validate_image_file(value):
     if ext not in allowed_extensions:
         raise ValidationError('Neplatný typ súboru. Povolené sú len JPG, PNG, GIF a WebP súbory.')
     
+    # SafeSearch kontrola – len ak je povolená
+    try:
+        if getattr(settings, 'SAFESEARCH_ENABLED', True):
+            # Uistime sa, že máme file-like objekt
+            file_obj = getattr(value, 'file', None) or value
+            check_image_safety(file_obj)
+    except ValidationError:
+        raise
+    except Exception as e:
+        # Ak by sa čokoľvek pokazilo, riadi sa to režimom FAIL_OPEN/FAIL_CLOSED v image_moderation
+        logger.warning(f"SafeSearch wrapper error: {e}")
+        if not getattr(settings, 'SAFESEARCH_FAIL_OPEN', True):
+            raise ValidationError(_('Kontrola bezpečnosti obrázka zlyhala, skúste neskôr.'))
+
     return value

@@ -35,6 +35,41 @@ npm install
 npm run dev
 ```
 
+## 🔒 Moderácia profilových fotiek (Google Cloud Vision SafeSearch)
+
+Backend kontroluje nahrávané profilové fotky proti Google Vision SafeSearch.
+
+### Prahy (default)
+- adult: POSSIBLE
+- violence: LIKELY
+- racy: LIKELY
+
+### Lokálne spustenie
+1. Vytvor service account v Google Cloud a stiahni JSON kľúč.
+2. Nastav env premenné (Windows PowerShell):
+   ```powershell
+   $env:SAFESEARCH_ENABLED="true"
+   $env:SAFESEARCH_FAIL_OPEN="true"
+   $env:SAFESEARCH_TIMEOUT="5"
+   $env:SAFESEARCH_MIN_ADULT="POSSIBLE"
+   $env:SAFESEARCH_MIN_VIOLENCE="LIKELY"
+   $env:SAFESEARCH_MIN_RACY="LIKELY"
+   $env:GOOGLE_APPLICATION_CREDENTIALS="backend\.secrets\gcp-vision.json"
+   ```
+
+### Railway hosting
+- V Project → Variables nastav:
+  - `SAFESEARCH_ENABLED=true`
+  - `SAFESEARCH_FAIL_OPEN=true`
+  - `SAFESEARCH_TIMEOUT=5`
+  - `SAFESEARCH_MIN_ADULT=POSSIBLE`
+  - `SAFESEARCH_MIN_VIOLENCE=LIKELY`
+  - `SAFESEARCH_MIN_RACY=LIKELY`
+  - `GCP_VISION_SERVICE_ACCOUNT_JSON` = celý JSON kľúč (obsah súboru)
+
+### Testovanie
+- Testy preskakujú Vision volanie cez `SAFESEARCH_SKIP_IN_TESTS=True`.
+
 ## 📁 Štruktúra
 ```
 swaply/

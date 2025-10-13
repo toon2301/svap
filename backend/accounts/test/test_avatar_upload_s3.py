@@ -13,6 +13,7 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 from swaply.validators import validate_image_file
+from django.test import override_settings
 
 
 User = get_user_model()
@@ -63,8 +64,10 @@ class TestAvatarUploadIntegration(APITestCase):
         self.url = reverse('accounts:update_profile')
 
     def test_upload_valid_jpeg_success(self):
-        file = generate_image_file('JPEG', 'avatar.jpg')
-        r = self.client.patch(self.url, {'avatar': file}, format='multipart')
+        # Skip SafeSearch in tests to avoid network calls
+        with override_settings(SAFESEARCH_SKIP_IN_TESTS=True, SAFESEARCH_ENABLED=True):
+            file = generate_image_file('JPEG', 'avatar.jpg')
+            r = self.client.patch(self.url, {'avatar': file}, format='multipart')
         assert r.status_code == status.HTTP_200_OK
         assert 'user' in r.data
         assert r.data['user'].get('avatar_url')
@@ -77,8 +80,9 @@ class TestAvatarUploadIntegration(APITestCase):
         assert os.path.exists(self.user.avatar.path)
 
     def test_upload_valid_png_success(self):
-        file = generate_image_file('PNG', 'avatar.png')
-        r = self.client.patch(self.url, {'avatar': file}, format='multipart')
+        with override_settings(SAFESEARCH_SKIP_IN_TESTS=True, SAFESEARCH_ENABLED=True):
+            file = generate_image_file('PNG', 'avatar.png')
+            r = self.client.patch(self.url, {'avatar': file}, format='multipart')
         assert r.status_code == status.HTTP_200_OK
         assert r.data['user'].get('avatar_url')
 

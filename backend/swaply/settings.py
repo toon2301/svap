@@ -362,6 +362,21 @@ CAPTCHA_SITE_KEY = os.getenv('CAPTCHA_SITE_KEY', 'test-site-key')
 CAPTCHA_VERIFY_URL = 'https://www.google.com/recaptcha/api/siteverify'
 CAPTCHA_SKIP_IN_TESTS = env_bool('CAPTCHA_SKIP_IN_TESTS', True)
 
+# SafeSearch (Google Cloud Vision) settings
+SAFESEARCH_ENABLED = env_bool('SAFESEARCH_ENABLED', True)
+SAFESEARCH_TIMEOUT = int(os.getenv('SAFESEARCH_TIMEOUT', '5'))
+SAFESEARCH_FAIL_OPEN = env_bool('SAFESEARCH_FAIL_OPEN', True)
+SAFESEARCH_SKIP_IN_TESTS = env_bool('SAFESEARCH_SKIP_IN_TESTS', True)
+
+# Thresholds: POSSIBLE < LIKELY < VERY_LIKELY
+SAFESEARCH_MIN_ADULT = os.getenv('SAFESEARCH_MIN_ADULT', 'POSSIBLE')
+SAFESEARCH_MIN_VIOLENCE = os.getenv('SAFESEARCH_MIN_VIOLENCE', 'LIKELY')
+SAFESEARCH_MIN_RACY = os.getenv('SAFESEARCH_MIN_RACY', 'LIKELY')
+
+# Credentials
+# Prefer full JSON in env (Railway), fallback to GOOGLE_APPLICATION_CREDENTIALS path (local)
+GCP_VISION_SERVICE_ACCOUNT_JSON = os.getenv('GCP_VISION_SERVICE_ACCOUNT_JSON')
+
 # Email settings
 # Allow explicit override via env even in DEBUG
 EMAIL_BACKEND = os.getenv('EMAIL_BACKEND')
