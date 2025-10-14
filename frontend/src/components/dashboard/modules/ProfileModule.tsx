@@ -46,10 +46,16 @@ export default function ProfileModule({ user, onUserUpdate, onEditProfileClick, 
       setTimeout(() => setUploadSuccess(false), 3000);
     } catch (error: any) {
       console.error('Photo upload error:', error);
-      setUploadError(
-        error.response?.data?.error || 
+      // Pokús sa vytiahnuť konkrétnu validačnú správu z backendu
+      const details = error?.response?.data?.details || error?.response?.data?.validation_errors;
+      const avatarErrors: string[] | undefined = details?.avatar;
+      const message = (
+        avatarErrors?.[0] ||
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
         'Nepodarilo sa nahrať fotku. Skús to znova.'
       );
+      setUploadError(message);
     } finally {
       setIsUploading(false);
     }
@@ -73,7 +79,15 @@ export default function ProfileModule({ user, onUserUpdate, onEditProfileClick, 
       }
       setIsActionsOpen(false);
     } catch (e: any) {
-      setUploadError(e.response?.data?.error || 'Nepodarilo sa odstrániť fotku. Skúste znova.');
+      const details = e?.response?.data?.details || e?.response?.data?.validation_errors;
+      const avatarErrors: string[] | undefined = details?.avatar;
+      const message = (
+        avatarErrors?.[0] ||
+        e?.response?.data?.message ||
+        e?.response?.data?.error ||
+        'Nepodarilo sa odstrániť fotku. Skúste znova.'
+      );
+      setUploadError(message);
     } finally {
       setIsUploading(false);
     }

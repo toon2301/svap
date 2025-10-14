@@ -22,15 +22,13 @@ def make_dummy_image_bytes() -> bytes:
     SAFESEARCH_MIN_RACY='LIKELY',
 )
 def test_check_image_safety_denies_when_threshold_met(monkeypatch):
-    class DummyLikelihood:
-        def __init__(self, name):
-            self.name = name
-
     class DummyAnnotation:
         def __init__(self):
-            self.adult = DummyLikelihood('LIKELY')  # exceeds POSSIBLE
-            self.violence = DummyLikelihood('VERY_UNLIKELY')
-            self.racy = DummyLikelihood('UNLIKELY')
+            # Use integer values like real Vision response: 0..5
+            # adult=4 (LIKELY) exceeds POSSIBLE(3)
+            self.adult = 4
+            self.violence = 1  # VERY_UNLIKELY
+            self.racy = 2      # UNLIKELY
 
     class DummyResponse:
         def __init__(self):

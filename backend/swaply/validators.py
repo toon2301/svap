@@ -312,20 +312,42 @@ def validate_image_file(value):
     from django.core.exceptions import ValidationError
     from .image_moderation import check_image_safety
     
-    # Kontrola veľkosti súboru (max 5MB)
-    if value.size > 5 * 1024 * 1024:
-        raise ValidationError('Obrázok je príliš veľký. Maximálna veľkosť je 5MB.')
+    # Kontrola veľkosti súboru – čítaj limit zo settings (default 5MB)
+    try:
+        max_mb = int(getattr(settings, 'IMAGE_MAX_SIZE_MB', 5))
+    except Exception:
+        max_mb = 5
+    if value.size > max_mb * 1024 * 1024:
+        raise ValidationError(f'Obrázok je príliš veľký. Maximálna veľkosť je {max_mb}MB.')
     
     # Kontrola typu súboru
-    allowed_extensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp']
+    # Povolené prípony – rozšírené o HEIC/HEIF, čitateľné zo settings
+    allowed_extensions = [
+        ext.strip().lower() for ext in getattr(
+            settings, 'ALLOWED_IMAGE_EXTENSIONS', ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.heic', '.heif']
+        )
+    ]
     ext = os.path.splitext(value.name)[1].lower()
     
     if ext not in allowed_extensions:
-        raise ValidationError('Neplatný typ súboru. Povolené sú len JPG, PNG, GIF a WebP súbory.')
+        allowed_list = ', '.join(allowed_extensions)
+        raise ValidationError(f'Neplatný typ súboru. Povolené sú: {allowed_list}.')
     
     # SafeSearch kontrola – len ak je povolená
     try:
         if getattr(settings, 'SAFESEARCH_ENABLED', True):
+            enforce_in_debug = getattr(settings, 'SAFESEARCH_ENFORCE_IN_DEBUG', False)
+            strict_mode = getattr(settings, 'SAFESEARCH_STRICT_MODE', False)
+            # Ak bežíme v DEBUG a nie je k dispozícii žiadna prístupná konfigurácia,
+            # sprav fail-open, aby vývoj nebol blokovaný (iba ak nie je vynútené)
+            if getattr(settings, 'DEBUG', False) and not (enforce_in_debug or strict_mode):
+                try:
+                    has_json = bool(getattr(settings, 'GCP_VISION_SERVICE_ACCOUNT_JSON', None))
+                    # Ak nemáme JSON a nie je ani súborová cesta, fail-open
+                    if not has_json and not bool(os.getenv('GOOGLE_APPLICATION_CREDENTIALS')):
+                        return value
+                except Exception:
+                    return value
             # Uistime sa, že máme file-like objekt
             file_obj = getattr(value, 'file', None) or value
             check_image_safety(file_obj)
