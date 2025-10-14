@@ -70,3 +70,5 @@ docker-compose.override.yml
 "~$*" 
 "backend/google-credentials.json" 
 "backend/svaply-8ae1b49fa953.json" 
+"backend/google-credentials.json" 
+"backend/svaply-8ae1b49fa953.json" 
