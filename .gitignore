@@ -68,3 +68,5 @@ Thumbs.db
 # Docker
 docker-compose.override.yml
 "~$*" 
+"backend/google-credentials.json" 
+"backend/svaply-8ae1b49fa953.json" 
