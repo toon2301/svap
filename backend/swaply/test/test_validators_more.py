@@ -134,6 +134,7 @@ def test_captcha_skips_in_pytest_environment(monkeypatch):
     assert CAPTCHAValidator.validate_captcha('any') is True
 
 
+@override_settings(SAFESEARCH_ENABLED=False)
 def test_validate_image_file_success_jpeg():
     content = b'\xff\xd8\xff' + b'0' * 100
     f = SimpleUploadedFile('img.jpg', content, content_type='image/jpeg')
@@ -172,6 +173,7 @@ def test_rate_limit_validator_pass_through():
     assert RateLimitValidator.validate_rate_limit(R(), 'any', 'k') is True
 
 
+@override_settings(SAFESEARCH_ENABLED=False)
 def test_validate_image_file_success_png():
     content = b'\x89PNG\r\n\x1a\n'  # PNG signature
     f = SimpleUploadedFile('ok.png', content, content_type='image/png')

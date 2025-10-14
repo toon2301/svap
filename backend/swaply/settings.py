@@ -325,7 +325,8 @@ CSRF_COOKIE_HTTPONLY = env_bool('CSRF_COOKIE_HTTPONLY', False)
 if DEBUG:
     CSRF_ENFORCE_API = env_bool('CSRF_ENFORCE_API', False) and not ('test' in sys.argv or 'pytest' in sys.modules)
 else:
-    CSRF_ENFORCE_API = env_bool('CSRF_ENFORCE_API', False)
+    # V produkcii vynucuj CSRF pre API ako default (nezávisle od testov)
+    CSRF_ENFORCE_API = True
 
 # Pri JWT (Authorization: Bearer ...) nie je CSRF potrebné – voliteľne vypnuteľné
 CSRF_SKIP_FOR_JWT = env_bool('CSRF_SKIP_FOR_JWT', True)
@@ -570,8 +571,8 @@ AUDIT_LOGGING_ENABLED = env_bool('AUDIT_LOGGING_ENABLED', True)
 ACCOUNT_LOCKOUT_ENABLED = env_bool('ACCOUNT_LOCKOUT_ENABLED', True)
 
 # Povoliť prihlásenie aj bez overeného emailu (do produkčného spustenia)
-# Predvolene povolené - dá sa vypnúť cez env premennu ALLOW_UNVERIFIED_LOGIN=false
-ALLOW_UNVERIFIED_LOGIN = env_bool('ALLOW_UNVERIFIED_LOGIN', True)
+# Predvolene povolené v DEBUG/test, v produkcii môže byť vypnuté cez env
+ALLOW_UNVERIFIED_LOGIN = env_bool('ALLOW_UNVERIFIED_LOGIN', True if DEBUG else True)
 
 # Django allauth settings
 ACCOUNT_LOGIN_METHODS = {'email'}

@@ -3,6 +3,7 @@ import json
 import logging
 import os
 from typing import Dict
+import sys
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -172,22 +173,18 @@ def check_image_safety(file_obj) -> None:
         # Re-raise ValidationError for content violations (always block)
         raise
     except Exception as e:
-        # Fail-open vs fail-closed pre technické chyby
-        # Ak je EXPLICITNE zapnuté v DEBUG striktné vynútenie, nepoľavuj
-        enforce_in_debug = getattr(settings, 'SAFESEARCH_ENFORCE_IN_DEBUG', False)
-        debug_mode = getattr(settings, 'DEBUG', False)
-        strict_mode = getattr(settings, 'SAFESEARCH_STRICT_MODE', False)
-        if not (enforce_in_debug or strict_mode) and (debug_mode or getattr(settings, 'SAFESEARCH_FAIL_OPEN', True)):
+        # Fail-open vs fail-closed pre technické chyby: rešpektuj SAFESEARCH_FAIL_OPEN jednoznačne
+        if getattr(settings, 'SAFESEARCH_FAIL_OPEN', True):
             logger.warning(f"SafeSearch check failed, allowing upload (fail-open): {e}")
-        else:
-            logger.error(f"SafeSearch check failed, denying upload (fail-closed): {e}")
-            message = 'Kontrola bezpečnosti obrázka zlyhala, skúste neskôr.'
-            if getattr(settings, 'DEBUG', False) or getattr(settings, 'SAFESEARCH_DEBUG_LOG', False):
-                try:
-                    message = f"{message} ({type(e).__name__}: {e})"
-                except Exception:
-                    pass
-            raise ValidationError(message)
+            return
+        logger.error(f"SafeSearch check failed, denying upload (fail-closed): {e}")
+        message = 'Kontrola bezpečnosti obrázka zlyhala, skúste neskôr.'
+        if getattr(settings, 'DEBUG', False) or getattr(settings, 'SAFESEARCH_DEBUG_LOG', False):
+            try:
+                message = f"{message} ({type(e).__name__}: {e})"
+            except Exception:
+                pass
+        raise ValidationError(message)
     finally:
         try:
             if position is not None:

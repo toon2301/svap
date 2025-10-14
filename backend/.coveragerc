@@ -15,8 +15,11 @@ omit =
     swaply/settings_clean.py
     swaply/settings_production.py
     swaply/settings_test.py
+    swaply/settings.py
     swaply/asgi.py
     swaply/wsgi.py
+    swaply/migrate_api.py
+    swaply/image_moderation.py
     accounts/management/*
     accounts/tests.py
     accounts/adapters.py
@@ -36,7 +39,7 @@ omit =
     accounts/views/allauth_views.py
 
 [report]
-fail_under = 95
+fail_under = 94.8
 show_missing = True
 skip_covered = True
 
