@@ -16,6 +16,10 @@ class Command(BaseCommand):
             # Spusti všetky migrácie
             call_command('migrate', verbosity=2, interactive=False)
             
+            # Explicitne spusti migrácie pre accounts app
+            self.stdout.write('Spúšťam migrácie pre accounts app...')
+            call_command('migrate', 'accounts', verbosity=2, interactive=False)
+            
             # Skontroluj, či existuje accounts_user tabuľka
             with connection.cursor() as cursor:
                 cursor.execute("""
@@ -30,6 +34,24 @@ class Command(BaseCommand):
                     self.stdout.write(
                         self.style.SUCCESS('✓ Tabuľka accounts_user existuje')
                     )
+                    
+                    # Skontroluj nové stĺpce
+                    cursor.execute("""
+                        SELECT column_name FROM information_schema.columns 
+                        WHERE table_name = 'accounts_user' 
+                        AND column_name IN ('phone_visible', 'job_title_visible')
+                        ORDER BY column_name;
+                    """)
+                    new_columns = [row[0] for row in cursor.fetchall()]
+                    
+                    if 'phone_visible' in new_columns and 'job_title_visible' in new_columns:
+                        self.stdout.write(
+                            self.style.SUCCESS('✓ Nové stĺpce phone_visible a job_title_visible existujú')
+                        )
+                    else:
+                        self.stdout.write(
+                            self.style.WARNING(f'⚠ Chýbajúce stĺpce: {[col for col in ["phone_visible", "job_title_visible"] if col not in new_columns]}')
+                        )
                 else:
                     self.stdout.write(self.style.WARNING('✗ Tabuľka accounts_user neexistuje – opravujem migrácie pre app accounts'))
 
