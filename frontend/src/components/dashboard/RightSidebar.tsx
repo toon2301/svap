@@ -139,15 +139,27 @@ export default function RightSidebar({
   return (
     <AnimatePresence>
       {isOpen && (
-        <motion.div
-          initial={{ x: 384 }}
-          animate={{ x: 0 }}
-          exit={{ x: 384 }}
-          transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-          className="w-96 h-full"
-        >
-          {sidebarContent}
-        </motion.div>
+        <>
+          {/* Overlay */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black bg-opacity-50 z-40"
+            onClick={onClose}
+          />
+          
+          {/* Right Sidebar */}
+          <motion.div
+            initial={{ x: 384 }}
+            animate={{ x: 0 }}
+            exit={{ x: 384 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+            className="w-96 h-full relative z-50"
+          >
+            {sidebarContent}
+          </motion.div>
+        </>
       )}
     </AnimatePresence>
   );

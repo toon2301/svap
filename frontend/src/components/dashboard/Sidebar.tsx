@@ -72,7 +72,7 @@ export default function Sidebar({
   };
 
   const sidebarContent = (
-    <div className="flex flex-col h-full bg-white border-r border-gray-200">
+    <div className="flex flex-col h-screen bg-white border-r border-gray-200">
       {/* Logo */}
       <div className="flex items-center justify-between p-4 border-b border-gray-200">
         <h1 className="text-xl font-bold text-purple-800">Swaply</h1>
@@ -154,7 +154,7 @@ export default function Sidebar({
   }
 
   return (
-    <div className="w-96 h-full">
+    <div className="w-96 h-screen">
       {sidebarContent}
     </div>
   );

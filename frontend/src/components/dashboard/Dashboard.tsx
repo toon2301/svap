@@ -146,9 +146,9 @@ export default function Dashboard({ initialUser }: DashboardProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="h-screen bg-gray-50 flex overflow-hidden">
       {/* Desktop Sidebar */}
-      <div className="hidden lg:block">
+      <div className="hidden lg:block fixed left-0 top-0 h-screen z-30">
         <Sidebar
           activeItem={activeModule}
           onItemClick={handleModuleChange}
@@ -159,13 +159,17 @@ export default function Dashboard({ initialUser }: DashboardProps) {
       {/* Mobile Top Bar */}
       <MobileTopBar 
         onMenuClick={() => setIsMobileMenuOpen(true)}
+        isEditMode={isRightSidebarOpen && activeModule === 'profile'}
+        onBackClick={() => setIsRightSidebarOpen(false)}
       />
 
-      {/* Mobile Bottom Navigation */}
-      <MobileTopNav 
-        activeItem={activeModule}
-        onItemClick={handleModuleChange}
-      />
+      {/* Mobile Bottom Navigation - skryť v edit móde */}
+      {!(isRightSidebarOpen && activeModule === 'profile') && (
+        <MobileTopNav 
+          activeItem={activeModule}
+          onItemClick={handleModuleChange}
+        />
+      )}
 
       {/* Mobile Sidebar */}
       <Sidebar
@@ -178,13 +182,15 @@ export default function Dashboard({ initialUser }: DashboardProps) {
       />
 
       {/* Main Content */}
-      <div className="flex-1 lg:ml-0 flex">
+      <div className="flex-1 lg:ml-1 overflow-y-auto">
         {/* Content Area */}
-        <main className="flex-1 p-6 pt-16 pb-24 lg:p-8 lg:pt-8">
+        <main className="p-6 pt-16 pb-24 lg:p-8 lg:pt-8">
           {renderModule()}
         </main>
-        
-        {/* Right Sidebar */}
+      </div>
+      
+      {/* Right Sidebar - Fixed (Desktop only) */}
+      <div className="hidden lg:block fixed right-0 top-0 h-screen z-30">
         <RightSidebar
           isOpen={isRightSidebarOpen}
           onClose={() => setIsRightSidebarOpen(false)}

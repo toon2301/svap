@@ -10,12 +10,7 @@ interface UserInfoProps {
 export default function UserInfo({ user }: UserInfoProps) {
   return (
     <div className="text-center">
-      {/* Lokácia */}
-      {user.location && user.location.trim() !== '' && (
-        <p className="text-gray-500">
-          📍 {user.location}
-        </p>
-      )}
+      {/* UserInfo je teraz prázdny, všetky informácie sú vedľa fotky */}
     </div>
   );
 }

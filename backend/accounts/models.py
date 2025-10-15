@@ -24,6 +24,7 @@ class User(AbstractUser):
         default=UserType.INDIVIDUAL
     )
     phone = models.CharField(_('Telefón'), max_length=20, blank=True)
+    phone_visible = models.BooleanField(_('Zobraziť telefón verejne'), default=False)
     bio = models.TextField(_('O mne'), blank=True)
     avatar = models.ImageField(
         _('Profilová fotka'), 
@@ -33,6 +34,8 @@ class User(AbstractUser):
         validators=[validate_image_file]
     )
     location = models.CharField(_('Lokalita'), max_length=100, blank=True)
+    job_title = models.CharField(_('Profesia'), max_length=100, blank=True)
+    job_title_visible = models.BooleanField(_('Zobraziť profesiu verejne'), default=False)
     
     # Dátum narodenia a pohlavie
     birth_date = models.DateField(_('Dátum narodenia'), blank=True, null=True)

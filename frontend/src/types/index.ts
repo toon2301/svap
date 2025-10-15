@@ -7,6 +7,9 @@ export interface User {
   last_name: string;
   user_type: 'individual' | 'company' | 'school';
   phone?: string;
+  phone_visible?: boolean;
+  job_title?: string;
+  job_title_visible?: boolean;
   bio?: string;
   avatar?: string; // relative or absolute path (writeable)
   avatar_url?: string; // absolute URL for display
