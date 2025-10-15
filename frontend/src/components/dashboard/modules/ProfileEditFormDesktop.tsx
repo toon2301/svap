@@ -33,7 +33,6 @@ export default function ProfileEditFormDesktop({
   const [professionVisible, setProfessionVisible] = useState(user.job_title_visible || false);
   const [website, setWebsite] = useState(user.website || '');
   const [gender, setGender] = useState(user.gender || '');
-  const [isUploading, setIsUploading] = useState(false);
   const [isActionsOpen, setIsActionsOpen] = useState(false);
   const [uploadError, setUploadError] = useState('');
 
