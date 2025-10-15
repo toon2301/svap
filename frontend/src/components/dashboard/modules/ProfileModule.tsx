@@ -216,7 +216,7 @@ export default function ProfileModule({ user, onUserUpdate, onEditProfileClick, 
               onUserUpdate={onUserUpdate}
               onEditProfileClick={onEditProfileClick}
               onPhotoUpload={handlePhotoUpload}
-              isUploading={isUploading}
+              isUploadingFromParent={isUploading}
               onAvatarClick={handleAvatarClick}
             />
           ) : (

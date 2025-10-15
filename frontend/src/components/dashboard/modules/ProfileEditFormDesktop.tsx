@@ -11,7 +11,7 @@ interface ProfileEditFormDesktopProps {
   onUserUpdate?: (user: User) => void;
   onEditProfileClick?: () => void;
   onPhotoUpload?: (file: File) => void;
-  isUploading?: boolean;
+  isUploadingFromParent?: boolean;
   onAvatarClick?: () => void;
 }
 
@@ -20,7 +20,7 @@ export default function ProfileEditFormDesktop({
   onUserUpdate, 
   onEditProfileClick,
   onPhotoUpload,
-  isUploading,
+  isUploadingFromParent,
   onAvatarClick
 }: ProfileEditFormDesktopProps) {
   // State pre formulár
@@ -33,6 +33,7 @@ export default function ProfileEditFormDesktop({
   const [professionVisible, setProfessionVisible] = useState(user.job_title_visible || false);
   const [website, setWebsite] = useState(user.website || '');
   const [gender, setGender] = useState(user.gender || '');
+  const [isUploading, setIsUploading] = useState(false);
   const [isActionsOpen, setIsActionsOpen] = useState(false);
   const [uploadError, setUploadError] = useState('');
 
