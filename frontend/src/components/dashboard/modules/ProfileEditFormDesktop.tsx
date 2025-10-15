@@ -10,12 +10,18 @@ interface ProfileEditFormDesktopProps {
   user: User;
   onUserUpdate?: (user: User) => void;
   onEditProfileClick?: () => void;
+  onPhotoUpload?: (file: File) => void;
+  isUploading?: boolean;
+  onAvatarClick?: () => void;
 }
 
 export default function ProfileEditFormDesktop({ 
   user, 
   onUserUpdate, 
-  onEditProfileClick 
+  onEditProfileClick,
+  onPhotoUpload,
+  isUploading,
+  onAvatarClick
 }: ProfileEditFormDesktopProps) {
   // State pre formulár
   const [firstName, setFirstName] = useState(user.first_name || '');
