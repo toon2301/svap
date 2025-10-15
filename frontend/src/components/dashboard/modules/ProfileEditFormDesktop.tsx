@@ -211,42 +211,46 @@ export default function ProfileEditFormDesktop({
     }
   };
 
-  const handlePhotoUpload = async () => {
+  const handlePhotoUpload = async (file: File) => {
+    if (!file) return;
+
+    setIsUploading(true);
+    setUploadError('');
+    
+    try {
+      const formData = new FormData();
+      formData.append('avatar', file);
+      
+      const response = await api.patch('/auth/profile/', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      
+      if (onUserUpdate && response.data.user) {
+        onUserUpdate(response.data.user);
+      }
+      setIsActionsOpen(false);
+    } catch (e: any) {
+      const details = e?.response?.data?.details || e?.response?.data?.validation_errors;
+      const avatarErrors: string[] | undefined = details?.avatar;
+      const message = (
+        avatarErrors?.[0] ||
+        e?.response?.data?.message ||
+        e?.response?.data?.error ||
+        'Nepodarilo sa nahrať fotku. Skúste znova.'
+      );
+      setUploadError(message);
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handlePhotoUploadClick = async () => {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/*';
     input.onchange = async (e: any) => {
       const file = e.target.files[0];
-      if (!file) return;
-
-      setIsUploading(true);
-      setUploadError('');
-      
-      try {
-        const formData = new FormData();
-        formData.append('avatar', file);
-        
-        const response = await api.patch('/auth/profile/', formData, {
-          headers: { 'Content-Type': 'multipart/form-data' }
-        });
-        
-        if (onUserUpdate && response.data.user) {
-          onUserUpdate(response.data.user);
-        }
-        setIsActionsOpen(false);
-      } catch (e: any) {
-        const details = e?.response?.data?.details || e?.response?.data?.validation_errors;
-        const avatarErrors: string[] | undefined = details?.avatar;
-        const message = (
-          avatarErrors?.[0] ||
-          e?.response?.data?.message ||
-          e?.response?.data?.error ||
-          'Nepodarilo sa nahrať fotku. Skúste znova.'
-        );
-        setUploadError(message);
-      } finally {
-        setIsUploading(false);
-      }
+      if (file) await handlePhotoUpload(file);
     };
     input.click();
   };
@@ -284,7 +288,7 @@ export default function ProfileEditFormDesktop({
             <UserAvatar 
               user={user} 
               size="medium" 
-              onPhotoUpload={handlePhotoUpload}
+              onPhotoUpload={handlePhotoUploadClick}
               isUploading={isUploading}
               onAvatarClick={handleAvatarClick}
             />
@@ -552,7 +556,7 @@ export default function ProfileEditFormDesktop({
                 <UserAvatar 
                   user={user} 
                   size="large" 
-                  onPhotoUpload={handlePhotoUpload}
+                  onPhotoUpload={handlePhotoUploadClick}
                   isUploading={isUploading}
                   onAvatarClick={handleAvatarClick}
                 />
