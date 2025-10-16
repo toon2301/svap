@@ -43,6 +43,16 @@
   --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
 }
 
+/* Dark theme using class on html/body */
+.dark {
+  --background: #000000; /* truly black */
+  --foreground: #FFFFFF;
+  --muted: #0B0B0B;
+  --muted-foreground: #A3A3A3;
+  --border: #1F1F1F;
+  --input: #0F0F0F;
+}
+
 * {
   box-sizing: border-box;
   padding: 0;

@@ -410,7 +410,7 @@ export default function RegisterForm() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col relative" style={{background: 'linear-gradient(135deg, #F3F0FF 0%, #E9E5FF 100%)'}}>
+    <div className="min-h-screen flex flex-col relative" style={{background: 'var(--background)'}}>
       {/* Particle efekt - lazy loaded s mobilnou optimalizáciou */}
       <Suspense fallback={
         <div className="absolute inset-0 z-0 max-lg:hidden">
@@ -422,7 +422,7 @@ export default function RegisterForm() {
       <div className="flex-1 flex items-center justify-center p-4 relative z-10">
         
         <motion.div 
-          className="bg-white rounded-2xl shadow-xl border border-gray-200"
+          className="bg-white dark:bg-black rounded-2xl shadow-xl border border-gray-200 dark:border-gray-800"
           style={{
             width: isMobile ? '100%' : '100%',
             maxWidth: isMobile ? '600px' : '580px'
@@ -498,8 +498,7 @@ export default function RegisterForm() {
                   onTouchEnd={(e) => handleTouchEnd(e, 'user_type')}
                   onFocus={() => handleSelectFocus('user_type')}
                   onBlur={() => handleSelectBlur('user_type')}
-                  className="w-full px-16 py-12 text-xl border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all max-lg:px-4 max-lg:py-3 max-lg:text-base"
-                  style={{paddingLeft: '12px', paddingRight: '12px', paddingTop: '16px', paddingBottom: '16px'}}
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent outline-none transition-all "
                   aria-label="Vyberte typ účtu"
                   aria-required="true"
                   aria-describedby="user-type-help"
@@ -528,7 +527,7 @@ export default function RegisterForm() {
                     value={formData.username}
                     onChange={handleInputChange}
                     onKeyDown={(e) => handleKeyDown(e, 'username')}
-                    className={`w-full px-16 py-12 text-xl border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all max-lg:px-4 max-lg:py-3 max-lg:text-base ${
+                    className={`w-full px-3 py-2 text-sm border rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent outline-none transition-all  ${
                       errors.username ? 'border-red-500' : 'border-gray-300'
                     }`}
                     placeholder="Používateľské meno"
@@ -538,7 +537,6 @@ export default function RegisterForm() {
                     aria-describedby={errors.username ? "username-error" : "username-help"}
                     tabIndex={2}
                     autoComplete="username"
-                    style={{paddingLeft: '12px', paddingRight: '12px', paddingTop: '16px', paddingBottom: '16px'}}
                   />
                   <div id="username-help" className="sr-only">
                     Zadajte jedinečné používateľské meno pre váš účet
@@ -562,7 +560,7 @@ export default function RegisterForm() {
                     onChange={handleInputChange}
                     onKeyDown={(e) => handleKeyDown(e, 'email')}
                     onBlur={(e) => checkEmailAvailability(e.target.value)}
-                    className={`w-full px-16 py-12 text-xl border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all max-lg:px-4 max-lg:py-3 max-lg:text-base ${
+                    className={`w-full px-3 py-2 text-sm border rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent outline-none transition-all  ${
                       errors.email ? 'border-red-500' : 
                       emailStatus === 'taken' ? 'border-red-500' :
                       emailStatus === 'available' ? 'border-green-500' : 'border-gray-300'
@@ -574,7 +572,6 @@ export default function RegisterForm() {
                     aria-describedby={errors.email ? "email-error" : "email-help"}
                     tabIndex={3}
                     autoComplete="email"
-                    style={{paddingLeft: '12px', paddingRight: '12px', paddingTop: '16px', paddingBottom: '16px'}}
                   />
                   <div id="email-help" className="sr-only">
                     Zadajte platnú emailovú adresu pre registráciu
@@ -639,7 +636,7 @@ export default function RegisterForm() {
                       value={formData.password}
                       onChange={handleInputChange}
                       onKeyDown={(e) => handleKeyDown(e, 'password')}
-                      className={`w-full px-16 py-12 text-xl pr-12 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all max-lg:px-4 max-lg:py-3 max-lg:text-base ${
+                      className={`w-full px-3 py-2 text-sm pr-12 border rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent outline-none transition-all  ${
                         errors.password ? 'border-red-500' : 'border-gray-300'
                       }`}
                       placeholder="••••••••"
@@ -649,7 +646,6 @@ export default function RegisterForm() {
                       aria-describedby={errors.password ? "password-error" : "password-help"}
                       tabIndex={4}
                       autoComplete="new-password"
-                      style={{paddingLeft: '12px', paddingRight: '12px', paddingTop: '16px', paddingBottom: '16px'}}
                     />
                     <div id="password-help" className="sr-only">
                       Heslo musí obsahovať aspoň 8 znakov
@@ -658,7 +654,7 @@ export default function RegisterForm() {
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
                       tabIndex={-1}
-                      className="absolute right-2 top-1/3 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 rounded"
+                      className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors focus:outline-none focus:ring-1 focus:ring-purple-300 focus:ring-offset-2 rounded"
                     >
                     
                       {showPassword ? (
@@ -689,17 +685,16 @@ export default function RegisterForm() {
                       name="password_confirm"
                       value={formData.password_confirm}
                       onChange={handleInputChange}
-                      className={`w-full px-16 py-12 text-xl pr-12 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all max-lg:px-4 max-lg:py-3 max-lg:text-base ${
+                      className={`w-full px-3 py-2 text-sm pr-12 border rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent outline-none transition-all  ${
                         errors.password_confirm ? 'border-red-500' : 'border-gray-300'
                       }`}
                       placeholder="••••••••"
-                      style={{paddingLeft: '12px', paddingRight: '12px', paddingTop: '16px', paddingBottom: '16px'}}
                     />
                     <button
                       type="button"
                       onClick={() => setShowPasswordConfirm(!showPasswordConfirm)}
                       aria-label={showPasswordConfirm ? 'Skryť heslo' : 'Zobraziť heslo'}
-                      className="absolute right-2 top-1/3 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                      className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
                     >
                       {showPasswordConfirm ? (
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -735,10 +730,9 @@ export default function RegisterForm() {
                     onTouchEnd={(e) => handleTouchEnd(e, 'birth_day')}
                     onFocus={() => handleSelectFocus('birth_day')}
                     onBlur={() => handleSelectBlur('birth_day')}
-                    className={`w-full px-16 py-12 text-xl border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all max-lg:px-4 max-lg:py-3 max-lg:text-base ${
+                    className={`w-full px-3 py-2 text-sm border rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent outline-none transition-all  ${
                       errors.birth_day ? 'border-red-500' : 'border-gray-300'
                     }`}
-                    style={{paddingLeft: '12px', paddingRight: '12px', paddingTop: '16px', paddingBottom: '16px'}}
                   >
                     <option value="">Deň</option>
                     {Array.from({ length: 31 }, (_, i) => i + 1).map(day => (
@@ -756,10 +750,9 @@ export default function RegisterForm() {
                     onTouchEnd={(e) => handleTouchEnd(e, 'birth_month')}
                     onFocus={() => handleSelectFocus('birth_month')}
                     onBlur={() => handleSelectBlur('birth_month')}
-                    className={`w-full px-16 py-12 text-xl border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all max-lg:px-4 max-lg:py-3 max-lg:text-base ${
+                    className={`w-full px-3 py-2 text-sm border rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent outline-none transition-all  ${
                       errors.birth_month ? 'border-red-500' : 'border-gray-300'
                     }`}
-                    style={{paddingLeft: '12px', paddingRight: '12px', paddingTop: '16px', paddingBottom: '16px'}}
                   >
                     <option value="">Mesiac</option>
                     {[
@@ -780,10 +773,9 @@ export default function RegisterForm() {
                     onTouchEnd={(e) => handleTouchEnd(e, 'birth_year')}
                     onFocus={() => handleSelectFocus('birth_year')}
                     onBlur={() => handleSelectBlur('birth_year')}
-                    className={`w-full px-16 py-12 text-xl border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all max-lg:px-4 max-lg:py-3 max-lg:text-base ${
+                    className={`w-full px-3 py-2 text-sm border rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent outline-none transition-all  ${
                       errors.birth_year ? 'border-red-500' : 'border-gray-300'
                     }`}
-                    style={{paddingLeft: '12px', paddingRight: '12px', paddingTop: '16px', paddingBottom: '16px'}}
                   >
                     <option value="">Rok</option>
                     {Array.from({ length: 100 }, (_, i) => new Date().getFullYear() - i).map(year => (
@@ -824,10 +816,9 @@ export default function RegisterForm() {
                   onTouchEnd={(e) => handleTouchEnd(e, 'gender')}
                   onFocus={() => handleSelectFocus('gender')}
                   onBlur={() => handleSelectBlur('gender')}
-                  className={`w-full px-16 py-12 text-xl border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all max-lg:px-4 max-lg:py-3 max-lg:text-base ${
+                  className={`w-full px-3 py-2 text-sm border rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent outline-none transition-all  ${
                     errors.gender ? 'border-red-500' : 'border-gray-300'
                   }`}
-                  style={{paddingLeft: '12px', paddingRight: '12px', paddingTop: '16px', paddingBottom: '16px'}}
                 >
                   <option value="">Vyberte pohlavie</option>
                   <option value="male">Muž</option>
@@ -858,11 +849,10 @@ export default function RegisterForm() {
                       name="company_name"
                       value={formData.company_name}
                       onChange={handleInputChange}
-                      className={`w-full px-16 py-12 text-xl border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all max-lg:px-4 max-lg:py-3 max-lg:text-base ${
+                      className={`w-full px-3 py-2 text-sm border rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent outline-none transition-all  ${
                         errors.company_name ? 'border-red-500' : 'border-gray-300'
                       }`}
                       placeholder="Názov firmy"
-                      style={{paddingLeft: '12px', paddingRight: '12px', paddingTop: '16px', paddingBottom: '16px'}}
                     />
                     {errors.company_name && (
                       <p className="text-red-500 text-sm mt-1">{errors.company_name}</p>
@@ -878,9 +868,8 @@ export default function RegisterForm() {
                       name="website"
                       value={formData.website}
                       onChange={handleInputChange}
-                      className="w-full px-16 py-12 text-xl border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all max-lg:px-4 max-lg:py-3 max-lg:text-base"
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent outline-none transition-all "
                       placeholder="https://www.example.sk"
-                      style={{paddingLeft: '12px', paddingRight: '12px', paddingTop: '16px', paddingBottom: '16px'}}
                     />
                   </div>
                 </div>

@@ -293,7 +293,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
 
   return (
     <motion.div 
-      className="bg-white rounded-2xl shadow-xl border border-gray-200"
+      className="bg-white dark:bg-black rounded-2xl shadow-xl border border-gray-200 dark:border-gray-800"
       style={{
         width: isMobile ? '100%' : '500px',
         maxWidth: isMobile ? '600px' : '500px',
@@ -311,7 +311,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
       }}>
         
         <motion.h1 
-          className="text-3xl font-medium mb-12 text-center tracking-wider max-lg:text-2xl max-lg:mb-8 text-black"
+          className="text-3xl font-medium mb-12 text-center tracking-wider max-lg:text-2xl max-lg:mb-8 text-black dark:text-white"
           style={{
             fontSize: isMobile ? '24px' : '28px',
             marginBottom: isMobile ? '32px' : '24px'
@@ -404,7 +404,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: 0.9 }}
           >
-            <label htmlFor="login-email" className="block text-base font-normal text-gray-600 mb-2 max-lg:text-base max-lg:mb-1">
+            <label htmlFor="login-email" className="block text-base font-normal text-gray-600 dark:text-gray-300 mb-2 max-lg:text-base max-lg:mb-1">
               Email
             </label>
             <input
@@ -414,8 +414,8 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
               value={loginData.email}
               onChange={handleLoginInputChange}
               onKeyDown={(e) => handleKeyDown(e, 'email')}
-              className={`w-full px-4 py-3 text-lg border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all ${
-                loginErrors.email ? 'border-red-500' : 'border-gray-300'
+              className={`w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-1 focus:ring-purple-300 focus:border-transparent outline-none transition-all ${
+                loginErrors.email ? 'border-red-500' : 'border-gray-300 dark:border-gray-700'
               }`}
               placeholder="Email.."
               aria-label="Zadajte svoju emailovú adresu"
@@ -424,14 +424,6 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
               aria-describedby={loginErrors.email ? "email-error" : "email-help"}
               tabIndex={1}
               autoComplete="email"
-              style={{
-                paddingLeft: '12px', 
-                paddingRight: '12px', 
-                paddingTop: isMobile ? '16px' : '12px', 
-                paddingBottom: isMobile ? '16px' : '12px',
-                minHeight: isMobile ? '60px' : '48px',
-                fontSize: isMobile ? 'clamp(16px, 4vw, 20px)' : '16px'
-              }}
             />
             <div id="email-help" className="sr-only">
               Zadajte platnú emailovú adresu pre prihlásenie do aplikácie
@@ -448,7 +440,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: 1.0 }}
           >
-            <label htmlFor="login-password" className="block text-base font-normal text-gray-600 mb-2 max-lg:text-base max-lg:mb-1">
+            <label htmlFor="login-password" className="block text-base font-normal text-gray-600 dark:text-gray-300 mb-2 max-lg:text-base max-lg:mb-1">
               Heslo
             </label>
             <div className="relative">
@@ -459,8 +451,8 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
                 value={loginData.password}
                 onChange={handleLoginInputChange}
                 onKeyDown={(e) => handleKeyDown(e, 'password')}
-                className={`w-full px-4 py-3 text-lg border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all ${
-                  loginErrors.password ? 'border-red-500' : 'border-gray-300'
+                className={`w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-1 focus:ring-purple-300 focus:border-transparent outline-none transition-all ${
+                  loginErrors.password ? 'border-red-500' : 'border-gray-300 dark:border-gray-700'
                 }`}
                 placeholder="••••••••"
                 aria-label="Zadajte svoje heslo"
@@ -469,20 +461,13 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
                 aria-describedby={loginErrors.password ? "password-error" : "password-help"}
                 tabIndex={2}
                 autoComplete="current-password"
-                style={{
-                  paddingLeft: '12px', 
-                  paddingRight: '12px', 
-                  paddingTop: isMobile ? '16px' : '12px', 
-                  paddingBottom: isMobile ? '16px' : '12px',
-                  minHeight: isMobile ? '60px' : '48px',
-                  fontSize: isMobile ? 'clamp(16px, 4vw, 20px)' : '16px'
-                }}
               />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   tabIndex={-1}
-                  className="absolute right-3 top-1/3 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 rounded flex items-center justify-center w-6 h-6"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 rounded flex items-center justify-center w-6 h-6"
+                  style={{ top: '50%', transform: 'translateY(-50%)' }}
                 >
                   {showPassword ? (
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -510,16 +495,14 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
           <motion.button
             type="submit"
             disabled={isLoginLoading}
-            className={`w-full text-white px-6 py-4 rounded-lg font-semibold text-xl transition-all max-lg:px-6 max-lg:py-3 max-lg:text-lg ${
+            className={`w-full text-white px-4 py-2.5 rounded-lg font-semibold text-xl transition-all max-lg:px-4 max-lg:py-2 max-lg:text-xl ${
               isLoginLoading ? 'cursor-not-allowed' : 'cursor-pointer'
             }`}
             style={{
               backgroundColor: isLoginLoading ? '#A855F7' : '#7C3AED',
               opacity: isLoginLoading ? 0.8 : 1,
               boxShadow: '0 4px 15px rgba(139, 92, 246, 0.3)',
-              marginTop: isMobile ? '24px' : '20px',
-              paddingTop: isMobile ? '20px' : '16px',
-              paddingBottom: isMobile ? '20px' : '16px'
+              marginTop: isMobile ? '24px' : '20px'
             }}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -551,10 +534,10 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
         >
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300" />
+              <div className="w-full border-t border-gray-300 dark:border-gray-700" />
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-gray-500">alebo</span>
+              <span className="px-2 bg-white dark:bg-black text-gray-500 dark:text-gray-400">alebo</span>
             </div>
           </div>
 
@@ -564,7 +547,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
             disabled={isGoogleLoading || isLoginLoading}
             aria-label="Prihlásiť sa pomocou Google účtu"
             aria-describedby="google-login-help"
-            className={`w-full mt-4 px-4 py-3 border border-gray-300 rounded-lg font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-all ${
+            className={`w-full mt-4 px-4 py-3 border border-gray-300 dark:border-gray-700 rounded-lg font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-black hover:bg-gray-50 dark:hover:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-all ${
               isGoogleLoading || isLoginLoading ? 'opacity-50 cursor-not-allowed' : ''
             }`}
             whileHover={!isGoogleLoading && !isLoginLoading ? { scale: 1.02 } : {}}
@@ -610,14 +593,14 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
         </motion.div>
 
         <div className="text-center" style={{marginTop: isMobile ? '16px' : '12px'}}>
-          <p className="text-lg text-gray-500 max-lg:text-sm" style={{marginBottom: isMobile ? '12px' : '8px', fontSize: isMobile ? '20px' : '16px'}}>
-            <a href="/forgot-password" className="text-purple-700 hover:text-purple-600 font-medium transition-colors max-lg:text-base">
+          <p className="text-lg text-gray-500 dark:text-gray-400 max-lg:text-sm" style={{marginBottom: isMobile ? '12px' : '8px', fontSize: isMobile ? '20px' : '16px'}}>
+            <a href="/forgot-password" className="text-purple-700 dark:text-purple-400 hover:text-purple-600 dark:hover:text-purple-300 font-medium transition-colors max-lg:text-base">
               Zabudli ste heslo?
             </a>
           </p>
-          <p className="text-xl text-gray-600 max-lg:text-base" style={{fontSize: isMobile ? '24px' : '18px'}}>
+          <p className="text-xl text-gray-600 dark:text-gray-300 max-lg:text-base" style={{fontSize: isMobile ? '24px' : '18px'}}>
             Nemáte účet?{' '}
-            <a href="/register" className="text-purple-800 font-semibold hover:text-purple-900">
+            <a href="/register" className="text-purple-800 dark:text-purple-400 font-semibold hover:text-purple-900 dark:hover:text-purple-300">
               Registrovať sa
             </a>
           </p>

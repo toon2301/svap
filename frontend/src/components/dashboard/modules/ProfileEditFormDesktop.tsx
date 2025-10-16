@@ -281,13 +281,13 @@ export default function ProfileEditFormDesktop({
 
   return (
     <>
-      <div className="pt-4 pb-8 pl-12">
-        <h2 className="text-2xl font-semibold text-gray-800 mb-6">
+      <div className="pt-4 pb-8 pl-12 text-[var(--foreground)]">
+        <h2 className="text-2xl font-semibold text-gray-800 dark:text-white mb-6">
           Upraviť profil
         </h2>
         
         {/* Fotka, meno, email a tlačidlo v bielom paneli */}
-        <div className="bg-white rounded-lg px-6 py-1 mb-6 shadow-sm">
+        <div className="bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg px-6 py-1 mb-6 shadow-sm">
           <div className="flex items-center gap-6">
             <UserAvatar 
               user={user} 
@@ -296,11 +296,11 @@ export default function ProfileEditFormDesktop({
               isUploading={isUploading}
               onAvatarClick={handleAvatarClick}
             />
-            <div className="text-base text-gray-800 flex-1">
-              <div className="font-bold text-gray-800">{`${firstName || user.first_name} ${lastName || user.last_name}`.trim()}</div>
-              <div className="text-gray-600">{user.email}</div>
+            <div className="text-base text-gray-800 dark:text-gray-200 flex-1">
+              <div className="font-bold text-gray-800 dark:text-white">{`${firstName || user.first_name} ${lastName || user.last_name}`.trim()}</div>
+              <div className="text-gray-600 dark:text-gray-300">{user.email}</div>
               {user.location && (
-                <div className="text-gray-600 text-sm flex items-center gap-1">
+                <div className="text-gray-600 dark:text-gray-300 text-sm flex items-center gap-1">
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-4">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
                     <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
@@ -309,7 +309,7 @@ export default function ProfileEditFormDesktop({
                 </div>
               )}
               {user.phone && (
-                <div className="text-gray-600 text-sm flex items-center gap-1">
+                <div className="text-gray-600 dark:text-gray-300 text-sm flex items-center gap-1">
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-4">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 0 0 6 3.75v16.5a2.25 2.25 0 0 0 2.25 2.25h7.5A2.25 2.25 0 0 0 18 20.25V3.75a2.25 2.25 0 0 0-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3" />
                   </svg>
@@ -317,7 +317,7 @@ export default function ProfileEditFormDesktop({
                 </div>
               )}
               {user.job_title && (
-                <div className="text-gray-600 text-sm flex items-center gap-1">
+                <div className="text-gray-600 dark:text-gray-300 text-sm flex items-center gap-1">
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-4">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 0 0 .75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 0 0-3.413-.387m4.5 8.006c-.194.165-.42.295-.673.38A23.978 23.978 0 0 1 12 15.75c-2.648 0-5.195-.429-7.577-1.22a2.016 2.016 0 0 1-.673-.38m0 0A2.18 2.18 0 0 1 3 12.489V8.706c0-1.081.768-2.015 1.837-2.175a48.111 48.111 0 0 1 3.413-.387m7.5 0V5.25A2.25 2.25 0 0 0 13.5 3h-3a2.25 2.25 0 0 0-2.25 2.25v.894m7.5 0a48.667 48.667 0 0 0-7.5 0M12 12.75h.008v.008H12v-.008Z" />
                   </svg>
@@ -339,7 +339,7 @@ export default function ProfileEditFormDesktop({
                   <div className="space-y-3">
             {/* Meno (celé meno v jednom vstupe) */}
             <div className="mb-4">
-              <label className="block text-base font-medium text-gray-700 mb-2">
+              <label className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Meno
               </label>
               <input
@@ -367,7 +367,7 @@ export default function ProfileEditFormDesktop({
                   }
                 }}
                 pattern="[a-zA-ZáčďéěíĺľňóôŕšťúýžÁČĎÉĚÍĹĽŇÓÔŔŠŤÚÝŽ\s-]*"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-1 focus:ring-purple-300 focus:border-transparent"
                 placeholder="Zadajte svoje meno a priezvisko"
               />
             </div>
@@ -375,7 +375,7 @@ export default function ProfileEditFormDesktop({
 
             {/* Bio */}
             <div className="mb-4">
-              <label className="block text-base font-medium text-gray-700 mb-2">
+              <label className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Bio
               </label>
               <div className="relative">
@@ -392,7 +392,7 @@ export default function ProfileEditFormDesktop({
                   }}
                   rows={3}
                   maxLength={150}
-                  className="w-full px-3 py-2 pr-16 border border-gray-300 rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent"
+                  className="w-full px-3 py-2 pr-16 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-1 focus:ring-purple-300 focus:border-transparent"
                   placeholder="Napíšte niečo o sebe..."
                 />
                 <div className="absolute bottom-2 right-2 text-xs text-gray-400">
@@ -403,7 +403,7 @@ export default function ProfileEditFormDesktop({
 
             {/* Lokalita */}
             <div className="mb-4">
-              <label className="block text-base font-medium text-gray-700 mb-2">
+              <label className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Lokalita
               </label>
               <input
@@ -418,14 +418,14 @@ export default function ProfileEditFormDesktop({
                   }
                 }}
                 maxLength={100}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-1 focus:ring-purple-300 focus:border-transparent"
                 placeholder="Zadajte svoje mesto alebo obec"
               />
             </div>
 
             {/* Kontakt */}
             <div className="mb-4">
-              <label className="block text-base font-medium text-gray-700 mb-2">
+              <label className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Kontakt
               </label>
               <input
@@ -440,7 +440,7 @@ export default function ProfileEditFormDesktop({
                   }
                 }}
                 maxLength={150}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-1 focus:ring-purple-300 focus:border-transparent"
                 placeholder="Tel. číslo"
               />
               {/* Prepínač pre zobrazenie telefónu */}
@@ -448,7 +448,7 @@ export default function ProfileEditFormDesktop({
                 <button
                   onClick={handlePhoneVisibleToggle}
                   className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 ${
-                    phoneVisible ? 'bg-purple-100 border border-purple-200' : 'bg-gray-200'
+                    phoneVisible ? 'bg-purple-400 border border-purple-400' : 'bg-gray-300 dark:bg-gray-600'
                   }`}
                 >
                   <span
@@ -457,13 +457,13 @@ export default function ProfileEditFormDesktop({
                     }`}
                   />
                 </button>
-                <span className="text-xs text-gray-500">Zobraziť kontakt verejne</span>
+                <span className="text-xs text-gray-500 dark:text-gray-400">Zobraziť kontakt verejne</span>
               </div>
             </div>
 
             {/* Profesia */}
             <div className="mb-4">
-              <label className="block text-base font-medium text-gray-700 mb-2">
+              <label className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Profesia
               </label>
               <input
@@ -478,7 +478,7 @@ export default function ProfileEditFormDesktop({
                   }
                 }}
                 maxLength={100}
-                className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent"
+                className="w-full px-3 py-2 bg-white dark:bg-black border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:ring-1 focus:ring-purple-300 focus:border-transparent"
                 placeholder="Zadajte svoju profesiu"
               />
               {/* Prepínač pre zobrazenie profese */}
@@ -486,7 +486,7 @@ export default function ProfileEditFormDesktop({
                 <button
                   onClick={handleProfessionVisibleToggle}
                   className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 ${
-                    professionVisible ? 'bg-purple-100 border border-purple-200' : 'bg-gray-200'
+                    professionVisible ? 'bg-purple-400 border border-purple-400' : 'bg-gray-300 dark:bg-gray-600'
                   }`}
                 >
                   <span
@@ -495,13 +495,13 @@ export default function ProfileEditFormDesktop({
                     }`}
                   />
                 </button>
-                <span className="text-xs text-gray-500">Zobraziť profesiu verejne</span>
+                <span className="text-xs text-gray-500 dark:text-gray-400">Zobraziť profesiu verejne</span>
               </div>
             </div>
 
             {/* Web */}
             <div className="mb-4">
-              <label className="block text-base font-medium text-gray-700 mb-2">
+              <label className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Web
               </label>
               <input
@@ -516,7 +516,7 @@ export default function ProfileEditFormDesktop({
                   }
                 }}
                 maxLength={255}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-1 focus:ring-purple-300 focus:border-transparent"
                 placeholder="https://example.com"
               />
             </div>
@@ -529,14 +529,14 @@ export default function ProfileEditFormDesktop({
 
             {/* Pohlavie */}
             <div className="mb-4">
-              <label className="block text-base font-medium text-gray-700 mb-2">
+              <label className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Pohlavie
               </label>
               <select
                 id="gender"
                 value={gender}
                 onChange={(e) => handleGenderChange(e.target.value)}
-                className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent appearance-none cursor-pointer"
+                className="w-full px-3 py-2 bg-white dark:bg-black border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:ring-1 focus:ring-purple-300 focus:border-transparent appearance-none cursor-pointer"
               >
                 <option value="">Vyberte pohlavie</option>
                 <option value="male">Muž</option>
@@ -568,7 +568,7 @@ export default function ProfileEditFormDesktop({
       {isActionsOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="relative z-10 w-[32rem] max-w-[90vw] mx-4">
-            <div className="rounded-2xl bg-white shadow-xl overflow-hidden">
+            <div className="rounded-2xl bg-white dark:bg-black border border-gray-200 dark:border-gray-800 shadow-xl overflow-hidden">
               {/* Avatar v modale */}
               <div className="flex justify-center py-6">
                 <UserAvatar 
@@ -592,20 +592,20 @@ export default function ProfileEditFormDesktop({
                     };
                     input.click();
                   }}
-                  className="w-full py-4 text-lg rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  className="w-full py-4 text-lg rounded-lg bg-gray-100 dark:bg-gray-900 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-800"
                 >
                   Zmeniť fotku
                 </button>
                 <button
                   onClick={handleRemoveAvatar}
-                  className="w-full py-4 text-lg rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  className="w-full py-4 text-lg rounded-lg bg-gray-100 dark:bg-gray-900 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-800"
                   disabled={isUploading}
                 >
                   Odstrániť fotku
                 </button>
                 <button
                   onClick={() => setIsActionsOpen(false)}
-                  className="w-full py-4 text-lg rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  className="w-full py-4 text-lg rounded-lg bg-gray-100 dark:bg-gray-900 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-800"
                 >
                   Zrušiť
                 </button>

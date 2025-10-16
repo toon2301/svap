@@ -11,6 +11,8 @@ import {
   XMarkIcon,
   ArrowRightOnRectangleIcon
 } from '@heroicons/react/24/outline';
+import { SunIcon, MoonIcon } from '@heroicons/react/24/outline';
+import { useTheme } from '@/contexts/ThemeContext';
 
 export interface SidebarItem {
   id: string;
@@ -64,6 +66,7 @@ export default function Sidebar({
   isOpen = false, 
   onClose 
 }: SidebarProps) {
+  const { theme, toggleTheme } = useTheme();
   const handleItemClick = (itemId: string) => {
     onItemClick(itemId);
     if (isMobile && onClose) {
@@ -72,17 +75,17 @@ export default function Sidebar({
   };
 
   const sidebarContent = (
-    <div className="flex flex-col h-screen bg-white border-r border-gray-200">
+    <div className="flex flex-col h-screen bg-white dark:bg-black border-r border-gray-200 dark:border-gray-800">
       {/* Logo */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-200">
-        <h1 className="text-xl font-bold text-purple-800">Swaply</h1>
+      <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-800">
+        <h1 className="text-xl font-bold text-purple-800 dark:text-white">Swaply</h1>
         {isMobile && (
           <button
             onClick={onClose}
-            className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-900 transition-colors"
             aria-label="Close"
           >
-            <XMarkIcon className="w-5 h-5 text-gray-600" />
+            <XMarkIcon className="w-5 h-5 text-gray-600 dark:text-gray-300" />
           </button>
         )}
       </div>
@@ -100,21 +103,33 @@ export default function Sidebar({
               className={`w-full flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ${
                 isActive
                   ? 'bg-purple-100 text-purple-800 border border-purple-200'
-                  : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-900 hover:text-gray-900 dark:hover:text-white'
               }`}
             >
-              <Icon className={`w-5 h-5 mr-3 ${isActive ? 'text-purple-600' : 'text-gray-500'}`} />
+              <Icon className={`w-5 h-5 mr-3 ${isActive ? 'text-purple-600' : 'text-gray-500 dark:text-gray-400'}`} />
               {item.label}
             </button>
           );
         })}
       </nav>
 
-      {/* Logout Button */}
-      <div className="p-4 border-t border-gray-200">
+      {/* Theme Toggle + Logout */}
+      <div className="p-4 border-t border-gray-200 dark:border-gray-800 space-y-2">
+        <button
+          onClick={toggleTheme}
+          className="w-full flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors bg-gray-100 dark:bg-gray-900 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-800"
+          aria-label="Prepínač témy"
+        >
+          {theme === 'dark' ? (
+            <SunIcon className="w-5 h-5 mr-3" />
+          ) : (
+            <MoonIcon className="w-5 h-5 mr-3" />
+          )}
+          {theme === 'dark' ? 'Svetlý režim' : 'Tmavý režim'}
+        </button>
         <button
           onClick={onLogout}
-          className="w-full flex items-center px-3 py-2.5 text-sm font-medium text-red-600 rounded-lg hover:bg-red-50 transition-colors"
+          className="w-full flex items-center px-3 py-2.5 text-sm font-medium text-red-600 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
         >
           <ArrowRightOnRectangleIcon className="w-5 h-5 mr-3 text-red-500" />
           Odhlásiť sa

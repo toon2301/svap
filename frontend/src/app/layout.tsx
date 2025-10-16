@@ -85,7 +85,7 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       </head>
       <body 
-        className={`${inter.className} antialiased bg-gray-50`}
+        className={`${inter.className} antialiased bg-[var(--background)] text-[var(--foreground)]`}
         style={{ scrollBehavior: 'smooth' }}
       >
         <Providers>

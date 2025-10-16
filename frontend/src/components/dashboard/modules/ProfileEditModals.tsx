@@ -386,7 +386,7 @@ export default function ProfileEditModals({
       {isNameModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex flex-col">
           {/* Horná lišta */}
-          <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
+          <div className="bg-white dark:bg-black border-b border-gray-200 dark:border-gray-800 px-4 py-3 flex items-center justify-between">
             {/* Šipka späť */}
             <button
               onClick={handleCancelName}
@@ -398,7 +398,7 @@ export default function ProfileEditModals({
             </button>
             
             {/* Nadpis v strede */}
-            <h2 className="text-lg font-semibold text-gray-900">Meno</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Meno</h2>
             
             {/* Fajka (uložiť) */}
             <button
@@ -412,11 +412,11 @@ export default function ProfileEditModals({
           </div>
           
           {/* Obsah modalu */}
-          <div className="flex-1 bg-white p-4">
+          <div className="flex-1 bg-white dark:bg-black p-4">
             <div>
               {/* Meno (jeden input – rozdelíme na meno/priezvisko) */}
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Meno
                 </label>
                 <input
@@ -436,7 +436,7 @@ export default function ProfileEditModals({
                       setLastName(parts[parts.length - 1]);
                     }
                   }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-1 focus:ring-purple-300 focus:border-transparent"
                   placeholder="Zadajte svoje meno a priezvisko"
                 />
               </div>
@@ -444,7 +444,7 @@ export default function ProfileEditModals({
               
               {/* Popisný text */}
               <div className="mt-3">
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-gray-500 dark:text-gray-400">
                   Tu si môžete upraviť svoje meno a priezvisko. Vaše meno sa bude zobrazovať ostatným používateľom a zároveň podľa neho budete vyhľadateľní. Odporúčame použiť svoje skutočné meno, aby vás ostatní ľahšie našli a rozpoznali.
                 </p>
               </div>
@@ -457,7 +457,7 @@ export default function ProfileEditModals({
       {isBioModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex flex-col">
           {/* Horná lišta */}
-          <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
+          <div className="bg-white dark:bg-black border-b border-gray-200 dark:border-gray-800 px-4 py-3 flex items-center justify-between">
             {/* Šipka späť */}
             <button
               onClick={handleCancelBio}
@@ -469,7 +469,7 @@ export default function ProfileEditModals({
             </button>
             
             {/* Nadpis v strede */}
-            <h2 className="text-lg font-semibold text-gray-900">Bio</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Bio</h2>
             
             {/* Fajka (uložiť) */}
             <button
@@ -483,10 +483,10 @@ export default function ProfileEditModals({
           </div>
           
           {/* Obsah modalu */}
-          <div className="flex-1 bg-white p-4">
+          <div className="flex-1 bg-white dark:bg-black p-4">
             <div>
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Bio
                 </label>
                 <div className="relative">
@@ -495,7 +495,7 @@ export default function ProfileEditModals({
                     onChange={(e) => setBio(e.target.value)}
                     rows={4}
                     maxLength={150}
-                    className="w-full px-3 py-2 pr-16 border border-gray-300 rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent resize-none"
+                    className="w-full px-3 py-2 pr-16 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-1 focus:ring-purple-300 focus:border-transparent resize-none"
                     placeholder="Napíšte niečo o sebe..."
                   />
                   <div className="absolute bottom-2 right-2 text-xs text-gray-400">
@@ -506,7 +506,7 @@ export default function ProfileEditModals({
               
               {/* Popisný text */}
               <div className="mt-3">
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-gray-500 dark:text-gray-400">
                   Napíšte krátky popis o sebe, vašich záujmoch, zručnostiach alebo čomkoľvek, čo by mohlo zaujať ostatných používateľov. Môžete napísať až 150 znakov.
                 </p>
               </div>
@@ -519,7 +519,7 @@ export default function ProfileEditModals({
       {isLocationModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex flex-col">
           {/* Horná lišta */}
-          <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
+          <div className="bg-white dark:bg-black border-b border-gray-200 dark:border-gray-800 px-4 py-3 flex items-center justify-between">
             {/* Šipka späť */}
             <button
               onClick={handleCancelLocation}
@@ -531,7 +531,7 @@ export default function ProfileEditModals({
             </button>
             
             {/* Nadpis v strede */}
-            <h2 className="text-lg font-semibold text-gray-900">Lokalita</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Lokalita</h2>
             
             {/* Fajka (uložiť) */}
             <button
@@ -545,10 +545,10 @@ export default function ProfileEditModals({
           </div>
           
           {/* Obsah modalu */}
-          <div className="flex-1 bg-white p-4">
+          <div className="flex-1 bg-white dark:bg-black p-4">
             <div>
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Lokalita
                 </label>
                 <input
@@ -556,14 +556,14 @@ export default function ProfileEditModals({
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
                   maxLength={100}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-1 focus:ring-purple-300 focus:border-transparent"
                   placeholder="Zadajte svoje mesto alebo obec"
                 />
               </div>
               
               {/* Popisný text */}
               <div className="mt-3">
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-gray-500 dark:text-gray-400">
                   Zadajte mesto alebo obec, kde sa nachádzate. Táto informácia pomôže ostatným používateľom lepšie vás nájsť a môže byť užitočná pri plánovaní stretnutí alebo výmeny zručností.
                 </p>
               </div>
@@ -576,7 +576,7 @@ export default function ProfileEditModals({
       {isContactModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex flex-col">
           {/* Horná lišta */}
-          <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
+          <div className="bg-white dark:bg-black border-b border-gray-200 dark:border-gray-800 px-4 py-3 flex items-center justify-between">
             {/* Šipka späť */}
             <button
               onClick={handleCancelContact}
@@ -588,7 +588,7 @@ export default function ProfileEditModals({
             </button>
             
             {/* Nadpis v strede */}
-            <h2 className="text-lg font-semibold text-gray-900">Kontakt</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Kontakt</h2>
             
             {/* Fajka (uložiť) */}
             <button
@@ -602,10 +602,10 @@ export default function ProfileEditModals({
           </div>
           
           {/* Obsah modalu */}
-          <div className="flex-1 bg-white p-4">
+          <div className="flex-1 bg-white dark:bg-black p-4">
             <div>
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Telefónne číslo
                 </label>
                 <input
@@ -613,14 +613,14 @@ export default function ProfileEditModals({
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   maxLength={150}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-1 focus:ring-purple-300 focus:border-transparent"
                   placeholder="Tel. číslo"
                 />
               </div>
               
               {/* Popisný text */}
               <div className="mt-3">
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-gray-500 dark:text-gray-400">
                   Zadajte svoje telefónne číslo. Viditeľnosť kontaktu môžete nastaviť pomocou prepínača v hlavnom zobrazení.
                 </p>
               </div>
@@ -633,7 +633,7 @@ export default function ProfileEditModals({
       {isProfessionModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex flex-col">
           {/* Horná lišta */}
-          <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
+          <div className="bg-white dark:bg-black border-b border-gray-200 dark:border-gray-800 px-4 py-3 flex items-center justify-between">
             {/* Šipka späť */}
             <button
               onClick={handleCancelProfession}
@@ -645,7 +645,7 @@ export default function ProfileEditModals({
             </button>
             
             {/* Nadpis v strede */}
-            <h2 className="text-lg font-semibold text-gray-900">Profesia</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Profesia</h2>
             
             {/* Fajka (uložiť) */}
             <button
@@ -659,10 +659,10 @@ export default function ProfileEditModals({
           </div>
           
           {/* Obsah modalu */}
-          <div className="flex-1 bg-white p-4">
+          <div className="flex-1 bg-white dark:bg-black p-4">
             <div>
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Profesia
                 </label>
                 <input
@@ -670,14 +670,14 @@ export default function ProfileEditModals({
                   value={profession}
                   onChange={(e) => setProfession(e.target.value)}
                   maxLength={100}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-1 focus:ring-purple-300 focus:border-transparent"
                   placeholder="Zadajte svoju profesiu"
                 />
               </div>
               
               {/* Popisný text */}
               <div className="mt-3">
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-gray-500 dark:text-gray-400">
                   Zadajte svoju profesiu alebo pracovné zaradenie. Viditeľnosť profesie môžete nastaviť pomocou prepínača v hlavnom zobrazení.
                 </p>
               </div>
@@ -690,7 +690,7 @@ export default function ProfileEditModals({
       {isWebsiteModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex flex-col">
           {/* Horná lišta */}
-          <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
+          <div className="bg-white dark:bg-black border-b border-gray-200 dark:border-gray-800 px-4 py-3 flex items-center justify-between">
             {/* Šipka späť */}
             <button
               onClick={handleCancelWebsite}
@@ -702,7 +702,7 @@ export default function ProfileEditModals({
             </button>
             
             {/* Nadpis v strede */}
-            <h2 className="text-lg font-semibold text-gray-900">Web</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Web</h2>
             
             {/* Fajka (uložiť) */}
             <button
@@ -716,10 +716,10 @@ export default function ProfileEditModals({
           </div>
           
           {/* Obsah modalu */}
-          <div className="flex-1 bg-white p-4">
+          <div className="flex-1 bg-white dark:bg-black p-4">
             <div>
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Web
                 </label>
                 <input
@@ -727,14 +727,14 @@ export default function ProfileEditModals({
                   value={website}
                   onChange={(e) => setWebsite(e.target.value)}
                   maxLength={255}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-1 focus:ring-purple-300 focus:border-transparent"
                   placeholder="https://example.com"
                 />
               </div>
               
               {/* Popisný text */}
               <div className="mt-3">
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-gray-500 dark:text-gray-400">
                   Zadajte URL vašej webovej stránky, portfólia alebo ľubovoľného odkazu, ktorý chcete zdieľať s ostatnými používateľmi.
                 </p>
               </div>
@@ -746,33 +746,33 @@ export default function ProfileEditModals({
       {/* Modal pre úpravu Instagramu */}
       {isInstagramModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex flex-col">
-          <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
+          <div className="bg-white dark:bg-black border-b border-gray-200 dark:border-gray-800 px-4 py-3 flex items-center justify-between">
             <button onClick={handleCancelInstagram} className="p-2 -ml-2">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
               </svg>
             </button>
-            <h2 className="text-lg font-semibold text-gray-900">Instagram</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Instagram</h2>
             <button onClick={handleSaveInstagram} className="p-2 -mr-2">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
               </svg>
             </button>
           </div>
-          <div className="flex-1 bg-white p-4">
+          <div className="flex-1 bg-white dark:bg-black p-4">
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Instagram</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Instagram</label>
               <input
                 type="url"
                 value={instagram}
                 onChange={(e) => setInstagram(e.target.value)}
                 maxLength={255}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-1 focus:ring-purple-300 focus:border-transparent"
                 placeholder="https://instagram.com/username"
               />
             </div>
             <div className="mt-3">
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-gray-500 dark:text-gray-400">
                 Zadajte URL vašej Instagram stránky.
               </p>
             </div>
@@ -783,33 +783,33 @@ export default function ProfileEditModals({
       {/* Modal pre úpravu Facebooku */}
       {isFacebookModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex flex-col">
-          <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
+          <div className="bg-white dark:bg-black border-b border-gray-200 dark:border-gray-800 px-4 py-3 flex items-center justify-between">
             <button onClick={handleCancelFacebook} className="p-2 -ml-2">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
               </svg>
             </button>
-            <h2 className="text-lg font-semibold text-gray-900">Facebook</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Facebook</h2>
             <button onClick={handleSaveFacebook} className="p-2 -mr-2">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
               </svg>
             </button>
           </div>
-          <div className="flex-1 bg-white p-4">
+          <div className="flex-1 bg-white dark:bg-black p-4">
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Facebook</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Facebook</label>
               <input
                 type="url"
                 value={facebook}
                 onChange={(e) => setFacebook(e.target.value)}
                 maxLength={255}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-1 focus:ring-purple-300 focus:border-transparent"
                 placeholder="https://facebook.com/username"
               />
             </div>
             <div className="mt-3">
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-gray-500 dark:text-gray-400">
                 Zadajte URL vašej Facebook stránky.
               </p>
             </div>
@@ -820,33 +820,33 @@ export default function ProfileEditModals({
       {/* Modal pre úpravu LinkedIn */}
       {isLinkedinModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex flex-col">
-          <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
+          <div className="bg-white dark:bg-black border-b border-gray-200 dark:border-gray-800 px-4 py-3 flex items-center justify-between">
             <button onClick={handleCancelLinkedin} className="p-2 -ml-2">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
               </svg>
             </button>
-            <h2 className="text-lg font-semibold text-gray-900">LinkedIn</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">LinkedIn</h2>
             <button onClick={handleSaveLinkedin} className="p-2 -mr-2">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
               </svg>
             </button>
           </div>
-          <div className="flex-1 bg-white p-4">
+          <div className="flex-1 bg-white dark:bg-black p-4">
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">LinkedIn</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">LinkedIn</label>
               <input
                 type="url"
                 value={linkedin}
                 onChange={(e) => setLinkedin(e.target.value)}
                 maxLength={255}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-1 focus:ring-purple-300 focus:border-transparent"
                 placeholder="https://linkedin.com/in/username"
               />
             </div>
             <div className="mt-3">
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-gray-500 dark:text-gray-400">
                 Zadajte URL vašej LinkedIn stránky.
               </p>
             </div>
@@ -857,22 +857,22 @@ export default function ProfileEditModals({
       {/* Modal pre úpravu pohlavia */}
       {isGenderModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex flex-col">
-          <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
+          <div className="bg-white dark:bg-black border-b border-gray-200 dark:border-gray-800 px-4 py-3 flex items-center justify-between">
             <button onClick={handleCancelGender} className="p-2 -ml-2">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
               </svg>
             </button>
-            <h2 className="text-lg font-semibold text-gray-900">Pohlavie</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Pohlavie</h2>
             <button onClick={handleSaveGender} className="p-2 -mr-2">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
               </svg>
             </button>
           </div>
-          <div className="flex-1 bg-white p-4">
+          <div className="flex-1 bg-white dark:bg-black p-4">
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-3">Pohlavie</label>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Pohlavie</label>
               <div className="space-y-3">
                 <label className="flex items-center">
                   <input
@@ -881,9 +881,9 @@ export default function ProfileEditModals({
                     value="male"
                     checked={gender === 'male'}
                     onChange={(e) => setGender(e.target.value)}
-                    className="w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 focus:ring-purple-500"
+                    className="w-4 h-4 text-purple-600 bg-gray-100 dark:bg-gray-900 border-gray-300 dark:border-gray-700 focus:ring-purple-500"
                   />
-                  <span className="ml-3 text-sm text-gray-700">Muž</span>
+                  <span className="ml-3 text-sm text-gray-700 dark:text-gray-300">Muž</span>
                 </label>
                 <label className="flex items-center">
                   <input
@@ -892,9 +892,9 @@ export default function ProfileEditModals({
                     value="female"
                     checked={gender === 'female'}
                     onChange={(e) => setGender(e.target.value)}
-                    className="w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 focus:ring-purple-500"
+                    className="w-4 h-4 text-purple-600 bg-gray-100 dark:bg-gray-900 border-gray-300 dark:border-gray-700 focus:ring-purple-500"
                   />
-                  <span className="ml-3 text-sm text-gray-700">Žena</span>
+                  <span className="ml-3 text-sm text-gray-700 dark:text-gray-300">Žena</span>
                 </label>
                 <label className="flex items-center">
                   <input
@@ -903,14 +903,14 @@ export default function ProfileEditModals({
                     value="other"
                     checked={gender === 'other'}
                     onChange={(e) => setGender(e.target.value)}
-                    className="w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 focus:ring-purple-500"
+                    className="w-4 h-4 text-purple-600 bg-gray-100 dark:bg-gray-900 border-gray-300 dark:border-gray-700 focus:ring-purple-500"
                   />
-                  <span className="ml-3 text-sm text-gray-700">Iné</span>
+                  <span className="ml-3 text-sm text-gray-700 dark:text-gray-300">Iné</span>
                 </label>
               </div>
             </div>
             <div className="mt-3">
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-gray-500 dark:text-gray-400">
                 Vyberte svoje pohlavie. Táto informácia pomôže ostatným používateľom lepšie vás identifikovať.
               </p>
             </div>

@@ -132,10 +132,10 @@ export default function Dashboard({ initialUser }: DashboardProps) {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-[var(--background)]">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Načítavam dashboard...</p>
+          <p className="text-gray-600 dark:text-gray-300">Načítavam dashboard...</p>
         </div>
       </div>
     );
@@ -146,7 +146,7 @@ export default function Dashboard({ initialUser }: DashboardProps) {
   }
 
   return (
-    <div className="h-screen bg-gray-50 flex overflow-hidden">
+    <div className="h-screen bg-[var(--background)] text-[var(--foreground)] flex overflow-hidden">
       {/* Desktop Sidebar */}
       <div className="hidden lg:block fixed left-0 top-0 h-screen z-30">
         <Sidebar

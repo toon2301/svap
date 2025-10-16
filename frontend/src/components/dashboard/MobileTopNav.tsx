@@ -23,7 +23,7 @@ export default function MobileTopNav({ activeItem, onItemClick }: MobileTopNavPr
   ];
 
   return (
-    <div className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-gray-200 shadow-lg">
+    <div className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-white dark:bg-black border-t border-gray-200 dark:border-gray-800 shadow-lg">
       <div className="flex items-center justify-between px-2 py-0">
         {navItems.map((item) => {
           const Icon = item.icon;
@@ -59,7 +59,7 @@ export default function MobileTopNav({ activeItem, onItemClick }: MobileTopNavPr
                 flex flex-col items-center justify-center p-2 rounded-lg transition-all
                 ${isActive 
                   ? 'text-purple-600' 
-                  : 'text-gray-600 hover:text-purple-600 hover:bg-gray-50'
+                  : 'text-gray-600 dark:text-gray-300 hover:text-purple-600 hover:bg-gray-50 dark:hover:bg-gray-900'
                 }
               `}
               aria-label={item.label}
