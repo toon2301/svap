@@ -327,7 +327,7 @@ export default function ProfileEditFormDesktop({
             </div>
             <button
               onClick={() => setIsActionsOpen(true)}
-              className="px-3 py-1 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm"
+              className="px-3 py-1 bg-purple-100 text-purple-800 border border-purple-200 rounded-lg hover:bg-purple-200 transition-colors text-sm"
             >
               Zmeniť fotku
             </button>
@@ -390,7 +390,7 @@ export default function ProfileEditFormDesktop({
                       handleBioSave();
                     }
                   }}
-                  rows={4}
+                  rows={3}
                   maxLength={150}
                   className="w-full px-3 py-2 pr-16 border border-gray-300 rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent"
                   placeholder="Napíšte niečo o sebe..."
@@ -448,7 +448,7 @@ export default function ProfileEditFormDesktop({
                 <button
                   onClick={handlePhoneVisibleToggle}
                   className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 ${
-                    phoneVisible ? 'bg-purple-600' : 'bg-gray-200'
+                    phoneVisible ? 'bg-purple-100 border border-purple-200' : 'bg-gray-200'
                   }`}
                 >
                   <span
@@ -486,7 +486,7 @@ export default function ProfileEditFormDesktop({
                 <button
                   onClick={handleProfessionVisibleToggle}
                   className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 ${
-                    professionVisible ? 'bg-purple-600' : 'bg-gray-200'
+                    professionVisible ? 'bg-purple-100 border border-purple-200' : 'bg-gray-200'
                   }`}
                 >
                   <span
@@ -557,7 +557,7 @@ export default function ProfileEditFormDesktop({
                 onEditProfileClick();
               }
             }}
-            className="px-32 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+            className="px-32 py-2 bg-purple-100 text-purple-800 border border-purple-200 rounded-lg hover:bg-purple-200 transition-colors"
           >
             Uložiť
           </button>

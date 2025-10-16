@@ -2,8 +2,9 @@
 
 import React, { useState } from 'react';
 import { User } from '../../../types';
-import { api } from '../../../lib/api';
 import UserAvatar from './profile/UserAvatar';
+import ProfileEditFields from './ProfileEditFields';
+import ProfileEditModals from './ProfileEditModals';
 
 interface ProfileEditFormMobileProps {
   user: User;
@@ -22,133 +23,115 @@ export default function ProfileEditFormMobile({
   isUploading,
   onAvatarClick
 }: ProfileEditFormMobileProps) {
+  // Modal states
   const [isNameModalOpen, setIsNameModalOpen] = useState(false);
+  const [isBioModalOpen, setIsBioModalOpen] = useState(false);
+  const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
+  const [isContactModalOpen, setIsContactModalOpen] = useState(false);
+  const [isProfessionModalOpen, setIsProfessionModalOpen] = useState(false);
+  const [isWebsiteModalOpen, setIsWebsiteModalOpen] = useState(false);
+  
+  // Field values
   const [firstName, setFirstName] = useState(user.first_name);
   const [lastName, setLastName] = useState(user.last_name);
+  const [bio, setBio] = useState(user.bio || '');
+  const [location, setLocation] = useState(user.location || '');
+  const [phone, setPhone] = useState(user.phone || '');
+  const [phoneVisible, setPhoneVisible] = useState(user.phone_visible || false);
+  const [profession, setProfession] = useState(user.job_title || '');
+  const [professionVisible, setProfessionVisible] = useState(user.job_title_visible || false);
+  const [website, setWebsite] = useState(user.website || '');
+  
+  // Original values for cancel functionality
   const [originalFirstName, setOriginalFirstName] = useState(user.first_name);
   const [originalLastName, setOriginalLastName] = useState(user.last_name);
-
-  const handleSaveName = async () => {
-    try {
-      const response = await api.patch('/auth/profile/', {
-        first_name: firstName,
-        last_name: lastName,
-      });
-      // Aktualizuj pôvodné hodnoty
-      setOriginalFirstName(firstName);
-      setOriginalLastName(lastName);
-      setIsNameModalOpen(false);
-      if (onUserUpdate && response.data?.user) {
-        onUserUpdate(response.data.user);
-      }
-    } catch (error) {
-      console.error('Chyba pri ukladaní mena:', error);
-    }
-  };
-
-  const handleCancelName = () => {
-    // Vráť pôvodné hodnoty
-    setFirstName(originalFirstName);
-    setLastName(originalLastName);
-    
-    // Zatvor modal
-    setIsNameModalOpen(false);
-  };
+  const [originalBio, setOriginalBio] = useState(user.bio || '');
+  const [originalLocation, setOriginalLocation] = useState(user.location || '');
+  const [originalPhone, setOriginalPhone] = useState(user.phone || '');
+  const [originalPhoneVisible, setOriginalPhoneVisible] = useState(user.phone_visible || false);
+  const [originalProfession, setOriginalProfession] = useState(user.job_title || '');
+  const [originalProfessionVisible, setOriginalProfessionVisible] = useState(user.job_title_visible || false);
+  const [originalWebsite, setOriginalWebsite] = useState(user.website || '');
 
   return (
     <div className="pt-2 pb-8">
       {/* Fotka v strede */}
       <div className="flex justify-center mb-4 px-4">
-        <UserAvatar 
-          user={user} 
-          size="medium" 
-          onPhotoUpload={onPhotoUpload}
-          isUploading={isUploading}
-          onAvatarClick={onAvatarClick}
-        />
-      </div>
-      
-      {/* List položiek */}
-      <div className="border-t border-gray-200 border-b border-gray-200">
-        <div 
-          className="flex justify-between items-center py-2 px-4 cursor-pointer hover:bg-gray-50"
-          onClick={() => setIsNameModalOpen(true)}
-        >
-          <span className="text-gray-900 font-medium">Meno</span>
-          <span className="text-gray-600">{`${user.first_name} ${user.last_name}`.trim()}</span>
+        <div className="relative">
+          <UserAvatar
+            user={user}
+            size="medium"
+            onAvatarClick={onAvatarClick}
+            isUploading={isUploading}
+          />
         </div>
       </div>
 
-      {/* Modal pre úpravu mena */}
-      {isNameModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex flex-col">
-          {/* Horná lišta */}
-          <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
-            {/* Šipka späť */}
-            <button
-              onClick={handleCancelName}
-              className="p-2 -ml-2"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
-              </svg>
-            </button>
-            
-            {/* Nadpis v strede */}
-            <h2 className="text-lg font-semibold text-gray-900">Meno</h2>
-            
-            {/* Fajka (uložiť) */}
-            <button
-              onClick={handleSaveName}
-              className="p-2 -mr-2"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-              </svg>
-            </button>
-          </div>
-          
-          {/* Obsah modalu */}
-          <div className="flex-1 bg-white p-4">
-            <div>
-            {/* Meno (jeden input – rozdelíme na meno/priezvisko) */}
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Meno
-                </label>
-                <input
-                  type="text"
-                value={`${firstName} ${lastName}`.trim()}
-                onChange={(e) => {
-                  const value = e.target.value || '';
-                  const parts = value.trim().split(/\s+/).filter(Boolean);
-                  if (parts.length === 0) {
-                    setFirstName('');
-                    setLastName('');
-                  } else if (parts.length === 1) {
-                    setFirstName(parts[0]);
-                    setLastName('');
-                  } else {
-                    setFirstName(parts.slice(0, -1).join(' '));
-                    setLastName(parts[parts.length - 1]);
-                  }
-                }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent"
-                placeholder="Zadajte svoje meno a priezvisko"
-                />
-              </div>
-            {/* Priezvisko zrušené – unified v jednom vstupe */}
-              
-              {/* Popisný text */}
-              <div className="mt-3">
-                <p className="text-xs text-gray-500">
-                  Tu si môžete upraviť svoje meno a priezvisko. Vaše meno sa bude zobrazovať ostatným používateľom a zároveň podľa neho budete vyhľadateľní. Odporúčame použiť svoje skutočné meno, aby vás ostatní ľahšie našli a rozpoznali.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* List položiek */}
+      <ProfileEditFields
+        user={user}
+        onUserUpdate={onUserUpdate}
+        setIsNameModalOpen={setIsNameModalOpen}
+        setIsBioModalOpen={setIsBioModalOpen}
+        setIsLocationModalOpen={setIsLocationModalOpen}
+        setIsContactModalOpen={setIsContactModalOpen}
+        setIsProfessionModalOpen={setIsProfessionModalOpen}
+        setIsWebsiteModalOpen={setIsWebsiteModalOpen}
+      />
+
+      {/* Modaly */}
+      <ProfileEditModals
+        user={user}
+        onUserUpdate={onUserUpdate}
+        isNameModalOpen={isNameModalOpen}
+        isBioModalOpen={isBioModalOpen}
+        isLocationModalOpen={isLocationModalOpen}
+        isContactModalOpen={isContactModalOpen}
+        isProfessionModalOpen={isProfessionModalOpen}
+        isWebsiteModalOpen={isWebsiteModalOpen}
+        firstName={firstName}
+        lastName={lastName}
+        bio={bio}
+        location={location}
+        phone={phone}
+        phoneVisible={phoneVisible}
+        profession={profession}
+        professionVisible={professionVisible}
+        website={website}
+        originalFirstName={originalFirstName}
+        originalLastName={originalLastName}
+        originalBio={originalBio}
+        originalLocation={originalLocation}
+        originalPhone={originalPhone}
+        originalPhoneVisible={originalPhoneVisible}
+        originalProfession={originalProfession}
+        originalProfessionVisible={originalProfessionVisible}
+        originalWebsite={originalWebsite}
+        setFirstName={setFirstName}
+        setLastName={setLastName}
+        setBio={setBio}
+        setLocation={setLocation}
+        setPhone={setPhone}
+        setPhoneVisible={setPhoneVisible}
+        setProfession={setProfession}
+        setProfessionVisible={setProfessionVisible}
+        setWebsite={setWebsite}
+        setOriginalFirstName={setOriginalFirstName}
+        setOriginalLastName={setOriginalLastName}
+        setOriginalBio={setOriginalBio}
+        setOriginalLocation={setOriginalLocation}
+        setOriginalPhone={setOriginalPhone}
+        setOriginalPhoneVisible={setOriginalPhoneVisible}
+        setOriginalProfession={setOriginalProfession}
+        setOriginalProfessionVisible={setOriginalProfessionVisible}
+        setOriginalWebsite={setOriginalWebsite}
+        setIsNameModalOpen={setIsNameModalOpen}
+        setIsBioModalOpen={setIsBioModalOpen}
+        setIsLocationModalOpen={setIsLocationModalOpen}
+        setIsContactModalOpen={setIsContactModalOpen}
+        setIsProfessionModalOpen={setIsProfessionModalOpen}
+        setIsWebsiteModalOpen={setIsWebsiteModalOpen}
+      />
     </div>
   );
 }
