@@ -39,7 +39,7 @@ export default function ProfileEditFields({
   return (
     <div className="border-t border-gray-200 border-b border-gray-200">
       <div 
-        className="flex items-center py-2 px-4 cursor-pointer hover:bg-gray-50"
+        className="flex items-center py-4 px-4 cursor-pointer hover:bg-gray-50"
         onClick={() => setIsNameModalOpen(true)}
       >
         <span className="text-gray-900 font-medium w-40">Meno</span>
@@ -50,7 +50,7 @@ export default function ProfileEditFields({
       </div>
       
       <div 
-        className="flex items-center py-2 px-4 cursor-pointer hover:bg-gray-50 border-t border-gray-100"
+        className="flex items-center py-4 px-4 cursor-pointer hover:bg-gray-50 border-t border-gray-100"
         onClick={() => setIsBioModalOpen(true)}
       >
         <span className="text-gray-900 font-medium w-40">Bio</span>
@@ -63,7 +63,7 @@ export default function ProfileEditFields({
       </div>
       
       <div 
-        className="flex items-center py-2 px-4 cursor-pointer hover:bg-gray-50 border-t border-gray-100"
+        className="flex items-center py-4 px-4 cursor-pointer hover:bg-gray-50 border-t border-gray-100"
         onClick={() => setIsLocationModalOpen(true)}
       >
         <span className="text-gray-900 font-medium w-40">Lokalita</span>
@@ -76,7 +76,7 @@ export default function ProfileEditFields({
       </div>
       
       <div 
-        className="py-2 px-4 border-t border-gray-100"
+        className="py-4 px-4 border-t border-gray-100"
       >
         <div 
           className="flex items-center cursor-pointer hover:bg-gray-50 -mx-4 px-4 py-1"
@@ -123,7 +123,7 @@ export default function ProfileEditFields({
       </div>
       
       <div 
-        className="py-2 px-4 border-t border-gray-100"
+        className="py-4 px-4 border-t border-gray-100"
       >
         <div 
           className="flex items-center cursor-pointer hover:bg-gray-50 -mx-4 px-4 py-1"
@@ -170,7 +170,7 @@ export default function ProfileEditFields({
       </div>
       
       <div 
-        className="flex items-center py-2 px-4 cursor-pointer hover:bg-gray-50 border-t border-gray-100"
+        className="flex items-center py-4 px-4 cursor-pointer hover:bg-gray-50 border-t border-gray-100"
         onClick={() => setIsWebsiteModalOpen(true)}
       >
         <span className="text-gray-900 font-medium w-40">Web</span>
@@ -190,7 +190,7 @@ export default function ProfileEditFields({
       </div>
       
       {/* Sociálne siete */}
-      <div className="flex items-center py-2 px-4 border-t border-gray-100">
+      <div className="flex items-center py-4 px-4 border-t border-gray-100">
         <span className="text-gray-900 font-medium w-40">Sociálne siete</span>
         <div className="flex items-center flex-1 ml-4">
           <div className="w-px h-4 bg-gray-300 mr-3"></div>
@@ -230,7 +230,7 @@ export default function ProfileEditFields({
       
       {/* Pohlavie */}
       <div 
-        className="flex items-center py-2 px-4 cursor-pointer hover:bg-gray-50 border-t border-gray-100"
+        className="flex items-center py-4 px-4 cursor-pointer hover:bg-gray-50 border-t border-gray-100"
         onClick={() => setIsGenderModalOpen(true)}
       >
         <span className="text-gray-900 font-medium w-40">Pohlavie</span>

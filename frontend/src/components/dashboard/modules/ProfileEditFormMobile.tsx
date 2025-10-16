@@ -172,6 +172,13 @@ export default function ProfileEditFormMobile({
         setIsLinkedinModalOpen={setIsLinkedinModalOpen}
         setIsGenderModalOpen={setIsGenderModalOpen}
       />
+      
+      {/* Overenie profilu - placeholder */}
+      <div className="mt-6 px-4">
+        <span className="text-sm text-purple-600 font-medium">
+          Overenie profilu
+        </span>
+      </div>
     </div>
   );
 }
