@@ -18,6 +18,7 @@ export default function ProfileEditForm({ user, onUserUpdate, onEditProfileClick
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [isActionsOpen, setIsActionsOpen] = useState(false);
   const [firstName, setFirstName] = useState(user.first_name || '');
+  const [lastName, setLastName] = useState(user.last_name || '');
   const [bio, setBio] = useState(user.bio || '');
   const [website, setWebsite] = useState(user.website || '');
   const [location, setLocation] = useState(user.location || '');
@@ -30,6 +31,7 @@ export default function ProfileEditForm({ user, onUserUpdate, onEditProfileClick
   // Update firstName, bio, website, location, phone, phoneVisible, profession, professionVisible and gender when user changes
   useEffect(() => {
     setFirstName(user.first_name || '');
+    setLastName(user.last_name || '');
     setBio(user.bio || '');
     setWebsite(user.website || '');
     setLocation(user.location || '');
@@ -55,6 +57,21 @@ export default function ProfileEditForm({ user, onUserUpdate, onEditProfileClick
       console.error('Error saving first name:', error);
       // Revert on error
       setFirstName(user.first_name || '');
+    }
+  };
+
+  const handleLastNameSave = async () => {
+    if (lastName.trim() === user.last_name) return;
+    try {
+      const response = await api.patch('/auth/profile/', {
+        last_name: lastName.trim()
+      });
+      if (onUserUpdate && response.data.user) {
+        onUserUpdate(response.data.user);
+      }
+    } catch (error: any) {
+      console.error('Error saving last name:', error);
+      setLastName(user.last_name || '');
     }
   };
 
@@ -279,7 +296,7 @@ export default function ProfileEditForm({ user, onUserUpdate, onEditProfileClick
               onAvatarClick={handleAvatarClick}
             />
             <div className="text-base text-gray-800 flex-1">
-              <div className="font-bold text-gray-800">{firstName || user.first_name}</div>
+              <div className="font-bold text-gray-800">{`${firstName || user.first_name} ${lastName || user.last_name}`.trim()}</div>
               <div className="text-gray-600">{user.email}</div>
               {user.location && (
                 <div className="text-gray-600 text-sm flex items-center gap-1">
@@ -336,6 +353,29 @@ export default function ProfileEditForm({ user, onUserUpdate, onEditProfileClick
             pattern="[a-zA-ZáčďéěíĺľňóôŕšťúýžÁČĎÉĚÍĹĽŇÓÔŔŠŤÚÝŽ\s]*"
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent"
             placeholder="Zadajte svoje meno"
+          />
+        </div>
+
+        {/* Priezvisko */}
+        <div className="mb-4">
+          <label htmlFor="last_name" className="block text-base font-medium text-gray-700 mb-2">
+            Priezvisko
+          </label>
+          <input
+            id="last_name"
+            type="text"
+            value={lastName}
+            onChange={(e) => setLastName(e.target.value)}
+            onBlur={handleLastNameSave}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                handleLastNameSave();
+              }
+            }}
+            maxLength={18}
+            pattern="[a-zA-ZáčďéěíĺľňóôŕšťúýžÁČĎÉĚÍĹĽŇÓÔŔŠŤÚÝŽ\s-]*"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent"
+            placeholder="Zadajte svoje priezvisko"
           />
         </div>
         

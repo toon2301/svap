@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { User } from '../../../types';
+import { api } from '../../../lib/api';
 import UserAvatar from './profile/UserAvatar';
 
 interface ProfileEditFormMobileProps {
@@ -29,49 +30,19 @@ export default function ProfileEditFormMobile({
 
   const handleSaveName = async () => {
     try {
-      // Získaj token z localStorage
-      const tokens = localStorage.getItem('tokens');
-      if (!tokens) {
-        throw new Error('Nie ste prihlásený');
-      }
-      
-      const { access } = JSON.parse(tokens);
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
-      
-      // API call na uloženie mena a priezviska
-      const response = await fetch(`${apiUrl}/profile/`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${access}`,
-        },
-        body: JSON.stringify({
-          first_name: firstName,
-          last_name: lastName
-        }),
+      const response = await api.patch('/auth/profile/', {
+        first_name: firstName,
+        last_name: lastName,
       });
-
-      if (!response.ok) {
-        throw new Error('Chyba pri ukladaní mena');
-      }
-
-      const result = await response.json();
-      console.log('Meno úspešne uložené:', result);
-      
       // Aktualizuj pôvodné hodnoty
       setOriginalFirstName(firstName);
       setOriginalLastName(lastName);
-      
-      // Zatvor modal
       setIsNameModalOpen(false);
-      
-      // Ak máme callback, zavolaj ho s aktualizovanými údajmi
-      if (onUserUpdate && result.user) {
-        onUserUpdate(result.user);
+      if (onUserUpdate && response.data?.user) {
+        onUserUpdate(response.data.user);
       }
     } catch (error) {
       console.error('Chyba pri ukladaní mena:', error);
-      // Môžeš pridať toast notifikáciu pre chybu
     }
   };
 
