@@ -42,35 +42,21 @@ export default function ProfileEditForm({ user, onUserUpdate, onEditProfileClick
     setGender(user.gender || '');
   }, [user.first_name, user.bio, user.website, user.location, user.phone, user.phone_visible, user.job_title, user.job_title_visible, user.gender]);
 
-  const handleFirstNameSave = async () => {
-    if (firstName.trim() === user.first_name) return; // No change
-    
+  const handleFullNameSave = async () => {
+    const f = (firstName || '').trim();
+    const l = (lastName || '').trim();
+    if (f === (user.first_name || '').trim() && l === (user.last_name || '').trim()) return;
     try {
       const response = await api.patch('/auth/profile/', {
-        first_name: firstName.trim()
+        first_name: f,
+        last_name: l,
       });
-      
       if (onUserUpdate && response.data.user) {
         onUserUpdate(response.data.user);
       }
     } catch (error: any) {
-      console.error('Error saving first name:', error);
-      // Revert on error
+      console.error('Error saving full name:', error);
       setFirstName(user.first_name || '');
-    }
-  };
-
-  const handleLastNameSave = async () => {
-    if (lastName.trim() === user.last_name) return;
-    try {
-      const response = await api.patch('/auth/profile/', {
-        last_name: lastName.trim()
-      });
-      if (onUserUpdate && response.data.user) {
-        onUserUpdate(response.data.user);
-      }
-    } catch (error: any) {
-      console.error('Error saving last name:', error);
       setLastName(user.last_name || '');
     }
   };
@@ -333,51 +319,42 @@ export default function ProfileEditForm({ user, onUserUpdate, onEditProfileClick
           </div>
         </div>
         
-        {/* Meno */}
+        {/* Meno (celé meno v jednom vstupe) */}
         <div className="mb-4">
           <label htmlFor="first_name" className="block text-base font-medium text-gray-700 mb-2">
             Meno
           </label>
           <input
-            id="first_name"
+            id="full_name"
             type="text"
-            value={firstName}
-            onChange={(e) => setFirstName(e.target.value)}
-            onBlur={handleFirstNameSave}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                handleFirstNameSave();
+            value={`${firstName} ${lastName}`.trim()}
+            onChange={(e) => {
+              const value = e.target.value || '';
+              const parts = value.trim().split(/\s+/).filter(Boolean);
+              if (parts.length === 0) {
+                setFirstName('');
+                setLastName('');
+              } else if (parts.length === 1) {
+                setFirstName(parts[0]);
+                setLastName('');
+              } else {
+                setFirstName(parts.slice(0, -1).join(' '));
+                setLastName(parts[parts.length - 1]);
               }
             }}
-            maxLength={18}
-            pattern="[a-zA-ZáčďéěíĺľňóôŕšťúýžÁČĎÉĚÍĹĽŇÓÔŔŠŤÚÝŽ\s]*"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent"
-            placeholder="Zadajte svoje meno"
-          />
-        </div>
-
-        {/* Priezvisko */}
-        <div className="mb-4">
-          <label htmlFor="last_name" className="block text-base font-medium text-gray-700 mb-2">
-            Priezvisko
-          </label>
-          <input
-            id="last_name"
-            type="text"
-            value={lastName}
-            onChange={(e) => setLastName(e.target.value)}
-            onBlur={handleLastNameSave}
+            onBlur={handleFullNameSave}
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
-                handleLastNameSave();
+                handleFullNameSave();
               }
             }}
             maxLength={18}
             pattern="[a-zA-ZáčďéěíĺľňóôŕšťúýžÁČĎÉĚÍĹĽŇÓÔŔŠŤÚÝŽ\s-]*"
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent"
-            placeholder="Zadajte svoje priezvisko"
+            placeholder="Zadajte svoje meno a priezvisko"
           />
         </div>
+        {/* Priezvisko zrušené – unified v jednom vstupe */}
         
         {/* Bio */}
         <div className="mb-4">
