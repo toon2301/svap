@@ -169,6 +169,21 @@ def google_callback_view(request):
         # Získaj alebo vytvor používateľa
         try:
             user = User.objects.get(email=email)
+            # Aktualizuj meno a priezvisko z Google profilu (ak sú dostupné)
+            google_first_name = user_info.get('given_name', '')
+            google_last_name = user_info.get('family_name', '')
+            
+            if google_first_name and google_first_name != user.first_name:
+                user.first_name = google_first_name
+            if google_last_name and google_last_name != user.last_name:
+                user.last_name = google_last_name
+            
+            # Ulož zmeny ak sa niečo zmenilo
+            if (google_first_name and google_first_name != user.first_name) or \
+               (google_last_name and google_last_name != user.last_name):
+                user.save()
+                logger.info(f"Updated user profile via Google OAuth: {email}")
+                
         except User.DoesNotExist:
             # Vytvor nového používateľa
             username = email.split('@')[0]
