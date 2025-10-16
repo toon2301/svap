@@ -173,16 +173,19 @@ def google_callback_view(request):
             google_first_name = user_info.get('given_name', '')
             google_last_name = user_info.get('family_name', '')
             
+            # Kontroluj zmeny PRED aktualizáciou
+            name_changed = False
             if google_first_name and google_first_name != user.first_name:
                 user.first_name = google_first_name
+                name_changed = True
             if google_last_name and google_last_name != user.last_name:
                 user.last_name = google_last_name
+                name_changed = True
             
             # Ulož zmeny ak sa niečo zmenilo
-            if (google_first_name and google_first_name != user.first_name) or \
-               (google_last_name and google_last_name != user.last_name):
+            if name_changed:
                 user.save()
-                logger.info(f"Updated user profile via Google OAuth: {email}")
+                logger.info(f"Updated user profile via Google OAuth: {email} - {user.first_name} {user.last_name}")
                 
         except User.DoesNotExist:
             # Vytvor nového používateľa

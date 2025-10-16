@@ -29,8 +29,34 @@ export default function ProfileEditFormMobile({
 
   const handleSaveName = async () => {
     try {
-      // Tu by bol API call na uloženie mena
-      console.log('Ukladám meno:', firstName);
+      // Získaj token z localStorage
+      const tokens = localStorage.getItem('tokens');
+      if (!tokens) {
+        throw new Error('Nie ste prihlásený');
+      }
+      
+      const { access } = JSON.parse(tokens);
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
+      
+      // API call na uloženie mena a priezviska
+      const response = await fetch(`${apiUrl}/profile/`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${access}`,
+        },
+        body: JSON.stringify({
+          first_name: firstName,
+          last_name: lastName
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Chyba pri ukladaní mena');
+      }
+
+      const result = await response.json();
+      console.log('Meno úspešne uložené:', result);
       
       // Aktualizuj pôvodné hodnoty
       setOriginalFirstName(firstName);
@@ -39,16 +65,13 @@ export default function ProfileEditFormMobile({
       // Zatvor modal
       setIsNameModalOpen(false);
       
-      // Ak máme callback, zavolaj ho
-      if (onUserUpdate) {
-        onUserUpdate({
-          ...user,
-          first_name: firstName,
-          last_name: lastName
-        });
+      // Ak máme callback, zavolaj ho s aktualizovanými údajmi
+      if (onUserUpdate && result.user) {
+        onUserUpdate(result.user);
       }
     } catch (error) {
       console.error('Chyba pri ukladaní mena:', error);
+      // Môžeš pridať toast notifikáciu pre chybu
     }
   };
 
@@ -118,7 +141,10 @@ export default function ProfileEditFormMobile({
           <div className="flex-1 bg-white p-4">
             <div>
               {/* Meno */}
-              <div>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Meno
+                </label>
                 <input
                   type="text"
                   value={firstName}
@@ -128,10 +154,24 @@ export default function ProfileEditFormMobile({
                 />
               </div>
               
+              {/* Priezvisko */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Priezvisko
+                </label>
+                <input
+                  type="text"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent"
+                  placeholder="Zadajte svoje priezvisko"
+                />
+              </div>
+              
               {/* Popisný text */}
               <div className="mt-3">
                 <p className="text-xs text-gray-500">
-                  Tu si môžete upraviť svoje meno. Vaše meno sa bude zobrazovať ostatným používateľom a zároveň podľa neho budete vyhľadateľní. Odporúčame použiť svoje skutočné meno, aby vás ostatní ľahšie našli a rozpoznali.
+                  Tu si môžete upraviť svoje meno a priezvisko. Vaše meno sa bude zobrazovať ostatným používateľom a zároveň podľa neho budete vyhľadateľní. Odporúčame použiť svoje skutočné meno, aby vás ostatní ľahšie našli a rozpoznali.
                 </p>
               </div>
             </div>
