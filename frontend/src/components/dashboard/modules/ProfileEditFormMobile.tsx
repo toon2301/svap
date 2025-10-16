@@ -30,6 +30,10 @@ export default function ProfileEditFormMobile({
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
   const [isProfessionModalOpen, setIsProfessionModalOpen] = useState(false);
   const [isWebsiteModalOpen, setIsWebsiteModalOpen] = useState(false);
+  const [isInstagramModalOpen, setIsInstagramModalOpen] = useState(false);
+  const [isFacebookModalOpen, setIsFacebookModalOpen] = useState(false);
+  const [isLinkedinModalOpen, setIsLinkedinModalOpen] = useState(false);
+  const [isGenderModalOpen, setIsGenderModalOpen] = useState(false);
   
   // Field values
   const [firstName, setFirstName] = useState(user.first_name);
@@ -41,6 +45,10 @@ export default function ProfileEditFormMobile({
   const [profession, setProfession] = useState(user.job_title || '');
   const [professionVisible, setProfessionVisible] = useState(user.job_title_visible || false);
   const [website, setWebsite] = useState(user.website || '');
+  const [instagram, setInstagram] = useState(user.instagram || '');
+  const [facebook, setFacebook] = useState(user.facebook || '');
+  const [linkedin, setLinkedin] = useState(user.linkedin || '');
+  const [gender, setGender] = useState(user.gender || '');
   
   // Original values for cancel functionality
   const [originalFirstName, setOriginalFirstName] = useState(user.first_name);
@@ -52,6 +60,10 @@ export default function ProfileEditFormMobile({
   const [originalProfession, setOriginalProfession] = useState(user.job_title || '');
   const [originalProfessionVisible, setOriginalProfessionVisible] = useState(user.job_title_visible || false);
   const [originalWebsite, setOriginalWebsite] = useState(user.website || '');
+  const [originalInstagram, setOriginalInstagram] = useState(user.instagram || '');
+  const [originalFacebook, setOriginalFacebook] = useState(user.facebook || '');
+  const [originalLinkedin, setOriginalLinkedin] = useState(user.linkedin || '');
+  const [originalGender, setOriginalGender] = useState(user.gender || '');
 
   return (
     <div className="pt-2 pb-8">
@@ -77,6 +89,10 @@ export default function ProfileEditFormMobile({
         setIsContactModalOpen={setIsContactModalOpen}
         setIsProfessionModalOpen={setIsProfessionModalOpen}
         setIsWebsiteModalOpen={setIsWebsiteModalOpen}
+        setIsInstagramModalOpen={setIsInstagramModalOpen}
+        setIsFacebookModalOpen={setIsFacebookModalOpen}
+        setIsLinkedinModalOpen={setIsLinkedinModalOpen}
+        setIsGenderModalOpen={setIsGenderModalOpen}
       />
 
       {/* Modaly */}
@@ -89,6 +105,10 @@ export default function ProfileEditFormMobile({
         isContactModalOpen={isContactModalOpen}
         isProfessionModalOpen={isProfessionModalOpen}
         isWebsiteModalOpen={isWebsiteModalOpen}
+        isInstagramModalOpen={isInstagramModalOpen}
+        isFacebookModalOpen={isFacebookModalOpen}
+        isLinkedinModalOpen={isLinkedinModalOpen}
+        isGenderModalOpen={isGenderModalOpen}
         firstName={firstName}
         lastName={lastName}
         bio={bio}
@@ -98,6 +118,10 @@ export default function ProfileEditFormMobile({
         profession={profession}
         professionVisible={professionVisible}
         website={website}
+        instagram={instagram}
+        facebook={facebook}
+        linkedin={linkedin}
+        gender={gender}
         originalFirstName={originalFirstName}
         originalLastName={originalLastName}
         originalBio={originalBio}
@@ -107,6 +131,10 @@ export default function ProfileEditFormMobile({
         originalProfession={originalProfession}
         originalProfessionVisible={originalProfessionVisible}
         originalWebsite={originalWebsite}
+        originalInstagram={originalInstagram}
+        originalFacebook={originalFacebook}
+        originalLinkedin={originalLinkedin}
+        originalGender={originalGender}
         setFirstName={setFirstName}
         setLastName={setLastName}
         setBio={setBio}
@@ -116,6 +144,10 @@ export default function ProfileEditFormMobile({
         setProfession={setProfession}
         setProfessionVisible={setProfessionVisible}
         setWebsite={setWebsite}
+        setInstagram={setInstagram}
+        setFacebook={setFacebook}
+        setLinkedin={setLinkedin}
+        setGender={setGender}
         setOriginalFirstName={setOriginalFirstName}
         setOriginalLastName={setOriginalLastName}
         setOriginalBio={setOriginalBio}
@@ -125,12 +157,20 @@ export default function ProfileEditFormMobile({
         setOriginalProfession={setOriginalProfession}
         setOriginalProfessionVisible={setOriginalProfessionVisible}
         setOriginalWebsite={setOriginalWebsite}
+        setOriginalInstagram={setOriginalInstagram}
+        setOriginalFacebook={setOriginalFacebook}
+        setOriginalLinkedin={setOriginalLinkedin}
+        setOriginalGender={setOriginalGender}
         setIsNameModalOpen={setIsNameModalOpen}
         setIsBioModalOpen={setIsBioModalOpen}
         setIsLocationModalOpen={setIsLocationModalOpen}
         setIsContactModalOpen={setIsContactModalOpen}
         setIsProfessionModalOpen={setIsProfessionModalOpen}
         setIsWebsiteModalOpen={setIsWebsiteModalOpen}
+        setIsInstagramModalOpen={setIsInstagramModalOpen}
+        setIsFacebookModalOpen={setIsFacebookModalOpen}
+        setIsLinkedinModalOpen={setIsLinkedinModalOpen}
+        setIsGenderModalOpen={setIsGenderModalOpen}
       />
     </div>
   );
