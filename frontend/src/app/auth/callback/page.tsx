@@ -80,6 +80,9 @@ function OAuthCallbackContent() {
         localStorage.setItem('refresh_token', tokens.refresh);
         localStorage.setItem('oauth_success', 'true');
         
+        // Tiež ulož tokeny do cookies pre konzistentnosť
+        setAuthTokens(tokens);
+        
         console.log('Tokens stored in localStorage, notifying parent window...');
         
         // Pošli správu do parent okna o úspešnom prihlásení

@@ -35,13 +35,29 @@ export const getRefreshToken = (): string | undefined => {
 export const clearAuthTokens = (): void => {
   Cookies.remove(AUTH_COOKIE_NAMES.ACCESS_TOKEN);
   Cookies.remove(AUTH_COOKIE_NAMES.REFRESH_TOKEN);
+  
+  // Vymaž aj z localStorage
+  localStorage.removeItem('access_token');
+  localStorage.removeItem('refresh_token');
+  localStorage.removeItem('oauth_success');
 };
 
 export const isAuthenticated = (): boolean => {
-  return !!getAccessToken();
+  // Skontroluj cookies (primárne)
+  const cookieToken = getAccessToken();
+  if (cookieToken) return true;
+  
+  // Fallback na localStorage (pre OAuth)
+  const localToken = localStorage.getItem('access_token');
+  return !!localToken;
 };
 
 export const getAuthHeader = (): string | undefined => {
-  const token = getAccessToken();
-  return token ? `Bearer ${token}` : undefined;
+  // Skontroluj cookies (primárne)
+  const cookieToken = getAccessToken();
+  if (cookieToken) return `Bearer ${cookieToken}`;
+  
+  // Fallback na localStorage (pre OAuth)
+  const localToken = localStorage.getItem('access_token');
+  return localToken ? `Bearer ${localToken}` : undefined;
 };
