@@ -144,7 +144,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const { access } = JSON.parse(tokens);
       
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
-      const response = await fetch(`${apiUrl}/profile/`, {
+      const response = await fetch(`${apiUrl}/me/`, {
         headers: {
           'Authorization': `Bearer ${access}`,
         },
