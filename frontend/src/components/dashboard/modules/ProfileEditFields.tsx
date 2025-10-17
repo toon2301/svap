@@ -237,7 +237,7 @@ export default function ProfileEditFields({
         <div className="flex items-center flex-1 ml-4">
           <div className="w-px h-4 bg-gray-300 dark:bg-gray-700 mr-3"></div>
           <span className="text-gray-600 dark:text-gray-300 text-sm">
-            Pohlavie
+            {user.gender === 'male' ? 'Muž' : user.gender === 'female' ? 'Žena' : user.gender === 'other' ? 'Iné' : 'Pohlavie'}
           </span>
         </div>
       </div>

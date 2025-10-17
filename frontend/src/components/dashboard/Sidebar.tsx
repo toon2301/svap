@@ -75,7 +75,7 @@ export default function Sidebar({
   };
 
   const sidebarContent = (
-    <div className="flex flex-col h-screen bg-white dark:bg-black border-r border-gray-200 dark:border-gray-800">
+    <div className={`flex flex-col ${isMobile ? 'h-dvh' : 'h-screen'} bg-white dark:bg-black border-r border-gray-200 dark:border-gray-800`}>
       {/* Logo */}
       <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-800">
         <h1 className="text-xl font-bold text-purple-800 dark:text-white">Swaply</h1>
@@ -158,7 +158,7 @@ export default function Sidebar({
               animate={{ x: 0 }}
               exit={{ x: -384 }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed left-0 top-0 h-full w-96 z-50"
+              className="fixed left-0 top-0 h-dvh w-96 z-50"
             >
               {sidebarContent}
             </motion.div>
