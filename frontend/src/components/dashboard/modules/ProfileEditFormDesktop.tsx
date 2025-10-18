@@ -297,7 +297,11 @@ export default function ProfileEditFormDesktop({
               onAvatarClick={handleAvatarClick}
             />
             <div className="text-base text-gray-800 dark:text-gray-200 flex-1">
-              <div className="font-bold text-gray-800 dark:text-white">{`${firstName || user.first_name} ${lastName || user.last_name}`.trim()}</div>
+              <div className="font-bold text-gray-800 dark:text-white">
+                {firstName || user.first_name && lastName || user.last_name ? 
+                  `${firstName || user.first_name} ${lastName || user.last_name}`.trim() : 
+                  user.username}
+              </div>
               <div className="text-gray-600 dark:text-gray-300">{user.email}</div>
               {user.location && (
                 <div className="text-gray-600 dark:text-gray-300 text-sm flex items-center gap-1">

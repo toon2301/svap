@@ -36,8 +36,8 @@ export default function ProfileEditFormMobile({
   const [isGenderModalOpen, setIsGenderModalOpen] = useState(false);
   
   // Field values
-  const [firstName, setFirstName] = useState(user.first_name);
-  const [lastName, setLastName] = useState(user.last_name);
+  const [firstName, setFirstName] = useState(user.first_name || '');
+  const [lastName, setLastName] = useState(user.last_name || '');
   const [bio, setBio] = useState(user.bio || '');
   const [location, setLocation] = useState(user.location || '');
   const [phone, setPhone] = useState(user.phone || '');
@@ -51,8 +51,8 @@ export default function ProfileEditFormMobile({
   const [gender, setGender] = useState(user.gender || '');
   
   // Original values for cancel functionality
-  const [originalFirstName, setOriginalFirstName] = useState(user.first_name);
-  const [originalLastName, setOriginalLastName] = useState(user.last_name);
+  const [originalFirstName, setOriginalFirstName] = useState(user.first_name || '');
+  const [originalLastName, setOriginalLastName] = useState(user.last_name || '');
   const [originalBio, setOriginalBio] = useState(user.bio || '');
   const [originalLocation, setOriginalLocation] = useState(user.location || '');
   const [originalPhone, setOriginalPhone] = useState(user.phone || '');

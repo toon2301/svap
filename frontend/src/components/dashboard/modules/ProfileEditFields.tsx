@@ -45,7 +45,7 @@ export default function ProfileEditFields({
         <span className="text-gray-900 dark:text-white font-medium w-40">Meno</span>
         <div className="flex items-center flex-1 ml-4">
           <div className="w-px h-4 bg-gray-300 dark:bg-gray-700 mr-3"></div>
-          <span className="text-gray-600 dark:text-gray-300 text-sm truncate">{`${user.first_name} ${user.last_name}`.trim()}</span>
+          <span className="text-gray-600 dark:text-gray-300 text-sm truncate">{user.first_name && user.last_name ? `${user.first_name} ${user.last_name}` : user.username}</span>
         </div>
       </div>
       
