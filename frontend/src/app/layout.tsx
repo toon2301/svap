@@ -55,8 +55,8 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/icon.svg" />
         
         {/* Accessibility meta tagy */}
-        <meta name="color-scheme" content="light only" />
-        <meta name="supported-color-schemes" content="light" />
+        <meta name="color-scheme" content="light dark" />
+        <meta name="supported-color-schemes" content="light dark" />
         
         {/* Performance a SEO */}
         <meta name="format-detection" content="telephone=no" />

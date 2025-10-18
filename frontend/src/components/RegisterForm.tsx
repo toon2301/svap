@@ -438,7 +438,7 @@ export default function RegisterForm() {
             marginBottom: '24px'
           }}>
             <motion.h1 
-              className="text-3xl font-medium text-center mb-6 text-black tracking-wider max-lg:text-2xl max-lg:mb-8"
+              className="text-3xl font-medium text-center mb-6 text-black dark:text-white tracking-wider max-lg:text-2xl max-lg:mb-8"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.2 }}
@@ -485,7 +485,7 @@ export default function RegisterForm() {
               >
               {/* Typ účtu */}
               <div>
-                <label className="block text-base font-normal text-gray-600 mb-1.5 max-lg:text-base max-lg:mb-1">
+                <label className="block text-base font-normal text-gray-600 dark:text-gray-300 mb-1.5 max-lg:text-base max-lg:mb-1">
                   Typ účtu
                 </label>
                 <select
@@ -498,7 +498,7 @@ export default function RegisterForm() {
                   onTouchEnd={(e) => handleTouchEnd(e, 'user_type')}
                   onFocus={() => handleSelectFocus('user_type')}
                   onBlur={() => handleSelectBlur('user_type')}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent outline-none transition-all "
+                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent outline-none transition-all bg-white dark:bg-black text-gray-900 dark:text-white"
                   aria-label="Vyberte typ účtu"
                   aria-required="true"
                   aria-describedby="user-type-help"
@@ -517,7 +517,7 @@ export default function RegisterForm() {
               {/* Prihlasovacie údaje */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="username" className="block text-base font-normal text-gray-600 mb-1.5 max-lg:text-base max-lg:mb-1">
+                  <label htmlFor="username" className="block text-base font-normal text-gray-600 dark:text-gray-300 mb-1.5 max-lg:text-base max-lg:mb-1">
                     Používateľské meno *
                   </label>
                   <input
@@ -527,8 +527,8 @@ export default function RegisterForm() {
                     value={formData.username}
                     onChange={handleInputChange}
                     onKeyDown={(e) => handleKeyDown(e, 'username')}
-                    className={`w-full px-3 py-2 text-sm border rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent outline-none transition-all  ${
-                      errors.username ? 'border-red-500' : 'border-gray-300'
+                    className={`w-full px-3 py-2 text-sm border rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent outline-none transition-all bg-white dark:bg-black text-gray-900 dark:text-white ${
+                      errors.username ? 'border-red-500' : 'border-gray-300 dark:border-gray-700'
                     }`}
                     placeholder="Používateľské meno"
                     aria-label="Zadajte svoje používateľské meno"
@@ -549,7 +549,7 @@ export default function RegisterForm() {
                 </div>
 
                 <div>
-                  <label htmlFor="email" className="block text-base font-normal text-gray-600 mb-1.5 max-lg:text-base max-lg:mb-1">
+                  <label htmlFor="email" className="block text-base font-normal text-gray-600 dark:text-gray-300 mb-1.5 max-lg:text-base max-lg:mb-1">
                     Email *
                   </label>
                   <input
@@ -560,10 +560,10 @@ export default function RegisterForm() {
                     onChange={handleInputChange}
                     onKeyDown={(e) => handleKeyDown(e, 'email')}
                     onBlur={(e) => checkEmailAvailability(e.target.value)}
-                    className={`w-full px-3 py-2 text-sm border rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent outline-none transition-all  ${
+                    className={`w-full px-3 py-2 text-sm border rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent outline-none transition-all bg-white dark:bg-black text-gray-900 dark:text-white ${
                       errors.email ? 'border-red-500' : 
                       emailStatus === 'taken' ? 'border-red-500' :
-                      emailStatus === 'available' ? 'border-green-500' : 'border-gray-300'
+                      emailStatus === 'available' ? 'border-green-500' : 'border-gray-300 dark:border-gray-700'
                     }`}
                     placeholder="vas@email.sk"
                     aria-label="Zadajte svoju emailovú adresu"
@@ -625,7 +625,7 @@ export default function RegisterForm() {
               {/* Heslá */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="password" className="block text-base font-normal text-gray-600 mb-1.5 max-lg:text-base max-lg:mb-1">
+                  <label htmlFor="password" className="block text-base font-normal text-gray-600 dark:text-gray-300 mb-1.5 max-lg:text-base max-lg:mb-1">
                     Heslo *
                   </label>
                   <div className="relative">
@@ -636,8 +636,8 @@ export default function RegisterForm() {
                       value={formData.password}
                       onChange={handleInputChange}
                       onKeyDown={(e) => handleKeyDown(e, 'password')}
-                      className={`w-full px-3 py-2 text-sm pr-12 border rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent outline-none transition-all  ${
-                        errors.password ? 'border-red-500' : 'border-gray-300'
+                      className={`w-full px-3 py-2 text-sm pr-12 border rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent outline-none transition-all bg-white dark:bg-black text-gray-900 dark:text-white ${
+                        errors.password ? 'border-red-500' : 'border-gray-300 dark:border-gray-700'
                       }`}
                       placeholder="••••••••"
                       aria-label="Zadajte svoje heslo"
@@ -654,7 +654,7 @@ export default function RegisterForm() {
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
                       tabIndex={-1}
-                      className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors focus:outline-none focus:ring-1 focus:ring-purple-300 focus:ring-offset-2 rounded"
+                      className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors focus:outline-none focus:ring-1 focus:ring-purple-300 focus:ring-offset-2 rounded"
                     >
                     
                       {showPassword ? (
@@ -675,7 +675,7 @@ export default function RegisterForm() {
                 </div>
 
                 <div>
-                  <label htmlFor="password_confirm" className="block text-base font-normal text-gray-600 mb-1.5 max-lg:text-base max-lg:mb-1">
+                  <label htmlFor="password_confirm" className="block text-base font-normal text-gray-600 dark:text-gray-300 mb-1.5 max-lg:text-base max-lg:mb-1">
                     Potvrdenie hesla *
                   </label>
                   <div className="relative">
@@ -685,8 +685,8 @@ export default function RegisterForm() {
                       name="password_confirm"
                       value={formData.password_confirm}
                       onChange={handleInputChange}
-                      className={`w-full px-3 py-2 text-sm pr-12 border rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent outline-none transition-all  ${
-                        errors.password_confirm ? 'border-red-500' : 'border-gray-300'
+                      className={`w-full px-3 py-2 text-sm pr-12 border rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent outline-none transition-all bg-white dark:bg-black text-gray-900 dark:text-white ${
+                        errors.password_confirm ? 'border-red-500' : 'border-gray-300 dark:border-gray-700'
                       }`}
                       placeholder="••••••••"
                     />
@@ -694,7 +694,7 @@ export default function RegisterForm() {
                       type="button"
                       onClick={() => setShowPasswordConfirm(!showPasswordConfirm)}
                       aria-label={showPasswordConfirm ? 'Skryť heslo' : 'Zobraziť heslo'}
-                      className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                      className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
                     >
                       {showPasswordConfirm ? (
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -718,7 +718,7 @@ export default function RegisterForm() {
 
               {/* Dátum narodenia */}
               <div>
-                <label className="block text-base font-normal text-gray-600 mb-1.5 max-lg:text-base max-lg:mb-1">
+                <label className="block text-base font-normal text-gray-600 dark:text-gray-300 mb-1.5 max-lg:text-base max-lg:mb-1">
                   Dátum narodenia *
                 </label>
                 <div className="grid grid-cols-3 gap-4">
@@ -730,8 +730,8 @@ export default function RegisterForm() {
                     onTouchEnd={(e) => handleTouchEnd(e, 'birth_day')}
                     onFocus={() => handleSelectFocus('birth_day')}
                     onBlur={() => handleSelectBlur('birth_day')}
-                    className={`w-full px-3 py-2 text-sm border rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent outline-none transition-all  ${
-                      errors.birth_day ? 'border-red-500' : 'border-gray-300'
+                    className={`w-full px-3 py-2 text-sm border rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent outline-none transition-all bg-white dark:bg-black text-gray-900 dark:text-white ${
+                      errors.birth_day ? 'border-red-500' : 'border-gray-300 dark:border-gray-700'
                     }`}
                   >
                     <option value="">Deň</option>
@@ -750,8 +750,8 @@ export default function RegisterForm() {
                     onTouchEnd={(e) => handleTouchEnd(e, 'birth_month')}
                     onFocus={() => handleSelectFocus('birth_month')}
                     onBlur={() => handleSelectBlur('birth_month')}
-                    className={`w-full px-3 py-2 text-sm border rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent outline-none transition-all  ${
-                      errors.birth_month ? 'border-red-500' : 'border-gray-300'
+                    className={`w-full px-3 py-2 text-sm border rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent outline-none transition-all bg-white dark:bg-black text-gray-900 dark:text-white ${
+                      errors.birth_month ? 'border-red-500' : 'border-gray-300 dark:border-gray-700'
                     }`}
                   >
                     <option value="">Mesiac</option>
@@ -773,8 +773,8 @@ export default function RegisterForm() {
                     onTouchEnd={(e) => handleTouchEnd(e, 'birth_year')}
                     onFocus={() => handleSelectFocus('birth_year')}
                     onBlur={() => handleSelectBlur('birth_year')}
-                    className={`w-full px-3 py-2 text-sm border rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent outline-none transition-all  ${
-                      errors.birth_year ? 'border-red-500' : 'border-gray-300'
+                    className={`w-full px-3 py-2 text-sm border rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent outline-none transition-all bg-white dark:bg-black text-gray-900 dark:text-white ${
+                      errors.birth_year ? 'border-red-500' : 'border-gray-300 dark:border-gray-700'
                     }`}
                   >
                     <option value="">Rok</option>
@@ -804,7 +804,7 @@ export default function RegisterForm() {
 
               {/* Pohlavie */}
               <div>
-                <label htmlFor="gender" className="block text-base font-normal text-gray-600 mb-1.5 max-lg:text-base max-lg:mb-1">
+                <label htmlFor="gender" className="block text-base font-normal text-gray-600 dark:text-gray-300 mb-1.5 max-lg:text-base max-lg:mb-1">
                   Pohlavie *
                 </label>
                 <select
@@ -816,8 +816,8 @@ export default function RegisterForm() {
                   onTouchEnd={(e) => handleTouchEnd(e, 'gender')}
                   onFocus={() => handleSelectFocus('gender')}
                   onBlur={() => handleSelectBlur('gender')}
-                  className={`w-full px-3 py-2 text-sm border rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent outline-none transition-all  ${
-                    errors.gender ? 'border-red-500' : 'border-gray-300'
+                  className={`w-full px-3 py-2 text-sm border rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent outline-none transition-all bg-white dark:bg-black text-gray-900 dark:text-white ${
+                    errors.gender ? 'border-red-500' : 'border-gray-300 dark:border-gray-700'
                   }`}
                 >
                   <option value="">Vyberte pohlavie</option>
@@ -834,13 +834,13 @@ export default function RegisterForm() {
 
               {/* Pre firmy */}
               {formData.user_type === 'company' && (
-                <div className="space-y-4 p-4 bg-purple-50 rounded-lg">
-                  <h3 className="text-base font-normal text-purple-700 mb-2 max-lg:text-base max-lg:mb-1">
+                <div className="space-y-4 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+                  <h3 className="text-base font-normal text-purple-700 dark:text-purple-400 mb-2 max-lg:text-base max-lg:mb-1">
                     Informácie o firme
                   </h3>
                   
                   <div>
-                    <label htmlFor="company_name" className="block text-base font-normal text-gray-600 mb-1.5 max-lg:text-base max-lg:mb-1">
+                    <label htmlFor="company_name" className="block text-base font-normal text-gray-600 dark:text-gray-300 mb-1.5 max-lg:text-base max-lg:mb-1">
                       Názov firmy *
                     </label>
                     <input
@@ -849,8 +849,8 @@ export default function RegisterForm() {
                       name="company_name"
                       value={formData.company_name}
                       onChange={handleInputChange}
-                      className={`w-full px-3 py-2 text-sm border rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent outline-none transition-all  ${
-                        errors.company_name ? 'border-red-500' : 'border-gray-300'
+                      className={`w-full px-3 py-2 text-sm border rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent outline-none transition-all bg-white dark:bg-black text-gray-900 dark:text-white ${
+                        errors.company_name ? 'border-red-500' : 'border-gray-300 dark:border-gray-700'
                       }`}
                       placeholder="Názov firmy"
                     />
@@ -860,7 +860,7 @@ export default function RegisterForm() {
                   </div>
 
                   <div>
-                    <label className="block text-base font-normal text-gray-600 mb-1.5 max-lg:text-base max-lg:mb-1">
+                    <label className="block text-base font-normal text-gray-600 dark:text-gray-300 mb-1.5 max-lg:text-base max-lg:mb-1">
                       Webstránka
                     </label>
                     <input
@@ -868,7 +868,7 @@ export default function RegisterForm() {
                       name="website"
                       value={formData.website}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent outline-none transition-all "
+                      className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent outline-none transition-all bg-white dark:bg-black text-gray-900 dark:text-white"
                       placeholder="https://www.example.sk"
                     />
                   </div>
@@ -879,7 +879,7 @@ export default function RegisterForm() {
               <motion.button
                 type="submit"
                 disabled={isLoading}
-                className={`w-full text-white px-6 py-3 rounded-lg font-semibold text-lg transition-all max-lg:text-xl max-lg:py-4 ${
+                className={`w-full text-white px-4 py-2.5 rounded-lg font-semibold text-xl transition-all max-lg:px-4 max-lg:py-2 max-lg:text-xl ${
                   isLoading ? 'cursor-not-allowed' : 'cursor-pointer hover:shadow-lg'
                 }`}
                 style={{
@@ -916,7 +916,7 @@ export default function RegisterForm() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.6 }}
               >
-                <p className="text-2xl text-gray-600 max-lg:text-base mb-4">
+                <p className="text-2xl text-gray-600 dark:text-gray-300 max-lg:text-base mb-4">
                   Po overení emailu sa môžete prihlásiť
                 </p>
                 <a 
@@ -928,11 +928,11 @@ export default function RegisterForm() {
               </motion.div>
             ) : (
               <div className="text-center" style={{marginTop: '16px'}}>
-                <p className="text-base text-gray-600 max-lg:text-base">
+                <p className="text-base text-gray-600 dark:text-gray-300 max-lg:text-base">
                   Už máte účet?{' '}
                   <a 
                     href="/" 
-                    className="text-purple-800 font-semibold hover:text-purple-900 transition-colors"
+                    className="text-purple-800 dark:text-purple-400 font-semibold hover:text-purple-900 dark:hover:text-purple-300 transition-colors"
                   >
                     Prihlásiť sa
                   </a>
@@ -960,7 +960,7 @@ export default function RegisterForm() {
           </div>
         }>
           <motion.footer 
-            className="bg-gray-50 border-t border-gray-200 relative z-10"
+            className="bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 relative z-10"
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 1.2 }}
@@ -968,26 +968,26 @@ export default function RegisterForm() {
         <div className="flex justify-center">
           <div className="max-w-full max-lg:px-4" style={{paddingTop: '80px', paddingBottom: '80px'}}>
             <div className="flex flex-wrap justify-center gap-6 text-center max-lg:gap-3">
-              <a href="#" className="text-gray-600 hover:text-purple-800 transition-colors max-lg:text-sm">Ako to funguje</a>
-              <a href="#" className="text-gray-600 hover:text-purple-800 transition-colors max-lg:text-sm">Pre jednotlivcov</a>
-              <a href="#" className="text-gray-600 hover:text-purple-800 transition-colors max-lg:text-sm">Pre firmy</a>
-              <a href="#" className="text-gray-600 hover:text-purple-800 transition-colors max-lg:text-sm">Pre školy</a>
-              <a href="#" className="text-gray-600 hover:text-purple-800 transition-colors max-lg:text-sm">Pomocník</a>
-              <a href="#" className="text-gray-600 hover:text-purple-800 transition-colors max-lg:text-sm">FAQ</a>
-              <a href="#" className="text-gray-600 hover:text-purple-800 transition-colors max-lg:text-sm">Kontakt</a>
-              <a href="#" className="text-gray-600 hover:text-purple-800 transition-colors max-lg:text-sm">Nahlásiť problém</a>
-              <a href="#" className="text-gray-600 hover:text-purple-800 transition-colors max-lg:text-sm">O nás</a>
-              <a href="#" className="text-gray-600 hover:text-purple-800 transition-colors max-lg:text-sm">Podmienky používania</a>
-              <a href="#" className="text-gray-600 hover:text-purple-800 transition-colors max-lg:text-sm">Ochrana údajov</a>
-              <a href="#" className="text-gray-600 hover:text-purple-800 transition-colors max-lg:text-sm">Cookies</a>
-              <a href="#" className="text-gray-600 hover:text-purple-800 transition-colors max-lg:text-sm">GDPR</a>
+              <a href="#" className="text-gray-600 dark:text-gray-400 hover:text-purple-800 dark:hover:text-purple-400 transition-colors max-lg:text-sm">Ako to funguje</a>
+              <a href="#" className="text-gray-600 dark:text-gray-400 hover:text-purple-800 dark:hover:text-purple-400 transition-colors max-lg:text-sm">Pre jednotlivcov</a>
+              <a href="#" className="text-gray-600 dark:text-gray-400 hover:text-purple-800 dark:hover:text-purple-400 transition-colors max-lg:text-sm">Pre firmy</a>
+              <a href="#" className="text-gray-600 dark:text-gray-400 hover:text-purple-800 dark:hover:text-purple-400 transition-colors max-lg:text-sm">Pre školy</a>
+              <a href="#" className="text-gray-600 dark:text-gray-400 hover:text-purple-800 dark:hover:text-purple-400 transition-colors max-lg:text-sm">Pomocník</a>
+              <a href="#" className="text-gray-600 dark:text-gray-400 hover:text-purple-800 dark:hover:text-purple-400 transition-colors max-lg:text-sm">FAQ</a>
+              <a href="#" className="text-gray-600 dark:text-gray-400 hover:text-purple-800 dark:hover:text-purple-400 transition-colors max-lg:text-sm">Kontakt</a>
+              <a href="#" className="text-gray-600 dark:text-gray-400 hover:text-purple-800 dark:hover:text-purple-400 transition-colors max-lg:text-sm">Nahlásiť problém</a>
+              <a href="#" className="text-gray-600 dark:text-gray-400 hover:text-purple-800 dark:hover:text-purple-400 transition-colors max-lg:text-sm">O nás</a>
+              <a href="#" className="text-gray-600 dark:text-gray-400 hover:text-purple-800 dark:hover:text-purple-400 transition-colors max-lg:text-sm">Podmienky používania</a>
+              <a href="#" className="text-gray-600 dark:text-gray-400 hover:text-purple-800 dark:hover:text-purple-400 transition-colors max-lg:text-sm">Ochrana údajov</a>
+              <a href="#" className="text-gray-600 dark:text-gray-400 hover:text-purple-800 dark:hover:text-purple-400 transition-colors max-lg:text-sm">Cookies</a>
+              <a href="#" className="text-gray-600 dark:text-gray-400 hover:text-purple-800 dark:hover:text-purple-400 transition-colors max-lg:text-sm">GDPR</a>
             </div>
 
           {/* Spodná časť footeru */}
-          <div className="mt-12 pt-8 border-t border-gray-200 max-lg:mt-8 max-lg:pt-6">
+          <div className="mt-12 pt-8 border-t border-gray-200 dark:border-gray-700 max-lg:mt-8 max-lg:pt-6">
             <div className="flex flex-col md:flex-row justify-between items-center">
             </div>
-            <div className="mt-4 text-center text-gray-500 text-sm max-lg:text-xs">
+            <div className="mt-4 text-center text-gray-500 dark:text-gray-400 text-sm max-lg:text-xs">
               © 2024 Svaply. Všetky práva vyhradené.
             </div>
           </div>

@@ -90,7 +90,7 @@ export default function ForgotPasswordPage() {
 
   if (isSuccess) {
     return (
-      <div className="min-h-screen flex flex-col relative" style={{background: 'linear-gradient(135deg, #F3F0FF 0%, #E9E5FF 100%)'}}>
+      <div className="min-h-screen flex flex-col relative" style={{background: 'var(--background)'}}>
         <Suspense fallback={
           <div className="absolute inset-0 z-0 max-lg:hidden">
             {/* Fallback len pre desktop */}
@@ -101,7 +101,7 @@ export default function ForgotPasswordPage() {
         
         <div className="flex-1 flex items-center justify-center p-4 relative z-10">
           <motion.div 
-            className="bg-white rounded-2xl shadow-xl border border-gray-200"
+            className="bg-white dark:bg-black rounded-2xl shadow-xl border border-gray-200 dark:border-gray-800"
             style={{
               width: '100%',
               maxWidth: '600px'
@@ -117,7 +117,7 @@ export default function ForgotPasswordPage() {
               marginBottom: '30px'
             }}>
               <motion.h1 
-                className="text-4xl font-medium text-center mb-8 text-black tracking-wider max-lg:text-2xl max-lg:mb-8"
+                className="text-4xl font-medium text-center mb-8 text-black dark:text-white tracking-wider max-lg:text-2xl max-lg:mb-8"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.2 }}
@@ -150,7 +150,7 @@ export default function ForgotPasswordPage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.6 }}
               >
-                <p className="text-2xl text-gray-600 max-lg:text-base mb-4">
+                <p className="text-2xl text-gray-600 dark:text-gray-300 max-lg:text-base mb-4">
                   Späť na prihlásenie
                 </p>
                 <a 
@@ -168,7 +168,7 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col relative" style={{background: 'linear-gradient(135deg, #F3F0FF 0%, #E9E5FF 100%)'}}>
+    <div className="min-h-screen flex flex-col relative" style={{background: 'var(--background)'}}>
       <Suspense fallback={
         <div className="absolute inset-0 z-0 max-lg:hidden">
           {/* Fallback len pre desktop */}
@@ -179,7 +179,7 @@ export default function ForgotPasswordPage() {
       
       <div className="flex-1 flex items-center justify-center p-4 relative z-10">
         <motion.div 
-          className="bg-white rounded-2xl shadow-xl border border-gray-200"
+          className="bg-white dark:bg-black rounded-2xl shadow-xl border border-gray-200 dark:border-gray-800"
           style={{
             width: '100%',
             maxWidth: '600px'
@@ -195,7 +195,7 @@ export default function ForgotPasswordPage() {
             marginBottom: '30px'
           }}>
             <motion.h1 
-              className="text-4xl font-medium text-center mb-8 text-black tracking-wider max-lg:text-2xl max-lg:mb-8"
+              className="text-4xl font-medium text-center mb-8 text-black dark:text-white tracking-wider max-lg:text-2xl max-lg:mb-8"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.2 }}
@@ -204,7 +204,7 @@ export default function ForgotPasswordPage() {
             </motion.h1>
 
             <motion.p 
-              className="text-lg text-gray-600 text-center mb-8 max-lg:text-base"
+              className="text-lg text-gray-600 dark:text-gray-300 text-center mb-8 max-lg:text-base"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.3 }}
@@ -231,7 +231,7 @@ export default function ForgotPasswordPage() {
               transition={{ duration: 0.5, delay: 0.4 }}
             >
               <div>
-                <label htmlFor="email" className="block text-lg font-normal text-gray-600 mb-2 max-lg:text-base max-lg:mb-1">
+                <label htmlFor="email" className="block text-lg font-normal text-gray-600 dark:text-gray-300 mb-2 max-lg:text-base max-lg:mb-1">
                   Emailová adresa
                 </label>
                 <input
@@ -240,8 +240,8 @@ export default function ForgotPasswordPage() {
                   name="email"
                   value={formData.email}
                   onChange={handleInputChange}
-                  className={`w-full px-16 py-12 text-xl border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all max-lg:px-4 max-lg:py-3 max-lg:text-base ${
-                    errors.email ? 'border-red-500' : 'border-gray-300'
+                  className={`w-full px-16 py-12 text-xl border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all max-lg:px-4 max-lg:py-3 max-lg:text-base bg-white dark:bg-black text-gray-900 dark:text-white ${
+                    errors.email ? 'border-red-500' : 'border-gray-300 dark:border-gray-700'
                   }`}
                   placeholder="vas@email.sk"
                   aria-label="Zadajte svoju emailovú adresu"
@@ -296,11 +296,11 @@ export default function ForgotPasswordPage() {
             </motion.form>
 
             <div className="text-center" style={{marginTop: '16px'}}>
-              <p className="text-2xl text-gray-600 max-lg:text-base">
+              <p className="text-2xl text-gray-600 dark:text-gray-300 max-lg:text-base">
                 Spomenuli ste si heslo?{' '}
                 <a 
                   href="/" 
-                  className="text-purple-800 font-semibold hover:text-purple-900 transition-colors"
+                  className="text-purple-800 dark:text-purple-400 font-semibold hover:text-purple-900 dark:hover:text-purple-300 transition-colors"
                 >
                   Prihlásiť sa
                 </a>
