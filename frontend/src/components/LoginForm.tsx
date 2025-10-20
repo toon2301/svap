@@ -443,7 +443,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
             <label htmlFor="login-password" className="block text-base font-normal text-gray-600 dark:text-gray-300 mb-2 max-lg:text-base max-lg:mb-1">
               Heslo
             </label>
-            <div className="relative">
+            <div className="relative flex items-center">
               <input
                 id="login-password"
                 type={showPassword ? 'text' : 'password'}
@@ -451,7 +451,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
                 value={loginData.password}
                 onChange={handleLoginInputChange}
                 onKeyDown={(e) => handleKeyDown(e, 'password')}
-                className={`w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-1 focus:ring-purple-300 focus:border-transparent outline-none transition-all ${
+                className={`w-full px-3 py-2 text-sm pr-12 border rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-1 focus:ring-purple-300 focus:border-transparent outline-none transition-all ${
                   loginErrors.password ? 'border-red-500' : 'border-gray-300 dark:border-gray-700'
                 }`}
                 placeholder="••••••••"
@@ -466,8 +466,8 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   tabIndex={-1}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 rounded flex items-center justify-center w-6 h-6"
-                  style={{ top: '50%', transform: 'translateY(-50%)' }}
+                  className="absolute right-3 flex items-center justify-center text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 rounded w-6 h-6"
+                  style={{ height: '100%' }}
                 >
                   {showPassword ? (
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">

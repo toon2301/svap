@@ -62,6 +62,22 @@ export default function Dashboard({ initialUser }: DashboardProps) {
     checkAuth();
   }, [router, initialUser]);
 
+  // Požiadavka: umožniť komponentom vyvolať presmerovanie na profil cez custom event
+  useEffect(() => {
+    const goToProfileHandler = () => {
+      setActiveModule('profile');
+      setIsRightSidebarOpen(false);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('activeModule', 'profile');
+      }
+    };
+
+    window.addEventListener('goToProfile', goToProfileHandler as EventListener);
+    return () => {
+      window.removeEventListener('goToProfile', goToProfileHandler as EventListener);
+    };
+  }, []);
+
   const handleLogout = async () => {
     try {
       await api.post(endpoints.auth.logout, {
@@ -85,18 +101,61 @@ export default function Dashboard({ initialUser }: DashboardProps) {
   };
 
   const handleRightSidebarToggle = () => {
-    setIsRightSidebarOpen(!isRightSidebarOpen);
+    const willOpen = !isRightSidebarOpen;
+    setIsRightSidebarOpen(willOpen);
+    // Ak sa práve zatvára pravá navigácia (po uložen í), prepnime na profil
+    if (!willOpen) {
+      setActiveModule('profile');
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('activeModule', 'profile');
+      }
+    }
   };
 
   const handleRightItemClick = (itemId: string) => {
     setActiveRightItem(itemId);
+    
+    // Pre upozornenia zmeň activeModule na 'notifications'
+    if (itemId === 'notifications') {
+      setActiveModule('notifications');
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('activeModule', 'notifications');
+      }
+    }
+    // Pre edit-profile zostáva activeModule na 'profile' ale otvorí sa edit mód
   };
 
   const handleUserUpdate = (updatedUser: User) => {
     setUser(updatedUser);
+    
+    // Po uložení profilu presmeruj na profil a zatvor pravú navigáciu
+    setActiveModule('profile');
+    setIsRightSidebarOpen(false);
+    setActiveRightItem('edit-profile');
+    
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('activeModule', 'profile');
+    }
   };
 
   const renderModule = () => {
+    // Ak je otvorená pravá navigácia a je vybrané edit-profile, zobraz edit mód
+    if (isRightSidebarOpen && activeRightItem === 'edit-profile') {
+      return (
+        <ProfileModule 
+          user={user!} 
+          onUserUpdate={handleUserUpdate}
+          onEditProfileClick={handleRightSidebarToggle}
+          isEditMode={true}
+        />
+      );
+    }
+
+    // Ak je otvorená pravá navigácia a je vybrané notifications, zobraz NotificationsModule
+    if (isRightSidebarOpen && activeRightItem === 'notifications') {
+      return <NotificationsModule />;
+    }
+
     switch (activeModule) {
       case 'profile':
         return (

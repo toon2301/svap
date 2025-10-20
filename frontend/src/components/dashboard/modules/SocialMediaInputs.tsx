@@ -136,7 +136,7 @@ export default function SocialMediaInputs({ user, onUserUpdate }: SocialMediaInp
               }
             }}
             maxLength={255}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent bg-white dark:bg-black text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
             placeholder="https://instagram.com/username"
             autoFocus
           />
@@ -157,7 +157,7 @@ export default function SocialMediaInputs({ user, onUserUpdate }: SocialMediaInp
               }
             }}
             maxLength={255}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent bg-white dark:bg-black text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
             placeholder="https://facebook.com/username"
             autoFocus
           />
@@ -178,7 +178,7 @@ export default function SocialMediaInputs({ user, onUserUpdate }: SocialMediaInp
               }
             }}
             maxLength={255}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent"
+            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent bg-white dark:bg-black text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
             placeholder="https://linkedin.com/in/username"
             autoFocus
           />

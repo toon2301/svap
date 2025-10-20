@@ -332,9 +332,9 @@ export default function ProfileModule({ user, onUserUpdate, onEditProfileClick, 
       
       {/* Avatar Actions Modal */}
       {mounted && isActionsOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="relative z-10 w-[32rem] max-w-[90vw] mx-4">
-            <div className="rounded-2xl bg-white shadow-xl overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 lg:bg-transparent" onClick={() => setIsActionsOpen(false)}>
+          <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 w-[32rem] max-w-[90vw] lg:ml-[-12rem]" onClick={(e) => e.stopPropagation()}>
+            <div className="rounded-2xl bg-[var(--background)] text-[var(--foreground)] border border-[var(--border)] shadow-xl overflow-hidden">
               {/* Avatar v modale */}
               <div className="flex justify-center py-6">
                 <UserAvatar 
@@ -358,20 +358,20 @@ export default function ProfileModule({ user, onUserUpdate, onEditProfileClick, 
                     };
                     input.click();
                   }}
-                  className="w-full py-4 text-lg rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  className="w-full py-4 text-lg rounded-lg bg-[var(--muted)] text-[var(--foreground)] hover:bg-gray-200 dark:hover:bg-[#141414]"
                 >
                   Zmeniť fotku
                 </button>
                 <button
                   onClick={handleRemoveAvatar}
-                  className="w-full py-4 text-lg rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  className="w-full py-4 text-lg rounded-lg bg-[var(--muted)] text-[var(--foreground)] hover:bg-gray-200 dark:hover:bg-[#141414]"
                   disabled={isUploading}
                 >
                   Odstrániť fotku
                 </button>
                 <button
                   onClick={() => setIsActionsOpen(false)}
-                  className="w-full py-4 text-lg rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  className="w-full py-4 text-lg rounded-lg bg-[var(--muted)] text-[var(--foreground)] hover:bg-gray-200 dark:hover:bg-[#141414]"
                 >
                   Zrušiť
                 </button>

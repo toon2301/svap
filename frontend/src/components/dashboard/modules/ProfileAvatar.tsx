@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { User } from '../../../types';
+import { useTheme } from '../../../contexts/ThemeContext';
 
 interface ProfileAvatarProps {
   user: User;
@@ -23,6 +24,7 @@ export default function ProfileAvatar({
 }: ProfileAvatarProps) {
   const [isActionsOpen, setIsActionsOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const { theme } = useTheme();
 
   React.useEffect(() => {
     setMounted(true);
@@ -99,10 +101,9 @@ export default function ProfileAvatar({
       
       {/* Avatar Actions Modal */}
       {mounted && isActionsOpen && createPortal(
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black bg-opacity-50" onClick={() => setIsActionsOpen(false)} aria-hidden="true" />
-          <div className="relative z-10 w-[32rem] max-w-[90vw] mx-4">
-            <div className="rounded-2xl bg-white shadow-xl overflow-hidden">
+        <div className="fixed inset-0 z-50 bg-black bg-opacity-50 lg:bg-transparent flex items-center justify-center" onClick={() => setIsActionsOpen(false)}>
+          <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[32rem] max-w-[90vw] lg:ml-[-12rem]" onClick={(e) => e.stopPropagation()}>
+            <div className={`rounded-2xl border shadow-xl overflow-hidden bg-[var(--background)] text-[var(--foreground)] border-[var(--border)]`}>
               <div className="py-6 px-2 space-y-3">
                 <button
                   onClick={() => {
@@ -116,20 +117,20 @@ export default function ProfileAvatar({
                     };
                     input.click();
                   }}
-                  className="w-full py-4 text-lg rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  className={`w-full py-4 text-lg rounded-lg transition-colors bg-[var(--muted)] text-[var(--foreground)] hover:bg-gray-200 dark:hover:bg-[#141414]`}
                 >
                   Zmeniť fotku
                 </button>
                 <button
                   onClick={handleRemoveAvatar}
-                  className="w-full py-4 text-lg rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  className={`w-full py-4 text-lg rounded-lg transition-colors bg-[var(--muted)] text-[var(--foreground)] hover:bg-gray-200 dark:hover:bg-[#141414]`}
                   disabled={isUploading}
                 >
                   Odstrániť fotku
                 </button>
                 <button
                   onClick={() => setIsActionsOpen(false)}
-                  className="w-full py-4 text-lg rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  className={`w-full py-4 text-lg rounded-lg transition-colors bg-[var(--muted)] text-[var(--foreground)] hover:bg-gray-200 dark:hover:bg-[#141414]`}
                 >
                   Zrušiť
                 </button>

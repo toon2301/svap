@@ -171,7 +171,7 @@ export default function RegisterForm() {
   const handleKeyDown = (e: React.KeyboardEvent, fieldName: string) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      const fieldOrder = ['username', 'email', 'password', 'password_confirm', 'user_type', 'birth_day', 'birth_month', 'birth_year', 'gender', 'company_name', 'website'];
+      const fieldOrder = ['username', 'email', 'password', 'password_confirm', 'user_type', 'birth_date', 'gender', 'company_name', 'website'];
       const currentIndex = fieldOrder.indexOf(fieldName);
       const nextField = fieldOrder[currentIndex + 1];
       
@@ -628,7 +628,7 @@ export default function RegisterForm() {
                   <label htmlFor="password" className="block text-base font-normal text-gray-600 dark:text-gray-300 mb-1.5 max-lg:text-base max-lg:mb-1">
                     Heslo *
                   </label>
-                  <div className="relative">
+                  <div className="relative flex items-center">
                     <input
                       id="password"
                       type={showPassword ? 'text' : 'password'}
@@ -654,7 +654,8 @@ export default function RegisterForm() {
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
                       tabIndex={-1}
-                      className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors focus:outline-none focus:ring-1 focus:ring-purple-300 focus:ring-offset-2 rounded"
+                      className="absolute right-2 flex items-center justify-center text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors focus:outline-none focus:ring-1 focus:ring-purple-300 focus:ring-offset-2 rounded"
+                      style={{ height: '100%' }}
                     >
                     
                       {showPassword ? (
@@ -678,7 +679,7 @@ export default function RegisterForm() {
                   <label htmlFor="password_confirm" className="block text-base font-normal text-gray-600 dark:text-gray-300 mb-1.5 max-lg:text-base max-lg:mb-1">
                     Potvrdenie hesla *
                   </label>
-                  <div className="relative">
+                  <div className="relative flex items-center">
                     <input
                       id="password_confirm"
                       type={showPasswordConfirm ? 'text' : 'password'}
@@ -694,7 +695,8 @@ export default function RegisterForm() {
                       type="button"
                       onClick={() => setShowPasswordConfirm(!showPasswordConfirm)}
                       aria-label={showPasswordConfirm ? 'Skryť heslo' : 'Zobraziť heslo'}
-                      className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                      className="absolute right-2 flex items-center justify-center text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                      style={{ height: '100%' }}
                     >
                       {showPasswordConfirm ? (
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -718,86 +720,55 @@ export default function RegisterForm() {
 
               {/* Dátum narodenia */}
               <div>
-                <label className="block text-base font-normal text-gray-600 dark:text-gray-300 mb-1.5 max-lg:text-base max-lg:mb-1">
+                <label htmlFor="birth_date" className="block text-base font-normal text-gray-600 dark:text-gray-300 mb-1.5 max-lg:text-base max-lg:mb-1">
                   Dátum narodenia *
                 </label>
-                <div className="grid grid-cols-3 gap-4">
-                  <select
-                    name="birth_day"
-                    value={formData.birth_day}
-                    onChange={handleInputChange}
-                    onTouchStart={(e) => handleTouchStart(e, 'birth_day')}
-                    onTouchEnd={(e) => handleTouchEnd(e, 'birth_day')}
-                    onFocus={() => handleSelectFocus('birth_day')}
-                    onBlur={() => handleSelectBlur('birth_day')}
-                    className={`w-full px-3 py-2 text-sm border rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent outline-none transition-all bg-white dark:bg-black text-gray-900 dark:text-white ${
-                      errors.birth_day ? 'border-red-500' : 'border-gray-300 dark:border-gray-700'
-                    }`}
-                  >
-                    <option value="">Deň</option>
-                    {Array.from({ length: 31 }, (_, i) => i + 1).map(day => (
-                      <option key={day} value={day.toString().padStart(2, '0')}>
-                        {day.toString().padStart(2, '0')}
-                      </option>
-                    ))}
-                  </select>
-
-                  <select
-                    name="birth_month"
-                    value={formData.birth_month}
-                    onChange={handleInputChange}
-                    onTouchStart={(e) => handleTouchStart(e, 'birth_month')}
-                    onTouchEnd={(e) => handleTouchEnd(e, 'birth_month')}
-                    onFocus={() => handleSelectFocus('birth_month')}
-                    onBlur={() => handleSelectBlur('birth_month')}
-                    className={`w-full px-3 py-2 text-sm border rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent outline-none transition-all bg-white dark:bg-black text-gray-900 dark:text-white ${
-                      errors.birth_month ? 'border-red-500' : 'border-gray-300 dark:border-gray-700'
-                    }`}
-                  >
-                    <option value="">Mesiac</option>
-                    {[
-                      'Január', 'Február', 'Marec', 'Apríl', 'Máj', 'Jún',
-                      'Júl', 'August', 'September', 'Október', 'November', 'December'
-                    ].map((month, index) => (
-                      <option key={index} value={(index + 1).toString().padStart(2, '0')}>
-                        {month}
-                      </option>
-                    ))}
-                  </select>
-
-                  <select
-                    name="birth_year"
-                    value={formData.birth_year}
-                    onChange={handleInputChange}
-                    onTouchStart={(e) => handleTouchStart(e, 'birth_year')}
-                    onTouchEnd={(e) => handleTouchEnd(e, 'birth_year')}
-                    onFocus={() => handleSelectFocus('birth_year')}
-                    onBlur={() => handleSelectBlur('birth_year')}
-                    className={`w-full px-3 py-2 text-sm border rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent outline-none transition-all bg-white dark:bg-black text-gray-900 dark:text-white ${
-                      errors.birth_year ? 'border-red-500' : 'border-gray-300 dark:border-gray-700'
-                    }`}
-                  >
-                    <option value="">Rok</option>
-                    {Array.from({ length: 100 }, (_, i) => new Date().getFullYear() - i).map(year => (
-                      <option key={year} value={year}>
-                        {year}
-                      </option>
-                    ))}
-                  </select>
+                <input
+                  id="birth_date"
+                  type="date"
+                  name="birth_date"
+                  value={formData.birth_day && formData.birth_month && formData.birth_year 
+                    ? `${formData.birth_year}-${formData.birth_month}-${formData.birth_day}` 
+                    : ''}
+                  onChange={(e) => {
+                    const dateValue = e.target.value;
+                    if (dateValue) {
+                      const [year, month, day] = dateValue.split('-');
+                      setFormData(prev => ({
+                        ...prev,
+                        birth_year: year,
+                        birth_month: month,
+                        birth_day: day
+                      }));
+                    } else {
+                      setFormData(prev => ({
+                        ...prev,
+                        birth_year: '',
+                        birth_month: '',
+                        birth_day: ''
+                      }));
+                    }
+                  }}
+                  onKeyDown={(e) => handleKeyDown(e, 'birth_date')}
+                  className={`w-full px-3 py-2 text-sm border rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent outline-none transition-all bg-white dark:bg-black text-gray-900 dark:text-white ${
+                    errors.birth_day || errors.birth_month || errors.birth_year ? 'border-red-500' : 'border-gray-300 dark:border-gray-700'
+                  }`}
+                  aria-label="Zadajte svoj dátum narodenia"
+                  aria-required="true"
+                  aria-invalid={errors.birth_day || errors.birth_month || errors.birth_year ? "true" : "false"}
+                  aria-describedby={errors.birth_day || errors.birth_month || errors.birth_year ? "birth-date-error" : "birth-date-help"}
+                  tabIndex={5}
+                />
+                <div id="birth-date-help" className="sr-only">
+                  Zadajte svoj dátum narodenia
                 </div>
                 
-                {/* Error messages outside select elements */}
-                <div className="grid grid-cols-3 gap-4 mt-2">
-                  {errors.birth_day && (
-                    <p className="text-red-500 text-sm">{errors.birth_day}</p>
-                  )}
-                  {errors.birth_month && (
-                    <p className="text-red-500 text-sm">{errors.birth_month}</p>
-                  )}
-                  {errors.birth_year && (
-                    <p className="text-red-500 text-sm">{errors.birth_year}</p>
-                  )}
-                </div>
+                {/* Error messages */}
+                {(errors.birth_day || errors.birth_month || errors.birth_year) && (
+                  <p id="birth-date-error" className="text-red-500 text-sm mt-1" role="alert" aria-live="polite">
+                    {errors.birth_day || errors.birth_month || errors.birth_year}
+                  </p>
+                )}
               </div>
 
               <div style={{marginTop: '12px'}}></div>

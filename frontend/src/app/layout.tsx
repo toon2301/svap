@@ -67,10 +67,10 @@ export default function RootLayout({
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
         <style dangerouslySetInnerHTML={{
           __html: `
+            /* Keep zoom reset but do NOT override transforms on all elements */
             @media (min-width: 769px) {
-              html { zoom: 1 !important; transform: scale(1) !important; }
-              body { zoom: 1 !important; transform: scale(1) !important; }
-              * { transform: scale(1) !important; }
+              html { zoom: 1 !important; transform: none !important; }
+              body { zoom: 1 !important; transform: none !important; }
             }
           `
         }} />
