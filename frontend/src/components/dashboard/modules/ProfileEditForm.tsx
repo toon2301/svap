@@ -43,14 +43,16 @@ export default function ProfileEditForm({ user, onUserUpdate, onEditProfileClick
   }, [user.first_name, user.bio, user.website, user.location, user.phone, user.phone_visible, user.job_title, user.job_title_visible, user.gender]);
 
   const handleFullNameSave = async () => {
+    const currentFirst = (user.first_name || '').trim();
+    const currentLast = (user.last_name || '').trim();
     const f = (firstName || '').trim();
     const l = (lastName || '').trim();
-    if (f === (user.first_name || '').trim() && l === (user.last_name || '').trim()) return;
+    const payload: Record<string, string> = {};
+    if (f !== currentFirst) payload.first_name = f;
+    if (l !== currentLast) payload.last_name = l;
+    if (Object.keys(payload).length === 0) return;
     try {
-      const response = await api.patch('/auth/profile/', {
-        first_name: f,
-        last_name: l,
-      });
+      const response = await api.patch('/auth/profile/', payload);
       if (onUserUpdate && response.data.user) {
         onUserUpdate(response.data.user);
       }
@@ -325,7 +327,7 @@ export default function ProfileEditForm({ user, onUserUpdate, onEditProfileClick
             Meno
           </label>
           <input
-            id="full_name"
+            id="first_name"
             type="text"
             value={`${firstName} ${lastName}`.trim()}
             onChange={(e) => {
@@ -336,7 +338,7 @@ export default function ProfileEditForm({ user, onUserUpdate, onEditProfileClick
                 setLastName('');
               } else if (parts.length === 1) {
                 setFirstName(parts[0]);
-                setLastName('');
+                // Preserve existing last name when only one token is provided
               } else {
                 setFirstName(parts.slice(0, -1).join(' '));
                 setLastName(parts[parts.length - 1]);

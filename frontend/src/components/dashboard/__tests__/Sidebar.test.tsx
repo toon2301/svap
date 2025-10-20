@@ -1,6 +1,7 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import Sidebar from '../Sidebar';
+import { ThemeProvider } from '@/contexts/ThemeContext';
 
 // Mock framer-motion
 jest.mock('framer-motion', () => ({
@@ -24,7 +25,7 @@ describe('Sidebar', () => {
   });
 
   it('renders all navigation items', () => {
-    render(<Sidebar {...defaultProps} />);
+    render(<ThemeProvider><Sidebar {...defaultProps} onLogout={() => {}} /></ThemeProvider>);
     
     expect(screen.getByText('Nástenka')).toBeInTheDocument();
     expect(screen.getByText('Vyhľadávanie')).toBeInTheDocument();
@@ -34,14 +35,14 @@ describe('Sidebar', () => {
   });
 
   it('highlights active item', () => {
-    render(<Sidebar {...defaultProps} activeItem="search" />);
+    render(<ThemeProvider><Sidebar {...defaultProps} onLogout={() => {}} activeItem="search" /></ThemeProvider>);
     
     const searchButton = screen.getByText('Vyhľadávanie').closest('button');
     expect(searchButton).toHaveClass('bg-purple-100', 'text-purple-800');
   });
 
   it('calls onItemClick when item is clicked', () => {
-    render(<Sidebar {...defaultProps} />);
+    render(<ThemeProvider><Sidebar {...defaultProps} onLogout={() => {}} /></ThemeProvider>);
     
     const searchButton = screen.getByText('Vyhľadávanie');
     fireEvent.click(searchButton);
@@ -51,12 +52,15 @@ describe('Sidebar', () => {
 
   it('renders mobile overlay when isMobile and isOpen', () => {
     render(
-      <Sidebar 
-        {...defaultProps} 
-        isMobile={true} 
-        isOpen={true} 
-        onClose={mockOnClose} 
-      />
+      <ThemeProvider>
+        <Sidebar 
+          {...defaultProps} 
+          onLogout={() => {}}
+          isMobile={true} 
+          isOpen={true} 
+          onClose={mockOnClose} 
+        />
+      </ThemeProvider>
     );
     
     const overlay = document.querySelector('.fixed.inset-0.bg-black');
@@ -65,12 +69,15 @@ describe('Sidebar', () => {
 
   it('calls onClose when mobile overlay is clicked', () => {
     render(
-      <Sidebar 
-        {...defaultProps} 
-        isMobile={true} 
-        isOpen={true} 
-        onClose={mockOnClose} 
-      />
+      <ThemeProvider>
+        <Sidebar 
+          {...defaultProps} 
+          onLogout={() => {}}
+          isMobile={true} 
+          isOpen={true} 
+          onClose={mockOnClose} 
+        />
+      </ThemeProvider>
     );
     
     const overlay = document.querySelector('.fixed.inset-0.bg-black');
@@ -81,12 +88,15 @@ describe('Sidebar', () => {
 
   it('renders close button in mobile mode', () => {
     render(
-      <Sidebar 
-        {...defaultProps} 
-        isMobile={true} 
-        isOpen={true} 
-        onClose={mockOnClose} 
-      />
+      <ThemeProvider>
+        <Sidebar 
+          {...defaultProps} 
+          onLogout={() => {}}
+          isMobile={true} 
+          isOpen={true} 
+          onClose={mockOnClose} 
+        />
+      </ThemeProvider>
     );
     
     const closeButton = screen.getByRole('button', { name: /close/i });
@@ -95,12 +105,15 @@ describe('Sidebar', () => {
 
   it('calls onClose when close button is clicked', () => {
     render(
-      <Sidebar 
-        {...defaultProps} 
-        isMobile={true} 
-        isOpen={true} 
-        onClose={mockOnClose} 
-      />
+      <ThemeProvider>
+        <Sidebar 
+          {...defaultProps} 
+          onLogout={() => {}}
+          isMobile={true} 
+          isOpen={true} 
+          onClose={mockOnClose} 
+        />
+      </ThemeProvider>
     );
     
     // Find the close button by looking for the X icon
@@ -113,13 +126,13 @@ describe('Sidebar', () => {
   });
 
   it('renders logout button', () => {
-    render(<Sidebar {...defaultProps} />);
+    render(<ThemeProvider><Sidebar {...defaultProps} onLogout={() => {}} /></ThemeProvider>);
     
     expect(screen.getByText('Odhlásiť sa')).toBeInTheDocument();
   });
 
   it('shows Swaply logo', () => {
-    render(<Sidebar {...defaultProps} />);
+    render(<ThemeProvider><Sidebar {...defaultProps} onLogout={() => {}} /></ThemeProvider>);
     
     expect(screen.getByText('Swaply')).toBeInTheDocument();
   });

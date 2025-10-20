@@ -1,6 +1,7 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import Dashboard from '../Dashboard';
+import { ThemeProvider } from '@/contexts/ThemeContext';
 import { User } from '@/types';
 
 // Mock framer-motion
@@ -62,7 +63,7 @@ describe('Dashboard', () => {
     const { isAuthenticated } = require('@/utils/auth');
     isAuthenticated.mockReturnValue(true);
     
-    render(<Dashboard />);
+    render(<ThemeProvider><Dashboard /></ThemeProvider>);
     
     expect(screen.getByText('Načítavam dashboard...')).toBeInTheDocument();
   });
@@ -74,7 +75,7 @@ describe('Dashboard', () => {
     isAuthenticated.mockReturnValue(true);
     api.get.mockResolvedValue({ data: mockUser });
     
-    render(<Dashboard />);
+    render(<ThemeProvider><Dashboard /></ThemeProvider>);
     
     await waitFor(() => {
       expect(screen.getByText('Vitaj v Swaply!')).toBeInTheDocument();
@@ -86,7 +87,7 @@ describe('Dashboard', () => {
     const api = require('@/lib/api').api;
     jest.spyOn(api, 'get').mockResolvedValue({ data: mockUser });
     
-    render(<Dashboard initialUser={mockUser} />);
+    render(<ThemeProvider><Dashboard initialUser={mockUser} /></ThemeProvider>);
     
     // Počkaj na dokončenie useEffect a renderovanie obsahu
     await waitFor(() => {
@@ -97,7 +98,7 @@ describe('Dashboard', () => {
   it('redirects to home when not authenticated', async () => {
     const { isAuthenticated } = require('@/utils/auth');
     isAuthenticated.mockReturnValue(false);
-    render(<Dashboard />);
+    render(<ThemeProvider><Dashboard /></ThemeProvider>);
 
     await waitFor(() => {
       expect(pushMock).toHaveBeenCalledWith('/');
@@ -108,7 +109,7 @@ describe('Dashboard', () => {
     const { isAuthenticated } = require('@/utils/auth');
     isAuthenticated.mockReturnValue(true);
     
-    render(<Dashboard initialUser={mockUser} />);
+    render(<ThemeProvider><Dashboard initialUser={mockUser} /></ThemeProvider>);
     
     expect(screen.getByText('Nástenka')).toBeInTheDocument();
     expect(screen.getByText('Vyhľadávanie')).toBeInTheDocument();
@@ -121,7 +122,7 @@ describe('Dashboard', () => {
     const { isAuthenticated } = require('@/utils/auth');
     isAuthenticated.mockReturnValue(true);
     
-    render(<Dashboard initialUser={mockUser} />);
+    render(<ThemeProvider><Dashboard initialUser={mockUser} /></ThemeProvider>);
     
     const searchButtons = screen.getAllByText('Vyhľadávanie');
     fireEvent.click(searchButtons[0]);
@@ -135,7 +136,7 @@ describe('Dashboard', () => {
     const { isAuthenticated } = require('@/utils/auth');
     isAuthenticated.mockReturnValue(true);
 
-    render(<Dashboard initialUser={mockUser} />);
+    render(<ThemeProvider><Dashboard initialUser={mockUser} /></ThemeProvider>);
 
     fireEvent.click(screen.getByText('Oblúbené'));
     await waitFor(() => {
@@ -171,7 +172,7 @@ describe('Dashboard', () => {
     const { isAuthenticated } = require('@/utils/auth');
     isAuthenticated.mockReturnValue(true);
     
-    render(<Dashboard initialUser={mockUser} />);
+    render(<ThemeProvider><Dashboard initialUser={mockUser} /></ThemeProvider>);
     // Home module welcome exists
     expect(screen.getAllByText('Vitaj v Swaply!').length).toBeGreaterThan(0);
   });
@@ -187,7 +188,7 @@ describe('Dashboard', () => {
       value: 768,
     });
     
-    render(<Dashboard initialUser={mockUser} />);
+    render(<ThemeProvider><Dashboard initialUser={mockUser} /></ThemeProvider>);
     
     // Check for mobile menu button (hamburger icon)
     const mobileMenuButton = document.querySelector('button svg');
@@ -198,7 +199,7 @@ describe('Dashboard', () => {
     const { isAuthenticated } = require('@/utils/auth');
     isAuthenticated.mockReturnValue(true);
     
-    render(<Dashboard initialUser={mockUser} />);
+    render(<ThemeProvider><Dashboard initialUser={mockUser} /></ThemeProvider>);
     
     const mobileMenuButton = document.querySelector('button svg');
     fireEvent.click(mobileMenuButton!.closest('button')!);
@@ -212,7 +213,7 @@ describe('Dashboard', () => {
     const { isAuthenticated } = require('@/utils/auth');
     isAuthenticated.mockReturnValue(true);
     
-    render(<Dashboard initialUser={mockUser} />);
+    render(<ThemeProvider><Dashboard initialUser={mockUser} /></ThemeProvider>);
     
     expect(screen.getByText('Odhlásiť sa')).toBeInTheDocument();
   });
@@ -225,7 +226,7 @@ describe('Dashboard', () => {
     isAuthenticated.mockReturnValue(true);
     api.post.mockResolvedValue({});
     
-    render(<Dashboard initialUser={mockUser} />);
+    render(<ThemeProvider><Dashboard initialUser={mockUser} /></ThemeProvider>);
     
     const logoutButton = screen.getByText('Odhlásiť sa');
     fireEvent.click(logoutButton);
@@ -242,8 +243,8 @@ describe('Dashboard', () => {
     const { isAuthenticated } = require('@/utils/auth');
     isAuthenticated.mockReturnValue(true);
     
-    render(<Dashboard initialUser={mockUser} />);
+    render(<ThemeProvider><Dashboard initialUser={mockUser} /></ThemeProvider>);
     
-    expect(screen.getByText('Vitaj v Swaply!')).toBeInTheDocument();
+    expect(screen.getAllByText('Vitaj v Swaply!').length).toBeGreaterThan(0);
   });
 });

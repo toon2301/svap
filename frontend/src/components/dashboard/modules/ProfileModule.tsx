@@ -126,10 +126,7 @@ export default function ProfileModule({ user, onUserUpdate, onEditProfileClick, 
                     <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
                       {user.first_name && user.last_name ? `${user.first_name} ${user.last_name}` : user.username}
                     </h2>
-                    {/* Email */}
-                    <p className="text-gray-600 dark:text-gray-300 text-sm">
-                      {user.email}
-                    </p>
+                    {/* Email intentionally not shown here (kept in edit views) */}
                     {/* Lokalita */}
                     {user.location && (
                       <p className="text-gray-600 dark:text-gray-300 text-sm flex items-center gap-1 mt-1">
@@ -238,10 +235,7 @@ export default function ProfileModule({ user, onUserUpdate, onEditProfileClick, 
                         <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-1">
                           {user.first_name && user.last_name ? `${user.first_name} ${user.last_name}` : user.username}
                         </h2>
-                        {/* Email */}
-                        <p className="text-gray-600 dark:text-gray-300">
-                          {user.email}
-                        </p>
+                        {/* Email intentionally not shown here (kept in edit views) */}
                         {/* Lokalita */}
                         {user.location && (
                           <p className="text-gray-600 dark:text-gray-300 text-sm flex items-center gap-1">
