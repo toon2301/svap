@@ -53,21 +53,26 @@ export default function Home() {
       <div className="flex items-center justify-center flex-1 px-8 max-lg:flex-col max-lg:px-4 max-lg:gap-8 relative z-10" style={{paddingTop: '40px'}}>
       {/* Main content */}
       <motion.div 
-        className="flex-1 max-w-4xl max-lg:text-center"
+        className="flex-1 max-w-4xl max-lg:text-center mt-[-72px] lg:mt-[-100px]"
         initial={{ opacity: 0, x: -50 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.8, ease: "easeOut" }}
       >
-        <motion.h1 
-          className="text-8xl font-bold text-gray-900 dark:text-white mb-8 max-lg:text-5xl max-lg:mb-6"
+        <motion.div 
+          className="text-8xl font-bold text-gray-900 dark:text-white max-lg:text-5xl flex items-center"
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
         >
-          <span className="text-6xl max-lg:text-4xl">Víta ťa</span> <span className="font-bold" style={{color: '#6B46C1'}}>Svaply</span>
-        </motion.h1>
+          <span className="text-6xl max-lg:text-4xl mr-4">Víta ťa</span>
+          <img
+            src="/Logotyp _svaply_ na fialovom pozadí.png"
+            alt="Svaply"
+            className="w-auto h-56 md:h-60 lg:h-[450px] mt-2 lg:mt-[20px] ml-[-40px] lg:ml-[-50px]"
+          />
+        </motion.div>
         <motion.p 
-          className="text-xl text-gray-600 dark:text-gray-300 text-left max-w-3xl leading-relaxed max-lg:text-sm max-lg:mx-auto max-lg:max-w-xs"
+          className="text-xl text-gray-600 dark:text-gray-300 text-left max-w-3xl leading-relaxed max-lg:text-sm max-lg:mx-auto max-lg:max-w-xs mb-0 mt-[-64px] lg:mt-[-130px]"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.5, ease: "easeOut" }}
