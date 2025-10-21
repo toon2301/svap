@@ -166,6 +166,12 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
             refresh: event.data.tokens.refresh
           });
           
+          // Reset preferovaného modulu a nastav flag na vynútenie HOME
+          try {
+            localStorage.setItem('activeModule', 'home');
+            sessionStorage.setItem('forceHome', '1');
+          } catch (e) {}
+          
           setIsGoogleLoading(false);
           router.push('/dashboard');
         } else if (event.data.type === 'OAUTH_ERROR') {
@@ -213,6 +219,12 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
               // Vymaž dočasné localStorage položky
               localStorage.removeItem('oauth_success');
               
+              // Reset preferovaného modulu a nastav flag na vynútenie HOME
+              try {
+                localStorage.setItem('activeModule', 'home');
+                sessionStorage.setItem('forceHome', '1');
+              } catch (e) {}
+              
               setIsGoogleLoading(false);
               router.push('/dashboard');
             } else {
@@ -248,6 +260,12 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
       
       // Uloženie tokenov
       setAuthTokens(response.data.tokens);
+      
+      // Reset preferovaného modulu po prihlásení a nastav flag na vynútenie HOME
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('activeModule', 'home');
+        sessionStorage.setItem('forceHome', '1');
+      }
       
       // Presmerovanie na dashboard
       router.push('/dashboard');

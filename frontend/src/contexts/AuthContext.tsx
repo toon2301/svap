@@ -89,6 +89,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
       localStorage.setItem('tokens', JSON.stringify(tokens));
       
       setUser(userData);
+      // Reset preferovaného modulu po prihlásení a nastav flag na vynútenie HOME
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('activeModule', 'home');
+        sessionStorage.setItem('forceHome', '1');
+      }
       router.push('/dashboard');
     } catch (error) {
       console.error('Login error:', error);
@@ -124,6 +129,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const logout = () => {
     localStorage.removeItem('user');
     localStorage.removeItem('tokens');
+    localStorage.removeItem('activeModule');
+    sessionStorage.removeItem('forceHome');
     setUser(null);
     router.push('/');
   };

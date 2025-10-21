@@ -27,6 +27,8 @@ export default function Dashboard({ initialUser }: DashboardProps) {
   const [isLoading, setIsLoading] = useState(!initialUser);
   const [activeModule, setActiveModule] = useState(() => {
     if (typeof window !== 'undefined') {
+      // Ak existuje forceHome flag, preferuj home
+      if (sessionStorage.getItem('forceHome') === '1') return 'home';
       return localStorage.getItem('activeModule') || 'home';
     }
     return 'home';
@@ -40,6 +42,17 @@ export default function Dashboard({ initialUser }: DashboardProps) {
       if (!isAuthenticated()) {
         router.push('/');
         return;
+      }
+
+      // Vynúť HOME po čerstvom prihlásení (aj keď boli uložené predchádzajúce preferencie)
+      if (typeof window !== 'undefined' && sessionStorage.getItem('forceHome') === '1') {
+        // Nastav hneď, pred načítaním usera
+        setActiveModule('home');
+        setIsRightSidebarOpen(false);
+        try {
+          localStorage.setItem('activeModule', 'home');
+          sessionStorage.removeItem('forceHome');
+        } catch (e) {}
       }
 
       if (!initialUser) {
