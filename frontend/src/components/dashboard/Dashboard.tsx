@@ -128,9 +128,9 @@ export default function Dashboard({ initialUser }: DashboardProps) {
   const handleUserUpdate = (updatedUser: User) => {
     setUser(updatedUser);
     
-    // Po uložení profilu presmeruj na profil a zatvor pravú navigáciu
+    // Po uložení profilu zostaň v edit móde (najmä na mobile)
     setActiveModule('profile');
-    setIsRightSidebarOpen(false);
+    setIsRightSidebarOpen(true);
     setActiveRightItem('edit-profile');
     
     if (typeof window !== 'undefined') {

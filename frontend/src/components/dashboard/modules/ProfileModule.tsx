@@ -124,7 +124,7 @@ export default function ProfileModule({ user, onUserUpdate, onEditProfileClick, 
                   <div className="flex flex-col justify-center">
                     {/* Meno používateľa */}
                     <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
-                      {user.first_name && user.last_name ? `${user.first_name} ${user.last_name}` : user.username}
+                      {`${(user.first_name || '').trim()} ${(user.last_name || '').trim()}`.trim() || user.username}
                     </h2>
                     {/* Email intentionally not shown here (kept in edit views) */}
                     {/* Lokalita */}
@@ -233,7 +233,7 @@ export default function ProfileModule({ user, onUserUpdate, onEditProfileClick, 
                       <div className="flex flex-col">
                         {/* Meno používateľa */}
                         <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-1">
-                          {user.first_name && user.last_name ? `${user.first_name} ${user.last_name}` : user.username}
+                          {`${(user.first_name || '').trim()} ${(user.last_name || '').trim()}`.trim() || user.username}
                         </h2>
                         {/* Email intentionally not shown here (kept in edit views) */}
                         {/* Lokalita */}

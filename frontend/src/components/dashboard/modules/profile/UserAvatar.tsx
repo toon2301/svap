@@ -21,7 +21,16 @@ const sizeClasses = {
 export default function UserAvatar({ user, size = 'large', onPhotoUpload, isUploading = false, onAvatarClick }: UserAvatarProps) {
   const [imageError, setImageError] = useState(false);
   const getInitials = (firstName: string, lastName: string): string => {
-    return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
+    const f = (firstName || '').trim();
+    const l = (lastName || '').trim();
+    if (f && l) return `${f.charAt(0)}${l.charAt(0)}`.toUpperCase();
+    if (f) {
+      const parts = f.split(/\s+/).filter(Boolean);
+      const base = parts[0] || f;
+      return base.slice(0, 2).toUpperCase();
+    }
+    if (l) return l.charAt(0).toUpperCase();
+    return (user.email?.charAt(0).toUpperCase() || 'U');
   };
 
   const initials = getInitials(user.first_name, user.last_name);
