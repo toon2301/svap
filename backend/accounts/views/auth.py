@@ -183,8 +183,9 @@ def login_view(request):
         # Resetuj počítadlo neúspešných pokusov po úspechu
         reset_login_failures(email)
 
-        # Generovanie JWT tokenov
-        refresh = RefreshToken.for_user(user)
+        # Generovanie JWT tokenov s custom RefreshToken
+        from ..authentication import SwaplyRefreshToken
+        refresh = SwaplyRefreshToken.for_user(user)
         access_token = refresh.access_token
         
         # Log úspešné prihlásenie
@@ -228,8 +229,14 @@ def logout_view(request):
     try:
         refresh_token = request.data.get('refresh')
         if refresh_token:
-            token = RefreshToken(refresh_token)
-            token.blacklist()
+            # Použi custom RefreshToken s Redis fallback
+            from ..authentication import SwaplyRefreshToken
+            try:
+                token = SwaplyRefreshToken(refresh_token)
+                token.blacklist()
+            except Exception as blacklist_error:
+                logger.warning(f"Token blacklisting failed: {blacklist_error}")
+                # Pokračuj aj ak blacklisting zlyhá
         
         return Response({
             'message': 'Odhlásenie bolo úspešné'
@@ -250,7 +257,8 @@ def me_view(request):
     
     # Pre OAuth callback - vrátime aj tokeny
     if request.GET.get('with_tokens') == 'true':
-        refresh = RefreshToken.for_user(request.user)
+        from ..authentication import SwaplyRefreshToken
+        refresh = SwaplyRefreshToken.for_user(request.user)
         access_token = refresh.access_token
         
         return Response({
@@ -289,8 +297,8 @@ def verify_email_view(request):
                 log_email_verification_success(verification.user, ip_address, user_agent)
                 
                 # Generovanie JWT tokenov pre automatické prihlásenie
-                from rest_framework_simplejwt.tokens import RefreshToken
-                refresh = RefreshToken.for_user(verification.user)
+                from ..authentication import SwaplyRefreshToken
+                refresh = SwaplyRefreshToken.for_user(verification.user)
                 
                 return Response({
                     'message': 'Email bol úspešne overený',

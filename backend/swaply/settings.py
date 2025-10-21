@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 import os
 import sys
+import logging
 from pathlib import Path
 from datetime import timedelta
 from dotenv import load_dotenv
@@ -211,7 +212,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Django REST Framework
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'accounts.authentication.SwaplyJWTAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
@@ -242,6 +243,7 @@ SIMPLE_JWT = {
     'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',
     'USER_ID_FIELD': 'id',
     'USER_ID_CLAIM': 'user_id',
+    'REFRESH_TOKEN_CLASS': 'accounts.authentication.SwaplyRefreshToken',
 }
 
 # CORS settings - nastavte v .env súbore pre produkciu (IP adresa pre mobile testovanie)
@@ -299,16 +301,37 @@ CSRF_TRUSTED_ORIGINS = os.getenv(
 # Redis settings (pre cache a session storage). Ak REDIS_URL nie je zadaný, použijeme LocMemCache.
 REDIS_URL = os.getenv('REDIS_URL', None)
 
+# Test Redis pripojenie
+REDIS_AVAILABLE = False
 if REDIS_URL:
+    try:
+        import redis
+        r = redis.from_url(REDIS_URL)
+        r.ping()  # Test pripojenia
+        REDIS_AVAILABLE = True
+    except Exception as e:
+        logger = logging.getLogger(__name__)
+        logger.warning(f"Redis connection failed: {e}. Falling back to LocMemCache.")
+        REDIS_AVAILABLE = False
+
+if REDIS_URL and REDIS_AVAILABLE:
     CACHES = {
         'default': {
             'BACKEND': 'django.core.cache.backends.redis.RedisCache',
             'LOCATION': REDIS_URL,
             'KEY_PREFIX': os.getenv('CACHE_KEY_PREFIX', 'swaply'),
+            'OPTIONS': {
+                'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+                'CONNECTION_POOL_KWARGS': {
+                    'retry_on_timeout': True,
+                    'socket_keepalive': True,
+                    'socket_keepalive_options': {},
+                }
+            }
         }
     }
 else:
-    # Fallback pre dev/test
+    # Fallback pre dev/test alebo ak Redis nie je dostupný
     CACHES = {
         'default': {
             'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',

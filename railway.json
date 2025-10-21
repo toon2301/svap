@@ -2,12 +2,18 @@
   "$schema": "https://railway.app/railway.schema.json",
   "services": [
     {
+      "name": "redis",
+      "image": "redis:7-alpine",
+      "ports": ["6379"]
+    },
+    {
       "name": "backend",
       "rootDirectory": "backend",
       "startCommand": "python manage.py migrate --noinput && python manage.py init_db && gunicorn swaply.wsgi:application --bind 0.0.0.0:$PORT --workers=3 --timeout 120",
       "buildCommand": "pip install -r requirements.txt && python manage.py migrate --noinput && python manage.py collectstatic --noinput",
       "env": {
-        "DJANGO_SETTINGS_MODULE": "swaply.settings_production"
+        "DJANGO_SETTINGS_MODULE": "swaply.settings_production",
+        "REDIS_URL": "redis://redis:6379"
       },
       "ports": ["$PORT"]
     },
