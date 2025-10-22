@@ -1,8 +1,10 @@
 'use client';
 
 import { useState } from 'react';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export default function NotificationsModule() {
+  const { t } = useLanguage();
   const [masterToggleEnabled, setMasterToggleEnabled] = useState(false);
   const [likesEnabled, setLikesEnabled] = useState(false);
   const [likesCommentsEnabled, setLikesCommentsEnabled] = useState(false);
@@ -56,14 +58,14 @@ export default function NotificationsModule() {
       {/* Desktop layout */}
       <div className="hidden lg:block pt-4 pb-8 pl-12 text-[var(--foreground)]">
         <h2 className="text-2xl font-semibold text-gray-800 dark:text-white mb-6 text-center -ml-[31rem]">
-          Upozornenia
+          {t('notifications.title', 'Upozornenia')}
         </h2>
         
         {/* Hlavný prepínač "Vypnúť všetko" */}
         <div className="mt-6 mx-auto w-full max-w-[40rem]">
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium text-gray-900 dark:text-white">
-              Vypnúť všetko
+              {t('notifications.turnOffAll', 'Vypnúť všetko')}
             </span>
             <button
               type="button"
@@ -109,14 +111,14 @@ export default function NotificationsModule() {
         <div className="mt-6 mx-auto w-full max-w-[40rem]">
           <div className="rounded-lg border border-[var(--border)] bg-[var(--background)] px-6 pt-6 pb-3 min-h-36 shadow-sm">
             <div className="flex items-center justify-between h-full">
-              {/* Left column: title + options */}
+            {/* Left column: title + options */}
               <div className="flex-1">
                 <div className="mb-4">
                   <h3 className="text-base font-medium text-gray-900 dark:text-white">
-                    Páči sa mi to
+                    {t('notifications.likes', 'Páči sa mi to')}
                   </h3>
                   <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                    Zapnite alebo vypnite upozornenia na 'Páči sa mi to'.
+                    {t('notifications.likesDesc', "Zapnite alebo vypnite upozornenia na 'Páči sa mi to'.")}
                   </p>
                 </div>
 
@@ -131,7 +133,7 @@ export default function NotificationsModule() {
                       className="w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 focus:ring-0 dark:bg-gray-700 dark:border-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
                     />
                     <span className="ml-3 text-sm font-medium text-gray-900 dark:text-white">
-                      Vypnuté
+                      {t('notifications.off', 'Vypnuté')}
                     </span>
                   </label>
 
@@ -145,7 +147,7 @@ export default function NotificationsModule() {
                       className="w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 focus:ring-0 dark:bg-gray-700 dark:border-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
                     />
                     <span className="ml-3 text-sm font-medium text-gray-900 dark:text-white">
-                      Zapnuté
+                      {t('notifications.on', 'Zapnuté')}
                     </span>
                   </label>
                 </div>
@@ -172,10 +174,10 @@ export default function NotificationsModule() {
               <div className="flex-1">
                 <div className="mb-4">
                   <h3 className="text-base font-medium text-gray-900 dark:text-white">
-                    Páči sa mi to a komentáre
+                    {t('notifications.likesAndComments', 'Páči sa mi to a komentáre')}
                   </h3>
                   <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                    Reakcie a komentáre na fotkách, kde ste označení
+                    {t('notifications.likesAndCommentsDesc', 'Reakcie a komentáre na fotkách, kde ste označení')}
                   </p>
                 </div>
 
@@ -190,7 +192,7 @@ export default function NotificationsModule() {
                       className="w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 focus:ring-0 dark:bg-gray-700 dark:border-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
                     />
                     <span className="ml-3 text-sm font-medium text-gray-900 dark:text-white">
-                      Vypnuté
+                      {t('notifications.off', 'Vypnuté')}
                     </span>
                   </label>
 
@@ -204,7 +206,7 @@ export default function NotificationsModule() {
                       className="w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 focus:ring-0 dark:bg-gray-700 dark:border-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
                     />
                     <span className="ml-3 text-sm font-medium text-gray-900 dark:text-white">
-                      Zapnuté
+                      {t('notifications.on', 'Zapnuté')}
                     </span>
                   </label>
                 </div>
@@ -236,10 +238,10 @@ export default function NotificationsModule() {
               <div className="flex-1">
                 <div className="mb-4">
                   <h3 className="text-base font-medium text-gray-900 dark:text-white">
-                    Komentáre
+                    {t('notifications.comments', 'Komentáre')}
                   </h3>
                   <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                    Zapnite alebo vypnite upozornenia na komentáre.
+                    {t('notifications.commentsDesc', 'Zapnite alebo vypnite upozornenia na komentáre.')}
                   </p>
                 </div>
 
@@ -254,7 +256,7 @@ export default function NotificationsModule() {
                       className="w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 focus:ring-0 dark:bg-gray-700 dark:border-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
                     />
                     <span className="ml-3 text-sm font-medium text-gray-900 dark:text-white">
-                      Vypnuté
+                      {t('notifications.off', 'Vypnuté')}
                     </span>
                   </label>
 
@@ -268,7 +270,7 @@ export default function NotificationsModule() {
                       className="w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 focus:ring-0 dark:bg-gray-700 dark:border-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
                     />
                     <span className="ml-3 text-sm font-medium text-gray-900 dark:text-white">
-                      Zapnuté
+                      {t('notifications.on', 'Zapnuté')}
                     </span>
                   </label>
                 </div>
@@ -295,10 +297,10 @@ export default function NotificationsModule() {
               <div className="flex-1">
                 <div className="mb-4">
                   <h3 className="text-base font-medium text-gray-900 dark:text-white">
-                    Páči sa mi to pre komentáre
+                    {t('notifications.likesForComments', 'Páči sa mi to pre komentáre')}
                   </h3>
                   <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                    Zapnite alebo vypnite upozornenia na 'Páči sa mi to' pre komentáre.
+                    {t('notifications.likesForCommentsDesc', "Zapnite alebo vypnite upozornenia na 'Páči sa mi to' pre komentáre.")}
                   </p>
                 </div>
 
@@ -313,7 +315,7 @@ export default function NotificationsModule() {
                       className="w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 focus:ring-0 dark:bg-gray-700 dark:border-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
                     />
                     <span className="ml-3 text-sm font-medium text-gray-900 dark:text-white">
-                      Vypnuté
+                      {t('notifications.off', 'Vypnuté')}
                     </span>
                   </label>
 
@@ -327,7 +329,7 @@ export default function NotificationsModule() {
                       className="w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 focus:ring-0 dark:bg-gray-700 dark:border-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
                     />
                     <span className="ml-3 text-sm font-medium text-gray-900 dark:text-white">
-                      Zapnuté
+                      {t('notifications.on', 'Zapnuté')}
                     </span>
                   </label>
                 </div>
@@ -354,10 +356,10 @@ export default function NotificationsModule() {
               <div className="flex-1">
                 <div className="mb-4">
                   <h3 className="text-base font-medium text-gray-900 dark:text-white">
-                    Žiadosť o zručnosť
+                    {t('notifications.skillRequest', 'Žiadosť o zručnosť')}
                   </h3>
                   <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                    Zapnite alebo vypnite upozornenia na žiadosti o zručnosť.
+                    {t('notifications.skillRequestDesc', 'Zapnite alebo vypnite upozornenia na žiadosti o zručnosť.')}
                   </p>
                 </div>
 
@@ -372,7 +374,7 @@ export default function NotificationsModule() {
                       className="w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 focus:ring-0 dark:bg-gray-700 dark:border-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
                     />
                     <span className="ml-3 text-sm font-medium text-gray-900 dark:text-white">
-                      Vypnuté
+                      {t('notifications.off', 'Vypnuté')}
                     </span>
                   </label>
 
@@ -386,7 +388,7 @@ export default function NotificationsModule() {
                       className="w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 focus:ring-0 dark:bg-gray-700 dark:border-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
                     />
                     <span className="ml-3 text-sm font-medium text-gray-900 dark:text-white">
-                      Zapnuté
+                      {t('notifications.on', 'Zapnuté')}
                     </span>
                   </label>
                 </div>

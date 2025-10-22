@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { api, endpoints } from '@/lib/api';
 import { setAuthTokens } from '@/utils/auth';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface LoginData {
   email: string;
@@ -24,6 +25,7 @@ interface LoginFormProps {
 
 export default function LoginForm({ onSuccess }: LoginFormProps) {
   const router = useRouter();
+  const { t } = useLanguage();
   const [loginData, setLoginData] = useState<LoginData>({
     email: '',
     password: ''
@@ -85,13 +87,13 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
   const validateLoginForm = (): boolean => {
     const newErrors: any = {};
 
-    if (!loginData.email.trim()) newErrors.email = 'Email je povinný';
-    if (!loginData.password) newErrors.password = 'Heslo je povinné';
+    if (!loginData.email.trim()) newErrors.email = t('auth.emailRequired');
+    if (!loginData.password) newErrors.password = t('auth.passwordRequired');
 
     // Validácia emailu
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (loginData.email && !emailRegex.test(loginData.email)) {
-      newErrors.email = 'Neplatný formát emailu';
+      newErrors.email = t('auth.invalidEmailFormat');
     }
 
     setLoginErrors(newErrors);
@@ -100,7 +102,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
 
   const handleResendVerification = async () => {
     if (!loginData.email) {
-      setLoginErrors({ email: 'Zadajte email pre znovu odoslanie verifikácie' });
+      setLoginErrors({ email: t('auth.enterEmailForResend') });
       return;
     }
 
@@ -120,7 +122,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
       if (error.response?.data?.error) {
         setLoginErrors({ general: error.response.data.error });
       } else {
-        setLoginErrors({ general: 'Chyba pri odosielaní verifikačného emailu' });
+        setLoginErrors({ general: t('auth.verificationSent') });
       }
     } finally {
       setIsResending(false);
@@ -147,7 +149,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
       );
 
       if (!popup) {
-        setLoginErrors({ general: 'Popup blokátor blokuje prihlásenie cez Google' });
+        setLoginErrors({ general: t('auth.googleLoginFailed') });
         setIsGoogleLoading(false);
         return;
       }
@@ -230,7 +232,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
             } else {
               console.log('No OAuth tokens found in localStorage');
               setIsGoogleLoading(false);
-              setLoginErrors({ general: 'Google prihlásenie sa nepodarilo dokončiť' });
+              setLoginErrors({ general: t('auth.googleLoginFailed') });
             }
           }
         } catch (error) {
@@ -241,7 +243,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
     } catch (error: any) {
       console.error('Google login error:', error);
       setLoginErrors({ 
-        general: error.response?.data?.error || 'Chyba pri prihlásení cez Google' 
+        general: error.response?.data?.error || t('auth.googleLoginFailed') 
       });
       setIsGoogleLoading(false);
     }
@@ -283,7 +285,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
           
           if (hasEmailVerificationError) {
             setLoginErrors({ 
-              email_verification: 'Váš email nie je overený. Skontrolujte si emailovú schránku a kliknite na verifikačný odkaz.' 
+              email_verification: t('auth.emailNotVerifiedMessage') 
             });
             return;
           }
@@ -296,13 +298,13 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
         const errorMessage = error.response.data.error;
         if (typeof errorMessage === 'string' && (errorMessage.includes('nie je overený') || errorMessage.includes('Skontrolujte si email'))) {
           setLoginErrors({ 
-            email_verification: 'Váš email nie je overený. Skontrolujte si emailovú schránku a kliknite na verifikačný odkaz.' 
+            email_verification: t('auth.emailNotVerifiedMessage') 
           });
         } else {
-          setLoginErrors({ general: typeof errorMessage === 'string' ? errorMessage : 'Neplatné prihlasovacie údaje.' });
+          setLoginErrors({ general: typeof errorMessage === 'string' ? errorMessage : t('auth.invalidCredentials') });
         }
       } else {
-        setLoginErrors({ general: 'Neplatné prihlasovacie údaje.' });
+        setLoginErrors({ general: t('auth.invalidCredentials') });
       }
     } finally {
       setIsLoginLoading(false);
@@ -338,7 +340,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.6, ease: "easeOut" }}
         >
-          Prihlásiť sa
+          {t('auth.login')}
         </motion.h1>
 
 
@@ -362,13 +364,13 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
                 <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
               </svg>
               <div className="flex-1">
-                <p className="font-semibold text-sm max-lg:text-base" id="email-verification-help">Email nie je overený</p>
+                <p className="font-semibold text-sm max-lg:text-base" id="email-verification-help">{t('auth.emailNotVerified')}</p>
                 <p className="text-xs mt-1 max-lg:text-sm max-lg:mt-1">{loginErrors.email_verification}</p>
                 <div className="mt-2 max-lg:mt-2">
                   <button
                     onClick={handleResendVerification}
                     disabled={isResending}
-                    aria-label="Znovu odoslať verifikačný email"
+                    aria-label={t('auth.resendVerification')}
                     aria-describedby="resend-button-help"
                     className={`px-3 py-1.5 text-xs font-medium rounded transition-colors w-full max-lg:px-4 max-lg:py-2 max-lg:text-sm ${
                       isResending 
@@ -376,14 +378,14 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
                         : 'bg-amber-600 text-white hover:bg-amber-700 active:bg-amber-800'
                     }`}
                   >
-                    {isResending ? 'Odosielam...' : 'Znovu odoslať verifikáciu'}
+                    {isResending ? t('auth.resending') : t('auth.resendVerification')}
                   </button>
                   <div id="resend-button-help" className="sr-only">
-                    Kliknite pre znovu odoslanie verifikačného emailu
+                    {t('auth.resendVerification')}
                   </div>
                   {resendSuccess && (
                     <p className="text-xs text-green-700 mt-1 max-lg:text-sm max-lg:mt-1" aria-live="polite">
-                      ✓ Verifikačný email bol odoslaný!
+                      {t('auth.verificationSent')}
                     </p>
                   )}
                 </div>
@@ -415,7 +417,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
           transition={{ duration: 0.5, delay: 0.8 }}
           onSubmit={handleLoginSubmit}
           role="form"
-          aria-label="Prihlasovací formulár"
+          aria-label={t('auth.login')}
         >
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -423,7 +425,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
             transition={{ duration: 0.4, delay: 0.9 }}
           >
             <label htmlFor="login-email" className="block text-base font-normal text-gray-600 dark:text-gray-300 mb-2 max-lg:text-base max-lg:mb-1">
-              Email
+              {t('auth.email')}
             </label>
             <input
               id="login-email"
@@ -435,8 +437,8 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
               className={`w-full px-3 py-2 text-sm border rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-1 focus:ring-purple-300 focus:border-transparent outline-none transition-all ${
                 loginErrors.email ? 'border-red-500' : 'border-gray-300 dark:border-gray-700'
               }`}
-              placeholder="Email.."
-              aria-label="Zadajte svoju emailovú adresu"
+              placeholder={t('placeholders.email')}
+              aria-label={t('auth.emailHelp')}
               aria-required="true"
               aria-invalid={loginErrors.email ? "true" : "false"}
               aria-describedby={loginErrors.email ? "email-error" : "email-help"}
@@ -444,7 +446,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
               autoComplete="email"
             />
             <div id="email-help" className="sr-only">
-              Zadajte platnú emailovú adresu pre prihlásenie do aplikácie
+              {t('auth.emailHelp')}
             </div>
             {loginErrors.email && (
               <p id="email-error" className="text-red-500 text-sm mt-1" role="alert" aria-live="polite">
@@ -459,7 +461,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
             transition={{ duration: 0.4, delay: 1.0 }}
           >
             <label htmlFor="login-password" className="block text-base font-normal text-gray-600 dark:text-gray-300 mb-2 max-lg:text-base max-lg:mb-1">
-              Heslo
+              {t('auth.password')}
             </label>
             <div className="relative flex items-center">
               <input
@@ -472,8 +474,8 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
                 className={`w-full px-3 py-2 text-sm pr-12 border rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-1 focus:ring-purple-300 focus:border-transparent outline-none transition-all ${
                   loginErrors.password ? 'border-red-500' : 'border-gray-300 dark:border-gray-700'
                 }`}
-                placeholder="••••••••"
-                aria-label="Zadajte svoje heslo"
+                placeholder={t('placeholders.password')}
+                aria-label={t('auth.passwordHelp')}
                 aria-required="true"
                 aria-invalid={loginErrors.password ? "true" : "false"}
                 aria-describedby={loginErrors.password ? "password-error" : "password-help"}
@@ -486,6 +488,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
                   tabIndex={-1}
                   className="absolute right-3 flex items-center justify-center text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 rounded w-6 h-6"
                   style={{ height: '100%' }}
+                  aria-label={showPassword ? t('auth.hidePassword') : t('auth.showPassword')}
                 >
                   {showPassword ? (
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -501,7 +504,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
                 
             </div>
             <div id="password-help" className="sr-only">
-              Zadajte svoje heslo pre prihlásenie do aplikácie
+              {t('auth.passwordHelp')}
             </div>
             {loginErrors.password && (
               <p id="password-error" className="text-red-500 text-sm mt-1" role="alert" aria-live="polite">
@@ -538,7 +541,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
                   aria-hidden="true"
                 />
               )}
-              {isLoginLoading ? 'Prihlasujem sa...' : 'Prihlásiť sa'}
+              {isLoginLoading ? t('auth.loggingIn') : t('auth.loginButton')}
             </div>
           </motion.button>
         </motion.form>
@@ -555,7 +558,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
               <div className="w-full border-t border-gray-300 dark:border-gray-700" />
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white dark:bg-black text-gray-500 dark:text-gray-400">alebo</span>
+              <span className="px-2 bg-white dark:bg-black text-gray-500 dark:text-gray-400">{t('common.or')}</span>
             </div>
           </div>
 
@@ -563,7 +566,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
             type="button"
             onClick={handleGoogleLogin}
             disabled={isGoogleLoading || isLoginLoading}
-            aria-label="Prihlásiť sa pomocou Google účtu"
+            aria-label={t('auth.loginWithGoogle')}
             aria-describedby="google-login-help"
             className={`w-full mt-4 px-4 py-3 border border-gray-300 dark:border-gray-700 rounded-lg font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-black hover:bg-gray-50 dark:hover:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-all ${
               isGoogleLoading || isLoginLoading ? 'opacity-50 cursor-not-allowed' : ''
@@ -601,25 +604,25 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
                 </svg>
               )}
               <span>
-                {isGoogleLoading ? 'Prihlasujem cez Google...' : 'Prihlásiť sa cez Google'}
+                {isGoogleLoading ? t('auth.loggingInGoogle') : t('auth.loginWithGoogle')}
               </span>
             </div>
           </motion.button>
           <div id="google-login-help" className="sr-only">
-            Otvorí sa nové okno pre prihlásenie cez Google. Po úspešnom prihlásení sa automaticky presmerujete späť do aplikácie.
+            {t('accessibility.googleLoginHelp')}
           </div>
         </motion.div>
 
         <div className="text-center" style={{marginTop: isMobile ? '16px' : '12px'}}>
           <p className="text-lg text-gray-500 dark:text-gray-400 max-lg:text-sm" style={{marginBottom: isMobile ? '12px' : '8px', fontSize: isMobile ? '20px' : '16px'}}>
             <a href="/forgot-password" className="text-purple-700 dark:text-purple-400 hover:text-purple-600 dark:hover:text-purple-300 font-medium transition-colors max-lg:text-base">
-              Zabudli ste heslo?
+              {t('auth.forgotPassword')}
             </a>
           </p>
           <p className="text-xl text-gray-600 dark:text-gray-300 max-lg:text-base" style={{fontSize: isMobile ? '24px' : '18px'}}>
-            Nemáte účet?{' '}
+            {t('auth.noAccount')}{' '}
             <a href="/register" className="text-purple-800 dark:text-purple-400 font-semibold hover:text-purple-900 dark:hover:text-purple-300">
-              Registrovať sa
+              {t('auth.register')}
             </a>
           </p>
         </div>

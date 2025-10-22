@@ -8,6 +8,7 @@ import { api, endpoints } from '@/lib/api';
 import { setAuthTokens } from '@/utils/auth';
 import { useAutoSave } from '@/hooks/useFormValidation';
 import { fetchCsrfToken } from '@/utils/csrf';
+import { useLanguage } from '@/contexts/LanguageContext';
 // import { logMobileDebugInfo, checkNetworkConnectivity } from '@/utils/mobileDebug';
 
 // Lazy load particle efekt
@@ -34,6 +35,7 @@ interface FormErrors {
 export default function RegisterForm() {
   const router = useRouter();
   const { executeRecaptcha } = useGoogleReCaptcha();
+  const { t } = useLanguage();
   const [formData, setFormData] = useState<FormData>({
     username: '',
     email: '',
@@ -226,31 +228,31 @@ export default function RegisterForm() {
     const newErrors: FormErrors = {};
 
     // Povinné polia
-    if (!formData.username.trim()) newErrors.username = 'Používateľské meno je povinné';
-    if (!formData.email.trim()) newErrors.email = 'Email je povinný';
-    if (!formData.password) newErrors.password = 'Heslo je povinné';
+    if (!formData.username.trim()) newErrors.username = t('auth.usernameRequired');
+    if (!formData.email.trim()) newErrors.email = t('auth.emailRequired');
+    if (!formData.password) newErrors.password = t('auth.passwordRequired');
     
     // Validácia password_confirm
     if (!formData.password_confirm || formData.password_confirm.trim() === '') {
-      newErrors.password_confirm = 'Potvrdenie hesla je povinné';
+      newErrors.password_confirm = t('auth.confirmPasswordRequired');
     } else if (formData.password && formData.password.trim() !== formData.password_confirm.trim()) {
-      newErrors.password_confirm = 'Heslá sa nezhodujú';
+      newErrors.password_confirm = t('auth.passwordsDoNotMatch');
     }
     
-    if (!formData.birth_day) newErrors.birth_day = 'Deň narodenia je povinný';
-    if (!formData.birth_month) newErrors.birth_month = 'Mesiac narodenia je povinný';
-    if (!formData.birth_year) newErrors.birth_year = 'Rok narodenia je povinný';
-    if (!formData.gender) newErrors.gender = 'Pohlavie je povinné';
+    if (!formData.birth_day) newErrors.birth_day = t('auth.birthDateRequired');
+    if (!formData.birth_month) newErrors.birth_month = t('auth.birthDateRequired');
+    if (!formData.birth_year) newErrors.birth_year = t('auth.birthDateRequired');
+    if (!formData.gender) newErrors.gender = t('auth.genderRequired');
 
     // Validácia emailu
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (formData.email && !emailRegex.test(formData.email)) {
-      newErrors.email = 'Neplatný formát emailu';
+      newErrors.email = t('auth.invalidEmailFormat');
     }
 
     // Validácia hesiel
     if (formData.password && formData.password.length < 8) {
-      newErrors.password = 'Heslo musí mať aspoň 8 znakov';
+      newErrors.password = t('auth.passwordMinLength');
     }
 
     // Validácia dátumu narodenia
@@ -261,33 +263,33 @@ export default function RegisterForm() {
       const currentYear = new Date().getFullYear();
       
       if (year < 1900 || year > currentYear) {
-        newErrors.birth_year = 'Neplatný rok narodenia';
+        newErrors.birth_year = t('auth.invalidBirthYear');
       }
       if (month < 1 || month > 12) {
-        newErrors.birth_month = 'Neplatný mesiac';
+        newErrors.birth_month = t('auth.invalidMonth');
       }
       if (day < 1 || day > 31) {
-        newErrors.birth_day = 'Neplatný deň';
+        newErrors.birth_day = t('auth.invalidDay');
       }
       
       // Kontrola počtu dní v mesiaci
       const daysInMonth = new Date(year, month, 0).getDate();
       if (day > daysInMonth) {
-        newErrors.birth_day = 'Neplatný deň pre daný mesiac';
+        newErrors.birth_day = t('auth.invalidDayForMonth');
       }
       
       // Kontrola veku (aspoň 13 rokov)
       const birthDate = new Date(year, month - 1, day);
       const age = currentYear - year;
       if (age < 13) {
-        newErrors.birth_year = 'Musíte mať aspoň 13 rokov';
+        newErrors.birth_year = t('auth.ageRequirement');
       }
     }
 
     // Validácia pre firmy
     if (formData.user_type === 'company') {
       if (!formData.company_name.trim()) {
-        newErrors.company_name = 'Názov firmy je povinný';
+        newErrors.company_name = t('auth.companyNameRequired');
       }
     }
 
@@ -311,7 +313,7 @@ export default function RegisterForm() {
           captchaToken = await executeRecaptcha('register');
         } catch (captchaError) {
           console.error('reCAPTCHA error:', captchaError);
-          setErrors({ general: 'Chyba pri overovaní reCAPTCHA. Skúste to znova.' });
+          setErrors({ general: t('auth.captchaError') });
           setIsLoading(false);
           return;
         }
@@ -319,7 +321,7 @@ export default function RegisterForm() {
         console.warn('reCAPTCHA nie je k dispozícii');
         // V development mode môžeme pokračovať bez CAPTCHA
         if (process.env.NODE_ENV === 'production') {
-          setErrors({ general: 'reCAPTCHA nie je dostupná. Obnovte stránku.' });
+          setErrors({ general: t('auth.captchaUnavailable') });
           setIsLoading(false);
           return;
         }
@@ -369,7 +371,7 @@ export default function RegisterForm() {
       console.error('Error status:', error.response?.status);
       
       // Detailné error handling - zobrazujeme všetko
-      let errorMessage = 'Chyba pri registrácii: ';
+      let errorMessage = t('auth.registrationError');
       
       if (error.response?.data) {
         if (error.response.data.details) {
@@ -400,8 +402,8 @@ export default function RegisterForm() {
   };
 
   const getButtonText = () => {
-    if (isLoading) return 'Registrujem...';
-    return 'Registrovať sa';
+    if (isLoading) return t('auth.registering');
+    return t('auth.registerButton');
   };
 
   const getButtonStyle = () => {
@@ -443,7 +445,7 @@ export default function RegisterForm() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.2 }}
             >
-              {registrationSuccess ? 'Registrácia úspešná!' : 'Registrácia'}
+              {registrationSuccess ? t('auth.registrationSuccess') : t('auth.registration')}
             </motion.h1>
 
             {registrationSuccess ? (
@@ -458,8 +460,8 @@ export default function RegisterForm() {
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                   </svg>
                   <div>
-                    <p className="font-semibold">Úspešná registrácia!</p>
-                    <p className="text-sm mt-1">Skontrolujte si email a potvrďte registráciu kliknutím na odkaz v emaile.</p>
+                    <p className="font-semibold">{t('auth.registrationSuccess')}</p>
+                    <p className="text-sm mt-1">{t('auth.registrationSuccessMessage')}</p>
                   </div>
                 </div>
               </motion.div>
@@ -486,7 +488,7 @@ export default function RegisterForm() {
               {/* Typ účtu */}
               <div>
                 <label className="block text-base font-normal text-gray-600 dark:text-gray-300 mb-1.5 max-lg:text-base max-lg:mb-1">
-                  Typ účtu
+                  {t('auth.accountType')}
                 </label>
                 <select
                   id="user_type"
@@ -499,16 +501,16 @@ export default function RegisterForm() {
                   onFocus={() => handleSelectFocus('user_type')}
                   onBlur={() => handleSelectBlur('user_type')}
                   className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent outline-none transition-all bg-white dark:bg-black text-gray-900 dark:text-white"
-                  aria-label="Vyberte typ účtu"
+                  aria-label={t('auth.selectAccountType')}
                   aria-required="true"
                   aria-describedby="user-type-help"
                   tabIndex={1}
                 >
-                  <option value="individual">Osoba</option>
-                  <option value="company">Firma</option>
+                  <option value="individual">{t('auth.individual')}</option>
+                  <option value="company">{t('auth.company')}</option>
                 </select>
                 <div id="user-type-help" className="sr-only">
-                  Vyberte, či sa registrujete ako osoba alebo firma
+                  {t('auth.selectAccountTypeHelp')}
                 </div>
               </div>
 
@@ -518,7 +520,7 @@ export default function RegisterForm() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="username" className="block text-base font-normal text-gray-600 dark:text-gray-300 mb-1.5 max-lg:text-base max-lg:mb-1">
-                    Používateľské meno *
+                    {t('auth.username')} *
                   </label>
                   <input
                     id="username"
@@ -530,8 +532,8 @@ export default function RegisterForm() {
                     className={`w-full px-3 py-2 text-sm border rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent outline-none transition-all bg-white dark:bg-black text-gray-900 dark:text-white ${
                       errors.username ? 'border-red-500' : 'border-gray-300 dark:border-gray-700'
                     }`}
-                    placeholder="Používateľské meno"
-                    aria-label="Zadajte svoje používateľské meno"
+                    placeholder={t('auth.usernamePlaceholder')}
+                    aria-label={t('auth.usernameHelp')}
                     aria-required="true"
                     aria-invalid={errors.username ? "true" : "false"}
                     aria-describedby={errors.username ? "username-error" : "username-help"}
@@ -539,7 +541,7 @@ export default function RegisterForm() {
                     autoComplete="username"
                   />
                   <div id="username-help" className="sr-only">
-                    Zadajte jedinečné používateľské meno pre váš účet
+                    {t('auth.usernameHelp')}
                   </div>
                   {errors.username && (
                     <p id="username-error" className="text-red-500 text-sm mt-1" role="alert" aria-live="polite">
@@ -550,7 +552,7 @@ export default function RegisterForm() {
 
                 <div>
                   <label htmlFor="email" className="block text-base font-normal text-gray-600 dark:text-gray-300 mb-1.5 max-lg:text-base max-lg:mb-1">
-                    Email *
+                    {t('auth.email')} *
                   </label>
                   <input
                     id="email"
@@ -565,8 +567,8 @@ export default function RegisterForm() {
                       emailStatus === 'taken' ? 'border-red-500' :
                       emailStatus === 'available' ? 'border-green-500' : 'border-gray-300 dark:border-gray-700'
                     }`}
-                    placeholder="vas@email.sk"
-                    aria-label="Zadajte svoju emailovú adresu"
+                    placeholder={t('auth.emailPlaceholder')}
+                    aria-label={t('auth.emailHelp')}
                     aria-required="true"
                     aria-invalid={errors.email ? "true" : "false"}
                     aria-describedby={errors.email ? "email-error" : "email-help"}
@@ -574,14 +576,14 @@ export default function RegisterForm() {
                     autoComplete="email"
                   />
                   <div id="email-help" className="sr-only">
-                    Zadajte platnú emailovú adresu pre registráciu
+                    {t('auth.emailHelp')}
                   </div>
                   
                   {/* Smart validácia - vizuálne indikátory */}
                   {emailStatus === 'checking' && (
                     <div className="flex items-center text-blue-600 text-sm mt-1" role="status" aria-live="polite">
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
-                      Kontrolujem dostupnosť emailu...
+                      {t('auth.checkingEmail')}
                     </div>
                   )}
                   
@@ -590,7 +592,7 @@ export default function RegisterForm() {
                       <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
                         <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                       </svg>
-                      Email je dostupný ✅
+                      {t('auth.emailAvailable')}
                     </div>
                   )}
                   
@@ -599,7 +601,7 @@ export default function RegisterForm() {
                       <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
                         <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
                       </svg>
-                      Email už je obsadený ❌
+                      {t('auth.emailTaken')}
                     </div>
                   )}
                   
@@ -626,7 +628,7 @@ export default function RegisterForm() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="password" className="block text-base font-normal text-gray-600 dark:text-gray-300 mb-1.5 max-lg:text-base max-lg:mb-1">
-                    Heslo *
+                    {t('auth.password')} *
                   </label>
                   <div className="relative flex items-center">
                     <input
@@ -639,8 +641,8 @@ export default function RegisterForm() {
                       className={`w-full px-3 py-2 text-sm pr-12 border rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent outline-none transition-all bg-white dark:bg-black text-gray-900 dark:text-white ${
                         errors.password ? 'border-red-500' : 'border-gray-300 dark:border-gray-700'
                       }`}
-                      placeholder="••••••••"
-                      aria-label="Zadajte svoje heslo"
+                      placeholder={t('auth.passwordPlaceholder')}
+                      aria-label={t('auth.passwordHelp')}
                       aria-required="true"
                       aria-invalid={errors.password ? "true" : "false"}
                       aria-describedby={errors.password ? "password-error" : "password-help"}
@@ -648,7 +650,7 @@ export default function RegisterForm() {
                       autoComplete="new-password"
                     />
                     <div id="password-help" className="sr-only">
-                      Heslo musí obsahovať aspoň 8 znakov
+                      {t('auth.passwordHelp')}
                     </div>
                     <button
                       type="button"
@@ -677,7 +679,7 @@ export default function RegisterForm() {
 
                 <div>
                   <label htmlFor="password_confirm" className="block text-base font-normal text-gray-600 dark:text-gray-300 mb-1.5 max-lg:text-base max-lg:mb-1">
-                    Potvrdenie hesla *
+                    {t('auth.confirmPassword')} *
                   </label>
                   <div className="relative flex items-center">
                     <input
@@ -689,12 +691,12 @@ export default function RegisterForm() {
                       className={`w-full px-3 py-2 text-sm pr-12 border rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent outline-none transition-all bg-white dark:bg-black text-gray-900 dark:text-white ${
                         errors.password_confirm ? 'border-red-500' : 'border-gray-300 dark:border-gray-700'
                       }`}
-                      placeholder="••••••••"
+                      placeholder={t('auth.passwordPlaceholder')}
                     />
                     <button
                       type="button"
                       onClick={() => setShowPasswordConfirm(!showPasswordConfirm)}
-                      aria-label={showPasswordConfirm ? 'Skryť heslo' : 'Zobraziť heslo'}
+                      aria-label={showPasswordConfirm ? t('auth.hidePassword') : t('auth.showPassword')}
                       className="absolute right-2 flex items-center justify-center text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
                       style={{ height: '100%' }}
                     >
@@ -721,7 +723,7 @@ export default function RegisterForm() {
               {/* Dátum narodenia */}
               <div>
                 <label htmlFor="birth_date" className="block text-base font-normal text-gray-600 dark:text-gray-300 mb-1.5 max-lg:text-base max-lg:mb-1">
-                  Dátum narodenia *
+                  {t('auth.birthDate')} *
                 </label>
                 <input
                   id="birth_date"
@@ -753,14 +755,14 @@ export default function RegisterForm() {
                   className={`w-full px-3 py-2 text-sm border rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent outline-none transition-all bg-white dark:bg-black text-gray-900 dark:text-white ${
                     errors.birth_day || errors.birth_month || errors.birth_year ? 'border-red-500' : 'border-gray-300 dark:border-gray-700'
                   }`}
-                  aria-label="Zadajte svoj dátum narodenia"
+                  aria-label={t('auth.birthDateHelp')}
                   aria-required="true"
                   aria-invalid={errors.birth_day || errors.birth_month || errors.birth_year ? "true" : "false"}
                   aria-describedby={errors.birth_day || errors.birth_month || errors.birth_year ? "birth-date-error" : "birth-date-help"}
                   tabIndex={5}
                 />
                 <div id="birth-date-help" className="sr-only">
-                  Zadajte svoj dátum narodenia
+                  {t('auth.birthDateHelp')}
                 </div>
                 
                 {/* Error messages */}
@@ -776,7 +778,7 @@ export default function RegisterForm() {
               {/* Pohlavie */}
               <div>
                 <label htmlFor="gender" className="block text-base font-normal text-gray-600 dark:text-gray-300 mb-1.5 max-lg:text-base max-lg:mb-1">
-                  Pohlavie *
+                  {t('auth.gender')} *
                 </label>
                 <select
                   id="gender"
@@ -791,10 +793,10 @@ export default function RegisterForm() {
                     errors.gender ? 'border-red-500' : 'border-gray-300 dark:border-gray-700'
                   }`}
                 >
-                  <option value="">Vyberte pohlavie</option>
-                  <option value="male">Muž</option>
-                  <option value="female">Žena</option>
-                  <option value="other">Iné</option>
+                  <option value="">{t('auth.selectGender')}</option>
+                  <option value="male">{t('auth.male')}</option>
+                  <option value="female">{t('auth.female')}</option>
+                  <option value="other">{t('auth.other')}</option>
                 </select>
                 {errors.gender && (
                   <p className="text-red-500 text-sm mt-1">{errors.gender}</p>
@@ -807,12 +809,12 @@ export default function RegisterForm() {
               {formData.user_type === 'company' && (
                 <div className="space-y-4 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
                   <h3 className="text-base font-normal text-purple-700 dark:text-purple-400 mb-2 max-lg:text-base max-lg:mb-1">
-                    Informácie o firme
+                    {t('auth.companyInfo')}
                   </h3>
                   
                   <div>
                     <label htmlFor="company_name" className="block text-base font-normal text-gray-600 dark:text-gray-300 mb-1.5 max-lg:text-base max-lg:mb-1">
-                      Názov firmy *
+                      {t('auth.companyName')} *
                     </label>
                     <input
                       id="company_name"
@@ -823,7 +825,7 @@ export default function RegisterForm() {
                       className={`w-full px-3 py-2 text-sm border rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent outline-none transition-all bg-white dark:bg-black text-gray-900 dark:text-white ${
                         errors.company_name ? 'border-red-500' : 'border-gray-300 dark:border-gray-700'
                       }`}
-                      placeholder="Názov firmy"
+                      placeholder={t('auth.companyNamePlaceholder')}
                     />
                     {errors.company_name && (
                       <p className="text-red-500 text-sm mt-1">{errors.company_name}</p>
@@ -832,7 +834,7 @@ export default function RegisterForm() {
 
                   <div>
                     <label className="block text-base font-normal text-gray-600 dark:text-gray-300 mb-1.5 max-lg:text-base max-lg:mb-1">
-                      Webstránka
+                      {t('auth.website')}
                     </label>
                     <input
                       type="url"
@@ -840,7 +842,7 @@ export default function RegisterForm() {
                       value={formData.website}
                       onChange={handleInputChange}
                       className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent outline-none transition-all bg-white dark:bg-black text-gray-900 dark:text-white"
-                      placeholder="https://www.example.sk"
+                      placeholder={t('auth.websitePlaceholder')}
                     />
                   </div>
                 </div>
@@ -888,24 +890,24 @@ export default function RegisterForm() {
                 transition={{ duration: 0.5, delay: 0.6 }}
               >
                 <p className="text-2xl text-gray-600 dark:text-gray-300 max-lg:text-base mb-4">
-                  Po overení emailu sa môžete prihlásiť
+                  {t('auth.afterVerification')}
                 </p>
                 <a 
                   href="/" 
                   className="inline-block bg-purple-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-purple-700 transition-colors"
                 >
-                  Prihlásiť sa
+                  {t('auth.loginLink')}
                 </a>
               </motion.div>
             ) : (
               <div className="text-center" style={{marginTop: '16px'}}>
                 <p className="text-base text-gray-600 dark:text-gray-300 max-lg:text-base">
-                  Už máte účet?{' '}
+                  {t('auth.haveAccount')}{' '}
                   <a 
                     href="/" 
                     className="text-purple-800 dark:text-purple-400 font-semibold hover:text-purple-900 dark:hover:text-purple-300 transition-colors"
                   >
-                    Prihlásiť sa
+                    {t('auth.loginLink')}
                   </a>
                 </p>
               </div>
@@ -939,19 +941,19 @@ export default function RegisterForm() {
         <div className="flex justify-center">
           <div className="max-w-full max-lg:px-4" style={{paddingTop: '80px', paddingBottom: '80px'}}>
             <div className="flex flex-wrap justify-center gap-6 text-center max-lg:gap-3">
-              <a href="#" className="text-gray-600 dark:text-gray-400 hover:text-purple-800 dark:hover:text-purple-400 transition-colors max-lg:text-sm">Ako to funguje</a>
-              <a href="#" className="text-gray-600 dark:text-gray-400 hover:text-purple-800 dark:hover:text-purple-400 transition-colors max-lg:text-sm">Pre jednotlivcov</a>
-              <a href="#" className="text-gray-600 dark:text-gray-400 hover:text-purple-800 dark:hover:text-purple-400 transition-colors max-lg:text-sm">Pre firmy</a>
-              <a href="#" className="text-gray-600 dark:text-gray-400 hover:text-purple-800 dark:hover:text-purple-400 transition-colors max-lg:text-sm">Pre školy</a>
-              <a href="#" className="text-gray-600 dark:text-gray-400 hover:text-purple-800 dark:hover:text-purple-400 transition-colors max-lg:text-sm">Pomocník</a>
-              <a href="#" className="text-gray-600 dark:text-gray-400 hover:text-purple-800 dark:hover:text-purple-400 transition-colors max-lg:text-sm">FAQ</a>
-              <a href="#" className="text-gray-600 dark:text-gray-400 hover:text-purple-800 dark:hover:text-purple-400 transition-colors max-lg:text-sm">Kontakt</a>
-              <a href="#" className="text-gray-600 dark:text-gray-400 hover:text-purple-800 dark:hover:text-purple-400 transition-colors max-lg:text-sm">Nahlásiť problém</a>
-              <a href="#" className="text-gray-600 dark:text-gray-400 hover:text-purple-800 dark:hover:text-purple-400 transition-colors max-lg:text-sm">O nás</a>
-              <a href="#" className="text-gray-600 dark:text-gray-400 hover:text-purple-800 dark:hover:text-purple-400 transition-colors max-lg:text-sm">Podmienky používania</a>
-              <a href="#" className="text-gray-600 dark:text-gray-400 hover:text-purple-800 dark:hover:text-purple-400 transition-colors max-lg:text-sm">Ochrana údajov</a>
-              <a href="#" className="text-gray-600 dark:text-gray-400 hover:text-purple-800 dark:hover:text-purple-400 transition-colors max-lg:text-sm">Cookies</a>
-              <a href="#" className="text-gray-600 dark:text-gray-400 hover:text-purple-800 dark:hover:text-purple-400 transition-colors max-lg:text-sm">GDPR</a>
+              <a href="#" className="text-gray-600 dark:text-gray-400 hover:text-purple-800 dark:hover:text-purple-400 transition-colors max-lg:text-sm">{t('footer.howItWorks')}</a>
+              <a href="#" className="text-gray-600 dark:text-gray-400 hover:text-purple-800 dark:hover:text-purple-400 transition-colors max-lg:text-sm">{t('footer.forIndividuals')}</a>
+              <a href="#" className="text-gray-600 dark:text-gray-400 hover:text-purple-800 dark:hover:text-purple-400 transition-colors max-lg:text-sm">{t('footer.forCompanies')}</a>
+              <a href="#" className="text-gray-600 dark:text-gray-400 hover:text-purple-800 dark:hover:text-purple-400 transition-colors max-lg:text-sm">{t('footer.forSchools')}</a>
+              <a href="#" className="text-gray-600 dark:text-gray-400 hover:text-purple-800 dark:hover:text-purple-400 transition-colors max-lg:text-sm">{t('footer.help')}</a>
+              <a href="#" className="text-gray-600 dark:text-gray-400 hover:text-purple-800 dark:hover:text-purple-400 transition-colors max-lg:text-sm">{t('footer.faq')}</a>
+              <a href="#" className="text-gray-600 dark:text-gray-400 hover:text-purple-800 dark:hover:text-purple-400 transition-colors max-lg:text-sm">{t('footer.contact')}</a>
+              <a href="#" className="text-gray-600 dark:text-gray-400 hover:text-purple-800 dark:hover:text-purple-400 transition-colors max-lg:text-sm">{t('footer.reportIssue')}</a>
+              <a href="#" className="text-gray-600 dark:text-gray-400 hover:text-purple-800 dark:hover:text-purple-400 transition-colors max-lg:text-sm">{t('footer.aboutUs')}</a>
+              <a href="#" className="text-gray-600 dark:text-gray-400 hover:text-purple-800 dark:hover:text-purple-400 transition-colors max-lg:text-sm">{t('footer.termsOfUse')}</a>
+              <a href="#" className="text-gray-600 dark:text-gray-400 hover:text-purple-800 dark:hover:text-purple-400 transition-colors max-lg:text-sm">{t('footer.privacyPolicy')}</a>
+              <a href="#" className="text-gray-600 dark:text-gray-400 hover:text-purple-800 dark:hover:text-purple-400 transition-colors max-lg:text-sm">{t('footer.cookies')}</a>
+              <a href="#" className="text-gray-600 dark:text-gray-400 hover:text-purple-800 dark:hover:text-purple-400 transition-colors max-lg:text-sm">{t('footer.gdpr')}</a>
             </div>
 
           {/* Spodná časť footeru */}
@@ -959,7 +961,7 @@ export default function RegisterForm() {
             <div className="flex flex-col md:flex-row justify-between items-center">
             </div>
             <div className="mt-4 text-center text-gray-500 dark:text-gray-400 text-sm max-lg:text-xs">
-              © 2024 Svaply. Všetky práva vyhradené.
+              {t('footer.allRightsReserved')}
             </div>
           </div>
           </div>

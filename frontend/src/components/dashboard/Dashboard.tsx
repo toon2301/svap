@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { isAuthenticated, clearAuthTokens } from '../../utils/auth';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { api, endpoints } from '../../lib/api';
 import type { User } from '../../types';
 
@@ -14,6 +15,7 @@ import SearchModule from './modules/SearchModule';
 import CreateModule from './modules/CreateModule';
 import MessagesModule from './modules/MessagesModule';
 import NotificationsModule from './modules/NotificationsModule';
+import LanguageModule from './modules/LanguageModule';
 import MobileTopNav from './MobileTopNav';
 import MobileTopBar from './MobileTopBar';
 
@@ -23,6 +25,7 @@ interface DashboardProps {
 
 export default function Dashboard({ initialUser }: DashboardProps) {
   const router = useRouter();
+  const { t } = useLanguage();
   const [user, setUser] = useState<User | null>(initialUser || null);
   const [isLoading, setIsLoading] = useState(!initialUser);
   const [activeModule, setActiveModule] = useState(() => {
@@ -135,6 +138,13 @@ export default function Dashboard({ initialUser }: DashboardProps) {
         localStorage.setItem('activeModule', 'notifications');
       }
     }
+    // Pre jazyk zmeň activeModule na 'language'
+    if (itemId === 'language') {
+      setActiveModule('language');
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('activeModule', 'language');
+      }
+    }
     // Pre edit-profile zostáva activeModule na 'profile' ale otvorí sa edit mód
   };
 
@@ -169,6 +179,11 @@ export default function Dashboard({ initialUser }: DashboardProps) {
       return <NotificationsModule />;
     }
 
+    // Ak je otvorená pravá navigácia a je vybrané language, zobraz LanguageModule
+    if (isRightSidebarOpen && activeRightItem === 'language') {
+      return <LanguageModule />;
+    }
+
     switch (activeModule) {
       case 'profile':
         return (
@@ -187,15 +202,17 @@ export default function Dashboard({ initialUser }: DashboardProps) {
         return <MessagesModule />;
       case 'notifications':
         return <NotificationsModule />;
+      case 'language':
+        return <LanguageModule />;
       case 'home':
       default:
         return (
           <div className="text-center py-20">
             <h2 className="text-2xl font-semibold text-gray-600 mb-4">
-              Vitaj v Swaply!
+              {t('dashboard.welcomeToSwaply', 'Vitaj v Swaply!')}
             </h2>
             <p className="text-gray-500">
-              Vyber si sekciu z navigácie pre pokračovanie.
+              {t('dashboard.selectSection', 'Vyber si sekciu z navigácie pre pokračovanie.')}
             </p>
           </div>
         );
@@ -207,7 +224,7 @@ export default function Dashboard({ initialUser }: DashboardProps) {
       <div className="min-h-screen flex items-center justify-center bg-[var(--background)]">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-300">Načítavam dashboard...</p>
+          <p className="text-gray-600 dark:text-gray-300">{t('dashboard.loadingDashboard', 'Načítavam dashboard...')}</p>
         </div>
       </div>
     );

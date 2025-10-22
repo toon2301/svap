@@ -1,0 +1,272 @@
+'use client';
+
+import React, {createContext, useCallback, useContext, useEffect, useMemo, useState} from 'react';
+import enMessages from '../../messages/en.json';
+
+// Minimal SK messages used by components we translate now
+const skMessages: Record<string, any> = {
+  common: {
+    lightMode: 'Svetlý režim',
+    darkMode: 'Tmavý režim',
+  },
+  navigation: {
+    home: 'Nástenka',
+    dashboard: 'Dashboard',
+    profile: 'Profil',
+    settings: 'Nastavenia',
+    logout: 'Odhlásiť sa',
+    search: 'Vyhľadávanie',
+    favorites: 'Obľúbené',
+  },
+  homepage: {
+    welcome: 'Víta ťa',
+    description: 'Miesto, kde sa stretávajú ľudia s túžbou rásť – jedni učia, druhí sa učia, všetci spolu tvoria silnejšiu komunitu.',
+    redirectingToDashboard: 'Presmerovávam na dashboard...'
+  },
+  dashboard: {
+    loadingDashboard: 'Načítavam dashboard...',
+    welcomeToSwaply: 'Vitaj v Swaply!',
+    selectSection: 'Vyber si sekciu z navigácie pre pokračovanie.'
+  },
+  footer: {
+    howItWorks: 'Ako to funguje',
+    forIndividuals: 'Pre jednotlivcov',
+    forCompanies: 'Pre firmy',
+    forSchools: 'Pre školy',
+    help: 'Pomocník',
+    faq: 'FAQ',
+    contact: 'Kontakt',
+    reportIssue: 'Nahlásiť problém',
+    aboutUs: 'O nás',
+    termsOfUse: 'Podmienky používania',
+    privacyPolicy: 'Ochrana údajov',
+    cookies: 'Cookies',
+    gdpr: 'GDPR',
+    allRightsReserved: '© 2024 Svaply. Všetky práva vyhradené.'
+  },
+  placeholders: {
+    email: 'Email..',
+    password: '••••••••'
+  },
+         auth: {
+           login: 'Prihlásiť sa',
+           register: 'Registrovať sa',
+           email: 'Email',
+           password: 'Heslo',
+           emailRequired: 'Email je povinný',
+           passwordRequired: 'Heslo je povinné',
+           invalidEmailFormat: 'Neplatný formát emailu',
+           emailNotVerified: 'Email nie je overený',
+           emailNotVerifiedMessage: 'Váš email nie je overený. Skontrolujte si emailovú schránku a kliknite na verifikačný odkaz.',
+           resendVerification: 'Znovu odoslať verifikáciu',
+           resending: 'Odosielam...',
+           verificationSent: '✓ Verifikačný email bol odoslaný!',
+           invalidCredentials: 'Neplatné prihlasovacie údaje.',
+           googleLoginFailed: 'Google prihlásenie sa nepodarilo dokončiť',
+           forgotPassword: 'Zabudli ste heslo?',
+           noAccount: 'Nemáte účet?',
+           registerHere: 'Registrovať sa',
+           loginButton: 'Prihlásiť sa',
+           loggingIn: 'Prihlasujem sa...',
+           loginWithGoogle: 'Prihlásiť sa cez Google',
+           loggingInGoogle: 'Prihlasujem cez Google...',
+           enterEmailForResend: 'Zadajte email pre znovu odoslanie verifikácie',
+    registration: 'Registrácia',
+    registrationSuccess: 'Registrácia úspešná!',
+    accountType: 'Typ účtu',
+    individual: 'Osoba',
+    company: 'Firma',
+    username: 'Používateľské meno',
+    usernameRequired: 'Používateľské meno je povinné',
+    confirmPassword: 'Potvrdenie hesla',
+    confirmPasswordRequired: 'Potvrdenie hesla je povinné',
+    passwordsDoNotMatch: 'Heslá sa nezhodujú',
+    passwordMinLength: 'Heslo musí mať aspoň 8 znakov',
+    birthDate: 'Dátum narodenia',
+    birthDateRequired: 'Dátum narodenia je povinný',
+    invalidBirthYear: 'Neplatný rok narodenia',
+    invalidMonth: 'Neplatný mesiac',
+    invalidDay: 'Neplatný deň',
+    invalidDayForMonth: 'Neplatný deň pre daný mesiac',
+    ageRequirement: 'Musíte mať aspoň 13 rokov',
+    gender: 'Pohlavie',
+    genderRequired: 'Pohlavie je povinné',
+    selectGender: 'Vyberte pohlavie',
+    male: 'Muž',
+    female: 'Žena',
+    other: 'Iné',
+    companyInfo: 'Informácie o firme',
+    companyName: 'Názov firmy',
+    companyNameRequired: 'Názov firmy je povinný',
+    website: 'Webstránka',
+    registerButton: 'Registrovať sa',
+    registering: 'Registrujem...',
+    checkingEmail: 'Kontrolujem dostupnosť emailu...',
+    emailAvailable: 'Email je dostupný ✅',
+    emailTaken: 'Email už je obsadený ❌',
+    emailCheckError: 'Chyba pri kontrole dostupnosti emailu',
+    registrationSuccessMessage: 'Skontrolujte si email a potvrďte registráciu kliknutím na odkaz v emaile.',
+    afterVerification: 'Po overení emailu sa môžete prihlásiť',
+    showPassword: 'Zobraziť heslo',
+    hidePassword: 'Skryť heslo',
+    usernamePlaceholder: 'Používateľské meno',
+    emailPlaceholder: 'vas@email.sk',
+    passwordPlaceholder: '••••••••',
+    companyNamePlaceholder: 'Názov firmy',
+    websitePlaceholder: 'https://www.example.sk',
+    selectAccountType: 'Vyberte typ účtu',
+    selectAccountTypeHelp: 'Vyberte, či sa registrujete ako osoba alebo firma',
+    usernameHelp: 'Zadajte jedinečné používateľské meno pre váš účet',
+    emailHelp: 'Zadajte platnú emailovú adresu pre registráciu',
+    passwordHelp: 'Heslo musí obsahovať aspoň 8 znakov',
+    birthDateHelp: 'Zadajte svoj dátum narodenia',
+    captchaError: 'Chyba pri overovaní reCAPTCHA. Skúste to znova.',
+    captchaUnavailable: 'reCAPTCHA nie je dostupná. Obnovte stránku.',
+    registrationError: 'Chyba pri registrácii: ',
+    loginLink: 'Prihlásiť sa',
+    haveAccount: 'Už máte účet?'
+  },
+  rightSidebar: {
+    settings: 'Nastavenia',
+    editProfile: 'Upraviť profil',
+    notifications: 'Upozornenia',
+    blocked: 'Blokované',
+    language: 'Jazyk',
+    accountType: 'Typ účtu',
+    close: 'Zatvoriť',
+  },
+  language: {
+    title: 'Jazyk',
+    languageSelection: 'Výber jazyka',
+    selectLanguage: 'Zvoľte si jazyk, v ktorom sa vám bude aplikácia najlepšie používať.',
+    slovak: 'Slovenčina',
+    czech: 'Čeština',
+    english: 'Angličtina',
+    german: 'Nemčina',
+    polish: 'Poľština',
+    hungarian: 'Maďarčina'
+  },
+  profile: {
+    editProfile: 'Upraviť profil',
+    skills: 'Zručnosti',
+    changePhoto: 'Zmeniť fotku',
+    removePhoto: 'Odstrániť fotku',
+    cancel: 'Zrušiť',
+    fullName: 'Meno',
+    bio: 'Bio',
+    location: 'Lokalita',
+    contact: 'Kontakt',
+    profession: 'Profesia',
+    website: 'Web',
+    gender: 'Pohlavie',
+    socials: 'Sociálne siete',
+    addLocation: 'Pridať lokalitu',
+    addContact: 'Pridať kontakt',
+    addProfession: 'Pridať profesiu',
+    addWebsite: 'Pridať web',
+    showPublic: 'Zobraziť verejne',
+    showContactPublic: 'Zobraziť kontakt verejne',
+    showProfessionPublic: 'Zobraziť profesiu verejne',
+    enterName: 'Zadajte svoje meno',
+    enterLocation: 'Zadajte svoje mesto alebo obec',
+    enterProfession: 'Zadajte svoju profesiu',
+    phoneNumber: 'Tel. číslo',
+    selectGender: 'Vyberte pohlavie',
+    male: 'Muž',
+    female: 'Žena',
+    other: 'Iné',
+    save: 'Uložiť',
+    writeAboutYourself: 'Napíšte niečo o sebe...',
+    photoUploaded: 'Fotka bola úspešne nahraná!',
+    photoUploadError: 'Nepodarilo sa nahrať fotku. Skús to znova.',
+    photoRemovedError: 'Nepodarilo sa odstrániť fotku. Skúste znova.',
+    fullNameDescription: 'Zadajte svoje celé meno',
+    bioDescription: 'Napíšte niečo o sebe (max. 150 znakov)',
+    locationDescription: 'Zadajte svoje mesto alebo obec',
+    contactDescription: 'Zadajte svoje telefónne číslo',
+    professionDescription: 'Zadajte svoju profesiu alebo pracovné zaoberanie',
+    websiteDescription: 'Zadajte URL svojej webovej stránky',
+    genderDescription: 'Vyberte svoje pohlavie',
+    instagram: 'Instagram',
+    facebook: 'Facebook',
+    linkedin: 'LinkedIn',
+    enterInstagramUrl: 'https://instagram.com/username',
+    enterFacebookUrl: 'https://facebook.com/username',
+    enterLinkedinUrl: 'https://linkedin.com/in/username',
+    instagramDescription: 'Zadajte URL svojho Instagram profilu',
+    facebookDescription: 'Zadajte URL svojho Facebook profilu',
+           linkedinDescription: 'Zadajte URL svojho LinkedIn profilu'
+         },
+         accessibility: {
+           loginForm: 'Prihlasovací formulár',
+           enterEmailAddress: 'Zadajte svoju emailovú adresu pre prihlásenie do aplikácie',
+           enterPassword: 'Zadajte svoje heslo pre prihlásenie do aplikácie',
+           resendVerificationButton: 'Kliknite pre znovu odoslanie verifikačného emailu',
+           googleLoginHelp: 'Otvorí sa nové okno pre prihlásenie cez Google. Po úspešnom prihlásení sa automaticky presmerujete späť do aplikácie.',
+           showPassword: 'Zobraziť heslo',
+           hidePassword: 'Skryť heslo'
+         }
+       };
+
+type SupportedLocale = 'sk' | 'en';
+
+type LanguageContextValue = {
+  locale: SupportedLocale;
+  setLocale: (locale: SupportedLocale) => void;
+  t: (key: string, fallback?: string) => string;
+};
+
+const LanguageContext = createContext<LanguageContextValue | undefined>(undefined);
+
+function getByPath(messages: Record<string, any>, key: string): unknown {
+  return key.split('.').reduce<unknown>((obj, segment) => {
+    if (obj && typeof obj === 'object' && segment in (obj as any)) {
+      return (obj as any)[segment];
+    }
+    return undefined;
+  }, messages);
+}
+
+export function LanguageProvider({ children }: { children: React.ReactNode }) {
+  // Start with default to match server-rendered HTML, then hydrate from storage
+  const [locale, setLocaleState] = useState<SupportedLocale>('sk');
+  useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem('appLocale');
+      if (saved === 'en' || saved === 'sk') setLocaleState(saved as SupportedLocale);
+    } catch {}
+  }, []);
+
+  const setLocale = useCallback((next: SupportedLocale) => {
+    setLocaleState(next);
+    try {
+      window.localStorage.setItem('appLocale', next);
+    } catch {}
+  }, []);
+
+  const messages = useMemo(() => {
+    if (locale === 'en') return enMessages as unknown as Record<string, any>;
+    return skMessages;
+  }, [locale]);
+
+  const t = useCallback(
+    (key: string, fallback?: string) => {
+      const value = getByPath(messages, key);
+      if (typeof value === 'string') return value as string;
+      return fallback ?? key;
+    },
+    [messages]
+  );
+
+  const value = useMemo<LanguageContextValue>(() => ({ locale, setLocale, t }), [locale, setLocale, t]);
+
+  return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
+}
+
+export function useLanguage(): LanguageContextValue {
+  const ctx = useContext(LanguageContext);
+  if (!ctx) throw new Error('useLanguage must be used within LanguageProvider');
+  return ctx;
+}
+
+

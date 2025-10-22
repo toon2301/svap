@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { User } from '../../../types';
 import UserAvatar from './profile/UserAvatar';
+import { useLanguage } from '@/contexts/LanguageContext';
 import UserInfo from './profile/UserInfo';
 import ProfileEditFormDesktop from './ProfileEditFormDesktop';
 import ProfileEditFormMobile from './ProfileEditFormMobile';
@@ -16,6 +17,7 @@ interface ProfileModuleProps {
 }
 
 export default function ProfileModule({ user, onUserUpdate, onEditProfileClick, isEditMode = false }: ProfileModuleProps) {
+  const { t } = useLanguage();
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string>('');
   const [uploadSuccess, setUploadSuccess] = useState(false);
@@ -187,7 +189,7 @@ export default function ProfileModule({ user, onUserUpdate, onEditProfileClick, 
                     }}
                     className="flex-1 px-3 py-1.5 text-xs bg-purple-100 text-purple-800 border border-purple-200 rounded-lg transition-colors hover:bg-purple-200"
                   >
-                    Upraviť profil
+                    {t('profile.editProfile', 'Upraviť profil')}
                   </button>
                   <button
                     onClick={() => {
@@ -195,7 +197,7 @@ export default function ProfileModule({ user, onUserUpdate, onEditProfileClick, 
                     }}
                     className="flex-1 px-3 py-1.5 text-xs bg-purple-100 text-purple-800 border border-purple-200 rounded-lg transition-colors hover:bg-purple-200"
                   >
-                    Zručnosti
+                    {t('profile.skills', 'Zručnosti')}
                   </button>
                 </div>
               </div>
@@ -294,7 +296,7 @@ export default function ProfileModule({ user, onUserUpdate, onEditProfileClick, 
                         }}
                         className="flex-1 px-32 py-2 text-sm bg-purple-100 text-purple-800 border border-purple-200 rounded-lg transition-colors hover:bg-purple-200 whitespace-nowrap"
                       >
-                        Upraviť profil
+                        {t('profile.editProfile')}
                       </button>
                       <button
                         onClick={() => {
@@ -302,7 +304,7 @@ export default function ProfileModule({ user, onUserUpdate, onEditProfileClick, 
                         }}
                         className="flex-1 px-32 py-2 text-sm bg-purple-100 text-purple-800 border border-purple-200 rounded-lg transition-colors hover:bg-purple-200 whitespace-nowrap"
                       >
-                        Zručnosti
+                        {t('profile.skills')}
                       </button>
                     </div>
                   </div>
@@ -360,20 +362,20 @@ export default function ProfileModule({ user, onUserUpdate, onEditProfileClick, 
                   }}
                   className="w-full py-4 text-lg rounded-lg bg-[var(--muted)] text-[var(--foreground)] hover:bg-gray-200 dark:hover:bg-[#141414]"
                 >
-                  Zmeniť fotku
+                  {t('profile.changePhoto')}
                 </button>
                 <button
                   onClick={handleRemoveAvatar}
                   className="w-full py-4 text-lg rounded-lg bg-[var(--muted)] text-[var(--foreground)] hover:bg-gray-200 dark:hover:bg-[#141414]"
                   disabled={isUploading}
                 >
-                  Odstrániť fotku
+                  {t('profile.removePhoto')}
                 </button>
                 <button
                   onClick={() => setIsActionsOpen(false)}
                   className="w-full py-4 text-lg rounded-lg bg-[var(--muted)] text-[var(--foreground)] hover:bg-gray-200 dark:hover:bg-[#141414]"
                 >
-                  Zrušiť
+                  {t('profile.cancel')}
                 </button>
               </div>
             </div>

@@ -2,6 +2,7 @@
 'use client';
 
 import { useState, lazy, Suspense, useEffect } from 'react';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { isAuthenticated } from '../utils/auth';
@@ -12,6 +13,7 @@ const ParticlesBackground = lazy(() => import('../components/ParticlesBackground
 
 export default function Home() {
   const router = useRouter();
+  const { t } = useLanguage();
   const [isAuth, setIsAuth] = useState(false);
 
   useEffect(() => {
@@ -34,7 +36,7 @@ export default function Home() {
       <div className="min-h-screen flex items-center justify-center" style={{background: 'var(--background)'}}>
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-300">Presmerovávam na dashboard...</p>
+          <p className="text-gray-600 dark:text-gray-300">{t('homepage.redirectingToDashboard', 'Presmerovávam na dashboard...')}</p>
         </div>
       </div>
     );
@@ -64,7 +66,7 @@ export default function Home() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
         >
-          <span className="text-6xl max-lg:text-4xl mr-4">Víta ťa</span>
+          <span className="text-6xl max-lg:text-4xl mr-4">{t('homepage.welcome', 'Víta ťa')}</span>
           <img
             src="/Logotyp _svaply_ na fialovom pozadí.png"
             alt="Svaply"
@@ -77,7 +79,7 @@ export default function Home() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.5, ease: "easeOut" }}
         >
-          „Miesto, kde sa stretávajú ľudia s túžbou rásť – jedni učia, druhí sa učia, všetci spolu tvoria silnejšiu komunitu."
+          {t('homepage.description', '„Miesto, kde sa stretávajú ľudia s túžbou rásť – jedni učia, druhí sa učia, všetci spolu tvoria silnejšiu komunitu."')}
         </motion.p>
       </motion.div>
 
@@ -100,19 +102,19 @@ export default function Home() {
         <div className="flex justify-center">
           <div className="max-w-full max-lg:px-4" style={{paddingTop: '20px', paddingBottom: '20px'}}>
             <div className="flex flex-wrap justify-center gap-6 text-center max-lg:gap-3">
-              <a href="#" className="text-gray-600 dark:text-gray-300 hover:text-purple-800 dark:hover:text-purple-400 transition-colors max-lg:text-sm">Ako to funguje</a>
-              <a href="#" className="text-gray-600 dark:text-gray-300 hover:text-purple-800 dark:hover:text-purple-400 transition-colors max-lg:text-sm">Pre jednotlivcov</a>
-              <a href="#" className="text-gray-600 dark:text-gray-300 hover:text-purple-800 dark:hover:text-purple-400 transition-colors max-lg:text-sm">Pre firmy</a>
-              <a href="#" className="text-gray-600 dark:text-gray-300 hover:text-purple-800 dark:hover:text-purple-400 transition-colors max-lg:text-sm">Pre školy</a>
-              <a href="#" className="text-gray-600 dark:text-gray-300 hover:text-purple-800 dark:hover:text-purple-400 transition-colors max-lg:text-sm">Pomocník</a>
-              <a href="#" className="text-gray-600 dark:text-gray-300 hover:text-purple-800 dark:hover:text-purple-400 transition-colors max-lg:text-sm">FAQ</a>
-              <a href="#" className="text-gray-600 dark:text-gray-300 hover:text-purple-800 dark:hover:text-purple-400 transition-colors max-lg:text-sm">Kontakt</a>
-              <a href="#" className="text-gray-600 dark:text-gray-300 hover:text-purple-800 dark:hover:text-purple-400 transition-colors max-lg:text-sm">Nahlásiť problém</a>
-              <a href="#" className="text-gray-600 dark:text-gray-300 hover:text-purple-800 dark:hover:text-purple-400 transition-colors max-lg:text-sm">O nás</a>
-              <a href="#" className="text-gray-600 dark:text-gray-300 hover:text-purple-800 dark:hover:text-purple-400 transition-colors max-lg:text-sm">Podmienky používania</a>
-              <a href="#" className="text-gray-600 dark:text-gray-300 hover:text-purple-800 dark:hover:text-purple-400 transition-colors max-lg:text-sm">Ochrana údajov</a>
-              <a href="#" className="text-gray-600 dark:text-gray-300 hover:text-purple-800 dark:hover:text-purple-400 transition-colors max-lg:text-sm">Cookies</a>
-              <a href="#" className="text-gray-600 dark:text-gray-300 hover:text-purple-800 dark:hover:text-purple-400 transition-colors max-lg:text-sm">GDPR</a>
+              <a href="#" className="text-gray-600 dark:text-gray-300 hover:text-purple-800 dark:hover:text-purple-400 transition-colors max-lg:text-sm">{t('footer.howItWorks', 'Ako to funguje')}</a>
+              <a href="#" className="text-gray-600 dark:text-gray-300 hover:text-purple-800 dark:hover:text-purple-400 transition-colors max-lg:text-sm">{t('footer.forIndividuals', 'Pre jednotlivcov')}</a>
+              <a href="#" className="text-gray-600 dark:text-gray-300 hover:text-purple-800 dark:hover:text-purple-400 transition-colors max-lg:text-sm">{t('footer.forCompanies', 'Pre firmy')}</a>
+              <a href="#" className="text-gray-600 dark:text-gray-300 hover:text-purple-800 dark:hover:text-purple-400 transition-colors max-lg:text-sm">{t('footer.forSchools', 'Pre školy')}</a>
+              <a href="#" className="text-gray-600 dark:text-gray-300 hover:text-purple-800 dark:hover:text-purple-400 transition-colors max-lg:text-sm">{t('footer.help', 'Pomocník')}</a>
+              <a href="#" className="text-gray-600 dark:text-gray-300 hover:text-purple-800 dark:hover:text-purple-400 transition-colors max-lg:text-sm">{t('footer.faq', 'FAQ')}</a>
+              <a href="#" className="text-gray-600 dark:text-gray-300 hover:text-purple-800 dark:hover:text-purple-400 transition-colors max-lg:text-sm">{t('footer.contact', 'Kontakt')}</a>
+              <a href="#" className="text-gray-600 dark:text-gray-300 hover:text-purple-800 dark:hover:text-purple-400 transition-colors max-lg:text-sm">{t('footer.reportIssue', 'Nahlásiť problém')}</a>
+              <a href="#" className="text-gray-600 dark:text-gray-300 hover:text-purple-800 dark:hover:text-purple-400 transition-colors max-lg:text-sm">{t('footer.aboutUs', 'O nás')}</a>
+              <a href="#" className="text-gray-600 dark:text-gray-300 hover:text-purple-800 dark:hover:text-purple-400 transition-colors max-lg:text-sm">{t('footer.termsOfUse', 'Podmienky používania')}</a>
+              <a href="#" className="text-gray-600 dark:text-gray-300 hover:text-purple-800 dark:hover:text-purple-400 transition-colors max-lg:text-sm">{t('footer.privacyPolicy', 'Ochrana údajov')}</a>
+              <a href="#" className="text-gray-600 dark:text-gray-300 hover:text-purple-800 dark:hover:text-purple-400 transition-colors max-lg:text-sm">{t('footer.cookies', 'Cookies')}</a>
+              <a href="#" className="text-gray-600 dark:text-gray-300 hover:text-purple-800 dark:hover:text-purple-400 transition-colors max-lg:text-sm">{t('footer.gdpr', 'GDPR')}</a>
             </div>
 
           {/* Spodná časť footeru */}

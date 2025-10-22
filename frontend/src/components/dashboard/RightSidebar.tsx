@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   UserIcon,
@@ -60,6 +61,7 @@ export default function RightSidebar({
   onItemClick,
   isMobile = false 
 }: RightSidebarProps) {
+  const { t } = useLanguage();
   const handleItemClick = (itemId: string) => {
     onItemClick(itemId);
     if (isMobile) {
@@ -71,11 +73,11 @@ export default function RightSidebar({
     <div className="flex flex-col h-full bg-white dark:bg-black border-l border-gray-200 dark:border-gray-800">
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-800">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Nastavenia</h2>
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{t('rightSidebar.settings', 'Nastavenia')}</h2>
         <button
           onClick={onClose}
           className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-900 transition-colors"
-          aria-label="Zatvoriť"
+          aria-label={t('rightSidebar.close', 'Zatvoriť')}
         >
           <XMarkIcon className="w-5 h-5 text-gray-600 dark:text-gray-300" />
         </button>
@@ -98,7 +100,14 @@ export default function RightSidebar({
               }`}
             >
               <Icon className={`w-5 h-5 mr-3 ${isActive ? 'text-purple-600' : 'text-gray-500 dark:text-gray-400'}`} />
-              {item.label}
+              {(() => {
+                if (item.id === 'edit-profile') return t('rightSidebar.editProfile', item.label);
+                if (item.id === 'notifications') return t('rightSidebar.notifications', item.label);
+                if (item.id === 'blocked') return t('rightSidebar.blocked', item.label);
+                if (item.id === 'language') return t('rightSidebar.language', item.label);
+                if (item.id === 'account-type') return t('rightSidebar.accountType', item.label);
+                return item.label;
+              })()}
             </button>
           );
         })}

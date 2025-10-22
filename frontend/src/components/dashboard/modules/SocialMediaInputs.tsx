@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { User } from '../../../types';
 import { api } from '../../../lib/api';
 
@@ -10,6 +11,7 @@ interface SocialMediaInputsProps {
 }
 
 export default function SocialMediaInputs({ user, onUserUpdate }: SocialMediaInputsProps) {
+  const { t } = useLanguage();
   const [instagram, setInstagram] = useState(user.instagram || '');
   const [facebook, setFacebook] = useState(user.facebook || '');
   const [linkedin, setLinkedin] = useState(user.linkedin || '');
@@ -89,8 +91,8 @@ export default function SocialMediaInputs({ user, onUserUpdate }: SocialMediaInp
 
   return (
     <div className="mb-4">
-      <label className="block text-base font-medium text-gray-700 mb-2">
-        Sociálne siete
+      <label className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
+        {t('profile.socials', 'Sociálne siete')}
       </label>
       <div className="flex gap-4 mt-3">
         {/* Instagram */}
@@ -137,7 +139,7 @@ export default function SocialMediaInputs({ user, onUserUpdate }: SocialMediaInp
             }}
             maxLength={255}
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent bg-white dark:bg-black text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
-            placeholder="https://instagram.com/username"
+            placeholder={t('profile.instagramPlaceholder', 'https://instagram.com/username')}
             autoFocus
           />
         </div>
@@ -158,7 +160,7 @@ export default function SocialMediaInputs({ user, onUserUpdate }: SocialMediaInp
             }}
             maxLength={255}
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent bg-white dark:bg-black text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
-            placeholder="https://facebook.com/username"
+            placeholder={t('profile.facebookPlaceholder', 'https://facebook.com/username')}
             autoFocus
           />
         </div>
@@ -179,7 +181,7 @@ export default function SocialMediaInputs({ user, onUserUpdate }: SocialMediaInp
             }}
             maxLength={255}
             className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent bg-white dark:bg-black text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
-            placeholder="https://linkedin.com/in/username"
+            placeholder={t('profile.linkedinPlaceholder', 'https://linkedin.com/in/username')}
             autoFocus
           />
         </div>

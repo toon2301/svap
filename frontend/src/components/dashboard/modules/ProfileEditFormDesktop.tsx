@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { User } from '../../../types';
 import { api } from '../../../lib/api';
 import UserAvatar from './profile/UserAvatar';
@@ -23,6 +24,7 @@ export default function ProfileEditFormDesktop({
   isUploadingFromParent,
   onAvatarClick
 }: ProfileEditFormDesktopProps) {
+  const { t } = useLanguage();
   // State pre formulár
   const [firstName, setFirstName] = useState(user.first_name || '');
   const [lastName, setLastName] = useState(user.last_name || '');
@@ -283,7 +285,7 @@ export default function ProfileEditFormDesktop({
     <>
       <div className="pt-4 pb-8 pl-12 text-[var(--foreground)]">
         <h2 className="text-2xl font-semibold text-gray-800 dark:text-white mb-6">
-          Upraviť profil
+          {t('profile.editProfile', 'Upraviť profil')}
         </h2>
         
         {/* Fotka, meno, email a tlačidlo v bielom paneli */}
@@ -331,7 +333,7 @@ export default function ProfileEditFormDesktop({
               onClick={() => setIsActionsOpen(true)}
               className="px-3 py-1 bg-purple-100 text-purple-800 border border-purple-200 rounded-lg hover:bg-purple-200 transition-colors text-sm"
             >
-              Zmeniť fotku
+              {t('profile.changePhoto', 'Zmeniť fotku')}
             </button>
           </div>
         </div>
@@ -342,7 +344,7 @@ export default function ProfileEditFormDesktop({
             {/* Meno (celé meno v jednom vstupe) */}
             <div className="mb-4">
               <label className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Meno
+                {t('profile.fullName', 'Meno')}
               </label>
               <input
                 id="fullName"
@@ -370,7 +372,7 @@ export default function ProfileEditFormDesktop({
                 }}
                 pattern="[a-zA-ZáčďéěíĺľňóôŕšťúýžÁČĎÉĚÍĹĽŇÓÔŔŠŤÚÝŽ\s-]*"
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-1 focus:ring-purple-300 focus:border-transparent"
-                placeholder="Zadajte svoje meno a priezvisko"
+                placeholder={t('profile.enterName', 'Zadajte svoje meno a priezvisko')}
               />
             </div>
             {/* Priezvisko zrušené – unified v jednom vstupe */}
@@ -378,7 +380,7 @@ export default function ProfileEditFormDesktop({
             {/* Bio */}
             <div className="mb-4">
               <label className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Bio
+                {t('profile.bio', 'Bio')}
               </label>
               <div className="relative">
                 <textarea
@@ -395,7 +397,7 @@ export default function ProfileEditFormDesktop({
                   rows={3}
                   maxLength={150}
                   className="w-full px-3 py-2 pr-16 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-1 focus:ring-purple-300 focus:border-transparent"
-                  placeholder="Napíšte niečo o sebe..."
+                  placeholder={t('placeholders.bio', 'Napíšte niečo o sebe...')}
                 />
                 <div className="absolute bottom-2 right-2 text-xs text-gray-400">
                   {bio.length}/150
@@ -406,7 +408,7 @@ export default function ProfileEditFormDesktop({
             {/* Lokalita */}
             <div className="mb-4">
               <label className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Lokalita
+                {t('profile.location', 'Lokalita')}
               </label>
               <input
                 id="location"
@@ -421,14 +423,14 @@ export default function ProfileEditFormDesktop({
                 }}
                 maxLength={100}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-1 focus:ring-purple-300 focus:border-transparent"
-                placeholder="Zadajte svoje mesto alebo obec"
+                placeholder={t('profile.enterLocation', 'Zadajte svoje mesto alebo obec')}
               />
             </div>
 
             {/* Kontakt */}
             <div className="mb-4">
               <label className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Kontakt
+                {t('profile.contact', 'Kontakt')}
               </label>
               <input
                 id="phone"
@@ -443,7 +445,7 @@ export default function ProfileEditFormDesktop({
                 }}
                 maxLength={150}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-1 focus:ring-purple-300 focus:border-transparent"
-                placeholder="Tel. číslo"
+                placeholder={t('profile.phone', 'Tel. číslo')}
               />
               {/* Prepínač pre zobrazenie telefónu */}
               <div className="mt-3 flex items-center gap-2">
@@ -459,14 +461,14 @@ export default function ProfileEditFormDesktop({
                     }`}
                   />
                 </button>
-                <span className="text-xs text-gray-500 dark:text-gray-400">Zobraziť kontakt verejne</span>
+                <span className="text-xs text-gray-500 dark:text-gray-400">{t('profile.showContactPublic', 'Zobraziť kontakt verejne')}</span>
               </div>
             </div>
 
             {/* Profesia */}
             <div className="mb-4">
               <label className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Profesia
+                {t('profile.profession', 'Profesia')}
               </label>
               <input
                 id="profession"
@@ -481,7 +483,7 @@ export default function ProfileEditFormDesktop({
                 }}
                 maxLength={100}
                 className="w-full px-3 py-2 bg-white dark:bg-black border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:ring-1 focus:ring-purple-300 focus:border-transparent"
-                placeholder="Zadajte svoju profesiu"
+                placeholder={t('profile.enterProfession', 'Zadajte svoju profesiu')}
               />
               {/* Prepínač pre zobrazenie profese */}
               <div className="mt-3 flex items-center gap-2">
@@ -497,14 +499,14 @@ export default function ProfileEditFormDesktop({
                     }`}
                   />
                 </button>
-                <span className="text-xs text-gray-500 dark:text-gray-400">Zobraziť profesiu verejne</span>
+                <span className="text-xs text-gray-500 dark:text-gray-400">{t('profile.showProfessionPublic', 'Zobraziť profesiu verejne')}</span>
               </div>
             </div>
 
             {/* Web */}
             <div className="mb-4">
               <label className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Web
+                {t('profile.website', 'Web')}
               </label>
               <input
                 id="website"
@@ -532,7 +534,7 @@ export default function ProfileEditFormDesktop({
             {/* Pohlavie */}
             <div className="mb-4">
               <label className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Pohlavie
+                {t('profile.gender', 'Pohlavie')}
               </label>
               <select
                 id="gender"
@@ -540,10 +542,10 @@ export default function ProfileEditFormDesktop({
                 onChange={(e) => handleGenderChange(e.target.value)}
                 className="w-full px-3 py-2 bg-white dark:bg-black border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:ring-1 focus:ring-purple-300 focus:border-transparent appearance-none cursor-pointer"
               >
-                <option value="">Vyberte pohlavie</option>
-                <option value="male">Muž</option>
-                <option value="female">Žena</option>
-                <option value="other">Iné</option>
+                <option value="">{t('profile.selectGender', 'Vyberte pohlavie')}</option>
+                <option value="male">{t('profile.male', 'Muž')}</option>
+                <option value="female">{t('profile.female', 'Žena')}</option>
+                <option value="other">{t('profile.other', 'Iné')}</option>
               </select>
             </div>
         </div>
@@ -565,7 +567,7 @@ export default function ProfileEditFormDesktop({
             }}
             className="px-32 py-2 bg-purple-100 text-purple-800 border border-purple-200 rounded-lg hover:bg-purple-200 transition-colors"
           >
-            Uložiť
+            {t('common.save', 'Uložiť')}
           </button>
         </div>
       </div>
@@ -600,20 +602,20 @@ export default function ProfileEditFormDesktop({
                   }}
                   className="w-full py-4 text-lg rounded-lg bg-[var(--muted)] text-[var(--foreground)] hover:bg-gray-200 dark:hover:bg-[#141414]"
                 >
-                  Zmeniť fotku
+                  {t('profile.changePhoto', 'Zmeniť fotku')}
                 </button>
                 <button
                   onClick={handleRemoveAvatar}
                   className="w-full py-4 text-lg rounded-lg bg-[var(--muted)] text-[var(--foreground)] hover:bg-gray-200 dark:hover:bg-[#141414]"
                   disabled={isUploading}
                 >
-                  Odstrániť fotku
+                  {t('profile.removePhoto', 'Odstrániť fotku')}
                 </button>
                 <button
                   onClick={() => setIsActionsOpen(false)}
                   className="w-full py-4 text-lg rounded-lg bg-[var(--muted)] text-[var(--foreground)] hover:bg-gray-200 dark:hover:bg-[#141414]"
                 >
-                  Zrušiť
+                  {t('common.cancel', 'Zrušiť')}
                 </button>
               </div>
             </div>

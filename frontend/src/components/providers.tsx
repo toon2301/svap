@@ -6,6 +6,7 @@ import { Toaster } from 'react-hot-toast';
 import { useState } from 'react';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { AuthProvider } from '@/contexts/AuthContext';
+import { LanguageProvider } from '@/contexts/LanguageContext';
 import ReCaptchaProvider from '@/components/ReCaptchaProvider';
 
 export function Providers({ children }: { children: React.ReactNode }) {
@@ -31,9 +32,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
     <QueryClientProvider client={queryClient}>
       <ReCaptchaProvider>
         <AuthProvider>
-          <ThemeProvider>
-            {children}
-          </ThemeProvider>
+          <LanguageProvider>
+            <ThemeProvider>
+              {children}
+            </ThemeProvider>
+          </LanguageProvider>
           <Toaster
             position="top-right"
             toastOptions={{
