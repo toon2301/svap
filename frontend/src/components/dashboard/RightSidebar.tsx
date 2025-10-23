@@ -74,13 +74,16 @@ export default function RightSidebar({
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-800">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{t('rightSidebar.settings', 'Nastavenia')}</h2>
-        <button
-          onClick={onClose}
-          className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-900 transition-colors"
-          aria-label={t('rightSidebar.close', 'Zatvoriť')}
-        >
-          <XMarkIcon className="w-5 h-5 text-gray-600 dark:text-gray-300" />
-        </button>
+        {/* Close button only on mobile */}
+        {isMobile && (
+          <button
+            onClick={onClose}
+            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-900 transition-colors"
+            aria-label={t('rightSidebar.close', 'Zatvoriť')}
+          >
+            <XMarkIcon className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+          </button>
+        )}
       </div>
 
       {/* Navigation Items */}

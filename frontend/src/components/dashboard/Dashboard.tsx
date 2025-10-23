@@ -250,6 +250,10 @@ export default function Dashboard({ initialUser }: DashboardProps) {
         onMenuClick={() => setIsMobileMenuOpen(true)}
         isEditMode={isRightSidebarOpen && activeModule === 'profile'}
         onBackClick={() => setIsRightSidebarOpen(false)}
+        onProfileClick={() => {
+          setActiveModule('profile');
+          setIsRightSidebarOpen(false);
+        }}
       />
 
       {/* Mobile Bottom Navigation - skryť v edit móde */}
