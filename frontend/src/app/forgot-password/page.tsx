@@ -4,6 +4,7 @@ import { useState, lazy, Suspense } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { api } from '../../lib/api';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 // Lazy load particle efekt
 const ParticlesBackground = lazy(() => import('../../components/ParticlesBackground'));
@@ -19,6 +20,7 @@ interface ForgotPasswordErrors {
 
 export default function ForgotPasswordPage() {
   const router = useRouter();
+  const { t } = useLanguage();
   const [formData, setFormData] = useState<ForgotPasswordData>({
     email: ''
   });
@@ -46,13 +48,13 @@ export default function ForgotPasswordPage() {
     const newErrors: ForgotPasswordErrors = {};
 
     if (!formData.email.trim()) {
-      newErrors.email = 'Email je povinný';
+      newErrors.email = t('auth.emailRequired');
     }
 
     // Validácia emailu
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (formData.email && !emailRegex.test(formData.email)) {
-      newErrors.email = 'Neplatný formát emailu';
+      newErrors.email = t('auth.invalidEmailFormat');
     }
 
     setErrors(newErrors);
@@ -81,7 +83,7 @@ export default function ForgotPasswordPage() {
       if (error.response?.data?.error) {
         setErrors({ general: error.response.data.error });
       } else {
-        setErrors({ general: 'Chyba pri odosielaní emailu pre reset hesla' });
+        setErrors({ general: t('auth.passwordResetError') });
       }
     } finally {
       setIsLoading(false);
@@ -122,7 +124,7 @@ export default function ForgotPasswordPage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.2 }}
               >
-                Email odoslaný!
+                {t('auth.emailSent')}
               </motion.h1>
 
               <motion.div 
@@ -136,9 +138,9 @@ export default function ForgotPasswordPage() {
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                   </svg>
                   <div>
-                    <p className="font-semibold">Email pre reset hesla bol odoslaný!</p>
+                    <p className="font-semibold">{t('auth.passwordResetEmailSent')}</p>
                     <p className="text-sm mt-1">
-                      Skontrolujte si emailovú schránku na adrese <strong>{formData.email}</strong> a kliknite na odkaz pre reset hesla.
+                      {t('auth.checkEmailForReset', 'Skontrolujte si emailovú schránku na adrese')} <strong>{formData.email}</strong> {t('auth.andClickResetLink', 'a kliknite na odkaz pre reset hesla')}.
                     </p>
                   </div>
                 </div>
@@ -151,13 +153,13 @@ export default function ForgotPasswordPage() {
                 transition={{ duration: 0.5, delay: 0.6 }}
               >
                 <p className="text-2xl text-gray-600 dark:text-gray-300 max-lg:text-base mb-4">
-                  Späť na prihlásenie
+                  {t('auth.backToLogin')}
                 </p>
                 <a 
                   href="/" 
                   className="inline-block bg-purple-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-purple-700 transition-colors"
                 >
-                  Prihlásiť sa
+                  {t('auth.login')}
                 </a>
               </motion.div>
             </div>
@@ -200,7 +202,7 @@ export default function ForgotPasswordPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.2 }}
             >
-              Zabudli ste heslo?
+              {t('auth.forgotPassword')}
             </motion.h1>
 
             <motion.p 
@@ -209,7 +211,7 @@ export default function ForgotPasswordPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.3 }}
             >
-              Zadajte svoju emailovú adresu a pošleme vám odkaz na reset hesla.
+              {t('auth.forgotPasswordDescription')}
             </motion.p>
 
             {errors.general && (
@@ -232,7 +234,7 @@ export default function ForgotPasswordPage() {
             >
               <div>
                 <label htmlFor="email" className="block text-lg font-normal text-gray-600 dark:text-gray-300 mb-2 max-lg:text-base max-lg:mb-1">
-                  Emailová adresa
+                  {t('auth.emailAddress')}
                 </label>
                 <input
                   id="email"
@@ -243,15 +245,15 @@ export default function ForgotPasswordPage() {
                   className={`w-full px-16 py-12 text-xl border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all max-lg:px-4 max-lg:py-3 max-lg:text-base bg-white dark:bg-black text-gray-900 dark:text-white ${
                     errors.email ? 'border-red-500' : 'border-gray-300 dark:border-gray-700'
                   }`}
-                  placeholder="vas@email.sk"
-                  aria-label="Zadajte svoju emailovú adresu"
+                  placeholder={t('auth.emailPlaceholder')}
+                  aria-label={t('auth.enterEmailForReset')}
                   aria-required="true"
                   aria-invalid={errors.email ? "true" : "false"}
                   aria-describedby={errors.email ? "email-error" : "email-help"}
                   style={{paddingLeft: '12px', paddingRight: '12px', paddingTop: '16px', paddingBottom: '16px'}}
                 />
                 <div id="email-help" className="sr-only">
-                  Zadajte emailovú adresu, ktorú ste používali pri registrácii
+                  {t('auth.enterEmailForReset')}
                 </div>
                 {errors.email && (
                   <p id="email-error" className="text-red-500 text-sm mt-1" role="alert" aria-live="polite">
@@ -263,7 +265,7 @@ export default function ForgotPasswordPage() {
               <motion.button
                 type="submit"
                 disabled={isLoading}
-                aria-label="Odoslať email pre reset hesla"
+                aria-label={t('auth.sendResetEmail')}
                 className={`w-full text-white px-6 py-4 rounded-lg font-semibold text-xl transition-all ${
                   isLoading ? 'cursor-not-allowed' : 'cursor-pointer hover:shadow-lg'
                 }`}
@@ -290,19 +292,19 @@ export default function ForgotPasswordPage() {
                       aria-hidden="true"
                     />
                   )}
-                  {isLoading ? 'Odosielam...' : 'Odoslať email'}
+                  {isLoading ? t('auth.sending') : t('auth.sendResetEmail')}
                 </div>
               </motion.button>
             </motion.form>
 
             <div className="text-center" style={{marginTop: '16px'}}>
               <p className="text-2xl text-gray-600 dark:text-gray-300 max-lg:text-base">
-                Spomenuli ste si heslo?{' '}
+                {t('auth.rememberPassword')}{' '}
                 <a 
                   href="/" 
                   className="text-purple-800 dark:text-purple-400 font-semibold hover:text-purple-900 dark:hover:text-purple-300 transition-colors"
                 >
-                  Prihlásiť sa
+                  {t('auth.login')}
                 </a>
               </p>
             </div>

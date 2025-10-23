@@ -7,12 +7,14 @@ import { useSearchParams } from 'next/navigation';
 import { api } from '@/lib/api';
 import { setAuthTokens } from '@/utils/auth';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 function OAuthCallbackContent() {
   const searchParams = useSearchParams();
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [error, setError] = useState<string>('');
   const { theme } = useTheme();
+  const { t } = useLanguage();
 
   useEffect(() => {
     // Nastav dark mode pre popup okno
@@ -40,7 +42,7 @@ function OAuthCallbackContent() {
       
       if (error) {
         console.error('OAuth error from URL:', error);
-        setError(`OAuth prihlásenie zlyhalo: ${error}`);
+        setError(`${t('auth.oauthLoginFailed')}: ${error}`);
         setStatus('error');
         
         // Pošli error správu do parent okna
@@ -48,7 +50,7 @@ function OAuthCallbackContent() {
           console.log('Sending error message to parent window');
           window.opener.postMessage({
             type: 'OAUTH_ERROR',
-            error: `OAuth prihlásenie zlyhalo: ${error}`
+            error: `${t('auth.oauthLoginFailed')}: ${error}`
           }, '*');
         }
         
@@ -60,14 +62,14 @@ function OAuthCallbackContent() {
       
       if (!token || !refreshToken) {
         console.error('Missing tokens');
-        setError('Chýbajú tokeny z Google prihlásenia');
+        setError(t('auth.missingGoogleTokens'));
         setStatus('error');
         
         // Pošli error správu do parent okna
         if (window.opener) {
           window.opener.postMessage({
             type: 'OAUTH_ERROR',
-            error: 'Chýbajú tokeny z Google prihlásenia'
+            error: t('auth.missingGoogleTokens')
           }, '*');
         }
         
@@ -118,7 +120,7 @@ function OAuthCallbackContent() {
       } catch (err: any) {
         console.error('OAuth callback error:', err);
         
-        const errorMessage = err.message || 'Chyba pri uložení tokenov';
+        const errorMessage = err.message || t('auth.tokenSaveError');
         setError(errorMessage);
         setStatus('error');
         
@@ -148,10 +150,10 @@ function OAuthCallbackContent() {
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-              Prihlasujem vás...
+              {t('auth.loggingYouIn')}
             </h2>
             <p className="text-gray-600 dark:text-gray-300">
-              Prosím počkajte, spracovávam vaše prihlásenie.
+              {t('auth.pleaseWaitProcessing')}
             </p>
           </div>
         )}
@@ -164,10 +166,10 @@ function OAuthCallbackContent() {
               </svg>
             </div>
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-              Úspešne prihlásený!
+              {t('auth.successfullyLoggedIn')}
             </h2>
             <p className="text-gray-600 dark:text-gray-300">
-              Zatváram okno a presmerovávam vás na dashboard...
+              {t('auth.closingWindowRedirecting')}
             </p>
           </div>
         )}
@@ -180,7 +182,7 @@ function OAuthCallbackContent() {
               </svg>
             </div>
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-              Chyba pri prihlásení
+              {t('auth.loginError')}
             </h2>
             <p className="text-gray-600 dark:text-gray-300 mb-4">
               {error}
@@ -189,7 +191,7 @@ function OAuthCallbackContent() {
               onClick={() => window.close()}
               className="px-4 py-2 bg-gray-600 dark:bg-gray-700 text-white rounded-lg hover:bg-gray-700 dark:hover:bg-gray-600 transition-colors"
             >
-              Zatvoriť okno
+              {t('common.close')}
             </button>
           </div>
         )}
@@ -204,7 +206,7 @@ export default function OAuthCallback() {
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-black">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-300">Načítavam...</p>
+          <p className="text-gray-600 dark:text-gray-300">Loading...</p>
         </div>
       </div>
     }>
