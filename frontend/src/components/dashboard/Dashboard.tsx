@@ -108,12 +108,16 @@ export default function Dashboard({ initialUser }: DashboardProps) {
   };
 
   const handleModuleChange = (moduleId: string) => {
-    setActiveModule(moduleId);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('activeModule', moduleId);
+    // Only allow valid modules that are still available (removed: home, search, favorites, profile, settings from hamburger)
+    const validModules = ['home', 'profile', 'search', 'favorites', 'settings', 'create', 'messages', 'notifications', 'language'];
+    if (validModules.includes(moduleId)) {
+      setActiveModule(moduleId);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('activeModule', moduleId);
+      }
+      // Zatvor pravú navigáciu keď sa zmení hlavná sekcia
+      setIsRightSidebarOpen(false);
     }
-    // Zatvor pravú navigáciu keď sa zmení hlavná sekcia
-    setIsRightSidebarOpen(false);
   };
 
   const handleRightSidebarToggle = () => {
@@ -185,6 +189,17 @@ export default function Dashboard({ initialUser }: DashboardProps) {
     }
 
     switch (activeModule) {
+      case 'home':
+        return (
+          <div className="text-center py-20">
+            <h2 className="text-2xl font-semibold text-gray-600 mb-4">
+              {t('dashboard.welcomeToSwaply', 'Vitaj v Swaply!')}
+            </h2>
+            <p className="text-gray-500">
+              {t('dashboard.selectSection', 'Vyber si sekciu z navigácie pre pokračovanie.')}
+            </p>
+          </div>
+        );
       case 'profile':
         return (
           <ProfileModule 
@@ -196,6 +211,24 @@ export default function Dashboard({ initialUser }: DashboardProps) {
         );
       case 'search':
         return <SearchModule />;
+      case 'favorites':
+        return <div className="text-center py-20">
+          <h2 className="text-2xl font-semibold text-gray-600 mb-4">
+            {t('navigation.favorites', 'Obľúbené')}
+          </h2>
+          <p className="text-gray-500">
+            {t('dashboard.selectSection', 'Vyber si sekciu z navigácie pre pokračovanie.')}
+          </p>
+        </div>;
+      case 'settings':
+        return <div className="text-center py-20">
+          <h2 className="text-2xl font-semibold text-gray-600 mb-4">
+            {t('navigation.settings', 'Nastavenia')}
+          </h2>
+          <p className="text-gray-500">
+            {t('dashboard.selectSection', 'Vyber si sekciu z navigácie pre pokračovanie.')}
+          </p>
+        </div>;
       case 'create':
         return <CreateModule />;
       case 'messages':
@@ -204,7 +237,6 @@ export default function Dashboard({ initialUser }: DashboardProps) {
         return <NotificationsModule />;
       case 'language':
         return <LanguageModule />;
-      case 'home':
       default:
         return (
           <div className="text-center py-20">
@@ -254,6 +286,7 @@ export default function Dashboard({ initialUser }: DashboardProps) {
           setActiveModule('profile');
           setIsRightSidebarOpen(false);
         }}
+        activeModule={activeModule}
       />
 
       {/* Mobile Bottom Navigation - skryť v edit móde */}

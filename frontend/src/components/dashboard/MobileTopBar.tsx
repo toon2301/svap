@@ -8,14 +8,15 @@ interface MobileTopBarProps {
   isEditMode?: boolean;
   onBackClick?: () => void;
   onProfileClick?: () => void;
+  activeModule?: string;
 }
 
-export default function MobileTopBar({ onMenuClick, isEditMode = false, onBackClick, onProfileClick }: MobileTopBarProps) {
+export default function MobileTopBar({ onMenuClick, isEditMode = false, onBackClick, onProfileClick, activeModule }: MobileTopBarProps) {
   const { t } = useLanguage();
   return (
     <div className="lg:hidden fixed top-0 left-0 right-0 z-30 bg-white dark:bg-black border-b border-gray-200 dark:border-gray-800 shadow-sm">
-      <div className="flex items-center justify-between px-3 py-2">
-        {/* Šipka späť vľavo (len ak je edit mode) */}
+      <div className="flex items-center justify-between px-3 py-0 h-12">
+        {/* Logo vľavo alebo šipka späť v edit móde */}
         {isEditMode ? (
           <button
             onClick={onBackClick}
@@ -27,7 +28,13 @@ export default function MobileTopBar({ onMenuClick, isEditMode = false, onBackCl
             </svg>
           </button>
         ) : (
-          <div className="w-9"></div>
+          <div className="flex items-center">
+            <img 
+              src="/Logotyp _svaply_ na fialovom pozadí.png" 
+              alt="Swaply" 
+              className="h-16 w-auto"
+            />
+          </div>
         )}
         
         {/* Nadpis v strede (len ak je edit mode) */}
@@ -37,23 +44,27 @@ export default function MobileTopBar({ onMenuClick, isEditMode = false, onBackCl
         
         {/* Pravá strana - Profil a Hamburger */}
         <div className="flex items-center space-x-2">
-          {/* Profil ikonka */}
-          <button
-            onClick={onProfileClick}
-            className="p-1.5 rounded-lg text-gray-600 dark:text-gray-300 hover:text-purple-600 hover:bg-gray-50 dark:hover:bg-gray-900 transition-all"
-            aria-label={t('rightSidebar.editProfile', 'Profil')}
-          >
-            <UserIcon className="w-5 h-5" strokeWidth={2} />
-          </button>
+          {/* Profil ikonka - len keď nie si v profile module */}
+          {activeModule !== 'profile' && (
+            <button
+              onClick={onProfileClick}
+              className="p-1.5 rounded-lg text-gray-600 dark:text-gray-300 hover:text-purple-600 hover:bg-gray-50 dark:hover:bg-gray-900 transition-all"
+              aria-label={t('rightSidebar.editProfile', 'Profil')}
+            >
+              <UserIcon className="w-5 h-5" strokeWidth={2} />
+            </button>
+          )}
           
-          {/* Hamburger menu */}
-          <button
-            onClick={onMenuClick}
-            className="p-1.5 rounded-lg text-gray-600 dark:text-gray-300 hover:text-purple-600 hover:bg-gray-50 dark:hover:bg-gray-900 transition-all"
-            aria-label={t('common.menu', 'Menu')}
-          >
-            <Bars3Icon className="w-5 h-5" strokeWidth={2} />
-          </button>
+          {/* Hamburger menu - len v profile module a nie v edit móde */}
+          {activeModule === 'profile' && !isEditMode && (
+            <button
+              onClick={onMenuClick}
+              className="p-1.5 rounded-lg text-gray-600 dark:text-gray-300 hover:text-purple-600 hover:bg-gray-50 dark:hover:bg-gray-900 transition-all"
+              aria-label={t('common.menu', 'Menu')}
+            >
+              <Bars3Icon className="w-5 h-5" strokeWidth={2} />
+            </button>
+          )}
         </div>
       </div>
     </div>
