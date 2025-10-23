@@ -153,16 +153,16 @@ export default function Sidebar({
         <div className="flex-1 px-6 py-4">
           <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-4">{t('rightSidebar.appSettings', 'Nastavenia aplikácie')}</h3>
           
-          {/* Jazyk a preklady - krajší štýl */}
-          <div className="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-lg p-3 mb-4 border border-purple-100 dark:border-purple-800/30">
+                 {/* Jazyk a preklady - krajší štýl */}
+                 <div className="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-lg p-2 mb-4 border border-purple-100 dark:border-purple-800/30">
             <button
               onClick={() => handleItemClick('language')}
               className="w-full flex items-center justify-between group"
             >
-              <div className="flex items-center">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center mr-3 group-hover:scale-110 transition-transform duration-200">
-                  <LanguageIcon className="w-5 h-5 text-white" />
-                </div>
+                     <div className="flex items-center">
+                       <div className="mr-3 group-hover:scale-110 transition-transform duration-200">
+                         <LanguageIcon className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                       </div>
                 <div className="text-left">
                   <div className="text-sm font-semibold text-gray-900 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
                     {t('rightSidebar.language', 'Jazyk')}

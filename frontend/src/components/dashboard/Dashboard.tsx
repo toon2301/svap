@@ -119,18 +119,24 @@ export default function Dashboard({ initialUser }: DashboardProps) {
       // Zatvor pravú navigáciu keď sa zmení hlavná sekcia
       setIsRightSidebarOpen(false);
       setActiveRightItem('');
+      // Zatvor mobilnú navigáciu pri zmene modulu
+      setIsMobileMenuOpen(false);
     }
   };
 
   const handleRightSidebarToggle = () => {
     const willOpen = !isRightSidebarOpen;
     setIsRightSidebarOpen(willOpen);
-    // Ak sa práve zatvára pravá navigácia (po uložen í), prepnime na profil
-    if (!willOpen) {
+    if (willOpen) {
+      // Pri otvorení z profilu nastav kontext na edit-profile
+      setActiveRightItem('edit-profile');
+    } else {
+      // Ak sa práve zatvára pravá navigácia (po uložení), prepnime na profil
       setActiveModule('profile');
       if (typeof window !== 'undefined') {
         localStorage.setItem('activeModule', 'profile');
       }
+      setActiveRightItem('');
     }
   };
 
