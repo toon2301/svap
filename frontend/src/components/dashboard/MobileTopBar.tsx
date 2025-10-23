@@ -9,15 +9,16 @@ interface MobileTopBarProps {
   onBackClick?: () => void;
   onProfileClick?: () => void;
   activeModule?: string;
+  activeRightItem?: string;
 }
 
-export default function MobileTopBar({ onMenuClick, isEditMode = false, onBackClick, onProfileClick, activeModule }: MobileTopBarProps) {
+export default function MobileTopBar({ onMenuClick, isEditMode = false, onBackClick, onProfileClick, activeModule, activeRightItem }: MobileTopBarProps) {
   const { t } = useLanguage();
   return (
     <div className="lg:hidden fixed top-0 left-0 right-0 z-30 bg-white dark:bg-black border-b border-gray-200 dark:border-gray-800 shadow-sm">
       <div className="flex items-center justify-between px-3 py-0 h-12">
-        {/* Logo vľavo alebo šipka späť v edit móde */}
-        {isEditMode ? (
+        {/* Logo vľavo alebo šipka späť v edit móde alebo jazyk */}
+        {(isEditMode || activeRightItem === 'language') ? (
           <button
             onClick={onBackClick}
             className="p-2 -ml-2"
@@ -37,9 +38,12 @@ export default function MobileTopBar({ onMenuClick, isEditMode = false, onBackCl
           </div>
         )}
         
-        {/* Nadpis v strede (len ak je edit mode) */}
+        {/* Nadpis v strede (len ak je edit mode alebo jazyk) */}
         {isEditMode && (
           <h1 className="text-lg font-semibold text-gray-900 dark:text-white">{t('profile.editProfile', 'Upraviť profil')}</h1>
+        )}
+        {activeRightItem === 'language' && (
+          <h1 className="text-lg font-semibold text-gray-900 dark:text-white">{t('language.title', 'Jazyk')}</h1>
         )}
         
         {/* Pravá strana - Profil a Hamburger */}
@@ -55,8 +59,8 @@ export default function MobileTopBar({ onMenuClick, isEditMode = false, onBackCl
             </button>
           )}
           
-          {/* Hamburger menu - len v profile module a nie v edit móde */}
-          {activeModule === 'profile' && !isEditMode && (
+        {/* Hamburger menu - len v profile module, nie v edit móde ani v jazyk modale */}
+        {activeModule === 'profile' && !isEditMode && activeRightItem !== 'language' && (
             <button
               onClick={onMenuClick}
               className="p-1.5 rounded-lg text-gray-600 dark:text-gray-300 hover:text-purple-600 hover:bg-gray-50 dark:hover:bg-gray-900 transition-all"

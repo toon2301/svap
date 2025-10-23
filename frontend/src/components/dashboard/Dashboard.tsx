@@ -83,6 +83,7 @@ export default function Dashboard({ initialUser }: DashboardProps) {
     const goToProfileHandler = () => {
       setActiveModule('profile');
       setIsRightSidebarOpen(false);
+      setActiveRightItem('');
       if (typeof window !== 'undefined') {
         localStorage.setItem('activeModule', 'profile');
       }
@@ -117,6 +118,7 @@ export default function Dashboard({ initialUser }: DashboardProps) {
       }
       // Zatvor pravú navigáciu keď sa zmení hlavná sekcia
       setIsRightSidebarOpen(false);
+      setActiveRightItem('');
     }
   };
 
@@ -280,13 +282,21 @@ export default function Dashboard({ initialUser }: DashboardProps) {
       {/* Mobile Top Bar */}
       <MobileTopBar 
         onMenuClick={() => setIsMobileMenuOpen(true)}
-        isEditMode={isRightSidebarOpen && activeModule === 'profile'}
-        onBackClick={() => setIsRightSidebarOpen(false)}
+        isEditMode={isRightSidebarOpen && activeModule === 'profile' && activeRightItem === 'edit-profile'}
+        onBackClick={() => {
+          if (activeRightItem === 'language') {
+            // Z jazyka sa vraciame do mobilnej navigácie (hamburger)
+            setIsMobileMenuOpen(true);
+          }
+          setIsRightSidebarOpen(false);
+          setActiveRightItem('');
+        }}
         onProfileClick={() => {
           setActiveModule('profile');
           setIsRightSidebarOpen(false);
         }}
         activeModule={activeModule}
+        activeRightItem={activeRightItem}
       />
 
       {/* Mobile Bottom Navigation - skryť v edit móde */}
@@ -305,6 +315,11 @@ export default function Dashboard({ initialUser }: DashboardProps) {
         isMobile={true}
         isOpen={isMobileMenuOpen}
         onClose={() => setIsMobileMenuOpen(false)}
+        onLanguageClick={() => {
+          setActiveModule('profile');
+          setIsRightSidebarOpen(true);
+          setActiveRightItem('language');
+        }}
       />
 
       {/* Main Content */}
@@ -319,7 +334,10 @@ export default function Dashboard({ initialUser }: DashboardProps) {
       <div className="hidden lg:block fixed right-0 top-0 h-screen z-30">
         <RightSidebar
           isOpen={isRightSidebarOpen}
-          onClose={() => setIsRightSidebarOpen(false)}
+          onClose={() => {
+            setIsRightSidebarOpen(false);
+            setActiveRightItem('');
+          }}
           activeItem={activeRightItem}
           onItemClick={handleRightItemClick}
           isMobile={false}
