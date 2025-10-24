@@ -63,7 +63,7 @@ export default function MobileTopBar({ onMenuClick, isEditMode = false, onBackCl
           )}
           
         {/* Hamburger menu - len v profile module, nie v edit móde ani v jazyk modale ani v upozorneniach */}
-        {activeModule === 'profile' && !isEditMode && activeRightItem !== 'language' && activeModule !== 'notifications' && (
+        {activeModule === 'profile' && !isEditMode && activeRightItem !== 'language' && (
             <button
               onClick={onMenuClick}
               className="p-1.5 rounded-lg text-gray-600 dark:text-gray-300 hover:text-purple-600 hover:bg-gray-50 dark:hover:bg-gray-900 transition-all"
