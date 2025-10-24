@@ -228,6 +228,7 @@
   "rightSidebar": {
     "settings": "Settings",
     "appSettings": "App Settings",
+    "appUsage": "App Usage",
     "editProfile": "Edit profile",
     "notifications": "Notifications",
     "blocked": "Blocked",

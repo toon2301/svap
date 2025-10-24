@@ -109,7 +109,7 @@ export default function NotificationsModule() {
         
         {/* Páči sa mi to sekcia - pekne viditeľná priamo pod nadpisom */}
         <div className="mt-6 mx-auto w-full max-w-[40rem]">
-          <div className="rounded-lg border border-[var(--border)] bg-[var(--background)] px-6 pt-6 pb-3 min-h-36 shadow-sm">
+          <div className="rounded-lg bg-[var(--background)] px-6 pt-6 pb-3 min-h-36 shadow-sm">
             <div className="flex items-center justify-between h-full">
             {/* Left column: title + options */}
               <div className="flex-1">
@@ -168,7 +168,7 @@ export default function NotificationsModule() {
 
         {/* Komentáre na fotkách sekcia */}
         <div className="mt-6 mx-auto w-full max-w-[40rem]">
-          <div className="rounded-lg border border-[var(--border)] bg-[var(--background)] px-6 pt-6 pb-3 min-h-36 shadow-sm">
+          <div className="rounded-lg bg-[var(--background)] px-6 pt-6 pb-3 min-h-36 shadow-sm">
             <div className="flex items-center justify-between h-full">
               {/* Left column: title + options */}
               <div className="flex-1">
@@ -232,7 +232,7 @@ export default function NotificationsModule() {
 
         {/* Komentáre sekcia */}
         <div className="mt-6 mx-auto w-full max-w-[40rem]">
-          <div className="rounded-lg border border-[var(--border)] bg-[var(--background)] px-6 pt-6 pb-3 min-h-36 shadow-sm">
+          <div className="rounded-lg bg-[var(--background)] px-6 pt-6 pb-3 min-h-36 shadow-sm">
             <div className="flex items-center justify-between h-full">
               {/* Left column: title + options */}
               <div className="flex-1">
@@ -291,7 +291,7 @@ export default function NotificationsModule() {
 
         {/* Páči sa mi to pre komentáre sekcia */}
         <div className="mt-6 mx-auto w-full max-w-[40rem]">
-          <div className="rounded-lg border border-[var(--border)] bg-[var(--background)] px-6 pt-6 pb-3 min-h-36 shadow-sm">
+          <div className="rounded-lg bg-[var(--background)] px-6 pt-6 pb-3 min-h-36 shadow-sm">
             <div className="flex items-center justify-between h-full">
               {/* Left column: title + options */}
               <div className="flex-1">
@@ -350,7 +350,7 @@ export default function NotificationsModule() {
 
         {/* Žiadosť o zručnosť sekcia */}
         <div className="mt-6 mx-auto w-full max-w-[40rem]">
-          <div className="rounded-lg border border-[var(--border)] bg-[var(--background)] px-6 pt-6 pb-3 min-h-36 shadow-sm">
+          <div className="rounded-lg bg-[var(--background)] px-6 pt-6 pb-3 min-h-36 shadow-sm">
             <div className="flex items-center justify-between h-full">
               {/* Left column: title + options */}
               <div className="flex-1">
@@ -402,6 +402,179 @@ export default function NotificationsModule() {
           </div>
         </div>
       </div>
+
+      {/* Mobile layout - podobné ako desktop, kompaktné karty */}
+      <div className="lg:hidden px-4 pt-2 pb-6 text-[var(--foreground)]">
+
+        <div className="space-y-0">
+          {/* Hlavný prepínač "Vypnúť všetko" */}
+          <div className="flex items-center justify-between p-3 bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800">
+            <div>
+              <div className="text-sm font-medium text-gray-900 dark:text-white">
+                {t('notifications.turnOffAll', 'Vypnúť všetko')}
+              </div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">
+                {t('notifications.turnOffAllDesc', 'Dočasne vypnúť všetky upozornenia')}
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => handleMasterToggleChange(!masterToggleEnabled)}
+              style={{
+                position: 'relative',
+                display: 'inline-flex',
+                height: '22px',
+                width: '42px',
+                alignItems: 'center',
+                borderRadius: '9999px',
+                backgroundColor: masterToggleEnabled ? '#c084fc' : '#d1d5db',
+                transition: 'all 0.2s ease-in-out',
+                border: 'none',
+                cursor: 'pointer'
+              }}
+            >
+              <span
+                style={{
+                  position: 'absolute',
+                  left: masterToggleEnabled ? '22px' : '2px',
+                  height: '18px',
+                  width: '18px',
+                  borderRadius: '50%',
+                  backgroundColor: masterToggleEnabled ? 'white' : '#f3f4f6',
+                  transition: 'all 0.2s ease-in-out',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                }}
+              />
+            </button>
+          </div>
+          <div className='border-t border-gray-200 dark:border-gray-700'></div>
+
+          {/* Páči sa mi to */}
+          <div className="p-4 rounded-lg bg-[var(--background)]">
+            <div className="mb-3">
+              <h3 className="text-sm font-medium text-gray-900 dark:text-white">
+                {t('notifications.likes', 'Páči sa mi to')}
+              </h3>
+              <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                {t('notifications.likesDesc', "Zapnite alebo vypnite upozornenia na 'Páči sa mi to'.")}
+              </p>
+            </div>
+            <div className="space-y-3">
+              <label className="flex items-center">
+                <input type="radio" name="m-likes" checked={!likesEnabled} onChange={() => setLikesEnabled(false)} disabled={masterToggleEnabled}
+                  className="w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 focus:ring-0 dark:bg-gray-700 dark:border-gray-600 disabled:opacity-50" />
+                <span className="ml-3 text-sm text-gray-900 dark:text-white">{t('notifications.off', 'Vypnuté')}</span>
+              </label>
+              <label className="flex items-center">
+                <input type="radio" name="m-likes" checked={likesEnabled} onChange={() => setLikesEnabled(true)} disabled={masterToggleEnabled}
+                  className="w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 focus:ring-0 dark:bg-gray-700 dark:border-gray-600 disabled:opacity-50" />
+                <span className="ml-3 text-sm text-gray-900 dark:text-white">{t('notifications.on', 'Zapnuté')}</span>
+              </label>
+            </div>
+          </div>
+          <div className='border-t border-gray-200 dark:border-gray-700'></div>
+
+          {/* Páči sa mi to a komentáre */}
+          <div className="p-4 rounded-lg bg-[var(--background)]">
+            <div className="mb-3">
+              <h3 className="text-sm font-medium text-gray-900 dark:text-white">
+                {t('notifications.likesAndComments', 'Páči sa mi to a komentáre')}
+              </h3>
+              <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                {t('notifications.likesAndCommentsDesc', 'Reakcie a komentáre na fotkách, kde ste označení')}
+              </p>
+            </div>
+            <div className="space-y-3">
+              <label className="flex items-center">
+                <input type="radio" name="m-likes-comments" checked={!likesCommentsEnabled} onChange={() => setLikesCommentsEnabled(false)} disabled={masterToggleEnabled}
+                  className="w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 focus:ring-0 dark:bg-gray-700 dark:border-gray-600 disabled:opacity-50" />
+                <span className="ml-3 text-sm text-gray-900 dark:text-white">{t('notifications.off', 'Vypnuté')}</span>
+              </label>
+              <label className="flex items-center">
+                <input type="radio" name="m-likes-comments" checked={likesCommentsEnabled} onChange={() => setLikesCommentsEnabled(true)} disabled={masterToggleEnabled}
+                  className="w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 focus:ring-0 dark:bg-gray-700 dark:border-gray-600 disabled:opacity-50" />
+                <span className="ml-3 text-sm text-gray-900 dark:text-white">{t('notifications.on', 'Zapnuté')}</span>
+              </label>
+            </div>
+          </div>
+          <div className='border-t border-gray-200 dark:border-gray-700'></div>
+
+          {/* Komentáre */}
+          <div className="p-4 rounded-lg bg-[var(--background)]">
+            <div className="mb-3">
+              <h3 className="text-sm font-medium text-gray-900 dark:text-white">
+                {t('notifications.comments', 'Komentáre')}
+              </h3>
+              <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                {t('notifications.commentsDesc', 'Zapnite alebo vypnite upozornenia na komentáre.')}
+              </p>
+            </div>
+            <div className="space-y-3">
+              <label className="flex items-center">
+                <input type="radio" name="m-comments" checked={!commentsEnabled} onChange={() => setCommentsEnabled(false)} disabled={masterToggleEnabled}
+                  className="w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 focus:ring-0 dark:bg-gray-700 dark:border-gray-600 disabled:opacity-50" />
+                <span className="ml-3 text-sm text-gray-900 dark:text-white">{t('notifications.off', 'Vypnuté')}</span>
+              </label>
+              <label className="flex items-center">
+                <input type="radio" name="m-comments" checked={commentsEnabled} onChange={() => setCommentsEnabled(true)} disabled={masterToggleEnabled}
+                  className="w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 focus:ring-0 dark:bg-gray-700 dark:border-gray-600 disabled:opacity-50" />
+                <span className="ml-3 text-sm text-gray-900 dark:text-white">{t('notifications.on', 'Zapnuté')}</span>
+              </label>
+            </div>
+          </div>
+          <div className='border-t border-gray-200 dark:border-gray-700'></div>
+
+          {/* Páči sa mi to pre komentáre */}
+          <div className="p-4 rounded-lg bg-[var(--background)]">
+            <div className="mb-3">
+              <h3 className="text-sm font-medium text-gray-900 dark:text-white">
+                {t('notifications.likesForComments', 'Páči sa mi to pre komentáre')}
+              </h3>
+              <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                {t('notifications.likesForCommentsDesc', "Zapnite alebo vypnite upozornenia na 'Páči sa mi to' pre komentáre.")}
+              </p>
+            </div>
+            <div className="space-y-3">
+              <label className="flex items-center">
+                <input type="radio" name="m-likes-for-comments" checked={!likesForCommentsEnabled} onChange={() => setLikesForCommentsEnabled(false)} disabled={masterToggleEnabled}
+                  className="w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 focus:ring-0 dark:bg-gray-700 dark:border-gray-600 disabled:opacity-50" />
+                <span className="ml-3 text-sm text-gray-900 dark:text-white">{t('notifications.off', 'Vypnuté')}</span>
+              </label>
+              <label className="flex items-center">
+                <input type="radio" name="m-likes-for-comments" checked={likesForCommentsEnabled} onChange={() => setLikesForCommentsEnabled(true)} disabled={masterToggleEnabled}
+                  className="w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 focus:ring-0 dark:bg-gray-700 dark:border-gray-600 disabled:opacity-50" />
+                <span className="ml-3 text-sm text-gray-900 dark:text-white">{t('notifications.on', 'Zapnuté')}</span>
+              </label>
+            </div>
+          </div>
+          <div className='border-t border-gray-200 dark:border-gray-700'></div>
+
+          {/* Žiadosti o zručnosť */}
+          <div className="p-4 rounded-lg bg-[var(--background)]">
+            <div className="mb-3">
+              <h3 className="text-sm font-medium text-gray-900 dark:text-white">
+                {t('notifications.skillRequest', 'Žiadosť o zručnosť')}
+              </h3>
+              <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                {t('notifications.skillRequestDesc', 'Zapnite alebo vypnite upozornenia na žiadosti o zručnosť.')}
+              </p>
+            </div>
+            <div className="space-y-3">
+              <label className="flex items-center">
+                <input type="radio" name="m-skill-request" checked={!skillRequestEnabled} onChange={() => setSkillRequestEnabled(false)} disabled={masterToggleEnabled}
+                  className="w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 focus:ring-0 dark:bg-gray-700 dark:border-gray-600 disabled:opacity-50" />
+                <span className="ml-3 text-sm text-gray-900 dark:text-white">{t('notifications.off', 'Vypnuté')}</span>
+              </label>
+              <label className="flex items-center">
+                <input type="radio" name="m-skill-request" checked={skillRequestEnabled} onChange={() => setSkillRequestEnabled(true)} disabled={masterToggleEnabled}
+                  className="w-4 h-4 text-purple-600 bg-gray-100 border-gray-300 focus:ring-0 dark:bg-gray-700 dark:border-gray-600 disabled:opacity-50" />
+                <span className="ml-3 text-sm text-gray-900 dark:text-white">{t('notifications.on', 'Zapnuté')}</span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </>
   );
 }

@@ -151,6 +151,28 @@ export default function Sidebar({
       {/* Prázdny priestor pre mobilnú verziu */}
       {isMobile && (
         <div className="flex-1 px-6 py-4">
+          <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-4">{t('rightSidebar.appUsage', 'Použitie aplikácie')}</h3>
+          
+          {/* Upozornenia */}
+          <div className="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-lg p-2 mb-4 border border-purple-100 dark:border-purple-800/30">
+            <button
+              onClick={() => handleItemClick('notifications')}
+              className="w-full flex items-center justify-between group"
+            >
+              <div className="flex items-center">
+                <div className="mr-3 group-hover:scale-110 transition-transform duration-200">
+                  <Cog6ToothIcon className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                </div>
+                <div className="text-left">
+                  <div className="text-sm font-semibold text-gray-900 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
+                    {t('rightSidebar.notifications', 'Upozornenia')}
+                  </div>
+                </div>
+              </div>
+              <ChevronRightIcon className="w-5 h-5 text-gray-400 dark:text-gray-500 group-hover:text-purple-500 group-hover:translate-x-1 transition-all duration-200" />
+            </button>
+          </div>
+          
           <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-4">{t('rightSidebar.appSettings', 'App Settings')}</h3>
           
                  {/* Jazyk a preklady - krajší štýl */}

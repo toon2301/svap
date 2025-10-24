@@ -184,6 +184,7 @@
   "rightSidebar": {
     "settings": "Beállítások",
     "appSettings": "Alkalmazás beállítások",
+    "appUsage": "Alkalmazás használata",
     "editProfile": "Profil szerkesztése",
     "notifications": "Értesítések",
     "blocked": "Letiltott",

@@ -293,6 +293,10 @@ export default function Dashboard({ initialUser }: DashboardProps) {
           if (activeRightItem === 'language') {
             // Z jazyka sa vraciame do mobilnej navigácie (hamburger)
             setIsMobileMenuOpen(true);
+          } else if (activeModule === 'notifications') {
+            // Z upozornení sa vraciame do mobilnej navigácie (hamburger)
+            setActiveModule('');
+            setIsMobileMenuOpen(true);
           }
           setIsRightSidebarOpen(false);
           setActiveRightItem('');

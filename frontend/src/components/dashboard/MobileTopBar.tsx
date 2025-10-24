@@ -17,8 +17,8 @@ export default function MobileTopBar({ onMenuClick, isEditMode = false, onBackCl
   return (
     <div className="lg:hidden fixed top-0 left-0 right-0 z-30 bg-white dark:bg-black border-b border-gray-200 dark:border-gray-800 shadow-sm">
       <div className="flex items-center justify-between px-3 py-0 h-12">
-        {/* Logo vľavo alebo šipka späť v edit móde alebo jazyk */}
-        {(isEditMode || activeRightItem === 'language') ? (
+        {/* Logo vľavo alebo šipka späť v edit móde alebo jazyk alebo upozornenia */}
+        {(isEditMode || activeRightItem === 'language' || activeModule === 'notifications') ? (
           <button
             onClick={onBackClick}
             className="p-2 -ml-2"
@@ -38,18 +38,21 @@ export default function MobileTopBar({ onMenuClick, isEditMode = false, onBackCl
           </div>
         )}
         
-        {/* Nadpis v strede (len ak je edit mode alebo jazyk) */}
+        {/* Nadpis v strede (len ak je edit mode alebo jazyk alebo upozornenia) */}
         {isEditMode && (
           <h1 className="text-lg font-semibold text-gray-900 dark:text-white">{t('profile.editProfile', 'Upraviť profil')}</h1>
         )}
         {activeRightItem === 'language' && (
-          <h1 className="text-lg font-semibold text-gray-900 dark:text-white">{t('language.title', 'Jazyk')}</h1>
+          <h1 className="text-lg font-semibold text-gray-900 dark:text-white absolute left-1/2 transform -translate-x-1/2">{t('language.title', 'Jazyk')}</h1>
+        )}
+        {activeModule === 'notifications' && (
+          <h1 className="text-lg font-semibold text-gray-900 dark:text-white absolute left-1/2 transform -translate-x-1/2">{t('rightSidebar.notifications', 'Upozornenia')}</h1>
         )}
         
         {/* Pravá strana - Profil a Hamburger */}
         <div className="flex items-center space-x-2">
-          {/* Profil ikonka - len keď nie si v profile module */}
-          {activeModule !== 'profile' && (
+          {/* Profil ikonka - len keď nie si v profile module ani v upozorneniach */}
+          {activeModule !== 'profile' && activeModule !== 'notifications' && (
             <button
               onClick={onProfileClick}
               className="p-1.5 rounded-lg text-gray-600 dark:text-gray-300 hover:text-purple-600 hover:bg-gray-50 dark:hover:bg-gray-900 transition-all"
@@ -59,8 +62,8 @@ export default function MobileTopBar({ onMenuClick, isEditMode = false, onBackCl
             </button>
           )}
           
-        {/* Hamburger menu - len v profile module, nie v edit móde ani v jazyk modale */}
-        {activeModule === 'profile' && !isEditMode && activeRightItem !== 'language' && (
+        {/* Hamburger menu - len v profile module, nie v edit móde ani v jazyk modale ani v upozorneniach */}
+        {activeModule === 'profile' && !isEditMode && activeRightItem !== 'language' && activeModule !== 'notifications' && (
             <button
               onClick={onMenuClick}
               className="p-1.5 rounded-lg text-gray-600 dark:text-gray-300 hover:text-purple-600 hover:bg-gray-50 dark:hover:bg-gray-900 transition-all"

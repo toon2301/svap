@@ -184,6 +184,7 @@
   "rightSidebar": {
     "settings": "Einstellungen",
     "appSettings": "App-Einstellungen",
+    "appUsage": "App-Nutzung",
     "editProfile": "Profil bearbeiten",
     "notifications": "Benachrichtigungen",
     "blocked": "Blockiert",
