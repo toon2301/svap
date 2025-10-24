@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { User } from '../../../types';
 import { api } from '../../../lib/api';
+import { useLanguage } from '../../../contexts/LanguageContext';
 import UserAvatar from './profile/UserAvatar';
 import SocialMediaInputs from './SocialMediaInputs';
 
@@ -13,6 +14,7 @@ interface ProfileEditFormProps {
 }
 
 export default function ProfileEditForm({ user, onUserUpdate, onEditProfileClick }: ProfileEditFormProps) {
+  const { t } = useLanguage();
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string>('');
   const [uploadSuccess, setUploadSuccess] = useState(false);
