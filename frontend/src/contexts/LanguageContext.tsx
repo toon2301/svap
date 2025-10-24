@@ -5,8 +5,10 @@ import enMessages from '../../messages/en.json';
 import skMessages from '../../messages/sk.json';
 import plMessages from '../../messages/pl.json';
 import csMessages from '../../messages/cs.json';
+import deMessages from '../../messages/de.json';
+import huMessages from '../../messages/hu.json';
 
-type SupportedLocale = 'sk' | 'en' | 'pl' | 'cs';
+type SupportedLocale = 'sk' | 'en' | 'pl' | 'cs' | 'de' | 'hu';
 
 type LanguageContextValue = {
   locale: SupportedLocale;
@@ -32,7 +34,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     // Priority 1: persisted value
     try {
       const saved = window.localStorage.getItem('appLocale');
-      if (saved === 'en' || saved === 'sk' || saved === 'pl' || saved === 'cs') {
+      if (saved === 'en' || saved === 'sk' || saved === 'pl' || saved === 'cs' || saved === 'de' || saved === 'hu') {
         setLocaleState(saved as SupportedLocale);
         return; // respect user choice
       }
@@ -50,8 +52,8 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
         if (code === 'PL') { setLocaleState('pl'); return; }
         if (code === 'SK') { setLocaleState('sk'); return; }
         if (code === 'CZ') { setLocaleState('cs'); return; }
-        if (code === 'HU') { /* future */ }
-        if (code === 'DE') { /* future */ }
+        if (code === 'DE') { setLocaleState('de'); return; }
+        if (code === 'HU') { setLocaleState('hu'); return; }
         // No decisive country → try browser language
         detectByBrowser();
       } catch {
@@ -68,6 +70,8 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
         if (l.startsWith('pl')) { setLocaleState('pl'); return; }
         if (l.startsWith('sk')) { setLocaleState('sk'); return; }
         if (l.startsWith('cs') || l.startsWith('cz')) { setLocaleState('cs'); return; }
+        if (l.startsWith('de')) { setLocaleState('de'); return; }
+        if (l.startsWith('hu')) { setLocaleState('hu'); return; }
         if (l.startsWith('en')) { setLocaleState('en'); return; }
       } catch {}
       // Priority 4: fallback
@@ -89,6 +93,8 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     if (locale === 'en') return enMessages as unknown as Record<string, any>;
     if (locale === 'pl') return plMessages as unknown as Record<string, any>;
     if (locale === 'cs') return csMessages as unknown as Record<string, any>;
+    if (locale === 'de') return deMessages as unknown as Record<string, any>;
+    if (locale === 'hu') return huMessages as unknown as Record<string, any>;
     return skMessages as unknown as Record<string, any>;
   }, [locale]);
 

@@ -142,6 +142,7 @@
   },
   "rightSidebar": {
     "settings": "Nastavenia",
+    "appSettings": "Nastavenia aplikácie",
     "editProfile": "Upraviť profil",
     "notifications": "Upozornenia",
     "blocked": "Blokované",
@@ -198,7 +199,7 @@
     "bioDescription": "Napíšte niečo o sebe (max. 150 znakov)",
     "locationDescription": "Zadajte svoje mesto alebo obec",
     "contactDescription": "Zadajte svoje telefónne číslo",
-    "professionDescription": "Zadajte svoju profesiu alebo pracovné zaoberanie",
+    "professionDescription": "Zadajte svoju profesiu alebo pracovné zaradenie",
     "websiteDescription": "Zadajte URL svojej webovej stránky",
     "genderDescription": "Vyberte svoje pohlavie",
     "instagram": "Instagram",
@@ -232,7 +233,7 @@
     "enterEmailAddress": "Zadajte svoju emailovú adresu pre prihlásenie do aplikácie",
     "enterPassword": "Zadajte svoje heslo pre prihlásenie do aplikácie",
     "resendVerificationButton": "Kliknite pre znovu odoslanie verifikačného emailu",
-    "googleLoginHelp": "Otvorí sa nové okno pre prihlásenie cez Google. Po úspešnom prihlásení sa automaticky presmerujete späť do aplikácie.",
+    "googleLoginHelp": "Otvorí sa nové okno pre prihlásenie cez Google. Po úspešnom prihlásení budete automaticky presmerovaní späť do aplikácie.",
     "showPassword": "Zobraziť heslo",
     "hidePassword": "Skryť heslo"
   }

@@ -3,6 +3,7 @@
 import React from 'react';
 import { User } from '../../../types';
 import { api } from '../../../lib/api';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface ProfileEditFieldsProps {
   user: User;
@@ -35,6 +36,7 @@ export default function ProfileEditFields({
   setIsLinkedinModalOpen,
   setIsGenderModalOpen,
 }: ProfileEditFieldsProps) {
+  const { t } = useLanguage();
   
   return (
     <div className="border-t border-gray-200 dark:border-gray-800 border-b border-gray-200 dark:border-b-gray-800">
@@ -42,7 +44,7 @@ export default function ProfileEditFields({
         className="flex items-center py-4 px-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-900"
         onClick={() => setIsNameModalOpen(true)}
       >
-        <span className="text-gray-900 dark:text-white font-medium w-40">Meno</span>
+        <span className="text-gray-900 dark:text-white font-medium w-40">{t('profile.fullName', 'Meno')}</span>
         <div className="flex items-center flex-1 ml-4">
           <div className="w-px h-4 bg-gray-300 dark:bg-gray-700 mr-3"></div>
           <span className="text-gray-600 dark:text-gray-300 text-sm truncate">{`${(user.first_name || '').trim()} ${(user.last_name || '').trim()}`.trim() || user.username}</span>
@@ -53,11 +55,11 @@ export default function ProfileEditFields({
         className="flex items-center py-4 px-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-900 border-t border-gray-100 dark:border-gray-800"
         onClick={() => setIsBioModalOpen(true)}
       >
-        <span className="text-gray-900 dark:text-white font-medium w-40">Bio</span>
+        <span className="text-gray-900 dark:text-white font-medium w-40">{t('profile.bio', 'Bio')}</span>
         <div className="flex items-center flex-1 ml-4">
           <div className="w-px h-4 bg-gray-300 dark:bg-gray-700 mr-3"></div>
           <span className="text-gray-600 dark:text-gray-300 text-sm truncate">
-            Bio
+            {t('profile.bio', 'Bio')}
           </span>
         </div>
       </div>
@@ -66,11 +68,11 @@ export default function ProfileEditFields({
         className="flex items-center py-4 px-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-900 border-t border-gray-100 dark:border-gray-800"
         onClick={() => setIsLocationModalOpen(true)}
       >
-        <span className="text-gray-900 dark:text-white font-medium w-40">Lokalita</span>
+        <span className="text-gray-900 dark:text-white font-medium w-40">{t('profile.location', 'Lokalita')}</span>
         <div className="flex items-center flex-1 ml-4">
           <div className="w-px h-4 bg-gray-300 dark:bg-gray-700 mr-3"></div>
           <span className="text-gray-600 dark:text-gray-300 text-sm truncate">
-            {user.location || 'Pridať lokalitu'}
+            {user.location || t('profile.addLocation', 'Pridať lokalitu')}
           </span>
         </div>
       </div>
@@ -82,11 +84,11 @@ export default function ProfileEditFields({
           className="flex items-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-900 -mx-4 px-4 py-1"
           onClick={() => setIsContactModalOpen(true)}
         >
-          <span className="text-gray-900 dark:text-white font-medium w-40">Kontakt</span>
+          <span className="text-gray-900 dark:text-white font-medium w-40">{t('profile.contact', 'Kontakt')}</span>
           <div className="flex items-center flex-1 ml-4">
             <div className="w-px h-4 bg-gray-300 dark:bg-gray-700 mr-3"></div>
             <span className="text-gray-600 dark:text-gray-300 text-sm truncate">
-              {user.phone || 'Pridať kontakt'}
+              {user.phone || t('profile.addContact', 'Pridať kontakt')}
             </span>
           </div>
         </div>
@@ -118,7 +120,7 @@ export default function ProfileEditFields({
               }`}
             />
           </button>
-          <span className="text-xs text-gray-500 dark:text-gray-400">Zobraziť verejne</span>
+          <span className="text-xs text-gray-500 dark:text-gray-400">{t('profile.showContactPublic', 'Zobraziť kontakt verejne')}</span>
         </div>
       </div>
       
@@ -129,11 +131,11 @@ export default function ProfileEditFields({
           className="flex items-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-900 -mx-4 px-4 py-1"
           onClick={() => setIsProfessionModalOpen(true)}
         >
-          <span className="text-gray-900 dark:text-white font-medium w-40">Profesia</span>
+          <span className="text-gray-900 dark:text-white font-medium w-40">{t('profile.profession', 'Profesia')}</span>
           <div className="flex items-center flex-1 ml-4">
             <div className="w-px h-4 bg-gray-300 dark:bg-gray-700 mr-3"></div>
             <span className="text-gray-600 dark:text-gray-300 text-sm truncate">
-              {user.job_title || 'Pridať profesiu'}
+              {user.job_title || t('profile.addProfession', 'Pridať profesiu')}
             </span>
           </div>
         </div>
@@ -165,7 +167,7 @@ export default function ProfileEditFields({
               }`}
             />
           </button>
-          <span className="text-xs text-gray-500 dark:text-gray-400">Zobraziť verejne</span>
+          <span className="text-xs text-gray-500 dark:text-gray-400">{t('profile.showProfessionPublic', 'Zobraziť profesiu verejne')}</span>
         </div>
       </div>
       
@@ -173,12 +175,12 @@ export default function ProfileEditFields({
         className="flex items-center py-4 px-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-900 border-t border-gray-100 dark:border-gray-800"
         onClick={() => setIsWebsiteModalOpen(true)}
       >
-        <span className="text-gray-900 dark:text-white font-medium w-40">Web</span>
+        <span className="text-gray-900 dark:text-white font-medium w-40">{t('profile.website', 'Web')}</span>
         <div className="flex items-center flex-1 ml-4">
           <div className="w-px h-4 bg-gray-300 dark:bg-gray-700 mr-3"></div>
           <div className="flex items-center gap-2">
             <span className="text-gray-600 dark:text-gray-300 text-sm">
-              Web
+              {t('profile.website', 'Web')}
             </span>
             {user.website && (
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 text-gray-400 dark:text-gray-500">
@@ -191,7 +193,7 @@ export default function ProfileEditFields({
       
       {/* Sociálne siete */}
       <div className="flex items-center py-4 px-4 border-t border-gray-100 dark:border-gray-800">
-        <span className="text-gray-900 dark:text-white font-medium w-40">Sociálne siete</span>
+        <span className="text-gray-900 dark:text-white font-medium w-40">{t('profile.socials', 'Sociálne siete')}</span>
         <div className="flex items-center flex-1 ml-4">
           <div className="w-px h-4 bg-gray-300 dark:bg-gray-700 mr-3"></div>
           <div className="flex items-center gap-3">
@@ -233,11 +235,11 @@ export default function ProfileEditFields({
         className="flex items-center py-4 px-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-900 border-t border-gray-100 dark:border-gray-800"
         onClick={() => setIsGenderModalOpen(true)}
       >
-        <span className="text-gray-900 dark:text-white font-medium w-40">Pohlavie</span>
+        <span className="text-gray-900 dark:text-white font-medium w-40">{t('profile.gender', 'Pohlavie')}</span>
         <div className="flex items-center flex-1 ml-4">
           <div className="w-px h-4 bg-gray-300 dark:bg-gray-700 mr-3"></div>
           <span className="text-gray-600 dark:text-gray-300 text-sm">
-            {user.gender === 'male' ? 'Muž' : user.gender === 'female' ? 'Žena' : user.gender === 'other' ? 'Iné' : 'Pohlavie'}
+            {user.gender === 'male' ? t('profile.male', 'Muž') : user.gender === 'female' ? t('profile.female', 'Žena') : user.gender === 'other' ? t('profile.other', 'Iné') : t('profile.gender', 'Pohlavie')}
           </span>
         </div>
       </div>

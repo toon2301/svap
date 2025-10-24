@@ -5,6 +5,7 @@ import { User } from '../../../types';
 import UserAvatar from './profile/UserAvatar';
 import ProfileEditFields from './ProfileEditFields';
 import ProfileEditModals from './ProfileEditModals';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface ProfileEditFormMobileProps {
   user: User;
@@ -23,6 +24,7 @@ export default function ProfileEditFormMobile({
   isUploading,
   onAvatarClick
 }: ProfileEditFormMobileProps) {
+  const { t } = useLanguage();
   // Modal states
   const [isNameModalOpen, setIsNameModalOpen] = useState(false);
   const [isBioModalOpen, setIsBioModalOpen] = useState(false);
@@ -176,7 +178,7 @@ export default function ProfileEditFormMobile({
       {/* Overenie profilu - placeholder */}
       <div className="mt-6 px-4">
         <span className="text-sm text-purple-600 font-medium">
-          Overenie profilu
+          {t('profile.verifyProfile', 'Overenie profilu')}
         </span>
       </div>
     </div>

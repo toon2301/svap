@@ -6,7 +6,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 export default function LanguageModule() {
   const { locale, setLocale, t } = useLanguage();
   const [selectedLanguage, setSelectedLanguage] = useState(
-    locale === 'en' ? 'angličtina' : locale === 'pl' ? 'poľština' : locale === 'cs' ? 'čeština' : 'slovenčina'
+    locale === 'en' ? 'angličtina' : locale === 'pl' ? 'poľština' : locale === 'cs' ? 'čeština' : locale === 'de' ? 'nemčina' : locale === 'hu' ? 'maďarčina' : 'slovenčina'
   );
 
   const languages = [
@@ -57,6 +57,8 @@ export default function LanguageModule() {
                     if (next === 'slovenčina') setLocale('sk');
                     if (next === 'poľština') setLocale('pl');
                     if (next === 'čeština') setLocale('cs');
+                    if (next === 'nemčina') setLocale('de');
+                    if (next === 'maďarčina') setLocale('hu');
                   }}
                   className="w-5 h-5 rounded-full border-2 border-gray-800 dark:border-white flex items-center justify-center"
                   style={{
@@ -96,6 +98,8 @@ export default function LanguageModule() {
                 if (next === 'slovenčina') setLocale('sk');
                 if (next === 'poľština') setLocale('pl');
                 if (next === 'čeština') setLocale('cs');
+                if (next === 'nemčina') setLocale('de');
+                if (next === 'maďarčina') setLocale('hu');
               }}
               className={`w-full flex items-center justify-between p-4 rounded-xl border-2 transition-all duration-200 ${
                 selectedLanguage === language

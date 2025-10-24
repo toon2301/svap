@@ -13,7 +13,7 @@ const ParticlesBackground = lazy(() => import('../components/ParticlesBackground
 
 export default function Home() {
   const router = useRouter();
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const [isAuth, setIsAuth] = useState(false);
 
   useEffect(() => {
@@ -61,16 +61,21 @@ export default function Home() {
         transition={{ duration: 0.8, ease: "easeOut" }}
       >
         <motion.div 
-          className="text-8xl font-bold text-gray-900 dark:text-white max-lg:text-5xl flex items-center"
+          className="text-8xl font-bold text-gray-900 dark:text-white max-lg:text-5xl flex items-center flex-wrap max-lg:flex-nowrap max-lg:justify-end max-lg:-mr-8"
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
         >
-          <span className="text-6xl max-lg:text-4xl mr-4">{t('homepage.welcome', 'Víta ťa')}</span>
+          <span 
+            className={`text-6xl max-lg:text-4xl whitespace-nowrap max-lg:-mr-6 max-lg:-mt-2.5 ${locale === 'de' ? 'max-lg:text-3xl max-lg:mt-2' : ''}`}
+            lang={locale}
+          >
+            {t('homepage.welcome', 'Víta ťa')}
+          </span>
           <img
             src="/Logotyp _svaply_ na fialovom pozadí.png"
             alt="Svaply"
-            className="w-auto h-56 md:h-60 lg:h-[450px] mt-2 lg:mt-[20px] ml-[-40px] lg:ml-[-50px]"
+            className="w-auto h-56 md:h-60 lg:h-[450px] mt-2 lg:mt-[20px] ml-[-40px] lg:ml-[-50px] max-lg:ml-0 max-lg:mt-0"
           />
         </motion.div>
         <motion.p 

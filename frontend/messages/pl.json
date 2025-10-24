@@ -39,7 +39,7 @@
     "favorites": "Ulubione"
   },
   "homepage": {
-    "welcome": "Witaj",
+    "welcome": "Witaj w",
     "description": "Miejsce, gdzie spotykają się ludzie z chęcią rozwoju – jedni uczą, drudzy się uczą, wszyscy razem tworzą silniejszą społeczność.",
     "redirectingToDashboard": "Przekierowuję do panelu..."
   },
@@ -142,7 +142,7 @@
     "missingGoogleTokens": "Brak tokenów z logowania Google",
     "tokenSaveError": "Błąd zapisu tokenów",
     "loggingYouIn": "Loguję Cię...",
-    "pleaseWaitProcessing": "Proszę czekać, przetwarzam Twoje logowanie.",
+    "pleaseWaitProcessing": "Proszę czekać, trwa przetwarzanie logowania.",
     "successfullyLoggedIn": "Zalogowano pomyślnie!",
     "closingWindowRedirecting": "Zamykam okno i przekierowuję do panelu...",
     "loginError": "Błąd logowania"
@@ -183,6 +183,7 @@
   },
   "rightSidebar": {
     "settings": "Ustawienia",
+    "appSettings": "Ustawienia aplikacji",
     "editProfile": "Edytuj profil",
     "notifications": "Powiadomienia",
     "blocked": "Zablokowani",
@@ -216,6 +217,7 @@
     "contact": "Kontakt",
     "addContact": "Dodaj kontakt",
     "showPublic": "Pokaż publicznie",
+    "showContactPublic": "Pokaż kontakt publicznie",
     "profession": "Zawód",
     "addProfession": "Dodaj zawód",
     "showProfessionPublic": "Pokaż zawód publicznie",

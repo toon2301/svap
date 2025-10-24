@@ -441,7 +441,7 @@ export default function ProfileEditForm({ user, onUserUpdate, onEditProfileClick
                 }`}
               />
             </button>
-            <span className="text-xs text-gray-500">Zobraziť kontakt verejne</span>
+            <span className="text-xs text-gray-500">{t('profile.showContactPublic', 'Show contact publicly')}</span>
           </div>
         </div>
         

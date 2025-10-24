@@ -39,14 +39,14 @@
     "favorites": "Oblíbené"
   },
   "homepage": {
-    "welcome": "Vítej",
+    "welcome": "Vítejte na",
     "description": "Místo, kde se setkávají lidé s touhou růst – jedni učí, druzí se učí, všichni spolu tvoří silnější komunitu.",
     "redirectingToDashboard": "Přesměrovávám na nástěnku..."
   },
   "dashboard": {
     "loadingDashboard": "Načítám nástěnku...",
-    "welcomeToSwaply": "Vítej v Swaply!",
-    "selectSection": "Vyber si sekci z navigace pro pokračování."
+    "welcomeToSwaply": "Vítejte na Swaply!",
+    "selectSection": "Vyberte sekci z navigace pro pokračování."
   },
   "auth": {
     "login": "Přihlásit se",
@@ -117,15 +117,15 @@
     "registerWithGoogle": "Registrovat se přes Google",
     "loginButton": "Přihlásit se",
     "loggingIn": "Přihlašuji se...",
-    "loggingInGoogle": "Přihlašuji přes Google...",
-    "registeringGoogle": "Registruji přes Google...",
+    "loggingInGoogle": "Přihlašuji se přes Google...",
+    "registeringGoogle": "Registruji se přes Google...",
     "emailNotVerified": "Email není ověřený",
     "emailNotVerifiedMessage": "Váš email není ověřený. Zkontrolujte si emailovou schránku a klikněte na ověřovací odkaz.",
     "resendVerification": "Znovu odeslat ověření",
     "resending": "Odesílám...",
     "verificationSent": "✓ Ověřovací email byl odeslán!",
     "invalidCredentials": "Neplatné přihlašovací údaje.",
-    "enterEmailForResend": "Zadejte email pro znovu odeslání ověření",
+    "enterEmailForResend": "Zadejte email pro opětovné odeslání ověření",
     "passwordResetError": "Chyba při odesílání emailu pro reset hesla",
     "emailSent": "Email odeslán!",
     "passwordResetEmailSent": "Email pro reset hesla byl odeslán!",
@@ -137,13 +137,13 @@
     "enterEmailForReset": "Zadejte emailovou adresu, kterou jste používali při registraci",
     "sendResetEmail": "Odeslat email",
     "sending": "Odesílám...",
-    "rememberPassword": "Vzpomněli jste si heslo?",
+    "rememberPassword": "Vzpomněli jste si na heslo?",
     "oauthLoginFailed": "OAuth přihlášení selhalo",
     "missingGoogleTokens": "Chybí tokeny z Google přihlášení",
     "tokenSaveError": "Chyba při uložení tokenů",
     "loggingYouIn": "Přihlašuji vás...",
     "pleaseWaitProcessing": "Prosím počkejte, zpracovávám vaše přihlášení.",
-    "successfullyLoggedIn": "Úspěšně přihlášen!",
+    "successfullyLoggedIn": "Úspěšně jste přihlášeni!",
     "closingWindowRedirecting": "Zavírám okno a přesměrovávám vás na nástěnku...",
     "loginError": "Chyba při přihlášení"
   },
@@ -183,6 +183,7 @@
   },
   "rightSidebar": {
     "settings": "Nastavení",
+    "appSettings": "Nastavení aplikace",
     "editProfile": "Upravit profil",
     "notifications": "Upozornění",
     "blocked": "Blokovaní",
@@ -216,6 +217,7 @@
     "contact": "Kontakt",
     "addContact": "Přidat kontakt",
     "showPublic": "Zobrazit veřejně",
+    "showContactPublic": "Zobrazit kontakt veřejně",
     "profession": "Profese",
     "addProfession": "Přidat profesi",
     "showProfessionPublic": "Zobrazit profesi veřejně",

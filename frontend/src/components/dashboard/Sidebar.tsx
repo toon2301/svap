@@ -151,7 +151,7 @@ export default function Sidebar({
       {/* Prázdny priestor pre mobilnú verziu */}
       {isMobile && (
         <div className="flex-1 px-6 py-4">
-          <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-4">{t('rightSidebar.appSettings', 'Nastavenia aplikácie')}</h3>
+          <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-4">{t('rightSidebar.appSettings', 'App Settings')}</h3>
           
                  {/* Jazyk a preklady - krajší štýl */}
                  <div className="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-lg p-2 mb-4 border border-purple-100 dark:border-purple-800/30">
