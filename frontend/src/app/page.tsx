@@ -67,7 +67,7 @@ export default function Home() {
           transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
         >
           <span 
-            className={`text-6xl max-lg:text-4xl whitespace-nowrap max-lg:-mr-6 max-lg:-mt-2.5 ${locale === 'de' ? 'max-lg:text-3xl max-lg:mt-2' : ''}`}
+            className={`text-6xl max-lg:text-3xl whitespace-nowrap max-lg:-mr-6 max-lg:-mt-2.5 ${locale === 'de' ? 'max-lg:text-3xl max-lg:mt-2' : ''}`}
             lang={locale}
           >
             {t('homepage.welcome', 'Víta ťa')}
@@ -75,7 +75,7 @@ export default function Home() {
           <img
             src="/Logotyp _svaply_ na fialovom pozadí.png"
             alt="Svaply"
-            className="w-auto h-56 md:h-60 lg:h-[450px] mt-2 lg:mt-[20px] ml-[-40px] lg:ml-[-50px] max-lg:ml-0 max-lg:mt-0"
+            className={`w-auto h-56 md:h-60 lg:h-[450px] mt-2 lg:mt-[20px] ml-[-40px] lg:ml-[-50px] max-lg:ml-0 ${locale === 'de' ? 'max-lg:mt-4' : 'max-lg:mt-0'}`}
           />
         </motion.div>
         <motion.p 
