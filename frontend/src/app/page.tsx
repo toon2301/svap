@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, lazy, Suspense, useEffect } from 'react';
+import { useState, lazy, Suspense, useEffect, useRef } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
@@ -15,6 +15,9 @@ export default function Home() {
   const router = useRouter();
   const { t, locale } = useLanguage();
   const [isAuth, setIsAuth] = useState(false);
+  const headerGroupRef = useRef<HTMLDivElement | null>(null);
+  const [mobileScale, setMobileScale] = useState(1);
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
     const checkAuth = () => {
@@ -29,6 +32,47 @@ export default function Home() {
 
     checkAuth();
   }, [router]);
+
+  // Mobile detection (client only)
+  useEffect(() => {
+    const update = () => {
+      if (typeof window === 'undefined') return;
+      setIsMobile(window.innerWidth <= 1024);
+    };
+    update();
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
+  }, []);
+
+  // Auto-scale header line (text + logo) on mobile so it fits one line across languages
+  useEffect(() => {
+    if (!isMobile) {
+      setMobileScale(1);
+      return;
+    }
+
+    const el = headerGroupRef.current;
+    if (!el) return;
+
+    const measureAndScale = () => {
+      if (!el) return;
+      // Reset scale to measure natural width
+      setMobileScale(1);
+      // Use next frame to measure after scale reset
+      requestAnimationFrame(() => {
+        const parentWidth = el.parentElement?.clientWidth ?? window.innerWidth;
+        const rect = el.getBoundingClientRect();
+        const totalWidth = rect.width;
+        const available = Math.max(0, parentWidth - 16); // small padding
+        const nextScale = totalWidth > 0 ? Math.min(1, available / totalWidth) : 1;
+        setMobileScale(nextScale);
+      });
+    };
+
+    measureAndScale();
+    window.addEventListener('resize', measureAndScale);
+    return () => window.removeEventListener('resize', measureAndScale);
+  }, [isMobile, locale]);
 
   // Ak je používateľ prihlásený, zobraz loading
   if (isAuth) {
@@ -61,13 +105,15 @@ export default function Home() {
         transition={{ duration: 0.8, ease: "easeOut" }}
       >
         <motion.div 
-          className="text-8xl font-bold text-gray-900 dark:text-white max-lg:text-5xl flex items-center flex-wrap max-lg:flex-nowrap max-lg:justify-end max-lg:-mr-8"
+          ref={headerGroupRef}
+          className="text-8xl font-bold text-gray-900 dark:text-white max-lg:text-5xl flex items-center flex-wrap max-lg:flex-nowrap max-lg:justify-center max-lg:gap-0"
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
+          style={{ transformOrigin: 'center center', scale: isMobile ? mobileScale : 1 }}
           transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
         >
           <span 
-            className={`text-6xl max-lg:text-3xl whitespace-nowrap max-lg:-mr-6 max-lg:-mt-2.5 ${locale === 'de' ? 'max-lg:text-3xl max-lg:mt-2' : ''}`}
+            className={`text-6xl max-lg:text-[clamp(26px,7vw,36px)] whitespace-nowrap max-lg:mt-1 max-lg:mr-1`}
             lang={locale}
           >
             {t('homepage.welcome', 'Víta ťa')}
@@ -75,11 +121,11 @@ export default function Home() {
           <img
             src="/Logotyp _svaply_ na fialovom pozadí.png"
             alt="Svaply"
-            className={`w-auto h-56 md:h-60 lg:h-[450px] mt-2 lg:mt-[20px] ml-[-40px] lg:ml-[-50px] max-lg:ml-0 ${locale === 'de' ? 'max-lg:mt-4' : 'max-lg:mt-0'}`}
+            className={`w-auto h-56 md:h-60 lg:h-[450px] mt-2 lg:mt-[20px] ml-[-40px] lg:ml-[-50px] max-lg:ml-[-20px] max-lg:h-auto max-lg:mt-2.5 max-lg:w-[clamp(160px,40vw,240px)]`}
           />
         </motion.div>
         <motion.p 
-          className="text-xl text-gray-600 dark:text-gray-300 text-left max-w-3xl leading-relaxed max-lg:text-sm max-lg:mx-auto max-lg:max-w-xs mb-0 mt-[-64px] lg:mt-[-130px]"
+          className={`text-xl text-gray-600 dark:text-gray-300 text-left max-w-3xl leading-relaxed max-lg:text-xs max-lg:mx-auto max-lg:max-w-xs mb-0 lg:mt-[-130px] max-lg:mt-[-45px]`}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.5, ease: "easeOut" }}
