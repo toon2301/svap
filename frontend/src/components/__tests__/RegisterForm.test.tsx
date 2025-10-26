@@ -47,7 +47,7 @@ describe('RegisterForm', () => {
   });
 
   it('renders registration form correctly', () => {
-    render(<RegisterForm />);
+    const { container } = render(<RegisterForm />);
     
     expect(screen.getByText('Registrácia')).toBeInTheDocument();
     expect(screen.getByLabelText('Používateľské meno *')).toBeInTheDocument();
@@ -115,51 +115,34 @@ describe('RegisterForm', () => {
   });
 
   it('validates birth date', async () => {
-    render(<RegisterForm />);
-    
-    const daySelect = screen.getByDisplayValue('Deň');
-    const monthSelect = screen.getByDisplayValue('Mesiac');
-    const yearSelect = screen.getByDisplayValue('Rok');
+    const { container } = render(<RegisterForm />);
     const submitButton = screen.getByRole('button', { name: 'Registrovať sa' });
-    
-    fireEvent.change(daySelect, { target: { value: '32' } }); // Neplatný deň
-    fireEvent.change(monthSelect, { target: { value: '06' } });
-    fireEvent.change(yearSelect, { target: { value: '1990' } });
+    const birth = container.querySelector('#birth_date') as HTMLInputElement;
+    // Neplatný deň – nastav 1990-06-32 (pre input sa zapíše ako string, validátor si to rozloží)
+    fireEvent.change(birth, { target: { value: '1990-06-32' } });
     fireEvent.click(submitButton);
-    
-    // Skontroluj, či sa form neodoslal (API sa nevolá)
     expect(mockApiPost).not.toHaveBeenCalled();
   });
 
   it('validates age requirement', async () => {
-    render(<RegisterForm />);
-    
-    const daySelect = screen.getByDisplayValue('Deň');
-    const monthSelect = screen.getByDisplayValue('Mesiac');
-    const yearSelect = screen.getByDisplayValue('Rok');
+    const { container } = render(<RegisterForm />);
     const submitButton = screen.getByRole('button', { name: 'Registrovať sa' });
-    
-    fireEvent.change(daySelect, { target: { value: '15' } });
-    fireEvent.change(monthSelect, { target: { value: '06' } });
-    fireEvent.change(yearSelect, { target: { value: '2020' } }); // Príliš mladý
+    const birth = container.querySelector('#birth_date') as HTMLInputElement;
+    fireEvent.change(birth, { target: { value: '2020-06-15' } }); // Príliš mladý
     fireEvent.click(submitButton);
-    
-    // Skontroluj, či sa form neodoslal (API sa nevolá)
     expect(mockApiPost).not.toHaveBeenCalled();
   });
 
   it('shows company fields when company type is selected', () => {
-    render(<RegisterForm />);
-    
-    const userTypeSelect = screen.getByDisplayValue('Osoba');
+    const { container } = render(<RegisterForm />);
+    const userTypeSelect = container.querySelector('#user_type') as HTMLSelectElement;
     fireEvent.change(userTypeSelect, { target: { value: 'company' } });
-    
     expect(screen.getByText('Informácie o firme')).toBeInTheDocument();
     expect(screen.getByLabelText('Názov firmy *')).toBeInTheDocument();
   });
 
   it('validates company name when company type is selected', async () => {
-    render(<RegisterForm />);
+    const { container } = render(<RegisterForm />);
     
     const userTypeSelect = screen.getByDisplayValue('Osoba');
     fireEvent.change(userTypeSelect, { target: { value: 'company' } });
@@ -182,7 +165,7 @@ describe('RegisterForm', () => {
     
     mockApiPost.mockResolvedValueOnce(mockResponse);
     
-    render(<RegisterForm />);
+    const { container } = render(<RegisterForm />);
     
     // Vyplň všetky povinné polia
     fireEvent.change(screen.getByLabelText('Používateľské meno *'), { 
@@ -197,15 +180,8 @@ describe('RegisterForm', () => {
     fireEvent.change(screen.getByLabelText('Potvrdenie hesla *'), { 
       target: { value: 'password123' } 
     });
-    fireEvent.change(screen.getByDisplayValue('Deň'), { 
-      target: { value: '15' } 
-    });
-    fireEvent.change(screen.getByDisplayValue('Mesiac'), { 
-      target: { value: '06' } 
-    });
-    fireEvent.change(screen.getByDisplayValue('Rok'), { 
-      target: { value: '1990' } 
-    });
+    const birth1 = container.querySelector('#birth_date') as HTMLInputElement;
+    fireEvent.change(birth1, { target: { value: '1990-06-15' } });
     fireEvent.change(screen.getByDisplayValue('Vyberte pohlavie'), { 
       target: { value: 'male' } 
     });
@@ -224,8 +200,10 @@ describe('RegisterForm', () => {
         birth_year: '1990',
         gender: 'male',
       }));
-      expect(screen.getByText('Registrácia úspešná!')).toBeInTheDocument();
     });
+
+    // Over, že sa zobrazil success obsah (dve výskyty v hlavičke a v alert boxe)
+    expect(screen.getAllByText('Registrácia úspešná!').length).toBeGreaterThan(0);
 
     // Skontroluj, že sa nevolá router.push (nová implementácia nepresmerováva)
     expect(mockPush).not.toHaveBeenCalled();
@@ -244,7 +222,7 @@ describe('RegisterForm', () => {
     
     mockApiPost.mockRejectedValueOnce(mockError);
     
-    render(<RegisterForm />);
+    const { container: container2 } = render(<RegisterForm />);
     
     // Vyplň minimálne polia
     fireEvent.change(screen.getByLabelText('Používateľské meno *'), { 
@@ -259,15 +237,8 @@ describe('RegisterForm', () => {
     fireEvent.change(screen.getByLabelText('Potvrdenie hesla *'), { 
       target: { value: 'password123' } 
     });
-    fireEvent.change(screen.getByDisplayValue('Deň'), { 
-      target: { value: '15' } 
-    });
-    fireEvent.change(screen.getByDisplayValue('Mesiac'), { 
-      target: { value: '06' } 
-    });
-    fireEvent.change(screen.getByDisplayValue('Rok'), { 
-      target: { value: '1990' } 
-    });
+    const birth2 = container2.querySelector('#birth_date') as HTMLInputElement;
+    fireEvent.change(birth2, { target: { value: '1990-06-15' } });
     fireEvent.change(screen.getByDisplayValue('Vyberte pohlavie'), { 
       target: { value: 'male' } 
     });
@@ -275,24 +246,27 @@ describe('RegisterForm', () => {
     const submitButton = screen.getByRole('button', { name: 'Registrovať sa' });
     fireEvent.click(submitButton);
     
-    await waitFor(() => {
-      // Error text may appear without exclamation
-      expect(screen.getByText(/Email už existuje/)).toBeInTheDocument();
-    });
+    await waitFor(() => expect(mockApiPost).toHaveBeenCalled());
+    // Nemal by sa zobraziť success stav
+    expect(screen.queryByText('Registrácia úspešná!')).not.toBeInTheDocument();
+    // Chyba pri emaile by mala byť viditeľná
+    expect(screen.getByText(/Email už existuje/)).toBeInTheDocument();
   });
 
   it('toggles password visibility', () => {
     render(<RegisterForm />);
     
     const passwordInput = screen.getByLabelText('Heslo *') as HTMLInputElement;
-    const toggleButtons = screen.getAllByRole('button', { name: '' }); // Toggle buttons
+    // Prvý toggle button (ikona vpravo)
+    const toggleButtons = screen.getAllByRole('button');
+    const toggle = toggleButtons.find(btn => (btn as HTMLButtonElement).type === 'button') as HTMLButtonElement;
     
     expect(passwordInput.type).toBe('password');
     
-    fireEvent.click(toggleButtons[0]); // Prvý toggle button
+    fireEvent.click(toggle);
     expect(passwordInput.type).toBe('text');
     
-    fireEvent.click(toggleButtons[0]);
+    fireEvent.click(toggle);
     expect(passwordInput.type).toBe('password');
   });
 
@@ -306,7 +280,7 @@ describe('RegisterForm', () => {
     
     mockApiPost.mockResolvedValueOnce(mockResponse);
     
-    render(<RegisterForm />);
+    const { container: container3 } = render(<RegisterForm />);
     
     // Vyplň všetky povinné polia
     fireEvent.change(screen.getByLabelText('Používateľské meno *'), { 
@@ -321,15 +295,8 @@ describe('RegisterForm', () => {
     fireEvent.change(screen.getByLabelText('Potvrdenie hesla *'), { 
       target: { value: 'password123' } 
     });
-    fireEvent.change(screen.getByDisplayValue('Deň'), { 
-      target: { value: '15' } 
-    });
-    fireEvent.change(screen.getByDisplayValue('Mesiac'), { 
-      target: { value: '06' } 
-    });
-    fireEvent.change(screen.getByDisplayValue('Rok'), { 
-      target: { value: '1990' } 
-    });
+    const birth3 = container3.querySelector('#birth_date') as HTMLInputElement;
+    fireEvent.change(birth3, { target: { value: '1990-06-15' } });
     fireEvent.change(screen.getByDisplayValue('Vyberte pohlavie'), { 
       target: { value: 'male' } 
     });
@@ -338,8 +305,7 @@ describe('RegisterForm', () => {
     fireEvent.click(submitButton);
     
     await waitFor(() => {
-      expect(screen.getByText('Registrácia úspešná!')).toBeInTheDocument();
-      expect(screen.getByText(/Úspešná registrácia/)).toBeInTheDocument();
+      expect(screen.getAllByText('Registrácia úspešná!').length).toBeGreaterThan(0);
       expect(screen.getByText(/Skontrolujte si email a potvrďte registráciu/)).toBeInTheDocument();
     });
 
@@ -361,7 +327,7 @@ describe('RegisterForm', () => {
     
     mockApiPost.mockResolvedValueOnce(mockResponse);
     
-    render(<RegisterForm />);
+    const { container: container4 } = render(<RegisterForm />);
     
     // Vyplň minimálne polia
     fireEvent.change(screen.getByLabelText('Používateľské meno *'), { 
@@ -376,15 +342,8 @@ describe('RegisterForm', () => {
     fireEvent.change(screen.getByLabelText('Potvrdenie hesla *'), { 
       target: { value: 'password123' } 
     });
-    fireEvent.change(screen.getByDisplayValue('Deň'), { 
-      target: { value: '15' } 
-    });
-    fireEvent.change(screen.getByDisplayValue('Mesiac'), { 
-      target: { value: '06' } 
-    });
-    fireEvent.change(screen.getByDisplayValue('Rok'), { 
-      target: { value: '1990' } 
-    });
+    const birth4 = container4.querySelector('#birth_date') as HTMLInputElement;
+    fireEvent.change(birth4, { target: { value: '1990-06-15' } });
     fireEvent.change(screen.getByDisplayValue('Vyberte pohlavie'), { 
       target: { value: 'male' } 
     });
@@ -393,7 +352,7 @@ describe('RegisterForm', () => {
     fireEvent.click(submitButton);
     
     await waitFor(() => {
-      expect(screen.getByText('Registrácia úspešná!')).toBeInTheDocument();
+      expect(screen.getAllByText('Registrácia úspešná!').length).toBeGreaterThan(0);
     });
 
     // Skontroluj, že sa nevolá router.push

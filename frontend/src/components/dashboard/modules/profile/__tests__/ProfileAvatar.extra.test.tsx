@@ -1,5 +1,6 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
+import { ThemeProvider } from '@/contexts/ThemeContext';
 import '@testing-library/jest-dom';
 import ProfileAvatar from '../../ProfileAvatar';
 import { User } from '@/types';
@@ -20,14 +21,14 @@ const baseUser: User = {
 
 describe('ProfileAvatar extra coverage', () => {
   it('renders image when avatar_url provided and falls back on error', () => {
-    render(<ProfileAvatar user={{ ...baseUser, avatar_url: 'http://img' }} size="small" />);
+    render(<ThemeProvider><ProfileAvatar user={{ ...baseUser, avatar_url: 'http://img' }} size="small" /></ThemeProvider>);
     const img = screen.getByRole('img');
     expect(img).toHaveAttribute('src', 'http://img');
   });
 
   it('shows upload button when no avatar and calls onPhotoUpload', () => {
     const onPhotoUpload = jest.fn();
-    render(<ProfileAvatar user={{ ...baseUser, avatar_url: undefined, avatar: undefined }} onPhotoUpload={onPhotoUpload} showUploadIcon />);
+    render(<ThemeProvider><ProfileAvatar user={{ ...baseUser, avatar_url: undefined, avatar: undefined }} onPhotoUpload={onPhotoUpload} showUploadIcon /></ThemeProvider>);
 
     const btn = screen.getByRole('button', { name: 'Nahrať fotku' });
     // simulate click; cannot actually open file dialog in jsdom but ensures handler exists

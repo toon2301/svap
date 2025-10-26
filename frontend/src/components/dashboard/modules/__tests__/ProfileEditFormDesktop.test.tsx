@@ -36,7 +36,7 @@ describe('ProfileEditFormDesktop', () => {
 
     expect(screen.getByText('Upraviť profil')).toBeInTheDocument();
 
-    const fullName = screen.getByPlaceholderText('Zadajte svoje meno a priezvisko') as HTMLInputElement;
+    const fullName = screen.getByPlaceholderText('Zadajte svoje meno') as HTMLInputElement;
     fireEvent.change(fullName, { target: { value: 'Nové Meno' } });
     fireEvent.keyDown(fullName, { key: 'Enter' });
 

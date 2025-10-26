@@ -50,6 +50,7 @@ export default function LanguageModule() {
                   })()}
                 </span>
                 <button
+                  type="button"
                   onClick={() => {
                     const next = language;
                     setSelectedLanguage(next);
@@ -60,13 +61,17 @@ export default function LanguageModule() {
                     if (next === 'nemčina') setLocale('de');
                     if (next === 'maďarčina') setLocale('hu');
                   }}
-                  className="w-5 h-5 rounded-full border-2 border-gray-800 dark:border-white flex items-center justify-center"
-                  style={{
-                    backgroundColor: selectedLanguage === language ? 'var(--foreground)' : 'transparent'
-                  }}
+                  onPointerDown={(e) => { e.preventDefault(); }}
+                  className={`w-5 h-5 rounded-full flex items-center justify-center ${
+                    selectedLanguage === language
+                      ? 'bg-black border border-white'
+                      : 'bg-transparent border-2 border-gray-300 dark:border-gray-600'
+                  }`}
+                  tabIndex={-1}
+                  style={{ WebkitTapHighlightColor: 'transparent' }}
                 >
                   {selectedLanguage === language && (
-                    <svg className="w-3 h-3 text-white dark:text-black" fill="currentColor" viewBox="0 0 20 20">
+                    <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                     </svg>
                   )}
@@ -78,7 +83,7 @@ export default function LanguageModule() {
       </div>
 
       {/* Mobile layout - compact, pretty */}
-      <div className="block lg:hidden p-6">
+      <div className="block lg:hidden px-4 pt-2 pb-6">
         <div className="mb-6">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
             {t('language.title', 'Jazyk')}
@@ -87,41 +92,30 @@ export default function LanguageModule() {
             {t('language.selectLanguage', 'Zvoľte si jazyk, v ktorom sa vám bude aplikácia najlepšie používať.')}
           </p>
         </div>
-        <div className="space-y-3">
-          {languages.map((language) => (
-            <button
-              key={language}
-              onClick={() => {
-                const next = language;
-                setSelectedLanguage(next);
-                if (next === 'angličtina') setLocale('en');
-                if (next === 'slovenčina') setLocale('sk');
-                if (next === 'poľština') setLocale('pl');
-                if (next === 'čeština') setLocale('cs');
-                if (next === 'nemčina') setLocale('de');
-                if (next === 'maďarčina') setLocale('hu');
-              }}
-              className={`w-full flex items-center justify-between p-4 rounded-xl border-2 transition-all duration-200 ${
-                selectedLanguage === language
-                  ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20'
-                  : 'border-gray-200 dark:border-gray-700 hover:border-purple-300 dark:hover:border-purple-600 hover:bg-gray-50 dark:hover:bg-gray-800/50'
-              }`}
-            >
-              <div className="flex items-center">
-                <div className={`w-4 h-4 rounded-full border-2 mr-3 flex items-center justify-center ${
-                  selectedLanguage === language
-                    ? 'border-purple-500 bg-purple-500'
-                    : 'border-gray-300 dark:border-gray-600'
-                }`}>
-                  {selectedLanguage === language && (
-                    <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
-                  )}
-                </div>
+        <div className="space-y-0">
+          {languages.map((language, index) => (
+            <div key={language}>
+              {index > 0 && <div className='border-t border-gray-200 dark:border-gray-700'></div>}
+              <button
+                type="button"
+                onClick={() => {
+                  const next = language;
+                  setSelectedLanguage(next);
+                  if (next === 'angličtina') setLocale('en');
+                  if (next === 'slovenčina') setLocale('sk');
+                  if (next === 'poľština') setLocale('pl');
+                  if (next === 'čeština') setLocale('cs');
+                  if (next === 'nemčina') setLocale('de');
+                  if (next === 'maďarčina') setLocale('hu');
+                }}
+                onPointerDown={(e) => { e.preventDefault(); }}
+                className="w-full flex items-center justify-between p-4 transition-all duration-200 focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 ring-0"
+                tabIndex={-1}
+                style={{ WebkitTapHighlightColor: 'transparent' }}
+              >
                 <span className={`text-sm font-medium ${
                   selectedLanguage === language
-                    ? 'text-purple-700 dark:text-purple-300'
+                    ? 'text-black dark:text-white'
                     : 'text-gray-700 dark:text-gray-300'
                 }`}>
                   {(() => {
@@ -134,11 +128,19 @@ export default function LanguageModule() {
                     return language;
                   })()}
                 </span>
-              </div>
-              {selectedLanguage === language && (
-                <div className="w-2 h-2 rounded-full bg-purple-500"></div>
-              )}
-            </button>
+                <div className={`w-5 h-5 rounded-full flex items-center justify-center ${
+                  selectedLanguage === language
+                    ? 'bg-black border border-white'
+                    : 'bg-transparent border-2 border-gray-300 dark:border-gray-600'
+                }`}>
+                  {selectedLanguage === language && (
+                    <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                  )}
+                </div>
+              </button>
+            </div>
           ))}
         </div>
       </div>

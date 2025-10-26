@@ -29,7 +29,7 @@ describe('Sidebar', () => {
     
     expect(screen.getByText('Nástenka')).toBeInTheDocument();
     expect(screen.getByText('Vyhľadávanie')).toBeInTheDocument();
-    expect(screen.getByText('Oblúbené')).toBeInTheDocument();
+    expect(screen.getByText('Obľúbené')).toBeInTheDocument();
     expect(screen.getByText('Profil')).toBeInTheDocument();
     expect(screen.getByText('Nastavenia')).toBeInTheDocument();
   });
@@ -134,6 +134,7 @@ describe('Sidebar', () => {
   it('shows Swaply logo', () => {
     render(<ThemeProvider><Sidebar {...defaultProps} onLogout={() => {}} /></ThemeProvider>);
     
-    expect(screen.getByText('Swaply')).toBeInTheDocument();
+    // Logo je obrázok s alt tagom
+    expect(screen.getByAltText('Swaply')).toBeInTheDocument();
   });
 });

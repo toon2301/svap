@@ -65,15 +65,6 @@ export default function RootLayout({
         
         {/* Force zoom reset for email links */}
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-        <style dangerouslySetInnerHTML={{
-          __html: `
-            /* Keep zoom reset but do NOT override transforms on all elements */
-            @media (min-width: 769px) {
-              html { zoom: 1 !important; transform: none !important; }
-              body { zoom: 1 !important; transform: none !important; }
-            }
-          `
-        }} />
         
         {/* Security */}
         <meta httpEquiv="X-Content-Type-Options" content="nosniff" />

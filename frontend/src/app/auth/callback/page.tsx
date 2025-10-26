@@ -32,13 +32,13 @@ function OAuthCallbackContent() {
       const userId = searchParams.get('user_id');
       const error = searchParams.get('error');
       
-      console.log('OAuth callback page loaded');
-      console.log('Full URL:', window.location.href);
-      console.log('Search params:', searchParams.toString());
-      console.log('Token:', token ? `${token.substring(0, 20)}...` : 'null');
-      console.log('Refresh token:', refreshToken ? `${refreshToken.substring(0, 20)}...` : 'null');
-      console.log('User ID:', userId);
-      console.log('Error:', error);
+      const isProd = process.env.NODE_ENV === 'production';
+      if (!isProd) {
+        console.debug('OAuth callback loaded');
+        console.debug('Search params:', searchParams.toString());
+        console.debug('User ID:', userId);
+        console.debug('Error:', error);
+      }
       
       if (error) {
         console.error('OAuth error from URL:', error);
@@ -47,11 +47,11 @@ function OAuthCallbackContent() {
         
         // Pošli error správu do parent okna
         if (window.opener) {
-          console.log('Sending error message to parent window');
+          !isProd && console.debug('Sending error message to parent window');
           window.opener.postMessage({
             type: 'OAUTH_ERROR',
             error: `${t('auth.oauthLoginFailed')}: ${error}`
-          }, '*');
+          }, window.location.origin);
         }
         
         setTimeout(() => {
@@ -80,15 +80,14 @@ function OAuthCallbackContent() {
       }
 
       try {
-        console.log('Preparing tokens for parent window...');
+        !isProd && console.debug('Preparing tokens for parent window...');
         // Priprav tokeny pre hlavné okno (NEUKLADAJ ich do popup okna!)
         const tokens = {
           access: token,
           refresh: refreshToken
         };
         
-        console.log('Storing tokens and closing popup...');
-        // Ulož tokeny do localStorage (zdieľané medzi oknami)
+        // Dočasne ulož tokeny do localStorage pre fallback mechanizmus
         localStorage.setItem('access_token', tokens.access);
         localStorage.setItem('refresh_token', tokens.refresh);
         localStorage.setItem('oauth_success', 'true');
@@ -96,7 +95,7 @@ function OAuthCallbackContent() {
         // Tiež ulož tokeny do cookies pre konzistentnosť
         setAuthTokens(tokens);
         
-        console.log('Tokens stored in localStorage, notifying parent window...');
+        !isProd && console.debug('Tokens stored, notifying parent window...');
         
         // Pošli správu do parent okna o úspešnom prihlásení
         if (window.opener) {
@@ -106,25 +105,34 @@ function OAuthCallbackContent() {
               access: token,
               refresh: refreshToken
             }
-          }, '*');
+          }, window.location.origin);
+
+          // Minimalizuj životnosť tokenov v localStorage po odovzdaní
+          setTimeout(() => {
+            try {
+              localStorage.removeItem('access_token');
+              localStorage.removeItem('refresh_token');
+              localStorage.removeItem('oauth_success');
+            } catch {}
+          }, 5000);
         }
         
         // Zatvor popup okno
         setTimeout(() => {
-          console.log('Closing popup window...');
+          !isProd && console.debug('Closing popup window...');
           window.close();
         }, 1000);
         
         setStatus('success');
         
       } catch (err: any) {
-        console.error('OAuth callback error:', err);
+        console.error('OAuth callback error');
         
         const errorMessage = err.message || t('auth.tokenSaveError');
         setError(errorMessage);
         setStatus('error');
         
-        console.log('Sending error message to parent window:', errorMessage);
+        !isProd && console.debug('Sending error message to parent window');
         // Pošli error správu do parent okna
         if (window.opener) {
           window.opener.postMessage({

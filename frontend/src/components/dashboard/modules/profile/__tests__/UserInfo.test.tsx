@@ -32,10 +32,11 @@ describe('UserInfo', () => {
     expect(screen.queryByText('test@example.com')).not.toBeInTheDocument();
   });
 
-  it('renders location when available', () => {
+  // Location is no longer rendered by UserInfo; it has moved next to avatar
+  it('does not render location even when available (handled elsewhere)', () => {
     const userWithLocation = { ...mockUser, location: 'Bratislava' };
     render(<UserInfo user={userWithLocation} />);
-    expect(screen.getByText('📍 Bratislava')).toBeInTheDocument();
+    expect(screen.queryByText(/Bratislava/)).not.toBeInTheDocument();
   });
 
   it('does not render location when not available', () => {

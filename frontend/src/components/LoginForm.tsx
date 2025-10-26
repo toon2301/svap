@@ -156,10 +156,15 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
 
       // Počúvaj na správy z popup okna
       const handleMessage = (event: MessageEvent) => {
-        console.log('Received message from popup:', event.data);
+        if (event.origin !== window.location.origin) return;
+        if (process.env.NODE_ENV !== 'production') {
+          console.debug('Received message from popup');
+        }
         
         if (event.data.type === 'OAUTH_SUCCESS') {
-          console.log('OAuth success message received');
+          if (process.env.NODE_ENV !== 'production') {
+            console.debug('OAuth success message received');
+          }
           clearInterval(checkClosed);
           
           // Ulož tokeny pomocou setAuthTokens
@@ -177,7 +182,9 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
           setIsGoogleLoading(false);
           router.push('/dashboard');
         } else if (event.data.type === 'OAUTH_ERROR') {
-          console.log('OAuth error message received:', event.data.error);
+          if (process.env.NODE_ENV !== 'production') {
+            console.debug('OAuth error message received');
+          }
           clearInterval(checkClosed);
           setIsGoogleLoading(false);
           setLoginErrors({ general: event.data.error });
@@ -200,7 +207,9 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
           }
           
           if (popupClosed) {
-            console.log('Popup closed without message, checking localStorage...');
+            if (process.env.NODE_ENV !== 'production') {
+              console.debug('Popup closed without message, checking localStorage...');
+            }
             clearInterval(checkClosed);
             window.removeEventListener('message', handleMessage);
             
@@ -210,7 +219,9 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
             const oauthSuccess = localStorage.getItem('oauth_success');
             
             if (accessToken && refreshToken && oauthSuccess === 'true') {
-              console.log('OAuth success detected via localStorage fallback');
+              if (process.env.NODE_ENV !== 'production') {
+                console.debug('OAuth success detected via localStorage fallback');
+              }
               
               // Ulož tokeny pomocou setAuthTokens
               setAuthTokens({
@@ -220,6 +231,8 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
               
               // Vymaž dočasné localStorage položky
               localStorage.removeItem('oauth_success');
+              localStorage.removeItem('access_token');
+              localStorage.removeItem('refresh_token');
               
               // Reset preferovaného modulu a nastav flag na vynútenie HOME
               try {
@@ -230,13 +243,17 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
               setIsGoogleLoading(false);
               router.push('/dashboard');
             } else {
-              console.log('No OAuth tokens found in localStorage');
+              if (process.env.NODE_ENV !== 'production') {
+                console.debug('No OAuth tokens found in localStorage');
+              }
               setIsGoogleLoading(false);
               setLoginErrors({ general: t('auth.googleLoginFailed') });
             }
           }
         } catch (error) {
-          console.log('Error checking popup status:', error);
+          if (process.env.NODE_ENV !== 'production') {
+            console.debug('Error checking popup status');
+          }
         }
       }, 1000);
 

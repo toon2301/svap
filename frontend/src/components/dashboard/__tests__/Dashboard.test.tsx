@@ -113,7 +113,7 @@ describe('Dashboard', () => {
     
     expect(screen.getByText('Nástenka')).toBeInTheDocument();
     expect(screen.getByText('Vyhľadávanie')).toBeInTheDocument();
-    expect(screen.getByText('Oblúbené')).toBeInTheDocument();
+    expect(screen.getByText('Obľúbené')).toBeInTheDocument();
     expect(screen.getByText('Profil')).toBeInTheDocument();
     expect(screen.getByText('Nastavenia')).toBeInTheDocument();
   });
@@ -138,9 +138,9 @@ describe('Dashboard', () => {
 
     render(<ThemeProvider><Dashboard initialUser={mockUser} /></ThemeProvider>);
 
-    fireEvent.click(screen.getByText('Oblúbené'));
+    fireEvent.click(screen.getByText('Obľúbené'));
     await waitFor(() => {
-      expect(screen.getAllByText('Oblúbené').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('Obľúbené').length).toBeGreaterThan(0);
     });
 
     fireEvent.click(screen.getByText('Profil'));
@@ -150,9 +150,8 @@ describe('Dashboard', () => {
     });
 
     fireEvent.click(screen.getByText('Nastavenia'));
-    await waitFor(() => {
-      expect(screen.getByText('Nastavenia')).toBeInTheDocument();
-    });
+    // obsah nastaví nadpis Nastavenia, nemusíme čakať na animáciu
+    expect(screen.getAllByText('Nastavenia').length).toBeGreaterThan(0);
   });
 
   it('clears tokens and redirects on API error', async () => {
@@ -173,8 +172,8 @@ describe('Dashboard', () => {
     isAuthenticated.mockReturnValue(true);
     
     render(<ThemeProvider><Dashboard initialUser={mockUser} /></ThemeProvider>);
-    // Home module welcome exists
-    expect(screen.getAllByText('Vitaj v Swaply!').length).toBeGreaterThan(0);
+    // Home module welcome exists (fallback v t() zaručí text)
+    expect(screen.getByText('Vyber si sekciu z navigácie pre pokračovanie.')).toBeInTheDocument();
   });
 
   it('renders mobile menu button on mobile', () => {

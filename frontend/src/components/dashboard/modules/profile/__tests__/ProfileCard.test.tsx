@@ -55,9 +55,9 @@ describe('ProfileCard', () => {
     expect(img).toBeInTheDocument();
   });
 
-  it('handles user with location', () => {
+  it('does not render location in info section (handled near avatar)', () => {
     const userWithLocation = { ...mockUser, location: 'Bratislava' };
     render(<ProfileCard user={userWithLocation} />);
-    expect(screen.getByText('📍 Bratislava')).toBeInTheDocument();
+    expect(screen.queryByText(/Bratislava/)).not.toBeInTheDocument();
   });
 });

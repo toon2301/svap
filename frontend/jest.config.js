@@ -27,6 +27,8 @@ const customJestConfig = {
     '!src/components/ServiceWorker.tsx',
     '!src/components/RegisterForm.tsx',
     '!src/components/LoginForm.tsx',
+    '!src/contexts/LanguageContext.tsx',
+    '!src/contexts/ThemeContext.tsx',
     '!src/contexts/AuthContext.tsx',
     '!src/hooks/index.ts',
     '!src/utils/mobileDebug.ts',

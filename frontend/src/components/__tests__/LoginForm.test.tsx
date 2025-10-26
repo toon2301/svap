@@ -141,16 +141,13 @@ describe('LoginForm', () => {
 
   it('toggles password visibility', () => {
     render(<LoginForm />);
-    
     const passwordInput = screen.getByLabelText('Heslo') as HTMLInputElement;
-    const toggleButton = screen.getByRole('button', { name: '' }); // Toggle button
-    
+    const toggleButton = screen.getByRole('button', { name: 'Zobraziť heslo' });
     expect(passwordInput.type).toBe('password');
-    
     fireEvent.click(toggleButton);
     expect(passwordInput.type).toBe('text');
-    
-    fireEvent.click(toggleButton);
+    const hideButton = screen.getByRole('button', { name: 'Skryť heslo' });
+    fireEvent.click(hideButton);
     expect(passwordInput.type).toBe('password');
   });
 

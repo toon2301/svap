@@ -53,6 +53,12 @@
   --input: #0F0F0F;
 }
 
+/* Desktop zoom reset (moved from inline style in layout.tsx) */
+@media (min-width: 769px) {
+  html { zoom: 1 !important; transform: none !important; }
+  body { zoom: 1 !important; transform: none !important; }
+}
+
 * {
   box-sizing: border-box;
   padding: 0;
