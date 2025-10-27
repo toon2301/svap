@@ -14,6 +14,7 @@ interface ProfileEditFormMobileProps {
   onPhotoUpload?: (file: File) => void;
   isUploading?: boolean;
   onAvatarClick?: () => void;
+  accountType?: 'personal' | 'business';
 }
 
 export default function ProfileEditFormMobile({ 
@@ -22,7 +23,8 @@ export default function ProfileEditFormMobile({
   onEditProfileClick,
   onPhotoUpload,
   isUploading,
-  onAvatarClick
+  onAvatarClick,
+  accountType = 'personal'
 }: ProfileEditFormMobileProps) {
   const { t } = useLanguage();
   // Modal states
@@ -85,6 +87,7 @@ export default function ProfileEditFormMobile({
       <ProfileEditFields
         user={user}
         onUserUpdate={onUserUpdate}
+        accountType={accountType}
         setIsNameModalOpen={setIsNameModalOpen}
         setIsBioModalOpen={setIsBioModalOpen}
         setIsLocationModalOpen={setIsLocationModalOpen}

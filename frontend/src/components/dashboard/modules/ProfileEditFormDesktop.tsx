@@ -14,6 +14,7 @@ interface ProfileEditFormDesktopProps {
   onPhotoUpload?: (file: File) => void;
   isUploadingFromParent?: boolean;
   onAvatarClick?: () => void;
+  accountType?: 'personal' | 'business';
 }
 
 export default function ProfileEditFormDesktop({ 
@@ -22,7 +23,8 @@ export default function ProfileEditFormDesktop({
   onEditProfileClick,
   onPhotoUpload,
   isUploadingFromParent,
-  onAvatarClick
+  onAvatarClick,
+  accountType = 'personal'
 }: ProfileEditFormDesktopProps) {
   const { t } = useLanguage();
   // State pre formulár
@@ -344,7 +346,7 @@ export default function ProfileEditFormDesktop({
             {/* Meno (celé meno v jednom vstupe) */}
             <div className="mb-4">
               <label className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
-                {t('profile.fullName', 'Meno')}
+                {accountType === 'business' ? 'Názov' : t('profile.fullName', 'Meno')}
               </label>
               <input
                 id="fullName"
@@ -380,7 +382,7 @@ export default function ProfileEditFormDesktop({
             {/* Bio */}
             <div className="mb-4">
               <label className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
-                {t('profile.bio', 'Bio')}
+                {accountType === 'business' ? 'O nás' : t('profile.bio', 'Bio')}
               </label>
               <div className="relative">
                 <textarea

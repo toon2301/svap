@@ -8,6 +8,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 interface ProfileEditFieldsProps {
   user: User;
   onUserUpdate?: (user: User) => void;
+  accountType?: 'personal' | 'business';
   
   // Modal setters
   setIsNameModalOpen: (value: boolean) => void;
@@ -25,6 +26,7 @@ interface ProfileEditFieldsProps {
 export default function ProfileEditFields({
   user,
   onUserUpdate,
+  accountType = 'personal',
   setIsNameModalOpen,
   setIsBioModalOpen,
   setIsLocationModalOpen,
@@ -44,7 +46,7 @@ export default function ProfileEditFields({
         className="flex items-center py-4 px-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-900"
         onClick={() => setIsNameModalOpen(true)}
       >
-        <span className="text-gray-900 dark:text-white font-medium w-40">{t('profile.fullName', 'Meno')}</span>
+        <span className="text-gray-900 dark:text-white font-medium w-40">{accountType === 'business' ? 'Názov' : t('profile.fullName', 'Meno')}</span>
         <div className="flex items-center flex-1 ml-4">
           <div className="w-px h-4 bg-gray-300 dark:bg-gray-700 mr-3"></div>
           <span className="text-gray-600 dark:text-gray-300 text-sm truncate">{`${(user.first_name || '').trim()} ${(user.last_name || '').trim()}`.trim() || user.username}</span>
@@ -55,11 +57,13 @@ export default function ProfileEditFields({
         className="flex items-center py-4 px-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-900 border-t border-gray-100 dark:border-gray-800"
         onClick={() => setIsBioModalOpen(true)}
       >
-        <span className="text-gray-900 dark:text-white font-medium w-40">{t('profile.bio', 'Bio')}</span>
+        <span className="text-gray-900 dark:text-white font-medium w-40">
+          {accountType === 'business' ? 'O nás' : t('profile.bio', 'Bio')}
+        </span>
         <div className="flex items-center flex-1 ml-4">
           <div className="w-px h-4 bg-gray-300 dark:bg-gray-700 mr-3"></div>
           <span className="text-gray-600 dark:text-gray-300 text-sm truncate">
-            {t('profile.bio', 'Bio')}
+            {accountType === 'business' ? 'O nás' : t('profile.bio', 'Bio')}
           </span>
         </div>
       </div>

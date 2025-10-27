@@ -43,16 +43,19 @@ interface DesktopProps {
 
 export default function Desktop({ labels, state, setState, labelsCommon }: DesktopProps) {
   return (
-    <div className="hidden lg:block pt-4 pb-8 pl-12 text-[var(--foreground)]">
-      <h2 className="text-2xl font-semibold text-gray-800 dark:text-white mb-6 text-center -ml-[31rem]">{labels.title}</h2>
+    <div className="hidden lg:flex items-start justify-center text-[var(--foreground)]">
+      <div className="flex flex-col items-start w-full max-w-3xl mx-auto">
+        <div className="w-full ml-8 lg:ml-12">
+          <h2 className="text-2xl font-semibold text-gray-800 dark:text-white mb-6">{labels.title}</h2>
+        </div>
 
-      <div className="mt-6 mx-auto w-full max-w-[40rem]">
+      <div className="mt-6 w-full max-w-lg mx-auto">
         <MasterToggle enabled={state.master} onChange={setState.setMaster} label={labels.turnOffAll} />
       </div>
 
-      <div className="mt-8 mx-auto w-full max-w-[50rem]"><div className="border-t border-gray-200 dark:border-gray-700" /></div>
+      <div className="mt-8 w-full max-w-6xl mx-auto"><div className="border-t border-gray-200 dark:border-gray-700" /></div>
 
-      <div className="mt-6 mx-auto w-full max-w-[40rem]">
+      <div className="mt-6 w-full max-w-lg mx-auto">
         <Section
           title={labels.likes}
           description={labels.likesDesc}
@@ -66,9 +69,9 @@ export default function Desktop({ labels, state, setState, labelsCommon }: Deskt
         />
       </div>
 
-      <div className="mt-8 mx-auto w-full max-w-[50rem]"><div className="border-t border-gray-200 dark:border-gray-700" /></div>
+      <div className="mt-8 w-full max-w-6xl mx-auto"><div className="border-t border-gray-200 dark:border-gray-700" /></div>
 
-      <div className="mt-6 mx-auto w-full max-w-[40rem]">
+      <div className="mt-6 w-full max-w-lg mx-auto">
         <Section
           title={labels.likesAndComments}
           description={labels.likesAndCommentsDesc}
@@ -82,9 +85,9 @@ export default function Desktop({ labels, state, setState, labelsCommon }: Deskt
         />
       </div>
 
-      <div className="mt-8 mx-auto w-full max-w-[50rem]"><div className="border-t border-gray-200 dark:border-gray-700" /></div>
+      <div className="mt-8 w-full max-w-6xl mx-auto"><div className="border-t border-gray-200 dark:border-gray-700" /></div>
 
-      <div className="mt-6 mx-auto w-full max-w-[40rem]">
+      <div className="mt-6 w-full max-w-lg mx-auto">
         <Section
           title={labels.comments}
           description={labels.commentsDesc}
@@ -98,9 +101,9 @@ export default function Desktop({ labels, state, setState, labelsCommon }: Deskt
         />
       </div>
 
-      <div className="mt-8 mx-auto w-full max-w-[50rem]"><div className="border-t border-gray-200 dark:border-gray-700" /></div>
+      <div className="mt-8 w-full max-w-6xl mx-auto"><div className="border-t border-gray-200 dark:border-gray-700" /></div>
 
-      <div className="mt-6 mx-auto w-full max-w-[40rem]">
+      <div className="mt-6 w-full max-w-lg mx-auto">
         <Section
           title={labels.likesForComments}
           description={labels.likesForCommentsDesc}
@@ -114,9 +117,9 @@ export default function Desktop({ labels, state, setState, labelsCommon }: Deskt
         />
       </div>
 
-      <div className="mt-8 mx-auto w-full max-w-[50rem]"><div className="border-t border-gray-200 dark:border-gray-700" /></div>
+      <div className="mt-8 w-full max-w-6xl mx-auto"><div className="border-t border-gray-200 dark:border-gray-700" /></div>
 
-      <div className="mt-6 mx-auto w-full max-w-[40rem]">
+      <div className="mt-6 w-full max-w-lg mx-auto">
         <Section
           title={labels.skillRequest}
           description={labels.skillRequestDesc}
@@ -128,6 +131,7 @@ export default function Desktop({ labels, state, setState, labelsCommon }: Deskt
           onLabel={labelsCommon.on}
           icon={<svg className="w-16 h-16 text-gray-500 dark:text-gray-400 self-center flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" /></svg>}
         />
+      </div>
       </div>
     </div>
   );

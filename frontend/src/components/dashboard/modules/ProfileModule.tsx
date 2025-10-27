@@ -14,9 +14,10 @@ interface ProfileModuleProps {
   onUserUpdate?: (updatedUser: User) => void;
   onEditProfileClick?: () => void;
   isEditMode?: boolean;
+  accountType?: 'personal' | 'business';
 }
 
-export default function ProfileModule({ user, onUserUpdate, onEditProfileClick, isEditMode = false }: ProfileModuleProps) {
+export default function ProfileModule({ user, onUserUpdate, onEditProfileClick, isEditMode = false, accountType = 'personal' }: ProfileModuleProps) {
   const { t } = useLanguage();
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string>('');
@@ -110,6 +111,7 @@ export default function ProfileModule({ user, onUserUpdate, onEditProfileClick, 
               onPhotoUpload={handlePhotoUpload}
               isUploading={isUploading}
               onAvatarClick={handleAvatarClick}
+              accountType={accountType}
             />
           ) : (
             // Normal profile view
@@ -207,7 +209,10 @@ export default function ProfileModule({ user, onUserUpdate, onEditProfileClick, 
         </div>
 
         {/* Desktop layout */}
-        <div className="hidden lg:block">
+        <div className="hidden lg:flex items-start justify-center">
+          <div className="flex flex-col items-start w-full max-w-3xl mx-auto">
+            {/* Pôvodný desktop obsah */}
+            <div className="w-full">
           {isEditMode ? (
             // Edit mode - show ProfileEditFormDesktop
             <ProfileEditFormDesktop 
@@ -217,6 +222,7 @@ export default function ProfileModule({ user, onUserUpdate, onEditProfileClick, 
               onPhotoUpload={handlePhotoUpload}
               isUploadingFromParent={isUploading}
               onAvatarClick={handleAvatarClick}
+              accountType={accountType}
             />
           ) : (
             // Normal profile view
@@ -315,6 +321,8 @@ export default function ProfileModule({ user, onUserUpdate, onEditProfileClick, 
               </div>
             </>
           )}
+            </div>
+          </div>
         </div>
         
         {/* Success message */}

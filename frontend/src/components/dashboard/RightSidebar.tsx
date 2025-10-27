@@ -6,7 +6,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   UserIcon,
   BellIcon,
-  NoSymbolIcon,
   LanguageIcon,
   UserGroupIcon,
   XMarkIcon
@@ -36,11 +35,6 @@ const rightSidebarItems: RightSidebarItem[] = [
     id: 'notifications',
     label: 'Upozornenia',
     icon: BellIcon,
-  },
-  {
-    id: 'blocked',
-    label: 'Blokované',
-    icon: NoSymbolIcon,
   },
   {
     id: 'language',
@@ -87,33 +81,67 @@ export default function RightSidebar({
       </div>
 
       {/* Navigation Items */}
-      <nav className="flex-1 px-4 py-4 space-y-2">
-        {rightSidebarItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = activeItem === item.id;
-          
-          return (
-            <button
-              key={item.id}
-              onClick={() => handleItemClick(item.id)}
-              className={`w-full flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ${
-                isActive
-                  ? 'bg-purple-100 text-purple-800 border border-purple-200'
-                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-900 hover:text-gray-900 dark:hover:text-white'
-              }`}
-            >
-              <Icon className={`w-5 h-5 mr-3 ${isActive ? 'text-purple-600' : 'text-gray-500 dark:text-gray-400'}`} />
-              {(() => {
-                if (item.id === 'edit-profile') return t('rightSidebar.editProfile', item.label);
-                if (item.id === 'notifications') return t('rightSidebar.notifications', item.label);
-                if (item.id === 'blocked') return t('rightSidebar.blocked', item.label);
-                if (item.id === 'language') return t('rightSidebar.language', item.label);
-                if (item.id === 'account-type') return t('rightSidebar.accountType', item.label);
-                return item.label;
-              })()}
-            </button>
-          );
-        })}
+      <nav className="flex-1 px-4 py-4 space-y-4 overflow-y-auto">
+        {/* Použitie aplikácie */}
+        <div>
+          <h3 className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 px-3">
+            {t('rightSidebar.appUsage', 'Použitie aplikácie')}
+          </h3>
+          <div className="space-y-2">
+            {rightSidebarItems.filter(item => item.id === 'edit-profile' || item.id === 'notifications' || item.id === 'account-type').map((item) => {
+              const Icon = item.icon;
+              const isActive = activeItem === item.id;
+              
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => handleItemClick(item.id)}
+                  className={`w-full flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ${
+                    isActive
+                      ? 'bg-purple-100 text-purple-800 border border-purple-200'
+                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-900 hover:text-gray-900 dark:hover:text-white'
+                  }`}
+                >
+                  <Icon className={`w-5 h-5 mr-3 ${isActive ? 'text-purple-600' : 'text-gray-500 dark:text-gray-400'}`} />
+                  {(() => {
+                    if (item.id === 'edit-profile') return t('rightSidebar.editProfile', item.label);
+                    if (item.id === 'notifications') return t('rightSidebar.notifications', item.label);
+                    if (item.id === 'account-type') return t('rightSidebar.accountType', item.label);
+                    return item.label;
+                  })()}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Nastavenia aplikácie */}
+        <div>
+          <h3 className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 px-3">
+            {t('rightSidebar.appSettings', 'Nastavenia aplikácie')}
+          </h3>
+          <div className="space-y-2">
+            {rightSidebarItems.filter(item => item.id === 'language').map((item) => {
+              const Icon = item.icon;
+              const isActive = activeItem === item.id;
+              
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => handleItemClick(item.id)}
+                  className={`w-full flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ${
+                    isActive
+                      ? 'bg-purple-100 text-purple-800 border border-purple-200'
+                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-900 hover:text-gray-900 dark:hover:text-white'
+                  }`}
+                >
+                  <Icon className={`w-5 h-5 mr-3 ${isActive ? 'text-purple-600' : 'text-gray-500 dark:text-gray-400'}`} />
+                  {t('rightSidebar.language', item.label)}
+                </button>
+              );
+            })}
+          </div>
+        </div>
       </nav>
     </div>
   );

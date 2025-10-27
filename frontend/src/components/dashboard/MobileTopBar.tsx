@@ -16,43 +16,48 @@ export default function MobileTopBar({ onMenuClick, isEditMode = false, onBackCl
   const { t } = useLanguage();
   return (
     <div className="lg:hidden fixed top-0 left-0 right-0 z-30 bg-white dark:bg-black border-b border-gray-200 dark:border-gray-800 shadow-sm">
-      <div className="flex items-center justify-between px-3 py-0 h-12">
-        {/* Logo vľavo alebo šipka späť v edit móde alebo jazyk alebo upozornenia */}
-        {(isEditMode || activeRightItem === 'language' || activeModule === 'notifications') ? (
-          <button
-            onClick={onBackClick}
-            className="p-2 -ml-2"
-            aria-label="Späť"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
-            </svg>
-          </button>
-        ) : (
-          <div className="flex items-center">
+      <div className="grid grid-cols-3 items-center px-3 py-0 h-12">
+        {/* Ľavá strana - Logo alebo šipka späť */}
+        <div className="flex items-center h-full justify-start">
+          {(isEditMode || activeRightItem === 'language' || activeModule === 'notifications' || activeModule === 'account-type') ? (
+            <button
+              onClick={onBackClick}
+              className="p-2 -ml-2"
+              aria-label="Späť"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+              </svg>
+            </button>
+          ) : (
             <img 
               src="/Logotyp _svaply_ na fialovom pozadí.png" 
               alt="Swaply" 
-              className="h-16 w-auto"
+              className="h-12 w-auto"
             />
-          </div>
-        )}
+          )}
+        </div>
         
-        {/* Nadpis v strede (len ak je edit mode alebo jazyk alebo upozornenia) */}
-        {isEditMode && (
-          <h1 className="text-lg font-semibold text-gray-900 dark:text-white">{t('profile.editProfile', 'Upraviť profil')}</h1>
-        )}
-        {activeRightItem === 'language' && (
-          <h1 className="text-lg font-semibold text-gray-900 dark:text-white absolute left-1/2 transform -translate-x-1/2">{t('language.title', 'Jazyk')}</h1>
-        )}
-        {activeModule === 'notifications' && (
-          <h1 className="text-lg font-semibold text-gray-900 dark:text-white absolute left-1/2 transform -translate-x-1/2">{t('rightSidebar.notifications', 'Upozornenia')}</h1>
-        )}
+        {/* Stred - Nadpis */}
+        <div className="text-center flex items-center justify-center h-full">
+          {isEditMode && (
+            <h1 className="text-lg font-semibold text-gray-900 dark:text-white whitespace-nowrap">{t('profile.editProfile', 'Upraviť profil')}</h1>
+          )}
+          {activeRightItem === 'language' && (
+            <h1 className="text-lg font-semibold text-gray-900 dark:text-white">{t('language.title', 'Jazyk')}</h1>
+          )}
+          {activeModule === 'notifications' && (
+            <h1 className="text-lg font-semibold text-gray-900 dark:text-white">{t('rightSidebar.notifications', 'Upozornenia')}</h1>
+          )}
+          {activeModule === 'account-type' && (
+            <h1 className="text-lg font-semibold text-gray-900 dark:text-white">{t('rightSidebar.accountType', 'Typ účtu')}</h1>
+          )}
+        </div>
         
         {/* Pravá strana - Profil a Hamburger */}
-        <div className="flex items-center space-x-2">
-          {/* Profil ikonka - len keď nie si v profile module ani v upozorneniach */}
-          {activeModule !== 'profile' && activeModule !== 'notifications' && (
+        <div className="flex items-center justify-end h-full space-x-2">
+          {/* Profil ikonka - len keď nie si v profile module ani v upozorneniach ani v account-type */}
+          {activeModule !== 'profile' && activeModule !== 'notifications' && activeModule !== 'account-type' && (
             <button
               onClick={onProfileClick}
               className="p-1.5 rounded-lg text-gray-600 dark:text-gray-300 hover:text-purple-600 hover:bg-gray-50 dark:hover:bg-gray-900 transition-all"
@@ -62,8 +67,8 @@ export default function MobileTopBar({ onMenuClick, isEditMode = false, onBackCl
             </button>
           )}
           
-        {/* Hamburger menu - len v profile module, nie v edit móde ani v jazyk modale ani v upozorneniach */}
-        {activeModule === 'profile' && !isEditMode && activeRightItem !== 'language' && (
+          {/* Hamburger menu - len v profile module, nie v edit móde ani v jazyk modale ani v upozorneniach */}
+          {activeModule === 'profile' && !isEditMode && activeRightItem !== 'language' && (
             <button
               onClick={onMenuClick}
               className="p-1.5 rounded-lg text-gray-600 dark:text-gray-300 hover:text-purple-600 hover:bg-gray-50 dark:hover:bg-gray-900 transition-all"
