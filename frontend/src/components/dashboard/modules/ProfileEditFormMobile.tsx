@@ -32,6 +32,7 @@ export default function ProfileEditFormMobile({
   const [isBioModalOpen, setIsBioModalOpen] = useState(false);
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
+  const [isContactEmailModalOpen, setIsContactEmailModalOpen] = useState(false);
   const [isProfessionModalOpen, setIsProfessionModalOpen] = useState(false);
   const [isWebsiteModalOpen, setIsWebsiteModalOpen] = useState(false);
   const [isInstagramModalOpen, setIsInstagramModalOpen] = useState(false);
@@ -46,6 +47,7 @@ export default function ProfileEditFormMobile({
   const [location, setLocation] = useState(user.location || '');
   const [phone, setPhone] = useState(user.phone || '');
   const [phoneVisible, setPhoneVisible] = useState(user.phone_visible || false);
+  const [contactEmail, setContactEmail] = useState(user.contact_email || '');
   const [profession, setProfession] = useState(user.job_title || '');
   const [professionVisible, setProfessionVisible] = useState(user.job_title_visible || false);
   const [website, setWebsite] = useState(user.website || '');
@@ -62,6 +64,7 @@ export default function ProfileEditFormMobile({
   const [originalLocation, setOriginalLocation] = useState(user.location || '');
   const [originalPhone, setOriginalPhone] = useState(user.phone || '');
   const [originalPhoneVisible, setOriginalPhoneVisible] = useState(user.phone_visible || false);
+  const [originalContactEmail, setOriginalContactEmail] = useState(user.contact_email || '');
   const [originalProfession, setOriginalProfession] = useState(user.job_title || '');
   const [originalProfessionVisible, setOriginalProfessionVisible] = useState(user.job_title_visible || false);
   const [originalWebsite, setOriginalWebsite] = useState(user.website || '');
@@ -76,6 +79,11 @@ export default function ProfileEditFormMobile({
     setAdditionalWebsites(user.additional_websites || []);
     setOriginalAdditionalWebsites(user.additional_websites || []);
   }, [user.additional_websites]);
+
+  React.useEffect(() => {
+    setContactEmail(user.contact_email || '');
+    setOriginalContactEmail(user.contact_email || '');
+  }, [user.contact_email]);
 
   return (
     <div className="pt-2 pb-8">
@@ -100,6 +108,7 @@ export default function ProfileEditFormMobile({
         setIsBioModalOpen={setIsBioModalOpen}
         setIsLocationModalOpen={setIsLocationModalOpen}
         setIsContactModalOpen={setIsContactModalOpen}
+        setIsContactEmailModalOpen={setIsContactEmailModalOpen}
         setIsProfessionModalOpen={setIsProfessionModalOpen}
         setIsWebsiteModalOpen={setIsWebsiteModalOpen}
         setIsInstagramModalOpen={setIsInstagramModalOpen}
@@ -116,6 +125,7 @@ export default function ProfileEditFormMobile({
         isBioModalOpen={isBioModalOpen}
         isLocationModalOpen={isLocationModalOpen}
         isContactModalOpen={isContactModalOpen}
+        isContactEmailModalOpen={isContactEmailModalOpen}
         isProfessionModalOpen={isProfessionModalOpen}
         isWebsiteModalOpen={isWebsiteModalOpen}
         isInstagramModalOpen={isInstagramModalOpen}
@@ -128,6 +138,7 @@ export default function ProfileEditFormMobile({
         location={location}
         phone={phone}
         phoneVisible={phoneVisible}
+        contactEmail={contactEmail}
         profession={profession}
         professionVisible={professionVisible}
         website={website}
@@ -142,6 +153,7 @@ export default function ProfileEditFormMobile({
         originalLocation={originalLocation}
         originalPhone={originalPhone}
         originalPhoneVisible={originalPhoneVisible}
+        originalContactEmail={originalContactEmail}
         originalProfession={originalProfession}
         originalProfessionVisible={originalProfessionVisible}
         originalWebsite={originalWebsite}
@@ -170,6 +182,8 @@ export default function ProfileEditFormMobile({
         setOriginalLocation={setOriginalLocation}
         setOriginalPhone={setOriginalPhone}
         setOriginalPhoneVisible={setOriginalPhoneVisible}
+        setContactEmail={setContactEmail}
+        setOriginalContactEmail={setOriginalContactEmail}
         setOriginalProfession={setOriginalProfession}
         setOriginalProfessionVisible={setOriginalProfessionVisible}
         setOriginalWebsite={setOriginalWebsite}
@@ -182,6 +196,7 @@ export default function ProfileEditFormMobile({
         setIsBioModalOpen={setIsBioModalOpen}
         setIsLocationModalOpen={setIsLocationModalOpen}
         setIsContactModalOpen={setIsContactModalOpen}
+        setIsContactEmailModalOpen={setIsContactEmailModalOpen}
         setIsProfessionModalOpen={setIsProfessionModalOpen}
         setIsWebsiteModalOpen={setIsWebsiteModalOpen}
         setIsInstagramModalOpen={setIsInstagramModalOpen}

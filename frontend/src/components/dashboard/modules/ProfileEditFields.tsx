@@ -15,6 +15,7 @@ interface ProfileEditFieldsProps {
   setIsBioModalOpen: (value: boolean) => void;
   setIsLocationModalOpen: (value: boolean) => void;
   setIsContactModalOpen: (value: boolean) => void;
+  setIsContactEmailModalOpen: (value: boolean) => void;
   setIsProfessionModalOpen: (value: boolean) => void;
   setIsWebsiteModalOpen: (value: boolean) => void;
   setIsInstagramModalOpen: (value: boolean) => void;
@@ -31,6 +32,7 @@ export default function ProfileEditFields({
   setIsBioModalOpen,
   setIsLocationModalOpen,
   setIsContactModalOpen,
+  setIsContactEmailModalOpen,
   setIsProfessionModalOpen,
   setIsWebsiteModalOpen,
   setIsInstagramModalOpen,
@@ -134,7 +136,7 @@ export default function ProfileEditFields({
       {accountType === 'business' && (
         <div 
           className="flex items-center py-4 px-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-900 border-t border-gray-100 dark:border-gray-800"
-          onClick={() => setIsContactEmailModalOpen && setIsContactEmailModalOpen(true)}
+          onClick={() => setIsContactEmailModalOpen(true)}
         >
           <span className="text-gray-900 dark:text-white font-medium w-40">Email</span>
           <div className="flex items-center flex-1 ml-4">

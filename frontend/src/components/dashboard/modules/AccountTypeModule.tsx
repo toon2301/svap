@@ -16,7 +16,6 @@ interface AccountTypeModuleProps {
 export default function AccountTypeModule({ accountType, setAccountType, setIsAccountTypeModalOpen, setIsPersonalAccountModalOpen }: AccountTypeModuleProps) {
   const { t } = useLanguage();
   const [isMobileModalOpen, setIsMobileModalOpen] = useState(false);
-  const [isPersonalModalOpen, setIsPersonalModalOpen] = useState(false);
 
   return (
     <div className="text-[var(--foreground)]">
@@ -116,7 +115,7 @@ export default function AccountTypeModule({ accountType, setAccountType, setIsAc
                     <button 
                       onClick={() => {
                         setIsMobileModalOpen(false);
-                        setIsPersonalModalOpen(true);
+                        setIsPersonalAccountModalOpen(true);
                       }} 
                       className={`w-full py-4 px-6 rounded-lg transition-colors ${
                         accountType === 'personal' 

@@ -14,6 +14,7 @@ interface ProfileEditModalsProps {
   isBioModalOpen: boolean;
   isLocationModalOpen: boolean;
   isContactModalOpen: boolean;
+  isContactEmailModalOpen: boolean;
   isProfessionModalOpen: boolean;
   isWebsiteModalOpen: boolean;
   isInstagramModalOpen: boolean;
@@ -28,6 +29,7 @@ interface ProfileEditModalsProps {
   location: string;
   phone: string;
   phoneVisible: boolean;
+  contactEmail: string;
   profession: string;
   professionVisible: boolean;
   website: string;
@@ -44,6 +46,7 @@ interface ProfileEditModalsProps {
   originalLocation: string;
   originalPhone: string;
   originalPhoneVisible: boolean;
+  originalContactEmail: string;
   originalProfession: string;
   originalProfessionVisible: boolean;
   originalWebsite: string;
@@ -60,6 +63,7 @@ interface ProfileEditModalsProps {
   setLocation: (value: string) => void;
   setPhone: (value: string) => void;
   setPhoneVisible: (value: boolean) => void;
+  setContactEmail: (value: string) => void;
   setProfession: (value: string) => void;
   setProfessionVisible: (value: boolean) => void;
   setWebsite: (value: string) => void;
@@ -76,6 +80,7 @@ interface ProfileEditModalsProps {
   setOriginalLocation: (value: string) => void;
   setOriginalPhone: (value: string) => void;
   setOriginalPhoneVisible: (value: boolean) => void;
+  setOriginalContactEmail: (value: string) => void;
   setOriginalProfession: (value: string) => void;
   setOriginalProfessionVisible: (value: boolean) => void;
   setOriginalWebsite: (value: string) => void;
@@ -90,6 +95,7 @@ interface ProfileEditModalsProps {
   setIsBioModalOpen: (value: boolean) => void;
   setIsLocationModalOpen: (value: boolean) => void;
   setIsContactModalOpen: (value: boolean) => void;
+  setIsContactEmailModalOpen: (value: boolean) => void;
   setIsProfessionModalOpen: (value: boolean) => void;
   setIsWebsiteModalOpen: (value: boolean) => void;
   setIsInstagramModalOpen: (value: boolean) => void;
@@ -105,6 +111,7 @@ export default function ProfileEditModals({
   isBioModalOpen,
   isLocationModalOpen,
   isContactModalOpen,
+  isContactEmailModalOpen,
   isProfessionModalOpen,
   isWebsiteModalOpen,
   isInstagramModalOpen,
@@ -117,6 +124,7 @@ export default function ProfileEditModals({
   location,
   phone,
   phoneVisible,
+  contactEmail,
   profession,
   professionVisible,
   website,
@@ -131,6 +139,7 @@ export default function ProfileEditModals({
   originalLocation,
   originalPhone,
   originalPhoneVisible,
+  originalContactEmail,
   originalProfession,
   originalProfessionVisible,
   originalWebsite,
@@ -145,6 +154,7 @@ export default function ProfileEditModals({
   setLocation,
   setPhone,
   setPhoneVisible,
+  setContactEmail,
   setProfession,
   setProfessionVisible,
   setWebsite,
@@ -159,6 +169,7 @@ export default function ProfileEditModals({
   setOriginalLocation,
   setOriginalPhone,
   setOriginalPhoneVisible,
+  setOriginalContactEmail,
   setOriginalProfession,
   setOriginalProfessionVisible,
   setOriginalWebsite,
@@ -171,6 +182,7 @@ export default function ProfileEditModals({
   setIsBioModalOpen,
   setIsLocationModalOpen,
   setIsContactModalOpen,
+  setIsContactEmailModalOpen,
   setIsProfessionModalOpen,
   setIsWebsiteModalOpen,
   setIsInstagramModalOpen,
@@ -265,6 +277,26 @@ export default function ProfileEditModals({
     setPhone(originalPhone);
     setPhoneVisible(originalPhoneVisible);
     setIsContactModalOpen(false);
+  };
+
+  const handleSaveContactEmail = async () => {
+    try {
+      const response = await api.patch('/auth/profile/', {
+        contact_email: contactEmail,
+      });
+      setOriginalContactEmail(contactEmail);
+      setIsContactEmailModalOpen(false);
+      if (onUserUpdate && response.data?.user) {
+        onUserUpdate(response.data.user);
+      }
+    } catch (error) {
+      console.error('Chyba pri ukladaní kontaktného emailu:', error);
+    }
+  };
+
+  const handleCancelContactEmail = () => {
+    setContactEmail(originalContactEmail);
+    setIsContactEmailModalOpen(false);
   };
 
   const handleSaveProfession = async () => {
@@ -635,6 +667,63 @@ export default function ProfileEditModals({
               <div className="mt-3">
                 <p className="text-xs text-gray-500 dark:text-gray-400">
                   {t('profile.contactDescription', 'Zadajte svoje telefónne číslo. Viditeľnosť kontaktu môžete nastaviť pomocou prepínača v hlavnom zobrazení.')}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal pre úpravu kontaktného emailu */}
+      {isContactEmailModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex flex-col">
+          {/* Horná lišta */}
+          <div className="bg-white dark:bg-black border-b border-gray-200 dark:border-gray-800 px-4 py-3 flex items-center justify-between">
+            {/* Šipka späť */}
+            <button
+              onClick={handleCancelContactEmail}
+              className="p-2 -ml-2"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+              </svg>
+            </button>
+            
+            {/* Nadpis v strede */}
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Email</h2>
+            
+            {/* Fajka (uložiť) */}
+            <button
+              onClick={handleSaveContactEmail}
+              className="p-2 -mr-2"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+              </svg>
+            </button>
+          </div>
+          
+          {/* Obsah modalu */}
+          <div className="flex-1 bg-white dark:bg-black p-4">
+            <div>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  value={contactEmail}
+                  onChange={(e) => setContactEmail(e.target.value)}
+                  maxLength={150}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-1 focus:ring-purple-300 focus:border-transparent"
+                  placeholder="Pridať email"
+                />
+              </div>
+              
+              {/* Popisný text */}
+              <div className="mt-3">
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Zadajte kontaktný email pre vašu firmu alebo organizáciu.
                 </p>
               </div>
             </div>
