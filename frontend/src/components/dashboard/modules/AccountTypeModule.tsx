@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { ChevronRightIcon } from '@heroicons/react/24/outline';
 
+// Falošná zmena pre push
+
 interface AccountTypeModuleProps {
   accountType: 'personal' | 'business';
   setAccountType: (type: 'personal' | 'business') => void;
