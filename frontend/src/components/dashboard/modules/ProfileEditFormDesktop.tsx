@@ -37,6 +37,8 @@ export default function ProfileEditFormDesktop({
   const [profession, setProfession] = useState(user.job_title || '');
   const [professionVisible, setProfessionVisible] = useState(user.job_title_visible || false);
   const [website, setWebsite] = useState(user.website || '');
+  const [additionalWebsites, setAdditionalWebsites] = useState<string[]>(user.additional_websites || []);
+  const [contactEmail, setContactEmail] = useState(user.contact_email || '');
   const [gender, setGender] = useState(user.gender || '');
   const [isUploading, setIsUploading] = useState(false);
   const [isActionsOpen, setIsActionsOpen] = useState(false);
@@ -53,8 +55,10 @@ export default function ProfileEditFormDesktop({
     setProfession(user.job_title || '');
     setProfessionVisible(user.job_title_visible || false);
     setWebsite(user.website || '');
+    setAdditionalWebsites(user.additional_websites || []);
+    setContactEmail(user.contact_email || '');
     setGender(user.gender || '');
-  }, [user.first_name, user.bio, user.location, user.phone, user.phone_visible, user.job_title, user.job_title_visible, user.website, user.gender]);
+  }, [user.first_name, user.bio, user.location, user.phone, user.phone_visible, user.job_title, user.job_title_visible, user.website, user.additional_websites, user.contact_email, user.gender]);
 
   // Save funkcie
   const handleFullNameSave = async () => {
@@ -200,6 +204,45 @@ export default function ProfileEditFormDesktop({
     }
   };
 
+  const handleAdditionalWebsitesSave = async () => {
+    // Filtrovať prázdne hodnoty a porovnať s aktuálnymi hodnotami
+    const filteredWebsites = additionalWebsites.filter(site => site.trim() !== '');
+    const currentWebsites = user.additional_websites || [];
+    
+    // Porovnať arrays
+    if (JSON.stringify(filteredWebsites) === JSON.stringify(currentWebsites)) return;
+    
+    try {
+      const response = await api.patch('/auth/profile/', {
+        additional_websites: filteredWebsites
+      });
+      
+      if (onUserUpdate && response.data.user) {
+        onUserUpdate(response.data.user);
+      }
+    } catch (error: any) {
+      console.error('Error saving additional websites:', error);
+      setAdditionalWebsites(user.additional_websites || []);
+    }
+  };
+
+  const handleContactEmailSave = async () => {
+    if (contactEmail.trim() === user.contact_email) return;
+    
+    try {
+      const response = await api.patch('/auth/profile/', {
+        contact_email: contactEmail.trim()
+      });
+      
+      if (onUserUpdate && response.data.user) {
+        onUserUpdate(response.data.user);
+      }
+    } catch (error: any) {
+      console.error('Error saving contact email:', error);
+      setContactEmail(user.contact_email || '');
+    }
+  };
+
 
   const handleGenderChange = async (value: string) => {
     if (value === user.gender) return;
@@ -322,7 +365,7 @@ export default function ProfileEditFormDesktop({
                   {user.phone}
                 </div>
               )}
-              {user.job_title && (
+              {accountType === 'personal' && user.job_title && (
                 <div className="text-gray-600 dark:text-gray-300 text-sm flex items-center gap-1">
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-4">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 0 0 .75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 0 0-3.413-.387m4.5 8.006c-.194.165-.42.295-.673.38A23.978 23.978 0 0 1 12 15.75c-2.648 0-5.195-.429-7.577-1.22a2.016 2.016 0 0 1-.673-.38m0 0A2.18 2.18 0 0 1 3 12.489V8.706c0-1.081.768-2.015 1.837-2.175a48.111 48.111 0 0 1 3.413-.387m7.5 0V5.25A2.25 2.25 0 0 0 13.5 3h-3a2.25 2.25 0 0 0-2.25 2.25v.894m7.5 0a48.667 48.667 0 0 0-7.5 0M12 12.75h.008v.008H12v-.008Z" />
@@ -346,7 +389,7 @@ export default function ProfileEditFormDesktop({
             {/* Meno (celé meno v jednom vstupe) */}
             <div className="mb-4">
               <label className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
-                {accountType === 'business' ? 'Názov' : t('profile.fullName', 'Meno')}
+                {accountType === 'business' ? 'Meno / Názov' : t('profile.fullName', 'Meno')}
               </label>
               <input
                 id="fullName"
@@ -382,7 +425,7 @@ export default function ProfileEditFormDesktop({
             {/* Bio */}
             <div className="mb-4">
               <label className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
-                {accountType === 'business' ? 'O nás' : t('profile.bio', 'Bio')}
+                {accountType === 'business' ? 'Bio / O nás' : t('profile.bio', 'Bio')}
               </label>
               <div className="relative">
                 <textarea
@@ -410,7 +453,7 @@ export default function ProfileEditFormDesktop({
             {/* Lokalita */}
             <div className="mb-4">
               <label className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
-                {t('profile.location', 'Lokalita')}
+                {accountType === 'business' ? 'Lokalita / Sídlo' : t('profile.location', 'Lokalita')}
               </label>
               <input
                 id="location"
@@ -467,11 +510,36 @@ export default function ProfileEditFormDesktop({
               </div>
             </div>
 
-            {/* Profesia */}
-            <div className="mb-4">
-              <label className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
-                {t('profile.profession', 'Profesia')}
-              </label>
+            {/* Kontaktný Email - len pre firemný účet */}
+            {accountType === 'business' && (
+              <div className="mb-4">
+                <label className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Email
+                </label>
+                <input
+                  id="contactEmail"
+                  type="email"
+                  value={contactEmail}
+                  onChange={(e) => setContactEmail(e.target.value)}
+                  onBlur={handleContactEmailSave}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      handleContactEmailSave();
+                    }
+                  }}
+                  maxLength={255}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-1 focus:ring-purple-300 focus:border-transparent"
+                  placeholder="kontakt@firma.sk"
+                />
+              </div>
+            )}
+
+            {/* Profesia - len pre osobný účet */}
+            {accountType === 'personal' && (
+              <div className="mb-4">
+                <label className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  {t('profile.profession', 'Profesia')}
+                </label>
               <input
                 id="profession"
                 type="text"
@@ -504,27 +572,96 @@ export default function ProfileEditFormDesktop({
                 <span className="text-xs text-gray-500 dark:text-gray-400">{t('profile.showProfessionPublic', 'Zobraziť profesiu verejne')}</span>
               </div>
             </div>
+            )}
 
             {/* Web */}
             <div className="mb-4">
               <label className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
                 {t('profile.website', 'Web')}
               </label>
-              <input
-                id="website"
-                type="url"
-                value={website}
-                onChange={(e) => setWebsite(e.target.value)}
-                onBlur={handleWebsiteSave}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    handleWebsiteSave();
-                  }
-                }}
-                maxLength={255}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-1 focus:ring-purple-300 focus:border-transparent"
-                placeholder="https://example.com"
-              />
+              
+              {/* Hlavný web s pluskom */}
+              <div className="relative mb-2">
+                <input
+                  id="website"
+                  type="url"
+                  value={website}
+                  onChange={(e) => setWebsite(e.target.value)}
+                  onBlur={handleWebsiteSave}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      handleWebsiteSave();
+                    }
+                  }}
+                  maxLength={255}
+                  className="w-full px-3 py-2 pr-12 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-1 focus:ring-purple-300 focus:border-transparent"
+                  placeholder="https://example.com"
+                />
+                <button
+                  type="button"
+                  onClick={() => setAdditionalWebsites([...additionalWebsites, ''])}
+                  className="absolute right-2 top-2 bottom-2 flex items-center justify-center w-8 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                  </svg>
+                </button>
+              </div>
+              
+              {/* Dodatočné weby */}
+              {additionalWebsites.map((additionalWebsite, index) => (
+                <div key={index} className="relative mb-2">
+                  <input
+                    type="url"
+                    value={additionalWebsite}
+                    onChange={(e) => {
+                      const newWebsites = [...additionalWebsites];
+                      newWebsites[index] = e.target.value;
+                      setAdditionalWebsites(newWebsites);
+                    }}
+                    onBlur={handleAdditionalWebsitesSave}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        handleAdditionalWebsitesSave();
+                      }
+                    }}
+                    maxLength={255}
+                    className="w-full px-3 py-2 pr-12 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-1 focus:ring-purple-300 focus:border-transparent"
+                    placeholder="https://example.com"
+                  />
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const newWebsites = additionalWebsites.filter((_, i) => i !== index);
+                      setAdditionalWebsites(newWebsites);
+                      
+                      // Uložiť zmeny ihneď po odstránení s novými hodnotami
+                      const filteredWebsites = newWebsites.filter(site => site.trim() !== '');
+                      const currentWebsites = user.additional_websites || [];
+                      
+                      if (JSON.stringify(filteredWebsites) !== JSON.stringify(currentWebsites)) {
+                        try {
+                          const response = await api.patch('/auth/profile/', {
+                            additional_websites: filteredWebsites
+                          });
+                          
+                          if (onUserUpdate && response.data.user) {
+                            onUserUpdate(response.data.user);
+                          }
+                        } catch (error: any) {
+                          console.error('Error saving additional websites:', error);
+                          setAdditionalWebsites(user.additional_websites || []);
+                        }
+                      }
+                    }}
+                    className="absolute right-2 top-2 bottom-2 flex items-center justify-center w-8 text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 transition-colors"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              ))}
             </div>
 
             {/* Sociálne siete */}

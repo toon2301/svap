@@ -32,6 +32,7 @@ interface SidebarProps {
   isOpen?: boolean;
   onClose?: () => void;
   onLanguageClick?: () => void;
+  onAccountTypeClick?: () => void;
 }
 
 const sidebarItems: SidebarItem[] = [
@@ -69,7 +70,8 @@ export default function Sidebar({
   isMobile = false, 
   isOpen = false, 
   onClose,
-  onLanguageClick
+  onLanguageClick,
+  onAccountTypeClick
 }: SidebarProps) {
   const { t } = useLanguage();
   const { theme, toggleTheme } = useTheme();
@@ -77,6 +79,15 @@ export default function Sidebar({
     // Pre jazyk otvor pravý sidebar namiesto zmeny hlavného modulu
     if (itemId === 'language' && onLanguageClick) {
       onLanguageClick();
+      if (isMobile && onClose) {
+        onClose();
+      }
+      return;
+    }
+    
+    // Pre account-type otvor pravý sidebar namiesto zmeny hlavného modulu
+    if (itemId === 'account-type' && onAccountTypeClick) {
+      onAccountTypeClick();
       if (isMobile && onClose) {
         onClose();
       }
@@ -166,6 +177,26 @@ export default function Sidebar({
                 <div className="text-left">
                   <div className="text-sm font-semibold text-gray-900 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
                     {t('rightSidebar.notifications', 'Upozornenia')}
+                  </div>
+                </div>
+              </div>
+              <ChevronRightIcon className="w-5 h-5 text-gray-400 dark:text-gray-500 group-hover:text-purple-500 group-hover:translate-x-1 transition-all duration-200" />
+            </button>
+          </div>
+
+          {/* Účet */}
+          <div className="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-lg p-2 mb-4 border border-purple-100 dark:border-purple-800/30">
+            <button
+              onClick={() => handleItemClick('account-type')}
+              className="w-full flex items-center justify-between group"
+            >
+              <div className="flex items-center">
+                <div className="mr-3 group-hover:scale-110 transition-transform duration-200">
+                  <UserIcon className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                </div>
+                <div className="text-left">
+                  <div className="text-sm font-semibold text-gray-900 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
+                    {t('rightSidebar.account', 'Účet')}
                   </div>
                 </div>
               </div>

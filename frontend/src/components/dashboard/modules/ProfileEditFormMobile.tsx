@@ -49,6 +49,7 @@ export default function ProfileEditFormMobile({
   const [profession, setProfession] = useState(user.job_title || '');
   const [professionVisible, setProfessionVisible] = useState(user.job_title_visible || false);
   const [website, setWebsite] = useState(user.website || '');
+  const [additionalWebsites, setAdditionalWebsites] = useState<string[]>(user.additional_websites || []);
   const [instagram, setInstagram] = useState(user.instagram || '');
   const [facebook, setFacebook] = useState(user.facebook || '');
   const [linkedin, setLinkedin] = useState(user.linkedin || '');
@@ -64,10 +65,17 @@ export default function ProfileEditFormMobile({
   const [originalProfession, setOriginalProfession] = useState(user.job_title || '');
   const [originalProfessionVisible, setOriginalProfessionVisible] = useState(user.job_title_visible || false);
   const [originalWebsite, setOriginalWebsite] = useState(user.website || '');
+  const [originalAdditionalWebsites, setOriginalAdditionalWebsites] = useState<string[]>(user.additional_websites || []);
   const [originalInstagram, setOriginalInstagram] = useState(user.instagram || '');
   const [originalFacebook, setOriginalFacebook] = useState(user.facebook || '');
   const [originalLinkedin, setOriginalLinkedin] = useState(user.linkedin || '');
   const [originalGender, setOriginalGender] = useState(user.gender || '');
+
+  // Update states when user prop changes
+  React.useEffect(() => {
+    setAdditionalWebsites(user.additional_websites || []);
+    setOriginalAdditionalWebsites(user.additional_websites || []);
+  }, [user.additional_websites]);
 
   return (
     <div className="pt-2 pb-8">
@@ -123,6 +131,7 @@ export default function ProfileEditFormMobile({
         profession={profession}
         professionVisible={professionVisible}
         website={website}
+        additionalWebsites={additionalWebsites}
         instagram={instagram}
         facebook={facebook}
         linkedin={linkedin}
@@ -136,6 +145,7 @@ export default function ProfileEditFormMobile({
         originalProfession={originalProfession}
         originalProfessionVisible={originalProfessionVisible}
         originalWebsite={originalWebsite}
+        originalAdditionalWebsites={originalAdditionalWebsites}
         originalInstagram={originalInstagram}
         originalFacebook={originalFacebook}
         originalLinkedin={originalLinkedin}
@@ -149,6 +159,7 @@ export default function ProfileEditFormMobile({
         setProfession={setProfession}
         setProfessionVisible={setProfessionVisible}
         setWebsite={setWebsite}
+        setAdditionalWebsites={setAdditionalWebsites}
         setInstagram={setInstagram}
         setFacebook={setFacebook}
         setLinkedin={setLinkedin}
@@ -162,6 +173,7 @@ export default function ProfileEditFormMobile({
         setOriginalProfession={setOriginalProfession}
         setOriginalProfessionVisible={setOriginalProfessionVisible}
         setOriginalWebsite={setOriginalWebsite}
+        setOriginalAdditionalWebsites={setOriginalAdditionalWebsites}
         setOriginalInstagram={setOriginalInstagram}
         setOriginalFacebook={setOriginalFacebook}
         setOriginalLinkedin={setOriginalLinkedin}

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { User } from '../../../types';
 import UserAvatar from './profile/UserAvatar';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -24,6 +25,7 @@ export default function ProfileModule({ user, onUserUpdate, onEditProfileClick, 
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [isActionsOpen, setIsActionsOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [isAllWebsitesModalOpen, setIsAllWebsitesModalOpen] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -150,35 +152,70 @@ export default function ProfileModule({ user, onUserUpdate, onEditProfileClick, 
                         {user.phone}
                       </p>
                     )}
-                    {/* Profesia */}
-                    {user.job_title && (
+                    {/* Kontaktný Email - len pre firemný účet */}
+                    {accountType === 'business' && user.contact_email && (
                       <p className="text-gray-600 dark:text-gray-300 text-sm flex items-center gap-1">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-3">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 0 0 .75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 0 0-3.413-.387m4.5 8.006c-.194.165-.42.295-.673.38A23.978 23.978 0 0 1 12 15.75c-2.648 0-5.195-.429-7.577-1.22a2.016 2.016 0 0 1-.673-.38m0 0A2.18 2.18 0 0 1 3 12.489V8.706c0-1.081.768-2.015 1.837-2.175a48.111 48.111 0 0 1 3.413-.387m7.5 0V5.25A2.25 2.25 0 0 0 13.5 3h-3a2.25 2.25 0 0 0-2.25 2.25v.894m7.5 0a48.667 48.667 0 0 0-7.5 0M12 12.75h.008v.008H12v-.008Z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
                         </svg>
-                        {user.job_title}
+                        {user.contact_email}
                       </p>
                     )}
+                        {/* Profesia - len pre osobný účet */}
+                        {accountType === 'personal' && user.job_title && (
+                          <p className="text-gray-600 dark:text-gray-300 text-sm flex items-center gap-1">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-3">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 0 0 .75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 0 0-3.413-.387m4.5 8.006c-.194.165-.42.295-.673.38A23.978 23.978 0 0 1 12 15.75c-2.648 0-5.195-.429-7.577-1.22a2.016 2.016 0 0 1-.673-.38m0 0A2.18 2.18 0 0 1 3 12.489V8.706c0-1.081.768-2.015 1.837-2.175a48.111 48.111 0 0 1 3.413-.387m7.5 0V5.25A2.25 2.25 0 0 0 13.5 3h-3a2.25 2.25 0 0 0-2.25 2.25v.894m7.5 0a48.667 48.667 0 0 0-7.5 0M12 12.75h.008v.008H12v-.008Z" />
+                            </svg>
+                            {user.job_title}
+                          </p>
+                        )}
                   </div>
                 </div>
                 {/* Webová stránka úplne z ľavej strany NAD buttony */}
-                {user.website && (
-                  <div className="mt-3">
-                    <p className="text-gray-600 dark:text-gray-300 text-sm flex items-center gap-1">
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-3">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
-                      </svg>
-                      <a 
-                        href={user.website} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="text-blue-600 hover:text-blue-400 transition-colors"
-                      >
-                        {user.website}
-                      </a>
-                    </p>
-                  </div>
-                )}
+                {(() => {
+                  const totalWebsites = (user.website ? 1 : 0) + (user.additional_websites ? user.additional_websites.length : 0);
+                  const additionalCount = totalWebsites - 1;
+                  
+                  if (totalWebsites === 0) return null;
+                  
+                  // Zobraz prvý dostupný web
+                  const firstWebsite = user.website || (user.additional_websites && user.additional_websites[0]);
+                  
+                  return (
+                    <div className="mt-3">
+                      <p className="text-gray-600 dark:text-gray-300 text-sm flex items-center gap-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-3 flex-shrink-0">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
+                        </svg>
+                        {additionalCount > 0 ? (
+                          // Viac webov - celý text je klikateľný na modal
+                          <span 
+                            className="flex items-center flex-wrap cursor-pointer"
+                            onClick={() => setIsAllWebsitesModalOpen(true)}
+                          >
+                            <span className="text-blue-600 hover:text-blue-400 transition-colors truncate max-w-[200px]">
+                              {firstWebsite}
+                            </span>
+                            <span className="text-blue-600 dark:text-blue-400 hover:text-blue-400 dark:hover:text-blue-300 ml-1 whitespace-nowrap">
+                              a ďalší ({additionalCount})
+                            </span>
+                          </span>
+                        ) : (
+                          // Jeden web - klikateľný odkaz
+                          <a 
+                            href={firstWebsite} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:text-blue-400 transition-colors truncate max-w-[200px]"
+                          >
+                            {firstWebsite}
+                          </a>
+                        )}
+                      </p>
+                    </div>
+                  );
+                })()}
                 {/* Tlačidlá POD webovou stránkou */}
                 <div className="flex gap-2 mt-2">
                   <button
@@ -263,8 +300,17 @@ export default function ProfileModule({ user, onUserUpdate, onEditProfileClick, 
                             {user.phone}
                           </p>
                         )}
-                        {/* Profesia */}
-                        {user.job_title && (
+                        {/* Kontaktný Email - len pre firemný účet */}
+                        {accountType === 'business' && user.contact_email && (
+                          <p className="text-gray-600 dark:text-gray-300 text-sm flex items-center gap-1">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-4 text-gray-500 dark:text-gray-400">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
+                            </svg>
+                            {user.contact_email}
+                          </p>
+                        )}
+                        {/* Profesia - len pre osobný účet */}
+                        {accountType === 'personal' && user.job_title && (
                           <p className="text-gray-600 dark:text-gray-300 text-sm flex items-center gap-1">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-4 text-gray-500 dark:text-gray-400">
                               <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 0 0 .75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 0 0-3.413-.387m4.5 8.006c-.194.165-.42.295-.673.38A23.978 23.978 0 0 1 12 15.75c-2.648 0-5.195-.429-7.577-1.22a2.016 2.016 0 0 1-.673-.38m0 0A2.18 2.18 0 0 1 3 12.489V8.706c0-1.081.768-2.015 1.837-2.175a48.111 48.111 0 0 1 3.413-.387m7.5 0V5.25A2.25 2.25 0 0 0 13.5 3h-3a2.25 2.25 0 0 0-2.25 2.25v.894m7.5 0a48.667 48.667 0 0 0-7.5 0M12 12.75h.008v.008H12v-.008Z" />
@@ -272,22 +318,44 @@ export default function ProfileModule({ user, onUserUpdate, onEditProfileClick, 
                             {user.job_title}
                           </p>
                         )}
-                        {/* Webová stránka */}
-                        {user.website && (
-                          <p className="text-gray-600 dark:text-gray-300 text-sm flex items-center gap-1">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-4 text-gray-500 dark:text-gray-400">
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
-                            </svg>
-                            <a 
-                              href={user.website} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="text-blue-600 hover:text-blue-800 transition-colors dark:text-blue-400 dark:hover:text-blue-300"
-                            >
-                              {user.website}
-                            </a>
-                          </p>
-                        )}
+                        {/* Webová stránka + "a ďalší" (desktop) */}
+                        {(() => {
+                          const totalWebsites = (user.website ? 1 : 0) + (user.additional_websites ? user.additional_websites.length : 0);
+                          const additionalCount = totalWebsites - 1;
+                          if (totalWebsites === 0) return null;
+                          const firstWebsite = user.website || (user.additional_websites && user.additional_websites[0]);
+                          return (
+                            <p className="text-gray-600 dark:text-gray-300 text-sm flex items-center gap-1">
+                              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-4 text-gray-500 dark:text-gray-400 flex-shrink-0">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
+                              </svg>
+                              {additionalCount > 0 ? (
+                                // Viac webov - celý text je klikateľný na modal
+                                <span 
+                                  className="flex items-center flex-wrap cursor-pointer"
+                                  onClick={() => setIsAllWebsitesModalOpen(true)}
+                                >
+                                  <span className="text-blue-600 hover:text-blue-800 transition-colors dark:text-blue-400 dark:hover:text-blue-300 truncate max-w-[300px]">
+                                    {firstWebsite}
+                                  </span>
+                                  <span className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 ml-1 whitespace-nowrap">
+                                    a ďalší ({additionalCount})
+                                  </span>
+                                </span>
+                              ) : (
+                                // Jeden web - klikateľný odkaz
+                                <a 
+                                  href={firstWebsite as string} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="text-blue-600 hover:text-blue-800 transition-colors dark:text-blue-400 dark:hover:text-blue-300 truncate max-w-[300px]"
+                                >
+                                  {firstWebsite}
+                                </a>
+                              )}
+                            </p>
+                          );
+                        })()}
                       </div>
                     </div>
                     {/* Tlačidlá pod fotkou */}
@@ -389,6 +457,72 @@ export default function ProfileModule({ user, onUserUpdate, onEditProfileClick, 
             </div>
           </div>
         </div>
+      )}
+      
+      {/* Modal pre všetky weby */}
+      {isAllWebsitesModalOpen && mounted && createPortal(
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4" onClick={() => setIsAllWebsitesModalOpen(false)}>
+          <div className="bg-[var(--background)] text-[var(--foreground)] border border-[var(--border)] rounded-2xl shadow-xl max-w-lg w-full p-0 overflow-hidden" onClick={(e) => e.stopPropagation()}>
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+              <h2 className="text-lg font-medium text-[var(--foreground)]">
+                Odkazy
+              </h2>
+              <button
+                onClick={() => setIsAllWebsitesModalOpen(false)}
+                className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 transition-colors"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            {/* Content */}
+            <div className="p-2">
+              {/* Hlavný web */}
+              {user.website && (
+                <a 
+                  href={user.website} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors group"
+                >
+                  <div className="w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center flex-shrink-0">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 text-purple-600 dark:text-purple-400">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
+                    </svg>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[var(--foreground)] font-medium text-sm truncate">{user.website}</div>
+                  </div>
+                </a>
+              )}
+              
+              {/* Dodatočné weby */}
+              {user.additional_websites && user.additional_websites.map((website, index) => (
+                <a 
+                  key={index}
+                  href={website} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 p-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors group"
+                >
+                  <div className="w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center flex-shrink-0">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 text-purple-600 dark:text-purple-400">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
+                    </svg>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[var(--foreground)] font-medium text-sm truncate">{website}</div>
+                  </div>
+                </a>
+              ))}
+            </div>
+            
+          </div>
+        </div>,
+        document.body
       )}
     </>
   );

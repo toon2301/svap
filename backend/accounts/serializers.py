@@ -185,8 +185,8 @@ class UserProfileSerializer(serializers.ModelSerializer):
         model = User
         fields = [
             'id', 'username', 'email', 'first_name', 'last_name',
-            'user_type', 'phone', 'phone_visible', 'bio', 'avatar', 'avatar_url', 'location',
-            'job_title', 'job_title_visible', 'company_name', 'website', 'linkedin', 'facebook',
+            'user_type', 'phone', 'phone_visible', 'contact_email', 'bio', 'avatar', 'avatar_url', 'location',
+            'job_title', 'job_title_visible', 'company_name', 'website', 'additional_websites', 'linkedin', 'facebook',
             'instagram', 'is_verified', 'is_public', 'created_at',
             'updated_at', 'profile_completeness', 'birth_date', 'gender'
         ]

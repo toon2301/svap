@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { User } from '../../../types';
 import { api } from '../../../lib/api';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -46,7 +46,7 @@ export default function ProfileEditFields({
         className="flex items-center py-4 px-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-900"
         onClick={() => setIsNameModalOpen(true)}
       >
-        <span className="text-gray-900 dark:text-white font-medium w-40">{accountType === 'business' ? 'Názov' : t('profile.fullName', 'Meno')}</span>
+        <span className="text-gray-900 dark:text-white font-medium w-40">{accountType === 'business' ? 'Meno / Názov' : t('profile.fullName', 'Meno')}</span>
         <div className="flex items-center flex-1 ml-4">
           <div className="w-px h-4 bg-gray-300 dark:bg-gray-700 mr-3"></div>
           <span className="text-gray-600 dark:text-gray-300 text-sm truncate">{`${(user.first_name || '').trim()} ${(user.last_name || '').trim()}`.trim() || user.username}</span>
@@ -58,12 +58,12 @@ export default function ProfileEditFields({
         onClick={() => setIsBioModalOpen(true)}
       >
         <span className="text-gray-900 dark:text-white font-medium w-40">
-          {accountType === 'business' ? 'O nás' : t('profile.bio', 'Bio')}
+          {accountType === 'business' ? 'Bio / O nás' : t('profile.bio', 'Bio')}
         </span>
         <div className="flex items-center flex-1 ml-4">
           <div className="w-px h-4 bg-gray-300 dark:bg-gray-700 mr-3"></div>
           <span className="text-gray-600 dark:text-gray-300 text-sm truncate">
-            {accountType === 'business' ? 'O nás' : t('profile.bio', 'Bio')}
+            {accountType === 'business' ? 'Bio / O nás' : t('profile.bio', 'Bio')}
           </span>
         </div>
       </div>
@@ -72,7 +72,9 @@ export default function ProfileEditFields({
         className="flex items-center py-4 px-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-900 border-t border-gray-100 dark:border-gray-800"
         onClick={() => setIsLocationModalOpen(true)}
       >
-        <span className="text-gray-900 dark:text-white font-medium w-40">{t('profile.location', 'Lokalita')}</span>
+        <span className="text-gray-900 dark:text-white font-medium w-40">
+          {accountType === 'business' ? 'Lokalita / Sídlo' : t('profile.location', 'Lokalita')}
+        </span>
         <div className="flex items-center flex-1 ml-4">
           <div className="w-px h-4 bg-gray-300 dark:bg-gray-700 mr-3"></div>
           <span className="text-gray-600 dark:text-gray-300 text-sm truncate">
@@ -128,69 +130,110 @@ export default function ProfileEditFields({
         </div>
       </div>
       
-      <div 
-        className="py-4 px-4 border-t border-gray-100 dark:border-gray-800"
-      >
+      {/* Email - len pre firemný účet */}
+      {accountType === 'business' && (
         <div 
-          className="flex items-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-900 -mx-4 px-4 py-1"
-          onClick={() => setIsProfessionModalOpen(true)}
+          className="flex items-center py-4 px-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-900 border-t border-gray-100 dark:border-gray-800"
+          onClick={() => setIsContactEmailModalOpen && setIsContactEmailModalOpen(true)}
         >
-          <span className="text-gray-900 dark:text-white font-medium w-40">{t('profile.profession', 'Profesia')}</span>
+          <span className="text-gray-900 dark:text-white font-medium w-40">Email</span>
           <div className="flex items-center flex-1 ml-4">
             <div className="w-px h-4 bg-gray-300 dark:bg-gray-700 mr-3"></div>
             <span className="text-gray-600 dark:text-gray-300 text-sm truncate">
-              {user.job_title || t('profile.addProfession', 'Pridať profesiu')}
+              {user.contact_email || 'Pridať email'}
             </span>
           </div>
         </div>
-        
-        {/* Prepínač pre zobrazenie profese */}
-        <div className="flex items-center gap-2 mt-2">
-          <button
-            onClick={async (e) => {
-              e.stopPropagation();
-              const newVisibility = !user.job_title_visible;
-              try {
-                const response = await api.patch('/auth/profile/', {
-                  job_title_visible: newVisibility,
-                });
-                if (onUserUpdate && response.data?.user) {
-                  onUserUpdate(response.data.user);
-                }
-              } catch (error) {
-                console.error('Chyba pri ukladaní viditeľnosti profese:', error);
-              }
-            }}
-            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-1 ${
-              user.job_title_visible ? 'bg-purple-400 border border-purple-400' : 'bg-gray-300 dark:bg-gray-600'
-            }`}
+      )}
+      
+      {/* Profesia - len pre osobný účet */}
+      {accountType === 'personal' && (
+        <div 
+          className="py-4 px-4 border-t border-gray-100 dark:border-gray-800"
+        >
+          <div 
+            className="flex items-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-900 -mx-4 px-4 py-1"
+            onClick={() => setIsProfessionModalOpen(true)}
           >
-            <span
-              className={`absolute h-3 w-3 rounded-full bg-white shadow-sm transition-all duration-200 ease-in-out ${
-                user.job_title_visible ? 'left-5' : 'left-1'
+            <span className="text-gray-900 dark:text-white font-medium w-40">{t('profile.profession', 'Profesia')}</span>
+            <div className="flex items-center flex-1 ml-4">
+              <div className="w-px h-4 bg-gray-300 dark:bg-gray-700 mr-3"></div>
+              <span className="text-gray-600 dark:text-gray-300 text-sm truncate">
+                {user.job_title || t('profile.addProfession', 'Pridať profesiu')}
+              </span>
+            </div>
+          </div>
+          
+          {/* Prepínač pre zobrazenie profese */}
+          <div className="flex items-center gap-2 mt-2">
+            <button
+              onClick={async (e) => {
+                e.stopPropagation();
+                const newVisibility = !user.job_title_visible;
+                try {
+                  const response = await api.patch('/auth/profile/', {
+                    job_title_visible: newVisibility,
+                  });
+                  if (onUserUpdate && response.data?.user) {
+                    onUserUpdate(response.data.user);
+                  }
+                } catch (error) {
+                  console.error('Chyba pri ukladaní viditeľnosti profese:', error);
+                }
+              }}
+              className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-1 ${
+                user.job_title_visible ? 'bg-purple-400 border border-purple-400' : 'bg-gray-300 dark:bg-gray-600'
               }`}
-            />
-          </button>
-          <span className="text-xs text-gray-500 dark:text-gray-400">{t('profile.showProfessionPublic', 'Zobraziť profesiu verejne')}</span>
+            >
+              <span
+                className={`absolute h-3 w-3 rounded-full bg-white shadow-sm transition-all duration-200 ease-in-out ${
+                  user.job_title_visible ? 'left-5' : 'left-1'
+                }`}
+              />
+            </button>
+            <span className="text-xs text-gray-500 dark:text-gray-400">{t('profile.showProfessionPublic', 'Zobraziť profesiu verejne')}</span>
+          </div>
         </div>
-      </div>
+      )}
       
       <div 
-        className="flex items-center py-4 px-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-900 border-t border-gray-100 dark:border-gray-800"
+        className="py-4 px-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-900 border-t border-gray-100 dark:border-gray-800"
         onClick={() => setIsWebsiteModalOpen(true)}
       >
-        <span className="text-gray-900 dark:text-white font-medium w-40">{t('profile.website', 'Web')}</span>
-        <div className="flex items-center flex-1 ml-4">
-          <div className="w-px h-4 bg-gray-300 dark:bg-gray-700 mr-3"></div>
-          <div className="flex items-center gap-2">
-            <span className="text-gray-600 dark:text-gray-300 text-sm">
-              {t('profile.website', 'Web')}
-            </span>
-            {user.website && (
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 text-gray-400 dark:text-gray-500">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
-              </svg>
-            )}
+        <div className="flex items-center">
+          <span className="text-gray-900 dark:text-white font-medium w-40">{t('profile.website', 'Web')}</span>
+          <div className="flex items-center flex-1 ml-4">
+            <div className="w-px h-4 bg-gray-300 dark:bg-gray-700 mr-3"></div>
+            <div className="flex items-center gap-2 flex-1">
+              {/* Hlavný web alebo "Pridať web" */}
+              {(() => {
+                const totalWebsites = (user.website ? 1 : 0) + (user.additional_websites ? user.additional_websites.length : 0);
+                const additionalCount = totalWebsites - 1;
+                
+                
+                if (totalWebsites === 0) {
+                  return (
+                    <span className="text-gray-600 dark:text-gray-300 text-sm">
+                      {t('profile.addWebsite', 'Pridať web')}
+                    </span>
+                  );
+                }
+                
+                // Zobraz prvý dostupný web
+                const firstWebsite = user.website || (user.additional_websites && user.additional_websites[0]);
+                
+                return (
+                  <>
+                    <span className="text-gray-600 dark:text-gray-300 text-sm">
+                      {t('profile.website', 'Web')}
+                    </span>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 text-gray-400 dark:text-gray-500">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 0 0 3 8.25v10.5A2.25 2.25 0 0 0 5.25 21h10.5A2.25 2.25 0 0 0 18 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                    </svg>
+                  </>
+                );
+              })()}
+            </div>
           </div>
         </div>
       </div>

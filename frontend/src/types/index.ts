@@ -8,6 +8,7 @@ export interface User {
   user_type: 'individual' | 'company' | 'school';
   phone?: string;
   phone_visible?: boolean;
+  contact_email?: string;
   job_title?: string;
   job_title_visible?: boolean;
   bio?: string;
@@ -16,6 +17,7 @@ export interface User {
   location?: string;
   company_name?: string;
   website?: string;
+  additional_websites?: string[];
   linkedin?: string;
   facebook?: string;
   instagram?: string;

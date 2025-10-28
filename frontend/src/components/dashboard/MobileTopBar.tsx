@@ -19,7 +19,7 @@ export default function MobileTopBar({ onMenuClick, isEditMode = false, onBackCl
       <div className="grid grid-cols-3 items-center px-3 py-0 h-12">
         {/* Ľavá strana - Logo alebo šipka späť */}
         <div className="flex items-center h-full justify-start">
-          {(isEditMode || activeRightItem === 'language' || activeModule === 'notifications' || activeModule === 'account-type') ? (
+          {(isEditMode || activeRightItem === 'language' || activeRightItem === 'account-type' || activeModule === 'notifications' || activeModule === 'account-type') ? (
             <button
               onClick={onBackClick}
               className="p-2 -ml-2"
@@ -46,6 +46,9 @@ export default function MobileTopBar({ onMenuClick, isEditMode = false, onBackCl
           {activeRightItem === 'language' && (
             <h1 className="text-lg font-semibold text-gray-900 dark:text-white">{t('language.title', 'Jazyk')}</h1>
           )}
+          {activeRightItem === 'account-type' && (
+            <h1 className="text-lg font-semibold text-gray-900 dark:text-white">Účet</h1>
+          )}
           {activeModule === 'notifications' && (
             <h1 className="text-lg font-semibold text-gray-900 dark:text-white">{t('rightSidebar.notifications', 'Upozornenia')}</h1>
           )}
@@ -67,8 +70,8 @@ export default function MobileTopBar({ onMenuClick, isEditMode = false, onBackCl
             </button>
           )}
           
-          {/* Hamburger menu - len v profile module, nie v edit móde ani v jazyk modale ani v upozorneniach */}
-          {activeModule === 'profile' && !isEditMode && activeRightItem !== 'language' && (
+          {/* Hamburger menu - len v profile module, nie v edit móde ani v jazyk modale ani v account-type ani v upozorneniach */}
+          {activeModule === 'profile' && !isEditMode && activeRightItem !== 'language' && activeRightItem !== 'account-type' && (
             <button
               onClick={onMenuClick}
               className="p-1.5 rounded-lg text-gray-600 dark:text-gray-300 hover:text-purple-600 hover:bg-gray-50 dark:hover:bg-gray-900 transition-all"

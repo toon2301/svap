@@ -16,6 +16,7 @@ import CreateModule from './modules/CreateModule';
 import MessagesModule from './modules/MessagesModule';
 import NotificationsModule from './modules/NotificationsModule';
 import LanguageModule from './modules/LanguageModule';
+import AccountTypeModule from './modules/AccountTypeModule';
 import MobileTopNav from './MobileTopNav';
 import MobileTopBar from './MobileTopBar';
 
@@ -52,6 +53,7 @@ export default function Dashboard({ initialUser }: DashboardProps) {
     } catch {}
   }, [accountType]);
   const [isAccountTypeModalOpen, setIsAccountTypeModalOpen] = useState(false);
+  const [isPersonalAccountModalOpen, setIsPersonalAccountModalOpen] = useState(false);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -183,7 +185,7 @@ export default function Dashboard({ initialUser }: DashboardProps) {
   const handleUserUpdate = (updatedUser: User) => {
     setUser(updatedUser);
     
-    // Po uložení profilu zostaň v edit móde (najmä na mobile)
+    // Po uložení profilu zostaň v edit móde (ale bez automatického otvárania modalov)
     setActiveModule('profile');
     setIsRightSidebarOpen(true);
     setActiveRightItem('edit-profile');
@@ -217,6 +219,16 @@ export default function Dashboard({ initialUser }: DashboardProps) {
       return <LanguageModule />;
     }
 
+    // Ak je otvorená pravá navigácia a je vybrané account-type, zobraz AccountTypeModule
+    if (isRightSidebarOpen && activeRightItem === 'account-type') {
+      return <AccountTypeModule 
+        accountType={accountType}
+        setAccountType={setAccountType}
+        setIsAccountTypeModalOpen={setIsAccountTypeModalOpen}
+        setIsPersonalAccountModalOpen={setIsPersonalAccountModalOpen}
+      />;
+    }
+
     switch (activeModule) {
       case 'home':
         return (
@@ -236,6 +248,7 @@ export default function Dashboard({ initialUser }: DashboardProps) {
             onUserUpdate={handleUserUpdate}
             onEditProfileClick={handleRightSidebarToggle}
             isEditMode={isRightSidebarOpen}
+            accountType={accountType}
           />
         );
       case 'search':
@@ -433,6 +446,9 @@ export default function Dashboard({ initialUser }: DashboardProps) {
           if (activeRightItem === 'language') {
             // Z jazyka sa vraciame do mobilnej navigácie (hamburger)
             setIsMobileMenuOpen(true);
+          } else if (activeRightItem === 'account-type') {
+            // Z typu účtu sa vraciame do mobilnej navigácie (hamburger)
+            setIsMobileMenuOpen(true);
           } else if (activeModule === 'notifications') {
             // Z upozornení sa vraciame do mobilnej navigácie (hamburger)
             setActiveModule('');
@@ -470,6 +486,11 @@ export default function Dashboard({ initialUser }: DashboardProps) {
           setIsRightSidebarOpen(true);
           setActiveRightItem('language');
         }}
+        onAccountTypeClick={() => {
+          setActiveModule('profile');
+          setIsRightSidebarOpen(true);
+          setActiveRightItem('account-type');
+        }}
       />
 
       {/* Main Content */}
@@ -496,33 +517,71 @@ export default function Dashboard({ initialUser }: DashboardProps) {
 
       {/* Account Type Modal */}
       {isAccountTypeModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50" onClick={() => setIsAccountTypeModalOpen(false)}>
-          <div className="w-[32rem] max-w-[90vw]" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4" onClick={() => setIsAccountTypeModalOpen(false)}>
+          <div className="w-full max-w-md" onClick={(e) => e.stopPropagation()}>
             <div className="rounded-2xl bg-[var(--background)] text-[var(--foreground)] border border-[var(--border)] shadow-xl overflow-hidden">
               {/* Header */}
               <div className="px-6 pt-6 pb-4">
-                <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-3">
                   {t('accountType.modalTitle', 'Prajete si prepnúť účet?')}
                 </h2>
-                <p className="text-gray-600 dark:text-gray-400">
+                <p className="text-sm text-gray-600 dark:text-gray-400">
                   Firemný účet je ideálny pre podnikateľov, spoločnosti a umelecké školy na prezentáciu aktivít, propagáciu služieb a komunikáciu s klientmi alebo študentmi.
                 </p>
               </div>
               
               {/* Buttons */}
-              <div className="px-2 space-y-3 pb-6">
+              <div className="px-6 space-y-3 pb-6">
                 <button
                   onClick={() => {
                     setAccountType('business');
                     setIsAccountTypeModalOpen(false);
                   }}
-                  className="w-full py-4 text-lg rounded-lg bg-[var(--muted)] text-purple-600 dark:text-purple-400 hover:bg-gray-200 dark:hover:bg-[#141414] font-semibold"
+                  className="w-full py-3 text-base rounded-lg bg-[var(--muted)] text-purple-600 dark:text-purple-400 hover:bg-gray-200 dark:hover:bg-[#141414] font-semibold"
                 >
                   {t('accountType.change', 'Zmeniť')}
                 </button>
                 <button
                   onClick={() => setIsAccountTypeModalOpen(false)}
-                  className="w-full py-4 text-lg rounded-lg bg-[var(--muted)] text-[var(--foreground)] hover:bg-gray-200 dark:hover:bg-[#141414]"
+                  className="w-full py-3 text-base rounded-lg bg-[var(--muted)] text-[var(--foreground)] hover:bg-gray-200 dark:hover:bg-[#141414]"
+                >
+                  {t('accountType.cancel', 'Zrušiť')}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Personal Account Modal */}
+      {isPersonalAccountModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4" onClick={() => setIsPersonalAccountModalOpen(false)}>
+          <div className="w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+            <div className="rounded-2xl bg-[var(--background)] text-[var(--foreground)] border border-[var(--border)] shadow-xl overflow-hidden">
+              {/* Header */}
+              <div className="px-6 pt-6 pb-4">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-3">
+                  {t('accountType.modalTitle', 'Prajete si prepnúť účet?')}
+                </h2>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Osobný účet je určený pre bežných používateľov, ktorí nepodnikajú. Prepnutím z firemného účtu prídete o jeho rozšírené možnosti.
+                </p>
+              </div>
+              
+              {/* Buttons */}
+              <div className="px-6 space-y-3 pb-6">
+                <button
+                  onClick={() => {
+                    setAccountType('personal');
+                    setIsPersonalAccountModalOpen(false);
+                  }}
+                  className="w-full py-3 text-base rounded-lg bg-[var(--muted)] text-purple-600 dark:text-purple-400 hover:bg-gray-200 dark:hover:bg-[#141414] font-semibold"
+                >
+                  {t('accountType.change', 'Zmeniť')}
+                </button>
+                <button
+                  onClick={() => setIsPersonalAccountModalOpen(false)}
+                  className="w-full py-3 text-base rounded-lg bg-[var(--muted)] text-[var(--foreground)] hover:bg-gray-200 dark:hover:bg-[#141414]"
                 >
                   {t('accountType.cancel', 'Zrušiť')}
                 </button>

@@ -31,6 +31,7 @@ interface ProfileEditModalsProps {
   profession: string;
   professionVisible: boolean;
   website: string;
+  additionalWebsites: string[];
   instagram: string;
   facebook: string;
   linkedin: string;
@@ -46,6 +47,7 @@ interface ProfileEditModalsProps {
   originalProfession: string;
   originalProfessionVisible: boolean;
   originalWebsite: string;
+  originalAdditionalWebsites: string[];
   originalInstagram: string;
   originalFacebook: string;
   originalLinkedin: string;
@@ -61,6 +63,7 @@ interface ProfileEditModalsProps {
   setProfession: (value: string) => void;
   setProfessionVisible: (value: boolean) => void;
   setWebsite: (value: string) => void;
+  setAdditionalWebsites: (value: string[]) => void;
   setInstagram: (value: string) => void;
   setFacebook: (value: string) => void;
   setLinkedin: (value: string) => void;
@@ -76,6 +79,7 @@ interface ProfileEditModalsProps {
   setOriginalProfession: (value: string) => void;
   setOriginalProfessionVisible: (value: boolean) => void;
   setOriginalWebsite: (value: string) => void;
+  setOriginalAdditionalWebsites: (value: string[]) => void;
   setOriginalInstagram: (value: string) => void;
   setOriginalFacebook: (value: string) => void;
   setOriginalLinkedin: (value: string) => void;
@@ -116,6 +120,7 @@ export default function ProfileEditModals({
   profession,
   professionVisible,
   website,
+  additionalWebsites,
   instagram,
   facebook,
   linkedin,
@@ -129,6 +134,7 @@ export default function ProfileEditModals({
   originalProfession,
   originalProfessionVisible,
   originalWebsite,
+  originalAdditionalWebsites,
   originalInstagram,
   originalFacebook,
   originalLinkedin,
@@ -142,6 +148,7 @@ export default function ProfileEditModals({
   setProfession,
   setProfessionVisible,
   setWebsite,
+  setAdditionalWebsites,
   setInstagram,
   setFacebook,
   setLinkedin,
@@ -155,6 +162,7 @@ export default function ProfileEditModals({
   setOriginalProfession,
   setOriginalProfessionVisible,
   setOriginalWebsite,
+  setOriginalAdditionalWebsites,
   setOriginalInstagram,
   setOriginalFacebook,
   setOriginalLinkedin,
@@ -286,8 +294,10 @@ export default function ProfileEditModals({
     try {
       const response = await api.patch('/auth/profile/', {
         website: website,
+        additional_websites: additionalWebsites,
       });
       setOriginalWebsite(website);
+      setOriginalAdditionalWebsites(additionalWebsites);
       setIsWebsiteModalOpen(false);
       if (onUserUpdate && response.data?.user) {
         onUserUpdate(response.data.user);
@@ -299,6 +309,7 @@ export default function ProfileEditModals({
 
   const handleCancelWebsite = () => {
     setWebsite(originalWebsite);
+    setAdditionalWebsites(originalAdditionalWebsites);
     setIsWebsiteModalOpen(false);
   };
 
@@ -720,19 +731,64 @@ export default function ProfileEditModals({
           {/* Obsah modalu */}
           <div className="flex-1 bg-white dark:bg-black p-4">
             <div>
+              {/* Hlavný web */}
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   {t('profile.website', 'Web')}
                 </label>
-                <input
-                  type="url"
-                  value={website}
-                  onChange={(e) => setWebsite(e.target.value)}
-                  maxLength={255}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-1 focus:ring-purple-300 focus:border-transparent"
-                  placeholder="https://example.com"
-                />
+                <div className="flex items-center gap-2">
+                  <input
+                    type="url"
+                    value={website}
+                    onChange={(e) => setWebsite(e.target.value)}
+                    maxLength={255}
+                    className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-1 focus:ring-purple-300 focus:border-transparent"
+                    placeholder="https://example.com"
+                  />
+                  <button
+                    onClick={() => setAdditionalWebsites([...additionalWebsites, ''])}
+                    className="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                    </svg>
+                  </button>
+                </div>
               </div>
+
+              {/* Dodatočné weby */}
+              {additionalWebsites.map((additionalWebsite, index) => (
+                <div key={index} className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Web {index + 2}
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="url"
+                      value={additionalWebsite}
+                      onChange={(e) => {
+                        const newWebsites = [...additionalWebsites];
+                        newWebsites[index] = e.target.value;
+                        setAdditionalWebsites(newWebsites);
+                      }}
+                      maxLength={255}
+                      className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-1 focus:ring-purple-300 focus:border-transparent"
+                      placeholder="https://example.com"
+                    />
+                    <button
+                      onClick={() => {
+                        const newWebsites = additionalWebsites.filter((_, i) => i !== index);
+                        setAdditionalWebsites(newWebsites);
+                      }}
+                      className="p-2 text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-200"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              ))}
               
               {/* Popisný text */}
               <div className="mt-3">

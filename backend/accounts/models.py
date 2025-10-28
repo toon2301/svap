@@ -25,6 +25,7 @@ class User(AbstractUser):
     )
     phone = models.CharField(_('Telefón'), max_length=20, blank=True)
     phone_visible = models.BooleanField(_('Zobraziť telefón verejne'), default=False)
+    contact_email = models.EmailField(_('Kontaktný email'), blank=True)
     bio = models.TextField(_('O mne'), blank=True)
     avatar = models.ImageField(
         _('Profilová fotka'), 
@@ -53,6 +54,7 @@ class User(AbstractUser):
     # Pre firmy
     company_name = models.CharField(_('Názov firmy'), max_length=100, blank=True)
     website = models.URLField(_('Webstránka'), blank=True)
+    additional_websites = models.JSONField(_('Dodatočné webstránky'), default=list, blank=True)
     
     # Sociálne siete
     linkedin = models.URLField(_('LinkedIn'), blank=True)
