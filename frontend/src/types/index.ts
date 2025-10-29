@@ -15,6 +15,10 @@ export interface User {
   avatar?: string; // relative or absolute path (writeable)
   avatar_url?: string; // absolute URL for display
   location?: string;
+  ico?: string;
+  ico_visible?: boolean;
+  category?: string;
+  category_sub?: string;
   company_name?: string;
   website?: string;
   additional_websites?: string[];

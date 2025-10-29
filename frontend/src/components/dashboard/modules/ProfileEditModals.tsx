@@ -21,12 +21,15 @@ interface ProfileEditModalsProps {
   isFacebookModalOpen: boolean;
   isLinkedinModalOpen: boolean;
   isGenderModalOpen: boolean;
+  isIcoModalOpen: boolean;
   
   // Field values
   firstName: string;
   lastName: string;
   bio: string;
   location: string;
+  ico: string;
+  icoVisible: boolean;
   phone: string;
   phoneVisible: boolean;
   contactEmail: string;
@@ -44,6 +47,8 @@ interface ProfileEditModalsProps {
   originalLastName: string;
   originalBio: string;
   originalLocation: string;
+  originalIco: string;
+  originalIcoVisible: boolean;
   originalPhone: string;
   originalPhoneVisible: boolean;
   originalContactEmail: string;
@@ -61,6 +66,8 @@ interface ProfileEditModalsProps {
   setLastName: (value: string) => void;
   setBio: (value: string) => void;
   setLocation: (value: string) => void;
+  setIco: (value: string) => void;
+  setIcoVisible: (value: boolean) => void;
   setPhone: (value: string) => void;
   setPhoneVisible: (value: boolean) => void;
   setContactEmail: (value: string) => void;
@@ -78,6 +85,8 @@ interface ProfileEditModalsProps {
   setOriginalLastName: (value: string) => void;
   setOriginalBio: (value: string) => void;
   setOriginalLocation: (value: string) => void;
+  setOriginalIco: (value: string) => void;
+  setOriginalIcoVisible: (value: boolean) => void;
   setOriginalPhone: (value: string) => void;
   setOriginalPhoneVisible: (value: boolean) => void;
   setOriginalContactEmail: (value: string) => void;
@@ -102,6 +111,7 @@ interface ProfileEditModalsProps {
   setIsFacebookModalOpen: (value: boolean) => void;
   setIsLinkedinModalOpen: (value: boolean) => void;
   setIsGenderModalOpen: (value: boolean) => void;
+  setIsIcoModalOpen: (value: boolean) => void;
 }
 
 export default function ProfileEditModals({
@@ -118,10 +128,13 @@ export default function ProfileEditModals({
   isFacebookModalOpen,
   isLinkedinModalOpen,
   isGenderModalOpen,
+  isIcoModalOpen,
   firstName,
   lastName,
   bio,
   location,
+  ico,
+  icoVisible,
   phone,
   phoneVisible,
   contactEmail,
@@ -137,6 +150,8 @@ export default function ProfileEditModals({
   originalLastName,
   originalBio,
   originalLocation,
+  originalIco,
+  originalIcoVisible,
   originalPhone,
   originalPhoneVisible,
   originalContactEmail,
@@ -152,6 +167,8 @@ export default function ProfileEditModals({
   setLastName,
   setBio,
   setLocation,
+  setIco,
+  setIcoVisible,
   setPhone,
   setPhoneVisible,
   setContactEmail,
@@ -167,6 +184,8 @@ export default function ProfileEditModals({
   setOriginalLastName,
   setOriginalBio,
   setOriginalLocation,
+  setOriginalIco,
+  setOriginalIcoVisible,
   setOriginalPhone,
   setOriginalPhoneVisible,
   setOriginalContactEmail,
@@ -189,6 +208,7 @@ export default function ProfileEditModals({
   setIsFacebookModalOpen,
   setIsLinkedinModalOpen,
   setIsGenderModalOpen,
+  setIsIcoModalOpen,
 }: ProfileEditModalsProps) {
   const { t } = useLanguage();
   
@@ -279,6 +299,36 @@ export default function ProfileEditModals({
     setIsContactModalOpen(false);
   };
 
+  const handleSaveIco = async () => {
+    try {
+      // Odstránenie medzier z IČO pre validáciu
+      const icoCleaned = ico.replace(/\s/g, '').trim();
+      // Klientská validácia: povolené je prázdne alebo 8 až 14 číslic
+      if (icoCleaned && (icoCleaned.length < 8 || icoCleaned.length > 14)) {
+        console.error('IČO musí mať 8 až 14 číslic');
+        return;
+      }
+      const response = await api.patch('/auth/profile/', {
+        ico: icoCleaned,
+        ico_visible: icoVisible,
+      });
+      setOriginalIco(icoCleaned);
+      setOriginalIcoVisible(icoVisible);
+      setIsIcoModalOpen(false);
+      if (onUserUpdate && response.data?.user) {
+        onUserUpdate(response.data.user);
+      }
+    } catch (error) {
+      console.error('Chyba pri ukladaní IČO:', error);
+    }
+  };
+
+  const handleCancelIco = () => {
+    setIco(originalIco);
+    setIcoVisible(originalIcoVisible);
+    setIsIcoModalOpen(false);
+  };
+
   const handleSaveContactEmail = async () => {
     try {
       const response = await api.patch('/auth/profile/', {
@@ -324,12 +374,22 @@ export default function ProfileEditModals({
 
   const handleSaveWebsite = async () => {
     try {
+      const main = (website || '').trim();
+      // filter empties
+      let extras = (additionalWebsites || []).filter(w => (w || '').trim());
+      // enforce max 5 total
+      const mainCount = main ? 1 : 0;
+      const allowedAdditional = Math.max(0, 5 - mainCount);
+      if (extras.length > allowedAdditional) {
+        extras = extras.slice(0, allowedAdditional);
+        setAdditionalWebsites(extras);
+      }
       const response = await api.patch('/auth/profile/', {
-        website: website,
-        additional_websites: additionalWebsites,
+        website: main,
+        additional_websites: extras,
       });
-      setOriginalWebsite(website);
-      setOriginalAdditionalWebsites(additionalWebsites);
+      setOriginalWebsite(main);
+      setOriginalAdditionalWebsites(extras);
       setIsWebsiteModalOpen(false);
       if (onUserUpdate && response.data?.user) {
         onUserUpdate(response.data.user);
@@ -674,6 +734,86 @@ export default function ProfileEditModals({
         </div>
       )}
 
+      {/* Modal pre úpravu IČO */}
+      {isIcoModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex flex-col">
+          {/* Horná lišta */}
+          <div className="bg-white dark:bg-black border-b border-gray-200 dark:border-gray-800 px-4 py-3 flex items-center justify-between">
+            {/* Šipka späť */}
+            <button
+              onClick={handleCancelIco}
+              className="p-2 -ml-2"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+              </svg>
+            </button>
+            
+            {/* Nadpis v strede */}
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">IČO</h2>
+            
+            {/* Fajka (uložiť) */}
+            <button
+              onClick={handleSaveIco}
+              className="p-2 -mr-2"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+              </svg>
+            </button>
+          </div>
+          
+          {/* Obsah modalu */}
+          <div className="flex-1 bg-white dark:bg-black p-4">
+            <div>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  IČO
+                </label>
+                <input
+                  type="text"
+                  value={ico}
+                  onChange={(e) => {
+                    // Povoliť iba číslice
+                    const value = e.target.value.replace(/\D/g, '');
+                    if (value.length <= 14) {
+                      setIco(value);
+                    }
+                  }}
+                  maxLength={14}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-1 focus:ring-purple-300 focus:border-transparent"
+                  placeholder="12345678901234"
+                />
+              </div>
+
+              {/* Prepínač pre zobrazenie IČO */}
+              <div className="flex items-center gap-2 mt-4">
+                <button
+                  onClick={() => setIcoVisible(!icoVisible)}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 ${
+                    icoVisible ? 'bg-purple-400 border border-purple-400' : 'bg-gray-300 dark:bg-gray-600'
+                  }`}
+                >
+                  <span
+                    className={`absolute h-4 w-4 rounded-full bg-white shadow-sm transition-all duration-200 ease-in-out ${
+                      icoVisible ? 'left-6' : 'left-1'
+                    }`}
+                  />
+                </button>
+                <span className="text-xs text-gray-500 dark:text-gray-400">Zobraziť IČO verejne</span>
+              </div>
+              
+              {/* Popisný text */}
+              <div className="mt-3">
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Zadajte svoje IČO (Identifikačné číslo organizácie). Musí mať presne 14 číslic.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Modal pre úpravu kontaktného emailu */}
       {isContactEmailModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex flex-col">
@@ -835,7 +975,12 @@ export default function ProfileEditModals({
                     placeholder="https://example.com"
                   />
                   <button
-                    onClick={() => setAdditionalWebsites([...additionalWebsites, ''])}
+                    onClick={() => {
+                      const mainCount = (website || '').trim() ? 1 : 0;
+                      const total = mainCount + additionalWebsites.length;
+                      if (total >= 5) return;
+                      setAdditionalWebsites([...additionalWebsites, ''])
+                    }}
                     className="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">

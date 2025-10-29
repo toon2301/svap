@@ -143,6 +143,12 @@ export default function ProfileModule({ user, onUserUpdate, onEditProfileClick, 
                         {user.location}
                       </p>
                     )}
+                    {/* IČO - iba pre firemné účty */}
+                    {accountType === 'business' && user.ico && (
+                      <p className="text-gray-600 dark:text-gray-300 text-sm">
+                        {user.ico}
+                      </p>
+                    )}
                     {/* Telefónne číslo */}
                     {user.phone && (
                       <p className="text-gray-600 dark:text-gray-300 text-sm flex items-center gap-1">
@@ -159,6 +165,12 @@ export default function ProfileModule({ user, onUserUpdate, onEditProfileClick, 
                           <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
                         </svg>
                         {user.contact_email}
+                      </p>
+                    )}
+                    {/* Kategória - len pre firemný účet (za emailom) */}
+                    {accountType === 'business' && (user.category_sub || user.category) && (
+                      <p className="text-gray-600 dark:text-gray-300 text-sm">
+                        {user.category_sub || user.category}
                       </p>
                     )}
                         {/* Profesia - len pre osobný účet */}
@@ -291,6 +303,12 @@ export default function ProfileModule({ user, onUserUpdate, onEditProfileClick, 
                             {user.location}
                           </p>
                         )}
+                        {/* IČO - iba pre firemné účty */}
+                        {accountType === 'business' && user.ico && (
+                          <p className="text-gray-600 dark:text-gray-300 text-sm">
+                            IČO: {user.ico}
+                          </p>
+                        )}
                         {/* Telefónne číslo */}
                         {user.phone && (
                           <p className="text-gray-600 dark:text-gray-300 text-sm flex items-center gap-1">
@@ -307,6 +325,12 @@ export default function ProfileModule({ user, onUserUpdate, onEditProfileClick, 
                               <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
                             </svg>
                             {user.contact_email}
+                          </p>
+                        )}
+                        {/* Kategória - len pre firemný účet (za emailom) */}
+                        {accountType === 'business' && (user.category_sub || user.category) && (
+                          <p className="text-gray-600 dark:text-gray-300 text-sm">
+                            {user.category_sub || user.category}
                           </p>
                         )}
                         {/* Profesia - len pre osobný účet */}

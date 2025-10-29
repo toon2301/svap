@@ -39,12 +39,15 @@ export default function ProfileEditFormMobile({
   const [isFacebookModalOpen, setIsFacebookModalOpen] = useState(false);
   const [isLinkedinModalOpen, setIsLinkedinModalOpen] = useState(false);
   const [isGenderModalOpen, setIsGenderModalOpen] = useState(false);
+  const [isIcoModalOpen, setIsIcoModalOpen] = useState(false);
   
   // Field values
   const [firstName, setFirstName] = useState(user.first_name || '');
   const [lastName, setLastName] = useState(user.last_name || '');
   const [bio, setBio] = useState(user.bio || '');
   const [location, setLocation] = useState(user.location || '');
+  const [ico, setIco] = useState(user.ico || '');
+  const [icoVisible, setIcoVisible] = useState(user.ico_visible || false);
   const [phone, setPhone] = useState(user.phone || '');
   const [phoneVisible, setPhoneVisible] = useState(user.phone_visible || false);
   const [contactEmail, setContactEmail] = useState(user.contact_email || '');
@@ -62,6 +65,8 @@ export default function ProfileEditFormMobile({
   const [originalLastName, setOriginalLastName] = useState(user.last_name || '');
   const [originalBio, setOriginalBio] = useState(user.bio || '');
   const [originalLocation, setOriginalLocation] = useState(user.location || '');
+  const [originalIco, setOriginalIco] = useState(user.ico || '');
+  const [originalIcoVisible, setOriginalIcoVisible] = useState(user.ico_visible || false);
   const [originalPhone, setOriginalPhone] = useState(user.phone || '');
   const [originalPhoneVisible, setOriginalPhoneVisible] = useState(user.phone_visible || false);
   const [originalContactEmail, setOriginalContactEmail] = useState(user.contact_email || '');
@@ -84,6 +89,13 @@ export default function ProfileEditFormMobile({
     setContactEmail(user.contact_email || '');
     setOriginalContactEmail(user.contact_email || '');
   }, [user.contact_email]);
+
+  React.useEffect(() => {
+    setIco(user.ico || '');
+    setIcoVisible(user.ico_visible || false);
+    setOriginalIco(user.ico || '');
+    setOriginalIcoVisible(user.ico_visible || false);
+  }, [user.ico, user.ico_visible]);
 
   return (
     <div className="pt-2 pb-8">
@@ -115,6 +127,7 @@ export default function ProfileEditFormMobile({
         setIsFacebookModalOpen={setIsFacebookModalOpen}
         setIsLinkedinModalOpen={setIsLinkedinModalOpen}
         setIsGenderModalOpen={setIsGenderModalOpen}
+        setIsIcoModalOpen={setIsIcoModalOpen}
       />
 
       {/* Modaly */}
@@ -132,10 +145,13 @@ export default function ProfileEditFormMobile({
         isFacebookModalOpen={isFacebookModalOpen}
         isLinkedinModalOpen={isLinkedinModalOpen}
         isGenderModalOpen={isGenderModalOpen}
+        isIcoModalOpen={isIcoModalOpen}
         firstName={firstName}
         lastName={lastName}
         bio={bio}
         location={location}
+        ico={ico}
+        icoVisible={icoVisible}
         phone={phone}
         phoneVisible={phoneVisible}
         contactEmail={contactEmail}
@@ -151,6 +167,8 @@ export default function ProfileEditFormMobile({
         originalLastName={originalLastName}
         originalBio={originalBio}
         originalLocation={originalLocation}
+        originalIco={originalIco}
+        originalIcoVisible={originalIcoVisible}
         originalPhone={originalPhone}
         originalPhoneVisible={originalPhoneVisible}
         originalContactEmail={originalContactEmail}
@@ -166,6 +184,8 @@ export default function ProfileEditFormMobile({
         setLastName={setLastName}
         setBio={setBio}
         setLocation={setLocation}
+        setIco={setIco}
+        setIcoVisible={setIcoVisible}
         setPhone={setPhone}
         setPhoneVisible={setPhoneVisible}
         setProfession={setProfession}
@@ -180,6 +200,8 @@ export default function ProfileEditFormMobile({
         setOriginalLastName={setOriginalLastName}
         setOriginalBio={setOriginalBio}
         setOriginalLocation={setOriginalLocation}
+        setOriginalIco={setOriginalIco}
+        setOriginalIcoVisible={setOriginalIcoVisible}
         setOriginalPhone={setOriginalPhone}
         setOriginalPhoneVisible={setOriginalPhoneVisible}
         setContactEmail={setContactEmail}
@@ -203,6 +225,7 @@ export default function ProfileEditFormMobile({
         setIsFacebookModalOpen={setIsFacebookModalOpen}
         setIsLinkedinModalOpen={setIsLinkedinModalOpen}
         setIsGenderModalOpen={setIsGenderModalOpen}
+        setIsIcoModalOpen={setIsIcoModalOpen}
       />
       
       {/* Overenie profilu - placeholder */}

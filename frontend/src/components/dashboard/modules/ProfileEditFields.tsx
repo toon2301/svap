@@ -22,6 +22,7 @@ interface ProfileEditFieldsProps {
   setIsFacebookModalOpen: (value: boolean) => void;
   setIsLinkedinModalOpen: (value: boolean) => void;
   setIsGenderModalOpen: (value: boolean) => void;
+  setIsIcoModalOpen: (value: boolean) => void;
 }
 
 export default function ProfileEditFields({
@@ -39,6 +40,7 @@ export default function ProfileEditFields({
   setIsFacebookModalOpen,
   setIsLinkedinModalOpen,
   setIsGenderModalOpen,
+  setIsIcoModalOpen,
 }: ProfileEditFieldsProps) {
   const { t } = useLanguage();
   
@@ -84,6 +86,56 @@ export default function ProfileEditFields({
           </span>
         </div>
       </div>
+      
+      {/* IČO - iba pre firemné účty */}
+      {accountType === 'business' && (
+        <div 
+          className="py-4 px-4 border-t border-gray-100 dark:border-gray-800"
+        >
+          <div 
+            className="flex items-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-900 -mx-4 px-4 py-1"
+            onClick={() => setIsIcoModalOpen(true)}
+          >
+            <span className="text-gray-900 dark:text-white font-medium w-40">IČO</span>
+            <div className="flex items-center flex-1 ml-4">
+              <div className="w-px h-4 bg-gray-300 dark:bg-gray-700 mr-3"></div>
+              <span className="text-gray-600 dark:text-gray-300 text-sm truncate">
+                {user.ico || 'Pridať IČO'}
+              </span>
+            </div>
+          </div>
+          
+          {/* Prepínač pre zobrazenie IČO */}
+          <div className="flex items-center gap-2 mt-2">
+            <button
+              onClick={async (e) => {
+                e.stopPropagation();
+                const newVisibility = !user.ico_visible;
+                try {
+                  const response = await api.patch('/auth/profile/', {
+                    ico_visible: newVisibility,
+                  });
+                  if (onUserUpdate && response.data?.user) {
+                    onUserUpdate(response.data.user);
+                  }
+                } catch (error) {
+                  console.error('Chyba pri ukladaní viditeľnosti IČO:', error);
+                }
+              }}
+              className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-1 ${
+                user.ico_visible ? 'bg-purple-400 border border-purple-400' : 'bg-gray-300 dark:bg-gray-600'
+              }`}
+            >
+              <span
+                className={`absolute h-3 w-3 rounded-full bg-white shadow-sm transition-all duration-200 ease-in-out ${
+                  user.ico_visible ? 'left-5' : 'left-1'
+                }`}
+              />
+            </button>
+            <span className="text-xs text-gray-500 dark:text-gray-400">Zobraziť IČO verejne</span>
+          </div>
+        </div>
+      )}
       
       <div 
         className="py-4 px-4 border-t border-gray-100 dark:border-gray-800"
@@ -279,19 +331,21 @@ export default function ProfileEditFields({
         </div>
       </div>
       
-      {/* Pohlavie */}
-      <div 
-        className="flex items-center py-4 px-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-900 border-t border-gray-100 dark:border-gray-800"
-        onClick={() => setIsGenderModalOpen(true)}
-      >
-        <span className="text-gray-900 dark:text-white font-medium w-40">{t('profile.gender', 'Pohlavie')}</span>
-        <div className="flex items-center flex-1 ml-4">
-          <div className="w-px h-4 bg-gray-300 dark:bg-gray-700 mr-3"></div>
-          <span className="text-gray-600 dark:text-gray-300 text-sm">
-            {user.gender === 'male' ? t('profile.male', 'Muž') : user.gender === 'female' ? t('profile.female', 'Žena') : user.gender === 'other' ? t('profile.other', 'Iné') : t('profile.gender', 'Pohlavie')}
-          </span>
+      {/* Pohlavie - iba pre osobné účty */}
+      {accountType !== 'business' && (
+        <div 
+          className="flex items-center py-4 px-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-900 border-t border-gray-100 dark:border-gray-800"
+          onClick={() => setIsGenderModalOpen(true)}
+        >
+          <span className="text-gray-900 dark:text-white font-medium w-40">{t('profile.gender', 'Pohlavie')}</span>
+          <div className="flex items-center flex-1 ml-4">
+            <div className="w-px h-4 bg-gray-300 dark:bg-gray-700 mr-3"></div>
+            <span className="text-gray-600 dark:text-gray-300 text-sm">
+              {user.gender === 'male' ? t('profile.male', 'Muž') : user.gender === 'female' ? t('profile.female', 'Žena') : user.gender === 'other' ? t('profile.other', 'Iné') : t('profile.gender', 'Pohlavie')}
+            </span>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

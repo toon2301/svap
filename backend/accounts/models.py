@@ -35,6 +35,8 @@ class User(AbstractUser):
         validators=[validate_image_file]
     )
     location = models.CharField(_('Lokalita'), max_length=100, blank=True)
+    ico = models.CharField(_('IČO'), max_length=14, blank=True)
+    ico_visible = models.BooleanField(_('Zobraziť IČO verejne'), default=False)
     job_title = models.CharField(_('Profesia'), max_length=100, blank=True)
     job_title_visible = models.BooleanField(_('Zobraziť profesiu verejne'), default=False)
     
@@ -64,6 +66,10 @@ class User(AbstractUser):
     # Nastavenia
     is_verified = models.BooleanField(_('Overený'), default=False)
     is_public = models.BooleanField(_('Verejný profil'), default=True)
+    
+    # Kategória (len jedna hodnota) a voliteľná podkategória
+    category = models.CharField(_('Kategória'), max_length=64, blank=True)
+    category_sub = models.CharField(_('Podkategória'), max_length=64, blank=True)
     
     # Timestamps
     created_at = models.DateTimeField(_('Vytvorené'), auto_now_add=True)
