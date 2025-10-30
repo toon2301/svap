@@ -1,0 +1,63 @@
+.scrollArea {
+  max-height: 70vh;
+  overflow-y: auto;
+  scrollbar-gutter: stable both-edges;
+}
+
+/* Light mode scrollbar */
+.scrollArea::-webkit-scrollbar {
+  width: 12px;
+}
+.scrollArea::-webkit-scrollbar-track,
+.scrollArea::-webkit-scrollbar-track-piece {
+  background: #f1f5f9; /* slate-100 */
+  border-radius: 9999px;
+}
+.scrollArea::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1; /* slate-300 */
+  border-radius: 9999px;
+  border: 3px solid #f1f5f9;
+  background-clip: padding-box;
+}
+.scrollArea::-webkit-scrollbar-thumb:hover {
+  background-color: #94a3b8; /* slate-400 */
+}
+.scrollArea::-webkit-scrollbar-corner {
+  background: #f1f5f9;
+}
+
+/* Firefox */
+.scrollArea {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 #f1f5f9;
+}
+
+/* Light color-scheme only when not in .dark (global selector) */
+:global(:root:not(.dark)) .scrollArea {
+  color-scheme: light;
+}
+
+/* Dark mode overrides via Tailwind's .dark on root (global selector) */
+:global(.dark) .scrollArea {
+  background-color: #0b0b0b; /* ensure dark surroundings */
+  scrollbar-color: #444444 transparent !important;
+  color-scheme: dark !important;
+}
+:global(.dark) .scrollArea::-webkit-scrollbar,
+:global(.dark) .scrollArea::-webkit-scrollbar-corner {
+  background: transparent !important;
+}
+:global(.dark) .scrollArea::-webkit-scrollbar-track,
+:global(.dark) .scrollArea::-webkit-scrollbar-track-piece {
+  background: transparent !important; /* show dark backdrop instead of white */
+  border-radius: 9999px;
+}
+:global(.dark) .scrollArea::-webkit-scrollbar-thumb {
+  background-color: #444444 !important;
+  border: 3px solid #0b0b0b !important;
+  background-clip: padding-box;
+  border-radius: 9999px;
+}
+:global(.dark) .scrollArea::-webkit-scrollbar-thumb:hover {
+  background-color: #5a5a5a !important;
+}

@@ -6,6 +6,7 @@ import { isAuthenticated, clearAuthTokens } from '../../utils/auth';
 import { useLanguage } from '@/contexts/LanguageContext';
 import SkillsHome from './modules/skills/SkillsHome';
 import SkillsScreen from './modules/skills/SkillsScreen';
+import SkillsCategoryModal from './modules/skills/SkillsCategoryModal';
 import { api, endpoints } from '../../lib/api';
 import type { User } from '../../types';
 
@@ -56,6 +57,37 @@ export default function Dashboard({ initialUser }: DashboardProps) {
   }, [accountType]);
   const [isAccountTypeModalOpen, setIsAccountTypeModalOpen] = useState(false);
   const [isPersonalAccountModalOpen, setIsPersonalAccountModalOpen] = useState(false);
+  const [isSkillsCategoryModalOpen, setIsSkillsCategoryModalOpen] = useState(false);
+  const [selectedSkillsCategory, setSelectedSkillsCategory] = useState<string | null>(null);
+  const skillsCategories: string[] = [
+    'IT a technológie',
+    'Remeslá a výroba',
+    'Domácnosť a služby',
+    'Krása a zdravie',
+    'Hudba a vystúpenia',
+    'Marketing a obchod',
+    'Doprava a logistika',
+    'Zvieratá a príroda',
+    'Dobrovoľníctvo a komunita',
+    'Zábava a hry',
+    'Cestovanie a zážitky',
+    'Food a gastronómia',
+    'Osobný rozvoj a mentoring',
+    'Finančné a právne poradenstvo',
+    'Fotografia a videografia',
+    'Eventy a organizácia podujatí',
+    'Jazykové služby a preklady',
+    'E-commerce a online predaj',
+    'Domáca výuka a tutoring',
+    'Technická podpora a servis',
+    'Psychológia a poradenstvo',
+    'Reklama a PR',
+    'Kutilstvo a DIY projekty',
+    'Modelárstvo a hobby tvorba',
+    'Zdravotná starostlivosť a first aid',
+    'Ekológia a udržateľný život',
+    'Sociálne siete a digitálny obsah',
+  ];
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -422,7 +454,13 @@ export default function Dashboard({ initialUser }: DashboardProps) {
           </div>
         );
       case 'skills-offer':
-        return <SkillsScreen title="Ponúkam" />;
+        return (
+          <SkillsScreen
+            title="Predveď, v čom vynikáš."
+            firstOptionText="Vyber kategóriu"
+            onFirstOptionClick={() => setIsSkillsCategoryModalOpen(true)}
+          />
+        );
       case 'skills-search':
         return <SkillsScreen title="Hľadám" />;
       default:
@@ -617,6 +655,18 @@ export default function Dashboard({ initialUser }: DashboardProps) {
           </div>
         </div>
       )}
+
+      {/* Skills Category Modal */}
+      <SkillsCategoryModal
+        isOpen={isSkillsCategoryModalOpen}
+        onClose={() => setIsSkillsCategoryModalOpen(false)}
+        categories={skillsCategories}
+        selected={selectedSkillsCategory}
+        onSelect={(val) => {
+          setSelectedSkillsCategory(val);
+          setIsSkillsCategoryModalOpen(false);
+        }}
+      />
     </div>
   );
 }

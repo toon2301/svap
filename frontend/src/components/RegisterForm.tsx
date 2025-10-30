@@ -493,7 +493,7 @@ export default function RegisterForm() {
               {/* Typ účtu */}
               <AccountTypeSelect
                 t={t}
-                value={formData.user_type}
+                  value={formData.user_type}
                 onChange={handleInputChange as any}
                 onKeyDown={handleKeyDown as any}
                 onTouchStart={handleTouchStart as any}
@@ -544,11 +544,11 @@ export default function RegisterForm() {
                 gender={formData.gender}
                 errors={errors}
                 onDateChange={(e) => {
-                  const dateValue = e.target.value;
-                  if (dateValue) {
-                    const [year, month, day] = dateValue.split('-');
+                    const dateValue = e.target.value;
+                    if (dateValue) {
+                      const [year, month, day] = dateValue.split('-');
                     setFormData(prev => ({ ...prev, birth_year: year, birth_month: month, birth_day: day }));
-                  } else {
+                    } else {
                     setFormData(prev => ({ ...prev, birth_year: '', birth_month: '', birth_day: '' }));
                   }
                 }}
@@ -560,7 +560,7 @@ export default function RegisterForm() {
               <div style={{marginTop: '12px'}}></div>
 
               {/* Pre firmy */}
-               {formData.user_type === 'company' && (
+              {formData.user_type === 'company' && (
                 <CompanySection
                   t={t}
                   companyName={formData.company_name}
@@ -568,7 +568,7 @@ export default function RegisterForm() {
                   errors={errors}
                   onChange={handleInputChange as any}
                 />
-               )}
+              )}
 
               {/* Submit button */}
               <motion.button
