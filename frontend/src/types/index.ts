@@ -17,8 +17,6 @@ export interface User {
   location?: string;
   ico?: string;
   ico_visible?: boolean;
-  category?: string;
-  category_sub?: string;
   company_name?: string;
   website?: string;
   additional_websites?: string[];

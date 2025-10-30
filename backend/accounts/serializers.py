@@ -186,7 +186,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'username', 'email', 'first_name', 'last_name',
             'user_type', 'phone', 'phone_visible', 'contact_email', 'bio', 'avatar', 'avatar_url', 'location',
-            'ico', 'ico_visible', 'job_title', 'job_title_visible', 'company_name', 'website', 'additional_websites', 'linkedin', 'facebook', 'category', 'category_sub',
+            'ico', 'ico_visible', 'job_title', 'job_title_visible', 'company_name', 'website', 'additional_websites', 'linkedin', 'facebook',
             'instagram', 'is_verified', 'is_public', 'created_at',
             'updated_at', 'profile_completeness', 'birth_date', 'gender'
         ]
@@ -293,35 +293,11 @@ class UserProfileSerializer(serializers.ModelSerializer):
                 'additional_websites': 'Maximálny počet webových odkazov je 5 (hlavný web + dodatočné).'
             })
         
-        # Validácia kategórie (ak poslaná)
-        category = attrs.get('category')
-        if category:
-            allowed = {
-                'Remeslá a výroba', 'IT a technológie', 'Vzdelávanie a kurzy', 'Krása a zdravie',
-                'Obchod a marketing', 'Umenie a tvorba', 'Doprava a logistika', 'Domácnosť a pomoc',
-                'Administratíva a financie', 'Dobrovoľníctvo a komunitné služby'
-            }
-            category = SecurityValidator.validate_input_safety(category).strip()
-            if category not in allowed:
-                raise serializers.ValidationError({'category': 'Neplatná kategória'})
-            attrs['category'] = category
-
-        # Validácia podkategórie – povolená len pre "Remeslá a výroba"
-        category_sub = attrs.get('category_sub')
-        # Zisti efektívnu kategóriu po update
-        effective_category = category or getattr(self.instance, 'category', '')
-        if category_sub is not None:
-            category_sub = SecurityValidator.validate_input_safety(category_sub).strip()
-            if effective_category == 'Remeslá a výroba':
-                sub_allowed = {
-                    'Stavebné práce', 'Opravy a údržba', 'Drevené výrobky', 'Kovové konštrukcie', 'Záhradníctvo a vonkajšie práce'
-                }
-                if category_sub and category_sub not in sub_allowed:
-                    raise serializers.ValidationError({'category_sub': 'Neplatná podkategória'})
-                attrs['category_sub'] = category_sub
-            else:
-                # Pri iných kategóriách podkategóriu vynuluj
-                attrs['category_sub'] = ''
+        # Kategória a podkategória odstránené – ignorujeme prípadné vstupy
+        if 'category' in attrs:
+            attrs.pop('category', None)
+        if 'category_sub' in attrs:
+            attrs.pop('category_sub', None)
         return validated
 
     def validate_ico(self, value):

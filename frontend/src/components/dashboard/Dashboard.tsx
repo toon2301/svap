@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { isAuthenticated, clearAuthTokens } from '../../utils/auth';
 import { useLanguage } from '@/contexts/LanguageContext';
+import SkillsHome from './modules/skills/SkillsHome';
+import SkillsScreen from './modules/skills/SkillsScreen';
 import { api, endpoints } from '../../lib/api';
 import type { User } from '../../types';
 
@@ -203,6 +205,10 @@ export default function Dashboard({ initialUser }: DashboardProps) {
           user={user!} 
           onUserUpdate={handleUserUpdate}
           onEditProfileClick={handleRightSidebarToggle}
+          onSkillsClick={() => {
+            setActiveModule('skills');
+            try { localStorage.setItem('activeModule', 'skills'); } catch {}
+          }}
           isEditMode={true}
           accountType={accountType}
         />
@@ -247,6 +253,10 @@ export default function Dashboard({ initialUser }: DashboardProps) {
             user={user!} 
             onUserUpdate={handleUserUpdate}
             onEditProfileClick={handleRightSidebarToggle}
+            onSkillsClick={() => {
+              setActiveModule('skills');
+              try { localStorage.setItem('activeModule', 'skills'); } catch {}
+            }}
             isEditMode={isRightSidebarOpen}
             accountType={accountType}
           />
@@ -279,6 +289,19 @@ export default function Dashboard({ initialUser }: DashboardProps) {
         return <NotificationsModule />;
       case 'language':
         return <LanguageModule />;
+      case 'skills':
+        return (
+          <SkillsHome
+            onOffer={() => {
+              setActiveModule('skills-offer');
+              try { localStorage.setItem('activeModule', 'skills-offer'); } catch {}
+            }}
+            onSearch={() => {
+              setActiveModule('skills-search');
+              try { localStorage.setItem('activeModule', 'skills-search'); } catch {}
+            }}
+          />
+        );
       case 'account-type':
         return (
           <div className="text-[var(--foreground)]">
@@ -398,6 +421,10 @@ export default function Dashboard({ initialUser }: DashboardProps) {
             </div>
           </div>
         );
+      case 'skills-offer':
+        return <SkillsScreen title="Ponúkam" />;
+      case 'skills-search':
+        return <SkillsScreen title="Hľadám" />;
       default:
         return (
           <div className="text-center py-20">

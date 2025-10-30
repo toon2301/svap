@@ -6,6 +6,10 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { User } from '../../../types';
 import { api } from '../../../lib/api';
 import UserAvatar from './profile/UserAvatar';
+import HeaderCard from './profile-edit/desktop/HeaderCard';
+import WebsitesField from './profile-edit/desktop/WebsitesField';
+import BioField from './profile-edit/desktop/fields/BioField';
+import LocationField from './profile-edit/desktop/fields/LocationField';
 import SocialMediaInputs from './SocialMediaInputs';
 
 interface ProfileEditFormDesktopProps {
@@ -42,10 +46,7 @@ export default function ProfileEditFormDesktop({
   const [website, setWebsite] = useState(user.website || '');
   const [additionalWebsites, setAdditionalWebsites] = useState<string[]>(user.additional_websites || []);
   const [contactEmail, setContactEmail] = useState(user.contact_email || '');
-  const [category, setCategory] = useState(user.category || '');
-  const [subcategory, setSubcategory] = useState<string>(user.category_sub || '');
-  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
-  const [isSubcategoryModalOpen, setIsSubcategoryModalOpen] = useState(false);
+  
   const [gender, setGender] = useState(user.gender || '');
   const [isUploading, setIsUploading] = useState(false);
   const [isActionsOpen, setIsActionsOpen] = useState(false);
@@ -67,8 +68,7 @@ export default function ProfileEditFormDesktop({
     setWebsite(user.website || '');
     setAdditionalWebsites(user.additional_websites || []);
     setContactEmail(user.contact_email || '');
-    setCategory(user.category || '');
-    setSubcategory(user.category_sub || '');
+    
     setGender(user.gender || '');
   }, [user.first_name, user.bio, user.location, user.ico, user.ico_visible, user.phone, user.phone_visible, user.job_title, user.job_title_visible, user.website, user.additional_websites, user.contact_email, user.gender]);
 
@@ -96,36 +96,7 @@ export default function ProfileEditFormDesktop({
     }
   };
 
-  const handleCategorySave = async (newCategory: string) => {
-    if ((newCategory || '') === (user.category || '')) {
-      // Ak už je vybratá rovnaká kategória a ide o "Remeslá a výroba",
-      // otvor rovno modal s podkategóriami
-      if (newCategory === 'Remeslá a výroba') {
-        setIsCategoryModalOpen(false);
-        setIsSubcategoryModalOpen(true);
-        return;
-      }
-      setIsCategoryModalOpen(false);
-      return;
-    }
-    try {
-      const response = await api.patch('/auth/profile/', { category: newCategory });
-      if (onUserUpdate && response.data.user) {
-        onUserUpdate(response.data.user);
-      }
-      setCategory(newCategory);
-      setIsCategoryModalOpen(false);
-      // Ak je vybratá kategória Remeslá a výroba, otvor podkategórie
-      if (newCategory === 'Remeslá a výroba') {
-        setIsSubcategoryModalOpen(true);
-      } else {
-        // Pri zmene na inú hlavnú kategóriu vyčisti podkategóriu
-        setSubcategory('');
-      }
-    } catch (error: any) {
-      console.error('Error saving category:', error);
-    }
-  };
+  
 
   const handleBioSave = async () => {
     if (bio.trim() === user.bio) return;
@@ -430,59 +401,15 @@ export default function ProfileEditFormDesktop({
         </h2>
         
         {/* Fotka, meno, email a tlačidlo v bielom paneli */}
-        <div className="bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg px-6 py-1 mb-6 shadow-sm">
-          <div className="flex items-center gap-6">
-            <UserAvatar 
-              user={user} 
-              size="medium" 
-              onPhotoUpload={handlePhotoUploadClick}
-              isUploading={isUploading}
-              onAvatarClick={handleAvatarClick}
-            />
-            <div className="text-base text-gray-800 dark:text-gray-200 flex-1">
-              <div className="font-bold text-gray-800 dark:text-white">
-                {`${(firstName || user.first_name || '').trim()} ${(lastName || user.last_name || '').trim()}`.trim() || user.username}
-              </div>
-              <div className="text-gray-600 dark:text-gray-300">{user.email}</div>
-              {user.location && (
-                <div className="text-gray-600 dark:text-gray-300 text-sm flex items-center gap-1">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-4">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
-                  </svg>
-                  {user.location}
-                </div>
-              )}
-              {accountType === 'business' && user.ico && (
-                <div className="text-gray-600 dark:text-gray-300 text-sm">
-                  IČO: {user.ico}
-                </div>
-              )}
-              {user.phone && (
-                <div className="text-gray-600 dark:text-gray-300 text-sm flex items-center gap-1">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-4">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 0 0 6 3.75v16.5a2.25 2.25 0 0 0 2.25 2.25h7.5A2.25 2.25 0 0 0 18 20.25V3.75a2.25 2.25 0 0 0-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3" />
-                  </svg>
-                  {user.phone}
-                </div>
-              )}
-              {accountType === 'personal' && user.job_title && (
-                <div className="text-gray-600 dark:text-gray-300 text-sm flex items-center gap-1">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-4">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 0 0 .75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 0 0-3.413-.387m4.5 8.006c-.194.165-.42.295-.673.38A23.978 23.978 0 0 1 12 15.75c-2.648 0-5.195-.429-7.577-1.22a2.016 2.016 0 0 1-.673-.38m0 0A2.18 2.18 0 0 1 3 12.489V8.706c0-1.081.768-2.015 1.837-2.175a48.111 48.111 0 0 1 3.413-.387m7.5 0V5.25A2.25 2.25 0 0 0 13.5 3h-3a2.25 2.25 0 0 0-2.25 2.25v.894m7.5 0a48.667 48.667 0 0 0-7.5 0M12 12.75h.008v.008H12v-.008Z" />
-                  </svg>
-                  {user.job_title}
-                </div>
-              )}
-            </div>
-            <button
-              onClick={() => setIsActionsOpen(true)}
-              className="px-3 py-1 bg-purple-100 text-purple-800 border border-purple-200 rounded-lg hover:bg-purple-200 transition-colors text-sm"
-            >
-              {t('profile.changePhoto', 'Zmeniť fotku')}
-            </button>
-          </div>
-        </div>
+        <HeaderCard
+          user={user}
+          firstName={firstName}
+          lastName={lastName}
+          isUploading={isUploading}
+          onPhotoUploadClick={handlePhotoUploadClick}
+          onAvatarClick={handleAvatarClick}
+          accountType={accountType}
+        />
 
 
                   {/* Formulár pre úpravu profilu */}
@@ -524,54 +451,10 @@ export default function ProfileEditFormDesktop({
             {/* Priezvisko zrušené – unified v jednom vstupe */}
 
             {/* Bio */}
-            <div className="mb-4">
-              <label className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
-                {accountType === 'business' ? 'Bio / O nás' : t('profile.bio', 'Bio')}
-              </label>
-              <div className="relative">
-                <textarea
-                  id="bio"
-                  value={bio}
-                  onChange={(e) => setBio(e.target.value)}
-                  onBlur={handleBioSave}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      handleBioSave();
-                    }
-                  }}
-                  rows={3}
-                  maxLength={150}
-                  className="w-full px-3 py-2 pr-16 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-1 focus:ring-purple-300 focus:border-transparent"
-                  placeholder={t('placeholders.bio', 'Napíšte niečo o sebe...')}
-                />
-                <div className="absolute bottom-2 right-2 text-xs text-gray-400">
-                  {bio.length}/150
-                </div>
-              </div>
-            </div>
+            <BioField bio={bio} setBio={setBio} onSave={handleBioSave} />
 
             {/* Lokalita */}
-            <div className="mb-4">
-              <label className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
-                {accountType === 'business' ? 'Lokalita / Sídlo' : t('profile.location', 'Lokalita')}
-              </label>
-              <input
-                id="location"
-                type="text"
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                onBlur={handleLocationSave}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    handleLocationSave();
-                  }
-                }}
-                maxLength={100}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-1 focus:ring-purple-300 focus:border-transparent"
-                placeholder={t('profile.enterLocation', 'Zadajte svoje mesto alebo obec')}
-              />
-            </div>
+            <LocationField location={location} setLocation={setLocation} onSave={handleLocationSave} />
 
             {/* IČO - iba pre firemné účty */}
             {accountType === 'business' && (
@@ -681,153 +564,7 @@ export default function ProfileEditFormDesktop({
               </div>
             )}
 
-            {/* Kategória - len pre firemný účet */}
-            {accountType === 'business' && (
-              <div className="mb-4">
-                <label className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Kategória
-                </label>
-                {!category ? (
-                  <button
-                    type="button"
-                    onClick={() => setIsCategoryModalOpen(true)}
-                    className="mt-1 text-sm text-blue-600 hover:text-blue-500"
-                  >
-                    + pridať
-                  </button>
-                ) : (
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm text-gray-800 dark:text-gray-200">{category === 'Remeslá a výroba' && subcategory ? subcategory : category}</span>
-                    <button
-                      type="button"
-                      onClick={() => setIsCategoryModalOpen(true)}
-                      className="text-sm text-blue-600 hover:text-blue-500"
-                    >
-                      Zmeniť
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {mounted && isCategoryModalOpen && createPortal(
-              (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4" onClick={() => setIsCategoryModalOpen(false)}>
-                  <div className="w-full max-w-md" onClick={(e) => e.stopPropagation()}>
-                    <div className="rounded-2xl bg-[var(--background)] text-[var(--foreground)] border border-[var(--border)] shadow-xl overflow-hidden">
-                      <div className="px-6 pt-6 pb-4 flex items-center justify-between">
-                        <h3 className="text-xl font-semibold">Vyber kategóriu</h3>
-                        <button
-                          type="button"
-                          onClick={() => setIsCategoryModalOpen(false)}
-                          className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-900"
-                          aria-label="Zavrieť"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                          </svg>
-                        </button>
-                      </div>
-                      <div className="px-6 pb-6 space-y-2">
-                        {[
-                          'Remeslá a výroba',
-                          'IT a technológie',
-                          'Vzdelávanie a kurzy',
-                          'Krása a zdravie',
-                          'Obchod a marketing',
-                          'Umenie a tvorba',
-                          'Doprava a logistika',
-                          'Domácnosť a pomoc',
-                          'Administratíva a financie',
-                          'Dobrovoľníctvo a komunitné služby',
-                        ].map((c) => (
-                          <button
-                            key={c}
-                            onClick={() => handleCategorySave(c)}
-                            className={`w-full px-4 py-3 rounded-lg border transition-colors flex items-center justify-between ${
-                              category === c
-                                ? 'border-black dark:border-white'
-                                : 'border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-900'
-                            }`}
-                          >
-                            <span className="text-sm text-gray-900 dark:text-white">{c}</span>
-                            {category === c && (
-                              <svg className="w-5 h-5 text-gray-900 dark:text-white" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                              </svg>
-                            )}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ),
-              document.body
-            )}
-
-            {/* Subkategórie pre "Remeslá a výroba" */}
-            {mounted && isSubcategoryModalOpen && createPortal(
-              (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4" onClick={() => setIsSubcategoryModalOpen(false)}>
-                  <div className="w-full max-w-md" onClick={(e) => e.stopPropagation()}>
-                    <div className="rounded-2xl bg-[var(--background)] text-[var(--foreground)] border border-[var(--border)] shadow-xl overflow-hidden">
-                      <div className="px-6 pt-6 pb-4 flex items-center justify-between">
-                        <h3 className="text-xl font-semibold">Vyber podkategóriu</h3>
-                        <button
-                          type="button"
-                          onClick={() => setIsSubcategoryModalOpen(false)}
-                          className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-900"
-                          aria-label="Zavrieť"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                          </svg>
-                        </button>
-                      </div>
-                      <div className="px-6 pb-6 space-y-2">
-                        {[
-                          'Stavebné práce',
-                          'Opravy a údržba',
-                          'Drevené výrobky',
-                          'Kovové konštrukcie',
-                          'Záhradníctvo a vonkajšie práce',
-                        ].map((sc) => (
-                          <button
-                            key={sc}
-                          onClick={async () => {
-                            try {
-                              const response = await api.patch('/auth/profile/', { category_sub: sc });
-                              if (onUserUpdate && response.data.user) {
-                                onUserUpdate(response.data.user);
-                              }
-                              setSubcategory(sc);
-                              setIsSubcategoryModalOpen(false);
-                            } catch (e) {
-                              console.error('Error saving subcategory:', e);
-                            }
-                          }}
-                            className={`w-full px-4 py-3 rounded-lg border transition-colors flex items-center justify-between ${
-                              subcategory === sc
-                                ? 'border-black dark:border-white'
-                                : 'border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-900'
-                            }`}
-                          >
-                            <span className="text-sm text-gray-900 dark:text-white">{sc}</span>
-                            {subcategory === sc && (
-                              <svg className="w-5 h-5 text-gray-900 dark:text-white" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                              </svg>
-                            )}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ),
-              document.body
-            )}
+            
 
             {/* Profesia - len pre osobný účet */}
             {accountType === 'personal' && (
@@ -870,99 +607,14 @@ export default function ProfileEditFormDesktop({
             )}
 
             {/* Web */}
-            <div className="mb-4">
-              <label className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
-                {t('profile.website', 'Web')}
-              </label>
-              
-              {/* Hlavný web s pluskom */}
-              <div className="relative mb-2">
-              <input
-                id="website"
-                type="url"
-                value={website}
-                onChange={(e) => setWebsite(e.target.value)}
-                onBlur={handleWebsiteSave}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    handleWebsiteSave();
-                  }
-                }}
-                maxLength={255}
-                  className="w-full px-3 py-2 pr-12 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-1 focus:ring-purple-300 focus:border-transparent"
-                  placeholder="https://example.com"
-                />
-                <button
-                  type="button"
-                  onClick={() => {
-                    const mainCount = (website || '').trim() ? 1 : 0;
-                    const total = mainCount + additionalWebsites.length;
-                    if (total >= 5) return;
-                    setAdditionalWebsites([...additionalWebsites, '']);
-                  }}
-                  className="absolute right-2 top-2 bottom-2 flex items-center justify-center w-8 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                  </svg>
-                </button>
-              </div>
-              
-              {/* Dodatočné weby */}
-              {additionalWebsites.map((additionalWebsite, index) => (
-                <div key={index} className="relative mb-2">
-                  <input
-                    type="url"
-                    value={additionalWebsite}
-                    onChange={(e) => {
-                      const newWebsites = [...additionalWebsites];
-                      newWebsites[index] = e.target.value;
-                      setAdditionalWebsites(newWebsites);
-                    }}
-                    onBlur={handleAdditionalWebsitesSave}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        handleAdditionalWebsitesSave();
-                      }
-                    }}
-                    maxLength={255}
-                    className="w-full px-3 py-2 pr-12 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-1 focus:ring-purple-300 focus:border-transparent"
-                placeholder="https://example.com"
-              />
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      const newWebsites = additionalWebsites.filter((_, i) => i !== index);
-                      setAdditionalWebsites(newWebsites);
-                      
-                      // Uložiť zmeny ihneď po odstránení s novými hodnotami
-                      const filteredWebsites = newWebsites.filter(site => site.trim() !== '');
-                      const currentWebsites = user.additional_websites || [];
-                      
-                      if (JSON.stringify(filteredWebsites) !== JSON.stringify(currentWebsites)) {
-                        try {
-                          const response = await api.patch('/auth/profile/', {
-                            additional_websites: filteredWebsites
-                          });
-                          
-                          if (onUserUpdate && response.data.user) {
-                            onUserUpdate(response.data.user);
-                          }
-                        } catch (error: any) {
-                          console.error('Error saving additional websites:', error);
-                          setAdditionalWebsites(user.additional_websites || []);
-                        }
-                      }
-                    }}
-                    className="absolute right-2 top-2 bottom-2 flex items-center justify-center w-8 text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 transition-colors"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                </div>
-              ))}
-            </div>
+            <WebsitesField
+              user={user}
+              website={website}
+              additionalWebsites={additionalWebsites}
+              setWebsite={setWebsite}
+              setAdditionalWebsites={setAdditionalWebsites}
+              onUserUpdate={onUserUpdate}
+            />
 
             {/* Sociálne siete */}
             <SocialMediaInputs

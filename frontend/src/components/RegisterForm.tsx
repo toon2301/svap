@@ -9,6 +9,11 @@ import { setAuthTokens } from '@/utils/auth';
 import { useAutoSave } from '@/hooks/useFormValidation';
 import { fetchCsrfToken } from '@/utils/csrf';
 import { useLanguage } from '@/contexts/LanguageContext';
+import AccountTypeSelect from './register/AccountTypeSelect';
+import CredentialsSection from './register/CredentialsSection';
+import PasswordSection from './register/PasswordSection';
+import BirthGenderSection from './register/BirthGenderSection';
+import CompanySection from './register/CompanySection';
 // import { logMobileDebugInfo, checkNetworkConnectivity } from '@/utils/mobileDebug';
 
 // Lazy load particle efekt
@@ -486,367 +491,84 @@ export default function RegisterForm() {
                 transition={{ duration: 0.5, delay: 0.4 }}
               >
               {/* Typ účtu */}
-              <div>
-                <label className="block text-base font-normal text-gray-600 dark:text-gray-300 mb-1.5 max-lg:text-base max-lg:mb-1">
-                  {t('auth.accountType')}
-                </label>
-                <select
-                  id="user_type"
-                  name="user_type"
-                  value={formData.user_type}
-                  onChange={handleInputChange}
-                  onKeyDown={(e) => handleKeyDown(e, 'user_type')}
-                  onTouchStart={(e) => handleTouchStart(e, 'user_type')}
-                  onTouchEnd={(e) => handleTouchEnd(e, 'user_type')}
-                  onFocus={() => handleSelectFocus('user_type')}
-                  onBlur={() => handleSelectBlur('user_type')}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent outline-none transition-all bg-white dark:bg-black text-gray-900 dark:text-white"
-                  aria-label={t('auth.selectAccountType')}
-                  aria-required="true"
-                  aria-describedby="user-type-help"
-                  tabIndex={1}
-                >
-                  <option value="individual">{t('auth.individual')}</option>
-                  <option value="company">{t('auth.company')}</option>
-                </select>
-                <div id="user-type-help" className="sr-only">
-                  {t('auth.selectAccountTypeHelp')}
-                </div>
-              </div>
+              <AccountTypeSelect
+                t={t}
+                value={formData.user_type}
+                onChange={handleInputChange as any}
+                onKeyDown={handleKeyDown as any}
+                onTouchStart={handleTouchStart as any}
+                onTouchEnd={handleTouchEnd as any}
+                onFocus={handleSelectFocus}
+                onBlur={handleSelectBlur}
+              />
 
               <div style={{marginTop: '12px'}}></div>
 
               {/* Prihlasovacie údaje */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="username" className="block text-base font-normal text-gray-600 dark:text-gray-300 mb-1.5 max-lg:text-base max-lg:mb-1">
-                    {t('auth.username')} *
-                  </label>
-                  <input
-                    id="username"
-                    type="text"
-                    name="username"
-                    value={formData.username}
-                    onChange={handleInputChange}
-                    onKeyDown={(e) => handleKeyDown(e, 'username')}
-                    className={`w-full px-3 py-2 text-sm border rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent outline-none transition-all bg-white dark:bg-black text-gray-900 dark:text-white ${
-                      errors.username ? 'border-red-500' : 'border-gray-300 dark:border-gray-700'
-                    }`}
-                    placeholder={t('auth.usernamePlaceholder')}
-                    aria-label={t('auth.usernameHelp')}
-                    aria-required="true"
-                    aria-invalid={errors.username ? "true" : "false"}
-                    aria-describedby={errors.username ? "username-error" : "username-help"}
-                    tabIndex={2}
-                    autoComplete="username"
-                  />
-                  <div id="username-help" className="sr-only">
-                    {t('auth.usernameHelp')}
-                  </div>
-                  {errors.username && (
-                    <p id="username-error" className="text-red-500 text-sm mt-1" role="alert" aria-live="polite">
-                      {errors.username}
-                    </p>
-                  )}
-                </div>
-
-                <div>
-                  <label htmlFor="email" className="block text-base font-normal text-gray-600 dark:text-gray-300 mb-1.5 max-lg:text-base max-lg:mb-1">
-                    {t('auth.email')} *
-                  </label>
-                  <input
-                    id="email"
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    onKeyDown={(e) => handleKeyDown(e, 'email')}
-                    onBlur={(e) => checkEmailAvailability(e.target.value)}
-                    className={`w-full px-3 py-2 text-sm border rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent outline-none transition-all bg-white dark:bg-black text-gray-900 dark:text-white ${
-                      errors.email ? 'border-red-500' : 
-                      emailStatus === 'taken' ? 'border-red-500' :
-                      emailStatus === 'available' ? 'border-green-500' : 'border-gray-300 dark:border-gray-700'
-                    }`}
-                    placeholder={t('auth.emailPlaceholder')}
-                    aria-label={t('auth.emailHelp')}
-                    aria-required="true"
-                    aria-invalid={errors.email ? "true" : "false"}
-                    aria-describedby={errors.email ? "email-error" : "email-help"}
-                    tabIndex={3}
-                    autoComplete="email"
-                  />
-                  <div id="email-help" className="sr-only">
-                    {t('auth.emailHelp')}
-                  </div>
-                  
-                  {/* Smart validácia - vizuálne indikátory */}
-                  {emailStatus === 'checking' && (
-                    <div className="flex items-center text-blue-600 text-sm mt-1" role="status" aria-live="polite">
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
-                      {t('auth.checkingEmail')}
-                    </div>
-                  )}
-                  
-                  {emailStatus === 'available' && (
-                    <div className="flex items-center text-green-600 text-sm mt-1" role="status" aria-live="polite">
-                      <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                      </svg>
-                      {t('auth.emailAvailable')}
-                    </div>
-                  )}
-                  
-                  {emailStatus === 'taken' && (
-                    <div className="flex items-center text-red-600 text-sm mt-1" role="alert" aria-live="polite">
-                      <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                      </svg>
-                      {t('auth.emailTaken')}
-                    </div>
-                  )}
-                  
-                  {emailStatus === 'error' && emailError && (
-                    <div className="flex items-center text-red-600 text-sm mt-1" role="alert" aria-live="polite">
-                      <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                      </svg>
-                      {emailError}
-                    </div>
-                  )}
-                  
-                  {errors.email && (
-                    <p id="email-error" className="text-red-500 text-sm mt-1" role="alert" aria-live="polite">
-                      {errors.email}
-                    </p>
-                  )}
-                </div>
-              </div>
+              <CredentialsSection
+                t={t}
+                username={formData.username}
+                email={formData.email}
+                errors={errors}
+                emailStatus={emailStatus}
+                emailError={emailError}
+                onChange={handleInputChange as any}
+                onKeyDown={handleKeyDown as any}
+                onEmailBlur={checkEmailAvailability}
+              />
 
               <div style={{marginTop: '12px'}}></div>
 
               {/* Heslá */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="password" className="block text-base font-normal text-gray-600 dark:text-gray-300 mb-1.5 max-lg:text-base max-lg:mb-1">
-                    {t('auth.password')} *
-                  </label>
-                  <div className="relative flex items-center">
-                    <input
-                      id="password"
-                      type={showPassword ? 'text' : 'password'}
-                      name="password"
-                      value={formData.password}
-                      onChange={handleInputChange}
-                      onKeyDown={(e) => handleKeyDown(e, 'password')}
-                      className={`w-full px-3 py-2 text-sm pr-12 border rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent outline-none transition-all bg-white dark:bg-black text-gray-900 dark:text-white ${
-                        errors.password ? 'border-red-500' : 'border-gray-300 dark:border-gray-700'
-                      }`}
-                      placeholder={t('auth.passwordPlaceholder')}
-                      aria-label={t('auth.passwordHelp')}
-                      aria-required="true"
-                      aria-invalid={errors.password ? "true" : "false"}
-                      aria-describedby={errors.password ? "password-error" : "password-help"}
-                      tabIndex={4}
-                      autoComplete="new-password"
-                    />
-                    <div id="password-help" className="sr-only">
-                      {t('auth.passwordHelp')}
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      tabIndex={-1}
-                      className="absolute right-2 flex items-center justify-center text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors focus:outline-none focus:ring-1 focus:ring-purple-300 focus:ring-offset-2 rounded"
-                      style={{ height: '100%' }}
-                    >
-                    
-                      {showPassword ? (
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
-                        </svg>
-                      ) : (
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                        </svg>
-                      )}
-                    </button>
-                  </div>
-                  {errors.password && (
-                    <p className="text-red-500 text-sm mt-1">{errors.password}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label htmlFor="password_confirm" className="block text-base font-normal text-gray-600 dark:text-gray-300 mb-1.5 max-lg:text-base max-lg:mb-1">
-                    {t('auth.confirmPassword')} *
-                  </label>
-                  <div className="relative flex items-center">
-                    <input
-                      id="password_confirm"
-                      type={showPasswordConfirm ? 'text' : 'password'}
-                      name="password_confirm"
-                      value={formData.password_confirm}
-                      onChange={handleInputChange}
-                      className={`w-full px-3 py-2 text-sm pr-12 border rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent outline-none transition-all bg-white dark:bg-black text-gray-900 dark:text-white ${
-                        errors.password_confirm ? 'border-red-500' : 'border-gray-300 dark:border-gray-700'
-                      }`}
-                      placeholder={t('auth.passwordPlaceholder')}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPasswordConfirm(!showPasswordConfirm)}
-                      aria-label={showPasswordConfirm ? t('auth.hidePassword') : t('auth.showPassword')}
-                      className="absolute right-2 flex items-center justify-center text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-                      style={{ height: '100%' }}
-                    >
-                      {showPasswordConfirm ? (
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
-                        </svg>
-                      ) : (
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                        </svg>
-                      )}
-                    </button>
-                  </div>
-                  {errors.password_confirm && (
-                    <p className="text-red-500 text-sm mt-1">{errors.password_confirm}</p>
-                  )}
-                </div>
-              </div>
+              <PasswordSection
+                t={t}
+                password={formData.password}
+                passwordConfirm={formData.password_confirm}
+                errors={errors}
+                showPassword={showPassword}
+                setShowPassword={setShowPassword}
+                showPasswordConfirm={showPasswordConfirm}
+                setShowPasswordConfirm={setShowPasswordConfirm}
+                onChange={handleInputChange as any}
+                onKeyDown={handleKeyDown as any}
+              />
 
               <div style={{marginTop: '12px'}}></div>
 
               {/* Dátum narodenia */}
-              <div>
-                <label htmlFor="birth_date" className="block text-base font-normal text-gray-600 dark:text-gray-300 mb-1.5 max-lg:text-base max-lg:mb-1">
-                  {t('auth.birthDate')} *
-                </label>
-                <input
-                  id="birth_date"
-                  type="date"
-                  name="birth_date"
-                  value={formData.birth_day && formData.birth_month && formData.birth_year 
-                    ? `${formData.birth_year}-${formData.birth_month}-${formData.birth_day}` 
-                    : ''}
-                  onChange={(e) => {
-                    const dateValue = e.target.value;
-                    if (dateValue) {
-                      const [year, month, day] = dateValue.split('-');
-                      setFormData(prev => ({
-                        ...prev,
-                        birth_year: year,
-                        birth_month: month,
-                        birth_day: day
-                      }));
-                    } else {
-                      setFormData(prev => ({
-                        ...prev,
-                        birth_year: '',
-                        birth_month: '',
-                        birth_day: ''
-                      }));
-                    }
-                  }}
-                  onKeyDown={(e) => handleKeyDown(e, 'birth_date')}
-                  className={`w-full px-3 py-2 text-sm border rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent outline-none transition-all bg-white dark:bg-black text-gray-900 dark:text-white ${
-                    errors.birth_day || errors.birth_month || errors.birth_year ? 'border-red-500' : 'border-gray-300 dark:border-gray-700'
-                  }`}
-                  aria-label={t('auth.birthDateHelp')}
-                  aria-required="true"
-                  aria-invalid={errors.birth_day || errors.birth_month || errors.birth_year ? "true" : "false"}
-                  aria-describedby={errors.birth_day || errors.birth_month || errors.birth_year ? "birth-date-error" : "birth-date-help"}
-                  tabIndex={5}
-                />
-                <div id="birth-date-help" className="sr-only">
-                  {t('auth.birthDateHelp')}
-                </div>
-                
-                {/* Error messages */}
-                {(errors.birth_day || errors.birth_month || errors.birth_year) && (
-                  <p id="birth-date-error" className="text-red-500 text-sm mt-1" role="alert" aria-live="polite">
-                    {errors.birth_day || errors.birth_month || errors.birth_year}
-                  </p>
-                )}
-              </div>
-
-              <div style={{marginTop: '12px'}}></div>
-
-              {/* Pohlavie */}
-              <div>
-                <label htmlFor="gender" className="block text-base font-normal text-gray-600 dark:text-gray-300 mb-1.5 max-lg:text-base max-lg:mb-1">
-                  {t('auth.gender')} *
-                </label>
-                <select
-                  id="gender"
-                  name="gender"
-                  value={formData.gender}
-                  onChange={handleInputChange}
-                  onTouchStart={(e) => handleTouchStart(e, 'gender')}
-                  onTouchEnd={(e) => handleTouchEnd(e, 'gender')}
-                  onFocus={() => handleSelectFocus('gender')}
-                  onBlur={() => handleSelectBlur('gender')}
-                  className={`w-full px-3 py-2 text-sm border rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent outline-none transition-all bg-white dark:bg-black text-gray-900 dark:text-white ${
-                    errors.gender ? 'border-red-500' : 'border-gray-300 dark:border-gray-700'
-                  }`}
-                >
-                  <option value="">{t('auth.selectGender')}</option>
-                  <option value="male">{t('auth.male')}</option>
-                  <option value="female">{t('auth.female')}</option>
-                  <option value="other">{t('auth.other')}</option>
-                </select>
-                {errors.gender && (
-                  <p className="text-red-500 text-sm mt-1">{errors.gender}</p>
-                )}
-              </div>
+              <BirthGenderSection
+                t={t}
+                birthDay={formData.birth_day}
+                birthMonth={formData.birth_month}
+                birthYear={formData.birth_year}
+                gender={formData.gender}
+                errors={errors}
+                onDateChange={(e) => {
+                  const dateValue = e.target.value;
+                  if (dateValue) {
+                    const [year, month, day] = dateValue.split('-');
+                    setFormData(prev => ({ ...prev, birth_year: year, birth_month: month, birth_day: day }));
+                  } else {
+                    setFormData(prev => ({ ...prev, birth_year: '', birth_month: '', birth_day: '' }));
+                  }
+                }}
+                onKeyDown={handleKeyDown as any}
+                onGenderChange={handleInputChange as any}
+                bindSelectHandlers={{ onTouchStart: handleTouchStart as any, onTouchEnd: handleTouchEnd as any, onFocus: handleSelectFocus, onBlur: handleSelectBlur }}
+              />
 
               <div style={{marginTop: '12px'}}></div>
 
               {/* Pre firmy */}
-              {formData.user_type === 'company' && (
-                <div className="space-y-4 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-                  <h3 className="text-base font-normal text-purple-700 dark:text-purple-400 mb-2 max-lg:text-base max-lg:mb-1">
-                    {t('auth.companyInfo')}
-                  </h3>
-                  
-                  <div>
-                    <label htmlFor="company_name" className="block text-base font-normal text-gray-600 dark:text-gray-300 mb-1.5 max-lg:text-base max-lg:mb-1">
-                      {t('auth.companyName')} *
-                    </label>
-                    <input
-                      id="company_name"
-                      type="text"
-                      name="company_name"
-                      value={formData.company_name}
-                      onChange={handleInputChange}
-                      className={`w-full px-3 py-2 text-sm border rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent outline-none transition-all bg-white dark:bg-black text-gray-900 dark:text-white ${
-                        errors.company_name ? 'border-red-500' : 'border-gray-300 dark:border-gray-700'
-                      }`}
-                      placeholder={t('auth.companyNamePlaceholder')}
-                    />
-                    {errors.company_name && (
-                      <p className="text-red-500 text-sm mt-1">{errors.company_name}</p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-base font-normal text-gray-600 dark:text-gray-300 mb-1.5 max-lg:text-base max-lg:mb-1">
-                      {t('auth.website')}
-                    </label>
-                    <input
-                      type="url"
-                      name="website"
-                      value={formData.website}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent outline-none transition-all bg-white dark:bg-black text-gray-900 dark:text-white"
-                      placeholder={t('auth.websitePlaceholder')}
-                    />
-                  </div>
-                </div>
-              )}
+               {formData.user_type === 'company' && (
+                <CompanySection
+                  t={t}
+                  companyName={formData.company_name}
+                  website={formData.website}
+                  errors={errors}
+                  onChange={handleInputChange as any}
+                />
+               )}
 
               {/* Submit button */}
               <motion.button

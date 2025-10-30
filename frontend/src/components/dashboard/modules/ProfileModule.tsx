@@ -6,6 +6,7 @@ import { User } from '../../../types';
 import UserAvatar from './profile/UserAvatar';
 import { useLanguage } from '@/contexts/LanguageContext';
 import UserInfo from './profile/UserInfo';
+import WebsitesRow from './profile/view/WebsitesRow';
 import ProfileEditFormDesktop from './ProfileEditFormDesktop';
 import ProfileEditFormMobile from './ProfileEditFormMobile';
 import { api } from '../../../lib/api';
@@ -14,11 +15,12 @@ interface ProfileModuleProps {
   user: User;
   onUserUpdate?: (updatedUser: User) => void;
   onEditProfileClick?: () => void;
+  onSkillsClick?: () => void;
   isEditMode?: boolean;
   accountType?: 'personal' | 'business';
 }
 
-export default function ProfileModule({ user, onUserUpdate, onEditProfileClick, isEditMode = false, accountType = 'personal' }: ProfileModuleProps) {
+export default function ProfileModule({ user, onUserUpdate, onEditProfileClick, onSkillsClick, isEditMode = false, accountType = 'personal' }: ProfileModuleProps) {
   const { t } = useLanguage();
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string>('');
@@ -167,12 +169,7 @@ export default function ProfileModule({ user, onUserUpdate, onEditProfileClick, 
                         {user.contact_email}
                       </p>
                     )}
-                    {/* Kategória - len pre firemný účet (za emailom) */}
-                    {accountType === 'business' && (user.category_sub || user.category) && (
-                      <p className="text-gray-600 dark:text-gray-300 text-sm">
-                        {user.category_sub || user.category}
-                      </p>
-                    )}
+                    
                         {/* Profesia - len pre osobný účet */}
                         {accountType === 'personal' && user.job_title && (
                           <p className="text-gray-600 dark:text-gray-300 text-sm flex items-center gap-1">
@@ -327,12 +324,7 @@ export default function ProfileModule({ user, onUserUpdate, onEditProfileClick, 
                             {user.contact_email}
                           </p>
                         )}
-                        {/* Kategória - len pre firemný účet (za emailom) */}
-                        {accountType === 'business' && (user.category_sub || user.category) && (
-                          <p className="text-gray-600 dark:text-gray-300 text-sm">
-                            {user.category_sub || user.category}
-                          </p>
-                        )}
+                        
                         {/* Profesia - len pre osobný účet */}
                         {accountType === 'personal' && user.job_title && (
                           <p className="text-gray-600 dark:text-gray-300 text-sm flex items-center gap-1">
@@ -343,43 +335,7 @@ export default function ProfileModule({ user, onUserUpdate, onEditProfileClick, 
                           </p>
                         )}
                         {/* Webová stránka + "a ďalší" (desktop) */}
-                        {(() => {
-                          const totalWebsites = (user.website ? 1 : 0) + (user.additional_websites ? user.additional_websites.length : 0);
-                          const additionalCount = totalWebsites - 1;
-                          if (totalWebsites === 0) return null;
-                          const firstWebsite = user.website || (user.additional_websites && user.additional_websites[0]);
-                          return (
-                            <p className="text-gray-600 dark:text-gray-300 text-sm flex items-center gap-1">
-                              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-4 text-gray-500 dark:text-gray-400 flex-shrink-0">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
-                              </svg>
-                              {additionalCount > 0 ? (
-                                // Viac webov - celý text je klikateľný na modal
-                                <span 
-                                  className="flex items-center flex-wrap cursor-pointer"
-                                  onClick={() => setIsAllWebsitesModalOpen(true)}
-                                >
-                                  <span className="text-blue-600 hover:text-blue-800 transition-colors dark:text-blue-400 dark:hover:text-blue-300 truncate max-w-[300px]">
-                                    {firstWebsite}
-                                  </span>
-                                  <span className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 ml-1 whitespace-nowrap">
-                                    a ďalší ({additionalCount})
-                                  </span>
-                                </span>
-                              ) : (
-                                // Jeden web - klikateľný odkaz
-                                <a 
-                                  href={firstWebsite as string} 
-                                  target="_blank" 
-                                  rel="noopener noreferrer"
-                                  className="text-blue-600 hover:text-blue-800 transition-colors dark:text-blue-400 dark:hover:text-blue-300 truncate max-w-[300px]"
-                                >
-                                  {firstWebsite}
-                                </a>
-                              )}
-                            </p>
-                          );
-                        })()}
+                        <WebsitesRow user={user} onOpenAll={() => setIsAllWebsitesModalOpen(true)} />
                       </div>
                     </div>
                     {/* Tlačidlá pod fotkou */}
@@ -396,10 +352,18 @@ export default function ProfileModule({ user, onUserUpdate, onEditProfileClick, 
                       >
                         {t('profile.editProfile')}
                       </button>
-                      <button
-                        onClick={() => {
-                          console.log('Zručnosti');
-                        }}
+                  <button
+                    onClick={() => {
+                      // Desktop: prepnúť na prázdny screen Zručnosti
+                      // Ak príde callback z nadradenej komponenty, použi ho
+                      // @ts-ignore - prop môže byť voliteľná
+                      if (typeof onSkillsClick === 'function') {
+                        // @ts-ignore
+                        onSkillsClick();
+                      } else {
+                        console.log('Zručnosti');
+                      }
+                    }}
                         className="flex-1 px-32 py-2 text-sm bg-purple-100 text-purple-800 border border-purple-200 rounded-lg transition-colors hover:bg-purple-200 whitespace-nowrap"
                       >
                         {t('profile.skills')}

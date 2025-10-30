@@ -6,6 +6,13 @@ import { api } from '../../../lib/api';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import UserAvatar from './profile/UserAvatar';
 import SocialMediaInputs from './SocialMediaInputs';
+import FullNameInput from './profile-edit/fields/FullNameInput';
+import BioInput from './profile-edit/fields/BioInput';
+import LocationInput from './profile-edit/fields/LocationInput';
+import ProfessionInput from './profile-edit/fields/ProfessionInput';
+import WebsiteInput from './profile-edit/fields/WebsiteInput';
+import GenderSelect from './profile-edit/fields/GenderSelect';
+import AvatarActionsModal from './profile-edit/shared/AvatarActionsModal';
 
 interface ProfileEditFormProps {
   user: User;
@@ -324,90 +331,15 @@ export default function ProfileEditForm({ user, onUserUpdate, onEditProfileClick
         </div>
         
         {/* Meno (celé meno v jednom vstupe) */}
-        <div className="mb-4">
-          <label htmlFor="first_name" className="block text-base font-medium text-gray-700 mb-2">
-            Meno
-          </label>
-          <input
-            id="first_name"
-            type="text"
-            value={`${firstName} ${lastName}`.trim()}
-            onChange={(e) => {
-              const value = e.target.value || '';
-              const parts = value.trim().split(/\s+/).filter(Boolean);
-              if (parts.length === 0) {
-                setFirstName('');
-                setLastName('');
-              } else if (parts.length === 1) {
-                setFirstName(parts[0]);
-                // Preserve existing last name when only one token is provided
-              } else {
-                setFirstName(parts.slice(0, -1).join(' '));
-                setLastName(parts[parts.length - 1]);
-              }
-            }}
-            onBlur={handleFullNameSave}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                handleFullNameSave();
-              }
-            }}
-            maxLength={18}
-            pattern="[a-zA-ZáčďéěíĺľňóôŕšťúýžÁČĎÉĚÍĹĽŇÓÔŔŠŤÚÝŽ\s-]*"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent"
-            placeholder="Zadajte svoje meno a priezvisko"
-          />
-        </div>
+        <FullNameInput firstName={firstName} lastName={lastName} setFirstName={setFirstName} setLastName={setLastName} onSave={handleFullNameSave} />
+        
         {/* Priezvisko zrušené – unified v jednom vstupe */}
         
         {/* Bio */}
-        <div className="mb-4">
-          <label htmlFor="bio" className="block text-base font-medium text-gray-700 mb-2">
-            Bio
-          </label>
-          <div className="relative">
-            <textarea
-              id="bio"
-              value={bio}
-              onChange={(e) => setBio(e.target.value)}
-              onBlur={handleBioSave}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && e.ctrlKey) { // Ctrl+Enter for new line, Enter for save
-                  handleBioSave();
-                }
-              }}
-              maxLength={150}
-              className="w-full px-3 py-2 pr-16 border border-gray-300 rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent"
-              placeholder="Napíšte niečo o sebe..."
-              rows={2}
-            />
-            <div className="absolute bottom-2 right-2 text-xs text-gray-400">
-              {bio.length}/150
-            </div>
-          </div>
-        </div>
+        <BioInput bio={bio} setBio={setBio} onSave={handleBioSave} />
         
         {/* Lokalita podnadpis */}
-        <div className="mb-4">
-          <label className="block text-base font-medium text-gray-700 mb-2">
-            Lokalita
-          </label>
-          <input
-            id="location"
-            type="text"
-            value={location}
-            onChange={(e) => setLocation(e.target.value)}
-            onBlur={handleLocationSave}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                handleLocationSave();
-              }
-            }}
-            maxLength={100}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent"
-            placeholder="Zadajte svoje mesto alebo obec"
-          />
-        </div>
+        <LocationInput location={location} setLocation={setLocation} onSave={handleLocationSave} />
         
         {/* Kontakt podnadpis */}
         <div className="mb-4">
@@ -448,64 +380,16 @@ export default function ProfileEditForm({ user, onUserUpdate, onEditProfileClick
         </div>
         
         {/* Profesia */}
-        <div className="mb-4">
-          <label className="block text-base font-medium text-gray-700 mb-2">
-            Profesia
-          </label>
-          <input
-            id="profession"
-            type="text"
-            value={profession}
-            onChange={(e) => setProfession(e.target.value)}
-            onBlur={handleProfessionSave}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                handleProfessionSave();
-              }
-            }}
-            maxLength={100}
-            className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent"
-            placeholder="Zadajte svoju profesiu"
-          />
-          {/* Prepínač pre zobrazenie profese */}
-          <div className="mt-3 flex items-center gap-2">
-            <button
-              onClick={handleProfessionVisibleToggle}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 ${
-                professionVisible ? 'bg-purple-600' : 'bg-gray-200'
-              }`}
-            >
-              <span
-                className={`absolute h-4 w-4 rounded-full bg-white shadow-sm transition-all duration-200 ease-in-out ${
-                  professionVisible ? 'left-6' : 'left-1'
-                }`}
-              />
-            </button>
-            <span className="text-xs text-gray-500">Zobraziť profesiu verejne</span>
-          </div>
-        </div>
+        <ProfessionInput
+          profession={profession}
+          setProfession={setProfession}
+          onSave={handleProfessionSave}
+          visible={professionVisible}
+          onToggleVisible={handleProfessionVisibleToggle}
+        />
         
         {/* Web */}
-        <div className="mb-4">
-          <label htmlFor="website" className="block text-base font-medium text-gray-700 mb-2">
-            Web
-          </label>
-          <input
-            id="website"
-            type="url"
-            value={website}
-            onChange={(e) => setWebsite(e.target.value)}
-            onBlur={handleWebsiteSave}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                handleWebsiteSave();
-              }
-            }}
-            maxLength={255}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent"
-            placeholder="https://example.com"
-          />
-        </div>
+        <WebsiteInput website={website} setWebsite={setWebsite} onSave={handleWebsiteSave} />
         
         {/* Sociálne siete */}
         <SocialMediaInputs 
@@ -514,32 +398,7 @@ export default function ProfileEditForm({ user, onUserUpdate, onEditProfileClick
         />
         
         {/* Pohlavie */}
-        <div className="mb-4">
-          <label className="block text-base font-medium text-gray-700 mb-2">
-            Pohlavie
-          </label>
-          <div className="relative">
-            <select
-              id="gender"
-              value={gender}
-              onChange={(e) => handleGenderChange(e.target.value)}
-              className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent appearance-none cursor-pointer"
-            >
-              <option value="">Vyberte pohlavie</option>
-              <option value="male">Muž</option>
-              <option value="female">Žena</option>
-            </select>
-            {/* Custom dropdown arrow */}
-            <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-              <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </div>
-          </div>
-          <p className="mt-2 text-sm text-gray-500">
-            Toto nie je súčasťou verejného profilu.
-          </p>
-        </div>
+        <GenderSelect gender={gender} onChange={handleGenderChange} />
         
         {/* Button Uložiť */}
         <div className="mt-6 flex justify-center">
@@ -576,55 +435,15 @@ export default function ProfileEditForm({ user, onUserUpdate, onEditProfileClick
       )}
       
       {/* Avatar Actions Modal */}
-      {isActionsOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 lg:bg-transparent" onClick={() => setIsActionsOpen(false)}>
-          <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 w-[32rem] max-w-[90vw] lg:top-32 lg:translate-y-0 lg:ml-[-12rem]" onClick={(e) => e.stopPropagation()}>
-            <div className="rounded-2xl bg-[var(--background)] text-[var(--foreground)] border border-[var(--border)] shadow-xl overflow-hidden">
-              {/* Avatar v modale */}
-              <div className="flex justify-center py-6">
-                <UserAvatar 
-                  user={user} 
-                  size="large" 
-                  onPhotoUpload={handlePhotoUpload}
-                  isUploading={isUploading}
-                  onAvatarClick={handleAvatarClick}
-                />
-              </div>
-              <div className="px-2 space-y-3 pb-6">
-                <button
-                  onClick={() => {
-                    setIsActionsOpen(false);
-                    const input = document.createElement('input');
-                    input.type = 'file';
-                    input.accept = 'image/*';
-                    input.onchange = (e: any) => {
-                      const file = e.target.files?.[0];
-                      if (file) handlePhotoUpload(file);
-                    };
-                    input.click();
-                  }}
-                  className="w-full py-4 text-lg rounded-lg bg-[var(--muted)] text-[var(--foreground)] hover:bg-gray-200 dark:hover:bg-[#141414]"
-                >
-                  Zmeniť fotku
-                </button>
-                <button
-                  onClick={handleRemoveAvatar}
-                  className="w-full py-4 text-lg rounded-lg bg-[var(--muted)] text-[var(--foreground)] hover:bg-gray-200 dark:hover:bg-[#141414]"
-                  disabled={isUploading}
-                >
-                  Odstrániť fotku
-                </button>
-                <button
-                  onClick={() => setIsActionsOpen(false)}
-                  className="w-full py-4 text-lg rounded-lg bg-[var(--muted)] text-[var(--foreground)] hover:bg-gray-200 dark:hover:bg-[#141414]"
-                >
-                  Zrušiť
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <AvatarActionsModal
+        user={user}
+        isOpen={isActionsOpen}
+        onClose={() => setIsActionsOpen(false)}
+        onPhotoUpload={handlePhotoUpload}
+        isUploading={isUploading}
+        onRemove={handleRemoveAvatar}
+        onAvatarClick={handleAvatarClick}
+      />
     </>
   );
 }

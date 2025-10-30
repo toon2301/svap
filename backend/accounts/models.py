@@ -67,9 +67,7 @@ class User(AbstractUser):
     is_verified = models.BooleanField(_('Overený'), default=False)
     is_public = models.BooleanField(_('Verejný profil'), default=True)
     
-    # Kategória (len jedna hodnota) a voliteľná podkategória
-    category = models.CharField(_('Kategória'), max_length=64, blank=True)
-    category_sub = models.CharField(_('Podkategória'), max_length=64, blank=True)
+    # Kategória odstránená
     
     # Timestamps
     created_at = models.DateTimeField(_('Vytvorené'), auto_now_add=True)
