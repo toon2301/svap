@@ -1,12 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { skillsCategories } from '@/constants/skillsCategories';
 import { useRouter } from 'next/navigation';
 import { isAuthenticated, clearAuthTokens } from '../../utils/auth';
 import { useLanguage } from '@/contexts/LanguageContext';
 import SkillsHome from './modules/skills/SkillsHome';
 import SkillsScreen from './modules/skills/SkillsScreen';
 import SkillsCategoryModal from './modules/skills/SkillsCategoryModal';
+import SkillDescriptionModal from './modules/skills/SkillDescriptionModal';
 import { api, endpoints } from '../../lib/api';
 import type { User } from '../../types';
 
@@ -58,141 +60,8 @@ export default function Dashboard({ initialUser }: DashboardProps) {
   const [isAccountTypeModalOpen, setIsAccountTypeModalOpen] = useState(false);
   const [isPersonalAccountModalOpen, setIsPersonalAccountModalOpen] = useState(false);
   const [isSkillsCategoryModalOpen, setIsSkillsCategoryModalOpen] = useState(false);
-  const [selectedSkillsCategory, setSelectedSkillsCategory] = useState<string | null>(null);
-  const skillsCategories: Record<string, string[]> = {
-    'IT a technológie': [
-      'Web development (frontend, backend, fullstack)',
-      'Mobilné aplikácie (iOS, Android, cross-platform)',
-      'Desktopové aplikácie',
-      'Herný vývoj (Game Development, Unity, Unreal Engine, Godot)',
-      'Embedded systems programming',
-      'DevOps, CI/CD, automatizácia',
-      'API vývoj a integrácie',
-      'Low-code / no-code vývoj',
-      'Skriptovanie (Python, Bash, PowerShell, atď.)',
-      'Open source vývoj',
-      'Návrh systémovej architektúry',
-      'Microservices',
-      'Databázový dizajn',
-      'Optimalizácia výkonu',
-      'Cloud-native aplikácie',
-      'API architektúra',
-      'Refaktoring a škálovanie aplikácií',
-      'AWS, Azure, Google Cloud',
-      'Cloud deployment a konfigurácia',
-      'Kubernetes, Docker, container management',
-      'Serverless technológie',
-      'Infrastructure as Code (Terraform, Ansible)',
-      'Cloud bezpečnosť',
-      'Load balancing, CDN',
-      'Penetračné testovanie (ethical hacking)',
-      'Network security',
-      'Application security',
-      'Incident response',
-      'Malware analýza',
-      'Šifrovanie a kryptografia',
-      'Bezpečnosť cloudu',
-      'Ochrana dát a GDPR',
-      'Data science',
-      'Machine Learning',
-      'Deep Learning',
-      'Computer Vision',
-      'Natural Language Processing (NLP)',
-      'Business Intelligence (BI)',
-      'Data Engineering (ETL pipelines, big data spracovanie)',
-      'Data Visualization (Power BI, Tableau, matplotlib, Plotly)',
-      'Štatistická analýza',
-      'SQL databázy (MySQL, PostgreSQL, MSSQL, Oracle)',
-      'NoSQL databázy (MongoDB, Firebase, Cassandra)',
-      'Data warehousing (Snowflake, BigQuery)',
-      'Data backup & recovery',
-      'Query optimalizácia',
-      'Indexovanie dát',
-      'Správa serverov (Linux, Windows Server)',
-      'Sieťové protokoly (TCP/IP, DNS, DHCP, VPN)',
-      'Routery, switche, firewally',
-      'Monitoring a diagnostika',
-      'Virtualizácia (VMware, Hyper-V)',
-      'Automatizácia infraštruktúry',
-      'Helpdesk, troubleshooting',
-      'Správa hardvéru a softvéru',
-      'Nasadzovanie systémov',
-      'Zálohovanie a obnova dát',
-      'Diagnostika chýb',
-      'Konfigurácia zariadení',
-      'Internet of Things (IoT)',
-      'Robotické systémy',
-      'Arduino, Raspberry Pi',
-      'Smart home technológie',
-      'Práca so senzormi',
-      'Práca s mikrokontrolérmi',
-      'Automatizácia výroby',
-      'Generatívna AI (ChatGPT, Midjourney, DALL·E, Claude)',
-      'AI integrácie do aplikácií',
-      'AI modelovanie a tréning',
-      'Prompt engineering',
-      'Automatizácia procesov pomocou AI (RPA)',
-      'Web design',
-      'Mobilný UX/UI dizajn',
-      'Prototypovanie (Figma, Sketch, XD)',
-      'Grafický dizajn (Photoshop, Illustrator, Canva)',
-      'Motion design',
-      '3D dizajn (Blender, Cinema 4D)',
-      'UX research a testovanie',
-      'Herné enginy (Unity, Unreal, Godot)',
-      '3D modelovanie a animácia',
-      'Fyzikálne simulácie',
-      'Herné skriptovanie (C#, Blueprint, Python)',
-      'Game design, storytelling',
-      'VR / AR vývoj',
-      'Agile, Scrum, Kanban',
-      'Jira, Trello, Notion',
-      'Product ownership',
-      'Technická dokumentácia',
-      'QA testing',
-      'Release management',
-      'ITIL procesy',
-      'IT školenia',
-      'Technická dokumentácia',
-      'Mentoring juniorov',
-      'Výskum technológií',
-      'Online kurzy, tutoring',
-      'EduTech riešenia',
-      'Blockchain a kryptomeny',
-      'Metaverse a XR',
-      'Quantum computing',
-      'Edge computing',
-      '3D tlač a výroba',
-      'Biotechnológie a bioinformatika',
-      'SpaceTech a drony',
-    ],
-    'Remeslá a výroba': [],
-    'Domácnosť a služby': [],
-    'Krása a zdravie': [],
-    'Hudba a vystúpenia': [],
-    'Marketing a obchod': [],
-    'Doprava a logistika': [],
-    'Zvieratá a príroda': [],
-    'Dobrovoľníctvo a komunita': [],
-    'Zábava a hry': [],
-    'Cestovanie a zážitky': [],
-    'Food a gastronómia': [],
-    'Osobný rozvoj a mentoring': [],
-    'Finančné a právne poradenstvo': [],
-    'Fotografia a videografia': [],
-    'Eventy a organizácia podujatí': [],
-    'Jazykové služby a preklady': [],
-    'E-commerce a online predaj': [],
-    'Domáca výuka a tutoring': [],
-    'Technická podpora a servis': [],
-    'Psychológia a poradenstvo': [],
-    'Reklama a PR': [],
-    'Kutilstvo a DIY projekty': [],
-    'Modelárstvo a hobby tvorba': [],
-    'Zdravotná starostlivosť a first aid': [],
-    'Ekológia a udržateľný život': [],
-    'Sociálne siete a digitálny obsah': [],
-  };
+  const [selectedSkillsCategory, setSelectedSkillsCategory] = useState<{ category: string; subcategory: string; description?: string } | null>(null);
+  const [isSkillDescriptionModalOpen, setIsSkillDescriptionModalOpen] = useState(false);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -561,9 +430,16 @@ export default function Dashboard({ initialUser }: DashboardProps) {
       case 'skills-offer':
         return (
           <SkillsScreen
-            title="Predveď, v čom vynikáš."
+            title="Vyber, v čom vynikáš."
             firstOptionText="Vyber kategóriu"
             onFirstOptionClick={() => setIsSkillsCategoryModalOpen(true)}
+            selectedCategory={selectedSkillsCategory}
+            onRemoveCategory={() => setSelectedSkillsCategory(null)}
+            onEditDescription={() => {
+              if (selectedSkillsCategory) {
+                setIsSkillDescriptionModalOpen(true);
+              }
+            }}
           />
         );
       case 'skills-search':
@@ -766,12 +642,44 @@ export default function Dashboard({ initialUser }: DashboardProps) {
         isOpen={isSkillsCategoryModalOpen}
         onClose={() => setIsSkillsCategoryModalOpen(false)}
         categories={skillsCategories}
-        selected={selectedSkillsCategory}
-        onSelect={(val) => {
-          setSelectedSkillsCategory(val);
+        selected={selectedSkillsCategory?.subcategory || null}
+        onSelect={(category, subcategory) => {
+          // Najprv zatvor modal kategórií
           setIsSkillsCategoryModalOpen(false);
+          // Nastav dočasne vybranú kategóriu a otvor modal pre popis
+          setSelectedSkillsCategory({ category, subcategory });
+          setIsSkillDescriptionModalOpen(true);
         }}
       />
+
+      {/* Skill Description Modal */}
+      {selectedSkillsCategory && (
+        <SkillDescriptionModal
+          isOpen={isSkillDescriptionModalOpen}
+          onClose={() => {
+            setIsSkillDescriptionModalOpen(false);
+            // Ak ešte nemá description, resetovať kategóriu (zatvorené bez uloženia)
+            if (!selectedSkillsCategory.description) {
+              setSelectedSkillsCategory(null);
+            }
+          }}
+          category={selectedSkillsCategory.category}
+          subcategory={selectedSkillsCategory.subcategory}
+          initialDescription={selectedSkillsCategory.description}
+          onSave={(description) => {
+            // TODO: Uložiť zručnosť do backendu
+            // Uložiť description do selectedSkillsCategory pomocou funkčnej formy setState
+            setSelectedSkillsCategory((prev) => {
+              if (!prev) return null;
+              return {
+                ...prev,
+                description
+              };
+            });
+            setIsSkillDescriptionModalOpen(false);
+          }}
+        />
+      )}
     </div>
   );
 }
