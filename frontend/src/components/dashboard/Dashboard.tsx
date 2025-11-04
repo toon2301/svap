@@ -9,6 +9,7 @@ import SkillsHome from './modules/skills/SkillsHome';
 import SkillsScreen from './modules/skills/SkillsScreen';
 import SkillsCategoryModal from './modules/skills/SkillsCategoryModal';
 import SkillDescriptionModal from './modules/skills/SkillDescriptionModal';
+import AddCustomCategoryModal from './modules/skills/AddCustomCategoryModal';
 import { api, endpoints } from '../../lib/api';
 import type { User } from '../../types';
 
@@ -60,8 +61,11 @@ export default function Dashboard({ initialUser }: DashboardProps) {
   const [isAccountTypeModalOpen, setIsAccountTypeModalOpen] = useState(false);
   const [isPersonalAccountModalOpen, setIsPersonalAccountModalOpen] = useState(false);
   const [isSkillsCategoryModalOpen, setIsSkillsCategoryModalOpen] = useState(false);
-  const [selectedSkillsCategory, setSelectedSkillsCategory] = useState<{ category: string; subcategory: string; description?: string } | null>(null);
+  const [selectedSkillsCategory, setSelectedSkillsCategory] = useState<{ category: string; subcategory: string; description?: string; experience?: { value: number; unit: 'years' | 'months' } } | null>(null);
+  const [customCategories, setCustomCategories] = useState<{ category: string; subcategory: string; description?: string; experience?: { value: number; unit: 'years' | 'months' } }[]>([]);
   const [isSkillDescriptionModalOpen, setIsSkillDescriptionModalOpen] = useState(false);
+  const [isAddCustomCategoryModalOpen, setIsAddCustomCategoryModalOpen] = useState(false);
+  const [editingCustomCategoryIndex, setEditingCustomCategoryIndex] = useState<number | null>(null);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -432,13 +436,39 @@ export default function Dashboard({ initialUser }: DashboardProps) {
           <SkillsScreen
             title="Vyber, v čom vynikáš."
             firstOptionText="Vyber kategóriu"
-            onFirstOptionClick={() => setIsSkillsCategoryModalOpen(true)}
+            onFirstOptionClick={() => {
+              // Počet uložených kategórií (s description) + custom categories
+              const savedCategories = (selectedSkillsCategory && selectedSkillsCategory.description ? 1 : 0) + customCategories.length;
+              if (savedCategories >= 3) {
+                alert('Môžeš pridať maximálne 3 kategórie');
+                return;
+              }
+              setIsSkillsCategoryModalOpen(true);
+            }}
             selectedCategory={selectedSkillsCategory}
             onRemoveCategory={() => setSelectedSkillsCategory(null)}
             onEditDescription={() => {
               if (selectedSkillsCategory) {
                 setIsSkillDescriptionModalOpen(true);
               }
+            }}
+            onAddCategory={() => {
+              // Počet uložených kategórií (s description) + custom categories
+              const savedCategories = (selectedSkillsCategory && selectedSkillsCategory.description ? 1 : 0) + customCategories.length;
+              if (savedCategories >= 3) {
+                alert('Môžeš pridať maximálne 3 kategórie');
+                return;
+              }
+              setIsAddCustomCategoryModalOpen(true);
+            }}
+            customCategories={customCategories}
+            onRemoveCustomCategory={(index) => {
+              setCustomCategories((prev) => prev.filter((_, i) => i !== index));
+            }}
+            onEditCustomCategoryDescription={(index) => {
+              setEditingCustomCategoryIndex(index);
+              setSelectedSkillsCategory(customCategories[index]);
+              setIsSkillDescriptionModalOpen(true);
             }}
           />
         );
@@ -661,25 +691,91 @@ export default function Dashboard({ initialUser }: DashboardProps) {
             // Ak ešte nemá description, resetovať kategóriu (zatvorené bez uloženia)
             if (!selectedSkillsCategory.description) {
               setSelectedSkillsCategory(null);
+              setEditingCustomCategoryIndex(null);
             }
           }}
           category={selectedSkillsCategory.category}
           subcategory={selectedSkillsCategory.subcategory}
           initialDescription={selectedSkillsCategory.description}
-          onSave={(description) => {
+          initialExperience={selectedSkillsCategory.experience}
+          onSave={(description, experience) => {
             // TODO: Uložiť zručnosť do backendu
-            // Uložiť description do selectedSkillsCategory pomocou funkčnej formy setState
-            setSelectedSkillsCategory((prev) => {
-              if (!prev) return null;
-              return {
-                ...prev,
-                description
-              };
-            });
+            if (editingCustomCategoryIndex !== null) {
+              // Aktualizovať existujúcu vlastnú kategóriu (nie je to nová kategória, takže nepotrebujeme kontrolu)
+              setCustomCategories((prev) => {
+                const updated = [...prev];
+                updated[editingCustomCategoryIndex] = {
+                  ...updated[editingCustomCategoryIndex],
+                  description,
+                  experience
+                };
+                return updated;
+              });
+              setEditingCustomCategoryIndex(null);
+              setSelectedSkillsCategory(null);
+            } else if (selectedSkillsCategory) {
+              // Skontrolovať, či je to vlastná kategóriu (category === subcategory)
+              if (selectedSkillsCategory.category === selectedSkillsCategory.subcategory) {
+                // Skontrolovať limit pred pridaním novej vlastnej kategórie
+                const savedCategories = (selectedSkillsCategory && selectedSkillsCategory.description ? 1 : 0) + customCategories.length;
+                if (savedCategories >= 3) {
+                  alert('Môžeš pridať maximálne 3 kategórie');
+                  return;
+                }
+                // Pridať novú vlastnú kategóriu do zoznamu
+                setCustomCategories((prev) => [
+                  ...prev,
+                  {
+                    category: selectedSkillsCategory.category,
+                    subcategory: selectedSkillsCategory.subcategory,
+                    description,
+                    experience
+                  }
+                ]);
+                setSelectedSkillsCategory(null); // Resetovať len pre vlastnú kategóriu
+              } else {
+                // Skontrolovať limit pred uložením kategórie vybratej cez "Vyber kategóriu"
+                // Ak už má description, len aktualizujeme, nie pridávame novú kategóriu
+                // Ak nemá description, pridáva sa nová kategória
+                if (!selectedSkillsCategory.description) {
+                  // Pridáva sa nová kategória, skontrolovať limit
+                  const savedCategories = customCategories.length;
+                  if (savedCategories >= 3) {
+                    alert('Môžeš pridať maximálne 3 kategórie');
+                    return;
+                  }
+                }
+                // Uložiť do selectedSkillsCategory (kategória vybratá cez "Vyber kategóriu")
+                setSelectedSkillsCategory((prev) => {
+                  if (!prev) return null;
+                  return {
+                    ...prev,
+                    description,
+                    experience
+                  };
+                });
+              }
+            }
             setIsSkillDescriptionModalOpen(false);
           }}
         />
       )}
+
+      {/* Add Custom Category Modal */}
+      <AddCustomCategoryModal
+        isOpen={isAddCustomCategoryModalOpen}
+        onClose={() => setIsAddCustomCategoryModalOpen(false)}
+        onSave={(categoryName) => {
+          // Nastavíme dočasnú kategóriu pre modal popisu
+          setSelectedSkillsCategory({ 
+            category: categoryName, 
+            subcategory: categoryName 
+          });
+          setEditingCustomCategoryIndex(null); // Nová kategória
+          setIsAddCustomCategoryModalOpen(false);
+          setIsSkillDescriptionModalOpen(true);
+        }}
+      />
     </div>
   );
 }
