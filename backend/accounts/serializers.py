@@ -4,7 +4,7 @@ from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from datetime import datetime, date
-from .models import User, UserProfile, UserType, EmailVerification
+from .models import User, UserProfile, UserType, EmailVerification, OfferedSkill
 from swaply.validators import (
     EmailValidator, PasswordValidator, NameValidator, 
     PhoneValidator, URLValidator, BioValidator, SecurityValidator, CAPTCHAValidator
@@ -365,3 +365,77 @@ class ResendVerificationSerializer(serializers.Serializer):
             raise serializers.ValidationError("Používateľ s týmto emailom neexistuje.")
         
         return value
+
+
+class OfferedSkillSerializer(serializers.ModelSerializer):
+    """Serializátor pre ponúkané zručnosti"""
+    
+    experience = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = OfferedSkill
+        fields = [
+            'id', 'category', 'subcategory', 'description',
+            'experience_value', 'experience_unit', 'experience', 'tags',
+            'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+    
+    def get_experience(self, obj):
+        """Vráti experience ako objekt (ak existuje)"""
+        if obj.experience_value is not None and obj.experience_unit:
+            return {
+                'value': obj.experience_value,
+                'unit': obj.experience_unit
+            }
+        return None
+    
+    def validate_description(self, value):
+        """Validácia popisu"""
+        if value:
+            value = SecurityValidator.validate_input_safety(value)
+            if len(value) > 75:
+                raise serializers.ValidationError("Popis môže mať maximálne 75 znakov")
+        return value
+    
+    def validate_tags(self, value):
+        """Validácia tagov"""
+        if not isinstance(value, list):
+            raise serializers.ValidationError("Tagy musia byť pole")
+        if len(value) > 5:
+            raise serializers.ValidationError("Môžeš pridať maximálne 5 tagov")
+        # Validácia jednotlivých tagov
+        validated_tags = []
+        for tag in value:
+            if not isinstance(tag, str):
+                continue
+            tag = tag.strip()
+            if tag:
+                # Odstránenie duplikátov (case-insensitive)
+                tag_lower = tag.lower()
+                if not any(t.lower() == tag_lower for t in validated_tags):
+                    validated_tags.append(tag)
+        return validated_tags
+    
+    def validate_experience_value(self, value):
+        """Validácia hodnoty praxe"""
+        if value is not None:
+            if value < 0 or value > 100:
+                raise serializers.ValidationError("Dĺžka praxe musí byť medzi 0 a 100")
+        return value
+    
+    def validate(self, attrs):
+        """Globálna validácia"""
+        # Ak je zadaná experience_value, musí byť aj experience_unit
+        experience_value = attrs.get('experience_value')
+        experience_unit = attrs.get('experience_unit')
+        
+        if experience_value is not None and not experience_unit:
+            raise serializers.ValidationError({
+                'experience_unit': 'Jednotka praxe je povinná, ak je zadaná hodnota praxe'
+            })
+        
+        if not experience_value and experience_unit:
+            attrs['experience_unit'] = ''  # Vyčistiť jednotku ak nie je hodnota
+        
+        return attrs

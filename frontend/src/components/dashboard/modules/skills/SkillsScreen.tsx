@@ -6,11 +6,11 @@ interface SkillsScreenProps {
   title: string;
   firstOptionText?: string;
   onFirstOptionClick?: () => void;
-  selectedCategory?: { category: string; subcategory: string; description?: string; experience?: { value: number; unit: 'years' | 'months' } } | null;
+  selectedCategory?: { id?: number; category: string; subcategory: string; description?: string; experience?: { value: number; unit: 'years' | 'months' }; tags?: string[] } | null;
   onRemoveCategory?: () => void;
   onEditDescription?: () => void;
   onAddCategory?: () => void;
-  customCategories?: { category: string; subcategory: string; description?: string; experience?: { value: number; unit: 'years' | 'months' } }[];
+  customCategories?: { id?: number; category: string; subcategory: string; description?: string; experience?: { value: number; unit: 'years' | 'months' }; tags?: string[] }[];
   onRemoveCustomCategory?: (index: number) => void;
   onEditCustomCategoryDescription?: (index: number) => void;
 }
@@ -62,7 +62,7 @@ export default function SkillsScreen({ title, firstOptionText, onFirstOptionClic
                         </button>
                       )}
                     </div>
-                    {(selectedCategory.description && selectedCategory.description.trim()) || selectedCategory.experience ? (
+                    {(selectedCategory.description && selectedCategory.description.trim()) || selectedCategory.experience || (selectedCategory.tags && selectedCategory.tags.length > 0) ? (
                       <div className="mt-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-black/30">
                         {selectedCategory.description && selectedCategory.description.trim() && (
                           <button
@@ -91,6 +91,22 @@ export default function SkillsScreen({ title, firstOptionText, onFirstOptionClic
                               <span className="text-sm text-gray-600 dark:text-gray-400">
                                 {selectedCategory.experience.value} {selectedCategory.experience.unit === 'years' ? 'rokov' : 'mesiacov'}
                               </span>
+                            </div>
+                          </>
+                        )}
+                        {selectedCategory.tags && selectedCategory.tags.length > 0 && (
+                          <>
+                            {(selectedCategory.description && selectedCategory.description.trim()) || selectedCategory.experience ? (
+                              <div className="mx-3 border-t border-gray-200 dark:border-gray-700" />
+                            ) : null}
+                            <div className="py-2 px-3">
+                              <div className="flex flex-wrap gap-1.5">
+                                {selectedCategory.tags.map((tag, idx) => (
+                                  <span key={idx} className="inline-flex items-center rounded-full bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300 px-2 py-0.5 text-xs">
+                                    {tag}
+                                  </span>
+                                ))}
+                              </div>
                             </div>
                           </>
                         )}
@@ -139,7 +155,7 @@ export default function SkillsScreen({ title, firstOptionText, onFirstOptionClic
                         </button>
                       )}
                     </div>
-                    {(customCategory.description && customCategory.description.trim()) || customCategory.experience ? (
+                    {(customCategory.description && customCategory.description.trim()) || customCategory.experience || (customCategory.tags && customCategory.tags.length > 0) ? (
                       <div className="mt-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-black/30">
                         {customCategory.description && customCategory.description.trim() && (
                           <button
@@ -168,6 +184,22 @@ export default function SkillsScreen({ title, firstOptionText, onFirstOptionClic
                               <span className="text-sm text-gray-600 dark:text-gray-400">
                                 {customCategory.experience.value} {customCategory.experience.unit === 'years' ? 'rokov' : 'mesiacov'}
                               </span>
+                            </div>
+                          </>
+                        )}
+                        {customCategory.tags && customCategory.tags.length > 0 && (
+                          <>
+                            {(customCategory.description && customCategory.description.trim()) || customCategory.experience ? (
+                              <div className="mx-3 border-t border-gray-200 dark:border-gray-700" />
+                            ) : null}
+                            <div className="py-2 px-3">
+                              <div className="flex flex-wrap gap-1.5">
+                                {customCategory.tags.map((tag, idx) => (
+                                  <span key={idx} className="inline-flex items-center rounded-full bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300 px-2 py-0.5 text-xs">
+                                    {tag}
+                                  </span>
+                                ))}
+                              </div>
                             </div>
                           </>
                         )}

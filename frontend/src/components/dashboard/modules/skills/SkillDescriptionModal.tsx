@@ -10,9 +10,10 @@ interface SkillDescriptionModalProps {
   onClose: () => void;
   category: string;
   subcategory: string;
-  onSave: (description: string, experience?: { value: number; unit: 'years' | 'months' }) => void;
+  onSave: (description: string, experience?: { value: number; unit: 'years' | 'months' }, tags?: string[]) => void;
   initialDescription?: string;
   initialExperience?: { value: number; unit: 'years' | 'months' };
+  initialTags?: string[];
 }
 
 export default function SkillDescriptionModal({ 
@@ -22,13 +23,17 @@ export default function SkillDescriptionModal({
   subcategory, 
   onSave,
   initialDescription = '',
-  initialExperience
+  initialExperience,
+  initialTags = []
 }: SkillDescriptionModalProps) {
   const [description, setDescription] = useState<string>('');
   const [error, setError] = useState<string>('');
   const [experienceValue, setExperienceValue] = useState<string>('');
   const [experienceUnit, setExperienceUnit] = useState<'years' | 'months'>('years');
   const [experienceError, setExperienceError] = useState<string>('');
+  const [tags, setTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState<string>('');
+  const [tagError, setTagError] = useState<string>('');
   const [showEmojiPicker, setShowEmojiPicker] = useState<boolean>(false);
   const [emojiDirection, setEmojiDirection] = useState<'top' | 'bottom'>('bottom');
   const [pickerCoords, setPickerCoords] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
@@ -41,6 +46,8 @@ export default function SkillDescriptionModal({
     setPortalNode(typeof window !== 'undefined' ? document.body : null);
   }, []);
 
+
+  // Reset a nastavenie počiatočných hodnôt pri otvorení/zatvorení modalu
   useEffect(() => {
     if (isOpen) {
       setDescription(initialDescription || '');
@@ -54,6 +61,9 @@ export default function SkillDescriptionModal({
         setExperienceUnit('years');
       }
       setExperienceError('');
+      setTags(Array.isArray(initialTags) ? initialTags : []);
+      setTagInput('');
+      setTagError('');
     } else {
       setDescription('');
       setError('');
@@ -61,8 +71,23 @@ export default function SkillDescriptionModal({
       setExperienceValue('');
       setExperienceUnit('years');
       setExperienceError('');
+      setTags([]);
+      setTagInput('');
+      setTagError('');
     }
-  }, [isOpen, initialDescription, initialExperience]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
+  
+  // Aktualizácia len keď sa zmení initialDescription pri editácii (nie pri každom renderi)
+  const prevInitialDescriptionRef = React.useRef<string | undefined>();
+  useEffect(() => {
+    if (isOpen && initialDescription !== prevInitialDescriptionRef.current) {
+      prevInitialDescriptionRef.current = initialDescription;
+      if (initialDescription !== undefined) {
+        setDescription(initialDescription);
+      }
+    }
+  }, [isOpen, initialDescription]);
 
   // Zavrie emoji picker pri kliknutí mimo neho
   useEffect(() => {
@@ -165,7 +190,7 @@ export default function SkillDescriptionModal({
     }
 
     setExperienceError('');
-    onSave(trimmed, experience);
+    onSave(trimmed, experience, tags);
     // Modal sa zatvorí automaticky v Dashboard.tsx cez setIsSkillDescriptionModalOpen(false)
   };
 
@@ -182,7 +207,9 @@ export default function SkillDescriptionModal({
   const remainingChars = 75 - description.length;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4" onClick={(e) => {
+      if (e.target === e.currentTarget) onClose();
+    }}>
       <div className="w-full max-w-md" onClick={(e) => e.stopPropagation()}>
         <div className="rounded-2xl bg-[var(--background)] text-[var(--foreground)] border border-[var(--border)] shadow-xl overflow-visible">
           <div className="flex items-center justify-between px-6 pt-6 pb-3">
@@ -217,6 +244,7 @@ export default function SkillDescriptionModal({
                   className="w-full px-3 py-2 pr-20 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-1 focus:ring-purple-300 focus:border-transparent resize-none"
                   rows={4}
                   maxLength={75}
+                  autoFocus
                 />
                 <button
                   ref={emojiButtonRef}
@@ -263,6 +291,85 @@ export default function SkillDescriptionModal({
                   {remainingChars} znakov
                 </p>
               </div>
+            </div>
+
+            {/* Tagy (voliteľné) */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <div className="flex items-center gap-2">
+                  <span>Tagy (voliteľné)</span>
+                  <div className="relative inline-flex group">
+                    <button
+                      type="button"
+                      className="w-4 h-4 rounded-full bg-gray-400 dark:bg-gray-500 text-white flex items-center justify-center hover:bg-gray-500 dark:hover:bg-gray-400 transition-colors cursor-help"
+                      aria-label="Informácie o tagoch"
+                    >
+                      <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                      </svg>
+                    </button>
+                    <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block z-50 pointer-events-none">
+                      <div className="bg-gray-900 dark:bg-gray-800 text-white text-xs rounded-lg px-3 py-2 shadow-xl max-w-[280px] leading-relaxed">
+                        Hashtagy slúžia na lepšie vyhľadávanie vás a vašich ponúk v aplikácii.
+                        <div className="absolute left-2 top-full w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900 dark:border-t-gray-800"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </label>
+              {tags.length > 0 && (
+                <div className="mb-2 flex flex-wrap gap-2">
+                  {tags.map((tag, idx) => (
+                    <span key={`${tag}-${idx}`} className="inline-flex items-center gap-1 rounded-full bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300 px-2.5 py-1 text-xs">
+                      {tag}
+                      <button
+                        type="button"
+                        aria-label={`Odstrániť tag ${tag}`}
+                        className="text-purple-600 hover:text-purple-800 dark:text-purple-300 dark:hover:text-purple-200"
+                        onClick={() => {
+                          setTags((prev) => prev.filter((t) => t !== tag));
+                        }}
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+              <input
+                type="text"
+                value={tagInput}
+                onChange={(e) => {
+                  setTagInput(e.target.value);
+                  setTagError('');
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ',') {
+                    e.preventDefault();
+                    const raw = tagInput.trim();
+                    if (!raw) return;
+                    const candidate = raw.replace(/,+$/g, '');
+                    const lower = candidate.toLowerCase();
+                    if (tags.some((t) => t.toLowerCase() === lower)) {
+                      setTagError('Tento tag už máš pridaný');
+                      return;
+                    }
+                    if (tags.length >= 5) {
+                      alert('Môžeš pridať maximálne 5 tagov.');
+                      return;
+                    }
+                    setTags((prev) => [...prev, candidate]);
+                    setTagInput('');
+                    setTagError('');
+                  }
+                }}
+                placeholder="Napíš tag a stlač Enter alebo ,"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-1 focus:ring-purple-300 focus:border-transparent"
+                aria-label="Vstup pre tagy"
+              />
+              {tagError && (
+                <p className="text-sm text-red-500 mt-1">{tagError}</p>
+              )}
             </div>
 
             {/* Dĺžka praxe */}

@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.utils.translation import gettext_lazy as _
-from .models import User, UserProfile, UserType
+from .models import User, UserProfile, UserType, OfferedSkill
 
 
 @admin.register(User)
@@ -82,6 +82,36 @@ class UserProfileAdmin(admin.ModelAdmin):
     )
     
     readonly_fields = ['created_at', 'updated_at']
+
+
+@admin.register(OfferedSkill)
+class OfferedSkillAdmin(admin.ModelAdmin):
+    """Admin rozhranie pre OfferedSkill model"""
+    
+    list_display = ['user', 'category', 'subcategory', 'created_at']
+    list_filter = ['category', 'created_at']
+    search_fields = ['user__username', 'user__email', 'category', 'subcategory', 'description']
+    ordering = ['-created_at']
+    readonly_fields = ['created_at', 'updated_at']
+    
+    fieldsets = (
+        (_('Používateľ'), {
+            'fields': ('user',)
+        }),
+        (_('Zručnosť'), {
+            'fields': ('category', 'subcategory', 'description')
+        }),
+        (_('Praxe'), {
+            'fields': ('experience_value', 'experience_unit')
+        }),
+        (_('Tagy'), {
+            'fields': ('tags',)
+        }),
+        (_('Dôležité dátumy'), {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
 
 
 # Vlastné nastavenia admin rozhrania

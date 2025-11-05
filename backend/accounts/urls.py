@@ -45,4 +45,8 @@ urlpatterns = [
     path('dashboard/favorites/', views.dashboard_favorites_view, name='dashboard_favorites'),
     path('dashboard/profile/', views.dashboard_profile_view, name='dashboard_profile'),
     path('dashboard/settings/', views.dashboard_settings_view, name='dashboard_settings'),
+    
+    # Skills
+    path('skills/', views.skills_list_view, name='skills_list'),
+    path('skills/<int:skill_id>/', views.skills_detail_view, name='skills_detail'),
 ]

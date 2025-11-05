@@ -245,3 +245,41 @@ Tím Swaply
         self.user.save()
         
         return True
+
+
+class OfferedSkill(models.Model):
+    """Model pre zručnosti, ktoré používateľ ponúka"""
+    
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='offered_skills')
+    category = models.CharField(_('Kategória'), max_length=100)
+    subcategory = models.CharField(_('Podkategória'), max_length=100)
+    description = models.TextField(_('Popis'), max_length=75, blank=True)
+    experience_value = models.FloatField(_('Hodnota dĺžky praxe'), null=True, blank=True)
+    experience_unit = models.CharField(
+        _('Jednotka dĺžky praxe'),
+        max_length=10,
+        choices=[
+            ('years', _('Roky')),
+            ('months', _('Mesiace')),
+        ],
+        blank=True
+    )
+    tags = models.JSONField(_('Tagy'), default=list, blank=True)
+    
+    created_at = models.DateTimeField(_('Vytvorené'), auto_now_add=True)
+    updated_at = models.DateTimeField(_('Aktualizované'), auto_now=True)
+    
+    class Meta:
+        verbose_name = _('Ponúkaná zručnosť')
+        verbose_name_plural = _('Ponúkané zručnosti')
+        ordering = ['-created_at']
+        # Jeden používateľ môže mať maximálne 3 zručnosti
+        constraints = [
+            models.UniqueConstraint(
+                fields=['user', 'category', 'subcategory'],
+                name='unique_user_skill_category'
+            )
+        ]
+    
+    def __str__(self):
+        return f"{self.user.display_name} - {self.category} → {self.subcategory}"

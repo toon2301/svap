@@ -152,6 +152,11 @@ export const endpoints = {
     profile: '/dashboard/profile/',
     settings: '/dashboard/settings/',
   },
+  // Skills
+  skills: {
+    list: '/auth/skills/',
+    detail: (id: number) => `/auth/skills/${id}/`,
+  },
 };
 
 export default api;

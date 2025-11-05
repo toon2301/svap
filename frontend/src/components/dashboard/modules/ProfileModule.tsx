@@ -9,7 +9,7 @@ import UserInfo from './profile/UserInfo';
 import WebsitesRow from './profile/view/WebsitesRow';
 import ProfileEditFormDesktop from './ProfileEditFormDesktop';
 import ProfileEditFormMobile from './ProfileEditFormMobile';
-import { api } from '../../../lib/api';
+import { api, endpoints } from '../../../lib/api';
 
 interface ProfileModuleProps {
   user: User;
@@ -20,6 +20,15 @@ interface ProfileModuleProps {
   accountType?: 'personal' | 'business';
 }
 
+interface Skill {
+  id?: number;
+  category: string;
+  subcategory: string;
+  description?: string;
+  experience?: { value: number; unit: 'years' | 'months' };
+  tags?: string[];
+}
+
 export default function ProfileModule({ user, onUserUpdate, onEditProfileClick, onSkillsClick, isEditMode = false, accountType = 'personal' }: ProfileModuleProps) {
   const { t } = useLanguage();
   const [isUploading, setIsUploading] = useState(false);
@@ -28,10 +37,36 @@ export default function ProfileModule({ user, onUserUpdate, onEditProfileClick, 
   const [isActionsOpen, setIsActionsOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [isAllWebsitesModalOpen, setIsAllWebsitesModalOpen] = useState(false);
+  const [skills, setSkills] = useState<Skill[]>([]);
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Načítanie ponúk (skills) z backendu – kompaktné zobrazenie pod čiarou
+  useEffect(() => {
+    const loadSkills = async () => {
+      if (!user || accountType !== 'personal' || isEditMode) return;
+      try {
+        const { data } = await api.get(endpoints.skills.list);
+        const items: any[] = Array.isArray(data) ? data : [];
+        const local: Skill[] = items.map((s: any) => ({
+          id: s.id,
+          category: s.category,
+          subcategory: s.subcategory,
+          description: s.description || '',
+          experience: (s.experience_value !== undefined && s.experience_value !== null && s.experience_unit)
+            ? { value: s.experience_value, unit: s.experience_unit }
+            : undefined,
+          tags: Array.isArray(s.tags) ? s.tags : [],
+        }));
+        setSkills(local);
+      } catch (_e) {
+        setSkills([]);
+      }
+    };
+    loadSkills();
+  }, [user, accountType, isEditMode]);
 
   const handlePhotoUpload = async (file: File) => {
     setIsUploading(true);
@@ -245,7 +280,7 @@ export default function ProfileModule({ user, onUserUpdate, onEditProfileClick, 
                     }}
                     className="flex-1 px-3 py-1.5 text-xs bg-purple-100 text-purple-800 border border-purple-200 rounded-lg transition-colors hover:bg-purple-200"
                   >
-                    {t('profile.skills', 'Zručnosti')}
+                    {t('profile.skills', 'Zručnosti a ponuky')}
                   </button>
                 </div>
               </div>
@@ -273,7 +308,7 @@ export default function ProfileModule({ user, onUserUpdate, onEditProfileClick, 
           ) : (
             // Normal profile view
             <>
-              <div className="flex gap-6 mb-6">
+              <div className="flex flex-col gap-6 mb-6">
                 <div className="flex gap-4">
                   <div className="flex flex-col items-start">
                     <div className="flex gap-4 items-center">
@@ -352,26 +387,64 @@ export default function ProfileModule({ user, onUserUpdate, onEditProfileClick, 
                       >
                         {t('profile.editProfile')}
                       </button>
-                  <button
-                    onClick={() => {
-                      // Desktop: prepnúť na prázdny screen Zručnosti
-                      // Ak príde callback z nadradenej komponenty, použi ho
-                      // @ts-ignore - prop môže byť voliteľná
-                      if (typeof onSkillsClick === 'function') {
-                        // @ts-ignore
-                        onSkillsClick();
-                      } else {
-                        console.log('Zručnosti');
-                      }
-                    }}
+                      <button
+                        onClick={() => {
+                          // Desktop: prepnúť na prázdny screen Zručnosti
+                          // Ak príde callback z nadradenej komponenty, použi ho
+                          // @ts-ignore - prop môže byť voliteľná
+                          if (typeof onSkillsClick === 'function') {
+                            // @ts-ignore
+                            onSkillsClick();
+                          } else {
+                            console.log('Zručnosti');
+                          }
+                        }}
                         className="flex-1 px-32 py-2 text-sm bg-purple-100 text-purple-800 border border-purple-200 rounded-lg transition-colors hover:bg-purple-200 whitespace-nowrap"
                       >
-                        {t('profile.skills')}
+                        {t('profile.skills', 'Zručnosti a ponuky')}
                       </button>
                     </div>
+                    {/* Rozdeľovacia čiara */}
+                    <div className="w-full border-t border-gray-200 dark:border-gray-700 mt-3"></div>
+                    {/* Ponuky pod čiarou - kompaktné karty */}
+                    {accountType === 'personal' && !isEditMode && skills.length > 0 && (
+                      <div className="w-full mt-3 space-y-2">
+                        {skills.map((skill) => (
+                          <div
+                            key={skill.id || `${skill.category}-${skill.subcategory}`}
+                            className="border border-gray-200 dark:border-gray-700 rounded-lg pt-0 pb-2.5 px-2.5 bg-gray-50 dark:bg-gray-900/30 hover:bg-gray-100 dark:hover:bg-gray-900/50 transition-colors relative"
+                          >
+                            <div className="text-center -mt-2 mb-0">
+                              <span className="text-[10px] text-gray-400 dark:text-gray-500">Ponúkam</span>
+                            </div>
+                            {skill.experience && (
+                              <div className="absolute top-0.5 right-2">
+                                <span className="text-xs text-gray-500 dark:text-gray-500 whitespace-nowrap">
+                                  {skill.experience.value} {skill.experience.unit === 'years' ? 'rokov' : 'mesiacov'}
+                                </span>
+                              </div>
+                            )}
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex-1 min-w-0 pr-16">
+                                <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-0.5 -mt-1.5">
+                                  {skill.category !== skill.subcategory 
+                                    ? `${skill.category} → ${skill.subcategory}`
+                                    : skill.category}
+                                </h4>
+                                {skill.description && skill.description.trim() && (
+                                  <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2">
+                                    {skill.description}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
-                <div className="flex-1">
+                <div className="w-full">
                   <UserInfo user={user} />
                 </div>
               </div>
