@@ -413,7 +413,7 @@ export default function ProfileEditForm({ user, onUserUpdate, onEditProfileClick
                 onEditProfileClick();
               }
             }}
-            className="w-3/5 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+            className="w-3/5 px-4 py-2 bg-purple-600 text-white rounded-2xl hover:bg-purple-700 transition-colors"
           >
             Uložiť
           </button>

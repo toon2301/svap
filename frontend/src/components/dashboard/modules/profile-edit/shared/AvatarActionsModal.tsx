@@ -41,20 +41,20 @@ export default function AvatarActionsModal({ user, isOpen, onClose, onPhotoUploa
                 };
                 input.click();
               }}
-              className="w-full py-4 text-lg rounded-lg bg-[var(--muted)] text-[var(--foreground)] hover:bg-gray-200 dark:hover:bg-[#141414]"
+              className="w-full py-4 text-lg rounded-2xl bg-[var(--muted)] text-[var(--foreground)] hover:bg-gray-200 dark:hover:bg-[#141414]"
             >
               Zmeniť fotku
             </button>
             <button
               onClick={() => onRemove()}
-              className="w-full py-4 text-lg rounded-lg bg-[var(--muted)] text-[var(--foreground)] hover:bg-gray-200 dark:hover:bg-[#141414]"
+              className="w-full py-4 text-lg rounded-2xl bg-[var(--muted)] text-[var(--foreground)] hover:bg-gray-200 dark:hover:bg-[#141414]"
               disabled={isUploading}
             >
               Odstrániť fotku
             </button>
             <button
               onClick={onClose}
-              className="w-full py-4 text-lg rounded-lg bg-[var(--muted)] text-[var(--foreground)] hover:bg-gray-200 dark:hover:bg-[#141414]"
+              className="w-full py-4 text-lg rounded-2xl bg-[var(--muted)] text-[var(--foreground)] hover:bg-gray-200 dark:hover:bg-[#141414]"
             >
               Zrušiť
             </button>

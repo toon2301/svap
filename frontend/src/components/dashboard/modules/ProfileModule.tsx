@@ -9,7 +9,7 @@ import UserInfo from './profile/UserInfo';
 import WebsitesRow from './profile/view/WebsitesRow';
 import ProfileEditFormDesktop from './ProfileEditFormDesktop';
 import ProfileEditFormMobile from './ProfileEditFormMobile';
-import { api, endpoints } from '../../../lib/api';
+import { api } from '../../../lib/api';
 
 interface ProfileModuleProps {
   user: User;
@@ -20,14 +20,7 @@ interface ProfileModuleProps {
   accountType?: 'personal' | 'business';
 }
 
-interface Skill {
-  id?: number;
-  category: string;
-  subcategory: string;
-  description?: string;
-  experience?: { value: number; unit: 'years' | 'months' };
-  tags?: string[];
-}
+// Removed inline Skill interface as profile no longer renders user's offers
 
 export default function ProfileModule({ user, onUserUpdate, onEditProfileClick, onSkillsClick, isEditMode = false, accountType = 'personal' }: ProfileModuleProps) {
   const { t } = useLanguage();
@@ -37,36 +30,28 @@ export default function ProfileModule({ user, onUserUpdate, onEditProfileClick, 
   const [isActionsOpen, setIsActionsOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [isAllWebsitesModalOpen, setIsAllWebsitesModalOpen] = useState(false);
-  const [skills, setSkills] = useState<Skill[]>([]);
+  const [activeTab, setActiveTab] = useState<'offers' | 'portfolio' | 'posts' | 'tagged'>('offers');
+  // Removed skills state - offers are not rendered on profile for now
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Načítanie ponúk (skills) z backendu – kompaktné zobrazenie pod čiarou
-  useEffect(() => {
-    const loadSkills = async () => {
-      if (!user || accountType !== 'personal' || isEditMode) return;
-      try {
-        const { data } = await api.get(endpoints.skills.list);
-        const items: any[] = Array.isArray(data) ? data : [];
-        const local: Skill[] = items.map((s: any) => ({
-          id: s.id,
-          category: s.category,
-          subcategory: s.subcategory,
-          description: s.description || '',
-          experience: (s.experience_value !== undefined && s.experience_value !== null && s.experience_unit)
-            ? { value: s.experience_value, unit: s.experience_unit }
-            : undefined,
-          tags: Array.isArray(s.tags) ? s.tags : [],
-        }));
-        setSkills(local);
-      } catch (_e) {
-        setSkills([]);
-      }
-    };
-    loadSkills();
-  }, [user, accountType, isEditMode]);
+  const handleTabsKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    const order: Array<'offers' | 'portfolio' | 'posts' | 'tagged'> = ['offers', 'portfolio', 'posts', 'tagged'];
+    const currentIndex = order.indexOf(activeTab);
+    if (event.key === 'ArrowRight') {
+      event.preventDefault();
+      const next = (currentIndex + 1) % order.length;
+      setActiveTab(order[next]);
+    } else if (event.key === 'ArrowLeft') {
+      event.preventDefault();
+      const prev = (currentIndex - 1 + order.length) % order.length;
+      setActiveTab(order[prev]);
+    }
+  };
+
+  // Removed offers loading effect - nothing to fetch for profile display now
 
   const handlePhotoUpload = async (file: File) => {
     setIsUploading(true);
@@ -270,7 +255,7 @@ export default function ProfileModule({ user, onUserUpdate, onEditProfileClick, 
                         console.log('Upraviť profil');
                       }
                     }}
-                    className="flex-1 px-3 py-1.5 text-xs bg-purple-100 text-purple-800 border border-purple-200 rounded-lg transition-colors hover:bg-purple-200"
+                    className="flex-1 px-3 py-1.5 text-xs bg-purple-100 text-purple-800 border border-purple-200 rounded-2xl transition-colors hover:bg-purple-200"
                   >
                     {t('profile.editProfile', 'Upraviť profil')}
                   </button>
@@ -278,10 +263,102 @@ export default function ProfileModule({ user, onUserUpdate, onEditProfileClick, 
                     onClick={() => {
                       console.log('Zručnosti');
                     }}
-                    className="flex-1 px-3 py-1.5 text-xs bg-purple-100 text-purple-800 border border-purple-200 rounded-lg transition-colors hover:bg-purple-200"
+                    className="flex-1 px-3 py-1.5 text-xs bg-purple-100 text-purple-800 border border-purple-200 rounded-2xl transition-colors hover:bg-purple-200"
                   >
                     {t('profile.skills', 'Zručnosti a ponuky')}
                   </button>
+                </div>
+                {/* Ikonová navigácia sekcií profilu (mobile) */}
+                <div className="mt-3 pt-2 border-t border-gray-200 dark:border-gray-700 w-full">
+                  <div
+                    role="tablist"
+                    aria-label="Sekcie profilu"
+                    className="w-full"
+                    tabIndex={0}
+                    onKeyDown={handleTabsKeyDown}
+                  >
+                    <div className="flex w-full items-stretch rounded-2xl border border-gray-200 bg-white/60 dark:bg-[#0f0f10] dark:border-gray-800 shadow-sm overflow-hidden">
+                      <button
+                        type="button"
+                        role="tab"
+                        aria-selected={activeTab === 'offers'}
+                        onClick={() => setActiveTab('offers')}
+                        aria-label="Ponúkam / Hľadám"
+                        title="Ponúkam / Hľadám"
+                        className={[
+                          'relative group flex-1 py-2.5 transition-all flex items-center justify-center min-w-[56px]',
+                          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60',
+                          activeTab === 'offers'
+                            ? 'bg-purple-100 text-purple-700 border border-purple-200 shadow-sm dark:bg-purple-100 dark:text-purple-800 dark:border-purple-200'
+                            : 'text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-[#111214]'
+                        ].join(' ')}
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-5 h-5">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 21l-4.5-4.5 4.5-4.5M3 16.5h11.25A3.75 3.75 0 0 0 18 8.25h3M16.5 3l4.5 4.5-4.5 4.5" />
+                        </svg>
+                      </button>
+                      <button
+                        type="button"
+                        role="tab"
+                        aria-selected={activeTab === 'portfolio'}
+                        onClick={() => setActiveTab('portfolio')}
+                        aria-label="Portfólio"
+                        title="Portfólio"
+                        className={[
+                          'relative group flex-1 py-2.5 transition-all flex items-center justify-center min-w-[56px]',
+                          'border-l border-gray-200 dark:border-gray-800',
+                          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60',
+                          activeTab === 'portfolio'
+                            ? 'bg-purple-100 text-purple-700 border border-purple-200 shadow-sm dark:bg-purple-100 dark:text-purple-800 dark:border-purple-200'
+                            : 'text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-[#111214]'
+                        ].join(' ')}
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-5 h-5">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75h7.5v7.5h-7.5zM12.75 3.75h7.5v7.5h-7.5zM3.75 12.75h7.5v7.5h-7.5zM12.75 12.75h7.5v7.5h-7.5z" />
+                        </svg>
+                      </button>
+                      <button
+                        type="button"
+                        role="tab"
+                        aria-selected={activeTab === 'posts'}
+                        onClick={() => setActiveTab('posts')}
+                        aria-label="Príspevky"
+                        title="Príspevky"
+                        className={[
+                          'relative group flex-1 py-2.5 transition-all flex items-center justify-center min-w-[56px]',
+                          'border-l border-gray-200 dark:border-gray-800',
+                          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60',
+                          activeTab === 'posts'
+                            ? 'bg-purple-100 text-purple-700 border border-purple-200 shadow-sm dark:bg-purple-100 dark:text-purple-800 dark:border-purple-200'
+                            : 'text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-[#111214]'
+                        ].join(' ')}
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-5 h-5">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 7.5h15v9h-15zM3 9l9 6 9-6" />
+                        </svg>
+                      </button>
+                      <button
+                        type="button"
+                        role="tab"
+                        aria-selected={activeTab === 'tagged'}
+                        onClick={() => setActiveTab('tagged')}
+                        aria-label="Označený"
+                        title="Označený"
+                        className={[
+                          'relative group flex-1 py-2.5 transition-all flex items-center justify-center min-w-[56px]',
+                          'border-l border-gray-200 dark:border-gray-800',
+                          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60',
+                          activeTab === 'tagged'
+                            ? 'bg-purple-100 text-purple-700 border border-purple-200 shadow-sm dark:bg-purple-100 dark:text-purple-800 dark:border-purple-200'
+                            : 'text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-[#111214]'
+                        ].join(' ')}
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-5 h-5">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0v1.5a2.25 2.25 0 0 0 4.5 0V12a9 9 0 1 0-3.515 7.082" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
               <UserInfo user={user} />
@@ -383,7 +460,7 @@ export default function ProfileModule({ user, onUserUpdate, onEditProfileClick, 
                             console.log('Upraviť profil');
                           }
                         }}
-                        className="flex-1 px-32 py-2 text-sm bg-purple-100 text-purple-800 border border-purple-200 rounded-lg transition-colors hover:bg-purple-200 whitespace-nowrap"
+                        className="flex-1 px-32 py-2 text-sm bg-purple-100 text-purple-800 border border-purple-200 rounded-2xl transition-colors hover:bg-purple-200 whitespace-nowrap"
                       >
                         {t('profile.editProfile')}
                       </button>
@@ -399,49 +476,128 @@ export default function ProfileModule({ user, onUserUpdate, onEditProfileClick, 
                             console.log('Zručnosti');
                           }
                         }}
-                        className="flex-1 px-32 py-2 text-sm bg-purple-100 text-purple-800 border border-purple-200 rounded-lg transition-colors hover:bg-purple-200 whitespace-nowrap"
+                        className="flex-1 px-32 py-2 text-sm bg-purple-100 text-purple-800 border border-purple-200 rounded-2xl transition-colors hover:bg-purple-200 whitespace-nowrap"
                       >
                         {t('profile.skills', 'Zručnosti a ponuky')}
                       </button>
                     </div>
-                    {/* Rozdeľovacia čiara */}
-                    <div className="w-full border-t border-gray-200 dark:border-gray-700 mt-3"></div>
-                    {/* Ponuky pod čiarou - kompaktné karty */}
-                    {accountType === 'personal' && !isEditMode && skills.length > 0 && (
-                      <div className="w-full mt-3 space-y-2">
-                        {skills.map((skill) => (
-                          <div
-                            key={skill.id || `${skill.category}-${skill.subcategory}`}
-                            className="border border-gray-200 dark:border-gray-700 rounded-lg pt-0 pb-2.5 px-2.5 bg-gray-50 dark:bg-gray-900/30 hover:bg-gray-100 dark:hover:bg-gray-900/50 transition-colors relative"
-                          >
-                            <div className="text-center -mt-2 mb-0">
-                              <span className="text-[10px] text-gray-400 dark:text-gray-500">Ponúkam</span>
-                            </div>
-                            {skill.experience && (
-                              <div className="absolute top-0.5 right-2">
-                                <span className="text-xs text-gray-500 dark:text-gray-500 whitespace-nowrap">
-                                  {skill.experience.value} {skill.experience.unit === 'years' ? 'rokov' : 'mesiacov'}
-                                </span>
-                              </div>
-                            )}
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="flex-1 min-w-0 pr-16">
-                                <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-0.5 -mt-1.5">
-                                  {skill.category !== skill.subcategory 
-                                    ? `${skill.category} → ${skill.subcategory}`
-                                    : skill.category}
-                                </h4>
-                                {skill.description && skill.description.trim() && (
-                                  <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2">
-                                    {skill.description}
-                                  </p>
-                                )}
-                              </div>
-                            </div>
+                    {/* Ikonová navigácia sekcií profilu */}
+                    <div className="mt-3 pt-2 border-t border-gray-200 dark:border-gray-700 w-full lg:mt-6 lg:pt-5 lg:pb-4">
+                      <div
+                        role="tablist"
+                        aria-label="Sekcie profilu"
+                        className="w-full"
+                        tabIndex={0}
+                        onKeyDown={handleTabsKeyDown}
+                      >
+                        <div className="flex w-full items-stretch rounded-3xl border border-gray-200 bg-white/60 dark:bg-[#0f0f10] dark:border-gray-800 shadow-sm overflow-hidden">
+                        {/* Tab: Ponúkam/Hľadám */}
+                        <button
+                          type="button"
+                          role="tab"
+                          aria-selected={activeTab === 'offers'}
+                          onClick={() => setActiveTab('offers')}
+                          aria-label="Ponúkam / Hľadám"
+                          title="Ponúkam / Hľadám"
+                        className={[
+                          'relative group flex-1 py-3 transition-all flex items-center justify-center min-w-[72px]',
+                          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60',
+                          activeTab === 'offers'
+                              ? 'bg-purple-100 text-purple-700 border border-purple-200 shadow-sm dark:bg-purple-100 dark:text-purple-800 dark:border-purple-200'
+                              : 'text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-[#111214]'
+                          ].join(' ')}
+                        >
+                          {/* Icon: handshake */}
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" className="w-5 h-5">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="m7.875 14.25 1.214 1.942a2.25 2.25 0 0 0 1.908 1.058h2.006c.776 0 1.497-.4 1.908-1.058l1.214-1.942M2.41 9h4.636a2.25 2.25 0 0 1 1.872 1.002l.164.246a2.25 2.25 0 0 0 1.872 1.002h2.092a2.25 2.25 0 0 0 1.872-1.002l.164-.246A2.25 2.25 0 0 1 16.954 9h4.636M2.41 9a2.25 2.25 0 0 0-.16.832V12a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 12V9.832c0-.287-.055-.57-.16-.832M2.41 9a2.25 2.25 0 0 1 .382-.632l3.285-3.832a2.25 2.25 0 0 1 1.708-.786h8.43c.657 0 1.281.287 1.709.786l3.284 3.832c.163.19.291.404.382.632M4.5 20.25h15A2.25 2.25 0 0 0 21.75 18v-2.625c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125V18a2.25 2.25 0 0 0 2.25 2.25Z" />
+                          </svg>
+                          {/* Tooltip */}
+                          <div className="pointer-events-none absolute -bottom-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-gray-800 px-2 py-1 text-[10px] text-white opacity-0 transition-opacity group-hover:opacity-100">
+                            Ponúkam / Hľadám
                           </div>
-                        ))}
+                        </button>
+
+                        {/* Tab: Portfólio */}
+                        <button
+                          type="button"
+                          role="tab"
+                          aria-selected={activeTab === 'portfolio'}
+                          onClick={() => setActiveTab('portfolio')}
+                          aria-label="Portfólio"
+                          title="Portfólio"
+                        className={[
+                          'relative group flex-1 py-3 transition-all flex items-center justify-center min-w-[72px]',
+                          'border-l border-gray-200 dark:border-gray-800',
+                          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60',
+                          activeTab === 'portfolio'
+                              ? 'bg-purple-100 text-purple-700 border border-purple-200 shadow-sm dark:bg-purple-100 dark:text-purple-800 dark:border-purple-200'
+                              : 'text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-[#111214]'
+                          ].join(' ')}
+                        >
+                          {/* Icon: briefcase */}
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-6 h-6">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M21 13.5V9.75A2.25 2.25 0 0018.75 7.5H5.25A2.25 2.25 0 003 9.75V13.5m18 0v4.5A2.25 2.25 0 0118.75 20.25H5.25A2.25 2.25 0 013 18v-4.5m18 0H3m12-6V4.5a.75.75 0 00-.75-.75h-4.5a.75.75 0 00-.75.75V7.5m6 0H9" />
+                          </svg>
+                          <div className="pointer-events-none absolute -bottom-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-gray-800 px-2 py-1 text-[10px] text-white opacity-0 transition-opacity group-hover:opacity-100">
+                            Portfólio
+                          </div>
+                        </button>
+
+                        {/* Tab: Príspevky */}
+                        <button
+                          type="button"
+                          role="tab"
+                          aria-selected={activeTab === 'posts'}
+                          onClick={() => setActiveTab('posts')}
+                          aria-label="Príspevky"
+                          title="Príspevky"
+                        className={[
+                          'relative group flex-1 py-3 transition-all flex items-center justify-center min-w-[72px]',
+                          'border-l border-gray-200 dark:border-gray-800',
+                          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60',
+                          activeTab === 'posts'
+                              ? 'bg-purple-100 text-purple-700 border border-purple-200 shadow-sm dark:bg-purple-100 dark:text-purple-800 dark:border-purple-200'
+                              : 'text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-[#111214]'
+                          ].join(' ')}
+                        >
+                          {/* Icon: squares-2x2 */}
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-6 h-6">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75h7.5v7.5h-7.5zM12.75 3.75h7.5v7.5h-7.5zM3.75 12.75h7.5v7.5h-7.5zM12.75 12.75h7.5v7.5h-7.5z" />
+                          </svg>
+                          <div className="pointer-events-none absolute -bottom-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-gray-800 px-2 py-1 text-[10px] text-white opacity-0 transition-opacity group-hover:opacity-100">
+                            Príspevky
+                          </div>
+                        </button>
+
+                        {/* Tab: Označený */}
+                        <button
+                          type="button"
+                          role="tab"
+                          aria-selected={activeTab === 'tagged'}
+                          onClick={() => setActiveTab('tagged')}
+                          aria-label="Označený"
+                          title="Označený"
+                        className={[
+                          'relative group flex-1 py-3 transition-all flex items-center justify-center min-w-[72px]',
+                          'border-l border-gray-200 dark:border-gray-800',
+                          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60',
+                          activeTab === 'tagged'
+                              ? 'bg-purple-100 text-purple-700 border border-purple-200 shadow-sm dark:bg-purple-100 dark:text-purple-800 dark:border-purple-200'
+                              : 'text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-[#111214]'
+                          ].join(' ')}
+                        >
+                          {/* Icon: at-symbol */}
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-6 h-6">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0v1.5a2.25 2.25 0 0 0 4.5 0V12a9 9 0 1 0-3.515 7.082" />
+                          </svg>
+                          <div className="pointer-events-none absolute -bottom-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-gray-800 px-2 py-1 text-[10px] text-white opacity-0 transition-opacity group-hover:opacity-100">
+                            Označený
+                          </div>
+                        </button>
+                        </div>
                       </div>
-                    )}
+                    </div>
+                    {/* Obsah sekcií doplníme neskôr podľa požiadaviek */}
                   </div>
                 </div>
                 <div className="w-full">

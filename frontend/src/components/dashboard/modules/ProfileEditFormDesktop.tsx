@@ -658,7 +658,7 @@ export default function ProfileEditFormDesktop({
                 onEditProfileClick();
               }
             }}
-            className="px-32 py-2 bg-purple-100 text-purple-800 border border-purple-200 rounded-lg hover:bg-purple-200 transition-colors"
+            className="px-32 py-2 bg-purple-100 text-purple-800 border border-purple-200 rounded-2xl hover:bg-purple-200 transition-colors"
           >
             {t('common.save', 'Uložiť')}
           </button>

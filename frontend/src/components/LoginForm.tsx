@@ -455,7 +455,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
           <motion.button
             type="submit"
             disabled={isLoginLoading}
-            className={`w-full text-white px-4 py-2.5 rounded-lg font-semibold text-xl transition-all max-lg:px-4 max-lg:py-2 max-lg:text-xl ${
+            className={`w-full text-white px-4 py-2.5 rounded-2xl font-semibold text-xl transition-all max-lg:px-4 max-lg:py-2 max-lg:text-xl ${
               isLoginLoading ? 'cursor-not-allowed' : 'cursor-pointer'
             }`}
             style={{

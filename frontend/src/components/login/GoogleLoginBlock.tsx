@@ -28,7 +28,7 @@ export default function GoogleLoginBlock({ t, isGoogleLoading, isLoginLoading, o
         disabled={isGoogleLoading || isLoginLoading}
         aria-label={t('auth.loginWithGoogle')}
         aria-describedby="google-login-help"
-        className={`w-full mt-4 px-4 py-3 border border-gray-300 dark:border-gray-700 rounded-lg font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-black hover:bg-gray-50 dark:hover:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-all ${
+        className={`w-full mt-4 px-4 py-3 border border-gray-300 dark:border-gray-700 rounded-2xl font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-black hover:bg-gray-50 dark:hover:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-all ${
           isGoogleLoading || isLoginLoading ? 'opacity-50 cursor-not-allowed' : ''
         }`}
         whileHover={!isGoogleLoading && !isLoginLoading ? { scale: 1.02 } : {}}

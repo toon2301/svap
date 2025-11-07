@@ -574,7 +574,7 @@ export default function RegisterForm() {
               <motion.button
                 type="submit"
                 disabled={isLoading}
-                className={`w-full text-white px-4 py-2.5 rounded-lg font-semibold text-xl transition-all max-lg:px-4 max-lg:py-2 max-lg:text-xl ${
+                className={`w-full text-white px-4 py-2.5 rounded-2xl font-semibold text-xl transition-all max-lg:px-4 max-lg:py-2 max-lg:text-xl ${
                   isLoading ? 'cursor-not-allowed' : 'cursor-pointer hover:shadow-lg'
                 }`}
                 style={{
@@ -616,7 +616,7 @@ export default function RegisterForm() {
                 </p>
                 <a 
                   href="/" 
-                  className="inline-block bg-purple-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-purple-700 transition-colors"
+                  className="inline-block bg-purple-600 text-white px-6 py-3 rounded-2xl font-semibold hover:bg-purple-700 transition-colors"
                 >
                   {t('auth.loginLink')}
                 </a>
