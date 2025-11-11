@@ -340,11 +340,15 @@ def validate_image_file(value):
             strict_mode = getattr(settings, 'SAFESEARCH_STRICT_MODE', False)
             # Ak bežíme v DEBUG a nie je k dispozícii žiadna prístupná konfigurácia,
             # sprav fail-open, aby vývoj nebol blokovaný (iba ak nie je vynútené)
+            # POZNÁMKA: Pre produkciu vždy vynútiť moderáciu!
             if getattr(settings, 'DEBUG', False) and not (enforce_in_debug or strict_mode):
                 try:
                     has_json = bool(getattr(settings, 'GCP_VISION_SERVICE_ACCOUNT_JSON', None))
                     # Ak nemáme JSON a nie je ani súborová cesta, fail-open
                     if not has_json and not bool(os.getenv('GOOGLE_APPLICATION_CREDENTIALS')):
+                        # V development prostredí bez GCP konfigurácie preskočiť moderáciu
+                        # ale len ak nie je SAFESEARCH_ENFORCE_IN_DEBUG=True
+                        logger.warning("SafeSearch skipped in DEBUG mode (no GCP credentials). Set SAFESEARCH_ENFORCE_IN_DEBUG=True to enforce.")
                         return value
                 except Exception:
                     return value

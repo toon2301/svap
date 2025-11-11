@@ -4,7 +4,7 @@ from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from datetime import datetime, date
-from .models import User, UserProfile, UserType, EmailVerification, OfferedSkill
+from .models import User, UserProfile, UserType, EmailVerification, OfferedSkill, OfferedSkillImage
 from swaply.validators import (
     EmailValidator, PasswordValidator, NameValidator, 
     PhoneValidator, URLValidator, BioValidator, SecurityValidator, CAPTCHAValidator
@@ -371,12 +371,16 @@ class OfferedSkillSerializer(serializers.ModelSerializer):
     """Serializátor pre ponúkané zručnosti"""
     
     experience = serializers.SerializerMethodField()
+    images = serializers.SerializerMethodField()
+    price_from = serializers.DecimalField(max_digits=10, decimal_places=2, required=False, allow_null=True)
+    price_currency = serializers.CharField(required=False, allow_blank=True)
     
     class Meta:
         model = OfferedSkill
         fields = [
             'id', 'category', 'subcategory', 'description',
-            'experience_value', 'experience_unit', 'experience', 'tags',
+            'experience_value', 'experience_unit', 'experience', 'tags', 'images',
+            'price_from', 'price_currency',
             'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
@@ -389,6 +393,26 @@ class OfferedSkillSerializer(serializers.ModelSerializer):
                 'unit': obj.experience_unit
             }
         return None
+
+    def get_images(self, obj):
+        """Vráti zoznam obrázkov s absolútnou URL."""
+        request = self.context.get('request')
+        results = []
+        try:
+            for img in getattr(obj, 'images', []).all():
+                url = None
+                if img.image and hasattr(img.image, 'url'):
+                    url = img.image.url
+                    if request:
+                        url = request.build_absolute_uri(url)
+                results.append({
+                    'id': img.id,
+                    'image_url': url,
+                    'order': img.order,
+                })
+        except Exception:
+            pass
+        return results
     
     def validate_description(self, value):
         """Validácia popisu"""
@@ -437,5 +461,13 @@ class OfferedSkillSerializer(serializers.ModelSerializer):
         
         if not experience_value and experience_unit:
             attrs['experience_unit'] = ''  # Vyčistiť jednotku ak nie je hodnota
-        
+
+        price_from = attrs.get('price_from')
+        if price_from is not None and price_from < 0:
+            raise serializers.ValidationError({'price_from': 'Cena musí byť nezáporná'})
+        if price_from is None:
+            attrs['price_currency'] = ''
+        elif not attrs.get('price_currency'):
+            attrs['price_currency'] = '€'
+
         return attrs

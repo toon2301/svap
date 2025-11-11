@@ -9,7 +9,8 @@ import UserInfo from './profile/UserInfo';
 import WebsitesRow from './profile/view/WebsitesRow';
 import ProfileEditFormDesktop from './ProfileEditFormDesktop';
 import ProfileEditFormMobile from './ProfileEditFormMobile';
-import { api } from '../../../lib/api';
+import { api, endpoints } from '../../../lib/api';
+import OfferImageCarousel from './shared/OfferImageCarousel';
 
 interface ProfileModuleProps {
   user: User;
@@ -31,7 +32,16 @@ export default function ProfileModule({ user, onUserUpdate, onEditProfileClick, 
   const [mounted, setMounted] = useState(false);
   const [isAllWebsitesModalOpen, setIsAllWebsitesModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'offers' | 'portfolio' | 'posts' | 'tagged'>('offers');
-  // Removed skills state - offers are not rendered on profile for now
+  // Offers for desktop tab rendering
+  const [offers, setOffers] = useState<Array<{
+    id: number;
+    category: string;
+    subcategory: string;
+    description: string;
+    images?: Array<{ id: number; image_url?: string | null; image?: string | null; order?: number }>;
+    price_from?: number | null;
+    price_currency?: string;
+  }>>([]);
 
   useEffect(() => {
     setMounted(true);
@@ -51,7 +61,46 @@ export default function ProfileModule({ user, onUserUpdate, onEditProfileClick, 
     }
   };
 
-  // Removed offers loading effect - nothing to fetch for profile display now
+  // Load offers when switching to 'offers' tab (desktop focus)
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const { data } = await api.get(endpoints.skills.list);
+        const list = Array.isArray(data) ? data : [];
+        const mapped = list.map((s: any) => {
+          const rawPrice = s.price_from;
+          const parsedPrice =
+            typeof rawPrice === 'number'
+              ? rawPrice
+              : typeof rawPrice === 'string' && rawPrice.trim() !== ''
+                ? parseFloat(rawPrice)
+                : null;
+          return {
+            id: s.id,
+            category: s.category,
+            subcategory: s.subcategory,
+            description: s.description || '',
+            images: Array.isArray(s.images)
+              ? s.images.map((im: any) => ({
+                  id: im.id,
+                  image_url: im.image_url || im.image || null,
+                  order: im.order,
+                }))
+              : [],
+            price_from: parsedPrice,
+            price_currency:
+              typeof s.price_currency === 'string' && s.price_currency.trim() !== ''
+                ? s.price_currency
+                : '€',
+          };
+        });
+        setOffers(mapped);
+      } catch (e) {
+        // silent
+      }
+    };
+    if (activeTab === 'offers') load();
+  }, [activeTab]);
 
   const handlePhotoUpload = async (file: File) => {
     setIsUploading(true);
@@ -223,7 +272,7 @@ export default function ProfileModule({ user, onUserUpdate, onEditProfileClick, 
                             className="flex items-center flex-wrap cursor-pointer"
                             onClick={() => setIsAllWebsitesModalOpen(true)}
                           >
-                            <span className="text-blue-600 hover:text-blue-400 transition-colors truncate max-w-[200px]">
+                            <span className="text-blue-600 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300 transition-colors truncate max-w-[200px]">
                               {firstWebsite}
                             </span>
                             <span className="text-blue-600 dark:text-blue-400 hover:text-blue-400 dark:hover:text-blue-300 ml-1 whitespace-nowrap">
@@ -236,7 +285,7 @@ export default function ProfileModule({ user, onUserUpdate, onEditProfileClick, 
                             href={firstWebsite} 
                             target="_blank" 
                             rel="noopener noreferrer"
-                            className="text-blue-600 hover:text-blue-400 transition-colors truncate max-w-[200px]"
+                            className="text-blue-600 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300 transition-colors truncate max-w-[200px]"
                           >
                             {firstWebsite}
                           </a>
@@ -265,7 +314,7 @@ export default function ProfileModule({ user, onUserUpdate, onEditProfileClick, 
                     }}
                     className="flex-1 px-3 py-1.5 text-xs bg-purple-100 text-purple-800 border border-purple-200 rounded-2xl transition-colors hover:bg-purple-200"
                   >
-                    {t('profile.skills', 'Zručnosti a ponuky')}
+                    {t('profile.skills', 'Služby a ponuky')}
                   </button>
                 </div>
                 {/* Ikonová navigácia sekcií profilu (mobile) */}
@@ -293,8 +342,8 @@ export default function ProfileModule({ user, onUserUpdate, onEditProfileClick, 
                             : 'text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-[#111214]'
                         ].join(' ')}
                       >
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-5 h-5">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 21l-4.5-4.5 4.5-4.5M3 16.5h11.25A3.75 3.75 0 0 0 18 8.25h3M16.5 3l4.5 4.5-4.5 4.5" />
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" className="w-5 h-5">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="m7.875 14.25 1.214 1.942a2.25 2.25 0 0 0 1.908 1.058h2.006c.776 0 1.497-.4 1.908-1.058l1.214-1.942M2.41 9h4.636a2.25 2.25 0 0 1 1.872 1.002l.164.246a2.25 2.25 0 0 0 1.872 1.002h2.092a2.25 2.25 0 0 0 1.872-1.002l.164-.246A2.25 2.25 0 0 1 16.954 9h4.636M2.41 9a2.25 2.25 0 0 0-.16.832V12a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 12V9.832c0-.287-.055-.57-.16-.832M2.41 9a2.25 2.25 0 0 1 .382-.632l3.285-3.832a2.25 2.25 0 0 1 1.708-.786h8.43c.657 0 1.281.287 1.709.786l3.284 3.832c.163.19.291.404.382.632M4.5 20.25h15A2.25 2.25 0 0 0 21.75 18v-2.625c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125V18a2.25 2.25 0 0 0 2.25 2.25Z" />
                         </svg>
                       </button>
                       <button
@@ -314,7 +363,7 @@ export default function ProfileModule({ user, onUserUpdate, onEditProfileClick, 
                         ].join(' ')}
                       >
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-5 h-5">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75h7.5v7.5h-7.5zM12.75 3.75h7.5v7.5h-7.5zM3.75 12.75h7.5v7.5h-7.5zM12.75 12.75h7.5v7.5h-7.5z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M21 13.5V9.75A2.25 2.25 0 0018.75 7.5H5.25A2.25 2.25 0 003 9.75V13.5m18 0v4.5A2.25 2.25 0 0118.75 20.25H5.25A2.25 2.25 0 013 18v-4.5m18 0H3m12-6V4.5a.75.75 0 00-.75-.75h-4.5a.75.75 0 00-.75.75V7.5m6 0H9" />
                         </svg>
                       </button>
                       <button
@@ -334,7 +383,7 @@ export default function ProfileModule({ user, onUserUpdate, onEditProfileClick, 
                         ].join(' ')}
                       >
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="w-5 h-5">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 7.5h15v9h-15zM3 9l9 6 9-6" />
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75h7.5v7.5h-7.5zM12.75 3.75h7.5v7.5h-7.5zM3.75 12.75h7.5v7.5h-7.5zM12.75 12.75h7.5v7.5h-7.5z" />
                         </svg>
                       </button>
                       <button
@@ -478,7 +527,7 @@ export default function ProfileModule({ user, onUserUpdate, onEditProfileClick, 
                         }}
                         className="flex-1 px-32 py-2 text-sm bg-purple-100 text-purple-800 border border-purple-200 rounded-2xl transition-colors hover:bg-purple-200 whitespace-nowrap"
                       >
-                        {t('profile.skills', 'Zručnosti a ponuky')}
+                        {t('profile.skills', 'Služby a ponuky')}
                       </button>
                     </div>
                     {/* Ikonová navigácia sekcií profilu */}
@@ -597,7 +646,57 @@ export default function ProfileModule({ user, onUserUpdate, onEditProfileClick, 
                         </div>
                       </div>
                     </div>
-                    {/* Obsah sekcií doplníme neskôr podľa požiadaviek */}
+                    {/* Obsah sekcií */}
+                    {activeTab === 'offers' && (
+                      <div className="mt-4">
+                        {offers.length === 0 ? (
+                          <p className="text-sm text-gray-600 dark:text-gray-400">Zatiaľ nemáš žiadne ponuky.</p>
+                        ) : (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                            {offers.map((offer) => {
+                              const imageAlt = (offer.description && offer.description.trim()) || offer.subcategory || offer.category || 'Ponuka';
+                              const headline = (offer.description && offer.description.trim()) || offer.subcategory || 'Bez popisu';
+                              const label = offer.subcategory || offer.category || '';
+                              const priceLabel =
+                                offer.price_from !== null && offer.price_from !== undefined
+                                  ? `${Number(offer.price_from).toLocaleString('sk-SK', { minimumFractionDigits: 0, maximumFractionDigits: 2 })} ${offer.price_currency || '€'}`
+                                  : null;
+                              return (
+                                <div key={offer.id} className="rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-800 bg-white/70 dark:bg-[#0f0f10] shadow-sm hover:shadow transition-shadow">
+                                  <div className="relative aspect-[4/3] bg-gray-100 dark:bg-[#0e0e0f] overflow-hidden">
+                                    <OfferImageCarousel images={offer.images} alt={imageAlt} />
+                                    {accountType === 'business' && (
+                                      <span className="absolute top-2 left-2 px-1.5 py-0.5 text-[10px] font-semibold bg-black/80 text-white rounded">
+                                        PRO
+                                      </span>
+                                    )}
+                                    <button aria-label="Obľúbené" className="absolute top-2 right-2 p-1.5 rounded-full bg-white/90 dark:bg-black/70 text-gray-700 dark:text-gray-200 hover:bg-white dark:hover:bg-black">
+                                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+                                        <path d="M11.645 20.91l-.007-.003-.022-.01a15.247 15.247 0 01-.383-.173 25.18 25.18 0 01-4.244-2.453C4.688 16.477 2.25 13.88 2.25 10.5 2.25 7.42 4.67 5 7.75 5c1.66 0 3.153.806 4.096 2.036C12.79 5.806 14.284 5 15.944 5 19.023 5 21.443 7.42 21.443 10.5c0 3.38-2.438 5.977-4.74 7.77a25.175 25.175 0 01-4.244 2.452 15.247 15.247 0 01-.383.173l-.022.01-.007.003a.75.75 0 01-.642 0z" />
+                                      </svg>
+                                    </button>
+                                  </div>
+                                  <div className="p-3 flex flex-col h-44">
+                                    {label ? (
+                                      <div className="text-[11px] text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wide">{label}</div>
+                                    ) : null}
+                                    <div className="text-xs font-semibold text-gray-900 dark:text-white whitespace-pre-wrap overflow-y-auto pr-1 flex-1" style={{ maxHeight: '5.5rem' }}>
+                                      {headline}
+                                    </div>
+                                    {priceLabel ? (
+                                      <div className="text-xs text-gray-700 dark:text-gray-300 mt-1.5">
+                                        <span className="font-medium text-gray-900 dark:text-white">Cena od:&nbsp;</span>
+                                        {priceLabel}
+                                      </div>
+                                    ) : null}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
                 <div className="w-full">

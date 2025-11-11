@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { skillsCategories } from '@/constants/skillsCategories';
 import { useRouter } from 'next/navigation';
 import { isAuthenticated, clearAuthTokens } from '../../utils/auth';
@@ -61,17 +61,27 @@ export default function Dashboard({ initialUser }: DashboardProps) {
   const [isAccountTypeModalOpen, setIsAccountTypeModalOpen] = useState(false);
   const [isPersonalAccountModalOpen, setIsPersonalAccountModalOpen] = useState(false);
   const [isSkillsCategoryModalOpen, setIsSkillsCategoryModalOpen] = useState(false);
-  const [selectedSkillsCategory, setSelectedSkillsCategory] = useState<{ id?: number; category: string; subcategory: string; description?: string; experience?: { value: number; unit: 'years' | 'months' }; tags?: string[] } | null>(null);
-  const [customCategories, setCustomCategories] = useState<{ id?: number; category: string; subcategory: string; description?: string; experience?: { value: number; unit: 'years' | 'months' }; tags?: string[] }[]>([]);
+  // Currently edited category (temporary holder for modals)
+  const [selectedSkillsCategory, setSelectedSkillsCategory] = useState<{ id?: number; category: string; subcategory: string; description?: string; experience?: { value: number; unit: 'years' | 'months' }; tags?: string[]; images?: Array<{id: number; image_url: string; order?: number}>; price_from?: number | null; price_currency?: string } | null>(null);
+  const [standardCategories, setStandardCategories] = useState<{ id?: number; category: string; subcategory: string; description?: string; experience?: { value: number; unit: 'years' | 'months' }; tags?: string[]; images?: Array<{id: number; image_url: string; order?: number}>; price_from?: number | null; price_currency?: string }[]>([]);
+  const [customCategories, setCustomCategories] = useState<{ id?: number; category: string; subcategory: string; description?: string; experience?: { value: number; unit: 'years' | 'months' }; tags?: string[]; images?: Array<{id: number; image_url: string; order?: number}>; price_from?: number | null; price_currency?: string }[]>([]);
   const [isSkillDescriptionModalOpen, setIsSkillDescriptionModalOpen] = useState(false);
   const [isAddCustomCategoryModalOpen, setIsAddCustomCategoryModalOpen] = useState(false);
   const [editingCustomCategoryIndex, setEditingCustomCategoryIndex] = useState<number | null>(null);
+  const [editingStandardCategoryIndex, setEditingStandardCategoryIndex] = useState<number | null>(null);
 
   // Helpers pre mapovanie backend -> UI
   const toLocalSkill = (s: any) => {
     const exp = (s.experience_value !== undefined && s.experience_value !== null && s.experience_unit)
       ? { value: s.experience_value as number, unit: s.experience_unit as 'years' | 'months' }
       : undefined;
+    const rawPrice = s.price_from;
+    const parsedPrice =
+      typeof rawPrice === 'number'
+        ? rawPrice
+        : typeof rawPrice === 'string' && rawPrice.trim() !== ''
+          ? parseFloat(rawPrice)
+          : null;
     return {
       id: s.id as number | undefined,
       category: s.category as string,
@@ -79,29 +89,66 @@ export default function Dashboard({ initialUser }: DashboardProps) {
       description: (s.description || '') as string,
       experience: exp,
       tags: Array.isArray(s.tags) ? (s.tags as string[]) : [],
+      images: Array.isArray(s.images)
+        ? s.images.map((im: any) => ({
+            id: im.id,
+            image_url: im.image_url || im.image || null,
+            order: im.order,
+          }))
+        : [],
+      price_from: parsedPrice,
+      price_currency:
+        typeof s.price_currency === 'string' && s.price_currency.trim() !== ''
+          ? s.price_currency
+          : '€',
     };
+  };
+
+  const loadSkills = useCallback(async () => {
+    try {
+      const { data } = await api.get(endpoints.skills.list);
+      const skills: any[] = Array.isArray(data) ? data : [];
+      const localSkills = skills.map(toLocalSkill);
+      const standard = localSkills.filter((s) => s.category !== s.subcategory);
+      const custom = localSkills.filter((s) => s.category === s.subcategory);
+      setStandardCategories(standard);
+      setCustomCategories(custom);
+    } catch (e) {
+      // Ticho zlyhať – frontend funguje aj bez backendu
+    }
+  }, []);
+
+  const fetchSkillDetail = async (id: number) => {
+    const { data } = await api.get(endpoints.skills.detail(id));
+    return toLocalSkill(data);
+  };
+
+  const handleRemoveSkillImage = async (skillId: number, imageId: number) => {
+    try {
+      await api.delete(endpoints.skills.imageDetail(skillId, imageId));
+      const refreshed = await fetchSkillDetail(skillId);
+      setSelectedSkillsCategory(refreshed);
+
+      if (refreshed.category === refreshed.subcategory) {
+        setCustomCategories((prev) => prev.map((item) => (item.id === refreshed.id ? refreshed : item)));
+      } else {
+        setStandardCategories((prev) => prev.map((item) => (item.id === refreshed.id ? refreshed : item)));
+      }
+
+      return refreshed.images ?? [];
+    } catch (error: any) {
+      const msg = error?.response?.data?.error || error?.response?.data?.detail || 'Odstránenie obrázka zlyhalo';
+      alert(msg);
+      throw error;
+    }
   };
 
   // Načítanie zručností po načítaní používateľa
   useEffect(() => {
-    const loadSkills = async () => {
-      try {
-        const { data } = await api.get(endpoints.skills.list);
-        const skills: any[] = Array.isArray(data) ? data : [];
-        const localSkills = skills.map(toLocalSkill);
-        const standard = localSkills.filter((s) => s.category !== s.subcategory);
-        const custom = localSkills.filter((s) => s.category === s.subcategory);
-        setSelectedSkillsCategory(standard[0] || null);
-        setCustomCategories(custom);
-      } catch (e) {
-        // Ticho zlyhať – frontend funguje aj bez backendu
-        // console.error('Načítanie skills zlyhalo', e);
-      }
-    };
     if (user) {
       loadSkills();
     }
-  }, [user]);
+  }, [user, loadSkills]);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -470,40 +517,37 @@ export default function Dashboard({ initialUser }: DashboardProps) {
       case 'skills-offer':
         return (
           <SkillsScreen
-            title="Zvoľ oblasť, v ktorej vynikáš alebo ponúkaš svoje služby."
-            firstOptionText="Vyber kategóriu"
-            onFirstOptionClick={() => {
-              // Počet uložených kategórií (s description) + custom categories
-              const savedCategories = (selectedSkillsCategory && selectedSkillsCategory.description ? 1 : 0) + customCategories.length;
-              if (savedCategories >= 3) {
-                alert('Môžeš pridať maximálne 3 kategórie');
+        title="Zvoľ oblasť, v ktorej vynikáš alebo ponúkaš svoje služby."
+        firstOptionText="Vyber kategóriu"
+        onFirstOptionClick={() => {
+          // Limit na štandardné (vybrané) kategórie
+          if (standardCategories.length >= 3) {
+            alert('Môžeš mať maximálne 3 výbery z kategórií.');
                 return;
               }
               setIsSkillsCategoryModalOpen(true);
             }}
-            selectedCategory={selectedSkillsCategory}
-            onRemoveCategory={async () => {
+            standardCategories={standardCategories}
+            onRemoveStandardCategory={async (index) => {
+              const item = standardCategories[index];
               try {
-                const id = selectedSkillsCategory?.id;
-                if (id) {
-                  await api.delete(endpoints.skills.detail(id));
+                if (item?.id) {
+                  await api.delete(endpoints.skills.detail(item.id));
                 }
-              } catch (e: any) {
-                // Ignoruj chybu mazania, stále odstráň lokálne
+              } catch (e) {
               } finally {
-                setSelectedSkillsCategory(null);
+                setStandardCategories((prev) => prev.filter((_, i) => i !== index));
               }
             }}
-            onEditDescription={() => {
-              if (selectedSkillsCategory) {
-                setIsSkillDescriptionModalOpen(true);
-              }
+            onEditStandardCategoryDescription={(index) => {
+              setEditingStandardCategoryIndex(index);
+              setSelectedSkillsCategory(standardCategories[index]);
+              setIsSkillDescriptionModalOpen(true);
             }}
-            onAddCategory={() => {
-              // Počet uložených kategórií (s description) + custom categories
-              const savedCategories = (selectedSkillsCategory && selectedSkillsCategory.description ? 1 : 0) + customCategories.length;
-              if (savedCategories >= 3) {
-                alert('Môžeš pridať maximálne 3 kategórie');
+        onAddCategory={() => {
+          // Limit na vlastné kategórie
+          if (customCategories.length >= 3) {
+            alert('Môžeš pridať maximálne 3 vlastné kategórie.');
                 return;
               }
               setIsAddCustomCategoryModalOpen(true);
@@ -733,7 +777,7 @@ export default function Dashboard({ initialUser }: DashboardProps) {
           // Najprv zatvor modal kategórií
           setIsSkillsCategoryModalOpen(false);
           // Nastav dočasne vybranú kategóriu a otvor modal pre popis
-          setSelectedSkillsCategory({ category, subcategory });
+          setSelectedSkillsCategory({ category, subcategory, price_from: null, price_currency: '€' });
           setIsSkillDescriptionModalOpen(true);
         }}
       />
@@ -748,6 +792,7 @@ export default function Dashboard({ initialUser }: DashboardProps) {
             if (!selectedSkillsCategory.description) {
               setSelectedSkillsCategory(null);
               setEditingCustomCategoryIndex(null);
+              setEditingStandardCategoryIndex(null);
             }
           }}
           category={selectedSkillsCategory.category}
@@ -755,7 +800,15 @@ export default function Dashboard({ initialUser }: DashboardProps) {
           initialDescription={selectedSkillsCategory.description}
           initialExperience={selectedSkillsCategory.experience}
           initialTags={selectedSkillsCategory.tags}
-          onSave={async (description, experience, tags) => {
+          initialImages={selectedSkillsCategory.images}
+          initialPriceFrom={selectedSkillsCategory.price_from ?? null}
+          initialPriceCurrency={selectedSkillsCategory.price_currency ?? '€'}
+          onRemoveExistingImage={
+            selectedSkillsCategory.id
+              ? (imageId) => handleRemoveSkillImage(selectedSkillsCategory.id!, imageId)
+              : undefined
+          }
+          onSave={async (description, experience, tags, images, priceFrom, priceCurrency) => {
             const buildPayload = () => {
               const payload: any = {
                 category: selectedSkillsCategory?.category,
@@ -770,6 +823,13 @@ export default function Dashboard({ initialUser }: DashboardProps) {
                 payload.experience_value = null;
                 payload.experience_unit = '';
               }
+              if (typeof priceFrom === 'number' && !isNaN(priceFrom)) {
+                payload.price_from = priceFrom;
+                payload.price_currency = priceCurrency || '€';
+              } else {
+                payload.price_from = null;
+                payload.price_currency = '';
+              }
               return payload;
             };
 
@@ -778,14 +838,32 @@ export default function Dashboard({ initialUser }: DashboardProps) {
                 // PATCH existujúcej vlastnej kategórie
                 const current = customCategories[editingCustomCategoryIndex];
                 if (current?.id) {
-                  const { data } = await api.patch(endpoints.skills.detail(current.id), {
+                const { data } = await api.patch(endpoints.skills.detail(current.id), {
                     description: description || '',
                     tags: Array.isArray(tags) ? tags : [],
                     ...(experience && typeof experience.value === 'number' && experience.unit
                       ? { experience_value: experience.value, experience_unit: experience.unit }
                       : { experience_value: null, experience_unit: '' }),
+                    ...(typeof priceFrom === 'number' && !isNaN(priceFrom)
+                      ? { price_from: priceFrom, price_currency: priceCurrency || '€' }
+                      : { price_from: null, price_currency: '' }),
                   });
-                  const updatedLocal = toLocalSkill(data);
+                let updatedLocal = toLocalSkill(data);
+                if (Array.isArray(images) && images.length > 0 && data?.id) {
+                  for (let i = 0; i < images.length; i++) {
+                    const file = images[i];
+                    try {
+                      const fd = new FormData();
+                      fd.append('image', file);
+                      await api.post(endpoints.skills.images(data.id), fd);
+                    } catch (imgError: any) {
+                      const imgMsg = imgError?.response?.data?.error || imgError?.response?.data?.detail || 'Nahrávanie obrázka zlyhalo';
+                      alert(`Chyba pri nahrávaní obrázka ${i + 1}: ${imgMsg}`);
+                      throw imgError; // Zastav upload, ak jeden obrázok neprejde
+                    }
+                  }
+                  updatedLocal = await fetchSkillDetail(data.id);
+                }
                   setCustomCategories((prev) => {
                     const updated = [...prev];
                     updated[editingCustomCategoryIndex] = updatedLocal;
@@ -801,9 +879,27 @@ export default function Dashboard({ initialUser }: DashboardProps) {
                     ...(experience && typeof experience.value === 'number' && experience.unit
                       ? { experience_value: experience.value, experience_unit: experience.unit }
                       : { experience_value: null, experience_unit: '' }),
+                    ...(typeof priceFrom === 'number' && !isNaN(priceFrom)
+                      ? { price_from: priceFrom, price_currency: priceCurrency || '€' }
+                      : { price_from: null, price_currency: '' }),
                   };
                   const { data } = await api.post(endpoints.skills.list, payload);
-                  const created = toLocalSkill(data);
+                let created = toLocalSkill(data);
+                if (Array.isArray(images) && images.length > 0 && data?.id) {
+                  for (let i = 0; i < images.length; i++) {
+                    const file = images[i];
+                    try {
+                      const fd = new FormData();
+                      fd.append('image', file);
+                      await api.post(endpoints.skills.images(data.id), fd);
+                    } catch (imgError: any) {
+                      const imgMsg = imgError?.response?.data?.error || imgError?.response?.data?.detail || 'Nahrávanie obrázka zlyhalo';
+                      alert(`Chyba pri nahrávaní obrázka ${i + 1}: ${imgMsg}`);
+                      throw imgError; // Zastav upload, ak jeden obrázok neprejde
+                    }
+                  }
+                  created = await fetchSkillDetail(data.id);
+                }
                   setCustomCategories((prev) => {
                     const updated = [...prev];
                     updated[editingCustomCategoryIndex] = created;
@@ -816,29 +912,58 @@ export default function Dashboard({ initialUser }: DashboardProps) {
                 // Rozlíš: vlastná vs štandardná
                 if (selectedSkillsCategory.category === selectedSkillsCategory.subcategory) {
                   // Nová vlastná kategória – kontrola limitu
-                  const savedCategories = (selectedSkillsCategory && selectedSkillsCategory.description ? 1 : 0) + customCategories.length;
-                  if (savedCategories >= 3) {
-                    alert('Môžeš pridať maximálne 3 kategórie');
+                  if (customCategories.length >= 3) {
+                    alert('Môžeš pridať maximálne 3 vlastné kategórie.');
                     return;
                   }
                   const payload = buildPayload();
                   const { data } = await api.post(endpoints.skills.list, payload);
-                  const created = toLocalSkill(data);
-                  setCustomCategories((prev) => [...prev, created]);
+                let created = toLocalSkill(data);
+                if (Array.isArray(images) && images.length > 0 && data?.id) {
+                  for (let i = 0; i < images.length; i++) {
+                    const file = images[i];
+                    try {
+                      const fd = new FormData();
+                      fd.append('image', file);
+                      await api.post(endpoints.skills.images(data.id), fd);
+                    } catch (imgError: any) {
+                      const imgMsg = imgError?.response?.data?.error || imgError?.response?.data?.detail || 'Nahrávanie obrázka zlyhalo';
+                      alert(`Chyba pri nahrávaní obrázka ${i + 1}: ${imgMsg}`);
+                      throw imgError; // Zastav upload, ak jeden obrázok neprejde
+                    }
+                  }
+                  created = await fetchSkillDetail(data.id);
+                }
+                setCustomCategories((prev) => [...prev, created]);
                   setSelectedSkillsCategory(null);
                 } else {
                   // Štandardná kategória – nová alebo update
                   if (!selectedSkillsCategory.id) {
-                    // Nová – kontrola limitu (počítame iba custom)
-                    const savedCategories = customCategories.length;
-                    if (savedCategories >= 3) {
-                      alert('Môžeš pridať maximálne 3 kategórie');
+                    // Nová – kontrola limitu pre štandardné kategórie
+                    if (standardCategories.length >= 3) {
+                      alert('Môžeš mať maximálne 3 výbery z kategórií.');
                       return;
                     }
                     const payload = buildPayload();
                     const { data } = await api.post(endpoints.skills.list, payload);
-                    const created = toLocalSkill(data);
-                    setSelectedSkillsCategory(created);
+                  let created = toLocalSkill(data);
+                  if (Array.isArray(images) && images.length > 0 && data?.id) {
+                    for (let i = 0; i < images.length; i++) {
+                      const file = images[i];
+                      try {
+                        const fd = new FormData();
+                        fd.append('image', file);
+                        await api.post(endpoints.skills.images(data.id), fd);
+                      } catch (imgError: any) {
+                        const imgMsg = imgError?.response?.data?.error || imgError?.response?.data?.detail || 'Nahrávanie obrázka zlyhalo';
+                        alert(`Chyba pri nahrávaní obrázka ${i + 1}: ${imgMsg}`);
+                        throw imgError; // Zastav upload, ak jeden obrázok neprejde
+                      }
+                    }
+                    created = await fetchSkillDetail(data.id);
+                  }
+                  setStandardCategories((prev) => [...prev, created]);
+                    setSelectedSkillsCategory(null);
                   } else {
                     // Update existujúcej
                     const { data } = await api.patch(endpoints.skills.detail(selectedSkillsCategory.id), {
@@ -847,12 +972,39 @@ export default function Dashboard({ initialUser }: DashboardProps) {
                       ...(experience && typeof experience.value === 'number' && experience.unit
                         ? { experience_value: experience.value, experience_unit: experience.unit }
                         : { experience_value: null, experience_unit: '' }),
+                      ...(typeof priceFrom === 'number' && !isNaN(priceFrom)
+                        ? { price_from: priceFrom, price_currency: priceCurrency || '€' }
+                        : { price_from: null, price_currency: '' }),
                     });
-                    const updated = toLocalSkill(data);
-                    setSelectedSkillsCategory(updated);
+                  let updated = toLocalSkill(data);
+                  if (Array.isArray(images) && images.length > 0 && data?.id) {
+                    for (let i = 0; i < images.length; i++) {
+                      const file = images[i];
+                      try {
+                        const fd = new FormData();
+                        fd.append('image', file);
+                        await api.post(endpoints.skills.images(data.id), fd);
+                      } catch (imgError: any) {
+                        const imgMsg = imgError?.response?.data?.error || imgError?.response?.data?.detail || 'Nahrávanie obrázka zlyhalo';
+                        alert(`Chyba pri nahrávaní obrázka ${i + 1}: ${imgMsg}`);
+                        throw imgError; // Zastav upload, ak jeden obrázok neprejde
+                      }
+                    }
+                    updated = await fetchSkillDetail(data.id);
+                  }
+                    setStandardCategories((prev) => {
+                      const idx = prev.findIndex((p) => p.id === updated.id);
+                      if (idx === -1) return prev;
+                      const next = [...prev];
+                      next[idx] = updated;
+                      return next;
+                    });
+                    setSelectedSkillsCategory(null);
                   }
                 }
               }
+
+              await loadSkills();
             } catch (e: any) {
               const msg = e?.response?.data?.error || e?.response?.data?.detail || 'Ukladanie zručnosti zlyhalo';
               alert(msg);

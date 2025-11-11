@@ -265,6 +265,8 @@ class OfferedSkill(models.Model):
         blank=True
     )
     tags = models.JSONField(_('Tagy'), default=list, blank=True)
+    price_from = models.DecimalField(_('Cena od'), max_digits=10, decimal_places=2, null=True, blank=True)
+    price_currency = models.CharField(_('Mena'), max_length=8, blank=True, default='€')
     
     created_at = models.DateTimeField(_('Vytvorené'), auto_now_add=True)
     updated_at = models.DateTimeField(_('Aktualizované'), auto_now=True)
@@ -283,3 +285,19 @@ class OfferedSkill(models.Model):
     
     def __str__(self):
         return f"{self.user.display_name} - {self.category} → {self.subcategory}"
+
+
+class OfferedSkillImage(models.Model):
+    """Obrázok priradený k ponúkanej zručnosti (ponuke)."""
+    skill = models.ForeignKey(OfferedSkill, on_delete=models.CASCADE, related_name='images')
+    image = models.ImageField(_('Obrázok'), upload_to='offers/', validators=[validate_image_file])
+    order = models.PositiveIntegerField(_('Poradie'), default=0)
+    created_at = models.DateTimeField(_('Vytvorené'), auto_now_add=True)
+
+    class Meta:
+        verbose_name = _('Obrázok ponuky')
+        verbose_name_plural = _('Obrázky ponúk')
+        ordering = ['order', 'id']
+
+    def __str__(self):
+        return f"Obrázok #{self.id} pre {self.skill}"

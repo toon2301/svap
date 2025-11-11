@@ -4,16 +4,267 @@ import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import data from '@emoji-mart/data';
 import Picker from '@emoji-mart/react';
+import { useLanguage } from '@/contexts/LanguageContext';
+
+type SkillImage = {
+  id?: number;
+  image_url?: string | null;
+  image?: string | null;
+  order?: number;
+};
+
+const CURRENCY_OPTIONS = ['€', 'Kč', '$', 'zł', 'Ft'] as const;
+type CurrencyOption = typeof CURRENCY_OPTIONS[number];
+
+const currencyFromLocale = (locale: string): CurrencyOption => {
+  if (locale === 'pl') return 'zł';
+  if (locale === 'hu') return 'Ft';
+  if (locale === 'cs') return 'Kč';
+  // de, sk, en → default to Euro in this app
+  return '€';
+};
+
+const ensureCurrencyOption = (value?: string | null): CurrencyOption => {
+  if (value && CURRENCY_OPTIONS.includes(value as CurrencyOption)) {
+    return value as CurrencyOption;
+  }
+  return '€';
+};
+
+function CurrencySelect({ value, onChange }: { value: CurrencyOption; onChange: (v: CurrencyOption) => void }) {
+  const [open, setOpen] = useState(false);
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+  const [portalRoot, setPortalRoot] = useState<HTMLElement | null>(null);
+  const [pos, setPos] = useState<{ left: number; top: number; width: number } | null>(null);
+
+  useEffect(() => {
+    setPortalRoot(typeof window !== 'undefined' ? document.body : null);
+  }, []);
+
+  const updatePosition = () => {
+    const el = triggerRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const width = Math.max(96, rect.width);
+    const estimatedMenuH = CURRENCY_OPTIONS.length * 36 + 12; // approx height
+    const gap = 6;
+    const canOpenDown = rect.bottom + gap + estimatedMenuH <= window.innerHeight;
+    const top = canOpenDown ? rect.bottom + gap : Math.max(8, rect.top - gap - estimatedMenuH);
+    const left = rect.left + rect.width - width;
+    setPos({ left, top, width });
+  };
+
+  useEffect(() => {
+    if (!open) return;
+    updatePosition();
+    const handleOutside = (event: MouseEvent) => {
+      const target = event.target as Node | null;
+      if (triggerRef.current?.contains(target) || menuRef.current?.contains(target)) return;
+      setOpen(false);
+    };
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setOpen(false);
+    };
+    const handleReflow = () => updatePosition();
+    document.addEventListener('mousedown', handleOutside);
+    document.addEventListener('keydown', handleEscape);
+    window.addEventListener('resize', handleReflow);
+    window.addEventListener('scroll', handleReflow, true);
+    return () => {
+      document.removeEventListener('mousedown', handleOutside);
+      document.removeEventListener('keydown', handleEscape);
+      window.removeEventListener('resize', handleReflow);
+      window.removeEventListener('scroll', handleReflow, true);
+    };
+  }, [open]);
+
+  return (
+    <div className="relative h-full flex items-center">
+      <button
+        ref={triggerRef}
+        type="button"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        onClick={() => setOpen((prev) => !prev)}
+        onKeyDown={(event) => {
+          if (event.key === 'ArrowDown') {
+            event.preventDefault();
+            setOpen(true);
+            requestAnimationFrame(updatePosition);
+          }
+        }}
+        className="relative h-full flex items-center gap-2 px-3 pr-9 text-sm font-medium text-gray-900 dark:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-300 dark:focus-visible:ring-purple-600 rounded-r-lg cursor-pointer"
+      >
+        {value}
+        <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-gray-400 dark:text-gray-400">
+          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+          </svg>
+        </span>
+      </button>
+
+      {open && portalRoot && pos && createPortal(
+        <div
+          ref={menuRef}
+          role="listbox"
+          style={{ position: 'fixed', left: pos.left, top: pos.top, width: pos.width }}
+          className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white/95 dark:bg-[#0d0d10]/95 backdrop-blur-sm shadow-[0_12px_30px_rgba(99,102,241,0.18)] overflow-hidden z-[9999] p-1"
+        >
+          {CURRENCY_OPTIONS.map((cur) => (
+            <button
+              key={cur}
+              role="option"
+              aria-selected={value === cur}
+              onClick={() => {
+                onChange(cur);
+                setOpen(false);
+                triggerRef.current?.focus();
+              }}
+              className={`w-full text-left px-4 py-2 text-sm rounded-xl transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-300 dark:focus-visible:ring-purple-600 ${
+                value === cur
+                  ? 'bg-purple-100 text-purple-700 font-semibold dark:bg-purple-900/30 dark:text-purple-200'
+                  : 'text-gray-800 hover:bg-gray-100/90 dark:text-gray-100 dark:hover:bg-[#18181c]'
+              }`}
+            >
+              {cur}
+            </button>
+          ))}
+        </div>,
+        portalRoot
+      )}
+    </div>
+  );
+}
+
+const UNIT_OPTIONS = [
+  { value: 'years' as const, label: 'rokov' },
+  { value: 'months' as const, label: 'mesiacov' },
+];
+
+type UnitOption = typeof UNIT_OPTIONS[number]['value'];
+
+function ExperienceUnitSelect({ value, onChange }: { value: UnitOption; onChange: (v: UnitOption) => void }) {
+  const [open, setOpen] = useState(false);
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+  const [portalRoot, setPortalRoot] = useState<HTMLElement | null>(null);
+  const [pos, setPos] = useState<{ left: number; top: number; width: number } | null>(null);
+
+  useEffect(() => {
+    setPortalRoot(typeof window !== 'undefined' ? document.body : null);
+  }, []);
+
+  const updatePosition = () => {
+    const el = triggerRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const width = Math.max(120, rect.width);
+    const estimatedMenuH = UNIT_OPTIONS.length * 36 + 12;
+    const gap = 6;
+    const canOpenDown = rect.bottom + gap + estimatedMenuH <= window.innerHeight;
+    const top = canOpenDown ? rect.bottom + gap : Math.max(8, rect.top - gap - estimatedMenuH);
+    const left = rect.left + rect.width - width;
+    setPos({ left, top, width });
+  };
+
+  useEffect(() => {
+    if (!open) return;
+    updatePosition();
+    const handleOutside = (event: MouseEvent) => {
+      const target = event.target as Node | null;
+      if (triggerRef.current?.contains(target) || menuRef.current?.contains(target)) return;
+      setOpen(false);
+    };
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setOpen(false);
+    };
+    const handleReflow = () => updatePosition();
+    document.addEventListener('mousedown', handleOutside);
+    document.addEventListener('keydown', handleEscape);
+    window.addEventListener('resize', handleReflow);
+    window.addEventListener('scroll', handleReflow, true);
+    return () => {
+      document.removeEventListener('mousedown', handleOutside);
+      document.removeEventListener('keydown', handleEscape);
+      window.removeEventListener('resize', handleReflow);
+      window.removeEventListener('scroll', handleReflow, true);
+    };
+  }, [open]);
+
+  const labelFor = (opt: UnitOption) => UNIT_OPTIONS.find(o => o.value === opt)?.label || opt;
+
+  return (
+    <div className="relative h-full flex items-center">
+      <button
+        ref={triggerRef}
+        type="button"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        onClick={() => setOpen((prev) => !prev)}
+        onKeyDown={(event) => {
+          if (event.key === 'ArrowDown') {
+            event.preventDefault();
+            setOpen(true);
+            requestAnimationFrame(updatePosition);
+          }
+        }}
+        className="relative h-full flex items-center gap-2 px-3 pr-9 text-sm font-medium text-gray-900 dark:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-300 dark:focus-visible:ring-purple-600 rounded-r-lg cursor-pointer"
+      >
+        {labelFor(value)}
+        <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-gray-400 dark:text-gray-400">
+          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+          </svg>
+        </span>
+      </button>
+
+      {open && portalRoot && pos && createPortal(
+        <div
+          ref={menuRef}
+          role="listbox"
+          style={{ position: 'fixed', left: pos.left, top: pos.top, width: pos.width }}
+          className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white/95 dark:bg-[#0d0d10]/95 backdrop-blur-sm shadow-[0_12px_30px_rgba(99,102,241,0.18)] overflow-hidden z-[9999] p-1"
+        >
+          {UNIT_OPTIONS.map(({ value: v, label }) => (
+            <button
+              key={v}
+              role="option"
+              aria-selected={value === v}
+              onClick={() => {
+                onChange(v);
+                setOpen(false);
+                triggerRef.current?.focus();
+              }}
+              className={`w-full text-left px-4 py-2 text-sm rounded-xl transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-300 dark:focus-visible:ring-purple-600 ${
+                value === v
+                  ? 'bg-purple-100 text-purple-700 font-semibold dark:bg-purple-900/30 dark:text-purple-200'
+                  : 'text-gray-800 hover:bg-gray-100/90 dark:text-gray-100 dark:hover:bg-[#18181c]'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>,
+        portalRoot
+      )}
+    </div>
+  );
+}
 
 interface SkillDescriptionModalProps {
   isOpen: boolean;
   onClose: () => void;
   category: string;
   subcategory: string;
-  onSave: (description: string, experience?: { value: number; unit: 'years' | 'months' }, tags?: string[]) => void;
+  onSave: (description: string, experience?: { value: number; unit: 'years' | 'months' }, tags?: string[], images?: File[], priceFrom?: number | null, priceCurrency?: string) => void;
   initialDescription?: string;
   initialExperience?: { value: number; unit: 'years' | 'months' };
   initialTags?: string[];
+  initialImages?: SkillImage[];
+  onRemoveExistingImage?: (imageId: number) => Promise<SkillImage[] | void>;
+  initialPriceFrom?: number | null;
+  initialPriceCurrency?: string;
 }
 
 export default function SkillDescriptionModal({ 
@@ -24,8 +275,13 @@ export default function SkillDescriptionModal({
   onSave,
   initialDescription = '',
   initialExperience,
-  initialTags = []
+  initialTags = [],
+  initialImages = [],
+  onRemoveExistingImage,
+  initialPriceFrom = null,
+  initialPriceCurrency = '€',
 }: SkillDescriptionModalProps) {
+  const { locale } = useLanguage();
   const [description, setDescription] = useState<string>('');
   const [error, setError] = useState<string>('');
   const [experienceValue, setExperienceValue] = useState<string>('');
@@ -41,6 +297,15 @@ export default function SkillDescriptionModal({
   const emojiWrapperRef = useRef<HTMLDivElement>(null);
   const emojiButtonRef = useRef<HTMLButtonElement>(null);
   const [portalNode, setPortalNode] = useState<HTMLElement | null>(null);
+  const [images, setImages] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [imageError, setImageError] = useState<string>('');
+  const [existingImages, setExistingImages] = useState<SkillImage[]>([]);
+  const [removingImageId, setRemovingImageId] = useState<number | null>(null);
+  const [priceFrom, setPriceFrom] = useState<string>('');
+  const [priceCurrency, setPriceCurrency] = useState<CurrencyOption>('€');
+  const [userTouchedCurrency, setUserTouchedCurrency] = useState<boolean>(false);
+  const [priceError, setPriceError] = useState<string>('');
 
   useEffect(() => {
     setPortalNode(typeof window !== 'undefined' ? document.body : null);
@@ -64,6 +329,19 @@ export default function SkillDescriptionModal({
       setTags(Array.isArray(initialTags) ? initialTags : []);
       setTagInput('');
       setTagError('');
+      setImages([]);
+      setImagePreviews([]);
+      setImageError('');
+      setExistingImages(Array.isArray(initialImages) ? initialImages : []);
+      setPriceFrom(initialPriceFrom !== null && initialPriceFrom !== undefined ? String(initialPriceFrom) : '');
+      // Default currency: if incoming is invalid/empty and no initial price, use language-based default
+      if ((initialPriceCurrency ?? '') === '' && (initialPriceFrom === null || initialPriceFrom === undefined)) {
+        setPriceCurrency(currencyFromLocale(locale));
+      } else {
+        setPriceCurrency(ensureCurrencyOption(initialPriceCurrency));
+      }
+      setUserTouchedCurrency(false);
+      setPriceError('');
     } else {
       setDescription('');
       setError('');
@@ -74,10 +352,36 @@ export default function SkillDescriptionModal({
       setTags([]);
       setTagInput('');
       setTagError('');
+      setImages([]);
+      setImagePreviews([]);
+      setImageError('');
+      setExistingImages([]);
+      setPriceFrom('');
+      setPriceCurrency(currencyFromLocale(locale));
+      setUserTouchedCurrency(false);
+      setPriceError('');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
+
+  // Aktualizuj existujúce obrázky pri zmene prop počas otvoreného modalu
+  useEffect(() => {
+    if (isOpen) {
+      setExistingImages(Array.isArray(initialImages) ? initialImages : []);
+      // priceFrom a priceCurrency neresetuj počas editácie, nech sa dá plynule písať
+    }
+  }, [initialImages, isOpen]);
   
+  // Keď sa zmení jazyk a používateľ ešte nemenil menu, prispôsob menu automaticky
+  useEffect(() => {
+    if (!isOpen) return;
+    if (userTouchedCurrency) return;
+    const hasNoPrice = !priceFrom || priceFrom.trim() === '';
+    if (hasNoPrice) {
+      setPriceCurrency(currencyFromLocale(locale));
+    }
+  }, [locale, isOpen, userTouchedCurrency, priceFrom]);
+
   // Aktualizácia len keď sa zmení initialDescription pri editácii (nie pri každom renderi)
   const prevInitialDescriptionRef = React.useRef<string | undefined>();
   useEffect(() => {
@@ -190,7 +494,17 @@ export default function SkillDescriptionModal({
     }
 
     setExperienceError('');
-    onSave(trimmed, experience, tags);
+    let priceValue: number | null = null;
+    if (priceFrom.trim()) {
+      const parsed = parseFloat(priceFrom.trim().replace(',', '.'));
+      if (isNaN(parsed) || parsed < 0) {
+        setPriceError('Cena musí byť nezáporné číslo');
+        return;
+      }
+      priceValue = parsed;
+    }
+    setPriceError('');
+    onSave(trimmed, experience, tags, images, priceValue, priceCurrency);
     // Modal sa zatvorí automaticky v Dashboard.tsx cez setIsSkillDescriptionModalOpen(false)
   };
 
@@ -202,9 +516,42 @@ export default function SkillDescriptionModal({
     }
   };
 
+  const remainingChars = 75 - description.length;
+  const validExistingImages = React.useMemo(() => {
+    const result: SkillImage[] = [];
+    const seen = new Set<string>();
+    for (const img of existingImages) {
+      const src = img?.image_url || img?.image || '';
+      if (!src) continue;
+      const key = img?.id ? `id-${img.id}` : `src-${src}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      result.push(img);
+    }
+    return result;
+  }, [existingImages]);
+  const totalImagesCount = validExistingImages.length + imagePreviews.length;
+  const maxImages = 6;
+
   if (!isOpen) return null;
 
-  const remainingChars = 75 - description.length;
+  const handleRemoveExistingImage = async (imageId: number) => {
+    if (!onRemoveExistingImage) return;
+    setRemovingImageId(imageId);
+    try {
+      const updated = await onRemoveExistingImage(imageId);
+      if (Array.isArray(updated)) {
+        setExistingImages(updated);
+      } else {
+        setExistingImages((prev) => prev.filter((img) => img.id !== imageId));
+      }
+    } catch (err: any) {
+      const msg = err?.response?.data?.error || err?.message || 'Odstránenie obrázka zlyhalo.';
+      alert(msg);
+    } finally {
+      setRemovingImageId(null);
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4" onClick={(e) => {
@@ -213,7 +560,7 @@ export default function SkillDescriptionModal({
       <div className="w-full max-w-md" onClick={(e) => e.stopPropagation()}>
         <div className="rounded-2xl bg-[var(--background)] text-[var(--foreground)] border border-[var(--border)] shadow-xl overflow-visible">
           <div className="flex items-center justify-between px-6 pt-6 pb-3">
-            <h2 className="text-xl font-semibold">Opíš svoju zručnosť</h2>
+            <h2 className="text-xl font-semibold">Opíš svoju službu/zručnosť</h2>
             <button 
               aria-label="Close" 
               onClick={onClose} 
@@ -318,14 +665,14 @@ export default function SkillDescriptionModal({
                 </div>
               </label>
               {tags.length > 0 && (
-                <div className="mb-2 flex flex-wrap gap-2">
+                <div className="mb-2 flex flex-wrap gap-x-2 gap-y-px leading-[12px]">
                   {tags.map((tag, idx) => (
-                    <span key={`${tag}-${idx}`} className="inline-flex items-center gap-1 rounded-full bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300 px-2.5 py-1 text-xs">
-                      {tag}
+                    <span key={`${tag}-${idx}`} className="text-[11px] text-purple-700 dark:text-purple-300 leading-[12px]">
+                      #{tag}
                       <button
                         type="button"
                         aria-label={`Odstrániť tag ${tag}`}
-                        className="text-purple-600 hover:text-purple-800 dark:text-purple-300 dark:hover:text-purple-200"
+                        className="ml-1 text-gray-400 hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-200 align-baseline"
                         onClick={() => {
                           setTags((prev) => prev.filter((t) => t !== tag));
                         }}
@@ -372,6 +719,113 @@ export default function SkillDescriptionModal({
               )}
             </div>
 
+            {/* Obrázky (voliteľné) */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Fotky (voliteľné, max. 6)
+              </label>
+              {imageError && <p className="text-sm text-red-500 mb-2">{imageError}</p>}
+              <div className="flex flex-wrap gap-3">
+                {validExistingImages.length > 0 && (
+                  <div className="basis-full text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                    Nahrané fotky
+                  </div>
+                )}
+                {validExistingImages.map((img) => {
+                  const src = img.image_url || img.image || '';
+                  const isRemoving = removingImageId === img.id;
+                  return (
+                    <div key={`${img.id ?? src}`} className="relative w-20 h-20 rounded-lg overflow-hidden border border-gray-300 dark:border-gray-700">
+                      <img src={src} alt="Existujúca fotka" className={`w-full h-full object-cover transition-opacity ${isRemoving ? 'opacity-50' : 'opacity-100'}`} />
+                      {onRemoveExistingImage && img.id ? (
+                        <button
+                          type="button"
+                          aria-label="Odstrániť existujúcu fotku"
+                          className="absolute top-1 right-1 bg-black/70 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-black/80 transition"
+                          onClick={() => handleRemoveExistingImage(img.id!)}
+                          disabled={isRemoving}
+                        >
+                          {isRemoving ? (
+                            <svg className="w-3 h-3 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 12a8 8 0 018-8" />
+                            </svg>
+                          ) : (
+                            '×'
+                          )}
+                        </button>
+                      ) : null}
+                    </div>
+                  );
+                })}
+
+                {imagePreviews.length > 0 && (
+                  <div className="basis-full text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                    Nové fotky
+                  </div>
+                )}
+                {imagePreviews.map((src, idx) => (
+                  <div key={idx} className="relative w-20 h-20 rounded-lg overflow-hidden border border-gray-300 dark:border-gray-700">
+                    <img src={src} alt={`Náhľad ${idx + 1}`} className="w-full h-full object-cover" />
+                    <button
+                      type="button"
+                      aria-label="Odstrániť obrázok"
+                      className="absolute top-1 right-1 bg-black/60 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"
+                      onClick={() => {
+                        setImages((prev) => prev.filter((_, i) => i !== idx));
+                        setImagePreviews((prev) => prev.filter((_, i) => i !== idx));
+                      }}
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+
+                {totalImagesCount < maxImages && (
+                  <label className="w-20 h-20 rounded-lg border border-dashed border-gray-300 dark:border-gray-700 flex items-center justify-center text-gray-500 dark:text-gray-400 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-900/40 transition-colors">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      className="hidden"
+                      onChange={(e) => {
+                        const files = Array.from(e.target.files || []);
+                        if (files.length === 0) return;
+                        const currentNew = images.length;
+                        const allowed = maxImages - (validExistingImages.length + currentNew);
+                        if (allowed <= 0) {
+                          setImageError('Dosiahol si maximálny počet 6 fotiek.');
+                          e.currentTarget.value = '';
+                          return;
+                        }
+                        const selected = files.slice(0, allowed);
+
+                        // basic validation and preview
+                        const newPreviews: string[] = [];
+                        for (const f of selected) {
+                          if (!f.type.startsWith('image/')) {
+                            setImageError('Súbor musí byť obrázok.');
+                            continue;
+                          }
+                          newPreviews.push(URL.createObjectURL(f));
+                        }
+                        setImages((prev) => [...prev, ...selected]);
+                        setImagePreviews((prev) => [...prev, ...newPreviews]);
+                        setImageError('');
+                        // reset input value so the same file can be re-selected if removed
+                        e.currentTarget.value = '';
+                      }}
+                    />
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="w-6 h-6">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M3 16.5l4.5-4.5L12 16.5l4.5-4.5L21 16.5M3 7.5h18" />
+                    </svg>
+                  </label>
+                )}
+                {totalImagesCount >= maxImages && (
+                  <p className="basis-full text-xs text-gray-500 dark:text-gray-400">Dosiahol si maximálny počet 6 fotiek.</p>
+                )}
+              </div>
+            </div>
+
             {/* Dĺžka praxe */}
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -395,29 +849,39 @@ export default function SkillDescriptionModal({
                   className="flex-1 px-3 py-0 h-full border-0 bg-transparent text-gray-900 dark:text-white focus:ring-0 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 />
                 <div className="self-stretch w-px bg-gray-300 dark:bg-gray-600"></div>
-                <div className="relative flex-shrink-0">
-                  <select
-                    value={experienceUnit}
-                    onChange={(e) => setExperienceUnit(e.target.value as 'years' | 'months')}
-                    className="appearance-none px-3 py-0 h-full pr-10 border-0 bg-transparent text-gray-900 dark:text-white focus:ring-0 focus:outline-none cursor-pointer"
-                  >
-                    <option value="years">rokov</option>
-                    <option value="months">mesiacov</option>
-                  </select>
-                  <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                    <svg 
-                      className="w-5 h-5 text-gray-400 dark:text-gray-500" 
-                      fill="none" 
-                      stroke="currentColor" 
-                      viewBox="0 0 24 24"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </div>
-                </div>
+                <ExperienceUnitSelect value={experienceUnit} onChange={setExperienceUnit} />
               </div>
               {experienceError && (
                 <p className="text-sm text-red-500 mt-1">{experienceError}</p>
+              )}
+            </div>
+
+            {/* Cena od */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Cena od (voliteľné)
+              </label>
+              <div className="flex items-stretch h-11 border border-gray-300 dark:border-gray-700 rounded-lg overflow-visible focus-within:ring-1 focus-within:ring-purple-300 focus-within:border-purple-300 dark:focus-within:border-purple-500 transition-all hover:border-gray-400 dark:hover:border-gray-600 bg-white dark:bg-black">
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={priceFrom}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === '' || (!isNaN(parseFloat(val)) && parseFloat(val) >= 0)) {
+                      setPriceFrom(val);
+                      setPriceError('');
+                    }
+                  }}
+                  placeholder="0"
+                  className="flex-1 px-3 py-0 h-full border-0 bg-transparent text-sm font-medium text-gray-900 dark:text-white focus:ring-0 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                />
+                <div className="self-stretch w-px bg-gray-300 dark:bg-gray-600"></div>
+                <CurrencySelect value={priceCurrency} onChange={(v) => { setPriceCurrency(v); setUserTouchedCurrency(true); }} />
+              </div>
+              {priceError && (
+                <p className="text-sm text-red-500 mt-1">{priceError}</p>
               )}
             </div>
 
@@ -433,7 +897,9 @@ export default function SkillDescriptionModal({
                 className="flex-1 px-4 py-2 rounded-2xl bg-purple-600 text-white hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 disabled={!description.trim()}
               >
-                Pridať
+                {existingImages.length || initialDescription || initialExperience || (initialTags && initialTags.length)
+                  ? 'Zmeniť'
+                  : 'Pridať'}
               </button>
             </div>
           </div>

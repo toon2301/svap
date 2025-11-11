@@ -156,6 +156,8 @@ export const endpoints = {
   skills: {
     list: '/auth/skills/',
     detail: (id: number) => `/auth/skills/${id}/`,
+    images: (skillId: number) => `/auth/skills/${skillId}/images/`,
+    imageDetail: (skillId: number, imageId: number) => `/auth/skills/${skillId}/images/${imageId}/`,
   },
 };
 

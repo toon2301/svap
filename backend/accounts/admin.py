@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.utils.translation import gettext_lazy as _
-from .models import User, UserProfile, UserType, OfferedSkill
+from .models import User, UserProfile, UserType, OfferedSkill, OfferedSkillImage
 
 
 @admin.register(User)
@@ -113,6 +113,15 @@ class OfferedSkillAdmin(admin.ModelAdmin):
         }),
     )
 
+
+@admin.register(OfferedSkillImage)
+class OfferedSkillImageAdmin(admin.ModelAdmin):
+    """Admin pre obrázky ponúk"""
+    list_display = ['id', 'skill', 'order', 'created_at']
+    list_filter = ['created_at']
+    search_fields = ['skill__user__username', 'skill__category', 'skill__subcategory']
+    ordering = ['skill', 'order', 'id']
+    readonly_fields = ['created_at']
 
 # Vlastné nastavenia admin rozhrania
 admin.site.site_header = "Swaply Admin"
