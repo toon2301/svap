@@ -380,7 +380,7 @@ class OfferedSkillSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'category', 'subcategory', 'description',
             'experience_value', 'experience_unit', 'experience', 'tags', 'images',
-            'price_from', 'price_currency',
+            'price_from', 'price_currency', 'location',
             'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
@@ -471,3 +471,12 @@ class OfferedSkillSerializer(serializers.ModelSerializer):
             attrs['price_currency'] = '€'
 
         return attrs
+
+    def validate_location(self, value):
+        """Validácia lokality"""
+        if value:
+            value = SecurityValidator.validate_input_safety(value)
+            value = value.strip()
+            if len(value) > 25:
+                raise serializers.ValidationError("Miesto môže mať maximálne 25 znakov")
+        return value

@@ -460,3 +460,29 @@ button:focus-visible {
     --input: var(--gray-800);
   }
 } */
+
+/* Subtle scrollbar - skoro neviditeľný scrollbar pre karty */
+.subtle-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.subtle-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.subtle-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(156, 163, 175, 0.2);
+  border-radius: 3px;
+}
+
+.subtle-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(156, 163, 175, 0.4);
+}
+
+.dark .subtle-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(75, 85, 99, 0.3);
+}
+
+.dark .subtle-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(75, 85, 99, 0.5);
+}

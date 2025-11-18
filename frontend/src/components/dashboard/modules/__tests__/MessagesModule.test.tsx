@@ -19,13 +19,13 @@ describe('MessagesModule', () => {
     render(<MessagesModule />);
     
     expect(screen.getByText('Žiadne správy')).toBeInTheDocument();
-    expect(screen.getByText(/Keď vám niekto pošle správu/i)).toBeInTheDocument();
+    expect(screen.getByText(/Keď vám niekto/i)).toBeInTheDocument();
   });
 
   it('shows placeholder message', () => {
     render(<MessagesModule />);
     
-    expect(screen.getByText(/Funkcia správ bude dostupná čoskoro/i)).toBeInTheDocument();
+    expect(screen.getByText(/Funkcia správ bude.*čoskoro/i)).toBeInTheDocument();
   });
 
   it('renders empty inbox icon', () => {

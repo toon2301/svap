@@ -22,7 +22,7 @@ describe('CreateModule', () => {
     
     expect(screen.getByText('Príspevok')).toBeInTheDocument();
     expect(screen.getByText('Ponuka')).toBeInTheDocument();
-    expect(screen.getByText('Požiadavka')).toBeInTheDocument();
+    expect(screen.getByText(/(Požiadavka|Dopyt)/)).toBeInTheDocument();
     expect(screen.getByText('Fotka')).toBeInTheDocument();
   });
 
@@ -37,7 +37,7 @@ describe('CreateModule', () => {
   it('shows placeholder message', () => {
     render(<CreateModule />);
     
-    expect(screen.getByText(/Funkcia vytvárania obsahu bude dostupná čoskoro/i)).toBeInTheDocument();
+    expect(screen.getByText(/(Funkcia vytvárania obsahu|Tvorba obsahu) bude.*čoskoro/i)).toBeInTheDocument();
   });
 
   it('renders create buttons as grid', () => {

@@ -16,7 +16,7 @@ interface CredentialsProps {
 
 export default function Credentials({ t, email, password, errors, showPassword, setShowPassword, onEmailChange, onPasswordChange, onKeyDown }: CredentialsProps) {
   return (
-    <>
+    <div className="flex flex-col space-y-3 max-lg:space-y-5">
       <div>
         <label htmlFor="login-email" className="block text-base font-normal text-gray-600 dark:text-gray-300 mb-2 max-lg:text-base max-lg:mb-1">
           {t('auth.email')}
@@ -99,7 +99,7 @@ export default function Credentials({ t, email, password, errors, showPassword, 
           </p>
         )}
       </div>
-    </>
+    </div>
   );
 }
 

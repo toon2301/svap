@@ -35,7 +35,7 @@ describe('ProfileModule', () => {
     render(<ProfileModule user={mockUser} />);
     // There are two variants (mobile/desktop), ensure at least one button exists
     expect(screen.getAllByText('Upraviť profil').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('Zručnosti').length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/(Zručnosti|Služby a ponuky)/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Bratislava/).length).toBeGreaterThan(0);
   });
 

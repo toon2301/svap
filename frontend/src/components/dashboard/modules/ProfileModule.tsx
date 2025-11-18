@@ -12,6 +12,15 @@ import ProfileEditFormMobile from './ProfileEditFormMobile';
 import { api, endpoints } from '../../../lib/api';
 import OfferImageCarousel from './shared/OfferImageCarousel';
 
+function slugifyLabel(label: string): string {
+  return label
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
+}
+
 interface ProfileModuleProps {
   user: User;
   onUserUpdate?: (updatedUser: User) => void;
@@ -32,6 +41,7 @@ export default function ProfileModule({ user, onUserUpdate, onEditProfileClick, 
   const [mounted, setMounted] = useState(false);
   const [isAllWebsitesModalOpen, setIsAllWebsitesModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'offers' | 'portfolio' | 'posts' | 'tagged'>('offers');
+  const [flippedCards, setFlippedCards] = useState<Set<number | string>>(new Set());
   // Offers for desktop tab rendering
   const [offers, setOffers] = useState<Array<{
     id: number;
@@ -41,6 +51,8 @@ export default function ProfileModule({ user, onUserUpdate, onEditProfileClick, 
     images?: Array<{ id: number; image_url?: string | null; image?: string | null; order?: number }>;
     price_from?: number | null;
     price_currency?: string;
+    location?: string;
+    experience?: { value: number; unit: 'years' | 'months' };
   }>>([]);
 
   useEffect(() => {
@@ -92,6 +104,11 @@ export default function ProfileModule({ user, onUserUpdate, onEditProfileClick, 
               typeof s.price_currency === 'string' && s.price_currency.trim() !== ''
                 ? s.price_currency
                 : '€',
+            location: typeof s.location === 'string' ? s.location : '',
+            experience: s.experience ? {
+              value: typeof s.experience.value === 'number' ? s.experience.value : parseFloat(String(s.experience.value || 0)),
+              unit: (s.experience.unit === 'years' || s.experience.unit === 'months') ? s.experience.unit : 'years',
+            } : undefined,
           };
         });
         setOffers(mapped);
@@ -654,41 +671,169 @@ export default function ProfileModule({ user, onUserUpdate, onEditProfileClick, 
                         ) : (
                           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                             {offers.map((offer) => {
-                              const imageAlt = (offer.description && offer.description.trim()) || offer.subcategory || offer.category || 'Ponuka';
-                              const headline = (offer.description && offer.description.trim()) || offer.subcategory || 'Bez popisu';
-                              const label = offer.subcategory || offer.category || '';
+                              const catSlug = offer.category ? slugifyLabel(offer.category) : '';
+                              const subSlug = offer.subcategory ? slugifyLabel(offer.subcategory) : '';
+                              const translatedLabel =
+                                offer.subcategory && catSlug && subSlug
+                                  ? t(`skillsCatalog.subcategories.${catSlug}.${subSlug}`, offer.subcategory)
+                                  : offer.category && catSlug
+                                    ? t(`skillsCatalog.categories.${catSlug}`, offer.category)
+                                    : offer.subcategory || offer.category || '';
+                              const imageAlt =
+                                (offer.description && offer.description.trim()) ||
+                                translatedLabel ||
+                                t('skills.offer', 'Ponúkam');
+                              const headline =
+                                (offer.description && offer.description.trim()) ||
+                                translatedLabel ||
+                                t('skills.noDescription', 'Bez popisu');
+                              const label = translatedLabel;
                               const priceLabel =
                                 offer.price_from !== null && offer.price_from !== undefined
                                   ? `${Number(offer.price_from).toLocaleString('sk-SK', { minimumFractionDigits: 0, maximumFractionDigits: 2 })} ${offer.price_currency || '€'}`
                                   : null;
+                              const locationText = offer.location && offer.location.trim();
+                              const cardId =
+                                offer.id ??
+                                `${offer.category || 'cat'}-${offer.subcategory || 'sub'}-${offer.description || 'desc'}`;
+                              const isFlipped = flippedCards.has(cardId);
+
+                              const handleFlip = (e: React.MouseEvent) => {
+                                e.stopPropagation();
+                                setFlippedCards((prev) => {
+                                  const next = new Set(prev);
+                                  if (next.has(cardId)) {
+                                    next.delete(cardId);
+                                  } else {
+                                    next.add(cardId);
+                                  }
+                                  return next;
+                                });
+                              };
+
+                              const FlipButton = ({ extraClasses = '' }: { extraClasses?: string }) => (
+                                <button
+                                  onClick={handleFlip}
+                                  aria-label="Otočiť"
+                                  title="Otočiť"
+                                  className={`absolute -top-2.5 -right-3 -translate-y-1/2 p-1 rounded-full bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-400/60 text-purple-700 dark:text-purple-300 hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors ${extraClasses}`}
+                                >
+                                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-3 h-3">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
+                                  </svg>
+                                </button>
+                              );
+
                               return (
-                                <div key={offer.id} className="rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-800 bg-white/70 dark:bg-[#0f0f10] shadow-sm hover:shadow transition-shadow">
-                                  <div className="relative aspect-[4/3] bg-gray-100 dark:bg-[#0e0e0f] overflow-hidden">
-                                    <OfferImageCarousel images={offer.images} alt={imageAlt} />
-                                    {accountType === 'business' && (
-                                      <span className="absolute top-2 left-2 px-1.5 py-0.5 text-[10px] font-semibold bg-black/80 text-white rounded">
-                                        PRO
-                                      </span>
-                                    )}
-                                    <button aria-label="Obľúbené" className="absolute top-2 right-2 p-1.5 rounded-full bg-white/90 dark:bg-black/70 text-gray-700 dark:text-gray-200 hover:bg-white dark:hover:bg-black">
-                                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
-                                        <path d="M11.645 20.91l-.007-.003-.022-.01a15.247 15.247 0 01-.383-.173 25.18 25.18 0 01-4.244-2.453C4.688 16.477 2.25 13.88 2.25 10.5 2.25 7.42 4.67 5 7.75 5c1.66 0 3.153.806 4.096 2.036C12.79 5.806 14.284 5 15.944 5 19.023 5 21.443 7.42 21.443 10.5c0 3.38-2.438 5.977-4.74 7.77a25.175 25.175 0 01-4.244 2.452 15.247 15.247 0 01-.383.173l-.022.01-.007.003a.75.75 0 01-.642 0z" />
-                                      </svg>
-                                    </button>
-                                  </div>
-                                  <div className="p-3 flex flex-col h-44">
-                                    {label ? (
-                                      <div className="text-[11px] text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wide">{label}</div>
-                                    ) : null}
-                                    <div className="text-xs font-semibold text-gray-900 dark:text-white whitespace-pre-wrap overflow-y-auto pr-1 flex-1" style={{ maxHeight: '5.5rem' }}>
-                                      {headline}
-                                    </div>
-                                    {priceLabel ? (
-                                      <div className="text-xs text-gray-700 dark:text-gray-300 mt-1.5">
-                                        <span className="font-medium text-gray-900 dark:text-white">Cena od:&nbsp;</span>
-                                        {priceLabel}
+                                <div key={offer.id} className="relative">
+                                  <div className="rounded-2xl overflow-visible border border-gray-200 dark:border-gray-800 bg-white/70 dark:bg-[#0f0f10] shadow-sm hover:shadow transition-shadow">
+                                    <div className={isFlipped ? 'hidden' : 'block'}>
+                                        <div className="relative aspect-[4/3] bg-gray-100 dark:bg-[#0e0e0f] overflow-hidden rounded-t-2xl">
+                                          <OfferImageCarousel images={offer.images} alt={imageAlt} />
+                                          {accountType === 'business' && (
+                                            <span className="absolute top-2 left-2 px-1.5 py-0.5 text-[10px] font-semibold bg-black/80 text-white rounded">
+                                              PRO
+                                            </span>
+                                          )}
+                                          <div className="absolute top-2 right-2 flex flex-col gap-0.5">
+                                            <button
+                                              aria-label="Páči sa mi to"
+                                              title="Páči sa mi to"
+                                              className="p-1 rounded-full bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-400/60 text-purple-700 dark:text-purple-300 hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors"
+                                            >
+                                              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3">
+                                                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                                              </svg>
+                                            </button>
+                                            <button
+                                              aria-label="Zdieľať"
+                                              title="Zdieľať"
+                                              className="p-1 rounded-full bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-400/60 text-purple-700 dark:text-purple-300 hover:bg-purple-100 dark:hover-bg-purple-900/30 transition-colors"
+                                            >
+                                              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3">
+                                                <circle cx="18" cy="5" r="3" />
+                                                <circle cx="6" cy="12" r="3" />
+                                                <circle cx="18" cy="19" r="3" />
+                                                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+                                                <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+                                              </svg>
+                                            </button>
+                                            <button
+                                              aria-label="Pridať recenziu"
+                                              title="Pridať recenziu"
+                                              className="p-1 rounded-full bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-400/60 text-purple-700 dark:text-purple-300 hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors"
+                                            >
+                                              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3">
+                                                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                                              </svg>
+                                            </button>
+                                          </div>
+                                        </div>
+                                        <div className="relative p-3 flex flex-col h-44 border-t border-gray-200 dark:border-gray-700/50">
+                                          <FlipButton />
+                                          {/* Scrollovateľná časť: nadpis a opis */}
+                                          <div className="flex-1 overflow-y-auto subtle-scrollbar pr-1" style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(156, 163, 175, 0.2) transparent' }}>
+                                            {label ? (
+                                              <div className="text-[11px] text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wide">{label}</div>
+                                            ) : null}
+                                            <div className="text-xs font-semibold text-gray-900 dark:text-white whitespace-pre-wrap break-words">
+                                              {headline}
+                                            </div>
+                                          </div>
+                                          {/* Fixná časť: miesto, prax, cena, "Ponúkam" */}
+                                          <div className="flex-shrink-0">
+                                            <div className="mt-2 mb-1.5 flex items-start justify-end gap-3">
+                                              <div className="flex-1 min-w-0 mr-auto flex flex-col gap-0.5">
+                                                {locationText && (
+                                                  <div className="text-[10px] text-gray-600 dark:text-gray-400 flex items-start gap-1">
+                                                    <span className="font-medium text-gray-900 dark:text-white flex-shrink-0">
+                                                      {t('skills.locationLabel', 'Miesto:')}
+                                                    </span>
+                                                    <span className="break-words">{locationText}</span>
+                                                  </div>
+                                                )}
+                                                {offer.experience && (
+                                                  <div className="text-[10px] text-gray-600 dark:text-gray-400 flex items-center gap-1">
+                                                    <span className="font-medium text-gray-900 dark:text-white">
+                                                      {t('skills.experience', 'Prax:')}
+                                                    </span>
+                                                    <span>
+                                                      {offer.experience.value} {offer.experience.unit === 'years' ? t('skills.years', 'rokov') : t('skills.months', 'mesiacov')}
+                                                    </span>
+                                                  </div>
+                                                )}
+                                              </div>
+                                              {priceLabel && (
+                                                <div className="px-2 py-1 rounded-lg bg-purple-50 dark:bg-purple-900/20 border border-purple-100 dark:border-purple-800/30 flex-shrink-0">
+                                                  <div className="text-[10px] text-purple-600 dark:text-purple-400 font-medium mb-0.5">
+                                                    {t('skills.priceFrom', 'Cena od:')}
+                                                  </div>
+                                                  <div className="text-sm font-bold text-purple-700 dark:text-purple-300">
+                                                    {priceLabel}
+                                                  </div>
+                                                </div>
+                                              )}
+                                            </div>
+                                            <p className="-mb-2 pt-0 pb-0 text-center text-[8px] text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                                              {t('skills.offering', 'Ponúkam')}
+                                            </p>
+                                          </div>
+                                        </div>
                                       </div>
-                                    ) : null}
+
+                                    <div className={isFlipped ? 'block' : 'hidden'}>
+                                      <div className="relative aspect-[4/3] rounded-t-2xl border-b border-gray-200/70 dark:border-gray-700/50 flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200 dark:from-[#101012] dark:to-[#151518]">
+                                        <span className="text-[11px] uppercase tracking-[0.2em] text-gray-400 dark:text-gray-500">
+                                          {t('skills.backSidePlaceholder', 'Zadná strana')}
+                                        </span>
+                                      </div>
+                                      <div className="relative p-3 flex flex-col h-44 border-t border-gray-200 dark:border-gray-700/50">
+                                        <FlipButton extraClasses="z-30" />
+                                        <div className="flex-1 flex items-center justify-center text-center text-[11px] text-gray-400 dark:text-gray-500">
+                                          {t('skills.backSideEmpty', 'Sem pridáme ďalšie informácie.')}
+                                        </div>
+                                      </div>
+                                    </div>
                                   </div>
                                 </div>
                               );

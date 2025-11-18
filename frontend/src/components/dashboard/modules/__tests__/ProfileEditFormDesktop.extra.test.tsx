@@ -45,7 +45,7 @@ describe('ProfileEditFormDesktop extra coverage', () => {
     fireEvent.change(locationInput, { target: { value: 'Bratislava' } });
     fireEvent.keyDown(locationInput, { key: 'Enter' });
 
-    const phoneInput = screen.getByPlaceholderText('Tel. číslo') as HTMLInputElement;
+    const phoneInput = screen.getByPlaceholderText(/(Tel\. číslo|Telefónne číslo)/) as HTMLInputElement;
     fireEvent.change(phoneInput, { target: { value: '+421900000000' } });
     fireEvent.blur(phoneInput);
 

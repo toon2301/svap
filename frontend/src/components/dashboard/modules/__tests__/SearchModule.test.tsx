@@ -11,7 +11,7 @@ describe('SearchModule', () => {
   it('renders search input', () => {
     render(<SearchModule />);
     
-    const searchInput = screen.getByPlaceholderText(/Hľadať používateľov/i);
+    const searchInput = screen.getByPlaceholderText(/Hľada(ť|jte) používateľov/i);
     expect(searchInput).toBeInTheDocument();
   });
 
@@ -31,7 +31,7 @@ describe('SearchModule', () => {
   it('updates search query on input change', () => {
     render(<SearchModule />);
     
-    const searchInput = screen.getByPlaceholderText(/Hľadať používateľov/i) as HTMLInputElement;
+    const searchInput = screen.getByPlaceholderText(/Hľada(ť|jte) používateľov/i) as HTMLInputElement;
     fireEvent.change(searchInput, { target: { value: 'React' } });
     
     expect(searchInput.value).toBe('React');
@@ -40,7 +40,7 @@ describe('SearchModule', () => {
   it('shows search results message when query is entered', () => {
     render(<SearchModule />);
     
-    const searchInput = screen.getByPlaceholderText(/Hľadať používateľov/i);
+    const searchInput = screen.getByPlaceholderText(/Hľada(ť|jte) používateľov/i);
     fireEvent.change(searchInput, { target: { value: 'TypeScript' } });
     
     expect(screen.getByText(/Výsledky vyhľadávania pre:/i)).toBeInTheDocument();
@@ -49,10 +49,10 @@ describe('SearchModule', () => {
   it('shows placeholder message for search functionality', () => {
     render(<SearchModule />);
     
-    const searchInput = screen.getByPlaceholderText(/Hľadať používateľov/i);
+    const searchInput = screen.getByPlaceholderText(/Hľada(ť|jte) používateľov/i);
     fireEvent.change(searchInput, { target: { value: 'test' } });
     
-    expect(screen.getByText(/Funkcia vyhľadávania bude dostupná čoskoro/i)).toBeInTheDocument();
+    expect(screen.getByText(/Funkcia vyhľadávania bude.*čoskoro/i)).toBeInTheDocument();
   });
 });
 

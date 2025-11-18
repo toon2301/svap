@@ -145,22 +145,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const refreshUser = async () => {
     try {
-      const tokens = localStorage.getItem('tokens');
-      if (!tokens) return;
-
-      const { access } = JSON.parse(tokens);
-      
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
-      const response = await fetch(`${apiUrl}/me/`, {
-        headers: {
-          'Authorization': `Bearer ${access}`,
-        },
-      });
-
-      if (response.ok) {
-        const userData = await response.json();
-        setUser(userData);
-        localStorage.setItem('user', JSON.stringify(userData));
+      // Použi centrálne axios API s interceptormi (Authorization z cookies)
+      const { api, endpoints } = await import('@/lib/api');
+      const resp = await api.get(endpoints.auth.me);
+      if (resp?.status === 200 && resp.data) {
+        setUser(resp.data);
+        localStorage.setItem('user', JSON.stringify(resp.data));
       }
     } catch (error) {
       console.error('Error refreshing user:', error);

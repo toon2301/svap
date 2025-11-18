@@ -83,9 +83,11 @@ class SwaplyJWTAuthentication(JWTAuthentication):
         Fallback blacklist check bez Redis
         """
         try:
-            # Jednoduchá implementácia - môže byť rozšírená
-            # Pre teraz vráť False (žiadne blacklisting bez Redis)
-            return False
+            jti = token.get('jti')
+            if not jti:
+                return False
+            blacklist_key = f"blacklist_{jti}"
+            return cache.get(blacklist_key) is not None
         except Exception:
             return False
 
@@ -99,6 +101,12 @@ class SwaplyRefreshToken(RefreshToken):
         """
         Blacklist token s Redis fallback
         """
+        # Najprv vždy zapíš do DB blacklistu (oficiálny simplejwt mechanizmus)
+        try:
+            super().blacklist()
+        except Exception as e:
+            logger.warning(f"Base blacklist failed or unavailable: {e}")
+        # Navyše použij rýchly cache/Redis mechanizmus ak je k dispozícii
         try:
             if self._is_redis_available():
                 self._blacklist_redis()
@@ -136,7 +144,10 @@ class SwaplyRefreshToken(RefreshToken):
         Fallback blacklisting bez Redis
         """
         try:
-            # Pre teraz len zalogujeme - môže byť rozšírené o databázu
-            logger.info(f"Token blacklisted (fallback): {self.get('jti')}")
+            jti = self.get('jti')
+            if jti:
+                blacklist_key = f"blacklist_{jti}"
+                # Použi default Django cache (LocMem v DEV/TEST) ako fallback
+                cache.set(blacklist_key, True, timeout=86400)  # 24 hodín
         except Exception as e:
             logger.error(f"Fallback blacklisting failed: {e}")

@@ -267,6 +267,7 @@ class OfferedSkill(models.Model):
     tags = models.JSONField(_('Tagy'), default=list, blank=True)
     price_from = models.DecimalField(_('Cena od'), max_digits=10, decimal_places=2, null=True, blank=True)
     price_currency = models.CharField(_('Mena'), max_length=8, blank=True, default='€')
+    location = models.CharField(_('Miesto'), max_length=25, blank=True)
     
     created_at = models.DateTimeField(_('Vytvorené'), auto_now_add=True)
     updated_at = models.DateTimeField(_('Aktualizované'), auto_now=True)

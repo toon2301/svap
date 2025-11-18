@@ -17,13 +17,13 @@ describe('SearchModule', () => {
 
   it('renders search input with placeholder', () => {
     render(<SearchModule />);
-    const searchInput = screen.getByPlaceholderText('Hľadať používateľov, zručnosti...');
+    const searchInput = screen.getByPlaceholderText(/Hľada(ť|jte) používateľov, zručnosti/i);
     expect(searchInput).toBeInTheDocument();
   });
 
   it('updates search query when typing', () => {
     render(<SearchModule />);
-    const searchInput = screen.getByPlaceholderText('Hľadať používateľov, zručnosti...');
+    const searchInput = screen.getByPlaceholderText(/Hľada(ť|jte) používateľov, zručnosti/i);
     fireEvent.change(searchInput, { target: { value: 'React' } });
     expect(searchInput).toHaveValue('React');
   });
@@ -34,7 +34,7 @@ describe('SearchModule', () => {
 
   it('renders search results summary when query entered', () => {
     render(<SearchModule />);
-    const input = screen.getByPlaceholderText('Hľadať používateľov, zručnosti...');
+    const input = screen.getByPlaceholderText(/Hľada(ť|jte) používateľov, zručnosti/i);
     fireEvent.change(input, { target: { value: 'React' } });
     expect(screen.getByText(/Výsledky vyhľadávania pre:/)).toBeInTheDocument();
   });
@@ -46,7 +46,7 @@ describe('SearchModule', () => {
 
   it('shows results information when search query is entered', () => {
     render(<SearchModule />);
-    const searchInput = screen.getByPlaceholderText('Hľadať používateľov, zručnosti...');
+    const searchInput = screen.getByPlaceholderText(/Hľada(ť|jte) používateľov, zručnosti/i);
     fireEvent.change(searchInput, { target: { value: 'React' } });
     expect(screen.getByText(/"React"/)).toBeInTheDocument();
   });

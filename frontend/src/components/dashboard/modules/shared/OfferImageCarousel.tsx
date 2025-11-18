@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface OfferImage {
   id?: number;
@@ -28,6 +29,7 @@ const OfferImageCarousel: React.FC<OfferImageCarouselProps> = ({
   alt,
   intervalMs = DEFAULT_INTERVAL,
 }) => {
+  const { t } = useLanguage();
   const preparedImages: PreparedImage[] = useMemo(() => {
     if (!Array.isArray(images)) {
       return [];
@@ -67,15 +69,15 @@ const OfferImageCarousel: React.FC<OfferImageCarouselProps> = ({
 
   if (preparedImages.length === 0) {
     return (
-      <div className="absolute inset-0 bg-gradient-to-br from-gray-200 via-gray-100 to-gray-300 dark:from-[#171717] dark:via-[#121213] dark:to-[#0d0d0d] flex items-center justify-center">
-        <div className="flex flex-col items-center text-gray-500 dark:text-gray-400">
+      <div className="absolute inset-0 bg-gradient-to-br from-gray-100 via-gray-50 to-gray-200 dark:from-[#141415] dark:via-[#0f0f10] dark:to-[#0a0a0b] flex items-center justify-center">
+        <div className="flex flex-col items-center text-gray-400 dark:text-gray-500">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
             strokeWidth="1.5"
-            className="w-10 h-10 mb-1 opacity-80"
+            className="w-10 h-10 mb-1.5 opacity-60"
           >
             <path
               strokeLinecap="round"
@@ -88,7 +90,9 @@ const OfferImageCarousel: React.FC<OfferImageCarouselProps> = ({
               d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"
             />
           </svg>
-          <span className="text-[11px] uppercase tracking-wide">Bez fotografie</span>
+          <span className="text-[11px] uppercase tracking-wide opacity-70">
+            {t('skills.noPhoto', 'Bez fotografie')}
+          </span>
         </div>
       </div>
     );

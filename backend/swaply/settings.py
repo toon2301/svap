@@ -300,44 +300,8 @@ CSRF_TRUSTED_ORIGINS = os.getenv(
 
 # Redis settings (pre cache a session storage). Ak REDIS_URL nie je zadaný, použijeme LocMemCache.
 REDIS_URL = os.getenv('REDIS_URL', None)
-
-# Test Redis pripojenie
-REDIS_AVAILABLE = False
-if REDIS_URL:
-    try:
-        import redis
-        r = redis.from_url(REDIS_URL)
-        r.ping()  # Test pripojenia
-        REDIS_AVAILABLE = True
-    except Exception as e:
-        logger = logging.getLogger(__name__)
-        logger.warning(f"Redis connection failed: {e}. Falling back to LocMemCache.")
-        REDIS_AVAILABLE = False
-
-if REDIS_URL and REDIS_AVAILABLE:
-    CACHES = {
-        'default': {
-            'BACKEND': 'django.core.cache.backends.redis.RedisCache',
-            'LOCATION': REDIS_URL,
-            'KEY_PREFIX': os.getenv('CACHE_KEY_PREFIX', 'swaply'),
-            'OPTIONS': {
-                'CLIENT_CLASS': 'django_redis.client.DefaultClient',
-                'CONNECTION_POOL_KWARGS': {
-                    'retry_on_timeout': True,
-                    'socket_keepalive': True,
-                    'socket_keepalive_options': {},
-                }
-            }
-        }
-    }
-else:
-    # Fallback pre dev/test alebo ak Redis nie je dostupný
-    CACHES = {
-        'default': {
-            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-            'LOCATION': 'swaply-cache'
-        }
-    }
+from swaply.settings_parts.cache import build_caches  # absolute import kvôli runtime načítaniu v testoch
+CACHES = build_caches(REDIS_URL)
 
 # Cookies a bezpečnosť
 SESSION_COOKIE_SECURE = env_bool('SESSION_COOKIE_SECURE', not DEBUG)

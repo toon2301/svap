@@ -22,11 +22,13 @@ interface WebsiteModalProps {
 
 export default function WebsiteModal({ isOpen, website, additionalWebsites, originalWebsite, originalAdditionalWebsites, setWebsite, setAdditionalWebsites, setOriginalWebsite, setOriginalAdditionalWebsites, onClose, onUserUpdate }: WebsiteModalProps) {
   const { t } = useLanguage();
+  const safeAdditionalWebsites = Array.isArray(additionalWebsites) ? additionalWebsites : [];
+  const safeOriginalAdditionalWebsites = Array.isArray(originalAdditionalWebsites) ? originalAdditionalWebsites : [];
 
   const handleSave = async () => {
     try {
       const main = (website || '').trim();
-      let extras = (additionalWebsites || []).filter((w) => (w || '').trim());
+      let extras = safeAdditionalWebsites.filter((w) => (w || '').trim());
       const mainCount = main ? 1 : 0;
       const allowedAdditional = Math.max(0, 5 - mainCount);
       if (extras.length > allowedAdditional) {
@@ -45,7 +47,7 @@ export default function WebsiteModal({ isOpen, website, additionalWebsites, orig
 
   const handleBack = () => {
     setWebsite(originalWebsite);
-    setAdditionalWebsites(originalAdditionalWebsites);
+    setAdditionalWebsites(safeOriginalAdditionalWebsites);
     onClose();
   };
 
@@ -65,9 +67,9 @@ export default function WebsiteModal({ isOpen, website, additionalWebsites, orig
           <button
             onClick={() => {
               const mainCount = (website || '').trim() ? 1 : 0;
-              const total = mainCount + additionalWebsites.length;
+              const total = mainCount + safeAdditionalWebsites.length;
               if (total >= 5) return;
-              setAdditionalWebsites([...additionalWebsites, '']);
+              setAdditionalWebsites([...safeAdditionalWebsites, '']);
             }}
             className="p-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
           >
@@ -77,7 +79,7 @@ export default function WebsiteModal({ isOpen, website, additionalWebsites, orig
           </button>
         </div>
       </div>
-      {additionalWebsites.map((additionalWebsite, index) => (
+      {safeAdditionalWebsites.map((additionalWebsite, index) => (
         <div key={index} className="mb-4">
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Web {index + 2}</label>
           <div className="flex items-center gap-2">
@@ -85,7 +87,7 @@ export default function WebsiteModal({ isOpen, website, additionalWebsites, orig
               type="url"
               value={additionalWebsite}
               onChange={(e) => {
-                const newWebsites = [...additionalWebsites];
+                const newWebsites = [...safeAdditionalWebsites];
                 newWebsites[index] = e.target.value;
                 setAdditionalWebsites(newWebsites);
               }}
@@ -95,7 +97,7 @@ export default function WebsiteModal({ isOpen, website, additionalWebsites, orig
             />
             <button
               onClick={() => {
-                const newWebsites = additionalWebsites.filter((_, i) => i !== index);
+                const newWebsites = safeAdditionalWebsites.filter((_, i) => i !== index);
                 setAdditionalWebsites(newWebsites);
               }}
               className="p-2 text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-200"

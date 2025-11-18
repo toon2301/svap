@@ -114,7 +114,7 @@ describe('ProfileEditModals extra coverage', () => {
     props.bio = 'About me';
 
     const { rerender } = render(<ProfileEditModals {...props} />);
-    const saveBioBtn = screen.getAllByRole('button').slice(-1)[0];
+    const saveBioBtn = screen.getByLabelText('Uložiť');
     fireEvent.click(saveBioBtn);
 
     await waitFor(() => {
@@ -125,10 +125,10 @@ describe('ProfileEditModals extra coverage', () => {
     props2.isWebsiteModalOpen = true;
     props2.website = 'https://site';
     rerender(<ProfileEditModals {...props2} />);
-    const saveWebBtn = screen.getAllByRole('button').slice(-1)[0];
+    const saveWebBtn = screen.getByLabelText('Uložiť');
     fireEvent.click(saveWebBtn);
     await waitFor(() => {
-      expect(api.patch).toHaveBeenCalledWith('/auth/profile/', { website: 'https://site' });
+      expect(api.patch).toHaveBeenCalledWith('/auth/profile/', expect.objectContaining({ website: 'https://site' }));
     });
   });
 

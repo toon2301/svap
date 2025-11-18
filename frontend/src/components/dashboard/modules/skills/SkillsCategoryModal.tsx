@@ -2,6 +2,16 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import styles from './SkillsCategoryModal.module.css';
+import { useLanguage } from '@/contexts/LanguageContext';
+
+function slugifyLabel(label: string): string {
+  return label
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
+}
 
 interface SkillsCategoryModalProps {
   isOpen: boolean;
@@ -12,6 +22,7 @@ interface SkillsCategoryModalProps {
 }
 
 export default function SkillsCategoryModal({ isOpen, onClose, categories, selected, onSelect }: SkillsCategoryModalProps) {
+  const { t } = useLanguage();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
 
@@ -99,7 +110,7 @@ export default function SkillsCategoryModal({ isOpen, onClose, categories, selec
                 <button
                   onClick={handleBack}
                   className="p-1 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
-                  aria-label="Späť"
+                  aria-label={t('common.back', 'Späť')}
                 >
                   <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -107,10 +118,14 @@ export default function SkillsCategoryModal({ isOpen, onClose, categories, selec
                 </button>
               )}
               <h2 className="text-xl font-semibold">
-                {isSearchActive ? 'Vyhľadať podkategóriu' : selectedCategory ? selectedCategory : 'Vyber kategóriu'}
+                {isSearchActive
+                  ? t('skills.searchSubcategoryTitle', 'Vyhľadať podkategóriu')
+                  : selectedCategory
+                    ? t(`skillsCatalog.categories.${slugifyLabel(selectedCategory)}`, selectedCategory)
+                    : t('skills.selectCategoryTitle', 'Vyber kategóriu')}
               </h2>
             </div>
-            <button aria-label="Close" onClick={onClose} className="p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
+            <button aria-label={t('common.close', 'Zavrieť')} onClick={onClose} className="p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
               <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
           </div>
@@ -130,7 +145,7 @@ export default function SkillsCategoryModal({ isOpen, onClose, categories, selec
               </div>
               <input
                 type="text"
-                placeholder="Hľadať podkategóriu..."
+                placeholder={t('skills.searchSubcategoryPlaceholder', 'Hľadať podkategóriu...')}
                 value={searchQuery}
                 onChange={handleSearchChange}
                 className="w-full px-4 py-2.5 pl-10 pr-10 rounded-lg border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -140,7 +155,7 @@ export default function SkillsCategoryModal({ isOpen, onClose, categories, selec
                   <button
                     onClick={() => setSearchQuery('')}
                     className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                    aria-label="Vymazať"
+                    aria-label={t('common.clear', 'Vymazať')}
                   >
                     <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -163,8 +178,12 @@ export default function SkillsCategoryModal({ isOpen, onClose, categories, selec
                     className="w-full flex items-center justify-between px-4 py-3 rounded-lg hover:bg-gray-100 dark:hover:bg-[#111] text-left"
                   >
                     <div className="flex flex-col">
-                      <span className="text-sm">{item.name}</span>
-                      <span className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{item.category}</span>
+                      <span className="text-sm">
+                        {t(`skillsCatalog.subcategories.${slugifyLabel(item.category)}.${slugifyLabel(item.name)}`, item.name)}
+                      </span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                        {t(`skillsCatalog.categories.${slugifyLabel(item.category)}`, item.category)}
+                      </span>
                     </div>
                     {selected === item.name && (
                       <svg className="w-4 h-4 text-gray-800 dark:text-white" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/></svg>
@@ -173,7 +192,7 @@ export default function SkillsCategoryModal({ isOpen, onClose, categories, selec
                 ))
               ) : (
                 <div className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
-                  <p>Žiadne výsledky nenájdené</p>
+                  <p>{t('common.noResults', 'Žiadne výsledky nenájdené')}</p>
                 </div>
               )
             ) : currentSubcategories ? (
@@ -185,7 +204,9 @@ export default function SkillsCategoryModal({ isOpen, onClose, categories, selec
                   onClick={() => handleSubcategoryClick(subcategory)}
                   className="w-full flex items-center justify-between px-4 py-3 rounded-lg hover:bg-gray-100 dark:hover:bg-[#111] text-left"
                 >
-                  <span className="text-sm">{subcategory}</span>
+                  <span className="text-sm">
+                    {t(`skillsCatalog.subcategories.${slugifyLabel(selectedCategory || '')}.${slugifyLabel(subcategory)}`, subcategory)}
+                  </span>
                   {selected === subcategory && (
                     <svg className="w-4 h-4 text-gray-800 dark:text-white" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/></svg>
                   )}
@@ -202,7 +223,9 @@ export default function SkillsCategoryModal({ isOpen, onClose, categories, selec
                     onClick={() => handleCategoryClick(categoryName)}
                     className="w-full flex items-center justify-between px-4 py-3 rounded-lg hover:bg-gray-100 dark:hover:bg-[#111] text-left"
                   >
-                    <span className="text-sm">{categoryName}</span>
+                    <span className="text-sm">
+                      {t(`skillsCatalog.categories.${slugifyLabel(categoryName)}`, categoryName)}
+                    </span>
                     {hasSubcategories ? (
                       <svg className="w-4 h-4 text-gray-400 dark:text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
