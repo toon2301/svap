@@ -91,13 +91,13 @@ export default function Dashboard({ initialUser }: DashboardProps) {
   }
 
   const handleRightSidebarClose = () => {
-    setIsRightSidebarOpen(false);
-    setActiveRightItem('');
+          setIsRightSidebarOpen(false);
+          setActiveRightItem('');
   };
 
   const handleMobileProfileClick = () => {
-    setActiveModule('profile');
-    setIsRightSidebarOpen(false);
+          setActiveModule('profile');
+          setIsRightSidebarOpen(false);
   };
 
   const handleSidebarLanguageClick = () => {

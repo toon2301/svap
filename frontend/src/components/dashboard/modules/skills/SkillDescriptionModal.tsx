@@ -11,11 +11,11 @@ import PriceSection from './skillDescriptionModal/sections/PriceSection';
 import { CurrencyOption, SkillDescriptionModalProps, SkillImage, UnitOption } from './skillDescriptionModal/types';
 import { currencyFromLocale, ensureCurrencyOption, slugifyLabel } from './skillDescriptionModal/utils';
 
-export default function SkillDescriptionModal({
-  isOpen,
-  onClose,
-  category,
-  subcategory,
+export default function SkillDescriptionModal({ 
+  isOpen, 
+  onClose, 
+  category, 
+  subcategory, 
   onSave,
   initialDescription = '',
   initialExperience,
@@ -108,7 +108,7 @@ export default function SkillDescriptionModal({
       setExistingImages(Array.isArray(initialImages) ? initialImages : []);
     }
   }, [initialImages, isOpen]);
-
+  
   useEffect(() => {
     if (!isOpen) {
       setLocation('');
@@ -123,7 +123,7 @@ export default function SkillDescriptionModal({
     setIsLocationSaving(false);
     lastSavedLocationRef.current = trimmedInitial;
   }, [initialLocation, isOpen]);
-
+  
   useEffect(() => {
     if (!isOpen) return;
     if (userTouchedCurrency) return;
@@ -183,7 +183,7 @@ export default function SkillDescriptionModal({
 
   const handleSave = () => {
     const trimmed = description.trim();
-
+    
     if (!trimmed) {
       setError(t('skills.descriptionRequired', 'Popis zručnosti je povinný'));
       return;
@@ -236,9 +236,9 @@ export default function SkillDescriptionModal({
         <div className="rounded-2xl bg-[var(--background)] text-[var(--foreground)] border border-[var(--border)] shadow-xl overflow-visible">
           <div className="flex items-center justify-between px-6 pt-6 pb-3">
             <h2 className="text-xl font-semibold">{t('skills.describeSkillTitle', 'Opíš svoju službu/zručnosť')}</h2>
-            <button
-              aria-label="Close"
-              onClick={onClose}
+            <button 
+              aria-label="Close" 
+              onClick={onClose} 
               className="p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -282,18 +282,18 @@ export default function SkillDescriptionModal({
             />
 
             <LocationSection
-              value={location}
+                value={location}
               onChange={(val) => {
                 setLocation(val);
-                setLocationError('');
-              }}
-              onBlur={handleLocationBlur}
+                  setLocationError('');
+                }}
+                onBlur={handleLocationBlur}
               error={locationError}
               isSaving={isLocationSaving}
             />
 
             <ExperienceSection
-              value={experienceValue}
+                  value={experienceValue}
               onChange={handleExperienceValueChange}
               unit={experienceUnit}
               onUnitChange={setExperienceUnit}
@@ -301,7 +301,7 @@ export default function SkillDescriptionModal({
             />
 
             <PriceSection
-              value={priceFrom}
+                  value={priceFrom}
               onChange={handlePriceChange}
               currency={priceCurrency}
               onCurrencyChange={(val) => {

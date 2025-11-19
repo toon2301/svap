@@ -42,6 +42,8 @@ export default function ProfileModule({ user, onUserUpdate, onEditProfileClick, 
   const [isAllWebsitesModalOpen, setIsAllWebsitesModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'offers' | 'portfolio' | 'posts' | 'tagged'>('offers');
   const [flippedCards, setFlippedCards] = useState<Set<number | string>>(new Set());
+  // Snapshot user objektu na začiatku edit módu - používa sa v normálnom zobrazení, kým sa edit mode neukončí
+  const [snapshotUser, setSnapshotUser] = useState<User | null>(null);
   // Offers for desktop tab rendering
   const [offers, setOffers] = useState<Array<{
     id: number;
@@ -58,6 +60,27 @@ export default function ProfileModule({ user, onUserUpdate, onEditProfileClick, 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Vytvorenie snapshotu user objektu na začiatku edit módu
+  useEffect(() => {
+    if (isEditMode && !snapshotUser) {
+      // Vytvoríme hlbokú kópiu user objektu
+      setSnapshotUser({ ...user });
+    } else if (!isEditMode && snapshotUser) {
+      // Keď sa edit mode vypne, vymazeme snapshot a použijeme aktuálny user
+      setSnapshotUser(null);
+    }
+  }, [isEditMode, user, snapshotUser]);
+
+  // Aktualizácia snapshotu, keď sa user zmení a nie sme v edit móde
+  useEffect(() => {
+    if (!isEditMode) {
+      setSnapshotUser(null);
+    }
+  }, [user, isEditMode]);
+
+  // User objekt pre normálne zobrazenie - používa snapshotUser, ak existuje (keď sme v edit móde), inak aktuálny user
+  const displayUser = snapshotUser || user;
 
   const handleTabsKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
     const order: Array<'offers' | 'portfolio' | 'posts' | 'tagged'> = ['offers', 'portfolio', 'posts', 'tagged'];
@@ -189,7 +212,7 @@ export default function ProfileModule({ user, onUserUpdate, onEditProfileClick, 
 
   return (
     <>
-      <div className="max-w-2xl mx-auto text-[var(--foreground)]">
+      <div className="max-w-2xl lg:max-w-full mx-auto lg:mx-0 text-[var(--foreground)] w-full">
         {/* Mobile layout */}
         <div className="lg:hidden">
           {isEditMode ? (
@@ -209,7 +232,7 @@ export default function ProfileModule({ user, onUserUpdate, onEditProfileClick, 
               <div className="mb-4">
                 <div className="flex gap-3 items-start">
                   <UserAvatar 
-                    user={user} 
+                    user={displayUser} 
                     size="medium" 
                     onPhotoUpload={handlePhotoUpload}
                     isUploading={isUploading}
@@ -218,64 +241,64 @@ export default function ProfileModule({ user, onUserUpdate, onEditProfileClick, 
                   <div className="flex flex-col justify-center">
                     {/* Meno používateľa */}
                     <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
-                      {`${(user.first_name || '').trim()} ${(user.last_name || '').trim()}`.trim() || user.username}
+                      {`${(displayUser.first_name || '').trim()} ${(displayUser.last_name || '').trim()}`.trim() || displayUser.username}
                     </h2>
                     {/* Email intentionally not shown here (kept in edit views) */}
                     {/* Lokalita */}
-                    {user.location && (
+                    {displayUser.location && (
                       <p className="text-gray-600 dark:text-gray-300 text-sm flex items-center gap-1 mt-1">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-3">
                           <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
                           <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
                         </svg>
-                        {user.location}
+                        {displayUser.location}
                       </p>
                     )}
                     {/* IČO - iba pre firemné účty */}
-                    {accountType === 'business' && user.ico && (
+                    {accountType === 'business' && displayUser.ico && (
                       <p className="text-gray-600 dark:text-gray-300 text-sm">
-                        {user.ico}
+                        {displayUser.ico}
                       </p>
                     )}
                     {/* Telefónne číslo */}
-                    {user.phone && (
+                    {displayUser.phone && (
                       <p className="text-gray-600 dark:text-gray-300 text-sm flex items-center gap-1">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-3">
                           <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 0 0 6 3.75v16.5a2.25 2.25 0 0 0 2.25 2.25h7.5A2.25 2.25 0 0 0 18 20.25V3.75a2.25 2.25 0 0 0-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3" />
                         </svg>
-                        {user.phone}
+                        {displayUser.phone}
                       </p>
                     )}
                     {/* Kontaktný Email - len pre firemný účet */}
-                    {accountType === 'business' && user.contact_email && (
+                    {accountType === 'business' && displayUser.contact_email && (
                       <p className="text-gray-600 dark:text-gray-300 text-sm flex items-center gap-1">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-3">
                           <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
                         </svg>
-                        {user.contact_email}
+                        {displayUser.contact_email}
                       </p>
                     )}
                     
                         {/* Profesia - len pre osobný účet */}
-                        {accountType === 'personal' && user.job_title && (
+                        {accountType === 'personal' && displayUser.job_title && (
                           <p className="text-gray-600 dark:text-gray-300 text-sm flex items-center gap-1">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-3">
                               <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 0 0 .75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 0 0-3.413-.387m4.5 8.006c-.194.165-.42.295-.673.38A23.978 23.978 0 0 1 12 15.75c-2.648 0-5.195-.429-7.577-1.22a2.016 2.016 0 0 1-.673-.38m0 0A2.18 2.18 0 0 1 3 12.489V8.706c0-1.081.768-2.015 1.837-2.175a48.111 48.111 0 0 1 3.413-.387m7.5 0V5.25A2.25 2.25 0 0 0 13.5 3h-3a2.25 2.25 0 0 0-2.25 2.25v.894m7.5 0a48.667 48.667 0 0 0-7.5 0M12 12.75h.008v.008H12v-.008Z" />
                             </svg>
-                            {user.job_title}
+                            {displayUser.job_title}
                           </p>
                         )}
                   </div>
                 </div>
                 {/* Webová stránka úplne z ľavej strany NAD buttony */}
                 {(() => {
-                  const totalWebsites = (user.website ? 1 : 0) + (user.additional_websites ? user.additional_websites.length : 0);
+                  const totalWebsites = (displayUser.website ? 1 : 0) + (displayUser.additional_websites ? displayUser.additional_websites.length : 0);
                   const additionalCount = totalWebsites - 1;
                   
                   if (totalWebsites === 0) return null;
                   
                   // Zobraz prvý dostupný web
-                  const firstWebsite = user.website || (user.additional_websites && user.additional_websites[0]);
+                  const firstWebsite = displayUser.website || (displayUser.additional_websites && displayUser.additional_websites[0]);
                   
                   return (
                     <div className="mt-3">
@@ -427,14 +450,14 @@ export default function ProfileModule({ user, onUserUpdate, onEditProfileClick, 
                   </div>
                 </div>
               </div>
-              <UserInfo user={user} />
+              <UserInfo user={displayUser} />
             </>
           )}
         </div>
 
         {/* Desktop layout */}
-        <div className="hidden lg:flex items-start justify-center">
-          <div className="flex flex-col items-start w-full max-w-3xl mx-auto">
+        <div className="hidden lg:flex items-start justify-start w-full">
+          <div className="flex flex-col items-start w-full max-w-5xl ml-[570px]">
             {/* Pôvodný desktop obsah */}
             <div className="w-full">
           {isEditMode ? (
@@ -452,68 +475,67 @@ export default function ProfileModule({ user, onUserUpdate, onEditProfileClick, 
             // Normal profile view
             <>
               <div className="flex flex-col gap-6 mb-6">
-                <div className="flex gap-4">
-                  <div className="flex flex-col items-start">
-                    <div className="flex gap-4 items-center">
-                      <UserAvatar 
-                        user={user} 
-                        size="large" 
-                        onPhotoUpload={handlePhotoUpload}
-                        isUploading={isUploading}
-                        onAvatarClick={handleAvatarClick}
-                      />
-                      <div className="flex flex-col">
-                        {/* Meno používateľa */}
-                        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-1">
-                          {`${(user.first_name || '').trim()} ${(user.last_name || '').trim()}`.trim() || user.username}
-                        </h2>
-                        {/* Email intentionally not shown here (kept in edit views) */}
-                        {/* Lokalita */}
-                        {user.location && (
-                          <p className="text-gray-600 dark:text-gray-300 text-sm flex items-center gap-1">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-4 text-gray-500 dark:text-gray-400">
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
-                            </svg>
-                            {user.location}
-                          </p>
-                        )}
-                        {/* IČO - iba pre firemné účty */}
-                        {accountType === 'business' && user.ico && (
-                          <p className="text-gray-600 dark:text-gray-300 text-sm">
-                            IČO: {user.ico}
-                          </p>
-                        )}
-                        {/* Telefónne číslo */}
-                        {user.phone && (
-                          <p className="text-gray-600 dark:text-gray-300 text-sm flex items-center gap-1">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-4 text-gray-500 dark:text-gray-400">
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 0 0 6 3.75v16.5a2.25 2.25 0 0 0 2.25 2.25h7.5A2.25 2.25 0 0 0 18 20.25V3.75a2.25 2.25 0 0 0-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3" />
-                            </svg>
-                            {user.phone}
-                          </p>
-                        )}
-                        {/* Kontaktný Email - len pre firemný účet */}
-                        {accountType === 'business' && user.contact_email && (
-                          <p className="text-gray-600 dark:text-gray-300 text-sm flex items-center gap-1">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-4 text-gray-500 dark:text-gray-400">
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
-                            </svg>
-                            {user.contact_email}
-                          </p>
-                        )}
-                        
-                        {/* Profesia - len pre osobný účet */}
-                        {accountType === 'personal' && user.job_title && (
-                          <p className="text-gray-600 dark:text-gray-300 text-sm flex items-center gap-1">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-4 text-gray-500 dark:text-gray-400">
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 0 0 .75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 0 0-3.413-.387m4.5 8.006c-.194.165-.42.295-.673.38A23.978 23.978 0 0 1 12 15.75c-2.648 0-5.195-.429-7.577-1.22a2.016 2.016 0 0 1-.673-.38m0 0A2.18 2.18 0 0 1 3 12.489V8.706c0-1.081.768-2.015 1.837-2.175a48.111 48.111 0 0 1 3.413-.387m7.5 0V5.25A2.25 2.25 0 0 0 13.5 3h-3a2.25 2.25 0 0 0-2.25 2.25v.894m7.5 0a48.667 48.667 0 0 0-7.5 0M12 12.75h.008v.008H12v-.008Z" />
-                            </svg>
-                            {user.job_title}
-                          </p>
-                        )}
-                        {/* Webová stránka + "a ďalší" (desktop) */}
-                        <WebsitesRow user={user} onOpenAll={() => setIsAllWebsitesModalOpen(true)} />
+                <div className="flex flex-col items-start ml-[140px]">
+                  <div className="flex gap-4 items-center">
+                        <UserAvatar 
+                          user={displayUser} 
+                          size="large" 
+                          onPhotoUpload={handlePhotoUpload}
+                          isUploading={isUploading}
+                          onAvatarClick={handleAvatarClick}
+                        />
+                        <div className="flex flex-col">
+                          {/* Meno používateľa */}
+                          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-1">
+                            {`${(displayUser.first_name || '').trim()} ${(displayUser.last_name || '').trim()}`.trim() || displayUser.username}
+                          </h2>
+                          {/* Email intentionally not shown here (kept in edit views) */}
+                          {/* Lokalita */}
+                          {displayUser.location && (
+                            <p className="text-gray-600 dark:text-gray-300 text-sm flex items-center gap-1">
+                              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-4 text-gray-500 dark:text-gray-400">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
+                              </svg>
+                              {displayUser.location}
+                            </p>
+                          )}
+                          {/* IČO - iba pre firemné účty */}
+                          {accountType === 'business' && displayUser.ico && (
+                            <p className="text-gray-600 dark:text-gray-300 text-sm">
+                              IČO: {displayUser.ico}
+                            </p>
+                          )}
+                          {/* Telefónne číslo */}
+                          {displayUser.phone && (
+                            <p className="text-gray-600 dark:text-gray-300 text-sm flex items-center gap-1">
+                              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-4 text-gray-500 dark:text-gray-400">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 0 0 6 3.75v16.5a2.25 2.25 0 0 0 2.25 2.25h7.5A2.25 2.25 0 0 0 18 20.25V3.75a2.25 2.25 0 0 0-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3" />
+                              </svg>
+                              {displayUser.phone}
+                            </p>
+                          )}
+                          {/* Kontaktný Email - len pre firemný účet */}
+                          {accountType === 'business' && displayUser.contact_email && (
+                            <p className="text-gray-600 dark:text-gray-300 text-sm flex items-center gap-1">
+                              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-4 text-gray-500 dark:text-gray-400">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
+                              </svg>
+                              {displayUser.contact_email}
+                            </p>
+                          )}
+                          
+                          {/* Profesia - len pre osobný účet */}
+                          {accountType === 'personal' && displayUser.job_title && (
+                            <p className="text-gray-600 dark:text-gray-300 text-sm flex items-center gap-1">
+                              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-4 text-gray-500 dark:text-gray-400">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 14.15v4.25c0 1.094-.787 2.036-1.872 2.18-2.087.277-4.216.42-6.378.42s-4.291-.143-6.378-.42c-1.085-.144-1.872-1.086-1.872-2.18v-4.25m16.5 0a2.18 2.18 0 0 0 .75-1.661V8.706c0-1.081-.768-2.015-1.837-2.175a48.114 48.114 0 0 0-3.413-.387m4.5 8.006c-.194.165-.42 .295-.673.38A23.978 23.978 0 0 1 12 15.75c-2.648 0-5.195-.429-7.577-1.22a2.016 2.016 0 0 1-.673-.38m0 0A2.18 2.18 0 0 1 3 12.489V8.706c0-1.081.768-2.015 1.837-2.175a48.111 48.111 0 0 1 3.413-.387m7.5 0V5.25A2.25 2.25 0 0 0 13.5 3h-3a2.25 2.25 0 0 0-2.25 2.25v.894m7.5 0a48.667 48.667 0 0 0-7.5 0M12 12.75h.008v.008H12v-.008Z" />
+                              </svg>
+                              {displayUser.job_title}
+                            </p>
+                          )}
+                          {/* Webová stránka + "a ďalší" (desktop) */}
+                        <WebsitesRow user={displayUser} onOpenAll={() => setIsAllWebsitesModalOpen(true)} />
                       </div>
                     </div>
                     {/* Tlačidlá pod fotkou */}
@@ -547,8 +569,9 @@ export default function ProfileModule({ user, onUserUpdate, onEditProfileClick, 
                         {t('profile.skills', 'Služby a ponuky')}
                       </button>
                     </div>
-                    {/* Ikonová navigácia sekcií profilu */}
-                    <div className="mt-3 pt-2 border-t border-gray-200 dark:border-gray-700 w-full lg:mt-6 lg:pt-5 lg:pb-4">
+                  </div>
+                {/* Ikonová navigácia sekcií profilu */}
+                <div className="mt-3 pt-2 border-t border-gray-200 dark:border-gray-700 w-full lg:mt-6 lg:pt-5 lg:pb-4">
                       <div
                         role="tablist"
                         aria-label="Sekcie profilu"
@@ -728,7 +751,7 @@ export default function ProfileModule({ user, onUserUpdate, onEditProfileClick, 
                                 <div key={offer.id} className="relative">
                                   <div className="rounded-2xl overflow-visible border border-gray-200 dark:border-gray-800 bg-white/70 dark:bg-[#0f0f10] shadow-sm hover:shadow transition-shadow">
                                     <div className={isFlipped ? 'hidden' : 'block'}>
-                                        <div className="relative aspect-[4/3] bg-gray-100 dark:bg-[#0e0e0f] overflow-hidden rounded-t-2xl">
+                                        <div className="relative aspect-[3/2] bg-gray-100 dark:bg-[#0e0e0f] overflow-hidden rounded-t-2xl">
                                           <OfferImageCarousel images={offer.images} alt={imageAlt} />
                                           {accountType === 'business' && (
                                             <span className="absolute top-2 left-2 px-1.5 py-0.5 text-[10px] font-semibold bg-black/80 text-white rounded">
@@ -769,7 +792,7 @@ export default function ProfileModule({ user, onUserUpdate, onEditProfileClick, 
                                             </button>
                                           </div>
                                         </div>
-                                        <div className="relative p-3 flex flex-col h-44 border-t border-gray-200 dark:border-gray-700/50">
+                                        <div className="relative p-3 flex flex-col h-52 border-t border-gray-200 dark:border-gray-700/50">
                                           <FlipButton />
                                           {/* Scrollovateľná časť: nadpis a opis */}
                                           <div className="flex-1 overflow-y-auto subtle-scrollbar pr-1" style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(156, 163, 175, 0.2) transparent' }}>
@@ -785,7 +808,7 @@ export default function ProfileModule({ user, onUserUpdate, onEditProfileClick, 
                                             <div className="mt-2 mb-1.5 flex items-start justify-end gap-3">
                                               <div className="flex-1 min-w-0 mr-auto flex flex-col gap-0.5">
                                                 {locationText && (
-                                                  <div className="text-[10px] text-gray-600 dark:text-gray-400 flex items-start gap-1">
+                                                  <div className="text-xs text-gray-600 dark:text-gray-400 flex items-start gap-1">
                                                     <span className="font-medium text-gray-900 dark:text-white flex-shrink-0">
                                                       {t('skills.locationLabel', 'Miesto:')}
                                                     </span>
@@ -793,7 +816,7 @@ export default function ProfileModule({ user, onUserUpdate, onEditProfileClick, 
                                                   </div>
                                                 )}
                                                 {offer.experience && (
-                                                  <div className="text-[10px] text-gray-600 dark:text-gray-400 flex items-center gap-1">
+                                                  <div className="text-xs text-gray-600 dark:text-gray-400 flex items-center gap-1">
                                                     <span className="font-medium text-gray-900 dark:text-white">
                                                       {t('skills.experience', 'Prax:')}
                                                     </span>
@@ -821,13 +844,13 @@ export default function ProfileModule({ user, onUserUpdate, onEditProfileClick, 
                                         </div>
                                       </div>
 
-                                    <div className={isFlipped ? 'block' : 'hidden'}>
-                                      <div className="relative aspect-[4/3] rounded-t-2xl border-b border-gray-200/70 dark:border-gray-700/50 flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200 dark:from-[#101012] dark:to-[#151518]">
+                                    <div className={isFlipped ? 'block' : 'hidden'} style={{ minHeight: '100%' }}>
+                                      <div className="relative aspect-[3/2] rounded-t-2xl border-b border-gray-200/70 dark:border-gray-700/50 flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200 dark:from-[#101012] dark:to-[#151518]">
                                         <span className="text-[11px] uppercase tracking-[0.2em] text-gray-400 dark:text-gray-500">
                                           {t('skills.backSidePlaceholder', 'Zadná strana')}
                                         </span>
                                       </div>
-                                      <div className="relative p-3 flex flex-col h-44 border-t border-gray-200 dark:border-gray-700/50">
+                                      <div className="relative p-3 flex flex-col h-52 border-t border-gray-200 dark:border-gray-700/50">
                                         <FlipButton extraClasses="z-30" />
                                         <div className="flex-1 flex items-center justify-center text-center text-[11px] text-gray-400 dark:text-gray-500">
                                           {t('skills.backSideEmpty', 'Sem pridáme ďalšie informácie.')}
@@ -842,15 +865,13 @@ export default function ProfileModule({ user, onUserUpdate, onEditProfileClick, 
                         )}
                       </div>
                     )}
-                  </div>
                 </div>
-                <div className="w-full">
-                  <UserInfo user={user} />
-                </div>
+              <div className="w-full">
+                <UserInfo user={displayUser} />
               </div>
             </>
           )}
-            </div>
+          </div>
           </div>
         </div>
         

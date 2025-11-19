@@ -395,7 +395,7 @@ export default function ProfileEditFormDesktop({
 
   return (
     <>
-      <div className="pt-4 pb-8 pl-12 text-[var(--foreground)]">
+      <div className="pt-4 pb-8 pl-0 text-[var(--foreground)] max-w-2xl">
         <h2 className="text-2xl font-semibold text-gray-800 dark:text-white mb-6">
           {t('profile.editProfile', 'Upraviť profil')}
         </h2>
