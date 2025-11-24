@@ -55,8 +55,8 @@ export default function DescriptionSection({
     const start = el.selectionStart ?? description.length;
     const end = el.selectionEnd ?? description.length;
     const newValue = description.slice(0, start) + text + description.slice(end);
-    if (newValue.length > 75) {
-      onErrorChange(t('skills.descriptionTooLong', 'Popis zručnosti môže mať maximálne 75 znakov'));
+    if (newValue.length > 100) {
+      onErrorChange(t('skills.descriptionTooLong', 'Popis zručnosti môže mať maximálne 100 znakov'));
       return;
     }
     onChange(newValue);
@@ -106,13 +106,13 @@ export default function DescriptionSection({
   }, [showEmojiPicker]);
 
   const handleChange = (value: string) => {
-    if (value.length <= 75) {
+    if (value.length <= 100) {
       onChange(value);
       onErrorChange('');
     }
   };
 
-  const remainingChars = 75 - description.length;
+  const remainingChars = 100 - description.length;
 
   return (
     <div className="mb-2 relative">
@@ -123,8 +123,8 @@ export default function DescriptionSection({
           onChange={(e) => handleChange(e.target.value)}
           placeholder=""
           className="w-full px-3 pt-2 pb-6 pr-20 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-1 focus:ring-purple-300 focus:border-transparent resize-none"
-          rows={4}
-          maxLength={75}
+          rows={3}
+          maxLength={100}
           autoFocus
         />
         <button

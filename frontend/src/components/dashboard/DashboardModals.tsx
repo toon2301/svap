@@ -97,13 +97,17 @@ export default function DashboardModals({
     priceFrom?: number | null,
     priceCurrency?: string,
     locationValue?: string,
+    detailedDescription?: string,
+    openingHours?: { [key: string]: { enabled: boolean; from: string; to: string } },
   ) => {
     const trimmedLocation = typeof locationValue === 'string' ? locationValue.trim() : '';
+    const detailedText = typeof detailedDescription === 'string' ? detailedDescription.trim() : '';
     const buildPayload = () => {
       const payload: any = {
         category: selectedSkillsCategory?.category,
         subcategory: selectedSkillsCategory?.subcategory,
         description: description || '',
+        detailed_description: detailedText,
         tags: Array.isArray(tags) ? tags : [],
       };
       if (experience && typeof experience.value === 'number' && experience.unit) {
@@ -121,6 +125,11 @@ export default function DashboardModals({
         payload.price_currency = '';
       }
       payload.location = trimmedLocation;
+      if (openingHours && Object.keys(openingHours).length > 0) {
+        payload.opening_hours = openingHours;
+      } else {
+        payload.opening_hours = null;
+      }
       return payload;
     };
 
@@ -132,6 +141,7 @@ export default function DashboardModals({
         if (current?.id) {
           const { data } = await api.patch(endpoints.skills.detail(current.id), {
             description: description || '',
+            detailed_description: detailedText,
             tags: Array.isArray(tags) ? tags : [],
             ...(experience && typeof experience.value === 'number' && experience.unit
               ? { experience_value: experience.value, experience_unit: experience.unit }
@@ -140,6 +150,7 @@ export default function DashboardModals({
               ? { price_from: priceFrom, price_currency: priceCurrency || '€' }
               : { price_from: null, price_currency: '' }),
             location: trimmedLocation,
+            opening_hours: openingHours && Object.keys(openingHours).length > 0 ? openingHours : null,
           });
           let updatedLocal = toLocalSkill(data);
           if (imageFiles.length && data?.id) {
@@ -200,6 +211,7 @@ export default function DashboardModals({
           } else {
             const { data } = await api.patch(endpoints.skills.detail(selectedSkillsCategory.id), {
               description: description || '',
+              detailed_description: detailedText,
               tags: Array.isArray(tags) ? tags : [],
               ...(experience && typeof experience.value === 'number' && experience.unit
                 ? { experience_value: experience.value, experience_unit: experience.unit }
@@ -208,6 +220,7 @@ export default function DashboardModals({
                 ? { price_from: priceFrom, price_currency: priceCurrency || '€' }
                 : { price_from: null, price_currency: '' }),
               location: trimmedLocation,
+              opening_hours: openingHours && Object.keys(openingHours).length > 0 ? openingHours : null,
             });
             let updated = toLocalSkill(data);
             if (imageFiles.length && data?.id) {
@@ -288,6 +301,9 @@ export default function DashboardModals({
           initialPriceFrom={selectedSkillsCategory.price_from ?? null}
           initialPriceCurrency={selectedSkillsCategory.price_currency ?? '€'}
           initialLocation={selectedSkillsCategory.location ?? ''}
+          initialDetailedDescription={selectedSkillsCategory.detailed_description || ''}
+          initialOpeningHours={selectedSkillsCategory.opening_hours}
+          accountType={accountType}
           onRemoveExistingImage={
             selectedSkillsCategory.id
               ? (imageId) => handleRemoveSkillImage(selectedSkillsCategory.id!, imageId)

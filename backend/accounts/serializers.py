@@ -378,9 +378,9 @@ class OfferedSkillSerializer(serializers.ModelSerializer):
     class Meta:
         model = OfferedSkill
         fields = [
-            'id', 'category', 'subcategory', 'description',
+            'id', 'category', 'subcategory', 'description', 'detailed_description',
             'experience_value', 'experience_unit', 'experience', 'tags', 'images',
-            'price_from', 'price_currency', 'location',
+            'price_from', 'price_currency', 'location', 'opening_hours',
             'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
@@ -418,8 +418,16 @@ class OfferedSkillSerializer(serializers.ModelSerializer):
         """Validácia popisu"""
         if value:
             value = SecurityValidator.validate_input_safety(value)
-            if len(value) > 75:
-                raise serializers.ValidationError("Popis môže mať maximálne 75 znakov")
+            if len(value) > 100:
+                raise serializers.ValidationError("Popis môže mať maximálne 100 znakov")
+        return value
+    
+    def validate_detailed_description(self, value):
+        """Validácia podrobného popisu"""
+        if value:
+            value = SecurityValidator.validate_input_safety(value)
+            if len(value) > 1000:
+                raise serializers.ValidationError("Podrobný popis môže mať maximálne 1000 znakov")
         return value
     
     def validate_tags(self, value):
@@ -435,6 +443,8 @@ class OfferedSkillSerializer(serializers.ModelSerializer):
                 continue
             tag = tag.strip()
             if tag:
+                if len(tag) > 15:
+                    raise serializers.ValidationError(f"Tag '{tag}' môže mať maximálne 15 znakov")
                 # Odstránenie duplikátov (case-insensitive)
                 tag_lower = tag.lower()
                 if not any(t.lower() == tag_lower for t in validated_tags):

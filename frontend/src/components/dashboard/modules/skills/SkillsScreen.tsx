@@ -156,53 +156,53 @@ export default function SkillsScreen({ title, firstOptionText, onFirstOptionClic
   };
   return (
     <div className="text-[var(--foreground)]">
-      <div className="hidden lg:flex items-start justify-center">
-        <div className="flex flex-col items-start w-full max-w-3xl mx-auto">
-          <div className="w-full ml-8 lg:ml-12">
+      <div className="hidden lg:flex items-start justify-start w-full">
+        <div className="flex flex-col items-start w-full max-w-5xl ml-[570px]">
+          <div className="w-full">
             <h2 className="text-2xl font-semibold text-gray-800 dark:text-white mb-2">{title}</h2>
           </div>
           <div className="mt-6 w-full"><div className="border-t border-gray-200 dark:border-gray-700" /></div>
-          <div className="w-full ml-8 lg:ml-12 py-10 text-gray-500 dark:text-gray-400">
+          <div className="w-full py-10 text-gray-500 dark:text-gray-400">
             {firstOptionText && (
               <>
-                <div className="w-full max-w-2xl -mt-6">
-                  <button type="button" onClick={onFirstOptionClick} className="w-full py-3 px-3 flex items-center justify-between text-left text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-900 rounded-lg transition-colors">
-                    <div className="flex flex-col flex-1 min-w-0">
-                      <span className="text-lg font-medium">{firstOptionText}</span>
-                      <span className="mt-0.5 text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap overflow-hidden text-ellipsis">
-                        {t('skills.selectCategoryHint', 'Vyber kategóriu, ktorá sa k tebe hodí. Nenašiel si nič? Pridaj vlastnú.')}
-                      </span>
-                    </div>
+                <div className="w-full flex items-center justify-between -mt-6">
+                  <div className="flex flex-col flex-1 min-w-0">
+                    <span className="text-lg font-medium text-gray-900 dark:text-white">{firstOptionText}</span>
+                    <span className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                      {t('skills.selectCategoryHint', 'Vyber kategóriu, ktorá sa k tebe hodí. Nenašiel si nič? Pridaj vlastnú.')}
+                    </span>
+                  </div>
+                  <button type="button" onClick={onFirstOptionClick} className="flex-shrink-0 ml-4 p-2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
                     {(standardCategories && standardCategories.length > 0) || (customCategories && customCategories.length > 0) ? (
-                      <svg className="w-6 h-6 text-gray-400 dark:text-gray-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                       </svg>
                     ) : (
-                      <svg className="w-6 h-6 text-gray-400 dark:text-gray-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                       </svg>
                     )}
                   </button>
                 </div>
                 {onAddCategory && (
-                  <div className="w-full max-w-2xl mt-4">
+                  <div className="w-full flex items-center justify-between mt-4">
+                    <div className="flex flex-col flex-1 min-w-0">
+                      <span className="text-lg font-medium text-gray-900 dark:text-white">{t('skills.addCategory', 'Pridať kategóriu')}</span>
+                      <span className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                        {t('skills.addCategoryHint', 'Pridaj si kategóriu, ktorá ťa vystihuje.')}
+                      </span>
+                    </div>
                     <button 
                       type="button" 
                       onClick={onAddCategory} 
-                      className="w-full py-3 px-3 flex items-center justify-between text-left text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-900 rounded-lg transition-colors"
+                      className="flex-shrink-0 ml-4 p-2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
                     >
-                      <div className="flex flex-col flex-1 min-w-0">
-                        <span className="text-lg font-medium">{t('skills.addCategory', 'Pridať kategóriu')}</span>
-                        <span className="mt-0.5 text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap overflow-hidden text-ellipsis">
-                          {t('skills.addCategoryHint', 'Pridaj si kategóriu, ktorá ťa vystihuje.')}
-                        </span>
-                      </div>
                       {customCategories && customCategories.length > 0 ? (
-                        <svg className="w-6 h-6 text-gray-400 dark:text-gray-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                         </svg>
                       ) : (
-                        <svg className="w-6 h-6 text-gray-400 dark:text-gray-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                         </svg>
                       )}

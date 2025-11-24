@@ -8,7 +8,9 @@ import ImagesSection from './skillDescriptionModal/sections/ImagesSection';
 import LocationSection from './skillDescriptionModal/sections/LocationSection';
 import ExperienceSection from './skillDescriptionModal/sections/ExperienceSection';
 import PriceSection from './skillDescriptionModal/sections/PriceSection';
-import { CurrencyOption, SkillDescriptionModalProps, SkillImage, UnitOption } from './skillDescriptionModal/types';
+import DetailedDescriptionModal from './skillDescriptionModal/DetailedDescriptionModal';
+import OpeningHoursModal from './skillDescriptionModal/OpeningHoursModal';
+import { CurrencyOption, SkillDescriptionModalProps, SkillImage, OpeningHours, UnitOption } from './skillDescriptionModal/types';
 import { currencyFromLocale, ensureCurrencyOption, slugifyLabel } from './skillDescriptionModal/utils';
 
 export default function SkillDescriptionModal({ 
@@ -26,6 +28,9 @@ export default function SkillDescriptionModal({
   initialPriceCurrency = '€',
   initialLocation = '',
   onLocationSave,
+  initialDetailedDescription = '',
+  initialOpeningHours,
+  accountType = 'personal',
 }: SkillDescriptionModalProps) {
   const { locale, t } = useLanguage();
   const categorySlug = useMemo(() => (category ? slugifyLabel(category) : ''), [category]);
@@ -60,6 +65,10 @@ export default function SkillDescriptionModal({
   const [locationError, setLocationError] = useState('');
   const [isLocationSaving, setIsLocationSaving] = useState(false);
   const lastSavedLocationRef = useRef('');
+  const [detailedDescription, setDetailedDescription] = useState('');
+  const [isDetailedModalOpen, setIsDetailedModalOpen] = useState(false);
+  const [openingHours, setOpeningHours] = useState<OpeningHours>({});
+  const [isOpeningHoursModalOpen, setIsOpeningHoursModalOpen] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -85,6 +94,8 @@ export default function SkillDescriptionModal({
       }
       setUserTouchedCurrency(false);
       setPriceError('');
+      setDetailedDescription(initialDetailedDescription || '');
+      setOpeningHours(initialOpeningHours || {});
     } else {
       setDescription('');
       setError('');
@@ -99,6 +110,8 @@ export default function SkillDescriptionModal({
       setPriceCurrency(currencyFromLocale(locale));
       setUserTouchedCurrency(false);
       setPriceError('');
+      setDetailedDescription('');
+      setOpeningHours({});
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
@@ -132,6 +145,14 @@ export default function SkillDescriptionModal({
       setPriceCurrency(currencyFromLocale(locale));
     }
   }, [locale, isOpen, userTouchedCurrency, priceFrom]);
+
+  useEffect(() => {
+    if (isOpen) {
+      setDetailedDescription(initialDetailedDescription || '');
+      setOpeningHours(initialOpeningHours || {});
+    }
+  }, [initialDetailedDescription, initialOpeningHours, isOpen]);
+
 
   const prevInitialDescriptionRef = React.useRef<string | undefined>();
   useEffect(() => {
@@ -189,8 +210,8 @@ export default function SkillDescriptionModal({
       return;
     }
 
-    if (trimmed.length > 75) {
-      setError(t('skills.descriptionTooLong', 'Popis zručnosti môže mať maximálne 75 znakov'));
+    if (trimmed.length > 100) {
+      setError(t('skills.descriptionTooLong', 'Popis zručnosti môže mať maximálne 100 znakov'));
       return;
     }
 
@@ -223,16 +244,22 @@ export default function SkillDescriptionModal({
     }
     setPriceError('');
     const locationValue = location.trim();
-    onSave(trimmed, experience, tags, images, priceValue, priceCurrency, locationValue);
+    const detailedValue = detailedDescription.trim();
+    const openingHoursValue = Object.keys(openingHours).length > 0 ? openingHours : undefined;
+    onSave(trimmed, experience, tags, images, priceValue, priceCurrency, locationValue, detailedValue, openingHoursValue);
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4" onClick={(e) => {
-      if (e.target === e.currentTarget) onClose();
-    }}>
-      <div className="w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+    <>
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4"
+        onClick={(e) => {
+          if (e.target === e.currentTarget) onClose();
+        }}
+      >
+        <div className="w-full max-w-md" onClick={(e) => e.stopPropagation()}>
         <div className="rounded-2xl bg-[var(--background)] text-[var(--foreground)] border border-[var(--border)] shadow-xl overflow-visible">
           <div className="flex items-center justify-between px-6 pt-6 pb-3">
             <h2 className="text-xl font-semibold">{t('skills.describeSkillTitle', 'Opíš svoju službu/zručnosť')}</h2>
@@ -267,6 +294,22 @@ export default function SkillDescriptionModal({
               onErrorChange={setError}
               isOpen={isOpen}
             />
+
+            <div className="mb-0">
+              <button
+                type="button"
+                onClick={() => setIsDetailedModalOpen(true)}
+                className="text-sm text-purple-700 dark:text-purple-300 font-medium hover:underline"
+              >
+                {detailedDescription 
+                  ? t('skills.editDetailedDescription', 'Upraviť podrobný opis')
+                  : `+ ${t('skills.addDetailedDescription', 'Pridať podrobný opis')}`}
+              </button>
+            </div>
+
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
+              {t('skills.descriptionInfo', 'Opíš svoju službu alebo zručnosť tak, aby používatelia získali čo najviac dôležitých informácií.')}
+            </p>
 
             <TagsSection tags={tags} onTagsChange={setTags} isOpen={isOpen} />
 
@@ -311,6 +354,54 @@ export default function SkillDescriptionModal({
               error={priceError}
             />
 
+            {accountType === 'business' && (
+              <div className="mb-4">
+                <button
+                  type="button"
+                  onClick={() => setIsOpeningHoursModalOpen(true)}
+                  className="text-sm text-purple-700 dark:text-purple-300 font-medium hover:underline flex items-center gap-1"
+                >
+                  {Object.keys(openingHours).length > 0 ? (
+                    <>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        strokeWidth="1.5"
+                        stroke="currentColor"
+                        className="w-4 h-4"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                      </svg>
+                      {t('skills.editOpeningHours', 'Upraviť otváraciu dobu')}
+                    </>
+                  ) : (
+                    <>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        strokeWidth="1.5"
+                        stroke="currentColor"
+                        className="w-4 h-4"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                      </svg>
+                      {t('skills.addOpeningHours', 'Pridať otváraciu dobu')}
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
+
             <div className="flex gap-3 mt-6">
               <button
                 onClick={onClose}
@@ -330,8 +421,23 @@ export default function SkillDescriptionModal({
             </div>
           </div>
         </div>
+        </div>
       </div>
-    </div>
+
+      <DetailedDescriptionModal
+        isOpen={isDetailedModalOpen}
+        onClose={() => setIsDetailedModalOpen(false)}
+        initialValue={detailedDescription}
+        onSave={(val) => setDetailedDescription(val)}
+      />
+
+      <OpeningHoursModal
+        isOpen={isOpeningHoursModalOpen}
+        onClose={() => setIsOpeningHoursModalOpen(false)}
+        initialValue={openingHours}
+        onSave={(val) => setOpeningHours(val)}
+      />
+    </>
   );
 }
 

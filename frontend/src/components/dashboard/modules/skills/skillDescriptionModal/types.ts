@@ -19,6 +19,22 @@ export type UnitOption = (typeof UNIT_OPTIONS)[number]['value'];
 
 export type ExperienceValue = { value: number; unit: UnitOption };
 
+export type DayOpeningHours = {
+  enabled: boolean;
+  from: string;
+  to: string;
+};
+
+export type OpeningHours = {
+  monday?: DayOpeningHours;
+  tuesday?: DayOpeningHours;
+  wednesday?: DayOpeningHours;
+  thursday?: DayOpeningHours;
+  friday?: DayOpeningHours;
+  saturday?: DayOpeningHours;
+  sunday?: DayOpeningHours;
+};
+
 export interface SkillDescriptionModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -31,7 +47,9 @@ export interface SkillDescriptionModalProps {
     images?: File[],
     priceFrom?: number | null,
     priceCurrency?: string,
-    location?: string
+    location?: string,
+    detailedDescription?: string,
+    openingHours?: OpeningHours
   ) => void;
   initialDescription?: string;
   initialExperience?: ExperienceValue;
@@ -42,5 +60,8 @@ export interface SkillDescriptionModalProps {
   initialPriceCurrency?: string;
   initialLocation?: string;
   onLocationSave?: (location: string) => Promise<void>;
+  initialDetailedDescription?: string;
+  initialOpeningHours?: OpeningHours;
+  accountType?: 'personal' | 'business';
 }
 

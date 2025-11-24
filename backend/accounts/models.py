@@ -253,7 +253,8 @@ class OfferedSkill(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='offered_skills')
     category = models.CharField(_('Kategória'), max_length=100)
     subcategory = models.CharField(_('Podkategória'), max_length=100)
-    description = models.TextField(_('Popis'), max_length=75, blank=True)
+    description = models.TextField(_('Popis'), max_length=100, blank=True)
+    detailed_description = models.TextField(_('Podrobný popis'), max_length=1000, blank=True)
     experience_value = models.FloatField(_('Hodnota dĺžky praxe'), null=True, blank=True)
     experience_unit = models.CharField(
         _('Jednotka dĺžky praxe'),
@@ -268,6 +269,7 @@ class OfferedSkill(models.Model):
     price_from = models.DecimalField(_('Cena od'), max_digits=10, decimal_places=2, null=True, blank=True)
     price_currency = models.CharField(_('Mena'), max_length=8, blank=True, default='€')
     location = models.CharField(_('Miesto'), max_length=25, blank=True)
+    opening_hours = models.JSONField(_('Otváracia doba'), default=dict, blank=True, null=True)
     
     created_at = models.DateTimeField(_('Vytvorené'), auto_now_add=True)
     updated_at = models.DateTimeField(_('Aktualizované'), auto_now=True)

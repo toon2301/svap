@@ -3,17 +3,29 @@
 import { useCallback, useState } from 'react';
 import { api, endpoints } from '../../../lib/api';
 
+export type OpeningHours = {
+  monday?: { enabled: boolean; from: string; to: string };
+  tuesday?: { enabled: boolean; from: string; to: string };
+  wednesday?: { enabled: boolean; from: string; to: string };
+  thursday?: { enabled: boolean; from: string; to: string };
+  friday?: { enabled: boolean; from: string; to: string };
+  saturday?: { enabled: boolean; from: string; to: string };
+  sunday?: { enabled: boolean; from: string; to: string };
+};
+
 export type DashboardSkill = {
   id?: number;
   category: string;
   subcategory: string;
   description?: string;
+  detailed_description?: string;
   experience?: { value: number; unit: 'years' | 'months' };
   tags?: string[];
   images?: Array<{ id: number; image_url?: string | null; image?: string | null; order?: number }>;
   price_from?: number | null;
   price_currency?: string;
   location?: string;
+  opening_hours?: OpeningHours;
 };
 
 export interface UseSkillsModalsResult {
@@ -69,6 +81,7 @@ export function useSkillsModals(): UseSkillsModalsResult {
       category: s.category as string,
       subcategory: s.subcategory as string,
       description: (s.description || '') as string,
+      detailed_description: (s.detailed_description || '') as string,
       experience: exp,
       tags: Array.isArray(s.tags) ? (s.tags as string[]) : [],
       images: Array.isArray(s.images)
@@ -84,6 +97,7 @@ export function useSkillsModals(): UseSkillsModalsResult {
           ? s.price_currency
           : '€',
       location: typeof s.location === 'string' ? s.location : '',
+      opening_hours: (s.opening_hours && typeof s.opening_hours === 'object') ? s.opening_hours as OpeningHours : undefined,
     };
   }, []);
 

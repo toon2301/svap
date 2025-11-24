@@ -25,6 +25,10 @@ export default function TagsSection({ tags, onTagsChange, isOpen }: TagsSectionP
     const raw = tagInput.trim();
     if (!raw) return;
     const candidate = raw.replace(/,+$/g, '');
+    if (candidate.length > 15) {
+      setTagError(t('skills.tagTooLong', 'Tag môže mať maximálne 15 znakov'));
+      return;
+    }
     const lower = candidate.toLowerCase();
     if (tags.some((t) => t.toLowerCase() === lower)) {
       setTagError(t('skills.tagDuplicateError', 'Tento tag už máš pridaný'));
@@ -90,8 +94,12 @@ export default function TagsSection({ tags, onTagsChange, isOpen }: TagsSectionP
         type="text"
         value={tagInput}
         onChange={(e) => {
-          setTagInput(e.target.value);
-          setTagError('');
+          if (e.target.value.length <= 15) {
+            setTagInput(e.target.value);
+            setTagError('');
+          } else {
+            setTagError(t('skills.tagTooLong', 'Tag môže mať maximálne 15 znakov'));
+          }
         }}
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ',') {
@@ -102,6 +110,7 @@ export default function TagsSection({ tags, onTagsChange, isOpen }: TagsSectionP
         placeholder={t('skills.tagInputPlaceholder', 'Napíš tag a stlač Enter alebo ,')}
         className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-1 focus:ring-purple-300 focus:border-transparent"
         aria-label={t('skills.tagInputAria', 'Vstup pre tagy')}
+        maxLength={15}
       />
 
       {tagError && (

@@ -8,17 +8,29 @@ import { api, endpoints } from '../../../../lib/api';
 type Experience = { value: number; unit: 'years' | 'months' } | undefined;
 type ImageItem = { id: number; image_url?: string | null; image?: string | null; order?: number } | any;
 
+export type OpeningHours = {
+  monday?: { enabled: boolean; from: string; to: string };
+  tuesday?: { enabled: boolean; from: string; to: string };
+  wednesday?: { enabled: boolean; from: string; to: string };
+  thursday?: { enabled: boolean; from: string; to: string };
+  friday?: { enabled: boolean; from: string; to: string };
+  saturday?: { enabled: boolean; from: string; to: string };
+  sunday?: { enabled: boolean; from: string; to: string };
+};
+
 export interface SkillItem {
   id?: number;
   category: string;
   subcategory: string;
   description?: string;
+  detailed_description?: string;
   experience?: Experience;
   tags?: string[];
   images?: Array<ImageItem>;
   price_from?: number | null;
   price_currency?: string;
   location?: string;
+  opening_hours?: OpeningHours;
 }
 
 type Props = {
@@ -77,6 +89,7 @@ export default function SkillModals(props: Props) {
       category: s.category as string,
       subcategory: s.subcategory as string,
       description: (s.description || '') as string,
+      detailed_description: (s.detailed_description || '') as string,
       experience: exp,
       tags: Array.isArray(s.tags) ? (s.tags as string[]) : [],
       images: Array.isArray(s.images)
@@ -92,6 +105,7 @@ export default function SkillModals(props: Props) {
           ? s.price_currency
           : '€',
       location: typeof s.location === 'string' ? s.location : '',
+      opening_hours: (s.opening_hours && typeof s.opening_hours === 'object') ? s.opening_hours as OpeningHours : undefined,
     };
   };
 
@@ -110,7 +124,7 @@ export default function SkillModals(props: Props) {
         selected={selectedSkillsCategory?.subcategory || null}
         onSelect={(category, subcategory) => {
           setIsSkillsCategoryModalOpen(false);
-          setSelectedSkillsCategory({ category, subcategory, price_from: null, price_currency: '€', location: '' });
+          setSelectedSkillsCategory({ category, subcategory, price_from: null, price_currency: '€', location: '', detailed_description: '' });
           setIsSkillDescriptionModalOpen(true);
         }}
       />
@@ -136,18 +150,21 @@ export default function SkillModals(props: Props) {
           initialPriceFrom={selectedSkillsCategory.price_from ?? null}
           initialPriceCurrency={selectedSkillsCategory.price_currency ?? '€'}
           initialLocation={selectedSkillsCategory.location ?? ''}
+          initialDetailedDescription={selectedSkillsCategory.detailed_description || ''}
           onRemoveExistingImage={
             selectedSkillsCategory.id
               ? (imageId) => handleRemoveSkillImage(selectedSkillsCategory.id!, imageId)
               : undefined
           }
-          onSave={async (description, experience, tags, images, priceFrom, priceCurrency, locationValue) => {
+          onSave={async (description, experience, tags, images, priceFrom, priceCurrency, locationValue, detailedDescription) => {
             const trimmedLocation = typeof locationValue === 'string' ? locationValue.trim() : '';
+            const detailedText = typeof detailedDescription === 'string' ? detailedDescription.trim() : '';
             const buildPayload = () => {
               const payload: any = {
                 category: selectedSkillsCategory?.category,
                 subcategory: selectedSkillsCategory?.subcategory,
                 description: description || '',
+                detailed_description: detailedText,
                 tags: Array.isArray(tags) ? tags : [],
               };
               if (experience && typeof experience.value === 'number' && experience.unit) {
@@ -174,6 +191,7 @@ export default function SkillModals(props: Props) {
                 if (current?.id) {
                   const { data } = await api.patch(endpoints.skills.detail(current.id), {
                     description: description || '',
+                    detailed_description: detailedText,
                     tags: Array.isArray(tags) ? tags : [],
                     ...(experience && typeof experience.value === 'number' && experience.unit
                       ? { experience_value: experience.value, experience_unit: experience.unit }
@@ -210,6 +228,7 @@ export default function SkillModals(props: Props) {
                     category: current.category,
                     subcategory: current.subcategory,
                     description: description || '',
+                    detailed_description: detailedText,
                     tags: Array.isArray(tags) ? tags : [],
                     ...(experience && typeof experience.value === 'number' && experience.unit
                       ? { experience_value: experience.value, experience_unit: experience.unit }
@@ -299,6 +318,7 @@ export default function SkillModals(props: Props) {
                   } else {
                     const { data } = await api.patch(endpoints.skills.detail(selectedSkillsCategory.id), {
                       description: description || '',
+                      detailed_description: detailedText,
                       tags: Array.isArray(tags) ? tags : [],
                       ...(experience && typeof experience.value === 'number' && experience.unit
                         ? { experience_value: experience.value, experience_unit: experience.unit }
