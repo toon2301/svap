@@ -29,6 +29,7 @@ export interface SkillItem {
   images?: Array<ImageItem>;
   price_from?: number | null;
   price_currency?: string;
+  district?: string;
   location?: string;
   opening_hours?: OpeningHours;
 }
@@ -104,6 +105,7 @@ export default function SkillModals(props: Props) {
         typeof s.price_currency === 'string' && s.price_currency.trim() !== ''
           ? s.price_currency
           : '€',
+      district: typeof s.district === 'string' ? s.district : '',
       location: typeof s.location === 'string' ? s.location : '',
       opening_hours: (s.opening_hours && typeof s.opening_hours === 'object') ? s.opening_hours as OpeningHours : undefined,
     };
@@ -149,6 +151,7 @@ export default function SkillModals(props: Props) {
           initialImages={selectedSkillsCategory.images}
           initialPriceFrom={selectedSkillsCategory.price_from ?? null}
           initialPriceCurrency={selectedSkillsCategory.price_currency ?? '€'}
+          initialDistrict={selectedSkillsCategory.district ?? ''}
           initialLocation={selectedSkillsCategory.location ?? ''}
           initialDetailedDescription={selectedSkillsCategory.detailed_description || ''}
           onRemoveExistingImage={
@@ -156,8 +159,9 @@ export default function SkillModals(props: Props) {
               ? (imageId) => handleRemoveSkillImage(selectedSkillsCategory.id!, imageId)
               : undefined
           }
-          onSave={async (description, experience, tags, images, priceFrom, priceCurrency, locationValue, detailedDescription) => {
+          onSave={async (description, experience, tags, images, priceFrom, priceCurrency, locationValue, detailedDescription, districtValue) => {
             const trimmedLocation = typeof locationValue === 'string' ? locationValue.trim() : '';
+            const trimmedDistrict = typeof districtValue === 'string' ? districtValue.trim() : '';
             const detailedText = typeof detailedDescription === 'string' ? detailedDescription.trim() : '';
             const buildPayload = () => {
               const payload: any = {
@@ -181,6 +185,7 @@ export default function SkillModals(props: Props) {
                 payload.price_from = null;
                 payload.price_currency = '';
               }
+              payload.district = trimmedDistrict;
               payload.location = trimmedLocation;
               return payload;
             };
@@ -199,6 +204,7 @@ export default function SkillModals(props: Props) {
                     ...(typeof priceFrom === 'number' && !isNaN(priceFrom)
                       ? { price_from: priceFrom, price_currency: priceCurrency || '€' }
                       : { price_from: null, price_currency: '' }),
+                    district: trimmedDistrict,
                     location: trimmedLocation,
                   });
                   let updatedLocal = toLocalSkill(data);
@@ -236,6 +242,7 @@ export default function SkillModals(props: Props) {
                     ...(typeof priceFrom === 'number' && !isNaN(priceFrom)
                       ? { price_from: priceFrom, price_currency: priceCurrency || '€' }
                       : { price_from: null, price_currency: '' }),
+                    district: trimmedDistrict,
                     location: trimmedLocation,
                   };
                   const { data } = await api.post(endpoints.skills.list, payload);
@@ -326,6 +333,7 @@ export default function SkillModals(props: Props) {
                       ...(typeof priceFrom === 'number' && !isNaN(priceFrom)
                         ? { price_from: priceFrom, price_currency: priceCurrency || '€' }
                         : { price_from: null, price_currency: '' }),
+                      district: trimmedDistrict,
                       location: trimmedLocation,
                     });
                     let updated = toLocalSkill(data);

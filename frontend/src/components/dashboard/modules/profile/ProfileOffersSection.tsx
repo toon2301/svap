@@ -1,10 +1,12 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { api, endpoints } from '../../../../lib/api';
 import { useLanguage } from '@/contexts/LanguageContext';
 import OfferImageCarousel from '../shared/OfferImageCarousel';
 import type { ProfileTab } from './profileTypes';
+import type { OpeningHours } from '../skills/skillDescriptionModal/types';
 
 type ExperienceUnit = 'years' | 'months';
 
@@ -29,9 +31,11 @@ interface Offer {
   images?: OfferImage[];
   price_from?: number | null;
   price_currency?: string;
+  district?: string;
   location?: string;
   experience?: OfferExperience;
   tags?: string[];
+  opening_hours?: OpeningHours;
 }
 
 interface ProfileOffersSectionProps {
@@ -48,10 +52,23 @@ function slugifyLabel(label: string): string {
     .replace(/(^-|-$)/g, '');
 }
 
+const HOURS_DAYS = [
+  { key: 'monday' as const, shortLabel: 'Po' },
+  { key: 'tuesday' as const, shortLabel: 'Ut' },
+  { key: 'wednesday' as const, shortLabel: 'St' },
+  { key: 'thursday' as const, shortLabel: 'Št' },
+  { key: 'friday' as const, shortLabel: 'Pi' },
+  { key: 'saturday' as const, shortLabel: 'So' },
+  { key: 'sunday' as const, shortLabel: 'Ne' },
+] as const;
+
 export default function ProfileOffersSection({ activeTab, accountType = 'personal' }: ProfileOffersSectionProps) {
   const { t } = useLanguage();
   const [offers, setOffers] = useState<Offer[]>([]);
   const [flippedCards, setFlippedCards] = useState<Set<number | string>>(() => new Set());
+  const [activeHoursOfferId, setActiveHoursOfferId] = useState<number | string | null>(null);
+  const [hoursPopoverPosition, setHoursPopoverPosition] = useState<{ top: number; left: number } | null>(null);
+  const [activeOpeningHours, setActiveOpeningHours] = useState<OpeningHours | null>(null);
 
   // Load offers when switching to 'offers' tab (desktop focus)
   useEffect(() => {
@@ -100,9 +117,11 @@ export default function ProfileOffersSection({ activeTab, accountType = 'persona
               typeof s.price_currency === 'string' && s.price_currency.trim() !== ''
                 ? s.price_currency
                 : '€',
+            district: typeof s.district === 'string' ? s.district : '',
             location: typeof s.location === 'string' ? s.location : '',
             experience,
             tags: Array.isArray(s.tags) ? s.tags : [],
+            opening_hours: (s.opening_hours || undefined) as OpeningHours | undefined,
           };
         });
         setOffers(mapped);
@@ -113,6 +132,28 @@ export default function ProfileOffersSection({ activeTab, accountType = 'persona
 
     void load();
   }, [activeTab]);
+
+  // Close hours popover when clicking outside
+  useEffect(() => {
+    if (!activeHoursOfferId) return;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (!target) return;
+      // Ignore clicks inside the popover
+      if (target.closest('[data-opening-hours-popover]')) {
+        return;
+      }
+      setActiveHoursOfferId(null);
+      setHoursPopoverPosition(null);
+      setActiveOpeningHours(null);
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [activeHoursOfferId]);
 
   if (activeTab !== 'offers') {
     return null;
@@ -150,6 +191,8 @@ export default function ProfileOffersSection({ activeTab, accountType = 'persona
                   })} ${offer.price_currency || '€'}`
                 : null;
             const locationText = offer.location && offer.location.trim();
+            const districtText = offer.district && offer.district.trim();
+            const displayLocationText = locationText || districtText || null;
             const cardId =
               offer.id ??
               `${offer.category || 'cat'}-${offer.subcategory || 'sub'}-${offer.description || 'desc'}`;
@@ -168,12 +211,52 @@ export default function ProfileOffersSection({ activeTab, accountType = 'persona
               });
             };
 
+            const handleOpenHoursClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+              if (!offer.opening_hours) return;
+
+              const hasAnyEnabled = Object.values(offer.opening_hours).some(
+                (day) => day && (day as any).enabled
+              );
+              if (!hasAnyEnabled) return;
+
+              if (activeHoursOfferId === cardId) {
+                setActiveHoursOfferId(null);
+                setHoursPopoverPosition(null);
+                setActiveOpeningHours(null);
+              } else {
+                const rect = event.currentTarget.getBoundingClientRect();
+                const popoverWidth = 260;
+                const popoverHeight = 200;
+                const viewportWidth = window.innerWidth;
+                const viewportHeight = window.innerHeight;
+
+                let top = rect.bottom + 8;
+                let left = rect.left + rect.width / 2 - popoverWidth / 2;
+
+                // Ak by popover pretiekol dole, zobraz ho nad tlačidlom
+                if (top + popoverHeight > viewportHeight - 8) {
+                  top = rect.top - popoverHeight - 8;
+                }
+                if (top < 8) top = 8;
+
+                // Horizontálne ohraničenie
+                if (left + popoverWidth > viewportWidth - 8) {
+                  left = viewportWidth - popoverWidth - 8;
+                }
+                if (left < 8) left = 8;
+
+                setActiveHoursOfferId(cardId);
+                setHoursPopoverPosition({ top, left });
+                setActiveOpeningHours(offer.opening_hours);
+              }
+            };
+
             const FlipButton = ({ extraClasses = '' }: { extraClasses?: string }) => (
               <button
                 onClick={handleFlip}
                 aria-label="Otočiť"
                 title="Otočiť"
-                className={`absolute -top-2.5 -right-3 -translate-y-1/2 p-1 rounded-full bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-400/60 text-purple-700 dark:text-purple-300 hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors ${extraClasses}`}
+                className={`absolute -top-2.5 -right-3 -translate-y-1/2 p-1 rounded-full bg-purple-50 dark:bg-purple-900/80 dark:backdrop-blur-sm border border-purple-200 dark:border-purple-800/60 text-purple-700 dark:text-white hover:bg-purple-100 dark:hover:bg-purple-900/90 transition-colors ${extraClasses}`}
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -207,7 +290,7 @@ export default function ProfileOffersSection({ activeTab, accountType = 'persona
                         <button
                           aria-label="Páči sa mi to"
                           title="Páči sa mi to"
-                          className="p-1 rounded-full bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-400/60 text-purple-700 dark:text-purple-300 hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors"
+                          className="p-1 rounded-full bg-purple-50 dark:bg-purple-900/80 dark:backdrop-blur-sm border border-purple-200 dark:border-purple-800/60 text-purple-700 dark:text-white hover:bg-purple-100 dark:hover:bg-purple-900/90 transition-colors"
                         >
                           <svg
                             xmlns="http://www.w3.org/2000/svg"
@@ -225,7 +308,7 @@ export default function ProfileOffersSection({ activeTab, accountType = 'persona
                         <button
                           aria-label="Zdieľať"
                           title="Zdieľať"
-                          className="p-1 rounded-full bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-400/60 text-purple-700 dark:text-purple-300 hover:bg-purple-100 dark:hover-bg-purple-900/30 transition-colors"
+                          className="p-1 rounded-full bg-purple-50 dark:bg-purple-900/80 dark:backdrop-blur-sm border border-purple-200 dark:border-purple-800/60 text-purple-700 dark:text-white hover:bg-purple-100 dark:hover:bg-purple-900/90 transition-colors"
                         >
                           <svg
                             xmlns="http://www.w3.org/2000/svg"
@@ -247,7 +330,7 @@ export default function ProfileOffersSection({ activeTab, accountType = 'persona
                         <button
                           aria-label="Pridať recenziu"
                           title="Pridať recenziu"
-                          className="p-1 rounded-full bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-400/60 text-purple-700 dark:text-purple-300 hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-colors"
+                          className="p-1 rounded-full bg-purple-50 dark:bg-purple-900/80 dark:backdrop-blur-sm border border-purple-200 dark:border-purple-800/60 text-purple-700 dark:text-white hover:bg-purple-100 dark:hover:bg-purple-900/90 transition-colors"
                         >
                           <svg
                             xmlns="http://www.w3.org/2000/svg"
@@ -287,12 +370,12 @@ export default function ProfileOffersSection({ activeTab, accountType = 'persona
                       <div className="flex-shrink-0">
                         <div className="mt-2 mb-1.5 flex items-start justify-end gap-3">
                           <div className="flex-1 min-w-0 mr-auto flex flex-col gap-0.5">
-                            {locationText && (
+                            {displayLocationText && (
                               <div className="text-xs text-gray-600 dark:text-gray-400 flex items-start gap-1">
                                 <span className="font-medium text-gray-900 dark:text-white flex-shrink-0">
                                   {t('skills.locationLabel', 'Miesto:')}
                                 </span>
-                                <span className="break-words">{locationText}</span>
+                                <span className="break-words">{displayLocationText}</span>
                               </div>
                             )}
                             {offer.experience && (
@@ -354,13 +437,13 @@ export default function ProfileOffersSection({ activeTab, accountType = 'persona
                         )}
                       </div>
                     </div>
-                    <div className="relative p-3 flex flex-col h-52 border-t border-gray-200 dark:border-gray-700/50 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-[#0f0f10] dark:to-[#151518]">
-                      <FlipButton extraClasses="z-30" />
-                      <div className="flex-1 flex flex-col justify-start pt-1">
+                    <div className="relative">
+                      <div className="p-3 flex flex-col h-52 border-t border-gray-200 dark:border-gray-700/50 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-[#0f0f10] dark:to-[#151518] overflow-hidden rounded-b-2xl">
+                        <div className="flex-1 flex flex-col justify-start pt-1">
                         <div className="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide mb-1.5">
                           {t('skills.ratings', 'Hodnotenia')}
                         </div>
-                        <div className="flex items-center gap-3 mb-3">
+                        <div className="flex items-center gap-3 mb-1">
                           <div className="flex items-center gap-0.5">
                             {/* 3 plné hviezdičky */}
                             {[1, 2, 3].map((i) => (
@@ -404,6 +487,29 @@ export default function ProfileOffersSection({ activeTab, accountType = 'persona
                             12 645
                           </span>
                         </div>
+                        {accountType === 'business' && (
+                          <button
+                            type="button"
+                            onClick={handleOpenHoursClick}
+                            className="mt-1 inline-flex items-center gap-1.5 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-300 focus:outline-none"
+                          >
+                            <span>{t('skills.openingHours.title', 'Otváracie hodiny')}</span>
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              strokeWidth="1.5"
+                              stroke="currentColor"
+                              className="w-4 h-4 text-gray-600 dark:text-gray-400"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"
+                              />
+                            </svg>
+                          </button>
+                        )}
                         <button
                           type="button"
                           onClick={() => {
@@ -448,11 +554,11 @@ export default function ProfileOffersSection({ activeTab, accountType = 'persona
                           </span>
                         </div>
                         {offer.tags && offer.tags.length > 0 && (
-                          <div className="mt-3 flex flex-wrap gap-1.5">
+                          <div className="mt-3 flex flex-wrap gap-1">
                             {offer.tags.map((tag, index) => (
                               <span
                                 key={index}
-                                className="text-[10px] font-medium text-purple-700 dark:text-purple-300 whitespace-nowrap"
+                                className="text-xs font-medium text-purple-700 dark:text-purple-300 whitespace-nowrap"
                               >
                                 #{tag}
                               </span>
@@ -460,6 +566,8 @@ export default function ProfileOffersSection({ activeTab, accountType = 'persona
                           </div>
                         )}
                       </div>
+                      </div>
+                      <FlipButton extraClasses="z-30" />
                     </div>
                   </div>
                 </div>
@@ -468,6 +576,81 @@ export default function ProfileOffersSection({ activeTab, accountType = 'persona
           })}
         </div>
       )}
+
+      {activeHoursOfferId && hoursPopoverPosition && activeOpeningHours &&
+        typeof document !== 'undefined' &&
+        createPortal(
+          <>
+            <div
+              className="fixed inset-0 z-[9998] bg-black/20"
+              onClick={() => {
+                setActiveHoursOfferId(null);
+                setHoursPopoverPosition(null);
+                setActiveOpeningHours(null);
+              }}
+            />
+            <div
+              data-opening-hours-popover
+              className="fixed z-[9999] w-64 max-w-xs rounded-2xl bg-white dark:bg-[#050507] border border-gray-200/70 dark:border-gray-700/60 shadow-xl p-3"
+              style={{ top: hoursPopoverPosition.top, left: hoursPopoverPosition.left }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-300">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth="1.5"
+                    stroke="currentColor"
+                    className="w-4 h-4"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                </div>
+                <div className="min-w-0">
+                  <div className="text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                    {t('skills.openingHours.title', 'Otváracie hodiny')}
+                  </div>
+                </div>
+              </div>
+              <div className="rounded-xl bg-gray-50/80 dark:bg-[#101012] border border-gray-200/70 dark:border-gray-700/60 px-3 py-2 max-h-48 overflow-y-auto subtle-scrollbar">
+                {HOURS_DAYS.map((day) => {
+                  const data = activeOpeningHours[day.key];
+                  if (!data || !data.enabled) return null;
+
+                  return (
+                    <div
+                      key={day.key}
+                      className="flex items-center justify-between text-xs text-gray-700 dark:text-gray-200 py-0.5"
+                    >
+                      <span className="font-medium w-10">{day.shortLabel}</span>
+                      <span className="tabular-nums">
+                        {data.from || '—'} – {data.to || '—'}
+                      </span>
+                    </div>
+                  );
+                })}
+                {!HOURS_DAYS.some((d) => {
+                  const data = activeOpeningHours[d.key];
+                  return data && data.enabled;
+                }) && (
+                  <div className="text-xs text-gray-500 dark:text-gray-400 text-center py-1.5">
+                    {t(
+                      'skills.openingHours.empty',
+                      'Otváracie hodiny zatiaľ nie sú nastavené alebo je prevádzka zatvorená.'
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          </>,
+          document.body
+        )}
     </div>
   );
 }

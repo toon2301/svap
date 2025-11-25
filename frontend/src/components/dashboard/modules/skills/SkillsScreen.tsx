@@ -23,6 +23,7 @@ interface SkillItem {
   images?: Array<{ id: number; image_url?: string | null; image?: string | null; order?: number }>;
   price_from?: number | null;
   price_currency?: string;
+  district?: string;
   location?: string;
 }
 
@@ -50,7 +51,9 @@ export default function SkillsScreen({ title, firstOptionText, onFirstOptionClic
     const catSlug = item.category ? slugifyLabel(item.category) : '';
     const subSlug = item.subcategory ? slugifyLabel(item.subcategory) : '';
     const locationText = item.location && item.location.trim();
-    const tagsMarginTop = item.experience || locationText ? 'mt-1.5' : 'mt-2';
+    const districtText = item.district && item.district.trim();
+    const displayLocationText = locationText || districtText || null;
+    const tagsMarginTop = item.experience || displayLocationText ? 'mt-1.5' : 'mt-2';
     const imageAlt = headline || t('skills.offer', 'Ponúkam');
     const priceLabel =
       item.price_from !== null && item.price_from !== undefined
@@ -107,10 +110,10 @@ export default function SkillsScreen({ title, firstOptionText, onFirstOptionClic
             <div className="mt-1 text-xs font-semibold text-gray-900 dark:text-white whitespace-pre-wrap break-words">
               {headline}
             </div>
-            {locationText && (
+            {displayLocationText && (
               <div className="text-xs text-gray-600 dark:text-gray-400 mt-1.5">
                 <span className="font-medium text-gray-700 dark:text-gray-300">{t('skills.locationLabel', 'Miesto:')} </span>
-                {locationText}
+                {displayLocationText}
               </div>
             )}
             {item.experience && (

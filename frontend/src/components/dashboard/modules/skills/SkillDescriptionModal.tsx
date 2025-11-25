@@ -27,6 +27,7 @@ export default function SkillDescriptionModal({
   initialPriceFrom = null,
   initialPriceCurrency = '€',
   initialLocation = '',
+  initialDistrict = '',
   onLocationSave,
   initialDetailedDescription = '',
   initialOpeningHours,
@@ -65,6 +66,7 @@ export default function SkillDescriptionModal({
   const [locationError, setLocationError] = useState('');
   const [isLocationSaving, setIsLocationSaving] = useState(false);
   const lastSavedLocationRef = useRef('');
+  const [district, setDistrict] = useState('');
   const [detailedDescription, setDetailedDescription] = useState('');
   const [isDetailedModalOpen, setIsDetailedModalOpen] = useState(false);
   const [openingHours, setOpeningHours] = useState<OpeningHours>({});
@@ -94,6 +96,7 @@ export default function SkillDescriptionModal({
       }
       setUserTouchedCurrency(false);
       setPriceError('');
+      setDistrict(initialDistrict || '');
       setDetailedDescription(initialDetailedDescription || '');
       setOpeningHours(initialOpeningHours || {});
     } else {
@@ -110,11 +113,20 @@ export default function SkillDescriptionModal({
       setPriceCurrency(currencyFromLocale(locale));
       setUserTouchedCurrency(false);
       setPriceError('');
+      setDistrict('');
       setDetailedDescription('');
       setOpeningHours({});
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
+  
+  useEffect(() => {
+    if (!isOpen) {
+      setDistrict('');
+      return;
+    }
+    setDistrict(initialDistrict || '');
+  }, [initialDistrict, isOpen]);
 
   useEffect(() => {
     if (isOpen) {
@@ -244,9 +256,54 @@ export default function SkillDescriptionModal({
     }
     setPriceError('');
     const locationValue = location.trim();
+    const districtValue = district.trim();
+    
+    // Validácia okresu
+    if (districtValue) {
+      // Importujeme zoznam okresov z LocationSection
+      const SLOVAK_DISTRICTS = [
+        'Bánovce nad Bebravou', 'Banská Bystrica', 'Banská Štiavnica', 'Bardejov',
+        'Bratislava I', 'Bratislava II', 'Bratislava III', 'Bratislava IV', 'Bratislava V',
+        'Brezno', 'Bytča', 'Čadca', 'Detva', 'Dolný Kubín', 'Dunajská Streda',
+        'Galanta', 'Gelnica', 'Hlohovec', 'Humenné', 'Ilava', 'Kežmarok', 'Komárno',
+        'Košice I', 'Košice II', 'Košice III', 'Košice IV', 'Košice-okolie',
+        'Krupina', 'Kysucké Nové Mesto', 'Levice', 'Levoča', 'Liptovský Mikuláš',
+        'Lučenec', 'Malacky', 'Martin', 'Medzilaborce', 'Michalovce', 'Myjava',
+        'Námestovo', 'Nitra', 'Nové Mesto nad Váhom', 'Nové Zámky', 'Partizánske',
+        'Pezinok', 'Piešťany', 'Poltár', 'Poprad', 'Považská Bystrica', 'Prešov',
+        'Prievidza', 'Púchov', 'Revúca', 'Rimavská Sobota', 'Rožňava', 'Ružomberok',
+        'Sabinov', 'Senec', 'Senica', 'Skalica', 'Snina', 'Sobrance', 'Spišská Nová Ves',
+        'Stará Ľubovňa', 'Stropkov', 'Svidník', 'Šaľa', 'Topoľčany', 'Trebišov',
+        'Trenčín', 'Trnava', 'Turčianske Teplice', 'Tvrdošín', 'Veľký Krtíš',
+        'Vranov nad Topľou', 'Zlaté Moravce', 'Zvolen', 'Žarnovica', 'Žiar nad Hronom', 'Žilina',
+      ];
+      
+      const removeDiacritics = (str: string): string => {
+        return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+      };
+      
+      const normalizedInput = removeDiacritics(districtValue.trim());
+      const isValid = SLOVAK_DISTRICTS.some((d) => 
+        removeDiacritics(d).toLowerCase() === normalizedInput.toLowerCase()
+      );
+      
+      if (!isValid) {
+        // Necháme LocationSection zobraziť chybu, len zastavíme uloženie
+        // Scrollneme na pole okresu, aby používateľ videl chybu
+        setTimeout(() => {
+          const districtInput = document.querySelector('input[placeholder*="okres" i]') as HTMLInputElement;
+          if (districtInput) {
+            districtInput.focus();
+            districtInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        }, 100);
+        return;
+      }
+    }
+    
     const detailedValue = detailedDescription.trim();
     const openingHoursValue = Object.keys(openingHours).length > 0 ? openingHours : undefined;
-    onSave(trimmed, experience, tags, images, priceValue, priceCurrency, locationValue, detailedValue, openingHoursValue);
+    onSave(trimmed, experience, tags, images, priceValue, priceCurrency, locationValue, detailedValue, openingHoursValue, districtValue);
   };
 
   if (!isOpen) return null;
@@ -259,7 +316,7 @@ export default function SkillDescriptionModal({
           if (e.target === e.currentTarget) onClose();
         }}
       >
-        <div className="w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+        <div className="w-full max-w-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="rounded-2xl bg-[var(--background)] text-[var(--foreground)] border border-[var(--border)] shadow-xl overflow-visible">
           <div className="flex items-center justify-between px-6 pt-6 pb-3">
             <h2 className="text-xl font-semibold">{t('skills.describeSkillTitle', 'Opíš svoju službu/zručnosť')}</h2>
@@ -333,6 +390,8 @@ export default function SkillDescriptionModal({
                 onBlur={handleLocationBlur}
               error={locationError}
               isSaving={isLocationSaving}
+              district={district}
+              onDistrictChange={setDistrict}
             />
 
             <ExperienceSection

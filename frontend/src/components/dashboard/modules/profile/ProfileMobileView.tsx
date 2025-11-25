@@ -250,7 +250,7 @@ export default function ProfileMobileView({
               </button>
             </div>
             {/* Ikonová navigácia sekcií profilu (mobile) */}
-            <div className="mt-3 pt-2 border-t border-gray-200 dark:border-gray-700 w-full">
+            <div className="mt-3 w-full">
               <div
                 role="tablist"
                 aria-label="Sekcie profilu"
@@ -258,7 +258,7 @@ export default function ProfileMobileView({
                 tabIndex={0}
                 onKeyDown={onTabsKeyDown}
               >
-                <div className="flex w-full items-stretch rounded-2xl border border-gray-200 bg-white/60 dark:bg-[#0f0f10] dark:border-gray-800 shadow-sm overflow-hidden">
+                <div className="flex w-full items-stretch rounded-2xl border-b border-gray-200 bg-white/60 dark:bg-[#0f0f10] dark:border-gray-800 shadow-sm overflow-hidden">
                   <button
                     type="button"
                     role="tab"
@@ -267,10 +267,10 @@ export default function ProfileMobileView({
                     aria-label="Ponúkam / Hľadám"
                     title="Ponúkam / Hľadám"
                     className={[
-                      'relative group flex-1 py-2.5 transition-all flex items-center justify-center min-w-[56px]',
+                      'relative group flex-1 py-1 transition-all flex items-center justify-center min-w-[56px]',
                       'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60',
                       activeTab === 'offers'
-                        ? 'bg-purple-100 text-purple-700 border border-purple-200 shadow-sm dark:bg-purple-100 dark:text-purple-800 dark:border-purple-200'
+                        ? 'bg-gradient-to-t from-purple-100 to-transparent text-purple-700 dark:from-purple-100 dark:to-purple-100/40 dark:text-purple-800'
                         : 'text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-[#111214]',
                     ].join(' ')}
                   >
@@ -297,11 +297,11 @@ export default function ProfileMobileView({
                     aria-label="Portfólio"
                     title="Portfólio"
                     className={[
-                      'relative group flex-1 py-2.5 transition-all flex items-center justify-center min-w-[56px]',
+                      'relative group flex-1 py-1 transition-all flex items-center justify-center min-w-[56px]',
                       'border-l border-gray-200 dark:border-gray-800',
                       'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60',
                       activeTab === 'portfolio'
-                        ? 'bg-purple-100 text-purple-700 border border-purple-200 shadow-sm dark:bg-purple-100 dark:text-purple-800 dark:border-purple-200'
+                        ? 'bg-gradient-to-t from-purple-100 to-transparent text-purple-700 dark:from-purple-100 dark:to-purple-100/40 dark:text-purple-800'
                         : 'text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-[#111214]',
                     ].join(' ')}
                   >
@@ -328,11 +328,11 @@ export default function ProfileMobileView({
                     aria-label="Príspevky"
                     title="Príspevky"
                     className={[
-                      'relative group flex-1 py-2.5 transition-all flex items-center justify-center min-w-[56px]',
+                      'relative group flex-1 py-1 transition-all flex items-center justify-center min-w-[56px]',
                       'border-l border-gray-200 dark:border-gray-800',
                       'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60',
                       activeTab === 'posts'
-                        ? 'bg-purple-100 text-purple-700 border border-purple-200 shadow-sm dark:bg-purple-100 dark:text-purple-800 dark:border-purple-200'
+                        ? 'bg-gradient-to-t from-purple-100 to-transparent text-purple-700 dark:from-purple-100 dark:to-purple-100/40 dark:text-purple-800'
                         : 'text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-[#111214]',
                     ].join(' ')}
                   >
@@ -359,11 +359,11 @@ export default function ProfileMobileView({
                     aria-label="Označený"
                     title="Označený"
                     className={[
-                      'relative group flex-1 py-2.5 transition-all flex items-center justify-center min-w-[56px]',
+                      'relative group flex-1 py-1 transition-all flex items-center justify-center min-w-[56px]',
                       'border-l border-gray-200 dark:border-gray-800',
                       'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60',
                       activeTab === 'tagged'
-                        ? 'bg-purple-100 text-purple-700 border border-purple-200 shadow-sm dark:bg-purple-100 dark:text-purple-800 dark:border-purple-200'
+                        ? 'bg-gradient-to-t from-purple-100 to-transparent text-purple-700 dark:from-purple-100 dark:to-purple-100/40 dark:text-purple-800'
                         : 'text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-[#111214]',
                     ].join(' ')}
                   >

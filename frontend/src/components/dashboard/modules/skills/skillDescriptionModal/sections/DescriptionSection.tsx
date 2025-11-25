@@ -123,7 +123,7 @@ export default function DescriptionSection({
           onChange={(e) => handleChange(e.target.value)}
           placeholder=""
           className="w-full px-3 pt-2 pb-6 pr-20 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-1 focus:ring-purple-300 focus:border-transparent resize-none"
-          rows={3}
+          rows={2}
           maxLength={100}
           autoFocus
         />

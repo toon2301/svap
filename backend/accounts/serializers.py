@@ -374,13 +374,14 @@ class OfferedSkillSerializer(serializers.ModelSerializer):
     images = serializers.SerializerMethodField()
     price_from = serializers.DecimalField(max_digits=10, decimal_places=2, required=False, allow_null=True)
     price_currency = serializers.CharField(required=False, allow_blank=True)
+    district = serializers.CharField(required=False, allow_blank=True)
     
     class Meta:
         model = OfferedSkill
         fields = [
             'id', 'category', 'subcategory', 'description', 'detailed_description',
             'experience_value', 'experience_unit', 'experience', 'tags', 'images',
-            'price_from', 'price_currency', 'location', 'opening_hours',
+            'price_from', 'price_currency', 'district', 'location', 'opening_hours',
             'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
@@ -413,6 +414,12 @@ class OfferedSkillSerializer(serializers.ModelSerializer):
         except Exception:
             pass
         return results
+    
+    def validate_district(self, value):
+        """Validácia okresu - normalizuje prázdne hodnoty"""
+        if value is None:
+            return ''
+        return value.strip() if isinstance(value, str) else ''
     
     def validate_description(self, value):
         """Validácia popisu"""

@@ -82,15 +82,23 @@ export default function ImagesSection({
       return;
     }
     const selected = files.slice(0, allowed);
+    const validFiles: File[] = [];
     const newPreviews: string[] = [];
     for (const f of selected) {
-      if (!f.type.startsWith('image/')) {
+      const isImageType = f.type && f.type.startsWith('image/');
+      const isHeicByName = /\.(heic|heif)$/i.test(f.name || '');
+      if (!isImageType && !isHeicByName) {
         setImageError(t('skills.fileMustBeImage', 'Súbor musí byť obrázok.'));
         continue;
       }
+      validFiles.push(f);
       newPreviews.push(URL.createObjectURL(f));
     }
-    setImages((prev) => [...prev, ...selected]);
+    if (!validFiles.length) {
+      event.currentTarget.value = '';
+      return;
+    }
+    setImages((prev) => [...prev, ...validFiles]);
     setImagePreviews((prev) => [...prev, ...newPreviews]);
     setImageError('');
     event.currentTarget.value = '';

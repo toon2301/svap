@@ -49,7 +49,8 @@ export interface SkillDescriptionModalProps {
     priceCurrency?: string,
     location?: string,
     detailedDescription?: string,
-    openingHours?: OpeningHours
+    openingHours?: OpeningHours,
+    district?: string
   ) => void;
   initialDescription?: string;
   initialExperience?: ExperienceValue;
@@ -59,6 +60,7 @@ export interface SkillDescriptionModalProps {
   initialPriceFrom?: number | null;
   initialPriceCurrency?: string;
   initialLocation?: string;
+  initialDistrict?: string;
   onLocationSave?: (location: string) => Promise<void>;
   initialDetailedDescription?: string;
   initialOpeningHours?: OpeningHours;

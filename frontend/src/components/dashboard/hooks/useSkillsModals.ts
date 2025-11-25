@@ -24,6 +24,7 @@ export type DashboardSkill = {
   images?: Array<{ id: number; image_url?: string | null; image?: string | null; order?: number }>;
   price_from?: number | null;
   price_currency?: string;
+  district?: string;
   location?: string;
   opening_hours?: OpeningHours;
 };
@@ -96,8 +97,12 @@ export function useSkillsModals(): UseSkillsModalsResult {
         typeof s.price_currency === 'string' && s.price_currency.trim() !== ''
           ? s.price_currency
           : '€',
+      district: typeof s.district === 'string' ? s.district : '',
       location: typeof s.location === 'string' ? s.location : '',
-      opening_hours: (s.opening_hours && typeof s.opening_hours === 'object') ? s.opening_hours as OpeningHours : undefined,
+      opening_hours:
+        s.opening_hours && typeof s.opening_hours === 'object'
+          ? (s.opening_hours as OpeningHours)
+          : undefined,
     };
   }, []);
 
