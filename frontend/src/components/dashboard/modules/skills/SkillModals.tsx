@@ -159,7 +159,7 @@ export default function SkillModals(props: Props) {
               ? (imageId) => handleRemoveSkillImage(selectedSkillsCategory.id!, imageId)
               : undefined
           }
-          onSave={async (description, experience, tags, images, priceFrom, priceCurrency, locationValue, detailedDescription, districtValue) => {
+          onSave={async (description, experience, tags, images, priceFrom, priceCurrency, locationValue, detailedDescription, districtValue?: string) => {
             const trimmedLocation = typeof locationValue === 'string' ? locationValue.trim() : '';
             const trimmedDistrict = typeof districtValue === 'string' ? districtValue.trim() : '';
             const detailedText = typeof detailedDescription === 'string' ? detailedDescription.trim() : '';
