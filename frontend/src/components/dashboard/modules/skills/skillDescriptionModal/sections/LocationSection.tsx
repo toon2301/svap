@@ -87,6 +87,150 @@ const SLOVAK_DISTRICTS = [
   'Žilina',
 ];
 
+// Zoznam českých okresov
+const CZECH_DISTRICTS = [
+  'Benešov',
+  'Beroun',
+  'Blansko',
+  'Brno-město',
+  'Brno-venkov',
+  'Bruntál',
+  'Břeclav',
+  'Česká Lípa',
+  'České Budějovice',
+  'Český Krumlov',
+  'Děčín',
+  'Domažlice',
+  'Frýdek-Místek',
+  'Havlíčkův Brod',
+  'Hodonín',
+  'Hradec Králové',
+  'Cheb',
+  'Chomutov',
+  'Chrudim',
+  'Jablonec nad Nisou',
+  'Jeseník',
+  'Jičín',
+  'Jihlava',
+  'Jindřichův Hradec',
+  'Karlovy Vary',
+  'Karviná',
+  'Kladno',
+  'Klatovy',
+  'Kolín',
+  'Kroměříž',
+  'Kutná Hora',
+  'Liberec',
+  'Litoměřice',
+  'Louny',
+  'Mělník',
+  'Mladá Boleslav',
+  'Náchod',
+  'Nový Jičín',
+  'Nymburk',
+  'Olomouc',
+  'Opava',
+  'Ostrava-město',
+  'Pardubice',
+  'Pelhřimov',
+  'Písek',
+  'Plzeň-jih',
+  'Plzeň-město',
+  'Plzeň-sever',
+  'Praha-západ',
+  'Praha-východ',
+  'Příbram',
+  'Prostějov',
+  'Přerov',
+  'Rakovník',
+  'Rokycany',
+  'Sokolov',
+  'Strakonice',
+  'Svitavy',
+  'Šumperk',
+  'Tachov',
+  'Tábor',
+  'Trutnov',
+  'Třebíč',
+  'Ústí nad Labem',
+  'Ústí nad Orlicí',
+  'Valašské Meziříčí',
+  'Vsetín',
+  'Vyškov',
+  'Znojmo',
+  'Žďár nad Sázavou',
+  'Zlín',
+];
+
+// Zoznam poľských okresov (powiaty)
+const POLISH_DISTRICTS = [
+  'Biała Podlaska',
+  'Białystok',
+  'Bielsko-Biała',
+  'Bydgoszcz',
+  'Bytom',
+  'Chełm',
+  'Chorzów',
+  'Częstochowa',
+  'Dąbrowa Górnicza',
+  'Elbląg',
+  'Gdańsk',
+  'Gdynia',
+  'Gliwice',
+  'Gorzów Wielkopolski',
+  'Grudziądz',
+  'Jastrzębie Zdrój',
+  'Jaworzno',
+  'Jelenia Góra',
+  'Kalisz',
+  'Katovice',
+  'Kielce',
+  'Konin',
+  'Koszalin',
+  'Kraków',
+  'Krosno',
+  'Legnica',
+  'Leszno',
+  'Lublin',
+  'Łomża',
+  'Lodž',
+  'Mysłowice',
+  'Nowy Sącz',
+  'Olsztyn',
+  'Opole',
+  'Ostrołęka',
+  'Piekary Śląskie',
+  'Piotrków Trybunalski',
+  'Płock',
+  'Poznań',
+  'Przemyśl',
+  'Radom',
+  'Ruda Śląska',
+  'Rybnik',
+  'Rzeszów',
+  'Siedlce',
+  'Siemianowice Śląskie',
+  'Skierniewice',
+  'Słupsk',
+  'Sopot',
+  'Sosnowiec',
+  'Suwałki',
+  'Szczecin',
+  'Świętochłowice',
+  'Świnoujście',
+  'Tarnobrzeg',
+  'Tarnów',
+  'Toruń',
+  'Tychy',
+  'Warszawa',
+  'Włocławek',
+  'Wrocław',
+  'Zabrze',
+  'Zamość',
+  'Zielona Góra',
+  'Żory',
+];
+
 // Funkcia na odstránenie diakritiky
 function removeDiacritics(str: string): string {
   return str
@@ -106,7 +250,7 @@ interface LocationSectionProps {
 }
 
 export default function LocationSection({ value, onChange, onBlur, error, isSaving, district, onDistrictChange }: LocationSectionProps) {
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const [districtInput, setDistrictInput] = useState(district || '');
   const [filteredDistricts, setFilteredDistricts] = useState<string[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -116,6 +260,20 @@ export default function LocationSection({ value, onChange, onBlur, error, isSavi
   const dropdownRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Vyber správny zoznam okresov podľa jazyka
+  const getDistrictsList = (): string[] => {
+    if (locale === 'cs') {
+      return CZECH_DISTRICTS;
+    }
+    if (locale === 'pl') {
+      return POLISH_DISTRICTS;
+    }
+    // Predvolené: slovenské okresy
+    return SLOVAK_DISTRICTS;
+  };
+
+  const DISTRICTS = getDistrictsList();
 
   useEffect(() => {
     setDistrictInput(district || '');
@@ -129,12 +287,12 @@ export default function LocationSection({ value, onChange, onBlur, error, isSavi
     }
 
     const searchTerm = removeDiacritics(districtInput);
-    const filtered = SLOVAK_DISTRICTS.filter((d) =>
+    const filtered = DISTRICTS.filter((d) =>
       removeDiacritics(d).startsWith(searchTerm)
     );
     
     // Skontroluj, či je okres presne rovnaký ako jeden z okresov (presná zhoda)
-    const exactMatch = SLOVAK_DISTRICTS.some((d) => 
+    const exactMatch = DISTRICTS.some((d) => 
       removeDiacritics(d).toLowerCase() === searchTerm.toLowerCase()
     );
     
@@ -151,7 +309,7 @@ export default function LocationSection({ value, onChange, onBlur, error, isSavi
     if (filtered.length > 0) {
       updateDropdownPosition();
     }
-  }, [districtInput]);
+  }, [districtInput, locale]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -185,7 +343,7 @@ export default function LocationSection({ value, onChange, onBlur, error, isSavi
     }
     
     const normalizedInput = removeDiacritics(districtValue.trim());
-    const isValid = SLOVAK_DISTRICTS.some((d) => 
+    const isValid = DISTRICTS.some((d) => 
       removeDiacritics(d).toLowerCase() === normalizedInput.toLowerCase()
     );
     
@@ -254,7 +412,7 @@ export default function LocationSection({ value, onChange, onBlur, error, isSavi
               const trimmed = districtInput.trim();
               if (trimmed) {
                 const normalizedInput = removeDiacritics(trimmed);
-                const exactMatch = SLOVAK_DISTRICTS.some((d) => 
+                const exactMatch = DISTRICTS.some((d) => 
                   removeDiacritics(d).toLowerCase() === normalizedInput.toLowerCase()
                 );
                 // Ak je presná zhoda, nezobrazuj dropdown
