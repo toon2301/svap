@@ -159,13 +159,15 @@ export default function SkillsScreen({ title, firstOptionText, onFirstOptionClic
   };
   return (
     <div className="text-[var(--foreground)]">
-      <div className="hidden lg:flex items-start justify-start w-full">
-        <div className="flex flex-col items-start w-full max-w-5xl ml-[570px]">
-          <div className="w-full">
+      <div className="hidden lg:flex items-start w-full">
+        {/* Desktop safe area odsadená od ľavého sidebaru */}
+        <div className="w-full lg:pl-64 xl:pl-72 2xl:pl-80 pr-6">
+          <div className="flex flex-col items-start w-full max-w-5xl">
+            <div className="w-full">
             <h2 className="text-2xl font-semibold text-gray-800 dark:text-white mb-2">{title}</h2>
           </div>
-          <div className="mt-6 w-full"><div className="border-t border-gray-200 dark:border-gray-700" /></div>
-          <div className="w-full py-10 text-gray-500 dark:text-gray-400">
+            <div className="mt-6 w-full"><div className="border-t border-gray-200 dark:border-gray-700" /></div>
+            <div className="w-full py-10 text-gray-500 dark:text-gray-400">
             {firstOptionText && (
               <>
                 <div className="w-full flex items-center justify-between -mt-6">
@@ -242,6 +244,7 @@ export default function SkillsScreen({ title, firstOptionText, onFirstOptionClic
                 )}
               </>
             )}
+            </div>
           </div>
         </div>
       </div>

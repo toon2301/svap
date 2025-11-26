@@ -5,6 +5,7 @@ import { Providers } from "@/components/providers";
 import ClientComponents from "@/components/ClientComponents";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { LoadingProvider } from "@/contexts/LoadingContext";
+import GlobalScale from "@/components/layout/GlobalScale";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -82,8 +83,10 @@ export default function RootLayout({
         <Providers>
           <ErrorBoundary>
             <LoadingProvider>
-              {children}
-              <ClientComponents />
+              <GlobalScale>
+                {children}
+                <ClientComponents />
+              </GlobalScale>
             </LoadingProvider>
           </ErrorBoundary>
         </Providers>
