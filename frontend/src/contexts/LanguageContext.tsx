@@ -9,11 +9,13 @@ import deMessages from '../../messages/de.json';
 import huMessages from '../../messages/hu.json';
 
 type SupportedLocale = 'sk' | 'en' | 'pl' | 'cs' | 'de' | 'hu';
+type CountryCode = 'SK' | 'CZ' | 'PL' | 'HU' | 'AT' | 'DE' | null;
 
 type LanguageContextValue = {
   locale: SupportedLocale;
   setLocale: (locale: SupportedLocale) => void;
   t: (key: string, fallback?: string) => string;
+  country: CountryCode;
 };
 
 const LanguageContext = createContext<LanguageContextValue | undefined>(undefined);
@@ -30,17 +32,21 @@ function getByPath(messages: Record<string, any>, key: string): unknown {
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
   // Start with default to match server-rendered HTML, then hydrate from storage
   const [locale, setLocaleState] = useState<SupportedLocale>('sk');
+  const [country, setCountry] = useState<CountryCode>(null);
+  
   useEffect(() => {
     // Priority 1: persisted value
+    let hasSavedLocale = false;
     try {
       const saved = window.localStorage.getItem('appLocale');
       if (saved === 'en' || saved === 'sk' || saved === 'pl' || saved === 'cs' || saved === 'de' || saved === 'hu') {
         setLocaleState(saved as SupportedLocale);
-        return; // respect user choice
+        hasSavedLocale = true;
       }
     } catch {}
 
     // Priority 2: geolocation by IP (best-effort)
+    // Vždy detekujeme krajinu (pre výber okresov), aj keď máme uložený jazyk
     let cancelled = false;
     const detectByIp = async () => {
       try {
@@ -49,16 +55,27 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
         const data = await res.json();
         if (cancelled) return;
         const code = (data?.country_code || '').toUpperCase();
-        if (code === 'PL') { setLocaleState('pl'); return; }
-        if (code === 'SK') { setLocaleState('sk'); return; }
-        if (code === 'CZ') { setLocaleState('cs'); return; }
-        if (code === 'DE') { setLocaleState('de'); return; }
-        if (code === 'HU') { setLocaleState('hu'); return; }
-        // No decisive country → try browser language
-        detectByBrowser();
+        
+        // Vždy nastav krajinu (pre výber okresov)
+        if (code === 'SK' || code === 'CZ' || code === 'PL' || code === 'HU' || code === 'AT' || code === 'DE') {
+          setCountry(code as CountryCode);
+        }
+        
+        // Nastav jazyk podľa krajiny len ak nie je uložený
+        if (!hasSavedLocale) {
+          if (code === 'PL') { setLocaleState('pl'); return; }
+          if (code === 'SK') { setLocaleState('sk'); return; }
+          if (code === 'CZ') { setLocaleState('cs'); return; }
+          if (code === 'DE' || code === 'AT') { setLocaleState('de'); return; }
+          if (code === 'HU') { setLocaleState('hu'); return; }
+          // No decisive country → try browser language
+          detectByBrowser();
+        }
       } catch {
-        // If IP fails, try browser
-        detectByBrowser();
+        // If IP fails, try browser (len ak nie je uložený jazyk)
+        if (!hasSavedLocale) {
+          detectByBrowser();
+        }
       }
     };
 
@@ -107,7 +124,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     [messages]
   );
 
-  const value = useMemo<LanguageContextValue>(() => ({ locale, setLocale, t }), [locale, setLocale, t]);
+  const value = useMemo<LanguageContextValue>(() => ({ locale, setLocale, t, country }), [locale, setLocale, t, country]);
 
   return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
 }

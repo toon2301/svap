@@ -74,7 +74,15 @@ export default function DashboardLayout({
       />
 
       <div className="flex-1 lg:ml-1 overflow-y-auto">
-        <main className="p-6 pt-16 pb-24 lg:p-8 lg:pt-8">{children}</main>
+        <main className="p-6 pt-16 pb-24 lg:p-8 lg:pt-8">
+          {/* Pre väčšinu modulov používame spoločný kontajner,
+              profil má vlastný layout vo svojom module. */}
+          {activeModule === 'profile' ? (
+            children
+          ) : (
+            <div className="w-full max-w-[1200px] mx-auto">{children}</div>
+          )}
+        </main>
       </div>
 
       <div className="hidden lg:block fixed right-0 top-0 h-screen z-30">
