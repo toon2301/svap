@@ -57,7 +57,7 @@ export default function ProfileAvatarActionsModal({
       onClick={handleOverlayClick}
     >
       <div
-        className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 w-[32rem] max-w-[90vw] lg:ml-[-12rem]"
+        className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 w-[32rem] max-w-[90vw] lg:ml-0 xl:ml-[-6rem] 2xl:ml-[-12rem]"
         onClick={handleContentClick}
       >
         <div className="rounded-2xl bg-[var(--background)] text-[var(--foreground)] border border-[var(--border)] shadow-xl overflow-hidden">

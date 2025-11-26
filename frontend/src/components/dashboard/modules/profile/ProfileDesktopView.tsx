@@ -47,7 +47,7 @@ export default function ProfileDesktopView({
 
   return (
     <div className="hidden lg:flex items-start justify-start w-full">
-      <div className="flex flex-col items-start w-full max-w-5xl ml-[570px]">
+      <div className="flex flex-col items-start w-full max-w-5xl lg:ml-64 xl:ml-80 2xl:ml-[570px]">
         {/* Pôvodný desktop obsah */}
         <div className="w-full">
           {isEditMode ? (
@@ -65,7 +65,7 @@ export default function ProfileDesktopView({
             // Normal profile view
             <>
               <div className="flex flex-col gap-6 mb-6">
-                <div className="flex flex-col items-start ml-[140px]">
+                <div className="flex flex-col items-start lg:ml-8 xl:ml-20 2xl:ml-[140px]">
                   <div className="flex gap-4 items-center">
                     <UserAvatar
                       user={displayUser}
@@ -186,7 +186,7 @@ export default function ProfileDesktopView({
                           console.log('Upraviť profil');
                         }
                       }}
-                      className="flex-1 px-32 py-2 text-sm bg-purple-100 text-purple-800 border border-purple-200 rounded-2xl transition-colors hover:bg-purple-200 whitespace-nowrap"
+                      className="flex-1 px-4 lg:px-8 xl:px-16 2xl:px-32 py-2 text-sm bg-purple-100 text-purple-800 border border-purple-200 rounded-2xl transition-colors hover:bg-purple-200 whitespace-nowrap"
                     >
                       {t('profile.editProfile')}
                     </button>
@@ -200,7 +200,7 @@ export default function ProfileDesktopView({
                           console.log('Zručnosti');
                         }
                       }}
-                      className="flex-1 px-32 py-2 text-sm bg-purple-100 text-purple-800 border border-purple-200 rounded-2xl transition-colors hover:bg-purple-200 whitespace-nowrap"
+                      className="flex-1 px-4 lg:px-8 xl:px-16 2xl:px-32 py-2 text-sm bg-purple-100 text-purple-800 border border-purple-200 rounded-2xl transition-colors hover:bg-purple-200 whitespace-nowrap"
                     >
                       {t('profile.skills', 'Služby a ponuky')}
                     </button>

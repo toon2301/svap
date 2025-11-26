@@ -54,9 +54,9 @@
 }
 
 /* Desktop zoom reset (moved from inline style in layout.tsx) */
-@media (min-width: 769px) {
-  html { zoom: 1 !important; transform: none !important; }
-  body { zoom: 1 !important; transform: none !important; }
+@media (min-width: 1024px) {
+  html { zoom: 1; transform: none; }
+  body { zoom: 1; transform: none; }
 }
 
 * {
@@ -229,78 +229,23 @@ a {
   }
 }
 
-/* Desktop zoom and scale fixes */
-@media (min-width: 769px) {
-  /* Force reset all scaling */
+/* Desktop zoom and scale fixes - only for very large screens */
+@media (min-width: 1536px) {
+  /* Force reset all scaling on extra large screens only */
   html {
-    zoom: 1 !important;
-    transform: scale(1) !important;
-    -webkit-text-size-adjust: 100% !important;
-    -ms-text-size-adjust: 100% !important;
-    font-size: 16px !important;
+    zoom: 1;
+    transform: scale(1);
+    -webkit-text-size-adjust: 100%;
+    -ms-text-size-adjust: 100%;
+    font-size: 16px;
   }
   
   /* Reset body scaling */
   body {
-    font-size: 16px !important;
-    line-height: 1.5 !important;
-    transform: scale(1) !important;
-    zoom: 1 !important;
-  }
-  
-  /* Reset all elements */
-  * {
-    transform: scale(1) !important;
-  }
-  
-  /* Ensure forms display properly on desktop */
-  .modern-input, select, input {
-    font-size: 16px !important;
-    line-height: 1.5 !important;
-    transform: scale(1) !important;
-  }
-  
-  /* Reset container scaling */
-  .min-h-screen, .bg-white, .rounded-2xl {
-    transform: scale(1) !important;
-    zoom: 1 !important;
-  }
-  
-  /* Specific fixes for reset password page */
-  .text-4xl {
-    font-size: 2.25rem !important; /* 36px */
-  }
-  
-  .text-xl {
-    font-size: 1.25rem !important; /* 20px */
-  }
-  
-  .text-lg {
-    font-size: 1.125rem !important; /* 18px */
-  }
-  
-  .text-base {
-    font-size: 1rem !important; /* 16px */
-  }
-  
-  .text-sm {
-    font-size: 0.875rem !important; /* 14px */
-  }
-  
-  /* Reset padding and margins */
-  .px-16, .py-12 {
-    padding-left: 1rem !important;
-    padding-right: 1rem !important;
-    padding-top: 1rem !important;
-    padding-bottom: 1rem !important;
-  }
-  
-  /* Reset button sizes */
-  .px-6, .py-4 {
-    padding-left: 1.5rem !important;
-    padding-right: 1.5rem !important;
-    padding-top: 1rem !important;
-    padding-bottom: 1rem !important;
+    font-size: 16px;
+    line-height: 1.5;
+    transform: scale(1);
+    zoom: 1;
   }
 }
 

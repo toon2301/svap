@@ -80,7 +80,7 @@ export default function DashboardLayout({
           {activeModule === 'profile' ? (
             children
           ) : (
-            <div className="w-full max-w-[1200px] mx-auto">{children}</div>
+            <div className="w-full max-w-full lg:max-w-6xl xl:max-w-7xl mx-auto px-2">{children}</div>
           )}
         </main>
       </div>
