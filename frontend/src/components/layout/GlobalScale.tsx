@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 
 interface GlobalScaleProps {
   children: React.ReactNode;
@@ -12,43 +12,42 @@ const BASE_WIDTH = 1600;
 const MIN_SCALE = 0.8;
 
 export default function GlobalScale({ children }: GlobalScaleProps) {
-  const [scale, setScale] = useState(1);
-
   useEffect(() => {
     const updateScale = () => {
-      if (typeof window === 'undefined') return;
+      if (typeof window === 'undefined' || typeof document === 'undefined') return;
 
       const width = window.innerWidth;
+      let scale = 1;
 
       // Na mobiloch / malých tabletoch nechávame prirodzený responzívny layout
-      if (width < 1024) {
-        setScale(1);
-        return;
+      if (width >= 1024) {
+        scale = Math.max(MIN_SCALE, Math.min(1, width / BASE_WIDTH));
       }
 
-      const nextScale = Math.max(MIN_SCALE, Math.min(1, width / BASE_WIDTH));
-      setScale(nextScale);
+      // Aplikujeme scale priamo na html element
+      const html = document.documentElement;
+      html.style.transform = `scale(${scale})`;
+      html.style.transformOrigin = 'top left';
+      html.style.width = `${100 / scale}%`;
+      html.style.height = `${100 / scale}%`;
     };
 
     updateScale();
     window.addEventListener('resize', updateScale);
-    return () => window.removeEventListener('resize', updateScale);
+    return () => {
+      window.removeEventListener('resize', updateScale);
+      // Cleanup - obnovíme pôvodné hodnoty
+      if (typeof document !== 'undefined') {
+        const html = document.documentElement;
+        html.style.transform = '';
+        html.style.transformOrigin = '';
+        html.style.width = '';
+        html.style.height = '';
+      }
+    };
   }, []);
 
-  const compensatedWidth = `${100 / scale}%`;
-
-  return (
-    <div
-      style={{
-        transform: `scale(${scale})`,
-        transformOrigin: 'top left',
-        width: compensatedWidth,
-        height: '100%',
-      }}
-    >
-      {children}
-    </div>
-  );
+  return <>{children}</>;
 }
 
 
