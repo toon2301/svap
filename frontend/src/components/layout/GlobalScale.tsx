@@ -1,53 +1,50 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 
 interface GlobalScaleProps {
   children: React.ReactNode;
 }
 
-// Základná desktop šírka, pri ktorej je dizajn "ideálny"
-const BASE_WIDTH = 1600;
-// Minimálne zmenšenie (aby text nebol extrémne malý)
-const MIN_SCALE = 0.8;
+// Pevný dizajn pre celú aplikáciu
+const BASE_WIDTH = 1920;
+const BASE_HEIGHT = 1080;
 
 export default function GlobalScale({ children }: GlobalScaleProps) {
+  const [scale, setScale] = useState(1);
+
   useEffect(() => {
     const updateScale = () => {
-      if (typeof window === 'undefined' || typeof document === 'undefined') return;
+      if (typeof window === 'undefined') return;
 
-      const width = window.innerWidth;
-      let scale = 1;
+      const { innerWidth, innerHeight } = window;
+      const scaleX = innerWidth / BASE_WIDTH;
+      const scaleY = innerHeight / BASE_HEIGHT;
+      const nextScale = Math.min(scaleX, scaleY);
 
-      // Na mobiloch / malých tabletoch nechávame prirodzený responzívny layout
-      if (width >= 1024) {
-        scale = Math.max(MIN_SCALE, Math.min(1, width / BASE_WIDTH));
-      }
-
-      // Aplikujeme scale priamo na html element
-      const html = document.documentElement;
-      html.style.transform = `scale(${scale})`;
-      html.style.transformOrigin = 'top left';
-      html.style.width = `${100 / scale}%`;
-      html.style.height = `${100 / scale}%`;
+      setScale(nextScale);
     };
 
     updateScale();
     window.addEventListener('resize', updateScale);
-    return () => {
-      window.removeEventListener('resize', updateScale);
-      // Cleanup - obnovíme pôvodné hodnoty
-      if (typeof document !== 'undefined') {
-        const html = document.documentElement;
-        html.style.transform = '';
-        html.style.transformOrigin = '';
-        html.style.width = '';
-        html.style.height = '';
-      }
-    };
+    return () => window.removeEventListener('resize', updateScale);
   }, []);
 
-  return <>{children}</>;
+  return (
+    <div
+      id="app-root"
+      style={{
+        width: `${BASE_WIDTH}px`,
+        height: `${BASE_HEIGHT}px`,
+        transformOrigin: 'top left',
+        transform: `scale(${scale})`,
+        position: 'relative',
+        overflow: 'hidden',
+      }}
+    >
+      {children}
+    </div>
+  );
 }
 
 

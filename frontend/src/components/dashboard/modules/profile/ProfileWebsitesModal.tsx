@@ -15,6 +15,15 @@ export default function ProfileWebsitesModal({ open, user, onClose }: ProfileWeb
     return null;
   }
 
+  const portalTarget =
+    typeof document !== 'undefined'
+      ? document.getElementById('app-root') ?? document.body
+      : null;
+
+  if (!portalTarget) {
+    return null;
+  }
+
   return createPortal(
     <div
       className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
@@ -110,7 +119,7 @@ export default function ProfileWebsitesModal({ open, user, onClose }: ProfileWeb
         </div>
       </div>
     </div>,
-    document.body,
+    portalTarget,
   );
 }
 

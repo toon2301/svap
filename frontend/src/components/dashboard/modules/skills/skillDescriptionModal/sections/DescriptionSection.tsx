@@ -30,7 +30,9 @@ export default function DescriptionSection({
   const [pickerCoords, setPickerCoords] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
 
   useEffect(() => {
-    setPortalNode(typeof window !== 'undefined' ? document.body : null);
+    if (typeof window === 'undefined' || typeof document === 'undefined') return;
+    const target = document.getElementById('app-root') ?? document.body;
+    setPortalNode(target);
   }, []);
 
   useEffect(() => {

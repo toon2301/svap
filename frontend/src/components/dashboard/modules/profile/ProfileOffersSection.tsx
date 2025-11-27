@@ -649,7 +649,7 @@ export default function ProfileOffersSection({ activeTab, accountType = 'persona
               </div>
             </div>
           </>,
-          document.body
+          document.getElementById('app-root') ?? document.body
         )}
     </div>
   );

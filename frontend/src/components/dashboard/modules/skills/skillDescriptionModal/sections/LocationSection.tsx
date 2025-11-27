@@ -759,7 +759,7 @@ export default function LocationSection({ value, onChange, onBlur, error, isSavi
                 ))}
               </div>
             </div>,
-            document.body
+            document.getElementById('app-root') ?? document.body
           )}
         </div>
         {/* Miesto - zobrazí sa len keď je vyplnený okres */}

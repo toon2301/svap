@@ -100,7 +100,7 @@ export default function ProfileAvatar({
       </div>
       
       {/* Avatar Actions Modal */}
-      {mounted && isActionsOpen && createPortal(
+      {mounted && isActionsOpen && typeof document !== 'undefined' && createPortal(
         <div className="fixed inset-0 z-50 bg-black bg-opacity-50 lg:bg-transparent flex items-center justify-center" onClick={() => setIsActionsOpen(false)}>
           <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[32rem] max-w-[90vw] lg:ml-[-12rem]" onClick={(e) => e.stopPropagation()}>
             <div className={`rounded-2xl border shadow-xl overflow-hidden bg-[var(--background)] text-[var(--foreground)] border-[var(--border)]`}>
@@ -138,7 +138,7 @@ export default function ProfileAvatar({
             </div>
           </div>
         </div>,
-        document.body
+        document.getElementById('app-root') ?? document.body
       )}
     </>
   );

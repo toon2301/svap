@@ -19,7 +19,9 @@ export default function ExperienceUnitSelect({ value, onChange }: ExperienceUnit
   const { t } = useLanguage();
 
   useEffect(() => {
-    setPortalRoot(typeof window !== 'undefined' ? document.body : null);
+    if (typeof window === 'undefined' || typeof document === 'undefined') return;
+    const target = document.getElementById('app-root') ?? document.body;
+    setPortalRoot(target);
   }, []);
 
   const updatePosition = () => {

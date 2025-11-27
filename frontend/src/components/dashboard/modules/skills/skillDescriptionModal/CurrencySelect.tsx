@@ -17,7 +17,9 @@ export default function CurrencySelect({ value, onChange }: CurrencySelectProps)
   const [pos, setPos] = useState<{ left: number; top: number; width: number } | null>(null);
 
   useEffect(() => {
-    setPortalRoot(typeof window !== 'undefined' ? document.body : null);
+    if (typeof window === 'undefined' || typeof document === 'undefined') return;
+    const target = document.getElementById('app-root') ?? document.body;
+    setPortalRoot(target);
   }, []);
 
   const updatePosition = () => {
