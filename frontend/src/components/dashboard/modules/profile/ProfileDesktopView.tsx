@@ -46,12 +46,10 @@ export default function ProfileDesktopView({
   const { t } = useLanguage();
 
   return (
-    <div className="hidden lg:flex items-start w-full">
-      {/* Desktop safe area odsadená od ľavého sidebaru */}
-      <div className="w-full lg:pl-64 xl:pl-72 2xl:pl-80 pr-6">
-        <div className="flex flex-col items-start w-full max-w-5xl ml-24 lg:ml-36 xl:ml-48 2xl:ml-64">
-          {/* Pôvodný desktop obsah */}
-          <div className="w-full">
+    <div className="hidden lg:block w-full">
+      <div className="flex flex-col items-stretch w-full gap-6">
+        {/* Pôvodný desktop obsah */}
+        <div className="w-full">
           {isEditMode ? (
             // Edit mode - show ProfileEditFormDesktop
             <ProfileEditFormDesktop
@@ -376,7 +374,6 @@ export default function ProfileDesktopView({
               </div>
             </>
           )}
-          </div>
         </div>
       </div>
     </div>

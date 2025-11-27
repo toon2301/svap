@@ -40,12 +40,21 @@ interface SkillsScreenProps {
   onEditCustomCategoryDescription?: (index: number) => void;
 }
 
-export default function SkillsScreen({ title, firstOptionText, onFirstOptionClick, standardCategories = [], onRemoveStandardCategory, onEditStandardCategoryDescription, onAddCategory, customCategories = [], onRemoveCustomCategory, onEditCustomCategoryDescription }: SkillsScreenProps) {
+export default function SkillsScreen({
+  title,
+  firstOptionText,
+  onFirstOptionClick,
+  standardCategories = [],
+  onRemoveStandardCategory,
+  onEditStandardCategoryDescription,
+  onAddCategory,
+  customCategories = [],
+  onRemoveCustomCategory,
+  onEditCustomCategoryDescription,
+}: SkillsScreenProps) {
   const { t } = useLanguage();
-  const renderOfferCard = (
-    item: SkillItem,
-    opts: { onEdit?: () => void; onRemove?: () => void }
-  ) => {
+
+  const renderOfferCard = (item: SkillItem, opts: { onEdit?: () => void; onRemove?: () => void }) => {
     const headline = (item.description && item.description.trim()) || item.subcategory || t('skills.noDescription', 'Bez popisu');
     const label = item.subcategory || item.category || '';
     const catSlug = item.category ? slugifyLabel(item.category) : '';
@@ -157,85 +166,160 @@ export default function SkillsScreen({ title, firstOptionText, onFirstOptionClic
       </div>
     );
   };
+
   return (
     <div className="text-[var(--foreground)]">
-      <div className="hidden lg:flex items-start w-full">
-        {/* Desktop safe area odsadená od ľavého sidebaru */}
-        <div className="w-full lg:pl-64 xl:pl-72 2xl:pl-80 pr-6">
-          <div className="flex flex-col items-start w-full max-w-5xl">
-            <div className="w-full">
-            <h2 className="text-2xl font-semibold text-gray-800 dark:text-white mb-2">{title}</h2>
+      <div className="hidden lg:block w-full">
+        <div className="flex flex-col items-stretch w-full">
+          <div className="w-full">
+            <h2 className="text-2xl font-semibold text-gray-800 dark:text-white mb-2">
+              {title}
+            </h2>
           </div>
-            <div className="mt-6 w-full"><div className="border-t border-gray-200 dark:border-gray-700" /></div>
-            <div className="w-full py-10 text-gray-500 dark:text-gray-400">
+
+          <div className="mt-6 w-full">
+            <div className="border-t border-gray-200 dark:border-gray-700" />
+          </div>
+
+          <div className="w-full py-10 text-gray-500 dark:text-gray-400">
             {firstOptionText && (
               <>
-                <div className="w-full flex items-center justify-between -mt-6">
-                  <div className="flex flex-col flex-1 min-w-0">
-                    <span className="text-lg font-medium text-gray-900 dark:text-white">{firstOptionText}</span>
+                <div className="w-full flex items-center justify-between -mt-6 flex-wrap gap-3">
+                  <div className="flex flex-col flex-1 min-w-[260px]">
+                    <span className="text-lg font-medium text-gray-900 dark:text-white">
+                      {firstOptionText}
+                    </span>
                     <span className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-                      {t('skills.selectCategoryHint', 'Vyber kategóriu, ktorá sa k tebe hodí. Nenašiel si nič? Pridaj vlastnú.')}
+                      {t(
+                        'skills.selectCategoryHint',
+                        'Vyber kategóriu, ktorá sa k tebe hodí. Nenašiel si nič? Pridaj vlastnú.',
+                      )}
                     </span>
                   </div>
-                  <button type="button" onClick={onFirstOptionClick} className="flex-shrink-0 ml-4 p-2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
-                    {(standardCategories && standardCategories.length > 0) || (customCategories && customCategories.length > 0) ? (
-                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  <button
+                    type="button"
+                    onClick={onFirstOptionClick}
+                    className="flex-shrink-0 p-2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                  >
+                    {(standardCategories && standardCategories.length > 0) ||
+                    (customCategories && customCategories.length > 0) ? (
+                      <svg
+                        className="w-6 h-6"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 4v16m8-8H4"
+                        />
                       </svg>
                     ) : (
-                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      <svg
+                        className="w-6 h-6"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 5l7 7-7 7"
+                        />
                       </svg>
                     )}
                   </button>
                 </div>
+
                 {onAddCategory && (
-                  <div className="w-full flex items-center justify-between mt-4">
-                    <div className="flex flex-col flex-1 min-w-0">
-                      <span className="text-lg font-medium text-gray-900 dark:text-white">{t('skills.addCategory', 'Pridať kategóriu')}</span>
+                  <div className="w-full flex items-center justify-between mt-4 flex-wrap gap-3">
+                    <div className="flex flex-col flex-1 min-w-[260px]">
+                      <span className="text-lg font-medium text-gray-900 dark:text-white">
+                        {t('skills.addCategory', 'Pridať kategóriu')}
+                      </span>
                       <span className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
                         {t('skills.addCategoryHint', 'Pridaj si kategóriu, ktorá ťa vystihuje.')}
                       </span>
                     </div>
-                    <button 
-                      type="button" 
-                      onClick={onAddCategory} 
-                      className="flex-shrink-0 ml-4 p-2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                    <button
+                      type="button"
+                      onClick={onAddCategory}
+                      className="flex-shrink-0 p-2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:bg-gray-300 transition-colors"
                     >
                       {customCategories && customCategories.length > 0 ? (
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        <svg
+                          className="w-6 h-6"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                          aria-hidden="true"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M12 4v16m8-8H4"
+                          />
                         </svg>
                       ) : (
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        <svg
+                          className="w-6 h-6"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                          aria-hidden="true"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M9 5l7 7-7 7"
+                          />
                         </svg>
                       )}
                     </button>
                   </div>
                 )}
+
                 {standardCategories && standardCategories.length > 0 && (
                   <div className="mt-6 w-full">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                       {standardCategories.map((item, index) => (
-                        <div key={item.id ?? `${item.category}-${item.subcategory}-${index}`} className="w-full">
+                        <div
+                          key={item.id ?? `${item.category}-${item.subcategory}-${index}`}
+                          className="w-full min-w-[260px]"
+                        >
                           {renderOfferCard(item, {
-                            onEdit: onEditStandardCategoryDescription ? () => onEditStandardCategoryDescription(index) : undefined,
-                            onRemove: onRemoveStandardCategory ? () => onRemoveStandardCategory(index) : undefined,
+                            onEdit: onEditStandardCategoryDescription
+                              ? () => onEditStandardCategoryDescription(index)
+                              : undefined,
+                            onRemove: onRemoveStandardCategory
+                              ? () => onRemoveStandardCategory(index)
+                              : undefined,
                           })}
                         </div>
                       ))}
                     </div>
                   </div>
                 )}
+
                 {customCategories && customCategories.length > 0 && (
                   <div className="mt-6 w-full">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                       {customCategories.map((customCategory, index) => (
-                        <div key={index} className="w-full">
+                        <div key={index} className="w-full min-w-[260px]">
                           {renderOfferCard(customCategory, {
-                            onEdit: onEditCustomCategoryDescription ? () => onEditCustomCategoryDescription(index) : undefined,
-                            onRemove: onRemoveCustomCategory ? () => onRemoveCustomCategory(index) : undefined,
+                            onEdit: onEditCustomCategoryDescription
+                              ? () => onEditCustomCategoryDescription(index)
+                              : undefined,
+                            onRemove: onRemoveCustomCategory
+                              ? () => onRemoveCustomCategory(index)
+                              : undefined,
                           })}
                         </div>
                       ))}
@@ -244,7 +328,6 @@ export default function SkillsScreen({ title, firstOptionText, onFirstOptionClic
                 )}
               </>
             )}
-            </div>
           </div>
         </div>
       </div>

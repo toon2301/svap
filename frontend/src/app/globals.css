@@ -35,6 +35,11 @@
   --input: var(--gray-100);
   --ring: var(--primary);
   
+  /* Fluid typography */
+  --font-heading: clamp(18px, 1.4vw, 22px);
+  --font-body: clamp(14px, 1vw, 16px);
+  --font-small: clamp(12px, 0.8vw, 14px);
+  
   /* Shadows */
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
   --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
@@ -69,8 +74,9 @@ html,
 body {
   margin: 0;
   padding: 0;
-  overflow: hidden;
   max-width: 100vw;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 body {
@@ -85,6 +91,42 @@ a {
 }
 
 /* Font styles - using Inter from layout.tsx */
+
+.text-heading {
+  font-size: var(--font-heading);
+}
+
+.text-body {
+  font-size: var(--font-body);
+}
+
+.text-small {
+  font-size: var(--font-small);
+}
+
+/* Centered main content column (similar to FB/IG feed) */
+.main-column {
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-inline: clamp(16px, 3vw, 24px);
+}
+
+@media (max-width: 1280px) {
+  .main-column {
+    padding-inline: clamp(12px, 2.4vw, 20px);
+  }
+}
+
+/* Base button sizing */
+button {
+  min-height: 36px;
+  font-size: var(--font-body);
+}
+
+.btn-padding {
+  padding-inline: clamp(8px, 1vw, 14px);
+}
 
 /* Modern professional components */
 .modern-card {

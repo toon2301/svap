@@ -41,7 +41,8 @@ export default function DashboardLayout({
   onSidebarAccountTypeClick,
   children,
 }: DashboardLayoutProps) {
-  const isMobileEditMode = isRightSidebarOpen && activeModule === 'profile' && activeRightItem === 'edit-profile';
+  const isMobileEditMode =
+    isRightSidebarOpen && activeModule === 'profile' && activeRightItem === 'edit-profile';
 
   return (
     <div className="h-screen bg-[var(--background)] text-[var(--foreground)] flex overflow-hidden">
@@ -73,18 +74,15 @@ export default function DashboardLayout({
         onAccountTypeClick={onSidebarAccountTypeClick}
       />
 
-      <div className="flex-1 lg:ml-1 overflow-y-auto">
-        <main className="p-6 pt-16 pb-24 lg:p-8 lg:pt-8">
-          {/* Pre väčšinu modulov používame spoločný kontajner,
-              profil má vlastný layout vo svojom module. */}
-          {activeModule === 'profile' ? (
-            children
-          ) : (
-            <div className="w-full max-w-full lg:max-w-6xl xl:max-w-7xl mx-auto px-2">{children}</div>
-          )}
+      <div className="flex-1 overflow-y-auto">
+        <main className="pt-16 pb-24 px-4 sm:px-6 lg:px-8 lg:pt-8">
+          <div className="main-column">
+            {children}
+          </div>
         </main>
       </div>
 
+      {/* Pravý panel – skrytý na šírkach < 1024px */}
       <div className="hidden lg:block fixed right-0 top-0 h-screen z-30">
         <RightSidebar
           isOpen={isRightSidebarOpen}
