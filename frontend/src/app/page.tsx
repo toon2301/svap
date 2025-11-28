@@ -95,55 +95,46 @@ export default function Home() {
         <ParticlesBackground />
       </Suspense>
 
-      <div className="flex-1 relative z-10 py-12 lg:py-16">
-        <div className="main-column flex flex-col-reverse lg:flex-row items-center lg:items-start gap-10 lg:gap-16">
-          {/* Hero text */}
-          <motion.div
-            className="flex-1 w-full max-lg:text-center space-y-6"
+      <div className="flex items-center justify-center flex-1 px-8 max-lg:flex-col max-lg:px-4 max-lg:gap-8 relative z-10" style={{paddingTop: '40px'}}>
+        {/* Main content */}
+        <motion.div 
+          className="flex-1 max-w-4xl max-lg:text-center mt-[-72px] lg:mt-[-100px]"
+          initial={{ opacity: 0, x: -50 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
+        >
+          <motion.div 
+            ref={headerGroupRef}
+            className="text-8xl font-bold text-gray-900 dark:text-white max-lg:text-5xl flex items-center flex-wrap max-lg:flex-nowrap max-lg:justify-center max-lg:gap-0"
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            style={{ transformOrigin: 'center center', scale: isMobile ? mobileScale : 1 }}
+            transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
+          >
+            <span 
+              className={`text-6xl max-lg:text-[clamp(26px,7vw,36px)] whitespace-nowrap max-lg:mt-1 max-lg:mr-1`}
+              lang={locale}
+            >
+              {t('homepage.welcome', 'Víta ťa')}
+            </span>
+            <img
+              src="/Logotyp _svaply_ na fialovom pozadí.png"
+              alt="Svaply"
+              className={`w-auto h-56 md:h-60 lg:h-[450px] mt-2 lg:mt-[20px] ml-[-40px] lg:ml-[-50px] max-lg:ml-[-20px] max-lg:h-auto max-lg:mt-2.5 max-lg:w-[clamp(160px,40vw,240px)]`}
+            />
+          </motion.div>
+          <motion.p 
+            className={`text-xl text-gray-600 dark:text-gray-300 text-left max-w-3xl leading-relaxed max-lg:text-xs max-lg:mx-auto max-lg:max-w-xs mb-0 lg:mt-[-130px] max-lg:mt-[-45px]`}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, ease: 'easeOut' }}
+            transition={{ duration: 0.6, delay: 0.5, ease: "easeOut" }}
           >
-            <motion.div
-              ref={headerGroupRef}
-              className="flex items-center flex-wrap max-lg:flex-nowrap max-lg:justify-center max-lg:gap-1 text-gray-900 dark:text-white"
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              style={{ transformOrigin: 'center center', scale: isMobile ? mobileScale : 1 }}
-              transition={{ duration: 0.8, delay: 0.2, ease: 'easeOut' }}
-            >
-              <span className="text-heading font-semibold whitespace-nowrap" lang={locale}>
-                {t('homepage.welcome', 'Víta ťa')}
-              </span>
-              <img
-                src="/Logotyp _svaply_ na fialovom pozadí.png"
-                alt="Svaply"
-                className="w-auto h-28 md:h-40 lg:h-48 ml-4 max-lg:h-[clamp(80px,20vw,120px)]"
-              />
-            </motion.div>
-            <motion.p
-              className="text-body text-gray-600 dark:text-gray-300 leading-relaxed max-w-3xl max-lg:mx-auto"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.5, ease: 'easeOut' }}
-            >
-              {t(
-                'homepage.description',
-                '„Miesto, kde sa stretávajú ľudia s túžbou rásť – jedni učia, druhí sa učia, všetci spolu tvoria silnejšiu komunitu."',
-              )}
-            </motion.p>
-          </motion.div>
+            {t('homepage.description', '„Miesto, kde sa stretávajú ľudia s túžbou rásť – jedni učia, druhí sa učia, všetci spolu tvoria silnejšiu komunitu."')}
+          </motion.p>
+        </motion.div>
 
-          {/* Login modul */}
-          <motion.div
-            className="w-full max-w-md"
-            initial={{ opacity: 0, x: 50 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6, delay: 0.4, ease: 'easeOut' }}
-          >
-            <LoginForm />
-          </motion.div>
-        </div>
+        {/* Login module */}
+        <LoginForm />
       </div>
 
       {/* Footer - Lazy loaded s mobilnou optimalizáciou */}
