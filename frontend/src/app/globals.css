@@ -118,6 +118,26 @@ a {
   }
 }
 
+/* Profile module - wider on large screens */
+.main-column.profile-column {
+  max-width: 1200px;
+}
+
+@media (min-width: 1441px) {
+  .main-column.profile-column {
+    margin-left: auto;
+    margin-right: 120px;
+  }
+}
+
+@media (max-width: 1440px) {
+  .main-column.profile-column {
+    max-width: 920px;
+    margin-left: 280px;
+    margin-right: 0;
+  }
+}
+
 /* Base button sizing */
 button {
   min-height: 36px;

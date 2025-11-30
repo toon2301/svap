@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { User } from '../../../../types';
 import { useLanguage } from '@/contexts/LanguageContext';
 import UserAvatar from './UserAvatar';
@@ -44,10 +44,28 @@ export default function ProfileDesktopView({
   onOpenAllWebsitesModal,
 }: ProfileDesktopViewProps) {
   const { t } = useLanguage();
+  const [isSmallDesktop, setIsSmallDesktop] = useState(false);
+
+  useEffect(() => {
+    const checkSmallDesktop = () => {
+      const width = window.innerWidth;
+      // Malé desktopy: 1024px < width <= 1440px (napr. 1280×720, 1366×768)
+      setIsSmallDesktop(width > 1024 && width <= 1440);
+    };
+    
+    checkSmallDesktop();
+    window.addEventListener('resize', checkSmallDesktop);
+    return () => window.removeEventListener('resize', checkSmallDesktop);
+  }, []);
 
   return (
     <div className="hidden lg:block w-full">
-      <div className="flex flex-col items-stretch w-full gap-6">
+      <div 
+        className="flex flex-col items-stretch w-full gap-6"
+        style={{
+          gap: isSmallDesktop ? '1rem' : undefined
+        }}
+      >
         {/* Pôvodný desktop obsah */}
         <div className="w-full">
           {isEditMode ? (
@@ -64,9 +82,20 @@ export default function ProfileDesktopView({
           ) : (
             // Normal profile view
             <>
-              <div className="flex flex-col gap-6 mb-6">
+              <div 
+                className="flex flex-col gap-6 mb-6"
+                style={{
+                  gap: isSmallDesktop ? '1rem' : undefined,
+                  marginBottom: isSmallDesktop ? '1rem' : undefined
+                }}
+              >
                 <div className="flex flex-col items-start w-full">
-                  <div className="flex gap-4 items-center">
+                  <div 
+                    className="flex gap-4 items-center"
+                    style={{
+                      gap: isSmallDesktop ? '0.75rem' : undefined
+                    }}
+                  >
                     <UserAvatar
                       user={displayUser}
                       size="large"
@@ -76,7 +105,12 @@ export default function ProfileDesktopView({
                     />
                     <div className="flex flex-col">
                       {/* Meno používateľa */}
-                      <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-1">
+                      <h2 
+                        className="text-xl font-semibold text-gray-900 dark:text-white mb-1"
+                        style={{
+                          fontSize: isSmallDesktop ? '1.125rem' : undefined
+                        }}
+                      >
                         {`${(displayUser.first_name || '').trim()} ${(displayUser.last_name || '').trim()}`.trim() ||
                           displayUser.username}
                       </h2>
@@ -176,7 +210,13 @@ export default function ProfileDesktopView({
                     </div>
                   </div>
                   {/* Tlačidlá pod fotkou */}
-                  <div className="flex gap-2 mt-3">
+                  <div 
+                    className="flex gap-2 mt-3"
+                    style={{
+                      gap: isSmallDesktop ? '0.5rem' : undefined,
+                      marginTop: isSmallDesktop ? '0.75rem' : undefined
+                    }}
+                  >
                     <button
                       onClick={() => {
                         if (onEditProfileClick) {
@@ -187,6 +227,11 @@ export default function ProfileDesktopView({
                         }
                       }}
                       className="flex-1 px-4 lg:px-8 xl:px-16 2xl:px-32 py-2 text-sm bg-purple-100 text-purple-800 border border-purple-200 rounded-2xl transition-colors hover:bg-purple-200 whitespace-nowrap"
+                      style={{
+                        paddingLeft: isSmallDesktop ? '5rem' : undefined,
+                        paddingRight: isSmallDesktop ? '5rem' : undefined,
+                        minWidth: '200px'
+                      }}
                     >
                       {t('profile.editProfile')}
                     </button>
@@ -201,13 +246,24 @@ export default function ProfileDesktopView({
                         }
                       }}
                       className="flex-1 px-4 lg:px-8 xl:px-16 2xl:px-32 py-2 text-sm bg-purple-100 text-purple-800 border border-purple-200 rounded-2xl transition-colors hover:bg-purple-200 whitespace-nowrap"
+                      style={{
+                        paddingLeft: isSmallDesktop ? '5rem' : undefined,
+                        paddingRight: isSmallDesktop ? '5rem' : undefined,
+                        minWidth: '200px'
+                      }}
                     >
                       {t('profile.skills', 'Služby a ponuky')}
                     </button>
                   </div>
                 </div>
                 {/* Ikonová navigácia sekcií profilu */}
-                <div className="mt-3 w-full lg:mt-6 lg:pb-4">
+                <div 
+                  className="mt-3 w-full lg:mt-6 lg:pb-4"
+                  style={{
+                    marginTop: isSmallDesktop ? '0.75rem' : undefined,
+                    paddingBottom: isSmallDesktop ? '0.5rem' : undefined
+                  }}
+                >
                   <div
                     role="tablist"
                     aria-label="Sekcie profilu"
@@ -231,6 +287,11 @@ export default function ProfileDesktopView({
                             ? 'bg-gradient-to-t from-purple-100 to-transparent text-purple-700 dark:from-purple-100 dark:to-purple-100/40 dark:text-purple-800'
                             : 'text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-[#111214]',
                         ].join(' ')}
+                        style={{
+                          paddingTop: isSmallDesktop ? '0.5rem' : undefined,
+                          paddingBottom: isSmallDesktop ? '0.5rem' : undefined,
+                          minWidth: isSmallDesktop ? '60px' : undefined
+                        }}
                       >
                         {/* Icon: handshake */}
                         <svg
@@ -240,6 +301,10 @@ export default function ProfileDesktopView({
                           stroke="currentColor"
                           strokeWidth="1.4"
                           className="w-5 h-5"
+                          style={{
+                            width: isSmallDesktop ? '1rem' : undefined,
+                            height: isSmallDesktop ? '1rem' : undefined
+                          }}
                         >
                           <path
                             strokeLinecap="round"
@@ -269,6 +334,11 @@ export default function ProfileDesktopView({
                             ? 'bg-gradient-to-t from-purple-100 to-transparent text-purple-700 dark:from-purple-100 dark:to-purple-100/40 dark:text-purple-800'
                             : 'text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-[#111214]',
                         ].join(' ')}
+                        style={{
+                          paddingTop: isSmallDesktop ? '0.5rem' : undefined,
+                          paddingBottom: isSmallDesktop ? '0.5rem' : undefined,
+                          minWidth: isSmallDesktop ? '60px' : undefined
+                        }}
                       >
                         {/* Icon: briefcase */}
                         <svg
@@ -278,6 +348,10 @@ export default function ProfileDesktopView({
                           stroke="currentColor"
                           strokeWidth="1.8"
                           className="w-6 h-6"
+                          style={{
+                            width: isSmallDesktop ? '1.125rem' : undefined,
+                            height: isSmallDesktop ? '1.125rem' : undefined
+                          }}
                         >
                           <path
                             strokeLinecap="round"
@@ -306,6 +380,11 @@ export default function ProfileDesktopView({
                             ? 'bg-gradient-to-t from-purple-100 to-transparent text-purple-700 dark:from-purple-100 dark:to-purple-100/40 dark:text-purple-800'
                             : 'text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-[#111214]',
                         ].join(' ')}
+                        style={{
+                          paddingTop: isSmallDesktop ? '0.5rem' : undefined,
+                          paddingBottom: isSmallDesktop ? '0.5rem' : undefined,
+                          minWidth: isSmallDesktop ? '60px' : undefined
+                        }}
                       >
                         {/* Icon: squares-2x2 */}
                         <svg
@@ -315,6 +394,10 @@ export default function ProfileDesktopView({
                           stroke="currentColor"
                           strokeWidth="1.8"
                           className="w-6 h-6"
+                          style={{
+                            width: isSmallDesktop ? '1.125rem' : undefined,
+                            height: isSmallDesktop ? '1.125rem' : undefined
+                          }}
                         >
                           <path
                             strokeLinecap="round"
@@ -343,6 +426,11 @@ export default function ProfileDesktopView({
                             ? 'bg-gradient-to-t from-purple-100 to-transparent text-purple-700 dark:from-purple-100 dark:to-purple-100/40 dark:text-purple-800'
                             : 'text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-[#111214]',
                         ].join(' ')}
+                        style={{
+                          paddingTop: isSmallDesktop ? '0.5rem' : undefined,
+                          paddingBottom: isSmallDesktop ? '0.5rem' : undefined,
+                          minWidth: isSmallDesktop ? '60px' : undefined
+                        }}
                       >
                         {/* Icon: at-symbol */}
                         <svg
@@ -352,6 +440,10 @@ export default function ProfileDesktopView({
                           stroke="currentColor"
                           strokeWidth="1.8"
                           className="w-6 h-6"
+                          style={{
+                            width: isSmallDesktop ? '1.125rem' : undefined,
+                            height: isSmallDesktop ? '1.125rem' : undefined
+                          }}
                         >
                           <path
                             strokeLinecap="round"

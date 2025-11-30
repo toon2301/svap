@@ -76,7 +76,7 @@ export default function DashboardLayout({
 
       <div className="flex-1 overflow-y-auto">
         <main className="pt-16 pb-24 px-4 sm:px-6 lg:px-8 lg:pt-8">
-          <div className="main-column">
+          <div className={`main-column ${activeModule === 'profile' ? 'profile-column' : ''}`}>
             {children}
           </div>
         </main>

@@ -60,6 +60,7 @@ export default function RegisterForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [isSmallDesktop, setIsSmallDesktop] = useState(false);
   const [registrationSuccess, setRegistrationSuccess] = useState(false);
   
   // Smart validácia - email availability
@@ -75,7 +76,10 @@ export default function RegisterForm() {
 
   useEffect(() => {
     const checkMobile = () => {
-      setIsMobile(window.innerWidth <= 768);
+      const width = window.innerWidth;
+      setIsMobile(width <= 768);
+      // Malé desktopy: 768px < width <= 1440px (napr. 1280×720, 1366×768)
+      setIsSmallDesktop(width > 768 && width <= 1440);
     };
     
     checkMobile();
@@ -432,20 +436,24 @@ export default function RegisterForm() {
           className="bg-white dark:bg-black rounded-2xl shadow-xl border border-gray-200 dark:border-gray-800"
           style={{
             width: isMobile ? '100%' : '100%',
-            maxWidth: isMobile ? '600px' : '580px'
+            maxWidth: isMobile ? '600px' : (isSmallDesktop ? '480px' : '580px')
           }}
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
         >
           <div style={{
-            marginLeft: isMobile ? '24px' : '32px', 
-            marginRight: isMobile ? '24px' : '32px', 
-            marginTop: '24px', 
-            marginBottom: '24px'
+            marginLeft: isMobile ? '24px' : (isSmallDesktop ? '20px' : '32px'), 
+            marginRight: isMobile ? '24px' : (isSmallDesktop ? '20px' : '32px'), 
+            marginTop: isMobile ? '24px' : (isSmallDesktop ? '20px' : '24px'), 
+            marginBottom: isMobile ? '24px' : (isSmallDesktop ? '20px' : '24px')
           }}>
             <motion.h1 
               className="text-3xl font-medium text-center mb-6 text-black dark:text-white tracking-wider max-lg:text-2xl max-lg:mb-8"
+              style={{
+                fontSize: isSmallDesktop ? '1.5rem' : undefined,
+                marginBottom: isSmallDesktop ? '1rem' : undefined
+              }}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.2 }}
@@ -650,44 +658,36 @@ export default function RegisterForm() {
       {/* Footer - Lazy loaded s mobilnou optimalizáciou - skrytý na mobile */}
       <div className="hidden lg:block">
         <Suspense fallback={
-          <div className="h-32 bg-gray-50 border-t border-gray-200">
+          <div className="h-32 bg-gray-50 dark:bg-black border-t border-gray-200 dark:border-gray-800">
             {/* Desktop fallback */}
           </div>
         }>
           <motion.footer 
-            className="bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 relative z-10"
+            className="bg-gray-50 dark:bg-black border-t border-gray-200 dark:border-gray-800 relative z-10"
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 1.2 }}
         >
-        <div className="flex justify-center">
-          <div className="max-w-full max-lg:px-4" style={{paddingTop: '80px', paddingBottom: '80px'}}>
-            <div className="flex flex-wrap justify-center gap-6 text-center max-lg:gap-3">
-              <a href="#" className="text-gray-600 dark:text-gray-400 hover:text-purple-800 dark:hover:text-purple-400 transition-colors max-lg:text-sm">{t('footer.howItWorks')}</a>
-              <a href="#" className="text-gray-600 dark:text-gray-400 hover:text-purple-800 dark:hover:text-purple-400 transition-colors max-lg:text-sm">{t('footer.forIndividuals')}</a>
-              <a href="#" className="text-gray-600 dark:text-gray-400 hover:text-purple-800 dark:hover:text-purple-400 transition-colors max-lg:text-sm">{t('footer.forCompanies')}</a>
-              <a href="#" className="text-gray-600 dark:text-gray-400 hover:text-purple-800 dark:hover:text-purple-400 transition-colors max-lg:text-sm">{t('footer.forSchools')}</a>
-              <a href="#" className="text-gray-600 dark:text-gray-400 hover:text-purple-800 dark:hover:text-purple-400 transition-colors max-lg:text-sm">{t('footer.help')}</a>
-              <a href="#" className="text-gray-600 dark:text-gray-400 hover:text-purple-800 dark:hover:text-purple-400 transition-colors max-lg:text-sm">{t('footer.faq')}</a>
-              <a href="#" className="text-gray-600 dark:text-gray-400 hover:text-purple-800 dark:hover:text-purple-400 transition-colors max-lg:text-sm">{t('footer.contact')}</a>
-              <a href="#" className="text-gray-600 dark:text-gray-400 hover:text-purple-800 dark:hover:text-purple-400 transition-colors max-lg:text-sm">{t('footer.reportIssue')}</a>
-              <a href="#" className="text-gray-600 dark:text-gray-400 hover:text-purple-800 dark:hover:text-purple-400 transition-colors max-lg:text-sm">{t('footer.aboutUs')}</a>
-              <a href="#" className="text-gray-600 dark:text-gray-400 hover:text-purple-800 dark:hover:text-purple-400 transition-colors max-lg:text-sm">{t('footer.termsOfUse')}</a>
-              <a href="#" className="text-gray-600 dark:text-gray-400 hover:text-purple-800 dark:hover:text-purple-400 transition-colors max-lg:text-sm">{t('footer.privacyPolicy')}</a>
-              <a href="#" className="text-gray-600 dark:text-gray-400 hover:text-purple-800 dark:hover:text-purple-400 transition-colors max-lg:text-sm">{t('footer.cookies')}</a>
-              <a href="#" className="text-gray-600 dark:text-gray-400 hover:text-purple-800 dark:hover:text-purple-400 transition-colors max-lg:text-sm">{t('footer.gdpr')}</a>
+          <div className="main-column py-8 lg:py-4 2xl:py-10">
+            <div className="flex flex-wrap justify-center gap-4 text-center text-small text-gray-600 dark:text-gray-300">
+              <a href="#" className="hover:text-purple-800 dark:hover:text-purple-400 transition-colors">{t('footer.howItWorks', 'Ako to funguje')}</a>
+              <a href="#" className="hover:text-purple-800 dark:hover:text-purple-400 transition-colors">{t('footer.forIndividuals', 'Pre jednotlivcov')}</a>
+              <a href="#" className="hover:text-purple-800 dark:hover:text-purple-400 transition-colors">{t('footer.forCompanies', 'Pre firmy')}</a>
+              <a href="#" className="hover:text-purple-800 dark:hover:text-purple-400 transition-colors">{t('footer.forSchools', 'Pre školy')}</a>
+              <a href="#" className="hover:text-purple-800 dark:hover:text-purple-400 transition-colors">{t('footer.help', 'Pomocník')}</a>
+              <a href="#" className="hover:text-purple-800 dark:hover:text-purple-400 transition-colors">{t('footer.faq', 'FAQ')}</a>
+              <a href="#" className="hover:text-purple-800 dark:hover:text-purple-400 transition-colors">{t('footer.contact', 'Kontakt')}</a>
+              <a href="#" className="hover:text-purple-800 dark:hover:text-purple-400 transition-colors">{t('footer.reportIssue', 'Nahlásiť problém')}</a>
+              <a href="#" className="hover:text-purple-800 dark:hover:text-purple-400 transition-colors">{t('footer.aboutUs', 'O nás')}</a>
+              <a href="#" className="hover:text-purple-800 dark:hover:text-purple-400 transition-colors">{t('footer.termsOfUse', 'Podmienky používania')}</a>
+              <a href="#" className="hover:text-purple-800 dark:hover:text-purple-400 transition-colors">{t('footer.privacyPolicy', 'Ochrana údajov')}</a>
+              <a href="#" className="hover:text-purple-800 dark:hover:text-purple-400 transition-colors">{t('footer.cookies', 'Cookies')}</a>
+              <a href="#" className="hover:text-purple-800 dark:hover:text-purple-400 transition-colors">{t('footer.gdpr', 'GDPR')}</a>
             </div>
-
-          {/* Spodná časť footeru */}
-          <div className="mt-12 pt-8 border-t border-gray-200 dark:border-gray-700 max-lg:mt-8 max-lg:pt-6">
-            <div className="flex flex-col md:flex-row justify-between items-center">
-            </div>
-            <div className="mt-4 text-center text-gray-500 dark:text-gray-400 text-sm max-lg:text-xs">
-              {t('footer.allRightsReserved')}
+            <div className="mt-8 border-t border-gray-200 dark:border-gray-800 pt-6 text-center text-small text-gray-500 dark:text-gray-400">
+              © 2024 Svaply. Všetky práva vyhradené.
             </div>
           </div>
-          </div>
-        </div>
       </motion.footer>
       </Suspense>
       </div>
