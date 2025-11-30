@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 export default function LanguageModule() {
@@ -8,6 +8,19 @@ export default function LanguageModule() {
   const [selectedLanguage, setSelectedLanguage] = useState(
     locale === 'en' ? 'angličtina' : locale === 'pl' ? 'poľština' : locale === 'cs' ? 'čeština' : locale === 'de' ? 'nemčina' : locale === 'hu' ? 'maďarčina' : 'slovenčina'
   );
+  const [isSmallDesktop, setIsSmallDesktop] = useState(false);
+
+  useEffect(() => {
+    const checkSmallDesktop = () => {
+      const width = window.innerWidth;
+      // Malé desktopy: 1024px < width <= 1440px (napr. 1280×720, 1366×768)
+      setIsSmallDesktop(width > 1024 && width <= 1440);
+    };
+    
+    checkSmallDesktop();
+    window.addEventListener('resize', checkSmallDesktop);
+    return () => window.removeEventListener('resize', checkSmallDesktop);
+  }, []);
 
   const languages = [
     'slovenčina',
@@ -23,8 +36,19 @@ export default function LanguageModule() {
       {/* Desktop layout */}
       <div className="text-[var(--foreground)]">
         <div className="hidden lg:flex items-start justify-center">
-          <div className="flex flex-col items-start w-full max-w-3xl mx-auto">
-            <div className="w-full ml-8 lg:ml-12">
+          <div 
+            className="flex flex-col items-start w-full mx-auto"
+            style={{
+              maxWidth: isSmallDesktop ? '520px' : '768px', // max-w-3xl = 768px
+              marginLeft: isSmallDesktop ? '120px' : undefined
+            }}
+          >
+            <div 
+              className="w-full"
+              style={{
+                marginLeft: isSmallDesktop ? '0' : undefined
+              }}
+            >
               <h2 className="text-2xl font-semibold text-gray-800 dark:text-white mb-6">
                 {t('language.title', 'Jazyk')}
               </h2>
@@ -35,11 +59,12 @@ export default function LanguageModule() {
                 {t('language.selectLanguage', 'Zvoľte si jazyk, v ktorom sa vám bude aplikácia najlepšie používať.')}
               </p>
             </div>
-            <div className="mt-6 w-full max-w-6xl mx-auto">
+            <div className="w-full max-w-6xl mx-auto" style={{ marginTop: isSmallDesktop ? '1rem' : '1.5rem' }}>
               <div className="border-t border-gray-200 dark:border-gray-700"></div>
             </div>
-            <div className="mt-8 w-full">
-              <div className="space-y-8 w-full max-w-lg mx-auto">
+            <div className="w-full" style={{ marginTop: isSmallDesktop ? '1rem' : '2rem' }}>
+              <div className="w-full mx-auto" style={{ maxWidth: isSmallDesktop ? '520px' : '512px', gap: isSmallDesktop ? '1rem' : undefined }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: isSmallDesktop ? '1rem' : '2rem' }}>
                 {languages.map((language) => (
                 <div key={language} className="flex items-center justify-between">
                   <span className="text-gray-800 dark:text-white text-sm font-medium">
@@ -82,6 +107,7 @@ export default function LanguageModule() {
                   </button>
                 </div>
                 ))}
+                </div>
               </div>
             </div>
           </div>

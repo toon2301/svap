@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { ChevronRightIcon } from '@heroicons/react/24/outline';
 
@@ -16,13 +16,37 @@ interface AccountTypeModuleProps {
 export default function AccountTypeModule({ accountType, setAccountType, setIsAccountTypeModalOpen, setIsPersonalAccountModalOpen }: AccountTypeModuleProps) {
   const { t } = useLanguage();
   const [isMobileModalOpen, setIsMobileModalOpen] = useState(false);
+  const [isSmallDesktop, setIsSmallDesktop] = useState(false);
+
+  useEffect(() => {
+    const checkSmallDesktop = () => {
+      const width = window.innerWidth;
+      // Malé desktopy: 1024px < width <= 1440px (napr. 1280×720, 1366×768)
+      setIsSmallDesktop(width > 1024 && width <= 1440);
+    };
+    
+    checkSmallDesktop();
+    window.addEventListener('resize', checkSmallDesktop);
+    return () => window.removeEventListener('resize', checkSmallDesktop);
+  }, []);
 
   return (
     <div className="text-[var(--foreground)]">
       {/* Desktop layout */}
       <div className="hidden lg:flex items-start justify-center">
-        <div className="flex flex-col items-start w-full max-w-3xl mx-auto">
-          <div className="w-full ml-8 lg:ml-12">
+        <div 
+          className="flex flex-col items-start w-full mx-auto"
+          style={{
+            maxWidth: isSmallDesktop ? '520px' : '768px', // max-w-3xl = 768px
+            marginLeft: isSmallDesktop ? '120px' : undefined
+          }}
+        >
+          <div 
+            className="w-full"
+            style={{
+              marginLeft: isSmallDesktop ? '0' : undefined
+            }}
+          >
             <h2 className="text-2xl font-semibold text-gray-800 dark:text-white mb-2">
               {t('rightSidebar.accountType', 'Typ účtu')}
             </h2>
@@ -30,9 +54,9 @@ export default function AccountTypeModule({ accountType, setAccountType, setIsAc
               {t('accountType.selectAccountType', 'Zvoľ typ účtu')}
             </p>
           </div>
-          <div className="mt-6 w-full max-w-6xl mx-auto"><div className="border-t border-gray-200 dark:border-gray-700" /></div>
+          <div className="w-full max-w-6xl mx-auto" style={{ marginTop: isSmallDesktop ? '1rem' : '1.5rem' }}><div className="border-t border-gray-200 dark:border-gray-700" /></div>
           {/* Obsah sekcie Typ účtu */}
-          <div className="mt-8 w-full max-w-lg mx-auto">
+          <div className="w-full mx-auto" style={{ maxWidth: isSmallDesktop ? '520px' : '512px', marginTop: isSmallDesktop ? '1rem' : '2rem' }}>
             <div className="space-y-4">
                   <button onClick={() => setIsPersonalAccountModalOpen(true)} className={`w-full py-4 px-6 rounded-lg transition-colors ${
                     accountType === 'personal' 

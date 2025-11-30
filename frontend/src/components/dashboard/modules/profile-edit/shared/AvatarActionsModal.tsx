@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import UserAvatar from '../../profile/UserAvatar';
 import { User } from '@/types';
 
@@ -15,10 +15,30 @@ interface AvatarActionsModalProps {
 }
 
 export default function AvatarActionsModal({ user, isOpen, onClose, onPhotoUpload, isUploading, onRemove, onAvatarClick }: AvatarActionsModalProps) {
+  const [isSmallDesktop, setIsSmallDesktop] = useState(false);
+
+  useEffect(() => {
+    const checkSmallDesktop = () => {
+      const width = window.innerWidth;
+      // Malé desktopy: 1024px < width <= 1440px (napr. 1280×720, 1366×768)
+      setIsSmallDesktop(width > 1024 && width <= 1440);
+    };
+    
+    checkSmallDesktop();
+    window.addEventListener('resize', checkSmallDesktop);
+    return () => window.removeEventListener('resize', checkSmallDesktop);
+  }, []);
+
   if (!isOpen) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 lg:bg-transparent" onClick={onClose}>
-      <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 w-[32rem] max-w-[90vw] lg:top-32 lg:translate-y-0 lg:ml-[-12rem]" onClick={(e) => e.stopPropagation()}>
+      <div 
+        className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 max-w-[90vw]" 
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          width: isSmallDesktop ? '24rem' : '32rem'
+        }}
+      >
         <div className="rounded-2xl bg-[var(--background)] text-[var(--foreground)] border border-[var(--border)] shadow-xl overflow-hidden">
           <div className="flex justify-center py-6">
             <UserAvatar 
