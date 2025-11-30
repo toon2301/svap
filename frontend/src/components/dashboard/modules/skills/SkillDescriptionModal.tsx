@@ -316,10 +316,15 @@ export default function SkillDescriptionModal({
           if (e.target === e.currentTarget) onClose();
         }}
       >
-        <div className="w-full max-w-2xl" onClick={(e) => e.stopPropagation()}>
-        <div className="rounded-2xl bg-[var(--background)] text-[var(--foreground)] border border-[var(--border)] shadow-xl overflow-visible">
-          <div className="flex items-center justify-between px-6 pt-6 pb-3">
-            <h2 className="text-xl font-semibold">{t('skills.describeSkillTitle', 'Opíš svoju službu/zručnosť')}</h2>
+        <div
+          className="w-full max-w-sm md:max-w-md 2xl:max-w-2xl"
+          onClick={(e) => e.stopPropagation()}
+        >
+        <div className="rounded-2xl bg-[var(--background)] text-[var(--foreground)] border border-[var(--border)] shadow-xl overflow-y-auto max-h-[80vh]">
+          <div className="flex items-center justify-between px-4 pt-4 pb-2 md:px-6 md:pt-6 md:pb-3">
+            <h2 className="text-lg md:text-xl font-semibold">
+              {t('skills.describeSkillTitle', 'Opíš svoju službu/zručnosť')}
+            </h2>
             <button 
               aria-label="Close" 
               onClick={onClose} 

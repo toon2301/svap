@@ -154,24 +154,24 @@ export default function OpeningHoursModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-2 sm:p-4"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+        className="w-full max-w-2xl max-w-[95vw] sm:max-w-2xl max-h-[75vh] lg:max-h-[70vh] xl:max-h-[85vh] sm:max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="rounded-2xl bg-[var(--background)] text-[var(--foreground)] border border-[var(--border)] shadow-2xl overflow-hidden">
-          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-800 bg-gradient-to-r from-purple-50/80 via-white to-transparent dark:from-purple-900/40 dark:via-[#0f0f10] dark:to-transparent">
+        <div className="rounded-2xl bg-[var(--background)] text-[var(--foreground)] border border-[var(--border)] shadow-2xl overflow-hidden opening-hours-compact-desktop">
+          <div className="flex items-center justify-between px-4 py-2 sm:px-6 sm:py-4 border-b border-gray-200 dark:border-gray-800 bg-gradient-to-r from-purple-50/80 via-white to-transparent dark:from-purple-900/40 dark:via-[#0f0f10] dark:to-transparent opening-hours-header">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-full bg-purple-100 dark:bg-purple-900/60 flex items-center justify-center text-purple-700 dark:text-purple-200 shadow-sm">
+              <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-full bg-purple-100 dark:bg-purple-900/60 flex items-center justify-center text-purple-700 dark:text-purple-200 shadow-sm">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
                   strokeWidth="1.6"
-                  className="w-5 h-5"
+                  className="w-4 h-4 sm:w-5 sm:h-5"
                 >
                   <path
                     strokeLinecap="round"
@@ -181,10 +181,10 @@ export default function OpeningHoursModal({
                 </svg>
               </div>
               <div className="flex flex-col">
-                <h2 className="text-lg font-semibold">
+                <h2 className="text-base sm:text-lg font-semibold">
                   {t('skills.openingHours.title', 'Otváracia doba')}
                 </h2>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
+                <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">
                   {t(
                     'skills.openingHours.subtitle',
                     'Nastav, kedy si dostupný pre zákazníkov.',
@@ -203,49 +203,49 @@ export default function OpeningHoursModal({
             </button>
           </div>
 
-          <div className="px-6 py-5 space-y-4">
-            <p className="text-sm text-gray-600 dark:text-gray-400">
+          <div className="px-4 py-2 sm:px-6 sm:py-5 space-y-2 sm:space-y-4 opening-hours-content">
+            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 leading-tight">
               {t(
                 'skills.openingHours.hint',
                 'Nastav otváraciu dobu pre každý deň v týždni. Môžeš nastaviť rôzne časy pre rôzne dni.',
               )}
             </p>
 
-            <div className="flex flex-wrap gap-2 pt-1">
-              <span className="text-xs font-medium text-gray-500 dark:text-gray-400 mr-1">
+            <div className="flex flex-wrap gap-1.5 sm:gap-2 pt-0.5 sm:pt-1 opening-hours-presets">
+              <span className="text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 mr-1">
                 {t('skills.openingHours.presets', 'Rýchle nastavenia:')}
               </span>
               <button
                 type="button"
                 onClick={() => applyPreset('workday_9_17')}
-                className="px-3 py-1.5 rounded-full text-xs font-medium bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-100 dark:bg-purple-900/30 dark:text-purple-200 dark:hover:bg-purple-900/50 dark:border-purple-800 transition-colors"
+                className="px-2 py-1 sm:px-3 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-medium bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-100 dark:bg-purple-900/30 dark:text-purple-200 dark:hover:bg-purple-900/50 dark:border-purple-800 transition-colors"
               >
                 {t('skills.openingHours.preset.workday_9_17', 'Po–Pi 9:00–17:00')}
               </button>
               <button
                 type="button"
                 onClick={() => applyPreset('workday_8_16')}
-                className="px-3 py-1.5 rounded-full text-xs font-medium bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200 dark:bg-gray-900/40 dark:text-gray-200 dark:hover:bg-gray-900/60 dark:border-gray-700 transition-colors"
+                className="px-2 py-1 sm:px-3 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-medium bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200 dark:bg-gray-900/40 dark:text-gray-200 dark:hover:bg-gray-900/60 dark:border-gray-700 transition-colors"
               >
                 {t('skills.openingHours.preset.workday_8_16', 'Po–Pi 8:00–16:00')}
               </button>
               <button
                 type="button"
                 onClick={() => applyPreset('nonstop')}
-                className="px-3 py-1.5 rounded-full text-xs font-medium bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200 dark:bg-gray-900/40 dark:text-gray-200 dark:hover:bg-gray-900/60 dark:border-gray-700 transition-colors"
+                className="px-2 py-1 sm:px-3 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-medium bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200 dark:bg-gray-900/40 dark:text-gray-200 dark:hover:bg-gray-900/60 dark:border-gray-700 transition-colors"
               >
                 {t('skills.openingHours.preset.nonstop', 'Nonstop (24/7)')}
               </button>
               <button
                 type="button"
                 onClick={() => applyPreset('weekend')}
-                className="px-3 py-1.5 rounded-full text-xs font-medium bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200 dark:bg-gray-900/40 dark:text-gray-200 dark:hover:bg-gray-900/60 dark:border-gray-700 transition-colors"
+                className="px-2 py-1 sm:px-3 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-medium bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200 dark:bg-gray-900/40 dark:text-gray-200 dark:hover:bg-gray-900/60 dark:border-gray-700 transition-colors"
               >
                 {t('skills.openingHours.preset.weekend', 'Len víkend')}
               </button>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-1.5 sm:space-y-3 opening-hours-days">
               {DAYS.map((day) => {
                 const dayData = openingHours[day.key];
                 const isEnabled = dayData?.enabled || false;
@@ -253,13 +253,13 @@ export default function OpeningHoursModal({
                 return (
                   <div
                     key={day.key}
-                    className={`flex items-center gap-4 p-3 rounded-xl border transition-all ${
+                    className={`flex items-center gap-2 sm:gap-4 p-1.5 sm:p-3 rounded-xl border transition-all opening-hours-day-row ${
                       isEnabled
                         ? 'border-purple-200 dark:border-purple-800 bg-purple-50/50 dark:bg-purple-900/10'
                         : 'border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/20'
                     }`}
                   >
-                    <div className="flex items-center gap-3 min-w-[160px]">
+                    <div className="flex items-center gap-2 sm:gap-3 min-w-[120px] sm:min-w-[160px]">
                       <button
                         type="button"
                         role="switch"
@@ -280,7 +280,7 @@ export default function OpeningHoursModal({
                       <button
                         type="button"
                         onClick={() => handleDayToggle(day.key)}
-                        className={`text-sm font-medium flex items-center gap-2 focus:outline-none ${
+                        className={`text-xs sm:text-sm font-medium flex items-center gap-1 sm:gap-2 focus:outline-none ${
                           isEnabled
                             ? 'text-gray-900 dark:text-white'
                             : 'text-gray-500 dark:text-gray-400'
@@ -292,35 +292,35 @@ export default function OpeningHoursModal({
                     </div>
                     {isEnabled && (
                       <>
-                        <div className="flex items-center gap-2 flex-1">
-                          <div className="flex items-center gap-2 flex-1">
-                            <label className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                        <div className="flex items-center gap-1 sm:gap-2 flex-1">
+                          <div className="flex items-center gap-1 sm:gap-2 flex-1">
+                            <label className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
                               {t('skills.openingHours.from', 'Od:')}
                             </label>
                             <input
                               type="time"
                               value={dayData?.from || '08:00'}
                               onChange={(e) => handleTimeChange(day.key, 'from', e.target.value)}
-                              className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-400 focus:border-transparent"
+                              className="flex-1 px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-400 focus:border-transparent"
                             />
                           </div>
-                          <span className="text-gray-400 dark:text-gray-500 mx-1">-</span>
-                          <div className="flex items-center gap-2 flex-1">
-                            <label className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                          <span className="text-gray-400 dark:text-gray-500 mx-0.5 sm:mx-1">-</span>
+                          <div className="flex items-center gap-1 sm:gap-2 flex-1">
+                            <label className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
                               {t('skills.openingHours.to', 'Do:')}
                             </label>
                             <input
                               type="time"
                               value={dayData?.to || '17:00'}
                               onChange={(e) => handleTimeChange(day.key, 'to', e.target.value)}
-                              className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-400 focus:border-transparent"
+                              className="flex-1 px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-400 focus:border-transparent"
                             />
                           </div>
                         </div>
                         <button
                           type="button"
                           onClick={() => handleCopyToAll(day.key)}
-                          className="px-3 py-1.5 text-xs font-medium text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/30 rounded-lg transition-colors whitespace-nowrap"
+                          className="px-2 py-0.5 sm:px-3 sm:py-1.5 text-[10px] sm:text-xs font-medium text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/30 rounded-lg transition-colors whitespace-nowrap"
                           title={t('skills.openingHours.copyToAll', 'Skopírovať na všetky dni')}
                         >
                           {t('skills.openingHours.copy', 'Kopírovať')}
@@ -333,14 +333,14 @@ export default function OpeningHoursModal({
             </div>
 
             {!hasAnyEnabled && (
-              <div className="text-center py-4 text-sm text-gray-500 dark:text-gray-400">
+              <div className="text-center py-2 sm:py-4 text-xs sm:text-sm text-gray-500 dark:text-gray-400">
                 {t('skills.openingHours.noDaysSelected', 'Vyber aspoň jeden deň a nastav otváraciu dobu.')}
               </div>
             )}
 
             {hasAnyEnabled && (
-              <div className="mt-2 rounded-xl bg-gray-50/80 dark:bg-[#111111] px-4 py-3 text-xs text-gray-600 dark:text-gray-300 border border-dashed border-gray-200 dark:border-gray-700">
-                <p className="font-medium mb-1">
+              <div className="mt-1.5 sm:mt-2 rounded-xl bg-gray-50/80 dark:bg-[#111111] px-3 py-1.5 sm:px-4 sm:py-3 text-[10px] sm:text-xs text-gray-600 dark:text-gray-300 border border-dashed border-gray-200 dark:border-gray-700 opening-hours-summary">
+                <p className="font-medium mb-0.5 sm:mb-1">
                   {t('skills.openingHours.summaryTitle', 'Zhrnutie otváracej doby')}
                 </p>
                 <p>
@@ -350,16 +350,16 @@ export default function OpeningHoursModal({
               </div>
             )}
 
-            <div className="flex gap-3 pt-2">
+            <div className="flex gap-2 sm:gap-3 pt-1.5 sm:pt-2 opening-hours-footer">
               <button
                 onClick={onClose}
-                className="flex-1 rounded-xl border border-gray-300 dark:border-gray-600 px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors"
+                className="flex-1 rounded-xl border border-gray-300 dark:border-gray-600 px-3 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors"
               >
                 {t('common.cancel', 'Zrušiť')}
               </button>
               <button
                 onClick={handleSave}
-                className="flex-1 rounded-xl bg-purple-600 text-white px-4 py-2 hover:bg-purple-700 transition-colors"
+                className="flex-1 rounded-xl bg-purple-600 text-white px-3 py-1 sm:px-4 sm:py-2 text-xs sm:text-sm hover:bg-purple-700 transition-colors"
               >
                 {t('common.save', 'Uložiť')}
               </button>

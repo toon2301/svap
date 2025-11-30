@@ -132,12 +132,12 @@ export default function DetailedDescriptionModal({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-2xl"
+        className="w-full max-w-md md:max-w-lg 2xl:max-w-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="rounded-2xl bg-[var(--background)] text-[var(--foreground)] border border-[var(--border)] shadow-2xl overflow-hidden">
-          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-800">
-            <h2 className="text-lg font-semibold">
+        <div className="rounded-2xl bg-[var(--background)] text-[var(--foreground)] border border-[var(--border)] shadow-2xl overflow-hidden max-h-[80vh] flex flex-col">
+          <div className="flex items-center justify-between px-4 py-3 md:px-6 md:py-4 border-b border-gray-200 dark:border-gray-800">
+            <h2 className="text-base md:text-lg font-semibold">
               {t('skills.detailedDescriptionTitle', 'Pridaj podrobný opis')}
             </h2>
             <button
@@ -151,7 +151,7 @@ export default function DetailedDescriptionModal({
             </button>
           </div>
 
-          <div className="px-6 py-5 space-y-4">
+          <div className="px-4 py-4 md:px-6 md:py-5 space-y-4 overflow-y-auto">
             <p className="text-sm text-gray-600 dark:text-gray-400">
               {t(
                 'skills.detailedDescriptionHint',
@@ -162,7 +162,7 @@ export default function DetailedDescriptionModal({
             <div className="relative">
               <textarea
                 ref={textareaRef}
-                rows={10}
+                rows={7}
                 value={value}
                 onChange={(e) => {
                   if (e.target.value.length <= MAX_LENGTH) {
@@ -170,7 +170,7 @@ export default function DetailedDescriptionModal({
                     setError('');
                   }
                 }}
-                className="w-full rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-black px-4 pt-3 pb-8 pr-20 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-400 focus:border-purple-400 resize-none overflow-y-auto subtle-scrollbar"
+                className="w-full rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-black px-4 pt-3 pb-8 pr-20 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-400 focus:border-purple-400 resize-none overflow-y-auto max-h-64 subtle-scrollbar"
               />
               <button
                 ref={emojiButtonRef}

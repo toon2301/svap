@@ -55,10 +55,11 @@ export default function TagsSection({ tags, onTagsChange, isOpen }: TagsSectionP
           <div className="relative inline-flex group">
             <button
               type="button"
-              className="w-4 h-4 rounded-full bg-gray-400 dark:bg-gray-500 text-white flex items-center justify-center hover:bg-gray-500 dark:hover:bg-gray-400 transition-colors cursor-help"
+              className="rounded-full bg-gray-400 dark:bg-gray-500 text-white flex items-center justify-center hover:bg-gray-500 dark:hover:bg-gray-400 transition-colors cursor-help"
+              style={{ width: '16px', height: '11px', minHeight: '11px', maxHeight: '11px' }}
               aria-label={t('skills.tagsInfo', 'Informácie o tagoch')}
             >
-              <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20">
+              <svg className="w-2 h-1.5" fill="currentColor" viewBox="0 0 20 20" style={{ height: '8px' }}>
                 <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
               </svg>
             </button>

@@ -237,26 +237,40 @@ export default function ProfileOffersSection({ activeTab, accountType = 'persona
                 setHoursPopoverPosition(null);
                 setActiveOpeningHours(null);
               } else {
-                const rect = event.currentTarget.getBoundingClientRect();
-                const popoverWidth = 260;
-                const popoverHeight = 200;
                 const viewportWidth = window.innerWidth;
                 const viewportHeight = window.innerHeight;
+                const isMobile = viewportWidth <= 640; // sm breakpoint
+                
+                let top: number;
+                let left: number;
 
-                let top = rect.bottom + 8;
-                let left = rect.left + rect.width / 2 - popoverWidth / 2;
+                if (isMobile) {
+                  // Na mobile: center modal
+                  const popoverWidth = Math.min(viewportWidth - 32, 320); // max 320px, s paddingom 16px na každú stranu
+                  const popoverHeight = 180; // zmenšená výška pre mobile
+                  top = (viewportHeight - popoverHeight) / 2;
+                  left = (viewportWidth - popoverWidth) / 2;
+                } else {
+                  // Na desktop: pozícia relatívne k tlačidlu
+                  const rect = event.currentTarget.getBoundingClientRect();
+                  const popoverWidth = 260;
+                  const popoverHeight = 200;
 
-                // Ak by popover pretiekol dole, zobraz ho nad tlačidlom
-                if (top + popoverHeight > viewportHeight - 8) {
-                  top = rect.top - popoverHeight - 8;
+                  top = rect.bottom + 8;
+                  left = rect.left + rect.width / 2 - popoverWidth / 2;
+
+                  // Ak by popover pretiekol dole, zobraz ho nad tlačidlom
+                  if (top + popoverHeight > viewportHeight - 8) {
+                    top = rect.top - popoverHeight - 8;
+                  }
+                  if (top < 8) top = 8;
+
+                  // Horizontálne ohraničenie
+                  if (left + popoverWidth > viewportWidth - 8) {
+                    left = viewportWidth - popoverWidth - 8;
+                  }
+                  if (left < 8) left = 8;
                 }
-                if (top < 8) top = 8;
-
-                // Horizontálne ohraničenie
-                if (left + popoverWidth > viewportWidth - 8) {
-                  left = viewportWidth - popoverWidth - 8;
-                }
-                if (left < 8) left = 8;
 
                 setActiveHoursOfferId(cardId);
                 setHoursPopoverPosition({ top, left });
@@ -595,7 +609,7 @@ export default function ProfileOffersSection({ activeTab, accountType = 'persona
         createPortal(
           <>
             <div
-              className="fixed inset-0 z-[9998] bg-black/20"
+              className="fixed inset-0 z-[9998] bg-black/40 sm:bg-black/20"
               onClick={() => {
                 setActiveHoursOfferId(null);
                 setHoursPopoverPosition(null);
@@ -604,19 +618,19 @@ export default function ProfileOffersSection({ activeTab, accountType = 'persona
             />
             <div
               data-opening-hours-popover
-              className="fixed z-[9999] w-64 max-w-xs rounded-2xl bg-white dark:bg-[#050507] border border-gray-200/70 dark:border-gray-700/60 shadow-xl p-3"
+              className="fixed z-[9999] w-[calc(100vw-2rem)] max-w-xs sm:w-64 sm:max-w-xs rounded-2xl bg-white dark:bg-[#050507] border border-gray-200/70 dark:border-gray-700/60 shadow-xl p-2.5 sm:p-3"
               style={{ top: hoursPopoverPosition.top, left: hoursPopoverPosition.left }}
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="flex items-center gap-2 mb-2">
-                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-300">
+              <div className="flex items-center gap-2 mb-1.5 sm:mb-2">
+                <div className="flex h-8 w-8 sm:h-7 sm:w-7 items-center justify-center rounded-lg bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-300 flex-shrink-0">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     fill="none"
                     viewBox="0 0 24 24"
                     strokeWidth="1.5"
                     stroke="currentColor"
-                    className="w-4 h-4"
+                    className="w-5 h-5 sm:w-4 sm:h-4"
                   >
                     <path
                       strokeLinecap="round"
@@ -625,13 +639,38 @@ export default function ProfileOffersSection({ activeTab, accountType = 'persona
                     />
                   </svg>
                 </div>
-                <div className="min-w-0">
-                  <div className="text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                <div className="min-w-0 flex-1">
+                  <div className="text-xs sm:text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
                     {t('skills.openingHours.title', 'Otváracie hodiny')}
                   </div>
                 </div>
+                {/* Tlačidlo na zatvorenie na mobile */}
+                <button
+                  onClick={() => {
+                    setActiveHoursOfferId(null);
+                    setHoursPopoverPosition(null);
+                    setActiveOpeningHours(null);
+                  }}
+                  className="sm:hidden flex h-8 w-8 items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400 transition-colors flex-shrink-0"
+                  aria-label="Zatvoriť"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth="2"
+                    stroke="currentColor"
+                    className="w-5 h-5"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </button>
               </div>
-              <div className="rounded-xl bg-gray-50/80 dark:bg-[#101012] border border-gray-200/70 dark:border-gray-700/60 px-3 py-2 max-h-48 overflow-y-auto subtle-scrollbar">
+              <div className="rounded-xl bg-gray-50/80 dark:bg-[#101012] border border-gray-200/70 dark:border-gray-700/60 px-3 sm:px-3 py-1.5 sm:py-2 max-h-20 sm:max-h-48 overflow-y-auto subtle-scrollbar">
                 {HOURS_DAYS.map((day) => {
                   const data = activeOpeningHours[day.key];
                   if (!data || !data.enabled) return null;
@@ -639,10 +678,10 @@ export default function ProfileOffersSection({ activeTab, accountType = 'persona
                   return (
                     <div
                       key={day.key}
-                      className="flex items-center justify-between text-xs text-gray-700 dark:text-gray-200 py-0.5"
+                      className="flex items-center justify-between text-sm sm:text-xs text-gray-700 dark:text-gray-200 py-0.5 sm:py-0.5"
                     >
-                      <span className="font-medium w-10">{day.shortLabel}</span>
-                      <span className="tabular-nums">
+                      <span className="font-medium w-12 sm:w-10">{day.shortLabel}</span>
+                      <span className="tabular-nums text-right">
                         {data.from || '—'} – {data.to || '—'}
                       </span>
                     </div>
@@ -652,7 +691,7 @@ export default function ProfileOffersSection({ activeTab, accountType = 'persona
                   const data = activeOpeningHours[d.key];
                   return data && data.enabled;
                 }) && (
-                  <div className="text-xs text-gray-500 dark:text-gray-400 text-center py-1.5">
+                  <div className="text-sm sm:text-xs text-gray-500 dark:text-gray-400 text-center py-2 sm:py-1.5">
                     {t(
                       'skills.openingHours.empty',
                       'Otváracie hodiny zatiaľ nie sú nastavené alebo je prevádzka zatvorená.'

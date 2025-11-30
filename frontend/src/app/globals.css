@@ -572,3 +572,146 @@ button:focus-visible {
 .dark .district-dropdown-scrollbar {
   scrollbar-color: rgba(75, 85, 99, 0.4) transparent;
 }
+
+/* Opening hours modal – compact layout ONLY for small desktop (1024px-1440px) */
+@media (min-width: 1024px) and (max-width: 1440px) {
+  .opening-hours-compact-desktop .opening-hours-header {
+    padding: 0.5rem 0.875rem !important;
+  }
+
+  .opening-hours-compact-desktop .opening-hours-header .w-7,
+  .opening-hours-compact-desktop .opening-hours-header .w-9 {
+    width: 1.25rem !important;
+    height: 1.25rem !important;
+  }
+
+  .opening-hours-compact-desktop .opening-hours-header .w-4,
+  .opening-hours-compact-desktop .opening-hours-header .w-5 {
+    width: 0.75rem !important;
+    height: 0.75rem !important;
+  }
+
+  .opening-hours-compact-desktop .opening-hours-header h2 {
+    font-size: 0.875rem !important;
+    line-height: 1.125rem !important;
+  }
+
+  .opening-hours-compact-desktop .opening-hours-header p {
+    font-size: 0.625rem !important;
+    line-height: 0.875rem !important;
+  }
+
+  .opening-hours-compact-desktop .opening-hours-content {
+    padding: 0.5rem 0.875rem 0.625rem 0.875rem !important;
+  }
+
+  .opening-hours-compact-desktop .opening-hours-content.space-y-2,
+  .opening-hours-compact-desktop .opening-hours-content.space-y-4 {
+    gap: 0.5rem !important;
+  }
+
+  .opening-hours-compact-desktop .opening-hours-content > p:first-child {
+    font-size: 0.625rem !important;
+    line-height: 1rem !important;
+    margin-bottom: 0.25rem !important;
+  }
+
+  .opening-hours-compact-desktop .opening-hours-presets {
+    gap: 0.375rem !important;
+    padding-top: 0 !important;
+    margin-top: 0.25rem !important;
+  }
+
+  .opening-hours-compact-desktop .opening-hours-presets > span {
+    font-size: 0.625rem !important;
+  }
+
+  .opening-hours-compact-desktop .opening-hours-presets button {
+    padding: 0.25rem 0.5rem !important;
+    font-size: 0.625rem !important;
+    line-height: 1rem !important;
+  }
+
+  .opening-hours-compact-desktop .opening-hours-days {
+    gap: 0.375rem !important;
+    margin-top: 0.5rem !important;
+  }
+
+  .opening-hours-compact-desktop .opening-hours-days.space-y-1\.5,
+  .opening-hours-compact-desktop .opening-hours-days.space-y-3 {
+    gap: 0.375rem !important;
+  }
+
+  .opening-hours-compact-desktop .opening-hours-day-row {
+    padding: 0.5rem 0.625rem !important;
+    gap: 0.5rem !important;
+  }
+
+  .opening-hours-compact-desktop .opening-hours-day-row > div:first-child {
+    min-width: 110px !important;
+  }
+
+  .opening-hours-compact-desktop .opening-hours-day-row button[role="switch"] {
+    height: 1.125rem !important;
+    width: 1.875rem !important;
+  }
+
+  .opening-hours-compact-desktop .opening-hours-day-row button[role="switch"] > span {
+    width: 0.6875rem !important;
+    height: 0.6875rem !important;
+  }
+
+  .opening-hours-compact-desktop .opening-hours-day-row button[role="switch"] > span.left-5 {
+    left: 1rem !important;
+  }
+
+  .opening-hours-compact-desktop .opening-hours-day-row > div:first-child button:not([role="switch"]) {
+    font-size: 0.625rem !important;
+    line-height: 1rem !important;
+  }
+
+  .opening-hours-compact-desktop .opening-hours-day-row label {
+    font-size: 0.625rem !important;
+    line-height: 1rem !important;
+  }
+
+  .opening-hours-compact-desktop .opening-hours-day-row input[type="time"] {
+    padding: 0.25rem 0.5rem !important;
+    font-size: 0.625rem !important;
+    line-height: 1rem !important;
+    height: 1.625rem !important;
+  }
+
+  .opening-hours-compact-desktop .opening-hours-day-row button.text-purple-600 {
+    padding: 0.25rem 0.5rem !important;
+    font-size: 0.625rem !important;
+  }
+
+  .opening-hours-compact-desktop .opening-hours-summary {
+    margin-top: 0.5rem !important;
+    padding: 0.5rem 0.625rem !important;
+  }
+
+  .opening-hours-compact-desktop .opening-hours-summary p {
+    font-size: 0.625rem !important;
+    line-height: 1rem !important;
+  }
+
+  .opening-hours-compact-desktop .opening-hours-footer {
+    padding-top: 0.5rem !important;
+    gap: 0.5rem !important;
+    margin-top: 0.5rem !important;
+  }
+
+  .opening-hours-compact-desktop .opening-hours-footer button {
+    padding: 0.375rem 0.75rem !important;
+    font-size: 0.625rem !important;
+    line-height: 1rem !important;
+  }
+
+  .opening-hours-compact-desktop .text-center {
+    padding: 0.5rem 0 !important;
+    font-size: 0.625rem !important;
+    line-height: 1rem !important;
+  }
+}
