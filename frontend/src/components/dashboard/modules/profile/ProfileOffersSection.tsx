@@ -453,20 +453,10 @@ export default function ProfileOffersSection({ activeTab, accountType = 'persona
                     <div className="relative">
                       <div className="p-3 flex flex-col h-52 border-t border-gray-200 dark:border-gray-700/50 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-[#0f0f10] dark:to-[#151518] overflow-hidden rounded-b-2xl">
                         <div className="flex-1 flex flex-col justify-start pt-1">
-                        <div 
-                          className="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide mb-1.5"
-                          style={{
-                            marginBottom: '0.125rem'
-                          }}
-                        >
+                        <div className="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide mb-1.5">
                           {t('skills.ratings', 'Hodnotenia')}
                         </div>
-                        <div 
-                          className="flex items-center gap-3 mb-1"
-                          style={{
-                            marginBottom: '0.125rem'
-                          }}
-                        >
+                        <div className="flex items-center gap-3 mb-1">
                           <div className="flex items-center gap-0.5">
                             {/* 3 plné hviezdičky */}
                             {[1, 2, 3].map((i) => (
@@ -515,9 +505,6 @@ export default function ProfileOffersSection({ activeTab, accountType = 'persona
                             type="button"
                             onClick={handleOpenHoursClick}
                             className="mt-1 inline-flex items-center gap-1.5 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-300 focus:outline-none"
-                            style={{
-                              marginTop: '0.125rem'
-                            }}
                           >
                             <span>{t('skills.openingHours.title', 'Otváracie hodiny')}</span>
                             <svg
@@ -542,9 +529,6 @@ export default function ProfileOffersSection({ activeTab, accountType = 'persona
                             // TODO: Implementovať otvorenie recenzií
                           }}
                           className="mt-3 flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 transition-colors cursor-pointer"
-                          style={{
-                            marginTop: '0.125rem'
-                          }}
                         >
                           <span>{t('skills.allReviews', 'Všetky recenzie')}</span>
                           <svg
@@ -562,12 +546,7 @@ export default function ProfileOffersSection({ activeTab, accountType = 'persona
                             />
                           </svg>
                         </button>
-                        <div 
-                          className="mt-2 flex items-center gap-1.5"
-                          style={{
-                            marginTop: '0.125rem'
-                          }}
-                        >
+                        <div className="mt-2 flex items-center gap-1.5">
                           <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
                             {t('skills.likes', 'Páči sa mi to')}
                           </span>
@@ -588,12 +567,7 @@ export default function ProfileOffersSection({ activeTab, accountType = 'persona
                           </span>
                         </div>
                         {offer.tags && offer.tags.length > 0 && (
-                          <div 
-                            className="mt-3 flex flex-wrap gap-1"
-                            style={{
-                              marginTop: '0.125rem'
-                            }}
-                          >
+                          <div className="mt-3 flex flex-wrap gap-1">
                             {offer.tags.map((tag, index) => (
                               <span
                                 key={index}

@@ -138,6 +138,21 @@ a {
   }
 }
 
+/* Skills modules (offer/search) - wider grid area on desktop */
+.main-column.skills-column {
+  max-width: 1200px;
+  margin-left: 505px;
+  margin-right: auto;
+}
+
+@media (min-width: 1024px) and (max-width: 1440px) {
+  .main-column.skills-column {
+    max-width: 1000px;
+    margin-left: 280px;
+    margin-right: 0;
+  }
+}
+
 /* Profile edit form column - centered on desktop */
 .profile-edit-column {
   max-width: 672px;
