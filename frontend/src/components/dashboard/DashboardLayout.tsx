@@ -41,8 +41,10 @@ export default function DashboardLayout({
   onSidebarAccountTypeClick,
   children,
 }: DashboardLayoutProps) {
-  const isMobileEditMode =
+  const isProfileEditMode =
     isRightSidebarOpen && activeModule === 'profile' && activeRightItem === 'edit-profile';
+
+  const isMobileEditMode = isProfileEditMode;
 
   return (
     <div className="h-screen bg-[var(--background)] text-[var(--foreground)] flex overflow-hidden">
@@ -76,7 +78,7 @@ export default function DashboardLayout({
 
       <div className="flex-1 overflow-y-auto">
         <main className="pt-16 pb-24 px-4 sm:px-6 lg:px-8 lg:pt-8">
-          <div className={`main-column ${activeModule === 'profile' ? 'profile-column' : ''}`}>
+          <div className={`main-column ${activeModule === 'profile' && !isProfileEditMode ? 'profile-column' : ''}`}>
             {children}
           </div>
         </main>

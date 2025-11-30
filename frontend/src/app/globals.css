@@ -138,10 +138,11 @@ a {
   }
 }
 
-/* Profile edit form column */
+/* Profile edit form column - centered on desktop */
 .profile-edit-column {
   max-width: 672px;
-  margin-left: 50px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 @media (min-width: 1024px) and (max-width: 1440px) {
