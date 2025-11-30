@@ -339,7 +339,8 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
       style={{
         width: isMobile ? '100%' : (isSmallDesktop ? '320px' : '500px'),
         maxWidth: isMobile ? '600px' : (isSmallDesktop ? '320px' : '500px'),
-        marginLeft: isMobile ? '0' : (isSmallDesktop ? '16px' : '50px')
+        marginLeft: isMobile ? '0' : (isSmallDesktop ? '-100px' : '50px'),
+        marginTop: isSmallDesktop ? '-40px' : undefined
       }}
       initial={{ opacity: 0, x: 50 }}
       animate={{ opacity: 1, x: 0 }}

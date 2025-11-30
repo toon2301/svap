@@ -103,7 +103,10 @@ export default function Home() {
         {/* Main content */}
         <motion.div 
           className="flex-1 max-w-4xl max-lg:text-center mt-[-72px] lg:mt-[-100px]"
-          style={{ marginTop: isSmallDesktop ? '0' : undefined }}
+          style={{ 
+            marginTop: isSmallDesktop ? '-180px' : undefined,
+            marginLeft: isSmallDesktop ? '-100px' : undefined
+          }}
           initial={{ opacity: 0, x: -50 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
@@ -135,7 +138,9 @@ export default function Home() {
             className={`text-xl text-gray-600 dark:text-gray-300 text-left max-w-3xl leading-relaxed max-lg:text-xs max-lg:mx-auto max-lg:max-w-xs mb-0 max-lg:mt-[-45px] 2xl:mt-[-130px]`}
             style={{
               fontSize: isSmallDesktop ? '1rem' : undefined,
-              marginTop: isSmallDesktop ? '-16px' : undefined,
+              marginTop: isSmallDesktop ? '-156px' : undefined,
+              marginLeft: isSmallDesktop ? '132px' : undefined,
+              maxWidth: isSmallDesktop ? '520px' : undefined,
             }}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
