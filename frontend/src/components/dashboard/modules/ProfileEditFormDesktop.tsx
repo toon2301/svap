@@ -52,6 +52,20 @@ export default function ProfileEditFormDesktop({
   const [isActionsOpen, setIsActionsOpen] = useState(false);
   const [uploadError, setUploadError] = useState('');
   const [mounted, setMounted] = useState(false);
+  const [isSmallDesktop, setIsSmallDesktop] = useState(false);
+
+  // Detekcia malého desktop rozlíšenia
+  useEffect(() => {
+    const checkSmallDesktop = () => {
+      const width = window.innerWidth;
+      // Malé desktopy: 1024px < width <= 1440px (napr. 1280×720, 1366×768)
+      setIsSmallDesktop(width > 1024 && width <= 1440);
+    };
+    
+    checkSmallDesktop();
+    window.addEventListener('resize', checkSmallDesktop);
+    return () => window.removeEventListener('resize', checkSmallDesktop);
+  }, []);
 
   // Aktualizácia stavu pri zmene user prop
   useEffect(() => {
@@ -395,7 +409,13 @@ export default function ProfileEditFormDesktop({
 
   return (
     <>
-      <div className="pt-4 pb-8 pl-0 text-[var(--foreground)] max-w-2xl">
+      <div 
+        className="pt-4 pb-8 pl-0 text-[var(--foreground)]"
+        style={{
+          maxWidth: isSmallDesktop ? '520px' : '672px', // max-w-2xl = 672px
+          marginLeft: isSmallDesktop ? '50px' : '50px'
+        }}
+      >
         <h2 className="text-2xl font-semibold text-gray-800 dark:text-white mb-6">
           {t('profile.editProfile', 'Upraviť profil')}
         </h2>
@@ -490,6 +510,10 @@ export default function ProfileEditFormDesktop({
                     className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 ${
                       icoVisible ? 'bg-purple-400 border border-purple-400' : 'bg-gray-300 dark:bg-gray-600'
                     }`}
+                    style={{
+                      transform: 'scaleY(0.8)',
+                      transformOrigin: 'left center',
+                    }}
                   >
                     <span
                       className={`absolute h-4 w-4 rounded-full bg-white shadow-sm transition-all duration-200 ease-in-out ${
@@ -529,6 +553,10 @@ export default function ProfileEditFormDesktop({
                   className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 ${
                     phoneVisible ? 'bg-purple-400 border border-purple-400' : 'bg-gray-300 dark:bg-gray-600'
                   }`}
+                  style={{
+                    transform: 'scaleY(0.8)',
+                    transformOrigin: 'left center',
+                  }}
                 >
                   <span
                     className={`absolute h-4 w-4 rounded-full bg-white shadow-sm transition-all duration-200 ease-in-out ${
@@ -594,6 +622,10 @@ export default function ProfileEditFormDesktop({
                   className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 ${
                     professionVisible ? 'bg-purple-400 border border-purple-400' : 'bg-gray-300 dark:bg-gray-600'
                   }`}
+                  style={{
+                    transform: 'scaleY(0.8)',
+                    transformOrigin: 'left center',
+                  }}
                 >
                   <span
                     className={`absolute h-4 w-4 rounded-full bg-white shadow-sm transition-all duration-200 ease-in-out ${

@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import MasterToggle from './MasterToggle';
 import Section from './Section';
 
@@ -42,20 +42,45 @@ interface DesktopProps {
 }
 
 export default function Desktop({ labels, state, setState, labelsCommon }: DesktopProps) {
+  const [isSmallDesktop, setIsSmallDesktop] = useState(false);
+
+  useEffect(() => {
+    const checkSmallDesktop = () => {
+      const width = window.innerWidth;
+      // Malé desktopy: 1024px < width <= 1440px (napr. 1280×720, 1366×768)
+      setIsSmallDesktop(width > 1024 && width <= 1440);
+    };
+    
+    checkSmallDesktop();
+    window.addEventListener('resize', checkSmallDesktop);
+    return () => window.removeEventListener('resize', checkSmallDesktop);
+  }, []);
+
   return (
     <div className="hidden lg:flex items-start justify-center text-[var(--foreground)]">
-      <div className="flex flex-col items-start w-full max-w-3xl mx-auto">
-        <div className="w-full ml-8 lg:ml-12">
+      <div 
+        className="flex flex-col items-start w-full mx-auto"
+        style={{
+          maxWidth: isSmallDesktop ? '520px' : '768px', // max-w-3xl = 768px
+          marginLeft: isSmallDesktop ? '120px' : undefined
+        }}
+      >
+        <div 
+          className="w-full"
+          style={{
+            marginLeft: isSmallDesktop ? '0' : undefined
+          }}
+        >
           <h2 className="text-2xl font-semibold text-gray-800 dark:text-white mb-6">{labels.title}</h2>
         </div>
 
-      <div className="mt-6 w-full max-w-lg mx-auto">
+      <div className="w-full mx-auto" style={{ maxWidth: isSmallDesktop ? '520px' : '512px', marginTop: isSmallDesktop ? '1rem' : '1.5rem' }}>
         <MasterToggle enabled={state.master} onChange={setState.setMaster} label={labels.turnOffAll} />
       </div>
 
-      <div className="mt-8 w-full max-w-6xl mx-auto"><div className="border-t border-gray-200 dark:border-gray-700" /></div>
+      <div className="w-full max-w-6xl mx-auto" style={{ marginTop: isSmallDesktop ? '1rem' : '2rem' }}><div className="border-t border-gray-200 dark:border-gray-700" /></div>
 
-      <div className="mt-6 w-full max-w-lg mx-auto">
+      <div className="w-full mx-auto" style={{ maxWidth: isSmallDesktop ? '520px' : '512px', marginTop: isSmallDesktop ? '1rem' : '1.5rem' }}>
         <Section
           title={labels.likes}
           description={labels.likesDesc}
@@ -69,9 +94,9 @@ export default function Desktop({ labels, state, setState, labelsCommon }: Deskt
         />
       </div>
 
-      <div className="mt-8 w-full max-w-6xl mx-auto"><div className="border-t border-gray-200 dark:border-gray-700" /></div>
+      <div className="w-full max-w-6xl mx-auto" style={{ marginTop: isSmallDesktop ? '1rem' : '2rem' }}><div className="border-t border-gray-200 dark:border-gray-700" /></div>
 
-      <div className="mt-6 w-full max-w-lg mx-auto">
+      <div className="w-full mx-auto" style={{ maxWidth: isSmallDesktop ? '520px' : '512px', marginTop: isSmallDesktop ? '1rem' : '1.5rem' }}>
         <Section
           title={labels.likesAndComments}
           description={labels.likesAndCommentsDesc}
@@ -85,9 +110,9 @@ export default function Desktop({ labels, state, setState, labelsCommon }: Deskt
         />
       </div>
 
-      <div className="mt-8 w-full max-w-6xl mx-auto"><div className="border-t border-gray-200 dark:border-gray-700" /></div>
+      <div className="w-full max-w-6xl mx-auto" style={{ marginTop: isSmallDesktop ? '1rem' : '2rem' }}><div className="border-t border-gray-200 dark:border-gray-700" /></div>
 
-      <div className="mt-6 w-full max-w-lg mx-auto">
+      <div className="w-full mx-auto" style={{ maxWidth: isSmallDesktop ? '520px' : '512px', marginTop: isSmallDesktop ? '1rem' : '1.5rem' }}>
         <Section
           title={labels.comments}
           description={labels.commentsDesc}
@@ -101,9 +126,9 @@ export default function Desktop({ labels, state, setState, labelsCommon }: Deskt
         />
       </div>
 
-      <div className="mt-8 w-full max-w-6xl mx-auto"><div className="border-t border-gray-200 dark:border-gray-700" /></div>
+      <div className="w-full max-w-6xl mx-auto" style={{ marginTop: isSmallDesktop ? '1rem' : '2rem' }}><div className="border-t border-gray-200 dark:border-gray-700" /></div>
 
-      <div className="mt-6 w-full max-w-lg mx-auto">
+      <div className="w-full mx-auto" style={{ maxWidth: isSmallDesktop ? '520px' : '512px', marginTop: isSmallDesktop ? '1rem' : '1.5rem' }}>
         <Section
           title={labels.likesForComments}
           description={labels.likesForCommentsDesc}
@@ -117,9 +142,9 @@ export default function Desktop({ labels, state, setState, labelsCommon }: Deskt
         />
       </div>
 
-      <div className="mt-8 w-full max-w-6xl mx-auto"><div className="border-t border-gray-200 dark:border-gray-700" /></div>
+      <div className="w-full max-w-6xl mx-auto" style={{ marginTop: isSmallDesktop ? '1rem' : '2rem' }}><div className="border-t border-gray-200 dark:border-gray-700" /></div>
 
-      <div className="mt-6 w-full max-w-lg mx-auto">
+      <div className="w-full mx-auto" style={{ maxWidth: isSmallDesktop ? '520px' : '512px', marginTop: isSmallDesktop ? '1rem' : '1.5rem' }}>
         <Section
           title={labels.skillRequest}
           description={labels.skillRequestDesc}

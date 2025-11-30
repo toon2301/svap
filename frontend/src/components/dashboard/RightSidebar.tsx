@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -56,6 +56,20 @@ export default function RightSidebar({
   isMobile = false 
 }: RightSidebarProps) {
   const { t } = useLanguage();
+  const [isSmallDesktop, setIsSmallDesktop] = useState(false);
+
+  useEffect(() => {
+    const checkSmallDesktop = () => {
+      const width = window.innerWidth;
+      // Malé desktopy: 1024px < width <= 1440px (napr. 1280×720, 1366×768)
+      setIsSmallDesktop(width > 1024 && width <= 1440);
+    };
+    
+    checkSmallDesktop();
+    window.addEventListener('resize', checkSmallDesktop);
+    return () => window.removeEventListener('resize', checkSmallDesktop);
+  }, []);
+
   const handleItemClick = (itemId: string) => {
     onItemClick(itemId);
     if (isMobile) {
@@ -162,11 +176,14 @@ export default function RightSidebar({
             
             {/* Mobile Right Sidebar */}
             <motion.div
-              initial={{ x: 384 }}
+              initial={{ x: isSmallDesktop ? 280 : 384 }}
               animate={{ x: 0 }}
-              exit={{ x: 384 }}
+              exit={{ x: isSmallDesktop ? 280 : 384 }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed right-0 top-0 h-full w-96 z-50"
+              className="fixed right-0 top-0 h-full z-50"
+              style={{
+                width: isSmallDesktop ? '280px' : '384px'
+              }}
             >
               {sidebarContent}
             </motion.div>
@@ -180,22 +197,25 @@ export default function RightSidebar({
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Overlay */}
+          {/* Overlay - hidden on desktop */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black bg-opacity-50 z-40"
+            className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
             onClick={onClose}
           />
           
           {/* Right Sidebar */}
           <motion.div
-            initial={{ x: 384 }}
+            initial={{ x: isSmallDesktop ? 280 : 384 }}
             animate={{ x: 0 }}
-            exit={{ x: 384 }}
+            exit={{ x: isSmallDesktop ? 280 : 384 }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="w-96 h-full relative z-50"
+            className="h-full relative z-50"
+            style={{
+              width: isSmallDesktop ? '280px' : '384px'
+            }}
           >
             {sidebarContent}
           </motion.div>
