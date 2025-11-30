@@ -138,6 +138,18 @@ a {
   }
 }
 
+/* Profile edit form column */
+.profile-edit-column {
+  max-width: 672px;
+  margin-left: 50px;
+}
+
+@media (min-width: 1024px) and (max-width: 1440px) {
+  .profile-edit-column {
+    max-width: 520px;
+  }
+}
+
 /* Base button sizing */
 button {
   min-height: 36px;
