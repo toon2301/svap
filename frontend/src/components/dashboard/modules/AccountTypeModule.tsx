@@ -16,7 +16,13 @@ interface AccountTypeModuleProps {
 export default function AccountTypeModule({ accountType, setAccountType, setIsAccountTypeModalOpen, setIsPersonalAccountModalOpen }: AccountTypeModuleProps) {
   const { t } = useLanguage();
   const [isMobileModalOpen, setIsMobileModalOpen] = useState(false);
-  const [isSmallDesktop, setIsSmallDesktop] = useState(false);
+  const [isSmallDesktop, setIsSmallDesktop] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const width = window.innerWidth;
+      return width > 1024 && width <= 1440;
+    }
+    return false;
+  });
 
   useEffect(() => {
     const checkSmallDesktop = () => {

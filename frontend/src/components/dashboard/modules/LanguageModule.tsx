@@ -8,7 +8,13 @@ export default function LanguageModule() {
   const [selectedLanguage, setSelectedLanguage] = useState(
     locale === 'en' ? 'angličtina' : locale === 'pl' ? 'poľština' : locale === 'cs' ? 'čeština' : locale === 'de' ? 'nemčina' : locale === 'hu' ? 'maďarčina' : 'slovenčina'
   );
-  const [isSmallDesktop, setIsSmallDesktop] = useState(false);
+  const [isSmallDesktop, setIsSmallDesktop] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const width = window.innerWidth;
+      return width > 1024 && width <= 1440;
+    }
+    return false;
+  });
 
   useEffect(() => {
     const checkSmallDesktop = () => {

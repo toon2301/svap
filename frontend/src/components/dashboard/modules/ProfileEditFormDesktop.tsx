@@ -52,7 +52,13 @@ export default function ProfileEditFormDesktop({
   const [isActionsOpen, setIsActionsOpen] = useState(false);
   const [uploadError, setUploadError] = useState('');
   const [mounted, setMounted] = useState(false);
-  const [isSmallDesktop, setIsSmallDesktop] = useState(false);
+  const [isSmallDesktop, setIsSmallDesktop] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const width = window.innerWidth;
+      return width > 1024 && width <= 1440;
+    }
+    return false;
+  });
 
   // Detekcia malého desktop rozlíšenia
   useEffect(() => {
@@ -413,7 +419,7 @@ export default function ProfileEditFormDesktop({
         className="pt-4 pb-8 pl-0 text-[var(--foreground)]"
         style={{
           maxWidth: isSmallDesktop ? '520px' : '672px', // max-w-2xl = 672px
-          marginLeft: isSmallDesktop ? '120px' : '50px'
+          marginLeft: isSmallDesktop ? '50px' : '50px'
         }}
       >
         <h2 className="text-2xl font-semibold text-gray-800 dark:text-white mb-6">
