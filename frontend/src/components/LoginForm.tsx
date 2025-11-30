@@ -36,6 +36,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
   const [isLoginLoading, setIsLoginLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [isSmallDesktop, setIsSmallDesktop] = useState(false);
   const [isResending, setIsResending] = useState(false);
   const [resendSuccess, setResendSuccess] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
@@ -47,8 +48,10 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
       const userAgent = navigator.userAgent;
       const isMobileUserAgent = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
       const isMobileDevice = width <= 768 || isMobileUserAgent;
-      
+
       setIsMobile(isMobileDevice);
+      // Malé desktop obrazovky: 768px < width <= 1440px (napr. 1280×720, 1366×768)
+      setIsSmallDesktop(!isMobileDevice && width <= 1440);
     };
     
     // Skús to s malým oneskorením
@@ -334,26 +337,26 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
     <motion.div 
       className="bg-white dark:bg-black rounded-2xl shadow-xl border border-gray-200 dark:border-gray-800"
       style={{
-        width: isMobile ? '100%' : '500px',
-        maxWidth: isMobile ? '600px' : '500px',
-        marginLeft: isMobile ? '0' : '50px'
+        width: isMobile ? '100%' : (isSmallDesktop ? '320px' : '500px'),
+        maxWidth: isMobile ? '600px' : (isSmallDesktop ? '320px' : '500px'),
+        marginLeft: isMobile ? '0' : (isSmallDesktop ? '16px' : '50px')
       }}
       initial={{ opacity: 0, x: 50 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.8, delay: 0.6, ease: "easeOut" }}
     >
       <div style={{
-        marginLeft: isMobile ? '24px' : '30px', 
-        marginRight: isMobile ? '24px' : '30px', 
-        marginTop: isMobile ? '30px' : '24px', 
-        marginBottom: isMobile ? '30px' : '24px'
+        marginLeft: isMobile ? '24px' : (isSmallDesktop ? '16px' : '30px'), 
+        marginRight: isMobile ? '24px' : (isSmallDesktop ? '16px' : '30px'), 
+        marginTop: isMobile ? '30px' : (isSmallDesktop ? '16px' : '24px'), 
+        marginBottom: isMobile ? '30px' : (isSmallDesktop ? '16px' : '24px')
       }}>
         
         <motion.h1 
           className="text-3xl font-medium mb-12 text-center tracking-wider max-lg:text-2xl max-lg:mb-8 text-black dark:text-white"
           style={{
-            fontSize: isMobile ? '24px' : '28px',
-            marginBottom: isMobile ? '32px' : '24px'
+            fontSize: isMobile ? '24px' : (isSmallDesktop ? '20px' : '28px'),
+            marginBottom: isMobile ? '32px' : (isSmallDesktop ? '16px' : '24px')
           }}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -429,7 +432,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
         <motion.form 
           className="space-y-5 max-lg:space-y-4"
           style={{
-            gap: isMobile ? '24px' : '20px'
+            gap: isMobile ? '24px' : (isSmallDesktop ? '12px' : '20px')
           }}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -462,7 +465,9 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
               backgroundColor: isLoginLoading ? '#A855F7' : '#7C3AED',
               opacity: isLoginLoading ? 0.8 : 1,
               boxShadow: '0 4px 15px rgba(139, 92, 246, 0.3)',
-              marginTop: isMobile ? '24px' : '20px'
+              marginTop: isMobile ? '24px' : (isSmallDesktop ? '12px' : '20px'),
+              fontSize: isSmallDesktop ? '14px' : undefined,
+              padding: isSmallDesktop ? '8px 16px' : undefined
             }}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -488,15 +493,15 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
         {/* Google prihlásenie */}
         <GoogleLoginBlock t={t} isGoogleLoading={isGoogleLoading} isLoginLoading={isLoginLoading} onGoogleLogin={handleGoogleLogin} />
 
-        <div className="text-center" style={{marginTop: isMobile ? '16px' : '12px'}}>
-          <p className="text-lg text-gray-500 dark:text-gray-400 max-lg:text-sm" style={{marginBottom: isMobile ? '12px' : '8px', fontSize: isMobile ? '20px' : '16px'}}>
-            <a href="/forgot-password" className="text-purple-700 dark:text-purple-400 hover:text-purple-600 dark:hover:text-purple-300 font-medium transition-colors max-lg:text-base">
+        <div className="text-center" style={{marginTop: isMobile ? '16px' : (isSmallDesktop ? '8px' : '12px')}}>
+          <p className="text-lg text-gray-500 dark:text-gray-400 max-lg:text-sm" style={{marginBottom: isMobile ? '12px' : (isSmallDesktop ? '6px' : '8px'), fontSize: isMobile ? '20px' : (isSmallDesktop ? '12px' : '16px')}}>
+            <a href="/forgot-password" className="text-purple-700 dark:text-purple-400 hover:text-purple-600 dark:hover:text-purple-300 font-medium transition-colors max-lg:text-base" style={{fontSize: isSmallDesktop ? '12px' : undefined}}>
               {t('auth.forgotPassword')}
             </a>
           </p>
-          <p className="text-xl text-gray-600 dark:text-gray-300 max-lg:text-base" style={{fontSize: isMobile ? '24px' : '18px'}}>
+          <p className="text-xl text-gray-600 dark:text-gray-300 max-lg:text-base" style={{fontSize: isMobile ? '24px' : (isSmallDesktop ? '14px' : '18px')}}>
             {t('auth.noAccount')}{' '}
-            <a href="/register" className="text-purple-800 dark:text-purple-400 font-semibold hover:text-purple-900 dark:hover:text-purple-300">
+            <a href="/register" className="text-purple-800 dark:text-purple-400 font-semibold hover:text-purple-900 dark:hover:text-purple-300" style={{fontSize: isSmallDesktop ? '14px' : undefined}}>
               {t('auth.register')}
             </a>
           </p>

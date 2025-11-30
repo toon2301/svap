@@ -18,6 +18,7 @@ export default function Home() {
   const headerGroupRef = useRef<HTMLDivElement | null>(null);
   const [mobileScale, setMobileScale] = useState(1);
   const [isMobile, setIsMobile] = useState(false);
+  const [isSmallDesktop, setIsSmallDesktop] = useState(false);
 
   useEffect(() => {
     const checkAuth = () => {
@@ -33,11 +34,14 @@ export default function Home() {
     checkAuth();
   }, [router]);
 
-  // Mobile detection (client only)
+  // Mobile + small desktop detection (client only)
   useEffect(() => {
     const update = () => {
       if (typeof window === 'undefined') return;
-      setIsMobile(window.innerWidth <= 1024);
+      const width = window.innerWidth;
+      setIsMobile(width <= 1024);
+      // Malé desktopy: 1024px < width <= 1440px (napr. 1280×720, 1366×768)
+      setIsSmallDesktop(width > 1024 && width <= 1440);
     };
     update();
     window.addEventListener('resize', update);
@@ -99,6 +103,7 @@ export default function Home() {
         {/* Main content */}
         <motion.div 
           className="flex-1 max-w-4xl max-lg:text-center mt-[-72px] lg:mt-[-100px]"
+          style={{ marginTop: isSmallDesktop ? '0' : undefined }}
           initial={{ opacity: 0, x: -50 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
@@ -108,7 +113,10 @@ export default function Home() {
             className="text-8xl font-bold text-gray-900 dark:text-white max-lg:text-5xl flex items-center flex-wrap max-lg:flex-nowrap max-lg:justify-center max-lg:gap-0"
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            style={{ transformOrigin: 'center center', scale: isMobile ? mobileScale : 1 }}
+            style={{ 
+              transformOrigin: 'center center', 
+              scale: isMobile ? mobileScale : (isSmallDesktop ? 0.7 : 1),
+            }}
             transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
           >
             <span 
@@ -124,7 +132,11 @@ export default function Home() {
             />
           </motion.div>
           <motion.p 
-            className={`text-xl text-gray-600 dark:text-gray-300 text-left max-w-3xl leading-relaxed max-lg:text-xs max-lg:mx-auto max-lg:max-w-xs mb-0 lg:mt-[-130px] max-lg:mt-[-45px]`}
+            className={`text-xl text-gray-600 dark:text-gray-300 text-left max-w-3xl leading-relaxed max-lg:text-xs max-lg:mx-auto max-lg:max-w-xs mb-0 max-lg:mt-[-45px] 2xl:mt-[-130px]`}
+            style={{
+              fontSize: isSmallDesktop ? '1rem' : undefined,
+              marginTop: isSmallDesktop ? '-16px' : undefined,
+            }}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.5, ease: "easeOut" }}
@@ -147,7 +159,7 @@ export default function Home() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 1.2 }}
         >
-          <div className="main-column py-8 lg:py-10">
+          <div className="main-column py-8 lg:py-4 2xl:py-10">
             <div className="flex flex-wrap justify-center gap-4 text-center text-small text-gray-600 dark:text-gray-300">
               <a href="#" className="hover:text-purple-800 dark:hover:text-purple-400 transition-colors">{t('footer.howItWorks', 'Ako to funguje')}</a>
               <a href="#" className="hover:text-purple-800 dark:hover:text-purple-400 transition-colors">{t('footer.forIndividuals', 'Pre jednotlivcov')}</a>
