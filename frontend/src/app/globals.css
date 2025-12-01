@@ -534,6 +534,43 @@ button:focus-visible {
   scrollbar-color: rgba(75, 85, 99, 0.3) transparent;
 }
 
+/* Ultra subtle scrollbar pre modal otváracej doby - ešte menej viditeľný */
+.opening-hours-modal-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.opening-hours-modal-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.opening-hours-modal-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(156, 163, 175, 0.15);
+  border-radius: 2px;
+  transition: background-color 0.2s ease;
+}
+
+.opening-hours-modal-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(156, 163, 175, 0.3);
+}
+
+.dark .opening-hours-modal-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(75, 85, 99, 0.2);
+}
+
+.dark .opening-hours-modal-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(75, 85, 99, 0.35);
+}
+
+/* Firefox scrollbar support */
+.opening-hours-modal-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(156, 163, 175, 0.15) transparent;
+}
+
+.dark .opening-hours-modal-scrollbar {
+  scrollbar-color: rgba(75, 85, 99, 0.2) transparent;
+}
+
 /* Custom scrollbar for district dropdown */
 .district-dropdown-scrollbar::-webkit-scrollbar {
   width: 8px;
@@ -576,7 +613,7 @@ button:focus-visible {
 /* Opening hours modal – compact layout ONLY for small desktop (1024px-1440px) */
 @media (min-width: 1024px) and (max-width: 1440px) {
   .opening-hours-compact-desktop .opening-hours-header {
-    padding: 0.5rem 0.875rem !important;
+    padding: 0.375rem 0.75rem !important;
   }
 
   .opening-hours-compact-desktop .opening-hours-header .w-7,
@@ -602,24 +639,28 @@ button:focus-visible {
   }
 
   .opening-hours-compact-desktop .opening-hours-content {
-    padding: 0.5rem 0.875rem 0.625rem 0.875rem !important;
+    padding: 0.375rem 0.75rem 0.5rem 0.75rem !important;
   }
 
   .opening-hours-compact-desktop .opening-hours-content.space-y-2,
   .opening-hours-compact-desktop .opening-hours-content.space-y-4 {
-    gap: 0.5rem !important;
+    gap: 0.25rem !important;
   }
 
   .opening-hours-compact-desktop .opening-hours-content > p:first-child {
     font-size: 0.625rem !important;
-    line-height: 1rem !important;
-    margin-bottom: 0.25rem !important;
+    line-height: 0.875rem !important;
+    margin-bottom: 0.125rem !important;
+  }
+
+  .opening-hours-compact-desktop .opening-hours-content > div:has(> .flex.items-center) {
+    padding-top: 0.125rem !important;
   }
 
   .opening-hours-compact-desktop .opening-hours-presets {
-    gap: 0.375rem !important;
+    gap: 0.25rem !important;
     padding-top: 0 !important;
-    margin-top: 0.25rem !important;
+    margin-top: 0.125rem !important;
   }
 
   .opening-hours-compact-desktop .opening-hours-presets > span {
@@ -627,31 +668,32 @@ button:focus-visible {
   }
 
   .opening-hours-compact-desktop .opening-hours-presets button {
-    padding: 0.25rem 0.5rem !important;
+    padding: 0.1875rem 0.375rem !important;
     font-size: 0.625rem !important;
-    line-height: 1rem !important;
+    line-height: 0.875rem !important;
   }
 
   .opening-hours-compact-desktop .opening-hours-days {
-    gap: 0.375rem !important;
-    margin-top: 0.5rem !important;
+    gap: 0.125rem !important;
+    margin-top: 0.25rem !important;
   }
 
   .opening-hours-compact-desktop .opening-hours-days.space-y-1\.5,
   .opening-hours-compact-desktop .opening-hours-days.space-y-3 {
-    gap: 0.375rem !important;
+    gap: 0.125rem !important;
   }
 
   .opening-hours-compact-desktop .opening-hours-day-row {
-    padding: 0.5rem 0.625rem !important;
-    gap: 0.5rem !important;
+    padding: 0.1875rem 0.375rem !important;
+    gap: 0.25rem !important;
   }
 
   .opening-hours-compact-desktop .opening-hours-day-row > div:first-child {
     min-width: 110px !important;
   }
 
-  .opening-hours-compact-desktop .opening-hours-day-row button[role="switch"] {
+  /* Prepínače pri dňoch majú rovnakú veľkosť ako MasterToggle - odstránené zmenšovanie */
+  /* .opening-hours-compact-desktop .opening-hours-day-row button[role="switch"] {
     height: 1.125rem !important;
     width: 1.875rem !important;
   }
@@ -663,7 +705,7 @@ button:focus-visible {
 
   .opening-hours-compact-desktop .opening-hours-day-row button[role="switch"] > span.left-5 {
     left: 1rem !important;
-  }
+  } */
 
   .opening-hours-compact-desktop .opening-hours-day-row > div:first-child button:not([role="switch"]) {
     font-size: 0.625rem !important;
@@ -672,46 +714,107 @@ button:focus-visible {
 
   .opening-hours-compact-desktop .opening-hours-day-row label {
     font-size: 0.625rem !important;
-    line-height: 1rem !important;
+    line-height: 0.875rem !important;
   }
 
   .opening-hours-compact-desktop .opening-hours-day-row input[type="time"] {
-    padding: 0.25rem 0.5rem !important;
+    padding: 0.125rem 0.25rem !important;
     font-size: 0.625rem !important;
-    line-height: 1rem !important;
-    height: 1.625rem !important;
+    line-height: 0.875rem !important;
+    height: 1.375rem !important;
   }
 
   .opening-hours-compact-desktop .opening-hours-day-row button.text-purple-600 {
-    padding: 0.25rem 0.5rem !important;
+    padding: 0.1875rem 0.375rem !important;
     font-size: 0.625rem !important;
   }
 
   .opening-hours-compact-desktop .opening-hours-summary {
-    margin-top: 0.5rem !important;
-    padding: 0.5rem 0.625rem !important;
+    margin-top: 0.25rem !important;
+    padding: 0.25rem 0.375rem !important;
   }
 
   .opening-hours-compact-desktop .opening-hours-summary p {
     font-size: 0.625rem !important;
-    line-height: 1rem !important;
+    line-height: 0.875rem !important;
   }
 
   .opening-hours-compact-desktop .opening-hours-footer {
-    padding-top: 0.5rem !important;
-    gap: 0.5rem !important;
-    margin-top: 0.5rem !important;
+    padding-top: 0.25rem !important;
+    gap: 0.25rem !important;
+    margin-top: 0.25rem !important;
   }
 
   .opening-hours-compact-desktop .opening-hours-footer button {
-    padding: 0.375rem 0.75rem !important;
+    padding: 0.25rem 0.5rem !important;
     font-size: 0.625rem !important;
-    line-height: 1rem !important;
+    line-height: 0.875rem !important;
   }
 
   .opening-hours-compact-desktop .text-center {
-    padding: 0.5rem 0 !important;
+    padding: 0.25rem 0 !important;
     font-size: 0.625rem !important;
-    line-height: 1rem !important;
+    line-height: 0.875rem !important;
+  }
+
+  /* Odstránenie scrollbaru - zmena max-height kontajnera na malom desktop rozlíšení */
+  .opening-hours-modal-scrollbar {
+    max-height: calc(100vh - 1rem) !important;
+    overflow-y: hidden !important;
+  }
+  
+  .opening-hours-compact-desktop {
+    max-height: none !important;
+  }
+
+  /* Zmenšenie medzier medzi tagmi v modale na vytvorenie karty */
+  .skill-modal-tags {
+    gap: 0.125rem -1rem !important;
+    line-height: 0.5 !important;
+  }
+  
+  .skill-modal-tags > span {
+    line-height: 0.5 !important;
+    margin-bottom: -1rem !important;
+    display: inline-block !important;
+  }
+
+  /* Krajší scrollbar v poli na krátky opis na malom desktop rozlíšení */
+  .skill-description-textarea-scrollbar::-webkit-scrollbar {
+    width: 8px !important;
+  }
+  
+  .skill-description-textarea-scrollbar::-webkit-scrollbar-track {
+    background: transparent !important;
+    border-radius: 4px !important;
+  }
+  
+  .skill-description-textarea-scrollbar::-webkit-scrollbar-thumb {
+    background-color: rgba(156, 163, 175, 0.4) !important; /* gray-400 s opacity */
+    border-radius: 4px !important;
+    border: 1px solid transparent !important;
+  }
+  
+  .skill-description-textarea-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(156, 163, 175, 0.6) !important; /* gray-400 s vyššou opacity */
+  }
+  
+  /* Dark mode */
+  .dark .skill-description-textarea-scrollbar::-webkit-scrollbar-thumb {
+    background-color: rgba(107, 114, 128, 0.4) !important; /* gray-500 s opacity */
+  }
+  
+  .dark .skill-description-textarea-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(107, 114, 128, 0.6) !important;
+  }
+  
+  /* Firefox */
+  .skill-description-textarea-scrollbar {
+    scrollbar-width: thin !important;
+    scrollbar-color: rgba(156, 163, 175, 0.4) transparent !important;
+  }
+  
+  .dark .skill-description-textarea-scrollbar {
+    scrollbar-color: rgba(107, 114, 128, 0.4) transparent !important;
   }
 }

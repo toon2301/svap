@@ -185,7 +185,11 @@ export default function SkillsScreen({
             {firstOptionText && (
               <>
                 <div className="w-full flex items-center justify-between -mt-6 flex-wrap gap-3">
-                  <div className="flex flex-col flex-1 min-w-[260px]">
+                  <button
+                    type="button"
+                    onClick={onFirstOptionClick}
+                    className="flex flex-col flex-1 min-w-[260px] text-left cursor-pointer hover:opacity-80 transition-opacity"
+                  >
                     <span className="text-lg font-medium text-gray-900 dark:text-white">
                       {firstOptionText}
                     </span>
@@ -195,11 +199,11 @@ export default function SkillsScreen({
                         'Vyber kategóriu, ktorá sa k tebe hodí. Nenašiel si nič? Pridaj vlastnú.',
                       )}
                     </span>
-                  </div>
+                  </button>
                   <button
                     type="button"
                     onClick={onFirstOptionClick}
-                    className="flex-shrink-0 p-2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                    className="flex-shrink-0 p-2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors focus:outline-none"
                   >
                     {(standardCategories && standardCategories.length > 0) ||
                     (customCategories && customCategories.length > 0) ? (
@@ -238,18 +242,22 @@ export default function SkillsScreen({
 
                 {onAddCategory && (
                   <div className="w-full flex items-center justify-between mt-4 flex-wrap gap-3">
-                    <div className="flex flex-col flex-1 min-w-[260px]">
+                    <button
+                      type="button"
+                      onClick={onAddCategory}
+                      className="flex flex-col flex-1 min-w-[260px] text-left cursor-pointer hover:opacity-80 transition-opacity"
+                    >
                       <span className="text-lg font-medium text-gray-900 dark:text-white">
                         {t('skills.addCategory', 'Pridať kategóriu')}
                       </span>
                       <span className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
                         {t('skills.addCategoryHint', 'Pridaj si kategóriu, ktorá ťa vystihuje.')}
                       </span>
-                    </div>
+                    </button>
                     <button
                       type="button"
                       onClick={onAddCategory}
-                      className="flex-shrink-0 p-2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:bg-gray-300 transition-colors"
+                      className="flex-shrink-0 p-2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors focus:outline-none"
                     >
                       {customCategories && customCategories.length > 0 ? (
                         <svg
@@ -286,12 +294,12 @@ export default function SkillsScreen({
                   </div>
                 )}
 
-                {standardCategories && standardCategories.length > 0 && (
+                {(standardCategories && standardCategories.length > 0) || (customCategories && customCategories.length > 0) ? (
                   <div className="mt-6 w-full">
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                       {standardCategories.map((item, index) => (
                         <div
-                          key={item.id ?? `${item.category}-${item.subcategory}-${index}`}
+                          key={item.id ?? `standard-${item.category}-${item.subcategory}-${index}`}
                           className="w-full min-w-[260px]"
                         >
                           {renderOfferCard(item, {
@@ -304,15 +312,8 @@ export default function SkillsScreen({
                           })}
                         </div>
                       ))}
-                    </div>
-                  </div>
-                )}
-
-                {customCategories && customCategories.length > 0 && (
-                  <div className="mt-6 w-full">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                       {customCategories.map((customCategory, index) => (
-                        <div key={index} className="w-full min-w-[260px]">
+                        <div key={`custom-${index}`} className="w-full min-w-[260px]">
                           {renderOfferCard(customCategory, {
                             onEdit: onEditCustomCategoryDescription
                               ? () => onEditCustomCategoryDescription(index)
@@ -325,7 +326,7 @@ export default function SkillsScreen({
                       ))}
                     </div>
                   </div>
-                )}
+                ) : null}
               </>
             )}
           </div>

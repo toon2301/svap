@@ -272,8 +272,9 @@ export default function SkillModals(props: Props) {
                 setSelectedSkillsCategory(null);
               } else if (selectedSkillsCategory) {
                 if (selectedSkillsCategory.category === selectedSkillsCategory.subcategory) {
-                  if (customCategories.length >= 5) {
-                    alert('Môžeš pridať maximálne 5 vlastných kategórií.');
+                  // Kontrola celkového počtu kariet (štandardné + vlastné)
+                  if (standardCategories.length + customCategories.length >= 3) {
+                    alert('Môžeš mať maximálne 3 karty dokopy (štandardné aj vlastné).');
                     return;
                   }
                   const payload = buildPayload();
@@ -298,8 +299,9 @@ export default function SkillModals(props: Props) {
                   setSelectedSkillsCategory(null);
                 } else {
                   if (!selectedSkillsCategory.id) {
-                    if (standardCategories.length >= 5) {
-                      alert('Môžeš mať maximálne 5 výberov z kategórií.');
+                    // Kontrola celkového počtu kariet (štandardné + vlastné)
+                    if (standardCategories.length + customCategories.length >= 3) {
+                      alert('Môžeš mať maximálne 3 karty dokopy (štandardné aj vlastné).');
                       return;
                     }
                     const payload = buildPayload();

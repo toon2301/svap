@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { OpeningHours } from './types';
+import MasterToggle from '../../notifications/MasterToggle';
 
 interface OpeningHoursModalProps {
   isOpen: boolean;
@@ -55,14 +56,85 @@ export default function OpeningHoursModal({
 }: OpeningHoursModalProps) {
   const { t } = useLanguage();
   const [openingHours, setOpeningHours] = useState<OpeningHours>({});
+  const [masterToggleEnabled, setMasterToggleEnabled] = useState(false);
+  const [previousHours, setPreviousHours] = useState<OpeningHours>({});
+  const [activePreset, setActivePreset] = useState<'workday_9_17' | 'workday_8_16' | 'nonstop' | 'weekend' | null>(null);
 
   useEffect(() => {
     if (isOpen) {
       setOpeningHours(initialValue || {});
+      setMasterToggleEnabled(false);
+      setActivePreset(null);
     }
   }, [isOpen, initialValue]);
 
+  // Funkcia na zistenie aktívneho presetu
+  const detectActivePreset = (hours: OpeningHours): 'workday_9_17' | 'workday_8_16' | 'nonstop' | 'weekend' | null => {
+    const enabledDays = Object.keys(hours).filter(key => hours[key as DayKey]?.enabled);
+    if (enabledDays.length === 0) return null;
+
+    // Nonstop - všetky dni 00:00-23:59
+    const isNonstop = enabledDays.length === 7 && enabledDays.every(key => {
+      const day = hours[key as DayKey];
+      return day?.from === '00:00' && day?.to === '23:59';
+    });
+    if (isNonstop) return 'nonstop';
+
+    // Weekend - len sobota a nedeľa
+    const isWeekend = enabledDays.length === 2 && 
+      enabledDays.includes('saturday') && enabledDays.includes('sunday') &&
+      hours.saturday?.from === '10:00' && hours.saturday?.to === '18:00' &&
+      hours.sunday?.from === '10:00' && hours.sunday?.to === '18:00';
+    if (isWeekend) return 'weekend';
+
+    // Workday - pondelok až piatok
+    const workdays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
+    const isWorkday = enabledDays.length === 5 && 
+      workdays.every(day => enabledDays.includes(day)) &&
+      enabledDays.every(key => {
+        const day = hours[key as DayKey];
+        return day && (day.from === '09:00' || day.from === '08:00') && 
+               (day.to === '17:00' || day.to === '16:00');
+      });
+
+    if (isWorkday) {
+      const firstDay = hours[workdays[0] as DayKey];
+      if (firstDay?.from === '09:00' && firstDay?.to === '17:00') {
+        return 'workday_9_17';
+      }
+      if (firstDay?.from === '08:00' && firstDay?.to === '16:00') {
+        return 'workday_8_16';
+      }
+    }
+
+    return null;
+  };
+
+  // Aktualizovať aktívny preset keď sa zmenia openingHours
+  useEffect(() => {
+    if (!masterToggleEnabled) {
+      const detected = detectActivePreset(openingHours);
+      setActivePreset(detected);
+    } else {
+      setActivePreset(null);
+    }
+  }, [openingHours, masterToggleEnabled]);
+
+  const handleMasterToggleChange = (enabled: boolean) => {
+    if (enabled) {
+      // Uložiť aktuálny stav a vypnúť všetky dni
+      setPreviousHours({ ...openingHours });
+      setOpeningHours({});
+    } else {
+      // Obnoviť predchádzajúci stav
+      setOpeningHours({ ...previousHours });
+    }
+    setMasterToggleEnabled(enabled);
+  };
+
   const handleDayToggle = (dayKey: keyof OpeningHours) => {
+    if (masterToggleEnabled) return; // Blokovať zmeny keď je master toggle zapnutý
+    
     const currentDay = openingHours[dayKey];
     if (currentDay?.enabled) {
       // Deaktivovať deň
@@ -98,6 +170,8 @@ export default function OpeningHoursModal({
   };
 
   const applyPreset = (preset: 'workday_9_17' | 'workday_8_16' | 'nonstop' | 'weekend') => {
+    if (masterToggleEnabled) return; // Blokovať presety keď je master toggle zapnutý
+    
     const next: OpeningHours = {};
 
     if (preset === 'workday_9_17' || preset === 'workday_8_16') {
@@ -124,6 +198,7 @@ export default function OpeningHoursModal({
     }
 
     setOpeningHours(next);
+    setActivePreset(preset);
   };
 
   const handleCopyToAll = (fromDay: keyof OpeningHours) => {
@@ -158,7 +233,7 @@ export default function OpeningHoursModal({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-2xl max-w-[95vw] sm:max-w-2xl max-h-[75vh] lg:max-h-[70vh] xl:max-h-[85vh] sm:max-h-[90vh] overflow-y-auto"
+        className="w-full max-w-2xl max-w-[95vw] sm:max-w-2xl max-h-[75vh] lg:max-h-[70vh] xl:max-h-[85vh] sm:max-h-[90vh] overflow-y-auto opening-hours-modal-scrollbar"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="rounded-2xl bg-[var(--background)] text-[var(--foreground)] border border-[var(--border)] shadow-2xl overflow-hidden opening-hours-compact-desktop">
@@ -211,6 +286,14 @@ export default function OpeningHoursModal({
               )}
             </p>
 
+            <div className="pt-1 sm:pt-2">
+              <MasterToggle
+                enabled={masterToggleEnabled}
+                onChange={handleMasterToggleChange}
+                label={t('skills.openingHours.turnOffAll', 'Vypnúť všetky dni')}
+              />
+            </div>
+
             <div className="flex flex-wrap gap-1.5 sm:gap-2 pt-0.5 sm:pt-1 opening-hours-presets">
               <span className="text-[10px] sm:text-xs font-medium text-gray-500 dark:text-gray-400 mr-1">
                 {t('skills.openingHours.presets', 'Rýchle nastavenia:')}
@@ -218,34 +301,50 @@ export default function OpeningHoursModal({
               <button
                 type="button"
                 onClick={() => applyPreset('workday_9_17')}
-                className="px-2 py-1 sm:px-3 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-medium bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-100 dark:bg-purple-900/30 dark:text-purple-200 dark:hover:bg-purple-900/50 dark:border-purple-800 transition-colors"
+                className={`px-2 py-1 sm:px-3 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-medium transition-colors ${
+                  activePreset === 'workday_9_17'
+                    ? 'bg-purple-600 text-white hover:bg-purple-700 border border-purple-600 dark:bg-purple-500 dark:text-white dark:hover:bg-purple-600 dark:border-purple-500'
+                    : 'bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200 dark:bg-gray-900/40 dark:text-gray-200 dark:hover:bg-gray-900/60 dark:border-gray-700'
+                }`}
               >
                 {t('skills.openingHours.preset.workday_9_17', 'Po–Pi 9:00–17:00')}
               </button>
               <button
                 type="button"
                 onClick={() => applyPreset('workday_8_16')}
-                className="px-2 py-1 sm:px-3 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-medium bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200 dark:bg-gray-900/40 dark:text-gray-200 dark:hover:bg-gray-900/60 dark:border-gray-700 transition-colors"
+                className={`px-2 py-1 sm:px-3 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-medium transition-colors ${
+                  activePreset === 'workday_8_16'
+                    ? 'bg-purple-600 text-white hover:bg-purple-700 border border-purple-600 dark:bg-purple-500 dark:text-white dark:hover:bg-purple-600 dark:border-purple-500'
+                    : 'bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200 dark:bg-gray-900/40 dark:text-gray-200 dark:hover:bg-gray-900/60 dark:border-gray-700'
+                }`}
               >
                 {t('skills.openingHours.preset.workday_8_16', 'Po–Pi 8:00–16:00')}
               </button>
               <button
                 type="button"
                 onClick={() => applyPreset('nonstop')}
-                className="px-2 py-1 sm:px-3 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-medium bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200 dark:bg-gray-900/40 dark:text-gray-200 dark:hover:bg-gray-900/60 dark:border-gray-700 transition-colors"
+                className={`px-2 py-1 sm:px-3 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-medium transition-colors ${
+                  activePreset === 'nonstop'
+                    ? 'bg-purple-600 text-white hover:bg-purple-700 border border-purple-600 dark:bg-purple-500 dark:text-white dark:hover:bg-purple-600 dark:border-purple-500'
+                    : 'bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200 dark:bg-gray-900/40 dark:text-gray-200 dark:hover:bg-gray-900/60 dark:border-gray-700'
+                }`}
               >
                 {t('skills.openingHours.preset.nonstop', 'Nonstop (24/7)')}
               </button>
               <button
                 type="button"
                 onClick={() => applyPreset('weekend')}
-                className="px-2 py-1 sm:px-3 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-medium bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200 dark:bg-gray-900/40 dark:text-gray-200 dark:hover:bg-gray-900/60 dark:border-gray-700 transition-colors"
+                className={`px-2 py-1 sm:px-3 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-medium transition-colors ${
+                  activePreset === 'weekend'
+                    ? 'bg-purple-600 text-white hover:bg-purple-700 border border-purple-600 dark:bg-purple-500 dark:text-white dark:hover:bg-purple-600 dark:border-purple-500'
+                    : 'bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200 dark:bg-gray-900/40 dark:text-gray-200 dark:hover:bg-gray-900/60 dark:border-gray-700'
+                }`}
               >
                 {t('skills.openingHours.preset.weekend', 'Len víkend')}
               </button>
             </div>
 
-            <div className="space-y-1.5 sm:space-y-3 opening-hours-days">
+            <div className="space-y-1 sm:space-y-2 opening-hours-days">
               {DAYS.map((day) => {
                 const dayData = openingHours[day.key];
                 const isEnabled = dayData?.enabled || false;
@@ -253,7 +352,7 @@ export default function OpeningHoursModal({
                 return (
                   <div
                     key={day.key}
-                    className={`flex items-center gap-2 sm:gap-4 p-1.5 sm:p-3 rounded-xl border transition-all opening-hours-day-row ${
+                    className={`flex items-center gap-2 sm:gap-3 p-1 sm:p-2 rounded-xl border transition-all opening-hours-day-row ${
                       isEnabled
                         ? 'border-purple-200 dark:border-purple-800 bg-purple-50/50 dark:bg-purple-900/10'
                         : 'border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-900/20'
@@ -265,32 +364,38 @@ export default function OpeningHoursModal({
                         role="switch"
                         aria-checked={isEnabled}
                         onClick={() => handleDayToggle(day.key)}
-                        className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-1 ${
+                        disabled={masterToggleEnabled}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 ${
                           isEnabled
                             ? 'bg-purple-400 border border-purple-400'
                             : 'bg-gray-300 dark:bg-gray-600'
-                        }`}
+                        } ${masterToggleEnabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        style={{
+                          transform: 'scaleY(0.8)',
+                          transformOrigin: 'left center',
+                        }}
                       >
                         <span
-                          className={`absolute h-3 w-3 rounded-full bg-white shadow-sm transition-all duration-200 ease-in-out ${
-                            isEnabled ? 'left-5' : 'left-1'
+                          className={`absolute h-4 w-4 rounded-full bg-white shadow-sm transition-all duration-200 ease-in-out ${
+                            isEnabled ? 'left-6' : 'left-1'
                           }`}
                         />
                       </button>
                       <button
                         type="button"
                         onClick={() => handleDayToggle(day.key)}
+                        disabled={masterToggleEnabled}
                         className={`text-xs sm:text-sm font-medium flex items-center gap-1 sm:gap-2 focus:outline-none ${
                           isEnabled
                             ? 'text-gray-900 dark:text-white'
                             : 'text-gray-500 dark:text-gray-400'
-                        }`}
+                        } ${masterToggleEnabled ? 'opacity-50 cursor-not-allowed' : ''}`}
                       >
                         <span className="hidden sm:inline">{t(day.labelKey, day.defaultLabel)}</span>
                         <span className="sm:hidden">{day.shortLabel}</span>
                       </button>
                     </div>
-                    {isEnabled && (
+                    {isEnabled && !masterToggleEnabled && (
                       <>
                         <div className="flex items-center gap-1 sm:gap-2 flex-1">
                           <div className="flex items-center gap-1 sm:gap-2 flex-1">
@@ -301,7 +406,8 @@ export default function OpeningHoursModal({
                               type="time"
                               value={dayData?.from || '08:00'}
                               onChange={(e) => handleTimeChange(day.key, 'from', e.target.value)}
-                              className="flex-1 px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-400 focus:border-transparent"
+                              disabled={masterToggleEnabled}
+                              className="flex-1 px-2 py-1 sm:px-2.5 sm:py-1.5 text-xs sm:text-sm border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-400 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
                             />
                           </div>
                           <span className="text-gray-400 dark:text-gray-500 mx-0.5 sm:mx-1">-</span>
@@ -313,14 +419,16 @@ export default function OpeningHoursModal({
                               type="time"
                               value={dayData?.to || '17:00'}
                               onChange={(e) => handleTimeChange(day.key, 'to', e.target.value)}
-                              className="flex-1 px-2 py-1 sm:px-3 sm:py-2 text-xs sm:text-sm border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-400 focus:border-transparent"
+                              disabled={masterToggleEnabled}
+                              className="flex-1 px-2 py-1 sm:px-2.5 sm:py-1.5 text-xs sm:text-sm border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-400 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
                             />
                           </div>
                         </div>
                         <button
                           type="button"
                           onClick={() => handleCopyToAll(day.key)}
-                          className="px-2 py-0.5 sm:px-3 sm:py-1.5 text-[10px] sm:text-xs font-medium text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/30 rounded-lg transition-colors whitespace-nowrap"
+                          disabled={masterToggleEnabled}
+                          className="px-2 py-0.5 sm:px-2.5 sm:py-1 text-[10px] sm:text-xs font-medium text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/30 rounded-lg transition-colors whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
                           title={t('skills.openingHours.copyToAll', 'Skopírovať na všetky dni')}
                         >
                           {t('skills.openingHours.copy', 'Kopírovať')}

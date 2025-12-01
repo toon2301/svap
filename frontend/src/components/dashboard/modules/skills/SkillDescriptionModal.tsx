@@ -12,6 +12,7 @@ import DetailedDescriptionModal from './skillDescriptionModal/DetailedDescriptio
 import OpeningHoursModal from './skillDescriptionModal/OpeningHoursModal';
 import { CurrencyOption, SkillDescriptionModalProps, SkillImage, OpeningHours, UnitOption } from './skillDescriptionModal/types';
 import { currencyFromLocale, ensureCurrencyOption, slugifyLabel } from './skillDescriptionModal/utils';
+import styles from './SkillsCategoryModal.module.css';
 
 export default function SkillDescriptionModal({ 
   isOpen, 
@@ -320,7 +321,7 @@ export default function SkillDescriptionModal({
           className="w-full max-w-sm md:max-w-md 2xl:max-w-2xl"
           onClick={(e) => e.stopPropagation()}
         >
-        <div className="rounded-2xl bg-[var(--background)] text-[var(--foreground)] border border-[var(--border)] shadow-xl overflow-y-auto max-h-[80vh]">
+        <div className="rounded-2xl bg-[var(--background)] text-[var(--foreground)] border border-[var(--border)] shadow-xl overflow-hidden">
           <div className="flex items-center justify-between px-4 pt-4 pb-2 md:px-6 md:pt-6 md:pb-3">
             <h2 className="text-lg md:text-xl font-semibold">
               {t('skills.describeSkillTitle', 'Opíš svoju službu/zručnosť')}
@@ -336,7 +337,7 @@ export default function SkillDescriptionModal({
             </button>
           </div>
 
-          <div className="px-6 pb-4">
+          <div className={`px-6 pb-4 ${styles.scrollArea}`} style={{ maxHeight: 'calc(80vh - 80px)' }}>
             <div className="mb-4">
               <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
                 {translatedCategory ? (

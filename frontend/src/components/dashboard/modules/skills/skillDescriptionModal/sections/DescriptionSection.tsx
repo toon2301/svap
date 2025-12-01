@@ -124,7 +124,7 @@ export default function DescriptionSection({
           value={description}
           onChange={(e) => handleChange(e.target.value)}
           placeholder=""
-          className="w-full px-3 pt-2 pb-6 pr-20 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-1 focus:ring-purple-300 focus:border-transparent resize-none"
+          className="w-full px-3 pt-2 pb-6 pr-20 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-1 focus:ring-purple-300 focus:border-transparent resize-none skill-description-textarea-scrollbar"
           rows={2}
           maxLength={100}
           autoFocus
@@ -133,7 +133,7 @@ export default function DescriptionSection({
           ref={emojiButtonRef}
           type="button"
           onClick={toggleEmojiPicker}
-          className="absolute right-2 top-2 p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded transition-colors"
+          className="absolute right-0.5 -top-1 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded transition-colors"
           aria-label={t('skills.addEmoji', 'Pridať emoji')}
         >
           <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">

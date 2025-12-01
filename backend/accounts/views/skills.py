@@ -37,23 +37,12 @@ def skills_list_view(request):
         subcategory = serializer.validated_data.get('subcategory')
         is_custom = category == subcategory
 
-        standard_count = OfferedSkill.objects.filter(user=request.user).exclude(
-            category=F('subcategory')
-        ).count()
-        custom_count = OfferedSkill.objects.filter(
-            user=request.user,
-            category=F('subcategory')
-        ).count()
+        # Celkový počet všetkých kariet (štandardné + vlastné)
+        total_count = OfferedSkill.objects.filter(user=request.user).count()
 
-        if not is_custom and standard_count >= 3:
+        if total_count >= 3:
             return Response(
-                {'error': 'Môžeš mať maximálne 3 výbery z kategórií.'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        if is_custom and custom_count >= 3:
-            return Response(
-                {'error': 'Môžeš pridať maximálne 3 vlastné kategórie.'},
+                {'error': 'Môžeš mať maximálne 3 karty dokopy (štandardné aj vlastné).'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
