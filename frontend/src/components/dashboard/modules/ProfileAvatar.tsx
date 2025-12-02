@@ -73,11 +73,10 @@ export default function ProfileAvatar({
           <img
             src={avatarUrl!}
             alt={`${user.first_name} ${user.last_name}`}
-            className={`${sizeClass} rounded-full mx-auto object-cover border-4 border-purple-100`}
+            className={`${sizeClass} rounded-full mx-auto object-cover border-4 border-purple-100 ${onAvatarClick ? 'cursor-pointer' : 'cursor-default'}`}
             onError={handleImageError}
             key={avatarUrl}
             onClick={handleAvatarClick}
-            className={onAvatarClick ? 'cursor-pointer' : 'cursor-default'}
           />
         ) : (
           <div 
