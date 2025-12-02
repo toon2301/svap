@@ -103,23 +103,14 @@ export default function ForgotPasswordPage() {
         
         <div className="flex-1 flex items-center justify-center p-4 relative z-10">
           <motion.div 
-            className="bg-white dark:bg-black rounded-2xl shadow-xl border border-gray-200 dark:border-gray-800"
-            style={{
-              width: '100%',
-              maxWidth: '600px'
-            }}
+            className="w-full max-w-[min(600px,90vw)] lg:max-w-[clamp(400px,40vw,600px)] bg-white dark:bg-black rounded-2xl shadow-xl border border-gray-200 dark:border-gray-800"
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: "easeOut" }}
           >
-            <div style={{
-              marginLeft: '40px', 
-              marginRight: '40px', 
-              marginTop: '30px', 
-              marginBottom: '30px'
-            }}>
+            <div className="px-[clamp(1.5rem,4vw,2.5rem)] py-[clamp(1.5rem,3vw,1.875rem)]">
               <motion.h1 
-                className="text-4xl font-medium text-center mb-8 text-black dark:text-white tracking-wider max-lg:text-2xl max-lg:mb-8"
+                className="text-[clamp(1.5rem,3.5vw,2.25rem)] font-medium text-center mb-[clamp(1.5rem,3vw,2rem)] text-black dark:text-white tracking-wider"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.2 }}
@@ -152,7 +143,7 @@ export default function ForgotPasswordPage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.6 }}
               >
-                <p className="text-2xl text-gray-600 dark:text-gray-300 max-lg:text-base mb-4">
+                <p className="text-[clamp(1rem,2vw,1.5rem)] text-gray-600 dark:text-gray-300 mb-4">
                   {t('auth.backToLogin')}
                 </p>
                 <a 
@@ -181,23 +172,14 @@ export default function ForgotPasswordPage() {
       
       <div className="flex-1 flex items-center justify-center p-4 relative z-10">
         <motion.div 
-          className="bg-white dark:bg-black rounded-2xl shadow-xl border border-gray-200 dark:border-gray-800"
-          style={{
-            width: '100%',
-            maxWidth: '600px'
-          }}
+          className="w-full max-w-[min(600px,90vw)] lg:max-w-[clamp(400px,40vw,600px)] bg-white dark:bg-black rounded-2xl shadow-xl border border-gray-200 dark:border-gray-800"
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
         >
-          <div style={{
-            marginLeft: '40px', 
-            marginRight: '40px', 
-            marginTop: '30px', 
-            marginBottom: '30px'
-          }}>
+          <div className="px-[clamp(1.5rem,4vw,2.5rem)] py-[clamp(1.5rem,3vw,1.875rem)]">
             <motion.h1 
-              className="text-4xl font-medium text-center mb-8 text-black dark:text-white tracking-wider max-lg:text-2xl max-lg:mb-8"
+              className="text-[clamp(1.5rem,3.5vw,2.25rem)] font-medium text-center mb-[clamp(1.5rem,3vw,2rem)] text-black dark:text-white tracking-wider"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.2 }}
@@ -206,7 +188,7 @@ export default function ForgotPasswordPage() {
             </motion.h1>
 
             <motion.p 
-              className="text-lg text-gray-600 dark:text-gray-300 text-center mb-8 max-lg:text-base"
+              className="text-[clamp(0.875rem,2vw,1.125rem)] text-gray-600 dark:text-gray-300 text-center mb-[clamp(1.5rem,3vw,2rem)]"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.3 }}
@@ -233,7 +215,7 @@ export default function ForgotPasswordPage() {
               transition={{ duration: 0.5, delay: 0.4 }}
             >
               <div>
-                <label htmlFor="email" className="block text-lg font-normal text-gray-600 dark:text-gray-300 mb-2 max-lg:text-base max-lg:mb-1">
+                <label htmlFor="email" className="block text-[clamp(0.875rem,1.8vw,1.125rem)] font-normal text-gray-600 dark:text-gray-300 mb-2">
                   {t('auth.emailAddress')}
                 </label>
                 <input
@@ -242,7 +224,7 @@ export default function ForgotPasswordPage() {
                   name="email"
                   value={formData.email}
                   onChange={handleInputChange}
-                  className={`w-full px-16 py-12 text-xl border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all max-lg:px-4 max-lg:py-3 max-lg:text-base bg-white dark:bg-black text-gray-900 dark:text-white ${
+                  className={`w-full px-3 py-[clamp(0.75rem,2vw,1rem)] text-[clamp(0.875rem,1.8vw,1.125rem)] border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all bg-white dark:bg-black text-gray-900 dark:text-white ${
                     errors.email ? 'border-red-500' : 'border-gray-300 dark:border-gray-700'
                   }`}
                   placeholder={t('auth.emailPlaceholder')}
@@ -250,7 +232,6 @@ export default function ForgotPasswordPage() {
                   aria-required="true"
                   aria-invalid={errors.email ? "true" : "false"}
                   aria-describedby={errors.email ? "email-error" : "email-help"}
-                  style={{paddingLeft: '12px', paddingRight: '12px', paddingTop: '16px', paddingBottom: '16px'}}
                 />
                 <div id="email-help" className="sr-only">
                   {t('auth.enterEmailForReset')}
@@ -266,16 +247,11 @@ export default function ForgotPasswordPage() {
                 type="submit"
                 disabled={isLoading}
                 aria-label={t('auth.sendResetEmail')}
-                className={`w-full text-white px-6 py-4 rounded-2xl font-semibold text-xl transition-all ${
-                  isLoading ? 'cursor-not-allowed' : 'cursor-pointer hover:shadow-lg'
+                className={`w-full text-white px-6 py-[clamp(0.75rem,2vw,1.25rem)] rounded-2xl font-semibold text-[clamp(0.875rem,2vw,1.25rem)] transition-all mt-6 ${
+                  isLoading ? 'cursor-not-allowed bg-purple-400 opacity-80' : 'cursor-pointer bg-purple-600 hover:bg-purple-700 hover:shadow-lg'
                 }`}
                 style={{
-                  backgroundColor: isLoading ? '#A855F7' : '#7C3AED',
-                  opacity: isLoading ? 0.8 : 1,
-                  boxShadow: '0 4px 15px rgba(139, 92, 246, 0.3)',
-                  marginTop: '24px',
-                  paddingTop: '20px',
-                  paddingBottom: '20px'
+                  boxShadow: '0 4px 15px rgba(139, 92, 246, 0.3)'
                 }}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -297,8 +273,8 @@ export default function ForgotPasswordPage() {
               </motion.button>
             </motion.form>
 
-            <div className="text-center" style={{marginTop: '16px'}}>
-              <p className="text-2xl text-gray-600 dark:text-gray-300 max-lg:text-base">
+            <div className="text-center mt-4">
+              <p className="text-[clamp(0.875rem,2vw,1.5rem)] text-gray-600 dark:text-gray-300">
                 {t('auth.rememberPassword')}{' '}
                 <a 
                   href="/" 

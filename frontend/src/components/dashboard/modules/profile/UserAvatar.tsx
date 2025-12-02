@@ -15,7 +15,7 @@ interface UserAvatarProps {
 const sizeClasses = {
   small: 'w-16 h-16 text-lg',
   medium: 'w-24 h-24 text-2xl',
-  large: 'w-48 h-48 text-6xl'
+  large: 'w-28 h-28 lg:w-32 lg:h-32 xl:w-36 xl:h-36 text-3xl xl:text-5xl'
 };
 
 export default function UserAvatar({ user, size = 'large', onPhotoUpload, isUploading = false, onAvatarClick }: UserAvatarProps) {
@@ -58,11 +58,10 @@ export default function UserAvatar({ user, size = 'large', onPhotoUpload, isUplo
         <img
           src={avatarUrl!}
           alt={`${user.first_name} ${user.last_name}`}
-          className={`${sizeClass} rounded-full mx-auto object-cover border-4 border-purple-100`}
+          className={`${sizeClass} rounded-full mx-auto object-cover border-4 border-purple-100 ${onAvatarClick ? 'cursor-pointer' : 'cursor-default'}`}
           onError={handleImageError}
           key={avatarUrl}
           onClick={onAvatarClick}
-          style={{ cursor: onAvatarClick ? 'pointer' : 'default' }}
         />
       ) : (
         <div className={`${sizeClass} rounded-full mx-auto bg-purple-100 flex items-center justify-center border-4 border-purple-200`}>

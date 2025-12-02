@@ -296,7 +296,7 @@ export default function SkillsScreen({
 
                 {(standardCategories && standardCategories.length > 0) || (customCategories && customCategories.length > 0) ? (
                   <div className="mt-6 w-full">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-[clamp(1rem,2vw,1.5rem)]">
                       {standardCategories.map((item, index) => (
                         <div
                           key={item.id ?? `standard-${item.category}-${item.subcategory}-${index}`}

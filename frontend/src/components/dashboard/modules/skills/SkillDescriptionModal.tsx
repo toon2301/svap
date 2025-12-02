@@ -318,7 +318,7 @@ export default function SkillDescriptionModal({
         }}
       >
         <div
-          className="w-full max-w-sm md:max-w-md 2xl:max-w-2xl"
+          className="w-full max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl 2xl:max-w-2xl"
           onClick={(e) => e.stopPropagation()}
         >
         <div className="rounded-2xl bg-[var(--background)] text-[var(--foreground)] border border-[var(--border)] shadow-xl overflow-hidden">

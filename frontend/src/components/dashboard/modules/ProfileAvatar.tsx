@@ -33,8 +33,8 @@ export default function ProfileAvatar({
   const sizeClass = {
     small: 'w-8 h-8 text-sm',
     medium: 'w-24 h-24 text-2xl',
-    large: 'w-32 h-32 text-4xl',
-    xlarge: 'w-48 h-48 text-6xl'
+    large: 'w-28 h-28 lg:w-32 lg:h-32 xl:w-36 xl:h-36 text-3xl xl:text-5xl',
+    xlarge: 'w-36 h-36 lg:w-40 lg:h-40 xl:w-44 xl:h-44 text-4xl xl:text-6xl'
   }[size];
 
   const hasAvatar = !!(user.avatar || user.avatar_url);
@@ -77,13 +77,12 @@ export default function ProfileAvatar({
             onError={handleImageError}
             key={avatarUrl}
             onClick={handleAvatarClick}
-            style={{ cursor: onAvatarClick ? 'pointer' : 'default' }}
+            className={onAvatarClick ? 'cursor-pointer' : 'cursor-default'}
           />
         ) : (
           <div 
-            className={`${sizeClass} rounded-full mx-auto bg-purple-100 flex items-center justify-center border-4 border-purple-200`}
+            className={`${sizeClass} rounded-full mx-auto bg-purple-100 flex items-center justify-center border-4 border-purple-200 ${onAvatarClick ? 'cursor-pointer' : 'cursor-default'}`}
             onClick={handleAvatarClick}
-            style={{ cursor: onAvatarClick ? 'pointer' : 'default' }}
           >
             <span className="font-bold text-purple-600">
               {initials}

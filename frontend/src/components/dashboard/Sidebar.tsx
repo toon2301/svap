@@ -75,19 +75,6 @@ export default function Sidebar({
 }: SidebarProps) {
   const { t } = useLanguage();
   const { theme, toggleTheme } = useTheme();
-  const [isSmallDesktop, setIsSmallDesktop] = useState(false);
-
-  useEffect(() => {
-    const checkSmallDesktop = () => {
-      const width = window.innerWidth;
-      // Malé desktopy: 1024px < width <= 1440px (napr. 1280×720, 1366×768)
-      setIsSmallDesktop(width > 1024 && width <= 1440);
-    };
-    
-    checkSmallDesktop();
-    window.addEventListener('resize', checkSmallDesktop);
-    return () => window.removeEventListener('resize', checkSmallDesktop);
-  }, []);
   const handleItemClick = (itemId: string) => {
     // Pre jazyk otvor pravý sidebar namiesto zmeny hlavného modulu
     if (itemId === 'language' && onLanguageClick) {
@@ -121,10 +108,7 @@ export default function Sidebar({
           <img 
             src="/Logotyp _svaply_ na fialovom pozadí.png" 
             alt="Swaply" 
-            className="h-24 w-auto"
-            style={{
-              height: isSmallDesktop ? '60px' : undefined
-            }}
+            className="h-16 w-auto lg:h-16 xl:h-24"
           />
         </div>
       )}
@@ -145,16 +129,7 @@ export default function Sidebar({
 
       {/* Navigation Items - Desktop only */}
       {!isMobile && (
-        <nav 
-          className="flex-1 px-4 py-4 space-y-2"
-          style={{
-            paddingLeft: isSmallDesktop ? '0.75rem' : undefined,
-            paddingRight: isSmallDesktop ? '0.75rem' : undefined,
-            paddingTop: isSmallDesktop ? '0.75rem' : undefined,
-            paddingBottom: isSmallDesktop ? '0.75rem' : undefined,
-            gap: isSmallDesktop ? '0.5rem' : undefined
-          }}
-        >
+        <nav className="flex-1 px-3 py-3 space-y-1.5 lg:px-3 lg:py-3 xl:px-4 xl:py-4 xl:space-y-2">
           {sidebarItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeItem === item.id;
@@ -163,30 +138,25 @@ export default function Sidebar({
               <button
                 key={item.id}
                 onClick={() => handleItemClick(item.id)}
-              className={`w-full flex items-center px-3 py-2.5 text-sm font-medium rounded-2xl transition-all duration-200 ${
+                className={`w-full flex items-center px-2 py-2 text-sm font-medium rounded-2xl transition-all duration-200 lg:px-2 lg:py-2 xl:px-3 xl:py-2.5 ${
                   isActive
                     ? 'bg-purple-100 text-purple-800 border border-purple-200'
                     : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-900 hover:text-gray-900 dark:hover:text-white'
                 }`}
-                style={{
-                  paddingLeft: isSmallDesktop ? '0.5rem' : undefined,
-                  paddingRight: isSmallDesktop ? '0.5rem' : undefined,
-                  paddingTop: isSmallDesktop ? '0.5rem' : undefined,
-                  paddingBottom: isSmallDesktop ? '0.5rem' : undefined,
-                  fontSize: isSmallDesktop ? '0.875rem' : undefined
-                }}
               >
                 <Icon 
-                  className={`${isSmallDesktop ? 'w-4 h-4 mr-2' : 'w-5 h-5 mr-3'} ${isActive ? 'text-purple-600' : 'text-gray-500 dark:text-gray-400'}`}
+                  className={`w-4 h-4 mr-2 xl:w-5 xl:h-5 xl:mr-3 ${isActive ? 'text-purple-600' : 'text-gray-500 dark:text-gray-400'}`}
                 />
-                {(() => {
-                  if (item.id === 'home') return t('navigation.home', item.label);
-                  if (item.id === 'search') return t('navigation.search', item.label);
-                  if (item.id === 'favorites') return t('navigation.favorites', item.label);
-                  if (item.id === 'profile') return t('navigation.profile', item.label);
-                  if (item.id === 'settings') return t('navigation.settings', item.label);
-                  return item.label;
-                })()}
+                <span className="text-sm">
+                  {(() => {
+                    if (item.id === 'home') return t('navigation.home', item.label);
+                    if (item.id === 'search') return t('navigation.search', item.label);
+                    if (item.id === 'favorites') return t('navigation.favorites', item.label);
+                    if (item.id === 'profile') return t('navigation.profile', item.label);
+                    if (item.id === 'settings') return t('navigation.settings', item.label);
+                    return item.label;
+                  })()}
+                </span>
               </button>
             );
           })}
@@ -263,66 +233,27 @@ export default function Sidebar({
       )}
 
       {/* Theme Toggle + Logout */}
-      <div 
-        className={`border-t border-gray-200 dark:border-gray-800 space-y-2 ${isMobile ? 'p-6' : 'p-4'}`}
-        style={{
-          padding: isSmallDesktop && !isMobile ? '0.75rem' : undefined,
-          gap: isSmallDesktop ? '0.5rem' : undefined
-        }}
-      >
+      <div className={`border-t border-gray-200 dark:border-gray-800 space-y-1.5 ${isMobile ? 'p-6' : 'p-3 lg:p-3 xl:p-4 xl:space-y-2'}`}>
         <button
           onClick={toggleTheme}
-          className="w-full flex items-center px-3 py-2.5 text-sm font-medium rounded-2xl transition-colors bg-gray-100 dark:bg-gray-900 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-800"
+          className="w-full flex items-center px-2 py-2 text-sm font-medium rounded-2xl transition-colors bg-gray-100 dark:bg-gray-900 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-800 lg:px-2 lg:py-2 xl:px-3 xl:py-2.5"
           aria-label="Prepínač témy"
-          style={{
-            paddingLeft: isSmallDesktop ? '0.5rem' : undefined,
-            paddingRight: isSmallDesktop ? '0.5rem' : undefined,
-            paddingTop: isSmallDesktop ? '0.5rem' : undefined,
-            paddingBottom: isSmallDesktop ? '0.5rem' : undefined,
-            fontSize: isSmallDesktop ? '0.875rem' : undefined
-          }}
         >
           {theme === 'dark' ? (
-            <SunIcon 
-              className="w-5 h-5 mr-3"
-              style={{
-                width: isSmallDesktop ? '1rem' : undefined,
-                height: isSmallDesktop ? '1rem' : undefined,
-                marginRight: isSmallDesktop ? '0.5rem' : undefined
-              }}
-            />
+            <SunIcon className="w-4 h-4 mr-2 xl:w-5 xl:h-5 xl:mr-3" />
           ) : (
-            <MoonIcon 
-              className="w-5 h-5 mr-3"
-              style={{
-                width: isSmallDesktop ? '1rem' : undefined,
-                height: isSmallDesktop ? '1rem' : undefined,
-                marginRight: isSmallDesktop ? '0.5rem' : undefined
-              }}
-            />
+            <MoonIcon className="w-4 h-4 mr-2 xl:w-5 xl:h-5 xl:mr-3" />
           )}
-          {theme === 'dark' ? t('common.lightMode', 'Svetlý režim') : t('common.darkMode', 'Tmavý režim')}
+          <span className="text-sm">
+            {theme === 'dark' ? t('common.lightMode', 'Svetlý režim') : t('common.darkMode', 'Tmavý režim')}
+          </span>
         </button>
         <button
           onClick={onLogout}
-          className="w-full flex items-center px-3 py-2.5 text-sm font-medium text-red-600 rounded-2xl hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-          style={{
-            paddingLeft: isSmallDesktop ? '0.5rem' : undefined,
-            paddingRight: isSmallDesktop ? '0.5rem' : undefined,
-            paddingTop: isSmallDesktop ? '0.5rem' : undefined,
-            paddingBottom: isSmallDesktop ? '0.5rem' : undefined,
-            fontSize: isSmallDesktop ? '0.875rem' : undefined
-          }}
+          className="w-full flex items-center px-2 py-2 text-sm font-medium text-red-600 rounded-2xl hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors lg:px-2 lg:py-2 xl:px-3 xl:py-2.5"
         >
-          <ArrowRightOnRectangleIcon 
-            className="w-5 h-5 mr-3 text-red-500"
-            style={{
-              width: isSmallDesktop ? '1rem' : undefined,
-              height: isSmallDesktop ? '1rem' : undefined,
-              marginRight: isSmallDesktop ? '0.5rem' : undefined
-            }}
-          />
-          {t('navigation.logout', 'Odhlásiť sa')}
+          <ArrowRightOnRectangleIcon className="w-4 h-4 mr-2 text-red-500 xl:w-5 xl:h-5 xl:mr-3" />
+          <span className="text-sm">{t('navigation.logout', 'Odhlásiť sa')}</span>
         </button>
       </div>
     </div>
@@ -359,12 +290,7 @@ export default function Sidebar({
   }
 
   return (
-    <div 
-      className="h-screen"
-      style={{
-        width: isSmallDesktop ? '280px' : '384px'
-      }}
-    >
+    <div className="h-screen w-full">
       {sidebarContent}
     </div>
   );

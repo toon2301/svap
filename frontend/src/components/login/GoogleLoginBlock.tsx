@@ -12,7 +12,7 @@ interface GoogleLoginBlockProps {
 
 export default function GoogleLoginBlock({ t, isGoogleLoading, isLoginLoading, onGoogleLogin }: GoogleLoginBlockProps) {
   return (
-    <motion.div className="mt-6" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 1.2 }}>
+    <motion.div className="mt-[clamp(0.75rem,2vw,1.25rem)]" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 1.2 }}>
       <div className="relative">
         <div className="absolute inset-0 flex items-center">
           <div className="w-full border-t border-gray-300 dark:border-gray-700" />
@@ -28,7 +28,7 @@ export default function GoogleLoginBlock({ t, isGoogleLoading, isLoginLoading, o
         disabled={isGoogleLoading || isLoginLoading}
         aria-label={t('auth.loginWithGoogle')}
         aria-describedby="google-login-help"
-        className={`w-full mt-4 px-4 py-3 border border-gray-300 dark:border-gray-700 rounded-2xl font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-black hover:bg-gray-50 dark:hover:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-all ${
+        className={`w-full mt-[clamp(0.5rem,1.5vw,0.875rem)] px-4 py-[clamp(0.5rem,1.5vw,0.75rem)] border border-gray-300 dark:border-gray-700 rounded-2xl font-medium text-[clamp(0.875rem,1.5vw,1rem)] text-gray-700 dark:text-gray-300 bg-white dark:bg-black hover:bg-gray-50 dark:hover:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-all ${
           isGoogleLoading || isLoginLoading ? 'opacity-50 cursor-not-allowed' : ''
         }`}
         whileHover={!isGoogleLoading && !isLoginLoading ? { scale: 1.02 } : {}}

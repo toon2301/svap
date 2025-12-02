@@ -8,25 +8,6 @@ export default function LanguageModule() {
   const [selectedLanguage, setSelectedLanguage] = useState(
     locale === 'en' ? 'angličtina' : locale === 'pl' ? 'poľština' : locale === 'cs' ? 'čeština' : locale === 'de' ? 'nemčina' : locale === 'hu' ? 'maďarčina' : 'slovenčina'
   );
-  const [isSmallDesktop, setIsSmallDesktop] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const width = window.innerWidth;
-      return width > 1024 && width <= 1440;
-    }
-    return false;
-  });
-
-  useEffect(() => {
-    const checkSmallDesktop = () => {
-      const width = window.innerWidth;
-      // Malé desktopy: 1024px < width <= 1440px (napr. 1280×720, 1366×768)
-      setIsSmallDesktop(width > 1024 && width <= 1440);
-    };
-    
-    checkSmallDesktop();
-    window.addEventListener('resize', checkSmallDesktop);
-    return () => window.removeEventListener('resize', checkSmallDesktop);
-  }, []);
 
   const languages = [
     'slovenčina',
@@ -42,19 +23,8 @@ export default function LanguageModule() {
       {/* Desktop layout */}
       <div className="text-[var(--foreground)]">
         <div className="hidden lg:flex items-start justify-center">
-          <div 
-            className="flex flex-col items-start w-full mx-auto"
-            style={{
-              maxWidth: isSmallDesktop ? '520px' : '768px', // max-w-3xl = 768px
-              marginLeft: isSmallDesktop ? '120px' : undefined
-            }}
-          >
-            <div 
-              className="w-full"
-              style={{
-                marginLeft: isSmallDesktop ? '0' : undefined
-              }}
-            >
+          <div className="flex flex-col items-start w-full max-w-[clamp(520px,50vw,768px)] mx-auto lg:ml-[clamp(0px,10vw,120px)]">
+            <div className="w-full">
               <h2 className="text-2xl font-semibold text-gray-800 dark:text-white mb-6">
                 {t('language.title', 'Jazyk')}
               </h2>
@@ -65,12 +35,12 @@ export default function LanguageModule() {
                 {t('language.selectLanguage', 'Zvoľte si jazyk, v ktorom sa vám bude aplikácia najlepšie používať.')}
               </p>
             </div>
-            <div className="w-full max-w-6xl mx-auto" style={{ marginTop: isSmallDesktop ? '1rem' : '1.5rem' }}>
+            <div className="w-full max-w-6xl mx-auto mt-[clamp(1rem,2vw,1.5rem)]">
               <div className="border-t border-gray-200 dark:border-gray-700"></div>
             </div>
-            <div className="w-full" style={{ marginTop: isSmallDesktop ? '1rem' : '2rem' }}>
-              <div className="w-full mx-auto" style={{ maxWidth: isSmallDesktop ? '520px' : '512px', gap: isSmallDesktop ? '1rem' : undefined }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: isSmallDesktop ? '1rem' : '2rem' }}>
+            <div className="w-full mt-[clamp(1rem,3vw,2rem)]">
+              <div className="w-full mx-auto max-w-[clamp(512px,50vw,520px)]">
+                <div className="flex flex-col gap-[clamp(1rem,2.5vw,2rem)]">
                 {languages.map((language) => (
                 <div key={language} className="flex items-center justify-between">
                   <span className="text-gray-800 dark:text-white text-sm font-medium">

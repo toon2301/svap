@@ -233,7 +233,7 @@ export default function OpeningHoursModal({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-2xl max-w-[95vw] sm:max-w-2xl max-h-[75vh] lg:max-h-[70vh] xl:max-h-[85vh] sm:max-h-[90vh] overflow-y-auto opening-hours-modal-scrollbar"
+        className="w-full max-w-[95vw] sm:max-w-xl lg:max-w-2xl max-h-[75vh] sm:max-h-[90vh] lg:max-h-[70vh] xl:max-h-[85vh] overflow-y-auto opening-hours-modal-scrollbar"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="rounded-2xl bg-[var(--background)] text-[var(--foreground)] border border-[var(--border)] shadow-2xl overflow-hidden opening-hours-compact-desktop">

@@ -23,19 +23,6 @@ export default function ProfileAvatarActionsModal({
   onRemoveAvatar,
 }: ProfileAvatarActionsModalProps) {
   const { t } = useLanguage();
-  const [isSmallDesktop, setIsSmallDesktop] = useState(false);
-
-  useEffect(() => {
-    const checkSmallDesktop = () => {
-      const width = window.innerWidth;
-      // Malé desktopy: 1024px < width <= 1440px (napr. 1280×720, 1366×768)
-      setIsSmallDesktop(width > 1024 && width <= 1440);
-    };
-    
-    checkSmallDesktop();
-    window.addEventListener('resize', checkSmallDesktop);
-    return () => window.removeEventListener('resize', checkSmallDesktop);
-  }, []);
 
   if (!open) {
     return null;
@@ -70,11 +57,8 @@ export default function ProfileAvatarActionsModal({
       onClick={handleOverlayClick}
     >
       <div
-        className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 max-w-[90vw] lg:ml-0 xl:ml-[-6rem] 2xl:ml-[-12rem]"
+        className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 w-[clamp(20rem,90vw,28rem)] lg:w-[clamp(24rem,30vw,28rem)]"
         onClick={handleContentClick}
-        style={{
-          width: isSmallDesktop ? '24rem' : '32rem'
-        }}
       >
         <div className="rounded-2xl bg-[var(--background)] text-[var(--foreground)] border border-[var(--border)] shadow-xl overflow-hidden">
           {/* Avatar v modale */}

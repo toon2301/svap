@@ -55,7 +55,7 @@ export default function AddCustomCategoryModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4" onClick={onClose}>
-      <div className="w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+      <div className="w-full max-w-sm md:max-w-md lg:max-w-lg" onClick={(e) => e.stopPropagation()}>
         <div className="rounded-2xl bg-[var(--background)] text-[var(--foreground)] border border-[var(--border)] shadow-xl overflow-hidden">
           <div className="flex items-center justify-between px-6 pt-6 pb-3">
             <h2 className="text-xl font-semibold">{t('skills.customCategoryTitle', 'Pridať kategóriu')}</h2>

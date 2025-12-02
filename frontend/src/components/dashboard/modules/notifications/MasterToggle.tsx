@@ -10,25 +10,9 @@ interface MasterToggleProps {
 }
 
 export default function MasterToggle({ enabled, onChange, label, compact }: MasterToggleProps) {
-  const [isSmallDesktop, setIsSmallDesktop] = useState(false);
-
-  useEffect(() => {
-    const checkSmallDesktop = () => {
-      const width = window.innerWidth;
-      // Malé desktopy: 1024px < width <= 1440px (napr. 1280×720, 1366×768)
-      setIsSmallDesktop(width > 1024 && width <= 1440);
-    };
-    
-    checkSmallDesktop();
-    window.addEventListener('resize', checkSmallDesktop);
-    return () => window.removeEventListener('resize', checkSmallDesktop);
-  }, []);
 
   return (
-    <div 
-      className={`flex items-center ${compact ? 'justify-between p-3 bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800' : (isSmallDesktop ? 'justify-start' : 'justify-between')}`}
-      style={!compact && isSmallDesktop ? { gap: '0.5rem' } : undefined}
-    >
+    <div className={`flex items-center ${compact ? 'justify-between p-3 bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800' : 'justify-between'}`}>
       <span className={compact ? 'text-sm font-medium text-gray-900 dark:text-white' : 'text-sm font-medium text-gray-900 dark:text-white'}>
         {label}
       </span>
@@ -37,7 +21,7 @@ export default function MasterToggle({ enabled, onChange, label, compact }: Mast
         onClick={() => onChange(!enabled)}
         className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 ${
           enabled ? 'bg-purple-400 border border-purple-400' : 'bg-gray-300 dark:bg-gray-600'
-        } ${!compact && isSmallDesktop ? 'ml-auto' : ''}`}
+        }`}
         style={{
           transform: 'scaleY(0.8)',
           transformOrigin: 'left center',

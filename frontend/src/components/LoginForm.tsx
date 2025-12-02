@@ -35,31 +35,9 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
   const [loginErrors, setLoginErrors] = useState<LoginErrors>({});
   const [isLoginLoading, setIsLoginLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
-  const [isSmallDesktop, setIsSmallDesktop] = useState(false);
   const [isResending, setIsResending] = useState(false);
   const [resendSuccess, setResendSuccess] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
-
-
-  useEffect(() => {
-    const checkMobile = () => {
-      const width = window.innerWidth;
-      const userAgent = navigator.userAgent;
-      const isMobileUserAgent = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
-      const isMobileDevice = width <= 768 || isMobileUserAgent;
-
-      setIsMobile(isMobileDevice);
-      // Malé desktop obrazovky: 768px < width <= 1440px (napr. 1280×720, 1366×768)
-      setIsSmallDesktop(!isMobileDevice && width <= 1440);
-    };
-    
-    // Skús to s malým oneskorením
-    setTimeout(checkMobile, 100);
-    window.addEventListener('resize', checkMobile);
-    
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
 
   const handleLoginInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -335,30 +313,15 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
 
   return (
     <motion.div 
-      className="bg-white dark:bg-black rounded-2xl shadow-xl border border-gray-200 dark:border-gray-800"
-      style={{
-        width: isMobile ? '100%' : (isSmallDesktop ? '320px' : '500px'),
-        maxWidth: isMobile ? '600px' : (isSmallDesktop ? '320px' : '500px'),
-        marginLeft: isMobile ? '0' : (isSmallDesktop ? '-100px' : '50px'),
-        marginTop: isSmallDesktop ? '-40px' : undefined
-      }}
+      className="w-full max-w-[min(500px,90vw)] lg:max-w-[clamp(280px,28vw,380px)] xl:max-w-[clamp(380px,30vw,500px)] bg-white dark:bg-black rounded-2xl shadow-xl border border-gray-200 dark:border-gray-800 lg:ml-[clamp(0px,2vw,30px)]"
       initial={{ opacity: 0, x: 50 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.8, delay: 0.6, ease: "easeOut" }}
     >
-      <div style={{
-        marginLeft: isMobile ? '24px' : (isSmallDesktop ? '16px' : '30px'), 
-        marginRight: isMobile ? '24px' : (isSmallDesktop ? '16px' : '30px'), 
-        marginTop: isMobile ? '30px' : (isSmallDesktop ? '16px' : '24px'), 
-        marginBottom: isMobile ? '30px' : (isSmallDesktop ? '16px' : '24px')
-      }}>
+      <div className="px-[clamp(1rem,3vw,1.5rem)] py-[clamp(1rem,3vw,1.5rem)] lg:py-[clamp(0.875rem,2vw,1.25rem)]">
         
         <motion.h1 
-          className="text-3xl font-medium mb-12 text-center tracking-wider max-lg:text-2xl max-lg:mb-8 text-black dark:text-white"
-          style={{
-            fontSize: isMobile ? '24px' : (isSmallDesktop ? '20px' : '28px'),
-            marginBottom: isMobile ? '32px' : (isSmallDesktop ? '16px' : '24px')
-          }}
+          className="text-[clamp(1.25rem,2.5vw,1.5rem)] font-medium mb-[clamp(0.75rem,2vw,1rem)] text-center tracking-wider text-black dark:text-white"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.6, ease: "easeOut" }}
@@ -431,10 +394,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
         )}
 
         <motion.form 
-          className="space-y-5 max-lg:space-y-4"
-          style={{
-            gap: isMobile ? '24px' : (isSmallDesktop ? '12px' : '20px')
-          }}
+          className="space-y-[clamp(0.625rem,1.5vw,1rem)]"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.8 }}
@@ -459,16 +419,11 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
           <motion.button
             type="submit"
             disabled={isLoginLoading}
-            className={`w-full text-white px-4 py-2.5 rounded-2xl font-semibold text-xl transition-all max-lg:px-4 max-lg:py-2 max-lg:text-xl ${
-              isLoginLoading ? 'cursor-not-allowed' : 'cursor-pointer'
+            className={`w-full text-white px-4 py-[clamp(0.5rem,1.5vw,0.625rem)] rounded-2xl font-semibold text-[clamp(0.875rem,2vw,1.25rem)] transition-all ${
+              isLoginLoading ? 'cursor-not-allowed bg-purple-400 opacity-80' : 'cursor-pointer bg-purple-600 hover:bg-purple-700'
             }`}
             style={{
-              backgroundColor: isLoginLoading ? '#A855F7' : '#7C3AED',
-              opacity: isLoginLoading ? 0.8 : 1,
-              boxShadow: '0 4px 15px rgba(139, 92, 246, 0.3)',
-              marginTop: isMobile ? '24px' : (isSmallDesktop ? '12px' : '20px'),
-              fontSize: isSmallDesktop ? '14px' : undefined,
-              padding: isSmallDesktop ? '8px 16px' : undefined
+              boxShadow: '0 4px 15px rgba(139, 92, 246, 0.3)'
             }}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -494,15 +449,15 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
         {/* Google prihlásenie */}
         <GoogleLoginBlock t={t} isGoogleLoading={isGoogleLoading} isLoginLoading={isLoginLoading} onGoogleLogin={handleGoogleLogin} />
 
-        <div className="text-center" style={{marginTop: isMobile ? '16px' : (isSmallDesktop ? '8px' : '12px')}}>
-          <p className="text-lg text-gray-500 dark:text-gray-400 max-lg:text-sm" style={{marginBottom: isMobile ? '12px' : (isSmallDesktop ? '6px' : '8px'), fontSize: isMobile ? '20px' : (isSmallDesktop ? '12px' : '16px')}}>
-            <a href="/forgot-password" className="text-purple-700 dark:text-purple-400 hover:text-purple-600 dark:hover:text-purple-300 font-medium transition-colors max-lg:text-base" style={{fontSize: isSmallDesktop ? '12px' : undefined}}>
+        <div className="text-center mt-[clamp(0.5rem,1.2vw,0.625rem)]">
+          <p className="text-[clamp(0.75rem,1.5vw,0.875rem)] text-gray-500 dark:text-gray-400 mb-[clamp(0.25rem,0.8vw,0.375rem)]">
+            <a href="/forgot-password" className="text-purple-700 dark:text-purple-400 hover:text-purple-600 dark:hover:text-purple-300 font-medium transition-colors">
               {t('auth.forgotPassword')}
             </a>
           </p>
-          <p className="text-xl text-gray-600 dark:text-gray-300 max-lg:text-base" style={{fontSize: isMobile ? '24px' : (isSmallDesktop ? '14px' : '18px')}}>
+          <p className="text-[clamp(0.875rem,1.8vw,1rem)] text-gray-600 dark:text-gray-300">
             {t('auth.noAccount')}{' '}
-            <a href="/register" className="text-purple-800 dark:text-purple-400 font-semibold hover:text-purple-900 dark:hover:text-purple-300" style={{fontSize: isSmallDesktop ? '14px' : undefined}}>
+            <a href="/register" className="text-purple-800 dark:text-purple-400 font-semibold hover:text-purple-900 dark:hover:text-purple-300">
               {t('auth.register')}
             </a>
           </p>

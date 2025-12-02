@@ -69,19 +69,6 @@ export default function ProfileOffersSection({ activeTab, accountType = 'persona
   const [activeHoursOfferId, setActiveHoursOfferId] = useState<number | string | null>(null);
   const [hoursPopoverPosition, setHoursPopoverPosition] = useState<{ top: number; left: number } | null>(null);
   const [activeOpeningHours, setActiveOpeningHours] = useState<OpeningHours | null>(null);
-  const [isSmallDesktop, setIsSmallDesktop] = useState(false);
-
-  useEffect(() => {
-    const checkSmallDesktop = () => {
-      const width = window.innerWidth;
-      // Malé desktopy: 1024px < width <= 1440px (napr. 1280×720, 1366×768)
-      setIsSmallDesktop(width > 1024 && width <= 1440);
-    };
-    
-    checkSmallDesktop();
-    window.addEventListener('resize', checkSmallDesktop);
-    return () => window.removeEventListener('resize', checkSmallDesktop);
-  }, []);
 
   // Load offers when switching to 'offers' tab (desktop focus)
   useEffect(() => {
@@ -177,7 +164,7 @@ export default function ProfileOffersSection({ activeTab, accountType = 'persona
       {offers.length === 0 ? (
         <p className="text-sm text-gray-600 dark:text-gray-400">Zatiaľ nemáš žiadne ponuky.</p>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-[clamp(1rem,2vw,1.5rem)]">
           {offers.map((offer) => {
             const catSlug = offer.category ? slugifyLabel(offer.category) : '';
             const subSlug = offer.subcategory ? slugifyLabel(offer.subcategory) : '';
@@ -466,20 +453,11 @@ export default function ProfileOffersSection({ activeTab, accountType = 'persona
                     </div>
                     <div className="relative">
                       <div className="p-3 flex flex-col h-52 border-t border-gray-200 dark:border-gray-700/50 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-[#0f0f10] dark:to-[#151518] overflow-hidden rounded-b-2xl">
-                        <div
-                          className="flex-1 flex flex-col justify-start pt-1"
-                          style={isSmallDesktop ? { paddingTop: 0 } : undefined}
-                        >
-                        <div
-                          className="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide mb-1.5 lg:mb-0.5"
-                          style={isSmallDesktop ? { marginBottom: 0 } : undefined}
-                        >
+                        <div className="flex-1 flex flex-col justify-start pt-0 xl:pt-0.5">
+                        <div className="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide mb-0 xl:mb-0">
                           {t('skills.ratings', 'Hodnotenia')}
                         </div>
-                        <div
-                          className="flex items-center gap-3 mb-1 lg:mb-0"
-                          style={isSmallDesktop ? { marginBottom: 0 } : undefined}
-                        >
+                        <div className="flex items-center gap-3 mb-0 xl:-mb-0.5">
                           <div className="flex items-center gap-0.5">
                             {/* 3 plné hviezdičky */}
                             {[1, 2, 3].map((i) => (
@@ -551,8 +529,7 @@ export default function ProfileOffersSection({ activeTab, accountType = 'persona
                           onClick={() => {
                             // TODO: Implementovať otvorenie recenzií
                           }}
-                          className="mt-3 lg:mt-1 flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 transition-colors cursor-pointer"
-                          style={isSmallDesktop ? { marginTop: 0 } : undefined}
+                          className="mt-0 xl:mt-0.5 flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 transition-colors cursor-pointer"
                         >
                           <span>{t('skills.allReviews', 'Všetky recenzie')}</span>
                           <svg
@@ -570,10 +547,7 @@ export default function ProfileOffersSection({ activeTab, accountType = 'persona
                             />
                           </svg>
                         </button>
-                        <div
-                          className="mt-2 lg:mt-0.5 flex items-center gap-1.5"
-                          style={isSmallDesktop ? { marginTop: 0 } : undefined}
-                        >
+                        <div className="mt-0 xl:mt-0 flex items-center gap-1.5">
                           <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
                             {t('skills.likes', 'Páči sa mi to')}
                           </span>
@@ -594,10 +568,7 @@ export default function ProfileOffersSection({ activeTab, accountType = 'persona
                           </span>
                         </div>
                         {offer.tags && offer.tags.length > 0 && (
-                          <div
-                            className="mt-3 lg:mt-1 flex flex-wrap gap-1"
-                            style={isSmallDesktop ? { marginTop: 0 } : undefined}
-                          >
+                          <div className="mt-0 xl:mt-0.5 flex flex-wrap gap-1">
                             {offer.tags.map((tag, index) => (
                               <span
                                 key={index}

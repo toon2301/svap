@@ -59,8 +59,6 @@ export default function RegisterForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
-  const [isSmallDesktop, setIsSmallDesktop] = useState(false);
   const [registrationSuccess, setRegistrationSuccess] = useState(false);
   
   // Smart validácia - email availability
@@ -75,21 +73,6 @@ export default function RegisterForm() {
   const { loadDraft, clearDraft } = useAutoSave(formData, 'registration_draft', 30000);
 
   useEffect(() => {
-    const checkMobile = () => {
-      const width = window.innerWidth;
-      setIsMobile(width <= 768);
-      // Malé desktopy: 768px < width <= 1440px (napr. 1280×720, 1366×768)
-      setIsSmallDesktop(width > 768 && width <= 1440);
-    };
-    
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    
-    // Mobile debugging - dočasne vypnuté
-    // if (window.innerWidth <= 768) {
-    //   logMobileDebugInfo();
-    // }
-    
     // Načítanie draftu pri inicializácii - pridáno bez narušenia existujúcich funkcií (ticho v pozadí)
     const savedDraft = loadDraft();
     if (savedDraft) {
@@ -101,15 +84,13 @@ export default function RegisterForm() {
     fetchCsrfToken().catch(err => {
       console.error('Nepodarilo sa získať CSRF token:', err);
     });
-    
-    return () => window.removeEventListener('resize', checkMobile);
   }, [loadDraft]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     
-    // Mobile dropdown handling - minimal delay for select elements
-    if (isMobile && e.target.tagName === 'SELECT') {
+    // Dropdown handling - minimal delay for select elements
+    if (e.target.tagName === 'SELECT') {
       // Add very small delay to prevent immediate blur, but allow normal interaction
       setTimeout(() => {
         setFormData(prev => ({
@@ -144,16 +125,14 @@ export default function RegisterForm() {
     }
   };
 
-  // Mobile touch handlers for dropdown elements
+  // Touch handlers for dropdown elements
   const handleTouchStart = (e: React.TouchEvent, fieldName: string) => {
-    if (isMobile) {
-      setTouchStartTime(Date.now());
-      setActiveDropdown(fieldName);
-    }
+    setTouchStartTime(Date.now());
+    setActiveDropdown(fieldName);
   };
 
   const handleTouchEnd = (e: React.TouchEvent, fieldName: string) => {
-    if (isMobile && touchStartTime) {
+    if (touchStartTime) {
       const touchDuration = Date.now() - touchStartTime;
       // Only prevent default for extremely short touches (likely accidental double-tap)
       if (touchDuration < 50) {
@@ -164,18 +143,14 @@ export default function RegisterForm() {
   };
 
   const handleSelectFocus = (fieldName: string) => {
-    if (isMobile) {
-      setActiveDropdown(fieldName);
-    }
+    setActiveDropdown(fieldName);
   };
 
   const handleSelectBlur = (fieldName: string) => {
-    if (isMobile) {
-      // Add small delay before clearing active dropdown
-      setTimeout(() => {
-        setActiveDropdown(null);
-      }, 50);
-    }
+    // Add small delay before clearing active dropdown
+    setTimeout(() => {
+      setActiveDropdown(null);
+    }, 50);
   };
 
   // Keyboard navigation handler
@@ -415,10 +390,6 @@ export default function RegisterForm() {
     return t('auth.registerButton');
   };
 
-  const getButtonStyle = () => {
-    if (isLoading) return { backgroundColor: '#A855F7', opacity: 0.8 };
-    return { backgroundColor: '#7C3AED' };
-  };
 
   return (
     <div className="min-h-screen flex flex-col relative" style={{background: 'var(--background)'}}>
@@ -433,27 +404,14 @@ export default function RegisterForm() {
       <div className="flex-1 flex items-center justify-center p-4 relative z-10">
         
         <motion.div 
-          className="bg-white dark:bg-black rounded-2xl shadow-xl border border-gray-200 dark:border-gray-800"
-          style={{
-            width: isMobile ? '100%' : '100%',
-            maxWidth: isMobile ? '600px' : (isSmallDesktop ? '480px' : '580px')
-          }}
+          className="w-full max-w-[min(580px,90vw)] lg:max-w-[clamp(380px,35vw,480px)] xl:max-w-[clamp(480px,38vw,580px)] bg-white dark:bg-black rounded-2xl shadow-xl border border-gray-200 dark:border-gray-800"
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
         >
-          <div style={{
-            marginLeft: isMobile ? '24px' : (isSmallDesktop ? '20px' : '32px'), 
-            marginRight: isMobile ? '24px' : (isSmallDesktop ? '20px' : '32px'), 
-            marginTop: isMobile ? '24px' : (isSmallDesktop ? '20px' : '24px'), 
-            marginBottom: isMobile ? '24px' : (isSmallDesktop ? '20px' : '24px')
-          }}>
+          <div className="px-[clamp(1.25rem,4vw,2rem)] py-[clamp(1.5rem,4vw,1.5rem)]">
             <motion.h1 
-              className="text-3xl font-medium text-center mb-6 text-black dark:text-white tracking-wider max-lg:text-2xl max-lg:mb-8"
-              style={{
-                fontSize: isSmallDesktop ? '1.5rem' : undefined,
-                marginBottom: isSmallDesktop ? '1rem' : undefined
-              }}
+              className="text-[clamp(1.5rem,3vw,1.875rem)] font-medium text-center mb-[clamp(1rem,2vw,1.5rem)] text-black dark:text-white tracking-wider"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.2 }}
@@ -510,8 +468,6 @@ export default function RegisterForm() {
                 onBlur={handleSelectBlur}
               />
 
-              <div style={{marginTop: '12px'}}></div>
-
               {/* Prihlasovacie údaje */}
               <CredentialsSection
                 t={t}
@@ -524,8 +480,6 @@ export default function RegisterForm() {
                 onKeyDown={handleKeyDown as any}
                 onEmailBlur={checkEmailAvailability}
               />
-
-              <div style={{marginTop: '12px'}}></div>
 
               {/* Heslá */}
               <PasswordSection
@@ -540,8 +494,6 @@ export default function RegisterForm() {
                 onChange={handleInputChange as any}
                 onKeyDown={handleKeyDown as any}
               />
-
-              <div style={{marginTop: '12px'}}></div>
 
               {/* Dátum narodenia */}
               <BirthGenderSection
@@ -565,8 +517,6 @@ export default function RegisterForm() {
                 bindSelectHandlers={{ onTouchStart: handleTouchStart as any, onTouchEnd: handleTouchEnd as any, onFocus: handleSelectFocus, onBlur: handleSelectBlur }}
               />
 
-              <div style={{marginTop: '12px'}}></div>
-
               {/* Pre firmy */}
               {formData.user_type === 'company' && (
                 <CompanySection
@@ -582,13 +532,11 @@ export default function RegisterForm() {
               <motion.button
                 type="submit"
                 disabled={isLoading}
-                className={`w-full text-white px-4 py-2.5 rounded-2xl font-semibold text-xl transition-all max-lg:px-4 max-lg:py-2 max-lg:text-xl ${
-                  isLoading ? 'cursor-not-allowed' : 'cursor-pointer hover:shadow-lg'
+                className={`w-full text-white px-4 py-[clamp(0.5rem,1.5vw,0.625rem)] rounded-2xl font-semibold text-[clamp(0.875rem,2vw,1.25rem)] transition-all mt-5 ${
+                  isLoading ? 'cursor-not-allowed bg-purple-400 opacity-80' : 'cursor-pointer bg-purple-600 hover:bg-purple-700 hover:shadow-lg'
                 }`}
                 style={{
-                  ...getButtonStyle(),
-                  boxShadow: '0 4px 15px rgba(139, 92, 246, 0.3)',
-                  marginTop: '20px'
+                  boxShadow: '0 4px 15px rgba(139, 92, 246, 0.3)'
                 }}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -630,8 +578,8 @@ export default function RegisterForm() {
                 </a>
               </motion.div>
             ) : (
-              <div className="text-center" style={{marginTop: '16px'}}>
-                <p className="text-base text-gray-600 dark:text-gray-300 max-lg:text-base">
+              <div className="text-center mt-4">
+                <p className="text-[clamp(0.875rem,1.5vw,1rem)] text-gray-600 dark:text-gray-300">
                   {t('auth.haveAccount')}{' '}
                   <a 
                     href="/" 

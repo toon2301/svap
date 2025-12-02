@@ -52,26 +52,6 @@ export default function ProfileEditFormDesktop({
   const [isActionsOpen, setIsActionsOpen] = useState(false);
   const [uploadError, setUploadError] = useState('');
   const [mounted, setMounted] = useState(false);
-  const [isSmallDesktop, setIsSmallDesktop] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const width = window.innerWidth;
-      return width > 1024 && width <= 1440;
-    }
-    return false;
-  });
-
-  // Detekcia malého desktop rozlíšenia
-  useEffect(() => {
-    const checkSmallDesktop = () => {
-      const width = window.innerWidth;
-      // Malé desktopy: 1024px < width <= 1440px (napr. 1280×720, 1366×768)
-      setIsSmallDesktop(width > 1024 && width <= 1440);
-    };
-    
-    checkSmallDesktop();
-    window.addEventListener('resize', checkSmallDesktop);
-    return () => window.removeEventListener('resize', checkSmallDesktop);
-  }, []);
 
   // Aktualizácia stavu pri zmene user prop
   useEffect(() => {
@@ -703,11 +683,8 @@ export default function ProfileEditFormDesktop({
       {isActionsOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 lg:bg-transparent" onClick={() => setIsActionsOpen(false)}>
           <div 
-            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 max-w-[90vw]" 
+            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 w-[clamp(24rem,30vw,32rem)] max-w-[90vw]" 
             onClick={(e) => e.stopPropagation()}
-            style={{
-              width: isSmallDesktop ? '24rem' : '32rem'
-            }}
           >
             <div className="rounded-2xl bg-[var(--background)] text-[var(--foreground)] border border-[var(--border)] shadow-xl overflow-hidden">
               {/* Avatar v modale */}

@@ -132,7 +132,7 @@ export default function DetailedDescriptionModal({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-md md:max-w-lg 2xl:max-w-2xl"
+        className="w-full max-w-md md:max-w-lg lg:max-w-xl xl:max-w-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="rounded-2xl bg-[var(--background)] text-[var(--foreground)] border border-[var(--border)] shadow-2xl overflow-hidden max-h-[80vh] flex flex-col">

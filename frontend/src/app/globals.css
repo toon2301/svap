@@ -104,66 +104,15 @@ a {
   font-size: var(--font-small);
 }
 
-/* Centered main content column (similar to FB/IG feed) */
-.main-column {
-  max-width: 800px;
-  margin-left: auto;
-  margin-right: auto;
-  padding-inline: clamp(16px, 3vw, 24px);
-}
+/* Responsive layout utilities */
+/* Note: Main layout is now handled by CSS Grid in DashboardLayout.tsx using Tailwind utilities */
+/* These legacy classes are kept for backwards compatibility if used elsewhere */
 
-@media (max-width: 1280px) {
-  .main-column {
-    padding-inline: clamp(12px, 2.4vw, 20px);
-  }
-}
-
-/* Profile module - wider on large screens */
-.main-column.profile-column {
-  max-width: 1200px;
-}
-
-@media (min-width: 1441px) {
-  .main-column.profile-column {
-    margin-left: auto;
-    margin-right: 120px;
-  }
-}
-
-@media (min-width: 1024px) and (max-width: 1440px) {
-  .main-column.profile-column {
-    max-width: 920px;
-    margin-left: 280px;
-    margin-right: 0;
-  }
-}
-
-/* Skills modules (offer/search) - wider grid area on desktop */
-.main-column.skills-column {
-  max-width: 1200px;
-  margin-left: 505px;
-  margin-right: auto;
-}
-
-@media (min-width: 1024px) and (max-width: 1440px) {
-  .main-column.skills-column {
-    max-width: 1000px;
-    margin-left: 280px;
-    margin-right: 0;
-  }
-}
-
-/* Profile edit form column - centered on desktop */
+/* Profile edit form column - centered form layout */
 .profile-edit-column {
-  max-width: 672px;
+  max-width: min(672px, 100% - 2rem);
   margin-left: auto;
   margin-right: auto;
-}
-
-@media (min-width: 1024px) and (max-width: 1440px) {
-  .profile-edit-column {
-    max-width: 520px;
-  }
 }
 
 /* Base button sizing */

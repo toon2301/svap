@@ -44,28 +44,10 @@ export default function ProfileDesktopView({
   onOpenAllWebsitesModal,
 }: ProfileDesktopViewProps) {
   const { t } = useLanguage();
-  const [isSmallDesktop, setIsSmallDesktop] = useState(false);
-
-  useEffect(() => {
-    const checkSmallDesktop = () => {
-      const width = window.innerWidth;
-      // Malé desktopy: 1024px < width <= 1440px (napr. 1280×720, 1366×768)
-      setIsSmallDesktop(width > 1024 && width <= 1440);
-    };
-    
-    checkSmallDesktop();
-    window.addEventListener('resize', checkSmallDesktop);
-    return () => window.removeEventListener('resize', checkSmallDesktop);
-  }, []);
 
   return (
     <div className="hidden lg:block w-full">
-      <div 
-        className="flex flex-col items-stretch w-full gap-6"
-        style={{
-          gap: isSmallDesktop ? '1rem' : undefined
-        }}
-      >
+      <div className="flex flex-col items-stretch w-full gap-[clamp(1rem,2vw,1.5rem)]">
         {/* Pôvodný desktop obsah */}
         <div className="w-full">
           {isEditMode ? (
@@ -82,35 +64,23 @@ export default function ProfileDesktopView({
           ) : (
             // Normal profile view
             <>
-              <div 
-                className="flex flex-col gap-6 mb-6"
-                style={{
-                  gap: isSmallDesktop ? '1rem' : undefined,
-                  marginBottom: isSmallDesktop ? '1rem' : undefined
-                }}
-              >
+              <div className="flex flex-col gap-[clamp(1rem,2vw,1.5rem)] mb-[clamp(1rem,2vw,1.5rem)]">
                 <div className="flex flex-col items-start w-full">
                   <div 
-                    className="flex gap-4 items-center"
-                    style={{
-                      gap: isSmallDesktop ? '0.75rem' : undefined
-                    }}
+                    className="flex gap-[clamp(1rem,2vw,2rem)] items-start lg:items-center w-full"
                   >
-                    <UserAvatar
-                      user={displayUser}
-                      size="large"
-                      onPhotoUpload={onPhotoUpload}
-                      isUploading={isUploading}
-                      onAvatarClick={onAvatarClick}
-                    />
-                    <div className="flex flex-col">
+                    <div className="flex-shrink-0">
+                      <UserAvatar
+                        user={displayUser}
+                        size="large"
+                        onPhotoUpload={onPhotoUpload}
+                        isUploading={isUploading}
+                        onAvatarClick={onAvatarClick}
+                      />
+                    </div>
+                    <div className="flex flex-col flex-grow min-w-0">
                       {/* Meno používateľa */}
-                      <h2 
-                        className="text-xl font-semibold text-gray-900 dark:text-white mb-1"
-                        style={{
-                          fontSize: isSmallDesktop ? '1.125rem' : undefined
-                        }}
-                      >
+                      <h2 className="text-[clamp(1.25rem,2vw,1.75rem)] font-semibold text-gray-900 dark:text-white mb-2">
                         {`${(displayUser.first_name || '').trim()} ${(displayUser.last_name || '').trim()}`.trim() ||
                           displayUser.username}
                       </h2>
@@ -210,13 +180,7 @@ export default function ProfileDesktopView({
                     </div>
                   </div>
                   {/* Tlačidlá pod fotkou */}
-                  <div 
-                    className="flex gap-2 mt-3"
-                    style={{
-                      gap: isSmallDesktop ? '0.5rem' : undefined,
-                      marginTop: isSmallDesktop ? '0.75rem' : undefined
-                    }}
-                  >
+                  <div className="flex gap-[clamp(0.5rem,1vw,0.5rem)] mt-[clamp(0.75rem,1.5vw,0.75rem)]">
                     <button
                       onClick={() => {
                         if (onEditProfileClick) {
@@ -226,12 +190,7 @@ export default function ProfileDesktopView({
                           console.log('Upraviť profil');
                         }
                       }}
-                      className="flex-1 px-4 lg:px-8 xl:px-16 2xl:px-32 py-2 text-sm bg-purple-100 text-purple-800 border border-purple-200 rounded-2xl transition-colors hover:bg-purple-200 whitespace-nowrap"
-                      style={{
-                        paddingLeft: isSmallDesktop ? '5rem' : undefined,
-                        paddingRight: isSmallDesktop ? '5rem' : undefined,
-                        minWidth: '200px'
-                      }}
+                      className="flex-1 px-[clamp(4rem,8vw,8rem)] xl:px-16 2xl:px-32 py-2 text-sm bg-purple-100 text-purple-800 border border-purple-200 rounded-2xl transition-colors hover:bg-purple-200 whitespace-nowrap min-w-[200px]"
                     >
                       {t('profile.editProfile')}
                     </button>
@@ -245,12 +204,7 @@ export default function ProfileDesktopView({
                           console.log('Zručnosti');
                         }
                       }}
-                      className="flex-1 px-4 lg:px-8 xl:px-16 2xl:px-32 py-2 text-sm bg-purple-100 text-purple-800 border border-purple-200 rounded-2xl transition-colors hover:bg-purple-200 whitespace-nowrap"
-                      style={{
-                        paddingLeft: isSmallDesktop ? '5rem' : undefined,
-                        paddingRight: isSmallDesktop ? '5rem' : undefined,
-                        minWidth: '200px'
-                      }}
+                      className="flex-1 px-[clamp(4rem,8vw,8rem)] xl:px-16 2xl:px-32 py-2 text-sm bg-purple-100 text-purple-800 border border-purple-200 rounded-2xl transition-colors hover:bg-purple-200 whitespace-nowrap min-w-[200px]"
                     >
                       {t('profile.skills', 'Služby a ponuky')}
                     </button>
@@ -258,11 +212,7 @@ export default function ProfileDesktopView({
                 </div>
                 {/* Ikonová navigácia sekcií profilu */}
                 <div 
-                  className="mt-3 w-full lg:mt-6 lg:pb-4"
-                  style={{
-                    marginTop: isSmallDesktop ? '0.75rem' : undefined,
-                    paddingBottom: isSmallDesktop ? '0.5rem' : undefined
-                  }}
+                  className="mt-[clamp(0.75rem,2vw,1.5rem)] w-full lg:pb-[clamp(0.5rem,1.5vw,1rem)]"
                 >
                   <div
                     role="tablist"
@@ -271,7 +221,7 @@ export default function ProfileDesktopView({
                     tabIndex={0}
                     onKeyDown={onTabsKeyDown}
                   >
-                    <div className="flex w-full items-stretch rounded-3xl border-b border-gray-200 bg-white/60 dark:bg-[#0f0f10] dark:border-gray-800 shadow-sm overflow-hidden">
+                    <div className="flex w-full items-stretch rounded-2xl border-b border-gray-200 bg-white/60 dark:bg-[#0f0f10] dark:border-gray-800 shadow-sm overflow-hidden">
                       {/* Tab: Ponúkam/Hľadám */}
                       <button
                         type="button"
@@ -281,17 +231,12 @@ export default function ProfileDesktopView({
                         aria-label="Ponúkam / Hľadám"
                         title="Ponúkam / Hľadám"
                         className={[
-                          'relative group flex-1 py-3 transition-all flex items-center justify-center min-w-[72px]',
+                          'relative group flex-1 py-[clamp(0.5rem,1vw,0.75rem)] transition-all flex items-center justify-center min-w-[clamp(60px,8vw,72px)]',
                           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60',
                           activeTab === 'offers'
                             ? 'bg-gradient-to-t from-purple-100 to-transparent text-purple-700 dark:from-purple-100 dark:to-purple-100/40 dark:text-purple-800'
                             : 'text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-[#111214]',
                         ].join(' ')}
-                        style={{
-                          paddingTop: isSmallDesktop ? '0.5rem' : undefined,
-                          paddingBottom: isSmallDesktop ? '0.5rem' : undefined,
-                          minWidth: isSmallDesktop ? '60px' : undefined
-                        }}
                       >
                         {/* Icon: handshake */}
                         <svg
@@ -300,11 +245,7 @@ export default function ProfileDesktopView({
                           fill="none"
                           stroke="currentColor"
                           strokeWidth="1.4"
-                          className="w-5 h-5"
-                          style={{
-                            width: isSmallDesktop ? '1rem' : undefined,
-                            height: isSmallDesktop ? '1rem' : undefined
-                          }}
+                          className="w-[clamp(1rem,1.5vw,1.25rem)] h-[clamp(1rem,1.5vw,1.25rem)]"
                         >
                           <path
                             strokeLinecap="round"
@@ -327,18 +268,13 @@ export default function ProfileDesktopView({
                         aria-label="Portfólio"
                         title="Portfólio"
                         className={[
-                          'relative group flex-1 py-3 transition-all flex items-center justify-center min-w-[72px]',
+                          'relative group flex-1 py-[clamp(0.5rem,1vw,0.75rem)] transition-all flex items-center justify-center min-w-[clamp(60px,8vw,72px)]',
                           'border-l border-gray-200 dark:border-gray-800',
                           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60',
                           activeTab === 'portfolio'
                             ? 'bg-gradient-to-t from-purple-100 to-transparent text-purple-700 dark:from-purple-100 dark:to-purple-100/40 dark:text-purple-800'
                             : 'text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-[#111214]',
                         ].join(' ')}
-                        style={{
-                          paddingTop: isSmallDesktop ? '0.5rem' : undefined,
-                          paddingBottom: isSmallDesktop ? '0.5rem' : undefined,
-                          minWidth: isSmallDesktop ? '60px' : undefined
-                        }}
                       >
                         {/* Icon: briefcase */}
                         <svg
@@ -347,11 +283,7 @@ export default function ProfileDesktopView({
                           fill="none"
                           stroke="currentColor"
                           strokeWidth="1.8"
-                          className="w-6 h-6"
-                          style={{
-                            width: isSmallDesktop ? '1.125rem' : undefined,
-                            height: isSmallDesktop ? '1.125rem' : undefined
-                          }}
+                          className="w-[clamp(1.125rem,1.8vw,1.5rem)] h-[clamp(1.125rem,1.8vw,1.5rem)]"
                         >
                           <path
                             strokeLinecap="round"
@@ -373,18 +305,13 @@ export default function ProfileDesktopView({
                         aria-label="Príspevky"
                         title="Príspevky"
                         className={[
-                          'relative group flex-1 py-3 transition-all flex items-center justify-center min-w-[72px]',
+                          'relative group flex-1 py-[clamp(0.5rem,1vw,0.75rem)] transition-all flex items-center justify-center min-w-[clamp(60px,8vw,72px)]',
                           'border-l border-gray-200 dark:border-gray-800',
                           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60',
                           activeTab === 'posts'
                             ? 'bg-gradient-to-t from-purple-100 to-transparent text-purple-700 dark:from-purple-100 dark:to-purple-100/40 dark:text-purple-800'
                             : 'text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-[#111214]',
                         ].join(' ')}
-                        style={{
-                          paddingTop: isSmallDesktop ? '0.5rem' : undefined,
-                          paddingBottom: isSmallDesktop ? '0.5rem' : undefined,
-                          minWidth: isSmallDesktop ? '60px' : undefined
-                        }}
                       >
                         {/* Icon: squares-2x2 */}
                         <svg
@@ -393,11 +320,7 @@ export default function ProfileDesktopView({
                           fill="none"
                           stroke="currentColor"
                           strokeWidth="1.8"
-                          className="w-6 h-6"
-                          style={{
-                            width: isSmallDesktop ? '1.125rem' : undefined,
-                            height: isSmallDesktop ? '1.125rem' : undefined
-                          }}
+                          className="w-[clamp(1.125rem,1.8vw,1.5rem)] h-[clamp(1.125rem,1.8vw,1.5rem)]"
                         >
                           <path
                             strokeLinecap="round"
@@ -419,18 +342,13 @@ export default function ProfileDesktopView({
                         aria-label="Označený"
                         title="Označený"
                         className={[
-                          'relative group flex-1 py-3 transition-all flex items-center justify-center min-w-[72px]',
+                          'relative group flex-1 py-[clamp(0.5rem,1vw,0.75rem)] transition-all flex items-center justify-center min-w-[clamp(60px,8vw,72px)]',
                           'border-l border-gray-200 dark:border-gray-800',
                           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60',
                           activeTab === 'tagged'
                             ? 'bg-gradient-to-t from-purple-100 to-transparent text-purple-700 dark:from-purple-100 dark:to-purple-100/40 dark:text-purple-800'
                             : 'text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-[#111214]',
                         ].join(' ')}
-                        style={{
-                          paddingTop: isSmallDesktop ? '0.5rem' : undefined,
-                          paddingBottom: isSmallDesktop ? '0.5rem' : undefined,
-                          minWidth: isSmallDesktop ? '60px' : undefined
-                        }}
                       >
                         {/* Icon: at-symbol */}
                         <svg
@@ -439,11 +357,7 @@ export default function ProfileDesktopView({
                           fill="none"
                           stroke="currentColor"
                           strokeWidth="1.8"
-                          className="w-6 h-6"
-                          style={{
-                            width: isSmallDesktop ? '1.125rem' : undefined,
-                            height: isSmallDesktop ? '1.125rem' : undefined
-                          }}
+                          className="w-[clamp(1.125rem,1.8vw,1.5rem)] h-[clamp(1.125rem,1.8vw,1.5rem)]"
                         >
                           <path
                             strokeLinecap="round"

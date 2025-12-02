@@ -30,7 +30,7 @@ export default function ProfileWebsitesModal({ open, user, onClose }: ProfileWeb
       onClick={onClose}
     >
       <div
-        className="bg-[var(--background)] text-[var(--foreground)] border border-[var(--border)] rounded-2xl shadow-xl max-w-lg w-full p-0 overflow-hidden"
+        className="bg-[var(--background)] text-[var(--foreground)] border border-[var(--border)] rounded-2xl shadow-xl w-full max-w-sm md:max-w-md lg:max-w-lg p-0 overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}

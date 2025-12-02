@@ -50,11 +50,8 @@ export default function DashboardLayout({
   const isMobileEditMode = isProfileEditMode;
 
   return (
-    <div className="h-screen bg-[var(--background)] text-[var(--foreground)] flex overflow-hidden">
-      <div className="hidden lg:block fixed left-0 top-0 h-screen z-30">
-        <Sidebar activeItem={activeModule} onItemClick={onModuleChange} onLogout={onLogout} />
-      </div>
-
+    <div className="h-screen bg-[var(--background)] text-[var(--foreground)] overflow-hidden">
+      {/* Mobile Top Bar */}
       <MobileTopBar
         onMenuClick={onMobileMenuOpen}
         isEditMode={isMobileEditMode}
@@ -64,10 +61,12 @@ export default function DashboardLayout({
         activeRightItem={activeRightItem}
       />
 
+      {/* Mobile Bottom Nav */}
       {!(isRightSidebarOpen && activeModule === 'profile') && (
         <MobileTopNav activeItem={activeModule} onItemClick={onModuleChange} />
       )}
 
+      {/* Mobile Sidebar (overlay) */}
       <Sidebar
         activeItem={activeModule}
         onItemClick={onModuleChange}
@@ -79,27 +78,46 @@ export default function DashboardLayout({
         onAccountTypeClick={onSidebarAccountTypeClick}
       />
 
-      <div className="flex-1 overflow-y-auto">
-        <main className="pt-16 pb-24 px-4 sm:px-6 lg:px-8 lg:pt-8">
-          <div
-            className={`main-column ${
-              activeModule === 'profile' && !isProfileEditMode ? 'profile-column' : ''
-            } ${isSkillsModule ? 'skills-column' : ''}`}
-          >
-            {children}
+      {/* Desktop Layout - CSS Grid */}
+      <div className={`h-full grid grid-cols-1 ${
+        isRightSidebarOpen 
+          ? 'lg:grid-cols-[240px_1fr_240px] xl:grid-cols-[280px_1fr_280px] 2xl:grid-cols-[384px_1fr_384px]'
+          : 'lg:grid-cols-[280px_1fr] xl:grid-cols-[384px_1fr]'
+      }`}>
+        {/* Left Sidebar - Desktop only */}
+        <div className="hidden lg:block h-screen overflow-hidden">
+          <Sidebar activeItem={activeModule} onItemClick={onModuleChange} onLogout={onLogout} />
+        </div>
+
+        {/* Main Content */}
+        <main className="h-screen overflow-y-auto pt-16 pb-24 lg:pt-0 lg:pb-0">
+          <div className="px-4 sm:px-6 lg:px-8 py-4 lg:py-8">
+            <div
+              className={`w-full mx-auto ${
+                activeModule === 'profile' && !isProfileEditMode 
+                  ? 'max-w-7xl' 
+                  : isSkillsModule 
+                  ? 'max-w-7xl' 
+                  : 'max-w-4xl'
+              }`}
+            >
+              {children}
+            </div>
           </div>
         </main>
-      </div>
 
-      {/* Pravý panel – skrytý na šírkach < 1024px */}
-      <div className="hidden lg:block fixed right-0 top-0 h-screen z-30">
-        <RightSidebar
-          isOpen={isRightSidebarOpen}
-          onClose={onRightSidebarClose}
-          activeItem={activeRightItem}
-          onItemClick={onRightItemClick}
-          isMobile={false}
-        />
+        {/* Right Sidebar - Desktop only, shows in grid when open */}
+        {isRightSidebarOpen && (
+          <div className="hidden lg:block h-screen overflow-hidden">
+            <RightSidebar
+              isOpen={isRightSidebarOpen}
+              onClose={onRightSidebarClose}
+              activeItem={activeRightItem}
+              onItemClick={onRightItemClick}
+              isMobile={false}
+            />
+          </div>
+        )}
       </div>
     </div>
   );
