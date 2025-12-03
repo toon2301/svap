@@ -159,6 +159,7 @@ export default function ProfileModule({
           onEditProfileClick={onEditProfileClick}
           onPhotoUpload={handlePhotoUpload}
           onAvatarClick={handleAvatarClick}
+          onSkillsClick={onSkillsClick}
           activeTab={activeTab}
           onChangeTab={setActiveTab}
           onTabsKeyDown={handleTabsKeyDown}

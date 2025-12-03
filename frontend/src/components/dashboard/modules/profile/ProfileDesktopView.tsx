@@ -206,7 +206,7 @@ export default function ProfileDesktopView({
                       }}
                       className="flex-1 px-[clamp(4rem,8vw,8rem)] xl:px-16 2xl:px-32 py-2 text-sm bg-purple-100 text-purple-800 border border-purple-200 rounded-2xl transition-colors hover:bg-purple-200 whitespace-nowrap min-w-[200px]"
                     >
-                      {t('profile.skills', 'Služby a ponuky')}
+                      {t('profile.skills', 'Zručnosti a služby')}
                     </button>
                   </div>
                 </div>

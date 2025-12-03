@@ -21,7 +21,7 @@ export default function AccountTypeModule({ accountType, setAccountType, setIsAc
     <div className="text-[var(--foreground)]">
       {/* Desktop layout */}
       <div className="hidden lg:flex items-start justify-center">
-        <div className="flex flex-col items-start w-full max-w-[clamp(520px,50vw,768px)] mx-auto lg:ml-[clamp(0px,10vw,120px)]">
+        <div className="flex flex-col items-start w-full profile-edit-column pt-4 pb-8">
           <div className="w-full">
             <h2 className="text-2xl font-semibold text-gray-800 dark:text-white mb-2">
               {t('rightSidebar.accountType', 'Typ účtu')}
@@ -30,9 +30,9 @@ export default function AccountTypeModule({ accountType, setAccountType, setIsAc
               {t('accountType.selectAccountType', 'Zvoľ typ účtu')}
             </p>
           </div>
-          <div className="w-full max-w-6xl mx-auto mt-[clamp(1rem,2vw,1.5rem)]"><div className="border-t border-gray-200 dark:border-gray-700" /></div>
+          <div className="w-full mt-[clamp(1rem,2vw,1.5rem)]"><div className="border-t border-gray-200 dark:border-gray-700" /></div>
           {/* Obsah sekcie Typ účtu */}
-          <div className="w-full max-w-[clamp(512px,48vw,520px)] mx-auto mt-[clamp(1rem,3vw,2rem)]">
+          <div className="w-full mt-[clamp(1rem,3vw,2rem)]">
             <div className="space-y-4">
                   <button onClick={() => setIsPersonalAccountModalOpen(true)} className={`w-full py-4 px-6 rounded-lg transition-colors ${
                     accountType === 'personal' 

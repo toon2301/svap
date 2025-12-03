@@ -19,7 +19,7 @@ export default function MobileTopBar({ onMenuClick, isEditMode = false, onBackCl
       <div className="grid grid-cols-3 items-center px-3 py-0 h-12">
         {/* Ľavá strana - Logo alebo šipka späť */}
         <div className="flex items-center h-full justify-start">
-          {(isEditMode || activeRightItem === 'language' || activeRightItem === 'account-type' || activeModule === 'notifications' || activeModule === 'account-type') ? (
+          {(isEditMode || activeRightItem === 'language' || activeRightItem === 'account-type' || activeModule === 'notifications' || activeModule === 'account-type' || activeModule === 'skills' || activeModule === 'skills-offer' || activeModule === 'skills-search') ? (
             <button
               onClick={onBackClick}
               className="p-2 -ml-2"
@@ -54,6 +54,9 @@ export default function MobileTopBar({ onMenuClick, isEditMode = false, onBackCl
           )}
           {activeModule === 'account-type' && (
             <h1 className="text-lg font-semibold text-gray-900 dark:text-white">{t('rightSidebar.accountType', 'Typ účtu')}</h1>
+          )}
+          {activeModule === 'skills' && (
+            <h1 className="text-sm font-semibold text-gray-900 dark:text-white whitespace-nowrap">{t('profile.skills', 'Zručnosti a služby')}</h1>
           )}
         </div>
         

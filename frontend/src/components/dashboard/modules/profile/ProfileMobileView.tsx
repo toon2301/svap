@@ -18,6 +18,7 @@ interface ProfileMobileViewProps {
   onEditProfileClick?: () => void;
   onPhotoUpload: (file: File) => void;
   onAvatarClick: () => void;
+  onSkillsClick?: () => void;
   activeTab: ProfileTab;
   onChangeTab: (tab: ProfileTab) => void;
   onTabsKeyDown: (event: React.KeyboardEvent<HTMLDivElement>) => void;
@@ -34,6 +35,7 @@ export default function ProfileMobileView({
   onEditProfileClick,
   onPhotoUpload,
   onAvatarClick,
+  onSkillsClick,
   activeTab,
   onChangeTab,
   onTabsKeyDown,
@@ -241,12 +243,13 @@ export default function ProfileMobileView({
               </button>
               <button
                 onClick={() => {
-                  // eslint-disable-next-line no-console
-                  console.log('Zručnosti');
+                  if (typeof onSkillsClick === 'function') {
+                    onSkillsClick();
+                  }
                 }}
                 className="flex-1 px-3 py-1.5 text-xs bg-purple-100 text-purple-800 border border-purple-200 rounded-2xl transition-colors hover:bg-purple-200"
               >
-                {t('profile.skills', 'Služby a ponuky')}
+                {t('profile.skills', 'Zručnosti a služby')}
               </button>
             </div>
             {/* Ikonová navigácia sekcií profilu (mobile) */}

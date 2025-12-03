@@ -90,7 +90,7 @@ export default function DashboardLayout({
         </div>
 
         {/* Main Content */}
-        <main className="h-screen overflow-y-auto pt-16 pb-24 lg:pt-0 lg:pb-0">
+        <main className="h-screen overflow-y-auto pt-16 pb-24 lg:pt-0 lg:pb-0 elegant-scrollbar">
           <div className="px-4 sm:px-6 lg:px-8 py-4 lg:py-8">
             <div
               className={`w-full mx-auto ${

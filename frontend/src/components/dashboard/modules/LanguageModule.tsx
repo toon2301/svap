@@ -23,7 +23,7 @@ export default function LanguageModule() {
       {/* Desktop layout */}
       <div className="text-[var(--foreground)]">
         <div className="hidden lg:flex items-start justify-center">
-          <div className="flex flex-col items-start w-full max-w-[clamp(520px,50vw,768px)] mx-auto lg:ml-[clamp(0px,10vw,120px)]">
+          <div className="flex flex-col items-start w-full profile-edit-column pt-4 pb-8">
             <div className="w-full">
               <h2 className="text-2xl font-semibold text-gray-800 dark:text-white mb-6">
                 {t('language.title', 'Jazyk')}
@@ -35,11 +35,11 @@ export default function LanguageModule() {
                 {t('language.selectLanguage', 'Zvoľte si jazyk, v ktorom sa vám bude aplikácia najlepšie používať.')}
               </p>
             </div>
-            <div className="w-full max-w-6xl mx-auto mt-[clamp(1rem,2vw,1.5rem)]">
+            <div className="w-full mt-[clamp(1rem,2vw,1.5rem)]">
               <div className="border-t border-gray-200 dark:border-gray-700"></div>
             </div>
             <div className="w-full mt-[clamp(1rem,3vw,2rem)]">
-              <div className="w-full mx-auto max-w-[clamp(512px,50vw,520px)]">
+              <div className="w-full">
                 <div className="flex flex-col gap-[clamp(1rem,2.5vw,2rem)]">
                 {languages.map((language) => (
                 <div key={language} className="flex items-center justify-between">
