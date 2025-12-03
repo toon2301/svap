@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { User } from '../../types';
 import DashboardLayout from './DashboardLayout';
@@ -17,6 +17,8 @@ export default function Dashboard({ initialUser }: DashboardProps) {
   const { t } = useLanguage();
   const dashboardState = useDashboardState(initialUser);
   const skillsState = useSkillsModals();
+  const [isInSubcategories, setIsInSubcategories] = useState(false);
+  const skillsCategoryBackHandlerRef = React.useRef<(() => void) | null>(null);
 
   const {
     user,
@@ -112,6 +114,17 @@ export default function Dashboard({ initialUser }: DashboardProps) {
     setActiveRightItem('account-type');
   };
 
+  // Custom back handler for skills-select-category
+  const handleSkillsCategoryBack = () => {
+    // Ak máme handler z SkillsCategoryScreen a sme v podkategóriách, volaj ho
+    if (skillsCategoryBackHandlerRef.current && isInSubcategories) {
+      skillsCategoryBackHandlerRef.current();
+    } else {
+      // Inak použi štandardnú navigáciu
+      handleMobileBack(isInSubcategories);
+    }
+  };
+
   const moduleContent = (
     <ModuleRouter
       user={user}
@@ -135,6 +148,12 @@ export default function Dashboard({ initialUser }: DashboardProps) {
       setIsPersonalAccountModalOpen={setIsPersonalAccountModalOpen}
       removeStandardCategory={removeStandardCategory}
       removeCustomCategory={removeCustomCategory}
+      selectedSkillsCategory={selectedSkillsCategory}
+      isInSubcategories={isInSubcategories}
+      setIsInSubcategories={setIsInSubcategories}
+      onSkillsCategoryBackHandlerSet={(handler) => {
+        skillsCategoryBackHandlerRef.current = handler;
+      }}
     />
   );
 
@@ -151,10 +170,11 @@ export default function Dashboard({ initialUser }: DashboardProps) {
         onRightItemClick={handleRightItemClick}
         onMobileMenuOpen={() => setIsMobileMenuOpen(true)}
         onMobileMenuClose={() => setIsMobileMenuOpen(false)}
-        onMobileBack={handleMobileBack}
+        onMobileBack={activeModule === 'skills-select-category' ? handleSkillsCategoryBack : handleMobileBack}
         onMobileProfileClick={handleMobileProfileClick}
         onSidebarLanguageClick={handleSidebarLanguageClick}
         onSidebarAccountTypeClick={handleSidebarAccountTypeClick}
+        subcategory={activeModule === 'skills-describe' ? selectedSkillsCategory?.subcategory : null}
       >
         {moduleContent}
       </DashboardLayout>

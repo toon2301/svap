@@ -332,6 +332,115 @@ export default function SkillsScreen({
           </div>
         </div>
       </div>
+
+      {/* Mobile layout */}
+      <div className="block lg:hidden w-full px-4">
+        <div className="flex flex-col items-stretch w-full">
+          {firstOptionText && (
+            <>
+              <div className="w-full pt-0 pb-6">
+                <div className="flex flex-col gap-0 w-full">
+                  {/* Vyber kategóriu */}
+                  <button
+                    type="button"
+                    onClick={onFirstOptionClick}
+                    className="w-full h-20 flex items-center justify-between px-2 rounded-t-2xl rounded-b-none bg-[var(--background)] active:bg-gray-50 dark:active:bg-gray-900 transition-colors gap-4 relative z-10 -mb-6"
+                  >
+                    <div className="flex flex-col text-left">
+                      <span className="text-base font-semibold text-gray-900 dark:text-white">
+                        {firstOptionText}
+                      </span>
+                    </div>
+                    {(standardCategories && standardCategories.length > 0) ||
+                    (customCategories && customCategories.length > 0) ? (
+                      <svg
+                        className="w-5 h-5 text-gray-400 dark:text-gray-500 flex-shrink-0"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 4v16m8-8H4"
+                        />
+                      </svg>
+                    ) : (
+                      <svg
+                        className="w-5 h-5 text-gray-400 dark:text-gray-500 flex-shrink-0"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 5l7 7-7 7"
+                        />
+                      </svg>
+                    )}
+                  </button>
+
+                  {/* Pridať kategóriu */}
+                  {onAddCategory && (
+                    <button
+                      type="button"
+                      onClick={onAddCategory}
+                      className="w-full h-20 flex items-center justify-between px-2 rounded-b-2xl rounded-t-none bg-[var(--background)] active:bg-gray-50 dark:active:bg-gray-900 transition-colors gap-4 relative z-0"
+                    >
+                      <div className="flex flex-col text-left">
+                        <span className="text-base font-semibold text-gray-900 dark:text-white">
+                          {t('skills.addCategory', 'Pridať kategóriu')}
+                        </span>
+                      </div>
+                      {customCategories && customCategories.length > 0 ? (
+                        <svg
+                          className="w-5 h-5 text-gray-400 dark:text-gray-500 flex-shrink-0"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                          aria-hidden="true"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M12 4v16m8-8H4"
+                          />
+                        </svg>
+                      ) : (
+                        <svg
+                          className="w-5 h-5 text-gray-400 dark:text-gray-500 flex-shrink-0"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                          aria-hidden="true"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M9 5l7 7-7 7"
+                          />
+                        </svg>
+                      )}
+                    </button>
+                  )}
+                </div>
+                <div className="-mt-0 px-2">
+                  <p className="text-xs text-gray-600 dark:text-gray-400 text-left">
+                    Vyber si kategóriu, ktorá ťa vystihuje, alebo si nižšie pridaj vlastnú.
+                  </p>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

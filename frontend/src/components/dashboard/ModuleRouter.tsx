@@ -8,7 +8,10 @@ import LanguageModule from './modules/LanguageModule';
 import AccountTypeModule from './modules/AccountTypeModule';
 import SkillsHome from './modules/skills/SkillsHome';
 import SkillsScreen from './modules/skills/SkillsScreen';
+import SkillsCategoryScreen from './modules/skills/SkillsCategoryScreen';
+import SkillsDescriptionScreen from './modules/skills/SkillsDescriptionScreen';
 import SearchModule from './modules/SearchModule';
+import { skillsCategories } from '@/constants/skillsCategories';
 import CreateModule from './modules/CreateModule';
 import MessagesModule from './modules/MessagesModule';
 import AccountTypeSection from './modules/accountType/AccountTypeSection';
@@ -37,6 +40,10 @@ interface ModuleRouterProps {
   setIsPersonalAccountModalOpen: (value: boolean) => void;
   removeStandardCategory: (index: number) => Promise<void>;
   removeCustomCategory: (index: number) => Promise<void>;
+  selectedSkillsCategory: DashboardSkill | null;
+  isInSubcategories?: boolean;
+  setIsInSubcategories?: (value: boolean) => void;
+  onSkillsCategoryBackHandlerSet?: (handler: () => void) => void;
 }
 
 export default function ModuleRouter({
@@ -61,6 +68,10 @@ export default function ModuleRouter({
   setIsPersonalAccountModalOpen,
   removeStandardCategory,
   removeCustomCategory,
+  selectedSkillsCategory,
+  isInSubcategories,
+  setIsInSubcategories,
+  onSkillsCategoryBackHandlerSet,
 }: ModuleRouterProps) {
   const { t } = useLanguage();
 
@@ -205,7 +216,17 @@ export default function ModuleRouter({
               alert('Môžeš mať maximálne 5 výberov z kategórií.');
               return;
             }
-            setIsSkillsCategoryModalOpen(true);
+            // Na mobile presmeruj na screen, na desktop otvor modal
+            if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+              setActiveModule('skills-select-category');
+              try {
+                localStorage.setItem('activeModule', 'skills-select-category');
+              } catch {
+                // ignore
+              }
+            } else {
+              setIsSkillsCategoryModalOpen(true);
+            }
           }}
           standardCategories={standardCategories}
           onRemoveStandardCategory={async (index) => {
@@ -236,6 +257,73 @@ export default function ModuleRouter({
       );
     case 'skills-search':
       return <SkillsScreen title="Hľadám" />;
+    case 'skills-describe':
+      if (!selectedSkillsCategory) {
+        setActiveModule('skills-offer');
+        return null;
+      }
+      return (
+        <SkillsDescriptionScreen
+          category={selectedSkillsCategory.category}
+          subcategory={selectedSkillsCategory.subcategory}
+          onBack={() => {
+            setActiveModule('skills-offer');
+            try {
+              localStorage.setItem('activeModule', 'skills-offer');
+            } catch {
+              // ignore
+            }
+          }}
+        />
+      );
+    case 'skills-select-category':
+      return (
+        <SkillsCategoryScreen
+          categories={skillsCategories}
+          selected={null}
+          onSelect={(category, subcategory) => {
+            setSelectedSkillsCategory({ 
+              category, 
+              subcategory, 
+              price_from: null, 
+              price_currency: '€', 
+              location: '', 
+              detailed_description: '' 
+            });
+            // Na mobile presmeruj na screen, na desktop otvor modal
+            if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+              setActiveModule('skills-describe');
+              try {
+                localStorage.setItem('activeModule', 'skills-describe');
+              } catch {
+                // ignore
+              }
+            } else {
+              setActiveModule('skills-offer');
+              try {
+                localStorage.setItem('activeModule', 'skills-offer');
+              } catch {
+                // ignore
+              }
+              setIsSkillDescriptionModalOpen(true);
+            }
+          }}
+          onBack={() => {
+            setActiveModule('skills-offer');
+            try {
+              localStorage.setItem('activeModule', 'skills-offer');
+            } catch {
+              // ignore
+            }
+          }}
+          onSubcategoryStateChange={(isInSubcategoriesValue) => {
+            if (setIsInSubcategories) {
+              setIsInSubcategories(isInSubcategoriesValue);
+            }
+          }}
+          onBackHandlerSet={onSkillsCategoryBackHandlerSet}
+        />
+      );
     default:
       return (
         <div className="text-center py-20">

@@ -77,7 +77,7 @@ export default function Home() {
             />
           </motion.div>
           <motion.p 
-            className="text-[clamp(0.75rem,1.5vw,1.25rem)] text-gray-600 dark:text-gray-300 text-left max-w-[clamp(300px,80%,700px)] leading-relaxed -mt-24 max-lg:mx-auto"
+            className="text-[clamp(0.75rem,1.5vw,1.25rem)] text-gray-600 dark:text-gray-300 text-left max-w-[clamp(300px,80%,700px)] leading-relaxed max-lg:-mt-16 lg:-mt-24 max-lg:mx-auto"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.5, ease: "easeOut" }}

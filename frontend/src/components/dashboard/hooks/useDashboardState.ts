@@ -50,7 +50,7 @@ export interface UseDashboardStateResult {
   handleRightItemClick: (itemId: string) => void;
   handleUserUpdate: (updatedUser: User) => void;
   handleLogout: () => Promise<void>;
-  handleMobileBack: () => void;
+  handleMobileBack: (isInSubcategories?: boolean) => void;
 }
 
 export function useDashboardState(initialUser?: User): UseDashboardStateResult {
@@ -133,7 +133,7 @@ export function useDashboardState(initialUser?: User): UseDashboardStateResult {
 
   const handleModuleChange = useCallback(
     (moduleId: string) => {
-      const validModules = ['home', 'profile', 'search', 'favorites', 'settings', 'create', 'messages', 'notifications', 'language', 'account-type', 'skills', 'skills-offer', 'skills-search'];
+      const validModules = ['home', 'profile', 'search', 'favorites', 'settings', 'create', 'messages', 'notifications', 'language', 'account-type', 'skills', 'skills-offer', 'skills-search', 'skills-select-category', 'skills-describe'];
       if (!validModules.includes(moduleId)) return;
       setActiveModule(moduleId);
       if (typeof window !== 'undefined') {
@@ -237,8 +237,61 @@ export function useDashboardState(initialUser?: User): UseDashboardStateResult {
     }
   }, [router]);
 
-  const handleMobileBack = useCallback(() => {
-    if (activeRightItem === 'language' || activeRightItem === 'account-type') {
+  const handleMobileBack = useCallback((isInSubcategories: boolean = false) => {
+    if (activeModule === 'skills-describe') {
+      setActiveModule('skills-offer');
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem('activeModule', 'skills-offer');
+        } catch {
+          // ignore
+        }
+      }
+      setIsRightSidebarOpen(false);
+      setActiveRightItem('');
+      setIsMobileMenuOpen(false);
+    } else if (activeModule === 'skills-select-category') {
+      // Ak je v podkategóriách, nepresmeruj - nechaj to na komponente SkillsCategoryScreen
+      if (isInSubcategories) {
+        return; // SkillsCategoryScreen si to vyrieši sám cez handleBack
+      }
+      // Ak nie je v podkategóriách, presmeruj na skills-offer
+      setActiveModule('skills-offer');
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem('activeModule', 'skills-offer');
+        } catch {
+          // ignore
+        }
+      }
+      setIsRightSidebarOpen(false);
+      setActiveRightItem('');
+      setIsMobileMenuOpen(false);
+    } else if (activeModule === 'skills-offer' || activeModule === 'skills-search') {
+      setActiveModule('skills');
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem('activeModule', 'skills');
+        } catch {
+          // ignore
+        }
+      }
+      setIsRightSidebarOpen(false);
+      setActiveRightItem('');
+      setIsMobileMenuOpen(false);
+    } else if (activeModule === 'skills') {
+      setActiveModule('profile');
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem('activeModule', 'profile');
+        } catch {
+          // ignore
+        }
+      }
+      setIsRightSidebarOpen(false);
+      setActiveRightItem('');
+      setIsMobileMenuOpen(false);
+    } else if (activeRightItem === 'language' || activeRightItem === 'account-type') {
       setIsMobileMenuOpen(true);
     } else if (activeModule === 'notifications') {
       setActiveModule('');
