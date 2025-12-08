@@ -7,7 +7,7 @@ import DashboardLayout from './DashboardLayout';
 import ModuleRouter from './ModuleRouter';
 import DashboardModals from './DashboardModals';
 import { useDashboardState } from './hooks/useDashboardState';
-import { useSkillsModals } from './hooks/useSkillsModals';
+import { useSkillsModals, type DashboardSkill } from './hooks/useSkillsModals';
 import { api, endpoints } from '../../lib/api';
 
 interface DashboardProps {
@@ -114,7 +114,7 @@ export default function Dashboard({ initialUser }: DashboardProps) {
         payload.opening_hours = skill.opening_hours;
       }
 
-      let savedSkill;
+      let savedSkill: DashboardSkill;
       const newImages = (skill as any)._newImages || [];
       
       if (skill.id) {
