@@ -334,7 +334,9 @@ export default function ModuleRouter({
           onExistingImagesChange={(existingImages) => {
             setSelectedSkillsCategory({
               ...selectedSkillsCategory,
-              images: existingImages,
+              images: existingImages.filter((img): img is { id: number; image_url?: string | null; image?: string | null; order?: number } => 
+                img.id !== undefined
+              ).map(img => ({ id: img.id!, image_url: img.image_url, image: img.image, order: img.order })),
             });
           }}
           onRemoveExistingImage={selectedSkillsCategory?.id
