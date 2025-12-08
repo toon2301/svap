@@ -13,6 +13,7 @@ import OpeningHoursModal from './skillDescriptionModal/OpeningHoursModal';
 import { CurrencyOption, SkillDescriptionModalProps, SkillImage, OpeningHours, UnitOption } from './skillDescriptionModal/types';
 import { currencyFromLocale, ensureCurrencyOption, slugifyLabel } from './skillDescriptionModal/utils';
 import styles from './SkillsCategoryModal.module.css';
+import MasterToggle from '../notifications/MasterToggle';
 
 export default function SkillDescriptionModal({ 
   isOpen, 
@@ -72,6 +73,7 @@ export default function SkillDescriptionModal({
   const [isDetailedModalOpen, setIsDetailedModalOpen] = useState(false);
   const [openingHours, setOpeningHours] = useState<OpeningHours>({});
   const [isOpeningHoursModalOpen, setIsOpeningHoursModalOpen] = useState(false);
+  const [isHideCardEnabled, setIsHideCardEnabled] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -466,6 +468,18 @@ export default function SkillDescriptionModal({
                 </button>
               </div>
             )}
+
+            {/* Skryť kartu */}
+            <div className="mb-4 px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg">
+              <MasterToggle
+                enabled={isHideCardEnabled}
+                onChange={(value) => {
+                  setIsHideCardEnabled(value);
+                  // TODO: Implementovať funkcionalitu skrytia karty
+                }}
+                label={t('skills.hideCardToggle', 'Skryť túto kartu')}
+              />
+            </div>
 
             <div className="flex gap-3 mt-6">
               <button

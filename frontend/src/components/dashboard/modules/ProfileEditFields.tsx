@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { User } from '../../../types';
 import { api } from '../../../lib/api';
 import { useLanguage } from '@/contexts/LanguageContext';
+import MasterToggle from './notifications/MasterToggle';
 
 interface ProfileEditFieldsProps {
   user: User;
@@ -106,11 +107,10 @@ export default function ProfileEditFields({
           </div>
           
           {/* Prepínač pre zobrazenie IČO */}
-          <div className="flex items-center gap-2 mt-2">
-            <button
-              onClick={async (e) => {
-                e.stopPropagation();
-                const newVisibility = !user.ico_visible;
+          <div className="mt-2">
+            <MasterToggle
+              enabled={user.ico_visible || false}
+              onChange={async (newVisibility) => {
                 try {
                   const response = await api.patch('/auth/profile/', {
                     ico_visible: newVisibility,
@@ -122,17 +122,8 @@ export default function ProfileEditFields({
                   console.error('Chyba pri ukladaní viditeľnosti IČO:', error);
                 }
               }}
-              className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-1 ${
-                user.ico_visible ? 'bg-purple-400 border border-purple-400' : 'bg-gray-300 dark:bg-gray-600'
-              }`}
-            >
-              <span
-                className={`absolute h-3 w-3 rounded-full bg-white shadow-sm transition-all duration-200 ease-in-out ${
-                  user.ico_visible ? 'left-5' : 'left-1'
-                }`}
-              />
-            </button>
-            <span className="text-xs text-gray-500 dark:text-gray-400">Zobraziť IČO verejne</span>
+              label="Zobraziť IČO verejne"
+            />
           </div>
         </div>
       )}
@@ -154,11 +145,10 @@ export default function ProfileEditFields({
         </div>
         
         {/* Prepínač pre zobrazenie kontaktu */}
-        <div className="flex items-center gap-2 mt-2">
-          <button
-            onClick={async (e) => {
-              e.stopPropagation();
-              const newVisibility = !user.phone_visible;
+        <div className="mt-2">
+          <MasterToggle
+            enabled={user.phone_visible || false}
+            onChange={async (newVisibility) => {
               try {
                 const response = await api.patch('/auth/profile/', {
                   phone_visible: newVisibility,
@@ -170,17 +160,8 @@ export default function ProfileEditFields({
                 console.error('Chyba pri ukladaní viditeľnosti kontaktu:', error);
               }
             }}
-            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-1 ${
-              user.phone_visible ? 'bg-purple-400 border border-purple-400' : 'bg-gray-300 dark:bg-gray-600'
-            }`}
-          >
-            <span
-              className={`absolute h-3 w-3 rounded-full bg-white shadow-sm transition-all duration-200 ease-in-out ${
-                user.phone_visible ? 'left-5' : 'left-1'
-              }`}
-            />
-          </button>
-          <span className="text-xs text-gray-500 dark:text-gray-400">{t('profile.showContactPublic', 'Zobraziť kontakt verejne')}</span>
+            label={t('profile.showContactPublic', 'Zobraziť kontakt verejne')}
+          />
         </div>
       </div>
       
@@ -219,11 +200,10 @@ export default function ProfileEditFields({
           </div>
           
           {/* Prepínač pre zobrazenie profese */}
-          <div className="flex items-center gap-2 mt-2">
-            <button
-              onClick={async (e) => {
-                e.stopPropagation();
-                const newVisibility = !user.job_title_visible;
+          <div className="mt-2">
+            <MasterToggle
+              enabled={user.job_title_visible || false}
+              onChange={async (newVisibility) => {
                 try {
                   const response = await api.patch('/auth/profile/', {
                     job_title_visible: newVisibility,
@@ -235,17 +215,8 @@ export default function ProfileEditFields({
                   console.error('Chyba pri ukladaní viditeľnosti profese:', error);
                 }
               }}
-              className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-1 ${
-                user.job_title_visible ? 'bg-purple-400 border border-purple-400' : 'bg-gray-300 dark:bg-gray-600'
-              }`}
-            >
-              <span
-                className={`absolute h-3 w-3 rounded-full bg-white shadow-sm transition-all duration-200 ease-in-out ${
-                  user.job_title_visible ? 'left-5' : 'left-1'
-                }`}
-              />
-            </button>
-            <span className="text-xs text-gray-500 dark:text-gray-400">{t('profile.showProfessionPublic', 'Zobraziť profesiu verejne')}</span>
+              label={t('profile.showProfessionPublic', 'Zobraziť profesiu verejne')}
+            />
           </div>
         </div>
       )}

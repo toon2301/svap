@@ -8,6 +8,7 @@ import ModuleRouter from './ModuleRouter';
 import DashboardModals from './DashboardModals';
 import { useDashboardState } from './hooks/useDashboardState';
 import { useSkillsModals } from './hooks/useSkillsModals';
+import { api, endpoints } from '../../lib/api';
 
 interface DashboardProps {
   initialUser?: User;
@@ -70,6 +71,122 @@ export default function Dashboard({ initialUser }: DashboardProps) {
     removeStandardCategory,
     removeCustomCategory,
   } = skillsState;
+
+  // Funkcia na uloženie karty
+  const handleSkillSave = async () => {
+    if (!selectedSkillsCategory) return;
+    
+    try {
+      const skill = selectedSkillsCategory;
+      
+      // Pripraviť payload
+      const trimmedDistrict = (skill.district || '').trim();
+      const trimmedLocation = (skill.location || '').trim();
+      const detailedText = (skill.detailed_description || '').trim();
+      
+      const payload: any = {
+        category: skill.category,
+        subcategory: skill.subcategory,
+        description: skill.description || '',
+        detailed_description: detailedText,
+        tags: Array.isArray(skill.tags) ? skill.tags : [],
+        district: trimmedDistrict,
+        location: trimmedLocation,
+      };
+      
+      if (skill.experience && typeof skill.experience.value === 'number' && skill.experience.unit) {
+        payload.experience_value = skill.experience.value;
+        payload.experience_unit = skill.experience.unit;
+      } else {
+        payload.experience_value = null;
+        payload.experience_unit = '';
+      }
+      
+      if (typeof skill.price_from === 'number' && !isNaN(skill.price_from)) {
+        payload.price_from = skill.price_from;
+        payload.price_currency = skill.price_currency || '€';
+      } else {
+        payload.price_from = null;
+        payload.price_currency = '';
+      }
+
+      if (skill.opening_hours) {
+        payload.opening_hours = skill.opening_hours;
+      }
+
+      let savedSkill;
+      const newImages = (skill as any)._newImages || [];
+      
+      if (skill.id) {
+        // Update existujúcej karty
+        const { data } = await api.patch(endpoints.skills.detail(skill.id), payload);
+        savedSkill = toLocalSkill(data);
+        
+        // Nahrať nové obrázky
+        if (newImages.length > 0) {
+          for (let i = 0; i < newImages.length; i++) {
+            const file = newImages[i];
+            try {
+              const fd = new FormData();
+              fd.append('image', file);
+              await api.post(endpoints.skills.images(skill.id), fd);
+            } catch (imgError: any) {
+              const imgMsg = imgError?.response?.data?.error || imgError?.response?.data?.detail || 'Nahrávanie obrázka zlyhalo';
+              alert(`Chyba pri nahrávaní obrázka ${i + 1}: ${imgMsg}`);
+            }
+          }
+          savedSkill = await fetchSkillDetail(skill.id);
+        }
+        
+        applySkillUpdate(savedSkill);
+      } else {
+        // Vytvoriť novú kartu
+        // Kontrola počtu kariet
+        if (standardCategories.length + customCategories.length >= 3) {
+          alert('Môžeš mať maximálne 3 karty dokopy (štandardné aj vlastné).');
+          return;
+        }
+        
+        const { data } = await api.post(endpoints.skills.list, payload);
+        savedSkill = toLocalSkill(data);
+        
+        // Nahrať obrázky
+        if (newImages.length > 0 && savedSkill.id) {
+          for (let i = 0; i < newImages.length; i++) {
+            const file = newImages[i];
+            try {
+              const fd = new FormData();
+              fd.append('image', file);
+              await api.post(endpoints.skills.images(savedSkill.id), fd);
+            } catch (imgError: any) {
+              const imgMsg = imgError?.response?.data?.error || imgError?.response?.data?.detail || 'Nahrávanie obrázka zlyhalo';
+              alert(`Chyba pri nahrávaní obrázka ${i + 1}: ${imgMsg}`);
+            }
+          }
+          savedSkill = await fetchSkillDetail(savedSkill.id);
+        }
+        
+        // Pridať do príslušného zoznamu
+        if (savedSkill.category === savedSkill.subcategory) {
+          setCustomCategories((prev) => [...prev, savedSkill]);
+        } else {
+          setStandardCategories((prev) => [...prev, savedSkill]);
+        }
+      }
+      
+      // Presmerovať späť na skills-offer
+      setActiveModule('skills-offer');
+      setSelectedSkillsCategory(null);
+      try {
+        localStorage.setItem('activeModule', 'skills-offer');
+      } catch {
+        // ignore
+      }
+    } catch (error: any) {
+      const msg = error?.response?.data?.error || error?.response?.data?.detail || error?.message || 'Uloženie karty zlyhalo';
+      alert(msg);
+    }
+  };
 
   useEffect(() => {
     if (user) {
@@ -175,6 +292,7 @@ export default function Dashboard({ initialUser }: DashboardProps) {
         onSidebarLanguageClick={handleSidebarLanguageClick}
         onSidebarAccountTypeClick={handleSidebarAccountTypeClick}
         subcategory={activeModule === 'skills-describe' ? selectedSkillsCategory?.subcategory : null}
+        onSkillSaveClick={activeModule === 'skills-describe' ? handleSkillSave : undefined}
       >
         {moduleContent}
       </DashboardLayout>

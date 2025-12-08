@@ -11,9 +11,10 @@ interface MobileTopBarProps {
   activeModule?: string;
   activeRightItem?: string;
   subcategory?: string | null;
+  onSaveClick?: () => void;
 }
 
-export default function MobileTopBar({ onMenuClick, isEditMode = false, onBackClick, onProfileClick, activeModule, activeRightItem, subcategory }: MobileTopBarProps) {
+export default function MobileTopBar({ onMenuClick, isEditMode = false, onBackClick, onProfileClick, activeModule, activeRightItem, subcategory, onSaveClick }: MobileTopBarProps) {
   const { t } = useLanguage();
   return (
     <div className="lg:hidden fixed top-0 left-0 right-0 z-30 bg-white dark:bg-black border-b border-gray-200 dark:border-gray-800 shadow-sm">
@@ -31,7 +32,15 @@ export default function MobileTopBar({ onMenuClick, isEditMode = false, onBackCl
               </svg>
             </button>
           ) : activeModule === 'skills-describe' ? (
-            <div></div>
+            <button
+              onClick={onSaveClick}
+              className="p-2 -ml-2"
+              aria-label="Uložiť"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+              </svg>
+            </button>
           ) : (
             <img 
               src="/Logotyp _svaply_ na fialovom pozadí.png" 
@@ -71,7 +80,7 @@ export default function MobileTopBar({ onMenuClick, isEditMode = false, onBackCl
             <h1 className="text-sm font-semibold text-gray-900 dark:text-white whitespace-nowrap">{t('skills.selectCategoryTitle', 'Vyber kategóriu')}</h1>
           )}
           {activeModule === 'skills-describe' && (
-            <h1 className="text-sm font-semibold text-gray-900 dark:text-white whitespace-nowrap">{t('skills.describeSkillTitle', 'Opíš svoju službu/zručnosť')}</h1>
+            <h1 className="text-sm font-semibold text-gray-900 dark:text-white max-lg:whitespace-normal lg:whitespace-nowrap max-lg:leading-tight">{t('skills.describeSkillTitle', 'Opíš svoju službu/zručnosť')}</h1>
           )}
         </div>
         

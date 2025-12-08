@@ -684,7 +684,7 @@ export default function LocationSection({ value, onChange, onBlur, error, isSavi
 
   return (
     <div className="mb-4">
-      <div className="flex gap-3">
+      <div className="flex flex-col lg:flex-row gap-3">
         {/* Okres */}
         <div ref={containerRef} className="flex-1 relative">
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -773,7 +773,7 @@ export default function LocationSection({ value, onChange, onBlur, error, isSavi
               value={value}
               onChange={(e) => onChange(e.target.value)}
               placeholder={t('skills.locationPlaceholder', 'Zadaj, kde ponúkaš svoje služby')}
-              maxLength={25}
+              maxLength={35}
               onBlur={onBlur}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-1 focus:ring-purple-300 focus:border-transparent"
             />

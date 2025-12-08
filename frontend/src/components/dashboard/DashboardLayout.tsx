@@ -22,6 +22,7 @@ interface DashboardLayoutProps {
   onSidebarLanguageClick: () => void;
   onSidebarAccountTypeClick: () => void;
   subcategory?: string | null;
+  onSkillSaveClick?: () => void;
   children: React.ReactNode;
 }
 
@@ -41,6 +42,7 @@ export default function DashboardLayout({
   onSidebarLanguageClick,
   onSidebarAccountTypeClick,
   subcategory,
+  onSkillSaveClick,
   children,
 }: DashboardLayoutProps) {
   const isProfileEditMode =
@@ -62,6 +64,7 @@ export default function DashboardLayout({
         activeModule={activeModule}
         activeRightItem={activeRightItem}
         subcategory={subcategory}
+        onSaveClick={onSkillSaveClick}
       />
 
       {/* Mobile Bottom Nav */}

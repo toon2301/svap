@@ -50,22 +50,22 @@ export default function Home() {
         <ParticlesBackground />
       </Suspense>
 
-      <div className="flex items-center justify-center flex-1 px-4 sm:px-6 lg:px-8 max-lg:flex-col max-lg:gap-6 relative z-10 pt-2 pb-6 lg:pt-4 lg:pb-8">
+      <div className="flex items-center justify-center flex-1 px-4 sm:px-6 lg:px-8 max-lg:flex-col max-lg:gap-6 relative z-10 pt-8 pb-6 lg:pt-4 lg:pb-8">
         {/* Main content */}
         <motion.div 
-          className="flex-1 max-w-4xl max-lg:text-center -mt-8 lg:-mt-24"
+          className="flex-1 max-w-4xl max-lg:text-center max-lg:mt-0 lg:-mt-24"
           initial={{ opacity: 0, x: -50 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
         >
           <motion.div 
-            className="flex items-center flex-wrap max-lg:flex-nowrap max-lg:justify-center max-lg:gap-0 lg:gap-2"
+            className="flex items-center flex-wrap max-lg:flex-col max-lg:items-center max-lg:gap-0 lg:gap-2"
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
           >
             <span 
-              className="text-[clamp(1.75rem,5vw,3.75rem)] font-bold text-gray-900 dark:text-white whitespace-nowrap"
+              className="text-[clamp(1.75rem,5vw,3.75rem)] font-bold text-gray-900 dark:text-white max-lg:whitespace-normal lg:whitespace-nowrap text-center"
               lang={locale}
             >
               {t('homepage.welcome', 'Víta ťa')}
@@ -73,11 +73,11 @@ export default function Home() {
             <img
               src="/Logotyp _svaply_ na fialovom pozadí.png"
               alt="Svaply"
-              className="w-auto h-[clamp(180px,28vw,400px)] -ml-[clamp(10px,2vw,40px)] lg:-ml-[clamp(30px,3vw,50px)] mt-[clamp(8px,1.5vw,20px)]"
+              className="w-auto h-[clamp(140px,22vw,400px)] max-lg:-mt-10 lg:-ml-[clamp(30px,3vw,50px)] lg:mt-[clamp(8px,1.5vw,20px)]"
             />
           </motion.div>
           <motion.p 
-            className="text-[clamp(0.75rem,1.5vw,1.25rem)] text-gray-600 dark:text-gray-300 text-left max-w-[clamp(300px,80%,700px)] leading-relaxed max-lg:-mt-16 lg:-mt-24 max-lg:mx-auto"
+            className="text-[clamp(0.75rem,1.5vw,1.25rem)] text-gray-600 dark:text-gray-300 text-left max-w-[clamp(300px,80%,700px)] leading-relaxed max-lg:-mt-10 lg:-mt-24 max-lg:mx-auto"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.5, ease: "easeOut" }}

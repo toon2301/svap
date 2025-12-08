@@ -105,10 +105,7 @@ export default function ImagesSection({
   };
 
   return (
-    <div className="mb-4">
-      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-        {t('skills.photosOptionalMax', 'Fotky (voliteľné, max. 6)')}
-      </label>
+    <div className="mb-0">
       {imageError && <p className="text-sm text-red-500 mb-2">{imageError}</p>}
       <div className="flex flex-wrap gap-3">
         {validExistingImages.length > 0 && (

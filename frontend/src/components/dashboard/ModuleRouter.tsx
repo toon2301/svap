@@ -17,6 +17,7 @@ import MessagesModule from './modules/MessagesModule';
 import AccountTypeSection from './modules/accountType/AccountTypeSection';
 import type { DashboardSkill } from './hooks/useSkillsModals';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { api, endpoints } from '../../lib/api';
 
 interface ModuleRouterProps {
   user: User;
@@ -274,6 +275,87 @@ export default function ModuleRouter({
               // ignore
             }
           }}
+          initialDescription={selectedSkillsCategory.description}
+          onDescriptionChange={(description) => {
+            setSelectedSkillsCategory({
+              ...selectedSkillsCategory,
+              description,
+            });
+          }}
+          initialDetailedDescription={selectedSkillsCategory.detailed_description}
+          onDetailedDescriptionChange={(detailedDescription) => {
+            setSelectedSkillsCategory({
+              ...selectedSkillsCategory,
+              detailed_description: detailedDescription,
+            });
+          }}
+          initialTags={selectedSkillsCategory.tags || []}
+          onTagsChange={(tags) => {
+            setSelectedSkillsCategory({
+              ...selectedSkillsCategory,
+              tags,
+            });
+          }}
+          initialDistrict={selectedSkillsCategory.district || ''}
+          onDistrictChange={(district) => {
+            setSelectedSkillsCategory({
+              ...selectedSkillsCategory,
+              district,
+            });
+          }}
+          initialLocation={selectedSkillsCategory.location || ''}
+          onLocationChange={(location) => {
+            setSelectedSkillsCategory({
+              ...selectedSkillsCategory,
+              location,
+            });
+          }}
+          initialExperience={selectedSkillsCategory.experience}
+          onExperienceChange={(experience) => {
+            setSelectedSkillsCategory({
+              ...selectedSkillsCategory,
+              experience,
+            });
+          }}
+          initialPriceFrom={selectedSkillsCategory.price_from ?? null}
+          initialPriceCurrency={selectedSkillsCategory.price_currency ?? '€'}
+          onPriceChange={(priceFrom, priceCurrency) => {
+            setSelectedSkillsCategory({
+              ...selectedSkillsCategory,
+              price_from: priceFrom,
+              price_currency: priceCurrency,
+            });
+          }}
+          initialImages={selectedSkillsCategory.images || []}
+          onImagesChange={(images) => {
+            // Images sú File[], uložíme ich do state
+            (selectedSkillsCategory as any)._newImages = images;
+          }}
+          onExistingImagesChange={(existingImages) => {
+            setSelectedSkillsCategory({
+              ...selectedSkillsCategory,
+              images: existingImages,
+            });
+          }}
+          onRemoveExistingImage={selectedSkillsCategory?.id
+            ? async (imageId) => {
+                try {
+                  const { data } = await api.delete(endpoints.skills.imageDetail(selectedSkillsCategory.id!, imageId));
+                  return data?.images || [];
+                } catch (error: any) {
+                  const msg = error?.response?.data?.error || error?.message || 'Odstránenie obrázka zlyhalo';
+                  throw new Error(msg);
+                }
+              }
+            : undefined}
+          initialOpeningHours={selectedSkillsCategory.opening_hours}
+          onOpeningHoursChange={(openingHours) => {
+            setSelectedSkillsCategory({
+              ...selectedSkillsCategory,
+              opening_hours: openingHours,
+            });
+          }}
+          accountType={accountType}
         />
       );
     case 'skills-select-category':

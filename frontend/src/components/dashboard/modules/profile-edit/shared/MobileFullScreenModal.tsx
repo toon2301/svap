@@ -27,7 +27,7 @@ export default function MobileFullScreenModal({ isOpen, title, onBack, onSave, c
           </svg>
         </button>
       </div>
-      <div className="flex-1 bg-white dark:bg-black p-4">{children}</div>
+      <div className="flex-1 bg-white dark:bg-black p-4 overflow-y-auto min-h-0">{children}</div>
     </div>
   );
 }
