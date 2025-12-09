@@ -23,7 +23,7 @@ class User(AbstractUser):
         choices=UserType.choices,
         default=UserType.INDIVIDUAL
     )
-    phone = models.CharField(_('Telefón'), max_length=20, blank=True)
+    phone = models.CharField(_('Telefón'), max_length=15, blank=True)
     phone_visible = models.BooleanField(_('Zobraziť telefón verejne'), default=False)
     contact_email = models.EmailField(_('Kontaktný email'), blank=True)
     bio = models.TextField(_('O mne'), blank=True)
@@ -34,7 +34,7 @@ class User(AbstractUser):
         null=True,
         validators=[validate_image_file]
     )
-    location = models.CharField(_('Lokalita'), max_length=100, blank=True)
+    location = models.CharField(_('Lokalita'), max_length=25, blank=True)
     ico = models.CharField(_('IČO'), max_length=14, blank=True)
     ico_visible = models.BooleanField(_('Zobraziť IČO verejne'), default=False)
     job_title = models.CharField(_('Profesia'), max_length=100, blank=True)

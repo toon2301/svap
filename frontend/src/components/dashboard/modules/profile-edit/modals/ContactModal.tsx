@@ -49,7 +49,7 @@ export default function ContactModal({ isOpen, phone, phoneVisible, originalPhon
           type="text"
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
-          maxLength={150}
+          maxLength={15}
           className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-1 focus:ring-purple-300 focus:border-transparent"
           placeholder={t('profile.phoneNumber', 'Tel. číslo')}
         />

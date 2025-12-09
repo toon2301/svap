@@ -357,7 +357,7 @@ export default function ProfileEditForm({ user, onUserUpdate, onEditProfileClick
                 handlePhoneSave();
               }
             }}
-            maxLength={150}
+            maxLength={15}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent"
             placeholder="Tel. číslo"
           />

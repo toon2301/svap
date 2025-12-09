@@ -771,12 +771,21 @@ export default function LocationSection({ value, onChange, onBlur, error, isSavi
             <input
               type="text"
               value={value}
-              onChange={(e) => onChange(e.target.value)}
+              onChange={(e) => {
+                // Obmedziť na 25 znakov
+                const newValue = e.target.value.slice(0, 25);
+                onChange(newValue);
+              }}
               placeholder={t('skills.locationPlaceholder', 'Zadaj, kde ponúkaš svoje služby')}
-              maxLength={35}
+              maxLength={25}
               onBlur={onBlur}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-1 focus:ring-purple-300 focus:border-transparent"
             />
+            {value.length > 0 && (
+              <p className={`text-xs mt-1 text-right ${value.length >= 23 ? 'text-red-500' : 'text-gray-500 dark:text-gray-400'}`}>
+                {value.length}/25
+              </p>
+            )}
           </div>
         )}
       </div>
