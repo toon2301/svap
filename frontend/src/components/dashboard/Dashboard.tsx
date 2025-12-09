@@ -75,7 +75,18 @@ export default function Dashboard({ initialUser }: DashboardProps) {
   // Funkcia na uloženie karty
   const handleSkillSave = async () => {
     if (!selectedSkillsCategory) return;
-    
+
+    // UX: hneď po kliknutí na fajku presmeruj späť na obrazovku s výberom/pridaním kategórie.
+    // Ukladanie prebehne na pozadí – po dokončení sa len aktualizuje zoznam kariet.
+    setActiveModule('skills-offer');
+    try {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('activeModule', 'skills-offer');
+      }
+    } catch {
+      // ignore storage errors
+    }
+
     try {
       const skill = selectedSkillsCategory;
       
@@ -173,15 +184,9 @@ export default function Dashboard({ initialUser }: DashboardProps) {
           setStandardCategories((prev) => [...prev, savedSkill]);
         }
       }
-      
-      // Presmerovať späť na skills-offer
-      setActiveModule('skills-offer');
+
+      // Po úspešnom uložení vyčisti dočasne vybranú kartu
       setSelectedSkillsCategory(null);
-      try {
-        localStorage.setItem('activeModule', 'skills-offer');
-      } catch {
-        // ignore
-      }
     } catch (error: any) {
       const msg = error?.response?.data?.error || error?.response?.data?.detail || error?.message || 'Uloženie karty zlyhalo';
       alert(msg);
