@@ -6,6 +6,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import UserAvatar from './UserAvatar';
 import UserInfo from './UserInfo';
 import ProfileEditFormMobile from '../ProfileEditFormMobile';
+import ProfileOffersMobileSection from './ProfileOffersMobileSection';
 import type { ProfileTab } from './profileTypes';
 
 interface ProfileMobileViewProps {
@@ -389,6 +390,12 @@ export default function ProfileMobileView({
               </div>
             </div>
           </div>
+          {/* Karty ponúk (len v tabu Ponúkam/Hľadám) */}
+          {activeTab === 'offers' && (
+            <ProfileOffersMobileSection accountType={accountType} />
+          )}
+
+          {/* Základné info o používateľovi */}
           <UserInfo user={displayUser} />
         </>
       )}

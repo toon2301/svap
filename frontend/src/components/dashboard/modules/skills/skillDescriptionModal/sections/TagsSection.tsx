@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useImperativeHandle, forwardRef } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 // Hook na detekciu mobilnej verzie
@@ -26,18 +26,37 @@ interface TagsSectionProps {
   isOpen: boolean;
 }
 
-export default function TagsSection({ tags, onTagsChange, isOpen }: TagsSectionProps) {
+export interface TagsSectionRef {
+  addTag: () => void;
+  getTagInput: () => string;
+  canAddTag: () => boolean;
+}
+
+const TagsSection = forwardRef<TagsSectionRef, TagsSectionProps>(
+  ({ tags, onTagsChange, isOpen }, ref) => {
   const { t } = useLanguage();
   const isMobile = useIsMobile();
   const [tagInput, setTagInput] = useState('');
   const [tagError, setTagError] = useState('');
+  const [canAdd, setCanAdd] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
       setTagInput('');
       setTagError('');
+      setCanAdd(false);
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    const trimmed = tagInput.trim();
+    const canAddTag = !!trimmed && 
+                      !tagError && 
+                      trimmed.length <= 15 && 
+                      !tags.some((t) => t.toLowerCase() === trimmed.toLowerCase()) &&
+                      tags.length < 5;
+    setCanAdd(canAddTag);
+  }, [tagInput, tagError, tags]);
 
   const addTag = () => {
     const raw = tagInput.trim();
@@ -64,6 +83,14 @@ export default function TagsSection({ tags, onTagsChange, isOpen }: TagsSectionP
   const removeTag = (tag: string) => {
     onTagsChange(tags.filter((t) => t !== tag));
   };
+
+  useImperativeHandle(ref, () => ({
+    addTag: () => {
+      addTag();
+    },
+    getTagInput: () => tagInput,
+    canAddTag: () => canAdd,
+  }));
 
   return (
     <div className="mb-4">
@@ -135,36 +162,10 @@ export default function TagsSection({ tags, onTagsChange, isOpen }: TagsSectionP
               ? t('skills.tagInputPlaceholderMobile', 'Napíš tag')
               : t('skills.tagInputPlaceholder', 'Napíš tag a stlač Enter alebo ,')
           }
-          className={`w-full border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-1 focus:ring-purple-300 focus:border-transparent ${
-            isMobile ? 'px-3 py-2 pr-12' : 'px-3 py-2'
-          }`}
+          className="w-full border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-1 focus:ring-purple-300 focus:border-transparent px-3 py-2"
           aria-label={t('skills.tagInputAria', 'Vstup pre tagy')}
           maxLength={15}
         />
-        {isMobile && (
-          <button
-            type="button"
-            onClick={addTag}
-            disabled={!tagInput.trim()}
-            className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 border border-purple-200 dark:border-purple-800 disabled:bg-gray-300 dark:disabled:bg-gray-600 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:border-gray-300 dark:disabled:border-gray-600 disabled:cursor-not-allowed enabled:hover:bg-purple-200 dark:enabled:hover:bg-purple-900/50 transition-colors"
-            aria-label={t('skills.addTag', 'Pridať tag')}
-          >
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M5 13l4 4L19 7"
-              />
-            </svg>
-          </button>
-        )}
       </div>
 
       {isMobile && (
@@ -178,5 +179,9 @@ export default function TagsSection({ tags, onTagsChange, isOpen }: TagsSectionP
       )}
     </div>
   );
-}
+});
+
+TagsSection.displayName = 'TagsSection';
+
+export default TagsSection;
 
