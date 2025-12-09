@@ -3,6 +3,20 @@
 from django.db import migrations, models
 
 
+def shorten_location_values(apps, schema_editor):
+    """Skráti existujúce hodnoty location na max 25 znakov."""
+    User = apps.get_model('accounts', 'User')
+    for user in User.objects.all():
+        if user.location and len(user.location) > 25:
+            user.location = user.location[:25]
+            user.save(update_fields=['location'])
+
+
+def reverse_shorten_location_values(apps, schema_editor):
+    """Reverzná funkcia - v tomto prípade nie je potrebná."""
+    pass
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -10,6 +24,7 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
+        migrations.RunPython(shorten_location_values, reverse_shorten_location_values),
         migrations.AlterField(
             model_name='user',
             name='location',
