@@ -412,11 +412,19 @@ export default function SkillsDescriptionScreen({
         <div className="flex flex-col w-full">
           {/* Category breadcrumb */}
           <div className="mb-4 px-4">
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              <span className="font-medium text-gray-800 dark:text-gray-200">{category}</span>
-              {category && subcategory && <span className="mx-2">→</span>}
-              {subcategory && (
-                <span className="text-gray-700 dark:text-gray-300">{subcategory}</span>
+            <p className="text-sm text-gray-600 dark:text-gray-400 break-words">
+              {category === subcategory ? (
+                <span className="font-medium text-gray-800 dark:text-gray-200 break-words">{category}</span>
+              ) : (
+                <>
+                  <span className="font-medium text-gray-800 dark:text-gray-200 break-words">{category}</span>
+                  {subcategory && (
+                    <>
+                      <span className="mx-2 whitespace-nowrap">→</span>
+                      <span className="text-gray-700 dark:text-gray-300 break-words">{subcategory}</span>
+                    </>
+                  )}
+                </>
               )}
             </p>
           </div>

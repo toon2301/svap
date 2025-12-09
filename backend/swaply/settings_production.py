@@ -73,6 +73,14 @@ MIDDLEWARE.insert(1, 'whitenoise.middleware.WhiteNoiseMiddleware')
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
+# Vytvoriť staticfiles adresár ak neexistuje (pre Railway)
+staticfiles_dir = STATIC_ROOT
+if not os.path.exists(staticfiles_dir):
+    try:
+        os.makedirs(staticfiles_dir, exist_ok=True)
+    except Exception:
+        pass  # Ignorovať chyby pri vytváraní adresára
+
 # Media files – S3 storage in production
 DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
 

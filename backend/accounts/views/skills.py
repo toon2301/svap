@@ -28,9 +28,15 @@ def skills_list_view(request):
         return Response(serializer.data, status=status.HTTP_200_OK)
     
     elif request.method == 'POST':
+        # Log pre debugging (len v development)
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(f"POST /api/auth/skills/ - Data: {request.data}")
+        
         serializer = OfferedSkillSerializer(data=request.data, context={'request': request})
 
         if not serializer.is_valid():
+            logger.warning(f"Serializer validation errors: {serializer.errors}")
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         category = serializer.validated_data.get('category')
@@ -136,7 +142,13 @@ def skill_images_view(request, skill_id):
         return Response({'images': serializer.data.get('images', [])}, status=status.HTTP_200_OK)
 
     # POST upload
+    # Log pre debugging (len v development)
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info(f"POST /api/auth/skills/{skill_id}/images/ - Files: {list(request.FILES.keys()) if request.FILES else 'No files'}")
+    
     if 'image' not in request.FILES:
+        logger.warning(f"POST /api/auth/skills/{skill_id}/images/ - Missing 'image' field")
         return Response({'error': 'Pole \"image\" je povinné'}, status=status.HTTP_400_BAD_REQUEST)
 
     # Limit počtu obrázkov na 6

@@ -133,7 +133,7 @@ export function useDashboardState(initialUser?: User): UseDashboardStateResult {
 
   const handleModuleChange = useCallback(
     (moduleId: string) => {
-      const validModules = ['home', 'profile', 'search', 'favorites', 'settings', 'create', 'messages', 'notifications', 'language', 'account-type', 'skills', 'skills-offer', 'skills-search', 'skills-select-category', 'skills-describe'];
+      const validModules = ['home', 'profile', 'search', 'favorites', 'settings', 'create', 'messages', 'notifications', 'language', 'account-type', 'skills', 'skills-offer', 'skills-search', 'skills-select-category', 'skills-describe', 'skills-add-custom-category'];
       if (!validModules.includes(moduleId)) return;
       setActiveModule(moduleId);
       if (typeof window !== 'undefined') {

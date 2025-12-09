@@ -10,6 +10,7 @@ import SkillsHome from './modules/skills/SkillsHome';
 import SkillsScreen from './modules/skills/SkillsScreen';
 import SkillsCategoryScreen from './modules/skills/SkillsCategoryScreen';
 import SkillsDescriptionScreen from './modules/skills/SkillsDescriptionScreen';
+import AddCustomCategoryScreen from './modules/skills/AddCustomCategoryScreen';
 import SearchModule from './modules/SearchModule';
 import { skillsCategories } from '@/constants/skillsCategories';
 import CreateModule from './modules/CreateModule';
@@ -236,14 +237,34 @@ export default function ModuleRouter({
           onEditStandardCategoryDescription={(index) => {
             setEditingStandardCategoryIndex(index);
             setSelectedSkillsCategory(standardCategories[index]);
-            setIsSkillDescriptionModalOpen(true);
+            // Na mobile presmeruj na screen, na desktop otvor modal
+            if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+              setActiveModule('skills-describe');
+              try {
+                localStorage.setItem('activeModule', 'skills-describe');
+              } catch {
+                // ignore
+              }
+            } else {
+              setIsSkillDescriptionModalOpen(true);
+            }
           }}
           onAddCategory={() => {
             if (customCategories.length >= 5) {
               alert('Môžeš pridať maximálne 5 vlastných kategórií.');
               return;
             }
-            setIsAddCustomCategoryModalOpen(true);
+            // Na mobile presmeruj na screen, na desktop otvor modal
+            if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+              setActiveModule('skills-add-custom-category');
+              try {
+                localStorage.setItem('activeModule', 'skills-add-custom-category');
+              } catch {
+                // ignore
+              }
+            } else {
+              setIsAddCustomCategoryModalOpen(true);
+            }
           }}
           customCategories={customCategories}
           onRemoveCustomCategory={async (index) => {
@@ -252,7 +273,17 @@ export default function ModuleRouter({
           onEditCustomCategoryDescription={(index) => {
             setEditingCustomCategoryIndex(index);
             setSelectedSkillsCategory(customCategories[index]);
-            setIsSkillDescriptionModalOpen(true);
+            // Na mobile presmeruj na screen, na desktop otvor modal
+            if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+              setActiveModule('skills-describe');
+              try {
+                localStorage.setItem('activeModule', 'skills-describe');
+              } catch {
+                // ignore
+              }
+            } else {
+              setIsSkillDescriptionModalOpen(true);
+            }
           }}
         />
       );
@@ -406,6 +437,40 @@ export default function ModuleRouter({
             }
           }}
           onBackHandlerSet={onSkillsCategoryBackHandlerSet}
+        />
+      );
+    case 'skills-add-custom-category':
+      return (
+        <AddCustomCategoryScreen
+          onBack={() => {
+            setActiveModule('skills-offer');
+            try {
+              localStorage.setItem('activeModule', 'skills-offer');
+            } catch {
+              // ignore
+            }
+          }}
+          onSave={(categoryName) => {
+            setSelectedSkillsCategory({
+              category: categoryName,
+              subcategory: categoryName,
+              price_from: null,
+              price_currency: '€',
+              location: '',
+              detailed_description: '',
+            });
+            // Na mobile presmeruj na screen, na desktop otvor modal
+            if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+              setActiveModule('skills-describe');
+              try {
+                localStorage.setItem('activeModule', 'skills-describe');
+              } catch {
+                // ignore
+              }
+            } else {
+              setIsSkillDescriptionModalOpen(true);
+            }
+          }}
         />
       );
     default:
