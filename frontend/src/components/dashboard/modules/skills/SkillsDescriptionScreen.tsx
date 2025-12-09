@@ -521,14 +521,17 @@ export default function SkillsDescriptionScreen({
 
             {/* Okres */}
             <div 
-              className="flex items-start py-4 pl-2 pr-0 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-900 border-t border-gray-100 dark:border-gray-800"
+              className="flex items-center py-4 pl-2 pr-0 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-900 border-t border-gray-100 dark:border-gray-800"
               onClick={() => setIsLocationModalOpen(true)}
             >
-              <span className="text-gray-900 dark:text-white font-medium w-40 whitespace-nowrap">
+              {/* Label vľavo */}
+              <span className="text-gray-900 dark:text-white font-medium whitespace-nowrap">
                 {t('skills.district', 'Okres')}
               </span>
-              <div className="flex items-center flex-1 ml-4 pr-2">
-                <div className="w-px h-4 bg-gray-300 dark:bg-gray-700 mr-3"></div>
+
+              {/* Vertikálna čiara + okres zarovnané doprava, rozširujú sa doľava podľa dĺžky textu */}
+              <div className="flex items-center flex-1 min-w-0 justify-end pr-2 ml-4">
+                <div className="w-px h-4 bg-gray-300 dark:bg-gray-700 mr-3 flex-shrink-0"></div>
                 {(() => {
                   const displayText = location && location.trim()
                     ? location
@@ -536,13 +539,15 @@ export default function SkillsDescriptionScreen({
                         ? district
                         : t('skills.addDistrict', 'Pridať okres'));
 
-                  const isLong = displayText.length > 26;
+                  // Rovnaká logika ako pri lokalite v \"Upraviť profil\" – ale s limitom 21 znakov
+                  const isLong = displayText.length > 21;
 
-                  // Pevná šírka zhruba na 26 znakov, potom zalomenie na ďalší riadok
                   return (
                     <span 
-                      className={`text-gray-600 dark:text-gray-300 max-w-[26ch] break-words whitespace-normal ${
-                        isLong ? 'text-xs leading-tight' : 'text-sm'
+                      className={`text-gray-600 dark:text-gray-300 max-w-full flex-1 min-w-0 ${
+                        isLong 
+                          ? 'text-xs leading-tight break-words line-clamp-2'  // >21 znakov: menšie písmo, max 2 riadky
+                          : 'text-sm whitespace-nowrap'                         // ≤21 znakov: jeden riadok, bez zalomenia
                       }`}
                     >
                       {displayText}

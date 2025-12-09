@@ -78,14 +78,14 @@ export default function ProfileMobileView({
                 {/* Email intentionally not shown here (kept in edit views) */}
                 {/* Lokalita */}
                 {displayUser.location && (
-                  <p className="text-gray-600 dark:text-gray-300 text-sm flex items-center gap-1 mt-1">
+                  <p className={`text-gray-600 dark:text-gray-300 ${displayUser.location.length > 15 ? 'text-xs' : 'text-sm'} flex items-center gap-1 mt-1`}>
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       fill="none"
                       viewBox="0 0 24 24"
                       strokeWidth={1.5}
                       stroke="currentColor"
-                      className="size-3"
+                      className={`${displayUser.location.length > 15 ? 'size-2.5' : 'size-3'}`}
                     >
                       <path
                         strokeLinecap="round"
@@ -98,7 +98,9 @@ export default function ProfileMobileView({
                         d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z"
                       />
                     </svg>
-                    {displayUser.location}
+                    <span className="whitespace-nowrap overflow-hidden text-ellipsis">
+                      {displayUser.location}
+                    </span>
                   </p>
                 )}
                 {/* IČO - iba pre firemné účty */}

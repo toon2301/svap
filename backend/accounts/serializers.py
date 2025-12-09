@@ -494,6 +494,6 @@ class OfferedSkillSerializer(serializers.ModelSerializer):
         if value:
             value = SecurityValidator.validate_input_safety(value)
             value = value.strip()
-            if len(value) > 25:
-                raise serializers.ValidationError("Miesto môže mať maximálne 25 znakov")
+            if len(value) > 35:
+                raise serializers.ValidationError("Miesto môže mať maximálne 35 znakov")
         return value
