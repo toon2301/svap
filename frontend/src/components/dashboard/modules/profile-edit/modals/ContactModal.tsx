@@ -53,6 +53,9 @@ export default function ContactModal({ isOpen, phone, phoneVisible, originalPhon
           className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-1 focus:ring-purple-300 focus:border-transparent"
           placeholder={t('profile.phoneNumber', 'Tel. číslo')}
         />
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+          {phone.length}/15
+        </p>
       </div>
       <div className="mt-3">
         <p className="text-xs text-gray-500 dark:text-gray-400">
