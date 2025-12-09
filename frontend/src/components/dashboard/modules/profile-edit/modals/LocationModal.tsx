@@ -21,12 +21,19 @@ export default function LocationModal({ isOpen, location, originalLocation, setL
 
   const handleSave = async () => {
     try {
-      const response = await api.patch('/auth/profile/', { location });
+      // Skrátiť lokalitu na max 25 znakov pred odoslaním
+      const trimmedLocation = location.trim().slice(0, 25);
+      const response = await api.patch('/auth/profile/', { location: trimmedLocation });
       onUserUpdate && response.data?.user && onUserUpdate(response.data.user);
-      setOriginalLocation && setOriginalLocation(location);
+      setOriginalLocation && setOriginalLocation(trimmedLocation);
+      setLocation(trimmedLocation); // Aktualizovať state s orezanou hodnotou
       onClose();
-    } catch (e) {
+    } catch (e: any) {
       console.error('Chyba pri ukladaní lokality:', e);
+      const errorMessage = e?.response?.data?.details?.location?.[0] || 
+                          e?.response?.data?.error || 
+                          'Chyba pri ukladaní lokality';
+      alert(errorMessage);
     }
   };
 

@@ -268,8 +268,8 @@ class UserProfileSerializer(serializers.ModelSerializer):
         """Validácia lokácie"""
         if value:
             value = SecurityValidator.validate_input_safety(value)
-            if len(value.strip()) > 100:
-                raise serializers.ValidationError("Lokácia môže mať maximálne 100 znakov")
+            if len(value.strip()) > 25:
+                raise serializers.ValidationError("Lokácia môže mať maximálne 25 znakov")
             return value.strip()
         return value
 

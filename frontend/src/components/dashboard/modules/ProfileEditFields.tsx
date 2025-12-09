@@ -77,10 +77,13 @@ export default function ProfileEditFields({
         className="flex items-center py-4 px-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-900 border-t border-gray-100 dark:border-gray-800"
         onClick={() => setIsLocationModalOpen(true)}
       >
-        <span className="text-gray-900 dark:text-white font-medium w-40">
+        {/* Label vľavo */}
+        <span className="text-gray-900 dark:text-white font-medium whitespace-nowrap">
           {accountType === 'business' ? 'Lokalita / Sídlo' : t('profile.location', 'Lokalita')}
         </span>
-        <div className="flex items-start flex-1 ml-4 pr-2 min-w-0">
+
+        {/* Vertikálna čiara + lokalita zarovnané doprava, rozširujú sa doľava podľa dĺžky textu */}
+        <div className="flex items-center flex-1 min-w-0 justify-end pr-2 ml-4">
           <div className="w-px h-4 bg-gray-300 dark:bg-gray-700 mr-3 flex-shrink-0"></div>
           {(() => {
             const displayText =
@@ -88,18 +91,18 @@ export default function ProfileEditFields({
                 ? user.location
                 : t('profile.addLocation', 'Pridať lokalitu');
 
-            // Ak je text dlhší (cca viac ako 20 znakov), zmenšíme písmo
-            // a obmedzíme na max. 2 riadky. Text sa natiahne na celú dostupnú šírku.
-            const isLong = displayText.length > 20;
+            const isLong = displayText.length > 15;
 
             return (
-              <div
-                className={`text-gray-600 dark:text-gray-300 break-words whitespace-normal flex-1 min-w-0 ${
-                  isLong ? 'text-xs leading-tight line-clamp-2' : 'text-sm'
+              <span
+                className={`text-gray-600 dark:text-gray-300 max-w-full flex-1 min-w-0 ${
+                  isLong
+                    ? 'text-xs leading-tight break-words line-clamp-2'
+                    : 'text-sm whitespace-nowrap'
                 }`}
               >
                 {displayText}
-              </div>
+              </span>
             );
           })()}
         </div>
