@@ -158,7 +158,7 @@ export default function ProfileOffersMobileSection({
 
     // Ak text "Ponúkam" ešte nie je skrytý, skry ho
     if (!isTapped) {
-      setTappedCards((prev) => {
+      setTappedCards(prev => {
         const next = new Set(prev);
         next.add(cardId);
         return next;

@@ -81,7 +81,7 @@ export const handleSave = ({
     initialLocation ||
     initialDistrict ||
     (initialOpeningHours && Object.keys(initialOpeningHours).length > 0) ||
-    (initialPriceFrom !== null && initialPriceFrom > 0);
+    (initialPriceFrom !== null && initialPriceFrom !== undefined && initialPriceFrom > 0);
 
   // Pri vytváraní novej karty je popis povinný, pri editácii existujúcej karty nie
   if (!isEditing && !trimmed) {
