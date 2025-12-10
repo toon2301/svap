@@ -160,7 +160,6 @@ export default function SkillsDescriptionScreen({
   const [originalOpeningHours] = useState<OpeningHours>(initialOpeningHours || {});
   const detailedTextareaRef = useRef<HTMLTextAreaElement>(null);
   const tagsSectionRef = useRef<TagsSectionRef>(null);
-  const [canAddTag, setCanAddTag] = useState(false);
 
   useEffect(() => {
     setOpeningHours(initialOpeningHours || {});
@@ -216,40 +215,7 @@ export default function SkillsDescriptionScreen({
   const handleTagsBack = () => {
     setTags(originalTags);
     setIsTagsModalOpen(false);
-    setCanAddTag(false);
   };
-
-  // Komponent na sledovanie zmeny tagInput a aktualizáciu canAddTag
-  const TagButtonUpdater = React.forwardRef<TagsSectionRef, { onCanAddChange: (canAdd: boolean) => void }>(
-    ({ onCanAddChange }, ref) => {
-      useEffect(() => {
-        if (!isTagsModalOpen) {
-          onCanAddChange(false);
-          return;
-        }
-
-        const interval = setInterval(() => {
-          if (ref && typeof ref !== 'function' && ref.current) {
-            const canAdd = ref.current.canAddTag();
-            onCanAddChange(canAdd);
-          }
-        }, 100);
-
-        return () => clearInterval(interval);
-      }, [ref, onCanAddChange, isTagsModalOpen, tags]);
-
-      return null;
-    }
-  );
-  
-  TagButtonUpdater.displayName = 'TagButtonUpdater';
-
-  // Resetovať canAddTag pri otvorení/zatvorení modalu
-  useEffect(() => {
-    if (!isTagsModalOpen) {
-      setCanAddTag(false);
-    }
-  }, [isTagsModalOpen]);
 
   const handleDistrictChange = (newDistrict: string) => {
     setDistrict(newDistrict);
@@ -544,10 +510,10 @@ export default function SkillsDescriptionScreen({
 
                   return (
                     <span 
-                      className={`text-gray-600 dark:text-gray-300 max-w-full flex-1 min-w-0 ${
+                      className={`text-gray-600 dark:text-gray-300 ${
                         isLong 
-                          ? 'text-xs leading-tight break-words line-clamp-2'  // >21 znakov: menšie písmo, max 2 riadky
-                          : 'text-sm whitespace-nowrap'                         // ≤21 znakov: jeden riadok, bez zalomenia
+                          ? 'text-xs leading-tight break-words line-clamp-2 max-w-full flex-1 min-w-0'  // >21 znakov: menšie písmo, max 2 riadky, môže expandovať
+                          : 'text-sm whitespace-nowrap'                                                 // ≤21 znakov: jeden riadok, bez zalomenia, zarovnané doprava
                       }`}
                     >
                       {displayText}
@@ -833,39 +799,6 @@ export default function SkillsDescriptionScreen({
           onTagsChange={handleTagsChange}
           isOpen={isTagsModalOpen}
         />
-        <TagButtonUpdater ref={tagsSectionRef} onCanAddChange={setCanAddTag} />
-        {isTagsModalOpen && (
-          <button
-            type="button"
-            onClick={() => {
-              if (tagsSectionRef.current?.canAddTag()) {
-                tagsSectionRef.current?.addTag();
-                // Aktualizovať stav po pridaní
-                setTimeout(() => {
-                  setCanAddTag(tagsSectionRef.current?.canAddTag() || false);
-                }, 50);
-              }
-            }}
-            disabled={!canAddTag}
-            className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-purple-500 dark:bg-purple-600 text-white shadow-lg disabled:bg-gray-300 dark:disabled:bg-gray-600 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed enabled:hover:bg-purple-600 dark:enabled:hover:bg-purple-700 transition-colors flex items-center justify-center z-50"
-            aria-label={t('skills.addTag', 'Pridať tag')}
-          >
-            <svg
-              className="w-7 h-7"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2.5}
-                d="M5 13l4 4L19 7"
-              />
-            </svg>
-          </button>
-        )}
       </MobileFullScreenModal>
 
       {/* Location Modal */}

@@ -9,6 +9,7 @@ interface DescriptionSectionProps {
   error: string;
   onErrorChange: (value: string) => void;
   isOpen: boolean;
+  isSeeking?: boolean;
 }
 
 export default function DescriptionSection({
@@ -17,6 +18,7 @@ export default function DescriptionSection({
   error,
   onErrorChange,
   isOpen,
+  isSeeking = false,
 }: DescriptionSectionProps) {
   const { t } = useLanguage();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -61,7 +63,9 @@ export default function DescriptionSection({
         <p className="mt-1 text-sm text-red-500">{error}</p>
       )}
       <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-        {t('skills.descriptionHint', 'Sem napíš krátky a výstižný popis.')}
+        {isSeeking 
+          ? t('skills.descriptionHintSeeking', 'Sem napíš krátky a výstižný popis čo hľadáš')
+          : t('skills.descriptionHint', 'Sem napíš krátky a výstižný popis.')}
       </p>
     </div>
   );

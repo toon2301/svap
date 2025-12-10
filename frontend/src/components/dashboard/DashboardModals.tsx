@@ -20,6 +20,7 @@ interface DashboardModalsProps {
   isPersonalAccountModalOpen: boolean;
   setIsPersonalAccountModalOpen: (value: boolean) => void;
   skillsState: UseSkillsModalsResult;
+  activeModule?: string;
   t: Translator;
 }
 
@@ -31,6 +32,7 @@ export default function DashboardModals({
   isPersonalAccountModalOpen,
   setIsPersonalAccountModalOpen,
   skillsState,
+  activeModule,
   t,
 }: DashboardModalsProps) {
   const {
@@ -184,8 +186,12 @@ export default function DashboardModals({
         setSelectedSkillsCategory(null);
       } else if (selectedSkillsCategory) {
         if (selectedSkillsCategory.category === selectedSkillsCategory.subcategory) {
-          if (customCategories.length >= 5) {
-            alert('Môžeš pridať maximálne 5 vlastných kategórií.');
+          // Kontrola celkového počtu kariet (štandardné + vlastné) - limit 3 pre každú sekciu
+          const isSeeking = activeModule === 'skills-search';
+          if (standardCategories.length + customCategories.length >= 3) {
+            alert(isSeeking 
+              ? 'Môžeš mať maximálne 3 karty v sekcii "Hľadám".' 
+              : 'Môžeš mať maximálne 3 karty v sekcii "Ponúkam".');
             return;
           }
           const payload = buildPayload();
@@ -199,8 +205,12 @@ export default function DashboardModals({
           setSelectedSkillsCategory(null);
         } else {
           if (!selectedSkillsCategory.id) {
-            if (standardCategories.length >= 5) {
-              alert('Môžeš mať maximálne 5 výberov z kategórií.');
+            // Kontrola celkového počtu kariet (štandardné + vlastné) - limit 3 pre každú sekciu
+            const isSeeking = activeModule === 'skills-search';
+            if (standardCategories.length + customCategories.length >= 3) {
+              alert(isSeeking 
+                ? 'Môžeš mať maximálne 3 karty v sekcii "Hľadám".' 
+                : 'Môžeš mať maximálne 3 karty v sekcii "Ponúkam".');
               return;
             }
             const payload = buildPayload();
@@ -317,6 +327,7 @@ export default function DashboardModals({
           initialDetailedDescription={selectedSkillsCategory.detailed_description || ''}
           initialOpeningHours={selectedSkillsCategory.opening_hours}
           accountType={accountType}
+          isSeeking={activeModule === 'skills-search'}
           onRemoveExistingImage={
             selectedSkillsCategory.id
               ? (imageId) => handleRemoveSkillImage(selectedSkillsCategory.id!, imageId)

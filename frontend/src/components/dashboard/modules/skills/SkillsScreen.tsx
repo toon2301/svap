@@ -30,7 +30,11 @@ interface SkillItem {
 interface SkillsScreenProps {
   title: string;
   firstOptionText?: string;
+  firstOptionHint?: string;
   onFirstOptionClick?: () => void;
+  secondOptionText?: string;
+  secondOptionHint?: string;
+  onSecondOptionClick?: () => void;
   standardCategories?: SkillItem[];
   onRemoveStandardCategory?: (index: number) => void;
   onEditStandardCategoryDescription?: (index: number) => void;
@@ -43,7 +47,11 @@ interface SkillsScreenProps {
 export default function SkillsScreen({
   title,
   firstOptionText,
+  firstOptionHint,
   onFirstOptionClick,
+  secondOptionText,
+  secondOptionHint,
+  onSecondOptionClick,
   standardCategories = [],
   onRemoveStandardCategory,
   onEditStandardCategoryDescription,
@@ -194,7 +202,7 @@ export default function SkillsScreen({
                       {firstOptionText}
                     </span>
                     <span className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-                      {t(
+                      {firstOptionHint || t(
                         'skills.selectCategoryHint',
                         'Vyber kategóriu, ktorá sa k tebe hodí. Nenašiel si nič? Pridaj vlastnú.',
                       )}
@@ -239,6 +247,43 @@ export default function SkillsScreen({
                     )}
                   </button>
                 </div>
+
+                {secondOptionText && onSecondOptionClick && (
+                  <div className="w-full flex items-center justify-between mt-4 flex-wrap gap-3">
+                    <button
+                      type="button"
+                      onClick={onSecondOptionClick}
+                      className="flex flex-col flex-1 min-w-[260px] text-left cursor-pointer hover:opacity-80 transition-opacity"
+                    >
+                      <span className="text-lg font-medium text-gray-900 dark:text-white">
+                        {secondOptionText}
+                      </span>
+                      <span className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                        {secondOptionHint}
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={onSecondOptionClick}
+                      className="flex-shrink-0 p-2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors focus:outline-none"
+                    >
+                      <svg
+                        className="w-6 h-6"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 5l7 7-7 7"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+                )}
 
                 {onAddCategory && (
                   <div className="w-full flex items-center justify-between mt-4 flex-wrap gap-3">
@@ -385,6 +430,35 @@ export default function SkillsScreen({
                     )}
                   </button>
 
+                  {/* Pridaj čo hľadáš */}
+                  {secondOptionText && onSecondOptionClick && (
+                    <button
+                      type="button"
+                      onClick={onSecondOptionClick}
+                      className={`w-full h-20 flex items-center justify-between px-2 ${onAddCategory ? 'rounded-none' : 'rounded-b-2xl'} bg-[var(--background)] active:bg-gray-50 dark:active:bg-gray-900 transition-colors gap-4 relative z-0`}
+                    >
+                      <div className="flex flex-col text-left">
+                        <span className="text-base font-semibold text-gray-900 dark:text-white">
+                          {secondOptionText}
+                        </span>
+                      </div>
+                      <svg
+                        className="w-5 h-5 text-gray-400 dark:text-gray-500 flex-shrink-0"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 5l7 7-7 7"
+                        />
+                      </svg>
+                    </button>
+                  )}
+
                   {/* Pridať kategóriu */}
                   {onAddCategory && (
                     <button
@@ -430,11 +504,6 @@ export default function SkillsScreen({
                       )}
                     </button>
                   )}
-                </div>
-                <div className="-mt-0 px-2">
-                  <p className="text-xs text-gray-600 dark:text-gray-400 text-left">
-                    Vyber si kategóriu, ktorá ťa vystihuje, alebo si nižšie pridaj vlastnú.
-                  </p>
                 </div>
               </div>
             </>

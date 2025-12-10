@@ -11,15 +11,18 @@ interface ExperienceSectionProps {
   unit: UnitOption;
   onUnitChange: (value: UnitOption) => void;
   error: string;
+  isSeeking?: boolean;
 }
 
-export default function ExperienceSection({ value, onChange, unit, onUnitChange, error }: ExperienceSectionProps) {
+export default function ExperienceSection({ value, onChange, unit, onUnitChange, error, isSeeking = false }: ExperienceSectionProps) {
   const { t } = useLanguage();
 
   return (
     <div className="mb-4">
       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-        {t('skills.experienceOptional', 'Dĺžka praxe (voliteľné)')}
+        {isSeeking
+          ? t('skills.experienceOptionalSeeking', 'Minimálna prax (voliteľné)')
+          : t('skills.experienceOptional', 'Dĺžka praxe (voliteľné)')}
       </label>
       <div className="flex items-stretch h-11 border border-gray-300 dark:border-gray-700 rounded-lg overflow-hidden focus-within:ring-1 focus-within:ring-purple-300 focus-within:border-purple-300 dark:focus-within:border-purple-500 transition-all hover:border-gray-400 dark:hover:border-gray-600 bg-white dark:bg-black">
         <input

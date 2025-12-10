@@ -65,5 +65,6 @@ export interface SkillDescriptionModalProps {
   initialDetailedDescription?: string;
   initialOpeningHours?: OpeningHours;
   accountType?: 'personal' | 'business';
+  isSeeking?: boolean;
 }
 

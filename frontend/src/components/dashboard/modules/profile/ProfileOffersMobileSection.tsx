@@ -69,6 +69,7 @@ export default function ProfileOffersMobileSection({
   const [loadError, setLoadError] = useState<string | null>(null);
   const [selectedOffer, setSelectedOffer] = useState<Offer | null>(null);
   const [hoursModal, setHoursModal] = useState<OpeningHours | null>(null);
+  const [tappedCards, setTappedCards] = useState<Set<number | string>>(() => new Set());
 
   useEffect(() => {
     let cancelled = false;
@@ -152,12 +153,27 @@ export default function ProfileOffersMobileSection({
   }, [t]);
 
   const handleCardClick = (offer: Offer) => {
-    setSelectedOffer(offer);
+    const cardId = offer.id ?? `${offer.category || 'cat'}-${offer.subcategory || 'sub'}-${offer.description || 'desc'}`;
+    const isTapped = tappedCards.has(cardId);
+
+    // Ak text "Ponúkam" ešte nie je skrytý, skry ho
+    if (!isTapped) {
+      setTappedCards(prev => {
+        const next = new Set(prev);
+        next.add(cardId);
+        return next;
+      });
+    } else {
+      // Ak je text už skrytý, otvor detail modal a resetuj tappedCards
+      setSelectedOffer(offer);
+      setTappedCards(new Set()); // Resetuj všetky tapped karty
+    }
   };
 
   const handleDetailClose = () => {
     setSelectedOffer(null);
     setHoursModal(null);
+    setTappedCards(new Set()); // Resetuj všetky tapped karty
   };
 
   const renderDetailOverlay = () => {
@@ -546,14 +562,26 @@ export default function ProfileOffersMobileSection({
 
           const imageCount = offer.images?.filter((img) => img?.image_url || img?.image).length || 0;
           const hasMultipleImages = imageCount > 1;
+          const cardId = offer.id ?? `${offer.category || 'cat'}-${offer.subcategory || 'sub'}-${offer.description || 'desc'}`;
+          const isTapped = tappedCards.has(cardId);
 
           return (
             <button
               key={offer.id}
               type="button"
-              className="w-full text-left rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-[#0f0f10] shadow-sm active:scale-[0.99] transition-transform"
+              className="relative w-full text-left rounded-2xl overflow-visible border border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-[#0f0f10] shadow-sm active:scale-[0.99] transition-transform"
               onClick={() => handleCardClick(offer)}
             >
+              {/* Veľký text "Ponúkam" cez celú kartu – mobilná verzia, skryje sa pri prvom kliknutí */}
+              {!isTapped && (
+                <div className="absolute left-0 right-0 top-[52.5%] -translate-y-1/2 z-30 pointer-events-none transition-all duration-300">
+                  <div className="w-full py-1 border border-transparent rounded-none bg-white/80 dark:bg-[#0f0f10]/80 backdrop-blur-sm shadow-lg">
+                    <p className="text-xl font-black text-gray-900 dark:text-gray-50 uppercase tracking-[0.2em] leading-tight text-center">
+                      {t('skills.offering', 'Ponúkam')}
+                    </p>
+                  </div>
+                </div>
+              )}
               <div className="relative aspect-[4/3] bg-gray-100 dark:bg-[#0e0e0f] overflow-hidden">
                 <OfferImageCarousel images={offer.images} alt={imageAlt} />
                 {accountType === 'business' && (

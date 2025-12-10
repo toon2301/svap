@@ -270,7 +270,7 @@ export default function ProfileOffersSection({ activeTab, accountType = 'persona
                 onClick={handleFlip}
                 aria-label="Otočiť"
                 title="Otočiť"
-                className={`absolute -top-2.5 -right-3 -translate-y-1/2 p-1 rounded-full bg-purple-50 dark:bg-purple-900/80 dark:backdrop-blur-sm border border-purple-200 dark:border-purple-800/60 text-purple-700 dark:text-white hover:bg-purple-100 dark:hover:bg-purple-900/90 transition-colors ${extraClasses}`}
+                className={`absolute -top-2.5 -right-3 -translate-y-1/2 p-1 rounded-full bg-purple-50 dark:bg-purple-900/80 dark:backdrop-blur-sm border border-purple-200 dark:border-purple-800/60 text-purple-700 dark:text-white hover:bg-purple-100 dark:hover:bg-purple-900/90 transition-colors z-40 ${extraClasses}`}
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -290,8 +290,18 @@ export default function ProfileOffersSection({ activeTab, accountType = 'persona
             );
 
             return (
-              <div key={offer.id} className="relative">
+              <div key={offer.id} className="relative group">
                 <div className="rounded-2xl overflow-visible border border-gray-200 dark:border-gray-800 bg-white/70 dark:bg-[#0f0f10] shadow-sm hover:shadow transition-shadow">
+                  {/* Veľký text "Ponúkam" uprostred celej karty - cez foto aj obsah - len na prednej strane */}
+                  {!isFlipped && (
+                    <div className="absolute left-0 right-0 top-[52.5%] -translate-y-1/2 pointer-events-none z-30 group-hover:opacity-0 group-hover:scale-90 transition-all duration-300">
+                      <div className="w-full py-1 border border-transparent rounded-none bg-white/80 dark:bg-[#0f0f10]/80 backdrop-blur-sm shadow-lg">
+                        <p className="text-xl md:text-2xl font-black text-gray-800 dark:text-gray-100 uppercase tracking-[0.2em] leading-tight text-center">
+                          {t('skills.offering', 'Ponúkam')}
+                        </p>
+                      </div>
+                    </div>
+                  )}
                   <div className={isFlipped ? 'hidden' : 'block'}>
                     <div className="relative aspect-[3/2] bg-gray-100 dark:bg-[#0e0e0f] overflow-hidden rounded-t-2xl">
                       <OfferImageCarousel images={offer.images} alt={imageAlt} />
@@ -417,7 +427,7 @@ export default function ProfileOffersSection({ activeTab, accountType = 'persona
                             </div>
                           )}
                         </div>
-                        <p className="-mb-2 pt-0 pb-0 text-center text-[8px] text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                        <p className="-mb-2 pt-0 pb-0 text-center text-xs font-bold text-purple-700 dark:text-purple-300 uppercase tracking-wide opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                           {t('skills.offering', 'Ponúkam')}
                         </p>
                       </div>

@@ -334,6 +334,7 @@ export default function Dashboard({ initialUser }: DashboardProps) {
           removeStandardCategory,
           removeCustomCategory,
         }}
+        activeModule={activeModule}
         t={t}
       />
     </>

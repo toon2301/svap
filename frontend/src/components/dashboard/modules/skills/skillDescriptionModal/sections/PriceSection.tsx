@@ -11,15 +11,18 @@ interface PriceSectionProps {
   currency: CurrencyOption;
   onCurrencyChange: (value: CurrencyOption) => void;
   error: string;
+  isSeeking?: boolean;
 }
 
-export default function PriceSection({ value, onChange, currency, onCurrencyChange, error }: PriceSectionProps) {
+export default function PriceSection({ value, onChange, currency, onCurrencyChange, error, isSeeking = false }: PriceSectionProps) {
   const { t } = useLanguage();
 
   return (
     <div className="mb-4">
       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-        {t('skills.priceFromOptional', 'Cena od (voliteľné)')}
+        {isSeeking
+          ? t('skills.priceToOptional', 'Cena do (voliteľné)')
+          : t('skills.priceFromOptional', 'Cena od (voliteľné)')}
       </label>
       <div className="flex items-stretch h-11 border border-gray-300 dark:border-gray-700 rounded-lg overflow-visible focus-within:ring-1 focus-within:ring-purple-300 focus-within:border-purple-300 dark:focus-within:border-purple-500 transition-all hover:border-gray-400 dark:hover:border-gray-600 bg-white dark:bg-black">
         <input

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useMemo } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import DescriptionSection from './skillDescriptionModal/sections/DescriptionSection';
 import TagsSection from './skillDescriptionModal/sections/TagsSection';
@@ -10,8 +10,15 @@ import ExperienceSection from './skillDescriptionModal/sections/ExperienceSectio
 import PriceSection from './skillDescriptionModal/sections/PriceSection';
 import DetailedDescriptionModal from './skillDescriptionModal/DetailedDescriptionModal';
 import OpeningHoursModal from './skillDescriptionModal/OpeningHoursModal';
-import { CurrencyOption, SkillDescriptionModalProps, SkillImage, OpeningHours, UnitOption } from './skillDescriptionModal/types';
-import { currencyFromLocale, ensureCurrencyOption, slugifyLabel } from './skillDescriptionModal/utils';
+import { SkillDescriptionModalProps } from './skillDescriptionModal/types';
+import { slugifyLabel } from './skillDescriptionModal/utils';
+import { useSkillDescriptionState } from './skillDescriptionModal/hooks/useSkillDescriptionState';
+import {
+  handleSave,
+  handleExperienceValueChange,
+  handlePriceChange,
+  handleLocationBlur,
+} from './skillDescriptionModal/handlers/skillDescriptionHandlers';
 import styles from './SkillsCategoryModal.module.css';
 import MasterToggle from '../notifications/MasterToggle';
 
@@ -34,6 +41,7 @@ export default function SkillDescriptionModal({
   initialDetailedDescription = '',
   initialOpeningHours,
   accountType = 'personal',
+  isSeeking = false,
 }: SkillDescriptionModalProps) {
   const { locale, t } = useLanguage();
   const categorySlug = useMemo(() => (category ? slugifyLabel(category) : ''), [category]);
@@ -51,262 +59,69 @@ export default function SkillDescriptionModal({
     return subcategory;
   }, [subcategory, categorySlug, subcategorySlug, t]);
 
-  const [description, setDescription] = useState('');
-  const [error, setError] = useState('');
-  const [experienceValue, setExperienceValue] = useState('');
-  const [experienceUnit, setExperienceUnit] = useState<UnitOption>('years');
-  const [experienceError, setExperienceError] = useState('');
-  const [tags, setTags] = useState<string[]>([]);
-  const [images, setImages] = useState<File[]>([]);
-  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
-  const [existingImages, setExistingImages] = useState<SkillImage[]>([]);
-  const [priceFrom, setPriceFrom] = useState('');
-  const [priceCurrency, setPriceCurrency] = useState<CurrencyOption>('€');
-  const [userTouchedCurrency, setUserTouchedCurrency] = useState(false);
-  const [priceError, setPriceError] = useState('');
-  const [location, setLocation] = useState('');
-  const [locationError, setLocationError] = useState('');
-  const [isLocationSaving, setIsLocationSaving] = useState(false);
-  const lastSavedLocationRef = useRef('');
-  const [district, setDistrict] = useState('');
-  const [detailedDescription, setDetailedDescription] = useState('');
-  const [isDetailedModalOpen, setIsDetailedModalOpen] = useState(false);
-  const [openingHours, setOpeningHours] = useState<OpeningHours>({});
-  const [isOpeningHoursModalOpen, setIsOpeningHoursModalOpen] = useState(false);
-  const [isHideCardEnabled, setIsHideCardEnabled] = useState(false);
+  const state = useSkillDescriptionState({
+    isOpen,
+    locale,
+    initialDescription,
+    initialExperience,
+    initialTags,
+    initialImages,
+    initialPriceFrom,
+    initialPriceCurrency,
+    initialLocation,
+    initialDistrict,
+    initialDetailedDescription,
+    initialOpeningHours,
+  });
 
-  useEffect(() => {
-    if (isOpen) {
-      setDescription(initialDescription || '');
-      setError('');
-      if (initialExperience) {
-        setExperienceValue(initialExperience.value.toString());
-        setExperienceUnit(initialExperience.unit);
-      } else {
-        setExperienceValue('');
-        setExperienceUnit('years');
-      }
-      setExperienceError('');
-      setTags(Array.isArray(initialTags) ? initialTags : []);
-      setImages([]);
-      setImagePreviews([]);
-      setExistingImages(Array.isArray(initialImages) ? initialImages : []);
-      setPriceFrom(initialPriceFrom !== null && initialPriceFrom !== undefined ? String(initialPriceFrom) : '');
-      if ((initialPriceCurrency ?? '') === '' && (initialPriceFrom === null || initialPriceFrom === undefined)) {
-        setPriceCurrency(currencyFromLocale(locale));
-      } else {
-        setPriceCurrency(ensureCurrencyOption(initialPriceCurrency));
-      }
-      setUserTouchedCurrency(false);
-      setPriceError('');
-      setDistrict(initialDistrict || '');
-      setDetailedDescription(initialDetailedDescription || '');
-      setOpeningHours(initialOpeningHours || {});
-    } else {
-      setDescription('');
-      setError('');
-      setExperienceValue('');
-      setExperienceUnit('years');
-      setExperienceError('');
-      setTags([]);
-      setImages([]);
-      setImagePreviews([]);
-      setExistingImages([]);
-      setPriceFrom('');
-      setPriceCurrency(currencyFromLocale(locale));
-      setUserTouchedCurrency(false);
-      setPriceError('');
-      setDistrict('');
-      setDetailedDescription('');
-      setOpeningHours({});
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen]);
-  
-  useEffect(() => {
-    if (!isOpen) {
-      setDistrict('');
-      return;
-    }
-    setDistrict(initialDistrict || '');
-  }, [initialDistrict, isOpen]);
-
-  useEffect(() => {
-    if (isOpen) {
-      setExistingImages(Array.isArray(initialImages) ? initialImages : []);
-    }
-  }, [initialImages, isOpen]);
-  
-  useEffect(() => {
-    if (!isOpen) {
-      setLocation('');
-      setLocationError('');
-      setIsLocationSaving(false);
-      lastSavedLocationRef.current = '';
-      return;
-    }
-    const trimmedInitial = (initialLocation || '').trim();
-    setLocation(initialLocation || '');
-    setLocationError('');
-    setIsLocationSaving(false);
-    lastSavedLocationRef.current = trimmedInitial;
-  }, [initialLocation, isOpen]);
-  
-  useEffect(() => {
-    if (!isOpen) return;
-    if (userTouchedCurrency) return;
-    const hasNoPrice = !priceFrom || priceFrom.trim() === '';
-    if (hasNoPrice) {
-      setPriceCurrency(currencyFromLocale(locale));
-    }
-  }, [locale, isOpen, userTouchedCurrency, priceFrom]);
-
-  useEffect(() => {
-    if (isOpen) {
-      setDetailedDescription(initialDetailedDescription || '');
-      setOpeningHours(initialOpeningHours || {});
-    }
-  }, [initialDetailedDescription, initialOpeningHours, isOpen]);
-
-
-  const prevInitialDescriptionRef = React.useRef<string | undefined>();
-  useEffect(() => {
-    if (isOpen && initialDescription !== prevInitialDescriptionRef.current) {
-      prevInitialDescriptionRef.current = initialDescription;
-      if (initialDescription !== undefined) {
-        setDescription(initialDescription);
-      }
-    }
-  }, [isOpen, initialDescription]);
-
-  const handleExperienceValueChange = (val: string) => {
-    if (val === '' || (!isNaN(parseFloat(val)) && parseFloat(val) >= 0 && parseFloat(val) <= 100)) {
-      setExperienceValue(val);
-      setExperienceError('');
-    }
+  const onSaveClick = () => {
+    handleSave({
+      description: state.description,
+      experienceValue: state.experienceValue,
+      experienceUnit: state.experienceUnit,
+      tags: state.tags,
+      images: state.images,
+      priceFrom: state.priceFrom,
+      priceCurrency: state.priceCurrency,
+      location: state.location,
+      district: state.district,
+      detailedDescription: state.detailedDescription,
+      openingHours: state.openingHours,
+      existingImages: state.existingImages,
+      initialDescription,
+      initialExperience,
+      initialTags,
+      initialDetailedDescription,
+      initialLocation,
+      initialDistrict,
+      initialOpeningHours,
+      initialPriceFrom,
+      onSave,
+      setError: state.setError,
+      setExperienceError: state.setExperienceError,
+      setPriceError: state.setPriceError,
+      t,
+    });
   };
 
-  const handlePriceChange = (val: string) => {
-    if (val === '' || (!isNaN(parseFloat(val)) && parseFloat(val) >= 0)) {
-      setPriceFrom(val);
-      setPriceError('');
-    }
+  const onExperienceValueChange = (val: string) => {
+    handleExperienceValueChange(val, state.setExperienceValue, state.setExperienceError);
   };
 
-  const handleLocationBlur = async () => {
-    if (!onLocationSave) {
-      return;
-    }
-    const trimmed = location.trim();
-    if (trimmed === lastSavedLocationRef.current) {
-      return;
-    }
-    try {
-      setIsLocationSaving(true);
-      setLocationError('');
-      await onLocationSave(trimmed);
-      lastSavedLocationRef.current = trimmed;
-      setLocation(trimmed);
-    } catch (err: any) {
-      const apiMessage = err?.response?.data?.error || err?.response?.data?.detail;
-      const fallback = t('skills.locationSaveError', 'Miesto sa nepodarilo uložiť. Skús to znova.');
-      setLocationError(apiMessage || fallback);
-      setLocation(lastSavedLocationRef.current);
-    } finally {
-      setIsLocationSaving(false);
-    }
+  const onPriceChange = (val: string) => {
+    handlePriceChange(val, state.setPriceFrom, state.setPriceError);
   };
 
-  const handleSave = () => {
-    const trimmed = description.trim();
-    
-    if (!trimmed) {
-      setError(t('skills.descriptionRequired', 'Popis zručnosti je povinný'));
-      return;
-    }
-
-    if (trimmed.length > 100) {
-      setError(t('skills.descriptionTooLong', 'Popis zručnosti môže mať maximálne 100 znakov'));
-      return;
-    }
-
-    let experience: { value: number; unit: UnitOption } | undefined;
-    if (experienceValue.trim()) {
-      const numValue = parseFloat(experienceValue.trim());
-      if (isNaN(numValue) || numValue <= 0) {
-        setExperienceError(t('skills.experiencePositive', 'Dĺžka praxe musí byť kladné číslo'));
-        return;
-      }
-      if (numValue > 100) {
-        setExperienceError(t('skills.experienceTooLarge', 'Dĺžka praxe nemôže byť väčšia ako 100'));
-        return;
-      }
-      experience = {
-        value: numValue,
-        unit: experienceUnit,
-      };
-    }
-
-    setExperienceError('');
-    let priceValue: number | null = null;
-    if (priceFrom.trim()) {
-      const parsed = parseFloat(priceFrom.trim().replace(',', '.'));
-      if (isNaN(parsed) || parsed < 0) {
-        setPriceError(t('skills.priceNonNegative', 'Cena musí byť nezáporné číslo'));
-        return;
-      }
-      priceValue = parsed;
-    }
-    setPriceError('');
-    const locationValue = location.trim();
-    const districtValue = district.trim();
-    
-    // Validácia okresu
-    if (districtValue) {
-      // Importujeme zoznam okresov z LocationSection
-      const SLOVAK_DISTRICTS = [
-        'Bánovce nad Bebravou', 'Banská Bystrica', 'Banská Štiavnica', 'Bardejov',
-        'Bratislava I', 'Bratislava II', 'Bratislava III', 'Bratislava IV', 'Bratislava V',
-        'Brezno', 'Bytča', 'Čadca', 'Detva', 'Dolný Kubín', 'Dunajská Streda',
-        'Galanta', 'Gelnica', 'Hlohovec', 'Humenné', 'Ilava', 'Kežmarok', 'Komárno',
-        'Košice I', 'Košice II', 'Košice III', 'Košice IV', 'Košice-okolie',
-        'Krupina', 'Kysucké Nové Mesto', 'Levice', 'Levoča', 'Liptovský Mikuláš',
-        'Lučenec', 'Malacky', 'Martin', 'Medzilaborce', 'Michalovce', 'Myjava',
-        'Námestovo', 'Nitra', 'Nové Mesto nad Váhom', 'Nové Zámky', 'Partizánske',
-        'Pezinok', 'Piešťany', 'Poltár', 'Poprad', 'Považská Bystrica', 'Prešov',
-        'Prievidza', 'Púchov', 'Revúca', 'Rimavská Sobota', 'Rožňava', 'Ružomberok',
-        'Sabinov', 'Senec', 'Senica', 'Skalica', 'Snina', 'Sobrance', 'Spišská Nová Ves',
-        'Stará Ľubovňa', 'Stropkov', 'Svidník', 'Šaľa', 'Topoľčany', 'Trebišov',
-        'Trenčín', 'Trnava', 'Turčianske Teplice', 'Tvrdošín', 'Veľký Krtíš',
-        'Vranov nad Topľou', 'Zlaté Moravce', 'Zvolen', 'Žarnovica', 'Žiar nad Hronom', 'Žilina',
-      ];
-      
-      const removeDiacritics = (str: string): string => {
-        return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-      };
-      
-      const normalizedInput = removeDiacritics(districtValue.trim());
-      const isValid = SLOVAK_DISTRICTS.some((d) => 
-        removeDiacritics(d).toLowerCase() === normalizedInput.toLowerCase()
-      );
-      
-      if (!isValid) {
-        // Necháme LocationSection zobraziť chybu, len zastavíme uloženie
-        // Scrollneme na pole okresu, aby používateľ videl chybu
-        setTimeout(() => {
-          const districtInput = document.querySelector('input[placeholder*="okres" i]') as HTMLInputElement;
-          if (districtInput) {
-            districtInput.focus();
-            districtInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          }
-        }, 100);
-        return;
-      }
-    }
-    
-    const detailedValue = detailedDescription.trim();
-    const openingHoursValue = Object.keys(openingHours).length > 0 ? openingHours : undefined;
-    onSave(trimmed, experience, tags, images, priceValue, priceCurrency, locationValue, detailedValue, openingHoursValue, districtValue);
+  const onLocationBlur = async () => {
+    await handleLocationBlur({
+      location: state.location,
+      lastSavedLocationRef: state.lastSavedLocationRef,
+      onLocationSave,
+      setLocation: state.setLocation,
+      setLocationError: state.setLocationError,
+      setIsLocationSaving: state.setIsLocationSaving,
+      t,
+    });
   };
 
   if (!isOpen) return null;
@@ -326,7 +141,9 @@ export default function SkillDescriptionModal({
         <div className="rounded-2xl bg-[var(--background)] text-[var(--foreground)] border border-[var(--border)] shadow-xl overflow-hidden">
           <div className="flex items-center justify-between px-4 pt-4 pb-2 md:px-6 md:pt-6 md:pb-3">
             <h2 className="text-lg md:text-xl font-semibold">
-              {t('skills.describeSkillTitle', 'Opíš svoju službu/zručnosť')}
+              {isSeeking 
+                ? t('skills.describeWhatYouSeek', 'Opíš čo presne hľadáš')
+                : t('skills.describeSkillTitle', 'Opíš svoju službu/zručnosť')}
             </h2>
             <button 
               aria-label="Close" 
@@ -353,82 +170,88 @@ export default function SkillDescriptionModal({
             </div>
 
             <DescriptionSection
-              description={description}
-              onChange={setDescription}
-              error={error}
-              onErrorChange={setError}
+              description={state.description}
+              onChange={state.setDescription}
+              error={state.error}
+              onErrorChange={state.setError}
               isOpen={isOpen}
+              isSeeking={isSeeking}
             />
 
             <div className="mb-0">
               <button
                 type="button"
-                onClick={() => setIsDetailedModalOpen(true)}
+                onClick={() => state.setIsDetailedModalOpen(true)}
                 className="text-sm text-purple-700 dark:text-purple-300 font-medium hover:underline"
               >
-                {detailedDescription 
+                {state.detailedDescription 
                   ? t('skills.editDetailedDescription', 'Upraviť podrobný opis')
                   : `+ ${t('skills.addDetailedDescription', 'Pridať podrobný opis')}`}
               </button>
             </div>
 
             <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
-              {t('skills.descriptionInfo', 'Opíš svoju službu alebo zručnosť tak, aby používatelia získali čo najviac dôležitých informácií.')}
+              {isSeeking
+                ? t('skills.descriptionInfoSeeking', 'Opíš podrobne čo hľadáš tak, aby používatelia získali čo najviac dôležitých informácií.')
+                : t('skills.descriptionInfo', 'Opíš svoju službu alebo zručnosť tak, aby používatelia získali čo najviac dôležitých informácií.')}
             </p>
 
-            <TagsSection tags={tags} onTagsChange={setTags} isOpen={isOpen} />
+            <TagsSection tags={state.tags} onTagsChange={state.setTags} isOpen={isOpen} />
 
             <ImagesSection
-              images={images}
-              setImages={setImages}
-              imagePreviews={imagePreviews}
-              setImagePreviews={setImagePreviews}
-              existingImages={existingImages}
-              setExistingImages={setExistingImages}
+              images={state.images}
+              setImages={state.setImages}
+              imagePreviews={state.imagePreviews}
+              setImagePreviews={state.setImagePreviews}
+              existingImages={state.existingImages}
+              setExistingImages={state.setExistingImages}
               onRemoveExistingImage={onRemoveExistingImage}
               isOpen={isOpen}
             />
 
             <LocationSection
-                value={location}
+              value={state.location}
               onChange={(val) => {
-                setLocation(val);
-                  setLocationError('');
-                }}
-                onBlur={handleLocationBlur}
-              error={locationError}
-              isSaving={isLocationSaving}
-              district={district}
-              onDistrictChange={setDistrict}
+                state.setLocation(val);
+                state.setLocationError('');
+              }}
+              onBlur={onLocationBlur}
+              error={state.locationError}
+              isSaving={state.isLocationSaving}
+              district={state.district}
+              onDistrictChange={state.setDistrict}
+              isSeeking={isSeeking}
             />
 
             <ExperienceSection
-                  value={experienceValue}
-              onChange={handleExperienceValueChange}
-              unit={experienceUnit}
-              onUnitChange={setExperienceUnit}
-              error={experienceError}
+              value={state.experienceValue}
+              onChange={onExperienceValueChange}
+              unit={state.experienceUnit}
+              onUnitChange={state.setExperienceUnit}
+              error={state.experienceError}
+              isSeeking={isSeeking}
             />
 
             <PriceSection
-                  value={priceFrom}
-              onChange={handlePriceChange}
-              currency={priceCurrency}
+              value={state.priceFrom}
+              onChange={onPriceChange}
+              currency={state.priceCurrency}
               onCurrencyChange={(val) => {
-                setPriceCurrency(val);
-                setUserTouchedCurrency(true);
+                state.setPriceCurrency(val);
+                state.setUserTouchedCurrency(true);
               }}
-              error={priceError}
+              error={state.priceError}
+              isSeeking={isSeeking}
             />
 
-            {accountType === 'business' && (
+            {accountType === 'business' && !isSeeking && (
               <div className="mb-4">
                 <button
                   type="button"
-                  onClick={() => setIsOpeningHoursModalOpen(true)}
+                  onClick={() => state.setIsOpeningHoursModalOpen(true)}
                   className="text-sm text-purple-700 dark:text-purple-300 font-medium hover:underline flex items-center gap-1"
                 >
-                  {Object.keys(openingHours).length > 0 ? (
+                  {Object.keys(state.openingHours).length > 0 ? (
                     <>
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
@@ -472,9 +295,9 @@ export default function SkillDescriptionModal({
             {/* Skryť kartu */}
             <div className="mb-4 px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg">
               <MasterToggle
-                enabled={isHideCardEnabled}
+                enabled={state.isHideCardEnabled}
                 onChange={(value) => {
-                  setIsHideCardEnabled(value);
+                  state.setIsHideCardEnabled(value);
                   // TODO: Implementovať funkcionalitu skrytia karty
                 }}
                 label={t('skills.hideCardToggle', 'Skryť túto kartu')}
@@ -489,12 +312,16 @@ export default function SkillDescriptionModal({
                 {t('common.cancel', 'Zrušiť')}
               </button>
               <button
-                onClick={handleSave}
+                onClick={onSaveClick}
                 className="flex-1 px-4 py-2 rounded-2xl bg-purple-600 text-white hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={!description.trim()}
+                disabled={
+                  state.existingImages.length > 0 || initialDescription || initialExperience || (initialTags && initialTags.length) || initialDetailedDescription || initialLocation || initialDistrict || (initialOpeningHours && Object.keys(initialOpeningHours).length > 0) || (initialPriceFrom !== null && initialPriceFrom > 0)
+                    ? false
+                    : !state.description.trim()
+                }
               >
-                {existingImages.length || initialDescription || initialExperience || (initialTags && initialTags.length)
-                  ? t('common.update', 'Zmeniť')
+                {state.existingImages.length || initialDescription || initialExperience || (initialTags && initialTags.length)
+                  ? t('common.update', 'Aktualizovať')
                   : t('common.add', 'Pridať')}
               </button>
             </div>
@@ -504,17 +331,17 @@ export default function SkillDescriptionModal({
       </div>
 
       <DetailedDescriptionModal
-        isOpen={isDetailedModalOpen}
-        onClose={() => setIsDetailedModalOpen(false)}
-        initialValue={detailedDescription}
-        onSave={(val) => setDetailedDescription(val)}
+        isOpen={state.isDetailedModalOpen}
+        onClose={() => state.setIsDetailedModalOpen(false)}
+        initialValue={state.detailedDescription}
+        onSave={(val) => state.setDetailedDescription(val)}
       />
 
       <OpeningHoursModal
-        isOpen={isOpeningHoursModalOpen}
-        onClose={() => setIsOpeningHoursModalOpen(false)}
-        initialValue={openingHours}
-        onSave={(val) => setOpeningHours(val)}
+        isOpen={state.isOpeningHoursModalOpen}
+        onClose={() => state.setIsOpeningHoursModalOpen(false)}
+        initialValue={state.openingHours}
+        onSave={(val) => state.setOpeningHours(val)}
       />
     </>
   );

@@ -51,6 +51,7 @@ type Props = {
   setCustomCategories: React.Dispatch<React.SetStateAction<SkillItem[]>>;
   loadSkills: () => Promise<void>;
   handleRemoveSkillImage: (skillId: number, imageId: number) => Promise<any[]>;
+  activeModule?: string;
 };
 
 export default function SkillModals(props: Props) {
@@ -71,6 +72,7 @@ export default function SkillModals(props: Props) {
     setCustomCategories,
     loadSkills,
     handleRemoveSkillImage,
+    activeModule,
   } = props;
 
   const toLocalSkill = (s: any): SkillItem => {
@@ -272,9 +274,13 @@ export default function SkillModals(props: Props) {
                 setSelectedSkillsCategory(null);
               } else if (selectedSkillsCategory) {
                 if (selectedSkillsCategory.category === selectedSkillsCategory.subcategory) {
-                  // Kontrola celkového počtu kariet (štandardné + vlastné)
+                  // Kontrola celkového počtu kariet (štandardné + vlastné) - limit 3 pre každú sekciu
+                  const isSeeking = activeModule === 'skills-search';
+                  // Pre sekciu "Hľadám" a "Ponúkam" je limit 3 karty každá
                   if (standardCategories.length + customCategories.length >= 3) {
-                    alert('Môžeš mať maximálne 3 karty dokopy (štandardné aj vlastné).');
+                    alert(isSeeking 
+                      ? 'Môžeš mať maximálne 3 karty v sekcii "Hľadám".' 
+                      : 'Môžeš mať maximálne 3 karty v sekcii "Ponúkam".');
                     return;
                   }
                   const payload = buildPayload();
@@ -299,9 +305,13 @@ export default function SkillModals(props: Props) {
                   setSelectedSkillsCategory(null);
                 } else {
                   if (!selectedSkillsCategory.id) {
-                    // Kontrola celkového počtu kariet (štandardné + vlastné)
+                    // Kontrola celkového počtu kariet (štandardné + vlastné) - limit 3 pre každú sekciu
+                    const isSeeking = activeModule === 'skills-search';
+                    // Pre sekciu "Hľadám" a "Ponúkam" je limit 3 karty každá
                     if (standardCategories.length + customCategories.length >= 3) {
-                      alert('Môžeš mať maximálne 3 karty dokopy (štandardné aj vlastné).');
+                      alert(isSeeking 
+                        ? 'Môžeš mať maximálne 3 karty v sekcii "Hľadám".' 
+                        : 'Môžeš mať maximálne 3 karty v sekcii "Ponúkam".');
                       return;
                     }
                     const payload = buildPayload();

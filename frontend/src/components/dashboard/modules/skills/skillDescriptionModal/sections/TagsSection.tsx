@@ -169,9 +169,35 @@ const TagsSection = forwardRef<TagsSectionRef, TagsSectionProps>(
       </div>
 
       {isMobile && (
-        <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-          {t('skills.tagsInfoText', 'Hashtagy slúžia na lepšie vyhľadávanie vás a vašich ponúk v aplikácii.')}
-        </p>
+        <>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+            {t('skills.tagsInfoText', 'Hashtagy slúžia na lepšie vyhľadávanie vás a vašich ponúk v aplikácii.')}
+          </p>
+          <div className="flex justify-end mt-2">
+            <button
+              type="button"
+              onClick={addTag}
+              disabled={!canAdd}
+              className="w-12 h-12 rounded-full bg-purple-500 dark:bg-purple-600 text-white shadow-lg disabled:bg-gray-300 dark:disabled:bg-gray-600 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed enabled:hover:bg-purple-600 dark:enabled:hover:bg-purple-700 transition-colors flex items-center justify-center"
+              aria-label={t('skills.addTag', 'Pridať tag')}
+            >
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2.5}
+                  d="M5 13l4 4L19 7"
+                />
+              </svg>
+            </button>
+          </div>
+        </>
       )}
 
       {tagError && (

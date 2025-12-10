@@ -95,10 +95,10 @@ export default function ProfileEditFields({
 
             return (
               <span
-                className={`text-gray-600 dark:text-gray-300 max-w-full flex-1 min-w-0 ${
+                className={`text-gray-600 dark:text-gray-300 ${
                   isLong
-                    ? 'text-xs leading-tight break-words line-clamp-2'
-                    : 'text-sm whitespace-nowrap'
+                    ? 'text-xs leading-tight break-words line-clamp-2 max-w-full flex-1 min-w-0'  // >15 znakov: menšie písmo, max 2 riadky, môže expandovať
+                    : 'text-sm whitespace-nowrap'                                                 // ≤15 znakov: jeden riadok, bez zalomenia, zarovnané doprava
                 }`}
               >
                 {displayText}

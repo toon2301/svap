@@ -288,7 +288,45 @@ export default function ModuleRouter({
         />
       );
     case 'skills-search':
-      return <SkillsScreen title="Hľadám" />;
+      return (
+        <SkillsScreen
+          title="Vyber, čo hľadáš, aby ostatní hneď vedeli, s čím ti môžu pomôcť."
+          firstOptionText={t('skills.setWhatYouSeek', 'Vyber čo hľadáš')}
+          firstOptionHint={t('skills.seekCategoryHint', 'Vyber kategóriu, ktorú hľadáš — a ak ti nič nesedí, jednoducho si nižšie nastav presne to, čo potrebuješ.')}
+          onFirstOptionClick={() => {
+            // Na mobile presmeruj na screen, na desktop otvor modal
+            if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+              setActiveModule('skills-select-category');
+              try {
+                localStorage.setItem('activeModule', 'skills-select-category');
+              } catch {
+                // ignore
+              }
+            } else {
+              setIsSkillsCategoryModalOpen(true);
+            }
+          }}
+          secondOptionText={t('skills.addWhatYouSeek', 'Pridaj čo hľadáš')}
+          secondOptionHint={t('skills.addWhatYouSeekHint', 'Nastav si presne to, čo hľadáš, podľa vlastných predstáv.')}
+          onSecondOptionClick={() => {
+            if (customCategories.length >= 5) {
+              alert('Môžeš pridať maximálne 5 vlastných kategórií.');
+              return;
+            }
+            // Na mobile presmeruj na screen, na desktop otvor modal
+            if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+              setActiveModule('skills-add-custom-category');
+              try {
+                localStorage.setItem('activeModule', 'skills-add-custom-category');
+              } catch {
+                // ignore
+              }
+            } else {
+              setIsAddCustomCategoryModalOpen(true);
+            }
+          }}
+        />
+      );
     case 'skills-describe':
       if (!selectedSkillsCategory) {
         setActiveModule('skills-offer');

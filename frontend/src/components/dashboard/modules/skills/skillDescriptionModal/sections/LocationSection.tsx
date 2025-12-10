@@ -527,9 +527,10 @@ interface LocationSectionProps {
   isSaving: boolean;
   district?: string;
   onDistrictChange?: (value: string) => void;
+  isSeeking?: boolean;
 }
 
-export default function LocationSection({ value, onChange, onBlur, error, isSaving, district, onDistrictChange }: LocationSectionProps) {
+export default function LocationSection({ value, onChange, onBlur, error, isSaving, district, onDistrictChange, isSeeking = false }: LocationSectionProps) {
   const { t, country } = useLanguage();
   const [districtInput, setDistrictInput] = useState(district || '');
   const [filteredDistricts, setFilteredDistricts] = useState<string[]>([]);
@@ -540,6 +541,7 @@ export default function LocationSection({ value, onChange, onBlur, error, isSavi
   const dropdownRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const isSelectingFromDropdown = useRef(false);
 
   // Vyber správny zoznam okresov podľa krajiny (nie jazyka)
   const getDistrictsList = (): string[] => {
@@ -602,8 +604,11 @@ export default function LocationSection({ value, onChange, onBlur, error, isSavi
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node) &&
-          inputRef.current && !inputRef.current.contains(event.target as Node)) {
+      // Ak klikneme na dropdown item, necháme handleDistrictSelect to spracovať
+      if (dropdownRef.current && dropdownRef.current.contains(event.target as Node)) {
+        return;
+      }
+      if (inputRef.current && !inputRef.current.contains(event.target as Node)) {
         setShowDropdown(false);
       }
     };
@@ -654,6 +659,12 @@ export default function LocationSection({ value, onChange, onBlur, error, isSavi
   };
 
   const handleDistrictBlur = () => {
+    // Ak sme práve vybrali z dropdownu, preskoč validáciu
+    if (isSelectingFromDropdown.current) {
+      isSelectingFromDropdown.current = false;
+      return;
+    }
+
     const trimmed = districtInput.trim();
     if (!trimmed) {
       setDistrictError('');
@@ -685,11 +696,16 @@ export default function LocationSection({ value, onChange, onBlur, error, isSavi
   };
 
   const handleDistrictSelect = (selectedDistrict: string) => {
+    isSelectingFromDropdown.current = true;
     setDistrictInput(selectedDistrict);
     onDistrictChange?.(selectedDistrict);
     setDistrictError(''); // Vymaž chybu pri výbere z dropdownu
     setShowDropdown(false);
-    inputRef.current?.blur();
+    // Nevoláme blur() - necháme input bez focusu prirodzene
+    // Resetujeme flag po krátkom čase, aby blur event (ak sa spustí) vedel, že sme vybrali z dropdownu
+    setTimeout(() => {
+      isSelectingFromDropdown.current = false;
+    }, 200);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -772,6 +788,10 @@ export default function LocationSection({ value, onChange, onBlur, error, isSavi
                   <button
                     key={d}
                     type="button"
+                    onMouseDown={(e) => {
+                      // Zabráň blur eventu na inpute pri kliknutí na dropdown item
+                      e.preventDefault();
+                    }}
                     onClick={() => handleDistrictSelect(d)}
                     className={`w-full text-left px-4 py-2.5 text-sm font-medium transition-all duration-150 ${
                       index === selectedIndex
@@ -789,8 +809,8 @@ export default function LocationSection({ value, onChange, onBlur, error, isSavi
             document.getElementById('app-root') ?? document.body
           )}
         </div>
-        {/* Miesto - zobrazí sa len keď je vyplnený okres */}
-        {districtInput.trim() !== '' && (
+        {/* Miesto - v sekcii "Hľadám" sa nezobrazuje vôbec, v "Ponúkam" sa zobrazí keď je vyplnený okres */}
+        {!isSeeking && districtInput.trim() !== '' && (
           <div className="flex-1">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               {t('skills.locationTitle', 'Mesto/dedina (voliteľné)')}
@@ -817,7 +837,9 @@ export default function LocationSection({ value, onChange, onBlur, error, isSavi
         )}
       </div>
       <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-        {t('skills.locationHint', 'Sem napíš, kde ponúkaš svoje služby a zručnosti.')}
+        {isSeeking
+          ? t('skills.locationHintSeeking', 'Sem napíš, kde hľadáš služby a zručnosti.')
+          : t('skills.locationHint', 'Sem napíš, kde ponúkaš svoje služby a zručnosti.')}
       </p>
       {isSaving && (
         <p className="text-xs text-purple-600 dark:text-purple-300 mt-0.5">
