@@ -379,7 +379,7 @@ export default function SkillsScreen({
       </div>
 
       {/* Mobile layout */}
-      <div className="block lg:hidden w-full px-4">
+      <div className="block lg:hidden w-full px-0">
         <div className="flex flex-col items-stretch w-full">
           {firstOptionText && (
             <>

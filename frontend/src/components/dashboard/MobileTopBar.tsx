@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import { Bars3Icon, UserIcon } from '@heroicons/react/24/outline';
 import { useLanguage } from '@/contexts/LanguageContext';
 
@@ -16,6 +17,22 @@ interface MobileTopBarProps {
 
 export default function MobileTopBar({ onMenuClick, isEditMode = false, onBackClick, onProfileClick, activeModule, activeRightItem, subcategory, onSaveClick }: MobileTopBarProps) {
   const { t } = useLanguage();
+  const [describeMode, setDescribeMode] = React.useState<'offer' | 'search' | null>(null);
+
+  React.useEffect(() => {
+    if (activeModule === 'skills-describe') {
+      if (typeof window !== 'undefined') {
+        const stored = localStorage.getItem('skillsDescribeMode');
+        if (stored === 'search' || stored === 'offer') {
+          setDescribeMode(stored);
+        } else {
+          setDescribeMode(null);
+        }
+      } else {
+        setDescribeMode(null);
+      }
+    }
+  }, [activeModule]);
   return (
     <div className="lg:hidden fixed top-0 left-0 right-0 z-30 bg-white dark:bg-black border-b border-gray-200 dark:border-gray-800 shadow-sm">
       <div className="grid grid-cols-3 items-center px-3 py-0 h-12">
@@ -80,7 +97,11 @@ export default function MobileTopBar({ onMenuClick, isEditMode = false, onBackCl
             <h1 className="text-sm font-semibold text-gray-900 dark:text-white whitespace-nowrap">{t('skills.selectCategoryTitle', 'Vyber kategóriu')}</h1>
           )}
           {activeModule === 'skills-describe' && (
-            <h1 className="text-sm font-semibold text-gray-900 dark:text-white max-lg:whitespace-normal lg:whitespace-nowrap max-lg:leading-tight">{t('skills.describeSkillTitle', 'Opíš svoju službu/zručnosť')}</h1>
+            <h1 className="text-sm font-semibold text-gray-900 dark:text-white max-lg:whitespace-normal lg:whitespace-nowrap max-lg:leading-tight">
+              {describeMode === 'search'
+                ? t('skills.describeWhatYouSeek', 'Opíš čo presne hľadáš')
+                : t('skills.describeSkillTitle', 'Opíš svoju službu/zručnosť')}
+            </h1>
           )}
         </div>
         

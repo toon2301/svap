@@ -17,6 +17,7 @@ interface SkillsDescriptionScreenProps {
   category: string;
   subcategory: string;
   onBack: () => void;
+  isSeeking?: boolean;
   initialDescription?: string;
   onDescriptionChange?: (description: string) => void;
   initialDetailedDescription?: string;
@@ -47,6 +48,7 @@ export default function SkillsDescriptionScreen({
   category,
   subcategory,
   onBack,
+  isSeeking = false,
   initialDescription = '',
   onDescriptionChange,
   initialDetailedDescription = '',
@@ -202,13 +204,13 @@ export default function SkillsDescriptionScreen({
 
   const handleTagsChange = (newTags: string[]) => {
     setTags(newTags);
-    if (onTagsChange) {
-      onTagsChange(newTags);
-    }
   };
 
   const handleTagsSave = () => {
     setOriginalTags(tags);
+    if (onTagsChange) {
+      onTagsChange(tags);
+    }
     setIsTagsModalOpen(false);
   };
 
@@ -571,7 +573,7 @@ export default function SkillsDescriptionScreen({
               onClick={() => setIsPriceModalOpen(true)}
             >
               <span className="text-gray-900 dark:text-white font-medium w-40 whitespace-nowrap">
-                {t('skills.priceFrom', 'Cena od')}
+                {isSeeking ? t('skills.priceTo', 'Cena do') : t('skills.priceFrom', 'Cena od')}
               </span>
               <div className="flex items-center flex-1 ml-4 pr-2">
                 <div className="w-px h-4 bg-gray-300 dark:bg-gray-700 mr-3"></div>
@@ -583,8 +585,8 @@ export default function SkillsDescriptionScreen({
               </div>
             </div>
 
-            {/* Otváracia doba - len pre firemné účty */}
-            {accountType === 'business' && (
+            {/* Otváracia doba - len pre firemné účty a len v Ponúkam */}
+            {accountType === 'business' && !isSeeking && (
               <div 
                 className="flex items-center py-4 pl-2 pr-0 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-900 border-t border-gray-100 dark:border-gray-800"
                 onClick={() => setIsOpeningHoursModalOpen(true)}
@@ -757,7 +759,11 @@ export default function SkillsDescriptionScreen({
               ref={detailedTextareaRef}
               value={detailedDescription}
               onChange={(e) => handleDetailedDescriptionChange(e.target.value)}
-              placeholder={t('skills.detailedDescriptionPlaceholder', 'Opíš detaily služby – postup, čo je zahrnuté, očakávania a výsledok.')}
+              placeholder={
+                isSeeking
+                  ? t('skills.detailedDescriptionHintSeeking', 'Opíš detailne čo hľadáš – postup, čo je zahrnuté, očakávania a výsledok.')
+                  : t('skills.detailedDescriptionPlaceholder', 'Opíš detaily služby – postup, čo je zahrnuté, očakávania a výsledok.')
+              }
               className="w-full px-3 pt-2 pb-6 pr-16 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-1 focus:ring-purple-300 focus:border-transparent resize-none skill-description-textarea-scrollbar"
               rows={6}
               maxLength={MAX_DETAILED_LENGTH}
@@ -782,7 +788,9 @@ export default function SkillsDescriptionScreen({
           <p className="mt-1 text-sm text-red-500">{detailedError}</p>
         )}
         <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-          {t('skills.detailedDescriptionHint', 'Opíš detaily služby – postup, čo je zahrnuté, očakávania a výsledok.')}
+          {isSeeking
+            ? t('skills.detailedDescriptionHintSeeking', 'Opíš detailne čo hľadáš – postup, čo je zahrnuté, očakávania a výsledok.')
+            : t('skills.detailedDescriptionHint', 'Opíš detaily služby – postup, čo je zahrnuté, očakávania a výsledok.')}
         </p>
       </MobileFullScreenModal>
 
@@ -804,7 +812,7 @@ export default function SkillsDescriptionScreen({
       {/* Location Modal */}
       <MobileFullScreenModal
         isOpen={isLocationModalOpen}
-        title={t('skills.district', 'Okres')}
+        title={isSeeking ? t('skills.districtTitleSeeking', 'Okres (povinné)') : t('skills.district', 'Okres')}
         onBack={handleLocationBack}
         onSave={handleLocationSave}
       >
@@ -816,13 +824,14 @@ export default function SkillsDescriptionScreen({
           isSaving={isLocationSaving}
           district={district}
           onDistrictChange={handleDistrictChange}
+          isSeeking={isSeeking}
         />
       </MobileFullScreenModal>
 
       {/* Experience Modal */}
       <MobileFullScreenModal
         isOpen={isExperienceModalOpen}
-        title={t('skills.experienceLength', 'Dĺžka praxe')}
+        title={isSeeking ? t('skills.experienceOptionalSeeking', 'Minimálna prax (voliteľné)') : t('skills.experienceLength', 'Dĺžka praxe')}
         onBack={handleExperienceBack}
         onSave={handleExperienceSave}
       >
@@ -832,16 +841,19 @@ export default function SkillsDescriptionScreen({
           unit={experienceUnit}
           onUnitChange={setExperienceUnit}
           error={experienceError}
+          isSeeking={isSeeking}
         />
         <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-          {t('skills.experienceHint', 'Daj ostatným vedieť, ako dlho sa venuješ svojej odbornosti.')}
+          {isSeeking
+            ? t('skills.experienceHintSeeking', 'Zadaj, akú dlhú prax má mať človek, ktorého hľadáš.')
+            : t('skills.experienceHint', 'Daj ostatným vedieť, ako dlho sa venuješ svojej odbornosti.')}
         </p>
       </MobileFullScreenModal>
 
       {/* Price Modal */}
       <MobileFullScreenModal
         isOpen={isPriceModalOpen}
-        title={t('skills.priceFrom', 'Cena od')}
+        title={isSeeking ? t('skills.priceToOptional', 'Cena do (voliteľné)') : t('skills.priceFrom', 'Cena od')}
         onBack={handlePriceBack}
         onSave={handlePriceSave}
       >
@@ -851,11 +863,12 @@ export default function SkillsDescriptionScreen({
           currency={priceCurrency}
           onCurrencyChange={(val) => setPriceCurrency(val)}
           error={priceError}
+          isSeeking={isSeeking}
         />
       </MobileFullScreenModal>
 
-      {/* Opening Hours Modal - Mobile Fullscreen */}
-      {accountType === 'business' && (
+      {/* Opening Hours Modal - Mobile Fullscreen (len pre Ponúkam) */}
+      {accountType === 'business' && !isSeeking && (
         <MobileFullScreenModal
           isOpen={isOpeningHoursModalOpen}
           title={t('skills.openingHours.title', 'Otváracia doba')}

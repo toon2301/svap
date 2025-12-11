@@ -335,6 +335,7 @@ export default function SkillDescriptionModal({
         onClose={() => state.setIsDetailedModalOpen(false)}
         initialValue={state.detailedDescription}
         onSave={(val) => state.setDetailedDescription(val)}
+        isSeeking={isSeeking}
       />
 
       <OpeningHoursModal

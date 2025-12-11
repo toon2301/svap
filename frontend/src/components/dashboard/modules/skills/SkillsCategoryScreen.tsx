@@ -111,7 +111,7 @@ export default function SkillsCategoryScreen({ categories, selected, onSelect, o
   return (
     <div className="text-[var(--foreground)]">
       {/* Mobile layout */}
-      <div className="block lg:hidden w-full px-4">
+      <div className="block lg:hidden w-full px-0">
         <div className="flex flex-col w-full">
           {/* Search input */}
           <div className="mb-4 pt-2">

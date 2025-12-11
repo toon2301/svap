@@ -237,12 +237,20 @@ export function useDashboardState(initialUser?: User): UseDashboardStateResult {
     }
   }, [router]);
 
+  const getDescribeMode = () => {
+    if (typeof window === 'undefined') return null;
+    const mode = localStorage.getItem('skillsDescribeMode');
+    return mode === 'search' ? 'skills-search' : mode === 'offer' ? 'skills-offer' : null;
+  };
+
   const handleMobileBack = useCallback((isInSubcategories: boolean = false) => {
+    const modeModule = getDescribeMode();
     if (activeModule === 'skills-describe') {
-      setActiveModule('skills-offer');
+      const target = modeModule || 'skills-offer';
+      setActiveModule(target);
       if (typeof window !== 'undefined') {
         try {
-          localStorage.setItem('activeModule', 'skills-offer');
+          localStorage.setItem('activeModule', target);
         } catch {
           // ignore
         }
@@ -255,11 +263,12 @@ export function useDashboardState(initialUser?: User): UseDashboardStateResult {
       if (isInSubcategories) {
         return; // SkillsCategoryScreen si to vyrieši sám cez handleBack
       }
-      // Ak nie je v podkategóriách, presmeruj na skills-offer
-      setActiveModule('skills-offer');
+      // Ak nie je v podkategóriách, presmeruj podľa módu (default ponúkam)
+      const target = modeModule || 'skills-offer';
+      setActiveModule(target);
       if (typeof window !== 'undefined') {
         try {
-          localStorage.setItem('activeModule', 'skills-offer');
+          localStorage.setItem('activeModule', target);
         } catch {
           // ignore
         }

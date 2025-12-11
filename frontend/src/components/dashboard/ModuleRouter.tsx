@@ -214,6 +214,11 @@ export default function ModuleRouter({
           title={t('skills.offerSelectAreaTitle', 'Zvoľ oblasť, v ktorej vynikáš alebo ponúkaš svoje služby.')}
           firstOptionText={t('skills.selectCategoryTitle', 'Vyber kategóriu')}
           onFirstOptionClick={() => {
+            try {
+              localStorage.setItem('skillsDescribeMode', 'offer');
+            } catch {
+              // ignore
+            }
             if (standardCategories.length >= 5) {
               alert('Môžeš mať maximálne 5 výberov z kategórií.');
               return;
@@ -239,6 +244,11 @@ export default function ModuleRouter({
             setSelectedSkillsCategory(standardCategories[index]);
             // Na mobile presmeruj na screen, na desktop otvor modal
             if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+              try {
+                localStorage.setItem('skillsDescribeMode', 'offer');
+              } catch {
+                // ignore
+              }
               setActiveModule('skills-describe');
               try {
                 localStorage.setItem('activeModule', 'skills-describe');
@@ -256,6 +266,11 @@ export default function ModuleRouter({
             }
             // Na mobile presmeruj na screen, na desktop otvor modal
             if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+              try {
+                localStorage.setItem('skillsDescribeMode', 'offer');
+              } catch {
+                // ignore
+              }
               setActiveModule('skills-add-custom-category');
               try {
                 localStorage.setItem('activeModule', 'skills-add-custom-category');
@@ -275,6 +290,11 @@ export default function ModuleRouter({
             setSelectedSkillsCategory(customCategories[index]);
             // Na mobile presmeruj na screen, na desktop otvor modal
             if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+              try {
+                localStorage.setItem('skillsDescribeMode', 'offer');
+              } catch {
+                // ignore
+              }
               setActiveModule('skills-describe');
               try {
                 localStorage.setItem('activeModule', 'skills-describe');
@@ -294,6 +314,11 @@ export default function ModuleRouter({
           firstOptionText={t('skills.setWhatYouSeek', 'Vyber čo hľadáš')}
           firstOptionHint={t('skills.seekCategoryHint', 'Vyber kategóriu, ktorú hľadáš — a ak ti nič nesedí, jednoducho si nižšie nastav presne to, čo potrebuješ.')}
           onFirstOptionClick={() => {
+            try {
+              localStorage.setItem('skillsDescribeMode', 'search');
+            } catch {
+              // ignore
+            }
             // Na mobile presmeruj na screen, na desktop otvor modal
             if (typeof window !== 'undefined' && window.innerWidth < 1024) {
               setActiveModule('skills-select-category');
@@ -315,6 +340,11 @@ export default function ModuleRouter({
             }
             // Na mobile presmeruj na screen, na desktop otvor modal
             if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+              try {
+                localStorage.setItem('skillsDescribeMode', 'search');
+              } catch {
+                // ignore
+              }
               setActiveModule('skills-add-custom-category');
               try {
                 localStorage.setItem('activeModule', 'skills-add-custom-category');
@@ -336,10 +366,13 @@ export default function ModuleRouter({
         <SkillsDescriptionScreen
           category={selectedSkillsCategory.category}
           subcategory={selectedSkillsCategory.subcategory}
+          isSeeking={(typeof window !== 'undefined' ? localStorage.getItem('skillsDescribeMode') === 'search' : false)}
           onBack={() => {
-            setActiveModule('skills-offer');
+            const mode = typeof window !== 'undefined' ? localStorage.getItem('skillsDescribeMode') : null;
+            const target = mode === 'search' ? 'skills-search' : 'skills-offer';
+            setActiveModule(target);
             try {
-              localStorage.setItem('activeModule', 'skills-offer');
+              localStorage.setItem('activeModule', target);
             } catch {
               // ignore
             }
@@ -462,9 +495,11 @@ export default function ModuleRouter({
             }
           }}
           onBack={() => {
-            setActiveModule('skills-offer');
+            const mode = typeof window !== 'undefined' ? localStorage.getItem('skillsDescribeMode') : null;
+            const target = mode === 'search' ? 'skills-search' : 'skills-offer';
+            setActiveModule(target);
             try {
-              localStorage.setItem('activeModule', 'skills-offer');
+              localStorage.setItem('activeModule', target);
             } catch {
               // ignore
             }
@@ -481,9 +516,11 @@ export default function ModuleRouter({
       return (
         <AddCustomCategoryScreen
           onBack={() => {
-            setActiveModule('skills-offer');
+            const mode = typeof window !== 'undefined' ? localStorage.getItem('skillsDescribeMode') : null;
+            const target = mode === 'search' ? 'skills-search' : 'skills-offer';
+            setActiveModule(target);
             try {
-              localStorage.setItem('activeModule', 'skills-offer');
+              localStorage.setItem('activeModule', target);
             } catch {
               // ignore
             }

@@ -11,6 +11,7 @@ interface DetailedDescriptionModalProps {
   onClose: () => void;
   onSave: (value: string) => void;
   initialValue?: string;
+  isSeeking?: boolean;
 }
 
 const MAX_LENGTH = 1000;
@@ -20,6 +21,7 @@ export default function DetailedDescriptionModal({
   onClose,
   onSave,
   initialValue = '',
+  isSeeking = false,
 }: DetailedDescriptionModalProps) {
   const { t } = useLanguage();
   const [value, setValue] = useState('');
@@ -153,10 +155,9 @@ export default function DetailedDescriptionModal({
 
           <div className="px-4 py-4 md:px-6 md:py-5 space-y-4 overflow-y-auto">
             <p className="text-sm text-gray-600 dark:text-gray-400">
-              {t(
-                'skills.detailedDescriptionHint',
-                'Opíš detaily služby – postup, čo je zahrnuté, očakávania a výsledok.',
-              )}
+              {isSeeking
+                ? t('skills.detailedDescriptionHintSeeking', 'Opíš detailne čo hľadáš – postup, čo je zahrnuté, očakávania a výsledok.')
+                : t('skills.detailedDescriptionHint', 'Opíš detaily služby – postup, čo je zahrnuté, očakávania a výsledok.')}
             </p>
 
             <div className="relative">
@@ -170,6 +171,11 @@ export default function DetailedDescriptionModal({
                     setError('');
                   }
                 }}
+                placeholder={
+                  isSeeking
+                    ? t('skills.detailedDescriptionHintSeeking', 'Opíš detailne čo hľadáš – postup, čo je zahrnuté, očakávania a výsledok.')
+                    : t('skills.detailedDescriptionPlaceholder', 'Opíš detaily služby – postup, čo je zahrnuté, očakávania a výsledok.')
+                }
                 className="w-full rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-black px-4 pt-3 pb-8 pr-20 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-400 focus:border-purple-400 resize-none overflow-y-auto max-h-64 subtle-scrollbar"
               />
               <button
