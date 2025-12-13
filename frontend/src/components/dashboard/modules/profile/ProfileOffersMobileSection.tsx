@@ -35,6 +35,9 @@ interface Offer {
   experience?: OfferExperience;
   tags?: string[];
   opening_hours?: OpeningHours;
+  is_seeking?: boolean;
+  urgency?: 'low' | 'medium' | 'high' | '';
+  duration_type?: 'one_time' | 'long_term' | 'project' | '' | null;
 }
 
 interface ProfileOffersMobileSectionProps {
@@ -126,6 +129,12 @@ export default function ProfileOffersMobileSection({
             experience,
             tags: Array.isArray(s.tags) ? s.tags : [],
             opening_hours: (s.opening_hours || undefined) as OpeningHours | undefined,
+            is_seeking: s.is_seeking === true,
+            urgency:
+              typeof s.urgency === 'string' && s.urgency.trim() !== ''
+                ? (s.urgency.trim() as 'low' | 'medium' | 'high' | '')
+                : '',
+            duration_type: s.duration_type || null,
           };
         });
 
@@ -332,6 +341,52 @@ export default function ProfileOffersMobileSection({
                     ))}
                   </div>
                 </div>
+              )}
+
+              {/* Urgency and Duration for "Hľadám" cards */}
+              {offer.is_seeking && (
+                <>
+                  {offer.urgency && offer.urgency.trim() !== '' && (
+                    <div className="space-y-1">
+                      <div className="text-xs font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wide">
+                        {t('skills.urgency', 'Urgentnosť')}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={`text-xs font-bold ${
+                            offer.urgency === 'low'
+                              ? 'text-green-600 dark:text-green-400'
+                              : offer.urgency === 'medium'
+                                ? 'text-orange-600 dark:text-orange-400'
+                                : 'text-red-600 dark:text-red-400'
+                          }`}
+                        >
+                          {offer.urgency === 'low'
+                            ? t('skills.urgencyLow', 'Nízka')
+                            : offer.urgency === 'medium'
+                              ? t('skills.urgencyMedium', 'Stredná')
+                              : t('skills.urgencyHigh', 'Vysoká')}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                  {offer.duration_type && offer.duration_type.trim() !== '' && (
+                    <div className="space-y-1">
+                      <div className="text-xs font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wide">
+                        {t('skills.duration', 'Trvanie')}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-gray-800 dark:text-gray-200">
+                          {offer.duration_type === 'one_time'
+                            ? t('skills.durationOneTime', 'Jednorazovo')
+                            : offer.duration_type === 'long_term'
+                              ? t('skills.durationLongTerm', 'Dlhodobo')
+                              : t('skills.durationProject', 'Zákazka')}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
 
               {/* Social / ratings (statické placeholdery ako na desktope) */}
@@ -572,12 +627,12 @@ export default function ProfileOffersMobileSection({
               className="relative w-full text-left rounded-2xl overflow-visible border border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-[#0f0f10] shadow-sm active:scale-[0.99] transition-transform"
               onClick={() => handleCardClick(offer)}
             >
-              {/* Veľký text "Ponúkam" cez celú kartu – mobilná verzia, skryje sa pri prvom kliknutí */}
+              {/* Veľký text "Ponúkam" alebo "Hľadám" cez celú kartu – mobilná verzia, skryje sa pri prvom kliknutí */}
               {!isTapped && (
                 <div className="absolute left-0 right-0 top-[52.5%] -translate-y-1/2 z-30 pointer-events-none transition-all duration-300">
                   <div className="w-full py-1 border border-transparent rounded-none bg-white/80 dark:bg-[#0f0f10]/80 backdrop-blur-sm shadow-lg">
                     <p className="text-xl font-black text-gray-900 dark:text-gray-50 uppercase tracking-[0.2em] leading-tight text-center">
-                      {t('skills.offering', 'Ponúkam')}
+                      {offer.is_seeking ? t('skills.search', 'Hľadám') : t('skills.offering', 'Ponúkam')}
                     </p>
                   </div>
                 </div>
@@ -589,6 +644,80 @@ export default function ProfileOffersMobileSection({
                     PRO
                   </span>
                 )}
+                <div className="absolute top-2 right-2 flex flex-col gap-1 z-10">
+                  <button
+                    aria-label="Páči sa mi to"
+                    title="Páči sa mi to"
+                    className="p-1.5 rounded-full bg-purple-50 dark:bg-purple-900/80 dark:backdrop-blur-sm border border-purple-200 dark:border-purple-800/60 text-purple-700 dark:text-white hover:bg-purple-100 dark:hover:bg-purple-900/90 transition-colors active:scale-95"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      // TODO: Implementovať páči sa mi to
+                    }}
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="w-4 h-4"
+                    >
+                      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                    </svg>
+                  </button>
+                  <button
+                    aria-label="Zdieľať"
+                    title="Zdieľať"
+                    className="p-1.5 rounded-full bg-purple-50 dark:bg-purple-900/80 dark:backdrop-blur-sm border border-purple-200 dark:border-purple-800/60 text-purple-700 dark:text-white hover:bg-purple-100 dark:hover:bg-purple-900/90 transition-colors active:scale-95"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      // TODO: Implementovať zdieľanie
+                    }}
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="w-4 h-4"
+                    >
+                      <circle cx="18" cy="5" r="3" />
+                      <circle cx="6" cy="12" r="3" />
+                      <circle cx="18" cy="19" r="3" />
+                      <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+                      <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+                    </svg>
+                  </button>
+                  {!offer.is_seeking && (
+                    <button
+                      aria-label="Pridať recenziu"
+                      title="Pridať recenziu"
+                      className="p-1.5 rounded-full bg-purple-50 dark:bg-purple-900/80 dark:backdrop-blur-sm border border-purple-200 dark:border-purple-800/60 text-purple-700 dark:text-white hover:bg-purple-100 dark:hover:bg-purple-900/90 transition-colors active:scale-95"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        // TODO: Implementovať pridať recenziu
+                      }}
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="w-4 h-4"
+                      >
+                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
                 {hasMultipleImages && (
                   <div className="absolute bottom-2 right-2 px-2 py-1 rounded-full bg-black/40 backdrop-blur-sm text-white/90 text-[10px] font-medium flex items-center gap-1">
                     <svg
@@ -641,7 +770,7 @@ export default function ProfileOffersMobileSection({
                   <div className="mt-2 w-full px-3 py-2 rounded-lg bg-purple-50 dark:bg-purple-900/20 border border-purple-100 dark:border-purple-800/40">
                     <div className="flex items-center justify-center gap-2">
                       <span className="text-sm text-purple-600 dark:text-purple-400 font-medium">
-                        {t('skills.priceFrom', 'Cena od:')}
+                        {offer.is_seeking ? t('skills.priceTo', 'Cena do:') : t('skills.priceFrom', 'Cena od:')}
                       </span>
                       <span className="text-base font-bold text-purple-700 dark:text-purple-300">
                         {priceLabel}

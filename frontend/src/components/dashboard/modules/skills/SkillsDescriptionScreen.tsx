@@ -9,9 +9,11 @@ import ExperienceSection from './skillDescriptionModal/sections/ExperienceSectio
 import PriceSection from './skillDescriptionModal/sections/PriceSection';
 import ImagesSection from './skillDescriptionModal/sections/ImagesSection';
 import OpeningHoursContent from './skillDescriptionModal/OpeningHoursContent';
-import { UnitOption, CurrencyOption, SkillImage, OpeningHours } from './skillDescriptionModal/types';
+import { UnitOption, CurrencyOption, SkillImage, OpeningHours, DurationOption } from './skillDescriptionModal/types';
 import MobileFullScreenModal from '../profile-edit/shared/MobileFullScreenModal';
 import MasterToggle from '../notifications/MasterToggle';
+import UrgencyModal from './skillDescriptionModal/UrgencyModal';
+import DurationModal from './skillDescriptionModal/DurationModal';
 
 interface SkillsDescriptionScreenProps {
   category: string;
@@ -33,6 +35,10 @@ interface SkillsDescriptionScreenProps {
   initialPriceFrom?: number | null;
   initialPriceCurrency?: string;
   onPriceChange?: (priceFrom: number | null, priceCurrency: string) => void;
+  initialUrgency?: 'low' | 'medium' | 'high' | '';
+  onUrgencyChange?: (urgency: 'low' | 'medium' | 'high' | '') => void;
+  initialDurationType?: DurationOption | '' | null;
+  onDurationTypeChange?: (durationType: DurationOption | '') => void;
   initialImages?: SkillImage[];
   onImagesChange?: (images: File[]) => void;
   onExistingImagesChange?: (existingImages: SkillImage[]) => void;
@@ -64,6 +70,10 @@ export default function SkillsDescriptionScreen({
   initialPriceFrom = null,
   initialPriceCurrency = '€',
   onPriceChange,
+  initialUrgency = 'low',
+  onUrgencyChange,
+  initialDurationType = null,
+  onDurationTypeChange,
   initialImages = [],
   onImagesChange,
   onExistingImagesChange,
@@ -91,6 +101,10 @@ export default function SkillsDescriptionScreen({
   const [originalPriceFrom] = useState(initialPriceFrom);
   const [priceCurrency, setPriceCurrency] = useState<CurrencyOption>((initialPriceCurrency || '€') as CurrencyOption);
   const [originalPriceCurrency] = useState(initialPriceCurrency || '€');
+  const [urgency, setUrgency] = useState<'low' | 'medium' | 'high' | ''>(initialUrgency || 'low');
+  const originalUrgencyRef = useRef<'low' | 'medium' | 'high' | ''>(initialUrgency || 'low');
+  const [durationType, setDurationType] = useState<DurationOption | ''>(initialDurationType || '');
+  const originalDurationTypeRef = useRef<DurationOption | ''>(initialDurationType || '');
   const [images, setImages] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [existingImages, setExistingImages] = useState<SkillImage[]>(initialImages);
@@ -145,6 +159,18 @@ export default function SkillsDescriptionScreen({
     setPriceCurrency((initialPriceCurrency || '€') as CurrencyOption);
   }, [initialPriceFrom, initialPriceCurrency]);
 
+  useEffect(() => {
+    const newUrgency = initialUrgency || 'low';
+    setUrgency(newUrgency);
+    originalUrgencyRef.current = newUrgency;
+  }, [initialUrgency]);
+
+  useEffect(() => {
+    const newDurationType = initialDurationType || '';
+    setDurationType(newDurationType);
+    originalDurationTypeRef.current = newDurationType;
+  }, [initialDurationType]);
+
   const [error, setError] = useState('');
   const [detailedError, setDetailedError] = useState('');
   const [locationError, setLocationError] = useState('');
@@ -158,6 +184,8 @@ export default function SkillsDescriptionScreen({
   const [isExperienceModalOpen, setIsExperienceModalOpen] = useState(false);
   const [isPriceModalOpen, setIsPriceModalOpen] = useState(false);
   const [isOpeningHoursModalOpen, setIsOpeningHoursModalOpen] = useState(false);
+  const [isUrgencyModalOpen, setIsUrgencyModalOpen] = useState(false);
+  const [isDurationModalOpen, setIsDurationModalOpen] = useState(false);
   const [openingHours, setOpeningHours] = useState<OpeningHours>(initialOpeningHours || {});
   const [originalOpeningHours] = useState<OpeningHours>(initialOpeningHours || {});
   const detailedTextareaRef = useRef<HTMLTextAreaElement>(null);
@@ -322,6 +350,34 @@ export default function SkillsDescriptionScreen({
     setPriceCurrency(originalPriceCurrency as CurrencyOption);
     setPriceError('');
     setIsPriceModalOpen(false);
+  };
+
+  const handleUrgencySave = (value: 'low' | 'medium' | 'high') => {
+    setUrgency(value);
+    originalUrgencyRef.current = value;
+    if (onUrgencyChange) {
+      onUrgencyChange(value);
+    }
+    setIsUrgencyModalOpen(false);
+  };
+
+  const handleUrgencyBack = () => {
+    setUrgency(originalUrgencyRef.current || 'low');
+    setIsUrgencyModalOpen(false);
+  };
+
+  const handleDurationSave = (value: DurationOption | '') => {
+    setDurationType(value);
+    originalDurationTypeRef.current = value;
+    if (onDurationTypeChange) {
+      onDurationTypeChange(value);
+    }
+    setIsDurationModalOpen(false);
+  };
+
+  const handleDurationBack = () => {
+    setDurationType(originalDurationTypeRef.current || '');
+    setIsDurationModalOpen(false);
   };
 
   const handleOpeningHoursSave = (newOpeningHours: OpeningHours) => {
@@ -584,6 +640,54 @@ export default function SkillsDescriptionScreen({
                 </span>
               </div>
             </div>
+
+            {/* Urgentnosť - len pre Hľadám */}
+            {isSeeking && (
+              <div 
+                className="flex items-center py-4 pl-2 pr-0 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-900 border-t border-gray-100 dark:border-gray-800"
+                onClick={() => setIsUrgencyModalOpen(true)}
+              >
+                <span className="text-gray-900 dark:text-white font-medium w-40 whitespace-nowrap">
+                  {t('skills.urgency', 'Urgentnosť')}
+                </span>
+                <div className="flex items-center flex-1 ml-4 pr-2">
+                  <div className="w-px h-4 bg-gray-300 dark:bg-gray-700 mr-3"></div>
+                  <span className="text-gray-600 dark:text-gray-300 text-sm">
+                    {urgency === 'low' 
+                      ? t('skills.urgencyLow', 'Nízka')
+                      : urgency === 'medium'
+                        ? t('skills.urgencyMedium', 'Stredná')
+                        : urgency === 'high'
+                          ? t('skills.urgencyHigh', 'Vysoká')
+                          : t('skills.urgencyLow', 'Nízka')}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Trvanie - len pre Hľadám */}
+            {isSeeking && (
+              <div 
+                className="flex items-center py-4 pl-2 pr-0 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-900 border-t border-gray-100 dark:border-gray-800"
+                onClick={() => setIsDurationModalOpen(true)}
+              >
+                <span className="text-gray-900 dark:text-white font-medium w-40 whitespace-nowrap">
+                  {t('skills.duration', 'Trvanie')}
+                </span>
+                <div className="flex items-center flex-1 ml-4 pr-2">
+                  <div className="w-px h-4 bg-gray-300 dark:bg-gray-700 mr-3"></div>
+                  <span className="text-gray-600 dark:text-gray-300 text-sm">
+                    {durationType === 'one_time'
+                      ? t('skills.durationOneTime', 'Jednorazovo')
+                      : durationType === 'long_term'
+                        ? t('skills.durationLongTerm', 'Dlhodobo')
+                        : durationType === 'project'
+                          ? t('skills.durationProject', 'Zákazka')
+                          : t('skills.selectDuration', 'Vyber trvanie')}
+                  </span>
+                </div>
+              </div>
+            )}
 
             {/* Otváracia doba - len pre firemné účty a len v Ponúkam */}
             {accountType === 'business' && !isSeeking && (
@@ -882,6 +986,24 @@ export default function SkillsDescriptionScreen({
             setOpeningHours={setOpeningHours}
           />
         </MobileFullScreenModal>
+      )}
+
+      {/* Urgency Modal - Mobile Fullscreen (len pre Hľadám) */}
+      {isSeeking && (
+        <>
+          <UrgencyModal
+            isOpen={isUrgencyModalOpen}
+            onClose={handleUrgencyBack}
+            onSave={handleUrgencySave}
+            initialValue={urgency || 'low'}
+          />
+          <DurationModal
+            isOpen={isDurationModalOpen}
+            onClose={handleDurationBack}
+            onSave={handleDurationSave}
+            initialValue={durationType || null}
+          />
+        </>
       )}
 
       {/* Desktop layout - hidden */}

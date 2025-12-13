@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { CurrencyOption, SkillImage, OpeningHours, UnitOption, ExperienceValue } from '../types';
+import { CurrencyOption, SkillImage, OpeningHours, UnitOption, ExperienceValue, DurationOption } from '../types';
 import { currencyFromLocale, ensureCurrencyOption } from '../utils';
 
 interface UseSkillDescriptionStateProps {
@@ -17,6 +17,8 @@ interface UseSkillDescriptionStateProps {
   initialDistrict?: string;
   initialDetailedDescription?: string;
   initialOpeningHours?: OpeningHours;
+  initialUrgency?: 'low' | 'medium' | 'high' | '';
+  initialDurationType?: DurationOption | '' | null;
 }
 
 export const useSkillDescriptionState = ({
@@ -32,6 +34,8 @@ export const useSkillDescriptionState = ({
   initialDistrict = '',
   initialDetailedDescription = '',
   initialOpeningHours,
+  initialUrgency = 'low',
+  initialDurationType = null,
 }: UseSkillDescriptionStateProps) => {
   const [description, setDescription] = useState('');
   const [error, setError] = useState('');
@@ -56,6 +60,8 @@ export const useSkillDescriptionState = ({
   const [openingHours, setOpeningHours] = useState<OpeningHours>({});
   const [isOpeningHoursModalOpen, setIsOpeningHoursModalOpen] = useState(false);
   const [isHideCardEnabled, setIsHideCardEnabled] = useState(false);
+  const [urgency, setUrgency] = useState<'low' | 'medium' | 'high' | ''>(initialUrgency || 'low');
+  const [durationType, setDurationType] = useState<DurationOption | ''>(initialDurationType || '');
 
   // Hlavná inicializácia pri otvorení/zatvorení modalu
   useEffect(() => {
@@ -85,6 +91,8 @@ export const useSkillDescriptionState = ({
       setDistrict(initialDistrict || '');
       setDetailedDescription(initialDetailedDescription || '');
       setOpeningHours(initialOpeningHours || {});
+      setUrgency(initialUrgency || 'low');
+      setDurationType(initialDurationType || '');
     } else {
       setDescription('');
       setError('');
@@ -102,6 +110,8 @@ export const useSkillDescriptionState = ({
       setDistrict('');
       setDetailedDescription('');
       setOpeningHours({});
+      setUrgency('low');
+      setDurationType('');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
@@ -116,9 +126,23 @@ export const useSkillDescriptionState = ({
   }, [initialDistrict, isOpen]);
 
   // Synchronizácia existujúcich obrázkov
+  const prevInitialImagesRef = useRef<SkillImage[]>([]);
   useEffect(() => {
     if (isOpen) {
-      setExistingImages(Array.isArray(initialImages) ? initialImages : []);
+      const currentImages = Array.isArray(initialImages) ? initialImages : [];
+      // Porovnaj obsah poľa, nie referenciu
+      const imagesChanged = 
+        prevInitialImagesRef.current.length !== currentImages.length ||
+        prevInitialImagesRef.current.some((img, idx) => 
+          img.id !== currentImages[idx]?.id || 
+          img.image_url !== currentImages[idx]?.image_url
+        );
+      if (imagesChanged) {
+        prevInitialImagesRef.current = currentImages;
+        setExistingImages(currentImages);
+      }
+    } else {
+      prevInitialImagesRef.current = [];
     }
   }, [initialImages, isOpen]);
 
@@ -155,6 +179,10 @@ export const useSkillDescriptionState = ({
       setOpeningHours(initialOpeningHours || {});
     }
   }, [initialDetailedDescription, initialOpeningHours, isOpen]);
+
+  useEffect(() => {
+    setUrgency(initialUrgency || 'low');
+  }, [initialUrgency, isOpen]);
 
   // Synchronizácia popisu pri zmene initialDescription
   const prevInitialDescriptionRef = useRef<string | undefined>();
@@ -214,6 +242,10 @@ export const useSkillDescriptionState = ({
     setIsOpeningHoursModalOpen,
     isHideCardEnabled,
     setIsHideCardEnabled,
+    urgency,
+    setUrgency,
+    durationType,
+    setDurationType,
   };
 };
 

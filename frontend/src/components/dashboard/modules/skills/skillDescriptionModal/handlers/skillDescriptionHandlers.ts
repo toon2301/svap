@@ -1,6 +1,6 @@
 'use client';
 
-import { CurrencyOption, SkillImage, OpeningHours, UnitOption, ExperienceValue } from '../types';
+import { CurrencyOption, SkillImage, OpeningHours, UnitOption, ExperienceValue, DurationOption } from '../types';
 import { isValidDistrict, scrollToDistrictInput } from '../validation/districtValidation';
 
 interface HandleSaveParams {
@@ -24,6 +24,8 @@ interface HandleSaveParams {
   initialDistrict?: string;
   initialOpeningHours?: OpeningHours;
   initialPriceFrom?: number | null;
+  urgency?: 'low' | 'medium' | 'high' | '';
+  durationType?: DurationOption | '' | null;
   onSave: (
     description: string,
     experience?: ExperienceValue,
@@ -34,7 +36,9 @@ interface HandleSaveParams {
     location?: string,
     detailedDescription?: string,
     openingHours?: OpeningHours,
-    district?: string
+    district?: string,
+    urgency?: 'low' | 'medium' | 'high' | '',
+    durationType?: DurationOption | '' | null
   ) => void;
   setError: (error: string) => void;
   setExperienceError: (error: string) => void;
@@ -63,6 +67,8 @@ export const handleSave = ({
   initialDistrict,
   initialOpeningHours,
   initialPriceFrom,
+  urgency,
+  durationType,
   onSave,
   setError,
   setExperienceError,
@@ -150,7 +156,9 @@ export const handleSave = ({
     locationValue,
     detailedValue,
     openingHoursValue,
-    districtValue
+    districtValue,
+    urgency || 'low',
+    durationType || null
   );
 };
 

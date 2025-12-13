@@ -102,17 +102,27 @@ export default function DashboardModals({
     detailedDescription?: string,
     openingHours?: { [key: string]: { enabled: boolean; from: string; to: string } },
     district?: string,
+    urgency?: 'low' | 'medium' | 'high' | '',
+    durationType?: 'one_time' | 'long_term' | 'project' | '' | null,
   ) => {
     const trimmedLocation = typeof locationValue === 'string' ? locationValue.trim() : '';
     const trimmedDistrict = typeof district === 'string' ? district.trim() : '';
     const detailedText = typeof detailedDescription === 'string' ? detailedDescription.trim() : '';
     const buildPayload = () => {
+      const isSeeking = activeModule === 'skills-search';
       const payload: any = {
         category: selectedSkillsCategory?.category,
         subcategory: selectedSkillsCategory?.subcategory,
         description: description || '',
         detailed_description: detailedText,
         tags: Array.isArray(tags) ? tags : [],
+        is_seeking: isSeeking,
+        // Ak príde hodnota z modalu, použijeme ju; inak fallback na uloženú hodnotu alebo default
+        urgency: urgency || selectedSkillsCategory?.urgency || 'low',
+        duration_type:
+          durationType !== undefined
+            ? durationType
+            : selectedSkillsCategory?.duration_type || null,
       };
       if (experience && typeof experience.value === 'number' && experience.unit) {
         payload.experience_value = experience.value;
@@ -157,6 +167,8 @@ export default function DashboardModals({
             district: trimmedDistrict,
             location: trimmedLocation,
             opening_hours: openingHours && Object.keys(openingHours).length > 0 ? openingHours : null,
+            urgency: urgency || selectedSkillsCategory?.urgency || 'low',
+            duration_type: durationType !== undefined ? durationType : selectedSkillsCategory?.duration_type || null,
           });
           let updatedLocal = toLocalSkill(data);
           if (imageFiles.length && data?.id) {
@@ -186,14 +198,7 @@ export default function DashboardModals({
         setSelectedSkillsCategory(null);
       } else if (selectedSkillsCategory) {
         if (selectedSkillsCategory.category === selectedSkillsCategory.subcategory) {
-          // Kontrola celkového počtu kariet (štandardné + vlastné) - limit 3 pre každú sekciu
-          const isSeeking = activeModule === 'skills-search';
-          if (standardCategories.length + customCategories.length >= 3) {
-            alert(isSeeking 
-              ? 'Môžeš mať maximálne 3 karty v sekcii "Hľadám".' 
-              : 'Môžeš mať maximálne 3 karty v sekcii "Ponúkam".');
-            return;
-          }
+          // Vytvorenie novej vlastnej karty – limit kontroluje backend podľa is_seeking
           const payload = buildPayload();
           const { data } = await api.post(endpoints.skills.list, payload);
           let created = toLocalSkill(data);
@@ -201,18 +206,11 @@ export default function DashboardModals({
             await uploadImagesIfNeeded(data.id, imageFiles);
             created = await fetchSkillDetail(data.id);
           }
-          setCustomCategories((prev) => [...prev, created]);
+          setCustomCategories((prev) => [created, ...prev]);
           setSelectedSkillsCategory(null);
         } else {
           if (!selectedSkillsCategory.id) {
-            // Kontrola celkového počtu kariet (štandardné + vlastné) - limit 3 pre každú sekciu
-            const isSeeking = activeModule === 'skills-search';
-            if (standardCategories.length + customCategories.length >= 3) {
-              alert(isSeeking 
-                ? 'Môžeš mať maximálne 3 karty v sekcii "Hľadám".' 
-                : 'Môžeš mať maximálne 3 karty v sekcii "Ponúkam".');
-              return;
-            }
+            // Vytvorenie novej štandardnej karty – limit kontroluje backend podľa is_seeking
             const payload = buildPayload();
             const { data } = await api.post(endpoints.skills.list, payload);
             let created = toLocalSkill(data);
@@ -220,7 +218,7 @@ export default function DashboardModals({
               await uploadImagesIfNeeded(data.id, imageFiles);
               created = await fetchSkillDetail(data.id);
             }
-            setStandardCategories((prev) => [...prev, created]);
+            setStandardCategories((prev) => [created, ...prev]);
             setSelectedSkillsCategory(null);
           } else {
             const { data } = await api.patch(endpoints.skills.detail(selectedSkillsCategory.id), {
@@ -236,6 +234,8 @@ export default function DashboardModals({
               district: trimmedDistrict,
               location: trimmedLocation,
               opening_hours: openingHours && Object.keys(openingHours).length > 0 ? openingHours : null,
+              urgency: urgency || selectedSkillsCategory?.urgency || 'low',
+              duration_type: durationType !== undefined ? durationType : selectedSkillsCategory?.duration_type || null,
             });
             let updated = toLocalSkill(data);
             if (imageFiles.length && data?.id) {
@@ -328,6 +328,8 @@ export default function DashboardModals({
           initialOpeningHours={selectedSkillsCategory.opening_hours}
           accountType={accountType}
           isSeeking={activeModule === 'skills-search'}
+          initialUrgency={selectedSkillsCategory.urgency || 'low'}
+          initialDurationType={selectedSkillsCategory.duration_type || null}
           onRemoveExistingImage={
             selectedSkillsCategory.id
               ? (imageId) => handleRemoveSkillImage(selectedSkillsCategory.id!, imageId)

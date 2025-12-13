@@ -76,12 +76,31 @@ export default function Dashboard({ initialUser }: DashboardProps) {
   const handleSkillSave = async () => {
     if (!selectedSkillsCategory) return;
 
+    // Zistiť, či ide o "Ponúkam" alebo "Hľadám"
+    let isSeeking =
+      selectedSkillsCategory.is_seeking === true ||
+      activeModule === 'skills-search';
+
+    // Ak ešte nemáme is_seeking, skúsime skillsDescribeMode z localStorage
+    if (!isSeeking && typeof window !== 'undefined') {
+      try {
+        const mode = localStorage.getItem('skillsDescribeMode');
+        if (mode === 'search') {
+          isSeeking = true;
+        }
+      } catch {
+        // ignore storage errors
+      }
+    }
+
+    const targetModule = isSeeking ? 'skills-search' : 'skills-offer';
+
     // UX: hneď po kliknutí na fajku presmeruj späť na obrazovku s výberom/pridaním kategórie.
     // Ukladanie prebehne na pozadí – po dokončení sa len aktualizuje zoznam kariet.
-    setActiveModule('skills-offer');
+    setActiveModule(targetModule);
     try {
       if (typeof window !== 'undefined') {
-        localStorage.setItem('activeModule', 'skills-offer');
+        localStorage.setItem('activeModule', targetModule);
       }
     } catch {
       // ignore storage errors
@@ -103,6 +122,9 @@ export default function Dashboard({ initialUser }: DashboardProps) {
         tags: Array.isArray(skill.tags) ? skill.tags : [],
         district: trimmedDistrict,
         location: trimmedLocation,
+        is_seeking: isSeeking,
+        urgency: skill.urgency || 'low',
+        duration_type: skill.duration_type || null,
       };
       
       if (skill.experience && typeof skill.experience.value === 'number' && skill.experience.unit) {
@@ -152,11 +174,7 @@ export default function Dashboard({ initialUser }: DashboardProps) {
         applySkillUpdate(savedSkill);
       } else {
         // Vytvoriť novú kartu
-        // Kontrola počtu kariet
-        if (standardCategories.length + customCategories.length >= 3) {
-          alert('Môžeš mať maximálne 3 karty dokopy (štandardné aj vlastné).');
-          return;
-        }
+        // Limit kontroluje backend podľa is_seeking (3 karty pre každý typ samostatne)
         
         const { data } = await api.post(endpoints.skills.list, payload);
         savedSkill = toLocalSkill(data);
@@ -177,19 +195,47 @@ export default function Dashboard({ initialUser }: DashboardProps) {
           savedSkill = await fetchSkillDetail(savedSkill.id);
         }
         
-        // Pridať do príslušného zoznamu
+        // Pridať do príslušného zoznamu (nové karty na vrchu)
         if (savedSkill.category === savedSkill.subcategory) {
-          setCustomCategories((prev) => [...prev, savedSkill]);
+          setCustomCategories((prev) => [savedSkill, ...prev]);
         } else {
-          setStandardCategories((prev) => [...prev, savedSkill]);
+          setStandardCategories((prev) => [savedSkill, ...prev]);
         }
       }
 
       // Po úspešnom uložení vyčisti dočasne vybranú kartu
       setSelectedSkillsCategory(null);
     } catch (error: any) {
-      const msg = error?.response?.data?.error || error?.response?.data?.detail || error?.message || 'Uloženie karty zlyhalo';
+      const msg =
+        error?.response?.data?.error ||
+        error?.response?.data?.detail ||
+        error?.message ||
+        'Uloženie karty zlyhalo';
       alert(msg);
+
+      // Po chybe vráť správny activeModule
+      let isSeekingOnError =
+        selectedSkillsCategory?.is_seeking === true ||
+        activeModule === 'skills-search';
+      if (!isSeekingOnError && typeof window !== 'undefined') {
+        try {
+          const mode = localStorage.getItem('skillsDescribeMode');
+          if (mode === 'search') {
+            isSeekingOnError = true;
+          }
+        } catch {
+          // ignore storage errors
+        }
+      }
+      const target = isSeekingOnError ? 'skills-search' : 'skills-offer';
+      setActiveModule(target);
+      try {
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('activeModule', target);
+        }
+      } catch {
+        // ignore storage errors
+      }
     }
   };
 

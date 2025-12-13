@@ -3,6 +3,7 @@
 import React from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import OfferImageCarousel from '../shared/OfferImageCarousel';
+import type { OpeningHours } from './skillDescriptionModal/types';
 
 function slugifyLabel(label: string): string {
   return label
@@ -25,6 +26,9 @@ interface SkillItem {
   price_currency?: string;
   district?: string;
   location?: string;
+  opening_hours?: OpeningHours;
+  is_seeking?: boolean;
+  urgency?: 'low' | 'medium' | 'high' | '';
 }
 
 interface SkillsScreenProps {
@@ -42,6 +46,7 @@ interface SkillsScreenProps {
   customCategories?: SkillItem[];
   onRemoveCustomCategory?: (index: number) => void;
   onEditCustomCategoryDescription?: (index: number) => void;
+  isSeeking?: boolean;
 }
 
 export default function SkillsScreen({
@@ -59,6 +64,7 @@ export default function SkillsScreen({
   customCategories = [],
   onRemoveCustomCategory,
   onEditCustomCategoryDescription,
+  isSeeking = false,
 }: SkillsScreenProps) {
   const { t } = useLanguage();
 
@@ -151,7 +157,7 @@ export default function SkillsScreen({
             {priceLabel && (
               <div className="mt-2 mb-2 px-2 py-1 rounded-lg bg-purple-50 dark:bg-purple-900/20 border border-purple-100 dark:border-purple-800/30">
                 <div className="text-[10px] text-purple-600 dark:text-purple-400 font-medium mb-0.5">
-                  {t('skills.priceFrom', 'Cena od:')}
+                  {isSeeking ? t('skills.priceTo', 'Cena do:') : t('skills.priceFrom', 'Cena od:')}
                 </div>
                 <div className="text-sm font-bold text-purple-700 dark:text-purple-300">
                   {priceLabel}
@@ -604,7 +610,7 @@ export default function SkillsScreen({
                           <div className="w-full px-3 py-2 rounded-lg bg-purple-50 dark:bg-purple-900/20 border border-purple-100 dark:border-purple-800/30 text-center">
                             <div className="flex items-center justify-center gap-1.5">
                               <span className="text-[10px] text-purple-600 dark:text-purple-400 font-medium">
-                                {t('skills.priceFrom', 'Cena od:')}
+                                {isSeeking ? t('skills.priceTo', 'Cena do:') : t('skills.priceFrom', 'Cena od:')}
                               </span>
                               <span className="text-base font-bold text-purple-700 dark:text-purple-300">
                                 {priceLabel}
@@ -720,7 +726,7 @@ export default function SkillsScreen({
                           <div className="w-full px-3 py-2 rounded-lg bg-purple-50 dark:bg-purple-900/20 border border-purple-100 dark:border-purple-800/30 text-center">
                             <div className="flex items-center justify-center gap-1.5">
                               <span className="text-[10px] text-purple-600 dark:text-purple-400 font-medium">
-                                {t('skills.priceFrom', 'Cena od:')}
+                                {isSeeking ? t('skills.priceTo', 'Cena do:') : t('skills.priceFrom', 'Cena od:')}
                               </span>
                               <span className="text-base font-bold text-purple-700 dark:text-purple-300">
                                 {priceLabel}

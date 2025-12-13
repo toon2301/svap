@@ -271,6 +271,32 @@ class OfferedSkill(models.Model):
     district = models.CharField(_('Okres'), max_length=100, blank=True)
     location = models.CharField(_('Miesto'), max_length=35, blank=True)
     opening_hours = models.JSONField(_('Otváracia doba'), default=dict, blank=True, null=True)
+    is_seeking = models.BooleanField(_('Hľadám'), default=False, help_text=_('True ak používateľ hľadá službu, False ak ponúka'))
+    URGENCY_CHOICES = (
+        ('low', _('Nízka')),
+        ('medium', _('Stredná')),
+        ('high', _('Vysoká')),
+    )
+    urgency = models.CharField(
+        _('Urgentnosť'),
+        max_length=10,
+        choices=URGENCY_CHOICES,
+        default='low',
+        help_text=_('Miera urgentnosti dopytu alebo ponuky'),
+    )
+    DURATION_CHOICES = (
+        ('one_time', _('Jednorazovo')),
+        ('long_term', _('Dlhodobo')),
+        ('project', _('Zákazka')),
+    )
+    duration_type = models.CharField(
+        _('Trvanie'),
+        max_length=20,
+        choices=DURATION_CHOICES,
+        blank=True,
+        null=True,
+        help_text=_('Typ trvania služby'),
+    )
     
     created_at = models.DateTimeField(_('Vytvorené'), auto_now_add=True)
     updated_at = models.DateTimeField(_('Aktualizované'), auto_now=True)

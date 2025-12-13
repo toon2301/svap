@@ -208,9 +208,13 @@ export default function ModuleRouter({
           setIsPersonalAccountModalOpen={setIsPersonalAccountModalOpen}
         />
       );
-    case 'skills-offer':
+    case 'skills-offer': {
+      // Filtruj karty pre "Ponúkam" (is_seeking === false)
+      const filteredStandard = standardCategories.filter(s => !(s.is_seeking ?? false));
+      const filteredCustom = customCategories.filter(s => !(s.is_seeking ?? false));
       return (
         <SkillsScreen
+          isSeeking={false}
           title={t('skills.offerSelectAreaTitle', 'Zvoľ oblasť, v ktorej vynikáš alebo ponúkaš svoje služby.')}
           firstOptionText={t('skills.selectCategoryTitle', 'Vyber kategóriu')}
           onFirstOptionClick={() => {
@@ -219,7 +223,7 @@ export default function ModuleRouter({
             } catch {
               // ignore
             }
-            if (standardCategories.length >= 5) {
+            if (filteredStandard.length >= 5) {
               alert('Môžeš mať maximálne 5 výberov z kategórií.');
               return;
             }
@@ -235,13 +239,18 @@ export default function ModuleRouter({
               setIsSkillsCategoryModalOpen(true);
             }
           }}
-          standardCategories={standardCategories}
+          standardCategories={filteredStandard}
           onRemoveStandardCategory={async (index) => {
-            await removeStandardCategory(index);
+            // Nájdeme pôvodný index v nefiltrovanom zozname
+            const item = filteredStandard[index];
+            const originalIndex = standardCategories.findIndex(s => s.id === item.id);
+            if (originalIndex !== -1) {
+              await removeStandardCategory(originalIndex);
+            }
           }}
           onEditStandardCategoryDescription={(index) => {
             setEditingStandardCategoryIndex(index);
-            setSelectedSkillsCategory(standardCategories[index]);
+            setSelectedSkillsCategory(filteredStandard[index]);
             // Na mobile presmeruj na screen, na desktop otvor modal
             if (typeof window !== 'undefined' && window.innerWidth < 1024) {
               try {
@@ -260,7 +269,7 @@ export default function ModuleRouter({
             }
           }}
           onAddCategory={() => {
-            if (customCategories.length >= 5) {
+            if (filteredCustom.length >= 5) {
               alert('Môžeš pridať maximálne 5 vlastných kategórií.');
               return;
             }
@@ -281,13 +290,18 @@ export default function ModuleRouter({
               setIsAddCustomCategoryModalOpen(true);
             }
           }}
-          customCategories={customCategories}
+          customCategories={filteredCustom}
           onRemoveCustomCategory={async (index) => {
-            await removeCustomCategory(index);
+            // Nájdeme pôvodný index v nefiltrovanom zozname
+            const item = filteredCustom[index];
+            const originalIndex = customCategories.findIndex(s => s.id === item.id);
+            if (originalIndex !== -1) {
+              await removeCustomCategory(originalIndex);
+            }
           }}
           onEditCustomCategoryDescription={(index) => {
             setEditingCustomCategoryIndex(index);
-            setSelectedSkillsCategory(customCategories[index]);
+            setSelectedSkillsCategory(filteredCustom[index]);
             // Na mobile presmeruj na screen, na desktop otvor modal
             if (typeof window !== 'undefined' && window.innerWidth < 1024) {
               try {
@@ -307,9 +321,14 @@ export default function ModuleRouter({
           }}
         />
       );
-    case 'skills-search':
+    }
+    case 'skills-search': {
+      // Filtruj karty pre "Hľadám" (is_seeking === true)
+      const filteredStandard = standardCategories.filter(s => s.is_seeking === true);
+      const filteredCustom = customCategories.filter(s => s.is_seeking === true);
       return (
         <SkillsScreen
+          isSeeking={true}
           title="Vyber, čo hľadáš, aby ostatní hneď vedeli, s čím ti môžu pomôcť."
           firstOptionText={t('skills.setWhatYouSeek', 'Vyber čo hľadáš')}
           firstOptionHint={t('skills.seekCategoryHint', 'Vyber kategóriu, ktorú hľadáš — a ak ti nič nesedí, jednoducho si nižšie nastav presne to, čo potrebuješ.')}
@@ -334,7 +353,7 @@ export default function ModuleRouter({
           secondOptionText={t('skills.addWhatYouSeek', 'Pridaj čo hľadáš')}
           secondOptionHint={t('skills.addWhatYouSeekHint', 'Nastav si presne to, čo hľadáš, podľa vlastných predstáv.')}
           onSecondOptionClick={() => {
-            if (customCategories.length >= 5) {
+            if (filteredCustom.length >= 5) {
               alert('Môžeš pridať maximálne 5 vlastných kategórií.');
               return;
             }
@@ -355,18 +374,83 @@ export default function ModuleRouter({
               setIsAddCustomCategoryModalOpen(true);
             }
           }}
+          standardCategories={filteredStandard}
+          onRemoveStandardCategory={async (index) => {
+            // Nájdeme pôvodný index v nefiltrovanom zozname
+            const item = filteredStandard[index];
+            const originalIndex = standardCategories.findIndex(s => s.id === item.id);
+            if (originalIndex !== -1) {
+              await removeStandardCategory(originalIndex);
+            }
+          }}
+          onEditStandardCategoryDescription={(index) => {
+            setEditingStandardCategoryIndex(index);
+            setSelectedSkillsCategory(filteredStandard[index]);
+            // Na mobile presmeruj na screen, na desktop otvor modal
+            if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+              try {
+                localStorage.setItem('skillsDescribeMode', 'search');
+              } catch {
+                // ignore
+              }
+              setActiveModule('skills-describe');
+              try {
+                localStorage.setItem('activeModule', 'skills-describe');
+              } catch {
+                // ignore
+              }
+            } else {
+              setIsSkillDescriptionModalOpen(true);
+            }
+          }}
+          customCategories={filteredCustom}
+          onRemoveCustomCategory={async (index) => {
+            // Nájdeme pôvodný index v nefiltrovanom zozname
+            const item = filteredCustom[index];
+            const originalIndex = customCategories.findIndex(s => s.id === item.id);
+            if (originalIndex !== -1) {
+              await removeCustomCategory(originalIndex);
+            }
+          }}
+          onEditCustomCategoryDescription={(index) => {
+            setEditingCustomCategoryIndex(index);
+            setSelectedSkillsCategory(filteredCustom[index]);
+            // Na mobile presmeruj na screen, na desktop otvor modal
+            if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+              try {
+                localStorage.setItem('skillsDescribeMode', 'search');
+              } catch {
+                // ignore
+              }
+              setActiveModule('skills-describe');
+              try {
+                localStorage.setItem('activeModule', 'skills-describe');
+              } catch {
+                // ignore
+              }
+            } else {
+              setIsSkillDescriptionModalOpen(true);
+            }
+          }}
         />
       );
-    case 'skills-describe':
+    }
+    case 'skills-describe': {
       if (!selectedSkillsCategory) {
         setActiveModule('skills-offer');
         return null;
       }
+
+      const describeMode =
+        typeof window !== 'undefined' ? localStorage.getItem('skillsDescribeMode') : null;
+      const derivedIsSeeking =
+        selectedSkillsCategory.is_seeking ?? (describeMode === 'search');
+
       return (
         <SkillsDescriptionScreen
           category={selectedSkillsCategory.category}
           subcategory={selectedSkillsCategory.subcategory}
-          isSeeking={(typeof window !== 'undefined' ? localStorage.getItem('skillsDescribeMode') === 'search' : false)}
+          isSeeking={derivedIsSeeking}
           onBack={() => {
             const mode = typeof window !== 'undefined' ? localStorage.getItem('skillsDescribeMode') : null;
             const target = mode === 'search' ? 'skills-search' : 'skills-offer';
@@ -428,6 +512,22 @@ export default function ModuleRouter({
               price_currency: priceCurrency,
             });
           }}
+          initialUrgency={selectedSkillsCategory.urgency || 'low'}
+          onUrgencyChange={(urgency) => {
+            setSelectedSkillsCategory({
+              ...selectedSkillsCategory,
+              urgency,
+              is_seeking: derivedIsSeeking,
+            });
+          }}
+          initialDurationType={selectedSkillsCategory.duration_type || null}
+          onDurationTypeChange={(durationType) => {
+            setSelectedSkillsCategory({
+              ...selectedSkillsCategory,
+              duration_type: durationType,
+              is_seeking: derivedIsSeeking,
+            });
+          }}
           initialImages={selectedSkillsCategory.images || []}
           onImagesChange={(images) => {
             // Images sú File[], uložíme ich do state
@@ -462,6 +562,7 @@ export default function ModuleRouter({
           accountType={accountType}
         />
       );
+    }
     case 'skills-select-category':
       return (
         <SkillsCategoryScreen

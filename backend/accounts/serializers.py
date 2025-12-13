@@ -375,6 +375,8 @@ class OfferedSkillSerializer(serializers.ModelSerializer):
     price_from = serializers.DecimalField(max_digits=10, decimal_places=2, required=False, allow_null=True)
     price_currency = serializers.CharField(required=False, allow_blank=True)
     district = serializers.CharField(required=False, allow_blank=True)
+    urgency = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    duration_type = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     
     class Meta:
         model = OfferedSkill
@@ -382,7 +384,7 @@ class OfferedSkillSerializer(serializers.ModelSerializer):
             'id', 'category', 'subcategory', 'description', 'detailed_description',
             'experience_value', 'experience_unit', 'experience', 'tags', 'images',
             'price_from', 'price_currency', 'district', 'location', 'opening_hours',
-            'created_at', 'updated_at'
+            'is_seeking', 'urgency', 'duration_type', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
     

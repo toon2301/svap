@@ -10,6 +10,9 @@ export type SkillImage = {
 export const CURRENCY_OPTIONS = ['€', 'Kč', '$', 'zł', 'Ft'] as const;
 export type CurrencyOption = (typeof CURRENCY_OPTIONS)[number];
 
+export const DURATION_OPTIONS = ['one_time', 'long_term', 'project'] as const;
+export type DurationOption = (typeof DURATION_OPTIONS)[number];
+
 export const UNIT_OPTIONS = [
   { value: 'years' as const, label: 'rokov' },
   { value: 'months' as const, label: 'mesiacov' },
@@ -50,7 +53,9 @@ export interface SkillDescriptionModalProps {
     location?: string,
     detailedDescription?: string,
     openingHours?: OpeningHours,
-    district?: string
+    district?: string,
+    urgency?: 'low' | 'medium' | 'high' | '',
+    durationType?: DurationOption | '' | null
   ) => void;
   initialDescription?: string;
   initialExperience?: ExperienceValue;
@@ -66,5 +71,9 @@ export interface SkillDescriptionModalProps {
   initialOpeningHours?: OpeningHours;
   accountType?: 'personal' | 'business';
   isSeeking?: boolean;
+  initialUrgency?: 'low' | 'medium' | 'high' | '';
+  onUrgencyChange?: (urgency: 'low' | 'medium' | 'high' | '') => void;
+  initialDurationType?: DurationOption | '' | null;
+  onDurationTypeChange?: (durationType: DurationOption | '') => void;
 }
 

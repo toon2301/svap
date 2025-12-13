@@ -8,6 +8,7 @@ import ImagesSection from './skillDescriptionModal/sections/ImagesSection';
 import LocationSection from './skillDescriptionModal/sections/LocationSection';
 import ExperienceSection from './skillDescriptionModal/sections/ExperienceSection';
 import PriceSection from './skillDescriptionModal/sections/PriceSection';
+import DurationSection from './skillDescriptionModal/sections/DurationSection';
 import DetailedDescriptionModal from './skillDescriptionModal/DetailedDescriptionModal';
 import OpeningHoursModal from './skillDescriptionModal/OpeningHoursModal';
 import { SkillDescriptionModalProps } from './skillDescriptionModal/types';
@@ -42,6 +43,10 @@ export default function SkillDescriptionModal({
   initialOpeningHours,
   accountType = 'personal',
   isSeeking = false,
+  initialUrgency = 'low',
+  onUrgencyChange,
+  initialDurationType = null,
+  onDurationTypeChange,
 }: SkillDescriptionModalProps) {
   const { locale, t } = useLanguage();
   const categorySlug = useMemo(() => (category ? slugifyLabel(category) : ''), [category]);
@@ -72,6 +77,8 @@ export default function SkillDescriptionModal({
     initialDistrict,
     initialDetailedDescription,
     initialOpeningHours,
+    initialUrgency,
+    initialDurationType,
   });
 
   const onSaveClick = () => {
@@ -96,6 +103,8 @@ export default function SkillDescriptionModal({
       initialDistrict,
       initialOpeningHours,
       initialPriceFrom,
+      urgency: state.urgency,
+      durationType: state.durationType,
       onSave,
       setError: state.setError,
       setExperienceError: state.setExperienceError,
@@ -214,7 +223,7 @@ export default function SkillDescriptionModal({
               onChange={(val) => {
                 state.setLocation(val);
                 state.setLocationError('');
-              }}
+                }}
               onBlur={onLocationBlur}
               error={state.locationError}
               isSaving={state.isLocationSaving}
@@ -243,6 +252,53 @@ export default function SkillDescriptionModal({
               error={state.priceError}
               isSeeking={isSeeking}
             />
+
+            <DurationSection
+              value={state.durationType}
+              onChange={(val) => {
+                state.setDurationType(val);
+                onDurationTypeChange?.(val);
+              }}
+            />
+
+          {/* Urgentnosť – len pre Hľadám */}
+          {isSeeking && (
+            <div className="mt-4">
+              <div className="text-sm font-semibold text-gray-900 dark:text-white mb-2">
+                {t('skills.urgency', 'Urgentnosť')}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {([
+                  { key: 'low', label: t('skills.urgencyLow', 'Nízka') },
+                  { key: 'medium', label: t('skills.urgencyMedium', 'Stredná') },
+                  { key: 'high', label: t('skills.urgencyHigh', 'Vysoká') },
+                ] as const).map((item) => (
+                  <button
+                    key={item.key}
+                    type="button"
+                    onClick={() => {
+                      state.setUrgency(item.key);
+                      onUrgencyChange?.(item.key);
+                    }}
+                    className={`px-3 py-2 rounded-lg border text-sm font-semibold transition-colors ${
+                      state.urgency === item.key
+                        ? item.key === 'low'
+                          ? 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-200 dark:border-green-800'
+                          : item.key === 'medium'
+                            ? 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-200 dark:border-amber-800'
+                            : 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-200 dark:border-red-800'
+                        : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50 dark:bg-[#0f0f10] dark:text-gray-200 dark:border-gray-700 dark:hover:bg-gray-900'
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                {t('skills.urgencyInfo', 'Zadaj, ako urgentne hľadáš službu alebo zručnosť.')}
+              </p>
+            </div>
+          )}
 
             {accountType === 'business' && !isSeeking && (
               <div className="mb-4">
@@ -293,7 +349,7 @@ export default function SkillDescriptionModal({
             )}
 
             {/* Skryť kartu */}
-            <div className="mb-4 px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg">
+            <div className="mt-4 mb-4 px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-lg">
               <MasterToggle
                 enabled={state.isHideCardEnabled}
                 onChange={(value) => {

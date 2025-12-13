@@ -32,6 +32,9 @@ export interface SkillItem {
   district?: string;
   location?: string;
   opening_hours?: OpeningHours;
+  is_seeking?: boolean;
+  urgency?: 'low' | 'medium' | 'high' | '';
+  duration_type?: 'one_time' | 'long_term' | 'project' | '' | null;
 }
 
 type Props = {
@@ -110,6 +113,12 @@ export default function SkillModals(props: Props) {
       district: typeof s.district === 'string' ? s.district : '',
       location: typeof s.location === 'string' ? s.location : '',
       opening_hours: (s.opening_hours && typeof s.opening_hours === 'object') ? s.opening_hours as OpeningHours : undefined,
+      is_seeking: s.is_seeking === true,
+      urgency:
+        typeof s.urgency === 'string' && s.urgency.trim() !== ''
+          ? (s.urgency.trim() as 'low' | 'medium' | 'high' | '')
+          : '',
+      duration_type: s.duration_type || null,
     };
   };
 
@@ -128,7 +137,7 @@ export default function SkillModals(props: Props) {
         selected={selectedSkillsCategory?.subcategory || null}
         onSelect={(category, subcategory) => {
           setIsSkillsCategoryModalOpen(false);
-          setSelectedSkillsCategory({ category, subcategory, price_from: null, price_currency: '€', location: '', detailed_description: '' });
+          setSelectedSkillsCategory({ category, subcategory, price_from: null, price_currency: '€', location: '', detailed_description: '', urgency: 'low' });
           setIsSkillDescriptionModalOpen(true);
         }}
       />
@@ -156,22 +165,34 @@ export default function SkillModals(props: Props) {
           initialDistrict={selectedSkillsCategory.district ?? ''}
           initialLocation={selectedSkillsCategory.location ?? ''}
           initialDetailedDescription={selectedSkillsCategory.detailed_description || ''}
+          initialUrgency={selectedSkillsCategory.urgency || 'low'}
+          onUrgencyChange={(u) => {
+            setSelectedSkillsCategory((prev) => (prev ? { ...prev, urgency: u } : prev));
+          }}
+          initialDurationType={selectedSkillsCategory.duration_type || null}
+          onDurationTypeChange={(d) => {
+            setSelectedSkillsCategory((prev) => (prev ? { ...prev, duration_type: d } : prev));
+          }}
           onRemoveExistingImage={
             selectedSkillsCategory.id
               ? (imageId) => handleRemoveSkillImage(selectedSkillsCategory.id!, imageId)
               : undefined
           }
-          onSave={async (description, experience, tags, images, priceFrom, priceCurrency, locationValue, detailedDescription, openingHours, districtValue) => {
+          onSave={async (description, experience, tags, images, priceFrom, priceCurrency, locationValue, detailedDescription, openingHours, districtValue, urgency, durationType) => {
             const trimmedLocation = typeof locationValue === 'string' ? locationValue.trim() : '';
             const trimmedDistrict = typeof districtValue === 'string' ? districtValue.trim() : '';
             const detailedText = typeof detailedDescription === 'string' ? detailedDescription.trim() : '';
             const buildPayload = () => {
+              const isSeeking = activeModule === 'skills-search';
               const payload: any = {
                 category: selectedSkillsCategory?.category,
                 subcategory: selectedSkillsCategory?.subcategory,
                 description: description || '',
                 detailed_description: detailedText,
                 tags: Array.isArray(tags) ? tags : [],
+                is_seeking: isSeeking,
+                urgency: urgency || 'low',
+                duration_type: durationType || null,
               };
               if (experience && typeof experience.value === 'number' && experience.unit) {
                 payload.experience_value = experience.value;
@@ -208,6 +229,8 @@ export default function SkillModals(props: Props) {
                       : { price_from: null, price_currency: '' }),
                     district: trimmedDistrict,
                     location: trimmedLocation,
+                    urgency: urgency || 'low',
+                    duration_type: durationType || null,
                   });
                   let updatedLocal = toLocalSkill(data);
                   if (Array.isArray(images) && images.length > 0 && data?.id) {
@@ -246,6 +269,7 @@ export default function SkillModals(props: Props) {
                       : { price_from: null, price_currency: '' }),
                     district: trimmedDistrict,
                     location: trimmedLocation,
+                    urgency: urgency || 'low',
                   };
                   const { data } = await api.post(endpoints.skills.list, payload);
                   let created = toLocalSkill(data);
@@ -274,15 +298,7 @@ export default function SkillModals(props: Props) {
                 setSelectedSkillsCategory(null);
               } else if (selectedSkillsCategory) {
                 if (selectedSkillsCategory.category === selectedSkillsCategory.subcategory) {
-                  // Kontrola celkového počtu kariet (štandardné + vlastné) - limit 3 pre každú sekciu
-                  const isSeeking = activeModule === 'skills-search';
-                  // Pre sekciu "Hľadám" a "Ponúkam" je limit 3 karty každá
-                  if (standardCategories.length + customCategories.length >= 3) {
-                    alert(isSeeking 
-                      ? 'Môžeš mať maximálne 3 karty v sekcii "Hľadám".' 
-                      : 'Môžeš mať maximálne 3 karty v sekcii "Ponúkam".');
-                    return;
-                  }
+                  // Vytvorenie novej vlastnej karty – limit kontroluje backend podľa is_seeking
                   const payload = buildPayload();
                   const { data } = await api.post(endpoints.skills.list, payload);
                   let created = toLocalSkill(data);
@@ -301,19 +317,11 @@ export default function SkillModals(props: Props) {
                     }
                     created = await fetchSkillDetail(data.id);
                   }
-                  setCustomCategories((prev) => [...prev, created]);
+                  setCustomCategories((prev) => [created, ...prev]);
                   setSelectedSkillsCategory(null);
                 } else {
                   if (!selectedSkillsCategory.id) {
-                    // Kontrola celkového počtu kariet (štandardné + vlastné) - limit 3 pre každú sekciu
-                    const isSeeking = activeModule === 'skills-search';
-                    // Pre sekciu "Hľadám" a "Ponúkam" je limit 3 karty každá
-                    if (standardCategories.length + customCategories.length >= 3) {
-                      alert(isSeeking 
-                        ? 'Môžeš mať maximálne 3 karty v sekcii "Hľadám".' 
-                        : 'Môžeš mať maximálne 3 karty v sekcii "Ponúkam".');
-                      return;
-                    }
+                    // Vytvorenie novej štandardnej karty – limit kontroluje backend podľa is_seeking
                     const payload = buildPayload();
                     const { data } = await api.post(endpoints.skills.list, payload);
                     let created = toLocalSkill(data);
@@ -332,7 +340,7 @@ export default function SkillModals(props: Props) {
                       }
                       created = await fetchSkillDetail(data.id);
                     }
-                    setStandardCategories((prev) => [...prev, created]);
+                    setStandardCategories((prev) => [created, ...prev]);
                     setSelectedSkillsCategory(null);
                   } else {
                     const { data } = await api.patch(endpoints.skills.detail(selectedSkillsCategory.id), {
@@ -347,6 +355,7 @@ export default function SkillModals(props: Props) {
                         : { price_from: null, price_currency: '' }),
                       district: trimmedDistrict,
                       location: trimmedLocation,
+                      urgency: urgency || 'low',
                     });
                     let updated = toLocalSkill(data);
                     if (Array.isArray(images) && images.length > 0 && data?.id) {

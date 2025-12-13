@@ -42,13 +42,15 @@ def skills_list_view(request):
         category = serializer.validated_data.get('category')
         subcategory = serializer.validated_data.get('subcategory')
         is_custom = category == subcategory
+        is_seeking = serializer.validated_data.get('is_seeking', False)
 
-        # Celkový počet všetkých kariet (štandardné + vlastné)
-        total_count = OfferedSkill.objects.filter(user=request.user).count()
+        # Kontrola limitu 3 karty pre každý typ samostatne (Ponúkam vs Hľadám)
+        count_by_type = OfferedSkill.objects.filter(user=request.user, is_seeking=is_seeking).count()
 
-        if total_count >= 3:
+        if count_by_type >= 3:
+            skill_type = 'Hľadám' if is_seeking else 'Ponúkam'
             return Response(
-                {'error': 'Môžeš mať maximálne 3 karty dokopy (štandardné aj vlastné).'},
+                {'error': f'Môžeš mať maximálne 3 karty v sekcii "{skill_type}".'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 

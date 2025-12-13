@@ -27,6 +27,9 @@ export type DashboardSkill = {
   district?: string;
   location?: string;
   opening_hours?: OpeningHours;
+  is_seeking?: boolean;
+  urgency?: 'low' | 'medium' | 'high' | '';
+  duration_type?: 'one_time' | 'long_term' | 'project' | '' | null;
 };
 
 export interface UseSkillsModalsResult {
@@ -103,6 +106,12 @@ export function useSkillsModals(): UseSkillsModalsResult {
         s.opening_hours && typeof s.opening_hours === 'object'
           ? (s.opening_hours as OpeningHours)
           : undefined,
+      is_seeking: s.is_seeking === true,
+      urgency:
+        typeof s.urgency === 'string' && s.urgency.trim() !== ''
+          ? (s.urgency.trim() as 'low' | 'medium' | 'high' | '')
+          : '',
+      duration_type: s.duration_type || null,
     };
   }, []);
 
@@ -119,9 +128,14 @@ export function useSkillsModals(): UseSkillsModalsResult {
     try {
       const { data } = await api.get(endpoints.skills.list);
       const skills: any[] = Array.isArray(data) ? data : [];
-      const localSkills = skills.map(toLocalSkill);
+      // Namapuj a zorad podľa ID zostupne – nové karty budú vždy hore
+      const localSkills = skills
+        .map(toLocalSkill)
+        .sort((a, b) => (b.id ?? 0) - (a.id ?? 0));
+
       const standard = localSkills.filter((s) => s.category !== s.subcategory);
       const custom = localSkills.filter((s) => s.category === s.subcategory);
+
       setStandardCategories(standard);
       setCustomCategories(custom);
     } catch {
