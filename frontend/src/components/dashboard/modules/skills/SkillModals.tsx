@@ -43,7 +43,7 @@ type Props = {
   isSkillDescriptionModalOpen: boolean;
   setIsSkillDescriptionModalOpen: (v: boolean) => void;
   selectedSkillsCategory: SkillItem | null;
-  setSelectedSkillsCategory: (v: SkillItem | null) => void;
+  setSelectedSkillsCategory: React.Dispatch<React.SetStateAction<SkillItem | null>>;
   editingCustomCategoryIndex: number | null;
   setEditingCustomCategoryIndex: (v: number | null) => void;
   editingStandardCategoryIndex: number | null;
