@@ -5,6 +5,7 @@ import { api, endpoints } from '../../../../lib/api';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { OpeningHours } from '../skills/skillDescriptionModal/types';
 import type { Offer, ExperienceUnit } from './profileOffersTypes';
+import { HOURS_DAYS } from './profileOffersTypes';
 import { ProfileOfferDetailMobile } from './ProfileOfferDetailMobile';
 import { ProfileOpeningHoursMobileModal } from './ProfileOpeningHoursMobileModal';
 import { ProfileOfferCardMobile } from './ProfileOfferCardMobile';
