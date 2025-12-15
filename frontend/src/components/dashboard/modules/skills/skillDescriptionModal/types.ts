@@ -22,6 +22,8 @@ export type UnitOption = (typeof UNIT_OPTIONS)[number]['value'];
 
 export type ExperienceValue = { value: number; unit: UnitOption };
 
+export const MAX_DETAILED_LENGTH = 1000;
+
 export type DayOpeningHours = {
   enabled: boolean;
   from: string;
@@ -75,5 +77,38 @@ export interface SkillDescriptionModalProps {
   onUrgencyChange?: (urgency: 'low' | 'medium' | 'high' | '') => void;
   initialDurationType?: DurationOption | '' | null;
   onDurationTypeChange?: (durationType: DurationOption | '') => void;
+}
+
+export interface SkillsDescriptionScreenProps {
+  category: string;
+  subcategory: string;
+  onBack: () => void;
+  isSeeking?: boolean;
+  initialDescription?: string;
+  onDescriptionChange?: (description: string) => void;
+  initialDetailedDescription?: string;
+  onDetailedDescriptionChange?: (description: string) => void;
+  initialTags?: string[];
+  onTagsChange?: (tags: string[]) => void;
+  initialDistrict?: string;
+  onDistrictChange?: (district: string) => void;
+  initialLocation?: string;
+  onLocationChange?: (location: string) => void;
+  initialExperience?: { value: number; unit: UnitOption };
+  onExperienceChange?: (experience: { value: number; unit: UnitOption } | undefined) => void;
+  initialPriceFrom?: number | null;
+  initialPriceCurrency?: string;
+  onPriceChange?: (priceFrom: number | null, priceCurrency: string) => void;
+  initialUrgency?: 'low' | 'medium' | 'high' | '';
+  onUrgencyChange?: (urgency: 'low' | 'medium' | 'high' | '') => void;
+  initialDurationType?: DurationOption | '' | null;
+  onDurationTypeChange?: (durationType: DurationOption | '') => void;
+  initialImages?: SkillImage[];
+  onImagesChange?: (images: File[]) => void;
+  onExistingImagesChange?: (existingImages: SkillImage[]) => void;
+  onRemoveExistingImage?: (imageId: number) => Promise<SkillImage[] | void>;
+  initialOpeningHours?: OpeningHours;
+  onOpeningHoursChange?: (openingHours: OpeningHours) => void;
+  accountType?: 'personal' | 'business';
 }
 

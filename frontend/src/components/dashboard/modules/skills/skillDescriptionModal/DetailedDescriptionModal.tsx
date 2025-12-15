@@ -166,8 +166,17 @@ export default function DetailedDescriptionModal({
                 rows={7}
                 value={value}
                 onChange={(e) => {
-                  if (e.target.value.length <= MAX_LENGTH) {
-                    setValue(e.target.value);
+                  const incoming = e.target.value;
+                  if (incoming.length > MAX_LENGTH) {
+                    setValue(incoming.slice(0, MAX_LENGTH));
+                    setError(
+                      t(
+                        'skills.detailedDescriptionTooLong',
+                        `Podrobný popis môže mať maximálne ${MAX_LENGTH} znakov.`,
+                      ),
+                    );
+                  } else {
+                    setValue(incoming);
                     setError('');
                   }
                 }}
@@ -221,16 +230,18 @@ export default function DetailedDescriptionModal({
           onClick={(e) => e.stopPropagation()}
           onMouseDown={(e) => e.stopPropagation()}
         >
-          <Picker
-            data={data}
-            onEmojiSelect={handleEmojiSelect}
-            theme="auto"
-            previewPosition="none"
-            skinTonePosition="none"
-            navPosition="top"
-            searchPosition="top"
-            perLine={8}
-          />
+          <div className="subtle-scrollbar max-h-[360px] overflow-y-auto rounded-xl">
+            <Picker
+              data={data}
+              onEmojiSelect={handleEmojiSelect}
+              theme="auto"
+              previewPosition="none"
+              skinTonePosition="none"
+              navPosition="top"
+              searchPosition="top"
+              perLine={8}
+            />
+          </div>
         </div>,
         portalNode
       )}

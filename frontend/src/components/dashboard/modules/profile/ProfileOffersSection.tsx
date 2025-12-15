@@ -6,65 +6,14 @@ import { api, endpoints } from '../../../../lib/api';
 import { useLanguage } from '@/contexts/LanguageContext';
 import OfferImageCarousel from '../shared/OfferImageCarousel';
 import type { ProfileTab } from './profileTypes';
+import type { Offer, ExperienceUnit } from './profileOffersTypes';
+import { HOURS_DAYS, slugifyLabel } from './profileOffersTypes';
 import type { OpeningHours } from '../skills/skillDescriptionModal/types';
-
-type ExperienceUnit = 'years' | 'months';
-
-interface OfferExperience {
-  value: number;
-  unit: ExperienceUnit;
-}
-
-interface OfferImage {
-  id: number;
-  image_url?: string | null;
-  image?: string | null;
-  order?: number;
-}
-
-interface Offer {
-  id: number;
-  category: string;
-  subcategory: string;
-  description: string;
-  detailed_description?: string;
-  images?: OfferImage[];
-  price_from?: number | null;
-  price_currency?: string;
-  district?: string;
-  location?: string;
-  experience?: OfferExperience;
-  tags?: string[];
-  opening_hours?: OpeningHours;
-  // True = karta z časti "Hľadám", False/undefined = karta z časti "Ponúkam"
-  is_seeking?: boolean;
-  urgency?: 'low' | 'medium' | 'high' | '';
-  duration_type?: 'one_time' | 'long_term' | 'project' | '' | null;
-}
 
 interface ProfileOffersSectionProps {
   activeTab: ProfileTab;
   accountType?: 'personal' | 'business';
 }
-
-function slugifyLabel(label: string): string {
-  return label
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/(^-|-$)/g, '');
-}
-
-const HOURS_DAYS = [
-  { key: 'monday' as const, shortLabel: 'Po' },
-  { key: 'tuesday' as const, shortLabel: 'Ut' },
-  { key: 'wednesday' as const, shortLabel: 'St' },
-  { key: 'thursday' as const, shortLabel: 'Št' },
-  { key: 'friday' as const, shortLabel: 'Pi' },
-  { key: 'saturday' as const, shortLabel: 'So' },
-  { key: 'sunday' as const, shortLabel: 'Ne' },
-] as const;
 
 export default function ProfileOffersSection({ activeTab, accountType = 'personal' }: ProfileOffersSectionProps) {
   const { t } = useLanguage();
@@ -361,6 +310,26 @@ export default function ProfileOffersSection({ activeTab, accountType = 'persona
                             <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
                           </svg>
                         </button>
+                        <button
+                          aria-label="Komentovať"
+                          title="Komentovať"
+                          className="p-1 rounded-full bg-purple-50 dark:bg-purple-900/80 dark:backdrop-blur-sm border border-purple-200 dark:border-purple-800/60 text-purple-700 dark:text-white hover:bg-purple-100 dark:hover:bg-purple-900/90 transition-colors"
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            strokeWidth={1.5}
+                            stroke="currentColor"
+                            className="w-3 h-3"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M2.25 12.76c0 1.6 1.123 2.994 2.707 3.227 1.087.16 2.185.283 3.293.369V21l4.076-4.076a1.526 1.526 0 0 1 1.037-.443 48.282 48.282 0 0 0 5.68-.494c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z"
+                            />
+                          </svg>
+                        </button>
                         {!offer.is_seeking && (
                           <button
                             aria-label="Pridať recenziu"
@@ -572,42 +541,11 @@ export default function ProfileOffersSection({ activeTab, accountType = 'persona
                             </button>
                           </div>
                         )}
-                        <div className="mt-0 xl:mt-0 flex items-center gap-1.5">
-                          <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                            {t('skills.likes', 'Páči sa mi to')}
-                          </span>
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            className="w-4 h-4 text-gray-600 dark:text-gray-400"
-                          >
-                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-                          </svg>
-                          <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                            3 564
-                          </span>
-                        </div>
-                        {offer.tags && offer.tags.length > 0 && (
-                          <div className="mt-0 xl:mt-0.5 flex flex-wrap gap-1">
-                            {offer.tags.map((tag, index) => (
-                              <span
-                                key={index}
-                                className="text-xs font-medium text-purple-700 dark:text-purple-300 whitespace-nowrap"
-                              >
-                                #{tag}
-                              </span>
-                            ))}
-                          </div>
-                        )}
+                        {/* Hľadám – zobraz urgentnosť a trvanie nad lajkami, aby tagy zostali úplne dole ako pri Ponúkam */}
                         {offer.is_seeking && (
                           <>
                             {offer.urgency && offer.urgency.trim() !== '' && (
-                              <div className="mt-2 xl:mt-2.5 flex items-center gap-2">
+                              <div className="mt-1.5 xl:mt-2 flex items-center gap-2">
                                 <span className="text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wide">
                                   {t('skills.urgency', 'Urgentnosť')}:
                                 </span>
@@ -643,6 +581,49 @@ export default function ProfileOffersSection({ activeTab, accountType = 'persona
                               </div>
                             )}
                           </>
+                        )}
+
+                        <div
+                          className={`flex items-center gap-1.5 ${
+                            offer.is_seeking ? 'mt-8 xl:mt-10' : 'mt-1 xl:mt-1'
+                          }`}
+                        >
+                          <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                            {t('skills.likes', 'Páči sa mi to')}
+                          </span>
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className="w-4 h-4 text-gray-600 dark:text-gray-400"
+                          >
+                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+                          </svg>
+                          <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                            3 564
+                          </span>
+                        </div>
+
+                        {/* Tagy – vždy úplne dole, rovnako pre Ponúkam aj Hľadám */}
+                        {offer.tags && offer.tags.length > 0 && (
+                          <div
+                            className={`flex flex-wrap gap-1 ${
+                              offer.is_seeking ? 'mt-3 xl:mt-4' : 'mt-1 xl:mt-1.5'
+                            }`}
+                          >
+                            {offer.tags.map((tag, index) => (
+                              <span
+                                key={index}
+                                className="text-xs font-medium text-purple-700 dark:text-purple-300 whitespace-nowrap"
+                              >
+                                #{tag}
+                              </span>
+                            ))}
+                          </div>
                         )}
                       </div>
                       <FlipButton extraClasses="z-30" />

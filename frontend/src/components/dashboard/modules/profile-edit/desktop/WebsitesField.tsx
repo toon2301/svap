@@ -49,7 +49,7 @@ export default function WebsitesField({ user, website, additionalWebsites, setWe
             if (total >= 5) return;
             setAdditionalWebsites([...additionalWebsites, '']);
           }}
-          className="absolute right-2 top-2 bottom-2 flex items-center justify-center w-8 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
+          className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center justify-center w-8 h-8 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
         >
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
@@ -114,7 +114,7 @@ export default function WebsitesField({ user, website, additionalWebsites, setWe
                 }
               }
             }}
-            className="absolute right-2 top-2 bottom-2 flex items-center justify-center w-8 text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 transition-colors"
+            className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center justify-center w-8 h-8 text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 transition-colors"
           >
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />

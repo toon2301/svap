@@ -253,13 +253,15 @@ export default function SkillDescriptionModal({
               isSeeking={isSeeking}
             />
 
-            <DurationSection
-              value={state.durationType}
-              onChange={(val) => {
-                state.setDurationType(val);
-                onDurationTypeChange?.(val);
-              }}
-            />
+            {isSeeking && (
+              <DurationSection
+                value={state.durationType}
+                onChange={(val) => {
+                  state.setDurationType(val);
+                  onDurationTypeChange?.(val);
+                }}
+              />
+            )}
 
           {/* Urgentnosť – len pre Hľadám */}
           {isSeeking && (
