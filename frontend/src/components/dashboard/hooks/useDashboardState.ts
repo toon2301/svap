@@ -212,7 +212,14 @@ export function useDashboardState(initialUser?: User): UseDashboardStateResult {
       setUser(updatedUser);
       setActiveModule('profile');
       setIsRightSidebarOpen(true);
-      setActiveRightItem('edit-profile');
+      // Zachovať activeRightItem ak je to 'privacy' alebo iné nastavenia
+      setActiveRightItem((prev) => {
+        // Ak sme v nastaveniach súkromia, zachovať to
+        if (prev === 'privacy' || prev === 'language' || prev === 'account-type' || prev === 'notifications') {
+          return prev;
+        }
+        return 'edit-profile';
+      });
       if (typeof window !== 'undefined') {
         try {
           localStorage.setItem('activeModule', 'profile');

@@ -6,6 +6,7 @@ import ProfileModule from './modules/ProfileModule';
 import NotificationsModule from './modules/NotificationsModule';
 import LanguageModule from './modules/LanguageModule';
 import AccountTypeModule from './modules/AccountTypeModule';
+import PrivacySettingsModule from './modules/PrivacySettingsModule';
 import SkillsHome from './modules/skills/SkillsHome';
 import SkillsScreen from './modules/skills/SkillsScreen';
 import SkillsCategoryScreen from './modules/skills/SkillsCategoryScreen';
@@ -114,6 +115,10 @@ export default function ModuleRouter({
         setIsPersonalAccountModalOpen={setIsPersonalAccountModalOpen}
       />
     );
+  }
+
+  if (isRightSidebarOpen && activeRightItem === 'privacy') {
+    return <PrivacySettingsModule user={user} onUserUpdate={onUserUpdate} />;
   }
 
   switch (activeModule) {

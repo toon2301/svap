@@ -8,6 +8,7 @@ import {
   BellIcon,
   LanguageIcon,
   UserGroupIcon,
+  LockClosedIcon,
   XMarkIcon
 } from '@heroicons/react/24/outline';
 
@@ -45,6 +46,11 @@ const rightSidebarItems: RightSidebarItem[] = [
     id: 'account-type',
     label: 'Typ účtu',
     icon: UserGroupIcon,
+  },
+  {
+    id: 'privacy',
+    label: 'Nastavenia súkromia',
+    icon: LockClosedIcon,
   },
 ];
 
@@ -89,7 +95,7 @@ export default function RightSidebar({
             {t('rightSidebar.appUsage', 'Použitie aplikácie')}
           </h3>
           <div className="space-y-2">
-            {rightSidebarItems.filter(item => item.id === 'edit-profile' || item.id === 'notifications' || item.id === 'account-type').map((item) => {
+            {rightSidebarItems.filter(item => item.id === 'edit-profile' || item.id === 'notifications' || item.id === 'account-type' || item.id === 'privacy').map((item) => {
               const Icon = item.icon;
               const isActive = activeItem === item.id;
               
@@ -108,6 +114,7 @@ export default function RightSidebar({
                     if (item.id === 'edit-profile') return t('rightSidebar.editProfile', item.label);
                     if (item.id === 'notifications') return t('rightSidebar.notifications', item.label);
                     if (item.id === 'account-type') return t('rightSidebar.accountType', item.label);
+                    if (item.id === 'privacy') return t('rightSidebar.privacy', item.label);
                     return item.label;
                   })()}
                 </button>
