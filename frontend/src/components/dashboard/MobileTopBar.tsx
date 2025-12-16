@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Bars3Icon, UserIcon } from '@heroicons/react/24/outline';
+import { Bars3Icon } from '@heroicons/react/24/outline';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 interface MobileTopBarProps {
@@ -36,9 +36,9 @@ export default function MobileTopBar({ onMenuClick, isEditMode = false, onBackCl
   return (
     <div className="lg:hidden fixed top-0 left-0 right-0 z-30 bg-white dark:bg-black border-b border-gray-200 dark:border-gray-800 shadow-sm">
       <div className="grid grid-cols-3 items-center px-3 py-0 h-12">
-        {/* Ľavá strana - Logo alebo šipka späť */}
+        {/* Ľavá strana - Šipka späť alebo prázdne */}
         <div className="flex items-center h-full justify-start">
-          {(isEditMode || activeRightItem === 'language' || activeRightItem === 'account-type' || activeModule === 'notifications' || activeModule === 'account-type' || activeModule === 'skills' || activeModule === 'skills-offer' || activeModule === 'skills-search' || activeModule === 'skills-select-category') ? (
+          {(isEditMode || activeRightItem === 'language' || activeRightItem === 'account-type' || activeRightItem === 'privacy' || activeModule === 'notifications' || activeModule === 'account-type' || activeModule === 'privacy' || activeModule === 'skills' || activeModule === 'skills-offer' || activeModule === 'skills-search' || activeModule === 'skills-select-category') ? (
             <button
               onClick={onBackClick}
               className="p-2 -ml-2"
@@ -58,13 +58,7 @@ export default function MobileTopBar({ onMenuClick, isEditMode = false, onBackCl
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
               </svg>
             </button>
-          ) : (
-            <img 
-              src="/Logotyp _svaply_ na fialovom pozadí.png" 
-              alt="Swaply" 
-              className="h-12 w-auto"
-            />
-          )}
+          ) : null}
         </div>
         
         {/* Stred - Nadpis */}
@@ -77,6 +71,9 @@ export default function MobileTopBar({ onMenuClick, isEditMode = false, onBackCl
           )}
           {activeRightItem === 'account-type' && (
             <h1 className="text-lg font-semibold text-gray-900 dark:text-white">Účet</h1>
+          )}
+          {(activeRightItem === 'privacy' || activeModule === 'privacy') && (
+            <h1 className="text-base font-semibold text-gray-900 dark:text-white whitespace-nowrap">{t('privacy.mobileTitle', 'Súkromie účtu')}</h1>
           )}
           {activeModule === 'notifications' && (
             <h1 className="text-lg font-semibold text-gray-900 dark:text-white">{t('rightSidebar.notifications', 'Upozornenia')}</h1>
@@ -120,16 +117,6 @@ export default function MobileTopBar({ onMenuClick, isEditMode = false, onBackCl
             </button>
           )}
           
-          {/* Profil ikonka - len keď nie si v profile module ani v upozorneniach ani v account-type ani v skills */}
-          {activeModule !== 'profile' && activeModule !== 'notifications' && activeModule !== 'account-type' && activeModule !== 'skills' && activeModule !== 'skills-offer' && activeModule !== 'skills-search' && activeModule !== 'skills-select-category' && activeModule !== 'skills-describe' && (
-            <button
-              onClick={onProfileClick}
-              className="p-1.5 rounded-lg text-gray-600 dark:text-gray-300 hover:text-purple-600 hover:bg-gray-50 dark:hover:bg-gray-900 transition-all"
-              aria-label={t('rightSidebar.editProfile', 'Profil')}
-            >
-              <UserIcon className="w-5 h-5" strokeWidth={2} />
-            </button>
-          )}
           
           {/* Hamburger menu - len v profile module, nie v edit móde ani v jazyk modale ani v account-type ani v upozorneniach */}
           {activeModule === 'profile' && !isEditMode && activeRightItem !== 'language' && activeRightItem !== 'account-type' && (

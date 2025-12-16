@@ -21,6 +21,7 @@ interface DashboardLayoutProps {
   onMobileProfileClick: () => void;
   onSidebarLanguageClick: () => void;
   onSidebarAccountTypeClick: () => void;
+  onSidebarPrivacyClick?: () => void;
   subcategory?: string | null;
   onSkillSaveClick?: () => void;
   children: React.ReactNode;
@@ -41,6 +42,7 @@ export default function DashboardLayout({
   onMobileProfileClick,
   onSidebarLanguageClick,
   onSidebarAccountTypeClick,
+  onSidebarPrivacyClick,
   subcategory,
   onSkillSaveClick,
   children,
@@ -82,6 +84,7 @@ export default function DashboardLayout({
         onClose={onMobileMenuClose}
         onLanguageClick={onSidebarLanguageClick}
         onAccountTypeClick={onSidebarAccountTypeClick}
+        onPrivacyClick={onSidebarPrivacyClick}
       />
 
       {/* Desktop Layout - CSS Grid */}

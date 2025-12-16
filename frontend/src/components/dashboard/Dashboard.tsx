@@ -282,6 +282,24 @@ export default function Dashboard({ initialUser }: DashboardProps) {
     setActiveRightItem('account-type');
   };
 
+  const handleSidebarPrivacyClick = () => {
+    // V mobilnej verzii otvor nový screen, v desktop verzii pravý sidebar
+    if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+      setActiveModule('privacy');
+      setIsRightSidebarOpen(false);
+      setActiveRightItem('');
+      try {
+        localStorage.setItem('activeModule', 'privacy');
+      } catch {
+        // ignore
+      }
+    } else {
+      setActiveModule('profile');
+      setIsRightSidebarOpen(true);
+      setActiveRightItem('privacy');
+    }
+  };
+
   // Custom back handler for skills-select-category
   const handleSkillsCategoryBack = () => {
     // Ak máme handler z SkillsCategoryScreen a sme v podkategóriách, volaj ho
@@ -342,6 +360,7 @@ export default function Dashboard({ initialUser }: DashboardProps) {
         onMobileProfileClick={handleMobileProfileClick}
         onSidebarLanguageClick={handleSidebarLanguageClick}
         onSidebarAccountTypeClick={handleSidebarAccountTypeClick}
+        onSidebarPrivacyClick={handleSidebarPrivacyClick}
         subcategory={activeModule === 'skills-describe' ? selectedSkillsCategory?.subcategory : null}
         onSkillSaveClick={activeModule === 'skills-describe' ? handleSkillSave : undefined}
       >

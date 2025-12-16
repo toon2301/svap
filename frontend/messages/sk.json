@@ -333,6 +333,9 @@
     "blocked": "Blokované",
     "language": "Jazyk",
     "accountType": "Typ účtu",
+    "account": "Účet",
+    "privacy": "Nastavenia súkromia",
+    "privacyShort": "Súkromie",
     "close": "Zatvoriť"
   },
   "accountType": {
@@ -346,6 +349,17 @@
     "personalDesc": "Pre jednotlivcov a osobné použitie",
     "business": "Firemný účet",
     "businessDesc": "Pre firmy a profesionálne použitie"
+  },
+  "privacy": {
+    "mobileTitle": "Súkromie účtu",
+    "privateAccountTitle": "Súkromný účet",
+    "privateAccountDescription": "Keď si nastavíte súkromný účet, váš profil nebude viditeľný ani vyhľadateľný pre ostatných používateľov Svaply. Nikto vás nebude môcť nájsť vo vyhľadávaní ani zobraziť váš profil. Budú skryté všetky informácie vrátane profilovej fotografie, príspevkov, ponúkaných a hľadaných zručností, portfólia, kontaktných údajov, mena, lokality a ďalších informácií o profile. Toto nastavenie je vhodné, ak chcete mať svoj účet úplne súkromný a dočasne sa nezviditeľňovať v aplikácii.",
+    "privateAccountMobileDescription": "Pri súkromnom účte nie ste viditeľní ani vyhľadateľní. Všetky informácie, fotky, príspevky, zručnosti, portfólio, kontakty, meno a lokalita sú skryté. Ideálne, ak chcete účet úplne súkromný.",
+    "publicAccountTitle": "Verejný účet",
+    "publicAccountDescription": "Pri verejnom účte môžu ostatní používatelia váš profil nájsť vo vyhľadávaní podľa mena, ponúkaných alebo hľadaných zručností a kategórií. Zobrazujú sa všetky informácie vo vašom profile vrátane profilovej fotografie, osobných údajov, príspevkov, portfólia, kontaktov a kompletného prehľadu toho, čo ponúkate alebo hľadáte. Verejný účet je vhodný, ak chcete byť viditeľní, osloviť ostatných používateľov a aktívne sa zapájať do komunity Svaply.",
+    "publicAccountMobileDescription": "Pri verejnom účte vás ostatní môžu nájsť podľa mena, zručností alebo kategórií. Zobrazujú sa všetky údaje, fotky, príspevky, portfólio a kontakty. Vhodné, ak chcete byť viditeľní a aktívni v komunite Svaply.",
+    "privateAccountModalTitle": "Chcete prepnúť svoj účet na súkromný?",
+    "publicAccountModalTitle": "Chcete prepnúť svoj účet na verejný?"
   },
   "language": {
     "title": "Jazyk",

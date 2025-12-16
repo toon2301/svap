@@ -7,6 +7,7 @@ import NotificationsModule from './modules/NotificationsModule';
 import LanguageModule from './modules/LanguageModule';
 import AccountTypeModule from './modules/AccountTypeModule';
 import PrivacySettingsModule from './modules/PrivacySettingsModule';
+import PrivacySettingsMobileSection from './modules/PrivacySettingsMobileSection';
 import SkillsHome from './modules/skills/SkillsHome';
 import SkillsScreen from './modules/skills/SkillsScreen';
 import SkillsCategoryScreen from './modules/skills/SkillsCategoryScreen';
@@ -211,6 +212,13 @@ export default function ModuleRouter({
           setAccountType={setAccountType}
           setIsAccountTypeModalOpen={setIsAccountTypeModalOpen}
           setIsPersonalAccountModalOpen={setIsPersonalAccountModalOpen}
+        />
+      );
+    case 'privacy':
+      return (
+        <PrivacySettingsMobileSection
+          user={user}
+          onUserUpdate={onUserUpdate}
         />
       );
     case 'skills-offer': {

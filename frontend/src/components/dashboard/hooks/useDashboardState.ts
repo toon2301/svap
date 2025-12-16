@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Cookies from 'js-cookie';
 import type { User } from '../../../types';
@@ -210,8 +210,31 @@ export function useDashboardState(initialUser?: User): UseDashboardStateResult {
   const handleUserUpdate = useCallback(
     (updatedUser: User) => {
       setUser(updatedUser);
-      setActiveModule('profile');
-      setIsRightSidebarOpen(true);
+      // Ak sme v mobilnej verzii na screen 'privacy', zachovať to
+      setActiveModule((prevModule) => {
+        const isPrivacy = prevModule === 'privacy';
+        if (isPrivacy) {
+          if (typeof window !== 'undefined') {
+            try {
+              localStorage.setItem('activeModule', 'privacy');
+            } catch {
+              // ignore
+            }
+          }
+          // Neotvárať sidebar v mobilnej verzii
+          setIsRightSidebarOpen(false);
+          return 'privacy';
+        }
+        if (typeof window !== 'undefined') {
+          try {
+            localStorage.setItem('activeModule', 'profile');
+          } catch {
+            // ignore
+          }
+        }
+        setIsRightSidebarOpen(true);
+        return 'profile';
+      });
       // Zachovať activeRightItem ak je to 'privacy' alebo iné nastavenia
       setActiveRightItem((prev) => {
         // Ak sme v nastaveniach súkromia, zachovať to
@@ -220,13 +243,6 @@ export function useDashboardState(initialUser?: User): UseDashboardStateResult {
         }
         return 'edit-profile';
       });
-      if (typeof window !== 'undefined') {
-        try {
-          localStorage.setItem('activeModule', 'profile');
-        } catch {
-          // ignore
-        }
-      }
     },
     []
   );
@@ -307,7 +323,17 @@ export function useDashboardState(initialUser?: User): UseDashboardStateResult {
       setIsRightSidebarOpen(false);
       setActiveRightItem('');
       setIsMobileMenuOpen(false);
-    } else if (activeRightItem === 'language' || activeRightItem === 'account-type') {
+    } else if (activeModule === 'privacy') {
+      setIsMobileMenuOpen(true);
+      setActiveModule('');
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.removeItem('activeModule');
+        } catch {
+          // ignore
+        }
+      }
+    } else if (activeRightItem === 'language' || activeRightItem === 'account-type' || activeRightItem === 'privacy') {
       setIsMobileMenuOpen(true);
     } else if (activeModule === 'notifications') {
       setActiveModule('');
