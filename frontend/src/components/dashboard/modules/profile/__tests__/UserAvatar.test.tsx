@@ -47,8 +47,8 @@ describe('UserAvatar', () => {
     expect(screen.getByText('JD').parentElement).toHaveClass('w-24', 'h-24', 'text-2xl');
 
     rerender(<UserAvatar user={mockUser} size="large" />);
-    // Large size maps to 48 per current component implementation
-    expect(screen.getByText('JD').parentElement).toHaveClass('w-48', 'h-48', 'text-6xl');
+    // Large size maps to responsive classes per current component implementation
+    expect(screen.getByText('JD').parentElement).toHaveClass('w-28', 'h-28', 'text-3xl');
   });
 
   it('handles image load error by showing initials', async () => {

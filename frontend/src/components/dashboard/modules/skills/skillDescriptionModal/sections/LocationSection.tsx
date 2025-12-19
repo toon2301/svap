@@ -28,10 +28,21 @@ interface LocationSectionProps {
   isSaving: boolean;
   district?: string;
   onDistrictChange?: (value: string) => void;
+  onDistrictBlur?: (value: string) => void;
   isSeeking?: boolean;
 }
 
-export default function LocationSection({ value, onChange, onBlur, error, isSaving, district, onDistrictChange, isSeeking = false }: LocationSectionProps) {
+export default function LocationSection({
+  value,
+  onChange,
+  onBlur,
+  error,
+  isSaving,
+  district,
+  onDistrictChange,
+  onDistrictBlur,
+  isSeeking = false,
+}: LocationSectionProps) {
   const { t, country } = useLanguage();
   const [districtInput, setDistrictInput] = useState(district || '');
   const [filteredDistricts, setFilteredDistricts] = useState<string[]>([]);
@@ -169,6 +180,8 @@ export default function LocationSection({ value, onChange, onBlur, error, isSavi
     const trimmed = districtInput.trim();
     if (!trimmed) {
       setDistrictError('');
+      onDistrictChange?.('');
+      onDistrictBlur?.('');
       return;
     }
 
@@ -184,11 +197,13 @@ export default function LocationSection({ value, onChange, onBlur, error, isSavi
       setDistrictInput(exactMatch);
       onDistrictChange?.(exactMatch);
       setDistrictError('');
+      onDistrictBlur?.(exactMatch);
     } else {
       // Ak nie je presná zhoda, nastav chybu a vymaž neplatnú hodnotu
       setDistrictError(t('skills.invalidDistrict', 'Neplatný okres. Vyber z navrhovaných možností.'));
       setDistrictInput('');
       onDistrictChange?.('');
+      onDistrictBlur?.('');
       // Fokus späť na input, aby používateľ videl chybu
       setTimeout(() => {
         inputRef.current?.focus();
@@ -200,6 +215,7 @@ export default function LocationSection({ value, onChange, onBlur, error, isSavi
     isSelectingFromDropdown.current = true;
     setDistrictInput(selectedDistrict);
     onDistrictChange?.(selectedDistrict);
+    onDistrictBlur?.(selectedDistrict);
     setDistrictError(''); // Vymaž chybu pri výbere z dropdownu
     setShowDropdown(false);
     // Nevoláme blur() - necháme input bez focusu prirodzene
@@ -231,7 +247,7 @@ export default function LocationSection({ value, onChange, onBlur, error, isSavi
       <div className="flex flex-col lg:flex-row gap-3">
         {/* Okres */}
         <div ref={containerRef} className="flex-1 relative">
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
             {t('skills.districtTitle', 'Okres (voliteľné)')}
           </label>
           <input
@@ -268,11 +284,6 @@ export default function LocationSection({ value, onChange, onBlur, error, isSavi
                 : 'border-gray-300 dark:border-gray-700'
             }`}
           />
-          {districtError && (
-            <p className="text-xs text-red-500 mt-1">
-              {districtError}
-            </p>
-          )}
           {showDropdown && filteredDistricts.length > 0 && dropdownPosition && typeof window !== 'undefined' && createPortal(
             <div
               ref={dropdownRef}
@@ -337,19 +348,14 @@ export default function LocationSection({ value, onChange, onBlur, error, isSavi
           </div>
         )}
       </div>
-      <p className="text-xs text-gray-500 dark:text-gray-400 -mt-3.5">
-        {isSeeking
-          ? t('skills.locationHintSeeking', 'Sem napíš, kde hľadáš služby a zručnosti.')
-          : t('skills.locationHint', 'Sem napíš, kde ponúkaš svoje služby a zručnosti.')}
-      </p>
       {isSaving && (
         <p className="text-xs text-purple-600 dark:text-purple-300 mt-0.5">
           {t('skills.locationSaving', 'Ukladám miesto...')}
         </p>
       )}
-      {error && (
-        <p className="text-xs text-red-500 mt-0.5">
-          {error}
+      {(districtError || error) && (
+        <p className="mt-2 text-xs leading-snug text-red-500 whitespace-normal break-words">
+          {districtError || error}
         </p>
       )}
     </div>

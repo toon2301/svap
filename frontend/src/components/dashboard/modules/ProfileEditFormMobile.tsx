@@ -46,6 +46,7 @@ export default function ProfileEditFormMobile({
   const [lastName, setLastName] = useState(user.last_name || '');
   const [bio, setBio] = useState(user.bio || '');
   const [location, setLocation] = useState(user.location || '');
+  const [district, setDistrict] = useState(user.district || '');
   const [ico, setIco] = useState(user.ico || '');
   const [icoVisible, setIcoVisible] = useState(user.ico_visible || false);
   const [phone, setPhone] = useState(user.phone || '');
@@ -65,6 +66,7 @@ export default function ProfileEditFormMobile({
   const [originalLastName, setOriginalLastName] = useState(user.last_name || '');
   const [originalBio, setOriginalBio] = useState(user.bio || '');
   const [originalLocation, setOriginalLocation] = useState(user.location || '');
+  const [originalDistrict, setOriginalDistrict] = useState(user.district || '');
   const [originalIco, setOriginalIco] = useState(user.ico || '');
   const [originalIcoVisible, setOriginalIcoVisible] = useState(user.ico_visible || false);
   const [originalPhone, setOriginalPhone] = useState(user.phone || '');
@@ -96,6 +98,13 @@ export default function ProfileEditFormMobile({
     setOriginalIco(user.ico || '');
     setOriginalIcoVisible(user.ico_visible || false);
   }, [user.ico, user.ico_visible]);
+
+  React.useEffect(() => {
+    setLocation(user.location || '');
+    setDistrict(user.district || '');
+    setOriginalLocation(user.location || '');
+    setOriginalDistrict(user.district || '');
+  }, [user.location, user.district]);
 
   return (
     <div className="pt-2 pb-8">
@@ -150,6 +159,7 @@ export default function ProfileEditFormMobile({
         lastName={lastName}
         bio={bio}
         location={location}
+        district={district}
         ico={ico}
         icoVisible={icoVisible}
         phone={phone}
@@ -167,6 +177,7 @@ export default function ProfileEditFormMobile({
         originalLastName={originalLastName}
         originalBio={originalBio}
         originalLocation={originalLocation}
+        originalDistrict={originalDistrict}
         originalIco={originalIco}
         originalIcoVisible={originalIcoVisible}
         originalPhone={originalPhone}
@@ -184,6 +195,7 @@ export default function ProfileEditFormMobile({
         setLastName={setLastName}
         setBio={setBio}
         setLocation={setLocation}
+        setDistrict={setDistrict}
         setIco={setIco}
         setIcoVisible={setIcoVisible}
         setPhone={setPhone}
@@ -200,6 +212,7 @@ export default function ProfileEditFormMobile({
         setOriginalLastName={setOriginalLastName}
         setOriginalBio={setOriginalBio}
         setOriginalLocation={setOriginalLocation}
+        setOriginalDistrict={setOriginalDistrict}
         setOriginalIco={setOriginalIco}
         setOriginalIcoVisible={setOriginalIcoVisible}
         setOriginalPhone={setOriginalPhone}

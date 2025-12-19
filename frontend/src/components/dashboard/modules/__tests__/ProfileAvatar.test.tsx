@@ -37,10 +37,10 @@ describe('ProfileAvatar (modules/ProfileAvatar)', () => {
     expect(screen.getByText('UT').parentElement).toHaveClass('w-24', 'h-24', 'text-2xl');
     // Large
     rerender(<ThemeProvider><ProfileAvatar user={baseUser} size="large" /></ThemeProvider>);
-    expect(screen.getByText('UT').parentElement).toHaveClass('w-32', 'h-32', 'text-4xl');
+    expect(screen.getByText('UT').parentElement).toHaveClass('w-28', 'h-28', 'text-3xl');
     // XLarge
     rerender(<ThemeProvider><ProfileAvatar user={baseUser} size="xlarge" /></ThemeProvider>);
-    expect(screen.getByText('UT').parentElement).toHaveClass('w-48', 'h-48', 'text-6xl');
+    expect(screen.getByText('UT').parentElement).toHaveClass('w-36', 'h-36', 'text-4xl');
   });
 
   it('renders avatar image when avatar_url provided and calls onAvatarClick', () => {

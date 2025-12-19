@@ -86,10 +86,13 @@ export default function ProfileEditFields({
         <div className="flex items-center flex-1 min-w-0 justify-end pr-2 ml-4">
           <div className="w-px h-4 bg-gray-300 dark:bg-gray-700 mr-3 flex-shrink-0"></div>
           {(() => {
+            // Zobraz mesto/dedinu ak je, inak okres ak je, inak "Pridať lokalitu"
             const displayText =
-              user.location && user.location.trim()
+              (user.location && user.location.trim())
                 ? user.location
-                : t('profile.addLocation', 'Pridať lokalitu');
+                : (user.district && user.district.trim())
+                  ? user.district
+                  : t('profile.addLocation', 'Pridať lokalitu');
 
             const isLong = displayText.length > 15;
 

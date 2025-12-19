@@ -39,6 +39,7 @@ interface ProfileEditModalsProps {
   lastName: string;
   bio: string;
   location: string;
+  district: string;
   ico: string;
   icoVisible: boolean;
   phone: string;
@@ -58,6 +59,7 @@ interface ProfileEditModalsProps {
   originalLastName: string;
   originalBio: string;
   originalLocation: string;
+  originalDistrict: string;
   originalIco: string;
   originalIcoVisible: boolean;
   originalPhone: string;
@@ -77,6 +79,7 @@ interface ProfileEditModalsProps {
   setLastName: (value: string) => void;
   setBio: (value: string) => void;
   setLocation: (value: string) => void;
+  setDistrict: (value: string) => void;
   setIco: (value: string) => void;
   setIcoVisible: (value: boolean) => void;
   setPhone: (value: string) => void;
@@ -96,6 +99,7 @@ interface ProfileEditModalsProps {
   setOriginalLastName: (value: string) => void;
   setOriginalBio: (value: string) => void;
   setOriginalLocation: (value: string) => void;
+  setOriginalDistrict: (value: string) => void;
   setOriginalIco: (value: string) => void;
   setOriginalIcoVisible: (value: boolean) => void;
   setOriginalPhone: (value: string) => void;
@@ -144,6 +148,7 @@ export default function ProfileEditModals({
   lastName,
   bio,
   location,
+  district,
   ico,
   icoVisible,
   phone,
@@ -161,6 +166,7 @@ export default function ProfileEditModals({
   originalLastName,
   originalBio,
   originalLocation,
+  originalDistrict,
   originalIco,
   originalIcoVisible,
   originalPhone,
@@ -178,6 +184,7 @@ export default function ProfileEditModals({
   setLastName,
   setBio,
   setLocation,
+  setDistrict,
   setIco,
   setIcoVisible,
   setPhone,
@@ -195,6 +202,7 @@ export default function ProfileEditModals({
   setOriginalLastName,
   setOriginalBio,
   setOriginalLocation,
+  setOriginalDistrict,
   setOriginalIco,
   setOriginalIcoVisible,
   setOriginalPhone,
@@ -254,9 +262,13 @@ export default function ProfileEditModals({
       <LocationModal
         isOpen={isLocationModalOpen}
         location={location}
+        district={district}
         originalLocation={originalLocation}
+        originalDistrict={originalDistrict}
         setLocation={setLocation}
+        setDistrict={setDistrict}
         setOriginalLocation={setOriginalLocation}
+        setOriginalDistrict={setOriginalDistrict}
         onClose={() => setIsLocationModalOpen(false)}
         onUserUpdate={onUserUpdate}
       />

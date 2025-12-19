@@ -22,6 +22,8 @@ const baseUser: User = {
   created_at: '2023-01-01',
   updated_at: '2023-01-01',
   profile_completeness: 50,
+  location: '',
+  district: '',
 };
 
 describe('ProfileEditFormDesktop', () => {

@@ -23,6 +23,7 @@ const baseUser: User = {
   updated_at: '2023-01-01',
   profile_completeness: 50,
   website: '',
+  district: '',
   location: '',
   phone: '',
   phone_visible: false,
@@ -41,9 +42,15 @@ describe('ProfileEditFormDesktop extra coverage', () => {
 
     render(<ProfileEditFormDesktop user={baseUser} onUserUpdate={onUserUpdate} />);
 
-    const locationInput = screen.getByPlaceholderText('Zadajte svoje mesto alebo obec') as HTMLInputElement;
+    // Najprv okres
+    const districtInput = screen.getByPlaceholderText('Zadaj okres') as HTMLInputElement;
+    fireEvent.change(districtInput, { target: { value: 'Nitra' } });
+    fireEvent.blur(districtInput);
+
+    // Potom mesto/dedina – teraz sa zobrazí druhý input
+    const locationInput = screen.getByPlaceholderText('Zadaj, kde ponúkaš svoje služby') as HTMLInputElement;
     fireEvent.change(locationInput, { target: { value: 'Bratislava' } });
-    fireEvent.keyDown(locationInput, { key: 'Enter' });
+    fireEvent.blur(locationInput);
 
     const phoneInput = screen.getByPlaceholderText(/(Tel\. číslo|Telefónne číslo)/) as HTMLInputElement;
     fireEvent.change(phoneInput, { target: { value: '+421900000000' } });
@@ -58,7 +65,7 @@ describe('ProfileEditFormDesktop extra coverage', () => {
     fireEvent.keyDown(websiteInput, { key: 'Enter' });
 
     await waitFor(() => {
-      expect(api.patch).toHaveBeenCalledWith('/auth/profile/', { location: 'Bratislava' });
+      expect(api.patch).toHaveBeenCalledWith('/auth/profile/', { location: 'Bratislava', district: 'Nitra' });
       expect(api.patch).toHaveBeenCalledWith('/auth/profile/', { phone: '+421900000000' });
       expect(api.patch).toHaveBeenCalledWith('/auth/profile/', { phone_visible: true });
       expect(api.patch).toHaveBeenCalledWith('/auth/profile/', { website: 'https://a.example' });

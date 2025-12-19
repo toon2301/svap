@@ -76,33 +76,37 @@ export default function ProfileMobileView({
                     displayUser.username}
                 </h2>
                 {/* Email intentionally not shown here (kept in edit views) */}
-                {/* Lokalita */}
-                {displayUser.location && (
-                  <p className={`text-gray-600 dark:text-gray-300 ${displayUser.location.length > 15 ? 'text-xs' : 'text-sm'} flex items-center gap-1 mt-1`}>
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      strokeWidth={1.5}
-                      stroke="currentColor"
-                      className={`${displayUser.location.length > 15 ? 'size-2.5' : 'size-3'}`}
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"
-                      />
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z"
-                      />
-                    </svg>
-                    <span className="whitespace-nowrap overflow-hidden text-ellipsis">
-                      {displayUser.location}
-                    </span>
-                  </p>
-                )}
+                {/* Lokalita - zobrazí mesto/dedinu ak je, inak okres ak je */}
+                {(displayUser.location || displayUser.district) && (() => {
+                  const locationText = displayUser.location || displayUser.district || '';
+                  const isLong = locationText.length > 15;
+                  return (
+                    <p className={`text-gray-600 dark:text-gray-300 ${isLong ? 'text-xs' : 'text-sm'} flex items-center gap-1 mt-1`}>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        strokeWidth={1.5}
+                        stroke="currentColor"
+                        className={`${isLong ? 'size-2.5' : 'size-3'}`}
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"
+                        />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z"
+                        />
+                      </svg>
+                      <span className="whitespace-nowrap overflow-hidden text-ellipsis">
+                        {locationText}
+                      </span>
+                    </p>
+                  );
+                })()}
                 {/* IČO - iba pre firemné účty */}
                 {accountType === 'business' && displayUser.ico && (
                   <p className="text-gray-600 dark:text-gray-300 text-sm">{displayUser.ico}</p>

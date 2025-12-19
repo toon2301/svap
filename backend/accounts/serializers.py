@@ -185,7 +185,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
         model = User
         fields = [
             'id', 'username', 'email', 'first_name', 'last_name',
-            'user_type', 'phone', 'phone_visible', 'contact_email', 'bio', 'avatar', 'avatar_url', 'location',
+            'user_type', 'phone', 'phone_visible', 'contact_email', 'bio', 'avatar', 'avatar_url', 'location', 'district',
             'ico', 'ico_visible', 'job_title', 'job_title_visible', 'company_name', 'website', 'additional_websites', 'linkedin', 'facebook',
             'instagram', 'is_verified', 'is_public', 'created_at',
             'updated_at', 'profile_completeness', 'birth_date', 'gender'
@@ -270,6 +270,16 @@ class UserProfileSerializer(serializers.ModelSerializer):
             value = SecurityValidator.validate_input_safety(value)
             if len(value.strip()) > 25:
                 raise serializers.ValidationError("Lokácia môže mať maximálne 25 znakov")
+            return value.strip()
+        return value
+
+    def validate_district(self, value):
+        """Validácia okresu v profile používateľa"""
+        if value:
+            value = SecurityValidator.validate_input_safety(value)
+            # Okres je voľné textové pole, ale obmedzíme dĺžku kvôli UI / DB
+            if len(value.strip()) > 100:
+                raise serializers.ValidationError("Okres môže mať maximálne 100 znakov")
             return value.strip()
         return value
 

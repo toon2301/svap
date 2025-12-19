@@ -35,6 +35,7 @@ class User(AbstractUser):
         validators=[validate_image_file]
     )
     location = models.CharField(_('Lokalita'), max_length=25, blank=True)
+    district = models.CharField(_('Okres'), max_length=100, blank=True)
     ico = models.CharField(_('IČO'), max_length=14, blank=True)
     ico_visible = models.BooleanField(_('Zobraziť IČO verejne'), default=False)
     job_title = models.CharField(_('Profesia'), max_length=100, blank=True)
