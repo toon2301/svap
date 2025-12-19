@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom';
 import { api, endpoints } from '../../../../lib/api';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { ProfileTab } from './profileTypes';
-import type { Offer } from './profileOffersTypes';
+import type { Offer, ExperienceUnit } from './profileOffersTypes';
 import { HOURS_DAYS } from './profileOffersTypes';
 import type { OpeningHours } from '../skills/skillDescriptionModal/types';
 import ProfileOfferCard from './ProfileOfferCard';
