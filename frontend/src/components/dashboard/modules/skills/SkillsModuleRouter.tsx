@@ -9,7 +9,7 @@ import SkillsScreen from './SkillsScreen';
 import SkillsCategoryScreen from './SkillsCategoryScreen';
 import SkillsDescriptionScreen from './SkillsDescriptionScreen';
 import AddCustomCategoryScreen from './AddCustomCategoryScreen';
-import type { DashboardSkill } from '../hooks/useSkillsModals';
+import type { DashboardSkill } from '../../hooks/useSkillsModals';
 import type { OpeningHours } from './skillDescriptionModal/types';
 
 interface SkillsModuleRouterProps {
