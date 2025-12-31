@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useMemo, useState } from 'react';
-import type { User } from '../../types';
+import type { User } from '@/types';
 import { api, endpoints } from '@/lib/api';
 
 interface BackendSkill {
