@@ -5,7 +5,7 @@ import {
   useEffect,
   useRef,
   useMemo,
-  type KeyboardEvent,
+  type KeyboardEvent as ReactKeyboardEvent,
   type FormEvent,
 } from "react";
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -331,7 +331,7 @@ export default function SearchModule({ user }: SearchModuleProps) {
     }
   };
 
-  const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyDown = (event: ReactKeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'Enter') {
       void handleSearch();
     }
