@@ -28,7 +28,7 @@ function FlipButton({ onToggle, extraClasses = '' }: FlipButtonProps) {
       }}
       aria-label="Otočiť"
       title="Otočiť"
-      className={`absolute -top-2.5 -right-3 -translate-y-1/2 p-1 rounded-full bg-purple-50 dark:bg-purple-900/80 dark:backdrop-blur-sm border border-purple-200 dark:border-purple-800/60 text-purple-700 dark:text-white hover:bg-purple-100 dark:hover:bg-purple-900/90 transition-colors z-40 ${extraClasses}`}
+      className={`absolute -top-2.5 -right-3 -translate-y-1/2 p-1 rounded-full bg-purple-50 dark:bg-purple-900/80 dark:backdrop-blur-sm border border-purple-200 dark:border-purple-800/60 text-purple-700 dark:text-white hover:bg-purple-100 dark:hover:bg-purple-900/90 transition-colors z-40 filter-modal-flip-button ${extraClasses}`}
     >
       <svg
         xmlns="http://www.w3.org/2000/svg"

@@ -387,6 +387,10 @@ class OfferedSkillSerializer(serializers.ModelSerializer):
     district = serializers.CharField(required=False, allow_blank=True)
     urgency = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     duration_type = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    # Meno používateľa prehľadne pre vyhľadávanie / listingy (read-only)
+    user_display_name = serializers.CharField(source='user.display_name', read_only=True)
+    # ID používateľa pre identifikáciu vlastných ponúk vo vyhľadávaní
+    user_id = serializers.IntegerField(source='user.id', read_only=True)
     
     class Meta:
         model = OfferedSkill
@@ -394,9 +398,10 @@ class OfferedSkillSerializer(serializers.ModelSerializer):
             'id', 'category', 'subcategory', 'description', 'detailed_description',
             'experience_value', 'experience_unit', 'experience', 'tags', 'images',
             'price_from', 'price_currency', 'district', 'location', 'opening_hours',
-            'is_seeking', 'urgency', 'duration_type', 'created_at', 'updated_at'
+            'is_seeking', 'urgency', 'duration_type', 'created_at', 'updated_at',
+            'user_display_name', 'user_id',
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'created_at', 'updated_at', 'user_display_name', 'user_id']
     
     def get_experience(self, obj):
         """Vráti experience ako objekt (ak existuje)"""

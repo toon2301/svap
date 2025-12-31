@@ -35,6 +35,7 @@ interface SidebarProps {
   onLanguageClick?: () => void;
   onAccountTypeClick?: () => void;
   onPrivacyClick?: () => void;
+  onSearchClick?: () => void;
 }
 
 const sidebarItems: SidebarItem[] = [
@@ -74,11 +75,18 @@ export default function Sidebar({
   onClose,
   onLanguageClick,
   onAccountTypeClick,
-  onPrivacyClick
+  onPrivacyClick,
+  onSearchClick,
 }: SidebarProps) {
   const { t } = useLanguage();
   const { theme, toggleTheme } = useTheme();
   const handleItemClick = (itemId: string) => {
+    // Desktop: pre vyhľadávanie otvor špeciálny search panel namiesto zmeny hlavného modulu
+    if (itemId === 'search' && onSearchClick && !isMobile) {
+      onSearchClick();
+      return;
+    }
+
     // Pre jazyk otvor pravý sidebar namiesto zmeny hlavného modulu
     if (itemId === 'language' && onLanguageClick) {
       onLanguageClick();

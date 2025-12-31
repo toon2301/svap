@@ -1,58 +1,74 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import SearchModule from '../SearchModule';
+import type { User } from '../../../../types';
 
-// Mock heroicons
-jest.mock('@heroicons/react/24/outline', () => ({
-  MagnifyingGlassIcon: () => <div>SearchIcon</div>,
+jest.mock('@/lib/api', () => ({
+  api: {
+    get: jest.fn().mockResolvedValue({
+      data: { skills: [], users: [] },
+    }),
+  },
+  endpoints: {
+    dashboard: {
+      search: '/dashboard/search/',
+    },
+  },
 }));
 
+const mockUser: User = {
+  id: 1,
+  username: 'testuser',
+  email: 'test@example.com',
+  first_name: 'Test',
+  last_name: 'User',
+  user_type: 'individual',
+  is_verified: false,
+  is_public: true,
+  created_at: '',
+  updated_at: '',
+  profile_completeness: 0,
+};
+
 describe('SearchModule', () => {
-  it('renders search input', () => {
-    render(<SearchModule />);
-    
-    const searchInput = screen.getByPlaceholderText(/Hľada(ť|jte) používateľov/i);
-    expect(searchInput).toBeInTheDocument();
-  });
+  it('renders heading and inputs', () => {
+    render(<SearchModule user={mockUser} />);
 
-  it('renders heading', () => {
-    render(<SearchModule />);
-    
     expect(screen.getByText('Vyhľadávanie')).toBeInTheDocument();
+    expect(
+      screen.getByPlaceholderText(/Hľada(ť|jte) používateľov, zručnosti/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByPlaceholderText(/Kde hľadáš\? \(okres, mesto\.\.\.\)/i),
+    ).toBeInTheDocument();
   });
 
-  it('shows empty state when no search query', () => {
-    render(<SearchModule />);
-    
+  it('shows empty state when nothing searched yet', () => {
+    render(<SearchModule user={mockUser} />);
+
     expect(screen.getByText('Začnite vyhľadávať')).toBeInTheDocument();
-    expect(screen.getByText(/Nájdite používateľov so zručnosťami/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Nájdite používateľov so zručnosťami/i),
+    ).toBeInTheDocument();
   });
 
-  it('updates search query on input change', () => {
-    render(<SearchModule />);
-    
-    const searchInput = screen.getByPlaceholderText(/Hľada(ť|jte) používateľov/i) as HTMLInputElement;
+  it('updates search query on input change and triggers search on submit', async () => {
+    render(<SearchModule user={mockUser} />);
+
+    const searchInput = screen.getByPlaceholderText(
+      /Hľada(ť|jte) používateľov, zručnosti/i,
+    ) as HTMLInputElement;
     fireEvent.change(searchInput, { target: { value: 'React' } });
-    
+
     expect(searchInput.value).toBe('React');
-  });
 
-  it('shows search results message when query is entered', () => {
-    render(<SearchModule />);
-    
-    const searchInput = screen.getByPlaceholderText(/Hľada(ť|jte) používateľov/i);
-    fireEvent.change(searchInput, { target: { value: 'TypeScript' } });
-    
-    expect(screen.getByText(/Výsledky vyhľadávania pre:/i)).toBeInTheDocument();
-  });
+    const submitButton = screen.getByRole('button', { name: /Hľadať/i });
+    fireEvent.click(submitButton);
 
-  it('shows placeholder message for search functionality', () => {
-    render(<SearchModule />);
-    
-    const searchInput = screen.getByPlaceholderText(/Hľada(ť|jte) používateľov/i);
-    fireEvent.change(searchInput, { target: { value: 'test' } });
-    
-    expect(screen.getByText(/Funkcia vyhľadávania bude.*čoskoro/i)).toBeInTheDocument();
+    await waitFor(() =>
+      expect(
+        screen.getByText(/Pre zadané vyhľadávanie sa nenašli žiadne výsledky/i),
+      ).toBeInTheDocument(),
+    );
   });
 });
-

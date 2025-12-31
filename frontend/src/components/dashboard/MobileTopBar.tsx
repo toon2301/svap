@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Bars3Icon } from '@heroicons/react/24/outline';
+import { Bars3Icon, UserCircleIcon } from '@heroicons/react/24/outline';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 interface MobileTopBarProps {
@@ -15,7 +15,16 @@ interface MobileTopBarProps {
   onSaveClick?: () => void;
 }
 
-export default function MobileTopBar({ onMenuClick, isEditMode = false, onBackClick, onProfileClick, activeModule, activeRightItem, subcategory, onSaveClick }: MobileTopBarProps) {
+export default function MobileTopBar({
+  onMenuClick,
+  isEditMode = false,
+  onBackClick,
+  onProfileClick,
+  activeModule,
+  activeRightItem,
+  subcategory,
+  onSaveClick,
+}: MobileTopBarProps) {
   const { t } = useLanguage();
   const [describeMode, setDescribeMode] = React.useState<'offer' | 'search' | null>(null);
 
@@ -33,6 +42,7 @@ export default function MobileTopBar({ onMenuClick, isEditMode = false, onBackCl
       }
     }
   }, [activeModule]);
+
   return (
     <div className="lg:hidden fixed top-0 left-0 right-0 z-30 bg-white dark:bg-black border-b border-gray-200 dark:border-gray-800 shadow-sm">
       <div className="grid grid-cols-3 items-center px-3 py-0 h-12">
@@ -111,26 +121,46 @@ export default function MobileTopBar({ onMenuClick, isEditMode = false, onBackCl
               className="p-2 -mr-2"
               aria-label="Zatvoriť"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={1.5}
+                stroke="currentColor"
+                className="w-6 h-6"
+              >
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
           )}
-          
-          
-          {/* Hamburger menu - len v profile module, nie v edit móde ani v jazyk modale ani v account-type ani v upozorneniach */}
-          {activeModule === 'profile' && !isEditMode && activeRightItem !== 'language' && activeRightItem !== 'account-type' && (
+
+          {/* Ikona profilu – rýchly prechod na profil (ak nie sme na profile) */}
+          {onProfileClick && activeModule !== 'profile' && activeModule !== 'skills-describe' && (
             <button
-              onClick={onMenuClick}
-              className="p-1.5 rounded-lg text-gray-600 dark:text-gray-300 hover:text-purple-600 hover:bg-gray-50 dark:hover:bg-gray-900 transition-all"
-              aria-label={t('common.menu', 'Menu')}
+              onClick={onProfileClick}
+              className="p-1.5 rounded-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-black text-gray-600 dark:text-gray-300 shadow-sm hover:border-purple-400 hover:text-purple-600 hover:bg-gray-50 dark:hover:bg-gray-900 transition-all"
+              aria-label={t('navigation.profile', 'Profil')}
             >
-              <Bars3Icon className="w-5 h-5" strokeWidth={2} />
+              <UserCircleIcon className="w-5 h-5" />
             </button>
           )}
+
+          {/* Hamburger menu - len v profile module, nie v edit móde ani v jazyk/account-type/prípadne privacy modale */}
+          {activeModule === 'profile' &&
+            !isEditMode &&
+            activeRightItem !== 'language' &&
+            activeRightItem !== 'account-type' &&
+            activeRightItem !== 'privacy' && (
+              <button
+                onClick={onMenuClick}
+                className="p-1.5 rounded-lg text-gray-600 dark:text-gray-300 hover:text-purple-600 hover:bg-gray-50 dark:hover:bg-gray-900 transition-all"
+                aria-label={t('common.menu', 'Menu')}
+              >
+                <Bars3Icon className="w-5 h-5" strokeWidth={2} />
+              </button>
+            )}
         </div>
       </div>
     </div>
   );
 }
-

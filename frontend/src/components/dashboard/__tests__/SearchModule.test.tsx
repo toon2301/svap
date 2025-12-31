@@ -1,55 +1,80 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import SearchModule from '../modules/SearchModule';
+import type { User } from '../../../types';
 
-// Mock framer-motion
-jest.mock('framer-motion', () => ({
-  motion: {
-    div: ({ children, ...props }: any) => <div {...props}>{children}</div>,
+jest.mock('@/lib/api', () => ({
+  api: {
+    get: jest.fn().mockResolvedValue({
+      data: { skills: [], users: [] },
+    }),
+  },
+  endpoints: {
+    dashboard: {
+      search: '/dashboard/search/',
+    },
   },
 }));
 
-describe('SearchModule', () => {
-  it('renders search header', () => {
-    render(<SearchModule />);
-    expect(screen.getByText('Vyhľadávanie')).toBeInTheDocument();
-  });
+const mockUser: User = {
+  id: 1,
+  username: 'testuser',
+  email: 'test@example.com',
+  first_name: 'Test',
+  last_name: 'User',
+  user_type: 'individual',
+  is_verified: false,
+  is_public: true,
+  created_at: '',
+  updated_at: '',
+  profile_completeness: 0,
+};
 
-  it('renders search input with placeholder', () => {
-    render(<SearchModule />);
-    const searchInput = screen.getByPlaceholderText(/Hľada(ť|jte) používateľov, zručnosti/i);
-    expect(searchInput).toBeInTheDocument();
+describe('SearchModule', () => {
+  it('renders search header and inputs', () => {
+    render(<SearchModule user={mockUser} />);
+
+    expect(screen.getByText('Vyhľadávanie')).toBeInTheDocument();
+    expect(
+      screen.getByPlaceholderText(/Hľada(ť|jte) používateľov, zručnosti/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByPlaceholderText(/Kde hľadáš\? \(okres, mesto\.\.\.\)/i),
+    ).toBeInTheDocument();
   });
 
   it('updates search query when typing', () => {
-    render(<SearchModule />);
-    const searchInput = screen.getByPlaceholderText(/Hľada(ť|jte) používateľov, zručnosti/i);
+    render(<SearchModule user={mockUser} />);
+
+    const searchInput = screen.getByPlaceholderText(
+      /Hľada(ť|jte) používateľov, zručnosti/i,
+    );
     fireEvent.change(searchInput, { target: { value: 'React' } });
+
     expect(searchInput).toHaveValue('React');
   });
 
-  // Filters are not yet implemented in current UI
+  it('shows empty state before first search', () => {
+    render(<SearchModule user={mockUser} />);
 
-  // Filtering toggle test removed; not applicable to current UI
-
-  it('renders search results summary when query entered', () => {
-    render(<SearchModule />);
-    const input = screen.getByPlaceholderText(/Hľada(ť|jte) používateľov, zručnosti/i);
-    fireEvent.change(input, { target: { value: 'React' } });
-    expect(screen.getByText(/Výsledky vyhľadávania pre:/)).toBeInTheDocument();
-  });
-
-  it('shows empty state when no search query', () => {
-    render(<SearchModule />);
     expect(screen.getByText('Začnite vyhľadávať')).toBeInTheDocument();
   });
 
-  it('shows results information when search query is entered', () => {
-    render(<SearchModule />);
-    const searchInput = screen.getByPlaceholderText(/Hľada(ť|jte) používateľov, zručnosti/i);
-    fireEvent.change(searchInput, { target: { value: 'React' } });
-    expect(screen.getByText(/"React"/)).toBeInTheDocument();
-  });
+  it('performs search and shows no-results message when nothing found', async () => {
+    render(<SearchModule user={mockUser} />);
 
-  // Filter options not present in current simplified UI; test removed
+    const searchInput = screen.getByPlaceholderText(
+      /Hľada(ť|jte) používateľov, zručnosti/i,
+    );
+    fireEvent.change(searchInput, { target: { value: 'React' } });
+
+    const submitButton = screen.getByRole('button', { name: /Hľadať/i });
+    fireEvent.click(submitButton);
+
+    await waitFor(() =>
+      expect(
+        screen.getByText(/Pre zadané vyhľadávanie sa nenašli žiadne výsledky/i),
+      ).toBeInTheDocument(),
+    );
+  });
 });

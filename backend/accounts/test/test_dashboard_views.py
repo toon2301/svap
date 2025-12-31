@@ -61,25 +61,32 @@ class DashboardViewsTestCase(TestCase):
         self.assertIn('pagination', response.data)
 
     def test_dashboard_search_view_with_query(self):
-        """Test vyhľadávania s query parametrom"""
+        """Test vyhľadávania s query parametrom – základná štruktúra odpovede"""
         url = reverse('accounts:dashboard_search')
-        response = self.client.get(url, {'q': 'React'})
-        
+        response = self.client.get(url, {'q': 'test'})
+
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn('skills', response.data)
         self.assertIn('users', response.data)
 
-    def test_dashboard_search_view_with_filters(self):
-        """Test vyhľadávania s filtrami"""
+    def test_dashboard_search_advanced_filters_do_not_crash(self):
+        """Test, že pokročilé filtre fungujú bez chyby (aj bez dát)"""
         url = reverse('accounts:dashboard_search')
-        response = self.client.get(url, {
-            'q': 'Python',
-            'category': 'programming',
-            'level': 'intermediate',
-            'location': 'Bratislava'
-        })
-        
+        response = self.client.get(
+            url,
+            {
+                'q': 'auto',
+                'location': 'Nitra',
+                'offer_type': 'offer',
+                'only_my_location': '1',
+                'price_min': '10',
+                'price_max': '100',
+            },
+        )
+
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn('skills', response.data)
+        self.assertIn('users', response.data)
 
     def test_dashboard_favorites_get_success(self):
         """Test získania obľúbených"""

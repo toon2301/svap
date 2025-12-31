@@ -2,6 +2,46 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Skryť FlipButton ikony v kartách zručností keď je filter modal otvorený */
+body.filter-modal-open .filter-modal-flip-button {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* Skryť spinner kontroly (šípky hore/dole) pri number input poliach */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+/* Progress bar animácia pre vyhľadávanie */
+@keyframes progress-bar {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.animate-progress-bar {
+  animation: progress-bar 1.5s ease-in-out infinite;
+  background-size: 200% 100%;
+  background-image: linear-gradient(
+    to right,
+    transparent,
+    rgba(255, 255, 255, 0.3),
+    transparent
+  );
+}
+
 :root {
   /* Modern professional colors */
   --primary: #7C3AED;

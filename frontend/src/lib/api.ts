@@ -146,11 +146,11 @@ export const endpoints = {
   },
   // Dashboard
   dashboard: {
-    home: '/dashboard/home/',
-    search: '/dashboard/search/',
-    favorites: '/dashboard/favorites/',
-    profile: '/dashboard/profile/',
-    settings: '/dashboard/settings/',
+    home: '/auth/dashboard/home/',
+    search: '/auth/dashboard/search/',
+    favorites: '/auth/dashboard/favorites/',
+    profile: '/auth/dashboard/profile/',
+    settings: '/auth/dashboard/settings/',
   },
   // Skills
   skills: {

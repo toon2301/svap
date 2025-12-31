@@ -147,7 +147,7 @@ export default function ModuleRouter({
         />
       );
     case 'search':
-      return <SearchModule />;
+      return <SearchModule user={user} />;
     case 'favorites':
       return (
         <div className="text-center py-20">

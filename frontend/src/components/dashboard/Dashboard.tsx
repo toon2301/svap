@@ -6,6 +6,7 @@ import type { User } from '../../types';
 import DashboardLayout from './DashboardLayout';
 import ModuleRouter from './ModuleRouter';
 import DashboardModals from './DashboardModals';
+import SearchModule from './modules/SearchModule';
 import { useDashboardState } from './hooks/useDashboardState';
 import { useSkillsModals, type DashboardSkill } from './hooks/useSkillsModals';
 import { api, endpoints } from '../../lib/api';
@@ -20,6 +21,7 @@ export default function Dashboard({ initialUser }: DashboardProps) {
   const skillsState = useSkillsModals();
   const [isInSubcategories, setIsInSubcategories] = useState(false);
   const skillsCategoryBackHandlerRef = React.useRef<(() => void) | null>(null);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   const {
     user,
@@ -245,6 +247,41 @@ export default function Dashboard({ initialUser }: DashboardProps) {
     }
   }, [user, loadSkills]);
 
+  // Global klávesová skratka "/" pre otvorenie vyhľadávania na desktop verzii
+  // Musí byť pred early return, aby sa hooks volali vždy v rovnakom poradí
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Ignoruj, ak používateľ píše do inputu, textarey alebo je v modale
+      const target = event.target as HTMLElement;
+      const isInputActive = 
+        target.tagName === 'INPUT' || 
+        target.tagName === 'TEXTAREA' || 
+        target.isContentEditable ||
+        target.closest('[role="dialog"]') !== null ||
+        target.closest('[role="textbox"]') !== null ||
+        document.body.classList.contains('filter-modal-open');
+
+      // "/" - otvor vyhľadávanie (len na desktop verzii)
+      if (event.key === '/' && !isInputActive) {
+        // Skontroluj, či sme na desktop verzii (lg a vyššie)
+        if (window.innerWidth >= 1024) {
+          event.preventDefault();
+          // Ak už nie je otvorené, otvor ho
+          if (!isSearchOpen) {
+            setIsSearchOpen(true);
+          }
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isSearchOpen]);
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[var(--background)]">
@@ -300,6 +337,14 @@ export default function Dashboard({ initialUser }: DashboardProps) {
     }
   };
 
+  const handleSidebarSearchClick = () => {
+    setIsSearchOpen((prev) => !prev);
+  };
+
+  const handleSearchClose = () => {
+    setIsSearchOpen(false);
+  };
+
   // Custom back handler for skills-select-category
   const handleSkillsCategoryBack = () => {
     // Ak máme handler z SkillsCategoryScreen a sme v podkategóriách, volaj ho
@@ -309,6 +354,12 @@ export default function Dashboard({ initialUser }: DashboardProps) {
       // Inak použi štandardnú navigáciu
       handleMobileBack(isInSubcategories);
     }
+  };
+
+  const handleMainModuleChange = (moduleId: string) => {
+    // Pri prepnutí hlavného modulu zatvor vyhľadávací panel
+    setIsSearchOpen(false);
+    handleModuleChange(moduleId);
   };
 
   const moduleContent = (
@@ -350,7 +401,7 @@ export default function Dashboard({ initialUser }: DashboardProps) {
         activeRightItem={activeRightItem}
         isRightSidebarOpen={isRightSidebarOpen}
         isMobileMenuOpen={isMobileMenuOpen}
-        onModuleChange={handleModuleChange}
+        onModuleChange={handleMainModuleChange}
         onLogout={handleLogout}
         onRightSidebarClose={handleRightSidebarClose}
         onRightItemClick={handleRightItemClick}
@@ -361,6 +412,10 @@ export default function Dashboard({ initialUser }: DashboardProps) {
         onSidebarLanguageClick={handleSidebarLanguageClick}
         onSidebarAccountTypeClick={handleSidebarAccountTypeClick}
         onSidebarPrivacyClick={handleSidebarPrivacyClick}
+        isSearchOpen={isSearchOpen}
+        onSidebarSearchClick={handleSidebarSearchClick}
+        onSearchClose={handleSearchClose}
+        searchOverlay={user ? <SearchModule user={user} /> : null}
         subcategory={activeModule === 'skills-describe' ? selectedSkillsCategory?.subcategory : null}
         onSkillSaveClick={activeModule === 'skills-describe' ? handleSkillSave : undefined}
       >
