@@ -1,5 +1,5 @@
 import type { Offer } from '../profile/profileOffersTypes';
-import type { User } from '../../../types';
+import type { User } from '@/types';
 
 export type SearchSkill = Offer & {
   created_at?: string;
