@@ -114,17 +114,19 @@ export default function DashboardLayout({
 
   return (
     <div className="h-screen bg-[var(--background)] text-[var(--foreground)] overflow-hidden">
-      {/* Mobile Top Bar */}
-      <MobileTopBar
-        onMenuClick={onMobileMenuOpen}
-        isEditMode={isMobileEditMode}
-        onBackClick={onMobileBack}
-        onProfileClick={onMobileProfileClick}
-        activeModule={activeModule}
-        activeRightItem={activeRightItem}
-        subcategory={subcategory}
-        onSaveClick={onSkillSaveClick}
-      />
+      {/* Mobile Top Bar - skryť pre search modul */}
+      {activeModule !== 'search' && (
+        <MobileTopBar
+          onMenuClick={onMobileMenuOpen}
+          isEditMode={isMobileEditMode}
+          onBackClick={onMobileBack}
+          onProfileClick={onMobileProfileClick}
+          activeModule={activeModule}
+          activeRightItem={activeRightItem}
+          subcategory={subcategory}
+          onSaveClick={onSkillSaveClick}
+        />
+      )}
 
       {/* Mobile Bottom Nav */}
       {!(isRightSidebarOpen && activeModule === 'profile') && activeModule !== 'skills-describe' && (
@@ -162,8 +164,16 @@ export default function DashboardLayout({
         </div>
 
         {/* Main Content */}
-        <main className="relative h-screen overflow-y-auto pt-16 pb-24 lg:pt-0 lg:pb-0 elegant-scrollbar">
-          <div className="px-4 sm:px-6 lg:px-8 py-4 lg:py-8">
+        <main className={`relative h-screen overflow-y-auto pb-24 lg:pt-0 lg:pb-0 elegant-scrollbar ${
+          activeModule === 'search' ? 'pt-0' : 'pt-16'
+        }`}>
+          <div
+            className={`py-4 lg:py-8 ${
+              activeModule === 'search'
+                ? 'px-0 sm:px-2 lg:px-8' // mobil: ešte menší padding, maximálne rozšírený obsah pre vyhľadávanie
+                : 'px-4 sm:px-6 lg:px-8'
+            }`}
+          >
             <div
               className={`w-full mx-auto ${
                 activeModule === 'profile' && !isProfileEditMode 
