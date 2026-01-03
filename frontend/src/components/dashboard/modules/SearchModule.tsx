@@ -36,6 +36,7 @@ export default function SearchModule({ user }: SearchModuleProps) {
   const [priceMax, setPriceMax] = useState('');
   const [recentSearches, setRecentSearches] = useState<SearchResults[]>([]);
   const [suggestedSkills, setSuggestedSkills] = useState<SearchSkill[]>([]);
+  const [isFromRecentSearch, setIsFromRecentSearch] = useState(false);
   const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -87,8 +88,35 @@ export default function SearchModule({ user }: SearchModuleProps) {
           return;
         }
 
+        // Pomocná funkcia na zistenie, či je karta používateľa prihláseného v systéme
+        const isOwnSkill = (skill: SearchSkill) => {
+          // 1) Preferujeme porovnanie podľa user_id (najspoľahlivejšie)
+          if (typeof skill.user_id === 'number' && skill.user_id === user.id) {
+            return true;
+          }
+
+          // 2) Fallback – porovnanie podľa mena, ak backend neposiela user_id
+          const skillOwnerName = (skill as any).user_display_name as string | undefined;
+          const currentDisplayName =
+            (user as any).display_name ||
+            [user.first_name, user.last_name].filter(Boolean).join(' ').trim() ||
+            user.username;
+
+          if (
+            skillOwnerName &&
+            typeof skillOwnerName === 'string' &&
+            currentDisplayName &&
+            typeof currentDisplayName === 'string' &&
+            skillOwnerName.trim().toLowerCase() === currentDisplayName.trim().toLowerCase()
+          ) {
+            return true;
+          }
+
+          return false;
+        };
+
         // Filtrovať vlastné karty používateľa - nezobrazovať ich v návrhoch
-        const skills = allSkills.filter((s) => s.user_id !== user.id);
+        const skills = allSkills.filter((s) => !isOwnSkill(s));
 
         if (!skills.length) {
           setSuggestedSkills([]);
@@ -96,7 +124,7 @@ export default function SearchModule({ user }: SearchModuleProps) {
         }
 
         // Rozdeliť na vlastné karty a ostatných (pre matching logiku)
-        const ownSkills = allSkills.filter((s) => s.user_id === user.id);
+        const ownSkills = allSkills.filter((s) => isOwnSkill(s));
         const otherSkills = skills;
 
         // Normalizačná funkcia na porovnávanie názvov (bez diakritiky, lowercase)
@@ -248,11 +276,13 @@ export default function SearchModule({ user }: SearchModuleProps) {
       setResults({ skills: [], users: [] });
       setError(null);
       setHasSearched(true);
+      setIsFromRecentSearch(false);
       return;
     }
 
     setIsSearching(true);
     setError(null);
+    setIsFromRecentSearch(false);
 
     try {
       const response = await api.get(endpoints.dashboard.search, {
@@ -330,6 +360,7 @@ export default function SearchModule({ user }: SearchModuleProps) {
   const handleRecentResultClick = (result: SearchResults) => {
     setResults(result);
     setHasSearched(true);
+    setIsFromRecentSearch(true);
     setError(null);
   };
 
@@ -401,6 +432,7 @@ export default function SearchModule({ user }: SearchModuleProps) {
                           setResults(null);
                           setError(null);
                           setHasSearched(false);
+                          setIsFromRecentSearch(false);
                           searchInputRef.current?.focus();
                         }}
                         className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
@@ -524,8 +556,8 @@ export default function SearchModule({ user }: SearchModuleProps) {
                 </div>
               )}
 
-              {/* Návrhy pre používateľa – zobrazia sa len keď nie je zadaný text */}
-              {!error && !searchQuery.trim() && suggestedSkills.length > 0 && (
+              {/* Návrhy pre používateľa – zobrazia sa len keď nie je zadaný text a ešte neprebehlo vyhľadávanie */}
+              {!error && !hasSearched && !searchQuery.trim() && suggestedSkills.length > 0 && (
                 <div className="mt-4">
                   <h4 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2 px-1">
                     {t('search.suggestionsForYou', 'Návrhy pre vás')}
@@ -549,6 +581,7 @@ export default function SearchModule({ user }: SearchModuleProps) {
                             // Po kliknutí na návrh nastavíme výsledky len na tento návrh
                             setResults({ skills: [skill], users: [] });
                             setHasSearched(true);
+                            setIsFromRecentSearch(false);
                             setError(null);
                           }}
                           className="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900 text-sm text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors flex items-start gap-3"
@@ -585,6 +618,55 @@ export default function SearchModule({ user }: SearchModuleProps) {
 
               {hasSearched && !error && results && (
                 <div className="mt-4 space-y-1">
+                  {/* Tlačidlo "Späť" na vrátenie sa k návrhom - len pri kliknutí na posledné vyhľadávanie */}
+                  {isFromRecentSearch && (
+                    <>
+                      {/* Desktop verzia - s šípkou */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setResults(null);
+                          setHasSearched(false);
+                          setIsFromRecentSearch(false);
+                          setSearchQuery('');
+                          setError(null);
+                          searchInputRef.current?.focus();
+                        }}
+                        className="hidden lg:flex w-full text-left px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors items-center gap-2 mb-2"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          strokeWidth={1.5}
+                          stroke="currentColor"
+                          className="w-4 h-4"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"
+                          />
+                        </svg>
+                        <span>{t('search.back', 'Späť')}</span>
+                      </button>
+                      {/* Mobilná verzia - len text, bez šípky */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setResults(null);
+                          setHasSearched(false);
+                          setIsFromRecentSearch(false);
+                          setSearchQuery('');
+                          setError(null);
+                          searchInputRef.current?.focus();
+                        }}
+                        className="lg:hidden w-full text-center px-3 py-2.5 rounded-lg bg-gray-100 dark:bg-gray-800 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 active:bg-gray-300 dark:active:bg-gray-600 transition-colors mb-3"
+                      >
+                        {t('search.back', 'Späť')}
+                      </button>
+                    </>
+                  )}
                   {hasPanelResults ? (
                     <>
                       {showSkills &&
