@@ -11,6 +11,7 @@ interface ProfileOfferCardMobileProps {
   accountType: 'personal' | 'business';
   isTapped: boolean;
   onCardClick: () => void;
+  isHighlighted?: boolean;
 }
 
 export function ProfileOfferCardMobile({
@@ -18,6 +19,7 @@ export function ProfileOfferCardMobile({
   accountType,
   isTapped,
   onCardClick,
+  isHighlighted = false,
 }: ProfileOfferCardMobileProps) {
   const { t } = useLanguage();
 
@@ -59,7 +61,9 @@ export function ProfileOfferCardMobile({
     <button
       key={offer.id}
       type="button"
-      className="relative w-full text-left rounded-2xl overflow-visible border border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-[#0f0f10] shadow-sm active:scale-[0.99] transition-transform"
+      className={`relative w-full text-left rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-[#0f0f10] shadow-sm active:scale-[0.99] transition-transform ${
+        isHighlighted ? 'highlight-offer-card' : ''
+      }`}
       onClick={onCardClick}
     >
       {/* Veľký text "Ponúkam" alebo "Hľadám" cez celú kartu – mobilná verzia, skryje sa pri prvom kliknutí */}

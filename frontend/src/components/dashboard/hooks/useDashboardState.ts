@@ -133,7 +133,25 @@ export function useDashboardState(initialUser?: User): UseDashboardStateResult {
 
   const handleModuleChange = useCallback(
     (moduleId: string) => {
-      const validModules = ['home', 'profile', 'search', 'favorites', 'settings', 'create', 'messages', 'notifications', 'language', 'account-type', 'skills', 'skills-offer', 'skills-search', 'skills-select-category', 'skills-describe', 'skills-add-custom-category'];
+      const validModules = [
+        'home',
+        'profile',
+        'user-profile',
+        'search',
+        'favorites',
+        'settings',
+        'create',
+        'messages',
+        'notifications',
+        'language',
+        'account-type',
+        'skills',
+        'skills-offer',
+        'skills-search',
+        'skills-select-category',
+        'skills-describe',
+        'skills-add-custom-category',
+      ];
       if (!validModules.includes(moduleId)) return;
       setActiveModule(moduleId);
       if (typeof window !== 'undefined') {
@@ -267,6 +285,22 @@ export function useDashboardState(initialUser?: User): UseDashboardStateResult {
   };
 
   const handleMobileBack = useCallback((isInSubcategories: boolean = false) => {
+    // Ak sme na cudzom profile, vráť sa na vyhľadávanie
+    if (activeModule === 'user-profile') {
+      setActiveModule('search');
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem('activeModule', 'search');
+        } catch {
+          // ignore
+        }
+      }
+      setIsRightSidebarOpen(false);
+      setActiveRightItem('');
+      setIsMobileMenuOpen(false);
+      return;
+    }
+
     const modeModule = getDescribeMode();
     if (activeModule === 'skills-describe') {
       const target = modeModule || 'skills-offer';

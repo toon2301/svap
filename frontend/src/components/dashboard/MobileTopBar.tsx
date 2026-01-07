@@ -48,7 +48,7 @@ export default function MobileTopBar({
       <div className="grid grid-cols-3 items-center px-3 py-0 h-12">
         {/* Ľavá strana - Šipka späť alebo prázdne */}
         <div className="flex items-center h-full justify-start">
-          {(isEditMode || activeRightItem === 'language' || activeRightItem === 'account-type' || activeRightItem === 'privacy' || activeModule === 'notifications' || activeModule === 'account-type' || activeModule === 'privacy' || activeModule === 'skills' || activeModule === 'skills-offer' || activeModule === 'skills-search' || activeModule === 'skills-select-category') ? (
+          {(isEditMode || activeRightItem === 'language' || activeRightItem === 'account-type' || activeRightItem === 'privacy' || activeModule === 'notifications' || activeModule === 'account-type' || activeModule === 'privacy' || activeModule === 'skills' || activeModule === 'skills-offer' || activeModule === 'skills-search' || activeModule === 'skills-select-category' || activeModule === 'user-profile') ? (
             <button
               onClick={onBackClick}
               className="p-2 -ml-2"
@@ -134,8 +134,8 @@ export default function MobileTopBar({
             </button>
           )}
 
-          {/* Ikona profilu – rýchly prechod na profil (ak nie sme na profile) */}
-          {onProfileClick && activeModule !== 'profile' && activeModule !== 'skills-describe' && (
+          {/* Ikona profilu – rýchly prechod na profil (ak nie sme na profile ani na cudzom profile) */}
+          {onProfileClick && activeModule !== 'profile' && activeModule !== 'user-profile' && activeModule !== 'skills-describe' && (
             <button
               onClick={onProfileClick}
               className="p-1.5 rounded-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-black text-gray-600 dark:text-gray-300 shadow-sm hover:border-purple-400 hover:text-purple-600 hover:bg-gray-50 dark:hover:bg-gray-900 transition-all"
@@ -145,14 +145,24 @@ export default function MobileTopBar({
             </button>
           )}
 
-          {/* Hamburger menu - len v profile module, nie v edit móde ani v jazyk/account-type/prípadne privacy modale */}
-          {activeModule === 'profile' &&
+          {/* Hamburger menu - v profile module alebo na cudzom profile (user-profile), nie v edit móde ani v jazyk/account-type/prípadne privacy modale */}
+          {(activeModule === 'profile' || activeModule === 'user-profile') &&
             !isEditMode &&
             activeRightItem !== 'language' &&
             activeRightItem !== 'account-type' &&
             activeRightItem !== 'privacy' && (
               <button
-                onClick={onMenuClick}
+                onClick={() => {
+                  if (activeModule === 'user-profile') {
+                    // Na cudzom profile otvor modal cez window event
+                    if (typeof (window as any).__openUserProfileModal === 'function') {
+                      (window as any).__openUserProfileModal();
+                    }
+                  } else {
+                    // Na vlastnom profile otvor normálne menu
+                    onMenuClick();
+                  }
+                }}
                 className="p-1.5 rounded-lg text-gray-600 dark:text-gray-300 hover:text-purple-600 hover:bg-gray-50 dark:hover:bg-gray-900 transition-all"
                 aria-label={t('common.menu', 'Menu')}
               >

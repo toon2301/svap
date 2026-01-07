@@ -1,6 +1,6 @@
 'use client';
-
-import React, { useEffect, useState } from 'react';
+ 
+import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { api, endpoints } from '../../../../lib/api';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -13,15 +13,23 @@ import ProfileOfferCard from './ProfileOfferCard';
 interface ProfileOffersSectionProps {
   activeTab: ProfileTab;
   accountType?: 'personal' | 'business';
+  ownerUserId?: number;
+  highlightedSkillId?: number | null;
 }
 
-export default function ProfileOffersSection({ activeTab, accountType = 'personal' }: ProfileOffersSectionProps) {
+export default function ProfileOffersSection({
+  activeTab,
+  accountType = 'personal',
+  ownerUserId,
+  highlightedSkillId,
+}: ProfileOffersSectionProps) {
   const { t } = useLanguage();
   const [offers, setOffers] = useState<Offer[]>([]);
   const [flippedCards, setFlippedCards] = useState<Set<number | string>>(() => new Set());
   const [activeHoursOfferId, setActiveHoursOfferId] = useState<number | string | null>(null);
   const [hoursPopoverPosition, setHoursPopoverPosition] = useState<{ top: number; left: number } | null>(null);
   const [activeOpeningHours, setActiveOpeningHours] = useState<OpeningHours | null>(null);
+  const highlightedCardRef = useRef<HTMLDivElement | null>(null);
 
   // Load offers when switching to 'offers' tab (desktop focus)
   useEffect(() => {
@@ -29,7 +37,10 @@ export default function ProfileOffersSection({ activeTab, accountType = 'persona
 
     const load = async () => {
       try {
-        const { data } = await api.get(endpoints.skills.list);
+        const endpoint = ownerUserId
+          ? endpoints.dashboard.userSkills(ownerUserId)
+          : endpoints.skills.list;
+        const { data } = await api.get(endpoint);
         const list = Array.isArray(data) ? data : [];
         const mapped: Offer[] = list.map((s: any) => {
           const rawPrice = s.price_from;
@@ -90,7 +101,7 @@ export default function ProfileOffersSection({ activeTab, accountType = 'persona
     };
 
     void load();
-  }, [activeTab]);
+  }, [activeTab, ownerUserId]);
 
   // Close hours popover when clicking outside
   useEffect(() => {
@@ -113,6 +124,21 @@ export default function ProfileOffersSection({ activeTab, accountType = 'persona
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [activeHoursOfferId]);
+
+  // Po načítaní ponúk a nastavení highlightedSkillId poscrolluj na danú kartu
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (!highlightedCardRef.current) return;
+
+    try {
+      highlightedCardRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      });
+    } catch {
+      // ignore scroll errors
+    }
+  }, [offers]);
 
   if (activeTab !== 'offers') {
     return null;
@@ -196,8 +222,14 @@ export default function ProfileOffersSection({ activeTab, accountType = 'persona
               }
             };
 
+            const isHighlighted = highlightedSkillId != null && offer.id === highlightedSkillId;
+
             return (
-              <div key={offer.id} className="relative group">
+              <div
+                key={offer.id}
+                ref={isHighlighted ? highlightedCardRef : undefined}
+                className="relative group"
+              >
                 <ProfileOfferCard
                   offer={offer}
                   accountType={accountType}
@@ -205,6 +237,7 @@ export default function ProfileOffersSection({ activeTab, accountType = 'persona
                   isFlipped={isFlipped}
                   onToggleFlip={handleToggleFlip}
                   onOpenHoursClick={accountType === 'business' ? handleOpenHoursClick : undefined}
+                  isHighlighted={isHighlighted}
                 />
               </div>
             );

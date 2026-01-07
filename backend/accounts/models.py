@@ -63,6 +63,8 @@ class User(AbstractUser):
     linkedin = models.URLField(_('LinkedIn'), blank=True)
     facebook = models.URLField(_('Facebook'), blank=True)
     instagram = models.URLField(_('Instagram'), blank=True)
+    youtube = models.URLField(_('YouTube'), blank=True)
+    whatsapp = models.CharField(_('WhatsApp'), max_length=64, blank=True)
     
     # Nastavenia
     is_verified = models.BooleanField(_('Overený'), default=False)

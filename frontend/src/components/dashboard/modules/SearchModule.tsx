@@ -20,7 +20,7 @@ import { getUserInitials } from './search/utils';
 import { ScrollableText } from './search/ScrollableText';
 import { FilterModal } from './search/FilterModal';
 
-export default function SearchModule({ user }: SearchModuleProps) {
+export default function SearchModule({ user, onUserClick, onSkillClick, isOverlay = false }: SearchModuleProps) {
   const { t } = useLanguage();
   const [searchQuery, setSearchQuery] = useState('');
   const [results, setResults] = useState<SearchResults | null>(null);
@@ -397,16 +397,20 @@ export default function SearchModule({ user }: SearchModuleProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchQuery]);
 
+  const rootClassName = isOverlay ? 'w-full h-full' : 'max-w-6xl mx-auto';
+  const layoutClassName = isOverlay ? 'h-full flex flex-col' : 'flex flex-col lg:flex-row gap-6';
+  const asideClassName = isOverlay ? 'w-full h-full' : 'w-full lg:w-96 flex-shrink-0';
+
   return (
-    <div className="max-w-6xl mx-auto">
-      <div className="flex flex-col lg:flex-row gap-6">
+    <div className={rootClassName}>
+      <div className={layoutClassName}>
         {/* Sekundárny panel vedľa ľavej navigácie */}
-        <aside className="w-full lg:w-96 flex-shrink-0">
-          <form
-            onSubmit={handleSearch}
+        <aside className={asideClassName}>
+      <form
+        onSubmit={handleSearch}
             className="px-4 pb-4 sm:px-5 sm:pb-5 pt-0 sm:pt-10 lg:pt-8"
-          >
-            <div className="space-y-4">
+      >
+        <div className="space-y-4">
               {/* Vyhľadávacie pole + Filter */}
               <div className="space-y-2">
                 <h3 className="hidden lg:block text-2xl font-semibold text-gray-900 dark:text-white mb-2">
@@ -414,12 +418,12 @@ export default function SearchModule({ user }: SearchModuleProps) {
                 </h3>
                 <div className="flex items-center gap-2">
                   <div className="relative flex-1">
-                    <input
+            <input
                       ref={searchInputRef}
-                      type="text"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      onKeyDown={handleKeyDown}
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={handleKeyDown}
                       placeholder="Vyhľadávanie"
                       className="block w-full px-3 py-2.5 pr-9 border border-gray-300 dark:border-gray-700 rounded-xl bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-1 focus:ring-purple-300 focus:border-transparent text-sm"
                     />
@@ -458,11 +462,11 @@ export default function SearchModule({ user }: SearchModuleProps) {
                     {isSearching && (
                       <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gray-200 dark:bg-gray-700 rounded-b-xl overflow-hidden">
                         <div className="h-full bg-gradient-to-r from-purple-500 via-purple-400 to-purple-500 animate-progress-bar" />
-                      </div>
+          </div>
                     )}
-                  </div>
+            </div>
                   {/* Filter button - integrovaný vedľa poľa */}
-                  <button
+            <button
                     type="button"
                     onClick={() => setIsFilterOpen(true)}
                     className="flex-shrink-0 h-[42px] w-[42px] flex items-center justify-center rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-black text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors"
@@ -482,16 +486,16 @@ export default function SearchModule({ user }: SearchModuleProps) {
                         d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 01-.659 1.591l-5.432 5.432a2.25 2.25 0 00-.659 1.591v2.927a2.25 2.25 0 01-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 00-.659-1.591L3.659 7.409A2.25 2.25 0 013 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0112 3z"
                       />
                     </svg>
-                  </button>
-                </div>
-              </div>
+            </button>
+          </div>
+        </div>
 
               {/* Výsledky priamo v search navigácii */}
-              {error && (
+      {error && (
                 <div className="mt-4 bg-red-50 border border-red-100 text-red-700 text-xs rounded-xl px-3 py-2">
-                  {error}
-                </div>
-              )}
+          {error}
+        </div>
+      )}
 
               {/* Posledné vyhľadávania - zobraziť len ak ešte nebolo vyhľadané alebo je searchQuery prázdny */}
               {!hasSearched && !error && !searchQuery.trim() && recentSearches.length > 0 && (
@@ -553,8 +557,8 @@ export default function SearchModule({ user }: SearchModuleProps) {
                       );
                     })}
                   </div>
-                </div>
-              )}
+        </div>
+      )}
 
               {/* Návrhy pre používateľa – zobrazia sa len keď nie je zadaný text a ešte neprebehlo vyhľadávanie */}
               {!error && !hasSearched && !searchQuery.trim() && suggestedSkills.length > 0 && (
@@ -573,6 +577,16 @@ export default function SearchModule({ user }: SearchModuleProps) {
                       // Meno používateľa - v návrhoch už sú len cudzie karty, takže nie je potrebné kontrolovať "Vy"
                       const ownerName = (skill as any).user_display_name || '';
 
+                      // Formátovanie ceny podľa typu ponuky
+                      const hasPrice = skill.price_from !== null && skill.price_from !== undefined;
+                      const priceValue = hasPrice ? Number(skill.price_from) : null;
+                      const priceCurrency = skill.price_currency || '€';
+                      const priceLabel = hasPrice 
+                        ? isSeeking
+                          ? `${t('search.priceToShort', 'do')} ${priceValue!.toLocaleString('sk-SK')}${priceCurrency}`
+                          : `${t('search.priceFromShort', 'od')} ${priceValue!.toLocaleString('sk-SK')}${priceCurrency}`
+                        : null;
+
                       return (
                         <button
                           key={`suggest-${skill.id}`}
@@ -587,17 +601,22 @@ export default function SearchModule({ user }: SearchModuleProps) {
                           className="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900 text-sm text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors flex items-start gap-3"
                         >
                           <div
-                            className={`px-2 py-1.5 rounded-full flex flex-col items-center justify-center flex-shrink-0 ${
+                            className={`px-2 py-1 rounded-full flex flex-col items-center justify-center flex-shrink-0 gap-0.5 ${
                               isSeeking
                                 ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
                                 : 'bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'
                             }`}
                           >
-                            <span className="text-[10px] font-semibold whitespace-nowrap">
+                            <span className="text-[10px] font-semibold whitespace-nowrap leading-tight">
                               {isSeeking
                                 ? t('search.labelSeeking', 'HĽADÁM')
                                 : t('search.labelOffer', 'PONÚKAM')}
                             </span>
+                            {priceLabel && (
+                              <span className="text-[9px] font-semibold whitespace-nowrap leading-tight">
+                                {priceLabel}
+                              </span>
+                            )}
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-1 text-sm text-gray-900 dark:text-white">
@@ -697,6 +716,15 @@ export default function SearchModule({ user }: SearchModuleProps) {
                             <button
                               key={`skill-${skill.id}`}
                               type="button"
+                              onClick={() => {
+                                // Klik na kartu zručnosti – presmeruj na profil používateľa a zvýrazni danú kartu
+                                if (typeof onSkillClick === 'function') {
+                                  const ownerId = skill.user_id ?? null;
+                                  if (ownerId) {
+                                    onSkillClick(ownerId, skill.id as number);
+                                  }
+                                }
+                              }}
                               className="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900 flex items-start gap-3"
                             >
                               <div
@@ -743,6 +771,18 @@ export default function SearchModule({ user }: SearchModuleProps) {
                             <button
                               key={`user-${u.id}`}
                               type="button"
+                              onClick={() => {
+                                // Klik na vlastný profil – použi existujúcu navigáciu dashboardu
+                                if (u.id === user.id) {
+                                  if (typeof window !== 'undefined') {
+                                    window.dispatchEvent(new Event('goToProfile'));
+                                  }
+                                  return;
+                                }
+
+                                if (!onUserClick) return;
+                                onUserClick(u.id);
+                              }}
                               className="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900 flex items-center gap-3"
                             >
                               {u.avatar_url ? (
@@ -773,20 +813,20 @@ export default function SearchModule({ user }: SearchModuleProps) {
                     </>
                   ) : (
                     <div className="text-xs text-gray-500 dark:text-gray-400">
-                      {t(
-                        'search.noResults',
-                        'Pre zadané vyhľadávanie sa nenašli žiadne výsledky.',
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
+          {t(
+            'search.noResults',
+            'Pre zadané vyhľadávanie sa nenašli žiadne výsledky.',
+          )}
+        </div>
+          )}
+        </div>
+      )}
             </div>
           </form>
         </aside>
 
         {/* Hlavná časť – zatiaľ bez výsledkov, všetko je v search paneli */}
-        <main className="flex-1" />
+        {!isOverlay && <main className="flex-1" />}
       </div>
 
       {/* Filter modal – nad obsahom, bez straty stavu */}

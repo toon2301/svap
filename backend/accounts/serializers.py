@@ -186,8 +186,9 @@ class UserProfileSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'username', 'email', 'first_name', 'last_name',
             'user_type', 'phone', 'phone_visible', 'contact_email', 'bio', 'avatar', 'avatar_url', 'location', 'district',
-            'ico', 'ico_visible', 'job_title', 'job_title_visible', 'company_name', 'website', 'additional_websites', 'linkedin', 'facebook',
-            'instagram', 'is_verified', 'is_public', 'created_at',
+            'ico', 'ico_visible', 'job_title', 'job_title_visible', 'company_name', 'website', 'additional_websites',
+            'linkedin', 'facebook', 'instagram', 'youtube', 'whatsapp',
+            'is_verified', 'is_public', 'created_at',
             'updated_at', 'profile_completeness', 'birth_date', 'gender'
         ]
         read_only_fields = ['id', 'is_verified', 'created_at', 'updated_at', 'profile_completeness']
@@ -252,6 +253,19 @@ class UserProfileSerializer(serializers.ModelSerializer):
         if value:
             value = SecurityValidator.validate_input_safety(value)
             return URLValidator.validate_url(value, 'Instagram')
+        return value
+
+    def validate_youtube(self, value):
+        """Validácia YouTube URL"""
+        if value:
+            value = SecurityValidator.validate_input_safety(value)
+            return URLValidator.validate_url(value, 'YouTube')
+        return value
+
+    def validate_whatsapp(self, value):
+        """Ľahká validácia WhatsApp hodnoty (môže byť číslo alebo URL)"""
+        if value:
+            return SecurityValidator.validate_input_safety(value)
         return value
 
     def validate_bio(self, value):

@@ -1,6 +1,6 @@
 'use client';
-
-import React, { useEffect, useState } from 'react';
+ 
+import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { api, endpoints } from '../../../../lib/api';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -13,10 +13,14 @@ import { ProfileOfferCardMobile } from './ProfileOfferCardMobile';
 
 interface ProfileOffersMobileSectionProps {
   accountType?: 'personal' | 'business';
+  ownerUserId?: number;
+  highlightedSkillId?: number | null;
 }
 
 export default function ProfileOffersMobileSection({
   accountType = 'personal',
+  ownerUserId,
+  highlightedSkillId,
 }: ProfileOffersMobileSectionProps) {
   const { t } = useLanguage();
   const [offers, setOffers] = useState<Offer[]>([]);
@@ -25,6 +29,7 @@ export default function ProfileOffersMobileSection({
   const [selectedOffer, setSelectedOffer] = useState<Offer | null>(null);
   const [hoursModal, setHoursModal] = useState<OpeningHours | null>(null);
   const [tappedCards, setTappedCards] = useState<Set<number | string>>(() => new Set());
+  const highlightedCardRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -33,7 +38,10 @@ export default function ProfileOffersMobileSection({
       try {
         setIsLoading(true);
         setLoadError(null);
-        const { data } = await api.get(endpoints.skills.list);
+        const endpoint = ownerUserId
+          ? endpoints.dashboard.userSkills(ownerUserId)
+          : endpoints.skills.list;
+        const { data } = await api.get(endpoint);
         if (cancelled) return;
         const list = Array.isArray(data) ? data : [];
 
@@ -111,7 +119,22 @@ export default function ProfileOffersMobileSection({
     return () => {
       cancelled = true;
     };
-  }, [t]);
+  }, [t, ownerUserId]);
+
+  // Po načítaní ponúk a nastavení highlightedSkillId poscrolluj na danú kartu
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (!highlightedCardRef.current) return;
+
+    try {
+      highlightedCardRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      });
+    } catch {
+      // ignore
+    }
+  }, [offers]);
 
   const handleCardClick = (offer: Offer) => {
     const cardId = offer.id ?? `${offer.category || 'cat'}-${offer.subcategory || 'sub'}-${offer.description || 'desc'}`;
@@ -257,15 +280,21 @@ export default function ProfileOffersMobileSection({
         {offers.map((offer) => {
           const cardId = offer.id ?? `${offer.category || 'cat'}-${offer.subcategory || 'sub'}-${offer.description || 'desc'}`;
           const isTapped = tappedCards.has(cardId);
+          const isHighlighted = highlightedSkillId != null && offer.id === highlightedSkillId;
 
           return (
-            <ProfileOfferCardMobile
+            <div
               key={offer.id}
-              offer={offer}
-              accountType={accountType}
-              isTapped={isTapped}
-              onCardClick={() => handleCardClick(offer)}
-            />
+              ref={isHighlighted ? highlightedCardRef : undefined}
+            >
+              <ProfileOfferCardMobile
+                offer={offer}
+                accountType={accountType}
+                isTapped={isTapped}
+                isHighlighted={isHighlighted}
+                onCardClick={() => handleCardClick(offer)}
+              />
+            </div>
           );
         })}
       </div>

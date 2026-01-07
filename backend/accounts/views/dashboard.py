@@ -613,6 +613,36 @@ def dashboard_profile_view(request):
         }, status=status.HTTP_400_BAD_REQUEST)
 
 
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+@api_rate_limit
+def dashboard_user_profile_detail_view(request, user_id: int):
+    """
+    Read‑only detail profilu iného používateľa pre dashboard / vyhľadávanie.
+    """
+    try:
+        user = User.objects.get(id=user_id, is_active=True)
+    except User.DoesNotExist:
+        return Response({'error': 'Používateľ nebol nájdený'}, status=status.HTTP_404_NOT_FOUND)
+
+    from ..serializers import UserProfileSerializer
+
+    serializer = UserProfileSerializer(user, context={'request': request})
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+@api_rate_limit
+def dashboard_user_skills_view(request, user_id: int):
+    """
+    Read‑only zoznam zručností (ponúk) iného používateľa pre dashboard / vyhľadávanie.
+    """
+    skills_qs = OfferedSkill.objects.filter(user_id=user_id).order_by('-updated_at')
+    serializer = OfferedSkillSerializer(skills_qs, many=True, context={'request': request})
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+
 @api_view(['GET', 'PUT', 'PATCH'])
 @permission_classes([IsAuthenticated])
 @api_rate_limit

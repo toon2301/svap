@@ -112,6 +112,10 @@ export default function DashboardLayout({
     };
   }, [isSearchOpen, onSearchClose]);
 
+  const searchPanelWidthClasses = isRightSidebarOpen
+    ? 'w-[240px] xl:w-[280px] 2xl:w-[384px]'
+    : 'w-[280px] xl:w-[384px]';
+
   return (
     <div className="h-screen bg-[var(--background)] text-[var(--foreground)] overflow-hidden">
       {/* Mobile Top Bar - skryť pre search modul */}
@@ -129,7 +133,7 @@ export default function DashboardLayout({
       )}
 
       {/* Mobile Bottom Nav */}
-      {!(isRightSidebarOpen && activeModule === 'profile') && activeModule !== 'skills-describe' && (
+      {!(isRightSidebarOpen && activeModule === 'profile') && activeModule !== 'skills-describe' && activeModule !== 'user-profile' && (
         <MobileTopNav activeItem={activeModule} onItemClick={onModuleChange} />
       )}
 
@@ -176,10 +180,10 @@ export default function DashboardLayout({
           >
             <div
               className={`w-full mx-auto ${
-                activeModule === 'profile' && !isProfileEditMode 
-                  ? 'max-w-7xl' 
-                  : isSkillsModule 
-                  ? 'max-w-7xl' 
+                (activeModule === 'profile' && !isProfileEditMode) ||
+                activeModule === 'user-profile' ||
+                isSkillsModule
+                  ? 'max-w-7xl'
                   : 'max-w-4xl'
               }`}
             >
@@ -192,7 +196,7 @@ export default function DashboardLayout({
             <div className="hidden lg:block absolute inset-y-0 left-0 z-30 pointer-events-none">
               <div 
                 ref={searchPanelRef}
-                className="h-full w-[384px] max-w-full pointer-events-auto bg-[var(--background)] border-r border-gray-800/60 shadow-2xl"
+                className={`h-full max-w-full pointer-events-auto bg-[var(--background)] border-r border-gray-800/60 shadow-2xl ${searchPanelWidthClasses}`}
               >
                 {searchOverlay}
               </div>

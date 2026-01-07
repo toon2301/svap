@@ -44,6 +44,8 @@ urlpatterns = [
     path('dashboard/search/', views.dashboard_search_view, name='dashboard_search'),
     path('dashboard/favorites/', views.dashboard_favorites_view, name='dashboard_favorites'),
     path('dashboard/profile/', views.dashboard_profile_view, name='dashboard_profile'),
+    path('dashboard/users/<int:user_id>/profile/', views.dashboard_user_profile_detail_view, name='dashboard_user_profile_detail'),
+    path('dashboard/users/<int:user_id>/skills/', views.dashboard_user_skills_view, name='dashboard_user_skills'),
     path('dashboard/settings/', views.dashboard_settings_view, name='dashboard_settings'),
     
     # Skills

@@ -42,6 +42,50 @@ input[type="number"] {
   );
 }
 
+/* Modal animácie */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUpFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+.animate-slide-up {
+  animation: slideUpFadeIn 0.3s ease-out forwards;
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.3s ease-out forwards;
+}
+
 :root {
   /* Modern professional colors */
   --primary: #7C3AED;
@@ -844,4 +888,30 @@ button:focus-visible {
   .dark .skill-description-textarea-scrollbar {
     scrollbar-color: rgba(107, 114, 128, 0.4) transparent !important;
   }
+}
+
+/* Jemné, ale stále viditeľné zvýraznenie karty ponuky po príchode z vyhľadávania
+   – pulzujúci fialový okraj, vnútro karty ostáva bezo zmeny */
+@keyframes highlight-offer-pulse {
+  0% {
+    border-color: rgba(124, 58, 237, 1);
+  }
+  50% {
+    border-color: rgba(124, 58, 237, 0.4);
+  }
+  100% {
+    border-color: rgba(124, 58, 237, 1);
+  }
+}
+
+.highlight-offer-card {
+  border-width: 3px;
+  border-style: solid;
+  border-color: rgba(124, 58, 237, 0.9);
+  animation: highlight-offer-pulse 1.8s ease-in-out infinite;
+  transition: border-color 0.2s ease-out;
+}
+
+.highlight-offer-card:hover {
+  border-color: rgba(124, 58, 237, 1);
 }

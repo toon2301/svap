@@ -22,6 +22,9 @@ export default function Dashboard({ initialUser }: DashboardProps) {
   const [isInSubcategories, setIsInSubcategories] = useState(false);
   const skillsCategoryBackHandlerRef = React.useRef<(() => void) | null>(null);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [viewedUserId, setViewedUserId] = useState<number | null>(null);
+  const [highlightedSkillId, setHighlightedSkillId] = useState<number | null>(null);
+  const highlightTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const {
     user,
@@ -247,6 +250,26 @@ export default function Dashboard({ initialUser }: DashboardProps) {
     }
   }, [user, loadSkills]);
 
+  // Pri odchode z modulu user-profile zruš zvýraznenie a timer
+  useEffect(() => {
+    if (activeModule !== 'user-profile') {
+      setHighlightedSkillId(null);
+      if (highlightTimeoutRef.current) {
+        clearTimeout(highlightTimeoutRef.current);
+        highlightTimeoutRef.current = null;
+      }
+    }
+  }, [activeModule]);
+
+  // Vyčistenie timeru pri unmount-e Dashboardu
+  useEffect(() => {
+    return () => {
+      if (highlightTimeoutRef.current) {
+        clearTimeout(highlightTimeoutRef.current);
+      }
+    };
+  }, []);
+
   // Global klávesová skratka "/" pre otvorenie vyhľadávania na desktop verzii
   // Musí byť pred early return, aby sa hooks volali vždy v rovnakom poradí
   useEffect(() => {
@@ -345,6 +368,53 @@ export default function Dashboard({ initialUser }: DashboardProps) {
     setIsSearchOpen(false);
   };
 
+  const handleViewUserProfileFromSearch = (userId: number) => {
+    // Navigácia na profil používateľa bez špecifickej karty
+    setViewedUserId(userId);
+    setHighlightedSkillId(null);
+    if (highlightTimeoutRef.current) {
+      clearTimeout(highlightTimeoutRef.current);
+      highlightTimeoutRef.current = null;
+    }
+    setActiveModule('user-profile');
+    setIsRightSidebarOpen(false);
+    setActiveRightItem('');
+    try {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('activeModule', 'user-profile');
+      }
+    } catch {
+      // ignore
+    }
+    setIsSearchOpen(false);
+  };
+
+  const handleViewUserSkillFromSearch = (userId: number, skillId: number) => {
+    // Navigácia na profil používateľa s konkrétnou kartou na zvýraznenie
+    setViewedUserId(userId);
+    setHighlightedSkillId(skillId);
+    setActiveModule('user-profile');
+    setIsRightSidebarOpen(false);
+    setActiveRightItem('');
+    try {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('activeModule', 'user-profile');
+      }
+    } catch {
+      // ignore
+    }
+    setIsSearchOpen(false);
+
+    // Automatické zrušenie zvýraznenia po 2 minútach
+    if (highlightTimeoutRef.current) {
+      clearTimeout(highlightTimeoutRef.current);
+    }
+    highlightTimeoutRef.current = setTimeout(() => {
+      setHighlightedSkillId(null);
+      highlightTimeoutRef.current = null;
+    }, 2 * 60 * 1000);
+  };
+
   // Custom back handler for skills-select-category
   const handleSkillsCategoryBack = () => {
     // Ak máme handler z SkillsCategoryScreen a sme v podkategóriách, volaj ho
@@ -391,6 +461,10 @@ export default function Dashboard({ initialUser }: DashboardProps) {
       onSkillsCategoryBackHandlerSet={(handler) => {
         skillsCategoryBackHandlerRef.current = handler;
       }}
+      viewedUserId={viewedUserId}
+      onViewUserProfile={handleViewUserProfileFromSearch}
+      highlightedSkillId={highlightedSkillId}
+      onViewUserSkillFromSearch={handleViewUserSkillFromSearch}
     />
   );
 
@@ -415,7 +489,16 @@ export default function Dashboard({ initialUser }: DashboardProps) {
         isSearchOpen={isSearchOpen}
         onSidebarSearchClick={handleSidebarSearchClick}
         onSearchClose={handleSearchClose}
-        searchOverlay={user ? <SearchModule user={user} /> : null}
+        searchOverlay={
+          user ? (
+            <SearchModule
+              user={user}
+              onUserClick={handleViewUserProfileFromSearch}
+              onSkillClick={handleViewUserSkillFromSearch}
+              isOverlay
+            />
+          ) : null
+        }
         subcategory={activeModule === 'skills-describe' ? selectedSkillsCategory?.subcategory : null}
         onSkillSaveClick={activeModule === 'skills-describe' ? handleSkillSave : undefined}
       >

@@ -164,6 +164,7 @@ export default function ProfileModule({
           onChangeTab={setActiveTab}
           onTabsKeyDown={handleTabsKeyDown}
           onOpenAllWebsitesModal={() => setIsAllWebsitesModalOpen(true)}
+          offersOwnerId={displayUser.id}
         />
 
         <ProfileDesktopView
@@ -181,6 +182,7 @@ export default function ProfileModule({
           onChangeTab={setActiveTab}
           onTabsKeyDown={handleTabsKeyDown}
           onOpenAllWebsitesModal={() => setIsAllWebsitesModalOpen(true)}
+          offersOwnerId={displayUser.id}
         />
 
         {/* Success message */}

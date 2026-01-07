@@ -38,6 +38,8 @@ export default function ProfileEditFormMobile({
   const [isInstagramModalOpen, setIsInstagramModalOpen] = useState(false);
   const [isFacebookModalOpen, setIsFacebookModalOpen] = useState(false);
   const [isLinkedinModalOpen, setIsLinkedinModalOpen] = useState(false);
+  const [isYouTubeModalOpen, setIsYouTubeModalOpen] = useState(false);
+  const [isWhatsAppModalOpen, setIsWhatsAppModalOpen] = useState(false);
   const [isGenderModalOpen, setIsGenderModalOpen] = useState(false);
   const [isIcoModalOpen, setIsIcoModalOpen] = useState(false);
   
@@ -59,6 +61,8 @@ export default function ProfileEditFormMobile({
   const [instagram, setInstagram] = useState(user.instagram || '');
   const [facebook, setFacebook] = useState(user.facebook || '');
   const [linkedin, setLinkedin] = useState(user.linkedin || '');
+  const [youtube, setYoutube] = useState(user.youtube || '');
+  const [whatsapp, setWhatsapp] = useState(user.whatsapp || '');
   const [gender, setGender] = useState(user.gender || '');
   
   // Original values for cancel functionality
@@ -79,6 +83,8 @@ export default function ProfileEditFormMobile({
   const [originalInstagram, setOriginalInstagram] = useState(user.instagram || '');
   const [originalFacebook, setOriginalFacebook] = useState(user.facebook || '');
   const [originalLinkedin, setOriginalLinkedin] = useState(user.linkedin || '');
+  const [originalYoutube, setOriginalYoutube] = useState(user.youtube || '');
+  const [originalWhatsapp, setOriginalWhatsapp] = useState(user.whatsapp || '');
   const [originalGender, setOriginalGender] = useState(user.gender || '');
 
   // Update states when user prop changes
@@ -105,6 +111,19 @@ export default function ProfileEditFormMobile({
     setOriginalLocation(user.location || '');
     setOriginalDistrict(user.district || '');
   }, [user.location, user.district]);
+
+  React.useEffect(() => {
+    setInstagram(user.instagram || '');
+    setFacebook(user.facebook || '');
+    setLinkedin(user.linkedin || '');
+    setYoutube(user.youtube || '');
+    setWhatsapp(user.whatsapp || '');
+    setOriginalInstagram(user.instagram || '');
+    setOriginalFacebook(user.facebook || '');
+    setOriginalLinkedin(user.linkedin || '');
+    setOriginalYoutube(user.youtube || '');
+    setOriginalWhatsapp(user.whatsapp || '');
+  }, [user.instagram, user.facebook, user.linkedin, user.youtube, user.whatsapp]);
 
   return (
     <div className="pt-2 pb-8">
@@ -135,6 +154,8 @@ export default function ProfileEditFormMobile({
         setIsInstagramModalOpen={setIsInstagramModalOpen}
         setIsFacebookModalOpen={setIsFacebookModalOpen}
         setIsLinkedinModalOpen={setIsLinkedinModalOpen}
+        setIsYouTubeModalOpen={setIsYouTubeModalOpen}
+        setIsWhatsAppModalOpen={setIsWhatsAppModalOpen}
         setIsGenderModalOpen={setIsGenderModalOpen}
         setIsIcoModalOpen={setIsIcoModalOpen}
       />
@@ -153,6 +174,8 @@ export default function ProfileEditFormMobile({
         isInstagramModalOpen={isInstagramModalOpen}
         isFacebookModalOpen={isFacebookModalOpen}
         isLinkedinModalOpen={isLinkedinModalOpen}
+        isYouTubeModalOpen={isYouTubeModalOpen}
+        isWhatsAppModalOpen={isWhatsAppModalOpen}
         isGenderModalOpen={isGenderModalOpen}
         isIcoModalOpen={isIcoModalOpen}
         firstName={firstName}
@@ -172,6 +195,8 @@ export default function ProfileEditFormMobile({
         instagram={instagram}
         facebook={facebook}
         linkedin={linkedin}
+        youtube={youtube}
+        whatsapp={whatsapp}
         gender={gender}
         originalFirstName={originalFirstName}
         originalLastName={originalLastName}
@@ -190,6 +215,8 @@ export default function ProfileEditFormMobile({
         originalInstagram={originalInstagram}
         originalFacebook={originalFacebook}
         originalLinkedin={originalLinkedin}
+        originalYoutube={originalYoutube}
+        originalWhatsapp={originalWhatsapp}
         originalGender={originalGender}
         setFirstName={setFirstName}
         setLastName={setLastName}
@@ -207,6 +234,8 @@ export default function ProfileEditFormMobile({
         setInstagram={setInstagram}
         setFacebook={setFacebook}
         setLinkedin={setLinkedin}
+        setYoutube={setYoutube}
+        setWhatsapp={setWhatsapp}
         setGender={setGender}
         setOriginalFirstName={setOriginalFirstName}
         setOriginalLastName={setOriginalLastName}
@@ -226,6 +255,8 @@ export default function ProfileEditFormMobile({
         setOriginalInstagram={setOriginalInstagram}
         setOriginalFacebook={setOriginalFacebook}
         setOriginalLinkedin={setOriginalLinkedin}
+        setOriginalYoutube={setOriginalYoutube}
+        setOriginalWhatsapp={setOriginalWhatsapp}
         setOriginalGender={setOriginalGender}
         setIsNameModalOpen={setIsNameModalOpen}
         setIsBioModalOpen={setIsBioModalOpen}
@@ -237,6 +268,8 @@ export default function ProfileEditFormMobile({
         setIsInstagramModalOpen={setIsInstagramModalOpen}
         setIsFacebookModalOpen={setIsFacebookModalOpen}
         setIsLinkedinModalOpen={setIsLinkedinModalOpen}
+        setIsYouTubeModalOpen={setIsYouTubeModalOpen}
+        setIsWhatsAppModalOpen={setIsWhatsAppModalOpen}
         setIsGenderModalOpen={setIsGenderModalOpen}
         setIsIcoModalOpen={setIsIcoModalOpen}
       />

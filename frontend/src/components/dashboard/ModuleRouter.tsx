@@ -15,6 +15,7 @@ import MessagesModule from './modules/MessagesModule';
 import AccountTypeSection from './modules/accountType/AccountTypeSection';
 import type { DashboardSkill } from './hooks/useSkillsModals';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { SearchUserProfileModule } from './modules/search/SearchUserProfileModule';
 
 interface ModuleRouterProps {
   user: User;
@@ -42,6 +43,10 @@ interface ModuleRouterProps {
   isInSubcategories?: boolean;
   setIsInSubcategories?: (value: boolean) => void;
   onSkillsCategoryBackHandlerSet?: (handler: () => void) => void;
+  viewedUserId?: number | null;
+  onViewUserProfile?: (userId: number) => void;
+  highlightedSkillId?: number | null;
+  onViewUserSkillFromSearch?: (userId: number, skillId: number) => void;
 }
 
 export default function ModuleRouter({
@@ -70,6 +75,10 @@ export default function ModuleRouter({
   isInSubcategories,
   setIsInSubcategories,
   onSkillsCategoryBackHandlerSet,
+  viewedUserId,
+  onViewUserProfile,
+  highlightedSkillId,
+  onViewUserSkillFromSearch,
 }: ModuleRouterProps) {
   const { t } = useLanguage();
 
@@ -128,6 +137,36 @@ export default function ModuleRouter({
           </p>
         </div>
       );
+    case 'user-profile':
+      if (!viewedUserId) {
+        return (
+          <div className="text-center py-20 text-gray-500 dark:text-gray-400">
+            {t('search.userProfileNotFound', 'Profil používateľa sa nepodarilo načítať.')}
+          </div>
+        );
+      }
+      return (
+        <SearchUserProfileModule
+          userId={viewedUserId}
+          highlightedSkillId={highlightedSkillId ?? null}
+          onBack={() => {
+            setActiveModule('search');
+            try {
+              localStorage.setItem('activeModule', 'search');
+            } catch {
+              // ignore
+            }
+          }}
+          onSendMessage={() => {
+            setActiveModule('messages');
+            try {
+              localStorage.setItem('activeModule', 'messages');
+            } catch {
+              // ignore
+            }
+          }}
+        />
+      );
     case 'profile':
       return (
         <ProfileModule
@@ -147,7 +186,13 @@ export default function ModuleRouter({
         />
       );
     case 'search':
-      return <SearchModule user={user} />;
+      return (
+        <SearchModule
+          user={user}
+          onUserClick={onViewUserProfile}
+          onSkillClick={onViewUserSkillFromSearch}
+        />
+      );
     case 'favorites':
       return (
         <div className="text-center py-20">

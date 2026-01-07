@@ -37,6 +37,8 @@ def update_profile_view(request):
         'linkedin': request.user.linkedin,
         'facebook': request.user.facebook,
         'instagram': request.user.instagram,
+        'youtube': getattr(request.user, 'youtube', ''),
+        'whatsapp': getattr(request.user, 'whatsapp', ''),
     }
     
     # Zachyť aktuálny avatar pred uložením (pre prípadné zmazanie po update)

@@ -150,6 +150,8 @@ export const endpoints = {
     search: '/auth/dashboard/search/',
     favorites: '/auth/dashboard/favorites/',
     profile: '/auth/dashboard/profile/',
+    userProfile: (id: number) => `/auth/dashboard/users/${id}/profile/`,
+    userSkills: (id: number) => `/auth/dashboard/users/${id}/skills/`,
     settings: '/auth/dashboard/settings/',
   },
   // Skills

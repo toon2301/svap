@@ -24,8 +24,15 @@ export interface SearchResults {
   users: SearchUserResult[];
 }
 
+// Payload pre zobrazenie profilu používateľa z výsledkov vyhľadávania
 export interface SearchModuleProps {
   user: User;
+  // Voliteľný callback pri kliknutí na používateľa vo výsledkoch
+  onUserClick?: (userId: number) => void;
+  // Voliteľný callback pri kliknutí na kartu zručnosti (Ponúkam/Hľadám)
+  onSkillClick?: (userId: number, skillId: number) => void;
+  // true ak je SearchModule použitý v ľavom overlay paneli vedľa navigácie
+  isOverlay?: boolean;
 }
 
 export interface SkillResultCardProps {
