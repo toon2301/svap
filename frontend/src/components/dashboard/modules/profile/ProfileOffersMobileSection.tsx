@@ -14,6 +14,7 @@ import {
   getOffersFromCache,
   makeOffersCacheKey,
   setOffersToCache,
+  getOrCreateOffersRequest,
 } from './profileOffersCache';
 
 interface ProfileOffersMobileSectionProps {
@@ -50,68 +51,73 @@ export default function ProfileOffersMobileSection({
           return;
         }
 
+        // Request deduplication - použij existujúci in-flight request alebo vytvor nový
         const endpoint = ownerUserId
           ? endpoints.dashboard.userSkills(ownerUserId)
           : endpoints.skills.list;
-        const { data } = await api.get(endpoint);
-        if (cancelled) return;
-        const list = Array.isArray(data) ? data : [];
 
-        const mapped: Offer[] = list.map((s: any) => {
-          const rawPrice = s.price_from;
-          const parsedPrice =
-            typeof rawPrice === 'number'
-              ? rawPrice
-              : typeof rawPrice === 'string' && rawPrice.trim() !== ''
-                ? parseFloat(rawPrice)
-                : null;
+        const mappedOffers = await getOrCreateOffersRequest(cacheKey, async () => {
+          const { data } = await api.get(endpoint);
+          const list = Array.isArray(data) ? data : [];
+          return list.map((s: any) => {
+            const rawPrice = s.price_from;
+            const parsedPrice =
+              typeof rawPrice === 'number'
+                ? rawPrice
+                : typeof rawPrice === 'string' && rawPrice.trim() !== ''
+                  ? parseFloat(rawPrice)
+                  : null;
 
-          const experience = s.experience
-            ? {
-                value:
-                  typeof s.experience.value === 'number'
-                    ? s.experience.value
-                    : parseFloat(String(s.experience.value || 0)),
-                unit: (s.experience.unit === 'years' || s.experience.unit === 'months'
-                  ? s.experience.unit
-                  : 'years') as ExperienceUnit,
-              }
-            : undefined;
+            const experience = s.experience
+              ? {
+                  value:
+                    typeof s.experience.value === 'number'
+                      ? s.experience.value
+                      : parseFloat(String(s.experience.value || 0)),
+                  unit: (s.experience.unit === 'years' || s.experience.unit === 'months'
+                    ? s.experience.unit
+                    : 'years') as ExperienceUnit,
+                }
+              : undefined;
 
-          return {
-            id: s.id,
-            category: s.category,
-            subcategory: s.subcategory,
-            description: s.description || '',
-            detailed_description: (s.detailed_description || '') as string,
-            images: Array.isArray(s.images)
-              ? s.images.map((im: any) => ({
-                  id: im.id,
-                  image_url: im.image_url || im.image || null,
-                  order: im.order,
-                }))
-              : [],
-            price_from: parsedPrice,
-            price_currency:
-              typeof s.price_currency === 'string' && s.price_currency.trim() !== ''
-                ? s.price_currency
-                : '€',
-            district: typeof s.district === 'string' ? s.district : '',
-            location: typeof s.location === 'string' ? s.location : '',
-            experience,
-            tags: Array.isArray(s.tags) ? s.tags : [],
-            opening_hours: (s.opening_hours || undefined) as OpeningHours | undefined,
-            is_seeking: s.is_seeking === true,
-            urgency:
-              typeof s.urgency === 'string' && s.urgency.trim() !== ''
-                ? (s.urgency.trim() as 'low' | 'medium' | 'high' | '')
-                : '',
-            duration_type: s.duration_type || null,
-          };
+            return {
+              id: s.id,
+              category: s.category,
+              subcategory: s.subcategory,
+              description: s.description || '',
+              detailed_description: (s.detailed_description || '') as string,
+              images: Array.isArray(s.images)
+                ? s.images.map((im: any) => ({
+                    id: im.id,
+                    image_url: im.image_url || im.image || null,
+                    order: im.order,
+                  }))
+                : [],
+              price_from: parsedPrice,
+              price_currency:
+                typeof s.price_currency === 'string' && s.price_currency.trim() !== ''
+                  ? s.price_currency
+                  : '€',
+              district: typeof s.district === 'string' ? s.district : '',
+              location: typeof s.location === 'string' ? s.location : '',
+              experience,
+              tags: Array.isArray(s.tags) ? s.tags : [],
+              opening_hours: (s.opening_hours || undefined) as OpeningHours | undefined,
+              is_seeking: s.is_seeking === true,
+              urgency:
+                typeof s.urgency === 'string' && s.urgency.trim() !== ''
+                  ? (s.urgency.trim() as 'low' | 'medium' | 'high' | '')
+                  : '',
+              duration_type: s.duration_type || null,
+            };
+          });
         });
 
-        setOffers(mapped);
-        setOffersToCache(cacheKey, mapped);
+        if (cancelled) return;
+
+        setOffers(mappedOffers);
+        setOffersToCache(cacheKey, mappedOffers);
+        setIsLoading(false);
       } catch (error: any) {
         if (cancelled) return;
         const msg =
@@ -120,10 +126,7 @@ export default function ProfileOffersMobileSection({
           error?.message ||
           t('profile.offersLoadError', 'Nepodarilo sa načítať ponuky. Skús to znova.');
         setLoadError(msg);
-      } finally {
-        if (!cancelled) {
-          setIsLoading(false);
-        }
+        setIsLoading(false);
       }
     };
 

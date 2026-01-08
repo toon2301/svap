@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useRef } from 'react';
 import { api, endpoints } from '../../../lib/api';
 
 export type OpeningHours = {
@@ -124,23 +124,55 @@ export function useSkillsModals(): UseSkillsModalsResult {
     }
   }, []);
 
+  // Request deduplication a cooldown pre loadSkills
+  const loadSkillsInFlightRef = useRef<Promise<void> | null>(null);
+  const loadSkillsLastTimeRef = useRef<number>(0);
+  const LOAD_SKILLS_COOLDOWN_MS = 2000; // 2 sekundy cooldown
+
   const loadSkills = useCallback(async () => {
-    try {
-      const { data } = await api.get(endpoints.skills.list);
-      const skills: any[] = Array.isArray(data) ? data : [];
-      // Namapuj a zorad podľa ID zostupne – nové karty budú vždy hore
-      const localSkills = skills
-        .map(toLocalSkill)
-        .sort((a, b) => (b.id ?? 0) - (a.id ?? 0));
-
-      const standard = localSkills.filter((s) => s.category !== s.subcategory);
-      const custom = localSkills.filter((s) => s.category === s.subcategory);
-
-      setStandardCategories(standard);
-      setCustomCategories(custom);
-    } catch {
-      // silently ignore – dashboard can work without backend data
+    const now = Date.now();
+    
+    // Cooldown check - ak sa request volal nedávno, nevolať ho znova
+    if (now - loadSkillsLastTimeRef.current < LOAD_SKILLS_COOLDOWN_MS) {
+      // Ak existuje in-flight request, počkaj naň
+      if (loadSkillsInFlightRef.current) {
+        return loadSkillsInFlightRef.current;
+      }
+      // Inak nevolať nový request
+      return;
     }
+
+    // Ak už existuje in-flight request, použij ho
+    if (loadSkillsInFlightRef.current) {
+      return loadSkillsInFlightRef.current;
+    }
+
+    // Vytvor nový request
+    loadSkillsLastTimeRef.current = now;
+    const request = (async () => {
+      try {
+        const { data } = await api.get(endpoints.skills.list);
+        const skills: any[] = Array.isArray(data) ? data : [];
+        // Namapuj a zorad podľa ID zostupne – nové karty budú vždy hore
+        const localSkills = skills
+          .map(toLocalSkill)
+          .sort((a, b) => (b.id ?? 0) - (a.id ?? 0));
+
+        const standard = localSkills.filter((s) => s.category !== s.subcategory);
+        const custom = localSkills.filter((s) => s.category === s.subcategory);
+
+        setStandardCategories(standard);
+        setCustomCategories(custom);
+      } catch {
+        // silently ignore – dashboard can work without backend data
+      } finally {
+        // Vyčisti in-flight request po dokončení
+        loadSkillsInFlightRef.current = null;
+      }
+    })();
+
+    loadSkillsInFlightRef.current = request;
+    return request;
   }, [toLocalSkill]);
 
   const fetchSkillDetail = useCallback(

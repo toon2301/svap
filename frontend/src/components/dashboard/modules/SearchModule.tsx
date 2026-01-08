@@ -66,8 +66,9 @@ export default function SearchModule({ user, onUserClick, onSkillClick, isOverla
   }, []);
 
   // Načítať návrhy pre používateľa (z kariet v jeho lokalite)
+  // OPRAVA: Použiť user?.id namiesto celého user objektu, aby sa zabránilo nekonečnej slučke
   useEffect(() => {
-    if (!user) return;
+    if (!user?.id) return;
 
     let cancelled = false;
 
@@ -206,8 +207,7 @@ export default function SearchModule({ user, onUserClick, onSkillClick, isOverla
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id]); // používame len user.id namiesto celého objektu
+  }, [user?.id]);
 
   // Skryť FlipButton ikony v kartách keď je filter modal otvorený
   useEffect(() => {

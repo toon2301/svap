@@ -51,9 +51,95 @@ export const api = axios.create({
   withCredentials: true, // Povoliť posielanie cookies pre CSRF
 });
 
+// ============================================
+// DEBUGGING: API Request Tracking
+// ============================================
+// Pomôže identifikovať, ktoré endpointy sa volajú príliš často
+if (typeof window !== 'undefined') {
+  const apiDebugStats = {
+    requests: new Map<string, Array<{ time: number; method: string; url: string; status?: number }>>(),
+    startTime: Date.now(),
+  };
+
+  // Uložiť štatistiky do window pre prístup z konzoly
+  (window as any).__API_DEBUG_STATS__ = apiDebugStats;
+
+  // Funkcia na výpis štatistík (volateľná z konzoly: window.__API_DEBUG__.print())
+  (window as any).__API_DEBUG__ = {
+    print: () => {
+      const now = Date.now();
+      const elapsed = now - apiDebugStats.startTime;
+      console.group('🔍 API Request Statistics');
+      console.log(`Total time: ${(elapsed / 1000).toFixed(2)}s`);
+      
+      apiDebugStats.requests.forEach((calls, endpoint) => {
+        const callsInLastMinute = calls.filter(c => now - c.time < 60000).length;
+        const callsInLast10Seconds = calls.filter(c => now - c.time < 10000).length;
+        const errors = calls.filter(c => c.status && c.status >= 400).length;
+        const rateLimited = calls.filter(c => c.status === 429).length;
+        
+        console.group(`📍 ${endpoint}`);
+        console.log(`Total calls: ${calls.length}`);
+        console.log(`Calls in last 10s: ${callsInLast10Seconds}`);
+        console.log(`Calls in last 60s: ${callsInLastMinute}`);
+        console.log(`Errors: ${errors} (429 rate-limited: ${rateLimited})`);
+        if (calls.length > 0) {
+          console.log(`Last call: ${((now - calls[calls.length - 1].time) / 1000).toFixed(2)}s ago`);
+          // Zobraziť posledných 5 volaní
+          const recent = calls.slice(-5).reverse();
+          console.table(recent.map(c => ({
+            time: new Date(c.time).toLocaleTimeString(),
+            method: c.method,
+            status: c.status || 'pending',
+            ago: `${((now - c.time) / 1000).toFixed(2)}s`,
+          })));
+        }
+        console.groupEnd();
+      });
+      console.groupEnd();
+    },
+    clear: () => {
+      apiDebugStats.requests.clear();
+      apiDebugStats.startTime = Date.now();
+      console.log('✅ API debug stats cleared');
+    },
+    getStats: () => apiDebugStats,
+  };
+
+  console.log('🔍 API Debug enabled! Use window.__API_DEBUG__.print() in console to see statistics');
+}
+
 // Request interceptor to add auth token and CSRF token
 api.interceptors.request.use(
   (config) => {
+    // DEBUGGING: Track request
+    if (typeof window !== 'undefined' && (window as any).__API_DEBUG_STATS__) {
+      const stats = (window as any).__API_DEBUG_STATS__;
+      const url = config.url || '';
+      const fullUrl = config.baseURL ? `${config.baseURL}${url}` : url;
+      const method = (config.method || 'GET').toUpperCase();
+      
+      // Extract endpoint pattern (remove IDs for grouping)
+      const endpoint = url.replace(/\/\d+\//g, '/:id/').replace(/\/\d+$/, '/:id');
+      const key = `${method} ${endpoint}`;
+      
+      if (!stats.requests.has(key)) {
+        stats.requests.set(key, []);
+      }
+      
+      const requestInfo = {
+        time: Date.now(),
+        method,
+        url: fullUrl,
+      };
+      
+      stats.requests.get(key)!.push(requestInfo);
+      
+      // Attach to config for response interceptor
+      (config as any).__debugRequestInfo = requestInfo;
+      (config as any).__debugKey = key;
+    }
+
     // Ak posielame FormData (upload súboru), odstráň Content-Type, aby Axios pridal multipart boundary
     const isFormData = typeof FormData !== 'undefined' && config.data instanceof FormData;
     if (isFormData) {
@@ -97,9 +183,53 @@ api.interceptors.request.use(
 
 // Response interceptor to handle token refresh
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // DEBUGGING: Update request info with status
+    if (typeof window !== 'undefined' && response.config && (response.config as any).__debugRequestInfo) {
+      const stats = (window as any).__API_DEBUG_STATS__;
+      const key = (response.config as any).__debugKey;
+      if (stats && key && stats.requests.has(key)) {
+        const calls = stats.requests.get(key)!;
+        const requestInfo = (response.config as any).__debugRequestInfo;
+        const index = calls.findIndex(c => c === requestInfo);
+        if (index !== -1) {
+          calls[index].status = response.status;
+        }
+      }
+    }
+    return response;
+  },
   async (error) => {
     const originalRequest = error.config;
+
+    // DEBUGGING: Update request info with error status
+    if (typeof window !== 'undefined' && originalRequest && (originalRequest as any).__debugRequestInfo) {
+      const stats = (window as any).__API_DEBUG_STATS__;
+      const key = (originalRequest as any).__debugKey;
+      if (stats && key && stats.requests.has(key)) {
+        const calls = stats.requests.get(key)!;
+        const requestInfo = (originalRequest as any).__debugRequestInfo;
+        const index = calls.findIndex(c => c === requestInfo);
+        if (index !== -1) {
+          calls[index].status = error.response?.status || 0;
+        }
+      }
+      
+      // Auto-log 429 errors
+      if (error.response?.status === 429) {
+        console.warn('🚨 429 Rate Limit Hit!', {
+          endpoint: key,
+          url: error.config?.url,
+          method: error.config?.method,
+        });
+        // Auto-print stats when 429 occurs
+        setTimeout(() => {
+          if ((window as any).__API_DEBUG__) {
+            (window as any).__API_DEBUG__.print();
+          }
+        }, 100);
+      }
+    }
 
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;

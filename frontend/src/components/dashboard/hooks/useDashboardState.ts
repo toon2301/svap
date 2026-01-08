@@ -57,6 +57,7 @@ export function useDashboardState(initialUser?: User): UseDashboardStateResult {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(initialUser || null);
   const [isLoading, setIsLoading] = useState(!initialUser);
+  const hasCheckedAuth = useRef(false);
   const [activeModule, setActiveModule] = useState<string>(() => getInitialModule());
   const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(false);
   const [activeRightItem, setActiveRightItem] = useState('edit-profile');
@@ -95,6 +96,10 @@ export function useDashboardState(initialUser?: User): UseDashboardStateResult {
   }, []);
 
   useEffect(() => {
+    // Ak už bola auth kontrola vykonaná, nevykonávať znova
+    if (hasCheckedAuth.current) return;
+    hasCheckedAuth.current = true;
+
     const checkAuth = async () => {
       if (!isAuthenticated()) {
         router.push('/');
@@ -130,7 +135,7 @@ export function useDashboardState(initialUser?: User): UseDashboardStateResult {
 
     checkAuth();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialUser]); // router je stabilný objekt z Next.js, nemusí byť v dependencies
+  }, []); // Prázdny dependency array - auth kontrola sa vykoná len raz pri mounte
 
   const handleModuleChange = useCallback(
     (moduleId: string) => {

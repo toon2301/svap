@@ -117,8 +117,7 @@ export default function Dashboard({
     } catch {
       // ignore storage errors
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialRoute]); // setActiveModule je stabilný setter, nemusí byť v dependencies
+  }, [initialRoute, setActiveModule]);
 
   // Inicializácia profilu podľa slug/ID z URL
   useEffect(() => {
@@ -193,8 +192,7 @@ export default function Dashboard({
         // ignore
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.slug, user?.id, initialProfileSlug]); // používame len primitívy z user objektu
+  }, [user, initialProfileSlug, setActiveModule]);
 
   // Aplikuj počiatočný stav pravého sidebaru pre vlastný profil na základe URL (edit, account, privacy, language)
   useEffect(() => {
@@ -245,8 +243,7 @@ export default function Dashboard({
         setActiveRightItem('language');
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.slug, user?.id, initialProfileSlug, initialRightItem]); // používame len primitívy z user objektu, settery sú stabilné
+  }, [user, initialProfileSlug, initialRightItem, setActiveModule, setIsRightSidebarOpen, setActiveRightItem]);
 
   // Funkcia na uloženie karty
   const handleSkillSave = async () => {
@@ -415,12 +412,12 @@ export default function Dashboard({
     }
   };
 
+  // OPRAVA: Použiť user?.id namiesto celého user objektu, aby sa zabránilo nekonečnej slučke
   useEffect(() => {
-    if (user) {
+    if (user?.id) {
       loadSkills();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id]); // používame len user.id namiesto celého objektu, loadSkills je stabilná funkcia
+  }, [user?.id, loadSkills]);
 
   // Pri odchode z modulu user-profile zruš zvýraznenie a timer
   useEffect(() => {
@@ -503,38 +500,18 @@ export default function Dashboard({
   };
 
   const handleSidebarLanguageClick = () => {
-    const identifier = user.slug || String(user.id);
-    // Okamžitá zmena URL - router.push() je asynchrónny, ale URL sa zmení okamžite
-    if (typeof window !== 'undefined') {
-      window.history.pushState(null, '', `/dashboard/users/${identifier}/language`);
-    }
-    router.push(`/dashboard/users/${identifier}/language`);
-    // State updates po navigácii
     setActiveModule('profile');
     setIsRightSidebarOpen(true);
     setActiveRightItem('language');
   };
 
   const handleSidebarAccountTypeClick = () => {
-    const identifier = user.slug || String(user.id);
-    // Okamžitá zmena URL
-    if (typeof window !== 'undefined') {
-      window.history.pushState(null, '', `/dashboard/users/${identifier}/account`);
-    }
-    router.push(`/dashboard/users/${identifier}/account`);
-    // State updates po navigácii
     setActiveModule('profile');
     setIsRightSidebarOpen(true);
     setActiveRightItem('account-type');
   };
 
   const handleSidebarPrivacyClick = () => {
-    const identifier = user.slug || String(user.id);
-    // Okamžitá zmena URL
-    if (typeof window !== 'undefined') {
-      window.history.pushState(null, '', `/dashboard/users/${identifier}/privacy`);
-    }
-    router.push(`/dashboard/users/${identifier}/privacy`);
     // V mobilnej verzii otvor nový screen, v desktop verzii pravý sidebar
     if (typeof window !== 'undefined' && window.innerWidth < 1024) {
       setActiveModule('privacy');
@@ -560,13 +537,9 @@ export default function Dashboard({
     // Zachovať existujúce správanie otvorenia/zatvorenia pravého sidebaru
     handleRightSidebarToggle();
 
-    // Okamžitá zmena URL - synchronizovať URL s režimom úpravy profilu (preferuj slug, fallback na ID)
+    // Synchronizovať URL s režimom úpravy profilu (preferuj slug, fallback na ID)
     const identifier = user.slug || String(user.id);
-    const targetUrl = `/dashboard/users/${identifier}/edit`;
-    if (typeof window !== 'undefined') {
-      window.history.pushState(null, '', targetUrl);
-    }
-    router.push(targetUrl);
+    router.push(`/dashboard/users/${identifier}/edit`);
   };
 
   const handleSearchClose = () => {
@@ -597,13 +570,9 @@ export default function Dashboard({
     } catch {
       // ignore
     }
-    // Okamžitá zmena URL - aktualizuj URL tak, aby profil používateľa prežil refresh
+    // Aktualizuj URL tak, aby profil používateľa prežil refresh
     const identifier = slug || String(userId);
-    const targetUrl = `/dashboard/users/${identifier}`;
-    if (typeof window !== 'undefined') {
-      window.history.pushState(null, '', targetUrl);
-    }
-    router.push(targetUrl);
+    router.push(`/dashboard/users/${identifier}`);
     setIsSearchOpen(false);
   };
 
@@ -628,12 +597,8 @@ export default function Dashboard({
       // ignore
     }
     const identifier = slug || String(userId);
-    // Okamžitá zmena URL - zatiaľ používame rovnakú route, skillId sa môže preniesť v query/hash ak bude potrebné
-    const targetUrl = `/dashboard/users/${identifier}`;
-    if (typeof window !== 'undefined') {
-      window.history.pushState(null, '', targetUrl);
-    }
-    router.push(targetUrl);
+    // Zatiaľ používame rovnakú route, skillId sa môže preniesť v query/hash ak bude potrebné
+    router.push(`/dashboard/users/${identifier}`);
     setIsSearchOpen(false);
 
     // Automatické zrušenie zvýraznenia po 2 minútach
@@ -657,96 +622,34 @@ export default function Dashboard({
     }
   };
 
-  // Handlery pre skills navigáciu s URL synchronizáciou
-  const handleSkillsClick = () => {
-    const targetUrl = '/dashboard/skills';
-    if (typeof window !== 'undefined') {
-      window.history.pushState(null, '', targetUrl);
-    }
-    router.push(targetUrl);
-    setActiveModule('skills');
-    try {
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('activeModule', 'skills');
-      }
-    } catch {
-      // ignore
-    }
-  };
-
-  const handleSkillsOfferClick = () => {
-    const targetUrl = '/dashboard/skills/offer';
-    if (typeof window !== 'undefined') {
-      window.history.pushState(null, '', targetUrl);
-    }
-    router.push(targetUrl);
-    setActiveModule('skills-offer');
-    try {
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('activeModule', 'skills-offer');
-      }
-    } catch {
-      // ignore
-    }
-  };
-
-  const handleSkillsSearchClick = () => {
-    const targetUrl = '/dashboard/skills/search';
-    if (typeof window !== 'undefined') {
-      window.history.pushState(null, '', targetUrl);
-    }
-    router.push(targetUrl);
-    setActiveModule('skills-search');
-    try {
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('activeModule', 'skills-search');
-      }
-    } catch {
-      // ignore
-    }
-  };
-
   const handleMainModuleChange = (moduleId: string) => {
     // Pri prepnutí hlavného modulu zatvor vyhľadávací panel
     setIsSearchOpen(false);
 
-    // Okamžitá zmena URL - určiť cieľovú URL
-    let targetUrl = '/dashboard';
-    
+    // Synchronizuj URL s hlavnými sekciami dashboardu
     if (moduleId === 'search') {
-      targetUrl = '/dashboard/search';
+      router.push('/dashboard/search');
     } else if (moduleId === 'settings') {
-      targetUrl = '/dashboard/settings';
+      router.push('/dashboard/settings');
     } else if (moduleId === 'notifications') {
-      targetUrl = '/dashboard/notifications';
+      router.push('/dashboard/notifications');
     } else if (moduleId === 'language') {
-      targetUrl = '/dashboard/language';
+      router.push('/dashboard/language');
     } else if (moduleId === 'profile') {
       const identifier = user.slug || String(user.id);
-      targetUrl = `/dashboard/users/${identifier}`;
+      router.push(`/dashboard/users/${identifier}`);
     } else if (moduleId === 'favorites') {
-      targetUrl = '/dashboard/favorites';
+      router.push('/dashboard/favorites');
     } else if (moduleId === 'messages') {
-      targetUrl = '/dashboard/messages';
-    } else if (moduleId === 'skills') {
-      targetUrl = '/dashboard/skills';
-    } else if (moduleId === 'skills-offer') {
-      targetUrl = '/dashboard/skills/offer';
-    } else if (moduleId === 'skills-search') {
-      targetUrl = '/dashboard/skills/search';
-    } else if (moduleId === 'home' || moduleId === 'create') {
-      targetUrl = '/dashboard';
+      router.push('/dashboard/messages');
+    } else if (
+      moduleId === 'home' ||
+      moduleId === 'create'
+    ) {
+      // Ostatné hlavné moduly ostávajú na /dashboard
+      router.push('/dashboard');
     }
-    
-    // Okamžitá zmena URL cez window.history
-    if (typeof window !== 'undefined') {
-      window.history.pushState(null, '', targetUrl);
-    }
-    
-    // Asynchrónna navigácia cez Next.js router
-    router.push(targetUrl);
-    
-    // State update po navigácii
+
     handleModuleChange(moduleId);
   };
 
@@ -786,9 +689,6 @@ export default function Dashboard({
       highlightedSkillId={highlightedSkillId}
       onViewUserSkillFromSearch={handleViewUserSkillFromSearch}
       initialProfileTab={initialProfileTab}
-      onSkillsClick={handleSkillsClick}
-      onSkillsOfferClick={handleSkillsOfferClick}
-      onSkillsSearchClick={handleSkillsSearchClick}
     />
   );
 
@@ -802,37 +702,7 @@ export default function Dashboard({
         onModuleChange={handleMainModuleChange}
         onLogout={handleLogout}
         onRightSidebarClose={handleRightSidebarClose}
-        onRightItemClick={(itemId) => {
-          // Okamžitá zmena URL - router.push() je asynchrónny, ale URL sa zmení okamžite
-          const identifier = user.slug || String(user.id);
-          let targetUrl = '';
-          
-          if (itemId === 'edit-profile') {
-            targetUrl = `/dashboard/users/${identifier}/edit`;
-          } else if (itemId === 'account-type') {
-            targetUrl = `/dashboard/users/${identifier}/account`;
-          } else if (itemId === 'privacy') {
-            targetUrl = `/dashboard/users/${identifier}/privacy`;
-          } else if (itemId === 'language') {
-            targetUrl = `/dashboard/users/${identifier}/language`;
-          } else if (itemId === 'notifications') {
-            // Notifications zostáva v pravom sidebare, ale URL sa zmení
-            targetUrl = '/dashboard/notifications';
-          }
-          
-          if (targetUrl && typeof window !== 'undefined') {
-            // Okamžitá zmena URL cez window.history
-            window.history.pushState(null, '', targetUrl);
-          }
-          
-          // Asynchrónna navigácia cez Next.js router (pre správne fungovanie SSR)
-          if (targetUrl) {
-            router.push(targetUrl);
-          }
-          
-          // State updates po navigácii
-          handleRightItemClick(itemId);
-        }}
+        onRightItemClick={handleRightItemClick}
         onMobileMenuOpen={() => setIsMobileMenuOpen(true)}
         onMobileMenuClose={() => setIsMobileMenuOpen(false)}
         onMobileBack={activeModule === 'skills-select-category' ? handleSkillsCategoryBack : handleMobileBack}

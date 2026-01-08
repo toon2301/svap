@@ -13,6 +13,7 @@ import {
   getOffersFromCache,
   makeOffersCacheKey,
   setOffersToCache,
+  getOrCreateOffersRequest,
 } from './profileOffersCache';
 
 interface ProfileOffersSectionProps {
@@ -41,22 +42,28 @@ export default function ProfileOffersSection({
   useEffect(() => {
     if (activeTab !== 'offers') return;
 
+    let cancelled = false;
+
     const load = async () => {
       try {
         setLoadError(null);
         const cacheKey = makeOffersCacheKey(ownerUserId);
         const cached = getOffersFromCache(cacheKey);
         if (cached) {
+          if (cancelled) return;
           setOffers(cached);
           return;
         }
 
+        // Request deduplication - použij existujúci in-flight request alebo vytvor nový
         const endpoint = ownerUserId
           ? endpoints.dashboard.userSkills(ownerUserId)
           : endpoints.skills.list;
-        const { data } = await api.get(endpoint);
-        const list = Array.isArray(data) ? data : [];
-        const mapped: Offer[] = list.map((s: any) => {
+
+        const mappedOffers = await getOrCreateOffersRequest(cacheKey, async () => {
+          const { data } = await api.get(endpoint);
+          const list = Array.isArray(data) ? data : [];
+          return list.map((s: any) => {
           const rawPrice = s.price_from;
           const parsedPrice =
             typeof rawPrice === 'number'
@@ -108,22 +115,31 @@ export default function ProfileOffersSection({
             duration_type: s.duration_type || null,
           };
         });
-        setOffers(mapped);
-        setOffersToCache(cacheKey, mapped);
-      } catch (error: any) {
-        // Pri 429 ponechaj posledné ponuky (z cache alebo prázdne) a zobraz jemnú hlášku
-        if (error?.response?.status === 429) {
-          setLoadError(
-            t(
-              'profile.offersRateLimited',
-              'Príliš veľa požiadaviek pri načítavaní ponúk, skúste to o chvíľu.',
-            ),
-          );
-        }
+      });
+
+      if (cancelled) return;
+
+      setOffers(mappedOffers);
+      setOffersToCache(cacheKey, mappedOffers);
+    } catch (error: any) {
+      if (cancelled) return;
+      // Pri 429 ponechaj posledné ponuky (z cache alebo prázdne) a zobraz jemnú hlášku
+      if (error?.response?.status === 429) {
+        setLoadError(
+          t(
+            'profile.offersRateLimited',
+            'Príliš veľa požiadaviek pri načítavaní ponúk, skúste to o chvíľu.',
+          ),
+        );
       }
-    };
+    }
+  };
 
     void load();
+
+    return () => {
+      cancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, ownerUserId]); // t je prekladová funkcia, ktorá sa nemení v tejto logike
 
