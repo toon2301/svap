@@ -66,9 +66,8 @@ export default function RootLayout({
         {/* Force zoom reset for email links */}
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
         
-        {/* Security */}
+        {/* Security (iba HTTP headers – X-Frame-Options sa nastavuje na serveri, nie v meta) */}
         <meta httpEquiv="X-Content-Type-Options" content="nosniff" />
-        <meta httpEquiv="X-Frame-Options" content="DENY" />
         <meta httpEquiv="X-XSS-Protection" content="1; mode=block" />
         
         {/* Preload kritických zdrojov */}

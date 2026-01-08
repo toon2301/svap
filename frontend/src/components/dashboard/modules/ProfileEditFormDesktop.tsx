@@ -1,8 +1,9 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { User } from '../../../types';
+import { api } from '../../../lib/api';
 import HeaderCard from './profile-edit/desktop/HeaderCard';
 import WebsitesField from './profile-edit/desktop/WebsitesField';
 import BioField from './profile-edit/desktop/fields/BioField';
@@ -79,6 +80,66 @@ export default function ProfileEditFormDesktop({
     handleRemoveAvatar,
   } = useProfileEditFormDesktop({ user, onUserUpdate });
 
+  // Lokálny state pre input hodnotu mena - zachová medzery počas písania
+  const [fullNameInput, setFullNameInput] = useState('');
+
+  // Synchronizovať lokálny state s firstName a lastName
+  useEffect(() => {
+    const fullName = firstName && lastName ? `${firstName} ${lastName}` : firstName || lastName || '';
+    setFullNameInput(fullName);
+  }, [firstName, lastName]);
+
+  // Wrapper pre handleFullNameSave, ktorý parsuje input hodnotu pred uložením
+  const handleFullNameSaveWithParse = async () => {
+    const trimmedValue = fullNameInput.trim();
+    const parts = trimmedValue.split(/\s+/).filter(Boolean);
+    let newFirstName = '';
+    let newLastName = '';
+    
+    if (parts.length === 0) {
+      newFirstName = '';
+      newLastName = '';
+    } else if (parts.length === 1) {
+      newFirstName = parts[0];
+      newLastName = '';
+    } else {
+      newFirstName = parts.slice(0, -1).join(' ');
+      newLastName = parts[parts.length - 1];
+    }
+    
+    // Porovnať s aktuálnymi hodnotami
+    const f = newFirstName.trim();
+    const l = newLastName.trim();
+    if (f === (user.first_name || '').trim() && l === (user.last_name || '').trim()) {
+      // Žiadna zmena - len aktualizovať lokálny state
+      setFirstName(newFirstName);
+      setLastName(newLastName);
+      return;
+    }
+    
+    try {
+      // Volať API priamo s novými hodnotami
+      const response = await api.patch('/auth/profile/', {
+        first_name: f,
+        last_name: l,
+      });
+      
+      // Aktualizovať state
+      setFirstName(newFirstName);
+      setLastName(newLastName);
+      
+      if (onUserUpdate && response.data?.user) {
+        onUserUpdate(response.data.user);
+      }
+    } catch (error: any) {
+      console.error('Error saving full name:', error);
+      // Revert na pôvodné hodnoty
+      setFirstName(user.first_name || '');
+      setLastName(user.last_name || '');
+      setFullNameInput(firstName && lastName ? `${firstName} ${lastName}` : firstName || lastName || '');
+    }
+  };
+
   return (
     <>
       <div 
@@ -110,28 +171,16 @@ export default function ProfileEditFormDesktop({
               <input
                 id="fullName"
                 type="text"
-                value={`${firstName} ${lastName}`.trim()}
+                value={fullNameInput}
                 onChange={(e) => {
-                  const value = e.target.value || '';
-                  const parts = value.trim().split(/\s+/).filter(Boolean);
-                  if (parts.length === 0) {
-                    setFirstName('');
-                    setLastName('');
-                  } else if (parts.length === 1) {
-                    setFirstName(parts[0]);
-                    setLastName('');
-                  } else {
-                    setFirstName(parts.slice(0, -1).join(' '));
-                    setLastName(parts[parts.length - 1]);
-                  }
+                  setFullNameInput(e.target.value);
                 }}
-                onBlur={handleFullNameSave}
+                onBlur={handleFullNameSaveWithParse}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
-                    handleFullNameSave();
+                    handleFullNameSaveWithParse();
                   }
                 }}
-                pattern="[a-zA-ZáčďéěíĺľňóôŕšťúýžÁČĎÉĚÍĹĽŇÓÔŔŠŤÚÝŽ\s-]*"
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-1 focus:ring-purple-300 focus:border-transparent"
                 placeholder={t('profile.enterName', 'Zadajte svoje meno a priezvisko')}
               />

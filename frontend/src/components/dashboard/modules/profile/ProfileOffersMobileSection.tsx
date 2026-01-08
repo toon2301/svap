@@ -10,6 +10,11 @@ import { HOURS_DAYS } from './profileOffersTypes';
 import { ProfileOfferDetailMobile } from './ProfileOfferDetailMobile';
 import { ProfileOpeningHoursMobileModal } from './ProfileOpeningHoursMobileModal';
 import { ProfileOfferCardMobile } from './ProfileOfferCardMobile';
+import {
+  getOffersFromCache,
+  makeOffersCacheKey,
+  setOffersToCache,
+} from './profileOffersCache';
 
 interface ProfileOffersMobileSectionProps {
   accountType?: 'personal' | 'business';
@@ -38,6 +43,13 @@ export default function ProfileOffersMobileSection({
       try {
         setIsLoading(true);
         setLoadError(null);
+        const cacheKey = makeOffersCacheKey(ownerUserId);
+        const cached = getOffersFromCache(cacheKey);
+        if (cached) {
+          setOffers(cached);
+          return;
+        }
+
         const endpoint = ownerUserId
           ? endpoints.dashboard.userSkills(ownerUserId)
           : endpoints.skills.list;
@@ -99,6 +111,7 @@ export default function ProfileOffersMobileSection({
         });
 
         setOffers(mapped);
+        setOffersToCache(cacheKey, mapped);
       } catch (error: any) {
         if (cancelled) return;
         const msg =

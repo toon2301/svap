@@ -2,6 +2,8 @@
 export interface User {
   id: number;
   username: string;
+  // URL-friendly identifikátor profilu (napr. meno.priezvisko-1)
+  slug?: string | null;
   email: string;
   first_name: string;
   last_name: string;

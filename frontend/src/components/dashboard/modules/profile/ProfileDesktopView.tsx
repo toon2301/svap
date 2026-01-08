@@ -98,8 +98,7 @@ export default function ProfileDesktopView({
                     <div className="flex flex-col flex-grow min-w-0">
                       {/* Meno používateľa */}
                       <h2 className="text-[clamp(1.25rem,2vw,1.75rem)] font-semibold text-gray-900 dark:text-white mb-2">
-                        {`${(displayUser.first_name || '').trim()} ${(displayUser.last_name || '').trim()}`.trim() ||
-                          displayUser.username}
+                        {[displayUser.first_name, displayUser.last_name].filter(Boolean).join(' ').trim() || displayUser.username}
                       </h2>
                       {/* Email intentionally not shown here (kept in edit views) */}
                       {/* Lokalita - zobrazí mesto/dedinu ak je, inak okres ak je */}

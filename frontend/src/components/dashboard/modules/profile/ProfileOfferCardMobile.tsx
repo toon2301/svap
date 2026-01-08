@@ -58,13 +58,20 @@ export function ProfileOfferCardMobile({
   const hasMultipleImages = imageCount > 1;
 
   return (
-    <button
+    <div
       key={offer.id}
-      type="button"
+      role="button"
+      tabIndex={0}
       className={`relative w-full text-left rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-[#0f0f10] shadow-sm active:scale-[0.99] transition-transform ${
         isHighlighted ? 'highlight-offer-card' : ''
       }`}
       onClick={onCardClick}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onCardClick();
+        }
+      }}
     >
       {/* Veľký text "Ponúkam" alebo "Hľadám" cez celú kartu – mobilná verzia, skryje sa pri prvom kliknutí */}
       {!isTapped && (
@@ -242,7 +249,7 @@ export function ProfileOfferCardMobile({
           </div>
         )}
       </div>
-    </button>
+    </div>
   );
 }
 

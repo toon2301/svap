@@ -262,6 +262,7 @@ def dashboard_home_view(request):
             'last_name': user.last_name,
             'username': user.username,
             'profile_completeness': user.profile_completeness,
+            'slug': getattr(user, 'slug', None),
         }
     }, status=status.HTTP_200_OK)
 
@@ -485,6 +486,7 @@ def dashboard_search_view(request):
                 'location': user.location,
                 'is_verified': user.is_verified,
                 'avatar_url': avatar_url,
+                'slug': getattr(user, 'slug', None),
             }
         )
 
@@ -634,11 +636,46 @@ def dashboard_user_profile_detail_view(request, user_id: int):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 @api_rate_limit
+def dashboard_user_profile_detail_by_slug_view(request, slug: str):
+    """
+    Read‑only detail profilu iného používateľa podľa slug-u.
+    """
+    try:
+        user = User.objects.get(slug=slug, is_active=True)
+    except User.DoesNotExist:
+        return Response({'error': 'Používateľ nebol nájdený'}, status=status.HTTP_404_NOT_FOUND)
+
+    from ..serializers import UserProfileSerializer
+
+    serializer = UserProfileSerializer(user, context={'request': request})
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+@api_rate_limit
 def dashboard_user_skills_view(request, user_id: int):
     """
     Read‑only zoznam zručností (ponúk) iného používateľa pre dashboard / vyhľadávanie.
     """
     skills_qs = OfferedSkill.objects.filter(user_id=user_id).order_by('-updated_at')
+    serializer = OfferedSkillSerializer(skills_qs, many=True, context={'request': request})
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+@api_rate_limit
+def dashboard_user_skills_by_slug_view(request, slug: str):
+    """
+    Read‑only zoznam zručností iného používateľa podľa slug-u.
+    """
+    try:
+        user = User.objects.get(slug=slug, is_active=True)
+    except User.DoesNotExist:
+        return Response({'error': 'Používateľ nebol nájdený'}, status=status.HTTP_404_NOT_FOUND)
+
+    skills_qs = OfferedSkill.objects.filter(user_id=user.id).order_by('-updated_at')
     serializer = OfferedSkillSerializer(skills_qs, many=True, context={'request': request})
     return Response(serializer.data, status=status.HTTP_200_OK)
 

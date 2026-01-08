@@ -46,6 +46,9 @@ urlpatterns = [
     path('dashboard/profile/', views.dashboard_profile_view, name='dashboard_profile'),
     path('dashboard/users/<int:user_id>/profile/', views.dashboard_user_profile_detail_view, name='dashboard_user_profile_detail'),
     path('dashboard/users/<int:user_id>/skills/', views.dashboard_user_skills_view, name='dashboard_user_skills'),
+    # Slug-based profily (BC: nové endpointy, nemenia existujúce kontrakty)
+    path('dashboard/users/slug/<str:slug>/profile/', views.dashboard_user_profile_detail_by_slug_view, name='dashboard_user_profile_detail_by_slug'),
+    path('dashboard/users/slug/<str:slug>/skills/', views.dashboard_user_skills_by_slug_view, name='dashboard_user_skills_by_slug'),
     path('dashboard/settings/', views.dashboard_settings_view, name='dashboard_settings'),
     
     # Skills

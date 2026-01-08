@@ -2,6 +2,7 @@
 
 import React from 'react';
 import type { User } from '../../types';
+import type { SearchUserResult } from './modules/search/types';
 import ProfileModule from './modules/ProfileModule';
 import NotificationsModule from './modules/NotificationsModule';
 import LanguageModule from './modules/LanguageModule';
@@ -44,9 +45,11 @@ interface ModuleRouterProps {
   setIsInSubcategories?: (value: boolean) => void;
   onSkillsCategoryBackHandlerSet?: (handler: () => void) => void;
   viewedUserId?: number | null;
-  onViewUserProfile?: (userId: number) => void;
+  viewedUserSummary?: SearchUserResult | null;
+  onViewUserProfile?: (userId: number, slug?: string | null, summary?: SearchUserResult) => void;
   highlightedSkillId?: number | null;
-  onViewUserSkillFromSearch?: (userId: number, skillId: number) => void;
+  onViewUserSkillFromSearch?: (userId: number, skillId: number, slug?: string | null) => void;
+  initialProfileTab?: import('./modules/profile/profileTypes').ProfileTab;
 }
 
 export default function ModuleRouter({
@@ -76,9 +79,11 @@ export default function ModuleRouter({
   setIsInSubcategories,
   onSkillsCategoryBackHandlerSet,
   viewedUserId,
+  viewedUserSummary,
   onViewUserProfile,
   highlightedSkillId,
   onViewUserSkillFromSearch,
+  initialProfileTab,
 }: ModuleRouterProps) {
   const { t } = useLanguage();
 
@@ -148,6 +153,8 @@ export default function ModuleRouter({
       return (
         <SearchUserProfileModule
           userId={viewedUserId}
+          initialSummary={viewedUserSummary ?? undefined}
+          initialTab={initialProfileTab}
           highlightedSkillId={highlightedSkillId ?? null}
           onBack={() => {
             setActiveModule('search');

@@ -13,6 +13,8 @@ export type SearchSkill = Offer & {
 export interface SearchUserResult {
   id: number;
   display_name: string;
+  // URL slug profilu používateľa (napr. meno.priezvisko-1)
+  slug?: string | null;
   district?: string | null;
   location?: string | null;
   is_verified: boolean;
@@ -28,9 +30,9 @@ export interface SearchResults {
 export interface SearchModuleProps {
   user: User;
   // Voliteľný callback pri kliknutí na používateľa vo výsledkoch
-  onUserClick?: (userId: number) => void;
+  onUserClick?: (userId: number, slug?: string | null, summary?: SearchUserResult) => void;
   // Voliteľný callback pri kliknutí na kartu zručnosti (Ponúkam/Hľadám)
-  onSkillClick?: (userId: number, skillId: number) => void;
+  onSkillClick?: (userId: number, skillId: number, slug?: string | null) => void;
   // true ak je SearchModule použitý v ľavom overlay paneli vedľa navigácie
   isOverlay?: boolean;
 }

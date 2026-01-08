@@ -1,8 +1,11 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { User } from '../../types';
+import type { ProfileTab } from './modules/profile/profileTypes';
+import type { SearchUserResult } from './modules/search/types';
 import DashboardLayout from './DashboardLayout';
 import ModuleRouter from './ModuleRouter';
 import DashboardModals from './DashboardModals';
@@ -10,21 +13,46 @@ import SearchModule from './modules/SearchModule';
 import { useDashboardState } from './hooks/useDashboardState';
 import { useSkillsModals, type DashboardSkill } from './hooks/useSkillsModals';
 import { api, endpoints } from '../../lib/api';
+import {
+  getUserIdBySlug,
+  getUserProfileFromCache,
+  setUserProfileToCache,
+} from './modules/profile/profileUserCache';
 
 interface DashboardProps {
   initialUser?: User;
+  initialRoute?: string;
+  initialViewedUserId?: number | null;
+  initialHighlightedSkillId?: number | null;
+  initialProfileTab?: ProfileTab;
+  // Pri routovaní cez slug (napr. /dashboard/users/[slug])
+  initialProfileSlug?: string | null;
+  // Ak je nastavený, otvorí po načítaní príslušnú sekciu pravého sidebaru na vlastnom profile
+  initialRightItem?: string | null;
 }
 
-export default function Dashboard({ initialUser }: DashboardProps) {
+export default function Dashboard({
+  initialUser,
+  initialRoute,
+  initialViewedUserId,
+  initialHighlightedSkillId,
+  initialProfileTab,
+  initialProfileSlug,
+  initialRightItem,
+}: DashboardProps) {
   const { t } = useLanguage();
+  const router = useRouter();
   const dashboardState = useDashboardState(initialUser);
   const skillsState = useSkillsModals();
   const [isInSubcategories, setIsInSubcategories] = useState(false);
   const skillsCategoryBackHandlerRef = React.useRef<(() => void) | null>(null);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [viewedUserId, setViewedUserId] = useState<number | null>(null);
+  const [viewedUserSlug, setViewedUserSlug] = useState<string | null>(null);
   const [highlightedSkillId, setHighlightedSkillId] = useState<number | null>(null);
+  const [viewedUserSummary, setViewedUserSummary] = useState<SearchUserResult | null>(null);
   const highlightTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const initialRightItemAppliedRef = React.useRef(false);
 
   const {
     user,
@@ -76,6 +104,146 @@ export default function Dashboard({ initialUser }: DashboardProps) {
     removeStandardCategory,
     removeCustomCategory,
   } = skillsState;
+
+  // Inicializácia podľa URL (routy dashboardu)
+  useEffect(() => {
+    if (!initialRoute) return;
+
+    setActiveModule(initialRoute);
+    try {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('activeModule', initialRoute);
+      }
+    } catch {
+      // ignore storage errors
+    }
+  }, [initialRoute, setActiveModule]);
+
+  // Inicializácia profilu podľa slug/ID z URL
+  useEffect(() => {
+    // Ak máme explicitné ID z props, nastav ho a skonči
+    if (initialViewedUserId) {
+      setViewedUserId(initialViewedUserId);
+      if (initialHighlightedSkillId != null) {
+        setHighlightedSkillId(initialHighlightedSkillId);
+      }
+      return;
+    }
+
+    if (!initialProfileSlug) return;
+
+    setViewedUserSlug(initialProfileSlug);
+
+    // 1) Skús mapovanie slug -> userId z cache
+    const cachedId = getUserIdBySlug(initialProfileSlug);
+    if (cachedId) {
+      setViewedUserId(cachedId);
+      const cachedUser = getUserProfileFromCache(cachedId);
+      if (!cachedUser) {
+        // profil sa pri ďalšej interakcii dotiahne cez existujúce fetchy
+      }
+      return;
+    }
+
+    // 2) Ak nemáme ID v cache, načítaj profil podľa slugu (vyžaduje slug endpoint na backende)
+    let cancelled = false;
+
+    const loadBySlug = async () => {
+      try {
+        const { data } = await api.get<User>(
+          endpoints.dashboard.userProfileBySlug(initialProfileSlug),
+        );
+        if (cancelled) return;
+
+        setViewedUserId(data.id);
+        setUserProfileToCache(data.id, data);
+      } catch {
+        // chyby riešia downstream komponenty (napr. jemná hláška v UI)
+      }
+    };
+
+    void loadBySlug();
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialProfileSlug]);
+
+  useEffect(() => {
+    if (!initialViewedUserId) return;
+
+    setViewedUserId(initialViewedUserId);
+    if (initialHighlightedSkillId != null) {
+      setHighlightedSkillId(initialHighlightedSkillId);
+    }
+  }, [initialViewedUserId, initialHighlightedSkillId]);
+
+  // Ak aktuálny route slug patrí prihlásenému používateľovi, zobraz jeho profil (ProfileModule)
+  useEffect(() => {
+    if (!user || !initialProfileSlug) return;
+    if (user.slug && user.slug === initialProfileSlug) {
+      setActiveModule('profile');
+      try {
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('activeModule', 'profile');
+        }
+      } catch {
+        // ignore
+      }
+    }
+  }, [user, initialProfileSlug, setActiveModule]);
+
+  // Aplikuj počiatočný stav pravého sidebaru pre vlastný profil na základe URL (edit, account, privacy, language)
+  useEffect(() => {
+    if (!user || !initialProfileSlug || !initialRightItem || initialRightItemAppliedRef.current) {
+      return;
+    }
+
+    if (user.slug && user.slug === initialProfileSlug) {
+      initialRightItemAppliedRef.current = true;
+
+      if (initialRightItem === 'edit-profile') {
+        // Zodpovedá handleRightSidebarToggle() pri zapnutí edit módu
+        setActiveModule('profile');
+        setIsRightSidebarOpen(true);
+        setActiveRightItem('edit-profile');
+        try {
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('activeModule', 'profile');
+          }
+        } catch {
+          // ignore
+        }
+      } else if (initialRightItem === 'account-type') {
+        // Zodpovedá handleSidebarAccountTypeClick()
+        setActiveModule('profile');
+        setIsRightSidebarOpen(true);
+        setActiveRightItem('account-type');
+      } else if (initialRightItem === 'privacy') {
+        // Zodpovedá handleSidebarPrivacyClick()
+        if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+          setActiveModule('privacy');
+          setIsRightSidebarOpen(false);
+          setActiveRightItem('');
+          try {
+            localStorage.setItem('activeModule', 'privacy');
+          } catch {
+            // ignore
+          }
+        } else {
+          setActiveModule('profile');
+          setIsRightSidebarOpen(true);
+          setActiveRightItem('privacy');
+        }
+      } else if (initialRightItem === 'language') {
+        // Zodpovedá handleSidebarLanguageClick()
+        setActiveModule('profile');
+        setIsRightSidebarOpen(true);
+        setActiveRightItem('language');
+      }
+    }
+  }, [user, initialProfileSlug, initialRightItem, setActiveModule, setIsRightSidebarOpen, setActiveRightItem]);
 
   // Funkcia na uloženie karty
   const handleSkillSave = async () => {
@@ -368,9 +536,15 @@ export default function Dashboard({ initialUser }: DashboardProps) {
     setIsSearchOpen(false);
   };
 
-  const handleViewUserProfileFromSearch = (userId: number) => {
+  const handleViewUserProfileFromSearch = (
+    userId: number,
+    slug?: string | null,
+    summary?: SearchUserResult,
+  ) => {
     // Navigácia na profil používateľa bez špecifickej karty
     setViewedUserId(userId);
+    setViewedUserSlug(slug ?? null);
+    setViewedUserSummary(summary ?? null);
     setHighlightedSkillId(null);
     if (highlightTimeoutRef.current) {
       clearTimeout(highlightTimeoutRef.current);
@@ -386,12 +560,21 @@ export default function Dashboard({ initialUser }: DashboardProps) {
     } catch {
       // ignore
     }
+    // Aktualizuj URL tak, aby profil používateľa prežil refresh
+    const identifier = slug || String(userId);
+    router.push(`/dashboard/users/${identifier}`);
     setIsSearchOpen(false);
   };
 
-  const handleViewUserSkillFromSearch = (userId: number, skillId: number) => {
+  const handleViewUserSkillFromSearch = (
+    userId: number,
+    skillId: number,
+    slug?: string | null,
+  ) => {
     // Navigácia na profil používateľa s konkrétnou kartou na zvýraznenie
     setViewedUserId(userId);
+    setViewedUserSlug(slug ?? null);
+    setViewedUserSummary(null);
     setHighlightedSkillId(skillId);
     setActiveModule('user-profile');
     setIsRightSidebarOpen(false);
@@ -403,6 +586,9 @@ export default function Dashboard({ initialUser }: DashboardProps) {
     } catch {
       // ignore
     }
+    const identifier = slug || String(userId);
+    // Zatiaľ používame rovnakú route, skillId sa môže preniesť v query/hash ak bude potrebné
+    router.push(`/dashboard/users/${identifier}`);
     setIsSearchOpen(false);
 
     // Automatické zrušenie zvýraznenia po 2 minútach
@@ -429,6 +615,31 @@ export default function Dashboard({ initialUser }: DashboardProps) {
   const handleMainModuleChange = (moduleId: string) => {
     // Pri prepnutí hlavného modulu zatvor vyhľadávací panel
     setIsSearchOpen(false);
+
+    // Synchronizuj URL s hlavnými sekciami dashboardu
+    if (moduleId === 'search') {
+      router.push('/dashboard/search');
+    } else if (moduleId === 'settings') {
+      router.push('/dashboard/settings');
+    } else if (moduleId === 'notifications') {
+      router.push('/dashboard/notifications');
+    } else if (moduleId === 'language') {
+      router.push('/dashboard/language');
+    } else if (moduleId === 'profile') {
+      const identifier = user.slug || String(user.id);
+      router.push(`/dashboard/users/${identifier}`);
+    } else if (moduleId === 'favorites') {
+      router.push('/dashboard/favorites');
+    } else if (moduleId === 'messages') {
+      router.push('/dashboard/messages');
+    } else if (
+      moduleId === 'home' ||
+      moduleId === 'create'
+    ) {
+      // Ostatné hlavné moduly ostávajú na /dashboard
+      router.push('/dashboard');
+    }
+
     handleModuleChange(moduleId);
   };
 
@@ -462,9 +673,11 @@ export default function Dashboard({ initialUser }: DashboardProps) {
         skillsCategoryBackHandlerRef.current = handler;
       }}
       viewedUserId={viewedUserId}
+      viewedUserSummary={viewedUserSummary}
       onViewUserProfile={handleViewUserProfileFromSearch}
       highlightedSkillId={highlightedSkillId}
       onViewUserSkillFromSearch={handleViewUserSkillFromSearch}
+      initialProfileTab={initialProfileTab}
     />
   );
 

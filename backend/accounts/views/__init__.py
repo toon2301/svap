@@ -11,7 +11,9 @@ from .dashboard import (
     dashboard_favorites_view, 
     dashboard_profile_view,
     dashboard_user_profile_detail_view,
+    dashboard_user_profile_detail_by_slug_view,
     dashboard_user_skills_view,
+    dashboard_user_skills_by_slug_view,
     dashboard_settings_view
 )
 
@@ -21,6 +23,8 @@ __all__ = [
     'update_profile_view',
     'skills_list_view', 'skills_detail_view', 'skill_images_view', 'skill_image_detail_view',
     'dashboard_home_view', 'dashboard_search_view', 'dashboard_favorites_view', 
-    'dashboard_profile_view', 'dashboard_user_profile_detail_view', 'dashboard_user_skills_view',
+    'dashboard_profile_view',
+    'dashboard_user_profile_detail_view', 'dashboard_user_profile_detail_by_slug_view',
+    'dashboard_user_skills_view', 'dashboard_user_skills_by_slug_view',
     'dashboard_settings_view'
 ]

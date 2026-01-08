@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { User } from '@/types';
 import { api } from '@/lib/api';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -22,20 +22,59 @@ interface NameModalProps {
 
 export default function NameModal({ isOpen, firstName, lastName, originalFirstName, originalLastName, setFirstName, setLastName, setOriginalFirstName, setOriginalLastName, onClose, onUserUpdate }: NameModalProps) {
   const { t } = useLanguage();
+  const [inputValue, setInputValue] = useState('');
+
+  // Inicializovať inputValue keď sa modal otvorí
+  useEffect(() => {
+    if (isOpen) {
+      const fullName = firstName && lastName ? `${firstName} ${lastName}` : firstName || lastName || '';
+      setInputValue(fullName);
+    }
+  }, [isOpen, firstName, lastName]);
+
+  const parseAndUpdate = (value: string) => {
+    const trimmedValue = value.trim();
+    const parts = trimmedValue.split(/\s+/).filter(Boolean);
+    if (parts.length === 0) {
+      setFirstName('');
+      setLastName('');
+    } else if (parts.length === 1) {
+      setFirstName(parts[0]);
+      setLastName('');
+    } else {
+      setFirstName(parts.slice(0, -1).join(' '));
+      setLastName(parts[parts.length - 1]);
+    }
+  };
 
   const handleSave = async () => {
     try {
-      const response = await api.patch('/auth/profile/', { first_name: firstName, last_name: lastName });
-      onUserUpdate && response.data?.user && onUserUpdate(response.data.user);
-      setOriginalFirstName && setOriginalFirstName(firstName);
-      setOriginalLastName && setOriginalLastName(lastName);
+      const trimmedValue = inputValue.trim();
+      const parts = trimmedValue.split(/\s+/).filter(Boolean);
+      const finalFirstName = parts.length === 0 ? '' : parts.length === 1 ? parts[0] : parts.slice(0, -1).join(' ');
+      const finalLastName = parts.length <= 1 ? '' : parts[parts.length - 1];
+      
+      // Parsovať hodnotu a aktualizovať state
+      parseAndUpdate(inputValue);
+      
+      const response = await api.patch('/auth/profile/', { first_name: finalFirstName.trim(), last_name: finalLastName.trim() });
+      if (onUserUpdate && response.data?.user) {
+        onUserUpdate(response.data.user);
+      }
+      setOriginalFirstName && setOriginalFirstName(finalFirstName.trim());
+      setOriginalLastName && setOriginalLastName(finalLastName.trim());
       onClose();
     } catch (e) {
       console.error('Chyba pri ukladaní mena:', e);
+      // Revert na pôvodné hodnoty
+      setFirstName(originalFirstName);
+      setLastName(originalLastName);
+      setInputValue(originalFirstName && originalLastName ? `${originalFirstName} ${originalLastName}` : originalFirstName || originalLastName || '');
     }
   };
 
   const handleBack = () => {
+    setInputValue(firstName && lastName ? `${firstName} ${lastName}` : firstName || lastName || '');
     setFirstName(originalFirstName);
     setLastName(originalLastName);
     onClose();
@@ -47,20 +86,9 @@ export default function NameModal({ isOpen, firstName, lastName, originalFirstNa
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('profile.fullName', 'Meno')}</label>
         <input
           type="text"
-          value={`${firstName} ${lastName}`.trim()}
+          value={inputValue}
           onChange={(e) => {
-            const value = e.target.value || '';
-            const parts = value.trim().split(/\s+/).filter(Boolean);
-            if (parts.length === 0) {
-              setFirstName('');
-              setLastName('');
-            } else if (parts.length === 1) {
-              setFirstName(parts[0]);
-              setLastName('');
-            } else {
-              setFirstName(parts.slice(0, -1).join(' '));
-              setLastName(parts[parts.length - 1]);
-            }
+            setInputValue(e.target.value);
           }}
           className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-1 focus:ring-purple-300 focus:border-transparent"
           placeholder={t('profile.enterName', 'Zadajte svoje meno a priezvisko')}

@@ -20,6 +20,9 @@ import { getUserInitials } from './search/utils';
 import { ScrollableText } from './search/ScrollableText';
 import { FilterModal } from './search/FilterModal';
 
+// Globálna cache výsledkov vyhľadávania v pamäti – prežije unmount/mount SearchModule
+const globalSearchResultsCache = new Map<string, SearchResults>();
+
 export default function SearchModule({ user, onUserClick, onSkillClick, isOverlay = false }: SearchModuleProps) {
   const { t } = useLanguage();
   const [searchQuery, setSearchQuery] = useState('');
@@ -39,6 +42,11 @@ export default function SearchModule({ user, onUserClick, onSkillClick, isOverla
   const [isFromRecentSearch, setIsFromRecentSearch] = useState(false);
   const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
+  const searchAbortControllerRef = useRef<AbortController | null>(null);
+  // Cache pre návrhy (suggestedSkills) – kľúč je ID aktuálneho používateľa
+  const suggestionsCacheRef = useRef<SearchSkill[] | null>(null);
+  // Jednoduchá cache výsledkov vyhľadávania v pamäti – zdieľaná medzi inštanciami SearchModule
+  const searchCacheRef = useRef<Map<string, SearchResults>>(globalSearchResultsCache);
 
   // Načítať posledné vyhľadávania (výsledky) z localStorage pri mounte
   useEffect(() => {
@@ -65,6 +73,12 @@ export default function SearchModule({ user, onUserClick, onSkillClick, isOverla
 
     const loadSuggestions = async () => {
       try {
+        // Ak už máme návrhy v cache pre aktuálneho používateľa, použi ich
+        if (suggestionsCacheRef.current) {
+          setSuggestedSkills(suggestionsCacheRef.current);
+          return;
+        }
+
         const response = await api.get(endpoints.dashboard.search, {
           params: {
             q: '',
@@ -177,6 +191,7 @@ export default function SearchModule({ user, onUserClick, onSkillClick, isOverla
 
         const ordered = [...complementary, ...remaining].slice(0, 10);
         setSuggestedSkills(ordered);
+        suggestionsCacheRef.current = ordered;
       } catch (e) {
         if (!cancelled) {
           // Návrhy sú len bonus – chyby ticho ignorujeme
@@ -280,6 +295,33 @@ export default function SearchModule({ user, onUserClick, onSkillClick, isOverla
       return;
     }
 
+    // Kľúč pre cache – závisí od textu aj filtrov
+    const cacheKey = JSON.stringify({
+      q,
+      offerType,
+      onlyMyLocation,
+      priceMin: priceMin || '',
+      priceMax: priceMax || '',
+    });
+
+    // Ak máme výsledok v cache, použi ho a nevolaj API znova
+    const cached = searchCacheRef.current.get(cacheKey);
+    if (cached) {
+      setResults(cached);
+      setIsSearching(false);
+      setError(null);
+      setHasSearched(true);
+      setIsFromRecentSearch(false);
+      return;
+    }
+
+    // Zruš predchádzajúci request, ak ešte beží
+    if (searchAbortControllerRef.current) {
+      searchAbortControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    searchAbortControllerRef.current = controller;
+
     setIsSearching(true);
     setError(null);
     setIsFromRecentSearch(false);
@@ -294,6 +336,7 @@ export default function SearchModule({ user, onUserClick, onSkillClick, isOverla
           price_min: priceMin || '',
           price_max: priceMax || '',
         },
+        signal: controller.signal,
       });
 
       const data = response.data || {};
@@ -302,7 +345,11 @@ export default function SearchModule({ user, onUserClick, onSkillClick, isOverla
         ? (data.users as SearchUserResult[])
         : [];
 
-      setResults({ skills, users });
+      const newResults: SearchResults = { skills, users };
+      setResults(newResults);
+
+      // Ulož do pamäťovej cache pre rovnaké vyhľadávanie v rámci session
+      searchCacheRef.current.set(cacheKey, newResults);
 
       // Uložiť výsledky do histórie localStorage
       if (typeof window !== 'undefined' && (skills.length > 0 || users.length > 0)) {
@@ -345,14 +392,27 @@ export default function SearchModule({ user, onUserClick, onSkillClick, isOverla
         }
       }
     } catch (e: any) {
+      // Ignoruj zrušené požiadavky (nové vyhľadávanie prebehlo skôr)
+      if (e?.name === 'CanceledError' || e?.code === 'ERR_CANCELED') {
+        return;
+      }
       console.error('Chyba pri vyhľadávaní:', e);
-      const message =
-        e?.response?.data?.error ||
-        t('search.error', 'Chyba pri vyhľadávaní. Skúste to znova.');
-      setError(message);
+
+      // Graceful handling 429 – nechaj posledné výsledky, zobraz len jemnú hlášku
+      if (e?.response?.status === 429) {
+        const message =
+          t('search.tooManyRequests', 'Príliš veľa požiadaviek, skúste o chvíľu.');
+        setError(message);
+      } else {
+        const message =
+          e?.response?.data?.error ||
+          t('search.error', 'Chyba pri vyhľadávaní. Skúste to znova.');
+        setError(message);
+      }
     } finally {
       setIsSearching(false);
       setHasSearched(true);
+      searchAbortControllerRef.current = null;
     }
   };
 
@@ -592,7 +652,14 @@ export default function SearchModule({ user, onUserClick, onSkillClick, isOverla
                           key={`suggest-${skill.id}`}
                           type="button"
                           onClick={() => {
-                            // Po kliknutí na návrh nastavíme výsledky len na tento návrh
+                            // Po kliknutí na návrh okamžite presmeruj na profil a zvýrazni kartu
+                            if (typeof onSkillClick === 'function') {
+                              const ownerId = skill.user_id ?? null;
+                              if (ownerId) {
+                                onSkillClick(ownerId, skill.id as number);
+                              }
+                            }
+                            // Nastavíme výsledky len na tento návrh (pre prípad, že sa užívateľ vráti)
                             setResults({ skills: [skill], users: [] });
                             setHasSearched(true);
                             setIsFromRecentSearch(false);
@@ -703,7 +770,8 @@ export default function SearchModule({ user, onUserClick, onSkillClick, isOverla
                           const skillTitle = skill.subcategory || skill.category;
 
                           // Formátovanie ceny podľa typu ponuky
-                          const hasPrice = skill.price_from !== null && skill.price_from !== undefined;
+                          const hasPrice =
+                            skill.price_from !== null && skill.price_from !== undefined;
                           const priceValue = hasPrice ? Number(skill.price_from) : null;
                           const priceCurrency = skill.price_currency || '€';
                           const priceLabel = hasPrice 
@@ -721,11 +789,16 @@ export default function SearchModule({ user, onUserClick, onSkillClick, isOverla
                                 if (typeof onSkillClick === 'function') {
                                   const ownerId = skill.user_id ?? null;
                                   if (ownerId) {
-                                    onSkillClick(ownerId, skill.id as number);
+                                    // Skús nájsť slug používateľa z results.users podľa ID
+                                    const owner =
+                                      results?.users.find((u) => u.id === ownerId) ??
+                                      null;
+                                    const ownerSlug = owner?.slug ?? null;
+                                    onSkillClick(ownerId, skill.id as number, ownerSlug);
                                   }
                                 }
                               }}
-                              className="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900 flex items-start gap-3"
+                              className="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover-bg-gray-900 flex items-start gap-3"
                             >
                               <div
                                 className={`px-2 py-1.5 rounded-full flex flex-col items-center justify-center flex-shrink-0 ${
@@ -781,7 +854,7 @@ export default function SearchModule({ user, onUserClick, onSkillClick, isOverla
                                 }
 
                                 if (!onUserClick) return;
-                                onUserClick(u.id);
+                                onUserClick(u.id, u.slug ?? null, u);
                               }}
                               className="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900 flex items-center gap-3"
                             >

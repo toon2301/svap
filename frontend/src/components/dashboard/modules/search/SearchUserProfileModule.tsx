@@ -4,6 +4,11 @@ import React, { useEffect, useState } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { api, endpoints } from "@/lib/api";
 import type { User } from "@/types";
+import type { SearchUserResult } from "./types";
+import {
+  getUserProfileFromCache,
+  setUserProfileToCache,
+} from "../profile/profileUserCache";
 import ProfileMobileView from "../profile/ProfileMobileView";
 import ProfileDesktopView from "../profile/ProfileDesktopView";
 import ProfileWebsitesModal from "../profile/ProfileWebsitesModal";
@@ -14,14 +19,23 @@ interface SearchUserProfileModuleProps {
   onBack?: () => void;
   onSendMessage?: () => void;
   highlightedSkillId?: number | null;
+  initialSummary?: SearchUserResult;
+  initialTab?: ProfileTab;
 }
 
-export function SearchUserProfileModule({ userId, onBack, onSendMessage, highlightedSkillId = null }: SearchUserProfileModuleProps) {
+export function SearchUserProfileModule({
+  userId,
+  onBack,
+  onSendMessage,
+  highlightedSkillId = null,
+  initialSummary,
+  initialTab,
+}: SearchUserProfileModuleProps) {
   const { t } = useLanguage();
   const [profileUser, setProfileUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<ProfileTab>("offers");
+  const [activeTab, setActiveTab] = useState<ProfileTab>(initialTab ?? "offers");
   const [isAllWebsitesModalOpen, setIsAllWebsitesModalOpen] = useState(false);
 
   const handleTabsKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
@@ -42,22 +56,37 @@ export function SearchUserProfileModule({ userId, onBack, onSendMessage, highlig
     let cancelled = false;
 
     const load = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
+      setIsLoading(true);
+      setError(null);
 
+      // Najprv skús cache profilu
+      const cached = getUserProfileFromCache(userId);
+      if (cached && !cancelled) {
+        setProfileUser(cached);
+        setIsLoading(false);
+        return;
+      }
+
+      try {
         const { data } = await api.get<User>(endpoints.dashboard.userProfile(userId));
 
         if (cancelled) return;
 
         setProfileUser(data);
+        setUserProfileToCache(userId, data);
       } catch (e: any) {
         if (cancelled) return;
+        const status = e?.response?.status;
         const msg =
-          e?.response?.data?.error ||
-          e?.response?.data?.detail ||
-          e?.message ||
-          t("search.userProfileLoadError", "Nepodarilo sa načítať profil používateľa.");
+          status === 429
+            ? t(
+                "search.userProfileRateLimited",
+                "Príliš veľa požiadaviek pri načítavaní profilu, skúste to o chvíľu.",
+              )
+            : e?.response?.data?.error ||
+              e?.response?.data?.detail ||
+              e?.message ||
+              t("search.userProfileLoadError", "Nepodarilo sa načítať profil používateľa.");
         setError(msg);
       } finally {
         if (!cancelled) {
@@ -71,7 +100,9 @@ export function SearchUserProfileModule({ userId, onBack, onSendMessage, highlig
     return () => {
       cancelled = true;
     };
-  }, [userId, t]);
+    // zámerne neuvádzame t v závislostiach, aby sa pri zmene jazyka nespúšťal nový network request
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId]);
 
   const handleSendMessage = () => {
     if (onSendMessage) {

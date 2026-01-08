@@ -5,6 +5,8 @@ from django.utils import timezone
 from django.core.mail import send_mail
 from django.conf import settings
 import uuid
+import unicodedata
+import re
 from swaply.validators import validate_image_file
 
 
@@ -69,6 +71,9 @@ class User(AbstractUser):
     # Nastavenia
     is_verified = models.BooleanField(_('Overený'), default=False)
     is_public = models.BooleanField(_('Verejný profil'), default=True)
+    # URL slug pre verejný profil (napr. meno.priezvisko-1)
+    # null=True kvôli existujúcim záznamom – unikátnosť platí len pre neprázdne slugy
+    slug = models.SlugField(_('URL slug'), max_length=150, unique=True, blank=True, null=True)
     
     # Kategória odstránená
     
@@ -111,6 +116,70 @@ class User(AbstractUser):
         total_fields = len(fields)
         
         return int((completed_fields / total_fields) * 100)
+
+    def _generate_base_slug(self) -> str:
+        """
+        Vygeneruje základný slug z display_name alebo username.
+        - malé písmená
+        - odstránená diakritika
+        - povolené znaky: a-z, 0-9, bodka, pomlčka
+        """
+        name = self.display_name or self.username or ''
+        if not name:
+          name = str(self.pk or uuid.uuid4())
+
+        # Odstrániť diakritiku
+        normalized = unicodedata.normalize('NFKD', name)
+        ascii_str = ''.join(ch for ch in normalized if unicodedata.category(ch) != 'Mn')
+        value = ascii_str.lower()
+
+        # Medzery -> bodky
+        value = re.sub(r'\s+', '.', value)
+        # Povolené len a-z, 0-9, bodka, pomlčka
+        value = re.sub(r'[^a-z0-9\.-]+', '', value)
+        # Zhluk bodiek/pomlčiek zjednotiť
+        value = re.sub(r'\.{2,}', '.', value)
+        value = re.sub(r'-{2,}', '-', value)
+        # Odstrániť bodky/pomlčky na kraji
+        value = value.strip('.-')
+
+        return value or 'user'
+
+    def ensure_slug(self, *, commit: bool = False) -> None:
+        """
+        Zabezpečí, že používateľ má jedinečný slug.
+        - Slug sa generuje len ak ešte neexistuje (stabilita URL).
+        - Pri kolízii pridáva -1, -2, -3, ...
+        """
+        if self.slug:
+            return
+
+        base = self._generate_base_slug()
+        slug = base
+        idx = 1
+        UserModel = type(self)
+
+        while UserModel.objects.filter(slug=slug).exclude(pk=self.pk).exists():
+            slug = f"{base}-{idx}"
+            idx += 1
+            if idx > 50:
+                # Fallback v extrémnom prípade kolízií
+                slug = f"user-{self.pk or uuid.uuid4().hex[:8]}"
+                break
+
+        self.slug = slug
+        if commit and self.pk:
+            UserModel.objects.filter(pk=self.pk).update(slug=slug)
+
+    def save(self, *args, **kwargs):
+        """
+        Pri prvom uložení používateľa vygeneruje slug, ak chýba.
+        Slug sa neskôr automaticky nemení, aby URL ostala stabilná.
+        """
+        if not self.slug:
+            # Vygenerujeme slug ešte pred uložením, aby sa dal použiť hneď po registrácii
+            self.ensure_slug(commit=False)
+        super().save(*args, **kwargs)
 
 
 class UserProfile(models.Model):

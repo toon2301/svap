@@ -152,6 +152,9 @@ export const endpoints = {
     profile: '/auth/dashboard/profile/',
     userProfile: (id: number) => `/auth/dashboard/users/${id}/profile/`,
     userSkills: (id: number) => `/auth/dashboard/users/${id}/skills/`,
+    // Slug-based endpointy pre profily používateľov (musí podporovať backend)
+    userProfileBySlug: (slug: string) => `/auth/dashboard/users/slug/${slug}/profile/`,
+    userSkillsBySlug: (slug: string) => `/auth/dashboard/users/slug/${slug}/skills/`,
     settings: '/auth/dashboard/settings/',
   },
   // Skills

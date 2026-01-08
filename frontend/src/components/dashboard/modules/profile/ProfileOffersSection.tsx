@@ -9,6 +9,11 @@ import type { Offer, ExperienceUnit } from './profileOffersTypes';
 import { HOURS_DAYS } from './profileOffersTypes';
 import type { OpeningHours } from '../skills/skillDescriptionModal/types';
 import ProfileOfferCard from './ProfileOfferCard';
+import {
+  getOffersFromCache,
+  makeOffersCacheKey,
+  setOffersToCache,
+} from './profileOffersCache';
 
 interface ProfileOffersSectionProps {
   activeTab: ProfileTab;
@@ -30,6 +35,7 @@ export default function ProfileOffersSection({
   const [hoursPopoverPosition, setHoursPopoverPosition] = useState<{ top: number; left: number } | null>(null);
   const [activeOpeningHours, setActiveOpeningHours] = useState<OpeningHours | null>(null);
   const highlightedCardRef = useRef<HTMLDivElement | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   // Load offers when switching to 'offers' tab (desktop focus)
   useEffect(() => {
@@ -37,6 +43,14 @@ export default function ProfileOffersSection({
 
     const load = async () => {
       try {
+        setLoadError(null);
+        const cacheKey = makeOffersCacheKey(ownerUserId);
+        const cached = getOffersFromCache(cacheKey);
+        if (cached) {
+          setOffers(cached);
+          return;
+        }
+
         const endpoint = ownerUserId
           ? endpoints.dashboard.userSkills(ownerUserId)
           : endpoints.skills.list;
@@ -95,13 +109,22 @@ export default function ProfileOffersSection({
           };
         });
         setOffers(mapped);
-      } catch (error) {
-        // silent - rate limiting or other errors
+        setOffersToCache(cacheKey, mapped);
+      } catch (error: any) {
+        // Pri 429 ponechaj posledné ponuky (z cache alebo prázdne) a zobraz jemnú hlášku
+        if (error?.response?.status === 429) {
+          setLoadError(
+            t(
+              'profile.offersRateLimited',
+              'Príliš veľa požiadaviek pri načítavaní ponúk, skúste to o chvíľu.',
+            ),
+          );
+        }
       }
     };
 
     void load();
-  }, [activeTab, ownerUserId]);
+  }, [activeTab, ownerUserId, t]);
 
   // Close hours popover when clicking outside
   useEffect(() => {
@@ -147,7 +170,9 @@ export default function ProfileOffersSection({
   return (
     <div className="mt-4">
       {offers.length === 0 ? (
-        <p className="text-sm text-gray-600 dark:text-gray-400">Zatiaľ nemáš žiadne ponuky.</p>
+        <p className="text-sm text-gray-600 dark:text-gray-400">
+          {loadError ?? t('profile.noOffers', 'Zatiaľ nemáš žiadne ponuky.')}
+        </p>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-[clamp(1rem,2vw,1.5rem)]">
           {offers.map((offer) => {
@@ -243,6 +268,12 @@ export default function ProfileOffersSection({
             );
           })}
         </div>
+      )}
+
+      {loadError && offers.length > 0 && (
+        <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+          {loadError}
+        </p>
       )}
 
       {activeHoursOfferId && hoursPopoverPosition && activeOpeningHours &&
