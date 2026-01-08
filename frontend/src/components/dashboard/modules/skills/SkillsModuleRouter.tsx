@@ -29,6 +29,8 @@ interface SkillsModuleRouterProps {
   removeCustomCategory: (index: number) => Promise<void>;
   setIsInSubcategories?: (value: boolean) => void;
   onSkillsCategoryBackHandlerSet?: (handler: () => void) => void;
+  onSkillsOfferClick?: () => void;
+  onSkillsSearchClick?: () => void;
 }
 
 export default function SkillsModuleRouter({
@@ -48,6 +50,8 @@ export default function SkillsModuleRouter({
   removeCustomCategory,
   setIsInSubcategories,
   onSkillsCategoryBackHandlerSet,
+  onSkillsOfferClick,
+  onSkillsSearchClick,
 }: SkillsModuleRouterProps) {
   const { t } = useLanguage();
 
@@ -55,22 +59,22 @@ export default function SkillsModuleRouter({
     case 'skills':
       return (
         <SkillsHome
-          onOffer={() => {
+          onOffer={onSkillsOfferClick || (() => {
             setActiveModule('skills-offer');
             try {
               localStorage.setItem('activeModule', 'skills-offer');
             } catch {
               // ignore
             }
-          }}
-          onSearch={() => {
+          })}
+          onSearch={onSkillsSearchClick || (() => {
             setActiveModule('skills-search');
             try {
               localStorage.setItem('activeModule', 'skills-search');
             } catch {
               // ignore
             }
-          }}
+          })}
         />
       );
     case 'skills-offer': {

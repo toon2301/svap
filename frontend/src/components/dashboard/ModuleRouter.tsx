@@ -51,6 +51,9 @@ interface ModuleRouterProps {
   highlightedSkillId?: number | null;
   onViewUserSkillFromSearch?: (userId: number, skillId: number, slug?: string | null) => void;
   initialProfileTab?: import('./modules/profile/profileTypes').ProfileTab;
+  onSkillsClick?: () => void;
+  onSkillsOfferClick?: () => void;
+  onSkillsSearchClick?: () => void;
 }
 
 export default function ModuleRouter({
@@ -86,6 +89,9 @@ export default function ModuleRouter({
   highlightedSkillId,
   onViewUserSkillFromSearch,
   initialProfileTab,
+  onSkillsClick,
+  onSkillsOfferClick,
+  onSkillsSearchClick,
 }: ModuleRouterProps) {
   const { t } = useLanguage();
 
@@ -182,14 +188,14 @@ export default function ModuleRouter({
           user={user}
           onUserUpdate={onUserUpdate}
           onEditProfileClick={onEditProfileClick ?? handleRightSidebarToggle}
-          onSkillsClick={() => {
+          onSkillsClick={onSkillsClick || (() => {
             setActiveModule('skills');
             try {
               localStorage.setItem('activeModule', 'skills');
             } catch {
               // ignore
             }
-          }}
+          })}
           isEditMode={isRightSidebarOpen}
           accountType={accountType}
         />
@@ -256,6 +262,8 @@ export default function ModuleRouter({
           removeCustomCategory={removeCustomCategory}
           setIsInSubcategories={setIsInSubcategories}
           onSkillsCategoryBackHandlerSet={onSkillsCategoryBackHandlerSet}
+          onSkillsOfferClick={onSkillsOfferClick}
+          onSkillsSearchClick={onSkillsSearchClick}
         />
       );
     case 'account-type':

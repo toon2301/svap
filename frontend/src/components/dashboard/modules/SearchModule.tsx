@@ -206,7 +206,8 @@ export default function SearchModule({ user, onUserClick, onSkillClick, isOverla
     return () => {
       cancelled = true;
     };
-  }, [user]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]); // používame len user.id namiesto celého objektu
 
   // Skryť FlipButton ikony v kartách keď je filter modal otvorený
   useEffect(() => {

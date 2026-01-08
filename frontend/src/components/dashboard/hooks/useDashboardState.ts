@@ -129,7 +129,8 @@ export function useDashboardState(initialUser?: User): UseDashboardStateResult {
     };
 
     checkAuth();
-  }, [router, initialUser]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialUser]); // router je stabilný objekt z Next.js, nemusí byť v dependencies
 
   const handleModuleChange = useCallback(
     (moduleId: string) => {

@@ -124,7 +124,8 @@ export default function ProfileOffersSection({
     };
 
     void load();
-  }, [activeTab, ownerUserId, t]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, ownerUserId]); // t je prekladová funkcia, ktorá sa nemení v tejto logike
 
   // Close hours popover when clicking outside
   useEffect(() => {

@@ -132,7 +132,8 @@ export default function ProfileOffersMobileSection({
     return () => {
       cancelled = true;
     };
-  }, [t, ownerUserId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ownerUserId]); // t je prekladová funkcia, ktorá sa nemení v tejto logike
 
   // Po načítaní ponúk a nastavení highlightedSkillId poscrolluj na danú kartu
   useEffect(() => {
