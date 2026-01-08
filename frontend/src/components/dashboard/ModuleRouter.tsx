@@ -46,6 +46,7 @@ interface ModuleRouterProps {
   onSkillsCategoryBackHandlerSet?: (handler: () => void) => void;
   viewedUserId?: number | null;
   viewedUserSummary?: SearchUserResult | null;
+  onEditProfileClick?: () => void;
   onViewUserProfile?: (userId: number, slug?: string | null, summary?: SearchUserResult) => void;
   highlightedSkillId?: number | null;
   onViewUserSkillFromSearch?: (userId: number, skillId: number, slug?: string | null) => void;
@@ -80,6 +81,7 @@ export default function ModuleRouter({
   onSkillsCategoryBackHandlerSet,
   viewedUserId,
   viewedUserSummary,
+  onEditProfileClick,
   onViewUserProfile,
   highlightedSkillId,
   onViewUserSkillFromSearch,
@@ -92,7 +94,7 @@ export default function ModuleRouter({
       <ProfileModule
         user={user}
         onUserUpdate={onUserUpdate}
-        onEditProfileClick={handleRightSidebarToggle}
+        onEditProfileClick={onEditProfileClick ?? handleRightSidebarToggle}
         onSkillsClick={() => {
           setActiveModule('skills');
           try {
@@ -179,7 +181,7 @@ export default function ModuleRouter({
         <ProfileModule
           user={user}
           onUserUpdate={onUserUpdate}
-          onEditProfileClick={handleRightSidebarToggle}
+          onEditProfileClick={onEditProfileClick ?? handleRightSidebarToggle}
           onSkillsClick={() => {
             setActiveModule('skills');
             try {

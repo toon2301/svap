@@ -532,6 +532,15 @@ export default function Dashboard({
     setIsSearchOpen((prev) => !prev);
   };
 
+  const handleEditProfileClick = () => {
+    // Zachovať existujúce správanie otvorenia/zatvorenia pravého sidebaru
+    handleRightSidebarToggle();
+
+    // Synchronizovať URL s režimom úpravy profilu (preferuj slug, fallback na ID)
+    const identifier = user.slug || String(user.id);
+    router.push(`/dashboard/users/${identifier}/edit`);
+  };
+
   const handleSearchClose = () => {
     setIsSearchOpen(false);
   };
@@ -674,6 +683,7 @@ export default function Dashboard({
       }}
       viewedUserId={viewedUserId}
       viewedUserSummary={viewedUserSummary}
+      onEditProfileClick={handleEditProfileClick}
       onViewUserProfile={handleViewUserProfileFromSearch}
       highlightedSkillId={highlightedSkillId}
       onViewUserSkillFromSearch={handleViewUserSkillFromSearch}
