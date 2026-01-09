@@ -209,7 +209,7 @@ api.interceptors.response.use(
       if (stats && key && stats.requests.has(key)) {
         const calls = stats.requests.get(key)!;
         const requestInfo = (originalRequest as any).__debugRequestInfo;
-        const index = calls.findIndex(c => c === requestInfo);
+        const index = calls.findIndex((c: any) => c === requestInfo);
         if (index !== -1) {
           calls[index].status = error.response?.status || 0;
         }
