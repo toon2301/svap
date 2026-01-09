@@ -145,13 +145,14 @@ class User(AbstractUser):
 
         return value or 'user'
 
-    def ensure_slug(self, *, commit: bool = False) -> None:
+    def ensure_slug(self, *, commit: bool = False, force_update: bool = False) -> None:
         """
         Zabezpečí, že používateľ má jedinečný slug.
         - Slug sa generuje len ak ešte neexistuje (stabilita URL).
         - Pri kolízii pridáva -1, -2, -3, ...
+        - Ak force_update=True, slug sa aktualizuje aj keď už existuje.
         """
-        if self.slug:
+        if self.slug and not force_update:
             return
 
         base = self._generate_base_slug()
@@ -174,11 +175,27 @@ class User(AbstractUser):
     def save(self, *args, **kwargs):
         """
         Pri prvom uložení používateľa vygeneruje slug, ak chýba.
-        Slug sa neskôr automaticky nemení, aby URL ostala stabilná.
+        Ak sa zmení meno (first_name alebo last_name), slug sa automaticky aktualizuje.
         """
+        # Ak už existuje v DB, načítame starý objekt na porovnanie
+        old_instance = None
+        if self.pk:
+            try:
+                old_instance = type(self).objects.get(pk=self.pk)
+            except type(self).DoesNotExist:
+                pass
+
+        # Ak nemáme slug, vygenerujeme ho
         if not self.slug:
-            # Vygenerujeme slug ešte pred uložením, aby sa dal použiť hneď po registrácii
             self.ensure_slug(commit=False)
+        # Ak sa zmenilo meno (first_name alebo last_name), aktualizujeme slug
+        elif old_instance:
+            old_name = (old_instance.first_name or '') + ' ' + (old_instance.last_name or '')
+            new_name = (self.first_name or '') + ' ' + (self.last_name or '')
+            if old_name.strip() != new_name.strip():
+                # Meno sa zmenilo - aktualizujeme slug
+                self.ensure_slug(commit=False, force_update=True)
+
         super().save(*args, **kwargs)
 
 

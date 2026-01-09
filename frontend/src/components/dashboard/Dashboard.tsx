@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { User } from '../../types';
 import type { ProfileTab } from './modules/profile/profileTypes';
@@ -42,6 +42,7 @@ export default function Dashboard({
 }: DashboardProps) {
   const { t } = useLanguage();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const dashboardState = useDashboardState(initialUser);
   const skillsState = useSkillsModals();
   const [isInSubcategories, setIsInSubcategories] = useState(false);
@@ -157,8 +158,15 @@ export default function Dashboard({
 
         setViewedUserId(data.id);
         setUserProfileToCache(data.id, data);
-      } catch {
-        // chyby riešia downstream komponenty (napr. jemná hláška v UI)
+      } catch (error: any) {
+        // Ak je 404, slug neexistuje (používateľ zmenil meno alebo slug sa nezmenil)
+        // Tichá chyba - downstream komponenty zobrazia user-friendly hlášku
+        if (error?.response?.status === 404) {
+          // Slug neexistuje - môže to byť starý slug po zmene mena
+          // Nezobrazovať chybu v konzole, len ticho ignorovať
+          console.debug(`User with slug "${initialProfileSlug}" not found`);
+        }
+        // Iné chyby riešia downstream komponenty (napr. jemná hláška v UI)
       }
     };
 
@@ -419,16 +427,199 @@ export default function Dashboard({
     }
   }, [user?.id, loadSkills]);
 
-  // Pri odchode z modulu user-profile zruš zvýraznenie a timer
+  // Aktualizácia URL pri zmene slugu vlastného profilu
   useEffect(() => {
-    if (activeModule !== 'user-profile') {
-      setHighlightedSkillId(null);
-      if (highlightTimeoutRef.current) {
-        clearTimeout(highlightTimeoutRef.current);
-        highlightTimeoutRef.current = null;
+    // Len ak sme na vlastnom profile a máme slug
+    if (!user?.slug || activeModule !== 'profile' || !user?.id) return;
+
+    // Skontrolovať, či sme na vlastnom profile (nie na cudzom)
+    // Ak je viewedUserId nastavený a je iný ako user.id, sme na cudzom profile
+    if (viewedUserId && viewedUserId !== user.id) return;
+
+    // Ak sme v edit móde, len aktualizovať URL bez presmerovania (aby sa zachoval edit mód)
+    const isEditMode = isRightSidebarOpen && activeRightItem === 'edit-profile';
+    
+    // Zistiť aktuálnu URL
+    const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
+    const expectedPath = `/dashboard/users/${user.slug}`;
+
+    // Ak URL neodpovedá novému slugu, aktualizovať ju
+    // Kontrolujeme, či sme na /dashboard/users/[nieco] a to nieco nie je nový slug
+    if (currentPath.startsWith('/dashboard/users/')) {
+      const currentSlug = currentPath.replace('/dashboard/users/', '').split('/')[0];
+      if (currentSlug !== user.slug) {
+        const newUrl = `/dashboard/users/${user.slug}`;
+        
+        // Okamžitá aktualizácia URL (bez reloadu)
+        if (typeof window !== 'undefined') {
+          window.history.pushState(null, '', newUrl);
+        }
+        
+        // Ak sme v edit móde, len aktualizovať URL bez router.push (aby sa zachoval stav)
+        if (!isEditMode) {
+          // Aktualizovať cez Next.js router len ak nie sme v edit móde
+          router.push(newUrl);
+        }
+      }
+    } else if (currentPath === '/dashboard/profile' || currentPath === '/dashboard') {
+      // Ak sme na /dashboard/profile alebo /dashboard, presmerovať na slug URL
+      const newUrl = `/dashboard/users/${user.slug}`;
+      
+      if (typeof window !== 'undefined') {
+        window.history.pushState(null, '', newUrl);
+      }
+      
+      // Ak sme v edit móde, len aktualizovať URL bez router.push (aby sa zachoval stav)
+      if (!isEditMode) {
+        router.push(newUrl);
       }
     }
-  }, [activeModule]);
+  }, [user?.slug, user?.id, activeModule, viewedUserId, isRightSidebarOpen, activeRightItem, router]);
+
+  // Aktualizácia URL na slug, keď sa načíta profil cudzieho používateľa
+  useEffect(() => {
+    // Len ak sme na cudzom profile (nie na vlastnom)
+    if (!viewedUserId || !user || viewedUserId === user.id) return;
+    if (activeModule !== 'user-profile') return;
+
+    // Skús získať slug z cache alebo z viewedUserSummary
+    let userSlug: string | null | undefined = viewedUserSlug;
+    
+    // Ak nemáme slug, skús ho získať z cache
+    if (!userSlug) {
+      const cachedUser = getUserProfileFromCache(viewedUserId);
+      userSlug = cachedUser?.slug;
+    }
+    
+    // Ak máme slug a URL má ID namiesto slugu, aktualizovať URL
+    if (userSlug) {
+      const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
+      if (currentPath.startsWith('/dashboard/users/')) {
+        const currentIdentifier = currentPath.replace('/dashboard/users/', '').split('/')[0];
+        // Ak je aktuálny identifikátor číslo (ID) a máme slug, aktualizovať URL
+        if (/^\d+$/.test(currentIdentifier) && currentIdentifier !== userSlug) {
+          const newUrl = `/dashboard/users/${userSlug}`;
+          
+          // Okamžitá aktualizácia URL (bez reloadu)
+          if (typeof window !== 'undefined') {
+            window.history.pushState(null, '', newUrl);
+          }
+          
+          // Aktualizovať cez Next.js router
+          router.push(newUrl);
+          
+          // Aktualizovať viewedUserSlug
+          setViewedUserSlug(userSlug);
+        }
+      }
+    }
+  }, [viewedUserId, user, activeModule, viewedUserSlug, router]);
+
+  // Synchronizácia highlightedSkillId s URL parametrom 'highlight'
+  // A záloha v sessionStorage pre prípad full refreshu
+  useEffect(() => {
+    const highlightParam = searchParams.get('highlight');
+    if (highlightParam) {
+      const id = Number(highlightParam);
+      if (!isNaN(id)) {
+        setHighlightedSkillId(id);
+        // Uložiť do session storage pre persistenciu
+        try {
+          if (typeof window !== 'undefined') {
+            sessionStorage.setItem('highlightedSkillId', String(id));
+            sessionStorage.setItem('highlightedSkillTime', String(Date.now()));
+          }
+        } catch (e) {
+          // ignore
+        }
+      }
+    } else {
+      // Ak v URL nie je parameter, skúsime obnoviť zo sessionStorage (ak sme po refreshi)
+      // Ale len ak neubehol čas
+      try {
+        if (typeof window !== 'undefined') {
+          const storedId = sessionStorage.getItem('highlightedSkillId');
+          const storedTime = sessionStorage.getItem('highlightedSkillTime');
+          
+          if (storedId && storedTime) {
+            const timeDiff = Date.now() - Number(storedTime);
+            if (timeDiff < 2 * 60 * 1000) { // Menej ako 2 minúty
+              setHighlightedSkillId(Number(storedId));
+              // Obnovíme aj URL parameter, aby to bolo konzistentné
+              // Ale opatrne, aby sme nespôsobili loop
+              const currentUrl = new URL(window.location.href);
+              if (!currentUrl.searchParams.has('highlight')) {
+                 currentUrl.searchParams.set('highlight', storedId);
+                 router.replace(currentUrl.pathname + currentUrl.search);
+              }
+              return; // Koniec, obnovili sme
+            } else {
+              // Expirovalo
+              sessionStorage.removeItem('highlightedSkillId');
+              sessionStorage.removeItem('highlightedSkillTime');
+            }
+          }
+        }
+      } catch (e) {
+        // ignore
+      }
+
+      // Ak nič z toho, zrušíme zvýraznenie
+      if (!highlightTimeoutRef.current) {
+        setHighlightedSkillId(null);
+      }
+    }
+  }, [searchParams, router]);
+
+  // Inteligentný časovač pre zvýraznenie:
+  useEffect(() => {
+    if (highlightedSkillId != null) {
+      if (highlightTimeoutRef.current) {
+        clearTimeout(highlightTimeoutRef.current);
+      }
+
+      // Vypočítať zostávajúci čas (ak obnovujeme zo storage)
+      let remainingTime = 2 * 60 * 1000;
+      try {
+        if (typeof window !== 'undefined') {
+          const storedTime = sessionStorage.getItem('highlightedSkillTime');
+          if (storedTime) {
+            const elapsed = Date.now() - Number(storedTime);
+            remainingTime = Math.max(1000, 2 * 60 * 1000 - elapsed);
+          }
+        }
+      } catch (e) {
+        // ignore
+      }
+
+      highlightTimeoutRef.current = setTimeout(() => {
+        setHighlightedSkillId(null);
+        highlightTimeoutRef.current = null;
+        
+        // Vyčistiť URL a Storage
+        try {
+          if (typeof window !== 'undefined') {
+            sessionStorage.removeItem('highlightedSkillId');
+            sessionStorage.removeItem('highlightedSkillTime');
+            
+            const currentUrl = new URL(window.location.href);
+            if (currentUrl.searchParams.has('highlight')) {
+              currentUrl.searchParams.delete('highlight');
+              router.replace(currentUrl.pathname + currentUrl.search);
+            }
+          }
+        } catch (e) {
+          // ignore
+        }
+      }, remainingTime);
+    }
+
+    return () => {
+      if (highlightTimeoutRef.current) {
+        clearTimeout(highlightTimeoutRef.current);
+      }
+    };
+  }, [highlightedSkillId, router]);
 
   // Vyčistenie timeru pri unmount-e Dashboardu
   useEffect(() => {
@@ -585,7 +776,7 @@ export default function Dashboard({
     setViewedUserId(userId);
     setViewedUserSlug(slug ?? null);
     setViewedUserSummary(null);
-    setHighlightedSkillId(skillId);
+    // setHighlightedSkillId(skillId) - neriešime priamo, rieši to URL parameter
     setActiveModule('user-profile');
     setIsRightSidebarOpen(false);
     setActiveRightItem('');
@@ -597,18 +788,13 @@ export default function Dashboard({
       // ignore
     }
     const identifier = slug || String(userId);
-    // Zatiaľ používame rovnakú route, skillId sa môže preniesť v query/hash ak bude potrebné
-    router.push(`/dashboard/users/${identifier}`);
+    
+    // Pridať highlight parameter do URL pre perzistentné zvýraznenie
+    const newUrl = `/dashboard/users/${identifier}?highlight=${skillId}`;
+    
+    // Použiť router.push pre navigáciu
+    router.push(newUrl);
     setIsSearchOpen(false);
-
-    // Automatické zrušenie zvýraznenia po 2 minútach
-    if (highlightTimeoutRef.current) {
-      clearTimeout(highlightTimeoutRef.current);
-    }
-    highlightTimeoutRef.current = setTimeout(() => {
-      setHighlightedSkillId(null);
-      highlightTimeoutRef.current = null;
-    }, 2 * 60 * 1000);
   };
 
   // Custom back handler for skills-select-category
@@ -623,6 +809,9 @@ export default function Dashboard({
   };
 
   const handleMainModuleChange = (moduleId: string) => {
+    // Pri zmene modulu zrušiť zvýraznenie karty
+    setHighlightedSkillId(null);
+
     // Pri prepnutí hlavného modulu zatvor vyhľadávací panel
     setIsSearchOpen(false);
 

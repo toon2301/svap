@@ -890,28 +890,52 @@ button:focus-visible {
   }
 }
 
-/* Jemné, ale stále viditeľné zvýraznenie karty ponuky po príchode z vyhľadávania
-   – pulzujúci fialový okraj, vnútro karty ostáva bezo zmeny */
-@keyframes highlight-offer-pulse {
+/* Moderné, inteligentné zvýraznenie karty (Výrazný Glow Pulse) */
+@keyframes highlight-glow-pulse {
   0% {
-    border-color: rgba(124, 58, 237, 1);
+    box-shadow: 0 0 0 0 rgba(139, 92, 246, 0),
+                0 0 0 0 rgba(167, 139, 250, 0),
+                0 0 0 0 rgba(196, 181, 253, 0);
+    border-color: rgba(139, 92, 246, 0.7);
   }
   50% {
-    border-color: rgba(124, 58, 237, 0.4);
+    box-shadow: 0 0 30px 4px rgba(139, 92, 246, 0.6),
+                0 0 50px 8px rgba(167, 139, 250, 0.4),
+                0 0 70px 12px rgba(196, 181, 253, 0.2);
+    border-color: rgba(139, 92, 246, 1);
   }
   100% {
-    border-color: rgba(124, 58, 237, 1);
+    box-shadow: 0 0 0 0 rgba(139, 92, 246, 0),
+                0 0 0 0 rgba(167, 139, 250, 0),
+                0 0 0 0 rgba(196, 181, 253, 0);
+    border-color: rgba(139, 92, 246, 0.7);
   }
 }
 
 .highlight-offer-card {
-  border-width: 3px;
-  border-style: solid;
-  border-color: rgba(124, 58, 237, 0.9);
-  animation: highlight-offer-pulse 1.8s ease-in-out infinite;
-  transition: border-color 0.2s ease-out;
+  position: relative;
+  z-index: 10;
+  border-width: 3px !important;
+  border-color: rgba(139, 92, 246, 0.9) !important; /* violet-500 */
+  animation: highlight-glow-pulse 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  transition: all 0.3s ease-in-out;
+}
+
+/* Výraznejší overlay na pozadí pre lepšiu čitateľnosť */
+.highlight-offer-card {
+  background-color: rgba(139, 92, 246, 0.08);
+}
+
+.dark .highlight-offer-card {
+  background-color: rgba(139, 92, 246, 0.12);
 }
 
 .highlight-offer-card:hover {
-  border-color: rgba(124, 58, 237, 1);
+  animation: none;
+  border-color: rgba(139, 92, 246, 1) !important;
+  border-width: 3px !important;
+  box-shadow: 0 0 35px 6px rgba(139, 92, 246, 0.7),
+              0 0 60px 10px rgba(167, 139, 250, 0.5),
+              0 0 80px 15px rgba(196, 181, 253, 0.3) !important;
+  transform: scale(1.02);
 }

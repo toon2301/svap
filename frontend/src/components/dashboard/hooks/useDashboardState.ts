@@ -6,6 +6,8 @@ import Cookies from 'js-cookie';
 import type { User } from '../../../types';
 import { isAuthenticated, clearAuthTokens } from '../../../utils/auth';
 import { api, endpoints } from '../../../lib/api';
+import { setUserProfileToCache } from '../modules/profile/profileUserCache';
+import { invalidateSearchCacheForUser } from '../modules/SearchModule';
 
 type AccountType = 'personal' | 'business';
 
@@ -56,6 +58,7 @@ export interface UseDashboardStateResult {
 export function useDashboardState(initialUser?: User): UseDashboardStateResult {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(initialUser || null);
+  const userRef = useRef<User | null>(initialUser || null); // Ref pre sledovanie zmien slugu
   const [isLoading, setIsLoading] = useState(!initialUser);
   const hasCheckedAuth = useRef(false);
   const [activeModule, setActiveModule] = useState<string>(() => getInitialModule());
@@ -120,6 +123,7 @@ export function useDashboardState(initialUser?: User): UseDashboardStateResult {
       if (!initialUser) {
         try {
           const response = await api.get(endpoints.auth.me);
+          userRef.current = response.data;
           setUser(response.data);
         } catch (error) {
           console.error('Error fetching user data:', error);
@@ -233,8 +237,25 @@ export function useDashboardState(initialUser?: User): UseDashboardStateResult {
 
   const handleUserUpdate = useCallback(
     (updatedUser: User) => {
+      // Skontrolovať, či sa zmenil slug (porovnať so starým user objektom z ref)
+      const oldUser = userRef.current;
+      const slugChanged = oldUser && oldUser.slug !== updatedUser.slug;
+      
+      // Aktualizovať ref pred setUser, aby sme mali aktuálny stav
+      userRef.current = updatedUser;
       setUser(updatedUser);
-      // Ak sme v mobilnej verzii na screen 'privacy', zachovať to
+      
+      // Aktualizovať cache s novým používateľom (vrátane nového slugu)
+      if (updatedUser.id) {
+        setUserProfileToCache(updatedUser.id, updatedUser);
+        
+        // Ak sa zmenil slug, invalidovať search cache, aby ostatní používatelia videli nový slug
+        if (slugChanged) {
+          invalidateSearchCacheForUser(updatedUser.id);
+        }
+      }
+      
+      // Zachovať aktuálny stav - ak sme už v edit móde, zostaneme v ňom
       setActiveModule((prevModule) => {
         const isPrivacy = prevModule === 'privacy';
         if (isPrivacy) {
@@ -249,6 +270,14 @@ export function useDashboardState(initialUser?: User): UseDashboardStateResult {
           setIsRightSidebarOpen(false);
           return 'privacy';
         }
+        
+        // Ak už sme v profile móde, zachovať ho (vrátane edit módu)
+        if (prevModule === 'profile') {
+          // Necháme aktuálny stav - edit mód zostane otvorený
+          return 'profile';
+        }
+        
+        // Ak sme v inom móde, prepnúť na profile s edit módom
         if (typeof window !== 'undefined') {
           try {
             localStorage.setItem('activeModule', 'profile');
@@ -259,12 +288,18 @@ export function useDashboardState(initialUser?: User): UseDashboardStateResult {
         setIsRightSidebarOpen(true);
         return 'profile';
       });
-      // Zachovať activeRightItem ak je to 'privacy' alebo iné nastavenia
+      
+      // Zachovať activeRightItem - ak už sme v edit móde, zostaneme v ňom
       setActiveRightItem((prev) => {
-        // Ak sme v nastaveniach súkromia, zachovať to
+        // Ak už sme v edit-profile, zachovať to
+        if (prev === 'edit-profile') {
+          return 'edit-profile';
+        }
+        // Ak sme v nastaveniach súkromia alebo iných, zachovať to
         if (prev === 'privacy' || prev === 'language' || prev === 'account-type' || prev === 'notifications') {
           return prev;
         }
+        // Inak nastaviť edit-profile
         return 'edit-profile';
       });
     },

@@ -185,7 +185,7 @@ login_rate_limit = rate_limit(max_attempts=5, window_minutes=15, block_minutes=6
 register_rate_limit = rate_limit(max_attempts=3, window_minutes=15, block_minutes=30, action='register')
 password_reset_rate_limit = rate_limit(max_attempts=3, window_minutes=60, block_minutes=120, action='password_reset')
 email_verification_rate_limit = rate_limit(max_attempts=5, window_minutes=15, block_minutes=60, action='email_verification')
-api_rate_limit = rate_limit(max_attempts=100, window_minutes=60, block_minutes=60, action='api')
+api_rate_limit = rate_limit(max_attempts=1000, window_minutes=60, block_minutes=60, action='api')
 email_check_rate_limit = rate_limit(max_attempts=30, window_minutes=10, block_minutes=30, action='email_check')
 
 

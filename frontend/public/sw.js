@@ -18,11 +18,18 @@ self.addEventListener('install', event => {
     caches.open(STATIC_CACHE)
       .then(cache => {
         console.log('Service Worker: Caching static files');
-        return cache.addAll(urlsToCache);
-      })
-      .then(() => {
-        // Force activation of new service worker
-        return self.skipWaiting();
+        // Use addAll with error handling - ignore failed requests
+        return Promise.allSettled(
+          urlsToCache.map(url => 
+            cache.add(url).catch(err => {
+              console.warn('Service Worker: Failed to cache', url, err);
+              return null; // Ignore failed cache requests
+            })
+          )
+        ).then(() => {
+          // Force activation of new service worker
+          return self.skipWaiting();
+        });
       })
   );
 });
@@ -99,11 +106,14 @@ self.addEventListener('fetch', event => {
     event.respondWith(
       fetch(request)
         .then(response => {
-          if (response.status === 200) {
+          // Only cache successful responses (200-299) and not auth errors
+          if (response.status >= 200 && response.status < 300 && response.status !== 401 && response.status !== 403) {
             const responseClone = response.clone();
             caches.open(DYNAMIC_CACHE)
               .then(cache => {
-                cache.put(request, responseClone);
+                cache.put(request, responseClone).catch(err => {
+                  console.warn('Service Worker: Failed to cache response', err);
+                });
               });
           }
           return response;

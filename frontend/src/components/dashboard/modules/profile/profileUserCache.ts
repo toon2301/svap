@@ -12,6 +12,7 @@ type CacheEntry = {
 const userProfileCache = new Map<number, CacheEntry>();
 const slugToUserIdCache = new Map<string, number>();
 
+
 export const getUserProfileFromCache = (userId: number): User | undefined => {
   const entry = userProfileCache.get(userId);
   if (!entry) return undefined;
@@ -26,6 +27,12 @@ export const getUserProfileFromCache = (userId: number): User | undefined => {
 };
 
 export const setUserProfileToCache = (userId: number, user: User): void => {
+  // Ak už máme starý záznam pre tohto používateľa, odstráň starý slug mapping
+  const oldEntry = userProfileCache.get(userId);
+  if (oldEntry?.user?.slug && oldEntry.user.slug !== user.slug) {
+    slugToUserIdCache.delete(oldEntry.user.slug);
+  }
+
   userProfileCache.set(userId, {
     user,
     timestamp: Date.now(),

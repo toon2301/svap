@@ -20,8 +20,18 @@ import { getUserInitials } from './search/utils';
 import { ScrollableText } from './search/ScrollableText';
 import { FilterModal } from './search/FilterModal';
 
+import { getUserProfileFromCache } from './profile/profileUserCache';
+
 // Globálna cache výsledkov vyhľadávania v pamäti – prežije unmount/mount SearchModule
 const globalSearchResultsCache = new Map<string, SearchResults>();
+
+// Export funkcie pre invalidáciu search cache pre konkrétneho používateľa
+export const invalidateSearchCacheForUser = (userId: number): void => {
+  // Prejdi všetky cache entries a odstráň tie, ktoré obsahujú tohto používateľa so starým slugom
+  // Alebo jednoducho invaliduj celú cache (jednoduchšie riešenie)
+  // Pre teraz invalidujeme celú cache, keď sa zmení slug používateľa
+  globalSearchResultsCache.clear();
+};
 
 export default function SearchModule({ user, onUserClick, onSkillClick, isOverlay = false }: SearchModuleProps) {
   const { t } = useLanguage();
@@ -64,6 +74,105 @@ export default function SearchModule({ user, onUserClick, onSkillClick, isOverla
       // Ignorovať chyby pri parsovaní
     }
   }, []);
+
+  // Aktualizovať mená v histórii vyhľadávania, ak sa zmení profil aktuálneho používateľa
+  // Alebo ak máme novšie dáta v userProfileCache (pre cudzích používateľov)
+  useEffect(() => {
+    if (!user) return;
+    if (recentSearches.length === 0) return;
+
+    setRecentSearches((prev) => {
+      let hasChanges = false;
+      const newSearches = prev.map((result) => {
+        let resultChanged = false;
+
+        // Aktualizácia users
+        const newUsers = result.users?.map((u) => {
+          // 1. Kontrola či je to aktuálny používateľ
+          if (u.id === user.id) {
+            const newName =
+              user.user_type === 'individual'
+                ? [user.first_name, user.last_name].filter(Boolean).join(' ').trim() || user.username
+                : user.company_name || user.username;
+
+            if (u.display_name !== newName || u.slug !== user.slug) {
+              hasChanges = true;
+              resultChanged = true;
+              return { ...u, display_name: newName, slug: user.slug };
+            }
+          } 
+          // 2. Kontrola či máme novšie dáta v cache (pre cudzích používateľov)
+          else {
+            const cachedUser = getUserProfileFromCache(u.id);
+            if (cachedUser) {
+              const newName =
+                cachedUser.user_type === 'individual'
+                  ? [cachedUser.first_name, cachedUser.last_name].filter(Boolean).join(' ').trim() || cachedUser.username
+                  : cachedUser.company_name || cachedUser.username;
+              
+              if (u.display_name !== newName || u.slug !== cachedUser.slug) {
+                hasChanges = true;
+                resultChanged = true;
+                return { ...u, display_name: newName, slug: cachedUser.slug };
+              }
+            }
+          }
+          return u;
+        });
+
+        // Aktualizácia skills (ak obsahujú user_display_name)
+        const newSkills = result.skills?.map((s) => {
+          // 1. Kontrola či je to aktuálny používateľ
+          if (s.user_id === user.id) {
+            const newName =
+              user.user_type === 'individual'
+                ? [user.first_name, user.last_name].filter(Boolean).join(' ').trim() || user.username
+                : user.company_name || user.username;
+
+            const currentName = (s as any).user_display_name;
+            if (currentName && currentName !== newName) {
+              hasChanges = true;
+              resultChanged = true;
+              return { ...s, user_display_name: newName };
+            }
+          }
+          // 2. Kontrola či máme novšie dáta v cache
+          else if (s.user_id) {
+             const cachedUser = getUserProfileFromCache(s.user_id);
+             if (cachedUser) {
+               const newName =
+                cachedUser.user_type === 'individual'
+                  ? [cachedUser.first_name, cachedUser.last_name].filter(Boolean).join(' ').trim() || cachedUser.username
+                  : cachedUser.company_name || cachedUser.username;
+               
+               const currentName = (s as any).user_display_name;
+               if (currentName && currentName !== newName) {
+                 hasChanges = true;
+                 resultChanged = true;
+                 return { ...s, user_display_name: newName };
+               }
+             }
+          }
+          return s;
+        });
+
+        if (resultChanged) {
+          return {
+            ...result,
+            users: newUsers || result.users,
+            skills: newSkills || result.skills,
+          };
+        }
+        return result;
+      });
+
+      if (hasChanges) {
+        localStorage.setItem('searchRecentResults', JSON.stringify(newSearches));
+        return newSearches;
+      }
+      return prev;
+    });
+  }, [user, recentSearches]);
 
   // Načítať návrhy pre používateľa (z kariet v jeho lokalite)
   // OPRAVA: Použiť user?.id namiesto celého user objektu, aby sa zabránilo nekonečnej slučke
@@ -419,10 +528,97 @@ export default function SearchModule({ user, onUserClick, onSkillClick, isOverla
 
   // Zobraziť výsledok z histórie
   const handleRecentResultClick = (result: SearchResults) => {
-    setResults(result);
+    // Vytvoriť kópiu výsledkov pre aktualizáciu
+    const updatedResult = { ...result };
+
+    // Aktualizovať používateľov v results podľa aktuálneho usera alebo cache
+    if (updatedResult.users && updatedResult.users.length > 0) {
+      updatedResult.users = updatedResult.users.map(u => {
+        // 1. Ak je to aktuálny používateľ, použi jeho aktuálne dáta
+        if (user && u.id === user.id) {
+          const newName =
+            user.user_type === 'individual'
+              ? [user.first_name, user.last_name].filter(Boolean).join(' ').trim() || user.username
+              : user.company_name || user.username;
+          
+          if (u.display_name !== newName || u.slug !== user.slug) {
+            return { ...u, display_name: newName, slug: user.slug };
+          }
+        } 
+        // 2. Ak je to iný používateľ, skús pozrieť do cache
+        else {
+          const cachedUser = getUserProfileFromCache(u.id);
+          if (cachedUser) {
+            const newName =
+              cachedUser.user_type === 'individual'
+                ? [cachedUser.first_name, cachedUser.last_name].filter(Boolean).join(' ').trim() || cachedUser.username
+                : cachedUser.company_name || cachedUser.username;
+            
+            if (u.display_name !== newName || u.slug !== cachedUser.slug) {
+              return { ...u, display_name: newName, slug: cachedUser.slug };
+            }
+          }
+        }
+        return u;
+      });
+    }
+
+    setResults(updatedResult);
     setHasSearched(true);
     setIsFromRecentSearch(true);
     setError(null);
+
+    // Spustiť asynchrónnu aktualizáciu dát na pozadí pre istotu
+    if (updatedResult.users && updatedResult.users.length > 0) {
+      updatedResult.users.forEach(async (u) => {
+        // Preskočiť ak to som ja (už aktualizované vyššie)
+        if (user && u.id === user.id) return;
+        
+        try {
+          const response = await api.get(endpoints.dashboard.userProfile(u.id));
+          const freshUser = response.data;
+          
+          // Ak sme dostali čerstvé dáta, aktualizujeme UI ak sa niečo zmenilo
+          if (freshUser) {
+             const freshName =
+              freshUser.user_type === 'individual'
+                ? [freshUser.first_name, freshUser.last_name].filter(Boolean).join(' ').trim() || freshUser.username
+                : freshUser.company_name || freshUser.username;
+             
+             // Ak sa líši meno alebo slug, aktualizuj results state
+             if (freshUser.slug !== u.slug || freshName !== u.display_name) {
+               setResults((currentResults) => {
+                 if (!currentResults) return null;
+                 const newUsers = currentResults.users.map(currU => {
+                   if (currU.id === freshUser.id) {
+                     return { ...currU, display_name: freshName, slug: freshUser.slug };
+                   }
+                   return currU;
+                 });
+                 return { ...currentResults, users: newUsers };
+               });
+
+               // A tiež aktualizuj v histórii localStorage
+               setRecentSearches((prev) => {
+                 const newSearches = prev.map(search => {
+                   const searchUsers = search.users.map(searchU => {
+                     if (searchU.id === freshUser.id) {
+                       return { ...searchU, display_name: freshName, slug: freshUser.slug };
+                     }
+                     return searchU;
+                   });
+                   return { ...search, users: searchUsers };
+                 });
+                 localStorage.setItem('searchRecentResults', JSON.stringify(newSearches));
+                 return newSearches;
+               });
+             }
+          }
+        } catch (err) {
+          // Ticho ignorovať chyby pri refreshovaní dát na pozadí
+        }
+      });
+    }
   };
 
   const handleKeyDown = (event: ReactKeyboardEvent<HTMLInputElement>) => {

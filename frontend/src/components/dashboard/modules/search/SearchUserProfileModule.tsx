@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { api, endpoints } from "@/lib/api";
 import type { User } from "@/types";
@@ -31,6 +32,7 @@ export function SearchUserProfileModule({
   initialSummary,
   initialTab,
 }: SearchUserProfileModuleProps) {
+  const router = useRouter();
   const { t } = useLanguage();
   const [profileUser, setProfileUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -74,6 +76,26 @@ export function SearchUserProfileModule({
 
         setProfileUser(data);
         setUserProfileToCache(userId, data);
+        
+        // Ak má používateľ slug a URL má ID namiesto slugu, aktualizovať URL
+        if (data.slug) {
+          const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
+          if (currentPath.startsWith('/dashboard/users/')) {
+            const currentIdentifier = currentPath.replace('/dashboard/users/', '').split('/')[0];
+            // Ak je aktuálny identifikátor číslo (ID) a máme slug, aktualizovať URL
+            if (/^\d+$/.test(currentIdentifier) && currentIdentifier !== data.slug) {
+              const newUrl = `/dashboard/users/${data.slug}`;
+              
+              // Okamžitá aktualizácia URL (bez reloadu)
+              if (typeof window !== 'undefined') {
+                window.history.pushState(null, '', newUrl);
+              }
+              
+              // Aktualizovať cez Next.js router
+              router.push(newUrl);
+            }
+          }
+        }
       } catch (e: any) {
         if (cancelled) return;
         const status = e?.response?.status;
