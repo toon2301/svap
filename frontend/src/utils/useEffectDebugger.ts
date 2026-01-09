@@ -24,7 +24,7 @@ export function useEffectDebugger(
     const count = countRef.current;
     
     // Check which dependencies changed
-    const changedDeps = deps.reduce((acc, dep, index) => {
+    const changedDeps = deps.reduce<Array<{ index: number; prev: any; current: any }>>((acc, dep, index) => {
       const prevDep = prevDepsRef.current[index];
       if (dep !== prevDep) {
         acc.push({
@@ -34,7 +34,7 @@ export function useEffectDebugger(
         });
       }
       return acc;
-    }, [] as Array<{ index: number; prev: any; current: any }>);
+    }, []);
     
     prevDepsRef.current = deps;
     
