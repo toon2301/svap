@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { User } from '../../types';
@@ -31,7 +31,8 @@ interface DashboardProps {
   initialRightItem?: string | null;
 }
 
-export default function Dashboard({
+// Vnútorný komponent, ktorý používa useSearchParams() - musí byť wrapped v Suspense
+function DashboardContent({
   initialUser,
   initialRoute,
   initialViewedUserId,
@@ -954,6 +955,15 @@ export default function Dashboard({
         t={t}
       />
     </>
+  );
+}
+
+// Hlavný komponent - wrapped v Suspense pre useSearchParams()
+export default function Dashboard(props: DashboardProps) {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><div className="text-gray-500">Loading...</div></div>}>
+      <DashboardContent {...props} />
+    </Suspense>
   );
 }
 
