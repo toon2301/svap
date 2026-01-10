@@ -55,15 +55,44 @@ export interface UseDashboardStateResult {
   handleMobileBack: (isInSubcategories?: boolean) => void;
 }
 
-export function useDashboardState(initialUser?: User): UseDashboardStateResult {
+export function useDashboardState(initialUser?: User, initialModule?: string): UseDashboardStateResult {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(initialUser || null);
   const userRef = useRef<User | null>(initialUser || null); // Ref pre sledovanie zmien slugu
   const [isLoading, setIsLoading] = useState(!initialUser);
   const hasCheckedAuth = useRef(false);
-  const [activeModule, setActiveModule] = useState<string>(() => getInitialModule());
-  const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(false);
-  const [activeRightItem, setActiveRightItem] = useState('edit-profile');
+  
+  // Inicializácia modulu - používame initialModule ak je poskytnutý (rovnaký pre SSR aj CSR)
+  // Ak nie, použijeme 'home' (hydration fix)
+  const [activeModule, setActiveModule] = useState<string>(initialModule || 'home');
+  
+  // Inicializácia sidebaru - ak initialModule je sidebar sekcia, otvor sidebar hneď
+  const rightSidebarItems = ['notifications', 'language', 'account-type', 'privacy'];
+  const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(() => {
+    return initialModule ? rightSidebarItems.includes(initialModule) : false;
+  });
+  
+  const [activeRightItem, setActiveRightItem] = useState(() => {
+    return initialModule && rightSidebarItems.includes(initialModule) ? initialModule : 'edit-profile';
+  });
+  
+  // Aktualizácia modulu z localStorage len ak nemáme initialModule (backward compatibility)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (initialModule) return; // Ak máme initialModule, nepoužívame localStorage
+    
+    // Len ak nemáme initialModule, skús localStorage
+    const storedModule = localStorage.getItem('activeModule');
+    if (storedModule && storedModule !== activeModule) {
+      setActiveModule(storedModule);
+      
+      // Ak je to sidebar sekcia, otvor sidebar
+      if (rightSidebarItems.includes(storedModule)) {
+        setIsRightSidebarOpen(true);
+        setActiveRightItem(storedModule);
+      }
+    }
+  }, [initialModule, activeModule]); // Zahrňme activeModule aby sa to nespúšťalo zbytočne
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [accountType, setAccountType] = useState<AccountType>(() => getInitialAccountType());
   const [isAccountTypeModalOpen, setIsAccountTypeModalOpen] = useState(false);

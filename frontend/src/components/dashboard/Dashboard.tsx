@@ -44,7 +44,7 @@ function DashboardContent({
   const { t } = useLanguage();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const dashboardState = useDashboardState(initialUser);
+  const dashboardState = useDashboardState(initialUser, initialRoute);
   const skillsState = useSkillsModals();
   const [isInSubcategories, setIsInSubcategories] = useState(false);
   const skillsCategoryBackHandlerRef = React.useRef<(() => void) | null>(null);
@@ -107,27 +107,17 @@ function DashboardContent({
     removeCustomCategory,
   } = skillsState;
 
-  // Inicializácia podľa URL (routy dashboardu)
+  // Uložiť initialRoute do localStorage (len na klientovi, po hydrácii)
+  // State je už nastavený priamo v useDashboardState inicializácii (hydration fix)
   useEffect(() => {
-    if (!initialRoute) return;
-
-    setActiveModule(initialRoute);
-    
-    // Ak je initialRoute jednou zo sekcií pravého sidebaru, otvor ho a nastav aktívnu položku
-    const rightSidebarItems = ['notifications', 'language', 'account-type', 'privacy'];
-    if (rightSidebarItems.includes(initialRoute)) {
-      setIsRightSidebarOpen(true);
-      setActiveRightItem(initialRoute);
-    }
+    if (!initialRoute || typeof window === 'undefined') return;
     
     try {
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('activeModule', initialRoute);
-      }
+      localStorage.setItem('activeModule', initialRoute);
     } catch {
       // ignore storage errors
     }
-  }, [initialRoute, setActiveModule, setIsRightSidebarOpen, setActiveRightItem]);
+  }, [initialRoute]);
 
   // Inicializácia profilu podľa slug/ID z URL
   useEffect(() => {
@@ -509,13 +499,13 @@ function DashboardContent({
         if (/^\d+$/.test(currentIdentifier) && currentIdentifier !== userSlug) {
           const newUrl = `/dashboard/users/${userSlug}`;
           
-          // Okamžitá aktualizácia URL (bez reloadu)
+          // Okamžitá aktualizácia URL (bez reloadu) - použijeme replaceState aby sme nezahlcovali históriu
           if (typeof window !== 'undefined') {
-            window.history.pushState(null, '', newUrl);
+            window.history.replaceState(null, '', newUrl);
           }
           
-          // Aktualizovať cez Next.js router
-          router.push(newUrl);
+          // Aktualizovať cez Next.js router (replace, nie push)
+          router.replace(newUrl);
           
           // Aktualizovať viewedUserSlug
           setViewedUserSlug(userSlug);
@@ -824,37 +814,40 @@ function DashboardContent({
     // Pri prepnutí hlavného modulu zatvor vyhľadávací panel
     setIsSearchOpen(false);
 
-    // Synchronizuj URL s hlavnými sekciami dashboardu
+    // Synchronizuj URL s hlavnými sekciami dashboardu - použijeme aj window.history.pushState ako fallback pre Railway
+    let url = '/dashboard';
     if (moduleId === 'search') {
-      router.push('/dashboard/search');
+      url = '/dashboard/search';
     } else if (moduleId === 'settings') {
-      router.push('/dashboard/settings');
+      url = '/dashboard/settings';
     } else if (moduleId === 'notifications') {
-      router.push('/dashboard/notifications');
+      url = '/dashboard/notifications';
     } else if (moduleId === 'language') {
-      router.push('/dashboard/language');
+      url = '/dashboard/language';
     } else if (moduleId === 'account-type') {
-      router.push('/dashboard/account-type');
+      url = '/dashboard/account-type';
     } else if (moduleId === 'privacy') {
-      router.push('/dashboard/privacy');
+      url = '/dashboard/privacy';
     } else if (moduleId === 'profile') {
       const identifier = user.slug || String(user.id);
-      router.push(`/dashboard/users/${identifier}`);
+      url = `/dashboard/users/${identifier}`;
     } else if (moduleId === 'favorites') {
-      router.push('/dashboard/favorites');
+      url = '/dashboard/favorites';
     } else if (moduleId === 'messages') {
-      router.push('/dashboard/messages');
+      url = '/dashboard/messages';
     } else if (moduleId === 'skills-offer') {
-      router.push('/dashboard/skills/offer');
+      url = '/dashboard/skills/offer';
     } else if (moduleId === 'skills-search') {
-      router.push('/dashboard/skills/search');
-    } else if (
-      moduleId === 'home' ||
-      moduleId === 'create'
-    ) {
-      // Ostatné hlavné moduly ostávajú na /dashboard
-      router.push('/dashboard');
+      url = '/dashboard/skills/search';
     }
+
+    if (typeof window !== 'undefined') {
+      // Najprv zmeň URL v browseri (to funguje vždy)
+      window.history.pushState(null, '', url);
+    }
+    
+    // Potom informuj router (pre istotu, ak by to potreboval)
+    router.push(url);
 
     handleModuleChange(moduleId);
   };
