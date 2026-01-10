@@ -71,6 +71,9 @@ class User(AbstractUser):
     # Nastavenia
     is_verified = models.BooleanField(_('Overený'), default=False)
     is_public = models.BooleanField(_('Verejný profil'), default=True)
+    # Flag označujúci, že používateľ manuálne upravil meno/priezvisko cez profil
+    # Ak je True, OAuth prihlásenie neprepíše meno z Google účtu
+    name_modified_by_user = models.BooleanField(_('Meno upravené používateľom'), default=False)
     # URL slug pre verejný profil (napr. meno.priezvisko-1)
     # null=True kvôli existujúcim záznamom – unikátnosť platí len pre neprázdne slugy
     slug = models.SlugField(_('URL slug'), max_length=150, unique=True, blank=True, null=True)

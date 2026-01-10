@@ -31,7 +31,7 @@ class UserAdmin(BaseUserAdmin):
             'classes': ('collapse',)
         }),
         (_('Nastavenia'), {
-            'fields': ('is_verified', 'is_public', 'is_active', 'is_staff', 'is_superuser')
+            'fields': ('is_verified', 'is_public', 'name_modified_by_user', 'is_active', 'is_staff', 'is_superuser')
         }),
         (_('Dôležité dátumy'), {
             'fields': ('last_login', 'date_joined', 'created_at', 'updated_at'),

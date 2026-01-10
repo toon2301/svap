@@ -169,23 +169,32 @@ def google_callback_view(request):
         # Získaj alebo vytvor používateľa
         try:
             user = User.objects.get(email=email)
-            # Aktualizuj meno a priezvisko z Google profilu (ak sú dostupné)
+            # Aktualizuj meno a priezvisko z Google profilu len ak:
+            # 1. Používateľ NEPOUŽIL flag name_modified_by_user (t.j. flag je False)
+            # 2. A meno je prázdne alebo null (kombinácia riešení 1 + 2)
             google_first_name = user_info.get('given_name', '')
             google_last_name = user_info.get('family_name', '')
             
             # Kontroluj zmeny PRED aktualizáciou
             name_changed = False
-            if google_first_name and google_first_name != user.first_name:
-                user.first_name = google_first_name
-                name_changed = True
-            if google_last_name and google_last_name != user.last_name:
-                user.last_name = google_last_name
-                name_changed = True
             
-            # Ulož zmeny ak sa niečo zmenilo
-            if name_changed:
-                user.save()
-                logger.info(f"Updated user profile via Google OAuth: {email} - {user.first_name} {user.last_name}")
+            # Ak používateľ manuálne upravil meno, neprepíšeme ho z Google
+            if not user.name_modified_by_user:
+                # Aktualizuj len ak je pole prázdne (kombinácia 1 + 2)
+                if google_first_name and (not user.first_name or user.first_name.strip() == ''):
+                    user.first_name = google_first_name
+                    name_changed = True
+                if google_last_name and (not user.last_name or user.last_name.strip() == ''):
+                    user.last_name = google_last_name
+                    name_changed = True
+                
+                # Ulož zmeny ak sa niečo zmenilo
+                if name_changed:
+                    user.save()
+                    logger.info(f"Updated user profile via Google OAuth (empty fields only): {email} - {user.first_name} {user.last_name}")
+            else:
+                # Používateľ manuálne upravil meno - zachovať jeho zmeny
+                logger.info(f"User {email} has manually modified name, skipping OAuth name update")
                 
         except User.DoesNotExist:
             # Vytvor nového používateľa

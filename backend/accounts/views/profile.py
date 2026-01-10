@@ -74,6 +74,22 @@ def update_profile_view(request):
                     'new': new_value
                 }
         
+        # Ak používateľ manuálne upravil meno alebo priezvisko, nastav flag
+        # Toto zabezpečí, že OAuth prihlásenie neprepíše manuálne zmenené meno
+        if 'first_name' in serializer.validated_data or 'last_name' in serializer.validated_data:
+            # Načítaj používateľa znova z DB, aby sme mali aktuálne hodnoty po uložení
+            request.user.refresh_from_db()
+            # Nastav flag, ak používateľ skutočne zmenil meno alebo priezvisko
+            name_was_changed = (
+                ('first_name' in serializer.validated_data and 
+                 serializer.validated_data.get('first_name') != original_data.get('first_name')) or
+                ('last_name' in serializer.validated_data and 
+                 serializer.validated_data.get('last_name') != original_data.get('last_name'))
+            )
+            if name_was_changed:
+                request.user.name_modified_by_user = True
+                request.user.save(update_fields=['name_modified_by_user'])
+        
         if changes:
             ip_address = request.META.get('REMOTE_ADDR')
             user_agent = request.META.get('HTTP_USER_AGENT')

@@ -190,9 +190,9 @@ class UserProfileSerializer(serializers.ModelSerializer):
             'linkedin', 'facebook', 'instagram', 'youtube', 'whatsapp',
             'is_verified', 'is_public', 'created_at',
             'updated_at', 'profile_completeness', 'birth_date', 'gender',
-            'slug',
+            'slug', 'name_modified_by_user',
         ]
-        read_only_fields = ['id', 'is_verified', 'created_at', 'updated_at', 'profile_completeness', 'slug']
+        read_only_fields = ['id', 'is_verified', 'created_at', 'updated_at', 'profile_completeness', 'slug', 'name_modified_by_user']
 
     def get_avatar_url(self, obj):
         """Vráti plnú URL k avataru (ak existuje)."""

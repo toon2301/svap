@@ -203,6 +203,8 @@ export function useDashboardState(initialUser?: User): UseDashboardStateResult {
       setActiveRightItem(itemId);
       if (itemId === 'notifications') {
         setActiveModule('notifications');
+        // Aktualizovať URL pre správne routing na Railway
+        router.push('/dashboard/notifications');
         if (typeof window !== 'undefined') {
           try {
             localStorage.setItem('activeModule', 'notifications');
@@ -210,9 +212,10 @@ export function useDashboardState(initialUser?: User): UseDashboardStateResult {
             // ignore
           }
         }
-      }
-      if (itemId === 'language') {
+      } else if (itemId === 'language') {
         setActiveModule('language');
+        // Aktualizovať URL pre správne routing na Railway
+        router.push('/dashboard/language');
         if (typeof window !== 'undefined') {
           try {
             localStorage.setItem('activeModule', 'language');
@@ -220,9 +223,9 @@ export function useDashboardState(initialUser?: User): UseDashboardStateResult {
             // ignore
           }
         }
-      }
-      if (itemId === 'account-type') {
+      } else if (itemId === 'account-type') {
         setActiveModule('account-type');
+        // Account-type nemá vlastnú route, zostane na aktuálnej URL
         if (typeof window !== 'undefined') {
           try {
             localStorage.setItem('activeModule', 'account-type');
@@ -232,7 +235,7 @@ export function useDashboardState(initialUser?: User): UseDashboardStateResult {
         }
       }
     },
-    []
+    [router]
   );
 
   const handleUserUpdate = useCallback(
