@@ -238,6 +238,28 @@ export default function ModuleRouter({
       return <NotificationsModule />;
     case 'language':
       return <LanguageModule />;
+    case 'account-type':
+      return (
+        <div className="text-center py-20">
+          <h2 className="text-2xl font-semibold text-gray-600 mb-4">
+            {t('rightSidebar.accountType', 'Typ účtu')}
+          </h2>
+          <p className="text-gray-500">
+            {t('dashboard.selectSection', 'Vyber si sekciu z navigácie pre pokračovanie.')}
+          </p>
+        </div>
+      );
+    case 'privacy':
+      return (
+        <div className="text-center py-20">
+          <h2 className="text-2xl font-semibold text-gray-600 mb-4">
+            {t('rightSidebar.privacy', 'Nastavenia súkromia')}
+          </h2>
+          <p className="text-gray-500">
+            {t('dashboard.selectSection', 'Vyber si sekciu z navigácie pre pokračovanie.')}
+          </p>
+        </div>
+      );
     case 'skills':
     case 'skills-offer':
     case 'skills-search':

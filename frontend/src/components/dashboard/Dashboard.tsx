@@ -112,6 +112,14 @@ function DashboardContent({
     if (!initialRoute) return;
 
     setActiveModule(initialRoute);
+    
+    // Ak je initialRoute jednou zo sekcií pravého sidebaru, otvor ho a nastav aktívnu položku
+    const rightSidebarItems = ['notifications', 'language', 'account-type', 'privacy'];
+    if (rightSidebarItems.includes(initialRoute)) {
+      setIsRightSidebarOpen(true);
+      setActiveRightItem(initialRoute);
+    }
+    
     try {
       if (typeof window !== 'undefined') {
         localStorage.setItem('activeModule', initialRoute);
@@ -119,7 +127,7 @@ function DashboardContent({
     } catch {
       // ignore storage errors
     }
-  }, [initialRoute, setActiveModule]);
+  }, [initialRoute, setActiveModule, setIsRightSidebarOpen, setActiveRightItem]);
 
   // Inicializácia profilu podľa slug/ID z URL
   useEffect(() => {
@@ -825,6 +833,10 @@ function DashboardContent({
       router.push('/dashboard/notifications');
     } else if (moduleId === 'language') {
       router.push('/dashboard/language');
+    } else if (moduleId === 'account-type') {
+      router.push('/dashboard/account-type');
+    } else if (moduleId === 'privacy') {
+      router.push('/dashboard/privacy');
     } else if (moduleId === 'profile') {
       const identifier = user.slug || String(user.id);
       router.push(`/dashboard/users/${identifier}`);
@@ -832,6 +844,10 @@ function DashboardContent({
       router.push('/dashboard/favorites');
     } else if (moduleId === 'messages') {
       router.push('/dashboard/messages');
+    } else if (moduleId === 'skills-offer') {
+      router.push('/dashboard/skills/offer');
+    } else if (moduleId === 'skills-search') {
+      router.push('/dashboard/skills/search');
     } else if (
       moduleId === 'home' ||
       moduleId === 'create'
@@ -841,6 +857,14 @@ function DashboardContent({
     }
 
     handleModuleChange(moduleId);
+  };
+
+  const handleSkillsOfferClick = () => {
+    handleMainModuleChange('skills-offer');
+  };
+
+  const handleSkillsSearchClick = () => {
+    handleMainModuleChange('skills-search');
   };
 
   const moduleContent = (
@@ -879,6 +903,8 @@ function DashboardContent({
       highlightedSkillId={highlightedSkillId}
       onViewUserSkillFromSearch={handleViewUserSkillFromSearch}
       initialProfileTab={initialProfileTab}
+      onSkillsOfferClick={handleSkillsOfferClick}
+      onSkillsSearchClick={handleSkillsSearchClick}
     />
   );
 

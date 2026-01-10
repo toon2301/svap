@@ -203,7 +203,6 @@ export function useDashboardState(initialUser?: User): UseDashboardStateResult {
       setActiveRightItem(itemId);
       if (itemId === 'notifications') {
         setActiveModule('notifications');
-        // Aktualizovať URL pre správne routing na Railway
         router.push('/dashboard/notifications');
         if (typeof window !== 'undefined') {
           try {
@@ -214,7 +213,6 @@ export function useDashboardState(initialUser?: User): UseDashboardStateResult {
         }
       } else if (itemId === 'language') {
         setActiveModule('language');
-        // Aktualizovať URL pre správne routing na Railway
         router.push('/dashboard/language');
         if (typeof window !== 'undefined') {
           try {
@@ -225,10 +223,20 @@ export function useDashboardState(initialUser?: User): UseDashboardStateResult {
         }
       } else if (itemId === 'account-type') {
         setActiveModule('account-type');
-        // Account-type nemá vlastnú route, zostane na aktuálnej URL
+        router.push('/dashboard/account-type');
         if (typeof window !== 'undefined') {
           try {
             localStorage.setItem('activeModule', 'account-type');
+          } catch {
+            // ignore
+          }
+        }
+      } else if (itemId === 'privacy') {
+        setActiveModule('privacy');
+        router.push('/dashboard/privacy');
+        if (typeof window !== 'undefined') {
+          try {
+            localStorage.setItem('activeModule', 'privacy');
           } catch {
             // ignore
           }
