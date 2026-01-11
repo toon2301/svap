@@ -75,24 +75,6 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
   const [activeRightItem, setActiveRightItem] = useState(() => {
     return initialModule && rightSidebarItems.includes(initialModule) ? initialModule : 'edit-profile';
   });
-  
-  // Aktualizácia modulu z localStorage len ak nemáme initialModule (backward compatibility)
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    if (initialModule) return; // Ak máme initialModule, nepoužívame localStorage
-    
-    // Len ak nemáme initialModule, skús localStorage
-    const storedModule = localStorage.getItem('activeModule');
-    if (storedModule && storedModule !== activeModule) {
-      setActiveModule(storedModule);
-      
-      // Ak je to sidebar sekcia, otvor sidebar
-      if (rightSidebarItems.includes(storedModule)) {
-        setIsRightSidebarOpen(true);
-        setActiveRightItem(storedModule);
-      }
-    }
-  }, [initialModule, activeModule]); // Zahrňme activeModule aby sa to nespúšťalo zbytočne
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [accountType, setAccountType] = useState<AccountType>(() => getInitialAccountType());
   const [isAccountTypeModalOpen, setIsAccountTypeModalOpen] = useState(false);
@@ -232,7 +214,13 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
       setActiveRightItem(itemId);
       if (itemId === 'notifications') {
         setActiveModule('notifications');
-        router.push('/dashboard/notifications');
+        const url = '/dashboard/notifications';
+        if (typeof window !== 'undefined') {
+          // Najprv zmeň URL v browseri (to funguje vždy) - fallback pre Railway
+          window.history.pushState(null, '', url);
+        }
+        // Potom informuj router (pre istotu, ak by to potreboval)
+        router.push(url);
         if (typeof window !== 'undefined') {
           try {
             localStorage.setItem('activeModule', 'notifications');
@@ -242,7 +230,13 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
         }
       } else if (itemId === 'language') {
         setActiveModule('language');
-        router.push('/dashboard/language');
+        const url = '/dashboard/language';
+        if (typeof window !== 'undefined') {
+          // Najprv zmeň URL v browseri (to funguje vždy) - fallback pre Railway
+          window.history.pushState(null, '', url);
+        }
+        // Potom informuj router (pre istotu, ak by to potreboval)
+        router.push(url);
         if (typeof window !== 'undefined') {
           try {
             localStorage.setItem('activeModule', 'language');
@@ -252,7 +246,13 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
         }
       } else if (itemId === 'account-type') {
         setActiveModule('account-type');
-        router.push('/dashboard/account-type');
+        const url = '/dashboard/account-type';
+        if (typeof window !== 'undefined') {
+          // Najprv zmeň URL v browseri (to funguje vždy) - fallback pre Railway
+          window.history.pushState(null, '', url);
+        }
+        // Potom informuj router (pre istotu, ak by to potreboval)
+        router.push(url);
         if (typeof window !== 'undefined') {
           try {
             localStorage.setItem('activeModule', 'account-type');
@@ -262,7 +262,13 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
         }
       } else if (itemId === 'privacy') {
         setActiveModule('privacy');
-        router.push('/dashboard/privacy');
+        const url = '/dashboard/privacy';
+        if (typeof window !== 'undefined') {
+          // Najprv zmeň URL v browseri (to funguje vždy) - fallback pre Railway
+          window.history.pushState(null, '', url);
+        }
+        // Potom informuj router (pre istotu, ak by to potreboval)
+        router.push(url);
         if (typeof window !== 'undefined') {
           try {
             localStorage.setItem('activeModule', 'privacy');
