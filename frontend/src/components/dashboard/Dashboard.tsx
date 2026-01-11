@@ -522,20 +522,21 @@ function DashboardContent({
         if (/^\d+$/.test(currentIdentifier) && currentIdentifier !== userSlug) {
           const newUrl = `/dashboard/users/${userSlug}`;
           
-          // Okamžitá aktualizácia URL (bez reloadu) - použijeme replaceState aby sme nezahlcovali históriu
+          console.log('[DEBUG] Updating URL from ID to slug:', { currentIdentifier, userSlug, newUrl });
+          
+          // Zmeniť URL bez reloadu - window.history.replaceState mení URL bez prerenderovania stránky
           if (typeof window !== 'undefined') {
             window.history.replaceState(null, '', newUrl);
           }
-          
-          // Aktualizovať cez Next.js router (replace, nie push)
-          router.replace(newUrl);
           
           // Aktualizovať viewedUserSlug
           setViewedUserSlug(userSlug);
         }
       }
+    } else {
+      console.log('[DEBUG] No slug available for user:', { viewedUserId, viewedUserSlug, hasCachedUser: !!getUserProfileFromCache(viewedUserId) });
     }
-  }, [viewedUserId, user, activeModule, viewedUserSlug, router]);
+  }, [viewedUserId, user, activeModule, viewedUserSlug]);
 
   // Synchronizácia highlightedSkillId s URL parametrom 'highlight'
   // A záloha v sessionStorage pre prípad full refreshu
