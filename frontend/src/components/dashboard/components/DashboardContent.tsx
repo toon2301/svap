@@ -243,7 +243,7 @@ export default function DashboardContent({
         savedSkill = toLocalSkill(data);
         
         // Nahrať nové obrázky
-        if (newImages.length > 0) {
+        if (newImages.length > 0 && savedSkill.id) {
           for (let i = 0; i < newImages.length; i++) {
             const file = newImages[i];
             try {
