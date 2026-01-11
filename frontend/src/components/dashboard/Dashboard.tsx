@@ -522,25 +522,29 @@ function DashboardContent({
         if (/^\d+$/.test(currentIdentifier) && currentIdentifier !== userSlug) {
           const newUrl = `/dashboard/users/${userSlug}`;
           
-          console.log('[DEBUG] Updating URL from ID to slug:', { currentIdentifier, userSlug, newUrl });
-          
-          // Zmeniť URL bez reloadu - window.history.replaceState mení URL bez prerenderovania stránky
+          // Okamžitá aktualizácia URL (bez reloadu) - použijeme replaceState aby sme nezahlcovali históriu
           if (typeof window !== 'undefined') {
             window.history.replaceState(null, '', newUrl);
           }
+          
+          // Aktualizovať cez Next.js router (replace, nie push)
+          router.replace(newUrl);
           
           // Aktualizovať viewedUserSlug
           setViewedUserSlug(userSlug);
         }
       }
-    } else {
-      console.log('[DEBUG] No slug available for user:', { viewedUserId, viewedUserSlug, hasCachedUser: !!getUserProfileFromCache(viewedUserId) });
     }
-  }, [viewedUserId, user, activeModule, viewedUserSlug]);
+  }, [viewedUserId, user, activeModule, viewedUserSlug, router]);
 
   // Synchronizácia highlightedSkillId s URL parametrom 'highlight'
-  // A záloha v sessionStorage pre prípad full refreshu
+  // A záloha v sessionStorage pre prípad full refreshu (len ak sme na user-profile module)
   useEffect(() => {
+    // Ak nie sme na user-profile module, neobnovovať zo sessionStorage
+    if (activeModule !== 'user-profile') {
+      return;
+    }
+
     const highlightParam = searchParams.get('highlight');
     if (highlightParam) {
       const id = Number(highlightParam);
@@ -566,7 +570,7 @@ function DashboardContent({
           
           if (storedId && storedTime) {
             const timeDiff = Date.now() - Number(storedTime);
-            if (timeDiff < 2 * 60 * 1000) { // Menej ako 2 minúty
+            if (timeDiff < 1 * 60 * 1000) { // Menej ako 1 minúta
               setHighlightedSkillId(Number(storedId));
               // Obnovíme aj URL parameter, aby to bolo konzistentné
               // Ale opatrne, aby sme nespôsobili loop
@@ -592,7 +596,29 @@ function DashboardContent({
         setHighlightedSkillId(null);
       }
     }
-  }, [searchParams, router]);
+  }, [searchParams, router, activeModule]);
+
+  // Zrušiť zvýraznenie pri opustení user-profile modulu
+  useEffect(() => {
+    if (activeModule !== 'user-profile') {
+      // Ak nie sme na user-profile module, zrušiť zvýraznenie a vyčistiť sessionStorage
+      if (highlightedSkillId != null) {
+        setHighlightedSkillId(null);
+      }
+      if (highlightTimeoutRef.current) {
+        clearTimeout(highlightTimeoutRef.current);
+        highlightTimeoutRef.current = null;
+      }
+      try {
+        if (typeof window !== 'undefined') {
+          sessionStorage.removeItem('highlightedSkillId');
+          sessionStorage.removeItem('highlightedSkillTime');
+        }
+      } catch {
+        // ignore
+      }
+    }
+  }, [activeModule, highlightedSkillId]);
 
   // Inteligentný časovač pre zvýraznenie:
   useEffect(() => {
@@ -602,13 +628,13 @@ function DashboardContent({
       }
 
       // Vypočítať zostávajúci čas (ak obnovujeme zo storage)
-      let remainingTime = 2 * 60 * 1000;
+      let remainingTime = 1 * 60 * 1000;
       try {
         if (typeof window !== 'undefined') {
           const storedTime = sessionStorage.getItem('highlightedSkillTime');
           if (storedTime) {
             const elapsed = Date.now() - Number(storedTime);
-            remainingTime = Math.max(1000, 2 * 60 * 1000 - elapsed);
+            remainingTime = Math.max(1000, 1 * 60 * 1000 - elapsed);
           }
         }
       } catch (e) {
@@ -780,9 +806,18 @@ function DashboardContent({
     setViewedUserSlug(slug ?? null);
     setViewedUserSummary(summary ?? null);
     setHighlightedSkillId(null);
+    // Vyčistiť sessionStorage a timeout
     if (highlightTimeoutRef.current) {
       clearTimeout(highlightTimeoutRef.current);
       highlightTimeoutRef.current = null;
+    }
+    try {
+      if (typeof window !== 'undefined') {
+        sessionStorage.removeItem('highlightedSkillId');
+        sessionStorage.removeItem('highlightedSkillTime');
+      }
+    } catch {
+      // ignore
     }
     setActiveModule('user-profile');
     setIsRightSidebarOpen(false);
@@ -844,6 +879,19 @@ function DashboardContent({
   const handleMainModuleChange = (moduleId: string) => {
     // Pri zmene modulu zrušiť zvýraznenie karty
     setHighlightedSkillId(null);
+    // Vyčistiť sessionStorage a timeout
+    if (highlightTimeoutRef.current) {
+      clearTimeout(highlightTimeoutRef.current);
+      highlightTimeoutRef.current = null;
+    }
+    try {
+      if (typeof window !== 'undefined') {
+        sessionStorage.removeItem('highlightedSkillId');
+        sessionStorage.removeItem('highlightedSkillTime');
+      }
+    } catch {
+      // ignore
+    }
 
     // Pri prepnutí hlavného modulu zatvor vyhľadávací panel
     setIsSearchOpen(false);
