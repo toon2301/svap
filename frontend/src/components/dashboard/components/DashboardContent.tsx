@@ -433,7 +433,7 @@ export default function DashboardContent({
           removeStandardCategory,
           removeCustomCategory,
         }}
-        user={user}
+        activeModule={activeModule}
         t={t}
       />
     </>

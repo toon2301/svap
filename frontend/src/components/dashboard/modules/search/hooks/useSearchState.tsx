@@ -8,7 +8,7 @@ export interface SearchStateProps {
   searchQuery: string;
   setSearchQuery: (query: string) => void;
   results: SearchResults | null;
-  setResults: (results: SearchResults | null) => void;
+  setResults: (results: SearchResults | null | ((prev: SearchResults | null) => SearchResults | null)) => void;
   isSearching: boolean;
   setIsSearching: (searching: boolean) => void;
   error: string | null;
