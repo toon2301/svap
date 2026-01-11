@@ -847,7 +847,7 @@ function DashboardContent({
     // Pri prepnutí hlavného modulu zatvor vyhľadávací panel
     setIsSearchOpen(false);
 
-    // Synchronizuj URL s hlavnými sekciami dashboardu - použijeme aj window.history.pushState ako fallback pre Railway
+    // Synchronizuj URL s hlavnými sekciami dashboardu - použijeme window.history.pushState bez reloadu
     let url = '/dashboard';
     if (moduleId === 'search') {
       url = '/dashboard/search';
@@ -874,13 +874,15 @@ function DashboardContent({
       url = '/dashboard/skills/search';
     }
 
+    // Zmeniť URL bez reloadu - window.history.pushState mení URL bez prerenderovania stránky
     if (typeof window !== 'undefined') {
-      // Najprv zmeň URL v browseri (to funguje vždy)
       window.history.pushState(null, '', url);
+      try {
+        localStorage.setItem('activeModule', moduleId);
+      } catch {
+        // ignore
+      }
     }
-    
-    // Potom informuj router (pre istotu, ak by to potreboval)
-    router.push(url);
 
     handleModuleChange(moduleId);
   };
