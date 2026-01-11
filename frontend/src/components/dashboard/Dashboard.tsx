@@ -442,12 +442,24 @@ function DashboardContent({
     const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
     const expectedPath = `/dashboard/users/${user.slug}`;
 
+    // DEBUG: Log pre kontrolu, čo sa deje
+    console.log('[DEBUG useEffect URL update]', {
+      currentPath,
+      expectedPath,
+      isEditMode,
+      activeRightItem,
+      isRightSidebarOpen,
+      userSlug: user.slug
+    });
+
     // Ak URL neodpovedá novému slugu, aktualizovať ju
     // Kontrolujeme, či sme na /dashboard/users/[nieco] a to nieco nie je nový slug
     if (currentPath.startsWith('/dashboard/users/')) {
       const currentSlug = currentPath.replace('/dashboard/users/', '').split('/')[0];
       if (currentSlug !== user.slug) {
         const newUrl = `/dashboard/users/${user.slug}`;
+        
+        console.log('[DEBUG] URL mismatch - updating slug:', { currentSlug, newSlug: user.slug, isEditMode });
         
         // Okamžitá aktualizácia URL (bez reloadu)
         if (typeof window !== 'undefined') {
@@ -456,13 +468,21 @@ function DashboardContent({
         
         // Ak sme v edit móde, len aktualizovať URL bez router.push (aby sa zachoval stav)
         if (!isEditMode) {
+          console.log('[DEBUG] Calling router.push (NOT in edit mode):', newUrl);
           // Aktualizovať cez Next.js router len ak nie sme v edit móde
           router.push(newUrl);
+        } else {
+          console.log('[DEBUG] Skipping router.push (in edit mode)');
         }
+      } else if (currentPath.endsWith('/edit')) {
+        // Ak sme na /edit URL, necháme to tak (nie je to slug mismatch)
+        console.log('[DEBUG] On /edit URL, skipping update');
       }
     } else if (currentPath === '/dashboard/profile' || currentPath === '/dashboard') {
       // Ak sme na /dashboard/profile alebo /dashboard, presmerovať na slug URL
       const newUrl = `/dashboard/users/${user.slug}`;
+      
+      console.log('[DEBUG] Redirecting from profile/dashboard to slug URL:', { currentPath, newUrl, isEditMode });
       
       if (typeof window !== 'undefined') {
         window.history.pushState(null, '', newUrl);
@@ -470,7 +490,10 @@ function DashboardContent({
       
       // Ak sme v edit móde, len aktualizovať URL bez router.push (aby sa zachoval stav)
       if (!isEditMode) {
+        console.log('[DEBUG] Calling router.push (NOT in edit mode):', newUrl);
         router.push(newUrl);
+      } else {
+        console.log('[DEBUG] Skipping router.push (in edit mode)');
       }
     }
   }, [user?.slug, user?.id, activeModule, viewedUserId, isRightSidebarOpen, activeRightItem, router]);
