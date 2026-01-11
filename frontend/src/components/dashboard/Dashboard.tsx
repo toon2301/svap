@@ -724,12 +724,22 @@ function DashboardContent({
   };
 
   const handleEditProfileClick = () => {
-    // Zachovať existujúce správanie otvorenia/zatvorenia pravého sidebaru
-    handleRightSidebarToggle();
+    // Nastaviť edit mód priamo (bez toggle) - otvoriť sidebar a nastaviť edit-profile
+    setActiveModule('profile');
+    setIsRightSidebarOpen(true);
+    setActiveRightItem('edit-profile');
 
-    // Synchronizovať URL s režimom úpravy profilu (preferuj slug, fallback na ID)
+    // Zmeniť URL bez reloadu - window.history.pushState mení URL bez prerenderovania stránky
     const identifier = user.slug || String(user.id);
-    router.push(`/dashboard/users/${identifier}/edit`);
+    const url = `/dashboard/users/${identifier}/edit`;
+    if (typeof window !== 'undefined') {
+      window.history.pushState(null, '', url);
+      try {
+        localStorage.setItem('activeModule', 'profile');
+      } catch {
+        // ignore
+      }
+    }
   };
 
   const handleSearchClose = () => {
