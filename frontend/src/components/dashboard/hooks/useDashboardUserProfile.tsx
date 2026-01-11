@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { type User } from '@/types/user';
+import { type User } from '@/types';
 import { type SearchUserResult } from '../modules/search/types';
 import { api, endpoints } from '@/lib/api';
 import {

@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { type User } from '@/types/user';
+import { type User } from '@/types';
 import { type SearchResults, type SearchSkill, type SearchUserResult } from '../types';
 import { getUserInitials } from '../utils';
 import { ScrollableText } from '../ScrollableText';

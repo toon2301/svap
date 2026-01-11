@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { api, endpoints } from '@/lib/api';
-import { type User } from '@/types/user';
+import { type User } from '@/types';
 import { type SearchSkill } from '../types';
 import { type SearchStateProps } from './useSearchState';
 

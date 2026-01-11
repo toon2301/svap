@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useLanguage } from '@/contexts/LanguageContext';
-import type { User } from '@/types/user';
+import type { User } from '@/types';
 import type { ProfileTab } from '../modules/profile/profileTypes';
 import type { SearchUserResult } from '../modules/search/types';
 import DashboardLayout from '../DashboardLayout';

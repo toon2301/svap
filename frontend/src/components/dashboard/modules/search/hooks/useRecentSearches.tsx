@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { api, endpoints } from '@/lib/api';
-import { type User } from '@/types/user';
+import { type User } from '@/types';
 import { type SearchResults, type SearchUserResult } from '../types';
 import { getUserProfileFromCache } from '../../profile/profileUserCache';
 import { type SearchStateProps } from './useSearchState';
