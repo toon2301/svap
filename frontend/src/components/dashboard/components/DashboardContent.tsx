@@ -262,7 +262,7 @@ export default function DashboardContent({
       applySkillUpdate(savedSkill);
 
       // Po úspešnom uložení, refresh skills pre aktívnu kategóriu
-      void loadSkills(isSeeking ? 'search' : 'offer');
+      void loadSkills();
     } catch (error: any) {
       console.error('Chyba pri ukladaní zručnosti:', error);
       const message = error?.response?.data?.error || error?.response?.data?.detail || t('dashboard.skillSaveError', 'Nepodarilo sa uložiť zručnosť');
