@@ -216,12 +216,8 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
         setActiveModule('notifications');
         const url = '/dashboard/notifications';
         if (typeof window !== 'undefined') {
-          // Najprv zmeň URL v browseri (to funguje vždy) - fallback pre Railway
+          // Zmeň URL bez reloadu - window.history.pushState mení URL bez prerenderovania stránky
           window.history.pushState(null, '', url);
-        }
-        // Potom informuj router (pre istotu, ak by to potreboval)
-        router.push(url);
-        if (typeof window !== 'undefined') {
           try {
             localStorage.setItem('activeModule', 'notifications');
           } catch {
@@ -232,12 +228,8 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
         setActiveModule('language');
         const url = '/dashboard/language';
         if (typeof window !== 'undefined') {
-          // Najprv zmeň URL v browseri (to funguje vždy) - fallback pre Railway
+          // Zmeň URL bez reloadu - window.history.pushState mení URL bez prerenderovania stránky
           window.history.pushState(null, '', url);
-        }
-        // Potom informuj router (pre istotu, ak by to potreboval)
-        router.push(url);
-        if (typeof window !== 'undefined') {
           try {
             localStorage.setItem('activeModule', 'language');
           } catch {
@@ -248,12 +240,8 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
         setActiveModule('account-type');
         const url = '/dashboard/account-type';
         if (typeof window !== 'undefined') {
-          // Najprv zmeň URL v browseri (to funguje vždy) - fallback pre Railway
+          // Zmeň URL bez reloadu - window.history.pushState mení URL bez prerenderovania stránky
           window.history.pushState(null, '', url);
-        }
-        // Potom informuj router (pre istotu, ak by to potreboval)
-        router.push(url);
-        if (typeof window !== 'undefined') {
           try {
             localStorage.setItem('activeModule', 'account-type');
           } catch {
@@ -264,12 +252,8 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
         setActiveModule('privacy');
         const url = '/dashboard/privacy';
         if (typeof window !== 'undefined') {
-          // Najprv zmeň URL v browseri (to funguje vždy) - fallback pre Railway
+          // Zmeň URL bez reloadu - window.history.pushState mení URL bez prerenderovania stránky
           window.history.pushState(null, '', url);
-        }
-        // Potom informuj router (pre istotu, ak by to potreboval)
-        router.push(url);
-        if (typeof window !== 'undefined') {
           try {
             localStorage.setItem('activeModule', 'privacy');
           } catch {
@@ -278,7 +262,7 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
         }
       }
     },
-    [router]
+    []
   );
 
   const handleUserUpdate = useCallback(
