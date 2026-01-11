@@ -108,6 +108,10 @@ export default function ModuleRouter({
           } catch {
             // ignore
           }
+          // Zmeniť URL bez reloadu - window.history.pushState mení URL bez prerenderovania stránky
+          if (typeof window !== 'undefined') {
+            window.history.pushState(null, '', '/dashboard/skills');
+          }
         }}
         isEditMode={true}
         accountType={accountType}
@@ -188,14 +192,18 @@ export default function ModuleRouter({
           user={user}
           onUserUpdate={onUserUpdate}
           onEditProfileClick={onEditProfileClick ?? handleRightSidebarToggle}
-          onSkillsClick={onSkillsClick || (() => {
-            setActiveModule('skills');
-            try {
-              localStorage.setItem('activeModule', 'skills');
-            } catch {
-              // ignore
-            }
-          })}
+        onSkillsClick={onSkillsClick || (() => {
+          setActiveModule('skills');
+          try {
+            localStorage.setItem('activeModule', 'skills');
+          } catch {
+            // ignore
+          }
+          // Zmeniť URL bez reloadu - window.history.pushState mení URL bez prerenderovania stránky
+          if (typeof window !== 'undefined') {
+            window.history.pushState(null, '', '/dashboard/skills');
+          }
+        })}
           isEditMode={isRightSidebarOpen}
           accountType={accountType}
         />

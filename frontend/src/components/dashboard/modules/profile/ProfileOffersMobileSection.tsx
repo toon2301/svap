@@ -139,9 +139,12 @@ export default function ProfileOffersMobileSection({
   }, [ownerUserId]); // t je prekladová funkcia, ktorá sa nemení v tejto logike
 
   // Po načítaní ponúk a nastavení highlightedSkillId poscrolluj na danú kartu
+  // Scroll len ak je highlightedSkillId nastavený (pri prvom zvýraznení)
   useEffect(() => {
     if (typeof window === 'undefined') return;
+    if (!highlightedSkillId) return; // Scroll len ak je zvýraznenie aktívne
     if (!highlightedCardRef.current) return;
+    if (offers.length === 0) return; // Čakaj na načítanie ponúk
 
     try {
       highlightedCardRef.current.scrollIntoView({
@@ -151,7 +154,7 @@ export default function ProfileOffersMobileSection({
     } catch {
       // ignore
     }
-  }, [offers]);
+  }, [highlightedSkillId, offers]);
 
   const handleCardClick = (offer: Offer) => {
     const cardId = offer.id ?? `${offer.category || 'cat'}-${offer.subcategory || 'sub'}-${offer.description || 'desc'}`;

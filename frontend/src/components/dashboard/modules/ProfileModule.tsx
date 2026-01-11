@@ -43,6 +43,7 @@ export default function ProfileModule({
   }, []);
 
   // Vytvorenie snapshotu user objektu na začiatku edit módu
+  // OPRAVA: Použiť user.id namiesto celého user objektu, aby sa zabránilo nekonečnej slučke
   useEffect(() => {
     if (isEditMode && !snapshotUser) {
       // Vytvoríme hlbokú kópiu user objektu
@@ -51,14 +52,16 @@ export default function ProfileModule({
       // Keď sa edit mode vypne, vymazeme snapshot a použijeme aktuálny user
       setSnapshotUser(null);
     }
-  }, [isEditMode, user, snapshotUser]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isEditMode, user.id]);
 
   // Aktualizácia snapshotu, keď sa user zmení a nie sme v edit móde
+  // OPRAVA: Odstrániť user z dependencies - nie je potrebný pre túto logiku
   useEffect(() => {
     if (!isEditMode) {
       setSnapshotUser(null);
     }
-  }, [user, isEditMode]);
+  }, [isEditMode]);
 
   // User objekt pre normálne zobrazenie - používa snapshotUser, ak existuje (keď sme v edit móde), inak aktuálny user
   const displayUser = snapshotUser || user;

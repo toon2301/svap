@@ -66,6 +66,10 @@ export default function SkillsModuleRouter({
             } catch {
               // ignore
             }
+            // Zmeniť URL bez reloadu - window.history.pushState mení URL bez prerenderovania stránky
+            if (typeof window !== 'undefined') {
+              window.history.pushState(null, '', '/dashboard/skills/offer');
+            }
           })}
           onSearch={onSkillsSearchClick || (() => {
             setActiveModule('skills-search');
@@ -73,6 +77,10 @@ export default function SkillsModuleRouter({
               localStorage.setItem('activeModule', 'skills-search');
             } catch {
               // ignore
+            }
+            // Zmeniť URL bez reloadu - window.history.pushState mení URL bez prerenderovania stránky
+            if (typeof window !== 'undefined') {
+              window.history.pushState(null, '', '/dashboard/skills/search');
             }
           })}
         />

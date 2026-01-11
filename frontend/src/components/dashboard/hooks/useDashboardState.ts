@@ -212,7 +212,23 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
   const handleRightItemClick = useCallback(
     (itemId: string) => {
       setActiveRightItem(itemId);
-      if (itemId === 'notifications') {
+      if (itemId === 'edit-profile') {
+        // Nastaviť edit mód - otvoriť sidebar a nastaviť edit-profile
+        setActiveModule('profile');
+        setIsRightSidebarOpen(true);
+        
+        // Zmeniť URL bez reloadu - window.history.pushState mení URL bez prerenderovania stránky
+        const identifier = user?.slug || String(user?.id);
+        const url = `/dashboard/users/${identifier}/edit`;
+        if (typeof window !== 'undefined') {
+          window.history.pushState(null, '', url);
+          try {
+            localStorage.setItem('activeModule', 'profile');
+          } catch {
+            // ignore
+          }
+        }
+      } else if (itemId === 'notifications') {
         setActiveModule('notifications');
         const url = '/dashboard/notifications';
         if (typeof window !== 'undefined') {
@@ -262,7 +278,7 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
         }
       }
     },
-    []
+    [user]
   );
 
   const handleUserUpdate = useCallback(
