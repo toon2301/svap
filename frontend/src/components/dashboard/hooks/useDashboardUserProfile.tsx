@@ -245,39 +245,90 @@ export function useDashboardUserProfile({
     // Len ak sme na cudzom profile (nie na vlastnom)
     if (!viewedUserId || !user || viewedUserId === user.id) return;
     if (activeModule !== 'user-profile') return;
+    if (typeof window === 'undefined') return;
 
-    // Skús získať slug z cache alebo z viewedUserSummary
+    const currentPath = window.location.pathname;
+    if (!currentPath.startsWith('/dashboard/users/')) return;
+
+    const currentIdentifier = currentPath.replace('/dashboard/users/', '').split('/')[0];
+    
+    // Ak už máme slug v URL, nič nerobiť
+    if (!/^\d+$/.test(currentIdentifier)) return;
+
+    // Pomocná funkcia na aktualizáciu URL
+    const updateUrlWithSlug = (slug: string) => {
+      if (typeof window === 'undefined') return;
+      
+      const currentPath = window.location.pathname;
+      if (!currentPath.startsWith('/dashboard/users/')) return;
+      
+      const currentIdentifier = currentPath.replace('/dashboard/users/', '').split('/')[0];
+      
+      // Ak je aktuálny identifikátor číslo (ID) a máme slug, aktualizovať URL
+      if (/^\d+$/.test(currentIdentifier) && currentIdentifier !== slug) {
+        let newUrl = `/dashboard/users/${slug}`;
+        
+        // Zachovať highlight parameter ak existuje
+        if (window.location.search) {
+          newUrl += window.location.search;
+        }
+        
+        // Aktualizovať URL bez reloadu - window.history.replaceState je konzistentnejšie
+        window.history.replaceState(null, '', newUrl);
+      }
+    };
+
+    // Skús získať slug - priorita: viewedUserSlug > viewedUserSummary > cache > API
     let userSlug: string | null | undefined = viewedUserSlug;
     
-    // Ak nemáme slug, skús ho získať z cache
-    if (!userSlug) {
-      const cachedUser = getUserProfileFromCache(viewedUserId);
-      userSlug = cachedUser?.slug;
+    // 1. Skús z viewedUserSummary (z search výsledkov)
+    if (!userSlug && viewedUserSummary?.slug) {
+      userSlug = viewedUserSummary.slug;
+      setViewedUserSlug(userSlug);
     }
     
-    // Ak máme slug a URL má ID namiesto slugu, aktualizovať URL
-    if (userSlug) {
-      const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
-      if (currentPath.startsWith('/dashboard/users/')) {
-        const currentIdentifier = currentPath.replace('/dashboard/users/', '').split('/')[0];
-        // Ak je aktuálny identifikátor číslo (ID) a máme slug, aktualizovať URL
-        if (/^\d+$/.test(currentIdentifier) && currentIdentifier !== userSlug) {
-          let newUrl = `/dashboard/users/${userSlug}`;
-          
-          // Zachovať highlight parameter ak existuje
-          if (typeof window !== 'undefined' && window.location.search) {
-            newUrl += window.location.search;
-          }
-          
-          // Aktualizovať cez Next.js router (replace, nie push)
-          router.replace(newUrl);
-          
-          // Aktualizovať viewedUserSlug
-          setViewedUserSlug(userSlug);
-        }
+    // 2. Ak nemáme slug, skús ho získať z cache
+    if (!userSlug) {
+      const cachedUser = getUserProfileFromCache(viewedUserId);
+      if (cachedUser?.slug) {
+        userSlug = cachedUser.slug;
+        setViewedUserSlug(userSlug);
       }
     }
-  }, [viewedUserId, user, activeModule, viewedUserSlug, router]);
+    
+    // 3. Ak máme slug, okamžite aktualizovať URL
+    if (userSlug) {
+      updateUrlWithSlug(userSlug);
+      return;
+    }
+    
+    // 4. Ak stále nemáme slug, načítaj profil z API (len ak cache nefunguje)
+    let cancelled = false;
+    
+    const loadProfile = async () => {
+      try {
+        const { data } = await api.get<User>(endpoints.dashboard.userProfile(viewedUserId));
+        if (cancelled) return;
+        
+        if (data.slug) {
+          setUserProfileToCache(data.id, data);
+          setViewedUserSlug(data.slug);
+          
+          // Aktualizovať URL po načítaní
+          updateUrlWithSlug(data.slug);
+        }
+      } catch (error) {
+        // Ticho ignorovať - downstream komponenty zobrazia chybu
+        console.debug('Failed to load user profile for slug update:', error);
+      }
+    };
+    
+    void loadProfile();
+    
+    return () => {
+      cancelled = true;
+    };
+  }, [viewedUserId, user, activeModule, viewedUserSlug, viewedUserSummary]);
 
   return {
     viewedUserId,
