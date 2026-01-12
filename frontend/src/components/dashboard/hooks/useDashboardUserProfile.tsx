@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { type User } from '@/types';
 import { type SearchUserResult } from '../modules/search/types';
 import { api, endpoints } from '@/lib/api';
@@ -46,7 +45,6 @@ export function useDashboardUserProfile({
   initialRightItem,
   setHighlightedSkillId,
 }: UseDashboardUserProfileParams): DashboardUserProfileProps {
-  const router = useRouter();
   const [viewedUserId, setViewedUserId] = useState<number | null>(null);
   const [viewedUserSlug, setViewedUserSlug] = useState<string | null>(null);
   const [viewedUserSummary, setViewedUserSummary] = useState<SearchUserResult | null>(null);
@@ -307,60 +305,118 @@ export function useDashboardUserProfile({
       needsUpdate: userSlug && currentIdentifier && /^\d+$/.test(currentIdentifier) && currentIdentifier !== userSlug,
     });
     
+    // Pomocná funkcia na aktualizáciu URL so slugom
+    const updateUrlWithSlug = (slug: string, source: string) => {
+      if (typeof window === 'undefined') return;
+      
+      const currentPath = window.location.pathname;
+      if (!currentPath.startsWith('/dashboard/users/')) return;
+      
+      const currentIdentifier = currentPath.replace('/dashboard/users/', '').split('/')[0];
+      
+      // Ak je aktuálny identifikátor číslo (ID) a máme slug, aktualizovať URL
+      if (/^\d+$/.test(currentIdentifier) && currentIdentifier !== slug) {
+        let newUrl = `/dashboard/users/${slug}`;
+        
+        // Zachovať highlight parameter ak existuje
+        if (window.location.search) {
+          newUrl += window.location.search;
+        }
+        
+        console.log('[URL-SLUG-DEBUG] ⚡ AKTUALIZUJEM URL', {
+          from: currentPath + window.location.search,
+          to: newUrl,
+          slugSource: source,
+          method: 'window.history.replaceState',
+        });
+        
+        // Aktualizovať URL bez reloadu - window.history.replaceState je konzistentnejšie
+        window.history.replaceState(null, '', newUrl);
+        
+        // Aktualizovať viewedUserSlug
+        setViewedUserSlug(slug);
+        
+        // Overenie po zmene
+        setTimeout(() => {
+          const afterPath = window.location.pathname;
+          console.log('[URL-SLUG-DEBUG] ✅ URL po aktualizácii', {
+            expected: newUrl,
+            actual: afterPath + window.location.search,
+            match: afterPath === `/dashboard/users/${slug}`,
+          });
+        }, 100);
+      } else {
+        console.log('[URL-SLUG-DEBUG] URL už má slug alebo nie je číslo', {
+          currentIdentifier,
+          slug,
+          isNumeric: currentIdentifier ? /^\d+$/.test(currentIdentifier) : false,
+          isSame: currentIdentifier === slug,
+        });
+      }
+    };
+
     // Ak máme slug a URL má ID namiesto slugu, aktualizovať URL
     if (userSlug) {
-      if (currentPath.startsWith('/dashboard/users/')) {
-        // Ak je aktuálny identifikátor číslo (ID) a máme slug, aktualizovať URL
-        if (/^\d+$/.test(currentIdentifier || '') && currentIdentifier !== userSlug) {
-          let newUrl = `/dashboard/users/${userSlug}`;
-          
-          // Zachovať highlight parameter ak existuje
-          if (typeof window !== 'undefined' && window.location.search) {
-            newUrl += window.location.search;
-          }
-          
-          console.log('[URL-SLUG-DEBUG] ⚡ AKTUALIZUJEM URL', {
-            from: currentPath + (typeof window !== 'undefined' ? window.location.search : ''),
-            to: newUrl,
-            slugSource,
-            method: 'router.replace',
-          });
-          
-          // Aktualizovať cez Next.js router (replace, nie push)
-          router.replace(newUrl);
-          
-          // Aktualizovať viewedUserSlug
-          setViewedUserSlug(userSlug);
-          
-          // Overenie po zmene
-          setTimeout(() => {
-            const afterPath = typeof window !== 'undefined' ? window.location.pathname : '';
-            console.log('[URL-SLUG-DEBUG] ✅ URL po aktualizácii', {
-              expected: newUrl,
-              actual: afterPath + (typeof window !== 'undefined' ? window.location.search : ''),
-              match: afterPath === `/dashboard/users/${userSlug}`,
-            });
-          }, 100);
-        } else {
-          console.log('[URL-SLUG-DEBUG] URL už má slug alebo nie je číslo', {
-            currentIdentifier,
-            userSlug,
-            isNumeric: currentIdentifier ? /^\d+$/.test(currentIdentifier) : false,
-            isSame: currentIdentifier === userSlug,
-          });
-        }
-      } else {
-        console.log('[URL-SLUG-DEBUG] URL nezačína s /dashboard/users/', { currentPath });
-      }
+      updateUrlWithSlug(userSlug, slugSource);
     } else {
-      console.log('[URL-SLUG-DEBUG] ❌ NEMÁME SLUG - URL sa neaktualizuje', {
+      // Fallback: Ak nemáme slug, načítať profil z API
+      console.log('[URL-SLUG-DEBUG] ❌ NEMÁME SLUG - Načítavam profil z API', {
         viewedUserId,
         viewedUserSlug,
         viewedUserSummarySlug: viewedUserSummary?.slug,
         cacheCheck: getUserProfileFromCache(viewedUserId)?.slug || 'not in cache',
       });
+
+      // Len ak URL má ID (nie slug), načítať profil z API
+      if (currentIdentifier && /^\d+$/.test(currentIdentifier)) {
+        let cancelled = false;
+
+        const loadProfileFromApi = async () => {
+          try {
+            console.log('[URL-SLUG-DEBUG] 🔄 Načítavam profil z API', { userId: viewedUserId });
+            const { data } = await api.get<User>(endpoints.dashboard.userProfile(viewedUserId));
+            
+            if (cancelled) return;
+
+            console.log('[URL-SLUG-DEBUG] ✅ Profil načítaný z API', {
+              userId: data.id,
+              slug: data.slug,
+              hasSlug: !!data.slug,
+            });
+
+            // Uložiť do cache
+            setUserProfileToCache(data.id, data);
+
+            // Ak má používateľ slug, aktualizovať URL a viewedUserSlug
+            if (data.slug) {
+              setViewedUserSlug(data.slug);
+              updateUrlWithSlug(data.slug, 'API');
+            } else {
+              console.log('[URL-SLUG-DEBUG] ⚠️ Používateľ nemá slug v databáze', { userId: data.id });
+            }
+          } catch (error: any) {
+            if (cancelled) return;
+            
+            // Ticho ignorovať chyby - downstream komponenty zobrazia user-friendly hlášku
+            console.debug('[URL-SLUG-DEBUG] Chyba pri načítaní profilu z API', {
+              userId: viewedUserId,
+              error: error?.response?.status || error?.message,
+            });
+          }
+        };
+
+        void loadProfileFromApi();
+
+        return () => {
+          cancelled = true;
+        };
+      } else {
+        console.log('[URL-SLUG-DEBUG] URL už má slug, nie je potrebné načítať profil z API', {
+          currentIdentifier,
+        });
+      }
     }
-  }, [viewedUserId, user, activeModule, viewedUserSlug, viewedUserSummary, router]);
+  }, [viewedUserId, user, activeModule, viewedUserSlug, viewedUserSummary]);
 
   return {
     viewedUserId,
