@@ -242,93 +242,125 @@ export function useDashboardUserProfile({
 
   // Aktualizácia URL na slug, keď sa načíta profil cudzieho používateľa
   useEffect(() => {
+    // DIAGNOSTIKA: Začiatok useEffect
+    console.log('[URL-SLUG-DEBUG] useEffect spustený', {
+      viewedUserId,
+      user: user?.id,
+      activeModule,
+      viewedUserSlug,
+      viewedUserSummary: viewedUserSummary ? { id: viewedUserSummary.id, slug: viewedUserSummary.slug } : null,
+      currentUrl: typeof window !== 'undefined' ? window.location.href : 'N/A',
+    });
+
     // Len ak sme na cudzom profile (nie na vlastnom)
-    if (!viewedUserId || !user || viewedUserId === user.id) return;
-    if (activeModule !== 'user-profile') return;
-    if (typeof window === 'undefined') return;
+    if (!viewedUserId || !user || viewedUserId === user.id) {
+      console.log('[URL-SLUG-DEBUG] Early return: nie sme na cudzom profile', {
+        viewedUserId,
+        user: user?.id,
+        isOwnProfile: viewedUserId === user?.id,
+      });
+      return;
+    }
+    if (activeModule !== 'user-profile') {
+      console.log('[URL-SLUG-DEBUG] Early return: activeModule nie je user-profile', { activeModule });
+      return;
+    }
 
-    const currentPath = window.location.pathname;
-    if (!currentPath.startsWith('/dashboard/users/')) return;
+    const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
+    const currentIdentifier = currentPath.startsWith('/dashboard/users/') 
+      ? currentPath.replace('/dashboard/users/', '').split('/')[0] 
+      : null;
 
-    const currentIdentifier = currentPath.replace('/dashboard/users/', '').split('/')[0];
-    
-    // Ak už máme slug v URL, nič nerobiť
-    if (!/^\d+$/.test(currentIdentifier)) return;
+    console.log('[URL-SLUG-DEBUG] Kontrola URL', {
+      currentPath,
+      currentIdentifier,
+      isNumeric: currentIdentifier ? /^\d+$/.test(currentIdentifier) : false,
+    });
 
-    // Pomocná funkcia na aktualizáciu URL
-    const updateUrlWithSlug = (slug: string) => {
-      if (typeof window === 'undefined') return;
-      
-      const currentPath = window.location.pathname;
-      if (!currentPath.startsWith('/dashboard/users/')) return;
-      
-      const currentIdentifier = currentPath.replace('/dashboard/users/', '').split('/')[0];
-      
-      // Ak je aktuálny identifikátor číslo (ID) a máme slug, aktualizovať URL
-      if (/^\d+$/.test(currentIdentifier) && currentIdentifier !== slug) {
-        let newUrl = `/dashboard/users/${slug}`;
-        
-        // Zachovať highlight parameter ak existuje
-        if (window.location.search) {
-          newUrl += window.location.search;
-        }
-        
-        // Aktualizovať URL bez reloadu - window.history.replaceState je konzistentnejšie
-        window.history.replaceState(null, '', newUrl);
-      }
-    };
-
-    // Skús získať slug - priorita: viewedUserSlug > viewedUserSummary > cache > API
+    // Skús získať slug z cache alebo z viewedUserSummary
     let userSlug: string | null | undefined = viewedUserSlug;
+    let slugSource = 'viewedUserSlug';
     
-    // 1. Skús z viewedUserSummary (z search výsledkov)
+    // Ak nemáme slug, skús ho získať z viewedUserSummary
     if (!userSlug && viewedUserSummary?.slug) {
       userSlug = viewedUserSummary.slug;
-      setViewedUserSlug(userSlug);
+      slugSource = 'viewedUserSummary';
+      console.log('[URL-SLUG-DEBUG] Slug získaný z viewedUserSummary', { userSlug });
     }
     
-    // 2. Ak nemáme slug, skús ho získať z cache
+    // Ak nemáme slug, skús ho získať z cache
     if (!userSlug) {
       const cachedUser = getUserProfileFromCache(viewedUserId);
       if (cachedUser?.slug) {
         userSlug = cachedUser.slug;
-        setViewedUserSlug(userSlug);
+        slugSource = 'cache';
+        console.log('[URL-SLUG-DEBUG] Slug získaný z cache', { userSlug, cachedUserId: cachedUser.id });
+      } else {
+        console.log('[URL-SLUG-DEBUG] Slug NENÁJDENÝ v cache', { viewedUserId, cachedUser: cachedUser ? 'exists but no slug' : 'not found' });
       }
     }
     
-    // 3. Ak máme slug, okamžite aktualizovať URL
+    console.log('[URL-SLUG-DEBUG] Finálny stav pred aktualizáciou URL', {
+      userSlug,
+      slugSource,
+      currentIdentifier,
+      needsUpdate: userSlug && currentIdentifier && /^\d+$/.test(currentIdentifier) && currentIdentifier !== userSlug,
+    });
+    
+    // Ak máme slug a URL má ID namiesto slugu, aktualizovať URL
     if (userSlug) {
-      updateUrlWithSlug(userSlug);
-      return;
-    }
-    
-    // 4. Ak stále nemáme slug, načítaj profil z API (len ak cache nefunguje)
-    let cancelled = false;
-    
-    const loadProfile = async () => {
-      try {
-        const { data } = await api.get<User>(endpoints.dashboard.userProfile(viewedUserId));
-        if (cancelled) return;
-        
-        if (data.slug) {
-          setUserProfileToCache(data.id, data);
-          setViewedUserSlug(data.slug);
+      if (currentPath.startsWith('/dashboard/users/')) {
+        // Ak je aktuálny identifikátor číslo (ID) a máme slug, aktualizovať URL
+        if (/^\d+$/.test(currentIdentifier || '') && currentIdentifier !== userSlug) {
+          let newUrl = `/dashboard/users/${userSlug}`;
           
-          // Aktualizovať URL po načítaní
-          updateUrlWithSlug(data.slug);
+          // Zachovať highlight parameter ak existuje
+          if (typeof window !== 'undefined' && window.location.search) {
+            newUrl += window.location.search;
+          }
+          
+          console.log('[URL-SLUG-DEBUG] ⚡ AKTUALIZUJEM URL', {
+            from: currentPath + (typeof window !== 'undefined' ? window.location.search : ''),
+            to: newUrl,
+            slugSource,
+            method: 'router.replace',
+          });
+          
+          // Aktualizovať cez Next.js router (replace, nie push)
+          router.replace(newUrl);
+          
+          // Aktualizovať viewedUserSlug
+          setViewedUserSlug(userSlug);
+          
+          // Overenie po zmene
+          setTimeout(() => {
+            const afterPath = typeof window !== 'undefined' ? window.location.pathname : '';
+            console.log('[URL-SLUG-DEBUG] ✅ URL po aktualizácii', {
+              expected: newUrl,
+              actual: afterPath + (typeof window !== 'undefined' ? window.location.search : ''),
+              match: afterPath === `/dashboard/users/${userSlug}`,
+            });
+          }, 100);
+        } else {
+          console.log('[URL-SLUG-DEBUG] URL už má slug alebo nie je číslo', {
+            currentIdentifier,
+            userSlug,
+            isNumeric: currentIdentifier ? /^\d+$/.test(currentIdentifier) : false,
+            isSame: currentIdentifier === userSlug,
+          });
         }
-      } catch (error) {
-        // Ticho ignorovať - downstream komponenty zobrazia chybu
-        console.debug('Failed to load user profile for slug update:', error);
+      } else {
+        console.log('[URL-SLUG-DEBUG] URL nezačína s /dashboard/users/', { currentPath });
       }
-    };
-    
-    void loadProfile();
-    
-    return () => {
-      cancelled = true;
-    };
-  }, [viewedUserId, user, activeModule, viewedUserSlug, viewedUserSummary]);
+    } else {
+      console.log('[URL-SLUG-DEBUG] ❌ NEMÁME SLUG - URL sa neaktualizuje', {
+        viewedUserId,
+        viewedUserSlug,
+        viewedUserSummarySlug: viewedUserSummary?.slug,
+        cacheCheck: getUserProfileFromCache(viewedUserId)?.slug || 'not in cache',
+      });
+    }
+  }, [viewedUserId, user, activeModule, viewedUserSlug, viewedUserSummary, router]);
 
   return {
     viewedUserId,

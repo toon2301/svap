@@ -188,6 +188,14 @@ export function useDashboardNavigation({
     slug?: string | null,
     summary?: SearchUserResult
   ) => {
+    console.log('[NAVIGATION-DEBUG] handleViewUserProfileFromSearch volané', {
+      userId,
+      slug,
+      summarySlug: summary?.slug,
+      summaryId: summary?.id,
+      currentUrl: typeof window !== 'undefined' ? window.location.href : 'N/A',
+    });
+
     setViewedUserId(userId);
     setViewedUserSlug(slug ?? null);
     setViewedUserSummary(summary ?? null);
@@ -207,6 +215,13 @@ export function useDashboardNavigation({
     // Použiť slug ak existuje, inak userId
     const identifier = slug || String(userId);
     const url = `/dashboard/users/${identifier}`;
+    
+    console.log('[NAVIGATION-DEBUG] Navigujem na URL', {
+      identifier,
+      url,
+      hasSlug: !!slug,
+      method: 'router.push',
+    });
     
     router.push(url);
   }, [

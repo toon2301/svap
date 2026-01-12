@@ -136,6 +136,15 @@ export function SearchResults({
       }
 
       if (!onUserClick) return;
+      
+      console.log('[SEARCH-DEBUG] Klik na používateľa vo výsledkoch', {
+        userId: u.id,
+        userSlug: u.slug,
+        displayName: u.display_name,
+        hasSlug: !!u.slug,
+        fullUserObject: u,
+      });
+      
       onUserClick(u.id, u.slug ?? null, u);
     };
 
