@@ -149,7 +149,7 @@ export default function ProfileEditFields({
                   console.error('Chyba pri ukladaní viditeľnosti IČO:', error);
                 }
               }}
-              label="Zobraziť IČO verejne"
+              label={t('profile.hideIco', 'Skryť IČO')}
             />
           </div>
         </div>
@@ -187,7 +187,7 @@ export default function ProfileEditFields({
                 console.error('Chyba pri ukladaní viditeľnosti kontaktu:', error);
               }
             }}
-            label={t('profile.showContactPublic', 'Zobraziť kontakt verejne')}
+            label={t('profile.showContactPublic', 'Skryť kontakt')}
           />
         </div>
       </div>
@@ -242,7 +242,7 @@ export default function ProfileEditFields({
                   console.error('Chyba pri ukladaní viditeľnosti profese:', error);
                 }
               }}
-              label={t('profile.showProfessionPublic', 'Zobraziť profesiu verejne')}
+              label={t('profile.showProfessionPublic', 'Skryť profesiu')}
             />
           </div>
         </div>

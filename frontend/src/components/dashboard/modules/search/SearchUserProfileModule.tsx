@@ -77,6 +77,16 @@ export function SearchUserProfileModule({
         setProfileUser(data);
         setUserProfileToCache(userId, data);
         
+        // Debug logy pre diagnostiku
+        console.log('🔍 SearchUserProfileModule DEBUG (načítané dáta z API):', {
+          'user_id': data.id,
+          'user_type': data.user_type,
+          'ico': data.ico,
+          'contact_email': data.contact_email,
+          'job_title': data.job_title,
+          'Očakávaný accountType': data.user_type === 'company' ? 'business' : 'personal',
+        });
+        
         // Ak má používateľ slug a URL má ID namiesto slugu, aktualizovať URL
         if (data.slug) {
           const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
@@ -187,6 +197,9 @@ export function SearchUserProfileModule({
     return null;
   }
 
+  // Určiť accountType na základe user_type používateľa
+  const accountType = profileUser.user_type === 'company' ? 'business' : 'personal';
+
   return (
     <>
       <div className="max-w-2xl lg:max-w-full mx-auto lg:mx-0 text-[var(--foreground)] w-full">
@@ -194,7 +207,7 @@ export function SearchUserProfileModule({
           user={profileUser}
           displayUser={profileUser}
           isEditMode={false}
-          accountType="personal"
+          accountType={accountType}
           isUploading={false}
           onUserUpdate={undefined}
           onEditProfileClick={undefined}
@@ -216,7 +229,7 @@ export function SearchUserProfileModule({
           user={profileUser}
           displayUser={profileUser}
           isEditMode={false}
-          accountType="personal"
+          accountType={accountType}
           isUploading={false}
           onUserUpdate={undefined}
           onEditProfileClick={undefined}

@@ -12,6 +12,7 @@ interface ProfileOfferCardMobileProps {
   isTapped: boolean;
   onCardClick: () => void;
   isHighlighted?: boolean;
+  isOtherUserProfile?: boolean;
 }
 
 export function ProfileOfferCardMobile({
@@ -20,6 +21,7 @@ export function ProfileOfferCardMobile({
   isTapped,
   onCardClick,
   isHighlighted = false,
+  isOtherUserProfile = false,
 }: ProfileOfferCardMobileProps) {
   const { t } = useLanguage();
 
@@ -246,6 +248,31 @@ export function ProfileOfferCardMobile({
                 {priceLabel}
               </span>
             </div>
+          </div>
+        )}
+        {/* Tlačidlá Požiadať a Správa - len na cudzom profile */}
+        {isOtherUserProfile && (
+          <div className="flex gap-2 mt-2">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                // Funkčnosť sa pridá neskôr
+              }}
+              className="flex-1 px-3 py-1.5 text-xs font-medium bg-purple-100 text-purple-800 border border-purple-200 rounded-lg transition-colors hover:bg-purple-200 dark:bg-purple-900/40 dark:text-purple-300 dark:border-purple-800/60 dark:hover:bg-purple-900/60"
+            >
+              Požiadať
+            </button>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                // Funkčnosť sa pridá neskôr
+              }}
+              className="flex-1 px-3 py-1.5 text-xs font-medium bg-purple-100 text-purple-800 border border-purple-200 rounded-lg transition-colors hover:bg-purple-200 dark:bg-purple-900/40 dark:text-purple-300 dark:border-purple-800/60 dark:hover:bg-purple-900/60"
+            >
+              Správa
+            </button>
           </div>
         )}
       </div>

@@ -244,7 +244,7 @@ export default function ProfileEditFormDesktop({
                       }`}
                     />
                   </button>
-                  <span className="text-xs text-gray-500 dark:text-gray-400">Zobraziť IČO verejne</span>
+                  <span className="text-xs text-gray-500 dark:text-gray-400">{t('profile.hideIco', 'Skryť IČO')}</span>
                 </div>
               </div>
             )}
@@ -287,7 +287,7 @@ export default function ProfileEditFormDesktop({
                     }`}
                   />
                 </button>
-                <span className="text-xs text-gray-500 dark:text-gray-400">{t('profile.showContactPublic', 'Zobraziť kontakt verejne')}</span>
+                <span className="text-xs text-gray-500 dark:text-gray-400">{t('profile.showContactPublic', 'Skryť kontakt')}</span>
               </div>
             </div>
 
@@ -356,7 +356,7 @@ export default function ProfileEditFormDesktop({
                     }`}
                   />
                 </button>
-                <span className="text-xs text-gray-500 dark:text-gray-400">{t('profile.showProfessionPublic', 'Zobraziť profesiu verejne')}</span>
+                <span className="text-xs text-gray-500 dark:text-gray-400">{t('profile.showProfessionPublic', 'Skryť profesiu')}</span>
               </div>
             </div>
             )}

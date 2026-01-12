@@ -103,7 +103,11 @@ class User(AbstractUser):
         if self.user_type == UserType.INDIVIDUAL:
             name = f"{self.first_name} {self.last_name}".strip()
             return name if name else self.username
-        return self.company_name or self.username
+        # Pre firemný účet: ak je company_name, použij ho, inak použij first_name + last_name
+        if self.company_name:
+            return self.company_name
+        name = f"{self.first_name} {self.last_name}".strip()
+        return name if name else self.username
 
     @property
     def profile_completeness(self):

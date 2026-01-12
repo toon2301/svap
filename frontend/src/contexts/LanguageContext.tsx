@@ -16,6 +16,7 @@ type LanguageContextValue = {
   setLocale: (locale: SupportedLocale) => void;
   t: (key: string, fallback?: string) => string;
   country: CountryCode;
+  setCountry: (country: CountryCode) => void;
 };
 
 const LanguageContext = createContext<LanguageContextValue | undefined>(undefined);
@@ -32,7 +33,7 @@ function getByPath(messages: Record<string, any>, key: string): unknown {
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
   // Start with default to match server-rendered HTML, then hydrate from storage
   const [locale, setLocaleState] = useState<SupportedLocale>('sk');
-  const [country, setCountry] = useState<CountryCode>(null);
+  const [country, setCountryState] = useState<CountryCode>(null);
   
   useEffect(() => {
     // Priority 1: persisted value
@@ -58,7 +59,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
         
         // Vždy nastav krajinu (pre výber okresov)
         if (code === 'SK' || code === 'CZ' || code === 'PL' || code === 'HU' || code === 'AT' || code === 'DE') {
-          setCountry(code as CountryCode);
+          setCountryState(code as CountryCode);
         }
         
         // Nastav jazyk podľa krajiny len ak nie je uložený
@@ -106,6 +107,10 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     } catch {}
   }, []);
 
+  const setCountry = useCallback((next: CountryCode) => {
+    setCountryState(next);
+  }, []);
+
   const messages = useMemo(() => {
     if (locale === 'en') return enMessages as unknown as Record<string, any>;
     if (locale === 'pl') return plMessages as unknown as Record<string, any>;
@@ -124,7 +129,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     [messages]
   );
 
-  const value = useMemo<LanguageContextValue>(() => ({ locale, setLocale, t, country }), [locale, setLocale, t, country]);
+  const value = useMemo<LanguageContextValue>(() => ({ locale, setLocale, t, country, setCountry }), [locale, setLocale, t, country, setCountry]);
 
   return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
 }

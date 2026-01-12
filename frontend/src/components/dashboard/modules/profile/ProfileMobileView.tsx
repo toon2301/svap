@@ -63,6 +63,21 @@ export default function ProfileMobileView({
     setMounted(true);
   }, []);
 
+  // Debug logy pre diagnostiku
+  useEffect(() => {
+    if (isOtherUserProfile) {
+      console.log('🔍 ProfileMobileView DEBUG (cudzí profil):', {
+        'displayUser.user_type': displayUser.user_type,
+        'accountType prop': accountType,
+        'isOtherUserProfile': isOtherUserProfile,
+        'displayUser.ico': displayUser.ico,
+        'displayUser.contact_email': displayUser.contact_email,
+        'displayUser.job_title': displayUser.job_title,
+        'Očakávaný typ (company=business)': displayUser.user_type === 'company' ? 'business' : 'personal',
+      });
+    }
+  }, [isOtherUserProfile, displayUser.user_type, accountType, displayUser.ico, displayUser.contact_email, displayUser.job_title]);
+
   // Exponovať funkciu na otvorenie modalu cez window event
   useEffect(() => {
     if (isOtherUserProfile) {
@@ -139,11 +154,11 @@ export default function ProfileMobileView({
                   );
                 })()}
                 {/* IČO - iba pre firemné účty */}
-                {accountType === 'business' && displayUser.ico && (
+                {accountType === 'business' && displayUser.ico && (!isOtherUserProfile || !displayUser.ico_visible) && (
                   <p className="text-gray-600 dark:text-gray-300 text-sm">{displayUser.ico}</p>
                 )}
                 {/* Telefónne číslo */}
-                {displayUser.phone && (
+                {displayUser.phone && (!isOtherUserProfile || !displayUser.phone_visible) && (
                   <p className="text-gray-600 dark:text-gray-300 text-sm flex items-center gap-1">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -184,7 +199,7 @@ export default function ProfileMobileView({
                 )}
 
                 {/* Profesia - len pre osobný účet */}
-                {accountType === 'personal' && displayUser.job_title && (
+                {accountType === 'personal' && displayUser.job_title && (!isOtherUserProfile || !displayUser.job_title_visible) && (
                   <p className="text-gray-600 dark:text-gray-300 text-sm flex items-center gap-1">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -537,6 +552,7 @@ export default function ProfileMobileView({
               accountType={accountType}
               ownerUserId={offersOwnerId ?? displayUser.id}
               highlightedSkillId={highlightedSkillId ?? null}
+              isOtherUserProfile={isOtherUserProfile}
             />
           )}
 

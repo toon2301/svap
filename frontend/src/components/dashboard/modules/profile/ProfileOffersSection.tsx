@@ -21,6 +21,7 @@ interface ProfileOffersSectionProps {
   accountType?: 'personal' | 'business';
   ownerUserId?: number;
   highlightedSkillId?: number | null;
+  isOtherUserProfile?: boolean;
 }
 
 export default function ProfileOffersSection({
@@ -28,6 +29,7 @@ export default function ProfileOffersSection({
   accountType = 'personal',
   ownerUserId,
   highlightedSkillId,
+  isOtherUserProfile = false,
 }: ProfileOffersSectionProps) {
   const { t } = useLanguage();
   const [offers, setOffers] = useState<Offer[]>([]);
@@ -280,6 +282,7 @@ export default function ProfileOffersSection({
                   onToggleFlip={handleToggleFlip}
                   onOpenHoursClick={accountType === 'business' ? handleOpenHoursClick : undefined}
                   isHighlighted={isHighlighted}
+                  isOtherUserProfile={isOtherUserProfile}
                 />
               </div>
             );

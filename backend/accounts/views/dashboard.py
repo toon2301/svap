@@ -282,6 +282,9 @@ def dashboard_search_view(request):
     only_my_location = (request.GET.get('only_my_location') or '').strip().lower() in ('1', 'true', 'yes')
     price_min_raw = (request.GET.get('price_min') or '').strip()
     price_max_raw = (request.GET.get('price_max') or '').strip()
+    
+    # Filter podľa krajiny
+    country_filter = (request.GET.get('country') or '').strip().upper()  # 'SK' | 'CZ' | 'PL' | etc.
 
     # Paginácia – bezpečné limity
     try:
@@ -354,6 +357,29 @@ def dashboard_search_view(request):
         skills_qs = skills_qs.filter(is_seeking=False)
     elif offer_type == 'seeking':
         skills_qs = skills_qs.filter(is_seeking=True)
+    
+    # Filter: krajina používateľa
+    if country_filter:
+        # Najskôr skúsime user.country ak existuje, inak fallback na detekciu z názvu krajiny
+        # Pre teraz použijem location/district mapping (neskôr sa pridá user.country field)
+        country_location_mapping = {
+            'SK': ['slovakia', 'slovensko', 'slovak'],
+            'CZ': ['czech', 'česko', 'česká', 'ceska'],
+            'PL': ['poland', 'poľsko', 'polsko', 'polish'],
+            'HU': ['hungary', 'maďarsko', 'madarska', 'hungarian'],
+            'DE': ['germany', 'nemecko', 'deutschland', 'german'],
+            'AT': ['austria', 'rakúsko', 'rakusko', 'österreich'],
+        }
+        
+        if country_filter in country_location_mapping:
+            country_terms = country_location_mapping[country_filter]
+            country_query = Q()
+            for term in country_terms:
+                country_query |= (
+                    Q(user__location__icontains=term) |
+                    Q(user__district__icontains=term)
+                )
+            skills_qs = skills_qs.filter(country_query)
 
     # Filter: cena od / do
     price_min = None
@@ -418,6 +444,28 @@ def dashboard_search_view(request):
               | Q(district__iregex=pattern)
           )
         users_qs = users_qs.filter(user_query)
+
+    # Filter: krajina používateľa
+    if country_filter:
+        # Rovnaký mapping ako pre skills
+        country_location_mapping = {
+            'SK': ['slovakia', 'slovensko', 'slovak'],
+            'CZ': ['czech', 'česko', 'česká', 'ceska'],
+            'PL': ['poland', 'poľsko', 'polsko', 'polish'],
+            'HU': ['hungary', 'maďarsko', 'madarska', 'hungarian'],
+            'DE': ['germany', 'nemecko', 'deutschland', 'german'],
+            'AT': ['austria', 'rakúsko', 'rakusko', 'österreich'],
+        }
+        
+        if country_filter in country_location_mapping:
+            country_terms = country_location_mapping[country_filter]
+            user_country_query = Q()
+            for term in country_terms:
+                user_country_query |= (
+                    Q(location__icontains=term) |
+                    Q(district__icontains=term)
+                )
+            users_qs = users_qs.filter(user_country_query)
 
     # Filter: len v mojej lokalite (podľa profilu)
     if only_my_location:
@@ -627,9 +675,18 @@ def dashboard_user_profile_detail_view(request, user_id: int):
     except User.DoesNotExist:
         return Response({'error': 'Používateľ nebol nájdený'}, status=status.HTTP_404_NOT_FOUND)
 
+    # Debug log - zistiť, čo má používateľ v databáze
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info(f'🔍 Backend DEBUG - User ID {user_id}: user_type v DB = {user.user_type}, ico = {user.ico}, contact_email = {user.contact_email}')
+
     from ..serializers import UserProfileSerializer
 
     serializer = UserProfileSerializer(user, context={'request': request})
+    
+    # Debug log - čo serializer vracia
+    logger.info(f'🔍 Backend DEBUG - Serializer data: user_type = {serializer.data.get("user_type")}, ico = {serializer.data.get("ico")}, contact_email = {serializer.data.get("contact_email")}')
+    
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 
@@ -645,9 +702,18 @@ def dashboard_user_profile_detail_by_slug_view(request, slug: str):
     except User.DoesNotExist:
         return Response({'error': 'Používateľ nebol nájdený'}, status=status.HTTP_404_NOT_FOUND)
 
+    # Debug log - zistiť, čo má používateľ v databáze
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info(f'🔍 Backend DEBUG - User slug {slug}: user_type v DB = {user.user_type}, ico = {user.ico}, contact_email = {user.contact_email}')
+
     from ..serializers import UserProfileSerializer
 
     serializer = UserProfileSerializer(user, context={'request': request})
+    
+    # Debug log - čo serializer vracia
+    logger.info(f'🔍 Backend DEBUG - Serializer data: user_type = {serializer.data.get("user_type")}, ico = {serializer.data.get("ico")}, contact_email = {serializer.data.get("contact_email")}')
+    
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 

@@ -34,7 +34,7 @@ export default function ProfessionInput({ profession, setProfession, onSave, vis
         >
           <span className={`absolute h-4 w-4 rounded-full bg-white shadow-sm transition-all duration-200 ease-in-out ${visible ? 'left-6' : 'left-1'}`} />
         </button>
-        <span className="text-xs text-gray-500">Zobraziť profesiu verejne</span>
+        <span className="text-xs text-gray-500">Skryť profesiu</span>
       </div>
     </div>
   );

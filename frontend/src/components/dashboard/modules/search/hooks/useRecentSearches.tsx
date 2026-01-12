@@ -67,7 +67,7 @@ export function useRecentSearches({ user, searchState }: UseRecentSearchesParams
             const newName =
               user.user_type === 'individual'
                 ? [user.first_name, user.last_name].filter(Boolean).join(' ').trim() || user.username
-                : user.company_name || user.username;
+                : user.company_name || [user.first_name, user.last_name].filter(Boolean).join(' ').trim() || user.username;
 
             if (u.display_name !== newName || u.slug !== user.slug) {
               hasChanges = true;
@@ -82,7 +82,7 @@ export function useRecentSearches({ user, searchState }: UseRecentSearchesParams
               const newName =
                 cachedUser.user_type === 'individual'
                   ? [cachedUser.first_name, cachedUser.last_name].filter(Boolean).join(' ').trim() || cachedUser.username
-                  : cachedUser.company_name || cachedUser.username;
+                  : cachedUser.company_name || [cachedUser.first_name, cachedUser.last_name].filter(Boolean).join(' ').trim() || cachedUser.username;
               
               if (u.display_name !== newName || u.slug !== cachedUser.slug) {
                 hasChanges = true;
@@ -101,7 +101,7 @@ export function useRecentSearches({ user, searchState }: UseRecentSearchesParams
             const newName =
               user.user_type === 'individual'
                 ? [user.first_name, user.last_name].filter(Boolean).join(' ').trim() || user.username
-                : user.company_name || user.username;
+                : user.company_name || [user.first_name, user.last_name].filter(Boolean).join(' ').trim() || user.username;
 
             const currentName = (s as any).user_display_name;
             if (currentName && currentName !== newName) {
@@ -117,7 +117,7 @@ export function useRecentSearches({ user, searchState }: UseRecentSearchesParams
                const newName =
                 cachedUser.user_type === 'individual'
                   ? [cachedUser.first_name, cachedUser.last_name].filter(Boolean).join(' ').trim() || cachedUser.username
-                  : cachedUser.company_name || cachedUser.username;
+                  : cachedUser.company_name || [cachedUser.first_name, cachedUser.last_name].filter(Boolean).join(' ').trim() || cachedUser.username;
                
                const currentName = (s as any).user_display_name;
                if (currentName && currentName !== newName) {
@@ -161,7 +161,7 @@ export function useRecentSearches({ user, searchState }: UseRecentSearchesParams
           const newName =
             user.user_type === 'individual'
               ? [user.first_name, user.last_name].filter(Boolean).join(' ').trim() || user.username
-              : user.company_name || user.username;
+              : user.company_name || [user.first_name, user.last_name].filter(Boolean).join(' ').trim() || user.username;
           
           if (u.display_name !== newName || u.slug !== user.slug) {
             return { ...u, display_name: newName, slug: user.slug };
@@ -174,7 +174,7 @@ export function useRecentSearches({ user, searchState }: UseRecentSearchesParams
             const newName =
               cachedUser.user_type === 'individual'
                 ? [cachedUser.first_name, cachedUser.last_name].filter(Boolean).join(' ').trim() || cachedUser.username
-                : cachedUser.company_name || cachedUser.username;
+                : cachedUser.company_name || [cachedUser.first_name, cachedUser.last_name].filter(Boolean).join(' ').trim() || cachedUser.username;
             
             if (u.display_name !== newName || u.slug !== cachedUser.slug) {
               return { ...u, display_name: newName, slug: cachedUser.slug };
@@ -205,7 +205,7 @@ export function useRecentSearches({ user, searchState }: UseRecentSearchesParams
              const freshName =
               freshUser.user_type === 'individual'
                 ? [freshUser.first_name, freshUser.last_name].filter(Boolean).join(' ').trim() || freshUser.username
-                : freshUser.company_name || freshUser.username;
+                : freshUser.company_name || [freshUser.first_name, freshUser.last_name].filter(Boolean).join(' ').trim() || freshUser.username;
              
              // Ak sa líši meno alebo slug, aktualizuj results state
              if (freshUser.slug !== u.slug || freshName !== u.display_name) {

@@ -408,6 +408,8 @@ export default function DashboardContent({
         setIsAccountTypeModalOpen={setIsAccountTypeModalOpen}
         isPersonalAccountModalOpen={isPersonalAccountModalOpen}
         setIsPersonalAccountModalOpen={setIsPersonalAccountModalOpen}
+        user={user}
+        onUserUpdate={dashboardState.handleUserUpdate}
         skillsState={{
           selectedSkillsCategory,
           setSelectedSkillsCategory,

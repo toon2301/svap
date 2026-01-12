@@ -25,7 +25,7 @@ interface UseSearchApiParams {
  * Custom hook pre API volania a cache management
  */
 export function useSearchApi({ searchState }: UseSearchApiParams): SearchApiProps {
-  const { t } = useLanguage();
+  const { t, country } = useLanguage();
   
   // Cache pre výsledky vyhľadávania v pamäti – zdieľaná medzi inštanciami SearchModule
   const searchCacheRef = useRef<Map<string, SearchResults>>(globalSearchResultsCache);
@@ -119,13 +119,14 @@ export function useSearchApi({ searchState }: UseSearchApiParams): SearchApiProp
       return;
     }
 
-    // Kľúč pre cache – závisí od textu aj filtrov
+    // Kľúč pre cache – závisí od textu, filtrov aj krajiny
     const cacheKey = JSON.stringify({
       q,
       offerType,
       onlyMyLocation,
       priceMin: priceMin || '',
       priceMax: priceMax || '',
+      country: country || '',
     });
 
     // Ak máme výsledok v cache, použi ho a nevolaj API znova
@@ -159,6 +160,7 @@ export function useSearchApi({ searchState }: UseSearchApiParams): SearchApiProp
           only_my_location: onlyMyLocation ? '1' : '',
           price_min: priceMin || '',
           price_max: priceMax || '',
+          country: country || '', // Filter podľa krajiny
         },
         signal: controller.signal,
       });
@@ -207,6 +209,7 @@ export function useSearchApi({ searchState }: UseSearchApiParams): SearchApiProp
     onlyMyLocation, 
     priceMin, 
     priceMax,
+    country, // Pridané pre filtrovanie podľa krajiny
     setResults,
     setError,
     setHasSearched,

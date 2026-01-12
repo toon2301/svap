@@ -9,6 +9,7 @@ import AddCustomCategoryModal from './modules/skills/AddCustomCategoryModal';
 import { skillsCategories } from '@/constants/skillsCategories';
 import { api, endpoints } from '../../lib/api';
 import type { DashboardSkill, UseSkillsModalsResult } from './hooks/useSkillsModals';
+import type { User } from '@/types';
 
 type Translator = (key: string, fallback: string) => string;
 
@@ -22,6 +23,8 @@ interface DashboardModalsProps {
   skillsState: UseSkillsModalsResult;
   activeModule?: string;
   t: Translator;
+  user: User | null;
+  onUserUpdate?: (updatedUser: User) => void;
 }
 
 export default function DashboardModals({
@@ -34,6 +37,8 @@ export default function DashboardModals({
   skillsState,
   activeModule,
   t,
+  user,
+  onUserUpdate,
 }: DashboardModalsProps) {
   const {
     selectedSkillsCategory,
@@ -269,18 +274,46 @@ export default function DashboardModals({
       <AccountTypeModal
         isOpen={isAccountTypeModalOpen}
         onClose={() => setIsAccountTypeModalOpen(false)}
-        onConfirm={() => {
-          setAccountType('business');
-          setIsAccountTypeModalOpen(false);
+        onConfirm={async () => {
+          try {
+            // Odoslať zmenu user_type na backend
+            if (user) {
+              const response = await api.patch('/auth/profile/', {
+                user_type: 'company'
+              });
+              if (onUserUpdate && response.data?.user) {
+                onUserUpdate(response.data.user);
+              }
+            }
+            setAccountType('business');
+            setIsAccountTypeModalOpen(false);
+          } catch (error: any) {
+            console.error('Error changing account type to business:', error);
+            alert(error?.response?.data?.error || error?.response?.data?.detail || 'Nepodarilo sa zmeniť typ účtu. Skús to znova.');
+          }
         }}
       />
 
       <PersonalAccountModal
         isOpen={isPersonalAccountModalOpen}
         onClose={() => setIsPersonalAccountModalOpen(false)}
-        onConfirm={() => {
-          setAccountType('personal');
-          setIsPersonalAccountModalOpen(false);
+        onConfirm={async () => {
+          try {
+            // Odoslať zmenu user_type na backend
+            if (user) {
+              const response = await api.patch('/auth/profile/', {
+                user_type: 'individual'
+              });
+              if (onUserUpdate && response.data?.user) {
+                onUserUpdate(response.data.user);
+              }
+            }
+            setAccountType('personal');
+            setIsPersonalAccountModalOpen(false);
+          } catch (error: any) {
+            console.error('Error changing account type to personal:', error);
+            alert(error?.response?.data?.error || error?.response?.data?.detail || 'Nepodarilo sa zmeniť typ účtu. Skús to znova.');
+          }
         }}
       />
 

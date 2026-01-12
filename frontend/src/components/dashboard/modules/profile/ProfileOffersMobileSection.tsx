@@ -21,12 +21,14 @@ interface ProfileOffersMobileSectionProps {
   accountType?: 'personal' | 'business';
   ownerUserId?: number;
   highlightedSkillId?: number | null;
+  isOtherUserProfile?: boolean;
 }
 
 export default function ProfileOffersMobileSection({
   accountType = 'personal',
   ownerUserId,
   highlightedSkillId,
+  isOtherUserProfile = false,
 }: ProfileOffersMobileSectionProps) {
   const { t } = useLanguage();
   const [offers, setOffers] = useState<Offer[]>([]);
@@ -313,6 +315,7 @@ export default function ProfileOffersMobileSection({
                 isTapped={isTapped}
                 isHighlighted={isHighlighted}
                 onCardClick={() => handleCardClick(offer)}
+                isOtherUserProfile={isOtherUserProfile}
               />
             </div>
           );

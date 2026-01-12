@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { User } from '@/types';
 import { api } from '@/lib/api';
 import MobileFullScreenModal from '../shared/MobileFullScreenModal';
@@ -20,6 +21,8 @@ interface IcoModalProps {
 }
 
 export default function IcoModal({ isOpen, ico, icoVisible, originalIco, originalIcoVisible, setIco, setIcoVisible, setOriginalIco, setOriginalIcoVisible, onClose, onUserUpdate }: IcoModalProps) {
+  const { t } = useLanguage();
+  
   const handleSave = async () => {
     try {
       const icoCleaned = ico.replace(/\s/g, '').trim();
@@ -68,7 +71,7 @@ export default function IcoModal({ isOpen, ico, icoVisible, originalIco, origina
         >
           <span className={`absolute h-4 w-4 rounded-full bg-white shadow-sm transition-all duration-200 ease-in-out ${icoVisible ? 'left-6' : 'left-1'}`} />
         </button>
-        <span className="text-xs text-gray-500 dark:text-gray-400">Zobraziť IČO verejne</span>
+        <span className="text-xs text-gray-500 dark:text-gray-400">{t('profile.hideIco', 'Skryť IČO')}</span>
       </div>
       <div className="mt-3">
         <p className="text-xs text-gray-500 dark:text-gray-400">Zadajte svoje IČO (Identifikačné číslo organizácie). Musí mať 8 až 14 číslic.</p>
