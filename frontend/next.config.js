@@ -49,6 +49,23 @@ const nextConfig = {
 
   compress: true,
 
+  // Disable aggressive caching in development
+  ...(process.env.NODE_ENV === 'development' && {
+    headers: async () => {
+      return [
+        {
+          source: '/:path*',
+          headers: [
+            {
+              key: 'Cache-Control',
+              value: 'no-store, no-cache, must-revalidate, proxy-revalidate',
+            },
+          ],
+        },
+      ];
+    },
+  }),
+
   // Server-side rendering pre Railway
   // output: 'export', // Zakomentované pre Railway deployment
 };

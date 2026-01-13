@@ -1,7 +1,7 @@
 // Pokročilý Service Worker pre Svaply
-const CACHE_NAME = 'svaply-cache-v2';
-const STATIC_CACHE = 'svaply-static-v2';
-const DYNAMIC_CACHE = 'svaply-dynamic-v2';
+const CACHE_NAME = 'svaply-cache-v3';
+const STATIC_CACHE = 'svaply-static-v3';
+const DYNAMIC_CACHE = 'svaply-dynamic-v3';
 
 const urlsToCache = [
   '/',
@@ -42,7 +42,9 @@ self.addEventListener('activate', event => {
       .then(cacheNames => {
         return Promise.all(
           cacheNames.map(cacheName => {
-            if (cacheName !== STATIC_CACHE && cacheName !== DYNAMIC_CACHE) {
+            // Delete all old caches (not matching current version)
+            if (!cacheName.startsWith('svaply-') || 
+                (cacheName !== STATIC_CACHE && cacheName !== DYNAMIC_CACHE && cacheName !== CACHE_NAME)) {
               console.log('Service Worker: Deleting old cache:', cacheName);
               return caches.delete(cacheName);
             }
@@ -50,7 +52,7 @@ self.addEventListener('activate', event => {
         );
       })
       .then(() => {
-        // Take control of all clients
+        // Take control of all clients immediately
         return self.clients.claim();
       })
   );
@@ -66,41 +68,79 @@ self.addEventListener('fetch', event => {
 
   // Handle different types of requests
   if (url.origin === location.origin) {
-    // Same origin requests
-    event.respondWith(
-      caches.match(request)
-        .then(response => {
-          if (response) {
-            return response;
-          }
-          
-          return fetch(request)
-            .then(fetchResponse => {
-              // Check if response is valid
-              if (!fetchResponse || fetchResponse.status !== 200 || fetchResponse.type !== 'basic') {
-                return fetchResponse;
-              }
-
+    // Same origin requests - Network First strategy for HTML and Next.js files
+    const isHTML = request.destination === 'document' || request.headers.get('accept')?.includes('text/html');
+    const isNextJS = url.pathname.startsWith('/_next/');
+    
+    if (isHTML || isNextJS) {
+      // Network First strategy - always try network first, fallback to cache
+      event.respondWith(
+        fetch(request)
+          .then(fetchResponse => {
+            // Check if response is valid
+            if (fetchResponse && fetchResponse.status === 200 && fetchResponse.type === 'basic') {
               // Clone response for caching
               const responseToCache = fetchResponse.clone();
-
-              // Cache dynamic content
+              // Cache for offline use
               caches.open(DYNAMIC_CACHE)
                 .then(cache => {
                   cache.put(request, responseToCache);
                 });
+            }
+            return fetchResponse;
+          })
+          .catch(() => {
+            // Network failed, try cache
+            return caches.match(request)
+              .then(cachedResponse => {
+                if (cachedResponse) {
+                  return cachedResponse;
+                }
+                // Offline fallback for HTML
+                if (request.destination === 'document') {
+                  return caches.match('/');
+                }
+                return new Response('Offline', { status: 503 });
+              });
+          })
+      );
+    } else {
+      // Cache First strategy for static assets (images, fonts, etc.)
+      event.respondWith(
+        caches.match(request)
+          .then(response => {
+            if (response) {
+              return response;
+            }
+            
+            return fetch(request)
+              .then(fetchResponse => {
+                // Check if response is valid
+                if (!fetchResponse || fetchResponse.status !== 200 || fetchResponse.type !== 'basic') {
+                  return fetchResponse;
+                }
 
-              return fetchResponse;
-            })
-            .catch(() => {
-              // Offline fallback
-              if (request.destination === 'document') {
-                return caches.match('/');
-              }
-              return new Response('Offline', { status: 503 });
-            });
-        })
-    );
+                // Clone response for caching
+                const responseToCache = fetchResponse.clone();
+
+                // Cache dynamic content
+                caches.open(DYNAMIC_CACHE)
+                  .then(cache => {
+                    cache.put(request, responseToCache);
+                  });
+
+                return fetchResponse;
+              })
+              .catch(() => {
+                // Offline fallback
+                if (request.destination === 'document') {
+                  return caches.match('/');
+                }
+                return new Response('Offline', { status: 503 });
+              });
+          })
+      );
+    }
   } else {
     // External requests (APIs, images, etc.)
     event.respondWith(
