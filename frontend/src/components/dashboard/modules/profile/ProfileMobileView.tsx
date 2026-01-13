@@ -63,21 +63,6 @@ export default function ProfileMobileView({
     setMounted(true);
   }, []);
 
-  // Debug logy pre diagnostiku
-  useEffect(() => {
-    if (isOtherUserProfile) {
-      console.log('🔍 ProfileMobileView DEBUG (cudzí profil):', {
-        'displayUser.user_type': displayUser.user_type,
-        'accountType prop': accountType,
-        'isOtherUserProfile': isOtherUserProfile,
-        'displayUser.ico': displayUser.ico,
-        'displayUser.contact_email': displayUser.contact_email,
-        'displayUser.job_title': displayUser.job_title,
-        'Očakávaný typ (company=business)': displayUser.user_type === 'company' ? 'business' : 'personal',
-      });
-    }
-  }, [isOtherUserProfile, displayUser.user_type, accountType, displayUser.ico, displayUser.contact_email, displayUser.job_title]);
-
   // Exponovať funkciu na otvorenie modalu cez window event
   useEffect(() => {
     if (isOtherUserProfile) {
@@ -236,7 +221,7 @@ export default function ProfileMobileView({
 
               return (
                 <div className="mt-3">
-                  <p className="text-gray-600 dark:text-gray-300 text-sm flex items-center gap-1">
+                  <p className="text-gray-600 dark:text-gray-300 text-sm flex items-center gap-1 min-w-0">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       fill="none"
@@ -254,7 +239,7 @@ export default function ProfileMobileView({
                     {additionalCount > 0 ? (
                       // Viac webov - celý text je klikateľný na modal
                       <span
-                        className="flex items-center flex-wrap cursor-pointer"
+                        className="flex items-center flex-wrap cursor-pointer min-w-0"
                         onClick={onOpenAllWebsitesModal}
                       >
                         <span className="text-blue-600 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300 transition-colors truncate max-w-[200px]">
@@ -270,7 +255,7 @@ export default function ProfileMobileView({
                         href={firstWebsite}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-blue-600 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300 transition-colors truncate max-w-[200px]"
+                        className="text-blue-600 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300 transition-colors truncate min-w-0 flex-1"
                       >
                         {firstWebsite}
                       </a>
@@ -279,8 +264,16 @@ export default function ProfileMobileView({
                 </div>
               );
             })()}
-            {/* Sociálne siete - pod linky alebo na spodku ak nie sú linky - len na cudzom profile */}
-            {isOtherUserProfile && (() => {
+            {/* BIO - pod linkom, alebo na tom istom mieste ak link nie je */}
+            {displayUser.bio && displayUser.bio.trim() && (
+              <div className="mt-3">
+                <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-words">
+                  {displayUser.bio}
+                </p>
+              </div>
+            )}
+            {/* Sociálne siete - pod linky alebo na spodku ak nie sú linky */}
+            {(() => {
               const hasSocialMedia = displayUser.instagram || displayUser.facebook || displayUser.linkedin || displayUser.youtube || displayUser.whatsapp;
               if (!hasSocialMedia) return null;
 

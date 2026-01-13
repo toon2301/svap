@@ -77,16 +77,6 @@ export function SearchUserProfileModule({
         setProfileUser(data);
         setUserProfileToCache(userId, data);
         
-        // Debug logy pre diagnostiku
-        console.log('🔍 SearchUserProfileModule DEBUG (načítané dáta z API):', {
-          'user_id': data.id,
-          'user_type': data.user_type,
-          'ico': data.ico,
-          'contact_email': data.contact_email,
-          'job_title': data.job_title,
-          'Očakávaný accountType': data.user_type === 'company' ? 'business' : 'personal',
-        });
-        
         // Ak má používateľ slug a URL má ID namiesto slugu, aktualizovať URL
         if (data.slug) {
           const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
