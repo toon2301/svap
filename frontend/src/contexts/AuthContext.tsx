@@ -38,26 +38,51 @@ interface AuthProviderProps {
 }
 
 export function AuthProvider({ children }: AuthProviderProps) {
+  const isServer = typeof window === 'undefined';
+  console.log('🔍 [HYDRATION DEBUG] AuthProvider render', {
+    isServer,
+    hasWindow: typeof window !== 'undefined',
+    timestamp: new Date().toISOString(),
+  });
+  
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
+  console.log('🔍 [HYDRATION DEBUG] AuthProvider - useState initialized', {
+    isServer,
+    user: user ? { id: user.id, email: user.email } : null,
+    isLoading,
+  });
+
   // Načítanie používateľa z localStorage pri inicializácii
   useEffect(() => {
+    console.log('🔍 [HYDRATION DEBUG] AuthProvider - useEffect started (client only)');
     const loadUser = () => {
       try {
         const storedUser = localStorage.getItem('user');
         const storedTokens = localStorage.getItem('tokens');
+        console.log('🔍 [HYDRATION DEBUG] AuthProvider - localStorage values', {
+          hasStoredUser: !!storedUser,
+          hasStoredTokens: !!storedTokens,
+        });
         
         if (storedUser && storedTokens) {
           const userData = JSON.parse(storedUser);
+          console.log('🔍 [HYDRATION DEBUG] AuthProvider - setting user from localStorage', {
+            userId: userData.id,
+            email: userData.email,
+          });
           setUser(userData);
+        } else {
+          console.log('🔍 [HYDRATION DEBUG] AuthProvider - no stored user/tokens');
         }
       } catch (error) {
-        console.error('Error loading user from localStorage:', error);
+        console.error('🔍 [HYDRATION DEBUG] AuthProvider - Error loading user from localStorage:', error);
         localStorage.removeItem('user');
         localStorage.removeItem('tokens');
       } finally {
+        console.log('🔍 [HYDRATION DEBUG] AuthProvider - setting isLoading to false');
         setIsLoading(false);
       }
     };

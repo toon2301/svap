@@ -40,12 +40,29 @@ export default function DashboardContent({
   initialProfileSlug,
   initialRightItem,
 }: DashboardContentProps) {
+  const isServer = typeof window === 'undefined';
+  console.log('🔍 [HYDRATION DEBUG] DashboardContent render', {
+    isServer,
+    hasWindow: typeof window !== 'undefined',
+    initialUser: initialUser ? { id: initialUser.id, email: initialUser.email } : null,
+    initialRoute,
+    timestamp: new Date().toISOString(),
+  });
+  
   const { t } = useLanguage();
   const router = useRouter();
   const searchParams = useSearchParams();
   
   // Core Dashboard State
   const dashboardState = useDashboardState(initialUser, initialRoute);
+  
+  console.log('🔍 [HYDRATION DEBUG] DashboardContent - after useDashboardState', {
+    isServer,
+    accountType: dashboardState.accountType,
+    activeModule: dashboardState.activeModule,
+    isLoading: dashboardState.isLoading,
+    hasUser: !!dashboardState.user,
+  });
   const skillsState = useSkillsModals();
   
   // Local component state
@@ -295,7 +312,16 @@ export default function DashboardContent({
   }, [activeModule, loadSkills]);
 
   // Early returns pre loading a error states
+  console.log('🔍 [HYDRATION DEBUG] DashboardContent - before early returns', {
+    isServer,
+    isLoading,
+    hasUser: !!user,
+    willShowLoading: isLoading,
+    willShowNoUser: !user,
+  });
+  
   if (isLoading) {
+    console.log('🔍 [HYDRATION DEBUG] DashboardContent - returning loading state');
     return (
       <div className="min-h-screen flex items-center justify-center bg-[var(--background)]">
         <div className="text-center">
@@ -307,6 +333,7 @@ export default function DashboardContent({
   }
 
   if (!user) {
+    console.log('🔍 [HYDRATION DEBUG] DashboardContent - returning no user state');
     return (
       <div className="min-h-screen flex items-center justify-center bg-[var(--background)]">
         <div className="text-center">
@@ -322,6 +349,13 @@ export default function DashboardContent({
     );
   }
 
+  console.log('🔍 [HYDRATION DEBUG] DashboardContent - rendering main content', {
+    isServer,
+    accountType,
+    activeModule,
+    hasUser: !!user,
+  });
+  
   // Module content pre ModuleRouter
   const moduleContent = (
     <ModuleRouter

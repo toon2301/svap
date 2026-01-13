@@ -31,15 +31,30 @@ function getByPath(messages: Record<string, any>, key: string): unknown {
 }
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
+  const isServer = typeof window === 'undefined';
+  console.log('🔍 [HYDRATION DEBUG] LanguageProvider render', {
+    isServer,
+    hasWindow: typeof window !== 'undefined',
+    timestamp: new Date().toISOString(),
+  });
+  
   // Start with default to match server-rendered HTML, then hydrate from storage
   const [locale, setLocaleState] = useState<SupportedLocale>('sk');
   const [country, setCountryState] = useState<CountryCode>(null);
   
+  console.log('🔍 [HYDRATION DEBUG] LanguageProvider - useState initialized', {
+    isServer,
+    locale,
+    country,
+  });
+  
   useEffect(() => {
+    console.log('🔍 [HYDRATION DEBUG] LanguageProvider - useEffect started (client only)');
     // Priority 1: persisted value
     let hasSavedLocale = false;
     try {
       const saved = window.localStorage.getItem('appLocale');
+      console.log('🔍 [HYDRATION DEBUG] LanguageProvider - localStorage appLocale:', saved);
       if (saved === 'en' || saved === 'sk' || saved === 'pl' || saved === 'cs' || saved === 'de' || saved === 'hu') {
         setLocaleState(saved as SupportedLocale);
         hasSavedLocale = true;
