@@ -19,12 +19,13 @@ export interface SearchApiProps {
 
 interface UseSearchApiParams {
   searchState: SearchStateProps;
+  user?: { id: number } | null;
 }
 
 /**
  * Custom hook pre API volania a cache management
  */
-export function useSearchApi({ searchState }: UseSearchApiParams): SearchApiProps {
+export function useSearchApi({ searchState, user }: UseSearchApiParams): SearchApiProps {
   const { t, country } = useLanguage();
   
   // Cache pre výsledky vyhľadávania v pamäti – zdieľaná medzi inštanciami SearchModule
@@ -61,14 +62,16 @@ export function useSearchApi({ searchState }: UseSearchApiParams): SearchApiProp
     searchCacheRef.current.clear();
   }, []);
 
-  // Uložiť výsledky do localStorage histórie
+  // Uložiť výsledky do localStorage histórie (per používateľ)
   const saveResultsToHistory = useCallback((skills: SearchSkill[], users: SearchUserResult[]) => {
-    if (typeof window === 'undefined' || (skills.length === 0 && users.length === 0)) {
+    if (typeof window === 'undefined' || (skills.length === 0 && users.length === 0) || !user?.id) {
       return;
     }
 
     try {
-      const stored = localStorage.getItem('searchRecentResults');
+      // Použiť kľúč per používateľ
+      const storageKey = `searchRecentResults_${user.id}`;
+      const stored = localStorage.getItem(storageKey);
       let searches: SearchResults[] = stored ? JSON.parse(stored) : [];
       
       // Vytvoriť nový výsledok
@@ -97,12 +100,12 @@ export function useSearchApi({ searchState }: UseSearchApiParams): SearchApiProp
       // Obmedziť na 20 posledných
       searches = searches.slice(0, 20);
       
-      // Uložiť späť
-      localStorage.setItem('searchRecentResults', JSON.stringify(searches));
+      // Uložiť späť (per používateľ)
+      localStorage.setItem(storageKey, JSON.stringify(searches));
     } catch (error) {
       // Ignorovať chyby pri ukladaní
     }
-  }, []);
+  }, [user?.id]);
 
   const handleSearch = useCallback(async (event?: React.FormEvent) => {
     if (event) {
@@ -152,17 +155,40 @@ export function useSearchApi({ searchState }: UseSearchApiParams): SearchApiProp
     setIsFromRecentSearch(false);
 
     try {
+      const params: Record<string, string> = {
+        q,
+        location: '',
+        offer_type: offerType === 'all' ? '' : offerType,
+        only_my_location: onlyMyLocation ? '1' : '',
+        price_min: priceMin || '',
+        price_max: priceMax || '',
+      };
+      
+      // Pridaj country len ak je skutočne nastavený a nie je prázdny
+      // Backend country filter je teraz menej prísny - aplikuje sa len ak vracia výsledky
+      if (country && country.trim() !== '') {
+        params.country = country;
+      }
+      
+      console.log('🔍 Search API call:', { 
+        params, 
+        query: q,
+        country: country || 'NOT SET',
+        countryInParams: !!params.country,
+      });
+      
       const response = await api.get(endpoints.dashboard.search, {
-        params: {
-          q,
-          location: '',
-          offer_type: offerType === 'all' ? '' : offerType,
-          only_my_location: onlyMyLocation ? '1' : '',
-          price_min: priceMin || '',
-          price_max: priceMax || '',
-          country: country || '', // Filter podľa krajiny
-        },
+        params,
         signal: controller.signal,
+      });
+
+      const responseData = response.data || {};
+      console.log('✅ Search API response:', { 
+        status: response.status, 
+        dataKeys: Object.keys(responseData),
+        skillsCount: Array.isArray(responseData.skills) ? responseData.skills.length : 0,
+        usersCount: Array.isArray(responseData.users) ? responseData.users.length : 0,
+        fullResponse: responseData, // Zobraz celú odpoveď pre debugging
       });
 
       const data = response.data || {};
@@ -170,6 +196,8 @@ export function useSearchApi({ searchState }: UseSearchApiParams): SearchApiProp
       const users = Array.isArray(data.users)
         ? (data.users as SearchUserResult[])
         : [];
+
+      console.log('📊 Processed results:', { skillsCount: skills.length, usersCount: users.length });
 
       const newResults: SearchResults = { skills, users };
       setResults(newResults);
@@ -183,9 +211,16 @@ export function useSearchApi({ searchState }: UseSearchApiParams): SearchApiProp
     } catch (e: any) {
       // Ignoruj zrušené požiadavky (nové vyhľadávanie prebehlo skôr)
       if (e?.name === 'CanceledError' || e?.code === 'ERR_CANCELED') {
+        console.log('⚠️ Search request canceled (new search started)');
         return;
       }
-      console.error('Chyba pri vyhľadávaní:', e);
+      console.error('❌ Chyba pri vyhľadávaní:', {
+        error: e,
+        message: e?.message,
+        response: e?.response?.data,
+        status: e?.response?.status,
+        statusText: e?.response?.statusText,
+      });
 
       // Graceful handling 429 – nechaj posledné výsledky, zobraz len jemnú hlášku
       if (e?.response?.status === 429) {

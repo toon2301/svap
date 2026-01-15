@@ -127,6 +127,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
   };
 
   const logout = () => {
+    // Vymazať posledné vyhľadávania aktuálneho používateľa
+    if (user?.id) {
+      localStorage.removeItem(`searchRecentResults_${user.id}`);
+    }
+    
     localStorage.removeItem('user');
     localStorage.removeItem('tokens');
     localStorage.removeItem('activeModule');

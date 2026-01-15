@@ -29,6 +29,7 @@ export default function RegisterForm() {
     emailStatus,
     emailError,
     handleInputChange,
+    handleUsernameChange,
     handleTouchStart,
     handleTouchEnd,
     handleSelectFocus,
@@ -121,10 +122,12 @@ export default function RegisterForm() {
                 t={t}
                 username={formData.username}
                 email={formData.email}
+                userType={formData.user_type}
                 errors={errors}
                 emailStatus={emailStatus}
                 emailError={emailError}
                 onChange={handleInputChange as any}
+                onUsernameChange={handleUsernameChange}
                 onKeyDown={handleKeyDown as any}
                 onEmailBlur={checkEmailAvailability}
               />
@@ -143,36 +146,27 @@ export default function RegisterForm() {
                 onKeyDown={handleKeyDown as any}
               />
 
-              {/* Dátum narodenia */}
-              <BirthGenderSection
-                t={t}
-                birthDay={formData.birth_day}
-                birthMonth={formData.birth_month}
-                birthYear={formData.birth_year}
-                gender={formData.gender}
-                errors={errors}
-                onDateChange={(e) => {
-                    const dateValue = e.target.value;
-                    if (dateValue) {
-                      const [year, month, day] = dateValue.split('-');
-                    setFormData(prev => ({ ...prev, birth_year: year, birth_month: month, birth_day: day }));
-                    } else {
-                    setFormData(prev => ({ ...prev, birth_year: '', birth_month: '', birth_day: '' }));
-                  }
-                }}
-                onKeyDown={handleKeyDown as any}
-                onGenderChange={handleInputChange as any}
-                bindSelectHandlers={{ onTouchStart: handleTouchStart as any, onTouchEnd: handleTouchEnd as any, onFocus: handleSelectFocus, onBlur: handleSelectBlur }}
-              />
-
-              {/* Pre firmy */}
-              {formData.user_type === 'company' && (
-                <CompanySection
+              {/* Dátum narodenia a pohlavie - len pre jednotlivcov */}
+              {formData.user_type === 'individual' && (
+                <BirthGenderSection
                   t={t}
-                  companyName={formData.company_name}
-                  website={formData.website}
+                  birthDay={formData.birth_day}
+                  birthMonth={formData.birth_month}
+                  birthYear={formData.birth_year}
+                  gender={formData.gender}
                   errors={errors}
-                  onChange={handleInputChange as any}
+                  onDateChange={(e) => {
+                      const dateValue = e.target.value;
+                      if (dateValue) {
+                        const [year, month, day] = dateValue.split('-');
+                      setFormData(prev => ({ ...prev, birth_year: year, birth_month: month, birth_day: day }));
+                      } else {
+                      setFormData(prev => ({ ...prev, birth_year: '', birth_month: '', birth_day: '' }));
+                    }
+                  }}
+                  onKeyDown={handleKeyDown as any}
+                  onGenderChange={handleInputChange as any}
+                  bindSelectHandlers={{ onTouchStart: handleTouchStart as any, onTouchEnd: handleTouchEnd as any, onFocus: handleSelectFocus, onBlur: handleSelectBlur }}
                 />
               )}
 

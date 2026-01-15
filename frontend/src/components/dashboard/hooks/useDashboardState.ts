@@ -90,6 +90,20 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
     }
   }, [accountType]);
 
+  // Synchronizácia accountType s user.user_type z databázy
+  useEffect(() => {
+    if (user?.user_type) {
+      const correctAccountType: AccountType = user.user_type === 'company' ? 'business' : 'personal';
+      setAccountType((currentAccountType) => {
+        // Aktualizovať accountType len ak sa líši od aktuálnej hodnoty
+        if (currentAccountType !== correctAccountType) {
+          return correctAccountType;
+        }
+        return currentAccountType;
+      });
+    }
+  }, [user?.user_type]);
+
   useEffect(() => {
     const goToProfileHandler = () => {
       setActiveModule('profile');
@@ -372,6 +386,19 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
   };
 
   const handleMobileBack = useCallback((isInSubcategories: boolean = false) => {
+    // Ak sme v edit profile móde, vráť sa na normálny profile view
+    if (activeModule === 'profile' && activeRightItem === 'edit-profile') {
+      setIsRightSidebarOpen(false);
+      setActiveRightItem('');
+      // Aktualizovať URL - odstrániť /edit časť
+      const identifier = user?.slug || String(user?.id);
+      const url = `/dashboard/users/${identifier}`;
+      if (typeof window !== 'undefined') {
+        window.history.replaceState(null, '', url);
+      }
+      return;
+    }
+
     // Ak sme na cudzom profile, vráť sa na vyhľadávanie
     if (activeModule === 'user-profile') {
       setActiveModule('search');
@@ -462,7 +489,7 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
     }
     setIsRightSidebarOpen(false);
     setActiveRightItem('');
-  }, [activeModule, activeRightItem]);
+  }, [activeModule, activeRightItem, user?.slug, user?.id]);
 
   return {
     user,

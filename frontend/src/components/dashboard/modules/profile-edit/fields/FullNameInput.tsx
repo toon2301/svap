@@ -20,7 +20,8 @@ export default function FullNameInput({ firstName, lastName, setFirstName, setLa
   }, [firstName, lastName]);
 
   const handleSaveWithParse = async () => {
-    const trimmedValue = inputValue.trim();
+    // Obmedziť na 35 znakov
+    const trimmedValue = inputValue.trim().slice(0, 35);
     const parts = trimmedValue.split(/\s+/).filter(Boolean);
     let newFirstName = '';
     let newLastName = '';
@@ -56,16 +57,23 @@ export default function FullNameInput({ firstName, lastName, setFirstName, setLa
         type="text"
         value={inputValue}
         onChange={(e) => {
-          setInputValue(e.target.value);
+          const value = e.target.value;
+          // Obmedziť na 35 znakov
+          if (value.length <= 35) {
+            setInputValue(value);
+          }
         }}
         onBlur={handleSaveWithParse}
         onKeyDown={(e) => {
           if (e.key === 'Enter') handleSaveWithParse();
         }}
-        maxLength={18}
+        maxLength={35}
         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent"
         placeholder="Zadajte svoje meno a priezvisko"
       />
+      <div className="mt-1 text-xs text-gray-500 text-right">
+        {inputValue.length}/35 znakov
+      </div>
     </div>
   );
 }

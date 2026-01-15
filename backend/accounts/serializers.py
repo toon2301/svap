@@ -25,12 +25,15 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         model = User
         fields = [
             'username', 'email', 'password', 'password_confirm',
+            'first_name', 'last_name',
             'user_type', 'phone', 'company_name', 'website',
             'birth_day', 'birth_month', 'birth_year', 'gender', 'captcha_token'
         ]
         extra_kwargs = {
             'username': {'required': True},
             'email': {'required': True},
+            'first_name': {'required': False},
+            'last_name': {'required': False},
         }
 
     def __init__(self, *args, **kwargs):
@@ -39,6 +42,12 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         required = False if getattr(settings, 'DEBUG', False) else bool(getattr(settings, 'CAPTCHA_ENABLED', True))
         if 'captcha_token' in self.fields:
             self.fields['captcha_token'].required = required
+        
+        # Odstrániť Django validátor z username field, lebo povolujeme medzery
+        # Django UnicodeUsernameValidator neumožňuje medzery
+        if 'username' in self.fields:
+            # Odstrániť všetky validátory z username field (vrátane Django UnicodeUsernameValidator)
+            self.fields['username'].validators = []
 
     def validate(self, attrs):
         """Validácia hesiel a business logiky"""
@@ -49,6 +58,39 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         captcha_token = attrs.get('captcha_token')
         if captcha_token:
             CAPTCHAValidator.validate_captcha(captcha_token)
+        
+        # Username sa uloží do first_name (môže obsahovať medzery, limit 35 znakov)
+        # Pre Django username použijeme časť emailu (Django username neumožňuje medzery)
+        username_value = attrs.get('username', '').strip()
+        
+        if username_value:
+            # Validácia dĺžky username (max 35 znakov)
+            if len(username_value) > 35:
+                raise serializers.ValidationError({
+                    'username': 'Používateľské meno môže mať maximálne 35 znakov vrátane medzier.'
+                })
+            
+            # Uložiť username do first_name (môže obsahovať medzery)
+            attrs['first_name'] = username_value
+            attrs['last_name'] = ''  # Priezvisko necháme prázdne
+        
+        # Validácia celkového mena (first_name + last_name) - max 35 znakov vrátane medzier
+        first_name = attrs.get('first_name', '')
+        last_name = attrs.get('last_name', '')
+        if first_name or last_name:
+            # Vypočítaj celkovú dĺžku (vrátane medzery ak sú obe hodnoty)
+            full_name = f"{first_name} {last_name}".strip() if first_name and last_name else (first_name or last_name or '')
+            total_length = len(full_name)
+            
+            if total_length > 35:
+                raise serializers.ValidationError({
+                    'username': 'Používateľské meno môže mať maximálne 35 znakov vrátane medzier.'
+                })
+        
+        # Odstrániť username z validated_data pred Django validáciou
+        # Django username validator neumožňuje medzery, takže ho nastavíme až v create()
+        if 'username' in attrs:
+            attrs.pop('username')
         
         # Validácia pre firmy
         if attrs.get('user_type') == UserType.COMPANY:
@@ -88,18 +130,19 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         return value
 
     def validate_username(self, value):
-        """Validácia username"""
+        """Validácia username - povolené medzery, limit 35 znakov"""
         # Bezpečnostná validácia
         value = SecurityValidator.validate_input_safety(value)
         
-        # Unikátnosť
-        if User.objects.filter(username=value).exists():
-            raise serializers.ValidationError("Používateľ s týmto používateľským menom už existuje.")
+        # Limit 35 znakov (vrátane medzier)
+        if len(value) > 35:
+            raise serializers.ValidationError("Používateľské meno môže mať maximálne 35 znakov vrátane medzier.")
+        
         return value
 
     def create(self, validated_data):
         """Vytvorenie nového používateľa"""
-        validated_data.pop('password_confirm')
+        validated_data.pop('password_confirm', None)
         validated_data.pop('captcha_token', None)  # Odstráň CAPTCHA token ak existuje
         # Odstránenie polí pre dátum narodenia (už sú konvertované na birth_date)
         validated_data.pop('birth_day', None)
@@ -107,13 +150,36 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         validated_data.pop('birth_year', None)
         
         password = validated_data.pop('password')
+        email = validated_data.get('email', '')
+        
+        # Django username neumožňuje medzery, takže použijeme časť emailu pred @ ako username
+        # Ak už existuje, pridáme číslo
+        base_username = email.split('@')[0] if email else 'user'
+        # Odstrániť špeciálne znaky z username (Django validator vyžaduje)
+        import re
+        base_username = re.sub(r'[^\w.@+-]', '', base_username)  # Ponechať len povolené znaky
+        if not base_username:
+            base_username = 'user'
+        
+        username = base_username
+        counter = 1
+        while User.objects.filter(username=username).exists():
+            username = f"{base_username}{counter}"
+            counter += 1
+        
+        # Nastaviť username (bez medzier, Django vyžaduje)
+        validated_data['username'] = username
+        validated_data['is_verified'] = False
+        
+        # first_name už obsahuje pôvodný username (s medzerami) z validate() metódy
         
         # Vytvorenie používateľa s is_verified=False
-        user = User.objects.create_user(
-            password=password,
-            is_verified=False,  # Používateľ nie je overený po registrácii
-            **validated_data
-        )
+        # Vytvoriť User objekt bez volania full_clean() (ktorý validuje username)
+        user = User(**validated_data)
+        user.is_verified = False
+        # Nastaviť heslo pomocou set_password (hashuje heslo)
+        user.set_password(password)
+        user.save()
         
         # Vytvorenie profilu
         UserProfile.objects.create(user=user)
@@ -220,6 +286,28 @@ class UserProfileSerializer(serializers.ModelSerializer):
             value = SecurityValidator.validate_input_safety(value)
             return NameValidator.validate_name(value, 'Priezvisko')
         return value
+
+    def validate(self, attrs):
+        """Validácia celkového mena (first_name + last_name)"""
+        first_name = attrs.get('first_name', self.instance.first_name if self.instance else '')
+        last_name = attrs.get('last_name', self.instance.last_name if self.instance else '')
+        
+        # Ak sa mení first_name alebo last_name, skontroluj celkovú dĺžku
+        if 'first_name' in attrs or 'last_name' in attrs:
+            # Získaj aktuálne hodnoty (buď z attrs alebo z instance)
+            current_first = attrs.get('first_name') if 'first_name' in attrs else (self.instance.first_name if self.instance else '')
+            current_last = attrs.get('last_name') if 'last_name' in attrs else (self.instance.last_name if self.instance else '')
+            
+            # Vypočítaj celkovú dĺžku (vrátane medzery ak sú obe hodnoty)
+            full_name = f"{current_first} {current_last}".strip() if current_first and current_last else (current_first or current_last or '')
+            total_length = len(full_name)
+            
+            if total_length > 35:
+                raise serializers.ValidationError({
+                    'first_name': 'Celé meno (meno a priezvisko) môže mať maximálne 35 znakov vrátane medzier.'
+                })
+        
+        return attrs
 
     def validate_phone(self, value):
         """Validácia telefónu"""

@@ -104,7 +104,10 @@ export default function ProfileMobileView({
               <div className="flex flex-col justify-center">
                 {/* Meno používateľa */}
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
-                  {[displayUser.first_name, displayUser.last_name].filter(Boolean).join(' ').trim() || displayUser.username}
+                  {accountType === 'business' 
+                    ? (displayUser.company_name || displayUser.username)
+                    : ([displayUser.first_name, displayUser.last_name].filter(Boolean).join(' ').trim() || displayUser.username)
+                  }
                 </h2>
                 {/* Email intentionally not shown here (kept in edit views) */}
                 {/* Lokalita - zobrazí mesto/dedinu ak je, inak okres ak je */}

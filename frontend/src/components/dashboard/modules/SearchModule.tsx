@@ -19,7 +19,7 @@ export default function SearchModule({ user, onUserClick, onSkillClick, isOverla
   
   // Hooky pre state management
   const searchState = useSearchState();
-  const searchApi = useSearchApi({ searchState });
+  const searchApi = useSearchApi({ searchState, user });
   const recentSearches = useRecentSearches({ user, searchState });
   const suggestions = useSuggestions({ user, searchState, onSkillClick });
 

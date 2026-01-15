@@ -83,15 +83,51 @@ export default function ProfileEditFormDesktop({
   // Lokálny state pre input hodnotu mena - zachová medzery počas písania
   const [fullNameInput, setFullNameInput] = useState('');
 
-  // Synchronizovať lokálny state s firstName a lastName
+  // Synchronizovať lokálny state s firstName a lastName (pre osobné účty) alebo company_name (pre firemné účty)
   useEffect(() => {
-    const fullName = firstName && lastName ? `${firstName} ${lastName}` : firstName || lastName || '';
-    setFullNameInput(fullName);
-  }, [firstName, lastName]);
+    if (accountType === 'business') {
+      // Pre firmy používame company_name
+      setFullNameInput(user.company_name || '');
+    } else {
+      // Pre osobné účty používame first_name + last_name
+      const fullName = firstName && lastName ? `${firstName} ${lastName}` : firstName || lastName || '';
+      setFullNameInput(fullName);
+    }
+  }, [firstName, lastName, accountType, user.company_name]);
 
   // Wrapper pre handleFullNameSave, ktorý parsuje input hodnotu pred uložením
   const handleFullNameSaveWithParse = async () => {
-    const trimmedValue = fullNameInput.trim();
+    // Obmedziť na 35 znakov
+    const trimmedValue = fullNameInput.trim().slice(0, 35);
+    
+    // Pre firemné účty ukladať ako company_name
+    if (accountType === 'business') {
+      const newCompanyName = trimmedValue;
+      
+      // Porovnať s aktuálnou hodnotou
+      if (newCompanyName === (user.company_name || '').trim()) {
+        // Žiadna zmena
+        return;
+      }
+      
+      try {
+        // Volať API priamo s company_name
+        const response = await api.patch('/auth/profile/', {
+          company_name: newCompanyName,
+        });
+        
+        if (onUserUpdate && response.data?.user) {
+          onUserUpdate(response.data.user);
+        }
+      } catch (error: any) {
+        console.error('Error saving company name:', error);
+        // Revert na pôvodnú hodnotu
+        setFullNameInput(user.company_name || '');
+      }
+      return;
+    }
+    
+    // Pre osobné účty používame existujúcu logiku
     const parts = trimmedValue.split(/\s+/).filter(Boolean);
     let newFirstName = '';
     let newLastName = '';
@@ -173,7 +209,11 @@ export default function ProfileEditFormDesktop({
                 type="text"
                 value={fullNameInput}
                 onChange={(e) => {
-                  setFullNameInput(e.target.value);
+                  const value = e.target.value;
+                  // Obmedziť na 35 znakov
+                  if (value.length <= 35) {
+                    setFullNameInput(value);
+                  }
                 }}
                 onBlur={handleFullNameSaveWithParse}
                 onKeyDown={(e) => {
@@ -181,9 +221,13 @@ export default function ProfileEditFormDesktop({
                     handleFullNameSaveWithParse();
                   }
                 }}
+                maxLength={35}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-1 focus:ring-purple-300 focus:border-transparent"
                 placeholder={t('profile.enterName', 'Zadajte svoje meno a priezvisko')}
               />
+              <div className="mt-1 text-xs text-gray-500 dark:text-gray-400 text-right">
+                {fullNameInput.length}/35 znakov
+              </div>
             </div>
             {/* Priezvisko zrušené – unified v jednom vstupe */}
 

@@ -5,7 +5,9 @@ import { User } from '../../../types';
 import UserAvatar from './profile/UserAvatar';
 import ProfileEditFields from './ProfileEditFields';
 import ProfileEditModals from './ProfileEditModals';
+import ProfileAvatarActionsModal from './profile/ProfileAvatarActionsModal';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { api } from '../../../lib/api';
 
 interface ProfileEditFormMobileProps {
   user: User;
@@ -42,10 +44,16 @@ export default function ProfileEditFormMobile({
   const [isWhatsAppModalOpen, setIsWhatsAppModalOpen] = useState(false);
   const [isGenderModalOpen, setIsGenderModalOpen] = useState(false);
   const [isIcoModalOpen, setIsIcoModalOpen] = useState(false);
+  const [isActionsOpen, setIsActionsOpen] = useState(false);
   
   // Field values
-  const [firstName, setFirstName] = useState(user.first_name || '');
-  const [lastName, setLastName] = useState(user.last_name || '');
+  // Pre firmy používame company_name, pre osobné účty first_name + last_name
+  const [firstName, setFirstName] = useState(
+    accountType === 'business' ? (user.company_name || '') : (user.first_name || '')
+  );
+  const [lastName, setLastName] = useState(
+    accountType === 'business' ? '' : (user.last_name || '')
+  );
   const [bio, setBio] = useState(user.bio || '');
   const [location, setLocation] = useState(user.location || '');
   const [district, setDistrict] = useState(user.district || '');
@@ -66,8 +74,12 @@ export default function ProfileEditFormMobile({
   const [gender, setGender] = useState(user.gender || '');
   
   // Original values for cancel functionality
-  const [originalFirstName, setOriginalFirstName] = useState(user.first_name || '');
-  const [originalLastName, setOriginalLastName] = useState(user.last_name || '');
+  const [originalFirstName, setOriginalFirstName] = useState(
+    accountType === 'business' ? (user.company_name || '') : (user.first_name || '')
+  );
+  const [originalLastName, setOriginalLastName] = useState(
+    accountType === 'business' ? '' : (user.last_name || '')
+  );
   const [originalBio, setOriginalBio] = useState(user.bio || '');
   const [originalLocation, setOriginalLocation] = useState(user.location || '');
   const [originalDistrict, setOriginalDistrict] = useState(user.district || '');
@@ -86,6 +98,23 @@ export default function ProfileEditFormMobile({
   const [originalYoutube, setOriginalYoutube] = useState(user.youtube || '');
   const [originalWhatsapp, setOriginalWhatsapp] = useState(user.whatsapp || '');
   const [originalGender, setOriginalGender] = useState(user.gender || '');
+
+  // Synchronizovať firstName a lastName s user objektom (pre firmy používame company_name)
+  React.useEffect(() => {
+    if (accountType === 'business') {
+      // Pre firmy používame company_name
+      setFirstName(user.company_name || '');
+      setLastName('');
+      setOriginalFirstName(user.company_name || '');
+      setOriginalLastName('');
+    } else {
+      // Pre osobné účty používame first_name + last_name
+      setFirstName(user.first_name || '');
+      setLastName(user.last_name || '');
+      setOriginalFirstName(user.first_name || '');
+      setOriginalLastName(user.last_name || '');
+    }
+  }, [user.company_name, user.first_name, user.last_name, accountType]);
 
   // Update states when user prop changes
   React.useEffect(() => {
@@ -125,6 +154,30 @@ export default function ProfileEditFormMobile({
     setOriginalWhatsapp(user.whatsapp || '');
   }, [user.instagram, user.facebook, user.linkedin, user.youtube, user.whatsapp]);
 
+  const handleAvatarClick = () => {
+    setIsActionsOpen(true);
+  };
+
+  const handleRemoveAvatar = async () => {
+    if (!onPhotoUpload) return;
+    
+    try {
+      const response = await api.patch('/auth/profile/', { avatar: null });
+      if (onUserUpdate && response.data.user) {
+        onUserUpdate(response.data.user);
+      }
+      setIsActionsOpen(false);
+    } catch (e: any) {
+      console.error('Error removing avatar:', e);
+    }
+  };
+
+  const handlePhotoUpload = async (file: File) => {
+    if (onPhotoUpload) {
+      onPhotoUpload(file);
+    }
+  };
+
   return (
     <div className="pt-2 pb-8">
       {/* Fotka v strede */}
@@ -133,7 +186,7 @@ export default function ProfileEditFormMobile({
           <UserAvatar
             user={user}
             size="medium"
-            onAvatarClick={onAvatarClick}
+            onAvatarClick={handleAvatarClick}
             isUploading={isUploading}
           />
         </div>
@@ -164,6 +217,7 @@ export default function ProfileEditFormMobile({
       <ProfileEditModals
         user={user}
         onUserUpdate={onUserUpdate}
+        accountType={accountType}
         isNameModalOpen={isNameModalOpen}
         isBioModalOpen={isBioModalOpen}
         isLocationModalOpen={isLocationModalOpen}
@@ -280,6 +334,16 @@ export default function ProfileEditFormMobile({
           {t('profile.verifyProfile', 'Overenie profilu')}
         </span>
       </div>
+
+      {/* Avatar actions modal */}
+      <ProfileAvatarActionsModal
+        open={isActionsOpen}
+        user={user}
+        isUploading={isUploading || false}
+        onClose={() => setIsActionsOpen(false)}
+        onPhotoUpload={handlePhotoUpload}
+        onRemoveAvatar={handleRemoveAvatar}
+      />
     </div>
   );
 }

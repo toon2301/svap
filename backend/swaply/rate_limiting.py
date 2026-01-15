@@ -1,6 +1,7 @@
 """
 Rate limiting utilities pre Swaply
 """
+from django.conf import settings
 from django.core.cache import cache
 from django.http import JsonResponse
 from django.utils import timezone
@@ -181,7 +182,12 @@ def rate_limit(max_attempts=5, window_minutes=15, block_minutes=60, action='defa
 
 
 # Prednastavené rate limitery pre rôzne akcie
-login_rate_limit = rate_limit(max_attempts=5, window_minutes=15, block_minutes=60, action='login')
+# Login rate limit - menej prísny pre lepšiu používateľskú skúsenosť
+# Development: 20 pokusov, blokovanie 5 minút
+# Produkcia: 10 pokusov, blokovanie 30 minút
+_login_max_attempts = 20 if settings.DEBUG else 10
+_login_block_minutes = 5 if settings.DEBUG else 30
+login_rate_limit = rate_limit(max_attempts=_login_max_attempts, window_minutes=15, block_minutes=_login_block_minutes, action='login')
 register_rate_limit = rate_limit(max_attempts=3, window_minutes=15, block_minutes=30, action='register')
 password_reset_rate_limit = rate_limit(max_attempts=3, window_minutes=60, block_minutes=120, action='password_reset')
 email_verification_rate_limit = rate_limit(max_attempts=5, window_minutes=15, block_minutes=60, action='email_verification')

@@ -22,7 +22,12 @@ export default function HeaderCard({ user, firstName, lastName, isUploading, onP
       <div className="flex items-center gap-6">
         <UserAvatar user={user} size="medium" onPhotoUpload={onPhotoUploadClick} isUploading={isUploading} onAvatarClick={onAvatarClick} />
         <div className="text-base text-gray-800 dark:text-gray-200 flex-1">
-          <div className="font-bold text-gray-800 dark:text-white">{`${(firstName || user.first_name || '').trim()} ${(lastName || user.last_name || '').trim()}`.trim() || user.username}</div>
+          <div className="font-bold text-gray-800 dark:text-white">
+            {accountType === 'business' 
+              ? (user.company_name || user.username)
+              : (`${(firstName || user.first_name || '').trim()} ${(lastName || user.last_name || '').trim()}`.trim() || user.username)
+            }
+          </div>
           <div className="text-gray-600 dark:text-gray-300">{user.email}</div>
           {/* Lokalita - zobrazí mesto/dedinu ak je, inak okres ak je */}
           {(user.location || user.district) && (

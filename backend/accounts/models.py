@@ -182,7 +182,7 @@ class User(AbstractUser):
     def save(self, *args, **kwargs):
         """
         Pri prvom uložení používateľa vygeneruje slug, ak chýba.
-        Ak sa zmení meno (first_name alebo last_name), slug sa automaticky aktualizuje.
+        Ak sa zmení meno (first_name, last_name alebo company_name), slug sa automaticky aktualizuje.
         """
         # Ak už existuje v DB, načítame starý objekt na porovnanie
         old_instance = None
@@ -195,11 +195,11 @@ class User(AbstractUser):
         # Ak nemáme slug, vygenerujeme ho
         if not self.slug:
             self.ensure_slug(commit=False)
-        # Ak sa zmenilo meno (first_name alebo last_name), aktualizujeme slug
+        # Ak sa zmenilo meno (používame display_name, ktorý pokrýva oba typy účtov), aktualizujeme slug
         elif old_instance:
-            old_name = (old_instance.first_name or '') + ' ' + (old_instance.last_name or '')
-            new_name = (self.first_name or '') + ' ' + (self.last_name or '')
-            if old_name.strip() != new_name.strip():
+            old_display_name = old_instance.display_name
+            new_display_name = self.display_name
+            if old_display_name != new_display_name:
                 # Meno sa zmenilo - aktualizujeme slug
                 self.ensure_slug(commit=False, force_update=True)
 

@@ -198,42 +198,62 @@ export function useDashboardUserProfile({
     // Ak je viewedUserId nastavený a je iný ako user.id, sme na cudzom profile
     if (viewedUserId && viewedUserId !== user.id) return;
 
-    // Ak sme v edit móde, NEOBNOVOVAŤ URL - handleEditProfileClick už to urobil
-    // Tento useEffect by sa nemal spúšťať v edit móde, pretože URL je už nastavený
+    // Skontrolovať, či sme v edit móde
     const isEditMode = isRightSidebarOpen && activeRightItem === 'edit-profile';
-    if (isEditMode) {
-      // V edit móde nič nerobiť - URL je už nastavený v handleEditProfileClick
-      return;
-    }
     
     // Zistiť aktuálnu URL
     const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
     const expectedPath = `/dashboard/users/${user.slug}`;
+    const expectedPathWithEdit = `/dashboard/users/${user.slug}/edit`;
+
+    // Ak sme v edit móde, očakávaná URL by mala obsahovať /edit
+    const expectedPathForCurrentMode = isEditMode ? expectedPathWithEdit : expectedPath;
 
     // Ak sme na správnej URL, nič nerobiť
-    if (currentPath === expectedPath) {
+    if (currentPath === expectedPathForCurrentMode) {
       return;
     }
 
     // Aktualizovať URL bez reloadu - window.history.replaceState mení URL bez prerenderovania stránky
     if (currentPath.startsWith('/dashboard/users/')) {
       const currentIdentifier = currentPath.replace('/dashboard/users/', '').split('/')[0];
+      const isCurrentPathEdit = currentPath.endsWith('/edit');
+      
+      // Kontrola, či URL obsahuje /edit - ak áno a je to vlastný profil, nastaviť edit mode
+      if (isCurrentPathEdit && currentIdentifier === user.slug) {
+        // URL obsahuje /edit - nastaviť edit mode (ak ešte nie je nastavený)
+        if (!isEditMode) {
+          setActiveModule('profile');
+          setIsRightSidebarOpen(true);
+          setActiveRightItem('edit-profile');
+        }
+        // Zachovať URL s /edit - nemeníme ju
+        return;
+      }
+      
+      // Ak sme v edit móde a slug sa zmenil, aktualizovať URL s novým slugom a zachovať /edit
+      if (isEditMode && currentIdentifier !== user.slug) {
+        if (typeof window !== 'undefined') {
+          window.history.replaceState(null, '', expectedPathWithEdit);
+        }
+        return;
+      }
       
       // Ak je aktuálny identifikátor číslo (ID) a máme slug
       if (/^\d+$/.test(currentIdentifier) && currentIdentifier !== user.slug) {
-        const newUrl = `/dashboard/users/${user.slug}`;
+        const newUrl = isEditMode ? expectedPathWithEdit : expectedPath;
         if (typeof window !== 'undefined') {
           window.history.replaceState(null, '', newUrl);
         }
       } else if (currentIdentifier !== user.slug) {
         if (typeof window !== 'undefined') {
-          window.history.replaceState(null, '', expectedPath);
+          window.history.replaceState(null, '', expectedPathForCurrentMode);
         }
       }
     } else {
       // Sme mimo user profile URL štruktúry
       if (typeof window !== 'undefined') {
-        window.history.replaceState(null, '', expectedPath);
+        window.history.replaceState(null, '', expectedPathForCurrentMode);
       }
     }
   }, [user?.slug, user?.id, activeModule, viewedUserId, isRightSidebarOpen, activeRightItem]);

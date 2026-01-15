@@ -100,7 +100,10 @@ export default function ProfileDesktopView({
                       {isOtherUserProfile ? (
                         <div className="flex items-center gap-20 mb-2">
                           <h2 className="text-[clamp(1.25rem,2vw,1.75rem)] font-semibold text-gray-900 dark:text-white">
-                        {[displayUser.first_name, displayUser.last_name].filter(Boolean).join(' ').trim() || displayUser.username}
+                        {accountType === 'business' 
+                          ? (displayUser.company_name || displayUser.username)
+                          : ([displayUser.first_name, displayUser.last_name].filter(Boolean).join(' ').trim() || displayUser.username)
+                        }
                       </h2>
                           {/* Sociálne siete - hneď vedľa mena */}
                           {(() => {
@@ -193,7 +196,10 @@ export default function ProfileDesktopView({
                       ) : (
                         <div className="flex items-center gap-20 mb-2">
                           <h2 className="text-[clamp(1.25rem,2vw,1.75rem)] font-semibold text-gray-900 dark:text-white">
-                            {[displayUser.first_name, displayUser.last_name].filter(Boolean).join(' ').trim() || displayUser.username}
+                            {accountType === 'business' 
+                              ? (displayUser.company_name || displayUser.username)
+                              : ([displayUser.first_name, displayUser.last_name].filter(Boolean).join(' ').trim() || displayUser.username)
+                            }
                           </h2>
                           {/* Sociálne siete - hneď vedľa mena */}
                           {(() => {

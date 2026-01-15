@@ -359,9 +359,9 @@ def dashboard_search_view(request):
         skills_qs = skills_qs.filter(is_seeking=True)
     
     # Filter: krajina používateľa
+    # POZNÁMKA: Country filter je menej prísny - aplikuje sa len ak by vracal výsledky
+    # Ak country filter vracia prázdne výsledky, preskočí sa (nefiltruje sa)
     if country_filter:
-        # Najskôr skúsime user.country ak existuje, inak fallback na detekciu z názvu krajiny
-        # Pre teraz použijem location/district mapping (neskôr sa pridá user.country field)
         country_location_mapping = {
             'SK': ['slovakia', 'slovensko', 'slovak'],
             'CZ': ['czech', 'česko', 'česká', 'ceska'],
@@ -379,7 +379,14 @@ def dashboard_search_view(request):
                     Q(user__location__icontains=term) |
                     Q(user__district__icontains=term)
                 )
-            skills_qs = skills_qs.filter(country_query)
+            
+            # Skontroluj, či country filter vracia nejaké výsledky
+            # Ak nie, neaplikuj ho (nefiltruj podľa krajiny)
+            test_qs = skills_qs.filter(country_query)
+            if test_qs.exists():
+                # Country filter vracia výsledky, aplikuj ho
+                skills_qs = skills_qs.filter(country_query)
+            # Ak country filter nevracia výsledky, preskoč ho (nefiltruj)
 
     # Filter: cena od / do
     price_min = None
@@ -446,8 +453,9 @@ def dashboard_search_view(request):
         users_qs = users_qs.filter(user_query)
 
     # Filter: krajina používateľa
+    # POZNÁMKA: Country filter je menej prísny - aplikuje sa len ak by vracal výsledky
+    # Ak country filter vracia prázdne výsledky, preskočí sa (nefiltruje sa)
     if country_filter:
-        # Rovnaký mapping ako pre skills
         country_location_mapping = {
             'SK': ['slovakia', 'slovensko', 'slovak'],
             'CZ': ['czech', 'česko', 'česká', 'ceska'],
@@ -465,7 +473,14 @@ def dashboard_search_view(request):
                     Q(location__icontains=term) |
                     Q(district__icontains=term)
                 )
-            users_qs = users_qs.filter(user_country_query)
+            
+            # Skontroluj, či country filter vracia nejaké výsledky
+            # Ak nie, neaplikuj ho (nefiltruj podľa krajiny)
+            test_qs = users_qs.filter(user_country_query)
+            if test_qs.exists():
+                # Country filter vracia výsledky, aplikuj ho
+                users_qs = users_qs.filter(user_country_query)
+            # Ak country filter nevracia výsledky, preskoč ho (nefiltruj)
 
     # Filter: len v mojej lokalite (podľa profilu)
     if only_my_location:

@@ -6,38 +6,50 @@ interface Props {
   t: (k: string, def?: string) => string;
   username: string;
   email: string;
+  userType?: 'individual' | 'company';
   errors: Record<string, string>;
   emailStatus: 'checking' | 'available' | 'taken' | 'error' | null;
   emailError: string | null;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onUsernameChange: (value: string) => void;
   onKeyDown: (e: React.KeyboardEvent, field: string) => void;
   onEmailBlur: (email: string) => void;
 }
 
-export default function CredentialsSection({ t, username, email, errors, emailStatus, emailError, onChange, onKeyDown, onEmailBlur }: Props) {
+export default function CredentialsSection({ t, username, email, userType, errors, emailStatus, emailError, onChange, onUsernameChange, onKeyDown, onEmailBlur }: Props) {
+  // Pre firmu zobraz "Názov firmy", pre jednotlivca "Používateľské meno"
+  const usernameLabel = userType === 'company' ? t('auth.companyName') : t('auth.username');
+  const usernamePlaceholder = userType === 'company' ? t('auth.companyNamePlaceholder') : t('auth.usernamePlaceholder');
+  
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div>
         <label htmlFor="username" className="block text-base font-normal text-gray-600 dark:text-gray-300 mb-1.5 max-lg:text-base max-lg:mb-1">
-          {t('auth.username')} *
+          {usernameLabel} *
         </label>
         <input
           id="username"
           type="text"
           name="username"
           value={username}
-          onChange={onChange}
+          onChange={(e) => {
+            const value = e.target.value;
+            // Obmedziť na 35 znakov a povoliť medzery
+            if (value.length <= 35) {
+              onUsernameChange(value);
+            }
+          }}
           onKeyDown={(e) => onKeyDown(e, 'username')}
+          maxLength={35}
           className={`w-full px-3 py-2 text-sm border rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent outline-none transition-all bg-white dark:bg-black text-gray-900 dark:text-white ${
             errors.username ? 'border-red-500' : 'border-gray-300 dark:border-gray-700'
           }`}
-          placeholder={t('auth.usernamePlaceholder')}
+          placeholder={usernamePlaceholder}
           aria-label={t('auth.usernameHelp')}
           aria-required="true"
           aria-invalid={errors.username ? 'true' : 'false'}
           aria-describedby={errors.username ? 'username-error' : 'username-help'}
           tabIndex={2}
-          autoComplete="username"
         />
         <div id="username-help" className="sr-only">{t('auth.usernameHelp')}</div>
         {errors.username && (

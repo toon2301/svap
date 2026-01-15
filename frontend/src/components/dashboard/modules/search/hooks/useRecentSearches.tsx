@@ -32,22 +32,31 @@ export function useRecentSearches({ user, searchState }: UseRecentSearchesParams
     setError 
   } = searchState;
 
-  // Načítať posledné vyhľadávania (výsledky) z localStorage pri mounte
+  // Načítať posledné vyhľadávania (výsledky) z localStorage pri mounte alebo zmene používateľa
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined' || !user?.id) {
+      setRecentSearches([]);
+      return;
+    }
     
     try {
-      const stored = localStorage.getItem('searchRecentResults');
+      // Použiť kľúč per používateľ
+      const storageKey = `searchRecentResults_${user.id}`;
+      const stored = localStorage.getItem(storageKey);
       if (stored) {
         const searches = JSON.parse(stored) as SearchResults[];
         // Obmedziť na 20 posledných (história) – zobrazovať budeme max 5
         const limited = searches.slice(0, 20);
         setRecentSearches(limited);
+      } else {
+        // Ak nie sú žiadne vyhľadávania pre tohto používateľa, vymazať state
+        setRecentSearches([]);
       }
     } catch (error) {
       // Ignorovať chyby pri parsovaní
+      setRecentSearches([]);
     }
-  }, []);
+  }, [user?.id]);
 
   // Aktualizovať mená v histórii vyhľadávania, ak sa zmení profil aktuálneho používateľa
   // Alebo ak máme novšie dáta v userProfileCache (pre cudzích používateľov)
@@ -141,7 +150,9 @@ export function useRecentSearches({ user, searchState }: UseRecentSearchesParams
       });
 
       if (hasChanges) {
-        localStorage.setItem('searchRecentResults', JSON.stringify(newSearches));
+        // Použiť kľúč per používateľ
+        const storageKey = user?.id ? `searchRecentResults_${user.id}` : 'searchRecentResults';
+        localStorage.setItem(storageKey, JSON.stringify(newSearches));
         return newSearches;
       }
       return prev;
@@ -231,7 +242,9 @@ export function useRecentSearches({ user, searchState }: UseRecentSearchesParams
                    });
                    return { ...search, users: searchUsers };
                  });
-                 localStorage.setItem('searchRecentResults', JSON.stringify(newSearches));
+                 // Použiť kľúč per používateľ
+                 const storageKey = user?.id ? `searchRecentResults_${user.id}` : 'searchRecentResults';
+                 localStorage.setItem(storageKey, JSON.stringify(newSearches));
                  return newSearches;
                });
              }

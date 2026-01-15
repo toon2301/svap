@@ -21,6 +21,7 @@ import GenderModal from './profile-edit/modals/GenderModal';
 interface ProfileEditModalsProps {
   user: User;
   onUserUpdate?: (user: User) => void;
+  accountType?: 'personal' | 'business';
   
   // Modal states
   isNameModalOpen: boolean;
@@ -146,6 +147,7 @@ interface ProfileEditModalsProps {
 export default function ProfileEditModals({
   user,
   onUserUpdate,
+  accountType = 'personal',
   isNameModalOpen,
   isBioModalOpen,
   isLocationModalOpen,
@@ -271,6 +273,8 @@ export default function ProfileEditModals({
         setOriginalLastName={setOriginalLastName}
         onClose={() => setIsNameModalOpen(false)}
         onUserUpdate={onUserUpdate}
+        accountType={accountType}
+        user={user}
       />
 
       {/* Modal pre úpravu bio */}

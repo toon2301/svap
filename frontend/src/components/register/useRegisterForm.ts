@@ -11,6 +11,8 @@ interface FormData {
   email: string;
   password: string;
   password_confirm: string;
+  first_name: string;
+  last_name: string;
   user_type: 'individual' | 'company';
   company_name: string;
   website: string;
@@ -36,6 +38,8 @@ export function useRegisterForm({ t }: UseRegisterFormParams) {
     email: '',
     password: '',
     password_confirm: '',
+    first_name: '',
+    last_name: '',
     user_type: 'individual',
     company_name: '',
     website: '',
@@ -152,6 +156,19 @@ export function useRegisterForm({ t }: UseRegisterFormParams) {
 
   // Keyboard navigation handler
   const handleKeyDown = (e: React.KeyboardEvent, fieldName: string) => {
+    // Pre username pole povoliť všetky znaky vrátane medzier
+    if (fieldName === 'username') {
+      // Nechaj medzery prejsť bez zásahu
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const nextElement = document.getElementById('email');
+        if (nextElement) {
+          (nextElement as HTMLElement).focus();
+        }
+      }
+      return; // Ukončiť handler pre username, nechaj medzery prejsť
+    }
+    
     if (e.key === 'Enter') {
       e.preventDefault();
       const fieldOrder = [
@@ -239,10 +256,13 @@ export function useRegisterForm({ t }: UseRegisterFormParams) {
       newErrors.password_confirm = t('auth.passwordsDoNotMatch');
     }
 
-    if (!formData.birth_day) newErrors.birth_day = t('auth.birthDateRequired');
-    if (!formData.birth_month) newErrors.birth_month = t('auth.birthDateRequired');
-    if (!formData.birth_year) newErrors.birth_year = t('auth.birthDateRequired');
-    if (!formData.gender) newErrors.gender = t('auth.genderRequired');
+    // Dátum narodenia a pohlavie - len pre jednotlivcov
+    if (formData.user_type === 'individual') {
+      if (!formData.birth_day) newErrors.birth_day = t('auth.birthDateRequired');
+      if (!formData.birth_month) newErrors.birth_month = t('auth.birthDateRequired');
+      if (!formData.birth_year) newErrors.birth_year = t('auth.birthDateRequired');
+      if (!formData.gender) newErrors.gender = t('auth.genderRequired');
+    }
 
     // Validácia emailu
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -255,8 +275,8 @@ export function useRegisterForm({ t }: UseRegisterFormParams) {
       newErrors.password = t('auth.passwordMinLength');
     }
 
-    // Validácia dátumu narodenia
-    if (formData.birth_day && formData.birth_month && formData.birth_year) {
+    // Validácia dátumu narodenia - len pre jednotlivcov
+    if (formData.user_type === 'individual' && formData.birth_day && formData.birth_month && formData.birth_year) {
       const day = parseInt(formData.birth_day);
       const month = parseInt(formData.birth_month);
       const year = parseInt(formData.birth_year);
@@ -285,10 +305,10 @@ export function useRegisterForm({ t }: UseRegisterFormParams) {
       }
     }
 
-    // Validácia pre firmy
+    // Validácia pre firmy - company_name sa ukladá z username poľa
     if (formData.user_type === 'company') {
-      if (!formData.company_name.trim()) {
-        newErrors.company_name = t('auth.companyNameRequired');
+      if (!formData.username.trim()) {
+        newErrors.username = t('auth.companyNameRequired');
       }
     }
 
@@ -307,15 +327,28 @@ export function useRegisterForm({ t }: UseRegisterFormParams) {
     try {
       // Získaj reCAPTCHA token
       let captchaToken = '';
-      if (executeRecaptcha) {
+      const reCaptchaSiteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
+      const isTestKey = !reCaptchaSiteKey || reCaptchaSiteKey === 'test-site-key' || reCaptchaSiteKey.startsWith('test-');
+      
+      // V development režime s test kľúčom alebo bez kľúča pokračujeme bez reCAPTCHA
+      if (isTestKey && process.env.NODE_ENV === 'development') {
+        console.warn('⚠️ Registrácia bez reCAPTCHA (development režim s test kľúčom)');
+        // Pokračujeme bez captcha tokenu
+      } else if (executeRecaptcha) {
         try {
           captchaToken = await executeRecaptcha('register');
         } catch (captchaError) {
           // eslint-disable-next-line no-console
           console.error('reCAPTCHA error:', captchaError);
-          setErrors({ general: t('auth.captchaError') });
-          setIsLoading(false);
-          return;
+          // Ak je to chyba s test-site-key, v development režime pokračujeme bez CAPTCHA
+          if (isTestKey && process.env.NODE_ENV === 'development') {
+            console.warn('⚠️ reCAPTCHA error s test kľúčom - pokračujeme bez CAPTCHA v development režime');
+            // Pokračujeme bez captcha tokenu
+          } else {
+            setErrors({ general: t('auth.captchaError') });
+            setIsLoading(false);
+            return;
+          }
         }
       } else {
         // eslint-disable-next-line no-console
@@ -328,9 +361,21 @@ export function useRegisterForm({ t }: UseRegisterFormParams) {
         }
       }
 
+      // Pre firmu: uložiť username (názov firmy) do first_name a company_name
+      // Pre jednotlivca: uložiť username do first_name
+      const updatedFormData = {
+        ...formData,
+        first_name: formData.username.trim(), // Username sa uloží ako first_name
+        last_name: '', // Priezvisko necháme prázdne
+        // Pre firmu: nastaviť company_name z username (názov firmy)
+        ...(formData.user_type === 'company' && {
+          company_name: formData.username.trim(),
+        }),
+      };
+
       // Vyčistenie prázdnych polí pred odoslaním, ale zachovanie povinných polí
       const cleanedData = Object.fromEntries(
-        Object.entries(formData).filter(([key, value]) => {
+        Object.entries(updatedFormData).filter(([key, value]) => {
           // Zachovaj povinné polia aj keď sú prázdne
           const requiredFields = [
             'username',
@@ -338,10 +383,8 @@ export function useRegisterForm({ t }: UseRegisterFormParams) {
             'password',
             'password_confirm',
             'user_type',
-            'birth_day',
-            'birth_month',
-            'birth_year',
-            'gender',
+            // Dátum narodenia a pohlavie len pre jednotlivcov
+            ...(formData.user_type === 'individual' ? ['birth_day', 'birth_month', 'birth_year', 'gender'] : []),
           ];
           if (requiredFields.includes(key)) {
             return true;
@@ -352,15 +395,21 @@ export function useRegisterForm({ t }: UseRegisterFormParams) {
       );
 
       // Pridaj CAPTCHA token do dát
-      const dataWithCaptcha = {
+      // V development režime s test kľúčom neposielame captcha_token vôbec (backend to nevyžaduje v DEBUG režime)
+      const dataWithCaptcha: any = {
         ...cleanedData,
-        captcha_token: captchaToken,
       };
+      
+      // Pridaj captcha_token len ak máme platný token
+      // V development režime s test kľúčom ho vôbec neposielame, lebo backend v DEBUG režime nevyžaduje CAPTCHA
+      if (captchaToken && captchaToken.trim() !== '') {
+        dataWithCaptcha.captcha_token = captchaToken;
+      }
+      // Ak je test kľúč alebo prázdny token v development režime, captcha_token vôbec neposielame
+      // Backend v DEBUG režime má captcha_token ako nepovinný
 
       const response = await api.post(endpoints.auth.register, dataWithCaptcha);
 
-      // eslint-disable-next-line no-console
-      console.log('Registrácia úspešná:', response.data);
       // Zobrazenie úspešnej hlášky
       setRegistrationSuccess(true);
 
@@ -411,6 +460,13 @@ export function useRegisterForm({ t }: UseRegisterFormParams) {
     return t('auth.registerButton');
   };
 
+  // Handler pre zmenu username s limitom 35 znakov
+  const handleUsernameChange = (value: string) => {
+    if (value.length <= 35) {
+      setFormData(prev => ({ ...prev, username: value }));
+    }
+  };
+
   return {
     formData,
     setFormData,
@@ -424,6 +480,7 @@ export function useRegisterForm({ t }: UseRegisterFormParams) {
     emailStatus,
     emailError,
     handleInputChange,
+    handleUsernameChange,
     handleTouchStart,
     handleTouchEnd,
     handleSelectFocus,

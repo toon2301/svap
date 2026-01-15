@@ -50,6 +50,7 @@ export default function ProfileOffersMobileSection({
         const cached = getOffersFromCache(cacheKey);
         if (cached) {
           setOffers(cached);
+          setIsLoading(false);
           return;
         }
 
@@ -122,6 +123,15 @@ export default function ProfileOffersMobileSection({
         setIsLoading(false);
       } catch (error: any) {
         if (cancelled) return;
+        
+        // Ak je to "Request in cooldown period" chyba, ignoruj ju a zobraz prázdny zoznam
+        // (toto sa môže stať pri F5 refresh, keď lastRequestTime Map zostane v pamäti)
+        if (error?.message === 'Request in cooldown period') {
+          setOffers([]);
+          setIsLoading(false);
+          return;
+        }
+        
         const msg =
           error?.response?.data?.error ||
           error?.response?.data?.detail ||
@@ -199,7 +209,11 @@ export default function ProfileOffersMobileSection({
   }
 
   if (offers.length === 0) {
-    return null;
+    return (
+      <div className="mt-3 text-sm text-gray-600 dark:text-gray-400">
+        {t('profile.noOffers', 'Zatiaľ nemáš žiadne ponuky.')}
+      </div>
+    );
   }
 
   const renderHoursModal = () => {

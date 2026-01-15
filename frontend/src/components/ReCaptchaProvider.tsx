@@ -14,9 +14,13 @@ interface ReCaptchaProviderProps {
 export default function ReCaptchaProvider({ children }: ReCaptchaProviderProps) {
   const reCaptchaSiteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
 
-  // Ak site key nie je nastavený, vypisujeme warning ale renderujeme children
-  if (!reCaptchaSiteKey) {
-    console.warn('NEXT_PUBLIC_RECAPTCHA_SITE_KEY nie je nastavený. reCAPTCHA nebude fungovať.');
+  // Ak site key nie je nastavený alebo je to test kľúč, vypisujeme warning ale renderujeme children
+  if (!reCaptchaSiteKey || reCaptchaSiteKey === 'test-site-key' || reCaptchaSiteKey.startsWith('test-')) {
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('⚠️ reCAPTCHA nie je nakonfigurovaná (test-site-key alebo chýba NEXT_PUBLIC_RECAPTCHA_SITE_KEY). V development režime bude registrácia fungovať bez reCAPTCHA.');
+    } else {
+      console.warn('NEXT_PUBLIC_RECAPTCHA_SITE_KEY nie je nastavený alebo je test kľúč. reCAPTCHA nebude fungovať.');
+    }
     return <>{children}</>;
   }
 
