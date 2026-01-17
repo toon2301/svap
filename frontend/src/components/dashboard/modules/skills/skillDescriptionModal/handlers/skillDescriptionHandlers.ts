@@ -26,6 +26,7 @@ interface HandleSaveParams {
   initialPriceFrom?: number | null;
   urgency?: 'low' | 'medium' | 'high' | '';
   durationType?: DurationOption | '' | null;
+  isHidden?: boolean;
   onSave: (
     description: string,
     experience?: ExperienceValue,
@@ -38,7 +39,8 @@ interface HandleSaveParams {
     openingHours?: OpeningHours,
     district?: string,
     urgency?: 'low' | 'medium' | 'high' | '',
-    durationType?: DurationOption | '' | null
+    durationType?: DurationOption | '' | null,
+    isHidden?: boolean
   ) => void;
   setError: (error: string) => void;
   setExperienceError: (error: string) => void;
@@ -69,6 +71,7 @@ export const handleSave = ({
   initialPriceFrom,
   urgency,
   durationType,
+  isHidden,
   onSave,
   setError,
   setExperienceError,
@@ -158,7 +161,8 @@ export const handleSave = ({
     openingHoursValue,
     districtValue,
     urgency || 'low',
-    durationType || null
+    durationType || null,
+    isHidden
   );
 };
 

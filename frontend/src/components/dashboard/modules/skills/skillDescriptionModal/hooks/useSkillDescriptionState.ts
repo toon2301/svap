@@ -19,6 +19,7 @@ interface UseSkillDescriptionStateProps {
   initialOpeningHours?: OpeningHours;
   initialUrgency?: 'low' | 'medium' | 'high' | '';
   initialDurationType?: DurationOption | '' | null;
+  initialIsHidden?: boolean;
 }
 
 export const useSkillDescriptionState = ({
@@ -36,6 +37,7 @@ export const useSkillDescriptionState = ({
   initialOpeningHours,
   initialUrgency = 'low',
   initialDurationType = null,
+  initialIsHidden = false,
 }: UseSkillDescriptionStateProps) => {
   const [description, setDescription] = useState('');
   const [error, setError] = useState('');
@@ -59,7 +61,7 @@ export const useSkillDescriptionState = ({
   const [isDetailedModalOpen, setIsDetailedModalOpen] = useState(false);
   const [openingHours, setOpeningHours] = useState<OpeningHours>({});
   const [isOpeningHoursModalOpen, setIsOpeningHoursModalOpen] = useState(false);
-  const [isHideCardEnabled, setIsHideCardEnabled] = useState(false);
+  const [isHideCardEnabled, setIsHideCardEnabled] = useState(initialIsHidden || false);
   const [urgency, setUrgency] = useState<'low' | 'medium' | 'high' | ''>(initialUrgency || 'low');
   const [durationType, setDurationType] = useState<DurationOption | ''>(initialDurationType || '');
 
@@ -91,6 +93,7 @@ export const useSkillDescriptionState = ({
       setDistrict(initialDistrict || '');
       setDetailedDescription(initialDetailedDescription || '');
       setOpeningHours(initialOpeningHours || {});
+      setIsHideCardEnabled(initialIsHidden || false);
       setUrgency(initialUrgency || 'low');
       setDurationType(initialDurationType || '');
     } else {

@@ -117,7 +117,7 @@ export function useSearchApi({ searchState, user }: UseSearchApiParams): SearchA
     if (!q) {
       setResults({ skills: [], users: [] });
       setError(null);
-      setHasSearched(true);
+      setHasSearched(false); // Resetovať hasSearched, aby sa zobrazili recent searches a suggestions
       setIsFromRecentSearch(false);
       return;
     }

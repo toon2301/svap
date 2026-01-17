@@ -10,7 +10,8 @@ def build_caches(redis_url: str | None) -> Dict[str, Any]:
     if redis_url:
         return {
             'default': {
-                'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+                # Use django-redis backend (supports CLIENT_CLASS / connection pool options)
+                'BACKEND': 'django_redis.cache.RedisCache',
                 'LOCATION': redis_url,
                 'KEY_PREFIX': os.getenv('CACHE_KEY_PREFIX', 'swaply'),
                 'OPTIONS': {

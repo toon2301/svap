@@ -30,6 +30,7 @@ export type DashboardSkill = {
   is_seeking?: boolean;
   urgency?: 'low' | 'medium' | 'high' | '';
   duration_type?: 'one_time' | 'long_term' | 'project' | '' | null;
+  is_hidden?: boolean;
 };
 
 export interface UseSkillsModalsResult {
@@ -112,6 +113,7 @@ export function useSkillsModals(): UseSkillsModalsResult {
           ? (s.urgency.trim() as 'low' | 'medium' | 'high' | '')
           : '',
       duration_type: s.duration_type || null,
+      is_hidden: s.is_hidden === true,
     };
   }, []);
 

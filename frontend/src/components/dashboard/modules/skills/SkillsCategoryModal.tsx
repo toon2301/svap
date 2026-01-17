@@ -13,6 +13,13 @@ function slugifyLabel(label: string): string {
     .replace(/(^-|-$)/g, '');
 }
 
+function removeDiacritics(str: string): string {
+  return str
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+}
+
 interface SkillsCategoryModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -45,15 +52,15 @@ export default function SkillsCategoryModal({ isOpen, onClose, categories, selec
     return subcats;
   }, [categories]);
 
-  // Filter subcategories based on search query
+  // Filter subcategories based on search query (case-insensitive and diacritics-insensitive)
   const filteredSubcategories = useMemo(() => {
     const trimmedQuery = searchQuery.trim();
     if (!trimmedQuery) {
       return [];
     }
-    const query = trimmedQuery.toLowerCase();
+    const normalizedQuery = removeDiacritics(trimmedQuery);
     return allSubcategories.filter(item => 
-      item.name.toLowerCase().includes(query)
+      removeDiacritics(item.name).includes(normalizedQuery)
     );
   }, [searchQuery, allSubcategories]);
 

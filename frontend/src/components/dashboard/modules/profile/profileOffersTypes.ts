@@ -34,6 +34,7 @@ export interface Offer {
   is_seeking?: boolean;
   urgency?: 'low' | 'medium' | 'high' | '';
   duration_type?: 'one_time' | 'long_term' | 'project' | '' | null;
+  is_hidden?: boolean;
 }
 
 export const HOURS_DAYS = [

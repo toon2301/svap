@@ -57,7 +57,8 @@ export interface SkillDescriptionModalProps {
     openingHours?: OpeningHours,
     district?: string,
     urgency?: 'low' | 'medium' | 'high' | '',
-    durationType?: DurationOption | '' | null
+    durationType?: DurationOption | '' | null,
+    isHidden?: boolean
   ) => void;
   initialDescription?: string;
   initialExperience?: ExperienceValue;
@@ -77,6 +78,7 @@ export interface SkillDescriptionModalProps {
   onUrgencyChange?: (urgency: 'low' | 'medium' | 'high' | '') => void;
   initialDurationType?: DurationOption | '' | null;
   onDurationTypeChange?: (durationType: DurationOption | '') => void;
+  initialIsHidden?: boolean;
 }
 
 export interface SkillsDescriptionScreenProps {

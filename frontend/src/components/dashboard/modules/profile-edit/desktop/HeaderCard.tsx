@@ -39,7 +39,6 @@ export default function HeaderCard({ user, firstName, lastName, isUploading, onP
               {user.location || user.district}
             </div>
           )}
-          {accountType === 'business' && user.ico && <div className="text-gray-600 dark:text-gray-300 text-sm">IČO: {user.ico}</div>}
           {user.phone && (
             <div className="text-gray-600 dark:text-gray-300 text-sm flex items-center gap-1">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-4">
@@ -48,6 +47,7 @@ export default function HeaderCard({ user, firstName, lastName, isUploading, onP
               {user.phone}
             </div>
           )}
+          {accountType === 'business' && user.ico && <div className="text-gray-600 dark:text-gray-300 text-sm">IČO: {user.ico}</div>}
           {accountType === 'personal' && user.job_title && (
             <div className="text-gray-600 dark:text-gray-300 text-sm flex items-center gap-1">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-4">

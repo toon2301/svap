@@ -1,6 +1,6 @@
 'use client';
  
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { api, endpoints } from '../../../../lib/api';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -38,117 +38,158 @@ export default function ProfileOffersMobileSection({
   const [hoursModal, setHoursModal] = useState<OpeningHours | null>(null);
   const [tappedCards, setTappedCards] = useState<Set<number | string>>(() => new Set());
   const highlightedCardRef = useRef<HTMLDivElement | null>(null);
+  const [isUnavailableModalOpen, setIsUnavailableModalOpen] = useState(false);
 
-  useEffect(() => {
-    let cancelled = false;
+  const checkOfferStillAvailable = useCallback(
+    async (offerId: number) => {
+      if (!isOtherUserProfile || !ownerUserId) return;
 
-    const load = async () => {
       try {
+        const endpoint = endpoints.dashboard.userSkills(ownerUserId);
+        const { data } = await api.get(endpoint);
+        const list = Array.isArray(data) ? data : [];
+        const exists = list.some((s: any) => s && typeof s.id === 'number' && s.id === offerId);
+        if (!exists) {
+          setIsUnavailableModalOpen(true);
+        }
+      } catch {
+        // Ak sa nepodarí overiť dostupnosť, necháme to bez hlášky (bezpečné minimum).
+      }
+    },
+    [isOtherUserProfile, ownerUserId],
+  );
+
+  // Load offers function (použitá pre prvotné načítanie aj polling)
+  const loadOffers = useCallback(async (skipCache = false, showLoading = true) => {
+    try {
+      if (showLoading) {
         setIsLoading(true);
-        setLoadError(null);
-        const cacheKey = makeOffersCacheKey(ownerUserId);
+      }
+      setLoadError(null);
+      const cacheKey = makeOffersCacheKey(ownerUserId);
+      
+      // Ak nie je skipCache, skús najprv cache
+      if (!skipCache) {
         const cached = getOffersFromCache(cacheKey);
         if (cached) {
           setOffers(cached);
-          setIsLoading(false);
+          if (showLoading) {
+            setIsLoading(false);
+          }
           return;
         }
+      }
 
-        // Request deduplication - použij existujúci in-flight request alebo vytvor nový
-        const endpoint = ownerUserId
-          ? endpoints.dashboard.userSkills(ownerUserId)
-          : endpoints.skills.list;
+      // Request deduplication - použij existujúci in-flight request alebo vytvor nový
+      const endpoint = ownerUserId
+        ? endpoints.dashboard.userSkills(ownerUserId)
+        : endpoints.skills.list;
 
-        const mappedOffers = await getOrCreateOffersRequest(cacheKey, async () => {
-          const { data } = await api.get(endpoint);
-          const list = Array.isArray(data) ? data : [];
-          return list.map((s: any) => {
-            const rawPrice = s.price_from;
-            const parsedPrice =
-              typeof rawPrice === 'number'
-                ? rawPrice
-                : typeof rawPrice === 'string' && rawPrice.trim() !== ''
-                  ? parseFloat(rawPrice)
-                  : null;
+      const mappedOffers = await getOrCreateOffersRequest(cacheKey, async () => {
+        const { data } = await api.get(endpoint);
+        const list = Array.isArray(data) ? data : [];
+        return list.map((s: any) => {
+          const rawPrice = s.price_from;
+          const parsedPrice =
+            typeof rawPrice === 'number'
+              ? rawPrice
+              : typeof rawPrice === 'string' && rawPrice.trim() !== ''
+                ? parseFloat(rawPrice)
+                : null;
 
-            const experience = s.experience
-              ? {
-                  value:
-                    typeof s.experience.value === 'number'
-                      ? s.experience.value
-                      : parseFloat(String(s.experience.value || 0)),
-                  unit: (s.experience.unit === 'years' || s.experience.unit === 'months'
-                    ? s.experience.unit
-                    : 'years') as ExperienceUnit,
-                }
-              : undefined;
+          const experience = s.experience
+            ? {
+                value:
+                  typeof s.experience.value === 'number'
+                    ? s.experience.value
+                    : parseFloat(String(s.experience.value || 0)),
+                unit: (s.experience.unit === 'years' || s.experience.unit === 'months'
+                  ? s.experience.unit
+                  : 'years') as ExperienceUnit,
+              }
+            : undefined;
 
-            return {
-              id: s.id,
-              category: s.category,
-              subcategory: s.subcategory,
-              description: s.description || '',
-              detailed_description: (s.detailed_description || '') as string,
-              images: Array.isArray(s.images)
-                ? s.images.map((im: any) => ({
-                    id: im.id,
-                    image_url: im.image_url || im.image || null,
-                    order: im.order,
-                  }))
-                : [],
-              price_from: parsedPrice,
-              price_currency:
-                typeof s.price_currency === 'string' && s.price_currency.trim() !== ''
-                  ? s.price_currency
-                  : '€',
-              district: typeof s.district === 'string' ? s.district : '',
-              location: typeof s.location === 'string' ? s.location : '',
-              experience,
-              tags: Array.isArray(s.tags) ? s.tags : [],
-              opening_hours: (s.opening_hours || undefined) as OpeningHours | undefined,
-              is_seeking: s.is_seeking === true,
-              urgency:
-                typeof s.urgency === 'string' && s.urgency.trim() !== ''
-                  ? (s.urgency.trim() as 'low' | 'medium' | 'high' | '')
-                  : '',
-              duration_type: s.duration_type || null,
-            };
-          });
+          return {
+            id: s.id,
+            category: s.category,
+            subcategory: s.subcategory,
+            description: s.description || '',
+            detailed_description: (s.detailed_description || '') as string,
+            images: Array.isArray(s.images)
+              ? s.images.map((im: any) => ({
+                  id: im.id,
+                  image_url: im.image_url || im.image || null,
+                  order: im.order,
+                }))
+              : [],
+            price_from: parsedPrice,
+            price_currency:
+              typeof s.price_currency === 'string' && s.price_currency.trim() !== ''
+                ? s.price_currency
+                : '€',
+            district: typeof s.district === 'string' ? s.district : '',
+            location: typeof s.location === 'string' ? s.location : '',
+            experience,
+            tags: Array.isArray(s.tags) ? s.tags : [],
+            opening_hours: (s.opening_hours || undefined) as OpeningHours | undefined,
+            is_seeking: s.is_seeking === true,
+            urgency:
+              typeof s.urgency === 'string' && s.urgency.trim() !== ''
+                ? (s.urgency.trim() as 'low' | 'medium' | 'high' | '')
+                : '',
+            duration_type: s.duration_type || null,
+            is_hidden: s.is_hidden === true,
+          };
         });
+      });
 
-        if (cancelled) return;
-
-        setOffers(mappedOffers);
-        setOffersToCache(cacheKey, mappedOffers);
-        setIsLoading(false);
-      } catch (error: any) {
-        if (cancelled) return;
-        
-        // Ak je to "Request in cooldown period" chyba, ignoruj ju a zobraz prázdny zoznam
-        // (toto sa môže stať pri F5 refresh, keď lastRequestTime Map zostane v pamäti)
-        if (error?.message === 'Request in cooldown period') {
-          setOffers([]);
-          setIsLoading(false);
-          return;
-        }
-        
-        const msg =
-          error?.response?.data?.error ||
-          error?.response?.data?.detail ||
-          error?.message ||
-          t('profile.offersLoadError', 'Nepodarilo sa načítať ponuky. Skús to znova.');
-        setLoadError(msg);
+      setOffers(mappedOffers);
+      setOffersToCache(cacheKey, mappedOffers);
+      if (showLoading) {
         setIsLoading(false);
       }
-    };
+    } catch (error: any) {
+      // Ak je to "Request in cooldown period" chyba, ignoruj ju a zobraz prázdny zoznam
+      // (toto sa môže stať pri F5 refresh, keď lastRequestTime Map zostane v pamäti)
+      if (error?.message === 'Request in cooldown period') {
+        setOffers([]);
+        if (showLoading) {
+          setIsLoading(false);
+        }
+        return;
+      }
+      
+      const msg =
+        error?.response?.data?.error ||
+        error?.response?.data?.detail ||
+        error?.message ||
+        t('profile.offersLoadError', 'Nepodarilo sa načítať ponuky. Skús to znova.');
+      setLoadError(msg);
+      if (showLoading) {
+        setIsLoading(false);
+      }
+    }
+  }, [ownerUserId, t]);
 
-    void load();
+  // Load offers on mount
+  useEffect(() => {
+    void loadOffers();
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ownerUserId]); // loadOffers je memoized
+
+  // Polling každých 20 sekúnd
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      // Pri polling-u preskočíme cache a neukazujeme loading, aby sa nebliklo UI
+      void loadOffers(true, false);
+    }, 20000); // 20 sekúnd
 
     return () => {
-      cancelled = true;
+      clearInterval(intervalId);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ownerUserId]); // t je prekladová funkcia, ktorá sa nemení v tejto logike
+  }, [ownerUserId]); // loadOffers je memoized
 
   // Po načítaní ponúk a nastavení highlightedSkillId poscrolluj na danú kartu
   // Scroll len ak je highlightedSkillId nastavený (pri prvom zvýraznení)
@@ -330,6 +371,8 @@ export default function ProfileOffersMobileSection({
                 isHighlighted={isHighlighted}
                 onCardClick={() => handleCardClick(offer)}
                 isOtherUserProfile={isOtherUserProfile}
+                onRequestClick={checkOfferStillAvailable}
+                onMessageClick={checkOfferStillAvailable}
               />
             </div>
           );
@@ -346,6 +389,42 @@ export default function ProfileOffersMobileSection({
         hours={hoursModal}
         onClose={() => setHoursModal(null)}
       />
+
+      {isUnavailableModalOpen &&
+        typeof document !== 'undefined' &&
+        createPortal(
+          <>
+            <div
+              className="fixed inset-0 z-[80] bg-black/45"
+              onClick={() => setIsUnavailableModalOpen(false)}
+            />
+            <div
+              className="fixed inset-0 z-[81] flex items-center justify-center px-4"
+              onClick={() => setIsUnavailableModalOpen(false)}
+            >
+              <div
+                className="w-full max-w-sm rounded-2xl bg-white dark:bg-black border border-gray-200 dark:border-gray-700 shadow-2xl overflow-hidden"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="p-6 text-center">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                    Karta nie je dostupná
+                  </h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+                    Táto karta už nie je dostupná.
+                  </p>
+                  <button
+                    onClick={() => setIsUnavailableModalOpen(false)}
+                    className="w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                  >
+                    Rozumiem
+                  </button>
+                </div>
+              </div>
+            </div>
+          </>,
+          document.getElementById('app-root') ?? document.body,
+        )}
     </>
   );
 }

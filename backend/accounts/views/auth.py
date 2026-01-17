@@ -53,7 +53,12 @@ def is_account_locked(email: str) -> bool:
     except Exception:
         return False
     _, lock_key = _lock_keys_for_email(email)
-    return bool(cache.get(lock_key))
+    try:
+        return bool(cache.get(lock_key))
+    except Exception as e:
+        # Fail-open: ak cache nie je dostupná, radšej nelockuj a nepadni na 500.
+        logger.warning(f"Lockout cache.get failed for {lock_key}: {e}")
+        return False
 
 
 def register_login_failure(email: str) -> bool:
@@ -66,15 +71,27 @@ def register_login_failure(email: str) -> bool:
     except Exception:
         return False
     fail_key, lock_key = _lock_keys_for_email(email)
-    data = cache.get(fail_key, {"attempts": 0})
+    try:
+        data = cache.get(fail_key, {"attempts": 0})
+    except Exception as e:
+        logger.warning(f"Lockout cache.get failed for {fail_key}: {e}")
+        return False
     attempts = int(data.get("attempts", 0)) + 1
-    cache.set(
-        fail_key,
-        {"attempts": attempts},
-        timeout=LOGIN_FAILURE_WINDOW_MINUTES * 60,
-    )
+    try:
+        cache.set(
+            fail_key,
+            {"attempts": attempts},
+            timeout=LOGIN_FAILURE_WINDOW_MINUTES * 60,
+        )
+    except Exception as e:
+        logger.warning(f"Lockout cache.set failed for {fail_key}: {e}")
+        return False
     if attempts >= LOGIN_FAILURE_MAX_ATTEMPTS:
-        cache.set(lock_key, True, timeout=ACCOUNT_LOCKOUT_MINUTES * 60)
+        try:
+            cache.set(lock_key, True, timeout=ACCOUNT_LOCKOUT_MINUTES * 60)
+        except Exception as e:
+            logger.warning(f"Lockout cache.set failed for {lock_key}: {e}")
+            return False
         return True
     return False
 
@@ -83,8 +100,14 @@ def reset_login_failures(email: str) -> None:
     if not email:
         return
     fail_key, lock_key = _lock_keys_for_email(email)
-    cache.delete(fail_key)
-    cache.delete(lock_key)
+    try:
+        cache.delete(fail_key)
+    except Exception as e:
+        logger.warning(f"Lockout cache.delete failed for {fail_key}: {e}")
+    try:
+        cache.delete(lock_key)
+    except Exception as e:
+        logger.warning(f"Lockout cache.delete failed for {lock_key}: {e}")
 
 
 @api_view(['GET'])

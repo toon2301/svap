@@ -15,7 +15,6 @@ import InstagramModal from './profile-edit/modals/InstagramModal';
 import FacebookModal from './profile-edit/modals/FacebookModal';
 import LinkedinModal from './profile-edit/modals/LinkedinModal';
 import YouTubeModal from './profile-edit/modals/YouTubeModal';
-import WhatsAppModal from './profile-edit/modals/WhatsAppModal';
 import GenderModal from './profile-edit/modals/GenderModal';
 
 interface ProfileEditModalsProps {
@@ -35,7 +34,6 @@ interface ProfileEditModalsProps {
   isFacebookModalOpen: boolean;
   isLinkedinModalOpen: boolean;
   isYouTubeModalOpen: boolean;
-  isWhatsAppModalOpen: boolean;
   isGenderModalOpen: boolean;
   isIcoModalOpen: boolean;
   
@@ -58,7 +56,6 @@ interface ProfileEditModalsProps {
   facebook: string;
   linkedin: string;
   youtube: string;
-  whatsapp: string;
   gender: string;
   
   // Original values for cancel
@@ -80,7 +77,6 @@ interface ProfileEditModalsProps {
   originalFacebook: string;
   originalLinkedin: string;
   originalYoutube: string;
-  originalWhatsapp: string;
   originalGender: string;
   
   // Setters
@@ -102,7 +98,6 @@ interface ProfileEditModalsProps {
   setFacebook: (value: string) => void;
   setLinkedin: (value: string) => void;
   setYoutube: (value: string) => void;
-  setWhatsapp: (value: string) => void;
   setGender: (value: string) => void;
   
   // Original setters
@@ -124,7 +119,6 @@ interface ProfileEditModalsProps {
   setOriginalFacebook: (value: string) => void;
   setOriginalLinkedin: (value: string) => void;
   setOriginalYoutube: (value: string) => void;
-  setOriginalWhatsapp: (value: string) => void;
   setOriginalGender: (value: string) => void;
   
   // Modal setters
@@ -139,7 +133,6 @@ interface ProfileEditModalsProps {
   setIsFacebookModalOpen: (value: boolean) => void;
   setIsLinkedinModalOpen: (value: boolean) => void;
   setIsYouTubeModalOpen: (value: boolean) => void;
-  setIsWhatsAppModalOpen: (value: boolean) => void;
   setIsGenderModalOpen: (value: boolean) => void;
   setIsIcoModalOpen: (value: boolean) => void;
 }
@@ -159,7 +152,6 @@ export default function ProfileEditModals({
   isFacebookModalOpen,
   isLinkedinModalOpen,
   isYouTubeModalOpen,
-  isWhatsAppModalOpen,
   isGenderModalOpen,
   isIcoModalOpen,
   firstName,
@@ -180,7 +172,6 @@ export default function ProfileEditModals({
   facebook,
   linkedin,
   youtube,
-  whatsapp,
   gender,
   originalFirstName,
   originalLastName,
@@ -200,7 +191,6 @@ export default function ProfileEditModals({
   originalFacebook,
   originalLinkedin,
   originalYoutube,
-  originalWhatsapp,
   originalGender,
   setFirstName,
   setLastName,
@@ -220,7 +210,6 @@ export default function ProfileEditModals({
   setFacebook,
   setLinkedin,
   setYoutube,
-  setWhatsapp,
   setGender,
   setOriginalFirstName,
   setOriginalLastName,
@@ -240,7 +229,6 @@ export default function ProfileEditModals({
   setOriginalFacebook,
   setOriginalLinkedin,
   setOriginalYoutube,
-  setOriginalWhatsapp,
   setOriginalGender,
   setIsNameModalOpen,
   setIsBioModalOpen,
@@ -253,7 +241,6 @@ export default function ProfileEditModals({
   setIsFacebookModalOpen,
   setIsLinkedinModalOpen,
   setIsYouTubeModalOpen,
-  setIsWhatsAppModalOpen,
   setIsGenderModalOpen,
   setIsIcoModalOpen,
 }: ProfileEditModalsProps) {
@@ -415,17 +402,6 @@ export default function ProfileEditModals({
         setYoutube={setYoutube}
         setOriginalYoutube={setOriginalYoutube}
         onClose={() => setIsYouTubeModalOpen(false)}
-        onUserUpdate={onUserUpdate}
-      />
-
-      {/* Modal pre úpravu WhatsApp */}
-      <WhatsAppModal
-        isOpen={isWhatsAppModalOpen}
-        whatsapp={whatsapp}
-        originalWhatsapp={originalWhatsapp}
-        setWhatsapp={setWhatsapp}
-        setOriginalWhatsapp={setOriginalWhatsapp}
-        onClose={() => setIsWhatsAppModalOpen(false)}
         onUserUpdate={onUserUpdate}
       />
 

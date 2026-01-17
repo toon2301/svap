@@ -29,7 +29,8 @@ export function useRecentSearches({ user, searchState }: UseRecentSearchesParams
     setResults, 
     setHasSearched, 
     setIsFromRecentSearch, 
-    setError 
+    setError,
+    setIsSearching,
   } = searchState;
 
   // Načítať posledné vyhľadávania (výsledky) z localStorage pri mounte alebo zmene používateľa
@@ -161,8 +162,40 @@ export function useRecentSearches({ user, searchState }: UseRecentSearchesParams
 
   // Zobraziť výsledok z histórie
   const handleRecentResultClick = useCallback((result: SearchResults) => {
-    // Vytvoriť kópiu výsledkov pre aktualizáciu
-    const updatedResult = { ...result };
+    void (async () => {
+      setIsSearching(true);
+      setError(null);
+
+      // Vytvoriť kópiu výsledkov pre aktualizáciu
+      const updatedResult: SearchResults = { ...result };
+
+      // Overiť ponuky cez API (localStorage môže mať zastarané dáta)
+      // Pre cudzie profily endpoint vracia len is_hidden=false, takže to vieme použiť ako "truth source".
+      const skills = Array.isArray(updatedResult.skills) ? updatedResult.skills : [];
+      const candidates = skills.filter(
+        (s) => typeof (s as any)?.id === 'number' && typeof (s as any)?.user_id === 'number',
+      );
+
+      const ownerIds = Array.from(new Set<number>(candidates.map((s) => (s as any).user_id as number)));
+      const allowedSkillIds = new Set<number>();
+
+      await Promise.all(
+        ownerIds.map(async (ownerId) => {
+          try {
+            const resp = await api.get(endpoints.dashboard.userSkills(ownerId));
+            const list = Array.isArray(resp.data) ? resp.data : [];
+            for (const item of list) {
+              if (item && typeof item.id === 'number') {
+                allowedSkillIds.add(item.id);
+              }
+            }
+          } catch {
+            // Ak sa nedá overiť, tak nič nepridáme => karty toho používateľa sa nezobrazia
+          }
+        }),
+      );
+
+      updatedResult.skills = candidates.filter((s) => allowedSkillIds.has((s as any).id as number));
 
     // Aktualizovať používateľov v results podľa aktuálneho usera alebo cache
     if (updatedResult.users && updatedResult.users.length > 0) {
@@ -200,6 +233,7 @@ export function useRecentSearches({ user, searchState }: UseRecentSearchesParams
     setHasSearched(true);
     setIsFromRecentSearch(true);
     setError(null);
+    setIsSearching(false);
 
     // Spustiť asynchrónnu aktualizáciu dát na pozadí pre istotu
     if (updatedResult.users && updatedResult.users.length > 0) {
@@ -254,6 +288,7 @@ export function useRecentSearches({ user, searchState }: UseRecentSearchesParams
         }
       });
     }
+    })();
   }, [user, setResults, setHasSearched, setIsFromRecentSearch, setError, setRecentSearches]);
 
   return {

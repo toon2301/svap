@@ -1,6 +1,6 @@
 'use client';
  
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { api, endpoints } from '../../../../lib/api';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -39,33 +39,51 @@ export default function ProfileOffersSection({
   const [activeOpeningHours, setActiveOpeningHours] = useState<OpeningHours | null>(null);
   const highlightedCardRef = useRef<HTMLDivElement | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [isUnavailableModalOpen, setIsUnavailableModalOpen] = useState(false);
 
-  // Load offers when switching to 'offers' tab (desktop focus)
-  useEffect(() => {
-    if (activeTab !== 'offers') return;
+  const checkOfferStillAvailable = useCallback(
+    async (offerId: number) => {
+      if (!isOtherUserProfile || !ownerUserId) return;
 
-    let cancelled = false;
-
-    const load = async () => {
       try {
-        setLoadError(null);
-        const cacheKey = makeOffersCacheKey(ownerUserId);
+        const endpoint = endpoints.dashboard.userSkills(ownerUserId);
+        const { data } = await api.get(endpoint);
+        const list = Array.isArray(data) ? data : [];
+        const exists = list.some((s: any) => s && typeof s.id === 'number' && s.id === offerId);
+        if (!exists) {
+          setIsUnavailableModalOpen(true);
+        }
+      } catch {
+        // Ak sa nepodarí overiť dostupnosť, necháme to bez hlášky (bezpečné minimum).
+      }
+    },
+    [isOtherUserProfile, ownerUserId],
+  );
+
+  // Load offers function (použitá pre prvotné načítanie aj polling)
+  const loadOffers = useCallback(async (skipCache = false) => {
+    try {
+      setLoadError(null);
+      const cacheKey = makeOffersCacheKey(ownerUserId);
+      
+      // Ak nie je skipCache, skús najprv cache
+      if (!skipCache) {
         const cached = getOffersFromCache(cacheKey);
         if (cached) {
-          if (cancelled) return;
           setOffers(cached);
           return;
         }
+      }
 
-        // Request deduplication - použij existujúci in-flight request alebo vytvor nový
-        const endpoint = ownerUserId
-          ? endpoints.dashboard.userSkills(ownerUserId)
-          : endpoints.skills.list;
+      // Request deduplication - použij existujúci in-flight request alebo vytvor nový
+      const endpoint = ownerUserId
+        ? endpoints.dashboard.userSkills(ownerUserId)
+        : endpoints.skills.list;
 
-        const mappedOffers = await getOrCreateOffersRequest(cacheKey, async () => {
-          const { data } = await api.get(endpoint);
-          const list = Array.isArray(data) ? data : [];
-          return list.map((s: any) => {
+      const mappedOffers = await getOrCreateOffersRequest(cacheKey, async () => {
+        const { data } = await api.get(endpoint);
+        const list = Array.isArray(data) ? data : [];
+        return list.map((s: any) => {
           const rawPrice = s.price_from;
           const parsedPrice =
             typeof rawPrice === 'number'
@@ -115,16 +133,14 @@ export default function ProfileOffersSection({
                 ? (s.urgency.trim() as 'low' | 'medium' | 'high' | '')
                 : '',
             duration_type: s.duration_type || null,
+            is_hidden: s.is_hidden === true,
           };
         });
       });
 
-      if (cancelled) return;
-
       setOffers(mappedOffers);
       setOffersToCache(cacheKey, mappedOffers);
     } catch (error: any) {
-      if (cancelled) return;
       // Pri 429 ponechaj posledné ponuky (z cache alebo prázdne) a zobraz jemnú hlášku
       if (error?.response?.status === 429) {
         setLoadError(
@@ -135,15 +151,31 @@ export default function ProfileOffersSection({
         );
       }
     }
-  };
+  }, [ownerUserId, t]);
 
-    void load();
+  // Load offers when switching to 'offers' tab (desktop focus)
+  useEffect(() => {
+    if (activeTab !== 'offers') return;
+
+    void loadOffers();
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, ownerUserId]); // loadOffers je memoized
+
+  // Polling každých 20 sekúnd keď je tab aktívny
+  useEffect(() => {
+    if (activeTab !== 'offers') return;
+
+    const intervalId = setInterval(() => {
+      // Pri polling-u preskočíme cache, aby sme získali najnovšie dáta
+      void loadOffers(true);
+    }, 20000); // 20 sekúnd
 
     return () => {
-      cancelled = true;
+      clearInterval(intervalId);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, ownerUserId]); // t je prekladová funkcia, ktorá sa nemení v tejto logike
+  }, [activeTab, ownerUserId]); // loadOffers je memoized
 
   // Close hours popover when clicking outside
   useEffect(() => {
@@ -283,6 +315,8 @@ export default function ProfileOffersSection({
                   onOpenHoursClick={accountType === 'business' ? handleOpenHoursClick : undefined}
                   isHighlighted={isHighlighted}
                   isOtherUserProfile={isOtherUserProfile}
+                  onRequestClick={checkOfferStillAvailable}
+                  onMessageClick={checkOfferStillAvailable}
                 />
               </div>
             );
@@ -394,6 +428,42 @@ export default function ProfileOffersSection({
             </div>
           </>,
           document.getElementById('app-root') ?? document.body
+        )}
+
+      {isUnavailableModalOpen &&
+        typeof document !== 'undefined' &&
+        createPortal(
+          <>
+            <div
+              className="fixed inset-0 z-[9998] bg-black/45"
+              onClick={() => setIsUnavailableModalOpen(false)}
+            />
+            <div
+              className="fixed inset-0 z-[9999] flex items-center justify-center px-4"
+              onClick={() => setIsUnavailableModalOpen(false)}
+            >
+              <div
+                className="w-full max-w-sm rounded-2xl bg-white dark:bg-black border border-gray-200 dark:border-gray-700 shadow-2xl overflow-hidden"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="p-6 text-center">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                    Karta nie je dostupná
+                  </h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+                    Táto karta už nie je dostupná.
+                  </p>
+                  <button
+                    onClick={() => setIsUnavailableModalOpen(false)}
+                    className="w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                  >
+                    Rozumiem
+                  </button>
+                </div>
+              </div>
+            </div>
+          </>,
+          document.getElementById('app-root') ?? document.body,
         )}
     </div>
   );

@@ -188,6 +188,13 @@ export function useDashboardNavigation({
     slug?: string | null,
     summary?: SearchUserResult
   ) => {
+    // Invalidovať cache ponúk pre cudzí profil, aby sa načítali čerstvé dáta (vrátane filtrovania skrytých kariet)
+    if (userId !== user?.id) {
+      import('../modules/profile/profileOffersCache').then(({ invalidateOffersCache }) => {
+        invalidateOffersCache(userId);
+      });
+    }
+
     setViewedUserId(userId);
     setViewedUserSlug(slug ?? null);
     setViewedUserSummary(summary ?? null);
@@ -210,6 +217,7 @@ export function useDashboardNavigation({
     
     router.push(url);
   }, [
+    user?.id,
     setViewedUserId,
     setViewedUserSlug,
     setViewedUserSummary,

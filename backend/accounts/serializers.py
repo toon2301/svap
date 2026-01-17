@@ -253,7 +253,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
             'id', 'username', 'email', 'first_name', 'last_name',
             'user_type', 'phone', 'phone_visible', 'contact_email', 'bio', 'avatar', 'avatar_url', 'location', 'district',
             'ico', 'ico_visible', 'job_title', 'job_title_visible', 'company_name', 'website', 'additional_websites',
-            'linkedin', 'facebook', 'instagram', 'youtube', 'whatsapp',
+            'linkedin', 'facebook', 'instagram', 'youtube',
             'is_verified', 'is_public', 'created_at',
             'updated_at', 'profile_completeness', 'birth_date', 'gender',
             'slug', 'name_modified_by_user',
@@ -351,11 +351,6 @@ class UserProfileSerializer(serializers.ModelSerializer):
             return URLValidator.validate_url(value, 'YouTube')
         return value
 
-    def validate_whatsapp(self, value):
-        """Ľahká validácia WhatsApp hodnoty (môže byť číslo alebo URL)"""
-        if value:
-            return SecurityValidator.validate_input_safety(value)
-        return value
 
     def validate_bio(self, value):
         """Validácia bio textu"""
@@ -501,7 +496,7 @@ class OfferedSkillSerializer(serializers.ModelSerializer):
             'id', 'category', 'subcategory', 'description', 'detailed_description',
             'experience_value', 'experience_unit', 'experience', 'tags', 'images',
             'price_from', 'price_currency', 'district', 'location', 'opening_hours',
-            'is_seeking', 'urgency', 'duration_type', 'created_at', 'updated_at',
+            'is_seeking', 'urgency', 'duration_type', 'is_hidden', 'created_at', 'updated_at',
             'user_display_name', 'user_id',
         ]
         read_only_fields = ['id', 'created_at', 'updated_at', 'user_display_name', 'user_id']

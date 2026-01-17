@@ -61,6 +61,11 @@ export function SearchUserProfileModule({
       setIsLoading(true);
       setError(null);
 
+      // Invalidovať cache ponúk pre cudzí profil, aby sa načítali čerstvé dáta (vrátane filtrovania skrytých kariet)
+      // Toto zabezpečí, že skryté karty sa nezobrazia v profile iného používateľa
+      const { invalidateOffersCache } = await import('../profile/profileOffersCache');
+      invalidateOffersCache(userId);
+
       // Najprv skús cache profilu
       const cached = getUserProfileFromCache(userId);
       if (cached && !cancelled) {

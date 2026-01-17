@@ -5,18 +5,17 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { User } from '@/types';
 import type { ProfileTab } from '../modules/profile/profileTypes';
-import type { SearchUserResult } from '../modules/search/types';
 import DashboardLayout from '../DashboardLayout';
 import ModuleRouter from '../ModuleRouter';
 import DashboardModals from '../DashboardModals';
 import SearchModule from '../modules/SearchModule';
 import { useDashboardState } from '../hooks/useDashboardState';
-import { useSkillsModals, type DashboardSkill } from '../hooks/useSkillsModals';
+import { useSkillsModals } from '../hooks/useSkillsModals';
 import { useDashboardNavigation } from '../hooks/useDashboardNavigation';
 import { useDashboardHighlighting } from '../hooks/useDashboardHighlighting';
 import { useDashboardUserProfile } from '../hooks/useDashboardUserProfile';
 import { useDashboardKeyboard } from '../hooks/useDashboardKeyboard';
-import { api, endpoints } from '@/lib/api';
+import { useSkillSaveHandler } from '../hooks/useSkillSaveHandler';
 
 interface DashboardContentProps {
   initialUser?: User;
@@ -140,143 +139,17 @@ export default function DashboardContent({
     removeCustomCategory,
   } = skillsState;
 
-  // Funkcia na uloženie karty
-  const handleSkillSave = useCallback(async () => {
-    if (!selectedSkillsCategory) return;
-
-    // Zistiť, či ide o "Ponúkam" alebo "Hľadám"
-    let isSeeking =
-      selectedSkillsCategory.is_seeking === true ||
-      activeModule === 'skills-search';
-
-    // Ak ešte nemáme is_seeking, skúsime skillsDescribeMode z localStorage
-    if (!isSeeking && typeof window !== 'undefined') {
-      try {
-        const mode = localStorage.getItem('skillsDescribeMode');
-        if (mode === 'search') {
-          isSeeking = true;
-        }
-      } catch {
-        // ignore storage errors
-      }
-    }
-
-    const targetModule = isSeeking ? 'skills-search' : 'skills-offer';
-
-    // UX: hneď po kliknutí na fajku presmeruj späť na obrazovku s výberom/pridaním kategórie.
-    // Ukladanie prebehne na pozadí – po dokončení sa len aktualizuje zoznam kariet.
-    setActiveModule(targetModule);
-    try {
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('activeModule', targetModule);
-      }
-    } catch {
-      // ignore storage errors
-    }
-
-    try {
-      const skill = selectedSkillsCategory;
-      
-      // Pripraviť payload
-      const trimmedDistrict = (skill.district || '').trim();
-      const trimmedLocation = (skill.location || '').trim();
-      const detailedText = (skill.detailed_description || '').trim();
-      
-      const payload: any = {
-        category: skill.category,
-        subcategory: skill.subcategory,
-        description: skill.description || '',
-        detailed_description: detailedText,
-        tags: Array.isArray(skill.tags) ? skill.tags : [],
-        district: trimmedDistrict,
-        location: trimmedLocation,
-        is_seeking: isSeeking,
-        urgency: skill.urgency || 'low',
-        duration_type: skill.duration_type || null,
-      };
-      
-      if (skill.experience && typeof skill.experience.value === 'number' && skill.experience.unit) {
-        payload.experience_value = skill.experience.value;
-        payload.experience_unit = skill.experience.unit;
-      } else {
-        payload.experience_value = null;
-        payload.experience_unit = '';
-      }
-      
-      if (typeof skill.price_from === 'number' && !isNaN(skill.price_from)) {
-        payload.price_from = skill.price_from;
-        payload.price_currency = skill.price_currency || '€';
-      } else {
-        payload.price_from = null;
-        payload.price_currency = '';
-      }
-
-      if (skill.opening_hours) {
-        payload.opening_hours = skill.opening_hours;
-      }
-
-      let savedSkill: DashboardSkill;
-      const newImages = (skill as any)._newImages || [];
-      
-      if (skill.id) {
-        // Update existujúcej karty
-        const { data } = await api.patch(endpoints.skills.detail(skill.id), payload);
-        savedSkill = toLocalSkill(data);
-        
-        // Nahrať nové obrázky
-        if (newImages.length > 0) {
-          for (let i = 0; i < newImages.length; i++) {
-            const file = newImages[i];
-            try {
-              const fd = new FormData();
-              fd.append('image', file);
-              await api.post(endpoints.skills.images(skill.id), fd);
-            } catch (imgError: any) {
-              const imgMsg = imgError?.response?.data?.error || imgError?.response?.data?.detail || 'Nahrávanie obrázka zlyhalo';
-              alert(`Chyba pri nahrávaní obrázka ${i + 1}: ${imgMsg}`);
-            }
-          }
-        }
-      } else {
-        // Vytvorenie novej karty
-        const { data } = await api.post(endpoints.skills.list, payload);
-        savedSkill = toLocalSkill(data);
-        
-        // Nahrať nové obrázky
-        if (newImages.length > 0 && savedSkill.id) {
-          for (let i = 0; i < newImages.length; i++) {
-            const file = newImages[i];
-            try {
-              const fd = new FormData();
-              fd.append('image', file);
-              await api.post(endpoints.skills.images(savedSkill.id), fd);
-            } catch (imgError: any) {
-              const imgMsg = imgError?.response?.data?.error || imgError?.response?.data?.detail || 'Nahrávanie obrázka zlyhalo';
-              alert(`Chyba pri nahrávaní obrázka ${i + 1}: ${imgMsg}`);
-            }
-          }
-        }
-      }
-      
-      // Úspešne uložené – aktualizuj zoznam kariet
-      applySkillUpdate(savedSkill);
-
-      // Po úspešnom uložení, refresh skills pre aktívnu kategóriu
-      void loadSkills();
-    } catch (error: any) {
-      console.error('Chyba pri ukladaní zručnosti:', error);
-      const message = error?.response?.data?.error || error?.response?.data?.detail || t('dashboard.skillSaveError', 'Nepodarilo sa uložiť zručnosť');
-      alert(message);
-    }
-  }, [
+  // Funkcia na uloženie karty (presunutá do samostatného hooku pre prehľadnosť)
+  const handleSkillSave = useSkillSaveHandler({
     selectedSkillsCategory,
     activeModule,
     setActiveModule,
     toLocalSkill,
     applySkillUpdate,
     loadSkills,
-    t
-  ]);
+    t,
+    ownerUserIdForOffersCache: initialUser?.id,
+  });
 
   // Skills category back handler
   const handleSkillsCategoryBack = useCallback(() => {

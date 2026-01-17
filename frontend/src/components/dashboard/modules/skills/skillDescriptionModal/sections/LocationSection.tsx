@@ -325,7 +325,7 @@ export default function LocationSection({
         {!isSeeking && districtInput.trim() !== '' && (
           <div className="flex-1">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              {t('skills.locationTitle', 'Mesto/dedina (voliteľné)')}
+              {t('skills.locationTitle', 'Mesto/obec (voliteľné)')}
             </label>
             <input
               type="text"

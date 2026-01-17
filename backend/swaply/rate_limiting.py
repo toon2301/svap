@@ -48,7 +48,12 @@ class RateLimiter:
         Kontroluje, či je akcia povolená
         """
         key = self.get_key(identifier, action)
-        data = cache.get(key, {'attempts': 0, 'first_attempt': None})
+        try:
+            data = cache.get(key, {'attempts': 0, 'first_attempt': None})
+        except Exception as e:
+            # Fail-open: ak cache nie je dostupná (napr. Redis down), nepolož endpoint.
+            logger.warning("Rate limiter cache.get failed, allowing request", exc_info=e)
+            return True
         
         now = timezone.now()
         
@@ -56,24 +61,36 @@ class RateLimiter:
         if data['first_attempt'] is None:
             data['first_attempt'] = now
             data['attempts'] = 1
-            cache.set(key, data, timeout=self.window_minutes * 60)
+            try:
+                cache.set(key, data, timeout=self.window_minutes * 60)
+            except Exception as e:
+                logger.warning("Rate limiter cache.set failed (init)", exc_info=e)
             return True
         
         # Ak je okno vypršané, resetuj
         if (now - data['first_attempt']).total_seconds() > self.window_minutes * 60:
             data = {'attempts': 1, 'first_attempt': now}
-            cache.set(key, data, timeout=self.window_minutes * 60)
+            try:
+                cache.set(key, data, timeout=self.window_minutes * 60)
+            except Exception as e:
+                logger.warning("Rate limiter cache.set failed (reset window)", exc_info=e)
             return True
         
         # Ak je počet pokusov prekročený, zablokuj
         if data['attempts'] >= self.max_attempts:
             # Nastav dlhšie blokovanie
-            cache.set(key, data, timeout=self.block_minutes * 60)
+            try:
+                cache.set(key, data, timeout=self.block_minutes * 60)
+            except Exception as e:
+                logger.warning("Rate limiter cache.set failed (block)", exc_info=e)
             return False
         
         # Inkrementuj počet pokusov
         data['attempts'] += 1
-        cache.set(key, data, timeout=self.window_minutes * 60)
+        try:
+            cache.set(key, data, timeout=self.window_minutes * 60)
+        except Exception as e:
+            logger.warning("Rate limiter cache.set failed (increment)", exc_info=e)
         return True
     
     def get_remaining_attempts(self, identifier, action):
@@ -81,7 +98,11 @@ class RateLimiter:
         Vráti počet zostávajúcich pokusov
         """
         key = self.get_key(identifier, action)
-        data = cache.get(key, {'attempts': 0, 'first_attempt': None})
+        try:
+            data = cache.get(key, {'attempts': 0, 'first_attempt': None})
+        except Exception as e:
+            logger.warning("Rate limiter cache.get failed (remaining)", exc_info=e)
+            return self.max_attempts
         
         if data['first_attempt'] is None:
             return self.max_attempts
@@ -97,7 +118,11 @@ class RateLimiter:
         Vráti čas, kedy sa rate limit resetuje
         """
         key = self.get_key(identifier, action)
-        data = cache.get(key, {'attempts': 0, 'first_attempt': None})
+        try:
+            data = cache.get(key, {'attempts': 0, 'first_attempt': None})
+        except Exception as e:
+            logger.warning("Rate limiter cache.get failed (reset_time)", exc_info=e)
+            return None
         
         if data['first_attempt'] is None:
             return None

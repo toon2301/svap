@@ -45,6 +45,17 @@ export const setOffersToCache = (key: string, offers: Offer[]): void => {
 };
 
 /**
+ * Invaliduje cache pre daný kľúč - zmaže ju, aby sa pri ďalšom načítaní načítali nové dáta
+ */
+export const invalidateOffersCache = (ownerUserId?: number): void => {
+  const key = makeOffersCacheKey(ownerUserId);
+  offersCache.delete(key);
+  // Zmaž aj cooldown a in-flight requesty
+  lastRequestTime.delete(key);
+  inFlightRequests.delete(key);
+};
+
+/**
  * Získa alebo vytvorí in-flight request pre daný cache key
  * Zabráni viacerým rovnakým requestom súčasne a príliš častým volaniam (cooldown)
  */

@@ -47,6 +47,7 @@ export default function SkillDescriptionModal({
   onUrgencyChange,
   initialDurationType = null,
   onDurationTypeChange,
+  initialIsHidden = false,
 }: SkillDescriptionModalProps) {
   const { locale, t } = useLanguage();
   const categorySlug = useMemo(() => (category ? slugifyLabel(category) : ''), [category]);
@@ -79,6 +80,7 @@ export default function SkillDescriptionModal({
     initialOpeningHours,
     initialUrgency,
     initialDurationType,
+    initialIsHidden,
   });
 
   const onSaveClick = () => {
@@ -105,6 +107,7 @@ export default function SkillDescriptionModal({
       initialPriceFrom,
       urgency: state.urgency,
       durationType: state.durationType,
+      isHidden: state.isHideCardEnabled,
       onSave,
       setError: state.setError,
       setExperienceError: state.setExperienceError,

@@ -1,13 +1,17 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { User } from '../../../types';
-import { api } from '../../../lib/api';
 import HeaderCard from './profile-edit/desktop/HeaderCard';
 import WebsitesField from './profile-edit/desktop/WebsitesField';
 import BioField from './profile-edit/desktop/fields/BioField';
 import LocationField from './profile-edit/desktop/fields/LocationField';
+import FullNameField from './profile-edit/desktop/fields/FullNameField';
+import PhoneField from './profile-edit/desktop/fields/PhoneField';
+import ProfessionField from './profile-edit/desktop/fields/ProfessionField';
+import GenderField from './profile-edit/desktop/fields/GenderField';
+import BusinessFieldsSection from './profile-edit/desktop/sections/BusinessFieldsSection';
 import SocialMediaInputs from './SocialMediaInputs';
 import ProfileAvatarActionsModal from './profile/ProfileAvatarActionsModal';
 import { useProfileEditFormDesktop } from './profile/useProfileEditFormDesktop';
@@ -63,7 +67,6 @@ export default function ProfileEditFormDesktop({
     setAdditionalWebsites,
     setContactEmail,
     setIsActionsOpen,
-    handleFullNameSave,
     handleBioSave,
     handleLocationSave,
     handleIcoSave,
@@ -80,101 +83,7 @@ export default function ProfileEditFormDesktop({
     handleRemoveAvatar,
   } = useProfileEditFormDesktop({ user, onUserUpdate });
 
-  // Lokálny state pre input hodnotu mena - zachová medzery počas písania
-  const [fullNameInput, setFullNameInput] = useState('');
-
-  // Synchronizovať lokálny state s firstName a lastName (pre osobné účty) alebo company_name (pre firemné účty)
-  useEffect(() => {
-    if (accountType === 'business') {
-      // Pre firmy používame company_name
-      setFullNameInput(user.company_name || '');
-    } else {
-      // Pre osobné účty používame first_name + last_name
-      const fullName = firstName && lastName ? `${firstName} ${lastName}` : firstName || lastName || '';
-      setFullNameInput(fullName);
-    }
-  }, [firstName, lastName, accountType, user.company_name]);
-
-  // Wrapper pre handleFullNameSave, ktorý parsuje input hodnotu pred uložením
-  const handleFullNameSaveWithParse = async () => {
-    // Obmedziť na 35 znakov
-    const trimmedValue = fullNameInput.trim().slice(0, 35);
-    
-    // Pre firemné účty ukladať ako company_name
-    if (accountType === 'business') {
-      const newCompanyName = trimmedValue;
-      
-      // Porovnať s aktuálnou hodnotou
-      if (newCompanyName === (user.company_name || '').trim()) {
-        // Žiadna zmena
-        return;
-      }
-      
-      try {
-        // Volať API priamo s company_name
-        const response = await api.patch('/auth/profile/', {
-          company_name: newCompanyName,
-        });
-        
-        if (onUserUpdate && response.data?.user) {
-          onUserUpdate(response.data.user);
-        }
-      } catch (error: any) {
-        console.error('Error saving company name:', error);
-        // Revert na pôvodnú hodnotu
-        setFullNameInput(user.company_name || '');
-      }
-      return;
-    }
-    
-    // Pre osobné účty používame existujúcu logiku
-    const parts = trimmedValue.split(/\s+/).filter(Boolean);
-    let newFirstName = '';
-    let newLastName = '';
-    
-    if (parts.length === 0) {
-      newFirstName = '';
-      newLastName = '';
-    } else if (parts.length === 1) {
-      newFirstName = parts[0];
-      newLastName = '';
-    } else {
-      newFirstName = parts.slice(0, -1).join(' ');
-      newLastName = parts[parts.length - 1];
-    }
-    
-    // Porovnať s aktuálnymi hodnotami
-    const f = newFirstName.trim();
-    const l = newLastName.trim();
-    if (f === (user.first_name || '').trim() && l === (user.last_name || '').trim()) {
-      // Žiadna zmena - len aktualizovať lokálny state
-      setFirstName(newFirstName);
-      setLastName(newLastName);
-      return;
-    }
-    
-    try {
-      // Volať API priamo s novými hodnotami
-      const response = await api.patch('/auth/profile/', {
-        first_name: f,
-        last_name: l,
-      });
-      
-      // Aktualizovať state
-      setFirstName(newFirstName);
-      setLastName(newLastName);
-      
-      if (onUserUpdate && response.data?.user) {
-        onUserUpdate(response.data.user);
-      }
-    } catch (error: any) {
-      console.error('Error saving full name:', error);
-      // Revert na pôvodné hodnoty
-      setFirstName(user.first_name || '');
-      setLastName(user.last_name || '');
-      setFullNameInput(firstName && lastName ? `${firstName} ${lastName}` : firstName || lastName || '');
-    }
-  };
+  // full name / company name logika je presunutá do FullNameField (bez zmeny správania)
 
   return (
     <>
@@ -199,36 +108,15 @@ export default function ProfileEditFormDesktop({
 
                   {/* Formulár pre úpravu profilu */}
                   <div className="space-y-3">
-            {/* Meno (celé meno v jednom vstupe) */}
-            <div className="mb-4">
-              <label className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
-                {accountType === 'business' ? 'Meno / Názov' : t('profile.fullName', 'Meno')}
-              </label>
-              <input
-                id="fullName"
-                type="text"
-                value={fullNameInput}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  // Obmedziť na 35 znakov
-                  if (value.length <= 35) {
-                    setFullNameInput(value);
-                  }
-                }}
-                onBlur={handleFullNameSaveWithParse}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    handleFullNameSaveWithParse();
-                  }
-                }}
-                maxLength={35}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-1 focus:ring-purple-300 focus:border-transparent"
-                placeholder={t('profile.enterName', 'Zadajte svoje meno a priezvisko')}
-              />
-              <div className="mt-1 text-xs text-gray-500 dark:text-gray-400 text-right">
-                {fullNameInput.length}/35 znakov
-              </div>
-            </div>
+            <FullNameField
+              user={user}
+              accountType={accountType}
+              firstName={firstName}
+              lastName={lastName}
+              setFirstName={setFirstName}
+              setLastName={setLastName}
+              onUserUpdate={onUserUpdate}
+            />
             {/* Priezvisko zrušené – unified v jednom vstupe */}
 
             {/* Bio */}
@@ -243,166 +131,38 @@ export default function ProfileEditFormDesktop({
               onSave={handleLocationSave}
             />
 
-            {/* IČO - iba pre firemné účty */}
             {accountType === 'business' && (
-              <div className="mb-4">
-                <label className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  IČO
-                </label>
-                <input
-                  id="ico"
-                  type="text"
-                  value={ico}
-                  onChange={(e) => {
-                    // Povoliť iba číslice
-                    const value = e.target.value.replace(/\D/g, '');
-                    if (value.length <= 14) {
-                      setIco(value);
-                    }
-                  }}
-                  onBlur={handleIcoSave}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      handleIcoSave();
-                    }
-                  }}
-                  maxLength={14}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-1 focus:ring-purple-300 focus:border-transparent"
-                  placeholder="12345678901234"
-                />
-                {/* Prepínač pre zobrazenie IČO */}
-                <div className="mt-3 flex items-center gap-2">
-                  <button
-                    onClick={handleIcoVisibleToggle}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 ${
-                      icoVisible ? 'bg-purple-400 border border-purple-400' : 'bg-gray-300 dark:bg-gray-600'
-                    }`}
-                    style={{
-                      transform: 'scaleY(0.8)',
-                      transformOrigin: 'left center',
-                    }}
-                  >
-                    <span
-                      className={`absolute h-4 w-4 rounded-full bg-white shadow-sm transition-all duration-200 ease-in-out ${
-                        icoVisible ? 'left-6' : 'left-1'
-                      }`}
-                    />
-                  </button>
-                  <span className="text-xs text-gray-500 dark:text-gray-400">{t('profile.hideIco', 'Skryť IČO')}</span>
-                </div>
-              </div>
-            )}
-
-            {/* Kontakt */}
-            <div className="mb-4">
-              <label className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
-                {t('profile.contact', 'Kontakt')}
-              </label>
-              <input
-                id="phone"
-                type="text"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                onBlur={handlePhoneSave}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    handlePhoneSave();
-                  }
-                }}
-                maxLength={15}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-1 focus:ring-purple-300 focus:border-transparent"
-                placeholder={t('profile.phone', 'Tel. číslo')}
+              <BusinessFieldsSection
+                ico={ico}
+                setIco={setIco}
+                icoVisible={icoVisible}
+                onIcoSave={handleIcoSave}
+                onIcoVisibleToggle={handleIcoVisibleToggle}
+                contactEmail={contactEmail}
+                setContactEmail={setContactEmail}
+                onContactEmailSave={handleContactEmailSave}
               />
-              {/* Prepínač pre zobrazenie telefónu */}
-              <div className="mt-3 flex items-center gap-2">
-                <button
-                  onClick={handlePhoneVisibleToggle}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 ${
-                    phoneVisible ? 'bg-purple-400 border border-purple-400' : 'bg-gray-300 dark:bg-gray-600'
-                  }`}
-                  style={{
-                    transform: 'scaleY(0.8)',
-                    transformOrigin: 'left center',
-                  }}
-                >
-                  <span
-                    className={`absolute h-4 w-4 rounded-full bg-white shadow-sm transition-all duration-200 ease-in-out ${
-                      phoneVisible ? 'left-6' : 'left-1'
-                    }`}
-                  />
-                </button>
-                <span className="text-xs text-gray-500 dark:text-gray-400">{t('profile.showContactPublic', 'Skryť kontakt')}</span>
-              </div>
-            </div>
-
-            {/* Kontaktný Email - len pre firemný účet */}
-            {accountType === 'business' && (
-              <div className="mb-4">
-                <label className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Email
-                </label>
-                <input
-                  id="contactEmail"
-                  type="email"
-                  value={contactEmail}
-                  onChange={(e) => setContactEmail(e.target.value)}
-                  onBlur={handleContactEmailSave}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      handleContactEmailSave();
-                    }
-                  }}
-                  maxLength={255}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-1 focus:ring-purple-300 focus:border-transparent"
-                  placeholder="kontakt@firma.sk"
-                />
-              </div>
             )}
+
+            <PhoneField
+              phone={phone}
+              setPhone={setPhone}
+              phoneVisible={phoneVisible}
+              onSave={handlePhoneSave}
+              onVisibleToggle={handlePhoneVisibleToggle}
+            />
 
             
 
             {/* Profesia - len pre osobný účet */}
             {accountType === 'personal' && (
-            <div className="mb-4">
-              <label className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
-                {t('profile.profession', 'Profesia')}
-              </label>
-              <input
-                id="profession"
-                type="text"
-                value={profession}
-                onChange={(e) => setProfession(e.target.value)}
-                onBlur={handleProfessionSave}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    handleProfessionSave();
-                  }
-                }}
-                maxLength={100}
-                className="w-full px-3 py-2 bg-white dark:bg-black border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:ring-1 focus:ring-purple-300 focus:border-transparent"
-                placeholder={t('profile.enterProfession', 'Zadajte svoju profesiu')}
+              <ProfessionField
+                profession={profession}
+                setProfession={setProfession}
+                professionVisible={professionVisible}
+                onSave={handleProfessionSave}
+                onVisibleToggle={handleProfessionVisibleToggle}
               />
-              {/* Prepínač pre zobrazenie profese */}
-              <div className="mt-3 flex items-center gap-2">
-                <button
-                  onClick={handleProfessionVisibleToggle}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 ${
-                    professionVisible ? 'bg-purple-400 border border-purple-400' : 'bg-gray-300 dark:bg-gray-600'
-                  }`}
-                  style={{
-                    transform: 'scaleY(0.8)',
-                    transformOrigin: 'left center',
-                  }}
-                >
-                  <span
-                    className={`absolute h-4 w-4 rounded-full bg-white shadow-sm transition-all duration-200 ease-in-out ${
-                      professionVisible ? 'left-6' : 'left-1'
-                    }`}
-                  />
-                </button>
-                <span className="text-xs text-gray-500 dark:text-gray-400">{t('profile.showProfessionPublic', 'Skryť profesiu')}</span>
-              </div>
-            </div>
             )}
 
             {/* Web */}
@@ -423,22 +183,7 @@ export default function ProfileEditFormDesktop({
 
             {/* Pohlavie - iba pre osobné účty */}
             {accountType !== 'business' && (
-            <div className="mb-4">
-              <label className="block text-base font-medium text-gray-700 dark:text-gray-300 mb-2">
-                {t('profile.gender', 'Pohlavie')}
-              </label>
-              <select
-                id="gender"
-                value={gender}
-                onChange={(e) => handleGenderChange(e.target.value)}
-                className="w-full px-3 py-2 bg-white dark:bg-black border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:ring-1 focus:ring-purple-300 focus:border-transparent appearance-none cursor-pointer"
-              >
-                <option value="">{t('profile.selectGender', 'Vyberte pohlavie')}</option>
-                <option value="male">{t('profile.male', 'Muž')}</option>
-                <option value="female">{t('profile.female', 'Žena')}</option>
-                <option value="other">{t('profile.other', 'Iné')}</option>
-              </select>
-            </div>
+              <GenderField gender={gender} onChange={handleGenderChange} />
             )}
         </div>
       </div>

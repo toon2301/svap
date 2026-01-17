@@ -109,6 +109,7 @@ export default function DashboardModals({
     district?: string,
     urgency?: 'low' | 'medium' | 'high' | '',
     durationType?: 'one_time' | 'long_term' | 'project' | '' | null,
+    isHidden?: boolean,
   ) => {
     const trimmedLocation = typeof locationValue === 'string' ? locationValue.trim() : '';
     const trimmedDistrict = typeof district === 'string' ? district.trim() : '';
@@ -128,6 +129,7 @@ export default function DashboardModals({
           durationType !== undefined
             ? durationType
             : selectedSkillsCategory?.duration_type || null,
+        is_hidden: isHidden !== undefined ? isHidden : (selectedSkillsCategory?.is_hidden || false),
       };
       if (experience && typeof experience.value === 'number' && experience.unit) {
         payload.experience_value = experience.value;
@@ -174,6 +176,7 @@ export default function DashboardModals({
             opening_hours: openingHours && Object.keys(openingHours).length > 0 ? openingHours : null,
             urgency: urgency || selectedSkillsCategory?.urgency || 'low',
             duration_type: durationType !== undefined ? durationType : selectedSkillsCategory?.duration_type || null,
+            is_hidden: isHidden !== undefined ? isHidden : (selectedSkillsCategory?.is_hidden || false),
           });
           let updatedLocal = toLocalSkill(data);
           if (imageFiles.length && data?.id) {
@@ -241,6 +244,7 @@ export default function DashboardModals({
               opening_hours: openingHours && Object.keys(openingHours).length > 0 ? openingHours : null,
               urgency: urgency || selectedSkillsCategory?.urgency || 'low',
               duration_type: durationType !== undefined ? durationType : selectedSkillsCategory?.duration_type || null,
+              is_hidden: isHidden !== undefined ? isHidden : (selectedSkillsCategory?.is_hidden || false),
             });
             let updated = toLocalSkill(data);
             if (imageFiles.length && data?.id) {
@@ -260,6 +264,10 @@ export default function DashboardModals({
       }
 
       await loadSkills();
+
+      // Invalidovať cache ponúk, aby sa pri návrate na profil načítali nové dáta
+      const { invalidateOffersCache } = await import('./modules/profile/profileOffersCache');
+      invalidateOffersCache(user?.id);
     } catch (e: any) {
       const msg = e?.response?.data?.error || e?.response?.data?.detail || 'Ukladanie zručnosti zlyhalo';
       alert(msg);
@@ -363,6 +371,7 @@ export default function DashboardModals({
           isSeeking={activeModule === 'skills-search'}
           initialUrgency={selectedSkillsCategory.urgency || 'low'}
           initialDurationType={selectedSkillsCategory.duration_type || null}
+          initialIsHidden={selectedSkillsCategory.is_hidden || false}
           onRemoveExistingImage={
             selectedSkillsCategory.id
               ? (imageId) => handleRemoveSkillImage(selectedSkillsCategory.id!, imageId)

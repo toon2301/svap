@@ -27,7 +27,6 @@ export interface User {
   facebook?: string;
   instagram?: string;
   youtube?: string;
-  whatsapp?: string;
   gender?: string;
   is_verified: boolean;
   is_public: boolean;

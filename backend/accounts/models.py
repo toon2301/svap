@@ -393,6 +393,11 @@ class OfferedSkill(models.Model):
         null=True,
         help_text=_('Typ trvania služby'),
     )
+    is_hidden = models.BooleanField(
+        _('Skrytá'),
+        default=False,
+        help_text=_('Ak je True, karta sa nezobrazí vo vyhľadávaní ani na cudzích profiloch'),
+    )
     
     created_at = models.DateTimeField(_('Vytvorené'), auto_now_add=True)
     updated_at = models.DateTimeField(_('Aktualizované'), auto_now=True)

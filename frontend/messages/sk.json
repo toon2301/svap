@@ -176,7 +176,7 @@
     "maxPhotosReached": "Dosiahol si maximálny počet 6 fotiek.",
     "district": "Okres",
     "addDistrict": "Pridať okres",
-    "locationTitle": "Mesto/dedina (voliteľné)",
+    "locationTitle": "Mesto/obec (voliteľné)",
     "locationPlaceholder": "Zadaj, kde ponúkaš svoje služby",
     "locationHint": "Sem napíš, kde ponúkaš svoje služby a zručnosti.",
     "locationSaving": "Ukladám miesto...",
@@ -222,7 +222,8 @@
     "offering": "Ponúkam",
     "hideCard": "Skryť kartu",
     "hideCardDescription": "Skryť kartu dočasne bez odstránenia",
-    "hideCardToggle": "Skryť túto kartu"
+    "hideCardToggle": "Skryť túto kartu",
+    "hiddenCard": "Skrytá"
   },
   "meta": {
     "title": "Svaply - Platforma výmeny zručností",

@@ -79,6 +79,20 @@ export default function SearchModule({ user, onUserClick, onSkillClick, isOverla
     };
   }, [searchState.isFilterOpen, searchState.setIsFilterOpen, searchState.searchInputRef]);
 
+  // Resetovať hasSearched keď sa searchQuery stane prázdnym (používateľ vymazal text)
+  // Ale NERESETOVAŤ ak je isFromRecentSearch true - vtedy chceme zobraziť výsledky z recent search
+  useEffect(() => {
+    const q = searchState.searchQuery.trim();
+    
+    if (!q && searchState.hasSearched && !searchState.isFromRecentSearch) {
+      // Keď používateľ vymaže text, resetovať hasSearched, aby sa zobrazili recent searches a suggestions
+      // Ale len ak to nie je z recent search (vtedy chceme zobraziť výsledky)
+      searchState.setHasSearched(false);
+      searchState.setResults(null);
+      searchState.setError(null);
+    }
+  }, [searchState.searchQuery, searchState.hasSearched, searchState.isFromRecentSearch, searchState.setHasSearched, searchState.setResults, searchState.setError]);
+
   // Dynamické vyhľadávanie – rýchle návrhy počas písania
   useEffect(() => {
     const q = searchState.searchQuery.trim();

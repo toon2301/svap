@@ -273,28 +273,58 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
       router.push('/dashboard');
       
     } catch (error: any) {
+      console.error('Login error:', error);
       
+      // Rate limit (429) - špeciálna správa
+      if (error.response?.status === 429) {
+        setLoginErrors({ 
+          general: t('auth.tooManyRequests', 'Príliš veľa pokusov. Skúste to o chvíľu.') 
+        });
+        setIsLoginLoading(false);
+        return;
+      }
+      
+      // Account locked (423)
+      if (error.response?.status === 423) {
+        const errorMessage = error.response?.data?.error || t('auth.accountLocked', 'Účet je dočasne zablokovaný. Skúste to neskôr.');
+        setLoginErrors({ general: errorMessage });
+        setIsLoginLoading(false);
+        return;
+      }
+      
+      // Ak máme details, spracuj ich
       if (error.response?.data?.details) {
-        // Kontrola, či je to chyba neovereného emailu v details
         const details = error.response.data.details;
         
         // Skontroluj non_field_errors
-        if (details.non_field_errors && Array.isArray(details.non_field_errors)) {
-          const hasEmailVerificationError = details.non_field_errors.some((msg: string) => 
-            msg.includes('nie je overený') || msg.includes('Skontrolujte si email'));
+        if (details.non_field_errors && Array.isArray(details.non_field_errors) && details.non_field_errors.length > 0) {
+          const firstError = details.non_field_errors[0];
+          const errorText = typeof firstError === 'string' ? firstError : String(firstError);
           
-          if (hasEmailVerificationError) {
+          // Kontrola, či je to chyba neovereného emailu
+          if (errorText.includes('nie je overený') || errorText.includes('Skontrolujte si email')) {
             setLoginErrors({ 
               email_verification: t('auth.emailNotVerifiedMessage') 
             });
+            setIsLoginLoading(false);
             return;
           }
+          
+          // Inak nastav ako general error
+          setLoginErrors({ general: errorText });
+          setIsLoginLoading(false);
+          return;
         }
         
-        // Ak nie je to email verification error, zobraz normálne chyby
-        setLoginErrors(details);
-      } else if (error.response?.data?.error) {
-        // Kontrola, či je to chyba neovereného emailu
+        // Ak nie je non_field_errors, skús použiť error z response alebo details
+        const errorMessage = error.response?.data?.error || (details.error || t('auth.invalidCredentials'));
+        setLoginErrors({ general: typeof errorMessage === 'string' ? errorMessage : t('auth.invalidCredentials') });
+        setIsLoginLoading(false);
+        return;
+      }
+      
+      // Ak máme error priamo v response.data.error
+      if (error.response?.data?.error) {
         const errorMessage = error.response.data.error;
         if (typeof errorMessage === 'string' && (errorMessage.includes('nie je overený') || errorMessage.includes('Skontrolujte si email'))) {
           setLoginErrors({ 
@@ -303,9 +333,12 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
         } else {
           setLoginErrors({ general: typeof errorMessage === 'string' ? errorMessage : t('auth.invalidCredentials') });
         }
-      } else {
-        setLoginErrors({ general: t('auth.invalidCredentials') });
+        setIsLoginLoading(false);
+        return;
       }
+      
+      // Fallback - vždy zobraz nejakú chybovú správu
+      setLoginErrors({ general: t('auth.invalidCredentials') });
     } finally {
       setIsLoginLoading(false);
     }
