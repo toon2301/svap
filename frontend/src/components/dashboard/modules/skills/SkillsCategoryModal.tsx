@@ -41,27 +41,37 @@ export default function SkillsCategoryModal({ isOpen, onClose, categories, selec
     }
   }, [isOpen]);
 
-  // Get all subcategories from all categories
+  // Get all subcategories from all categories (odstrániť duplikáty)
   const allSubcategories = useMemo(() => {
     const subcats: Array<{ name: string; category: string }> = [];
+    const seen = new Set<string>();
+    
     Object.entries(categories).forEach(([categoryName, subcategories]) => {
       subcategories.forEach(subcategory => {
-        subcats.push({ name: subcategory, category: categoryName });
+        // Vytvoriť unikátny kľúč z kategórie a podkategórie (odstrániť diakritiku pre konzistentné porovnávanie)
+        const key = `${removeDiacritics(categoryName)}|${removeDiacritics(subcategory)}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          subcats.push({ name: subcategory, category: categoryName });
+        }
       });
     });
     return subcats;
   }, [categories]);
 
   // Filter subcategories based on search query (case-insensitive and diacritics-insensitive)
+  // Vyhľadáva LEN v názve podkategórie, nie v kategórii
   const filteredSubcategories = useMemo(() => {
     const trimmedQuery = searchQuery.trim();
     if (!trimmedQuery) {
       return [];
     }
     const normalizedQuery = removeDiacritics(trimmedQuery);
-    return allSubcategories.filter(item => 
-      removeDiacritics(item.name).includes(normalizedQuery)
-    );
+    return allSubcategories.filter(item => {
+      // Vyhľadáva len v názve podkategórie (item.name), nie v kategórii
+      const normalizedName = removeDiacritics(item.name);
+      return normalizedName.includes(normalizedQuery);
+    });
   }, [searchQuery, allSubcategories]);
 
   if (!isOpen) return null;
