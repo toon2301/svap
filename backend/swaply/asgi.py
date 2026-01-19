@@ -13,4 +13,20 @@ from django.core.asgi import get_asgi_application
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'swaply.settings')
 
-application = get_asgi_application()
+# HTTP aplikácia (Django)
+django_asgi_app = get_asgi_application()
+
+try:
+    from channels.routing import ProtocolTypeRouter, URLRouter
+    from swaply.routing import websocket_urlpatterns
+    from swaply.ws_auth import JwtAuthMiddleware
+
+    application = ProtocolTypeRouter(
+        {
+            "http": django_asgi_app,
+            "websocket": JwtAuthMiddleware(URLRouter(websocket_urlpatterns)),
+        }
+    )
+except Exception:
+    # Fail-open: ak Channels nie je dostupné, nech aspoň beží HTTP.
+    application = django_asgi_app

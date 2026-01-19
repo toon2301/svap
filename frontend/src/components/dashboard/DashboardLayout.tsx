@@ -182,6 +182,7 @@ export default function DashboardLayout({
               className={`w-full mx-auto ${
                 (activeModule === 'profile' && !isProfileEditMode) ||
                 activeModule === 'user-profile' ||
+                activeModule === 'requests' ||
                 isSkillsModule
                   ? 'max-w-7xl'
                   : 'max-w-4xl'

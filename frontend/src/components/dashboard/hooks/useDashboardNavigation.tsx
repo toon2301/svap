@@ -101,6 +101,8 @@ export function useDashboardNavigation({
       url = '/dashboard/favorites';
     } else if (moduleId === 'messages') {
       url = '/dashboard/messages';
+    } else if (moduleId === 'requests') {
+      url = '/dashboard/requests';
     } else if (moduleId === 'skills-offer') {
       url = '/dashboard/skills/offer';
     } else if (moduleId === 'skills-search') {

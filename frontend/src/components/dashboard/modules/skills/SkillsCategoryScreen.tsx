@@ -43,8 +43,15 @@ export default function SkillsCategoryScreen({ categories, selected, onSelect, o
   // Get all subcategories from all categories
   const allSubcategories = useMemo(() => {
     const subcats: Array<{ name: string; category: string }> = [];
+    // Deduplikácia je kritická: duplicitné položky spôsobujú duplicitné React keys
+    // a môžu viesť k „zostávaniu“ nesprávnych výsledkov v UI.
+    const seen = new Set<string>();
+
     Object.entries(categories).forEach(([categoryName, subcategories]) => {
-      subcategories.forEach(subcategory => {
+      subcategories.forEach((subcategory) => {
+        const key = `${removeDiacritics(categoryName)}|${removeDiacritics(subcategory)}`;
+        if (seen.has(key)) return;
+        seen.add(key);
         subcats.push({ name: subcategory, category: categoryName });
       });
     });
@@ -103,10 +110,9 @@ export default function SkillsCategoryScreen({ categories, selected, onSelect, o
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
-    // Reset selected category when searching
-    if (e.target.value.trim()) {
-      setSelectedCategory(null);
-    }
+    // Reset selected category pri každej zmene vyhľadávania (aj pri vymazaní)
+    // aby sa UI bezpečne vrátilo späť na zoznam kategórií.
+    setSelectedCategory(null);
   };
 
   const handleSearchResultClick = (item: { name: string; category: string }) => {
@@ -143,7 +149,10 @@ export default function SkillsCategoryScreen({ categories, selected, onSelect, o
               {searchQuery && (
                 <div className="absolute right-3 top-0 bottom-0 flex items-center z-10">
                   <button
-                    onClick={() => setSearchQuery('')}
+                    onClick={() => {
+                      setSearchQuery('');
+                      setSelectedCategory(null);
+                    }}
                     className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
                     aria-label={t('common.clear', 'Vymazať')}
                   >
@@ -164,7 +173,8 @@ export default function SkillsCategoryScreen({ categories, selected, onSelect, o
                 <div className="space-y-0">
                   {filteredSubcategories.map((item) => (
                     <button
-                      key={`${item.category}-${item.name}`}
+                      // Unikátny key aj pri rovnakých názvoch
+                      key={`${item.category}-${item.name}-${slugifyLabel(item.category)}-${slugifyLabel(item.name)}`}
                       type="button"
                       onClick={() => handleSearchResultClick(item)}
                       className="w-full flex items-center justify-between px-4 py-3 rounded-lg bg-[var(--background)] hover:bg-gray-50 dark:hover:bg-gray-900 text-left border border-transparent hover:border-gray-200 dark:hover:border-gray-700 -mt-6 first:mt-0"
@@ -193,9 +203,9 @@ export default function SkillsCategoryScreen({ categories, selected, onSelect, o
             ) : currentSubcategories ? (
               // Zobraz podkategórie
               <div className="space-y-0">
-                {currentSubcategories.map((subcategory) => (
+                {currentSubcategories.map((subcategory, idx) => (
                   <button
-                    key={subcategory}
+                    key={`${subcategory}-${idx}`}
                     type="button"
                     onClick={() => handleSubcategoryClick(subcategory)}
                     className="w-full flex items-center justify-between px-4 py-3 rounded-lg bg-[var(--background)] hover:bg-gray-50 dark:hover:bg-gray-900 text-left border border-transparent hover:border-gray-200 dark:hover:border-gray-700 -mt-0.5 first:mt-0"

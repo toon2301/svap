@@ -177,6 +177,7 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
         'settings',
         'create',
         'messages',
+        'requests',
         'notifications',
         'language',
         'account-type',

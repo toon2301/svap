@@ -13,6 +13,7 @@ import SkillsModuleRouter from './modules/skills/SkillsModuleRouter';
 import SearchModule from './modules/SearchModule';
 import CreateModule from './modules/CreateModule';
 import MessagesModule from './modules/MessagesModule';
+import RequestsModule from './modules/RequestsModule';
 import AccountTypeSection from './modules/accountType/AccountTypeSection';
 import type { DashboardSkill } from './hooks/useSkillsModals';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -242,6 +243,8 @@ export default function ModuleRouter({
       return <CreateModule />;
     case 'messages':
       return <MessagesModule />;
+    case 'requests':
+      return <RequestsModule />;
     case 'notifications':
       return <NotificationsModule />;
     case 'language':

@@ -16,6 +16,8 @@ interface ProfileOfferCardProps {
   isOtherUserProfile?: boolean;
   onRequestClick?: (offerId: number) => void;
   onMessageClick?: (offerId: number) => void;
+  requestLabel?: string;
+  isRequestDisabled?: boolean;
 }
 
 interface FlipButtonProps {
@@ -63,6 +65,8 @@ export default function ProfileOfferCard({
   isOtherUserProfile = false,
   onRequestClick,
   onMessageClick,
+  requestLabel,
+  isRequestDisabled = false,
 }: ProfileOfferCardProps) {
   const catSlug = offer.category ? slugifyLabel(offer.category) : '';
   const subSlug = offer.subcategory ? slugifyLabel(offer.subcategory) : '';
@@ -314,13 +318,19 @@ export default function ProfileOfferCard({
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation();
+                    if (isRequestDisabled) return;
                     if (typeof offer.id === 'number' && onRequestClick) {
                       onRequestClick(offer.id);
                     }
                   }}
-                  className="flex-1 px-3 py-1.5 text-xs font-medium bg-purple-100 text-purple-800 border border-purple-200 rounded-lg transition-colors hover:bg-purple-200 dark:bg-purple-900/40 dark:text-purple-300 dark:border-purple-800/60 dark:hover:bg-purple-900/60"
+                  disabled={isRequestDisabled}
+                  className={`flex-1 px-3 py-1.5 text-xs font-medium bg-purple-100 text-purple-800 border border-purple-200 rounded-lg transition-colors dark:bg-purple-900/40 dark:text-purple-300 dark:border-purple-800/60 ${
+                    isRequestDisabled
+                      ? 'opacity-70 cursor-not-allowed'
+                      : 'hover:bg-purple-200 dark:hover:bg-purple-900/60'
+                  }`}
                 >
-                  Požiadať
+                  {requestLabel || 'Požiadať'}
                 </button>
                 <button
                   type="button"

@@ -4,7 +4,18 @@ from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from datetime import datetime, date
-from .models import User, UserProfile, UserType, EmailVerification, OfferedSkill, OfferedSkillImage
+from .models import (
+    User,
+    UserProfile,
+    UserType,
+    EmailVerification,
+    OfferedSkill,
+    OfferedSkillImage,
+    SkillRequest,
+    SkillRequestStatus,
+    Notification,
+    NotificationType,
+)
 from swaply.validators import (
     EmailValidator, PasswordValidator, NameValidator, 
     PhoneValidator, URLValidator, BioValidator, SecurityValidator, CAPTCHAValidator
@@ -59,38 +70,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         if captcha_token:
             CAPTCHAValidator.validate_captcha(captcha_token)
         
-        # Username sa uloží do first_name (môže obsahovať medzery, limit 35 znakov)
-        # Pre Django username použijeme časť emailu (Django username neumožňuje medzery)
-        username_value = attrs.get('username', '').strip()
-        
-        if username_value:
-            # Validácia dĺžky username (max 35 znakov)
-            if len(username_value) > 35:
-                raise serializers.ValidationError({
-                    'username': 'Používateľské meno môže mať maximálne 35 znakov vrátane medzier.'
-                })
-            
-            # Uložiť username do first_name (môže obsahovať medzery)
-            attrs['first_name'] = username_value
-            attrs['last_name'] = ''  # Priezvisko necháme prázdne
-        
-        # Validácia celkového mena (first_name + last_name) - max 35 znakov vrátane medzier
-        first_name = attrs.get('first_name', '')
-        last_name = attrs.get('last_name', '')
-        if first_name or last_name:
-            # Vypočítaj celkovú dĺžku (vrátane medzery ak sú obe hodnoty)
-            full_name = f"{first_name} {last_name}".strip() if first_name and last_name else (first_name or last_name or '')
-            total_length = len(full_name)
-            
-            if total_length > 35:
-                raise serializers.ValidationError({
-                    'username': 'Používateľské meno môže mať maximálne 35 znakov vrátane medzier.'
-                })
-        
-        # Odstrániť username z validated_data pred Django validáciou
-        # Django username validator neumožňuje medzery, takže ho nastavíme až v create()
-        if 'username' in attrs:
-            attrs.pop('username')
+        # Username (display name) – povolíme medzery a validujeme dĺžku v validate_username()
         
         # Validácia pre firmy
         if attrs.get('user_type') == UserType.COMPANY:
@@ -137,6 +117,10 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         # Limit 35 znakov (vrátane medzier)
         if len(value) > 35:
             raise serializers.ValidationError("Používateľské meno môže mať maximálne 35 znakov vrátane medzier.")
+
+        # Unikátnosť (model má unikátny username)
+        if User.objects.filter(username=value).exists():
+            raise serializers.ValidationError("Používateľské meno je už obsadené.")
         
         return value
 
@@ -150,28 +134,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         validated_data.pop('birth_year', None)
         
         password = validated_data.pop('password')
-        email = validated_data.get('email', '')
-        
-        # Django username neumožňuje medzery, takže použijeme časť emailu pred @ ako username
-        # Ak už existuje, pridáme číslo
-        base_username = email.split('@')[0] if email else 'user'
-        # Odstrániť špeciálne znaky z username (Django validator vyžaduje)
-        import re
-        base_username = re.sub(r'[^\w.@+-]', '', base_username)  # Ponechať len povolené znaky
-        if not base_username:
-            base_username = 'user'
-        
-        username = base_username
-        counter = 1
-        while User.objects.filter(username=username).exists():
-            username = f"{base_username}{counter}"
-            counter += 1
-        
-        # Nastaviť username (bez medzier, Django vyžaduje)
-        validated_data['username'] = username
         validated_data['is_verified'] = False
-        
-        # first_name už obsahuje pôvodný username (s medzerami) z validate() metódy
         
         # Vytvorenie používateľa s is_verified=False
         # Vytvoriť User objekt bez volania full_clean() (ktorý validuje username)
@@ -612,3 +575,139 @@ class OfferedSkillSerializer(serializers.ModelSerializer):
             if len(value) > 35:
                 raise serializers.ValidationError("Miesto môže mať maximálne 35 znakov")
         return value
+
+
+class SkillRequestCreateSerializer(serializers.Serializer):
+    """Vytvorenie žiadosti o kartu."""
+
+    offer_id = serializers.IntegerField()
+
+    def validate_offer_id(self, value):
+        try:
+            offer = OfferedSkill.objects.select_related('user').get(id=value)
+        except OfferedSkill.DoesNotExist:
+            raise serializers.ValidationError('Karta neexistuje.')
+
+        request = self.context.get('request')
+        if request and getattr(request, 'user', None) and offer.user_id == request.user.id:
+            raise serializers.ValidationError('Nemôžeš požiadať o vlastnú kartu.')
+
+        self.context['offer_obj'] = offer
+        return value
+
+
+class SkillRequestSerializer(serializers.ModelSerializer):
+    """Read serializer pre žiadosti."""
+
+    requester_display_name = serializers.CharField(source='requester.display_name', read_only=True)
+    recipient_display_name = serializers.CharField(source='recipient.display_name', read_only=True)
+
+    offer_is_seeking = serializers.BooleanField(source='offer.is_seeking', read_only=True)
+    offer_category = serializers.CharField(source='offer.category', read_only=True)
+    offer_subcategory = serializers.CharField(source='offer.subcategory', read_only=True)
+    offer_description = serializers.CharField(source='offer.description', read_only=True)
+
+    requester_summary = serializers.SerializerMethodField()
+    recipient_summary = serializers.SerializerMethodField()
+    offer_summary = serializers.SerializerMethodField()
+
+    def _avatar_url(self, user: User):
+        try:
+            if getattr(user, 'avatar', None) and hasattr(user.avatar, 'url'):
+                request = self.context.get('request')
+                url = user.avatar.url
+                return request.build_absolute_uri(url) if request else url
+        except Exception:
+            return None
+        return None
+
+    def get_requester_summary(self, obj):
+        u = getattr(obj, 'requester', None)
+        if not u:
+            return None
+        return {
+            'id': u.id,
+            'display_name': getattr(u, 'display_name', None),
+            'slug': getattr(u, 'slug', None),
+            'avatar_url': self._avatar_url(u),
+        }
+
+    def get_recipient_summary(self, obj):
+        u = getattr(obj, 'recipient', None)
+        if not u:
+            return None
+        return {
+            'id': u.id,
+            'display_name': getattr(u, 'display_name', None),
+            'slug': getattr(u, 'slug', None),
+            'avatar_url': self._avatar_url(u),
+        }
+
+    def get_offer_summary(self, obj):
+        offer = getattr(obj, 'offer', None)
+        if not offer:
+            return None
+        owner = getattr(offer, 'user', None)
+        return {
+            'id': offer.id,
+            'subcategory': getattr(offer, 'subcategory', '') or '',
+            'is_seeking': bool(getattr(offer, 'is_seeking', False)),
+            'price_from': getattr(offer, 'price_from', None),
+            'price_currency': getattr(offer, 'price_currency', '') or '€',
+            'owner': (
+                {
+                    'id': getattr(owner, 'id', None),
+                    'slug': getattr(owner, 'slug', None),
+                }
+                if owner is not None
+                else None
+            ),
+        }
+
+    def to_representation(self, instance):
+        """Override to ensure SerializerMethodField values are included."""
+        ret = super().to_representation(instance)
+        # Explicitly add summary fields
+        ret['requester_summary'] = self.get_requester_summary(instance)
+        ret['recipient_summary'] = self.get_recipient_summary(instance)
+        ret['offer_summary'] = self.get_offer_summary(instance)
+        return ret
+
+    class Meta:
+        model = SkillRequest
+        fields = [
+            'id',
+            'status',
+            'created_at',
+            'updated_at',
+            'requester',
+            'recipient',
+            'offer',
+            'requester_display_name',
+            'recipient_display_name',
+            'offer_is_seeking',
+            'offer_category',
+            'offer_subcategory',
+            'offer_description',
+            'requester_summary',
+            'recipient_summary',
+            'offer_summary',
+        ]
+        read_only_fields = fields
+
+
+class NotificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Notification
+        fields = [
+            'id',
+            'type',
+            'title',
+            'body',
+            'data',
+            'skill_request',
+            'is_read',
+            'created_at',
+            'read_at',
+        ]
+        read_only_fields = fields

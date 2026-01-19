@@ -294,6 +294,18 @@ export const endpoints = {
     images: (skillId: number) => `/auth/skills/${skillId}/images/`,
     imageDetail: (skillId: number, imageId: number) => `/auth/skills/${skillId}/images/${imageId}/`,
   },
+  // Žiadosti
+  requests: {
+    list: '/auth/skill-requests/',
+    detail: (id: number) => `/auth/skill-requests/${id}/`,
+    status: '/auth/skill-requests/status/',
+  },
+  // Notifikácie
+  notifications: {
+    list: '/auth/notifications/',
+    unreadCount: '/auth/notifications/unread-count/',
+    markAllRead: '/auth/notifications/mark-all-read/',
+  },
 };
 
 export default api;

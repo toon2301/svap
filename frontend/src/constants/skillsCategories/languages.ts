@@ -62,7 +62,6 @@ export const JAZYKOVE_SLUZBY_A_PREKLADY: string[] = [
   'Preklady prezentácií a PPT materiálov',
   'Tlmočenie pri školeniach a online kurzoch',
   'Tlmočenie pri firemných stretnutiach',
-  'Tlmočenie pre obchodné rokovania',
   'Tlmočenie pre online eventy a webináre',
   'Preklady kreatívnych textov a literárnych diel',
   'Preklady newsletterov a marketingových kampaní',

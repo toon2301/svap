@@ -16,6 +16,7 @@ import { useDashboardHighlighting } from '../hooks/useDashboardHighlighting';
 import { useDashboardUserProfile } from '../hooks/useDashboardUserProfile';
 import { useDashboardKeyboard } from '../hooks/useDashboardKeyboard';
 import { useSkillSaveHandler } from '../hooks/useSkillSaveHandler';
+import { RequestsNotificationsProvider } from '../contexts/RequestsNotificationsContext';
 
 interface DashboardContentProps {
   initialUser?: User;
@@ -238,7 +239,7 @@ export default function DashboardContent({
   );
 
   return (
-    <>
+    <RequestsNotificationsProvider>
       <DashboardLayout
         activeModule={activeModule}
         activeRightItem={activeRightItem}
@@ -311,6 +312,6 @@ export default function DashboardContent({
         activeModule={activeModule}
         t={t}
       />
-    </>
+    </RequestsNotificationsProvider>
   );
 }

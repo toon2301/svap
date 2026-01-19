@@ -432,3 +432,121 @@ class OfferedSkillImage(models.Model):
 
     def __str__(self):
         return f"Obrázok #{self.id} pre {self.skill}"
+
+
+class SkillRequestStatus(models.TextChoices):
+    PENDING = 'pending', _('Čaká na odpoveď')
+    ACCEPTED = 'accepted', _('Prijaté')
+    REJECTED = 'rejected', _('Zamietnuté')
+    CANCELLED = 'cancelled', _('Zrušené')
+
+
+class SkillRequest(models.Model):
+    """
+    Žiadosť o kartu (ponúkam / hľadám).
+
+    - requester: kto žiadosť posiela
+    - recipient: komu žiadosť príde (vlastník karty)
+    - offer: karta, ktorej sa žiadosť týka
+    """
+
+    requester = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='sent_skill_requests',
+        verbose_name=_('Odosielateľ'),
+    )
+    recipient = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='received_skill_requests',
+        verbose_name=_('Príjemca'),
+    )
+    offer = models.ForeignKey(
+        OfferedSkill,
+        on_delete=models.CASCADE,
+        related_name='skill_requests',
+        verbose_name=_('Karta'),
+    )
+    status = models.CharField(
+        _('Stav'),
+        max_length=20,
+        choices=SkillRequestStatus.choices,
+        default=SkillRequestStatus.PENDING,
+    )
+    created_at = models.DateTimeField(_('Vytvorené'), auto_now_add=True)
+    updated_at = models.DateTimeField(_('Aktualizované'), auto_now=True)
+
+    class Meta:
+        verbose_name = _('Žiadosť o kartu')
+        verbose_name_plural = _('Žiadosti o kartu')
+        ordering = ['-created_at']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['requester', 'offer'],
+                name='unique_skill_request_per_requester_offer',
+            )
+        ]
+        indexes = [
+            models.Index(fields=['recipient', 'status', 'created_at']),
+            models.Index(fields=['requester', 'status', 'created_at']),
+            models.Index(fields=['offer', 'created_at']),
+        ]
+
+    def __str__(self):
+        return f"Request #{self.id}: {self.requester_id} -> {self.recipient_id} (offer {self.offer_id}) [{self.status}]"
+
+
+class NotificationType(models.TextChoices):
+    SKILL_REQUEST = 'skill_request', _('Nová žiadosť')
+    SKILL_REQUEST_ACCEPTED = 'skill_request_accepted', _('Žiadosť prijatá')
+    SKILL_REQUEST_REJECTED = 'skill_request_rejected', _('Žiadosť zamietnutá')
+    SKILL_REQUEST_CANCELLED = 'skill_request_cancelled', _('Žiadosť zrušená')
+
+
+class Notification(models.Model):
+    """Jednoduché notifikácie (pre badge + realtime)."""
+
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='notifications',
+        verbose_name=_('Používateľ'),
+    )
+    type = models.CharField(
+        _('Typ'),
+        max_length=50,
+        choices=NotificationType.choices,
+    )
+    title = models.CharField(_('Názov'), max_length=120, blank=True, default='')
+    body = models.TextField(_('Text'), blank=True, default='')
+    data = models.JSONField(_('Dáta'), default=dict, blank=True)
+    skill_request = models.ForeignKey(
+        SkillRequest,
+        on_delete=models.SET_NULL,
+        related_name='notifications',
+        null=True,
+        blank=True,
+        verbose_name=_('Žiadosť'),
+    )
+    is_read = models.BooleanField(_('Prečítané'), default=False)
+    created_at = models.DateTimeField(_('Vytvorené'), auto_now_add=True)
+    read_at = models.DateTimeField(_('Prečítané o'), null=True, blank=True)
+
+    class Meta:
+        verbose_name = _('Notifikácia')
+        verbose_name_plural = _('Notifikácie')
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['user', 'is_read', 'created_at']),
+            models.Index(fields=['user', 'type', 'is_read']),
+        ]
+
+    def mark_read(self):
+        if not self.is_read:
+            self.is_read = True
+            try:
+                self.read_at = timezone.now()
+            except Exception:
+                self.read_at = None
+            self.save(update_fields=['is_read', 'read_at'])

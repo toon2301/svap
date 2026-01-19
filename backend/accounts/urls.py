@@ -56,4 +56,13 @@ urlpatterns = [
     path('skills/<int:skill_id>/', views.skills_detail_view, name='skills_detail'),
     path('skills/<int:skill_id>/images/', views.skill_images_view, name='skill_images'),
     path('skills/<int:skill_id>/images/<int:image_id>/', views.skill_image_detail_view, name='skill_image_detail'),
+
+    # Žiadosti + notifikácie
+    path('skill-requests/', views.skill_requests_view, name='skill_requests'),
+    path('skill-requests/status/', views.skill_requests_status_view, name='skill_requests_status'),
+    path('skill-requests/<int:request_id>/', views.skill_request_detail_view, name='skill_request_detail'),
+
+    path('notifications/', views.notifications_list_view, name='notifications_list'),
+    path('notifications/unread-count/', views.notifications_unread_count_view, name='notifications_unread_count'),
+    path('notifications/mark-all-read/', views.notifications_mark_all_read_view, name='notifications_mark_all_read'),
 ]

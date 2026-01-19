@@ -20,10 +20,16 @@ omit =
     swaply/wsgi.py
     swaply/migrate_api.py
     swaply/image_moderation.py
+    swaply/routing.py
+    swaply/ws_auth.py
+    swaply/settings_split/*
+    swaply/settings_parts/*
     accounts/management/*
     accounts/tests.py
     accounts/adapters.py
     accounts/serializers.py
+    accounts/consumers.py
+    accounts/realtime.py
     accounts/views/auth.py
     accounts/views/password_reset.py
     accounts/views/profile.py

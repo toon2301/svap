@@ -33,6 +33,7 @@ export default function ProfileOffersSection({
 }: ProfileOffersSectionProps) {
   const { t } = useLanguage();
   const [offers, setOffers] = useState<Offer[]>([]);
+  const [requestStatusByOfferId, setRequestStatusByOfferId] = useState<Record<number, string>>({});
   const [flippedCards, setFlippedCards] = useState<Set<number | string>>(() => new Set());
   const [activeHoursOfferId, setActiveHoursOfferId] = useState<number | string | null>(null);
   const [hoursPopoverPosition, setHoursPopoverPosition] = useState<{ top: number; left: number } | null>(null);
@@ -41,23 +42,53 @@ export default function ProfileOffersSection({
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isUnavailableModalOpen, setIsUnavailableModalOpen] = useState(false);
 
-  const checkOfferStillAvailable = useCallback(
+  const isOfferStillAvailable = useCallback(
     async (offerId: number) => {
-      if (!isOtherUserProfile || !ownerUserId) return;
+      if (!isOtherUserProfile || !ownerUserId) return true;
 
       try {
         const endpoint = endpoints.dashboard.userSkills(ownerUserId);
         const { data } = await api.get(endpoint);
         const list = Array.isArray(data) ? data : [];
         const exists = list.some((s: any) => s && typeof s.id === 'number' && s.id === offerId);
-        if (!exists) {
-          setIsUnavailableModalOpen(true);
-        }
+        return exists;
       } catch {
         // Ak sa nepodarí overiť dostupnosť, necháme to bez hlášky (bezpečné minimum).
       }
+
+      return true;
     },
     [isOtherUserProfile, ownerUserId],
+  );
+
+  const checkOfferStillAvailable = useCallback(
+    async (offerId: number) => {
+      const ok = await isOfferStillAvailable(offerId);
+      if (!ok) setIsUnavailableModalOpen(true);
+    },
+    [isOfferStillAvailable],
+  );
+
+  const handleRequestClick = useCallback(
+    async (offerId: number) => {
+      if (!isOtherUserProfile) return;
+      const current = requestStatusByOfferId[offerId];
+      if (current === 'pending' || current === 'accepted') return;
+
+      const ok = await isOfferStillAvailable(offerId);
+      if (!ok) {
+        setIsUnavailableModalOpen(true);
+        return;
+      }
+
+      try {
+        await api.post(endpoints.requests.list, { offer_id: offerId });
+        setRequestStatusByOfferId((prev) => ({ ...prev, [offerId]: 'pending' }));
+      } catch {
+        // fail-open
+      }
+    },
+    [isOtherUserProfile, isOfferStillAvailable, requestStatusByOfferId],
   );
 
   // Load offers function (použitá pre prvotné načítanie aj polling)
@@ -214,6 +245,32 @@ export default function ProfileOffersSection({
     }
   }, [offers]);
 
+  // Na cudzom profile: načítaj statusy "požiadané" pre aktuálne ponuky (batch)
+  useEffect(() => {
+    if (!isOtherUserProfile) return;
+
+    const ids = offers
+      .map((o) => o.id)
+      .filter((id): id is number => typeof id === 'number');
+
+    if (ids.length === 0) return;
+
+    void (async () => {
+      try {
+        const res = await api.get(endpoints.requests.status, { params: { offer_ids: ids.join(',') } });
+        const map = res?.data && typeof res.data === 'object' ? (res.data as Record<string, string>) : {};
+        const normalized: Record<number, string> = {};
+        Object.entries(map).forEach(([k, v]) => {
+          const n = Number(k);
+          if (Number.isFinite(n) && typeof v === 'string') normalized[n] = v;
+        });
+        setRequestStatusByOfferId(normalized);
+      } catch {
+        // ignore
+      }
+    })();
+  }, [offers, isOtherUserProfile]);
+
   if (activeTab !== 'offers') {
     return null;
   }
@@ -315,8 +372,18 @@ export default function ProfileOffersSection({
                   onOpenHoursClick={accountType === 'business' ? handleOpenHoursClick : undefined}
                   isHighlighted={isHighlighted}
                   isOtherUserProfile={isOtherUserProfile}
-                  onRequestClick={checkOfferStillAvailable}
+                  onRequestClick={handleRequestClick}
                   onMessageClick={checkOfferStillAvailable}
+                  requestLabel={(() => {
+                    if (typeof offer.id !== 'number') return 'Požiadať';
+                    const st = requestStatusByOfferId[offer.id];
+                    return st === 'pending' ? 'Zrušiť žiadosť' : st === 'accepted' ? 'Požiadané' : 'Požiadať';
+                  })()}
+                  isRequestDisabled={(() => {
+                    if (typeof offer.id !== 'number') return false;
+                    const st = requestStatusByOfferId[offer.id];
+                    return st === 'pending' || st === 'accepted';
+                  })()}
                 />
               </div>
             );
