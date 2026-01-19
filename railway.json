@@ -9,7 +9,7 @@
     {
       "name": "backend",
       "rootDirectory": "backend",
-      "startCommand": "python manage.py migrate --noinput && python manage.py init_db && gunicorn swaply.wsgi:application --bind 0.0.0.0:$PORT --workers=3 --timeout 120",
+      "startCommand": "python manage.py migrate --noinput && python manage.py init_db && daphne -b 0.0.0.0 -p $PORT swaply.asgi:application",
       "buildCommand": "pip install -r requirements.txt && python manage.py migrate --noinput && python manage.py collectstatic --noinput",
       "env": {
         "DJANGO_SETTINGS_MODULE": "swaply.settings_production",

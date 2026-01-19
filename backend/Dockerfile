@@ -29,5 +29,5 @@ USER appuser
 # Expose port
 EXPOSE 8000
 
-# Start: run migrations then start gunicorn (Railway provides $PORT)
-CMD ["sh", "-c", "python manage.py migrate --noinput && python manage.py collectstatic --noinput && gunicorn swaply.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers=3"]
+# Start: run migrations then start daphne (Railway provides $PORT)
+CMD ["sh", "-c", "python manage.py migrate --noinput && python manage.py collectstatic --noinput && daphne -b 0.0.0.0 -p ${PORT:-8000} swaply.asgi:application"]
