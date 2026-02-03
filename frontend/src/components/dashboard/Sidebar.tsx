@@ -87,7 +87,7 @@ export default function Sidebar({
 }: SidebarProps) {
   const { t } = useLanguage();
   const { theme, toggleTheme } = useTheme();
-  const { unreadCount } = useRequestsNotifications();
+  const { unreadCount, markAllRead } = useRequestsNotifications();
   const handleItemClick = (itemId: string) => {
     // Desktop: pre vyhľadávanie otvor špeciálny search panel namiesto zmeny hlavného modulu
     if (itemId === 'search' && onSearchClick && !isMobile) {
@@ -121,7 +121,12 @@ export default function Sidebar({
       }
       return;
     }
-    
+
+    // Re-klik na Žiadosti: keď už si v Žiadostiach, označ ako prečítané (badge zmizne)
+    if (itemId === 'requests' && activeItem === 'requests') {
+      void markAllRead();
+    }
+
     onItemClick(itemId);
     if (isMobile && onClose) {
       onClose();

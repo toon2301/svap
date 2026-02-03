@@ -75,7 +75,7 @@ it('pridáva Authorization header keď je access token (request interceptor)', a
   postSpy.mockRestore();
 });
 
-  it('pri zlyhaní refreshu odstráni cookies a presmeruje na /auth/login (response interceptor)', async () => {
+  it('pri zlyhaní refreshu odstráni cookies a presmeruje na /login (response interceptor)', async () => {
   (Cookies.get as jest.Mock)
     .mockReturnValueOnce('access-old')
     .mockReturnValueOnce('refresh-xyz');
@@ -88,7 +88,7 @@ it('pridáva Authorization header keď je access token (request interceptor)', a
 
   expect(removeSpy).toHaveBeenCalledWith('access_token');
   expect(removeSpy).toHaveBeenCalledWith('refresh_token');
-  expect(window.location.href).toBe('/auth/login');
+  expect(window.location.href).toBe('/login');
 
   postSpy.mockRestore();
 });

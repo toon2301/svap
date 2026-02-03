@@ -11,6 +11,7 @@ export type SkillRequestOfferSummary = {
   id: number;
   subcategory: string;
   is_seeking: boolean;
+  is_hidden?: boolean;
   price_from: number | null;
   price_currency: string;
   owner?: {
@@ -32,6 +33,7 @@ export type SkillRequest = {
   recipient_display_name?: string;
 
   offer_is_seeking?: boolean;
+  offer_is_hidden?: boolean;
   offer_category?: string;
   offer_subcategory?: string;
   offer_description?: string;

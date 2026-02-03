@@ -19,7 +19,37 @@
     "darkMode": "Dunkler Modus",
     "clear": "Leeren",
     "add": "Hinzufügen",
-    "update": "Aktualisieren"
+    "update": "Aktualisieren",
+    "refresh": "Aktualisieren"
+  },
+  "requests": {
+    "title": "Anfragen",
+    "subtitle": "Erhaltene und gesendete Fähigkeitsanfragen",
+    "received": "Erhalten",
+    "sent": "Gesendet",
+    "accept": "Annehmen",
+    "reject": "Ablehnen",
+    "showCard": "Karte anzeigen",
+    "cancel": "Abbrechen",
+    "request": "Anfragen",
+    "offer": "Anbieten",
+    "cancelRequest": "Anfrage abbrechen",
+    "cancelOffer": "Angebot zurückziehen",
+    "requested": "Angefragt",
+    "userFallback": "Nutzer",
+    "noTitle": "Ohne Titel",
+    "intentOfferSeeks": "bietet Ihnen an, was Sie suchen",
+    "intentUserRequests": "fragt an, was Sie anbieten",
+    "intentUserSeeks": "sucht, was Sie anbieten",
+    "intentUserOffers": "bietet an, was Sie anfragen",
+    "toastCardUnavailable": "Karte ist nicht mehr verfügbar.",
+    "toastProfileOpenFailed": "Profil konnte nicht geöffnet werden.",
+    "offerNoLongerOffered": "Der Nutzer bietet dieses Angebot derzeit nicht an.",
+    "youHiddenThisCard": "Sie haben diese Karte ausgeblendet.",
+    "statusPending": "Ausstehend",
+    "statusAccepted": "Angenommen",
+    "statusRejected": "Abgelehnt",
+    "statusCancelled": "Abgebrochen"
   },
   "language": {
     "title": "Sprache",
@@ -77,7 +107,32 @@
     "resultsFor": "Suchergebnisse für:",
     "start": "Beginnen Sie mit der Suche",
     "find": "Finden Sie Nutzer mit den Fähigkeiten, die Sie benötigen",
-    "soon": "Die Suchfunktion wird in Kürze verfügbar sein"
+    "soon": "Die Suchfunktion wird in Kürze verfügbar sein",
+    "verified": "Verifiziert",
+    "profileBadge": "PROFIL",
+    "noLocation": "Kein Standort",
+    "you": "Sie",
+    "filterTitle": "Suchfilter",
+    "filterResultTypes": "Ergebnistyp",
+    "filterShowSkills": "Skill-Angebote anzeigen",
+    "filterShowUsers": "Nutzer anzeigen",
+    "offerTypeTitle": "Angebotstyp",
+    "offerTypeAll": "Alle",
+    "offerTypeOffer": "Ich biete an",
+    "offerTypeSeeking": "Ich suche",
+    "priceTitle": "Preis (Skill-Angebote)",
+    "priceMin": "Von",
+    "priceMax": "Bis",
+    "onlyMyLocation": "Nur in meiner Region (laut Profil)",
+    "noResults": "Keine Ergebnisse für Ihre Suche.",
+    "error": "Suchfehler. Bitte erneut versuchen.",
+    "labelOffer": "PONÚKAM",
+    "labelSeeking": "HĽADÁM",
+    "priceFromShort": "od",
+    "priceToShort": "do",
+    "categoryTitle": "Skill-Kategorien",
+    "resetFilters": "Zurücksetzen",
+    "applyFilters": "Filter anwenden"
   },
   "skills": {
     "offer": "Anbieten",
@@ -206,7 +261,10 @@
     "detailedDescriptionHintSeeking": "Beschreiben Sie im Detail, was Sie suchen – Vorgehensweise, was enthalten ist, Erwartungen und Ergebnis.",
     "hideCard": "Karte ausblenden",
     "hideCardDescription": "Karte vorübergehend ausblenden, ohne sie zu löschen",
-    "hideCardToggle": "Diese Karte ausblenden"
+    "hideCardToggle": "Diese Karte ausblenden",
+    "describeWhatYouSeek": "Opíš čo presne hľadáš",
+    "experienceHint": "Daj ostatným vedieť, ako dlho sa venuješ svojej odbornosti.",
+    "hiddenCard": "Skrytá"
   },
   "auth": {
     "login": "Anmelden",
@@ -308,7 +366,8 @@
     "loginError": "Anmeldefehler",
     "googleLoginFailed": "Google-Anmeldung konnte nicht abgeschlossen werden",
     "popupBlocked": "Popup-Blocker blockiert Google-Anmeldung",
-    "verificationResendError": "Fehler beim Senden der Verifizierungs-E-Mail"
+    "verificationResendError": "Fehler beim Senden der Verifizierungs-E-Mail",
+    "registerHere": "Registrieren"
   },
   "footer": {
     "howItWorks": "Wie es funktioniert",
@@ -353,7 +412,10 @@
     "blocked": "Blockiert",
     "language": "Sprache",
     "accountType": "Kontotyp",
-    "close": "Schließen"
+    "close": "Schließen",
+    "account": "Konto",
+    "privacy": "Datenschutzeinstellungen",
+    "privacyShort": "Datenschutz"
   },
   "accountType": {
     "modalTitle": "Möchten Sie das Konto wechseln?",
@@ -3207,6 +3269,18 @@
     "genderDescription": "Wählen Sie Ihr Geschlecht aus",
     "instagramDescription": "Geben Sie die URL Ihres Instagram-Profils ein",
     "facebookDescription": "Geben Sie die URL Ihres Facebook-Profils ein",
-    "linkedinDescription": "Geben Sie die URL Ihres LinkedIn-Profils ein"
+    "linkedinDescription": "Geben Sie die URL Ihres LinkedIn-Profils ein",
+    "addWebsite": "Pridať web"
+  },
+  "privacy": {
+    "mobileTitle": "Súkromie účtu",
+    "privateAccountTitle": "Súkromný účet",
+    "privateAccountDescription": "Keď si nastavíte súkromný účet, váš profil nebude viditeľný ani vyhľadateľný pre ostatných používateľov Svaply. Nikto vás nebude môcť nájsť vo vyhľadávaní ani zobraziť váš profil. Budú skryté všetky informácie vrátane profilovej fotografie, príspevkov, ponúkaných a hľadaných zručností, portfólia, kontaktných údajov, mena, lokality a ďalších informácií o profile. Toto nastavenie je vhodné, ak chcete mať svoj účet úplne súkromný a dočasne sa nezviditeľňovať v aplikácii.",
+    "privateAccountMobileDescription": "Pri súkromnom účte nie ste viditeľní ani vyhľadateľní. Všetky informácie, fotky, príspevky, zručnosti, portfólio, kontakty, meno a lokalita sú skryté. Ideálne, ak chcete účet úplne súkromný.",
+    "publicAccountTitle": "Verejný účet",
+    "publicAccountDescription": "Pri verejnom účte môžu ostatní používatelia váš profil nájsť vo vyhľadávaní podľa mena, ponúkaných alebo hľadaných zručností a kategórií. Zobrazujú sa všetky informácie vo vašom profile vrátane profilovej fotografie, osobných údajov, príspevkov, portfólia, kontaktov a kompletného prehľadu toho, čo ponúkate alebo hľadáte. Verejný účet je vhodný, ak chcete byť viditeľní, osloviť ostatných používateľov a aktívne sa zapájať do komunity Svaply.",
+    "publicAccountMobileDescription": "Pri verejnom účte vás ostatní môžu nájsť podľa mena, zručností alebo kategórií. Zobrazujú sa všetky údaje, fotky, príspevky, portfólio a kontakty. Vhodné, ak chcete byť viditeľní a aktívni v komunite Svaply.",
+    "privateAccountModalTitle": "Chcete prepnúť svoj účet na súkromný?",
+    "publicAccountModalTitle": "Chcete prepnúť svoj účet na verejný?"
   }
 }

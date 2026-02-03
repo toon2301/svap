@@ -175,7 +175,9 @@ export default function DashboardLayout({
             className={`py-4 lg:py-8 ${
               activeModule === 'search'
                 ? 'px-0 sm:px-2 lg:px-8' // mobil: ešte menší padding, maximálne rozšírený obsah pre vyhľadávanie
-                : 'px-4 sm:px-6 lg:px-8'
+                : activeModule === 'requests'
+                  ? 'px-2 sm:px-4 lg:px-8' // mobil: menší padding pre žiadosti (viac šírky pre zoznam)
+                  : 'px-4 sm:px-6 lg:px-8'
             }`}
           >
             <div

@@ -19,7 +19,37 @@
     "darkMode": "Ciemny tryb",
     "clear": "Wyczyść",
     "add": "Dodaj",
-    "update": "Aktualizuj"
+    "update": "Aktualizuj",
+    "refresh": "Odśwież"
+  },
+  "requests": {
+    "title": "Prośby",
+    "subtitle": "Otrzymane i wysłane prośby o umiejętności",
+    "received": "Otrzymane",
+    "sent": "Wysłane",
+    "accept": "Zaakceptuj",
+    "reject": "Odrzuć",
+    "showCard": "Pokaż kartę",
+    "cancel": "Anuluj",
+    "request": "Poproś",
+    "offer": "Zaoferuj",
+    "cancelRequest": "Anuluj prośbę",
+    "cancelOffer": "Wycofaj ofertę",
+    "requested": "Poproszono",
+    "userFallback": "Użytkownik",
+    "noTitle": "Bez tytułu",
+    "intentOfferSeeks": "oferuje to, czego szukasz",
+    "intentUserRequests": "prosi o to, co oferujesz",
+    "intentUserSeeks": "szuka tego, co oferujesz",
+    "intentUserOffers": "oferuje to, o co prosisz",
+    "toastCardUnavailable": "Karta nie jest już dostępna.",
+    "toastProfileOpenFailed": "Nie udało się otworzyć profilu.",
+    "offerNoLongerOffered": "Użytkownik nie oferuje już tej oferty.",
+    "youHiddenThisCard": "Ukryłeś tę kartę.",
+    "statusPending": "Oczekuje",
+    "statusAccepted": "Zaakceptowano",
+    "statusRejected": "Odrzucono",
+    "statusCancelled": "Anulowano"
   },
   "language": {
     "title": "Język",
@@ -77,7 +107,32 @@
     "resultsFor": "Wyniki wyszukiwania dla:",
     "start": "Rozpocznij wyszukiwanie",
     "find": "Znajdź użytkowników z umiejętnościami, których potrzebujesz",
-    "soon": "Funkcja wyszukiwania będzie wkrótce dostępna"
+    "soon": "Funkcja wyszukiwania będzie wkrótce dostępna",
+    "verified": "Zweryfikowany",
+    "profileBadge": "PROFIL",
+    "noLocation": "Bez lokalizacji",
+    "you": "Ty",
+    "filterTitle": "Filtry wyszukiwania",
+    "filterResultTypes": "Typ wyników",
+    "filterShowSkills": "Pokaż oferty umiejętności",
+    "filterShowUsers": "Pokaż użytkowników",
+    "offerTypeTitle": "Typ oferty",
+    "offerTypeAll": "Wszystkie",
+    "offerTypeOffer": "Oferuję",
+    "offerTypeSeeking": "Szukam",
+    "priceTitle": "Cena (oferty umiejętności)",
+    "priceMin": "Od",
+    "priceMax": "Do",
+    "onlyMyLocation": "Tylko w mojej lokalizacji (według profilu)",
+    "noResults": "Brak wyników wyszukiwania.",
+    "error": "Błąd wyszukiwania. Spróbuj ponownie.",
+    "labelOffer": "PONÚKAM",
+    "labelSeeking": "HĽADÁM",
+    "priceFromShort": "od",
+    "priceToShort": "do",
+    "categoryTitle": "Kategorie umiejętności",
+    "resetFilters": "Resetuj",
+    "applyFilters": "Zastosuj filtry"
   },
   "skills": {
     "offer": "Oferuję",
@@ -206,7 +261,10 @@
     "detailedDescriptionHintSeeking": "Opisz szczegółowo, czego szukasz – proces, co jest wliczone, oczekiwania i rezultat.",
     "hideCard": "Ukryj kartę",
     "hideCardDescription": "Ukryj kartę tymczasowo bez usuwania",
-    "hideCardToggle": "Ukryj tę kartę"
+    "hideCardToggle": "Ukryj tę kartę",
+    "describeWhatYouSeek": "Opíš čo presne hľadáš",
+    "experienceHint": "Daj ostatným vedieť, ako dlho sa venuješ svojej odbornosti.",
+    "hiddenCard": "Skrytá"
   },
   "auth": {
     "login": "Zaloguj się",
@@ -308,7 +366,8 @@
     "loginError": "Błąd logowania",
     "googleLoginFailed": "Logowanie przez Google nie zostało zakończone pomyślnie",
     "popupBlocked": "Blokada wyskakujących okien blokuje logowanie Google",
-    "verificationResendError": "Błąd wysyłania e-maila weryfikacyjnego"
+    "verificationResendError": "Błąd wysyłania e-maila weryfikacyjnego",
+    "registerHere": "Zarejestruj się"
   },
   "footer": {
     "howItWorks": "Jak to działa",
@@ -353,7 +412,10 @@
     "blocked": "Zablokowani",
     "language": "Język",
     "accountType": "Typ konta",
-    "close": "Zamknij"
+    "close": "Zamknij",
+    "account": "Konto",
+    "privacy": "Ustawienia prywatności",
+    "privacyShort": "Prywatność"
   },
   "accountType": {
     "modalTitle": "Czy chcesz przełączyć konto?",
@@ -3207,6 +3269,18 @@
     "genderDescription": "Wybierz swoją płeć",
     "instagramDescription": "Wpisz adres URL swojego profilu na Instagramie",
     "facebookDescription": "Wpisz adres URL swojego profilu na Facebooku",
-    "linkedinDescription": "Wpisz adres URL swojego profilu na LinkedIn"
+    "linkedinDescription": "Wpisz adres URL swojego profilu na LinkedIn",
+    "addWebsite": "Pridať web"
+  },
+  "privacy": {
+    "mobileTitle": "Súkromie účtu",
+    "privateAccountTitle": "Súkromný účet",
+    "privateAccountDescription": "Keď si nastavíte súkromný účet, váš profil nebude viditeľný ani vyhľadateľný pre ostatných používateľov Svaply. Nikto vás nebude môcť nájsť vo vyhľadávaní ani zobraziť váš profil. Budú skryté všetky informácie vrátane profilovej fotografie, príspevkov, ponúkaných a hľadaných zručností, portfólia, kontaktných údajov, mena, lokality a ďalších informácií o profile. Toto nastavenie je vhodné, ak chcete mať svoj účet úplne súkromný a dočasne sa nezviditeľňovať v aplikácii.",
+    "privateAccountMobileDescription": "Pri súkromnom účte nie ste viditeľní ani vyhľadateľní. Všetky informácie, fotky, príspevky, zručnosti, portfólio, kontakty, meno a lokalita sú skryté. Ideálne, ak chcete účet úplne súkromný.",
+    "publicAccountTitle": "Verejný účet",
+    "publicAccountDescription": "Pri verejnom účte môžu ostatní používatelia váš profil nájsť vo vyhľadávaní podľa mena, ponúkaných alebo hľadaných zručností a kategórií. Zobrazujú sa všetky informácie vo vašom profile vrátane profilovej fotografie, osobných údajov, príspevkov, portfólia, kontaktov a kompletného prehľadu toho, čo ponúkate alebo hľadáte. Verejný účet je vhodný, ak chcete byť viditeľní, osloviť ostatných používateľov a aktívne sa zapájať do komunity Svaply.",
+    "publicAccountMobileDescription": "Pri verejnom účte vás ostatní môžu nájsť podľa mena, zručností alebo kategórií. Zobrazujú sa všetky údaje, fotky, príspevky, portfólio a kontakty. Vhodné, ak chcete byť viditeľní a aktívni v komunite Svaply.",
+    "privateAccountModalTitle": "Chcete prepnúť svoj účet na súkromný?",
+    "publicAccountModalTitle": "Chcete prepnúť svoj účet na verejný?"
   }
 }

@@ -474,6 +474,8 @@ class SkillRequest(models.Model):
         choices=SkillRequestStatus.choices,
         default=SkillRequestStatus.PENDING,
     )
+    hidden_by_requester = models.BooleanField(_('Skryté pre odosielateľa'), default=False)
+    hidden_by_recipient = models.BooleanField(_('Skryté pre príjemcu'), default=False)
     created_at = models.DateTimeField(_('Vytvorené'), auto_now_add=True)
     updated_at = models.DateTimeField(_('Aktualizované'), auto_now=True)
 

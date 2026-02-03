@@ -46,9 +46,13 @@ export default function MobileTopBar({
   return (
     <div className="lg:hidden fixed top-0 left-0 right-0 z-30 bg-white dark:bg-black border-b border-gray-200 dark:border-gray-800 shadow-sm">
       <div className="grid grid-cols-3 items-center px-3 py-0 h-12">
-        {/* Ľavá strana - Šipka späť alebo prázdne */}
+        {/* Ľavá strana - Žiadosti (nadpis) alebo Šipka späť alebo prázdne */}
         <div className="flex items-center h-full justify-start">
-          {(isEditMode || activeRightItem === 'language' || activeRightItem === 'account-type' || activeRightItem === 'privacy' || activeModule === 'notifications' || activeModule === 'account-type' || activeModule === 'privacy' || activeModule === 'skills' || activeModule === 'skills-offer' || activeModule === 'skills-search' || activeModule === 'skills-select-category' || activeModule === 'user-profile') ? (
+          {activeModule === 'requests' ? (
+            <h1 className="text-base font-semibold text-gray-900 dark:text-white truncate">
+              {t('requests.title', 'Žiadosti')}
+            </h1>
+          ) : (isEditMode || activeRightItem === 'language' || activeRightItem === 'account-type' || activeRightItem === 'privacy' || activeModule === 'notifications' || activeModule === 'account-type' || activeModule === 'privacy' || activeModule === 'skills' || activeModule === 'skills-offer' || activeModule === 'skills-search' || activeModule === 'skills-select-category' || activeModule === 'user-profile') ? (
             <button
               onClick={onBackClick}
               className="p-2 -ml-2"
@@ -71,7 +75,7 @@ export default function MobileTopBar({
           ) : null}
         </div>
         
-        {/* Stred - Nadpis */}
+        {/* Stred - Nadpis (pre requests je nadpis vľavo) */}
         <div className="text-center flex items-center justify-center h-full">
           {isEditMode && (
             <h1 className="text-lg font-semibold text-gray-900 dark:text-white whitespace-nowrap">{t('profile.editProfile', 'Upraviť profil')}</h1>
@@ -112,8 +116,22 @@ export default function MobileTopBar({
           )}
         </div>
         
-        {/* Pravá strana - Profil, Hamburger alebo Krížik */}
+        {/* Pravá strana - Obnoviť (žiadosti), Profil, Hamburger alebo Krížik */}
         <div className="flex items-center justify-end h-full space-x-2">
+          {/* Obnoviť pre modul Žiadosti */}
+          {activeModule === 'requests' && (
+            <button
+              type="button"
+              onClick={() => {
+                if (typeof window !== 'undefined') {
+                  window.dispatchEvent(new CustomEvent('requestsRefresh'));
+                }
+              }}
+              className="inline-flex items-center justify-center rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-black px-3 py-1.5 text-sm font-semibold text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60"
+            >
+              {t('common.refresh', 'Obnoviť')}
+            </button>
+          )}
           {/* Krížik pre skills-describe */}
           {activeModule === 'skills-describe' && (
             <button
@@ -135,7 +153,7 @@ export default function MobileTopBar({
           )}
 
           {/* Ikona profilu – rýchly prechod na profil (ak nie sme na profile ani na cudzom profile) */}
-          {onProfileClick && activeModule !== 'profile' && activeModule !== 'user-profile' && activeModule !== 'skills-describe' && (
+          {onProfileClick && activeModule !== 'profile' && activeModule !== 'user-profile' && activeModule !== 'skills-describe' && activeModule !== 'requests' && (
             <button
               onClick={onProfileClick}
               className="p-1.5 rounded-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-black text-gray-600 dark:text-gray-300 shadow-sm hover:border-purple-400 hover:text-purple-600 hover:bg-gray-50 dark:hover:bg-gray-900 transition-all"

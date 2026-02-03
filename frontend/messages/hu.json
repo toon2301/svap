@@ -19,7 +19,37 @@
     "darkMode": "Sötét mód",
     "clear": "Törlés",
     "add": "Hozzáadás",
-    "update": "Frissítés"
+    "update": "Frissítés",
+    "refresh": "Frissítés"
+  },
+  "requests": {
+    "title": "Kérések",
+    "subtitle": "Megkapott és elküldött készségkérések",
+    "received": "Megkapott",
+    "sent": "Elküldött",
+    "accept": "Elfogadás",
+    "reject": "Elutasítás",
+    "showCard": "Kártya megjelenítése",
+    "cancel": "Mégse",
+    "request": "Kérés",
+    "offer": "Ajánlat",
+    "cancelRequest": "Kérés visszavonása",
+    "cancelOffer": "Ajánlat visszavonása",
+    "requested": "Kérve",
+    "userFallback": "Felhasználó",
+    "noTitle": "Nincs cím",
+    "intentOfferSeeks": "azt kínálja, amit Ön keres",
+    "intentUserRequests": "azt kéri, amit Ön kínál",
+    "intentUserSeeks": "azt keresi, amit Ön kínál",
+    "intentUserOffers": "azt kínálja, amit Ön kér",
+    "toastCardUnavailable": "A kártya már nem elérhető.",
+    "toastProfileOpenFailed": "A profil megnyitása sikertelen.",
+    "offerNoLongerOffered": "A felhasználó jelenleg nem kínálja ezt az ajánlatot.",
+    "youHiddenThisCard": "Ön rejtette ezt a kártyát.",
+    "statusPending": "Függőben",
+    "statusAccepted": "Elfogadva",
+    "statusRejected": "Elutasítva",
+    "statusCancelled": "Törölve"
   },
   "language": {
     "title": "Nyelv",
@@ -77,7 +107,32 @@
     "resultsFor": "Keresési eredmények:",
     "start": "Kezdje a keresést",
     "find": "Keressen olyan felhasználókat, akik rendelkeznek a szükséges készségekkel",
-    "soon": "A keresési funkció hamarosan elérhető lesz"
+    "soon": "A keresési funkció hamarosan elérhető lesz",
+    "verified": "Hitelesített",
+    "profileBadge": "PROFIL",
+    "noLocation": "Nincs helyszín",
+    "you": "Ön",
+    "filterTitle": "Keresési szűrők",
+    "filterResultTypes": "Eredménytípusok",
+    "filterShowSkills": "Készségajánlatok megjelenítése",
+    "filterShowUsers": "Felhasználók megjelenítése",
+    "offerTypeTitle": "Ajánlat típusa",
+    "offerTypeAll": "Összes",
+    "offerTypeOffer": "Kínálok",
+    "offerTypeSeeking": "Keresek",
+    "priceTitle": "Cena (ponuky zručností)",
+    "priceMin": "Tól",
+    "priceMax": "Ig",
+    "onlyMyLocation": "Len v mojej lokalite (podľa profilu)",
+    "noResults": "Pre zadané vyhľadávanie sa nenašli žiadne výsledky.",
+    "error": "Chyba pri vyhľadávaní. Skúste to znova.",
+    "labelOffer": "PONÚKAM",
+    "labelSeeking": "HĽADÁM",
+    "priceFromShort": "od",
+    "priceToShort": "do",
+    "categoryTitle": "Kategórie zručností",
+    "resetFilters": "Visszaállítás",
+    "applyFilters": "Szűrők alkalmazása"
   },
   "skills": {
     "offer": "Kínálok",
@@ -206,7 +261,10 @@
     "detailedDescriptionHintSeeking": "Írd le részletesen, mit keresel – folyamat, mit tartalmaz, elvárások és eredmény.",
     "hideCard": "Kártya elrejtése",
     "hideCardDescription": "Kártya ideiglenes elrejtése törlés nélkül",
-    "hideCardToggle": "E kártya elrejtése"
+    "hideCardToggle": "E kártya elrejtése",
+    "describeWhatYouSeek": "Opíš čo presne hľadáš",
+    "experienceHint": "Daj ostatným vedieť, ako dlho sa venuješ svojej odbornosti.",
+    "hiddenCard": "Skrytá"
   },
   "auth": {
     "login": "Bejelentkezés",
@@ -308,7 +366,8 @@
     "loginError": "Bejelentkezési hiba",
     "googleLoginFailed": "A Google-bejelentkezés nem fejeződött be",
     "popupBlocked": "A felugróablak-blokkoló blokkolja a Google bejelentkezést",
-    "verificationResendError": "Hiba a megerősítő e-mail küldésekor"
+    "verificationResendError": "Hiba a megerősítő e-mail küldésekor",
+    "registerHere": "Regisztráció"
   },
   "footer": {
     "howItWorks": "Hogyan működik",
@@ -353,7 +412,10 @@
     "blocked": "Letiltott",
     "language": "Nyelv",
     "accountType": "Fiók típusa",
-    "close": "Bezárás"
+    "close": "Bezárás",
+    "account": "Fiók",
+    "privacy": "Adatvédelmi beállítások",
+    "privacyShort": "Adatvédelem"
   },
   "accountType": {
     "modalTitle": "Szeretné átváltani a fiókot?",
@@ -3207,6 +3269,18 @@
     "genderDescription": "Válassza ki nemét",
     "instagramDescription": "Adja meg Instagram profiljának URL-jét",
     "facebookDescription": "Adja meg Facebook profiljának URL-jét",
-    "linkedinDescription": "Adja meg LinkedIn profiljának URL-jét"
+    "linkedinDescription": "Adja meg LinkedIn profiljának URL-jét",
+    "addWebsite": "Pridať web"
+  },
+  "privacy": {
+    "mobileTitle": "Súkromie účtu",
+    "privateAccountTitle": "Súkromný účet",
+    "privateAccountDescription": "Keď si nastavíte súkromný účet, váš profil nebude viditeľný ani vyhľadateľný pre ostatných používateľov Svaply. Nikto vás nebude môcť nájsť vo vyhľadávaní ani zobraziť váš profil. Budú skryté všetky informácie vrátane profilovej fotografie, príspevkov, ponúkaných a hľadaných zručností, portfólia, kontaktných údajov, mena, lokality a ďalších informácií o profile. Toto nastavenie je vhodné, ak chcete mať svoj účet úplne súkromný a dočasne sa nezviditeľňovať v aplikácii.",
+    "privateAccountMobileDescription": "Pri súkromnom účte nie ste viditeľní ani vyhľadateľní. Všetky informácie, fotky, príspevky, zručnosti, portfólio, kontakty, meno a lokalita sú skryté. Ideálne, ak chcete účet úplne súkromný.",
+    "publicAccountTitle": "Verejný účet",
+    "publicAccountDescription": "Pri verejnom účte môžu ostatní používatelia váš profil nájsť vo vyhľadávaní podľa mena, ponúkaných alebo hľadaných zručností a kategórií. Zobrazujú sa všetky informácie vo vašom profile vrátane profilovej fotografie, osobných údajov, príspevkov, portfólia, kontaktov a kompletného prehľadu toho, čo ponúkate alebo hľadáte. Verejný účet je vhodný, ak chcete byť viditeľní, osloviť ostatných používateľov a aktívne sa zapájať do komunity Svaply.",
+    "publicAccountMobileDescription": "Pri verejnom účte vás ostatní môžu nájsť podľa mena, zručností alebo kategórií. Zobrazujú sa všetky údaje, fotky, príspevky, portfólio a kontakty. Vhodné, ak chcete byť viditeľní a aktívni v komunite Svaply.",
+    "privateAccountModalTitle": "Chcete prepnúť svoj účet na súkromný?",
+    "publicAccountModalTitle": "Chcete prepnúť svoj účet na verejný?"
   }
 }

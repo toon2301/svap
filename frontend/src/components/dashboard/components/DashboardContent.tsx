@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { User } from '@/types';
+import { api, endpoints } from '@/lib/api';
 import type { ProfileTab } from '../modules/profile/profileTypes';
 import DashboardLayout from '../DashboardLayout';
 import ModuleRouter from '../ModuleRouter';
@@ -17,6 +18,7 @@ import { useDashboardUserProfile } from '../hooks/useDashboardUserProfile';
 import { useDashboardKeyboard } from '../hooks/useDashboardKeyboard';
 import { useSkillSaveHandler } from '../hooks/useSkillSaveHandler';
 import { RequestsNotificationsProvider } from '../contexts/RequestsNotificationsContext';
+import { getUserIdBySlug, setUserProfileToCache } from '../modules/profile/profileUserCache';
 
 interface DashboardContentProps {
   initialUser?: User;
@@ -168,6 +170,159 @@ export default function DashboardContent({
     }
   }, [activeModule, loadSkills]);
 
+  // Globálna navigácia na cudzí profil (napr. zo Žiadostí).
+  // Používame event, aby UI reagovalo okamžite aj v prípadoch, keď sa URL zmení bez
+  // toho, aby Next router prerenderoval stránku (napr. window.history.pushState).
+  useEffect(() => {
+    const handler = (evt: Event) => {
+      const detail = (evt as CustomEvent<{ identifier?: string; highlightId?: number | string | null }>).detail;
+      const identifier = (detail?.identifier || '').trim();
+      if (!identifier) return;
+
+      const rawHighlight = detail?.highlightId;
+      const parsedHighlight =
+        typeof rawHighlight === 'number'
+          ? rawHighlight
+          : rawHighlight != null && String(rawHighlight).trim()
+            ? Number(rawHighlight)
+            : null;
+      const highlightId = parsedHighlight != null && Number.isFinite(parsedHighlight) ? parsedHighlight : null;
+
+      // Prepni modul a zavri vedľajšie UI
+      setActiveModule('user-profile');
+      setIsRightSidebarOpen(false);
+      setActiveRightItem('');
+      setIsMobileMenuOpen(false);
+      setIsSearchOpen(false);
+
+      // Nastav, aký profil sa má zobraziť
+      if (/^\d+$/.test(identifier)) {
+        userProfile.setViewedUserId(Number(identifier));
+        userProfile.setViewedUserSlug(null);
+      } else {
+        userProfile.setViewedUserSlug(identifier);
+        userProfile.setViewedUserId(null);
+
+        // Pokús sa slug -> userId (cache -> API), aby ModuleRouter vedel vyrenderovať profil.
+        const cachedId = getUserIdBySlug(identifier);
+        if (cachedId) {
+          userProfile.setViewedUserId(cachedId);
+        } else {
+          void (async () => {
+            try {
+              const { data } = await api.get(endpoints.dashboard.userProfileBySlug(identifier));
+              userProfile.setViewedUserId(data.id);
+              setUserProfileToCache(data.id, data);
+            } catch {
+              // necháme UI rozhodnúť (zobrazí not-found hlášku)
+            }
+          })();
+        }
+      }
+      userProfile.setViewedUserSummary(null);
+
+      // Highlight skill (ak je)
+      if (highlightId != null) {
+        highlighting.setHighlightedSkillId(highlightId);
+        try {
+          if (typeof window !== 'undefined') {
+            sessionStorage.setItem('highlightedSkillId', String(highlightId));
+            sessionStorage.setItem('highlightedSkillTime', String(Date.now()));
+          }
+        } catch {
+          // ignore
+        }
+      } else {
+        highlighting.setHighlightedSkillId(null);
+      }
+
+      // Aktualizuj URL bez reloadu
+      if (typeof window !== 'undefined') {
+        const url = `/dashboard/users/${encodeURIComponent(identifier)}${
+          highlightId != null ? `?highlight=${encodeURIComponent(String(highlightId))}` : ''
+        }`;
+        window.history.pushState(null, '', url);
+      }
+    };
+
+    window.addEventListener('goToUserProfile', handler as EventListener);
+    return () => {
+      window.removeEventListener('goToUserProfile', handler as EventListener);
+    };
+  }, [
+    setActiveModule,
+    setIsRightSidebarOpen,
+    setActiveRightItem,
+    setIsMobileMenuOpen,
+    setIsSearchOpen,
+    userProfile,
+    highlighting,
+  ]);
+
+  // Globálna navigácia na vlastný profil (napr. zo Žiadostí pri prijatej žiadosti).
+  useEffect(() => {
+    const handler = (evt: Event) => {
+      const detail = (evt as CustomEvent<{ highlightId?: number | string | null }>).detail;
+      const rawHighlight = detail?.highlightId;
+      const parsedHighlight =
+        typeof rawHighlight === 'number'
+          ? rawHighlight
+          : rawHighlight != null && String(rawHighlight).trim()
+            ? Number(rawHighlight)
+            : null;
+      const highlightId = parsedHighlight != null && Number.isFinite(parsedHighlight) ? parsedHighlight : null;
+
+      setActiveModule('profile');
+      setIsRightSidebarOpen(false);
+      setActiveRightItem('');
+      setIsMobileMenuOpen(false);
+      setIsSearchOpen(false);
+
+      // vyčisti stav cudzích profilov, aby sa UI nemiešalo
+      try {
+        userProfile.setViewedUserId(null);
+        userProfile.setViewedUserSlug(null);
+        userProfile.setViewedUserSummary(null);
+      } catch {
+        // ignore
+      }
+
+      if (highlightId != null) {
+        highlighting.setHighlightedSkillId(highlightId);
+        try {
+          if (typeof window !== 'undefined') {
+            sessionStorage.setItem('highlightedSkillId', String(highlightId));
+            sessionStorage.setItem('highlightedSkillTime', String(Date.now()));
+          }
+        } catch {
+          // ignore
+        }
+      } else {
+        highlighting.setHighlightedSkillId(null);
+      }
+
+      if (typeof window !== 'undefined') {
+        const url = `/dashboard/profile${
+          highlightId != null ? `?highlight=${encodeURIComponent(String(highlightId))}` : ''
+        }`;
+        window.history.pushState(null, '', url);
+      }
+    };
+
+    window.addEventListener('goToMyProfile', handler as EventListener);
+    return () => {
+      window.removeEventListener('goToMyProfile', handler as EventListener);
+    };
+  }, [
+    setActiveModule,
+    setIsRightSidebarOpen,
+    setActiveRightItem,
+    setIsMobileMenuOpen,
+    setIsSearchOpen,
+    userProfile,
+    highlighting,
+  ]);
+
   // Early returns pre loading a error states
   if (isLoading) {
     return (
@@ -227,6 +382,7 @@ export default function DashboardContent({
         skillsCategoryBackHandlerRef.current = handler;
       }}
       viewedUserId={userProfile.viewedUserId}
+      viewedUserSlug={userProfile.viewedUserSlug}
       viewedUserSummary={userProfile.viewedUserSummary}
       onEditProfileClick={navigation.handleEditProfileClick}
       onViewUserProfile={navigation.handleViewUserProfileFromSearch}

@@ -45,27 +45,27 @@ export default function Home() {
     <div className="min-h-screen flex flex-col relative bg-[var(--background)]">
       {/* Particle efekt - lazy loaded s mobilnou optimalizáciou */}
       <Suspense
-        fallback={<div className="absolute inset-0 z-0 max-lg:hidden" />}
+        fallback={<div className="absolute inset-0 z-0 hidden lg:block" />}
       >
         <ParticlesBackground />
       </Suspense>
 
-      <div className="flex items-center justify-center flex-1 px-4 sm:px-6 lg:px-8 max-lg:flex-col max-lg:gap-6 relative z-10 pt-8 pb-6 lg:pt-4 lg:pb-8">
+      <div className="flex flex-col lg:flex-row items-center justify-center flex-1 gap-6 lg:gap-0 px-4 sm:px-6 lg:px-8 relative z-10 pt-8 pb-6 lg:pt-4 lg:pb-8">
         {/* Main content */}
         <motion.div 
-          className="flex-1 max-w-4xl max-lg:text-center max-lg:mt-0 lg:-mt-24"
+          className="flex-1 max-w-4xl text-center lg:text-left mt-0 lg:-mt-24"
           initial={{ opacity: 0, x: -50 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
         >
           <motion.div 
-            className="flex items-center flex-wrap max-lg:flex-col max-lg:items-center max-lg:gap-0 lg:gap-2"
+            className="flex flex-col items-center flex-wrap gap-0 lg:flex-row lg:gap-2"
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
           >
             <span 
-              className="text-[clamp(1.75rem,5vw,3.75rem)] font-bold text-gray-900 dark:text-white max-lg:whitespace-normal lg:whitespace-nowrap text-center"
+              className="text-[clamp(1.75rem,5vw,3.75rem)] font-bold text-gray-900 dark:text-white whitespace-normal lg:whitespace-nowrap text-center"
               lang={locale}
             >
               {t('homepage.welcome', 'Víta ťa')}
@@ -73,11 +73,11 @@ export default function Home() {
             <img
               src="/Logotyp _svaply_ na fialovom pozadí.png"
               alt="Svaply"
-              className="w-auto h-[clamp(140px,22vw,400px)] max-lg:-mt-10 lg:-ml-[clamp(30px,3vw,50px)] lg:mt-[clamp(8px,1.5vw,20px)]"
+              className="w-auto h-[clamp(140px,22vw,400px)] -mt-10 lg:-ml-[clamp(30px,3vw,50px)] lg:mt-[clamp(8px,1.5vw,20px)]"
             />
           </motion.div>
           <motion.p 
-            className="text-[clamp(0.75rem,1.5vw,1.25rem)] text-gray-600 dark:text-gray-300 text-left max-w-[clamp(300px,80%,700px)] leading-relaxed max-lg:-mt-10 lg:-mt-24 max-lg:mx-auto"
+            className="text-[clamp(0.75rem,1.5vw,1.25rem)] text-gray-600 dark:text-gray-300 text-center lg:text-left max-w-[clamp(300px,80%,700px)] leading-relaxed -mt-10 lg:-mt-12 xl:-mt-24 mx-auto lg:mx-0"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.5, ease: "easeOut" }}
@@ -92,7 +92,7 @@ export default function Home() {
 
       {/* Footer - Lazy loaded s mobilnou optimalizáciou */}
       <Suspense
-        fallback={<div className="h-32 bg-gray-50 dark:bg-black border-t border-gray-200 dark:border-gray-800 max-lg:h-24" />}
+        fallback={<div className="h-24 lg:h-32 bg-gray-50 dark:bg-black border-t border-gray-200 dark:border-gray-800" />}
       >
         <motion.footer
           className="bg-gray-50 dark:bg-black border-t border-gray-200 dark:border-gray-800 relative z-10"

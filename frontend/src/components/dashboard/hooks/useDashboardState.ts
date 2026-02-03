@@ -65,6 +65,22 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
   // Inicializácia modulu - používame initialModule ak je poskytnutý (rovnaký pre SSR aj CSR)
   // Ak nie, použijeme 'home' (hydration fix)
   const [activeModule, setActiveModule] = useState<string>(initialModule || 'home');
+
+  // Pri client-side navigácii (router.push / zmena URL bez full reloadu) môže rovnaká inštancia
+  // Dashboardu dostať nové `initialModule`. Bez synchronizácie by UI ostalo na starom module.
+  useEffect(() => {
+    if (!initialModule) return;
+
+    setActiveModule(initialModule);
+
+    try {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('activeModule', initialModule);
+      }
+    } catch {
+      // ignore
+    }
+  }, [initialModule]);
   
   // Inicializácia sidebaru - ak initialModule je sidebar sekcia, otvor sidebar hneď
   const rightSidebarItems = ['notifications', 'language', 'account-type', 'privacy'];

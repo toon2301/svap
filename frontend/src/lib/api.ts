@@ -251,7 +251,7 @@ api.interceptors.response.use(
         // Refresh failed, redirect to login
         Cookies.remove('access_token');
         Cookies.remove('refresh_token');
-        window.location.href = '/auth/login';
+        window.location.href = '/login';
       }
     }
 

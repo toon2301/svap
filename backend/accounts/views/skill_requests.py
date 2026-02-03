@@ -2,6 +2,7 @@
 Skill request (Žiadosti) API views.
 """
 
+import json
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
@@ -53,10 +54,16 @@ def skill_requests_view(request):
     POST: vytvorí žiadosť o kartu (offer_id)
     """
     if request.method == 'GET':
-        received = SkillRequest.objects.filter(recipient=request.user).select_related(
+        received = SkillRequest.objects.filter(
+            recipient=request.user,
+            hidden_by_recipient=False,
+        ).select_related(
             'requester', 'recipient', 'offer', 'offer__user'
         )
-        sent = SkillRequest.objects.filter(requester=request.user).select_related(
+        sent = SkillRequest.objects.filter(
+            requester=request.user,
+            hidden_by_requester=False,
+        ).select_related(
             'requester', 'recipient', 'offer', 'offer__user'
         )
         received_serializer = SkillRequestSerializer(received, many=True, context={'request': request})
@@ -91,7 +98,17 @@ def skill_requests_view(request):
         if obj.status in (SkillRequestStatus.CANCELLED, SkillRequestStatus.REJECTED):
             obj.status = SkillRequestStatus.PENDING
             obj.recipient = recipient
-            obj.save(update_fields=['status', 'recipient', 'updated_at'])
+            # Ak bola žiadosť predtým „skrytá“ (vymazaná zo zoznamu),
+            # pri opätovnom odoslaní ju musíme znovu zviditeľniť obom stranám.
+            obj.hidden_by_requester = False
+            obj.hidden_by_recipient = False
+            obj.save(update_fields=[
+                'status',
+                'recipient',
+                'hidden_by_requester',
+                'hidden_by_recipient',
+                'updated_at',
+            ])
         else:
             return Response(SkillRequestSerializer(obj, context={'request': request}).data, status=status.HTTP_200_OK)
     except SkillRequest.DoesNotExist:
@@ -172,7 +189,7 @@ def skill_requests_status_view(request):
 def skill_request_detail_view(request, request_id: int):
     """
     PATCH /skill-requests/<id>/
-    Body: { action: 'accept'|'reject'|'cancel' }
+    Body: { action: 'accept'|'reject'|'cancel'|'hide' }
     """
     try:
         obj = SkillRequest.objects.select_related('offer', 'requester', 'recipient').get(id=request_id)
@@ -183,8 +200,17 @@ def skill_request_detail_view(request, request_id: int):
     if request.user.id not in (obj.requester_id, obj.recipient_id):
         return Response({'error': 'Nemáš prístup.'}, status=status.HTTP_403_FORBIDDEN)
 
-    action = (request.data.get('action') or '').strip().lower()
-    if action not in {'accept', 'reject', 'cancel'}:
+    raw_action = request.data.get('action') if hasattr(request, 'data') and request.data else None
+    if raw_action is None and getattr(request, '_request', None):
+        try:
+            body = getattr(request._request, 'body', b'')
+            if body:
+                data = json.loads(body.decode('utf-8') if isinstance(body, bytes) else body)
+                raw_action = data.get('action')
+        except Exception:
+            pass
+    action = (raw_action or '').strip().lower() if isinstance(raw_action, str) else ''
+    if not raw_action or action not in {'accept', 'reject', 'cancel', 'hide'}:
         return Response({'error': 'Neplatná akcia.'}, status=status.HTTP_400_BAD_REQUEST)
 
     # Recipient môže accept/reject, requester môže cancel
@@ -192,6 +218,22 @@ def skill_request_detail_view(request, request_id: int):
         return Response({'error': 'Nemáš oprávnenie.'}, status=status.HTTP_403_FORBIDDEN)
     if action == 'cancel' and request.user.id != obj.requester_id:
         return Response({'error': 'Nemáš oprávnenie.'}, status=status.HTTP_403_FORBIDDEN)
+    # Hide môže urobiť len účastník žiadosti (už overené) a len na svojej strane
+
+    if action == 'hide':
+        # Bezpečnosť: dovoľ len pre odmietnuté alebo zrušené.
+        if obj.status not in (SkillRequestStatus.REJECTED, SkillRequestStatus.CANCELLED):
+            return Response({'error': 'Žiadosť môžeš skryť len ak je zrušená alebo zamietnutá.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if request.user.id == obj.requester_id:
+            if not obj.hidden_by_requester:
+                obj.hidden_by_requester = True
+                obj.save(update_fields=['hidden_by_requester', 'updated_at'])
+        elif request.user.id == obj.recipient_id:
+            if not obj.hidden_by_recipient:
+                obj.hidden_by_recipient = True
+                obj.save(update_fields=['hidden_by_recipient', 'updated_at'])
+        return Response(SkillRequestSerializer(obj, context={'request': request}).data, status=status.HTTP_200_OK)
 
     # Stavové prechody
     if action == 'accept' and obj.status == SkillRequestStatus.PENDING:

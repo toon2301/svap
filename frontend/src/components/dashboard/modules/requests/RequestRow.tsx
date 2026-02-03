@@ -10,10 +10,11 @@ type Props = {
   onAccept?: () => void;
   onReject?: () => void;
   onCancel?: () => void;
+  onHide?: () => void;
   isBusy?: boolean;
 };
 
-export function RequestRow({ item, variant, onAccept, onReject, onCancel, isBusy = false }: Props) {
+export function RequestRow({ item, variant, onAccept, onReject, onCancel, onHide, isBusy = false }: Props) {
   return (
     <RequestSummaryCard
       item={item}
@@ -21,6 +22,7 @@ export function RequestRow({ item, variant, onAccept, onReject, onCancel, isBusy
       onAccept={onAccept}
       onReject={onReject}
       onCancel={onCancel}
+      onHide={onHide}
       isBusy={isBusy}
     />
   );

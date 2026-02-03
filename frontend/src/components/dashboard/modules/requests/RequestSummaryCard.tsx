@@ -3,10 +3,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
-import { CheckIcon, NoSymbolIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { CheckIcon, NoSymbolIcon, TrashIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { StatusPill } from './ui/StatusPill';
 import type { SkillRequest } from './types';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { api } from '@/lib/api';
 
 type Props = {
@@ -15,6 +16,7 @@ type Props = {
   onAccept?: () => void;
   onReject?: () => void;
   onCancel?: () => void;
+  onHide?: () => void;
   isBusy?: boolean;
 };
 
@@ -82,9 +84,10 @@ function resolveMediaUrl(rawUrl: string, backendOrigin: string): string {
   return origin ? `${origin}/${raw}` : raw;
 }
 
-export function RequestSummaryCard({ item, variant, onAccept, onReject, onCancel, isBusy = false }: Props) {
+export function RequestSummaryCard({ item, variant, onAccept, onReject, onCancel, onHide, isBusy = false }: Props) {
   const router = useRouter();
   const { user } = useAuth();
+  const { t } = useLanguage();
 
   const who = variant === 'received' ? item.requester_summary : item.recipient_summary;
   const whoName = who?.display_name || (variant === 'received' ? item.requester_display_name : item.recipient_display_name) || '';
@@ -93,9 +96,12 @@ export function RequestSummaryCard({ item, variant, onAccept, onReject, onCancel
 
   const offer = item.offer_summary || null;
   const isSeeking = offer?.is_seeking ?? item.offer_is_seeking ?? false;
+  const isOfferHidden = offer?.is_hidden === true || item.offer_is_hidden === true;
   const subcategory = (offer?.subcategory || item.offer_subcategory || '').trim();
   const description = (item.offer_description || '').trim();
-  const created = formatDateSk(item.created_at);
+  const dateToShow = item.updated_at ?? item.created_at;
+  const created = formatDateSk(dateToShow);
+  const canHide = item.status === 'cancelled' || item.status === 'rejected';
 
   const avatarSrc = useMemo(() => {
     if (!whoAvatar) return '';
@@ -119,73 +125,78 @@ export function RequestSummaryCard({ item, variant, onAccept, onReject, onCancel
   }, [offer?.price_currency, offer?.price_from]);
 
   const intentText = useMemo(() => {
-    if (variant === 'received') {
-      // Prijaté: karta patrí mne, niekto mi poslal žiadosť
-      return isSeeking
-        ? 'Užívateľ ponúka to, čo hľadáte.'
-        : 'Užívateľ žiada o to, čo ponúkate.';
-    } else {
-      // Odoslané: karta patrí niekomu inému, ja som poslal žiadosť
-      return isSeeking
-        ? 'Užívateľ hľadá to, čo ponúkate.'
-        : 'Užívateľ ponúka to, čo žiadate.';
+    if (isOfferHidden) {
+      return variant === 'received'
+        ? t('requests.youHiddenThisCard')
+        : t('requests.offerNoLongerOffered');
     }
-  }, [variant, isSeeking]);
+    const key =
+      variant === 'received'
+        ? isSeeking
+          ? 'requests.intentOfferSeeks'
+          : 'requests.intentUserRequests'
+        : isSeeking
+          ? 'requests.intentUserSeeks'
+          : 'requests.intentUserOffers';
+    const text = t(key);
+    return text.endsWith('!') ? text : `${text}!`;
+  }, [variant, isSeeking, isOfferHidden, t]);
 
   const handleView = () => {
     const offerId = offer?.id ?? item.offer;
     if (typeof offerId !== 'number' || !Number.isFinite(offerId)) {
-      toast('Karta už nie je dostupná.');
+      toast(t('requests.toastCardUnavailable'));
+      return;
+    }
+
+    // Pri prijatých žiadostiach ide o moju kartu -> otvor môj profil modul (nie /dashboard/users/...)
+    // Tým pádom sa nikdy nezobrazia "Požiadať/Správa" na vlastnej karte.
+    if (variant === 'received') {
+      try {
+        sessionStorage.setItem('highlightedSkillId', String(offerId));
+        sessionStorage.setItem('highlightedSkillTime', String(Date.now()));
+      } catch {
+        // ignore
+      }
+
+      try {
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(
+            new CustomEvent('goToMyProfile', {
+              detail: { highlightId: offerId },
+            }),
+          );
+          return;
+        }
+      } catch {
+        // ignore
+      }
+
+      router.push(`/dashboard/profile?highlight=${encodeURIComponent(String(offerId))}`);
       return;
     }
 
     let profileIdentifier: string | null = null;
 
-    if (variant === 'received') {
-      // prijaté: karta patrí mne (recipient), otvor môj profil
-      // Skús najprv z offer_summary.owner, potom z recipient_summary, potom z recipient ID
-      const owner = offer?.owner;
-      if (owner?.slug) {
-        profileIdentifier = String(owner.slug);
-      } else if (owner?.id && typeof owner.id === 'number') {
-        profileIdentifier = String(owner.id);
-      } else {
-        // Fallback: recipient_summary alebo recipient ID (karta patrí recipientovi = mne)
-        const slug = item.recipient_summary?.slug;
-        if (slug) {
-          profileIdentifier = String(slug);
-        } else if (typeof item.recipient === 'number') {
-          profileIdentifier = String(item.recipient);
-        } else {
-          // Posledný fallback: auth context
-          const me = user;
-          if (me) {
-            const meSlug = (me as any).slug;
-            profileIdentifier = meSlug ? String(meSlug) : typeof me.id === 'number' ? String(me.id) : null;
-          }
-        }
-      }
+    // odoslané: karta patrí recipientovi, otvor jeho profil
+    // Skús najprv z offer_summary.owner, potom z recipient_summary, potom z recipient ID
+    const owner = offer?.owner;
+    if (owner?.slug) {
+      profileIdentifier = String(owner.slug);
+    } else if (owner?.id && typeof owner.id === 'number') {
+      profileIdentifier = String(owner.id);
     } else {
-      // odoslané: karta patrí recipientovi, otvor jeho profil
-      // Skús najprv z offer_summary.owner, potom z recipient_summary, potom z recipient ID
-      const owner = offer?.owner;
-      if (owner?.slug) {
-        profileIdentifier = String(owner.slug);
-      } else if (owner?.id && typeof owner.id === 'number') {
-        profileIdentifier = String(owner.id);
-      } else {
-        // Fallback: recipient_summary alebo recipient ID
-        const slug = item.recipient_summary?.slug;
-        if (slug) {
-          profileIdentifier = String(slug);
-        } else if (typeof item.recipient === 'number') {
-          profileIdentifier = String(item.recipient);
-        }
+      // Fallback: recipient_summary alebo recipient ID
+      const slug = item.recipient_summary?.slug;
+      if (slug) {
+        profileIdentifier = String(slug);
+      } else if (typeof item.recipient === 'number') {
+        profileIdentifier = String(item.recipient);
       }
     }
 
     if (!profileIdentifier) {
-      toast('Profil sa nepodarilo otvoriť.');
+      toast(t('requests.toastProfileOpenFailed'));
       return;
     }
 
@@ -196,138 +207,175 @@ export function RequestSummaryCard({ item, variant, onAccept, onReject, onCancel
       // ignore
     }
 
+    // Preferuj internú SPA navigáciu v Dashboarde (bez potreby reloadu/SSR renderu).
+    // Fallback na Next router, ak event listener nie je dostupný.
+    try {
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('goToUserProfile', {
+            detail: { identifier: profileIdentifier, highlightId: offerId },
+          }),
+        );
+        return;
+      }
+    } catch {
+      // ignore
+    }
+
     router.push(`/dashboard/users/${encodeURIComponent(profileIdentifier)}?highlight=${encodeURIComponent(String(offerId))}`);
   };
 
   return (
-    <div className="group relative overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-800 bg-white/70 dark:bg-[#0f0f10] shadow-sm hover:shadow-md transition-shadow">
-      {/* Pravý panel akcií: od úplného vrchu po úplný spod celej karty */}
+    <div className="group relative overflow-hidden pt-4 pb-4 min-h-[11rem]">
+      {/* Pri skrytej karte: hláška o skrytí v pôvodnom mieste (v strede hore) */}
+      {isOfferHidden && (
+        <div className="w-full text-center pt-1 pb-1">
+          <div className="text-sm sm:text-base font-semibold text-purple-700 dark:text-purple-300">
+            {intentText}
+          </div>
+        </div>
+      )}
+      {/* Pravý panel: od 1109px dole aj od 1110px hore dátum a tlačidlá úplne vpravo (right-0). */}
       <div
-        className="absolute inset-y-0 right-0 w-20 sm:w-24 border-l border-gray-200 dark:border-gray-800 divide-y divide-gray-200 dark:divide-gray-800 flex flex-col bg-white/80 dark:bg-[#0f0f10]"
+        className="absolute inset-y-0 right-6 sm:right-8 compact-max:right-0 compact:right-0 flex flex-col items-stretch justify-start px-2 sm:px-3 compact-max:pl-3 compact-max:pr-0 compact:pl-3 compact:pr-0 pt-3 sm:pt-4 gap-3 sm:gap-4 w-56 sm:w-64 md:w-72 compact:w-96 wide:w-80"
         aria-label="Akcie"
       >
+        <div className="shrink-0 flex items-center justify-end gap-2">
+          {created && (
+            <div className="text-right text-xs sm:text-sm wide:text-base font-medium text-gray-500 dark:text-gray-400">
+              {created}
+            </div>
+          )}
+          {canHide && onHide && (
+            <button
+              type="button"
+              onClick={onHide}
+              disabled={isBusy}
+              className="inline-flex items-center justify-center rounded-md p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-900/40 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60"
+              aria-label={t('common.delete', 'Odstrániť')}
+              title={t('common.delete', 'Odstrániť')}
+            >
+              <TrashIcon className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+        <div className="flex flex-row items-stretch justify-center gap-1 compact-max:gap-1 sm:gap-2 wide:gap-3 shrink-0">
         {variant === 'received' ? (
           <>
             <button
               type="button"
               onClick={onAccept}
               disabled={isBusy || item.status !== 'pending'}
-              className="flex-1 inline-flex w-full items-center justify-center gap-1 bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-200 px-2 py-1 text-[10px] font-semibold hover:bg-purple-200 dark:hover:bg-purple-900/50 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60"
+              className="flex-1 inline-flex items-center justify-center gap-1 sm:gap-1.5 wide:gap-2 rounded-md bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-200 px-1.5 compact-max:px-1 sm:px-2 md:px-2.5 hd:px-4 py-1.5 compact-max:py-1 sm:py-2 hd:py-2.5 text-[11px] compact-max:text-[10px] sm:text-xs md:text-sm hd:text-sm font-semibold hover:bg-purple-200 dark:hover:bg-purple-900/50 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 shrink-0"
             >
-              <CheckIcon className="w-3 h-3" />
-              Prijať
+              <CheckIcon className="w-3 h-3 compact-max:w-2.5 compact-max:h-2.5 sm:w-4 sm:h-4 hd:w-5 hd:h-5 shrink-0" />
+              {t('requests.accept')}
             </button>
             <button
               type="button"
               onClick={onReject}
               disabled={isBusy || item.status !== 'pending'}
-              className="flex-1 inline-flex w-full items-center justify-center gap-1 bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-200 px-2 py-1 text-[10px] font-semibold hover:bg-purple-200 dark:hover:bg-purple-900/50 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60"
+              className="flex-1 inline-flex items-center justify-center gap-1 sm:gap-1.5 wide:gap-2 rounded-md bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-200 px-1.5 compact-max:px-1 sm:px-2 md:px-2.5 hd:px-4 py-1.5 compact-max:py-1 sm:py-2 hd:py-2.5 text-[11px] compact-max:text-[10px] sm:text-xs md:text-sm hd:text-sm font-semibold hover:bg-purple-200 dark:hover:bg-purple-900/50 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 shrink-0"
             >
-              <XMarkIcon className="w-3 h-3" />
-              Odmietnuť
+              <XMarkIcon className="w-3 h-3 compact-max:w-2.5 compact-max:h-2.5 sm:w-4 sm:h-4 hd:w-5 hd:h-5 shrink-0" />
+              {t('requests.reject')}
             </button>
-            <button
-              type="button"
-              onClick={handleView}
-              className="flex-1 inline-flex w-full items-center justify-center bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-200 px-2 py-1 text-[10px] font-semibold hover:bg-purple-200 dark:hover:bg-purple-900/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60"
-            >
-              Zobraziť kartu
-            </button>
+            {!isOfferHidden && (
+              <button
+                type="button"
+                onClick={handleView}
+                className="flex-[1.6] inline-flex items-center justify-center gap-1 sm:gap-1.5 wide:gap-2 rounded-md bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-200 px-1.5 compact-max:px-1 sm:px-2 md:px-2.5 hd:px-4 py-1.5 compact-max:py-1 sm:py-2 hd:py-2.5 text-[11px] compact-max:text-[10px] sm:text-xs md:text-sm hd:text-sm font-semibold hover:bg-purple-200 dark:hover:bg-purple-900/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 shrink-0 whitespace-nowrap"
+              >
+                {t('requests.showCard')}
+              </button>
+            )}
           </>
         ) : (
           <>
-            <button
-              type="button"
-              onClick={handleView}
-              className="flex-1 inline-flex w-full items-center justify-center bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-200 px-2 py-1 text-[10px] font-semibold hover:bg-purple-200 dark:hover:bg-purple-900/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60"
-            >
-              Zobraziť kartu
-            </button>
-            {item.status === 'pending' ? (
+            {!isOfferHidden && (
+              <button
+                type="button"
+                onClick={handleView}
+                className="flex-[1.6] inline-flex items-center justify-center gap-1 sm:gap-1.5 wide:gap-2 rounded-md bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-200 px-1.5 compact-max:px-1 sm:px-2 md:px-2.5 hd:px-4 py-1.5 compact-max:py-1 sm:py-2 hd:py-2.5 text-[11px] compact-max:text-[10px] sm:text-xs md:text-sm hd:text-sm font-semibold hover:bg-purple-200 dark:hover:bg-purple-900/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 shrink-0 whitespace-nowrap"
+              >
+                {t('requests.showCard')}
+              </button>
+            )}
+            {item.status === 'pending' && (
               <button
                 type="button"
                 onClick={onCancel}
                 disabled={isBusy}
-                className="flex-1 inline-flex w-full items-center justify-center gap-1 bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-200 px-2 py-1 text-[10px] font-semibold hover:bg-purple-200 dark:hover:bg-purple-900/50 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60"
+                className="flex-1 inline-flex items-center justify-center gap-1 sm:gap-1.5 wide:gap-2 rounded-md bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-200 px-1.5 compact-max:px-1 sm:px-2 md:px-2.5 hd:px-4 py-1.5 compact-max:py-1 sm:py-2 hd:py-2.5 text-[11px] compact-max:text-[10px] sm:text-xs md:text-sm hd:text-sm font-semibold hover:bg-purple-200 dark:hover:bg-purple-900/50 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 shrink-0 whitespace-nowrap"
               >
-                <NoSymbolIcon className="w-3 h-3" />
-                Zrušiť
+                <NoSymbolIcon className="w-3 h-3 compact-max:w-2.5 compact-max:h-2.5 sm:w-4 sm:h-4 hd:w-5 hd:h-5 shrink-0" />
+                {t('requests.cancel')}
               </button>
-            ) : (
-              <div className="flex-1" />
             )}
           </>
         )}
+        </div>
+        {/* Suma a stav: v pravom dolnom rohu, rovnaká veľkosť */}
+        <div className="shrink-0 pt-2 pb-2 flex flex-row items-center justify-end gap-3">
+          {priceLabel && (
+            <span className="inline-flex items-center rounded-full border border-purple-200 dark:border-purple-800/50 bg-purple-50 dark:bg-purple-900/20 px-2.5 py-1 text-[11px] font-semibold text-purple-800 dark:text-purple-200">
+              {priceLabel}
+            </span>
+          )}
+          <StatusPill status={item.status} />
+        </div>
       </div>
 
-      <div className="flex flex-col pr-20 sm:pr-24">
-        {/* Horný header (mimo kontajnera avatara) */}
-        <div className="px-3 pt-1.5 pb-0">
-          <div className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white leading-none truncate">
-            {whoName || 'Používateľ'}
+      <div className="flex flex-col pr-[15.5rem] sm:pr-72 md:pr-80 compact-max:pr-[22rem] compact:pr-[26rem] wide:pr-[22rem] min-w-0">
+        {/* Avatar, meno a hneď za menom pokračovanie vety (vám ponúka to, čo hľadáte!) */}
+        <div className="px-3 pt-0 pb-2 flex items-center gap-2">
+          <div className="w-8 h-8 sm:w-9 sm:h-9 flex-shrink-0 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800">
+            {hasAvatar ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={avatarSrc}
+                alt=""
+                className="h-full w-full object-cover"
+                onError={() => setAvatarError(true)}
+              />
+            ) : (
+              <div className="h-full w-full grid place-items-center">
+                <span className="text-xs sm:text-sm font-bold text-gray-700 dark:text-gray-200">
+                  {initials(whoName)}
+                </span>
+              </div>
+            )}
           </div>
-          <div className="mt-0 text-[10px] sm:text-xs text-gray-600 dark:text-gray-400 truncate">
-            {intentText}
+          <div className="min-w-0 flex-1 text-xs sm:text-sm leading-tight">
+            {isOfferHidden ? (
+              <span className="font-semibold text-gray-900 dark:text-white">
+                {whoName || t('requests.userFallback')}
+              </span>
+            ) : (
+              <>
+                <span className="font-semibold text-gray-900 dark:text-white">
+                  {whoName || t('requests.userFallback')}
+                </span>
+                <span className="font-semibold text-purple-700 dark:text-purple-300">
+                  {' '}{intentText}
+                </span>
+              </>
+            )}
           </div>
-          {created && (
-            <div className="mt-0.5 text-[10px] text-gray-500 dark:text-gray-400">
-              {created}
-            </div>
-          )}
         </div>
 
-        <div className="flex">
-          {/* Ľavý stĺpec: iba avatar box dole vľavo */}
-          <div className="w-16 sm:w-20 md:w-24 flex-shrink-0 bg-gray-50 dark:bg-black/30">
-            <div className="h-full w-full pt-0 pr-0.5 flex flex-col">
-              <div className="mt-auto">
-                <div className="w-full aspect-square overflow-hidden rounded-tr-2xl rounded-bl-none rounded-tl-none rounded-br-none bg-gray-100 dark:bg-gray-800">
-                  {hasAvatar ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={avatarSrc}
-                      alt=""
-                      className="h-full w-full object-cover"
-                      onError={() => setAvatarError(true)}
-                    />
-                  ) : (
-                    <div className="h-full w-full grid place-items-center">
-                      <span className="text-sm sm:text-base font-bold text-gray-700 dark:text-gray-200">
-                        {initials(whoName)}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
+        <div className="flex-1 p-0.5 pt-0 pb-0.5 min-w-0 relative flex flex-col">
+          <div className="mt-2 flex-1 px-3">
+            <div className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white leading-tight">
+              {subcategory || t('requests.noTitle')}
             </div>
+            {description && (
+              <div className="mt-1 text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 leading-tight italic">
+                &ldquo;{description}&rdquo;
+              </div>
+            )}
           </div>
-
-          {/* Obsah karty */}
-          <div className="flex-1 p-0.5 pt-0 pb-0.5 min-w-0 relative flex flex-col">
-
-            <div className="-mt-2 flex-1">
-              <div className="text-xs font-semibold text-gray-900 dark:text-white leading-tight">
-                {subcategory || 'Bez názvu'}
-              </div>
-              {description && (
-                <div className="mt-0.5 text-[10px] text-gray-500 dark:text-gray-400 leading-tight italic">
-                  &ldquo;{description}&rdquo;
-                </div>
-              )}
-            </div>
-
-            <div className="mt-auto flex items-center gap-2">
-              {priceLabel && (
-                <span className="inline-flex items-center rounded-full border border-purple-200 dark:border-purple-800/50 bg-purple-50 dark:bg-purple-900/20 px-1.5 py-0 font-semibold text-purple-800 dark:text-purple-200 text-[10px]">
-                  {priceLabel}
-                </span>
-              )}
-              <div className="scale-75 origin-left shrink-0">
-                <StatusPill status={item.status} />
-              </div>
-            </div>
-
-          </div>
+          <div className="mt-auto" />
         </div>
       </div>
     </div>

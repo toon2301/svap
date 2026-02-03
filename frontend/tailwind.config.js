@@ -10,7 +10,19 @@ module.exports = {
     './src/utils/**/*.{js,ts,jsx,tsx,mdx}',
   ],
   theme: {
-    extend: {},
+    extend: {
+      screens: {
+        // Zmenšenie UI už od 1440px nadol
+        hd: '1440px',
+        // Žiadosti: plná verzia od 1160px (pod 1159 sa nepáči)
+        wide: '1160px',
+        // Menšie tlačidlá len pod 1110px; od 1110px (vrátane) rovnaké ako 1111+
+        'compact-max': { max: '1109px' },
+        compact: '1110px',
+        // Od šírky 1379px nadol fixná výška karty žiadosti
+        'fixed-h-max': { max: '1379px' },
+      },
+    },
   },
   plugins: [],
   safelist: [

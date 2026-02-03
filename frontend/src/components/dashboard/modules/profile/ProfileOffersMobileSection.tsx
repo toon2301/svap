@@ -2,6 +2,7 @@
  
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import toast from 'react-hot-toast';
 import { api, endpoints } from '../../../../lib/api';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { OpeningHours } from '../skills/skillDescriptionModal/types';
@@ -16,6 +17,7 @@ import {
   setOffersToCache,
   getOrCreateOffersRequest,
 } from './profileOffersCache';
+import { fetchSkillRequests, getApiErrorMessage, updateSkillRequest } from '../requests/requestsApi';
 
 interface ProfileOffersMobileSectionProps {
   accountType?: 'personal' | 'business';
@@ -32,6 +34,9 @@ export default function ProfileOffersMobileSection({
 }: ProfileOffersMobileSectionProps) {
   const { t } = useLanguage();
   const [offers, setOffers] = useState<Offer[]>([]);
+  const [requestStatusByOfferId, setRequestStatusByOfferId] = useState<Record<number, string>>({});
+  const [requestIdByOfferId, setRequestIdByOfferId] = useState<Record<number, number>>({});
+  const [busyOfferId, setBusyOfferId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [selectedOffer, setSelectedOffer] = useState<Offer | null>(null);
@@ -40,23 +45,106 @@ export default function ProfileOffersMobileSection({
   const highlightedCardRef = useRef<HTMLDivElement | null>(null);
   const [isUnavailableModalOpen, setIsUnavailableModalOpen] = useState(false);
 
-  const checkOfferStillAvailable = useCallback(
+  const isOfferStillAvailable = useCallback(
     async (offerId: number) => {
-      if (!isOtherUserProfile || !ownerUserId) return;
-
+      if (!isOtherUserProfile || !ownerUserId) return true;
       try {
         const endpoint = endpoints.dashboard.userSkills(ownerUserId);
         const { data } = await api.get(endpoint);
         const list = Array.isArray(data) ? data : [];
-        const exists = list.some((s: any) => s && typeof s.id === 'number' && s.id === offerId);
-        if (!exists) {
-          setIsUnavailableModalOpen(true);
-        }
+        return list.some((s: any) => s && typeof s.id === 'number' && s.id === offerId);
       } catch {
-        // Ak sa nepodarí overiť dostupnosť, necháme to bez hlášky (bezpečné minimum).
+        return true;
       }
     },
     [isOtherUserProfile, ownerUserId],
+  );
+
+  const checkOfferStillAvailable = useCallback(
+    async (offerId: number) => {
+      const ok = await isOfferStillAvailable(offerId);
+      if (!ok) setIsUnavailableModalOpen(true);
+    },
+    [isOfferStillAvailable],
+  );
+
+  const resolvePendingRequestIdForOffer = useCallback(
+    async (offerId: number): Promise<number | null> => {
+      const fromMap = requestIdByOfferId[offerId];
+      if (typeof fromMap === 'number' && Number.isFinite(fromMap) && fromMap >= 1) return fromMap;
+      try {
+        const res = await fetchSkillRequests();
+        const match = res.sent.find((r) => r && r.offer === offerId && r.status === 'pending');
+        if (match && typeof match.id === 'number' && Number.isFinite(match.id) && match.id >= 1) {
+          setRequestIdByOfferId((prev) => ({ ...prev, [offerId]: match.id }));
+          return match.id;
+        }
+      } catch {
+        // ignore
+      }
+      return null;
+    },
+    [requestIdByOfferId],
+  );
+
+  const handleRequestClick = useCallback(
+    async (offerId: number) => {
+      if (!isOtherUserProfile) return;
+      if (busyOfferId === offerId) return;
+      const current = requestStatusByOfferId[offerId];
+      if (current === 'accepted') return;
+
+      if (current === 'pending') {
+        setBusyOfferId(offerId);
+        try {
+          const requestId = await resolvePendingRequestIdForOffer(offerId);
+          if (!requestId) {
+            toast.error(t('requests.toastCancelFailed', 'Zrušenie žiadosti zlyhalo.'));
+            return;
+          }
+          await updateSkillRequest(requestId, 'cancel');
+          setRequestStatusByOfferId((prev) => ({ ...prev, [offerId]: '' }));
+          setRequestIdByOfferId((prev) => {
+            const next = { ...prev };
+            delete next[offerId];
+            return next;
+          });
+        } catch (err: unknown) {
+          toast.error(getApiErrorMessage(err, t('requests.toastCancelFailed', 'Zrušenie žiadosti zlyhalo.')));
+        } finally {
+          setBusyOfferId(null);
+        }
+        return;
+      }
+
+      const ok = await isOfferStillAvailable(offerId);
+      if (!ok) {
+        setIsUnavailableModalOpen(true);
+        return;
+      }
+
+      try {
+        setBusyOfferId(offerId);
+        const { data } = await api.post(endpoints.requests.list, { offer_id: offerId });
+        setRequestStatusByOfferId((prev) => ({ ...prev, [offerId]: 'pending' }));
+        const createdId = data?.id != null ? Number(data.id) : NaN;
+        if (Number.isFinite(createdId) && createdId >= 1) {
+          setRequestIdByOfferId((prev) => ({ ...prev, [offerId]: createdId }));
+        }
+      } catch {
+        // fail-open
+      } finally {
+        setBusyOfferId(null);
+      }
+    },
+    [
+      isOtherUserProfile,
+      isOfferStillAvailable,
+      requestStatusByOfferId,
+      busyOfferId,
+      resolvePendingRequestIdForOffer,
+      t,
+    ],
   );
 
   // Load offers function (použitá pre prvotné načítanie aj polling)
@@ -208,6 +296,39 @@ export default function ProfileOffersMobileSection({
       // ignore
     }
   }, [highlightedSkillId, offers]);
+
+  // Na cudzom profile: načítaj statusy žiadostí pre aktuálne ponuky (rovnako ako desktop)
+  useEffect(() => {
+    if (!isOtherUserProfile) return;
+    const ids = offers.map((o) => o.id).filter((id): id is number => typeof id === 'number');
+    if (ids.length === 0) return;
+    void (async () => {
+      try {
+        const res = await api.get(endpoints.requests.status, { params: { offer_ids: ids.join(',') } });
+        const data = res?.data && typeof res.data === 'object' ? (res.data as Record<string, unknown>) : {};
+        const requestIdsRaw =
+          data.request_ids && typeof data.request_ids === 'object'
+            ? (data.request_ids as Record<string, unknown>)
+            : {};
+        const normalized: Record<number, string> = {};
+        Object.entries(data).forEach(([k, v]) => {
+          if (k === 'request_ids') return;
+          const n = Number(k);
+          if (Number.isFinite(n) && typeof v === 'string') normalized[n] = v;
+        });
+        setRequestStatusByOfferId(normalized);
+        const ridMap: Record<number, number> = {};
+        Object.entries(requestIdsRaw).forEach(([k, v]) => {
+          const n = Number(k);
+          const id = typeof v === 'number' ? v : Number(v);
+          if (Number.isFinite(n) && Number.isFinite(id) && id >= 1) ridMap[n] = id;
+        });
+        setRequestIdByOfferId(ridMap);
+      } catch {
+        // ignore
+      }
+    })();
+  }, [offers, isOtherUserProfile]);
 
   const handleCardClick = (offer: Offer) => {
     const cardId = offer.id ?? `${offer.category || 'cat'}-${offer.subcategory || 'sub'}-${offer.description || 'desc'}`;
@@ -371,8 +492,25 @@ export default function ProfileOffersMobileSection({
                 isHighlighted={isHighlighted}
                 onCardClick={() => handleCardClick(offer)}
                 isOtherUserProfile={isOtherUserProfile}
-                onRequestClick={checkOfferStillAvailable}
+                onRequestClick={handleRequestClick}
                 onMessageClick={checkOfferStillAvailable}
+                requestLabel={(() => {
+                  const defaultRequest = offer.is_seeking ? t('requests.offer', 'Ponúknuť') : t('requests.request', 'Požiadať');
+                  if (typeof offer.id !== 'number') return defaultRequest;
+                  const raw = requestStatusByOfferId[offer.id];
+                  const st = raw === 'pending' || raw === 'accepted' || raw === 'rejected' || raw === 'cancelled' ? raw : '';
+                  if (st === 'accepted') return t('requests.statusAccepted', 'Prijaté');
+                  if (st === 'pending') return t('requests.requested', 'Požiadané');
+                  if (st === 'rejected') return t('requests.statusRejected', 'Odmietnuté');
+                  if (st === 'cancelled') return t('requests.statusCancelled', 'Zrušené');
+                  return defaultRequest;
+                })()}
+                isRequestDisabled={(() => {
+                  if (typeof offer.id !== 'number') return false;
+                  const raw = requestStatusByOfferId[offer.id];
+                  const st = raw === 'pending' || raw === 'accepted' || raw === 'rejected' || raw === 'cancelled' ? raw : '';
+                  return st === 'accepted' || busyOfferId === offer.id;
+                })()}
               />
             </div>
           );

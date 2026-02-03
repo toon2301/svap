@@ -603,6 +603,7 @@ class SkillRequestSerializer(serializers.ModelSerializer):
     recipient_display_name = serializers.CharField(source='recipient.display_name', read_only=True)
 
     offer_is_seeking = serializers.BooleanField(source='offer.is_seeking', read_only=True)
+    offer_is_hidden = serializers.BooleanField(source='offer.is_hidden', read_only=True)
     offer_category = serializers.CharField(source='offer.category', read_only=True)
     offer_subcategory = serializers.CharField(source='offer.subcategory', read_only=True)
     offer_description = serializers.CharField(source='offer.description', read_only=True)
@@ -652,6 +653,7 @@ class SkillRequestSerializer(serializers.ModelSerializer):
             'id': offer.id,
             'subcategory': getattr(offer, 'subcategory', '') or '',
             'is_seeking': bool(getattr(offer, 'is_seeking', False)),
+            'is_hidden': bool(getattr(offer, 'is_hidden', False)),
             'price_from': getattr(offer, 'price_from', None),
             'price_currency': getattr(offer, 'price_currency', '') or '€',
             'owner': (
@@ -678,6 +680,8 @@ class SkillRequestSerializer(serializers.ModelSerializer):
         fields = [
             'id',
             'status',
+            'hidden_by_requester',
+            'hidden_by_recipient',
             'created_at',
             'updated_at',
             'requester',
@@ -686,6 +690,7 @@ class SkillRequestSerializer(serializers.ModelSerializer):
             'requester_display_name',
             'recipient_display_name',
             'offer_is_seeking',
+            'offer_is_hidden',
             'offer_category',
             'offer_subcategory',
             'offer_description',

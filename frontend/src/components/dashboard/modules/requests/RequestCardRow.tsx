@@ -143,7 +143,7 @@ export function RequestCardRow({ item, onAccept, onReject, isBusy = false }: Pro
             className="flex-1 px-3 py-1.5 text-xs font-medium bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg transition-colors hover:from-purple-700 hover:to-indigo-700 disabled:opacity-60 flex items-center justify-center gap-1.5"
           >
             <CheckIcon className="w-3.5 h-3.5" />
-            Prijať
+            {t('requests.accept')}
           </button>
         </div>
       )}

@@ -15,6 +15,9 @@ interface ProfileOfferCardMobileProps {
   isOtherUserProfile?: boolean;
   onRequestClick?: (offerId: number) => void;
   onMessageClick?: (offerId: number) => void;
+  /** Rovnako ako desktop: Ponúknuť (is_seeking) / Požiadať, alebo stav: Požiadané, Prijaté, atď. */
+  requestLabel?: string;
+  isRequestDisabled?: boolean;
 }
 
 export function ProfileOfferCardMobile({
@@ -26,8 +29,12 @@ export function ProfileOfferCardMobile({
   isOtherUserProfile = false,
   onRequestClick,
   onMessageClick,
+  requestLabel: requestLabelProp,
+  isRequestDisabled = false,
 }: ProfileOfferCardMobileProps) {
   const { t } = useLanguage();
+  const defaultRequestLabel = offer.is_seeking ? t('requests.offer', 'Ponúknuť') : t('requests.request', 'Požiadať');
+  const requestLabel = requestLabelProp ?? defaultRequestLabel;
 
   const catSlug = offer.category ? slugifyLabel(offer.category) : '';
   const subSlug = offer.subcategory ? slugifyLabel(offer.subcategory) : '';
@@ -275,20 +282,26 @@ export function ProfileOfferCardMobile({
             </div>
           </div>
         )}
-        {/* Tlačidlá Požiadať a Správa - len na cudzom profile */}
+        {/* Tlačidlá Požiadať/Ponúknuť a Správa - len na cudzom profile (rovnako ako desktop) */}
         {isOtherUserProfile && (
           <div className="flex gap-2 mt-2">
             <button
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
+                if (isRequestDisabled) return;
                 if (typeof offer.id === 'number' && onRequestClick) {
                   onRequestClick(offer.id);
                 }
               }}
-              className="flex-1 px-3 py-1.5 text-xs font-medium bg-purple-100 text-purple-800 border border-purple-200 rounded-lg transition-colors hover:bg-purple-200 dark:bg-purple-900/40 dark:text-purple-300 dark:border-purple-800/60 dark:hover:bg-purple-900/60"
+              disabled={isRequestDisabled}
+              className={`flex-1 px-3 py-1.5 text-xs font-medium bg-purple-100 text-purple-800 border border-purple-200 rounded-lg transition-colors dark:bg-purple-900/40 dark:text-purple-300 dark:border-purple-800/60 ${
+                isRequestDisabled
+                  ? 'opacity-70 cursor-not-allowed'
+                  : 'hover:bg-purple-200 dark:hover:bg-purple-900/60'
+              }`}
             >
-              Požiadať
+              {requestLabel}
             </button>
             <button
               type="button"

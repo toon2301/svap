@@ -3,10 +3,11 @@
 import { 
   HomeIcon, 
   MagnifyingGlassIcon, 
-  PlusCircleIcon,
+  InboxIcon,
   ChatBubbleLeftRightIcon,
   BellIcon 
 } from '@heroicons/react/24/outline';
+import { useRequestsNotifications } from './contexts/RequestsNotificationsContext';
 
 interface MobileTopNavProps {
   activeItem: string;
@@ -14,49 +15,28 @@ interface MobileTopNavProps {
 }
 
 export default function MobileTopNav({ activeItem, onItemClick }: MobileTopNavProps) {
+  const { unreadCount } = useRequestsNotifications();
   const navItems = [
     { id: 'home', icon: HomeIcon, label: 'Domov' },
     { id: 'search', icon: MagnifyingGlassIcon, label: 'Hľadať' },
-    { id: 'create', icon: PlusCircleIcon, label: 'Pridať', isSpecial: true },
+    { id: 'requests', icon: InboxIcon, label: 'Žiadosti' },
     { id: 'messages', icon: ChatBubbleLeftRightIcon, label: 'Správy' },
     { id: 'notifications', icon: BellIcon, label: 'Upozornenia' },
   ];
 
   return (
-    <div className="lg:hidden fixed bottom-0 left-0 right-0 z-[60] bg-white dark:bg-black border-t border-gray-200 dark:border-gray-800 shadow-lg">
-      <div className="flex items-center justify-between px-2 py-0">
+    <div className="lg:hidden fixed bottom-0 left-0 right-0 z-[60] bg-white dark:bg-black border-t border-gray-200 dark:border-gray-800 shadow-lg overflow-visible">
+      <div className="flex items-center justify-between px-2 py-0 overflow-visible">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = activeItem === item.id;
-          
-          if (item.isSpecial) {
-            // Špeciálne tlačidlo s krúžkom a pluskom
-            return (
-              <button
-                key={item.id}
-                onClick={() => onItemClick(item.id)}
-                className="flex flex-col items-center justify-center p-2 relative group"
-                aria-label={item.label}
-              >
-                <div className={`
-                  w-12 h-12 rounded-full flex items-center justify-center transition-all
-                  ${isActive 
-                    ? 'bg-purple-600 text-white shadow-lg' 
-                    : 'bg-purple-100 text-purple-600 group-hover:bg-purple-200'
-                  }
-                `}>
-                  <Icon className="w-7 h-7" strokeWidth={2.5} />
-                </div>
-              </button>
-            );
-          }
           
           return (
             <button
               key={item.id}
               onClick={() => onItemClick(item.id)}
               className={`
-                flex flex-col items-center justify-center p-2 rounded-lg transition-all
+                relative flex flex-col items-center justify-center p-2 rounded-lg transition-all overflow-visible
                 ${isActive 
                   ? 'text-purple-600' 
                   : 'text-gray-600 dark:text-gray-300 hover:text-purple-600 hover:bg-gray-50 dark:hover:bg-gray-900'
@@ -64,7 +44,17 @@ export default function MobileTopNav({ activeItem, onItemClick }: MobileTopNavPr
               `}
               aria-label={item.label}
             >
-              <Icon className="w-6 h-6" strokeWidth={isActive ? 2.5 : 2} />
+              <span className="relative inline-block overflow-visible">
+                <Icon className="w-6 h-6 shrink-0" strokeWidth={isActive ? 2.5 : 2} />
+                {item.id === 'requests' && unreadCount > 0 && (
+                  <span
+                    className="absolute top-0 right-0 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full bg-purple-600 text-white text-[11px] font-bold -translate-y-1/2 translate-x-1/2 z-10"
+                    aria-label={`${unreadCount} ${unreadCount === 1 ? 'nová žiadosť' : 'nové žiadosti'}`}
+                  >
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
+              </span>
             </button>
           );
         })}
