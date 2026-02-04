@@ -5,8 +5,32 @@ import Dashboard from '../Dashboard';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { User } from '@/types';
 
+jest.mock('../contexts/RequestsNotificationsContext', () => {
+  const React = require('react');
+  return {
+    __esModule: true,
+    RequestsNotificationsProvider: ({ children }: any) => React.createElement(React.Fragment, null, children),
+    useRequestsNotifications: () => ({
+      unreadCount: 0,
+      refreshUnreadCount: jest.fn(),
+      markAllRead: jest.fn(),
+    }),
+  };
+});
+
 jest.mock('next/navigation', () => ({
-  useRouter: () => ({ push: jest.fn() }),
+  useRouter: () => ({
+    push: jest.fn(),
+    replace: jest.fn(),
+    prefetch: jest.fn(),
+    back: jest.fn(),
+    forward: jest.fn(),
+    refresh: jest.fn(),
+  }),
+  useSearchParams: () => ({
+    get: jest.fn(),
+  }),
+  usePathname: () => '/',
 }));
 
 jest.mock('../../../utils/auth', () => ({

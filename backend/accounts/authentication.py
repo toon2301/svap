@@ -19,6 +19,25 @@ class SwaplyJWTAuthentication(JWTAuthentication):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.user_id_field = 'id'
+
+    def authenticate(self, request):
+        """
+        Podpora HttpOnly cookie auth:
+        - Preferuj Authorization header (BC)
+        - Ak chýba, skús access token z cookies
+        """
+        header = self.get_header(request)
+        if header is None:
+            cookie_token = None
+            try:
+                cookie_token = request.COOKIES.get('access_token')
+            except Exception:
+                cookie_token = None
+            if not cookie_token:
+                return None
+            validated_token = self.get_validated_token(cookie_token)
+            return self.get_user(validated_token), validated_token
+        return super().authenticate(request)
     
     def get_user(self, validated_token):
         """

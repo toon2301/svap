@@ -4,7 +4,8 @@ import RequestsModule from '../RequestsModule';
 
 jest.mock('@/contexts/LanguageContext', () => ({
   useLanguage: () => ({
-    t: (_key: string, defaultValue: string) => defaultValue,
+    t: (key: string, defaultValue?: string) =>
+      typeof defaultValue === 'string' ? defaultValue : key,
   }),
 }));
 
@@ -27,7 +28,7 @@ describe('RequestsModule', () => {
     expect(screen.getByText('Žiadosti')).toBeInTheDocument();
 
     await waitFor(() => {
-      expect(screen.getByText('Zatiaľ tu nič nie je.')).toBeInTheDocument();
+      expect(screen.getAllByText('Žiadne prijaté žiadosti').length).toBeGreaterThan(0);
     });
   });
 });

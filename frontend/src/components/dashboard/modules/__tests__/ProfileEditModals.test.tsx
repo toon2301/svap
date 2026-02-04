@@ -42,6 +42,7 @@ function renderModals(partial: Partial<React.ComponentProps<typeof ProfileEditMo
     lastName: '',
     bio: '',
     location: '',
+    district: '',
     phone: '',
     phoneVisible: false,
     profession: '',
@@ -55,6 +56,7 @@ function renderModals(partial: Partial<React.ComponentProps<typeof ProfileEditMo
     originalLastName: '',
     originalBio: '',
     originalLocation: '',
+    originalDistrict: '',
     originalPhone: '',
     originalPhoneVisible: false,
     originalProfession: '',
@@ -68,6 +70,7 @@ function renderModals(partial: Partial<React.ComponentProps<typeof ProfileEditMo
     setLastName: jest.fn(),
     setBio: jest.fn(),
     setLocation: jest.fn(),
+    setDistrict: jest.fn(),
     setPhone: jest.fn(),
     setPhoneVisible: jest.fn(),
     setProfession: jest.fn(),
@@ -81,6 +84,7 @@ function renderModals(partial: Partial<React.ComponentProps<typeof ProfileEditMo
     setOriginalLastName: jest.fn(),
     setOriginalBio: jest.fn(),
     setOriginalLocation: jest.fn(),
+    setOriginalDistrict: jest.fn(),
     setOriginalPhone: jest.fn(),
     setOriginalPhoneVisible: jest.fn(),
     setOriginalProfession: jest.fn(),
@@ -138,14 +142,23 @@ describe('ProfileEditModals', () => {
   it('cancels location modal', () => {
     const setIsLocationModalOpen = jest.fn();
     const setLocation = jest.fn();
+    const setDistrict = jest.fn();
 
-    renderModals({ isLocationModalOpen: true, originalLocation: 'X', setIsLocationModalOpen, setLocation });
+    renderModals({
+      isLocationModalOpen: true,
+      originalLocation: 'X',
+      originalDistrict: 'D',
+      setIsLocationModalOpen,
+      setLocation,
+      setDistrict,
+    });
 
     // back arrow button
     const backBtn = screen.getAllByRole('button')[0];
     fireEvent.click(backBtn);
 
     expect(setLocation).toHaveBeenCalledWith('X');
+    expect(setDistrict).toHaveBeenCalledWith('D');
     expect(setIsLocationModalOpen).toHaveBeenCalledWith(false);
   });
 });

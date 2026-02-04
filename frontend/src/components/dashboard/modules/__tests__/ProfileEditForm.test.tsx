@@ -46,7 +46,8 @@ describe('ProfileEditForm', () => {
 
     render(<ProfileEditForm user={mockUser} onUserUpdate={onUserUpdate} />);
     const input = screen.getByLabelText('Meno') as HTMLInputElement;
-    fireEvent.change(input, { target: { value: 'Nové' } });
+    // FullNameInput parsuje celé meno (prvé slovo(y) = first_name, posledné = last_name)
+    fireEvent.change(input, { target: { value: 'Nové User' } });
     fireEvent.blur(input);
 
     await waitFor(() => {

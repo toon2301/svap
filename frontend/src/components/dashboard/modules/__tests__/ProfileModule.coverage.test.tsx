@@ -4,8 +4,6 @@ import '@testing-library/jest-dom';
 import ProfileModule from '../ProfileModule';
 import { User } from '@/types';
 
-jest.useFakeTimers();
-
 jest.mock('@/lib/api', () => ({
   api: {
     patch: jest.fn(),
@@ -54,7 +52,6 @@ describe('ProfileModule coverage', () => {
     await waitFor(() => {
       expect(screen.getByText('✓ Fotka bola úspešne nahraná!')).toBeInTheDocument();
     });
-    jest.runAllTimers();
   });
 
   it('shows upload error from backend on failure', async () => {

@@ -15,7 +15,7 @@ jest.mock('next/navigation', () => ({
 // Mock API
 jest.mock('@/lib/api', () => ({
   api: {
-    post: jest.fn(),
+    get: jest.fn(),
   },
   endpoints: {
     auth: {
@@ -25,11 +25,11 @@ jest.mock('@/lib/api', () => ({
 }));
 
 const mockUseSearchParams = useSearchParams as jest.MockedFunction<typeof useSearchParams>;
-const mockApiPost = api.post as jest.MockedFunction<typeof api.post>;
+const mockApiGet = api.get as jest.MockedFunction<typeof api.get>;
 
 describe('VerifyEmailPage', () => {
   beforeEach(() => {
-    mockApiPost.mockClear();
+    mockApiGet.mockClear();
   });
 
   it('renders loading state initially', () => {
@@ -48,7 +48,7 @@ describe('VerifyEmailPage', () => {
       get: jest.fn().mockReturnValue('test-token'),
     } as any);
 
-    mockApiPost.mockResolvedValueOnce({
+    mockApiGet.mockResolvedValueOnce({
       data: {
         verified: true,
         message: 'Email bol úspešne overený'
@@ -70,7 +70,7 @@ describe('VerifyEmailPage', () => {
       get: jest.fn().mockReturnValue('test-token'),
     } as any);
 
-    mockApiPost.mockRejectedValueOnce({
+    mockApiGet.mockRejectedValueOnce({
       response: {
         data: {
           error: 'Token expiroval'
@@ -108,7 +108,7 @@ describe('VerifyEmailPage', () => {
       get: jest.fn().mockReturnValue('test-token'),
     } as any);
 
-    mockApiPost.mockRejectedValueOnce({
+    mockApiGet.mockRejectedValueOnce({
       response: {
         data: {
           details: {
@@ -132,7 +132,7 @@ describe('VerifyEmailPage', () => {
       get: jest.fn().mockReturnValue('test-token'),
     } as any);
 
-    mockApiPost.mockRejectedValueOnce(new Error('Network error'));
+    mockApiGet.mockRejectedValueOnce(new Error('Network error'));
 
     render(<VerifyEmailPage />);
     
@@ -149,7 +149,7 @@ describe('VerifyEmailPage', () => {
       get: jest.fn().mockReturnValue(testToken),
     } as any);
 
-    mockApiPost.mockResolvedValueOnce({
+    mockApiGet.mockResolvedValueOnce({
       data: {
         verified: true
       }
@@ -158,8 +158,8 @@ describe('VerifyEmailPage', () => {
     render(<VerifyEmailPage />);
     
     await waitFor(() => {
-      expect(mockApiPost).toHaveBeenCalledWith('/auth/verify-email/', {
-        token: testToken
+      expect(mockApiGet).toHaveBeenCalledWith('/auth/verify-email/', {
+        params: { token: testToken },
       });
     });
   });

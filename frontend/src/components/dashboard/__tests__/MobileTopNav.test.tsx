@@ -2,11 +2,20 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import MobileTopNav from '../MobileTopNav';
 
+jest.mock('../contexts/RequestsNotificationsContext', () => ({
+  __esModule: true,
+  useRequestsNotifications: () => ({
+    unreadCount: 0,
+    refreshUnreadCount: jest.fn(),
+    markAllRead: jest.fn(),
+  }),
+}));
+
 // Mock heroicons
 jest.mock('@heroicons/react/24/outline', () => ({
   HomeIcon: () => <div>HomeIcon</div>,
   MagnifyingGlassIcon: () => <div>SearchIcon</div>,
-  PlusCircleIcon: () => <div>PlusIcon</div>,
+  InboxIcon: () => <div>InboxIcon</div>,
   ChatBubbleLeftRightIcon: () => <div>MessagesIcon</div>,
   BellIcon: () => <div>BellIcon</div>,
 }));
@@ -28,7 +37,7 @@ describe('MobileTopNav', () => {
     
     expect(screen.getByLabelText('Domov')).toBeInTheDocument();
     expect(screen.getByLabelText('Hľadať')).toBeInTheDocument();
-    expect(screen.getByLabelText('Pridať')).toBeInTheDocument();
+    expect(screen.getByLabelText('Žiadosti')).toBeInTheDocument();
     expect(screen.getByLabelText('Správy')).toBeInTheDocument();
     expect(screen.getByLabelText('Upozornenia')).toBeInTheDocument();
   });
@@ -57,12 +66,6 @@ describe('MobileTopNav', () => {
     expect(searchButton).toHaveClass('text-purple-600');
   });
 
-  it('renders special create button with circle background', () => {
-    render(<MobileTopNav {...defaultProps} activeItem="create" />);
-    
-    const createButton = screen.getByLabelText('Pridať');
-    const circle = createButton.querySelector('.rounded-full');
-    expect(circle).toBeInTheDocument();
-  });
+  // Create button bol nahradený requests; coverage ponecháme na existujúcich testoch.
 });
 

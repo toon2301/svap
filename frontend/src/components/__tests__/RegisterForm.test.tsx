@@ -134,25 +134,34 @@ describe('RegisterForm', () => {
   });
 
   it('shows company fields when company type is selected', async () => {
-    const { container } = render(<RegisterForm />);
-    const userTypeSelect = container.querySelector('#user_type') as HTMLSelectElement;
-    fireEvent.change(userTypeSelect, { target: { value: 'company' } });
+    render(<RegisterForm />);
+    const trigger = screen.getByLabelText('Vyberte typ účtu');
+    fireEvent.click(trigger);
 
     await waitFor(() => {
-      expect(screen.getByText('Informácie o firme')).toBeInTheDocument();
+      expect(screen.getByRole('listbox')).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole('option', { name: 'Firma' }));
+
+    await waitFor(() => {
+      // V company mode sa "username" pole používa ako názov firmy
       expect(screen.getByLabelText('Názov firmy *')).toBeInTheDocument();
     });
   });
 
   it('validates company name when company type is selected', async () => {
-    const { container } = render(<RegisterForm />);
-    
-    const userTypeSelect = screen.getByDisplayValue('Osoba');
-    fireEvent.change(userTypeSelect, { target: { value: 'company' } });
+    render(<RegisterForm />);
+
+    const trigger = screen.getByLabelText('Vyberte typ účtu');
+    fireEvent.click(trigger);
+    await waitFor(() => {
+      expect(screen.getByRole('listbox')).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole('option', { name: 'Firma' }));
 
     // počkaj, kým sa zaktualizuje stav a zobrazí sekcia pre firmu
     await waitFor(() => {
-      expect(screen.getByText('Informácie o firme')).toBeInTheDocument();
+      expect(screen.getByLabelText('Názov firmy *')).toBeInTheDocument();
     });
     
     const submitButton = screen.getByRole('button', { name: 'Registrovať sa' });
@@ -163,21 +172,24 @@ describe('RegisterForm', () => {
     });
   });
 
-  it('toggles password visibility', () => {
+  it('toggles password visibility', async () => {
     render(<RegisterForm />);
     
     const passwordInput = screen.getByLabelText('Heslo *') as HTMLInputElement;
-    // Prvý toggle button (ikona vpravo)
-    const toggleButtons = screen.getAllByRole('button');
-    const toggle = toggleButtons.find(btn => (btn as HTMLButtonElement).type === 'button') as HTMLButtonElement;
+    const wrapper = passwordInput.parentElement as HTMLElement;
+    const toggle = wrapper.querySelector('button[type="button"]') as HTMLButtonElement;
     
     expect(passwordInput.type).toBe('password');
     
     fireEvent.click(toggle);
-    expect(passwordInput.type).toBe('text');
+    await waitFor(() => {
+      expect((screen.getByLabelText('Heslo *') as HTMLInputElement).type).toBe('text');
+    });
     
     fireEvent.click(toggle);
-    expect(passwordInput.type).toBe('password');
+    await waitFor(() => {
+      expect((screen.getByLabelText('Heslo *') as HTMLInputElement).type).toBe('password');
+    });
   });
 
 });

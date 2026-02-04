@@ -5,7 +5,6 @@ export const dynamic = 'force-dynamic';
 import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { api } from '@/lib/api';
-import { setAuthTokens } from '@/utils/auth';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 
@@ -31,6 +30,7 @@ function OAuthCallbackContent() {
       const refreshToken = searchParams.get('refresh_token');
       const userId = searchParams.get('user_id');
       const error = searchParams.get('error');
+      const oauthSuccess = searchParams.get('oauth');
       
       const isProd = process.env.NODE_ENV === 'production';
       if (!isProd) {
@@ -60,6 +60,28 @@ function OAuthCallbackContent() {
         return;
       }
       
+      // B mód: backend nastaví HttpOnly cookies a tokeny nie sú v URL
+      if ((!token || !refreshToken) && oauthSuccess === 'success') {
+        try {
+          // Over session cez /me/ (ak prešlo, cookies fungujú)
+          await api.get('/auth/me/');
+          setStatus('success');
+          if (window.opener) {
+            window.opener.postMessage({ type: 'OAUTH_SUCCESS' }, window.location.origin);
+          }
+          setTimeout(() => window.close(), 1000);
+          return;
+        } catch (e) {
+          setError(t('auth.missingGoogleTokens'));
+          setStatus('error');
+          if (window.opener) {
+            window.opener.postMessage({ type: 'OAUTH_ERROR', error: t('auth.missingGoogleTokens') }, window.location.origin);
+          }
+          setTimeout(() => window.close(), 3000);
+          return;
+        }
+      }
+
       if (!token || !refreshToken) {
         console.error('Missing tokens');
         setError(t('auth.missingGoogleTokens'));
@@ -87,14 +109,7 @@ function OAuthCallbackContent() {
           refresh: refreshToken
         };
         
-        // Dočasne ulož tokeny do localStorage pre fallback mechanizmus
-        localStorage.setItem('access_token', tokens.access);
-        localStorage.setItem('refresh_token', tokens.refresh);
-        localStorage.setItem('oauth_success', 'true');
-        
-        // Tiež ulož tokeny do cookies pre konzistentnosť
-        setAuthTokens(tokens);
-        
+        // Legacy fallback: tokeny sú v URL (starý mód). Neukladaj do localStorage.
         !isProd && console.debug('Tokens stored, notifying parent window...');
         
         // Pošli správu do parent okna o úspešnom prihlásení
@@ -107,14 +122,6 @@ function OAuthCallbackContent() {
             }
           }, window.location.origin);
 
-          // Minimalizuj životnosť tokenov v localStorage po odovzdaní
-          setTimeout(() => {
-            try {
-              localStorage.removeItem('access_token');
-              localStorage.removeItem('refresh_token');
-              localStorage.removeItem('oauth_success');
-            } catch {}
-          }, 5000);
         }
         
         // Zatvor popup okno

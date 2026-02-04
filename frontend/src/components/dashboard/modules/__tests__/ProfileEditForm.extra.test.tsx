@@ -51,7 +51,7 @@ describe('ProfileEditForm extra coverage', () => {
     fireEvent.blur(phoneInput);
 
     // toggle button is the first relative inline-flex inside Contact section
-    const contactToggle = screen.getByText('Zobraziť kontakt verejne').previousElementSibling as HTMLButtonElement;
+    const contactToggle = screen.getByText('Skryť kontakt').previousElementSibling as HTMLButtonElement;
     fireEvent.click(contactToggle);
 
     await waitFor(() => {
@@ -74,7 +74,7 @@ describe('ProfileEditForm extra coverage', () => {
     fireEvent.keyDown(professionInput, { key: 'Enter' });
 
     // toggle profession visibility
-    const professionToggle = screen.getByText('Zobraziť profesiu verejne').previousElementSibling as HTMLButtonElement;
+    const professionToggle = screen.getByText('Skryť profesiu').previousElementSibling as HTMLButtonElement;
     fireEvent.click(professionToggle);
 
     const websiteInput = screen.getByPlaceholderText('https://example.com') as HTMLInputElement;

@@ -51,11 +51,11 @@ export default function ProfileEditForm({ user, onUserUpdate, onEditProfileClick
     setGender(user.gender || '');
   }, [user.first_name, user.bio, user.website, user.location, user.phone, user.phone_visible, user.job_title, user.job_title_visible, user.gender]);
 
-  const handleFullNameSave = async () => {
+  const handleFullNameSave = async (nextFirstName?: string, nextLastName?: string) => {
     const currentFirst = (user.first_name || '').trim();
     const currentLast = (user.last_name || '').trim();
-    const f = (firstName || '').trim();
-    const l = (lastName || '').trim();
+    const f = (nextFirstName ?? firstName ?? '').trim();
+    const l = (nextLastName ?? lastName ?? '').trim();
     const payload: Record<string, string> = {};
     if (f !== currentFirst) payload.first_name = f;
     if (l !== currentLast) payload.last_name = l;
@@ -331,7 +331,15 @@ export default function ProfileEditForm({ user, onUserUpdate, onEditProfileClick
         </div>
         
         {/* Meno (celé meno v jednom vstupe) */}
-        <FullNameInput firstName={firstName} lastName={lastName} setFirstName={setFirstName} setLastName={setLastName} onSave={handleFullNameSave} />
+        <FullNameInput
+          firstName={firstName}
+          lastName={lastName}
+          setFirstName={setFirstName}
+          setLastName={setLastName}
+          onSave={(nextFirstName, nextLastName) => {
+            void handleFullNameSave(nextFirstName, nextLastName);
+          }}
+        />
         
         {/* Priezvisko zrušené – unified v jednom vstupe */}
         

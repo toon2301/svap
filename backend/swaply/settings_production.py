@@ -19,7 +19,7 @@ DEBUG = False
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv('SECRET_KEY')
 if not SECRET_KEY:
-    SECRET_KEY = 'fallback-secret-key-for-production'
+    raise ValueError('SECRET_KEY must be set in production')
 
 # ALLOWED_HOSTS - nastavte v .env súbore pre produkciu
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',')

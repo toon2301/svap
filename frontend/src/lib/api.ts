@@ -1,5 +1,6 @@
 import axios from 'axios';
 import Cookies from 'js-cookie';
+import { clearAuthTokens } from '@/utils/auth';
 
 // API URL konfigurácia - používa environment premenné
 const getApiUrl = () => {
@@ -52,10 +53,10 @@ export const api = axios.create({
 });
 
 // ============================================
-// DEBUGGING: API Request Tracking
+// DEBUGGING: API Request Tracking (dev only)
 // ============================================
 // Pomôže identifikovať, ktoré endpointy sa volajú príliš často
-if (typeof window !== 'undefined') {
+if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
   const apiDebugStats = {
     requests: new Map<string, Array<{ time: number; method: string; url: string; status?: number }>>(),
     startTime: Date.now(),
@@ -106,6 +107,7 @@ if (typeof window !== 'undefined') {
     getStats: () => apiDebugStats,
   };
 
+  // eslint-disable-next-line no-console
   console.log('🔍 API Debug enabled! Use window.__API_DEBUG__.print() in console to see statistics');
 }
 
@@ -159,12 +161,6 @@ api.interceptors.request.use(
       }
     }
 
-    // Pridaj JWT auth token ak existuje
-    const token = Cookies.get('access_token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    
     // Pridaj CSRF token pre POST/PUT/PATCH/DELETE requesty
     const method = config.method?.toUpperCase();
     if (method && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
@@ -235,23 +231,23 @@ api.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        const refreshToken = Cookies.get('refresh_token');
-        if (refreshToken) {
-          const response = await axios.post(`${API_URL}/token/refresh/`, {
-            refresh: refreshToken,
-          });
-
-          const { access } = response.data;
-          Cookies.set('access_token', access);
-          
-          originalRequest.headers.Authorization = `Bearer ${access}`;
-          return api(originalRequest);
-        }
+        // HttpOnly cookies: refresh token sa posiela v cookie; pri cross-origin (dev) môže byť chýbajúci a backend vráti 400.
+        const csrfToken = getCsrfToken();
+        await axios.post(
+          `${API_URL}/token/refresh/`,
+          {},
+          {
+            withCredentials: true,
+            headers: csrfToken ? { 'X-CSRFToken': csrfToken } : undefined,
+          }
+        );
+        return api(originalRequest);
       } catch (refreshError) {
-        // Refresh failed, redirect to login
-        Cookies.remove('access_token');
-        Cookies.remove('refresh_token');
-        window.location.href = '/login';
+        // Refresh zlyhal (400 = chýbajúci cookie pri cross-origin, 401 = neplatný/expired). Nevolať logout API – vyžaduje auth a vráti 401.
+        if (typeof window !== 'undefined') {
+          clearAuthTokens();
+          window.location.href = '/';
+        }
       }
     }
 

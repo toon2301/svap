@@ -2,11 +2,13 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import LanguageModule from '../dashboard/modules/LanguageModule';
 
 const setLocaleMock = jest.fn();
+const setCountryMock = jest.fn();
 
 jest.mock('@/contexts/LanguageContext', () => ({
   useLanguage: () => ({
     locale: 'sk',
     setLocale: setLocaleMock,
+    setCountry: setCountryMock,
     t: (k: string, d: string) => {
       if (k === 'language.german') return 'Nemčina';
       if (k === 'language.english') return 'Angličtina';

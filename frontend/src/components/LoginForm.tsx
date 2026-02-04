@@ -4,10 +4,11 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { api, endpoints } from '@/lib/api';
-import { setAuthTokens } from '@/utils/auth';
 import { useLanguage } from '@/contexts/LanguageContext';
 import Credentials from './login/Credentials';
 import GoogleLoginBlock from './login/GoogleLoginBlock';
+import { fetchCsrfToken } from '@/utils/csrf';
+import { setAuthStateCookie } from '@/utils/auth';
 
 interface LoginData {
   email: string;
@@ -38,6 +39,13 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
   const [isResending, setIsResending] = useState(false);
   const [resendSuccess, setResendSuccess] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+
+  useEffect(() => {
+    // Získaj CSRF token z backendu – v testoch preskoč, aby sme nevolali sieťové requesty
+    if (process.env.NODE_ENV !== 'test') {
+      fetchCsrfToken().catch(() => {});
+    }
+  }, []);
 
   const handleLoginInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -149,19 +157,16 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
             console.debug('OAuth success message received');
           }
           clearInterval(checkClosed);
-          
-          // Ulož tokeny pomocou setAuthTokens
-          setAuthTokens({
-            access: event.data.tokens.access,
-            refresh: event.data.tokens.refresh
-          });
-          
+
+          // Pri cross-origin OAuth callback nastaví cookies na API doméne – frontend si nastaví auth_state na svojej origin
+          setAuthStateCookie();
+
           // Reset preferovaného modulu a nastav flag na vynútenie HOME
           try {
             localStorage.setItem('activeModule', 'home');
             sessionStorage.setItem('forceHome', '1');
           } catch (e) {}
-          
+
           setIsGoogleLoading(false);
           router.push('/dashboard');
         } else if (event.data.type === 'OAUTH_ERROR') {
@@ -196,38 +201,19 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
             clearInterval(checkClosed);
             window.removeEventListener('message', handleMessage);
             
-            // Fallback: skontroluj localStorage
-            const accessToken = localStorage.getItem('access_token');
-            const refreshToken = localStorage.getItem('refresh_token');
-            const oauthSuccess = localStorage.getItem('oauth_success');
-            
-            if (accessToken && refreshToken && oauthSuccess === 'true') {
-              if (process.env.NODE_ENV !== 'production') {
-                console.debug('OAuth success detected via localStorage fallback');
-              }
-              
-              // Ulož tokeny pomocou setAuthTokens
-              setAuthTokens({
-                access: accessToken,
-                refresh: refreshToken
-              });
-              
-              // Vymaž dočasné localStorage položky
-              localStorage.removeItem('oauth_success');
-              localStorage.removeItem('access_token');
-              localStorage.removeItem('refresh_token');
-              
+            // Fallback: over session cez backend (HttpOnly cookies)
+            try {
+              await api.get(endpoints.auth.me);
               // Reset preferovaného modulu a nastav flag na vynútenie HOME
               try {
                 localStorage.setItem('activeModule', 'home');
                 sessionStorage.setItem('forceHome', '1');
               } catch (e) {}
-              
               setIsGoogleLoading(false);
               router.push('/dashboard');
-            } else {
+            } catch (e) {
               if (process.env.NODE_ENV !== 'production') {
-                console.debug('No OAuth tokens found in localStorage');
+                console.debug('OAuth fallback session check failed');
               }
               setIsGoogleLoading(false);
               setLoginErrors({ general: t('auth.googleLoginFailed') });
@@ -259,16 +245,16 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
 
     try {
       const response = await api.post(endpoints.auth.login, loginData);
-      
-      // Uloženie tokenov
-      setAuthTokens(response.data.tokens);
-      
+
+      // Pri cross-origin backend nastaví cookies pre svoju doménu – frontend si nastaví auth_state na svojej origin, aby isAuthenticated() a presmerovanie fungovali
+      setAuthStateCookie();
+
       // Reset preferovaného modulu po prihlásení a nastav flag na vynútenie HOME
       if (typeof window !== 'undefined') {
         localStorage.setItem('activeModule', 'home');
         sessionStorage.setItem('forceHome', '1');
       }
-      
+
       // Presmerovanie na dashboard
       router.push('/dashboard');
       

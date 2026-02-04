@@ -10,6 +10,9 @@ from django.contrib.auth import get_user_model
 from django.db import transaction
 from django.core.cache import cache
 import logging
+from django.conf import settings
+from django.middleware.csrf import get_token
+from django.views.decorators.csrf import ensure_csrf_cookie
 
 from swaply.rate_limiting import login_rate_limit, register_rate_limit, email_verification_rate_limit
 from swaply.audit_logger import (
@@ -33,6 +36,47 @@ logger = logging.getLogger(__name__)
 LOGIN_FAILURE_MAX_ATTEMPTS = 5
 LOGIN_FAILURE_WINDOW_MINUTES = 15
 ACCOUNT_LOCKOUT_MINUTES = 15
+
+
+def _auth_cookie_kwargs() -> dict:
+    """
+    Bezpečné defaulty pre JWT cookies.
+    Poznámka: v produkcii používame SameSite=None + Secure, aby cookies fungovali aj pri oddelenom hostingu FE/BE.
+    """
+    is_prod = not getattr(settings, 'DEBUG', False)
+    return {
+        "httponly": True,
+        "secure": True if is_prod else False,
+        "samesite": "None" if is_prod else "Lax",
+        "path": "/",
+    }
+
+
+def _auth_state_cookie_kwargs() -> dict:
+    """Non-HttpOnly flag cookie pre client-side detekciu prihlásenia (neobsahuje token)."""
+    kwargs = _auth_cookie_kwargs()
+    kwargs["httponly"] = False
+    return kwargs
+
+
+def _set_auth_cookies(response, *, access: str, refresh: str) -> None:
+    kwargs = _auth_cookie_kwargs()
+    state_kwargs = _auth_state_cookie_kwargs()
+    # Access token – kratšia životnosť
+    response.set_cookie("access_token", access, max_age=60 * 60, **kwargs)
+    # Refresh token – dlhšia životnosť
+    response.set_cookie("refresh_token", refresh, max_age=7 * 24 * 60 * 60, **kwargs)
+    # Stavový cookie pre UI (bez tokenov)
+    response.set_cookie("auth_state", "1", max_age=7 * 24 * 60 * 60, **state_kwargs)
+
+
+def _clear_auth_cookies(response) -> None:
+    kwargs = _auth_cookie_kwargs()
+    state_kwargs = _auth_state_cookie_kwargs()
+    # delete_cookie nevie vždy nastaviť rovnaké samesite/secure v každej verzii, preto nastavíme expiráciu.
+    response.set_cookie("access_token", "", max_age=0, **kwargs)
+    response.set_cookie("refresh_token", "", max_age=0, **kwargs)
+    response.set_cookie("auth_state", "", max_age=0, **state_kwargs)
 
 
 def _lock_keys_for_email(email: str):
@@ -112,9 +156,9 @@ def reset_login_failures(email: str) -> None:
 
 @api_view(['GET'])
 @permission_classes([AllowAny])
+@ensure_csrf_cookie
 def get_csrf_token_view(request):
     """Získanie CSRF tokenu pre API volania"""
-    from django.middleware.csrf import get_token
     csrf_token = get_token(request)
     return Response({
         'csrf_token': csrf_token
@@ -216,7 +260,7 @@ def login_view(request):
         user_agent = request.META.get('HTTP_USER_AGENT')
         log_login_success(user, ip_address, user_agent)
         
-        return Response({
+        resp = Response({
             'message': 'Prihlásenie bolo úspešné',
             'user': UserProfileSerializer(user).data,
             'tokens': {
@@ -224,6 +268,12 @@ def login_view(request):
                 'refresh': str(refresh)
             }
         }, status=status.HTTP_200_OK)
+        # Nastav HttpOnly cookies (B mód). Zachovávame aj tokens v body kvôli BC.
+        try:
+            _set_auth_cookies(resp, access=str(access_token), refresh=str(refresh))
+        except Exception as e:
+            logger.error(f"Failed to set auth cookies: {e}")
+        return resp
     
     # Log neúspešné prihlásenie a registruj zlyhanie pre lockout
     email = request.data.get('email', 'unknown')
@@ -250,7 +300,7 @@ def login_view(request):
 def logout_view(request):
     """Odhlásenie používateľa"""
     try:
-        refresh_token = request.data.get('refresh')
+        refresh_token = request.data.get('refresh') or request.COOKIES.get('refresh_token')
         if refresh_token:
             # Použi custom RefreshToken s Redis fallback
             from ..authentication import SwaplyRefreshToken
@@ -261,9 +311,14 @@ def logout_view(request):
                 logger.warning(f"Token blacklisting failed: {blacklist_error}")
                 # Pokračuj aj ak blacklisting zlyhá
         
-        return Response({
+        resp = Response({
             'message': 'Odhlásenie bolo úspešné'
         }, status=status.HTTP_200_OK)
+        try:
+            _clear_auth_cookies(resp)
+        except Exception:
+            pass
+        return resp
     except Exception as e:
         # Log error for debugging but don't expose details to client
         logger.error(f"Logout error: {str(e)}")
@@ -284,13 +339,19 @@ def me_view(request):
         refresh = SwaplyRefreshToken.for_user(request.user)
         access_token = refresh.access_token
         
-        return Response({
+        resp = Response({
             'user': serializer.data,
             'tokens': {
                 'access': str(access_token),
                 'refresh': str(refresh)
             }
         })
+        # Voliteľne nastav cookies (užitočné pre legacy OAuth flow)
+        try:
+            _set_auth_cookies(resp, access=str(access_token), refresh=str(refresh))
+        except Exception:
+            pass
+        return resp
     
     return Response(serializer.data)
 
@@ -322,8 +383,8 @@ def verify_email_view(request):
                 # Generovanie JWT tokenov pre automatické prihlásenie
                 from ..authentication import SwaplyRefreshToken
                 refresh = SwaplyRefreshToken.for_user(verification.user)
-                
-                return Response({
+
+                resp = Response({
                     'message': 'Email bol úspešne overený',
                     'verified': True,
                     'tokens': {
@@ -337,6 +398,11 @@ def verify_email_view(request):
                         'is_verified': verification.user.is_verified
                     }
                 }, status=status.HTTP_200_OK)
+                try:
+                    _set_auth_cookies(resp, access=str(refresh.access_token), refresh=str(refresh))
+                except Exception:
+                    pass
+                return resp
             else:
                 # Log neúspešnú verifikáciu
                 token = request.data.get('token', 'unknown')

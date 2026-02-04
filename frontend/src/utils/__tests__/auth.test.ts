@@ -5,7 +5,9 @@ import {
   clearAuthTokens,
   isAuthenticated,
   getAuthHeader,
+  setAuthStateCookie,
   AUTH_COOKIE_NAMES,
+  AUTH_STATE_COOKIE,
 } from '../auth';
 import Cookies from 'js-cookie';
 
@@ -49,14 +51,27 @@ describe('utils/auth', () => {
     expect(getRefreshToken()).toBe('r2');
   });
 
-  it('clearAuthTokens odstráni obidva tokeny', () => {
+  it('clearAuthTokens odstráni tokeny a auth_state', () => {
     clearAuthTokens();
     expect((Cookies as any).remove).toHaveBeenCalledWith(AUTH_COOKIE_NAMES.ACCESS_TOKEN);
     expect((Cookies as any).remove).toHaveBeenCalledWith(AUTH_COOKIE_NAMES.REFRESH_TOKEN);
+    expect((Cookies as any).remove).toHaveBeenCalledWith(AUTH_STATE_COOKIE, { path: '/' });
   });
 
-  it('isAuthenticated vracia true ak existuje access token', () => {
-    (Cookies.get as jest.Mock).mockReturnValueOnce('a3');
+  it('setAuthStateCookie nastaví auth_state na aktuálnej origin', () => {
+    setAuthStateCookie();
+    expect((Cookies as any).set).toHaveBeenCalledWith(
+      AUTH_STATE_COOKIE,
+      '1',
+      expect.objectContaining({ path: '/', sameSite: 'strict' })
+    );
+  });
+
+  it('isAuthenticated vracia true ak existuje auth_state', () => {
+    (Cookies.get as jest.Mock).mockImplementation((name: string) => {
+      if (name === AUTH_STATE_COOKIE) return '1';
+      return undefined;
+    });
     expect(isAuthenticated()).toBe(true);
   });
 

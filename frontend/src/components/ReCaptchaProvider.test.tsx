@@ -33,7 +33,7 @@ describe('ReCaptchaProvider', () => {
   });
 
   it('wraps children with GoogleReCaptchaProvider when key present', () => {
-    process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY = 'test-key';
+    process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY = 'prod-site-key';
     render(
       <ReCaptchaProvider>
         <div>child</div>

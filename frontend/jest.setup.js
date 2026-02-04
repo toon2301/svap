@@ -40,6 +40,7 @@ jest.mock('@/contexts/LanguageContext', () => {
   const ctx = {
     locale: 'sk',
     setLocale: jest.fn(),
+    setCountry: jest.fn(),
     t: (key, fallback) => {
       const v = getByPath(sk, key)
       if (typeof v === 'string') return v

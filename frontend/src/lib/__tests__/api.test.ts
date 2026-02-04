@@ -40,6 +40,7 @@ describe('lib/api axios instance', () => {
   });
 
   beforeEach(() => {
+    jest.clearAllMocks();
     // Stub adapter to zabrániť reálnym HTTP volaniam
     (api as any).defaults.adapter = async (config: any) => {
       return {
@@ -52,42 +53,44 @@ describe('lib/api axios instance', () => {
     };
   });
 
-it('pridáva Authorization header keď je access token (request interceptor)', async () => {
-  (Cookies.get as jest.Mock).mockReturnValueOnce('token-123');
-  const interceptor = (api as any).interceptors.request.handlers[0].fulfilled;
-  const cfg = await interceptor({ headers: {} });
-  expect(cfg.headers.Authorization).toBe('Bearer token-123');
-});
+  it('nepridáva Authorization header z JS (HttpOnly cookies auth)', async () => {
+    const interceptor = (api as any).interceptors.request.handlers[0].fulfilled;
+    const cfg = await interceptor({ headers: {} });
+    expect(cfg.headers.Authorization).toBeUndefined();
+  });
 
   it('pri 401 sa pokúsi o refresh a znovu odošle request (response interceptor)', async () => {
-  (Cookies.get as jest.Mock)
-    .mockReturnValueOnce('access-old')
-    .mockReturnValueOnce('refresh-xyz');
+  // CSRF token header for refresh
+  (Cookies.get as jest.Mock).mockImplementation((key: string) => (key === 'csrftoken' ? 'csrf123' : undefined));
 
   const postSpy = jest.spyOn(axios as any, 'post').mockResolvedValueOnce({ data: { access: 'access-new' } } as any);
   const rejected = (api as any).interceptors.response.handlers[0].rejected;
   const originalRequest: any = { headers: {} };
   const res = await rejected({ response: { status: 401 }, config: originalRequest });
 
-  expect(postSpy).toHaveBeenCalled();
-  expect(originalRequest.headers.Authorization).toBe('Bearer access-new');
+  expect(postSpy).toHaveBeenCalledWith(
+    expect.stringMatching(/\/token\/refresh\/$/),
+    {},
+    expect.objectContaining({
+      withCredentials: true,
+      headers: { 'X-CSRFToken': 'csrf123' },
+    })
+  );
+  expect(originalRequest.headers.Authorization).toBeUndefined();
   expect(res.data.ok).toBe(true);
   postSpy.mockRestore();
 });
 
   it('pri zlyhaní refreshu odstráni cookies a presmeruje na /login (response interceptor)', async () => {
-  (Cookies.get as jest.Mock)
-    .mockReturnValueOnce('access-old')
-    .mockReturnValueOnce('refresh-xyz');
+  (Cookies.get as jest.Mock).mockImplementation((key: string) => (key === 'csrftoken' ? 'csrf123' : undefined));
 
   const postSpy = jest.spyOn(axios as any, 'post').mockRejectedValueOnce(new Error('refresh fail'));
-  const removeSpy = jest.spyOn(Cookies, 'remove');
+  const logoutSpy = jest.spyOn(api, 'post').mockResolvedValueOnce({ data: { ok: true } } as any);
 
     const rejected = (api as any).interceptors.response.handlers[0].rejected;
     await rejected({ response: { status: 401 }, config: { headers: {} } }).catch(() => {});
 
-  expect(removeSpy).toHaveBeenCalledWith('access_token');
-  expect(removeSpy).toHaveBeenCalledWith('refresh_token');
+  expect(logoutSpy).toHaveBeenCalled();
   expect(window.location.href).toBe('/login');
 
   postSpy.mockRestore();

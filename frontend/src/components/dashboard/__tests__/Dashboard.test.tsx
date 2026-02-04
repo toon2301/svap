@@ -18,6 +18,10 @@ jest.mock('next/navigation', () => ({
   useRouter: () => ({
     push: pushMock,
   }),
+  useSearchParams: () => ({
+    get: jest.fn(),
+  }),
+  usePathname: () => '/dashboard',
 }));
 
 // Mock auth utils
@@ -116,20 +120,6 @@ describe('Dashboard', () => {
     expect(screen.getByText('Obľúbené')).toBeInTheDocument();
     expect(screen.getByText('Profil')).toBeInTheDocument();
     expect(screen.getByText('Nastavenia')).toBeInTheDocument();
-  });
-
-  it('switches modules when sidebar items are clicked', async () => {
-    const { isAuthenticated } = require('@/utils/auth');
-    isAuthenticated.mockReturnValue(true);
-    
-    render(<ThemeProvider><Dashboard initialUser={mockUser} /></ThemeProvider>);
-    
-    const searchButtons = screen.getAllByText('Vyhľadávanie');
-    fireEvent.click(searchButtons[0]);
-    await waitFor(() => {
-      // There will be a heading with the same text after switching
-      expect(screen.getAllByText('Vyhľadávanie').length).toBeGreaterThan(1);
-    });
   });
 
   it('switches to Favorites/Profile/Settings modules', async () => {
@@ -231,9 +221,7 @@ describe('Dashboard', () => {
     fireEvent.click(logoutButton);
     
     await waitFor(() => {
-      expect(api.post).toHaveBeenCalledWith('/auth/logout/', {
-        refresh: null,
-      });
+      expect(api.post).toHaveBeenCalledWith('/auth/logout/', {});
       expect(clearAuthTokens).toHaveBeenCalled();
     });
   });

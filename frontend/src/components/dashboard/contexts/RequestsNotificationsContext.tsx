@@ -1,7 +1,6 @@
 'use client';
 
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import Cookies from 'js-cookie';
 import { api, endpoints } from '@/lib/api';
 
 type RequestsNotificationsContextValue = {
@@ -49,38 +48,11 @@ function getBackendOrigin(): string {
   return 'http://localhost:8000';
 }
 
-function toWebSocketUrl(origin: string, token: string): string {
+function toWebSocketUrl(origin: string): string {
   const wsOrigin = origin.startsWith('https://')
     ? origin.replace(/^https:\/\//, 'wss://')
     : origin.replace(/^http:\/\//, 'ws://');
-  return `${wsOrigin}/ws/notifications/?token=${encodeURIComponent(token)}`;
-}
-
-function _base64UrlDecode(input: string): string {
-  const base64 = input.replace(/-/g, '+').replace(/_/g, '/');
-  const pad = base64.length % 4;
-  const padded = pad ? base64 + '='.repeat(4 - pad) : base64;
-  try {
-    return atob(padded);
-  } catch {
-    return '';
-  }
-}
-
-function isJwtExpired(token: string, skewSeconds = 30): boolean {
-  try {
-    const parts = token.split('.');
-    if (parts.length < 2) return true;
-    const payloadRaw = _base64UrlDecode(parts[1]);
-    if (!payloadRaw) return true;
-    const payload = JSON.parse(payloadRaw);
-    const exp = typeof payload?.exp === 'number' ? payload.exp : null;
-    if (!exp) return true;
-    const now = Math.floor(Date.now() / 1000);
-    return exp <= now + skewSeconds;
-  } catch {
-    return true;
-  }
+  return `${wsOrigin}/ws/notifications/`;
 }
 
 export function RequestsNotificationsProvider({ children }: { children: React.ReactNode }) {
@@ -140,29 +112,12 @@ export function RequestsNotificationsProvider({ children }: { children: React.Re
     }
 
     const refreshAccessToken = async (): Promise<string | null> => {
-      const refresh = Cookies.get('refresh_token');
-      if (!refresh) return null;
-      if (authRefreshInFlightRef.current) return Cookies.get('access_token') || null;
-
       authRefreshInFlightRef.current = true;
       try {
-        const resp = await api.post(endpoints.auth.refresh, { refresh });
-        const access = typeof resp?.data?.access === 'string' ? resp.data.access : null;
-        const nextRefresh = typeof resp?.data?.refresh === 'string' ? resp.data.refresh : null;
-
-        if (access) Cookies.set('access_token', access);
-        if (nextRefresh) Cookies.set('refresh_token', nextRefresh);
-
-        return access;
+        // HttpOnly cookies: refresh token nie je dostupný v JS, backend ho zoberie z cookies.
+        await api.post(endpoints.auth.refresh, {});
+        return 'ok';
       } catch {
-        // Refresh zlyhal (napr. refresh token expirovaný alebo blacklisted).
-        // Zastav WS pokusy tým, že tokeny odstránime.
-        try {
-          Cookies.remove('access_token');
-          Cookies.remove('refresh_token');
-        } catch {
-          // ignore
-        }
         return null;
       } finally {
         authRefreshInFlightRef.current = false;
@@ -180,15 +135,9 @@ export function RequestsNotificationsProvider({ children }: { children: React.Re
 
         closedByUsRef.current = false;
 
-        let token = Cookies.get('access_token') || '';
-        if (!token || isJwtExpired(token)) {
-          const refreshed = await refreshAccessToken();
-          token = refreshed || Cookies.get('access_token') || '';
-        }
-        if (!token) return;
         if (disposed) return;
 
-        const wsUrl = toWebSocketUrl(origin, token);
+        const wsUrl = toWebSocketUrl(origin);
         const ws = new WebSocket(wsUrl);
         store.ws = ws;
 

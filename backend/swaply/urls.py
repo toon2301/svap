@@ -19,12 +19,13 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from django.http import JsonResponse
-from rest_framework_simplejwt.views import TokenRefreshView, TokenObtainPairView
+from rest_framework_simplejwt.views import TokenObtainPairView
 import os
 from accounts.views import update_profile_view
 from accounts.views import google_oauth_simple
 from .migrate_api import run_migrations_view
 from accounts.views import update_profile_view, google_oauth_simple, get_csrf_token_view
+from accounts.views.token_refresh_cookie import token_refresh_cookie_view
 
 
 def api_root(request):
@@ -45,7 +46,7 @@ urlpatterns = [
     # API endpoints
     path('api/', api_root, name='api_root'),
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
-    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('api/token/refresh/', token_refresh_cookie_view, name='token_refresh'),
     path('api/auth/', include('accounts.urls')),
     # Alias routy pre Google OAuth, aby fungovalo aj /api/oauth/... (bez /auth)
     path('api/oauth/google/login/', google_oauth_simple.google_login_view, name='api_google_login'),

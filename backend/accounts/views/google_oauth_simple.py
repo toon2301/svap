@@ -219,18 +219,29 @@ def google_callback_view(request):
         # Generuj JWT tokeny
         refresh = RefreshToken.for_user(user)
         access_token_jwt = refresh.access_token
-        
-        # Vytvor redirect URL s tokenmi
+
+        # Nastav HttpOnly cookies a presmeruj bez tokenov v URL (bezpečnejšie)
         redirect_url = (
             f"{frontend_callback}?"
-            f"token={str(access_token_jwt)}&"
-            f"refresh_token={str(refresh)}&"
+            f"oauth=success&"
             f"user_id={user.id}"
         )
         
         logger.info(f"Google OAuth login successful for user {user.email}")
         
-        return HttpResponseRedirect(redirect_url)
+        resp = HttpResponseRedirect(redirect_url)
+        try:
+            from .auth import _auth_cookie_kwargs
+            kwargs = _auth_cookie_kwargs()
+            resp.set_cookie("access_token", str(access_token_jwt), max_age=60 * 60, **kwargs)
+            resp.set_cookie("refresh_token", str(refresh), max_age=7 * 24 * 60 * 60, **kwargs)
+            # Stavový cookie pre UI (bez tokenov)
+            state_kwargs = dict(kwargs)
+            state_kwargs["httponly"] = False
+            resp.set_cookie("auth_state", "1", max_age=7 * 24 * 60 * 60, **state_kwargs)
+        except Exception as e:
+            logger.error(f"Failed to set OAuth auth cookies: {e}")
+        return resp
         
     except Exception as e:
         logger.error(f"Google OAuth callback error: {str(e)}")

@@ -3,6 +3,15 @@ import '@testing-library/jest-dom';
 import Sidebar from '../Sidebar';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 
+jest.mock('../contexts/RequestsNotificationsContext', () => ({
+  __esModule: true,
+  useRequestsNotifications: () => ({
+    unreadCount: 0,
+    refreshUnreadCount: jest.fn(),
+    markAllRead: jest.fn(),
+  }),
+}));
+
 // framer-motion mocked globally in jest.setup
 
 describe('Sidebar extra coverage', () => {

@@ -229,13 +229,11 @@ class CAPTCHAValidator:
     @classmethod
     def validate_captcha(cls, captcha_token):
         """Validuje CAPTCHA token cez Google reCAPTCHA API"""
-        # DEBUG: Log CAPTCHA settings
-        logger.info(f"🔍 DEBUG CAPTCHA: Starting validation")
-        logger.info(f"🔍 DEBUG CAPTCHA: CAPTCHA_ENABLED = {getattr(settings, 'CAPTCHA_ENABLED', True)}")
-        logger.info(f"🔍 DEBUG CAPTCHA: CAPTCHA_VERIFY_URL = {getattr(settings, 'CAPTCHA_VERIFY_URL', 'NOT SET')}")
-        
-        secret_key = getattr(settings, 'CAPTCHA_SECRET_KEY', 'NOT SET')
-        logger.info(f"🔍 DEBUG CAPTCHA: CAPTCHA_SECRET_KEY = {secret_key[:15]}... (first 15 chars)")
+        # DEBUG: log len bezpečné meta informácie (nikdy nie secret/token)
+        if getattr(settings, 'DEBUG', False):
+            logger.info("🔍 DEBUG CAPTCHA: Starting validation")
+            logger.info(f"🔍 DEBUG CAPTCHA: CAPTCHA_ENABLED = {getattr(settings, 'CAPTCHA_ENABLED', True)}")
+            logger.info(f"🔍 DEBUG CAPTCHA: CAPTCHA_VERIFY_URL is set = {bool(getattr(settings, 'CAPTCHA_VERIFY_URL', None))}")
         
         # Skontroluj, či je CAPTCHA povolená
         if not getattr(settings, 'CAPTCHA_ENABLED', True):
@@ -253,8 +251,8 @@ class CAPTCHAValidator:
             logger.error(f"🔍 DEBUG CAPTCHA: Token is empty!")
             raise ValidationError(_('CAPTCHA je povinná'))
         
-        logger.info(f"🔍 DEBUG CAPTCHA: Token received (length: {len(captcha_token)})")
-        logger.info(f"🔍 DEBUG CAPTCHA: Token first 50 chars: {captcha_token[:50]}...")
+        if getattr(settings, 'DEBUG', False):
+            logger.info(f"🔍 DEBUG CAPTCHA: Token received (length: {len(captcha_token)})")
         
         # Validuj token cez Google API
         try:
@@ -271,10 +269,12 @@ class CAPTCHAValidator:
                 timeout=10
             )
             
-            logger.info(f"🔍 DEBUG CAPTCHA: Google API response status: {response.status_code}")
-            
+            if getattr(settings, 'DEBUG', False):
+                logger.info(f"🔍 DEBUG CAPTCHA: Google API response status: {response.status_code}")
+
             result = response.json()
-            logger.info(f"🔍 DEBUG CAPTCHA: Google API response: {result}")
+            if getattr(settings, 'DEBUG', False):
+                logger.info("🔍 DEBUG CAPTCHA: Google API response received")
             
             if not result.get('success', False):
                 error_codes = result.get('error-codes', [])

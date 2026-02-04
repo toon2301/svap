@@ -19,13 +19,8 @@ export default function Home() {
     const checkAuth = () => {
       const auth = isAuthenticated();
       setIsAuth(auth);
-      
-      // Ak je používateľ prihlásený, presmeruj na dashboard
-      if (auth) {
-        router.push('/dashboard');
-      }
+      if (auth) router.push('/dashboard');
     };
-
     checkAuth();
   }, [router]);
 

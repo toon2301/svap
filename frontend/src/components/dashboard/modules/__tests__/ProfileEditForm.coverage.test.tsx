@@ -58,7 +58,8 @@ describe('ProfileEditForm coverage', () => {
     const onUserUpdate = jest.fn();
     render(<ProfileEditForm user={user} onUserUpdate={onUserUpdate} />);
     const input = screen.getByLabelText('Meno') as HTMLInputElement;
-    fireEvent.change(input, { target: { value: 'Nové' } });
+    // FullNameInput očakáva celé meno (posledné slovo = priezvisko)
+    fireEvent.change(input, { target: { value: 'Nové Test' } });
     fireEvent.keyDown(input, { key: 'Enter' });
     await waitFor(() => expect(api.patch).toHaveBeenCalledWith('/auth/profile/', { first_name: 'Nové' }));
     fireEvent.blur(input);

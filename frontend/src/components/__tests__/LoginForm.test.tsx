@@ -23,11 +23,6 @@ jest.mock('@/lib/api', () => ({
   },
 }));
 
-// Mock auth utils
-jest.mock('@/utils/auth', () => ({
-  setAuthTokens: jest.fn(),
-}));
-
 const mockPush = jest.fn();
 const mockApiPost = api.post as jest.MockedFunction<typeof api.post>;
 
@@ -135,7 +130,8 @@ describe('LoginForm', () => {
     fireEvent.click(submitButton);
     
     await waitFor(() => {
-      expect(screen.getByText('Neplatný email')).toBeInTheDocument();
+      // Komponent zobrazuje konzistentnú general chybu pri neplatných prihlasovacích údajoch
+      expect(screen.getByText('Neplatné prihlasovacie údaje.')).toBeInTheDocument();
     });
   });
 

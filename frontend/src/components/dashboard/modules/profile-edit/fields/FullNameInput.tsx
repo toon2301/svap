@@ -7,7 +7,7 @@ interface FullNameInputProps {
   lastName: string;
   setFirstName: (v: string) => void;
   setLastName: (v: string) => void;
-  onSave: () => void;
+  onSave: (nextFirstName: string, nextLastName: string) => void;
 }
 
 export default function FullNameInput({ firstName, lastName, setFirstName, setLastName, onSave }: FullNameInputProps) {
@@ -40,11 +40,9 @@ export default function FullNameInput({ firstName, lastName, setFirstName, setLa
     // Nastaviť hodnoty
     setFirstName(newFirstName);
     setLastName(newLastName);
-    
-    // Uložiť - používame setTimeout s 0 delay, aby sa state stihol aktualizovať
-    // React batche state updates, takže musíme počkať na ďalší tick
-    await new Promise(resolve => setTimeout(resolve, 0));
-    onSave();
+
+    // Uložiť rovno s vypočítanými hodnotami (nespoliehať sa na asynchrónny React state)
+    onSave(newFirstName, newLastName);
   };
 
   return (

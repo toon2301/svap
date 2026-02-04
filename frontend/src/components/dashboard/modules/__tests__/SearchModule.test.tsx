@@ -34,36 +34,30 @@ describe('SearchModule', () => {
   it('renders heading and inputs', () => {
     render(<SearchModule user={mockUser} />);
 
-    expect(screen.getByText('Vyhľadávanie')).toBeInTheDocument();
-    expect(
-      screen.getByPlaceholderText(/Hľada(ť|jte) používateľov, zručnosti/i),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByPlaceholderText(/Kde hľadáš\? \(okres, mesto\.\.\.\)/i),
-    ).toBeInTheDocument();
+    expect(screen.getByText('Hľadať')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Vyhľadávanie')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /filter/i })).toBeInTheDocument();
   });
 
-  it('shows empty state when nothing searched yet', () => {
+  it('does not show no-results message before search', () => {
     render(<SearchModule user={mockUser} />);
 
-    expect(screen.getByText('Začnite vyhľadávať')).toBeInTheDocument();
     expect(
-      screen.getByText(/Nájdite používateľov so zručnosťami/i),
-    ).toBeInTheDocument();
+      screen.queryByText(/Pre zadané vyhľadávanie sa nenašli žiadne výsledky/i),
+    ).not.toBeInTheDocument();
   });
 
   it('updates search query on input change and triggers search on submit', async () => {
     render(<SearchModule user={mockUser} />);
 
     const searchInput = screen.getByPlaceholderText(
-      /Hľada(ť|jte) používateľov, zručnosti/i,
+      'Vyhľadávanie',
     ) as HTMLInputElement;
     fireEvent.change(searchInput, { target: { value: 'React' } });
 
     expect(searchInput.value).toBe('React');
 
-    const submitButton = screen.getByRole('button', { name: /Hľadať/i });
-    fireEvent.click(submitButton);
+    fireEvent.keyDown(searchInput, { key: 'Enter', code: 'Enter', charCode: 13 });
 
     await waitFor(() =>
       expect(

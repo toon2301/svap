@@ -34,42 +34,40 @@ describe('SearchModule', () => {
   it('renders search header and inputs', () => {
     render(<SearchModule user={mockUser} />);
 
-    expect(screen.getByText('Vyhľadávanie')).toBeInTheDocument();
-    expect(
-      screen.getByPlaceholderText(/Hľada(ť|jte) používateľov, zručnosti/i),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByPlaceholderText(/Kde hľadáš\? \(okres, mesto\.\.\.\)/i),
-    ).toBeInTheDocument();
+    expect(screen.getByText('Hľadať')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Vyhľadávanie')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /filter/i })).toBeInTheDocument();
   });
 
   it('updates search query when typing', () => {
     render(<SearchModule user={mockUser} />);
 
     const searchInput = screen.getByPlaceholderText(
-      /Hľada(ť|jte) používateľov, zručnosti/i,
+      'Vyhľadávanie',
     );
     fireEvent.change(searchInput, { target: { value: 'React' } });
 
     expect(searchInput).toHaveValue('React');
   });
 
-  it('shows empty state before first search', () => {
+  it('does not show no-results message before search', () => {
     render(<SearchModule user={mockUser} />);
 
-    expect(screen.getByText('Začnite vyhľadávať')).toBeInTheDocument();
+    expect(
+      screen.queryByText(/Pre zadané vyhľadávanie sa nenašli žiadne výsledky/i),
+    ).not.toBeInTheDocument();
   });
 
   it('performs search and shows no-results message when nothing found', async () => {
     render(<SearchModule user={mockUser} />);
 
     const searchInput = screen.getByPlaceholderText(
-      /Hľada(ť|jte) používateľov, zručnosti/i,
+      'Vyhľadávanie',
     );
     fireEvent.change(searchInput, { target: { value: 'React' } });
 
-    const submitButton = screen.getByRole('button', { name: /Hľadať/i });
-    fireEvent.click(submitButton);
+    // Search sa spúšťa na Enter (alebo debounce); v teste použijeme Enter.
+    fireEvent.keyDown(searchInput, { key: 'Enter', code: 'Enter', charCode: 13 });
 
     await waitFor(() =>
       expect(

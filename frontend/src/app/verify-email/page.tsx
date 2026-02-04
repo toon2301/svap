@@ -6,7 +6,6 @@ import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { api, endpoints } from '@/lib/api';
-import { setAuthTokens } from '@/utils/auth';
 
 interface VerificationStatus {
   status: 'loading' | 'success' | 'error';
@@ -36,18 +35,14 @@ function VerifyEmailContent() {
       }
 
       try {
-        const response = await api.post(endpoints.auth.verifyEmail, {
-          token: token
+        // GET je podporované (linky z emailu) a nevyžaduje CSRF
+        const response = await api.get(endpoints.auth.verifyEmail, {
+          params: { token },
         });
 
         if (response.data.verified) {
           // Automatické prihlásenie po úspešnej verifikácii
           if (response.data.tokens) {
-            setAuthTokens({
-              access: response.data.tokens.access,
-              refresh: response.data.tokens.refresh
-            });
-            
             setVerificationStatus({
               status: 'success',
               message: 'Email bol úspešne overený! Presmerovávam na dashboard...'

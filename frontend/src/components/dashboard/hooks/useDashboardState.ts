@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import Cookies from 'js-cookie';
 import type { User } from '../../../types';
 import { isAuthenticated, clearAuthTokens } from '../../../utils/auth';
 import { api, endpoints } from '../../../lib/api';
@@ -385,9 +384,7 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
 
   const handleLogout = useCallback(async () => {
     try {
-      await api.post(endpoints.auth.logout, {
-        refresh: Cookies.get('refresh_token') ?? null,
-      });
+      await api.post(endpoints.auth.logout, {});
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
