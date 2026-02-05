@@ -27,40 +27,45 @@ const getApiUrl = () => {
     try {
       const saved = window.sessionStorage.getItem('API_BASE_URL');
       if (saved && /^https?:\/\//.test(saved)) {
-        return `${saved}/auth`.replace(/\/$/, '') // will be used below anyway
+        return saved.replace(/\/$/, '')
       }
     } catch {}
   }
   return 'http://localhost:8000/api';
 };
 
+/** Pri cross-origin (frontend ≠ backend) cookie csrftoken nie je čitateľná – držíme token z response body. */
+let csrfTokenFromResponse: string | null = null;
+
 /**
- * Získa CSRF token z Django backendu
- * Django automaticky nastaví csrftoken cookie pri prvom volaní
+ * Získa CSRF token z Django backendu.
+ * Pri same-origin Django nastaví cookie; pri cross-origin ukladáme token z response body,
+ * lebo cookie pre inú doménu nie je v JS čitateľná.
  */
 export const fetchCsrfToken = async (): Promise<void> => {
   try {
     const apiUrl = getApiUrl();
-    await axios.get(`${apiUrl}/auth/csrf-token/`, {
-      withCredentials: true, // Dôležité pre prijímanie cookies
+    const res = await axios.get<{ csrf_token?: string }>(`${apiUrl}/auth/csrf-token/`, {
+      withCredentials: true,
     });
-    // CSRF token je teraz uložený v cookies automaticky Django backendom
+    const token = res?.data?.csrf_token;
+    if (token) csrfTokenFromResponse = token;
   } catch (error) {
     console.error('Chyba pri získavaní CSRF tokenu:', error);
   }
 };
 
 /**
- * Kontrola či CSRF token existuje v cookies
+ * Kontrola či máme CSRF token (z cookies alebo z response body pri cross-origin)
  */
 export const hasCsrfToken = (): boolean => {
-  return !!Cookies.get('csrftoken');
+  return !!(csrfTokenFromResponse || Cookies.get('csrftoken'));
 };
 
 /**
- * Získa CSRF token z cookies
+ * Získa CSRF token – pri cross-origin z response body, inak z cookies
  */
 export const getCsrfToken = (): string | undefined => {
-  return Cookies.get('csrftoken');
+  return csrfTokenFromResponse ?? Cookies.get('csrftoken') ?? undefined;
 };
 

@@ -1,6 +1,7 @@
 import axios from 'axios';
 import Cookies from 'js-cookie';
 import { clearAuthTokens, getAuthHeader, getRefreshToken } from '@/utils/auth';
+import { getCsrfToken } from '@/utils/csrf';
 
 // API URL konfigurácia - používa environment premenné
 const getApiUrl = () => {
@@ -37,12 +38,6 @@ if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
     }
   } catch {}
 }
-
-// Utility funkcia na získanie CSRF tokenu z cookies
-const getCsrfToken = (): string | undefined => {
-  // Django štandardne používa cookie s názvom 'csrftoken'
-  return Cookies.get('csrftoken');
-};
 
 // Create axios instance
 export const api = axios.create({

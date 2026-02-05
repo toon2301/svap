@@ -54,6 +54,8 @@ SESSION_COOKIE_SECURE = env_bool('SESSION_COOKIE_SECURE', not DEBUG)
 CSRF_COOKIE_SECURE = env_bool('CSRF_COOKIE_SECURE', not DEBUG)
 SESSION_COOKIE_HTTPONLY = env_bool('SESSION_COOKIE_HTTPONLY', True)
 CSRF_COOKIE_HTTPONLY = env_bool('CSRF_COOKIE_HTTPONLY', False)
+# Pri cross-origin (frontend na inej doméne) musí byť SameSite=None, inak prehliadač nepošle cookie pri POST
+CSRF_COOKIE_SAMESITE = 'None' if (not DEBUG and CSRF_COOKIE_SECURE) else 'Lax'
 
 # Enforce CSRF pre API – v produkcii povoliť vždy; v testoch je možné vypnúť
 if DEBUG:
