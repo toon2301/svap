@@ -158,7 +158,15 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
           }
           clearInterval(checkClosed);
 
-          // Pri cross-origin OAuth callback nastaví cookies na API doméne – frontend si nastaví auth_state na svojej origin
+          // Cross-origin: tokeny prišli v URL, uložiť do localStorage (api potom posiela Authorization header)
+          if (event.data.tokens?.access) {
+            try {
+              localStorage.setItem('access_token', event.data.tokens.access);
+              if (event.data.tokens.refresh) {
+                localStorage.setItem('refresh_token', event.data.tokens.refresh);
+              }
+            } catch (e) {}
+          }
           setAuthStateCookie();
 
           // Reset preferovaného modulu a nastav flag na vynútenie HOME

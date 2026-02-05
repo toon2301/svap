@@ -220,22 +220,35 @@ def google_callback_view(request):
         refresh = RefreshToken.for_user(user)
         access_token_jwt = refresh.access_token
 
-        # Nastav HttpOnly cookies a presmeruj bez tokenov v URL (bezpečnejšie)
-        redirect_url = (
-            f"{frontend_callback}?"
-            f"oauth=success&"
-            f"user_id={user.id}"
-        )
-        
+        # Cross-origin: ak frontend je na inej doméne, cookies sa nepošlú – pridaj tokeny do URL
+        from urllib.parse import urlparse
+        try:
+            frontend_host = urlparse(frontend_callback).netloc
+            backend_host = request.get_host().split(':')[0]
+            cross_origin = frontend_host != backend_host
+        except Exception:
+            cross_origin = False
+
+        base_params = f"oauth=success&user_id={user.id}"
+        if cross_origin:
+            # Fallback pre cross-origin: frontend uloží tokeny a pošle Authorization header
+            redirect_url = (
+                f"{frontend_callback}?"
+                f"{base_params}&"
+                f"token={urllib.parse.quote(str(access_token_jwt))}&"
+                f"refresh_token={urllib.parse.quote(str(refresh))}"
+            )
+        else:
+            redirect_url = f"{frontend_callback}?{base_params}"
+
         logger.info(f"Google OAuth login successful for user {user.email}")
-        
+
         resp = HttpResponseRedirect(redirect_url)
         try:
             from .auth import _auth_cookie_kwargs
             kwargs = _auth_cookie_kwargs()
             resp.set_cookie("access_token", str(access_token_jwt), max_age=60 * 60, **kwargs)
             resp.set_cookie("refresh_token", str(refresh), max_age=7 * 24 * 60 * 60, **kwargs)
-            # Stavový cookie pre UI (bez tokenov)
             state_kwargs = dict(kwargs)
             state_kwargs["httponly"] = False
             resp.set_cookie("auth_state", "1", max_age=7 * 24 * 60 * 60, **state_kwargs)

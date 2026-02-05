@@ -37,3 +37,11 @@ SAFESEARCH_MIN_RACY=LIKELY
 
 # Local credentials path (optional if using JSON in env)
 # GOOGLE_APPLICATION_CREDENTIALS=backend/.secrets/gcp-vision.json
+
+# ---------- Production / Railway (oddelený frontend a backend) ----------
+# DEBUG=False
+# CORS_ALLOWED_ORIGINS=https://tvoja-frontend-app.up.railway.app
+# CSRF_TRUSTED_ORIGINS=https://tvoja-frontend-app.up.railway.app,https://tvoj-backend.up.railway.app
+# FRONTEND_CALLBACK_URL=https://tvoja-frontend-app.up.railway.app/auth/callback
+# BACKEND_CALLBACK_URL=https://tvoj-backend.up.railway.app/api/oauth/google/callback/
+# Pri cross-origin OAuth backend automaticky pridá tokeny do redirect URL, aby prihlásenie fungovalo.

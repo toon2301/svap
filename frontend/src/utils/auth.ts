@@ -25,11 +25,25 @@ export const setAuthTokens = (tokens: AuthTokens): void => {
 };
 
 export const getAccessToken = (): string | undefined => {
-  return Cookies.get(AUTH_COOKIE_NAMES.ACCESS_TOKEN);
+  const fromCookie = Cookies.get(AUTH_COOKIE_NAMES.ACCESS_TOKEN);
+  if (fromCookie) return fromCookie;
+  if (typeof window !== 'undefined') {
+    try {
+      return window.localStorage.getItem('access_token') ?? undefined;
+    } catch {}
+  }
+  return undefined;
 };
 
 export const getRefreshToken = (): string | undefined => {
-  return Cookies.get(AUTH_COOKIE_NAMES.REFRESH_TOKEN);
+  const fromCookie = Cookies.get(AUTH_COOKIE_NAMES.REFRESH_TOKEN);
+  if (fromCookie) return fromCookie;
+  if (typeof window !== 'undefined') {
+    try {
+      return window.localStorage.getItem('refresh_token') ?? undefined;
+    } catch {}
+  }
+  return undefined;
 };
 
 /** Cookie name pre stav prihlásenia (číta sa na frontende pri cross-origin) */
@@ -79,16 +93,6 @@ export const isAuthenticated = (): boolean => {
 };
 
 export const getAuthHeader = (): string | undefined => {
-  // Skontroluj cookies (primárne)
-  const cookieToken = getAccessToken();
-  if (cookieToken) return `Bearer ${cookieToken}`;
-  
-  // Fallback na localStorage (pre OAuth)
-  if (typeof window !== 'undefined') {
-    try {
-      const localToken = window.localStorage.getItem('access_token');
-      return localToken ? `Bearer ${localToken}` : undefined;
-    } catch {}
-  }
-  return undefined;
+  const token = getAccessToken();
+  return token ? `Bearer ${token}` : undefined;
 };

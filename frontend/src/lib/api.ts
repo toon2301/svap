@@ -1,6 +1,6 @@
 import axios from 'axios';
 import Cookies from 'js-cookie';
-import { clearAuthTokens } from '@/utils/auth';
+import { clearAuthTokens, getAuthHeader, getRefreshToken } from '@/utils/auth';
 
 // API URL konfigurácia - používa environment premenné
 const getApiUrl = () => {
@@ -161,6 +161,12 @@ api.interceptors.request.use(
       }
     }
 
+    // Pri cross-origin OAuth sú tokeny v localStorage – posielame Authorization header
+    const authHeader = getAuthHeader();
+    if (authHeader) {
+      config.headers['Authorization'] = authHeader;
+    }
+
     // Pridaj CSRF token pre POST/PUT/PATCH/DELETE requesty
     const method = config.method?.toUpperCase();
     if (method && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
@@ -231,16 +237,25 @@ api.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        // HttpOnly cookies: refresh token sa posiela v cookie; pri cross-origin (dev) môže byť chýbajúci a backend vráti 400.
+        // Refresh: cookie (same-origin) alebo body (cross-origin, tokeny z localStorage)
+        const refreshToken = getRefreshToken();
         const csrfToken = getCsrfToken();
-        await axios.post(
+        const refreshResponse = await axios.post(
           `${API_URL}/token/refresh/`,
-          {},
+          refreshToken ? { refresh: refreshToken } : {},
           {
             withCredentials: true,
             headers: csrfToken ? { 'X-CSRFToken': csrfToken } : undefined,
           }
         );
+        // Pri cross-origin nové tokeny neprídu v cookies – uložiť do localStorage
+        const data = refreshResponse?.data;
+        if (data?.access && typeof window !== 'undefined') {
+          try {
+            window.localStorage.setItem('access_token', data.access);
+            if (data.refresh) window.localStorage.setItem('refresh_token', data.refresh);
+          } catch {}
+        }
         return api(originalRequest);
       } catch (refreshError) {
         // Refresh zlyhal (400 = chýbajúci cookie pri cross-origin, 401 = neplatný/expired). Nevolať logout API – vyžaduje auth a vráti 401.
