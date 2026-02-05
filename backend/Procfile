@@ -1,2 +1,3 @@
+# ASGI server (daphne) – potrebné pre WebSocket /ws/notifications/. Nepoužívaj gunicorn.
 web: daphne -b 0.0.0.0 -p $PORT swaply.asgi:application
 

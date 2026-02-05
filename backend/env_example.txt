@@ -45,3 +45,7 @@ SAFESEARCH_MIN_RACY=LIKELY
 # FRONTEND_CALLBACK_URL=https://tvoja-frontend-app.up.railway.app/auth/callback
 # BACKEND_CALLBACK_URL=https://tvoj-backend.up.railway.app/api/oauth/google/callback/
 # Pri cross-origin OAuth backend automaticky pridá tokeny do redirect URL, aby prihlásenie fungovalo.
+#
+# WebSocket: backend musí bežať cez ASGI (daphne), nie gunicorn. V Railway Service → Settings → Start Command
+# nastav (alebo nechaj prázdne, ak používaš Procfile/nixpacks.toml):
+#   python manage.py migrate --noinput && python manage.py init_db && daphne -b 0.0.0.0 -p $PORT swaply.asgi:application

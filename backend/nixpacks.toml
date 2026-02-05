@@ -1,0 +1,4 @@
+# Nixpacks: vynútiť ASGI server (daphne) namiesto gunicorn, aby fungoval WebSocket /ws/notifications/
+# Bez tohto môže Railway/Nixpacks zvoliť gunicorn a WebSocket vráti 404.
+[start]
+cmd = "daphne -b 0.0.0.0 -p ${PORT:-8000} swaply.asgi:application"
