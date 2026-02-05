@@ -21,6 +21,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy project files
 COPY . .
 
+# Make start script executable
+RUN chmod +x start.sh
+
 # Create non-root user
 RUN adduser --disabled-password --gecos '' appuser && \
     chown -R appuser:appuser /app
@@ -29,5 +32,6 @@ USER appuser
 # Expose port
 EXPOSE 8000
 
-# Start: run migrations then start daphne (Railway provides $PORT)
-CMD ["sh", "-c", "python manage.py migrate --noinput && python manage.py collectstatic --noinput && daphne -b 0.0.0.0 -p ${PORT:-8000} swaply.asgi:application"]
+# Start: použije start.sh, ktorý vždy spustí daphne (ASGI) pre WebSocket
+# Railway môže prepísať CMD cez Start Command v Settings - v tom prípade nastav: ./start.sh
+CMD ["./start.sh"]
