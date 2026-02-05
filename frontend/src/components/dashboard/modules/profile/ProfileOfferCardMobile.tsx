@@ -128,7 +128,7 @@ export function ProfileOfferCardMobile({
           <button
             aria-label="Páči sa mi to"
             title="Páči sa mi to"
-            className="p-1.5 rounded-full bg-purple-50 dark:bg-purple-900/80 dark:backdrop-blur-sm border border-purple-200 dark:border-purple-800/60 text-purple-700 dark:text-white hover:bg-purple-100 dark:hover:bg-purple-900/90 transition-colors active:scale-95"
+            className="p-1.5 rounded-full inline-flex items-center justify-center leading-none bg-purple-50 dark:bg-purple-900/80 dark:backdrop-blur-sm border border-purple-200 dark:border-purple-800/60 text-purple-700 dark:text-white hover:bg-purple-100 dark:hover:bg-purple-900/90 transition-colors active:scale-95"
             onClick={(e) => {
               e.stopPropagation();
               // TODO: Implementovať páči sa mi to
@@ -150,7 +150,7 @@ export function ProfileOfferCardMobile({
           <button
             aria-label="Zdieľať"
             title="Zdieľať"
-            className="p-1.5 rounded-full bg-purple-50 dark:bg-purple-900/80 dark:backdrop-blur-sm border border-purple-200 dark:border-purple-800/60 text-purple-700 dark:text-white hover:bg-purple-100 dark:hover:bg-purple-900/90 transition-colors active:scale-95"
+            className="p-1.5 rounded-full inline-flex items-center justify-center leading-none bg-purple-50 dark:bg-purple-900/80 dark:backdrop-blur-sm border border-purple-200 dark:border-purple-800/60 text-purple-700 dark:text-white hover:bg-purple-100 dark:hover:bg-purple-900/90 transition-colors active:scale-95"
             onClick={(e) => {
               e.stopPropagation();
               // TODO: Implementovať zdieľanie
@@ -176,7 +176,7 @@ export function ProfileOfferCardMobile({
           <button
             aria-label="Komentovať"
             title="Komentovať"
-            className="p-1.5 rounded-full bg-purple-50 dark:bg-purple-900/80 dark:backdrop-blur-sm border border-purple-200 dark:border-purple-800/60 text-purple-700 dark:text-white hover:bg-purple-100 dark:hover:bg-purple-900/90 transition-colors active:scale-95"
+            className="p-1.5 rounded-full inline-flex items-center justify-center leading-none bg-purple-50 dark:bg-purple-900/80 dark:backdrop-blur-sm border border-purple-200 dark:border-purple-800/60 text-purple-700 dark:text-white hover:bg-purple-100 dark:hover:bg-purple-900/90 transition-colors active:scale-95"
             onClick={(e) => {
               e.stopPropagation();
               // TODO: Implementovať komentovanie
@@ -186,7 +186,7 @@ export function ProfileOfferCardMobile({
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 24 24"
               fill="none"
-              strokeWidth={1.5}
+              strokeWidth="2"
               stroke="currentColor"
               className="w-4 h-4"
             >
@@ -201,7 +201,7 @@ export function ProfileOfferCardMobile({
             <button
               aria-label="Pridať recenziu"
               title="Pridať recenziu"
-              className="p-1.5 rounded-full bg-purple-50 dark:bg-purple-900/80 dark:backdrop-blur-sm border border-purple-200 dark:border-purple-800/60 text-purple-700 dark:text-white hover:bg-purple-100 dark:hover:bg-purple-900/90 transition-colors active:scale-95"
+              className="p-1.5 rounded-full inline-flex items-center justify-center leading-none bg-purple-50 dark:bg-purple-900/80 dark:backdrop-blur-sm border border-purple-200 dark:border-purple-800/60 text-purple-700 dark:text-white hover:bg-purple-100 dark:hover:bg-purple-900/90 transition-colors active:scale-95"
               onClick={(e) => {
                 e.stopPropagation();
                 // TODO: Implementovať pridať recenziu

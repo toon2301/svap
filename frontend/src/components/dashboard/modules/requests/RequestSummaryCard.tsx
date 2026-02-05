@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { CheckIcon, NoSymbolIcon, TrashIcon, XMarkIcon } from '@heroicons/react/24/outline';
@@ -90,6 +90,7 @@ export function RequestSummaryCard({ item, variant, onAccept, onReject, onCancel
   const { t } = useLanguage();
 
   const who = variant === 'received' ? item.requester_summary : item.recipient_summary;
+  const whoId = who?.id ?? (variant === 'received' ? item.requester : item.recipient);
   const whoName = who?.display_name || (variant === 'received' ? item.requester_display_name : item.recipient_display_name) || '';
   const whoAvatar = who?.avatar_url || null;
   const [avatarError, setAvatarError] = useState(false);
@@ -141,6 +142,28 @@ export function RequestSummaryCard({ item, variant, onAccept, onReject, onCancel
     const text = t(key);
     return text.endsWith('!') ? text : `${text}!`;
   }, [variant, isSeeking, isOfferHidden, t]);
+
+  const handleProfileClick = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (typeof window === 'undefined') return;
+      const currentUserId = user?.id;
+      const isOwnProfile =
+        typeof whoId === 'number' && typeof currentUserId === 'number' && whoId === currentUserId;
+      if (isOwnProfile) {
+        window.dispatchEvent(new CustomEvent('goToMyProfile', { detail: {} }));
+        return;
+      }
+      const identifier =
+        (who?.slug && String(who.slug).trim()) || (typeof whoId === 'number' ? String(whoId) : null);
+      if (!identifier) return;
+      window.dispatchEvent(
+        new CustomEvent('goToUserProfile', { detail: { identifier } }),
+      );
+    },
+    [user?.id, who?.slug, whoId],
+  );
 
   const handleView = () => {
     const offerId = offer?.id ?? item.offer;
@@ -327,9 +350,14 @@ export function RequestSummaryCard({ item, variant, onAccept, onReject, onCancel
       </div>
 
       <div className="flex flex-col pr-[15.5rem] sm:pr-72 md:pr-80 compact-max:pr-[22rem] compact:pr-[26rem] wide:pr-[22rem] min-w-0">
-        {/* Avatar, meno a hneď za menom pokračovanie vety (vám ponúka to, čo hľadáte!) */}
+        {/* Avatar, meno – klikateľné, presmerujú na profil */}
         <div className="px-3 pt-0 pb-2 flex items-center gap-2">
-          <div className="w-8 h-8 sm:w-9 sm:h-9 flex-shrink-0 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800">
+          <button
+            type="button"
+            onClick={handleProfileClick}
+            className="w-8 h-8 sm:w-9 sm:h-9 flex-shrink-0 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800 p-0 border-0 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 focus-visible:ring-offset-1"
+            aria-label={t('requests.openProfile', 'Otvoriť profil')}
+          >
             {hasAvatar ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -345,17 +373,27 @@ export function RequestSummaryCard({ item, variant, onAccept, onReject, onCancel
                 </span>
               </div>
             )}
-          </div>
+          </button>
           <div className="min-w-0 flex-1 text-xs sm:text-sm leading-tight">
             {isOfferHidden ? (
-              <span className="font-semibold text-gray-900 dark:text-white">
+              <button
+                type="button"
+                onClick={handleProfileClick}
+                className="font-semibold text-gray-900 dark:text-white bg-transparent border-0 p-0 cursor-pointer text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 rounded"
+                aria-label={t('requests.openProfile', 'Otvoriť profil')}
+              >
                 {whoName || t('requests.userFallback')}
-              </span>
+              </button>
             ) : (
               <>
-                <span className="font-semibold text-gray-900 dark:text-white">
+                <button
+                  type="button"
+                  onClick={handleProfileClick}
+                  className="font-semibold text-gray-900 dark:text-white bg-transparent border-0 p-0 cursor-pointer text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 rounded"
+                  aria-label={t('requests.openProfile', 'Otvoriť profil')}
+                >
                   {whoName || t('requests.userFallback')}
-                </span>
+                </button>
                 <span className="font-semibold text-purple-700 dark:text-purple-300">
                   {' '}{intentText}
                 </span>

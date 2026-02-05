@@ -500,7 +500,13 @@ export default function ProfileOffersMobileSection({
                   const raw = requestStatusByOfferId[offer.id];
                   const st = raw === 'pending' || raw === 'accepted' || raw === 'rejected' || raw === 'cancelled' ? raw : '';
                   if (st === 'accepted') return t('requests.statusAccepted', 'Prijaté');
-                  if (st === 'pending') return t('requests.requested', 'Požiadané');
+                  if (st === 'pending') {
+                    // Ak používateľ hľadá (is_seeking), po kliknutí na "Ponúknuť" → "Ponúknuté"
+                    // Ak používateľ ponúka (nie is_seeking), po kliknutí na "Požiadať" → "Požiadané"
+                    return offer.is_seeking
+                      ? t('requests.offered', 'Ponúknuté')
+                      : t('requests.requested', 'Požiadané');
+                  }
                   if (st === 'rejected') return t('requests.statusRejected', 'Odmietnuté');
                   if (st === 'cancelled') return t('requests.statusCancelled', 'Zrušené');
                   return defaultRequest;

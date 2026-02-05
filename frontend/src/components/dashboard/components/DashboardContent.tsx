@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { User } from '@/types';
 import { api, endpoints } from '@/lib/api';
@@ -28,6 +28,8 @@ interface DashboardContentProps {
   initialProfileTab?: ProfileTab;
   initialProfileSlug?: string | null;
   initialRightItem?: string | null;
+  /** ID karty (ponuky) pre view recenzií (/dashboard/offers/[offerId]/reviews). */
+  initialOfferId?: number | null;
 }
 
 /**
@@ -41,11 +43,19 @@ export default function DashboardContent({
   initialProfileTab,
   initialProfileSlug,
   initialRightItem,
+  initialOfferId,
 }: DashboardContentProps) {
   const { t } = useLanguage();
   const router = useRouter();
   const searchParams = useSearchParams();
-  
+  const pathname = usePathname();
+
+  // Odvodiť offerId pre recenzie z URL (fix: client-side navigácia bez full reloadu)
+  const offerIdFromReviewsPath = React.useMemo(() => {
+    const m = pathname?.match(/^\/dashboard\/offers\/(\d+)\/reviews\/?$/);
+    return m ? Number(m[1]) : null;
+  }, [pathname]);
+
   // Core Dashboard State
   const dashboardState = useDashboardState(initialUser, initialRoute);
   const skillsState = useSkillsModals();
@@ -169,6 +179,14 @@ export default function DashboardContent({
       void loadSkills();
     }
   }, [activeModule, loadSkills]);
+
+  // Sync modulu a offerId pri URL /dashboard/offers/[id]/reviews (client-side navigácia bez reloadu)
+  const effectiveOfferIdForReviews = initialOfferId ?? offerIdFromReviewsPath ?? null;
+  useEffect(() => {
+    if (offerIdFromReviewsPath != null) {
+      setActiveModule('offer-reviews');
+    }
+  }, [offerIdFromReviewsPath, setActiveModule]);
 
   // Globálna navigácia na cudzí profil (napr. zo Žiadostí).
   // Používame event, aby UI reagovalo okamžite aj v prípadoch, keď sa URL zmení bez
@@ -391,6 +409,7 @@ export default function DashboardContent({
       initialProfileTab={initialProfileTab}
       onSkillsOfferClick={navigation.handleSkillsOfferClick}
       onSkillsSearchClick={navigation.handleSkillsSearchClick}
+      offerIdForReviews={effectiveOfferIdForReviews}
     />
   );
 

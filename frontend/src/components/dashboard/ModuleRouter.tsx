@@ -18,6 +18,7 @@ import AccountTypeSection from './modules/accountType/AccountTypeSection';
 import type { DashboardSkill } from './hooks/useSkillsModals';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { SearchUserProfileModule } from './modules/search/SearchUserProfileModule';
+import OfferReviewsView from './modules/reviews/OfferReviewsView';
 
 interface ModuleRouterProps {
   user: User;
@@ -56,6 +57,8 @@ interface ModuleRouterProps {
   onSkillsClick?: () => void;
   onSkillsOfferClick?: () => void;
   onSkillsSearchClick?: () => void;
+  /** ID karty (ponuky) pre view recenzií. */
+  offerIdForReviews?: number | null;
 }
 
 export default function ModuleRouter({
@@ -95,6 +98,7 @@ export default function ModuleRouter({
   onSkillsClick,
   onSkillsOfferClick,
   onSkillsSearchClick,
+  offerIdForReviews,
 }: ModuleRouterProps) {
   const { t } = useLanguage();
 
@@ -146,6 +150,8 @@ export default function ModuleRouter({
   }
 
   switch (activeModule) {
+    case 'offer-reviews':
+      return <OfferReviewsView offerId={offerIdForReviews ?? null} />;
     case 'home':
       return (
         <div className="text-center py-20">

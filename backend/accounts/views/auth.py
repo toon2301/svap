@@ -2,7 +2,7 @@
 Autentifikačné views pre Swaply
 """
 from rest_framework import status
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, authentication_classes
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -155,6 +155,7 @@ def reset_login_failures(email: str) -> None:
 
 
 @api_view(['GET'])
+@authentication_classes([])  # CSRF endpoint musí fungovať aj s neplatnými auth cookies
 @permission_classes([AllowAny])
 @ensure_csrf_cookie
 def get_csrf_token_view(request):
@@ -166,6 +167,7 @@ def get_csrf_token_view(request):
 
 
 @api_view(['GET', 'POST'])
+@authentication_classes([])  # register je verejný endpoint
 @permission_classes([AllowAny])
 @register_rate_limit
 def register_view(request):
@@ -235,6 +237,7 @@ def register_view(request):
 
 
 @api_view(['POST'])
+@authentication_classes([])  # login je verejný endpoint
 @permission_classes([AllowAny])
 @login_rate_limit
 def login_view(request):

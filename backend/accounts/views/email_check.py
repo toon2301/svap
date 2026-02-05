@@ -2,7 +2,7 @@
 Email availability check view pre Swaply
 """
 from rest_framework import status
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, authentication_classes
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
 from swaply.rate_limiting import email_check_rate_limit
@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 @api_view(['GET'])
+@authentication_classes([])  # Verejný endpoint – bez JWT, inak starý token spôsobí 401
 @permission_classes([AllowAny])
 @email_check_rate_limit
 def check_email_availability_view(request, email):

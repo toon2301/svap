@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import type { SkillRequest, SkillRequestStatus } from './types';
+import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { api } from '@/lib/api';
 
@@ -66,8 +67,10 @@ const STATUS_GRADIENT_CLASS: Record<SkillRequestStatus, string> = {
 
 export function RequestMobileCard({ item, variant, onPress }: Props) {
   const { t } = useLanguage();
+  const { user } = useAuth();
 
   const who = variant === 'received' ? item.requester_summary : item.recipient_summary;
+  const whoId = who?.id ?? (variant === 'received' ? item.requester : item.recipient);
   const whoName =
     who?.display_name ||
     (variant === 'received' ? item.requester_display_name : item.recipient_display_name) ||
@@ -112,16 +115,52 @@ export function RequestMobileCard({ item, variant, onPress }: Props) {
   const status = item.status ?? 'pending';
   const gradientClass = STATUS_GRADIENT_CLASS[status] ?? STATUS_GRADIENT_CLASS.pending;
 
+  const handleProfileClick = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (typeof window === 'undefined') return;
+      const currentUserId = user?.id;
+      const isOwnProfile =
+        typeof whoId === 'number' && typeof currentUserId === 'number' && whoId === currentUserId;
+      if (isOwnProfile) {
+        window.dispatchEvent(new CustomEvent('goToMyProfile', { detail: {} }));
+        return;
+      }
+      const identifier =
+        (who?.slug && String(who.slug).trim()) || (typeof whoId === 'number' ? String(whoId) : null);
+      if (!identifier) return;
+      window.dispatchEvent(
+        new CustomEvent('goToUserProfile', { detail: { identifier } }),
+      );
+    },
+    [user?.id, who?.slug, whoId],
+  );
+
+  const profileAriaLabel = t('requests.openProfile', 'Otvoriť profil');
+
   return (
     <div className={`relative w-full bg-gradient-to-l ${gradientClass}`}>
-      <button
-        type="button"
+      <div
+        role="button"
+        tabIndex={0}
         onClick={onPress}
-        className="relative w-full text-left px-6 py-3 sm:px-8 active:opacity-90 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 overflow-hidden"
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onPress();
+          }
+        }}
+        className="relative w-full text-left px-6 py-3 sm:px-8 active:opacity-90 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 overflow-hidden cursor-pointer"
         aria-label={t('requests.openDetail', 'Otvoriť detail žiadosti')}
       >
         <div className="relative flex items-start gap-3">
-          <div className="w-10 h-10 shrink-0 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800">
+          <button
+            type="button"
+            onClick={handleProfileClick}
+            className="w-10 h-10 shrink-0 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800 p-0 border-0 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 focus-visible:ring-offset-1 focus-visible:ring-offset-transparent"
+            aria-label={profileAriaLabel}
+          >
             {hasAvatar ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -135,12 +174,19 @@ export function RequestMobileCard({ item, variant, onPress }: Props) {
                 <span className="text-sm font-bold text-gray-700 dark:text-gray-200">{initials(whoName)}</span>
               </div>
             )}
-          </div>
+          </button>
 
           <div className="min-w-0 flex-1">
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
-                <div className="text-sm font-semibold text-gray-900 dark:text-white truncate">{whoName}</div>
+                <button
+                  type="button"
+                  onClick={handleProfileClick}
+                  className="block w-full text-left text-sm font-semibold text-gray-900 dark:text-white truncate bg-transparent border-0 p-0 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 rounded focus-visible:ring-offset-1"
+                  aria-label={profileAriaLabel}
+                >
+                  {whoName}
+                </button>
                 <div className="text-xs font-semibold text-purple-700 dark:text-purple-300 truncate mt-0.5">
                   {intentText}
                 </div>
@@ -154,7 +200,7 @@ export function RequestMobileCard({ item, variant, onPress }: Props) {
             </div>
           </div>
         </div>
-      </button>
+      </div>
     </div>
   );
 }

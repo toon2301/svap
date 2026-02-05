@@ -15,6 +15,8 @@ export interface DashboardProps {
   initialProfileSlug?: string | null;
   // Ak je nastavený, otvorí po načítaní príslušnú sekciu pravého sidebaru na vlastnom profile
   initialRightItem?: string | null;
+  /** ID karty (ponuky) pre view recenzií (/dashboard/offers/[offerId]/reviews). */
+  initialOfferId?: number | null;
 }
 
 // Hlavný komponent - wrapped v Suspense pre useSearchParams()
