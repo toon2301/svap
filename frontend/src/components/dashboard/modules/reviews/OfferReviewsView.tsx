@@ -30,6 +30,12 @@ type OfferDetailLike = Offer & {
   user_display_name?: string | null;
   user_id?: number | null;
   owner_user_type?: 'individual' | 'company' | null;
+  /** L ľudsky čitateľné názvy z API (skills detail) */
+  category_label?: string | null;
+  subcategory_label?: string | null;
+  experience_years?: number | null;
+  price_per_hour?: number | null;
+  opening_hours?: Offer['opening_hours'];
 };
 
 export type OfferReviewsViewProps = {
@@ -169,7 +175,7 @@ export default function OfferReviewsView({
     if (!offer) return '';
     const label = offer.category_label || '';
     const subcategory = offer.subcategory_label || '';
-    return slugifyLabel(label, subcategory);
+    return slugifyLabel([label, subcategory].filter(Boolean).join(' '));
   }, [offer]);
 
   const locationText = useMemo(() => {
@@ -198,7 +204,7 @@ export default function OfferReviewsView({
     // Nadpis = názov ponuky (category/subcategory)
     const label = offer.category_label || '';
     const subcategory = offer.subcategory_label || '';
-    return slugifyLabel(label, subcategory) || t('reviews.offerDetails', 'Detaily ponuky');
+    return slugifyLabel([label, subcategory].filter(Boolean).join(' ')) || t('reviews.offerDetails', 'Detaily ponuky');
   }, [offer, t]);
 
   const todayKey = useMemo(() => {
