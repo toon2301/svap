@@ -567,6 +567,91 @@ button:focus-visible {
   scrollbar-color: rgba(75, 85, 99, 0.3) transparent;
 }
 
+/* Viditeľnejší scrollbar pre review modal - viditeľný na bielom pozadí */
+.review-modal-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.review-modal-scrollbar::-webkit-scrollbar-track {
+  background: rgba(243, 244, 246, 0.5);
+  border-radius: 4px;
+}
+
+.review-modal-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(156, 163, 175, 0.6);
+  border-radius: 4px;
+  border: 1px solid rgba(243, 244, 246, 0.8);
+}
+
+.review-modal-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(107, 114, 128, 0.8);
+}
+
+.dark .review-modal-scrollbar::-webkit-scrollbar-track {
+  background: rgba(17, 24, 39, 0.5);
+}
+
+.dark .review-modal-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(75, 85, 99, 0.6);
+  border: 1px solid rgba(17, 24, 39, 0.8);
+}
+
+.dark .review-modal-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(107, 114, 128, 0.8);
+}
+
+/* Firefox scrollbar support for review-modal-scrollbar */
+.review-modal-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(156, 163, 175, 0.6) rgba(243, 244, 246, 0.5);
+}
+
+.dark .review-modal-scrollbar {
+  scrollbar-color: rgba(75, 85, 99, 0.6) rgba(17, 24, 39, 0.5);
+}
+
+/* Mobilný add-review modal – výraznejší scrollbar pre zoznam plusov/mínusov */
+.review-modal-mobile-scrollbar::-webkit-scrollbar {
+  width: 10px;
+}
+
+.review-modal-mobile-scrollbar::-webkit-scrollbar-track {
+  background: rgba(229, 231, 235, 0.8);
+  border-radius: 5px;
+}
+
+.review-modal-mobile-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(107, 114, 128, 0.75);
+  border-radius: 5px;
+  border: 2px solid rgba(229, 231, 235, 0.9);
+}
+
+.review-modal-mobile-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(75, 85, 99, 0.9);
+}
+
+.dark .review-modal-mobile-scrollbar::-webkit-scrollbar-track {
+  background: rgba(55, 65, 81, 0.6);
+}
+
+.dark .review-modal-mobile-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(107, 114, 128, 0.8);
+  border-color: rgba(55, 65, 81, 0.8);
+}
+
+.dark .review-modal-mobile-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(156, 163, 175, 0.9);
+}
+
+.review-modal-mobile-scrollbar {
+  scrollbar-width: auto;
+  scrollbar-color: rgba(107, 114, 128, 0.75) rgba(229, 231, 235, 0.8);
+}
+
+.dark .review-modal-mobile-scrollbar {
+  scrollbar-color: rgba(107, 114, 128, 0.8) rgba(55, 65, 81, 0.6);
+}
+
 /* Ultra subtle scrollbar pre modal otváracej doby - ešte menej viditeľný */
 .opening-hours-modal-scrollbar::-webkit-scrollbar {
   width: 4px;

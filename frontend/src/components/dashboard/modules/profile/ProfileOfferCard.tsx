@@ -15,6 +15,8 @@ interface ProfileOfferCardProps {
   onOpenHoursClick?: (event: React.MouseEvent<HTMLButtonElement>) => void;
   isHighlighted?: boolean;
   isOtherUserProfile?: boolean;
+  /** Meno/názov majiteľa profilu (kvôli recenziám v URL). */
+  ownerDisplayName?: string;
   onRequestClick?: (offerId: number) => void;
   onMessageClick?: (offerId: number) => void;
   requestLabel?: string;
@@ -30,6 +32,7 @@ export default function ProfileOfferCard({
   onOpenHoursClick,
   isHighlighted = false,
   isOtherUserProfile = false,
+  ownerDisplayName,
   onRequestClick,
   onMessageClick,
   requestLabel,
@@ -76,7 +79,7 @@ export default function ProfileOfferCard({
 
   return (
     <div
-      className={`rounded-2xl overflow-visible border border-gray-200 dark:border-gray-800 bg-white/70 dark:bg-[#0f0f10] shadow-sm hover:shadow transition-shadow relative ${
+      className={`group rounded-2xl overflow-visible border border-gray-200 dark:border-gray-800 bg-white/70 dark:bg-[#0f0f10] shadow-sm hover:shadow transition-shadow relative ${
         isHighlighted ? 'highlight-offer-card' : ''
       } ${isHidden ? 'opacity-60' : ''}`}
     >
@@ -100,6 +103,18 @@ export default function ProfileOfferCard({
           {t('skills.hiddenCard', 'Skrytá')}
         </div>
       )}
+
+      {/* Veľký text "Ponúkam" alebo "Hľadám" uprostred celej karty - cez foto aj obsah - len na prednej strane */}
+      {!isFlipped && (
+        <div className="absolute left-0 right-0 top-[52.5%] -translate-y-1/2 pointer-events-none z-30 group-hover:opacity-0 group-hover:scale-90 transition-all duration-300">
+          <div className="w-full py-1 border border-transparent rounded-none bg-white/80 dark:bg-[#0f0f10]/80 backdrop-blur-sm shadow-lg">
+            <p className="text-xl md:text-2xl font-black text-gray-800 dark:text-gray-100 uppercase tracking-[0.2em] leading-tight text-center">
+              {offer.is_seeking ? t('skills.search', 'Hľadám') : t('skills.offering', 'Ponúkam')}
+            </p>
+          </div>
+        </div>
+      )}
+
       <OfferCardFront
         offer={offer}
         accountType={accountType}
@@ -116,6 +131,7 @@ export default function ProfileOfferCard({
         hasMultipleImages={hasMultipleImages}
         imageCount={imageCount}
         isOtherUserProfile={isOtherUserProfile}
+        ownerDisplayName={ownerDisplayName}
         onRequestClick={onRequestClick}
         onMessageClick={onMessageClick}
         requestLabel={requestLabel}
@@ -129,6 +145,7 @@ export default function ProfileOfferCard({
         onToggleFlip={onToggleFlip}
         onOpenHoursClick={onOpenHoursClick}
         isFlipped={isFlipped}
+        ownerDisplayName={ownerDisplayName}
       />
     </div>
   );

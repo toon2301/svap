@@ -151,7 +151,7 @@ export default function ModuleRouter({
 
   switch (activeModule) {
     case 'offer-reviews':
-      return <OfferReviewsView offerId={offerIdForReviews ?? null} />;
+      return <OfferReviewsView offerId={offerIdForReviews ?? null} accountType={accountType} user={user} />;
     case 'home':
       return (
         <div className="text-center py-20">

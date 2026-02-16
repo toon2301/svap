@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.utils.translation import gettext_lazy as _
-from .models import User, UserProfile, UserType, OfferedSkill, OfferedSkillImage
+from .models import User, UserProfile, UserType, OfferedSkill, OfferedSkillImage, Review
 
 
 @admin.register(User)
@@ -122,6 +122,33 @@ class OfferedSkillImageAdmin(admin.ModelAdmin):
     search_fields = ['skill__user__username', 'skill__category', 'skill__subcategory']
     ordering = ['skill', 'order', 'id']
     readonly_fields = ['created_at']
+
+
+@admin.register(Review)
+class ReviewAdmin(admin.ModelAdmin):
+    """Admin rozhranie pre Review model"""
+    
+    list_display = ['id', 'reviewer', 'offer', 'rating', 'created_at']
+    list_filter = ['rating', 'created_at']
+    search_fields = ['reviewer__username', 'reviewer__email', 'offer__category', 'offer__subcategory', 'text']
+    ordering = ['-created_at']
+    readonly_fields = ['created_at', 'updated_at']
+    
+    fieldsets = (
+        (_('Recenzent a ponuka'), {
+            'fields': ('reviewer', 'offer')
+        }),
+        (_('Hodnotenie'), {
+            'fields': ('rating',)
+        }),
+        (_('Obsah recenzie'), {
+            'fields': ('text', 'pros', 'cons')
+        }),
+        (_('Dôležité dátumy'), {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
 
 # Vlastné nastavenia admin rozhrania
 admin.site.site_header = "Swaply Admin"

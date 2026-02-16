@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useRouter } from 'next/navigation';
 import OfferImageCarousel from '../shared/OfferImageCarousel';
 import type { Offer } from './profileOffersTypes';
 import { slugifyLabel } from './profileOffersTypes';
@@ -13,6 +14,8 @@ interface ProfileOfferCardMobileProps {
   onCardClick: () => void;
   isHighlighted?: boolean;
   isOtherUserProfile?: boolean;
+  /** Meno/názov majiteľa profilu (kvôli recenziám v URL). */
+  ownerDisplayName?: string;
   onRequestClick?: (offerId: number) => void;
   onMessageClick?: (offerId: number) => void;
   /** Rovnako ako desktop: Ponúknuť (is_seeking) / Požiadať, alebo stav: Požiadané, Prijaté, atď. */
@@ -27,12 +30,14 @@ export function ProfileOfferCardMobile({
   onCardClick,
   isHighlighted = false,
   isOtherUserProfile = false,
+  ownerDisplayName,
   onRequestClick,
   onMessageClick,
   requestLabel: requestLabelProp,
   isRequestDisabled = false,
 }: ProfileOfferCardMobileProps) {
   const { t } = useLanguage();
+  const router = useRouter();
   const defaultRequestLabel = offer.is_seeking ? t('requests.offer', 'Ponúknuť') : t('requests.request', 'Požiadať');
   const requestLabel = requestLabelProp ?? defaultRequestLabel;
 
@@ -204,7 +209,10 @@ export function ProfileOfferCardMobile({
               className="p-1.5 rounded-full inline-flex items-center justify-center leading-none bg-purple-50 dark:bg-purple-900/80 dark:backdrop-blur-sm border border-purple-200 dark:border-purple-800/60 text-purple-700 dark:text-white hover:bg-purple-100 dark:hover:bg-purple-900/90 transition-colors active:scale-95"
               onClick={(e) => {
                 e.stopPropagation();
-                // TODO: Implementovať pridať recenziu
+                if (typeof offer.id !== 'number') return;
+                const base = `/dashboard/offers/${offer.id}/reviews`;
+                const name = (ownerDisplayName || '').trim();
+                router.push(name ? `${base}?ownerName=${encodeURIComponent(name)}` : base);
               }}
             >
               <svg

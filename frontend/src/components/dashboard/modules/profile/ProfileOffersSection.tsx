@@ -22,6 +22,8 @@ interface ProfileOffersSectionProps {
   activeTab: ProfileTab;
   accountType?: 'personal' | 'business';
   ownerUserId?: number;
+  /** Meno/názov majiteľa profilu (kvôli recenziám v URL). */
+  ownerDisplayName?: string;
   highlightedSkillId?: number | null;
   isOtherUserProfile?: boolean;
 }
@@ -30,6 +32,7 @@ export default function ProfileOffersSection({
   activeTab,
   accountType = 'personal',
   ownerUserId,
+  ownerDisplayName,
   highlightedSkillId,
   isOtherUserProfile = false,
 }: ProfileOffersSectionProps) {
@@ -443,6 +446,7 @@ export default function ProfileOffersSection({
                   onOpenHoursClick={accountType === 'business' ? handleOpenHoursClick : undefined}
                   isHighlighted={isHighlighted}
                   isOtherUserProfile={isOtherUserProfile}
+                  ownerDisplayName={ownerDisplayName}
                   onRequestClick={handleRequestClick}
                   onMessageClick={checkOfferStillAvailable}
                   requestLabel={(() => {

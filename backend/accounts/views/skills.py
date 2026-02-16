@@ -73,23 +73,38 @@ def skills_list_view(request):
 @api_rate_limit
 def skills_detail_view(request, skill_id):
     """
-    GET: Detail zručnosti
-    PUT/PATCH: Aktualizácia zručnosti
-    DELETE: Odstránenie zručnosti
+    GET: Detail zručnosti (aj pre cudzieho používateľa, ak profil je verejný a karta nie je skrytá)
+    PUT/PATCH: Aktualizácia zručnosti (len vlastník)
+    DELETE: Odstránenie zručnosti (len vlastník)
     """
     try:
-        skill = OfferedSkill.objects.get(id=skill_id, user=request.user)
+        skill = OfferedSkill.objects.select_related('user').get(id=skill_id)
     except OfferedSkill.DoesNotExist:
         return Response(
             {'error': 'Zručnosť nebola nájdená'},
             status=status.HTTP_404_NOT_FOUND
         )
-    
+
+    is_owner = skill.user_id == request.user.id
+
     if request.method == 'GET':
+        # Cudzí používateľ nesmie vidieť skrytú kartu ani kartu z privátneho profilu
+        if not is_owner and (skill.is_hidden or not getattr(skill.user, 'is_public', True)):
+            return Response(
+                {'error': 'Zručnosť nebola nájdená'},
+                status=status.HTTP_404_NOT_FOUND
+            )
         serializer = OfferedSkillSerializer(skill, context={'request': request})
         return Response(serializer.data, status=status.HTTP_200_OK)
-    
-    elif request.method in ['PUT', 'PATCH']:
+
+    # PUT/PATCH/DELETE len vlastník
+    if not is_owner:
+        return Response(
+            {'error': 'Zručnosť nebola nájdená'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+    if request.method in ['PUT', 'PATCH']:
         serializer = OfferedSkillSerializer(
             skill,
             data=request.data,
@@ -116,7 +131,7 @@ def skills_detail_view(request, skill_id):
             return Response(serializer.data, status=status.HTTP_200_OK)
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+
     elif request.method == 'DELETE':
         skill.delete()
         return Response(

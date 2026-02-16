@@ -299,6 +299,12 @@ export const endpoints = {
     detail: (id: number) => `/auth/skills/${id}/`,
     images: (skillId: number) => `/auth/skills/${skillId}/images/`,
     imageDetail: (skillId: number, imageId: number) => `/auth/skills/${skillId}/images/${imageId}/`,
+    reviews: (offerId: number) => `/auth/skills/${offerId}/reviews/`,
+  },
+  // Recenzie
+  reviews: {
+    list: (offerId: number) => `/auth/skills/${offerId}/reviews/`,
+    detail: (reviewId: number) => `/auth/reviews/${reviewId}/`,
   },
   // Žiadosti
   requests: {

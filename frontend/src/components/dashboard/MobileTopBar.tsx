@@ -52,7 +52,7 @@ export default function MobileTopBar({
             <h1 className="text-base font-semibold text-gray-900 dark:text-white truncate">
               {t('requests.title', 'Žiadosti')}
             </h1>
-          ) : (isEditMode || activeRightItem === 'language' || activeRightItem === 'account-type' || activeRightItem === 'privacy' || activeModule === 'notifications' || activeModule === 'account-type' || activeModule === 'privacy' || activeModule === 'skills' || activeModule === 'skills-offer' || activeModule === 'skills-search' || activeModule === 'skills-select-category' || activeModule === 'user-profile') ? (
+          ) : (isEditMode || activeRightItem === 'language' || activeRightItem === 'account-type' || activeRightItem === 'privacy' || activeModule === 'notifications' || activeModule === 'account-type' || activeModule === 'privacy' || activeModule === 'skills' || activeModule === 'skills-offer' || activeModule === 'skills-search' || activeModule === 'skills-select-category' || activeModule === 'user-profile' || activeModule === 'offer-reviews') ? (
             <button
               onClick={onBackClick}
               className="p-2 -ml-2"
@@ -114,6 +114,9 @@ export default function MobileTopBar({
                 : t('skills.describeSkillTitle', 'Opíš svoju službu/zručnosť')}
             </h1>
           )}
+          {activeModule === 'offer-reviews' && (
+            <h1 className="text-lg font-semibold text-gray-900 dark:text-white">{t('reviews.title', 'Recenzie')}</h1>
+          )}
         </div>
         
         {/* Pravá strana - Obnoviť (žiadosti), Profil, Hamburger alebo Krížik */}
@@ -153,7 +156,7 @@ export default function MobileTopBar({
           )}
 
           {/* Ikona profilu – rýchly prechod na profil (ak nie sme na profile ani na cudzom profile) */}
-          {onProfileClick && activeModule !== 'profile' && activeModule !== 'user-profile' && activeModule !== 'skills-describe' && activeModule !== 'requests' && (
+          {onProfileClick && activeModule !== 'profile' && activeModule !== 'user-profile' && activeModule !== 'skills-describe' && activeModule !== 'requests' && activeModule !== 'offer-reviews' && (
             <button
               onClick={onProfileClick}
               className="p-1.5 rounded-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-black text-gray-600 dark:text-gray-300 shadow-sm hover:border-purple-400 hover:text-purple-600 hover:bg-gray-50 dark:hover:bg-gray-900 transition-all"

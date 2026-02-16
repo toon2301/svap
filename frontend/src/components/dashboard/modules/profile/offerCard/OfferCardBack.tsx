@@ -12,9 +12,19 @@ export type OfferCardBackProps = {
   onToggleFlip: () => void;
   onOpenHoursClick?: (event: React.MouseEvent<HTMLButtonElement>) => void;
   isFlipped: boolean;
+  /** Meno/názov majiteľa profilu (kvôli recenziám v URL). */
+  ownerDisplayName?: string;
 };
 
-export function OfferCardBack({ offer, accountType, t, onToggleFlip, onOpenHoursClick, isFlipped }: OfferCardBackProps) {
+export function OfferCardBack({
+  offer,
+  accountType,
+  t,
+  onToggleFlip,
+  onOpenHoursClick,
+  isFlipped,
+  ownerDisplayName,
+}: OfferCardBackProps) {
   return (
     <div className={isFlipped ? 'block' : 'hidden'} style={{ minHeight: '100%' }}>
       <div className="relative aspect-[3/2] rounded-t-2xl border-b border-gray-200/70 dark:border-gray-700/50 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-[#101012] dark:to-[#151518]">
@@ -97,7 +107,11 @@ export function OfferCardBack({ offer, accountType, t, onToggleFlip, onOpenHours
 
               {typeof offer.id === 'number' && (
                 <Link
-                  href={`/dashboard/offers/${offer.id}/reviews`}
+                  href={(() => {
+                    const base = `/dashboard/offers/${offer.id}/reviews`;
+                    const name = (ownerDisplayName || '').trim();
+                    return name ? `${base}?ownerName=${encodeURIComponent(name)}` : base;
+                  })()}
                   onClick={(e) => e.stopPropagation()}
                   className="mt-0 xl:mt-0.5 flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 transition-colors cursor-pointer"
                 >

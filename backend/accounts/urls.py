@@ -53,9 +53,14 @@ urlpatterns = [
     
     # Skills
     path('skills/', views.skills_list_view, name='skills_list'),
+    # Recenzie - MUSIA byť PRED skills/<int:skill_id>/ lebo sú špecifickejšie
+    path('skills/<int:offer_id>/reviews/', views.reviews_list_view, name='reviews_list'),
     path('skills/<int:skill_id>/', views.skills_detail_view, name='skills_detail'),
     path('skills/<int:skill_id>/images/', views.skill_images_view, name='skill_images'),
     path('skills/<int:skill_id>/images/<int:image_id>/', views.skill_image_detail_view, name='skill_image_detail'),
+    
+    # Recenzie detail
+    path('reviews/<int:review_id>/', views.review_detail_view, name='review_detail'),
 
     # Žiadosti + notifikácie
     path('skill-requests/', views.skill_requests_view, name='skill_requests'),

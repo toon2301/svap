@@ -500,10 +500,17 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
     } else if (activeModule === 'notifications') {
       setActiveModule('');
       setIsMobileMenuOpen(true);
+    } else if (activeModule === 'offer-reviews') {
+      // Vráť sa na predchádzajúcu stránku pomocou router.back()
+      router.back();
+      setIsRightSidebarOpen(false);
+      setActiveRightItem('');
+      setIsMobileMenuOpen(false);
+      return;
     }
     setIsRightSidebarOpen(false);
     setActiveRightItem('');
-  }, [activeModule, activeRightItem, user?.slug, user?.id]);
+  }, [activeModule, activeRightItem, user?.slug, user?.id, router]);
 
   return {
     user,

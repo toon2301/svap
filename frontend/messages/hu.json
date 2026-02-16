@@ -20,7 +20,11 @@
     "clear": "Törlés",
     "add": "Hozzáadás",
     "update": "Frissítés",
-    "refresh": "Frissítés"
+    "refresh": "Frissítés",
+    "deleting": "Vymazávam...",
+    "noResults": "Žiadne výsledky nenájdené",
+    "remove": "Odstrániť",
+    "saving": "Ukladám..."
   },
   "requests": {
     "title": "Kérések",
@@ -49,7 +53,24 @@
     "statusPending": "Függőben",
     "statusAccepted": "Elfogadva",
     "statusRejected": "Elutasítva",
-    "statusCancelled": "Törölve"
+    "statusCancelled": "Törölve",
+    "toastDeleteFailed": "A kérés törlése nem sikerült.",
+    "emptyReceivedTitle": "Nincsenek beérkezett kérések",
+    "emptyReceivedText": "Még senki sem küldött neked kérést. Ha valaki kéri a kártyádat vagy segítséget ajánl fel, itt fogod látni.",
+    "emptySentTitle": "Nincsenek elküldött kérések",
+    "emptySentText": "Még nem küldtél kérést. Böngészd mások kártyáit, és kattints a Kérés vagy Felajánlás gombra.",
+    "confirmRejectTitle": "Kérés elutasítása",
+    "confirmRejectText": "Biztosan elutasítod ezt a kérést? A feladó értesítést kap róla.",
+    "confirmCancelTitle": "Kérés visszavonása",
+    "confirmCancelText": "Biztosan visszavonod ezt a kérést? A címzett értesítést kap róla.",
+    "confirmHideTitle": "Eltávolítás a listáról",
+    "confirmHideText": "Biztosan eltávolítod ezt a kérést a listáról? Ez az eltávolítás csak rád vonatkozik, és kijelentkezés után is megmarad.",
+    "confirmBack": "Vissza",
+    "detailTitle": "Detail žiadosti",
+    "offered": "Ponúknuté",
+    "openDetail": "Otvoriť detail žiadosti",
+    "openProfile": "Otvoriť profil",
+    "toastCancelFailed": "Zrušenie žiadosti zlyhalo."
   },
   "language": {
     "title": "Nyelv",
@@ -69,7 +90,8 @@
     "settings": "Beállítások",
     "logout": "Kijelentkezés",
     "search": "Keresés",
-    "favorites": "Kedvencek"
+    "favorites": "Kedvencek",
+    "requests": "navigation.requests"
   },
   "homepage": {
     "welcome": "Üdvözöljük a",
@@ -79,7 +101,10 @@
   "dashboard": {
     "loadingDashboard": "Irányítópult betöltése...",
     "welcomeToSwaply": "Üdvözöljük a Swaply-ben!",
-    "selectSection": "Válasszon egy szakaszt a navigációból a folytatáshoz."
+    "selectSection": "Válasszon egy szakaszt a navigációból a folytatáshoz.",
+    "goHome": "Prejsť na domovskú stránku",
+    "skillSaveError": "Nepodarilo sa uložiť zručnosť",
+    "userNotFound": "Používateľ nebol nájdený."
   },
   "create": {
     "title": "Létrehozás",
@@ -132,7 +157,21 @@
     "priceToShort": "do",
     "categoryTitle": "Kategórie zručností",
     "resetFilters": "Visszaállítás",
-    "applyFilters": "Szűrők alkalmazása"
+    "applyFilters": "Szűrők alkalmazása",
+    "addToFavoritesError": "Nepodarilo sa pridať k obľúbeným.",
+    "back": "Späť",
+    "backToResults": "Späť na vyhľadávanie",
+    "clearSearch": "Vyčistiť vyhľadávanie",
+    "filter": "Filter",
+    "loadingUserProfile": "Načítavam profil...",
+    "recentResult": "Výsledok",
+    "recentSearches": "Posledné vyhľadávania",
+    "suggestionsForYou": "Návrhy pre vás",
+    "tooManyRequests": "Príliš veľa požiadaviek, skúste o chvíľu.",
+    "userProfileLoadError": "Nepodarilo sa načítať profil používateľa.",
+    "userProfileLoading": "Načítavam profil používateľa...",
+    "userProfileNotFound": "Profil používateľa sa nepodarilo načítať.",
+    "userProfileRateLimited": "Príliš veľa požiadaviek pri načítavaní profilu, skúste to o chvíľu."
   },
   "skills": {
     "offer": "Kínálok",
@@ -207,7 +246,24 @@
     "editOpeningHours": "Szerkesztés",
     "addOpeningHours": "Nyitvatartás hozzáadása",
     "openingHours": {
-      "title": "Nyitvatartás"
+      "title": "Nyitvatartás",
+      "copy": "Kopírovať",
+      "copyToAll": "Skopírovať na všetky dni",
+      "empty": "Otváracie hodiny zatiaľ nie sú nastavené alebo je prevádzka zatvorená.",
+      "from": "Od:",
+      "hint": "Nastav otváraciu dobu pre každý deň v týždni. Môžeš nastaviť rôzne časy pre rôzne dni.",
+      "noDaysSelected": "Vyber aspoň jeden deň a nastav otváraciu dobu.",
+      "preset": {
+        "nonstop": "Nonstop (24/7)",
+        "weekend": "Len víkend",
+        "workday_8_16": "Po–Pi 8:00–16:00",
+        "workday_9_17": "Po–Pi 9:00–17:00"
+      },
+      "presets": "Rýchle nastavenia:",
+      "subtitle": "Nastav, kedy si dostupný pre zákazníkov.",
+      "summaryTitle": "Zhrnutie otváracej doby",
+      "to": "Do:",
+      "turnOffAll": "Vypnúť všetky dni"
     },
     "experiencePositive": "A tapasztalatnak pozitív számnak kell lennie",
     "experienceTooLarge": "A tapasztalat nem lehet nagyobb, mint 100",
@@ -264,7 +320,15 @@
     "hideCardToggle": "E kártya elrejtése",
     "describeWhatYouSeek": "Opíš čo presne hľadáš",
     "experienceHint": "Daj ostatným vedieť, ako dlho sa venuješ svojej odbornosti.",
-    "hiddenCard": "Skrytá"
+    "hiddenCard": "Skrytá",
+    "allReviews": "Všetky recenzie",
+    "detailedDescriptionEmpty": "Zatiaľ nemáš pridaný podrobný opis tejto služby.",
+    "detailedDescriptionTitle": "Pridaj podrobný opis",
+    "detailedDescriptionTooLong": "Podrobný popis môže mať maximálne ${MAX_LENGTH} znakov.",
+    "edit": "Upraviť",
+    "likes": "Páči sa mi to",
+    "message": "Správa",
+    "ratings": "Hodnotenia"
   },
   "auth": {
     "login": "Bejelentkezés",
@@ -367,7 +431,9 @@
     "googleLoginFailed": "A Google-bejelentkezés nem fejeződött be",
     "popupBlocked": "A felugróablak-blokkoló blokkolja a Google bejelentkezést",
     "verificationResendError": "Hiba a megerősítő e-mail küldésekor",
-    "registerHere": "Regisztráció"
+    "registerHere": "Regisztráció",
+    "accountLocked": "Účet je dočasne zablokovaný. Skúste to neskôr.",
+    "tooManyRequests": "Príliš veľa pokusov. Skúste to o chvíľu."
   },
   "footer": {
     "howItWorks": "Hogyan működik",
@@ -392,7 +458,8 @@
   },
   "placeholders": {
     "email": "E-mail..",
-    "password": "••••••••"
+    "password": "••••••••",
+    "bio": "Napíšte niečo o sebe..."
   },
   "accessibility": {
     "loginForm": "Bejelentkezési űrlap",
@@ -443,7 +510,8 @@
     "skillRequest": "Készség kérés",
     "skillRequestDesc": "Kapcsolja ki vagy kapcsolja be a készség kérések értesítéseit.",
     "on": "Be",
-    "off": "Ki"
+    "off": "Ki",
+    "turnOffAllDesc": "Dočasne vypnúť všetky upozornenia"
   },
   "skillsCatalog": {
     "categories": {
@@ -3270,7 +3338,22 @@
     "instagramDescription": "Adja meg Instagram profiljának URL-jét",
     "facebookDescription": "Adja meg Facebook profiljának URL-jét",
     "linkedinDescription": "Adja meg LinkedIn profiljának URL-jét",
-    "addWebsite": "Pridať web"
+    "addWebsite": "Pridať web",
+    "addToFavorites": "+ Pridať k obľúbeným",
+    "block": "Zablokovať",
+    "enterWhatsAppNumber": "+421 912 345 678 alebo https://wa.me/421912345678",
+    "enterYouTubeUrl": "https://youtube.com/@username alebo https://youtube.com/channel/...",
+    "noOffers": "Zatiaľ nemáš žiadne ponuky.",
+    "offersLoadError": "Nepodarilo sa načítať ponuky. Skús to znova.",
+    "offersLoading": "Načítavam tvoje karty...",
+    "offersRateLimited": "Príliš veľa požiadaviek pri načítavaní ponúk, skúste to o chvíľu.",
+    "report": "Nahlásiť",
+    "sendMessage": "Poslať správu",
+    "share": "Zdieľať",
+    "whatsapp": "WhatsApp",
+    "whatsappDescription": "Zadajte WhatsApp číslo alebo link.",
+    "youtube": "YouTube",
+    "youtubeDescription": "Zadajte URL vašej YouTube stránky alebo kanálu."
   },
   "privacy": {
     "mobileTitle": "Súkromie účtu",
@@ -3282,5 +3365,35 @@
     "publicAccountMobileDescription": "Pri verejnom účte vás ostatní môžu nájsť podľa mena, zručností alebo kategórií. Zobrazujú sa všetky údaje, fotky, príspevky, portfólio a kontakty. Vhodné, ak chcete byť viditeľní a aktívni v komunite Svaply.",
     "privateAccountModalTitle": "Chcete prepnúť svoj účet na súkromný?",
     "publicAccountModalTitle": "Chcete prepnúť svoj účet na verejný?"
+  },
+  "reviews": {
+    "addReview": "Pridať recenziu",
+    "addedOn": "pridané",
+    "closedToday": "Neaktívny / zatvorené",
+    "cons": "Minusy",
+    "consPlaceholder": "Napíšte mínus a stlačte Enter",
+    "deleteReviewMessage": "Naozaj chceš vymazať túto recenziu? Túto akciu nemožno vrátiť späť.",
+    "deleteReviewTitle": "Vymazať recenziu?",
+    "editReview": "Upraviť recenziu",
+    "experience": "Prax",
+    "heading": "Recenzie",
+    "location": "Miesto",
+    "maxItemsReached": "Maximálny počet položiek",
+    "name": "Meno",
+    "nameOrTitle": "Názov/Meno",
+    "noReviews": "Zatiaľ nie sú žiadne recenzie.",
+    "openingHoursToday": "Otváracie hodiny dnes",
+    "priceFrom": "Cena od",
+    "pros": "Plusy",
+    "prosPlaceholder": "Napíšte plus a stlačte Enter",
+    "ratesOffer": "Hodnotenie ponuky",
+    "rating": "Hodnotenie",
+    "ratingSummary": "Hodnotenie",
+    "reviewDisclaimer": "Recenzie sú vytvárané používateľmi platformy. Spoločnosť Svaply ich neoveruje ani nekontroluje a nezodpovedá za ich obsah, pravdivosť alebo aktuálnosť.",
+    "reviewPlaceholder": "Napíšte svoju recenziu...",
+    "reviewText": "Recenzia",
+    "reviews": "Recenzie",
+    "shortDescription": "Krátky popis",
+    "submit": "Pridať"
   }
 }

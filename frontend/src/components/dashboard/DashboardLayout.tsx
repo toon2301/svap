@@ -169,25 +169,41 @@ export default function DashboardLayout({
 
         {/* Main Content */}
         <main className={`relative h-screen overflow-y-auto pb-24 lg:pt-0 lg:pb-0 elegant-scrollbar ${
-          activeModule === 'search' ? 'pt-0' : 'pt-16'
+          activeModule === 'search'
+            ? 'pt-0'
+            : activeModule === 'offer-reviews'
+              ? 'pt-12 lg:pt-0' // mobil: h-12 = výška lišty, žiadna medzera; desktop bez pt
+              : 'pt-16'
         }`}>
           <div
-            className={`py-4 lg:py-8 ${
+            className={`${
+              activeModule === 'offer-reviews'
+                ? 'pt-0 pb-4 lg:py-8' // recenzie: žiadna medzera medzi hornou lištou a tabmi
+                : 'py-4 lg:py-8'
+            } ${
               activeModule === 'search'
                 ? 'px-0 sm:px-2 lg:px-8' // mobil: ešte menší padding, maximálne rozšírený obsah pre vyhľadávanie
                 : activeModule === 'requests'
                   ? 'px-2 sm:px-4 lg:px-8' // mobil: menší padding pre žiadosti (viac šírky pre zoznam)
+                : activeModule === 'offer-reviews'
+                  ? 'px-0' // žiadny padding pre recenzie (taby sú od kraja po kraj)
                   : 'px-4 sm:px-6 lg:px-8'
             }`}
           >
             <div
-              className={`w-full mx-auto ${
+              className={`w-full ${
+                activeModule === 'offer-reviews'
+                  ? '' // žiadne centrovanie pre recenzie
+                  : 'mx-auto'
+              } ${
                 (activeModule === 'profile' && !isProfileEditMode) ||
                 activeModule === 'user-profile' ||
                 activeModule === 'requests' ||
                 isSkillsModule
                   ? 'max-w-7xl'
-                  : 'max-w-4xl'
+                  : activeModule === 'offer-reviews'
+                    ? '' // žiadne max-width pre recenzie
+                    : 'max-w-4xl'
               }`}
             >
               {children}

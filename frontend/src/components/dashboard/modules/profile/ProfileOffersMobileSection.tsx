@@ -22,6 +22,8 @@ import { fetchSkillRequests, getApiErrorMessage, updateSkillRequest } from '../r
 interface ProfileOffersMobileSectionProps {
   accountType?: 'personal' | 'business';
   ownerUserId?: number;
+  /** Meno/názov majiteľa profilu (kvôli recenziám v URL). */
+  ownerDisplayName?: string;
   highlightedSkillId?: number | null;
   isOtherUserProfile?: boolean;
 }
@@ -29,6 +31,7 @@ interface ProfileOffersMobileSectionProps {
 export default function ProfileOffersMobileSection({
   accountType = 'personal',
   ownerUserId,
+  ownerDisplayName,
   highlightedSkillId,
   isOtherUserProfile = false,
 }: ProfileOffersMobileSectionProps) {
@@ -492,6 +495,7 @@ export default function ProfileOffersMobileSection({
                 isHighlighted={isHighlighted}
                 onCardClick={() => handleCardClick(offer)}
                 isOtherUserProfile={isOtherUserProfile}
+                ownerDisplayName={ownerDisplayName}
                 onRequestClick={handleRequestClick}
                 onMessageClick={checkOfferStillAvailable}
                 requestLabel={(() => {

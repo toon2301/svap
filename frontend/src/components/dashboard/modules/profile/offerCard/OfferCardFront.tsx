@@ -24,6 +24,8 @@ export type OfferCardFrontProps = {
   imageCount: number;
 
   isOtherUserProfile?: boolean;
+  /** Meno/názov majiteľa profilu (kvôli recenziám v URL). */
+  ownerDisplayName?: string;
   onRequestClick?: (offerId: number) => void;
   onMessageClick?: (offerId: number) => void;
   requestLabel?: string;
@@ -46,6 +48,7 @@ export function OfferCardFront({
   hasMultipleImages,
   imageCount,
   isOtherUserProfile = false,
+  ownerDisplayName,
   onRequestClick,
   onMessageClick,
   requestLabel,
@@ -56,7 +59,7 @@ export function OfferCardFront({
 
   return (
     <div className={showFront ? 'block' : 'hidden'} style={{ minHeight: '100%' }}>
-      <div className="relative aspect-[3/2] bg-gray-100 dark:bg-[#0e0e0f] overflow-hidden rounded-t-2xl border-b border-gray-200/70 dark:border-gray-700/50">
+      <div className="relative aspect-[3/2] bg-gray-100 dark:bg-[#0e0e0f] overflow-hidden rounded-t-2xl">
         <OfferImageCarousel images={offer.images} alt={imageAlt} />
         {accountType === 'business' && (
           <span className="absolute top-2 left-2 px-1.5 py-0.5 text-[10px] font-semibold bg-black/80 text-white rounded">
@@ -113,7 +116,9 @@ export function OfferCardFront({
               title="Pridať recenziu"
               onClick={(e) => {
                 e.stopPropagation();
-                router.push(`/dashboard/offers/${offer.id}/reviews`);
+                const base = `/dashboard/offers/${offer.id}/reviews`;
+                const name = (ownerDisplayName || '').trim();
+                router.push(name ? `${base}?ownerName=${encodeURIComponent(name)}` : base);
               }}
               className="p-1 rounded-full inline-flex items-center justify-center leading-none bg-purple-50 dark:bg-purple-900/80 dark:backdrop-blur-sm border border-purple-200 dark:border-purple-800/60 text-purple-700 dark:text-white hover:bg-purple-100 dark:hover:bg-purple-900/90 transition-colors"
             >
@@ -152,14 +157,14 @@ export function OfferCardFront({
           <div className="mt-2 mb-1.5 flex items-start justify-end gap-3">
             <div className="flex-1 min-w-0 mr-auto flex flex-col gap-0.5">
               {displayLocationText && (
-                <div className="text-[11px] text-gray-600 dark:text-gray-400 flex items-center gap-1">
-                  <span className="font-medium text-gray-800 dark:text-gray-200 shrink-0">{t('skills.locationLabel', 'Miesto:')}</span>
-                  <span className="truncate">{displayLocationText}</span>
+                <div className="text-xs text-gray-600 dark:text-gray-400 flex items-start gap-1">
+                  <span className="font-medium text-gray-900 dark:text-white flex-shrink-0">{t('skills.locationLabel', 'Miesto:')}</span>
+                  <span className="break-words">{displayLocationText}</span>
                 </div>
               )}
               {offer.experience && (
-                <div className="text-[11px] text-gray-600 dark:text-gray-400 flex items-center gap-1">
-                  <span className="font-medium text-gray-800 dark:text-gray-200">{t('skills.experience', 'Prax:')}</span>
+                <div className="text-xs text-gray-600 dark:text-gray-400 flex items-center gap-1">
+                  <span className="font-medium text-gray-900 dark:text-white">{t('skills.experience', 'Prax:')}</span>
                   <span>
                     {offer.experience.value}{' '}
                     {offer.experience.unit === 'years' ? t('skills.years', 'rokov') : t('skills.months', 'mesiacov')}
@@ -167,40 +172,53 @@ export function OfferCardFront({
                 </div>
               )}
             </div>
-            <div className="flex flex-col items-end gap-1 shrink-0">
-              {priceLabel && (
-                <div className="text-[11px] font-semibold text-purple-700 dark:text-purple-300">{priceLabel}</div>
-              )}
-              {isOtherUserProfile && (
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (isRequestDisabled) return;
-                      if (typeof offer.id === 'number' && onRequestClick) onRequestClick(offer.id);
-                    }}
-                    disabled={isRequestDisabled}
-                    className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors bg-purple-50 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800/60 ${
-                      isRequestDisabled ? 'opacity-70 cursor-not-allowed' : 'hover:bg-purple-100 dark:hover:bg-purple-900/60'
-                    }`}
-                  >
-                    {requestLabel ?? (offer.is_seeking ? t('requests.offer', 'Ponúknuť') : t('requests.request', 'Požiadať'))}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (typeof offer.id === 'number' && onMessageClick) onMessageClick(offer.id);
-                    }}
-                    className="px-3 py-1.5 text-xs font-medium rounded-lg border bg-purple-50 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800/60 hover:bg-purple-100 dark:hover:bg-purple-900/60"
-                  >
-                    {t('skills.message', 'Správa')}
-                  </button>
+            {priceLabel && (
+              <div className="px-2 py-1 rounded-lg bg-purple-50 dark:bg-purple-900/20 border border-purple-100 dark:border-purple-800/30 flex-shrink-0">
+                <div className="text-[10px] text-purple-600 dark:text-purple-400 font-medium mb-0.5">
+                  {offer.is_seeking ? t('skills.priceTo', 'Cena do:') : t('skills.priceFrom', 'Cena od:')}
                 </div>
-              )}
-            </div>
+                <div className="text-sm font-bold text-purple-700 dark:text-purple-300">{priceLabel}</div>
+              </div>
+            )}
           </div>
+
+          <p className="-mb-2 pt-0 pb-0 text-center text-xs font-bold text-purple-700 dark:text-purple-300 uppercase tracking-wide opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+            {offer.is_seeking ? t('skills.search', 'Hľadám') : t('skills.offering', 'Ponúkam')}
+          </p>
+
+          {/* Tlačidlá Požiadať/Ponúknuť a Správa - len na cudzom profile */}
+          {isOtherUserProfile && (
+            <div className="flex gap-2 mt-2">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (isRequestDisabled) return;
+                  if (typeof offer.id === 'number' && onRequestClick) {
+                    onRequestClick(offer.id);
+                  }
+                }}
+                disabled={isRequestDisabled}
+                className={`flex-1 px-3 py-1.5 text-xs font-medium bg-purple-100 text-purple-800 border border-purple-200 rounded-lg transition-colors dark:bg-purple-900/40 dark:text-purple-300 dark:border-purple-800/60 ${
+                  isRequestDisabled ? 'opacity-70 cursor-not-allowed' : 'hover:bg-purple-200 dark:hover:bg-purple-900/60'
+                }`}
+              >
+                {requestLabel ?? (offer.is_seeking ? t('requests.offer', 'Ponúknuť') : t('requests.request', 'Požiadať'))}
+              </button>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (typeof offer.id === 'number' && onMessageClick) {
+                    onMessageClick(offer.id);
+                  }
+                }}
+                className="flex-1 px-3 py-1.5 text-xs font-medium bg-purple-100 text-purple-800 border border-purple-200 rounded-lg transition-colors hover:bg-purple-200 dark:bg-purple-900/40 dark:text-purple-300 dark:border-purple-800/60 dark:hover:bg-purple-900/60"
+              >
+                {t('skills.message', 'Správa')}
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

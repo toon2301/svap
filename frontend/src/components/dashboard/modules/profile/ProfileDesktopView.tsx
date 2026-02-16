@@ -100,6 +100,12 @@ export default function ProfileDesktopView({
                 activeTab={activeTab}
                 accountType={accountType}
                 ownerUserId={offersOwnerId ?? displayUser.id}
+                ownerDisplayName={
+                  (displayUser.company_name && displayUser.company_name.trim()) ||
+                  [displayUser.first_name, displayUser.last_name].filter(Boolean).join(' ').trim() ||
+                  displayUser.username ||
+                  ''
+                }
                 highlightedSkillId={highlightedSkillId ?? null}
                 isOtherUserProfile={isOtherUserProfile}
               />
