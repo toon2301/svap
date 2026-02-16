@@ -30,11 +30,12 @@ type OfferDetailLike = Offer & {
   user_display_name?: string | null;
   user_id?: number | null;
   owner_user_type?: 'individual' | 'company' | null;
-  /** L ľudsky čitateľné názvy z API (skills detail) */
+  /** Ľudsky čitateľné názvy a polia z API (skills detail) */
   category_label?: string | null;
   subcategory_label?: string | null;
   experience_years?: number | null;
   price_per_hour?: number | null;
+  city?: string | null;
   opening_hours?: Offer['opening_hours'];
 };
 
