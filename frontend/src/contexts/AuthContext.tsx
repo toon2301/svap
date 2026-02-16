@@ -9,6 +9,7 @@ interface User {
   first_name: string;
   last_name: string;
   company_name?: string;
+  avatar_url?: string;
   is_verified: boolean;
   bio?: string;
   location?: string;
