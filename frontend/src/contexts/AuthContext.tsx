@@ -8,6 +8,7 @@ interface User {
   email: string;
   first_name: string;
   last_name: string;
+  company_name?: string;
   is_verified: boolean;
   bio?: string;
   location?: string;
