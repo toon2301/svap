@@ -413,16 +413,9 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
       return;
     }
 
-    // Ak sme na cudzom profile, vráť sa na vyhľadávanie
+    // Ak sme na cudzom profile, vráť sa na predchádzajúcu stránku (Žiadosti, Vyhľadávanie, …)
     if (activeModule === 'user-profile') {
-      setActiveModule('search');
-      if (typeof window !== 'undefined') {
-        try {
-          localStorage.setItem('activeModule', 'search');
-        } catch {
-          // ignore
-        }
-      }
+      router.back();
       setIsRightSidebarOpen(false);
       setActiveRightItem('');
       setIsMobileMenuOpen(false);

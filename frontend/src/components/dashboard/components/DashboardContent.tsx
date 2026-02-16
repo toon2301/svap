@@ -188,6 +188,49 @@ export default function DashboardContent({
     }
   }, [offerIdFromReviewsPath, setActiveModule]);
 
+  // Po stlačení späť z cudzieho profilu (user-profile) URL skočí správne, ale activeModule ostáva
+  // user-profile – synchronizujeme modul podľa aktuálnej URL pri popstate
+  const setViewedUserId = userProfile.setViewedUserId;
+  const setViewedUserSlug = userProfile.setViewedUserSlug;
+  const setViewedUserSummary = userProfile.setViewedUserSummary;
+  useEffect(() => {
+    const syncModuleFromPath = () => {
+      if (typeof window === 'undefined') return;
+      const p = window.location.pathname || '';
+      let moduleId: string | null = null;
+      if (p.match(/^\/dashboard\/requests\/?$/)) {
+        moduleId = 'requests';
+      } else if (p.match(/^\/dashboard\/search\/?$/)) {
+        moduleId = 'search';
+      } else if (p === '/dashboard' || p === '/dashboard/') {
+        moduleId = 'home';
+      } else if (p.match(/^\/dashboard\/profile\/?$/)) {
+        moduleId = 'profile';
+      } else if (p.match(/^\/dashboard\/users\/[^/]+\/?$/)) {
+        moduleId = 'user-profile';
+      }
+      if (moduleId !== null) {
+        setActiveModule(moduleId);
+        try {
+          localStorage.setItem('activeModule', moduleId);
+        } catch {
+          // ignore
+        }
+        if (moduleId !== 'user-profile') {
+          setViewedUserId(null);
+          setViewedUserSlug(null);
+          setViewedUserSummary(null);
+        }
+        setIsRightSidebarOpen(false);
+        setActiveRightItem('');
+        setIsMobileMenuOpen(false);
+      }
+    };
+
+    window.addEventListener('popstate', syncModuleFromPath);
+    return () => window.removeEventListener('popstate', syncModuleFromPath);
+  }, [setActiveModule, setIsRightSidebarOpen, setActiveRightItem, setIsMobileMenuOpen, setViewedUserId, setViewedUserSlug, setViewedUserSummary]);
+
   // Globálna navigácia na cudzí profil (napr. zo Žiadostí).
   // Používame event, aby UI reagovalo okamžite aj v prípadoch, keď sa URL zmení bez
   // toho, aby Next router prerenderoval stránku (napr. window.history.pushState).
