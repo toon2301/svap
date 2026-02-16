@@ -4,6 +4,7 @@ import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { StarIcon, HeartIcon, ChatBubbleLeftIcon, PencilIcon, TrashIcon, PlusIcon } from '@heroicons/react/24/outline';
 import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
 import { useLanguage } from '@/contexts/LanguageContext';
+import type { Offer } from '../profile/profileOffersTypes';
 import type { Review } from './ReviewCard';
 
 /** Meno recenzenta: pri pretečení zobrazí horizontálnu animáciu zo strany na stranu */
