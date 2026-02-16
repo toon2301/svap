@@ -150,7 +150,7 @@ export default function OfferReviewsView({
     if (isBusinessOwner && offer.owner) {
       return formatOwnerNameFromOfferOwner(offer.owner);
     }
-    return offer.user_display_name || formatDashboardName(offer);
+    return offer.user_display_name || formatDashboardName(offer as NameLike);
   }, [offer, isBusinessOwner]);
 
   const reviewerName = useMemo(() => {
