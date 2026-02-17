@@ -71,16 +71,16 @@ export function OfferReviewsDesktop({
   const { t } = useLanguage();
 
   return (
-    <div className="w-full h-full pt-6 pr-6 pb-6 pl-12 sm:pl-16 lg:pl-24">
+    <div className="w-full h-full pt-6 pr-6 pb-6 pl-12 sm:pl-16 xl:pl-24">
       <h1 className="text-2xl font-semibold text-gray-900 dark:text-white text-left mb-8">
         {headingText}
       </h1>
 
       {/* Fotka, údaje a rating summary */}
-      <div className="flex flex-col sm:flex-row lg:flex-row gap-4 sm:gap-6 lg:gap-8 items-start">
+      <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:gap-8 items-start sm:grid-cols-[400px_minmax(0,1fr)] 2xl:grid-cols-[400px_minmax(0,1fr)_1px_minmax(300px,350px)]">
         {/* Fotka - zachovaná šírka */}
-        <div className="w-full max-w-[400px] sm:w-[400px] shrink-0">
-          <div className="relative w-full h-[440px] rounded-xl overflow-hidden bg-gray-100 dark:bg-[#141415] border border-gray-200 dark:border-gray-800">
+        <div className="w-full max-w-[400px] sm:w-[400px]">
+          <div className="relative w-full h-[320px] sm:h-[380px] 2xl:h-[440px] rounded-xl overflow-hidden bg-gray-100 dark:bg-[#141415] border border-gray-200 dark:border-gray-800">
             {loading ? (
               <div className="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-[#141415]">
                 <div className="w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
@@ -103,7 +103,7 @@ export function OfferReviewsDesktop({
         </div>
 
         {/* Údaje - rozšírený na širku */}
-        <div className="min-w-0 flex-[2] sm:min-w-[400px] lg:min-w-[500px] overflow-hidden">
+        <div className="min-w-0 overflow-hidden">
           <div className="pt-4 pr-5 pb-3 pl-0 space-y-3">
             <div className="flex flex-col gap-0.5">
               <span className="text-xs font-medium uppercase tracking-wider text-purple-600 dark:text-purple-400">
@@ -173,12 +173,12 @@ export function OfferReviewsDesktop({
 
         {/* Vertikálna čiara medzi údajmi a hodnotením */}
         <div
-          className="hidden sm:block w-px shrink-0 bg-gradient-to-b from-transparent via-gray-300 dark:via-gray-600 to-transparent self-stretch"
+          className="hidden 2xl:block w-px bg-gradient-to-b from-transparent via-gray-300 dark:via-gray-600 to-transparent self-stretch"
           aria-hidden
         />
 
         {/* Rating Summary - pridá sa do voľného priestoru napravo */}
-        <div className="w-full lg:w-auto lg:min-w-[300px] lg:max-w-[350px] shrink-0">
+        <div className="w-full sm:col-span-2 2xl:col-span-1 2xl:col-start-4">
           <ReviewSummary reviews={reviews} />
         </div>
       </div>

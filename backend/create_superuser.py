@@ -5,24 +5,29 @@ import sys
 import django
 
 # Nastavenie Django prostredia
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'swaply.settings')
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "swaply.settings")
 django.setup()
 
 from accounts.models import User
 
+
 def create_superuser(username, email, password):
     """Vytvori alebo aktualizuje superuser ucet"""
     print(f"Vytvaranie/aktualizacia superuser uctu: {username} ({email})...")
-    
+
     # Skontroluj, ci uz existuje
     user = None
     if User.objects.filter(email=email).exists():
         user = User.objects.get(email=email)
-        print(f"Pouzivatel s emailom '{email}' uz existuje. Aktualizujem na superuser...")
+        print(
+            f"Pouzivatel s emailom '{email}' uz existuje. Aktualizujem na superuser..."
+        )
     elif User.objects.filter(username=username).exists():
         user = User.objects.get(username=username)
-        print(f"Pouzivatel s username '{username}' uz existuje. Aktualizujem na superuser...")
-    
+        print(
+            f"Pouzivatel s username '{username}' uz existuje. Aktualizujem na superuser..."
+        )
+
     if user:
         # Aktualizacia existujuceho pouzivatela
         user.username = username
@@ -34,7 +39,9 @@ def create_superuser(username, email, password):
         user.is_verified = True
         user.is_public = True
         user.save()
-        print(f"\nOK: Pouzivatel '{username}' ({email}) bol aktualizovany na superuser!")
+        print(
+            f"\nOK: Pouzivatel '{username}' ({email}) bol aktualizovany na superuser!"
+        )
         return user
     else:
         # Vytvorenie noveho superuser
@@ -47,7 +54,7 @@ def create_superuser(username, email, password):
                 is_staff=True,
                 is_superuser=True,
                 is_verified=True,
-                is_public=True
+                is_public=True,
             )
             print(f"\nOK: Superuser '{username}' ({email}) bol uspesne vytvoreny!")
             return user
@@ -55,7 +62,8 @@ def create_superuser(username, email, password):
             print(f"\nCHYBA pri vytvarani superuser: {e}")
             sys.exit(1)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     if len(sys.argv) == 4:
         username = sys.argv[1]
         email = sys.argv[2]
@@ -64,4 +72,3 @@ if __name__ == '__main__':
     else:
         print("Použitie: python create_superuser.py <username> <email> <password>")
         sys.exit(1)
-

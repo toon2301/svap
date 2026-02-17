@@ -16,14 +16,21 @@ def run_migrations_view(request):
     Nastav MIGRATE_SECRET v env a zavolaj /api/admin/init-db/?secret=... iba raz.
     """
     # Bezpečnostné sprísnenie: endpoint je štandardne vypnutý (zapni MIGRATIONS_API_ENABLED=1)
-    enabled = os.getenv("MIGRATIONS_API_ENABLED", "0").lower() in {"1", "true", "yes", "on"}
+    enabled = os.getenv("MIGRATIONS_API_ENABLED", "0").lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
     if not enabled and not getattr(settings, "DEBUG", False):
         return JsonResponse({"error": "forbidden"}, status=403)
 
     # Preferuj tajomstvo v hlavičke; query param povol len v DEBUG (kvôli logom/proxy)
     header_secret = request.headers.get("X-Migrate-Secret")
     query_secret = request.GET.get("secret")
-    provided = header_secret or (query_secret if getattr(settings, "DEBUG", False) else None)
+    provided = header_secret or (
+        query_secret if getattr(settings, "DEBUG", False) else None
+    )
     expected = os.getenv("MIGRATE_SECRET") or getattr(settings, "MIGRATE_SECRET", None)
 
     if not expected or not provided or not hmac.compare_digest(provided, expected):
@@ -42,4 +49,3 @@ def run_migrations_view(request):
         if getattr(settings, "DEBUG", False):
             return JsonResponse({"error": str(exc)}, status=500)
         return JsonResponse({"error": "migration_failed"}, status=500)
-

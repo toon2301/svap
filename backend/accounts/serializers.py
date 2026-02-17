@@ -18,93 +18,119 @@ from .models import (
     Review,
 )
 from swaply.validators import (
-    EmailValidator, PasswordValidator, NameValidator, 
-    PhoneValidator, URLValidator, BioValidator, SecurityValidator, CAPTCHAValidator
+    EmailValidator,
+    PasswordValidator,
+    NameValidator,
+    PhoneValidator,
+    URLValidator,
+    BioValidator,
+    SecurityValidator,
+    CAPTCHAValidator,
 )
 from swaply.validators import HtmlSanitizer
 
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
     """Serializátor pre registráciu používateľa"""
+
     password = serializers.CharField(write_only=True, validators=[validate_password])
     password_confirm = serializers.CharField(write_only=True)
     birth_day = serializers.CharField(write_only=True, required=False)
     birth_month = serializers.CharField(write_only=True, required=False)
     birth_year = serializers.CharField(write_only=True, required=False)
     captcha_token = serializers.CharField(write_only=True, required=True)
-    
+
     class Meta:
         model = User
         fields = [
-            'username', 'email', 'password', 'password_confirm',
-            'first_name', 'last_name',
-            'user_type', 'phone', 'company_name', 'website',
-            'birth_day', 'birth_month', 'birth_year', 'gender', 'captcha_token'
+            "username",
+            "email",
+            "password",
+            "password_confirm",
+            "first_name",
+            "last_name",
+            "user_type",
+            "phone",
+            "company_name",
+            "website",
+            "birth_day",
+            "birth_month",
+            "birth_year",
+            "gender",
+            "captcha_token",
         ]
         extra_kwargs = {
-            'username': {'required': True},
-            'email': {'required': True},
-            'first_name': {'required': False},
-            'last_name': {'required': False},
+            "username": {"required": True},
+            "email": {"required": True},
+            "first_name": {"required": False},
+            "last_name": {"required": False},
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # V DEBUG režime sprav captcha nepovinnú; inak podľa nastavenia
-        required = False if getattr(settings, 'DEBUG', False) else bool(getattr(settings, 'CAPTCHA_ENABLED', True))
-        if 'captcha_token' in self.fields:
-            self.fields['captcha_token'].required = required
-        
+        required = (
+            False
+            if getattr(settings, "DEBUG", False)
+            else bool(getattr(settings, "CAPTCHA_ENABLED", True))
+        )
+        if "captcha_token" in self.fields:
+            self.fields["captcha_token"].required = required
+
         # Odstrániť Django validátor z username field, lebo povolujeme medzery
         # Django UnicodeUsernameValidator neumožňuje medzery
-        if 'username' in self.fields:
+        if "username" in self.fields:
             # Odstrániť všetky validátory z username field (vrátane Django UnicodeUsernameValidator)
-            self.fields['username'].validators = []
+            self.fields["username"].validators = []
 
     def validate(self, attrs):
         """Validácia hesiel a business logiky"""
-        if attrs['password'] != attrs['password_confirm']:
+        if attrs["password"] != attrs["password_confirm"]:
             raise serializers.ValidationError("Heslá sa nezhodujú.")
-        
+
         # Validácia CAPTCHA
-        captcha_token = attrs.get('captcha_token')
+        captcha_token = attrs.get("captcha_token")
         if captcha_token:
             CAPTCHAValidator.validate_captcha(captcha_token)
-        
+
         # Username (display name) – povolíme medzery a validujeme dĺžku v validate_username()
-        
+
         # Validácia pre firmy
-        if attrs.get('user_type') == UserType.COMPANY:
-            if not attrs.get('company_name'):
+        if attrs.get("user_type") == UserType.COMPANY:
+            if not attrs.get("company_name"):
                 raise serializers.ValidationError("Názov firmy je povinný.")
-        
+
         # Validácia dátumu narodenia
-        birth_day = attrs.get('birth_day')
-        birth_month = attrs.get('birth_month')
-        birth_year = attrs.get('birth_year')
-        
+        birth_day = attrs.get("birth_day")
+        birth_month = attrs.get("birth_month")
+        birth_year = attrs.get("birth_year")
+
         if birth_day and birth_month and birth_year:
             try:
                 birth_date = date(int(birth_year), int(birth_month), int(birth_day))
                 # Kontrola veku (aspoň 13 rokov)
                 today = date.today()
-                age = today.year - birth_date.year - ((today.month, today.day) < (birth_date.month, birth_date.day))
+                age = (
+                    today.year
+                    - birth_date.year
+                    - ((today.month, today.day) < (birth_date.month, birth_date.day))
+                )
                 if age < 13:
                     raise serializers.ValidationError("Musíte mať aspoň 13 rokov.")
-                attrs['birth_date'] = birth_date
+                attrs["birth_date"] = birth_date
             except ValueError:
                 raise serializers.ValidationError("Neplatný dátum narodenia.")
-        
+
         return attrs
 
     def validate_email(self, value):
         """Validácia emailu"""
         # Bezpečnostná validácia
         value = SecurityValidator.validate_input_safety(value)
-        
+
         # Formátová validácia
         value = EmailValidator.validate_email(value)
-        
+
         # Unikátnosť
         if User.objects.filter(email=value).exists():
             raise serializers.ValidationError("Používateľ s týmto emailom už existuje.")
@@ -114,29 +140,31 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         """Validácia username - povolené medzery, limit 35 znakov"""
         # Bezpečnostná validácia
         value = SecurityValidator.validate_input_safety(value)
-        
+
         # Limit 35 znakov (vrátane medzier)
         if len(value) > 35:
-            raise serializers.ValidationError("Používateľské meno môže mať maximálne 35 znakov vrátane medzier.")
+            raise serializers.ValidationError(
+                "Používateľské meno môže mať maximálne 35 znakov vrátane medzier."
+            )
 
         # Unikátnosť (model má unikátny username)
         if User.objects.filter(username=value).exists():
             raise serializers.ValidationError("Používateľské meno je už obsadené.")
-        
+
         return value
 
     def create(self, validated_data):
         """Vytvorenie nového používateľa"""
-        validated_data.pop('password_confirm', None)
-        validated_data.pop('captcha_token', None)  # Odstráň CAPTCHA token ak existuje
+        validated_data.pop("password_confirm", None)
+        validated_data.pop("captcha_token", None)  # Odstráň CAPTCHA token ak existuje
         # Odstránenie polí pre dátum narodenia (už sú konvertované na birth_date)
-        validated_data.pop('birth_day', None)
-        validated_data.pop('birth_month', None)
-        validated_data.pop('birth_year', None)
-        
-        password = validated_data.pop('password')
-        validated_data['is_verified'] = False
-        
+        validated_data.pop("birth_day", None)
+        validated_data.pop("birth_month", None)
+        validated_data.pop("birth_year", None)
+
+        password = validated_data.pop("password")
+        validated_data["is_verified"] = False
+
         # Vytvorenie používateľa s is_verified=False
         # Vytvoriť User objekt bez volania full_clean() (ktorý validuje username)
         user = User(**validated_data)
@@ -144,91 +172,135 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         # Nastaviť heslo pomocou set_password (hashuje heslo)
         user.set_password(password)
         user.save()
-        
+
         # Vytvorenie profilu
         UserProfile.objects.create(user=user)
-        
+
         # Vytvorenie verifikačného tokenu
         verification = EmailVerification.objects.create(user=user)
-        
+
         # Odoslanie verifikačného emailu
-        request = self.context.get('request')
+        request = self.context.get("request")
         verification.send_verification_email(request)
-        
+
         # Vymazanie hesla z validated_data pre bezpečnosť
-        validated_data.pop('password', None)
-        
+        validated_data.pop("password", None)
+
         return user
 
 
 class UserLoginSerializer(serializers.Serializer):
     """Serializátor pre prihlásenie"""
+
     email = serializers.EmailField()
     password = serializers.CharField()
     totp = serializers.CharField(write_only=True, required=False, allow_blank=True)
 
     def validate(self, attrs):
         """Validácia prihlasovacích údajov"""
-        email = attrs.get('email')
-        password = attrs.get('password')
+        email = attrs.get("email")
+        password = attrs.get("password")
 
         if email and password:
             user = authenticate(username=email, password=password)
             if not user:
-                raise serializers.ValidationError('Neplatné prihlasovacie údaje.')
+                raise serializers.ValidationError("Neplatné prihlasovacie údaje.")
             if not user.is_active:
-                raise serializers.ValidationError('Účet je deaktivovaný.')
+                raise serializers.ValidationError("Účet je deaktivovaný.")
             # Overenie emailu – dá sa vypnúť cez ALLOW_UNVERIFIED_LOGIN (pre test/dev)
-            if not getattr(settings, 'ALLOW_UNVERIFIED_LOGIN', False):
-                if not getattr(user, 'is_verified', False):
-                    raise serializers.ValidationError('Účet nie je overený. Skontrolujte si email a kliknite na verifikačný odkaz.')
+            if not getattr(settings, "ALLOW_UNVERIFIED_LOGIN", False):
+                if not getattr(user, "is_verified", False):
+                    raise serializers.ValidationError(
+                        "Účet nie je overený. Skontrolujte si email a kliknite na verifikačný odkaz."
+                    )
             # 2FA: ak má používateľ zapnuté 2FA, vyžaduj TOTP
-            if getattr(getattr(user, 'profile', None), 'mfa_enabled', False):
-                totp_code = (self.initial_data.get('totp') or '').strip()
+            if getattr(getattr(user, "profile", None), "mfa_enabled", False):
+                totp_code = (self.initial_data.get("totp") or "").strip()
                 if not totp_code:
-                    raise serializers.ValidationError('Vyžaduje sa 2FA kód.')
+                    raise serializers.ValidationError("Vyžaduje sa 2FA kód.")
                 # Over TOTP cez jednoduchý storage secretu v profile (predpoklad: user.profile.mfa_secret)
                 try:
                     import pyotp
-                    mfa_secret = getattr(getattr(user, 'profile', None), 'mfa_secret', None)
+
+                    mfa_secret = getattr(
+                        getattr(user, "profile", None), "mfa_secret", None
+                    )
                     if not mfa_secret:
-                        raise serializers.ValidationError('2FA nie je správne nastavené.')
+                        raise serializers.ValidationError(
+                            "2FA nie je správne nastavené."
+                        )
                     totp = pyotp.TOTP(mfa_secret)
                     if not totp.verify(totp_code):
-                        raise serializers.ValidationError('Neplatný 2FA kód.')
+                        raise serializers.ValidationError("Neplatný 2FA kód.")
                 except Exception:
-                    raise serializers.ValidationError('Chyba pri overovaní 2FA.')
-            attrs['user'] = user
+                    raise serializers.ValidationError("Chyba pri overovaní 2FA.")
+            attrs["user"] = user
         else:
-            raise serializers.ValidationError('Musí byť zadaný email a heslo.')
+            raise serializers.ValidationError("Musí byť zadaný email a heslo.")
 
         return attrs
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
     """Serializátor pre profil používateľa"""
+
     # avatar ostáva zapisovateľné (ImageField na modeli)
     # avatar_url poskytuje plnú URL pre klienta
     avatar_url = serializers.SerializerMethodField()
-    
+
     class Meta:
         model = User
         fields = [
-            'id', 'username', 'email', 'first_name', 'last_name',
-            'user_type', 'phone', 'phone_visible', 'contact_email', 'bio', 'avatar', 'avatar_url', 'location', 'district',
-            'ico', 'ico_visible', 'job_title', 'job_title_visible', 'company_name', 'website', 'additional_websites',
-            'linkedin', 'facebook', 'instagram', 'youtube',
-            'is_verified', 'is_public', 'created_at',
-            'updated_at', 'profile_completeness', 'birth_date', 'gender',
-            'slug', 'name_modified_by_user',
+            "id",
+            "username",
+            "email",
+            "first_name",
+            "last_name",
+            "user_type",
+            "phone",
+            "phone_visible",
+            "contact_email",
+            "bio",
+            "avatar",
+            "avatar_url",
+            "location",
+            "district",
+            "ico",
+            "ico_visible",
+            "job_title",
+            "job_title_visible",
+            "company_name",
+            "website",
+            "additional_websites",
+            "linkedin",
+            "facebook",
+            "instagram",
+            "youtube",
+            "is_verified",
+            "is_public",
+            "created_at",
+            "updated_at",
+            "profile_completeness",
+            "birth_date",
+            "gender",
+            "slug",
+            "name_modified_by_user",
         ]
-        read_only_fields = ['id', 'is_verified', 'created_at', 'updated_at', 'profile_completeness', 'slug', 'name_modified_by_user']
+        read_only_fields = [
+            "id",
+            "is_verified",
+            "created_at",
+            "updated_at",
+            "profile_completeness",
+            "slug",
+            "name_modified_by_user",
+        ]
 
     def get_avatar_url(self, obj):
         """Vráti plnú URL k avataru (ak existuje)."""
         try:
-            if obj.avatar and hasattr(obj.avatar, 'url'):
-                request = self.context.get('request')
+            if obj.avatar and hasattr(obj.avatar, "url"):
+                request = self.context.get("request")
                 url = obj.avatar.url
                 if request:
                     return request.build_absolute_uri(url)
@@ -241,37 +313,70 @@ class UserProfileSerializer(serializers.ModelSerializer):
         """Validácia mena"""
         if value:
             value = SecurityValidator.validate_input_safety(value)
-            return NameValidator.validate_name(value, 'Meno')
+            return NameValidator.validate_name(value, "Meno")
         return value
 
     def validate_last_name(self, value):
         """Validácia priezviska"""
         if value:
             value = SecurityValidator.validate_input_safety(value)
-            return NameValidator.validate_name(value, 'Priezvisko')
+            return NameValidator.validate_name(value, "Priezvisko")
         return value
 
     def validate(self, attrs):
-        """Validácia celkového mena (first_name + last_name)"""
-        first_name = attrs.get('first_name', self.instance.first_name if self.instance else '')
-        last_name = attrs.get('last_name', self.instance.last_name if self.instance else '')
-        
+        """Globálna validácia pre závislé polia (meno + limit počtu webov)."""
+        validated = super().validate(attrs)
+        instance = getattr(self, "instance", None)
+
         # Ak sa mení first_name alebo last_name, skontroluj celkovú dĺžku
-        if 'first_name' in attrs or 'last_name' in attrs:
-            # Získaj aktuálne hodnoty (buď z attrs alebo z instance)
-            current_first = attrs.get('first_name') if 'first_name' in attrs else (self.instance.first_name if self.instance else '')
-            current_last = attrs.get('last_name') if 'last_name' in attrs else (self.instance.last_name if self.instance else '')
-            
-            # Vypočítaj celkovú dĺžku (vrátane medzery ak sú obe hodnoty)
-            full_name = f"{current_first} {current_last}".strip() if current_first and current_last else (current_first or current_last or '')
-            total_length = len(full_name)
-            
-            if total_length > 35:
-                raise serializers.ValidationError({
-                    'first_name': 'Celé meno (meno a priezvisko) môže mať maximálne 35 znakov vrátane medzier.'
-                })
-        
-        return attrs
+        if "first_name" in validated or "last_name" in validated:
+            current_first = (
+                validated.get("first_name")
+                if "first_name" in validated
+                else (getattr(instance, "first_name", "") if instance else "")
+            )
+            current_last = (
+                validated.get("last_name")
+                if "last_name" in validated
+                else (getattr(instance, "last_name", "") if instance else "")
+            )
+
+            full_name = (
+                f"{current_first} {current_last}".strip()
+                if current_first and current_last
+                else (current_first or current_last or "")
+            )
+            if len(full_name) > 35:
+                raise serializers.ValidationError(
+                    {
+                        "first_name": "Celé meno (meno a priezvisko) môže mať maximálne 35 znakov vrátane medzier."
+                    }
+                )
+
+        # Limit počtu webov (hlavný web + dodatočné)
+        website = validated.get("website")
+        if website is None and instance is not None:
+            website = getattr(instance, "website", "")
+        additional = validated.get("additional_websites")
+        if additional is None and instance is not None:
+            additional = getattr(instance, "additional_websites", [])
+        additional = additional or []
+        additional = [w for w in additional if (w or "").strip()]
+        total_websites = (1 if (website or "").strip() else 0) + len(additional)
+        if total_websites > 5:
+            raise serializers.ValidationError(
+                {
+                    "additional_websites": "Maximálny počet webových odkazov je 5 (hlavný web + dodatočné)."
+                }
+            )
+
+        # Kategória a podkategória odstránené – ignorujeme prípadné vstupy
+        if "category" in validated:
+            validated.pop("category", None)
+        if "category_sub" in validated:
+            validated.pop("category_sub", None)
+
+        return validated
 
     def validate_phone(self, value):
         """Validácia telefónu"""
@@ -284,37 +389,36 @@ class UserProfileSerializer(serializers.ModelSerializer):
         """Validácia webovej stránky"""
         if value:
             value = SecurityValidator.validate_input_safety(value)
-            return URLValidator.validate_url(value, 'Webová stránka')
+            return URLValidator.validate_url(value, "Webová stránka")
         return value
 
     def validate_linkedin(self, value):
         """Validácia LinkedIn URL"""
         if value:
             value = SecurityValidator.validate_input_safety(value)
-            return URLValidator.validate_url(value, 'LinkedIn')
+            return URLValidator.validate_url(value, "LinkedIn")
         return value
 
     def validate_facebook(self, value):
         """Validácia Facebook URL"""
         if value:
             value = SecurityValidator.validate_input_safety(value)
-            return URLValidator.validate_url(value, 'Facebook')
+            return URLValidator.validate_url(value, "Facebook")
         return value
 
     def validate_instagram(self, value):
         """Validácia Instagram URL"""
         if value:
             value = SecurityValidator.validate_input_safety(value)
-            return URLValidator.validate_url(value, 'Instagram')
+            return URLValidator.validate_url(value, "Instagram")
         return value
 
     def validate_youtube(self, value):
         """Validácia YouTube URL"""
         if value:
             value = SecurityValidator.validate_input_safety(value)
-            return URLValidator.validate_url(value, 'YouTube')
+            return URLValidator.validate_url(value, "YouTube")
         return value
-
 
     def validate_bio(self, value):
         """Validácia bio textu"""
@@ -331,7 +435,9 @@ class UserProfileSerializer(serializers.ModelSerializer):
         if value:
             value = SecurityValidator.validate_input_safety(value)
             if len(value.strip()) > 25:
-                raise serializers.ValidationError("Lokácia môže mať maximálne 25 znakov")
+                raise serializers.ValidationError(
+                    "Lokácia môže mať maximálne 25 znakov"
+                )
             return value.strip()
         return value
 
@@ -345,39 +451,12 @@ class UserProfileSerializer(serializers.ModelSerializer):
             return value.strip()
         return value
 
-    def validate(self, attrs):
-        """Globálna validácia pre závislé polia (limit počtu webov)."""
-        validated = super().validate(attrs)
-        # Získaj navrhované hodnoty po update
-        instance = getattr(self, 'instance', None)
-        website = attrs.get('website')
-        if website is None and instance is not None:
-            website = getattr(instance, 'website', '')
-        additional = attrs.get('additional_websites')
-        if additional is None and instance is not None:
-            additional = getattr(instance, 'additional_websites', [])
-        additional = additional or []
-        # Filtrovať prázdne
-        additional = [w for w in additional if (w or '').strip()]
-        total_websites = (1 if (website or '').strip() else 0) + len(additional)
-        if total_websites > 5:
-            raise serializers.ValidationError({
-                'additional_websites': 'Maximálny počet webových odkazov je 5 (hlavný web + dodatočné).'
-            })
-        
-        # Kategória a podkategória odstránené – ignorujeme prípadné vstupy
-        if 'category' in attrs:
-            attrs.pop('category', None)
-        if 'category_sub' in attrs:
-            attrs.pop('category_sub', None)
-        return validated
-
     def validate_ico(self, value):
         """Validácia IČO"""
         if value:
             value = SecurityValidator.validate_input_safety(value)
             # Odstránenie medzier a čiarky
-            value = value.replace(' ', '').replace(',', '').strip()
+            value = value.replace(" ", "").replace(",", "").strip()
             # Dĺžka: povolené 8 až 14 číslic
             if not value.isdigit():
                 raise serializers.ValidationError("IČO môže obsahovať iba číslice")
@@ -387,121 +466,154 @@ class UserProfileSerializer(serializers.ModelSerializer):
         return value
 
 
-
-
 class EmailVerificationSerializer(serializers.Serializer):
     """Serializátor pre email verifikáciu"""
+
     token = serializers.UUIDField()
-    captcha_token = serializers.CharField(write_only=True, required=False, allow_blank=True)
-    
+    captcha_token = serializers.CharField(
+        write_only=True, required=False, allow_blank=True
+    )
+
     def validate_token(self, value):
         """Validácia tokenu"""
         try:
             verification = EmailVerification.objects.get(token=value)
             if verification.is_used:
-                raise serializers.ValidationError('Token už bol použitý.')
+                raise serializers.ValidationError("Token už bol použitý.")
             if verification.is_expired():
-                raise serializers.ValidationError('Token expiroval.')
+                raise serializers.ValidationError("Token expiroval.")
             return value
         except EmailVerification.DoesNotExist:
-            raise serializers.ValidationError('Neplatný token.')
-    
+            raise serializers.ValidationError("Neplatný token.")
+
     def verify(self):
         """Overenie tokenu"""
         # Voliteľná CAPTCHA validácia (zapínateľná v settings), nesmie rozbiť existujúce testy
-        captcha = self.initial_data.get('captcha_token')
+        captcha = self.initial_data.get("captcha_token")
         try:
             if captcha is not None:
                 CAPTCHAValidator.validate_captcha(captcha)
         except Exception:
             # Ak CAPTCHA zlyhá a bola poslaná, nechaj to prepadnúť ako validačná chyba vyššie v view
             raise
-        verification = EmailVerification.objects.get(token=self.validated_data['token'])
+        verification = EmailVerification.objects.get(token=self.validated_data["token"])
         return verification.verify()
 
 
 class ResendVerificationSerializer(serializers.Serializer):
     """Serializátor pre znovu odoslanie verifikačného emailu"""
+
     email = serializers.EmailField()
-    
+
     def validate_email(self, value):
         """Validácia emailu"""
         # Bezpečnostná validácia
         value = SecurityValidator.validate_input_safety(value)
-        
+
         # Formátová validácia
         value = EmailValidator.validate_email(value)
-        
+
         # Kontrola, či používateľ existuje
         if not User.objects.filter(email=value).exists():
             raise serializers.ValidationError("Používateľ s týmto emailom neexistuje.")
-        
+
         return value
 
 
 class OfferedSkillSerializer(serializers.ModelSerializer):
     """Serializátor pre ponúkané zručnosti"""
-    
+
     experience = serializers.SerializerMethodField()
     images = serializers.SerializerMethodField()
-    price_from = serializers.DecimalField(max_digits=10, decimal_places=2, required=False, allow_null=True)
+    price_from = serializers.DecimalField(
+        max_digits=10, decimal_places=2, required=False, allow_null=True
+    )
     price_currency = serializers.CharField(required=False, allow_blank=True)
     district = serializers.CharField(required=False, allow_blank=True)
     urgency = serializers.CharField(required=False, allow_blank=True, allow_null=True)
-    duration_type = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    duration_type = serializers.CharField(
+        required=False, allow_blank=True, allow_null=True
+    )
     # Meno používateľa prehľadne pre vyhľadávanie / listingy (read-only)
-    user_display_name = serializers.CharField(source='user.display_name', read_only=True)
+    user_display_name = serializers.CharField(
+        source="user.display_name", read_only=True
+    )
     # ID používateľa pre identifikáciu vlastných ponúk vo vyhľadávaní
-    user_id = serializers.IntegerField(source='user.id', read_only=True)
+    user_id = serializers.IntegerField(source="user.id", read_only=True)
     # Typ účtu majiteľa karty (individual/company) – pre odlíšenie osobný vs firemný účet
-    owner_user_type = serializers.CharField(source='user.user_type', read_only=True)
-    
+    owner_user_type = serializers.CharField(source="user.user_type", read_only=True)
+
     class Meta:
         model = OfferedSkill
         fields = [
-            'id', 'category', 'subcategory', 'description', 'detailed_description',
-            'experience_value', 'experience_unit', 'experience', 'tags', 'images',
-            'price_from', 'price_currency', 'district', 'location', 'opening_hours',
-            'is_seeking', 'urgency', 'duration_type', 'is_hidden', 'created_at', 'updated_at',
-            'user_display_name', 'user_id', 'owner_user_type',
+            "id",
+            "category",
+            "subcategory",
+            "description",
+            "detailed_description",
+            "experience_value",
+            "experience_unit",
+            "experience",
+            "tags",
+            "images",
+            "price_from",
+            "price_currency",
+            "district",
+            "location",
+            "opening_hours",
+            "is_seeking",
+            "urgency",
+            "duration_type",
+            "is_hidden",
+            "created_at",
+            "updated_at",
+            "user_display_name",
+            "user_id",
+            "owner_user_type",
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at', 'user_display_name', 'user_id', 'owner_user_type']
-    
+        read_only_fields = [
+            "id",
+            "created_at",
+            "updated_at",
+            "user_display_name",
+            "user_id",
+            "owner_user_type",
+        ]
+
     def get_experience(self, obj):
         """Vráti experience ako objekt (ak existuje)"""
         if obj.experience_value is not None and obj.experience_unit:
-            return {
-                'value': obj.experience_value,
-                'unit': obj.experience_unit
-            }
+            return {"value": obj.experience_value, "unit": obj.experience_unit}
         return None
 
     def get_images(self, obj):
         """Vráti zoznam obrázkov s absolútnou URL."""
-        request = self.context.get('request')
+        request = self.context.get("request")
         results = []
         try:
-            for img in getattr(obj, 'images', []).all():
+            for img in getattr(obj, "images", []).all():
                 url = None
-                if img.image and hasattr(img.image, 'url'):
+                if img.image and hasattr(img.image, "url"):
                     url = img.image.url
                     if request:
                         url = request.build_absolute_uri(url)
-                results.append({
-                    'id': img.id,
-                    'image_url': url,
-                    'order': img.order,
-                })
+                results.append(
+                    {
+                        "id": img.id,
+                        "image_url": url,
+                        "order": img.order,
+                    }
+                )
         except Exception:
             pass
         return results
-    
+
     def validate_district(self, value):
         """Validácia okresu - normalizuje prázdne hodnoty"""
         if value is None:
-            return ''
-        return value.strip() if isinstance(value, str) else ''
-    
+            return ""
+        return value.strip() if isinstance(value, str) else ""
+
     def validate_description(self, value):
         """Validácia popisu"""
         if value:
@@ -509,15 +621,17 @@ class OfferedSkillSerializer(serializers.ModelSerializer):
             if len(value) > 100:
                 raise serializers.ValidationError("Popis môže mať maximálne 100 znakov")
         return value
-    
+
     def validate_detailed_description(self, value):
         """Validácia podrobného popisu"""
         if value:
             value = SecurityValidator.validate_input_safety(value)
             if len(value) > 1000:
-                raise serializers.ValidationError("Podrobný popis môže mať maximálne 1000 znakov")
+                raise serializers.ValidationError(
+                    "Podrobný popis môže mať maximálne 1000 znakov"
+                )
         return value
-    
+
     def validate_tags(self, value):
         """Validácia tagov"""
         if not isinstance(value, list):
@@ -532,41 +646,45 @@ class OfferedSkillSerializer(serializers.ModelSerializer):
             tag = tag.strip()
             if tag:
                 if len(tag) > 15:
-                    raise serializers.ValidationError(f"Tag '{tag}' môže mať maximálne 15 znakov")
+                    raise serializers.ValidationError(
+                        f"Tag '{tag}' môže mať maximálne 15 znakov"
+                    )
                 # Odstránenie duplikátov (case-insensitive)
                 tag_lower = tag.lower()
                 if not any(t.lower() == tag_lower for t in validated_tags):
                     validated_tags.append(tag)
         return validated_tags
-    
+
     def validate_experience_value(self, value):
         """Validácia hodnoty praxe"""
         if value is not None:
             if value < 0 or value > 100:
                 raise serializers.ValidationError("Dĺžka praxe musí byť medzi 0 a 100")
         return value
-    
+
     def validate(self, attrs):
         """Globálna validácia"""
         # Ak je zadaná experience_value, musí byť aj experience_unit
-        experience_value = attrs.get('experience_value')
-        experience_unit = attrs.get('experience_unit')
-        
-        if experience_value is not None and not experience_unit:
-            raise serializers.ValidationError({
-                'experience_unit': 'Jednotka praxe je povinná, ak je zadaná hodnota praxe'
-            })
-        
-        if not experience_value and experience_unit:
-            attrs['experience_unit'] = ''  # Vyčistiť jednotku ak nie je hodnota
+        experience_value = attrs.get("experience_value")
+        experience_unit = attrs.get("experience_unit")
 
-        price_from = attrs.get('price_from')
+        if experience_value is not None and not experience_unit:
+            raise serializers.ValidationError(
+                {
+                    "experience_unit": "Jednotka praxe je povinná, ak je zadaná hodnota praxe"
+                }
+            )
+
+        if not experience_value and experience_unit:
+            attrs["experience_unit"] = ""  # Vyčistiť jednotku ak nie je hodnota
+
+        price_from = attrs.get("price_from")
         if price_from is not None and price_from < 0:
-            raise serializers.ValidationError({'price_from': 'Cena musí byť nezáporná'})
+            raise serializers.ValidationError({"price_from": "Cena musí byť nezáporná"})
         if price_from is None:
-            attrs['price_currency'] = ''
-        elif not attrs.get('price_currency'):
-            attrs['price_currency'] = '€'
+            attrs["price_currency"] = ""
+        elif not attrs.get("price_currency"):
+            attrs["price_currency"] = "€"
 
         return attrs
 
@@ -587,29 +705,43 @@ class SkillRequestCreateSerializer(serializers.Serializer):
 
     def validate_offer_id(self, value):
         try:
-            offer = OfferedSkill.objects.select_related('user').get(id=value)
+            offer = OfferedSkill.objects.select_related("user").get(id=value)
         except OfferedSkill.DoesNotExist:
-            raise serializers.ValidationError('Karta neexistuje.')
+            raise serializers.ValidationError("Karta neexistuje.")
 
-        request = self.context.get('request')
-        if request and getattr(request, 'user', None) and offer.user_id == request.user.id:
-            raise serializers.ValidationError('Nemôžeš požiadať o vlastnú kartu.')
+        request = self.context.get("request")
+        if (
+            request
+            and getattr(request, "user", None)
+            and offer.user_id == request.user.id
+        ):
+            raise serializers.ValidationError("Nemôžeš požiadať o vlastnú kartu.")
 
-        self.context['offer_obj'] = offer
+        self.context["offer_obj"] = offer
         return value
 
 
 class SkillRequestSerializer(serializers.ModelSerializer):
     """Read serializer pre žiadosti."""
 
-    requester_display_name = serializers.CharField(source='requester.display_name', read_only=True)
-    recipient_display_name = serializers.CharField(source='recipient.display_name', read_only=True)
+    requester_display_name = serializers.CharField(
+        source="requester.display_name", read_only=True
+    )
+    recipient_display_name = serializers.CharField(
+        source="recipient.display_name", read_only=True
+    )
 
-    offer_is_seeking = serializers.BooleanField(source='offer.is_seeking', read_only=True)
-    offer_is_hidden = serializers.BooleanField(source='offer.is_hidden', read_only=True)
-    offer_category = serializers.CharField(source='offer.category', read_only=True)
-    offer_subcategory = serializers.CharField(source='offer.subcategory', read_only=True)
-    offer_description = serializers.CharField(source='offer.description', read_only=True)
+    offer_is_seeking = serializers.BooleanField(
+        source="offer.is_seeking", read_only=True
+    )
+    offer_is_hidden = serializers.BooleanField(source="offer.is_hidden", read_only=True)
+    offer_category = serializers.CharField(source="offer.category", read_only=True)
+    offer_subcategory = serializers.CharField(
+        source="offer.subcategory", read_only=True
+    )
+    offer_description = serializers.CharField(
+        source="offer.description", read_only=True
+    )
 
     requester_summary = serializers.SerializerMethodField()
     recipient_summary = serializers.SerializerMethodField()
@@ -617,8 +749,8 @@ class SkillRequestSerializer(serializers.ModelSerializer):
 
     def _avatar_url(self, user: User):
         try:
-            if getattr(user, 'avatar', None) and hasattr(user.avatar, 'url'):
-                request = self.context.get('request')
+            if getattr(user, "avatar", None) and hasattr(user.avatar, "url"):
+                request = self.context.get("request")
                 url = user.avatar.url
                 return request.build_absolute_uri(url) if request else url
         except Exception:
@@ -626,43 +758,43 @@ class SkillRequestSerializer(serializers.ModelSerializer):
         return None
 
     def get_requester_summary(self, obj):
-        u = getattr(obj, 'requester', None)
+        u = getattr(obj, "requester", None)
         if not u:
             return None
         return {
-            'id': u.id,
-            'display_name': getattr(u, 'display_name', None),
-            'slug': getattr(u, 'slug', None),
-            'avatar_url': self._avatar_url(u),
+            "id": u.id,
+            "display_name": getattr(u, "display_name", None),
+            "slug": getattr(u, "slug", None),
+            "avatar_url": self._avatar_url(u),
         }
 
     def get_recipient_summary(self, obj):
-        u = getattr(obj, 'recipient', None)
+        u = getattr(obj, "recipient", None)
         if not u:
             return None
         return {
-            'id': u.id,
-            'display_name': getattr(u, 'display_name', None),
-            'slug': getattr(u, 'slug', None),
-            'avatar_url': self._avatar_url(u),
+            "id": u.id,
+            "display_name": getattr(u, "display_name", None),
+            "slug": getattr(u, "slug", None),
+            "avatar_url": self._avatar_url(u),
         }
 
     def get_offer_summary(self, obj):
-        offer = getattr(obj, 'offer', None)
+        offer = getattr(obj, "offer", None)
         if not offer:
             return None
-        owner = getattr(offer, 'user', None)
+        owner = getattr(offer, "user", None)
         return {
-            'id': offer.id,
-            'subcategory': getattr(offer, 'subcategory', '') or '',
-            'is_seeking': bool(getattr(offer, 'is_seeking', False)),
-            'is_hidden': bool(getattr(offer, 'is_hidden', False)),
-            'price_from': getattr(offer, 'price_from', None),
-            'price_currency': getattr(offer, 'price_currency', '') or '€',
-            'owner': (
+            "id": offer.id,
+            "subcategory": getattr(offer, "subcategory", "") or "",
+            "is_seeking": bool(getattr(offer, "is_seeking", False)),
+            "is_hidden": bool(getattr(offer, "is_hidden", False)),
+            "price_from": getattr(offer, "price_from", None),
+            "price_currency": getattr(offer, "price_currency", "") or "€",
+            "owner": (
                 {
-                    'id': getattr(owner, 'id', None),
-                    'slug': getattr(owner, 'slug', None),
+                    "id": getattr(owner, "id", None),
+                    "slug": getattr(owner, "slug", None),
                 }
                 if owner is not None
                 else None
@@ -673,33 +805,33 @@ class SkillRequestSerializer(serializers.ModelSerializer):
         """Override to ensure SerializerMethodField values are included."""
         ret = super().to_representation(instance)
         # Explicitly add summary fields
-        ret['requester_summary'] = self.get_requester_summary(instance)
-        ret['recipient_summary'] = self.get_recipient_summary(instance)
-        ret['offer_summary'] = self.get_offer_summary(instance)
+        ret["requester_summary"] = self.get_requester_summary(instance)
+        ret["recipient_summary"] = self.get_recipient_summary(instance)
+        ret["offer_summary"] = self.get_offer_summary(instance)
         return ret
 
     class Meta:
         model = SkillRequest
         fields = [
-            'id',
-            'status',
-            'hidden_by_requester',
-            'hidden_by_recipient',
-            'created_at',
-            'updated_at',
-            'requester',
-            'recipient',
-            'offer',
-            'requester_display_name',
-            'recipient_display_name',
-            'offer_is_seeking',
-            'offer_is_hidden',
-            'offer_category',
-            'offer_subcategory',
-            'offer_description',
-            'requester_summary',
-            'recipient_summary',
-            'offer_summary',
+            "id",
+            "status",
+            "hidden_by_requester",
+            "hidden_by_recipient",
+            "created_at",
+            "updated_at",
+            "requester",
+            "recipient",
+            "offer",
+            "requester_display_name",
+            "recipient_display_name",
+            "offer_is_seeking",
+            "offer_is_hidden",
+            "offer_category",
+            "offer_subcategory",
+            "offer_description",
+            "requester_summary",
+            "recipient_summary",
+            "offer_summary",
         ]
         read_only_fields = fields
 
@@ -708,102 +840,120 @@ class NotificationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Notification
         fields = [
-            'id',
-            'type',
-            'title',
-            'body',
-            'data',
-            'skill_request',
-            'is_read',
-            'created_at',
-            'read_at',
+            "id",
+            "type",
+            "title",
+            "body",
+            "data",
+            "skill_request",
+            "is_read",
+            "created_at",
+            "read_at",
         ]
         read_only_fields = fields
 
 
 class ReviewSerializer(serializers.ModelSerializer):
     """Serializer pre recenzie ponúk"""
-    
-    reviewer_id = serializers.IntegerField(source='reviewer.id', read_only=True)
-    reviewer_display_name = serializers.CharField(source='reviewer.display_name', read_only=True)
+
+    reviewer_id = serializers.IntegerField(source="reviewer.id", read_only=True)
+    reviewer_display_name = serializers.CharField(
+        source="reviewer.display_name", read_only=True
+    )
     reviewer_avatar_url = serializers.SerializerMethodField()
-    
+
     class Meta:
         model = Review
         fields = [
-            'id',
-            'reviewer_id',
-            'reviewer_display_name',
-            'reviewer_avatar_url',
-            'offer',
-            'rating',
-            'text',
-            'pros',
-            'cons',
-            'created_at',
-            'updated_at',
+            "id",
+            "reviewer_id",
+            "reviewer_display_name",
+            "reviewer_avatar_url",
+            "offer",
+            "rating",
+            "text",
+            "pros",
+            "cons",
+            "created_at",
+            "updated_at",
         ]
-        read_only_fields = ['id', 'reviewer_id', 'reviewer_display_name', 'reviewer_avatar_url', 'offer', 'created_at', 'updated_at']
-    
+        read_only_fields = [
+            "id",
+            "reviewer_id",
+            "reviewer_display_name",
+            "reviewer_avatar_url",
+            "offer",
+            "created_at",
+            "updated_at",
+        ]
+
     def get_reviewer_avatar_url(self, obj):
         """Vráti URL avatara recenzenta"""
         if obj.reviewer.avatar:
-            request = self.context.get('request')
+            request = self.context.get("request")
             if request:
                 return request.build_absolute_uri(obj.reviewer.avatar.url)
             return obj.reviewer.avatar.url
         return None
-    
+
     def validate_rating(self, value):
         """Validácia ratingu"""
         if value < 0 or value > 5:
-            raise serializers.ValidationError('Hodnotenie musí byť medzi 0.0 a 5.0.')
+            raise serializers.ValidationError("Hodnotenie musí byť medzi 0.0 a 5.0.")
         # Kontrola krokov 0.5
         if float(value) % 0.5 != 0:
-            raise serializers.ValidationError('Hodnotenie musí byť v krokoch 0.5 (napr. 3.5, 4.0).')
+            raise serializers.ValidationError(
+                "Hodnotenie musí byť v krokoch 0.5 (napr. 3.5, 4.0)."
+            )
         return value
-    
+
     def validate_pros(self, value):
         """Validácia plusov"""
         if not isinstance(value, list):
-            raise serializers.ValidationError('Plusy musia byť zoznam.')
+            raise serializers.ValidationError("Plusy musia byť zoznam.")
         if len(value) > 10:
-            raise serializers.ValidationError('Môžeš pridať maximálne 10 plusov.')
+            raise serializers.ValidationError("Môžeš pridať maximálne 10 plusov.")
         for i, pro in enumerate(value):
             if not isinstance(pro, str):
-                raise serializers.ValidationError(f'Plus #{i+1} musí byť text.')
+                raise serializers.ValidationError(f"Plus #{i+1} musí byť text.")
             if len(pro) > 120:
-                raise serializers.ValidationError(f'Plus #{i+1} môže mať maximálne 120 znakov.')
+                raise serializers.ValidationError(
+                    f"Plus #{i+1} môže mať maximálne 120 znakov."
+                )
         return value
-    
+
     def validate_cons(self, value):
         """Validácia minusov"""
         if not isinstance(value, list):
-            raise serializers.ValidationError('Minusy musia byť zoznam.')
+            raise serializers.ValidationError("Minusy musia byť zoznam.")
         if len(value) > 10:
-            raise serializers.ValidationError('Môžeš pridať maximálne 10 minusov.')
+            raise serializers.ValidationError("Môžeš pridať maximálne 10 minusov.")
         for i, con in enumerate(value):
             if not isinstance(con, str):
-                raise serializers.ValidationError(f'Mínus #{i+1} musí byť text.')
+                raise serializers.ValidationError(f"Mínus #{i+1} musí byť text.")
             if len(con) > 120:
-                raise serializers.ValidationError(f'Mínus #{i+1} môže mať maximálne 120 znakov.')
+                raise serializers.ValidationError(
+                    f"Mínus #{i+1} môže mať maximálne 120 znakov."
+                )
         return value
-    
+
     def validate_text(self, value):
         """Validácia textu recenzie"""
         if len(value) > 300:
-            raise serializers.ValidationError('Text recenzie môže mať maximálne 300 znakov.')
+            raise serializers.ValidationError(
+                "Text recenzie môže mať maximálne 300 znakov."
+            )
         return value
-    
+
     def validate(self, attrs):
         """Validácia na úrovni objektu"""
         # Pros a cons musia byť zoznamy (už validované v validate_pros/cons, ale pre istotu)
-        pros = attrs.get('pros', [])
-        cons = attrs.get('cons', [])
-        
+        pros = attrs.get("pros", [])
+        cons = attrs.get("cons", [])
+
         if not isinstance(pros, list):
-            raise serializers.ValidationError({'pros': 'Plusy musia byť zoznam.'})
+            raise serializers.ValidationError({"pros": "Plusy musia byť zoznam."})
         if not isinstance(cons, list):
-            raise serializers.ValidationError({'cons': 'Minusy musia byť zoznam.'})
-        
+            raise serializers.ValidationError({"cons": "Minusy musia byť zoznam."})
+
         return attrs

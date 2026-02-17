@@ -25,5 +25,3 @@ from .logging_cfg import *  # noqa
 from .oauth import *  # noqa
 from .redirects import *  # noqa
 from .channels_cfg import *  # noqa
-
-

@@ -25,4 +25,3 @@ def test_settings_production_missing_secret_key_raises(monkeypatch):
 def test_settings_production_uses_env_secret_key(monkeypatch):
     mod = reload_settings_production(monkeypatch, {"SECRET_KEY": "prod-secret"})
     assert mod.SECRET_KEY == "prod-secret"
-

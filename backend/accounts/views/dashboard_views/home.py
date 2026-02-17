@@ -6,7 +6,7 @@ from rest_framework.response import Response
 from swaply.rate_limiting import api_rate_limit
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @permission_classes([IsAuthenticated])
 @api_rate_limit
 def dashboard_home_view(request):
@@ -15,11 +15,11 @@ def dashboard_home_view(request):
 
     # Základné štatistiky (zatiaľ mock data, neskôr sa nahradí skutočnými dátami)
     stats = {
-        'skills_count': 0,  # Počet zručností používateľa
-        'active_exchanges': 0,  # Aktívne výmeny
-        'completed_exchanges': 0,  # Dokončené výmeny
-        'favorites_count': 0,  # Počet obľúbených používateľov
-        'profile_completeness': user.profile_completeness,
+        "skills_count": 0,  # Počet zručností používateľa
+        "active_exchanges": 0,  # Aktívne výmeny
+        "completed_exchanges": 0,  # Dokončené výmeny
+        "favorites_count": 0,  # Počet obľúbených používateľov
+        "profile_completeness": user.profile_completeness,
     }
 
     # Posledné aktivity (zatiaľ prázdne)
@@ -27,18 +27,16 @@ def dashboard_home_view(request):
 
     return Response(
         {
-            'stats': stats,
-            'recent_activities': recent_activities,
-            'user': {
-                'id': user.id,
-                'first_name': user.first_name,
-                'last_name': user.last_name,
-                'username': user.username,
-                'profile_completeness': user.profile_completeness,
-                'slug': getattr(user, 'slug', None),
+            "stats": stats,
+            "recent_activities": recent_activities,
+            "user": {
+                "id": user.id,
+                "first_name": user.first_name,
+                "last_name": user.last_name,
+                "username": user.username,
+                "profile_completeness": user.profile_completeness,
+                "slug": getattr(user, "slug", None),
             },
         },
         status=status.HTTP_200_OK,
     )
-
-

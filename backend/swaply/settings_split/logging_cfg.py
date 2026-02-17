@@ -4,123 +4,121 @@ from .env import env_bool
 
 # Logging configuration pre cloud (Railway)
 LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'formatters': {
-        'verbose': {
-            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
-            'style': '{',
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "{levelname} {asctime} {module} {process:d} {thread:d} {message}",
+            "style": "{",
         },
-        'simple': {
-            'format': '{levelname} {message}',
-            'style': '{',
+        "simple": {
+            "format": "{levelname} {message}",
+            "style": "{",
         },
-        'json': {
-            'format': '{"level": "%(levelname)s", "time": "%(asctime)s", "module": "%(module)s", "message": "%(message)s"}',
-        },
-    },
-    'handlers': {
-        'console': {
-            'level': 'DEBUG' if DEBUG else 'INFO',
-            'class': 'logging.StreamHandler',
-            'formatter': 'simple',
-        },
-        'audit_console': {
-            'level': 'INFO',
-            'class': 'logging.StreamHandler',
-            'formatter': 'json',
-        },
-        'security_console': {
-            'level': 'WARNING',
-            'class': 'logging.StreamHandler',
-            'formatter': 'json',
+        "json": {
+            "format": '{"level": "%(levelname)s", "time": "%(asctime)s", "module": "%(module)s", "message": "%(message)s"}',
         },
     },
-    'loggers': {
-        'django': {
-            'handlers': ['console'],
-            'level': 'INFO',
-            'propagate': True,
+    "handlers": {
+        "console": {
+            "level": "DEBUG" if DEBUG else "INFO",
+            "class": "logging.StreamHandler",
+            "formatter": "simple",
         },
-        'swaply': {
-            'handlers': ['console'],
-            'level': 'DEBUG' if DEBUG else 'INFO',
-            'propagate': True,
+        "audit_console": {
+            "level": "INFO",
+            "class": "logging.StreamHandler",
+            "formatter": "json",
         },
-        'accounts': {
-            'handlers': ['console'],
-            'level': 'INFO',
-            'propagate': True,
+        "security_console": {
+            "level": "WARNING",
+            "class": "logging.StreamHandler",
+            "formatter": "json",
         },
-        'audit': {
-            'handlers': ['audit_console'],
-            'level': 'INFO',
-            'propagate': False,
+    },
+    "loggers": {
+        "django": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": True,
         },
-        'security': {
-            'handlers': ['security_console'],
-            'level': 'WARNING',
-            'propagate': False,
+        "swaply": {
+            "handlers": ["console"],
+            "level": "DEBUG" if DEBUG else "INFO",
+            "propagate": True,
+        },
+        "accounts": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": True,
+        },
+        "audit": {
+            "handlers": ["audit_console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "security": {
+            "handlers": ["security_console"],
+            "level": "WARNING",
+            "propagate": False,
         },
     },
 }
 
 # On Railway/containers: log to stdout instead of files to avoid FS errors
-if os.getenv('RAILWAY_ENVIRONMENT_ID') or os.getenv('LOG_TO_STDOUT', '0') == '1':
+if os.getenv("RAILWAY_ENVIRONMENT_ID") or os.getenv("LOG_TO_STDOUT", "0") == "1":
     LOGGING = {
-        'version': 1,
-        'disable_existing_loggers': False,
-        'formatters': {
-            'simple': {
-                'format': '{levelname} {message}',
-                'style': '{',
+        "version": 1,
+        "disable_existing_loggers": False,
+        "formatters": {
+            "simple": {
+                "format": "{levelname} {message}",
+                "style": "{",
             },
-            'json': {
-                'format': '{"level": "%(levelname)s", "time": "%(asctime)s", "module": "%(module)s", "message": "%(message)s"}',
-            },
-        },
-        'handlers': {
-            'console': {
-                'level': 'INFO',
-                'class': 'logging.StreamHandler',
-                'formatter': 'simple',
-            },
-            'console_json': {
-                'level': 'INFO',
-                'class': 'logging.StreamHandler',
-                'formatter': 'json',
+            "json": {
+                "format": '{"level": "%(levelname)s", "time": "%(asctime)s", "module": "%(module)s", "message": "%(message)s"}',
             },
         },
-        'loggers': {
-            'django': {
-                'handlers': ['console'],
-                'level': 'INFO',
-                'propagate': True,
+        "handlers": {
+            "console": {
+                "level": "INFO",
+                "class": "logging.StreamHandler",
+                "formatter": "simple",
             },
-            'swaply': {
-                'handlers': ['console'],
-                'level': 'INFO',
-                'propagate': True,
+            "console_json": {
+                "level": "INFO",
+                "class": "logging.StreamHandler",
+                "formatter": "json",
             },
-            'accounts': {
-                'handlers': ['console'],
-                'level': 'INFO',
-                'propagate': True,
+        },
+        "loggers": {
+            "django": {
+                "handlers": ["console"],
+                "level": "INFO",
+                "propagate": True,
             },
-            'audit': {
-                'handlers': ['console_json'],
-                'level': 'INFO',
-                'propagate': False,
+            "swaply": {
+                "handlers": ["console"],
+                "level": "INFO",
+                "propagate": True,
             },
-            'security': {
-                'handlers': ['console_json'],
-                'level': 'WARNING',
-                'propagate': False,
+            "accounts": {
+                "handlers": ["console"],
+                "level": "INFO",
+                "propagate": True,
+            },
+            "audit": {
+                "handlers": ["console_json"],
+                "level": "INFO",
+                "propagate": False,
+            },
+            "security": {
+                "handlers": ["console_json"],
+                "level": "WARNING",
+                "propagate": False,
             },
         },
     }
 
 # Monitoring bezpečnostných udalostí (feature flag)
-AUDIT_LOGGING_ENABLED = env_bool('AUDIT_LOGGING_ENABLED', True)
-
-
+AUDIT_LOGGING_ENABLED = env_bool("AUDIT_LOGGING_ENABLED", True)

@@ -1,0 +1,115 @@
+[tool.black]
+line-length = 88
+target-version = ["py311"]
+extend-exclude = '''
+(
+  /migrations/
+  | /venv/
+  | /htmlcov/
+  | /\.pytest_cache/
+)
+'''
+
+[tool.ruff]
+target-version = "py311"
+line-length = 88
+fix = false
+show-fixes = true
+exclude = [
+  "migrations",
+  "venv",
+  "htmlcov",
+  ".pytest_cache",
+]
+
+[tool.ruff.lint]
+# Production-friendly baseline for Django projects, kept compatible with existing code.
+select = ["E", "F", "W", "B", "DJ"]
+ignore = [
+  "E501", # line length handled by black
+  "F401", # existing codebase has many intentional/legacy unused imports (revisit gradually)
+  "B008", # function call in default arg (common in DI; can be revisited later)
+  "B904", # raise-from improvements can be tackled incrementally
+  "DJ001", "DJ008", # avoid noisy/arguable Django rules initially
+]
+
+[tool.ruff.lint.isort]
+combine-as-imports = true
+known-first-party = ["accounts", "swaply"]
+
+[tool.ruff.lint.per-file-ignores]
+# Tests: allow common pytest patterns / intentional unused vars.
+"accounts/test/**/*.py" = ["B007", "B011", "B017", "F811", "F841"]
+"swaply/test/**/*.py" = ["B007", "B011", "B017", "F811", "F841", "E402"]
+"tests/**/*.py" = ["B007", "B011", "B017", "F811", "F841"]
+
+# Django settings modules often use star-import patterns.
+"swaply/settings_production.py" = ["F403", "F405"]
+"swaply/settings_test.py" = ["F403", "F405"]
+"swaply/test_settings.py" = ["F403", "F405"]
+
+# Standalone maintenance scripts may intentionally import after setup.
+"clear_cache_now.py" = ["E402"]
+"clear_rate_limit_cache.py" = ["E402"]
+"create_superuser.py" = ["E402"]
+"list_users.py" = ["E402"]
+"list_users_simple.py" = ["E402"]
+
+# Legacy script with shadowed variable (not part of runtime app path).
+"accounts/management/commands/setup_google_oauth.py" = ["F823"]
+
+# Email templates contain intentional indentation inside triple-quoted strings.
+"accounts/views/password_reset.py" = ["W291", "W293"]
+
+[tool.mypy]
+python_version = "3.11"
+warn_unused_configs = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+no_implicit_optional = true
+disable_error_code = ["import-untyped"]
+
+# Gradual strictness (compatible with current Django codebase)
+check_untyped_defs = false
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+disallow_any_generics = false
+strict_equality = false
+
+ignore_missing_imports = true
+follow_imports = "silent"
+
+exclude = [
+  "migrations/",
+  "venv/",
+  "htmlcov/",
+  "\\.pytest_cache/",
+  "^accounts/test/",
+  "^swaply/test/",
+  "^tests/",
+  "^swaply/settings.*\\.py$",
+  "^swaply/settings_split/",
+]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "swaply.settings"
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+  "--tb=short",
+  "--strict-markers",
+  "--disable-warnings",
+  "--cov=accounts",
+  "--cov=swaply",
+  "--cov-report=term-missing",
+  "--cov-report=html:htmlcov",
+  "--cov-config=.coveragerc",
+  "--cov-fail-under=85",
+]
+testpaths = ["accounts/test", "swaply/test", "tests"]
+markers = [
+  "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+  "integration: marks tests as integration tests",
+  "unit: marks tests as unit tests",
+]

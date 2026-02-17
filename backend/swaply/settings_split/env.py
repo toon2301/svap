@@ -13,7 +13,7 @@ from urllib.parse import urlparse
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 # Load environment variables from .env file (if it exists)
-env_path = BASE_DIR / '.env'
+env_path = BASE_DIR / ".env"
 if env_path.exists():
     load_dotenv(env_path)
 
@@ -22,5 +22,3 @@ if env_path.exists():
 def env_bool(name: str, default: bool = False) -> bool:
     value = os.getenv(name, str(default))
     return value.lower() in {"1", "true", "yes", "on"}
-
-

@@ -12,16 +12,16 @@ def _get_cookie(headers, name: str) -> str | None:
     try:
         cookie_header = None
         for k, v in headers:
-            if k == b'cookie':
-                cookie_header = v.decode('utf-8', errors='ignore')
+            if k == b"cookie":
+                cookie_header = v.decode("utf-8", errors="ignore")
                 break
         if not cookie_header:
             return None
-        parts = [p.strip() for p in cookie_header.split(';') if p.strip()]
+        parts = [p.strip() for p in cookie_header.split(";") if p.strip()]
         for p in parts:
-            if '=' not in p:
+            if "=" not in p:
                 continue
-            k, val = p.split('=', 1)
+            k, val = p.split("=", 1)
             if k.strip() == name:
                 return val.strip()
     except Exception:
@@ -49,12 +49,14 @@ class JwtAuthMiddleware(BaseMiddleware):
         auth_error = None
 
         try:
-            qs = parse_qs((scope.get('query_string') or b'').decode('utf-8', errors='ignore'))
+            qs = parse_qs(
+                (scope.get("query_string") or b"").decode("utf-8", errors="ignore")
+            )
             token = None
-            if 'token' in qs and qs['token']:
-                token = qs['token'][0]
+            if "token" in qs and qs["token"]:
+                token = qs["token"][0]
             if not token:
-                token = _get_cookie(scope.get('headers') or [], 'access_token')
+                token = _get_cookie(scope.get("headers") or [], "access_token")
 
             if token:
                 # get_validated_token je sync a je OK; get_user robí DB/cache operácie,
@@ -62,22 +64,30 @@ class JwtAuthMiddleware(BaseMiddleware):
                 validated = self._auth.get_validated_token(token)
                 user = await database_sync_to_async(self._auth.get_user)(validated)
             else:
-                auth_error = 'missing_token'
+                auth_error = "missing_token"
         except Exception as e:
             user = AnonymousUser()
-            auth_error = f'{type(e).__name__}: {e}'
+            auth_error = f"{type(e).__name__}: {e}"
 
-        scope['user'] = user
+        scope["user"] = user
         # len pre debug / troubleshooting (nepoužíva sa v produkcii logike)
-        scope['ws_auth_error'] = auth_error
+        scope["ws_auth_error"] = auth_error
 
         # Debug log v DEV: pomôže zistiť prečo WS končí WSREJECT
         try:
-            path = scope.get('path')
-            uid = getattr(user, 'id', None) if getattr(user, 'is_authenticated', False) else None
-            self._logger.info("WS auth: path=%s authenticated=%s user_id=%s error=%s", path, getattr(user, 'is_authenticated', False), uid, auth_error)
+            path = scope.get("path")
+            uid = (
+                getattr(user, "id", None)
+                if getattr(user, "is_authenticated", False)
+                else None
+            )
+            self._logger.info(
+                "WS auth: path=%s authenticated=%s user_id=%s error=%s",
+                path,
+                getattr(user, "is_authenticated", False),
+                uid,
+                auth_error,
+            )
         except Exception:
             pass
         return await super().__call__(scope, receive, send)
-
-

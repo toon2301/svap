@@ -1,0 +1,13 @@
+exclude_dirs:
+  - venv
+  - htmlcov
+  - .pytest_cache
+  - migrations
+  - tests
+  - accounts/test
+  - swaply/test
+
+# B101: assert_used (pytest uses assert extensively)
+skips:
+  - B101
+

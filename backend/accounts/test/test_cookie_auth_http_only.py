@@ -19,7 +19,9 @@ class TestCookieAuthHttpOnly(APITestCase):
         )
 
         url = reverse("accounts:login")
-        r = self.client.post(url, {"email": user.email, "password": "StrongPass123"}, format="json")
+        r = self.client.post(
+            url, {"email": user.email, "password": "StrongPass123"}, format="json"
+        )
         assert r.status_code == status.HTTP_200_OK
 
         # Cookies set
@@ -33,4 +35,3 @@ class TestCookieAuthHttpOnly(APITestCase):
         r2 = self.client.get(me_url)
         assert r2.status_code == status.HTTP_200_OK
         assert r2.data.get("email") == user.email
-

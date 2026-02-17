@@ -30,4 +30,3 @@ def test_captcha_validator_success_path_with_mocked_requests():
         with patch("swaply.validators.requests.post", return_value=mock_resp) as post:
             assert CAPTCHAValidator.validate_captcha("token-123") is True
             post.assert_called_once()
-

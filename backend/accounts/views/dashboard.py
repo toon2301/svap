@@ -18,5 +18,3 @@ from .dashboard_views.public_profiles import (
     dashboard_user_skills_view,
     dashboard_user_skills_by_slug_view,
 )
-
-

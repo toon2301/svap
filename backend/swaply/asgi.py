@@ -14,7 +14,7 @@ from django.core.asgi import get_asgi_application
 
 logger = logging.getLogger(__name__)
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'swaply.settings')
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "swaply.settings")
 
 # HTTP aplikácia (Django)
 django_asgi_app = get_asgi_application()

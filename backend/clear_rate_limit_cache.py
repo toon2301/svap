@@ -3,6 +3,7 @@ Script na vyčistenie rate limit cache pre všetkých používateľov
 Spustiť: python manage.py shell < clear_rate_limit_cache.py
 alebo: python manage.py shell, potom skopíruj obsah tohto súboru
 """
+
 from django.core.cache import cache
 from swaply.rate_limiting import RateLimiter
 import re
@@ -24,4 +25,3 @@ print("✅ All cache cleared!")
 
 print("\n✅ Rate limit cache cleared for all users!")
 print("📊 New limit: 1000 requests per 60 minutes")
-

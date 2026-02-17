@@ -30,5 +30,3 @@ def notify_user(user_id: int, event: dict) -> None:
     except Exception:
         # fail-open: notifikácia je best-effort, nech nespadne API request
         return
-
-

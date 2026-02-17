@@ -15,9 +15,9 @@ class DummyUpload:
 
 @pytest.mark.django_db
 class TestValidateImageFileExtras:
-    @override_settings(IMAGE_MAX_SIZE_MB='not-an-int', SAFESEARCH_ENABLED=False)
+    @override_settings(IMAGE_MAX_SIZE_MB="not-an-int", SAFESEARCH_ENABLED=False)
     def test_max_size_setting_parse_fallback(self):
-        f = DummyUpload('x.jpg', size=10)
+        f = DummyUpload("x.jpg", size=10)
         assert validate_image_file(f) is f
 
     @override_settings(
@@ -28,10 +28,8 @@ class TestValidateImageFileExtras:
         GCP_VISION_SERVICE_ACCOUNT_JSON=None,
     )
     def test_safesearch_skipped_in_debug_without_credentials(self):
-        f = DummyUpload('x.jpg', size=10)
+        f = DummyUpload("x.jpg", size=10)
         with patch.dict(os.environ, {}, clear=True):
-            with patch('swaply.image_moderation.check_image_safety') as check:
+            with patch("swaply.image_moderation.check_image_safety") as check:
                 assert validate_image_file(f) is f
                 check.assert_not_called()
-
-

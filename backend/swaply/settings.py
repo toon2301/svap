@@ -14,9 +14,11 @@ import sys
 # ale sub-moduly `swaply.settings_split.*` by inak ostali cache-ované v sys.modules.
 # Keď settings importujeme mimo `swaply.settings`, sprav "soft reload" settings split modulov,
 # aby env overrides v testoch fungovali deterministicky.
-if __name__ != 'swaply.settings':
+if __name__ != "swaply.settings":
     for key in list(sys.modules.keys()):
-        if key.startswith('swaply.settings_split.') or key.startswith('swaply.settings_parts.'):
+        if key.startswith("swaply.settings_split.") or key.startswith(
+            "swaply.settings_parts."
+        ):
             try:
                 importlib.reload(sys.modules[key])
             except Exception as e:

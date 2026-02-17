@@ -30,7 +30,9 @@ def token_refresh_cookie_view(request):
             refresh_str = request.COOKIES.get("refresh_token")
 
         if not refresh_str:
-            return Response({"detail": "Refresh token missing"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "Refresh token missing"}, status=status.HTTP_400_BAD_REQUEST
+            )
 
         from rest_framework_simplejwt.serializers import TokenRefreshSerializer
 
@@ -48,16 +50,21 @@ def token_refresh_cookie_view(request):
 
             if access:
                 if new_refresh_str:
-                    _set_auth_cookies(resp, access=str(access), refresh=str(new_refresh_str))
+                    _set_auth_cookies(
+                        resp, access=str(access), refresh=str(new_refresh_str)
+                    )
                 else:
                     # iba access
                     kwargs = _auth_cookie_kwargs()
-                    resp.set_cookie("access_token", str(access), max_age=60 * 60, **kwargs)
+                    resp.set_cookie(
+                        "access_token", str(access), max_age=60 * 60, **kwargs
+                    )
         except Exception as e:
             logger.error(f"Failed to set refresh cookies: {e}")
 
         return resp
     except Exception as e:
         logger.error(f"Token refresh failed: {e}")
-        return Response({"detail": "Token refresh failed"}, status=status.HTTP_401_UNAUTHORIZED)
-
+        return Response(
+            {"detail": "Token refresh failed"}, status=status.HTTP_401_UNAUTHORIZED
+        )

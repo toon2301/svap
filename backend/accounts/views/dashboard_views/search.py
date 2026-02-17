@@ -29,33 +29,41 @@ for group in SMART_KEYWORD_GROUPS:
         SMART_KEYWORD_INDEX[no_accents] = lowered
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @permission_classes([IsAuthenticated])
 @api_rate_limit
 def dashboard_search_view(request):
     """Dashboard search - vyhľadávanie zručností a používateľov"""
     # Základné parametre vyhľadávania
-    raw_query = (request.GET.get('q') or '').strip()
-    raw_location = (request.GET.get('location') or '').strip()
-    raw_district = (request.GET.get('district') or '').strip()
+    raw_query = (request.GET.get("q") or "").strip()
+    raw_location = (request.GET.get("location") or "").strip()
+    raw_district = (request.GET.get("district") or "").strip()
 
     # Pokročilé filtre pre ponuky
-    offer_type = (request.GET.get('offer_type') or '').strip().lower()  # 'offer' | 'seeking' | ''
-    only_my_location = (request.GET.get('only_my_location') or '').strip().lower() in ('1', 'true', 'yes')
-    price_min_raw = (request.GET.get('price_min') or '').strip()
-    price_max_raw = (request.GET.get('price_max') or '').strip()
+    offer_type = (
+        (request.GET.get("offer_type") or "").strip().lower()
+    )  # 'offer' | 'seeking' | ''
+    only_my_location = (request.GET.get("only_my_location") or "").strip().lower() in (
+        "1",
+        "true",
+        "yes",
+    )
+    price_min_raw = (request.GET.get("price_min") or "").strip()
+    price_max_raw = (request.GET.get("price_max") or "").strip()
 
     # Filter podľa krajiny
-    country_filter = (request.GET.get('country') or '').strip().upper()  # 'SK' | 'CZ' | 'PL' | etc.
+    country_filter = (
+        (request.GET.get("country") or "").strip().upper()
+    )  # 'SK' | 'CZ' | 'PL' | etc.
 
     # Paginácia – bezpečné limity
     try:
-        page = int(request.GET.get('page', 1))
+        page = int(request.GET.get("page", 1))
     except (TypeError, ValueError):
         page = 1
 
     try:
-        per_page = int(request.GET.get('per_page', 20))
+        per_page = int(request.GET.get("per_page", 20))
     except (TypeError, ValueError):
         per_page = 20
 
@@ -64,7 +72,7 @@ def dashboard_search_view(request):
     per_page = min(per_page, 50)
 
     # Rozdelenie query na jednotlivé výrazy (napr. "auto upratovanie")
-    base_terms = [term for term in raw_query.replace(',', ' ').split() if term]
+    base_terms = [term for term in raw_query.replace(",", " ").split() if term]
 
     # Location parametre môžu dopĺňať dotaz (napr. ak by bol samostatný input)
     location_terms = []
@@ -96,7 +104,7 @@ def dashboard_search_view(request):
     # =========================
     #  Vyhľadávanie v zručnostiach (OfferedSkill)
     # =========================
-    skills_qs = OfferedSkill.objects.select_related('user').filter(user__is_public=True)
+    skills_qs = OfferedSkill.objects.select_related("user").filter(user__is_public=True)
     # Vylúčiť vlastné ponuky používateľa z výsledkov vyhľadávania
     skills_qs = skills_qs.exclude(user=request.user)
     # Vylúčiť skryté karty
@@ -119,9 +127,9 @@ def dashboard_search_view(request):
         skills_qs = skills_qs.filter(skill_query)
 
     # Filter: typ ponuky (PONÚKAM / HĽADÁM)
-    if offer_type == 'offer':
+    if offer_type == "offer":
         skills_qs = skills_qs.filter(is_seeking=False)
-    elif offer_type == 'seeking':
+    elif offer_type == "seeking":
         skills_qs = skills_qs.filter(is_seeking=True)
 
     # Filter: krajina používateľa
@@ -129,21 +137,20 @@ def dashboard_search_view(request):
     # Ak country filter vracia prázdne výsledky, preskočí sa (nefiltruje sa)
     if country_filter:
         country_location_mapping = {
-            'SK': ['slovakia', 'slovensko', 'slovak'],
-            'CZ': ['czech', 'česko', 'česká', 'ceska'],
-            'PL': ['poland', 'poľsko', 'polsko', 'polish'],
-            'HU': ['hungary', 'maďarsko', 'madarska', 'hungarian'],
-            'DE': ['germany', 'nemecko', 'deutschland', 'german'],
-            'AT': ['austria', 'rakúsko', 'rakusko', 'österreich'],
+            "SK": ["slovakia", "slovensko", "slovak"],
+            "CZ": ["czech", "česko", "česká", "ceska"],
+            "PL": ["poland", "poľsko", "polsko", "polish"],
+            "HU": ["hungary", "maďarsko", "madarska", "hungarian"],
+            "DE": ["germany", "nemecko", "deutschland", "german"],
+            "AT": ["austria", "rakúsko", "rakusko", "österreich"],
         }
 
         if country_filter in country_location_mapping:
             country_terms = country_location_mapping[country_filter]
             country_query = Q()
             for term in country_terms:
-                country_query |= (
-                    Q(user__location__icontains=term)
-                    | Q(user__district__icontains=term)
+                country_query |= Q(user__location__icontains=term) | Q(
+                    user__district__icontains=term
                 )
 
             # Skontroluj, či country filter vracia nejaké výsledky
@@ -159,12 +166,12 @@ def dashboard_search_view(request):
     price_max = None
     if price_min_raw:
         try:
-            price_min = Decimal(price_min_raw.replace(',', '.'))
+            price_min = Decimal(price_min_raw.replace(",", "."))
         except InvalidOperation:
             price_min = None
     if price_max_raw:
         try:
-            price_max = Decimal(price_max_raw.replace(',', '.'))
+            price_max = Decimal(price_max_raw.replace(",", "."))
         except InvalidOperation:
             price_max = None
 
@@ -185,9 +192,9 @@ def dashboard_search_view(request):
                 default=0,
                 output_field=IntegerField(),
             )
-        ).order_by('-relevance', '-user__is_verified', '-created_at')
+        ).order_by("-relevance", "-user__is_verified", "-created_at")
     else:
-        skills_qs = skills_qs.order_by('-user__is_verified', '-created_at')
+        skills_qs = skills_qs.order_by("-user__is_verified", "-created_at")
 
     skills_paginator = Paginator(skills_qs, per_page)
     skills_page = skills_paginator.get_page(page)
@@ -195,7 +202,7 @@ def dashboard_search_view(request):
     skills_data = OfferedSkillSerializer(
         skills_page.object_list,
         many=True,
-        context={'request': request},
+        context={"request": request},
     ).data
 
     # =========================
@@ -223,21 +230,20 @@ def dashboard_search_view(request):
     # Ak country filter vracia prázdne výsledky, preskočí sa (nefiltruje sa)
     if country_filter:
         country_location_mapping = {
-            'SK': ['slovakia', 'slovensko', 'slovak'],
-            'CZ': ['czech', 'česko', 'česká', 'ceska'],
-            'PL': ['poland', 'poľsko', 'polsko', 'polish'],
-            'HU': ['hungary', 'maďarsko', 'madarska', 'hungarian'],
-            'DE': ['germany', 'nemecko', 'deutschland', 'german'],
-            'AT': ['austria', 'rakúsko', 'rakusko', 'österreich'],
+            "SK": ["slovakia", "slovensko", "slovak"],
+            "CZ": ["czech", "česko", "česká", "ceska"],
+            "PL": ["poland", "poľsko", "polsko", "polish"],
+            "HU": ["hungary", "maďarsko", "madarska", "hungarian"],
+            "DE": ["germany", "nemecko", "deutschland", "german"],
+            "AT": ["austria", "rakúsko", "rakusko", "österreich"],
         }
 
         if country_filter in country_location_mapping:
             country_terms = country_location_mapping[country_filter]
             user_country_query = Q()
             for term in country_terms:
-                user_country_query |= (
-                    Q(location__icontains=term)
-                    | Q(district__icontains=term)
+                user_country_query |= Q(location__icontains=term) | Q(
+                    district__icontains=term
                 )
 
             # Skontroluj, či country filter vracia nejaké výsledky
@@ -252,24 +258,22 @@ def dashboard_search_view(request):
     if only_my_location:
         profile_loc_q = Q()
         profile_user = request.user
-        if getattr(profile_user, 'location', None):
+        if getattr(profile_user, "location", None):
             profile_loc_q |= Q(location__icontains=profile_user.location)
-        if getattr(profile_user, 'district', None):
+        if getattr(profile_user, "district", None):
             profile_loc_q |= Q(district__icontains=profile_user.district)
 
         if profile_loc_q:
             users_qs = users_qs.filter(profile_loc_q)
 
         skill_loc_q = Q()
-        if getattr(profile_user, 'location', None):
-            skill_loc_q |= (
-                Q(location__icontains=profile_user.location)
-                | Q(user__location__icontains=profile_user.location)
+        if getattr(profile_user, "location", None):
+            skill_loc_q |= Q(location__icontains=profile_user.location) | Q(
+                user__location__icontains=profile_user.location
             )
-        if getattr(profile_user, 'district', None):
-            skill_loc_q |= (
-                Q(district__icontains=profile_user.district)
-                | Q(user__district__icontains=profile_user.district)
+        if getattr(profile_user, "district", None):
+            skill_loc_q |= Q(district__icontains=profile_user.district) | Q(
+                user__district__icontains=profile_user.district
             )
         if skill_loc_q:
             skills_qs = skills_qs.filter(skill_loc_q)
@@ -286,9 +290,9 @@ def dashboard_search_view(request):
                 default=0,
                 output_field=IntegerField(),
             )
-        ).order_by('-relevance', '-is_verified', '-updated_at')
+        ).order_by("-relevance", "-is_verified", "-updated_at")
     else:
-        users_qs = users_qs.order_by('-is_verified', '-updated_at')
+        users_qs = users_qs.order_by("-is_verified", "-updated_at")
 
     users_paginator = Paginator(users_qs, per_page)
     users_page = users_paginator.get_page(page)
@@ -298,7 +302,7 @@ def dashboard_search_view(request):
     for user in users_page.object_list:
         avatar_url = None
         try:
-            if getattr(user, 'avatar', None) and hasattr(user.avatar, 'url'):
+            if getattr(user, "avatar", None) and hasattr(user.avatar, "url"):
                 url = user.avatar.url
                 if request:
                     avatar_url = request.build_absolute_uri(url)
@@ -309,29 +313,27 @@ def dashboard_search_view(request):
 
         users_data.append(
             {
-                'id': user.id,
-                'display_name': user.display_name,
-                'district': user.district,
-                'location': user.location,
-                'is_verified': user.is_verified,
-                'avatar_url': avatar_url,
-                'slug': getattr(user, 'slug', None),
+                "id": user.id,
+                "display_name": user.display_name,
+                "district": user.district,
+                "location": user.location,
+                "is_verified": user.is_verified,
+                "avatar_url": avatar_url,
+                "slug": getattr(user, "slug", None),
             }
         )
 
     results = {
-        'skills': skills_data,
-        'users': users_data,
-        'pagination': {
-            'page': page,
-            'per_page': per_page,
-            'total_skills': skills_paginator.count,
-            'total_users': users_paginator.count,
-            'total_pages_skills': skills_paginator.num_pages,
-            'total_pages_users': users_paginator.num_pages,
+        "skills": skills_data,
+        "users": users_data,
+        "pagination": {
+            "page": page,
+            "per_page": per_page,
+            "total_skills": skills_paginator.count,
+            "total_users": users_paginator.count,
+            "total_pages_skills": skills_paginator.num_pages,
+            "total_pages_users": users_paginator.num_pages,
         },
     }
 
     return Response(results, status=status.HTTP_200_OK)
-
-

@@ -1,6 +1,7 @@
 """
 Custom Google OAuth views pre Swaply
 """
+
 from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
 from allauth.socialaccount.providers.oauth2.client import OAuth2Client
 from django.conf import settings
@@ -15,7 +16,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @permission_classes([AllowAny])
 def google_login_view(request):
     """
@@ -25,16 +26,21 @@ def google_login_view(request):
         # Získaj Google OAuth credentials
         client_id = settings.GOOGLE_OAUTH2_CLIENT_ID
         if not client_id:
-            return Response({
-                'error': 'Google OAuth nie je nakonfigurované'
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
+            return Response(
+                {"error": "Google OAuth nie je nakonfigurované"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
         # Frontend callback URL
-        frontend_callback = request.GET.get('callback', request.build_absolute_uri('/auth/callback/'))
-        
+        frontend_callback = request.GET.get(
+            "callback", request.build_absolute_uri("/auth/callback/")
+        )
+
         # Django allauth callback URL
-        backend_callback = request.build_absolute_uri('/accounts/google/login/callback/')
-        
+        backend_callback = request.build_absolute_uri(
+            "/accounts/google/login/callback/"
+        )
+
         # Vytvor Google OAuth URL
         auth_url = (
             f"https://accounts.google.com/o/oauth2/v2/auth?"
@@ -45,17 +51,18 @@ def google_login_view(request):
             f"access_type=online&"
             f"state={frontend_callback}"
         )
-        
+
         return HttpResponseRedirect(auth_url)
-        
+
     except Exception as e:
         logger.error(f"Google login view error: {str(e)}")
-        return Response({
-            'error': 'Chyba pri prihlásení cez Google'
-        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return Response(
+            {"error": "Chyba pri prihlásení cez Google"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @permission_classes([AllowAny])
 def google_callback_view(request):
     """
@@ -66,21 +73,23 @@ def google_callback_view(request):
         from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
         from allauth.socialaccount.providers.oauth2.client import OAuth2Client
         from rest_framework_simplejwt.tokens import RefreshToken
-        
+
         # Získaj authorization code
-        code = request.GET.get('code')
+        code = request.GET.get("code")
         if not code:
-            return HttpResponseRedirect('/auth/callback/?error=missing_code')
-        
+            return HttpResponseRedirect("/auth/callback/?error=missing_code")
+
         # Získaj frontend callback URL
-        frontend_callback = request.GET.get('state', '/auth/callback/')
-        
+        frontend_callback = request.GET.get("state", "/auth/callback/")
+
         # Získaj Google SocialApp
         try:
-            social_app = SocialApp.objects.get(provider='google')
+            social_app = SocialApp.objects.get(provider="google")
         except SocialApp.DoesNotExist:
-            return HttpResponseRedirect(f'{frontend_callback}?error=google_app_not_configured')
-        
+            return HttpResponseRedirect(
+                f"{frontend_callback}?error=google_app_not_configured"
+            )
+
         # Vytvor OAuth2 client
         client = OAuth2Client(
             request,
@@ -88,40 +97,41 @@ def google_callback_view(request):
             social_app.secret,
             GoogleOAuth2Adapter.access_token_url,
             GoogleOAuth2Adapter.authorize_url,
-            GoogleOAuth2Adapter.profile_url
+            GoogleOAuth2Adapter.profile_url,
         )
-        
+
         # Vymen authorization code za access token
         token = client.get_access_token(code)
-        
+
         # Získaj používateľské údaje
         extra_data = client.get_profile_info(token)
-        
+
         # Získaj alebo vytvor používateľa
         from django.contrib.auth import get_user_model
+
         User = get_user_model()
-        
-        email = extra_data.get('email')
+
+        email = extra_data.get("email")
         if not email:
-            return HttpResponseRedirect(f'{frontend_callback}?error=no_email')
-        
+            return HttpResponseRedirect(f"{frontend_callback}?error=no_email")
+
         # Skús nájsť existujúceho používateľa
         try:
             user = User.objects.get(email=email)
         except User.DoesNotExist:
             # Vytvor nového používateľa
             user = User.objects.create_user(
-                username=email.split('@')[0],
+                username=email.split("@")[0],
                 email=email,
-                first_name=extra_data.get('given_name', ''),
-                last_name=extra_data.get('family_name', ''),
-                is_verified=True  # Google používatelia sú automaticky overení
+                first_name=extra_data.get("given_name", ""),
+                last_name=extra_data.get("family_name", ""),
+                is_verified=True,  # Google používatelia sú automaticky overení
             )
-        
+
         # Generuj JWT tokeny
         refresh = RefreshToken.for_user(user)
         access_token = refresh.access_token
-        
+
         # Vytvor redirect URL s tokenmi
         redirect_url = (
             f"{frontend_callback}?"
@@ -129,12 +139,12 @@ def google_callback_view(request):
             f"refresh_token={str(refresh)}&"
             f"user_id={user.id}"
         )
-        
+
         logger.info(f"Google OAuth login successful for user {user.email}")
-        
+
         return HttpResponseRedirect(redirect_url)
-        
+
     except Exception as e:
         logger.error(f"Google OAuth callback error: {str(e)}")
-        frontend_callback = request.GET.get('state', '/auth/callback/')
-        return HttpResponseRedirect(f'{frontend_callback}?error=oauth_failed')
+        frontend_callback = request.GET.get("state", "/auth/callback/")
+        return HttpResponseRedirect(f"{frontend_callback}?error=oauth_failed")
