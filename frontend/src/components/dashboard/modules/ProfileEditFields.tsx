@@ -23,7 +23,6 @@ interface ProfileEditFieldsProps {
   setIsFacebookModalOpen: (value: boolean) => void;
   setIsLinkedinModalOpen: (value: boolean) => void;
   setIsYouTubeModalOpen: (value: boolean) => void;
-  setIsGenderModalOpen: (value: boolean) => void;
   setIsIcoModalOpen: (value: boolean) => void;
 }
 
