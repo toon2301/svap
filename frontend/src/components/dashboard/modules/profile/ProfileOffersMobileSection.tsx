@@ -376,7 +376,10 @@ export default function ProfileOffersMobileSection({
   if (offers.length === 0) {
     return (
       <div className="mt-3 text-sm text-gray-600 dark:text-gray-400">
-        {t('profile.noOffers', 'Zatiaľ nemáš žiadne ponuky.')}
+        {isOtherUserProfile 
+          ? t('profile.noOffersOther', 'Zatiaľ nemá žiadne ponuky.')
+          : t('profile.noOffers', 'Zatiaľ nemáš žiadne ponuky.')
+        }
       </div>
     );
   }

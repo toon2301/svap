@@ -353,7 +353,10 @@ export default function ProfileOffersSection({
     <div className="mt-4">
       {offers.length === 0 ? (
         <p className="text-sm text-gray-600 dark:text-gray-400">
-          {loadError ?? t('profile.noOffers', 'Zatiaľ nemáš žiadne ponuky.')}
+          {loadError ?? (isOtherUserProfile 
+            ? t('profile.noOffersOther', 'Zatiaľ nemá žiadne ponuky.')
+            : t('profile.noOffers', 'Zatiaľ nemáš žiadne ponuky.')
+          )}
         </p>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-[clamp(1rem,2vw,1.5rem)]">
