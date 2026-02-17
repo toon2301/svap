@@ -2,6 +2,7 @@
 
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { api, endpoints } from '@/lib/api';
+import { getAccessToken } from '@/utils/auth';
 
 type RequestsNotificationsContextValue = {
   unreadCount: number;
@@ -48,11 +49,15 @@ function getBackendOrigin(): string {
   return 'http://localhost:8000';
 }
 
-function toWebSocketUrl(origin: string): string {
+function toWebSocketUrl(origin: string, token?: string | null): string {
   const wsOrigin = origin.startsWith('https://')
     ? origin.replace(/^https:\/\//, 'wss://')
     : origin.replace(/^http:\/\//, 'ws://');
-  return `${wsOrigin}/ws/notifications/`;
+  const baseUrl = `${wsOrigin}/ws/notifications/`;
+  if (token) {
+    return `${baseUrl}?token=${encodeURIComponent(token)}`;
+  }
+  return baseUrl;
 }
 
 export function RequestsNotificationsProvider({ children }: { children: React.ReactNode }) {
@@ -137,7 +142,9 @@ export function RequestsNotificationsProvider({ children }: { children: React.Re
 
         if (disposed) return;
 
-        const wsUrl = toWebSocketUrl(origin);
+        // Získaj access token z localStorage (pre cross-origin)
+        const token = getAccessToken();
+        const wsUrl = toWebSocketUrl(origin, token);
         const ws = new WebSocket(wsUrl);
         store.ws = ws;
 
