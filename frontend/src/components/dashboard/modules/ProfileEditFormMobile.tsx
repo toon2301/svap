@@ -41,7 +41,6 @@ export default function ProfileEditFormMobile({
   const [isFacebookModalOpen, setIsFacebookModalOpen] = useState(false);
   const [isLinkedinModalOpen, setIsLinkedinModalOpen] = useState(false);
   const [isYouTubeModalOpen, setIsYouTubeModalOpen] = useState(false);
-  const [isGenderModalOpen, setIsGenderModalOpen] = useState(false);
   const [isIcoModalOpen, setIsIcoModalOpen] = useState(false);
   const [isActionsOpen, setIsActionsOpen] = useState(false);
   
@@ -69,7 +68,6 @@ export default function ProfileEditFormMobile({
   const [facebook, setFacebook] = useState(user.facebook || '');
   const [linkedin, setLinkedin] = useState(user.linkedin || '');
   const [youtube, setYoutube] = useState(user.youtube || '');
-  const [gender, setGender] = useState(user.gender || '');
   
   // Original values for cancel functionality
   const [originalFirstName, setOriginalFirstName] = useState(
@@ -94,21 +92,24 @@ export default function ProfileEditFormMobile({
   const [originalFacebook, setOriginalFacebook] = useState(user.facebook || '');
   const [originalLinkedin, setOriginalLinkedin] = useState(user.linkedin || '');
   const [originalYoutube, setOriginalYoutube] = useState(user.youtube || '');
-  const [originalGender, setOriginalGender] = useState(user.gender || '');
 
   // Synchronizovať firstName a lastName s user objektom (pre firmy používame company_name)
+  // Preferovať synchronizované meno - ak existuje first_name, použiť ho aj pre business
   React.useEffect(() => {
     if (accountType === 'business') {
-      // Pre firmy používame company_name
-      setFirstName(user.company_name || '');
+      // Pre firmy používame company_name, ale ak existuje first_name (synchronizované), preferovať ho
+      const nameToUse = user.first_name || user.company_name || '';
+      setFirstName(nameToUse);
       setLastName('');
-      setOriginalFirstName(user.company_name || '');
+      setOriginalFirstName(nameToUse);
       setOriginalLastName('');
     } else {
       // Pre osobné účty používame first_name + last_name
-      setFirstName(user.first_name || '');
+      // Ak existuje company_name (synchronizované), použiť ho ako first_name
+      const firstNameToUse = user.first_name || user.company_name || '';
+      setFirstName(firstNameToUse);
       setLastName(user.last_name || '');
-      setOriginalFirstName(user.first_name || '');
+      setOriginalFirstName(firstNameToUse);
       setOriginalLastName(user.last_name || '');
     }
   }, [user.company_name, user.first_name, user.last_name, accountType]);
@@ -170,6 +171,20 @@ export default function ProfileEditFormMobile({
   const handlePhotoUpload = async (file: File) => {
     if (onPhotoUpload) {
       onPhotoUpload(file);
+      setIsActionsOpen(false);
+    } else {
+      // Fallback: implementácia uploadu priamo tu
+      try {
+        const formData = new FormData();
+        formData.append('avatar', file);
+        const response = await api.patch('/auth/profile/', formData);
+        if (onUserUpdate && response.data.user) {
+          onUserUpdate(response.data.user);
+        }
+        setIsActionsOpen(false);
+      } catch (e: any) {
+        console.error('Error uploading photo:', e);
+      }
     }
   };
 
@@ -203,7 +218,6 @@ export default function ProfileEditFormMobile({
         setIsFacebookModalOpen={setIsFacebookModalOpen}
         setIsLinkedinModalOpen={setIsLinkedinModalOpen}
         setIsYouTubeModalOpen={setIsYouTubeModalOpen}
-        setIsGenderModalOpen={setIsGenderModalOpen}
         setIsIcoModalOpen={setIsIcoModalOpen}
       />
 
@@ -223,7 +237,6 @@ export default function ProfileEditFormMobile({
         isFacebookModalOpen={isFacebookModalOpen}
         isLinkedinModalOpen={isLinkedinModalOpen}
         isYouTubeModalOpen={isYouTubeModalOpen}
-        isGenderModalOpen={isGenderModalOpen}
         isIcoModalOpen={isIcoModalOpen}
         firstName={firstName}
         lastName={lastName}
@@ -243,7 +256,6 @@ export default function ProfileEditFormMobile({
         facebook={facebook}
         linkedin={linkedin}
         youtube={youtube}
-        gender={gender}
         originalFirstName={originalFirstName}
         originalLastName={originalLastName}
         originalBio={originalBio}
@@ -262,7 +274,6 @@ export default function ProfileEditFormMobile({
         originalFacebook={originalFacebook}
         originalLinkedin={originalLinkedin}
         originalYoutube={originalYoutube}
-        originalGender={originalGender}
         setFirstName={setFirstName}
         setLastName={setLastName}
         setBio={setBio}
@@ -280,7 +291,6 @@ export default function ProfileEditFormMobile({
         setFacebook={setFacebook}
         setLinkedin={setLinkedin}
         setYoutube={setYoutube}
-        setGender={setGender}
         setOriginalFirstName={setOriginalFirstName}
         setOriginalLastName={setOriginalLastName}
         setOriginalBio={setOriginalBio}
@@ -300,7 +310,6 @@ export default function ProfileEditFormMobile({
         setOriginalFacebook={setOriginalFacebook}
         setOriginalLinkedin={setOriginalLinkedin}
         setOriginalYoutube={setOriginalYoutube}
-        setOriginalGender={setOriginalGender}
         setIsNameModalOpen={setIsNameModalOpen}
         setIsBioModalOpen={setIsBioModalOpen}
         setIsLocationModalOpen={setIsLocationModalOpen}
@@ -312,7 +321,6 @@ export default function ProfileEditFormMobile({
         setIsFacebookModalOpen={setIsFacebookModalOpen}
         setIsLinkedinModalOpen={setIsLinkedinModalOpen}
         setIsYouTubeModalOpen={setIsYouTubeModalOpen}
-        setIsGenderModalOpen={setIsGenderModalOpen}
         setIsIcoModalOpen={setIsIcoModalOpen}
       />
       

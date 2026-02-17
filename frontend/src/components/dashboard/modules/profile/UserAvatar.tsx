@@ -64,7 +64,10 @@ export default function UserAvatar({ user, size = 'large', onPhotoUpload, isUplo
           onClick={onAvatarClick}
         />
       ) : (
-        <div className={`${sizeClass} rounded-full mx-auto bg-purple-100 flex items-center justify-center border-4 border-purple-200`}>
+        <div 
+          className={`${sizeClass} rounded-full mx-auto bg-purple-100 flex items-center justify-center border-4 border-purple-200 ${onAvatarClick ? 'cursor-pointer' : 'cursor-default'}`}
+          onClick={onAvatarClick}
+        >
           <span className="font-bold text-purple-600">
             {initials}
           </span>

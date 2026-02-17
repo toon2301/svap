@@ -15,7 +15,6 @@ import InstagramModal from './profile-edit/modals/InstagramModal';
 import FacebookModal from './profile-edit/modals/FacebookModal';
 import LinkedinModal from './profile-edit/modals/LinkedinModal';
 import YouTubeModal from './profile-edit/modals/YouTubeModal';
-import GenderModal from './profile-edit/modals/GenderModal';
 
 interface ProfileEditModalsProps {
   user: User;
@@ -34,7 +33,6 @@ interface ProfileEditModalsProps {
   isFacebookModalOpen: boolean;
   isLinkedinModalOpen: boolean;
   isYouTubeModalOpen: boolean;
-  isGenderModalOpen: boolean;
   isIcoModalOpen: boolean;
   
   // Field values
@@ -56,7 +54,6 @@ interface ProfileEditModalsProps {
   facebook: string;
   linkedin: string;
   youtube: string;
-  gender: string;
   
   // Original values for cancel
   originalFirstName: string;
@@ -77,7 +74,6 @@ interface ProfileEditModalsProps {
   originalFacebook: string;
   originalLinkedin: string;
   originalYoutube: string;
-  originalGender: string;
   
   // Setters
   setFirstName: (value: string) => void;
@@ -98,7 +94,6 @@ interface ProfileEditModalsProps {
   setFacebook: (value: string) => void;
   setLinkedin: (value: string) => void;
   setYoutube: (value: string) => void;
-  setGender: (value: string) => void;
   
   // Original setters
   setOriginalFirstName: (value: string) => void;
@@ -119,7 +114,6 @@ interface ProfileEditModalsProps {
   setOriginalFacebook: (value: string) => void;
   setOriginalLinkedin: (value: string) => void;
   setOriginalYoutube: (value: string) => void;
-  setOriginalGender: (value: string) => void;
   
   // Modal setters
   setIsNameModalOpen: (value: boolean) => void;
@@ -133,7 +127,6 @@ interface ProfileEditModalsProps {
   setIsFacebookModalOpen: (value: boolean) => void;
   setIsLinkedinModalOpen: (value: boolean) => void;
   setIsYouTubeModalOpen: (value: boolean) => void;
-  setIsGenderModalOpen: (value: boolean) => void;
   setIsIcoModalOpen: (value: boolean) => void;
 }
 
@@ -152,7 +145,6 @@ export default function ProfileEditModals({
   isFacebookModalOpen,
   isLinkedinModalOpen,
   isYouTubeModalOpen,
-  isGenderModalOpen,
   isIcoModalOpen,
   firstName,
   lastName,
@@ -172,7 +164,6 @@ export default function ProfileEditModals({
   facebook,
   linkedin,
   youtube,
-  gender,
   originalFirstName,
   originalLastName,
   originalBio,
@@ -191,7 +182,6 @@ export default function ProfileEditModals({
   originalFacebook,
   originalLinkedin,
   originalYoutube,
-  originalGender,
   setFirstName,
   setLastName,
   setBio,
@@ -210,7 +200,6 @@ export default function ProfileEditModals({
   setFacebook,
   setLinkedin,
   setYoutube,
-  setGender,
   setOriginalFirstName,
   setOriginalLastName,
   setOriginalBio,
@@ -229,7 +218,6 @@ export default function ProfileEditModals({
   setOriginalFacebook,
   setOriginalLinkedin,
   setOriginalYoutube,
-  setOriginalGender,
   setIsNameModalOpen,
   setIsBioModalOpen,
   setIsLocationModalOpen,
@@ -241,7 +229,6 @@ export default function ProfileEditModals({
   setIsFacebookModalOpen,
   setIsLinkedinModalOpen,
   setIsYouTubeModalOpen,
-  setIsGenderModalOpen,
   setIsIcoModalOpen,
 }: ProfileEditModalsProps) {
   const { t } = useLanguage();
@@ -405,16 +392,6 @@ export default function ProfileEditModals({
         onUserUpdate={onUserUpdate}
       />
 
-      {/* Modal pre úpravu pohlavia */}
-      <GenderModal
-        isOpen={isGenderModalOpen}
-        gender={gender}
-        originalGender={originalGender}
-        setGender={setGender}
-        setOriginalGender={setOriginalGender}
-        onClose={() => setIsGenderModalOpen(false)}
-        onUserUpdate={onUserUpdate}
-      />
     </>
   );
 }

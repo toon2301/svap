@@ -11,7 +11,6 @@ import BioInput from './profile-edit/fields/BioInput';
 import LocationInput from './profile-edit/fields/LocationInput';
 import ProfessionInput from './profile-edit/fields/ProfessionInput';
 import WebsiteInput from './profile-edit/fields/WebsiteInput';
-import GenderSelect from './profile-edit/fields/GenderSelect';
 import AvatarActionsModal from './profile-edit/shared/AvatarActionsModal';
 
 interface ProfileEditFormProps {
@@ -35,9 +34,7 @@ export default function ProfileEditForm({ user, onUserUpdate, onEditProfileClick
   const [phoneVisible, setPhoneVisible] = useState(user.phone_visible || false);
   const [profession, setProfession] = useState(user.job_title || '');
   const [professionVisible, setProfessionVisible] = useState(user.job_title_visible || false);
-  const [gender, setGender] = useState(user.gender || '');
-
-  // Update firstName, bio, website, location, phone, phoneVisible, profession, professionVisible and gender when user changes
+  // Update firstName, bio, website, location, phone, phoneVisible, profession, professionVisible when user changes
   useEffect(() => {
     setFirstName(user.first_name || '');
     setLastName(user.last_name || '');
@@ -48,8 +45,7 @@ export default function ProfileEditForm({ user, onUserUpdate, onEditProfileClick
     setPhoneVisible(user.phone_visible || false);
     setProfession(user.job_title || '');
     setProfessionVisible(user.job_title_visible || false);
-    setGender(user.gender || '');
-  }, [user.first_name, user.bio, user.website, user.location, user.phone, user.phone_visible, user.job_title, user.job_title_visible, user.gender]);
+  }, [user.first_name, user.bio, user.website, user.location, user.phone, user.phone_visible, user.job_title, user.job_title_visible]);
 
   const handleFullNameSave = async (nextFirstName?: string, nextLastName?: string) => {
     const currentFirst = (user.first_name || '').trim();
@@ -59,6 +55,13 @@ export default function ProfileEditForm({ user, onUserUpdate, onEditProfileClick
     const payload: Record<string, string> = {};
     if (f !== currentFirst) payload.first_name = f;
     if (l !== currentLast) payload.last_name = l;
+    
+    // Synchronizovať do company_name
+    const fullNameForCompany = (f && l ? `${f} ${l}` : f || l).trim();
+    if (fullNameForCompany !== (user.company_name || '').trim()) {
+      payload.company_name = fullNameForCompany;
+    }
+    
     if (Object.keys(payload).length === 0) return;
     try {
       const response = await api.patch('/auth/profile/', payload);
@@ -203,25 +206,6 @@ export default function ProfileEditForm({ user, onUserUpdate, onEditProfileClick
     }
   };
 
-  const handleGenderChange = async (newGender: string) => {
-    if (newGender === user.gender) return; // No change
-    
-    setGender(newGender);
-    
-    try {
-      const response = await api.patch('/auth/profile/', {
-        gender: newGender
-      });
-      
-      if (onUserUpdate && response.data.user) {
-        onUserUpdate(response.data.user);
-      }
-    } catch (error: any) {
-      console.error('Error saving gender:', error);
-      // Revert on error
-      setGender(user.gender || '');
-    }
-  };
 
   const handlePhotoUpload = async (file: File) => {
     setIsUploading(true);
@@ -404,9 +388,6 @@ export default function ProfileEditForm({ user, onUserUpdate, onEditProfileClick
           user={user}
           onUserUpdate={onUserUpdate}
         />
-        
-        {/* Pohlavie */}
-        <GenderSelect gender={gender} onChange={handleGenderChange} />
         
         {/* Button Uložiť */}
         <div className="mt-6 flex justify-center">

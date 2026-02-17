@@ -40,7 +40,7 @@ export default function ContactEmailModal({ isOpen, contactEmail, originalContac
           type="email"
           value={contactEmail}
           onChange={(e) => setContactEmail(e.target.value)}
-          maxLength={150}
+          maxLength={50}
           className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-1 focus:ring-purple-300 focus:border-transparent"
           placeholder="Pridať email"
         />

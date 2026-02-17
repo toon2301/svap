@@ -42,7 +42,6 @@ export default function ProfileEditFields({
   setIsFacebookModalOpen,
   setIsLinkedinModalOpen,
   setIsYouTubeModalOpen,
-  setIsGenderModalOpen,
   setIsIcoModalOpen,
 }: ProfileEditFieldsProps) {
   const { t } = useLanguage();
@@ -201,11 +200,15 @@ export default function ProfileEditFields({
           className="flex items-center py-4 px-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-900 border-t border-gray-100 dark:border-gray-800"
           onClick={() => setIsContactEmailModalOpen(true)}
         >
-          <span className="text-gray-900 dark:text-white font-medium w-40">Email</span>
-          <div className="flex items-center flex-1 ml-4">
-            <div className="w-px h-4 bg-gray-300 dark:bg-gray-700 mr-3"></div>
-            <span className="text-gray-600 dark:text-gray-300 text-sm truncate">
-              {user.contact_email || 'Pridať email'}
+          <span className="text-gray-900 dark:text-white font-medium w-40 flex-shrink-0">Email</span>
+          <div className="flex items-center flex-1 ml-4 min-w-0 overflow-hidden">
+            <div className="w-px h-4 bg-gray-300 dark:bg-gray-700 mr-3 flex-shrink-0"></div>
+            <span className="text-gray-600 dark:text-gray-300 text-sm whitespace-nowrap overflow-hidden text-ellipsis block min-w-0">
+              {user.contact_email 
+                ? (user.contact_email.length > 20 
+                    ? `${user.contact_email.slice(0, 20)}...` 
+                    : user.contact_email)
+                : 'Pridať email'}
             </span>
           </div>
         </div>
@@ -342,21 +345,6 @@ export default function ProfileEditFields({
         </div>
       </div>
       
-      {/* Pohlavie - iba pre osobné účty */}
-      {accountType !== 'business' && (
-        <div 
-          className="flex items-center py-4 px-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-900 border-t border-gray-100 dark:border-gray-800"
-          onClick={() => setIsGenderModalOpen(true)}
-        >
-          <span className="text-gray-900 dark:text-white font-medium w-40">{t('profile.gender', 'Pohlavie')}</span>
-          <div className="flex items-center flex-1 ml-4">
-            <div className="w-px h-4 bg-gray-300 dark:bg-gray-700 mr-3"></div>
-            <span className="text-gray-600 dark:text-gray-300 text-sm">
-              {user.gender === 'male' ? t('profile.male', 'Muž') : user.gender === 'female' ? t('profile.female', 'Žena') : user.gender === 'other' ? t('profile.other', 'Iné') : t('profile.gender', 'Pohlavie')}
-            </span>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

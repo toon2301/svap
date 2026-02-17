@@ -11,7 +11,6 @@ import LocationField from './fields/LocationField';
 import FullNameField from './fields/FullNameField';
 import PhoneField from './fields/PhoneField';
 import ProfessionField from './fields/ProfessionField';
-import GenderField from './fields/GenderField';
 import BusinessFieldsSection from './sections/BusinessFieldsSection';
 
 import SocialMediaInputs from '../../SocialMediaInputs';
@@ -119,11 +118,6 @@ export function ProfileEditFormDesktopLayout({
 
           {/* Sociálne siete */}
           <SocialMediaInputs user={user} onUserUpdate={onUserUpdate} />
-
-          {/* Pohlavie - iba pre osobné účty */}
-          {accountType !== 'business' && (
-            <GenderField gender={form.gender} onChange={form.handleGenderChange} />
-          )}
         </div>
       </div>
 

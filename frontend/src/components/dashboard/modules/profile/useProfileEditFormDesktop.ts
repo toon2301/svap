@@ -31,7 +31,6 @@ export function useProfileEditFormDesktop({
     user.additional_websites || [],
   );
   const [contactEmail, setContactEmail] = useState(user.contact_email || '');
-  const [gender, setGender] = useState(user.gender || '');
   const [isUploading, setIsUploading] = useState(false);
   const [isActionsOpen, setIsActionsOpen] = useState(false);
   const [uploadError, setUploadError] = useState('');
@@ -52,7 +51,6 @@ export function useProfileEditFormDesktop({
     setWebsite(user.website || '');
     setAdditionalWebsites(user.additional_websites || []);
     setContactEmail(user.contact_email || '');
-    setGender(user.gender || '');
   }, [
     user.first_name,
     user.last_name,
@@ -68,7 +66,6 @@ export function useProfileEditFormDesktop({
     user.website,
     user.additional_websites,
     user.contact_email,
-    user.gender,
   ]);
 
   const handleFullNameSave = async () => {
@@ -78,9 +75,13 @@ export function useProfileEditFormDesktop({
       return;
     }
     try {
+      // Spojiť first_name a last_name pre company_name synchronizáciu
+      const fullNameForCompany = (f && l ? `${f} ${l}` : f || l).trim();
+      
       const response = await api.patch('/auth/profile/', {
         first_name: f,
         last_name: l,
+        company_name: fullNameForCompany, // Synchronizovať do company_name
       });
       if (onUserUpdate && response.data.user) {
         onUserUpdate(response.data.user);
@@ -258,22 +259,6 @@ export function useProfileEditFormDesktop({
     }
   };
 
-  const handleGenderChange = async (value: string) => {
-    if (value === user.gender) return;
-    try {
-      const response = await api.patch('/auth/profile/', {
-        gender: value,
-      });
-      if (onUserUpdate && response.data.user) {
-        onUserUpdate(response.data.user);
-      }
-      setGender(value);
-    } catch (error: any) {
-      // eslint-disable-next-line no-console
-      console.error('Error saving gender:', error);
-      setGender(user.gender || '');
-    }
-  };
 
   const handlePhotoUpload = async (file: File) => {
     if (!file) return;
@@ -352,7 +337,6 @@ export function useProfileEditFormDesktop({
     website,
     additionalWebsites,
     contactEmail,
-    gender,
     isUploading,
     isActionsOpen,
     uploadError,
@@ -382,7 +366,6 @@ export function useProfileEditFormDesktop({
     handleProfessionSave,
     handleProfessionVisibleToggle,
     handleContactEmailSave,
-    handleGenderChange,
     handlePhotoUpload,
     handlePhotoUploadClick,
     handleAvatarClick,

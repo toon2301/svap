@@ -35,22 +35,26 @@ export default function FullNameField({
   const [fullNameInput, setFullNameInput] = useState('');
 
   // Synchronizovať lokálny state s firstName a lastName (pre osobné účty) alebo company_name (pre firemné účty)
+  // Preferovať synchronizované meno - ak existuje first_name, použiť ho aj pre business
   useEffect(() => {
     if (accountType === 'business') {
-      // Pre firmy používame company_name
-      setFullNameInput(user.company_name || '');
+      // Pre firmy používame company_name, ale ak existuje first_name (synchronizované), preferovať ho
+      const nameToUse = user.first_name || user.company_name || '';
+      setFullNameInput(nameToUse);
     } else {
       // Pre osobné účty používame first_name + last_name
+      // Ak existuje company_name (synchronizované), použiť ho ako first_name ak first_name nie je
+      const firstNameToUse = firstName || user.company_name || '';
       const fullName =
-        firstName && lastName ? `${firstName} ${lastName}` : firstName || lastName || '';
+        firstNameToUse && lastName ? `${firstNameToUse} ${lastName}` : firstNameToUse || lastName || '';
       setFullNameInput(fullName);
     }
-  }, [firstName, lastName, accountType, user.company_name]);
+  }, [firstName, lastName, accountType, user.company_name, user.first_name]);
 
   // Wrapper pre handleFullNameSave, ktorý parsuje input hodnotu pred uložením
   const handleFullNameSaveWithParse = async () => {
-    // Obmedziť na 35 znakov
-    const trimmedValue = fullNameInput.trim().slice(0, 35);
+    // Obmedziť na 25 znakov
+    const trimmedValue = fullNameInput.trim().slice(0, 25);
 
     // Pre firemné účty ukladať ako company_name
     if (accountType === 'business') {
@@ -63,9 +67,11 @@ export default function FullNameField({
       }
 
       try {
-        // Volať API priamo s company_name
+        // Volať API priamo s company_name a synchronizovať do first_name
         const response = await api.patch('/auth/profile/', {
           company_name: newCompanyName,
+          first_name: newCompanyName, // Synchronizovať do first_name
+          last_name: '' // Vymazať last_name
         });
 
         if (onUserUpdate && response.data?.user) {
@@ -107,10 +113,14 @@ export default function FullNameField({
     }
 
     try {
-      // Volať API priamo s novými hodnotami
+      // Spojiť first_name a last_name pre company_name
+      const fullNameForCompany = (f && l ? `${f} ${l}` : f || l).trim();
+      
+      // Volať API priamo s novými hodnotami a synchronizovať do company_name
       const response = await api.patch('/auth/profile/', {
         first_name: f,
         last_name: l,
+        company_name: fullNameForCompany, // Synchronizovať do company_name
       });
 
       // Aktualizovať state
@@ -143,8 +153,8 @@ export default function FullNameField({
         value={fullNameInput}
         onChange={(e) => {
           const value = e.target.value;
-          // Obmedziť na 35 znakov
-          if (value.length <= 35) {
+          // Obmedziť na 25 znakov
+          if (value.length <= 25) {
             setFullNameInput(value);
           }
         }}
@@ -154,12 +164,12 @@ export default function FullNameField({
             handleFullNameSaveWithParse();
           }
         }}
-        maxLength={35}
+        maxLength={25}
         className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-1 focus:ring-purple-300 focus:border-transparent"
         placeholder={t('profile.enterName', 'Zadajte svoje meno a priezvisko')}
       />
       <div className="mt-1 text-xs text-gray-500 dark:text-gray-400 text-right">
-        {fullNameInput.length}/35 znakov
+        {fullNameInput.length}/25 znakov
       </div>
     </div>
   );

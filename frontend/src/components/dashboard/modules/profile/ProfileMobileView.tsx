@@ -10,6 +10,9 @@ import ProfileOffersMobileSection from './ProfileOffersMobileSection';
 import type { ProfileTab } from './profileTypes';
 import ProfileMobileSocialLinks from './ProfileMobileSocialLinks';
 import ProfileMobileHamburgerModal from './ProfileMobileHamburgerModal';
+import { InformationCircleIcon, ClipboardIcon } from '@heroicons/react/24/outline';
+import toast from 'react-hot-toast';
+import { createPortal } from 'react-dom';
 
 interface ProfileMobileViewProps {
   user: User;
@@ -58,7 +61,28 @@ export default function ProfileMobileView({
 }: ProfileMobileViewProps) {
   const { t } = useLanguage();
   const [isHamburgerModalOpen, setIsHamburgerModalOpen] = useState(false);
+  const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+
+  // Skrátiť email ak je príliš dlhý (viac ako 20 znakov)
+  const MAX_EMAIL_DISPLAY_LENGTH = 20;
+  const contactEmail = displayUser.contact_email || '';
+  const shouldTruncateEmail = contactEmail.length > MAX_EMAIL_DISPLAY_LENGTH;
+  const truncatedEmail = shouldTruncateEmail
+    ? `${contactEmail.slice(0, MAX_EMAIL_DISPLAY_LENGTH)}...`
+    : contactEmail;
+
+  // Kopírovať email do clipboardu
+  const handleCopyEmail = async () => {
+    if (!displayUser.contact_email) return;
+    try {
+      await navigator.clipboard.writeText(displayUser.contact_email);
+      toast.success(t('profile.emailCopied', 'Email skopírovaný'));
+    } catch (error) {
+      console.error('Failed to copy email:', error);
+      toast.error(t('profile.emailCopyFailed', 'Nepodarilo sa skopírovať email'));
+    }
+  };
 
   useEffect(() => {
     setMounted(true);
@@ -95,14 +119,16 @@ export default function ProfileMobileView({
         <>
           <div className="mb-4">
             <div className="flex gap-3 items-start">
-              <UserAvatar
-                user={displayUser}
-                size="medium"
-                onPhotoUpload={onPhotoUpload}
-                isUploading={isUploading}
-                onAvatarClick={onAvatarClick}
-              />
-              <div className="flex flex-col justify-center">
+              <div className="flex-shrink-0">
+                <UserAvatar
+                  user={displayUser}
+                  size="medium"
+                  onPhotoUpload={isOtherUserProfile ? undefined : onPhotoUpload}
+                  isUploading={isUploading}
+                  onAvatarClick={onAvatarClick}
+                />
+              </div>
+              <div className="flex flex-col justify-center min-w-0 flex-1 overflow-hidden">
                 {/* Meno používateľa */}
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
                   {accountType === 'business' 
@@ -142,10 +168,6 @@ export default function ProfileMobileView({
                     </p>
                   );
                 })()}
-                {/* IČO - iba pre firemné účty */}
-                {accountType === 'business' && displayUser.ico && (!isOtherUserProfile || !displayUser.ico_visible) && (
-                  <p className="text-gray-600 dark:text-gray-300 text-sm">{displayUser.ico}</p>
-                )}
                 {/* Telefónne číslo */}
                 {displayUser.phone && (!isOtherUserProfile || !displayUser.phone_visible) && (
                   <p className="text-gray-600 dark:text-gray-300 text-sm flex items-center gap-1">
@@ -168,14 +190,17 @@ export default function ProfileMobileView({
                 )}
                 {/* Kontaktný Email - len pre firemný účet */}
                 {accountType === 'business' && displayUser.contact_email && (
-                  <p className="text-gray-600 dark:text-gray-300 text-sm flex items-center gap-1">
+                  <div 
+                    className="text-gray-600 dark:text-gray-300 text-sm flex items-center gap-1 no-underline cursor-pointer min-w-0"
+                    onClick={() => shouldTruncateEmail && setIsEmailModalOpen(true)}
+                  >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       fill="none"
                       viewBox="0 0 24 24"
                       strokeWidth={1.5}
                       stroke="currentColor"
-                      className="size-3"
+                      className="size-3 flex-shrink-0"
                     >
                       <path
                         strokeLinecap="round"
@@ -183,8 +208,17 @@ export default function ProfileMobileView({
                         d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75"
                       />
                     </svg>
-                    {displayUser.contact_email}
-                  </p>
+                    <span className="no-underline flex-1 min-w-0 whitespace-nowrap overflow-hidden text-ellipsis">
+                      {truncatedEmail}
+                    </span>
+                    {shouldTruncateEmail && (
+                      <InformationCircleIcon className="w-4 h-4 flex-shrink-0 text-gray-400 dark:text-gray-500" />
+                    )}
+                  </div>
+                )}
+                {/* IČO - iba pre firemné účty */}
+                {accountType === 'business' && displayUser.ico && (!isOtherUserProfile || !displayUser.ico_visible) && (
+                  <p className="text-gray-600 dark:text-gray-300 text-sm">IČO: {displayUser.ico}</p>
                 )}
 
                 {/* Profesia - len pre osobný účet */}
@@ -486,6 +520,44 @@ export default function ProfileMobileView({
           mounted={mounted}
           onClose={() => setIsHamburgerModalOpen(false)}
         />
+      )}
+
+      {/* Email Modal - zobrazenie celého emailu */}
+      {mounted && isEmailModalOpen && displayUser.contact_email && createPortal(
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+          onClick={() => setIsEmailModalOpen(false)}
+        >
+          <div 
+            className="bg-white dark:bg-black rounded-lg shadow-xl max-w-sm w-full p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              {t('profile.contactEmail', 'Kontaktný email')}
+            </h3>
+            <div className="mb-6">
+              <p className="text-gray-600 dark:text-gray-300 text-sm mb-2 break-all">
+                {displayUser.contact_email}
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setIsEmailModalOpen(false)}
+                className="flex-1 px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+              >
+                {t('common.close', 'Zavrieť')}
+              </button>
+              <button
+                onClick={handleCopyEmail}
+                className="flex-1 px-4 py-2 rounded-lg bg-purple-600 text-white font-medium hover:bg-purple-700 transition-colors flex items-center justify-center gap-2"
+              >
+                <ClipboardIcon className="w-4 h-4" />
+                {t('profile.copyEmail', 'Kopírovať')}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.getElementById('app-root') ?? document.body
       )}
     </div>
   );

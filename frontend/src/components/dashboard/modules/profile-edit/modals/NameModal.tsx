@@ -57,12 +57,16 @@ export default function NameModal({ isOpen, firstName, lastName, originalFirstNa
 
   const handleSave = async () => {
     try {
-      // Obmedziť na 35 znakov
-      const trimmedValue = inputValue.trim().slice(0, 35);
+      // Obmedziť na 25 znakov
+      const trimmedValue = inputValue.trim().slice(0, 25);
       
       if (accountType === 'business') {
-        // Pre firmy ukladať ako company_name
-        const response = await api.patch('/auth/profile/', { company_name: trimmedValue });
+        // Pre firmy ukladať ako company_name a synchronizovať do first_name
+        const response = await api.patch('/auth/profile/', { 
+          company_name: trimmedValue,
+          first_name: trimmedValue, // Synchronizovať do first_name
+          last_name: '' // Vymazať last_name
+        });
         if (onUserUpdate && response.data?.user) {
           onUserUpdate(response.data.user);
         }
@@ -72,15 +76,20 @@ export default function NameModal({ isOpen, firstName, lastName, originalFirstNa
         setOriginalLastName && setOriginalLastName('');
         onClose();
       } else {
-        // Pre osobné účty používame existujúcu logiku
+        // Pre osobné účty používame existujúcu logiku a synchronizovať do company_name
         const parts = trimmedValue.split(/\s+/).filter(Boolean);
         const finalFirstName = parts.length === 0 ? '' : parts.length === 1 ? parts[0] : parts.slice(0, -1).join(' ');
         const finalLastName = parts.length <= 1 ? '' : parts[parts.length - 1];
+        const fullNameForCompany = trimmedValue; // Celé meno pre company_name
         
         // Parsovať hodnotu a aktualizovať state
         parseAndUpdate(trimmedValue);
         
-        const response = await api.patch('/auth/profile/', { first_name: finalFirstName.trim(), last_name: finalLastName.trim() });
+        const response = await api.patch('/auth/profile/', { 
+          first_name: finalFirstName.trim(), 
+          last_name: finalLastName.trim(),
+          company_name: fullNameForCompany // Synchronizovať do company_name
+        });
         if (onUserUpdate && response.data?.user) {
           onUserUpdate(response.data.user);
         }
@@ -123,17 +132,17 @@ export default function NameModal({ isOpen, firstName, lastName, originalFirstNa
           value={inputValue}
           onChange={(e) => {
             const value = e.target.value;
-            // Obmedziť na 35 znakov
-            if (value.length <= 35) {
+            // Obmedziť na 25 znakov
+            if (value.length <= 25) {
               setInputValue(value);
             }
           }}
-          maxLength={35}
+          maxLength={25}
           className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-1 focus:ring-purple-300 focus:border-transparent"
           placeholder={t('profile.enterName', 'Zadajte svoje meno a priezvisko')}
         />
         <div className="mt-1 text-xs text-gray-500 dark:text-gray-400 text-right">
-          {inputValue.length}/35 znakov
+          {inputValue.length}/25 znakov
         </div>
       </div>
       <div className="mt-3">
