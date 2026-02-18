@@ -12,6 +12,93 @@ import json
 User = get_user_model()
 audit_logger = logging.getLogger("audit")
 
+_PII_DETAIL_KEYS = {
+    "email",
+    "user_email",
+    "phone",
+    "contact_email",
+    "ico",
+    "birth_date",
+    "gender",
+    "access",
+    "refresh",
+    "access_token",
+    "refresh_token",
+    "password",
+}
+
+
+def _sanitize_details(details):
+    """
+    In production (DEBUG=False) strip PII/secret-like fields from audit details.
+    In DEBUG keep details as-is to aid development.
+    """
+    if getattr(settings, "DEBUG", False):
+        return details or {}
+
+    if not isinstance(details, dict):
+        return {}
+
+    out = {}
+    for k, v in details.items():
+        if k in _PII_DETAIL_KEYS:
+            continue
+        if isinstance(v, dict):
+            out[k] = _sanitize_details(v)
+        elif isinstance(v, list):
+            sanitized_list = []
+            for item in v:
+                sanitized_list.append(_sanitize_details(item) if isinstance(item, dict) else item)
+            out[k] = sanitized_list
+        elif isinstance(v, str) and len(v) > 200:
+            out[k] = v[:200] + "..."
+        else:
+            out[k] = v
+    return out
+
+
+def _build_audit_record(*, user=None, details=None, ip_address=None, user_agent=None):
+    """
+    Build a structured audit record.
+
+    - In production (DEBUG=False) do not include PII (email) in the record.
+    - IP and user_agent are allowed ONLY inside the audit system (this record).
+    """
+    is_debug = getattr(settings, "DEBUG", False)
+    record = {
+        "user_id": user.id if user and getattr(user, "is_authenticated", False) else None,
+        # Preserve key for backwards compatibility; in production keep it None (no PII).
+        "user_email": (
+            user.email
+            if getattr(settings, "DEBUG", False)
+            and user
+            and getattr(user, "is_authenticated", False)
+            else None
+        ),
+        "details": _sanitize_details(details),
+        # IP/UA are stored only inside audit records (never in app logs).
+        "ip_address": (ip_address or "").strip() or None,
+        "user_agent": (user_agent or "").strip() or None,
+        "timestamp": timezone.now().isoformat(),
+    }
+    if not is_debug:
+        # Ensure no PII sneaks in via user_email in production.
+        record["user_email"] = None
+    return record
+
+
+def _emit_audit_json(level: str, record: dict) -> None:
+    """
+    Emit a single JSON audit line. This is intentionally kept within the 'audit' logger,
+    so sensitive incident-response metadata (ip/user_agent) does not leak to application logs.
+    """
+    # Keep output stable & parseable.
+    payload = json.dumps(record, ensure_ascii=False, separators=(",", ":"), default=str)
+    if level == "warning":
+        audit_logger.warning(payload)
+    else:
+        audit_logger.info(payload)
+
 
 class AuditLog:
     """
@@ -27,19 +114,11 @@ class AuditLog:
         if not getattr(settings, "AUDIT_LOGGING_ENABLED", True):
             return
 
-        audit_logger.info(
-            f"User action: {action}",
-            extra={
-                "user_id": user.id if user and user.is_authenticated else None,
-                "user_email": user.email if user and user.is_authenticated else None,
-                "action": action,
-                "details": details or {},
-                "ip_address": ip_address,
-                "user_agent": user_agent,
-                "timestamp": timezone.now().isoformat(),
-                "log_type": "user_action",
-            },
+        record = _build_audit_record(
+            user=user, details=details, ip_address=ip_address, user_agent=user_agent
         )
+        record.update({"action": action, "log_type": "user_action"})
+        _emit_audit_json("info", record)
 
     @staticmethod
     def log_security_event(
@@ -48,19 +127,11 @@ class AuditLog:
         """
         Loguje bezpečnostné udalosti
         """
-        audit_logger.warning(
-            f"Security event: {event_type}",
-            extra={
-                "user_id": user.id if user and user.is_authenticated else None,
-                "user_email": user.email if user and user.is_authenticated else None,
-                "event_type": event_type,
-                "details": details or {},
-                "ip_address": ip_address,
-                "user_agent": user_agent,
-                "timestamp": timezone.now().isoformat(),
-                "log_type": "security_event",
-            },
+        record = _build_audit_record(
+            user=user, details=details, ip_address=ip_address, user_agent=user_agent
         )
+        record.update({"event_type": event_type, "log_type": "security_event"})
+        _emit_audit_json("warning", record)
 
     @staticmethod
     def log_api_access(
@@ -69,20 +140,18 @@ class AuditLog:
         """
         Loguje prístup k API endpointom
         """
-        audit_logger.info(
-            f"API access: {method} {endpoint}",
-            extra={
-                "user_id": user.id if user and user.is_authenticated else None,
-                "user_email": user.email if user and user.is_authenticated else None,
+        record = _build_audit_record(
+            user=user, details=None, ip_address=ip_address, user_agent=user_agent
+        )
+        record.update(
+            {
                 "endpoint": endpoint,
                 "method": method,
                 "status_code": status_code,
-                "ip_address": ip_address,
-                "user_agent": user_agent,
-                "timestamp": timezone.now().isoformat(),
                 "log_type": "api_access",
-            },
+            }
         )
+        _emit_audit_json("info", record)
 
     @staticmethod
     def log_data_change(
@@ -91,20 +160,20 @@ class AuditLog:
         """
         Loguje zmeny dát
         """
-        audit_logger.info(
-            f"Data change: {action} {model_name}",
-            extra={
-                "user_id": user.id if user and user.is_authenticated else None,
-                "user_email": user.email if user and user.is_authenticated else None,
+        record = _build_audit_record(
+            user=user, details={"changes": changes or {}}, ip_address=ip_address, user_agent=None
+        )
+        # keep backwards compatible "changes" key
+        record["changes"] = record["details"].get("changes", {})
+        record.update(
+            {
                 "model_name": model_name,
                 "object_id": object_id,
                 "action": action,
-                "changes": changes or {},
-                "ip_address": ip_address,
-                "timestamp": timezone.now().isoformat(),
                 "log_type": "data_change",
-            },
+            }
         )
+        _emit_audit_json("info", record)
 
 
 def audit_user_action(action, details=None):
@@ -192,9 +261,13 @@ def log_login_success(user, ip_address, user_agent):
 
 def log_login_failed(email, ip_address, user_agent, reason="invalid_credentials"):
     """Loguje neúspešné prihlásenie"""
+    # V produkcii neloguj email (PII)
+    details = {"reason": reason}
+    if getattr(settings, "DEBUG", False):
+        details["email"] = email
     AuditLog.log_security_event(
         event_type="login_failed",
-        details={"email": email, "reason": reason},
+        details=details,
         ip_address=ip_address,
         user_agent=user_agent,
     )

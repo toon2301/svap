@@ -13,7 +13,7 @@ from accounts.models import User
 
 def create_superuser(username, email, password):
     """Vytvori alebo aktualizuje superuser ucet"""
-    print(f"Vytvaranie/aktualizacia superuser uctu: {username} ({email})...")
+    print(f"Vytvaranie/aktualizacia superuser uctu: {username} (<redacted>)...")
 
     # Skontroluj, ci uz existuje
     user = None
@@ -56,7 +56,7 @@ def create_superuser(username, email, password):
                 is_verified=True,
                 is_public=True,
             )
-            print(f"\nOK: Superuser '{username}' ({email}) bol uspesne vytvoreny!")
+            print(f"\nOK: Superuser '{username}' (<redacted>) bol uspesne vytvoreny!")
             return user
         except Exception as e:
             print(f"\nCHYBA pri vytvarani superuser: {e}")

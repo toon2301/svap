@@ -11,6 +11,17 @@ from ...serializers import OfferedSkillSerializer
 
 User = get_user_model()
 
+def _not_found():
+    # Neodhaľuj, či profil existuje alebo je privátny.
+    return Response({"error": "Používateľ nebol nájdený"}, status=status.HTTP_404_NOT_FOUND)
+
+
+def _enforce_public_or_owner(request, user) -> Response | None:
+    is_owner = bool(getattr(request.user, "is_authenticated", False) and user.id == request.user.id)
+    if not is_owner and not getattr(user, "is_public", True):
+        return _not_found()
+    return None
+
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
@@ -22,26 +33,15 @@ def dashboard_user_profile_detail_view(request, user_id: int):
     try:
         user = User.objects.get(id=user_id, is_active=True)
     except User.DoesNotExist:
-        return Response(
-            {"error": "Používateľ nebol nájdený"}, status=status.HTTP_404_NOT_FOUND
-        )
+        return _not_found()
 
-    # Debug log - zistiť, čo má používateľ v databáze
-    import logging
-
-    logger = logging.getLogger(__name__)
-    logger.info(
-        f"🔍 Backend DEBUG - User ID {user_id}: user_type v DB = {user.user_type}, ico = {user.ico}, contact_email = {user.contact_email}"
-    )
+    privacy_resp = _enforce_public_or_owner(request, user)
+    if privacy_resp is not None:
+        return privacy_resp
 
     from ...serializers import UserProfileSerializer
 
     serializer = UserProfileSerializer(user, context={"request": request})
-
-    # Debug log - čo serializer vracia
-    logger.info(
-        f'🔍 Backend DEBUG - Serializer data: user_type = {serializer.data.get("user_type")}, ico = {serializer.data.get("ico")}, contact_email = {serializer.data.get("contact_email")}'
-    )
 
     return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -56,26 +56,15 @@ def dashboard_user_profile_detail_by_slug_view(request, slug: str):
     try:
         user = User.objects.get(slug=slug, is_active=True)
     except User.DoesNotExist:
-        return Response(
-            {"error": "Používateľ nebol nájdený"}, status=status.HTTP_404_NOT_FOUND
-        )
+        return _not_found()
 
-    # Debug log - zistiť, čo má používateľ v databáze
-    import logging
-
-    logger = logging.getLogger(__name__)
-    logger.info(
-        f"🔍 Backend DEBUG - User slug {slug}: user_type v DB = {user.user_type}, ico = {user.ico}, contact_email = {user.contact_email}"
-    )
+    privacy_resp = _enforce_public_or_owner(request, user)
+    if privacy_resp is not None:
+        return privacy_resp
 
     from ...serializers import UserProfileSerializer
 
     serializer = UserProfileSerializer(user, context={"request": request})
-
-    # Debug log - čo serializer vracia
-    logger.info(
-        f'🔍 Backend DEBUG - Serializer data: user_type = {serializer.data.get("user_type")}, ico = {serializer.data.get("ico")}, contact_email = {serializer.data.get("contact_email")}'
-    )
 
     return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -87,6 +76,15 @@ def dashboard_user_skills_view(request, user_id: int):
     """
     Read‑only zoznam zručností (ponúk) iného používateľa pre dashboard / vyhľadávanie.
     """
+    try:
+        user = User.objects.get(id=user_id, is_active=True)
+    except User.DoesNotExist:
+        return _not_found()
+
+    privacy_resp = _enforce_public_or_owner(request, user)
+    if privacy_resp is not None:
+        return privacy_resp
+
     skills_qs = OfferedSkill.objects.filter(user_id=user_id).order_by("-updated_at")
     # Pre cudzí profil filtruj skryté karty, pre vlastný profil zobraz všetky
     if user_id != request.user.id:
@@ -107,9 +105,11 @@ def dashboard_user_skills_by_slug_view(request, slug: str):
     try:
         user = User.objects.get(slug=slug, is_active=True)
     except User.DoesNotExist:
-        return Response(
-            {"error": "Používateľ nebol nájdený"}, status=status.HTTP_404_NOT_FOUND
-        )
+        return _not_found()
+
+    privacy_resp = _enforce_public_or_owner(request, user)
+    if privacy_resp is not None:
+        return privacy_resp
 
     skills_qs = OfferedSkill.objects.filter(user_id=user.id).order_by("-updated_at")
     # Pre cudzí profil filtruj skryté karty, pre vlastný profil zobraz všetky

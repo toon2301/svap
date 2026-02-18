@@ -25,21 +25,35 @@ class GlobalErrorHandlingMiddleware(MiddlewareMixin):
         """
         Zachytáva všetky neodchytané výnimky
         """
-        # Log chybu
-        logger.error(
-            f"Unhandled exception: {str(exception)}",
-            extra={
-                "request_path": request.path,
-                "request_method": request.method,
-                "user_agent": request.META.get("HTTP_USER_AGENT", ""),
-                "user_id": (
-                    getattr(request.user, "id", None)
-                    if hasattr(request, "user")
-                    else None
-                ),
-                "traceback": traceback.format_exc(),
-            },
-        )
+        # V produkcii neloguj user_agent ani celé exception/traceback (môže obsahovať PII).
+        if getattr(settings, "DEBUG", False):
+            logger.error(
+                f"Unhandled exception: {str(exception)}",
+                extra={
+                    "request_path": request.path,
+                    "request_method": request.method,
+                    "user_id": (
+                        getattr(request.user, "id", None)
+                        if hasattr(request, "user")
+                        else None
+                    ),
+                    "traceback": traceback.format_exc(),
+                },
+            )
+        else:
+            logger.error(
+                "Unhandled exception",
+                extra={
+                    "request_path": request.path,
+                    "request_method": request.method,
+                    "user_id": (
+                        getattr(request.user, "id", None)
+                        if hasattr(request, "user")
+                        else None
+                    ),
+                    "exception_type": exception.__class__.__name__,
+                },
+            )
 
         # Ak je to API request, vráť JSON response
         if request.path.startswith("/api/"):
@@ -65,25 +79,38 @@ def custom_exception_handler(exc, context):
     response = exception_handler(exc, context)
 
     if response is not None:
-        # Log chybu
+        # Log chybu (v produkcii bez user_agent a bez response_data)
         request = context.get("request")
-        logger.error(
-            f"API Error: {str(exc)}",
-            extra={
-                "request_path": request.path if request else "unknown",
-                "request_method": request.method if request else "unknown",
-                "user_agent": (
-                    request.META.get("HTTP_USER_AGENT", "") if request else ""
-                ),
-                "user_id": (
-                    getattr(request.user, "id", None)
-                    if request and hasattr(request, "user")
-                    else None
-                ),
-                "response_status": response.status_code,
-                "response_data": response.data,
-            },
-        )
+        if getattr(settings, "DEBUG", False):
+            logger.error(
+                f"API Error: {str(exc)}",
+                extra={
+                    "request_path": request.path if request else "unknown",
+                    "request_method": request.method if request else "unknown",
+                    "user_id": (
+                        getattr(request.user, "id", None)
+                        if request and hasattr(request, "user")
+                        else None
+                    ),
+                    "response_status": response.status_code,
+                    "response_data": response.data,
+                },
+            )
+        else:
+            logger.error(
+                "API Error",
+                extra={
+                    "request_path": request.path if request else "unknown",
+                    "request_method": request.method if request else "unknown",
+                    "user_id": (
+                        getattr(request.user, "id", None)
+                        if request and hasattr(request, "user")
+                        else None
+                    ),
+                    "response_status": response.status_code,
+                    "exception_type": exc.__class__.__name__,
+                },
+            )
 
         # Vytvor konzistentnú error response
         custom_response_data = {
@@ -180,11 +207,6 @@ class EnforceCSRFMiddleware(MiddlewareMixin):
             return None
         # Vynucujeme iba pre metódy, ktoré modifikujú stav – validáciu nech robí CsrfViewMiddleware (form token alebo header)
         if request.method in ("POST", "PUT", "PATCH", "DELETE"):
-            # Ak je povolené preskočiť CSRF pri JWT, a je prítomný Authorization: Bearer token, CSRF nekontroluj
-            if getattr(settings, "CSRF_SKIP_FOR_JWT", False):
-                auth_header = request.META.get("HTTP_AUTHORIZATION", "")
-                if auth_header.startswith("Bearer "):
-                    return None
             # Pre API akceptuj CSRF token z hlavičky alebo cookies
             header_token = request.META.get("HTTP_X_CSRFTOKEN") or request.META.get(
                 "HTTP_X_CSRF_TOKEN"

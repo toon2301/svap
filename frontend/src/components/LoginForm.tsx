@@ -158,15 +158,6 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
           }
           clearInterval(checkClosed);
 
-          // Cross-origin: tokeny prišli v URL, uložiť do localStorage (api potom posiela Authorization header)
-          if (event.data.tokens?.access) {
-            try {
-              localStorage.setItem('access_token', event.data.tokens.access);
-              if (event.data.tokens.refresh) {
-                localStorage.setItem('refresh_token', event.data.tokens.refresh);
-              }
-            } catch (e) {}
-          }
           setAuthStateCookie();
 
           // Reset preferovaného modulu a nastav flag na vynútenie HOME
@@ -256,18 +247,6 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
 
       // Pri cross-origin backend nastaví cookies pre svoju doménu – frontend si nastaví auth_state na svojej origin, aby isAuthenticated() a presmerovanie fungovali
       setAuthStateCookie();
-
-      // Cross-origin: extrahovať tokeny z response body a uložiť do localStorage (api potom posiela Authorization header)
-      if (response.data?.tokens?.access) {
-        try {
-          localStorage.setItem('access_token', response.data.tokens.access);
-          if (response.data.tokens.refresh) {
-            localStorage.setItem('refresh_token', response.data.tokens.refresh);
-          }
-        } catch (e) {
-          console.error('Failed to save tokens to localStorage:', e);
-        }
-      }
 
       // Reset preferovaného modulu po prihlásení a nastav flag na vynútenie HOME
       if (typeof window !== 'undefined') {

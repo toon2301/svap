@@ -90,8 +90,10 @@ class TestAuthViews(APITestCase):
 
         response = self.client.post(url, data, format="json")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn("tokens", response.data)
         self.assertIn("user", response.data)
+        # Čistý cookie model: tokeny nie sú v body, musia byť v cookies
+        self.assertIn("access_token", response.cookies)
+        self.assertIn("refresh_token", response.cookies)
 
     def test_login_view_invalid_credentials(self):
         """Test prihlásenia s neplatnými údajmi"""
@@ -108,7 +110,7 @@ class TestAuthViews(APITestCase):
 
         # Vytvor JWT token
         refresh = RefreshToken.for_user(self.user)
-        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {refresh.access_token}")
+        self.client.cookies["access_token"] = str(refresh.access_token)
 
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -127,10 +129,10 @@ class TestAuthViews(APITestCase):
 
         # Vytvor JWT token
         refresh = RefreshToken.for_user(self.user)
-        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {refresh.access_token}")
+        self.client.cookies["access_token"] = str(refresh.access_token)
+        self.client.cookies["refresh_token"] = str(refresh)
 
-        data = {"refresh": str(refresh)}
-        response = self.client.post(url, data, format="json")
+        response = self.client.post(url, {}, format="json")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn("message", response.data)
 
@@ -146,7 +148,7 @@ class TestProfileViews(APITestCase):
 
         # Vytvor JWT token
         refresh = RefreshToken.for_user(self.user)
-        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {refresh.access_token}")
+        self.client.cookies["access_token"] = str(refresh.access_token)
 
     def test_update_profile_success(self):
         """Test úspešnej aktualizácie profilu"""

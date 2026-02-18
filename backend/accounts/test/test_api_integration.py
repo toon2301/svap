@@ -83,15 +83,11 @@ class TestAPIIntegration(APITestCase):
         response = self.client.post(url, data, format="json")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-        # Skontroluj, že tokeny boli vrátené
-        self.assertIn("tokens", response.data)
-        self.assertIn("access", response.data["tokens"])
-        self.assertIn("refresh", response.data["tokens"])
+        # Čistý cookie model: tokeny nie sú v body, musia byť v cookies
+        self.assertIn("access_token", response.cookies)
+        self.assertIn("refresh_token", response.cookies)
 
         # Test autentifikovaného prístupu
-        access_token = response.data["tokens"]["access"]
-        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {access_token}")
-
         me_url = f"{self.base_url}/auth/me/"
         me_response = self.client.get(me_url)
         self.assertEqual(me_response.status_code, status.HTTP_200_OK)
@@ -105,16 +101,13 @@ class TestAPIIntegration(APITestCase):
 
         login_response = self.client.post(login_url, login_data, format="json")
         self.assertEqual(login_response.status_code, status.HTTP_200_OK)
-        self.assertIn("tokens", login_response.data)
-        refresh_token = login_response.data["tokens"]["refresh"]
+        self.assertIn("refresh_token", login_response.cookies)
 
         # Obnovenie tokenu
         refresh_url = "/api/token/refresh/"
-        refresh_data = {"refresh": refresh_token}
-
-        refresh_response = self.client.post(refresh_url, refresh_data, format="json")
+        refresh_response = self.client.post(refresh_url, {}, format="json")
         self.assertEqual(refresh_response.status_code, status.HTTP_200_OK)
-        self.assertIn("access", refresh_response.data)
+        self.assertIn("access_token", refresh_response.cookies)
 
     def test_logout_flow(self):
         """Test odhlasovacieho toku"""
@@ -124,17 +117,10 @@ class TestAPIIntegration(APITestCase):
 
         login_response = self.client.post(login_url, login_data, format="json")
         self.assertEqual(login_response.status_code, status.HTTP_200_OK)
-        self.assertIn("tokens", login_response.data)
-        tokens = login_response.data["tokens"]
-
-        # Autentifikácia
-        self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {tokens["access"]}')
 
         # Odhlásenie
         logout_url = f"{self.base_url}/auth/logout/"
-        logout_data = {"refresh": tokens["refresh"]}
-
-        logout_response = self.client.post(logout_url, logout_data, format="json")
+        logout_response = self.client.post(logout_url, {}, format="json")
         self.assertEqual(logout_response.status_code, status.HTTP_200_OK)
 
         # Skontroluj, že token je už neplatný
@@ -147,7 +133,7 @@ class TestAPIIntegration(APITestCase):
         """Test aktualizácie profilu"""
         # Prihlásenie
         refresh = RefreshToken.for_user(self.user)
-        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {refresh.access_token}")
+        self.client.cookies["access_token"] = str(refresh.access_token)
 
         # Aktualizácia profilu
         profile_url = f"{self.base_url}/profile/"

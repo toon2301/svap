@@ -23,9 +23,27 @@ if not SECRET_KEY:
     raise ValueError("SECRET_KEY must be set in production")
 
 # ALLOWED_HOSTS - nastavte v .env súbore pre produkciu
-ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "").split(",")
-if not ALLOWED_HOSTS or ALLOWED_HOSTS == [""]:
-    ALLOWED_HOSTS = ["antonchudjak.pythonanywhere.com"]
+_PROD_ALLOWED_HOSTS = {
+    "svaply.com",
+    "www.svaply.com",
+    "api.svaply.com",
+    "stunning-inspiration-svap.up.railway.app",
+}
+
+raw_allowed_hosts = os.getenv("ALLOWED_HOSTS")
+if not raw_allowed_hosts:
+    raise ValueError("ALLOWED_HOSTS must be set in production")
+
+ALLOWED_HOSTS = [h.strip() for h in raw_allowed_hosts.split(",") if h and h.strip()]
+for h in ALLOWED_HOSTS:
+    if "*" in h or h.startswith("."):
+        raise ValueError(f"Wildcard hosts are not allowed in ALLOWED_HOSTS: {h!r}")
+
+if set(ALLOWED_HOSTS) != _PROD_ALLOWED_HOSTS:
+    raise ValueError(
+        "Invalid ALLOWED_HOSTS for production. Must match exactly: "
+        + ", ".join(sorted(_PROD_ALLOWED_HOSTS))
+    )
 
 # Database – preferuj DATABASE_URL, inak fallback na sqlite
 db_url = os.getenv("DATABASE_URL")
@@ -127,21 +145,25 @@ CORS_ALLOWED_ORIGINS = os.getenv("CORS_ALLOWED_ORIGINS", "").split(",")
 if not CORS_ALLOWED_ORIGINS or CORS_ALLOWED_ORIGINS == [""]:
     CORS_ALLOWED_ORIGINS = ["https://antonchudjak.pythonanywhere.com"]
 
-# Email settings
-# FORCE console backend for development - TODO: Change to SMTP when setting up SendGrid/Mailgun
-EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+# Email settings (production) - strict, no fallbacks
+def _require_env(name: str) -> str:
+    v = os.getenv(name)
+    if v is None or not str(v).strip():
+        raise ValueError(f"{name} must be set in production")
+    return str(v).strip()
 
-# Commented out for development - uncomment for production with SendGrid/Mailgun
-# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-# EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
-# EMAIL_PORT = int(os.getenv('EMAIL_PORT', '587'))
-# EMAIL_USE_TLS = True
-# EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
-# EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
-# DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL')
 
-# if not EMAIL_HOST_USER or not EMAIL_HOST_PASSWORD:
-#     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = _require_env("EMAIL_HOST")
+try:
+    EMAIL_PORT = int(_require_env("EMAIL_PORT"))
+except Exception:
+    raise ValueError("EMAIL_PORT must be an integer in production")
+EMAIL_HOST_USER = _require_env("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = _require_env("EMAIL_HOST_PASSWORD")
+# TLS je bezpečný default; dá sa override cez env, ale production nepadá na tomto nastavení.
+EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "1").lower() not in ("0", "false", "no")
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL") or EMAIL_HOST_USER
 
 # Google OAuth credentials
 GOOGLE_OAUTH2_CLIENT_ID = os.getenv("GOOGLE_OAUTH2_CLIENT_ID")

@@ -50,9 +50,11 @@ def _get_client():
 
     creds_json = _load_credentials()
     if creds_json:
-        # Debug: log which service account email sa použije
+        # Debug-only: log which service account email sa použije
         try:
-            if getattr(settings, "SAFESEARCH_DEBUG_LOG", False):
+            if getattr(settings, "DEBUG", False) and getattr(
+                settings, "SAFESEARCH_DEBUG_LOG", False
+            ):
                 email = creds_json.get("client_email")
                 logger.info(f"SafeSearch using service account: {email}")
         except Exception:
@@ -67,7 +69,9 @@ def _get_client():
             if path:
                 norm = os.path.normpath(path.strip().strip("\"'"))
                 if os.path.exists(norm):
-                    if getattr(settings, "SAFESEARCH_DEBUG_LOG", False):
+                    if getattr(settings, "DEBUG", False) and getattr(
+                        settings, "SAFESEARCH_DEBUG_LOG", False
+                    ):
                         logger.info(f"SafeSearch using service account file: {norm}")
                     credentials = service_account.Credentials.from_service_account_file(
                         norm
@@ -75,7 +79,9 @@ def _get_client():
                     # Log client_email z credentials, ak je dostupný
                     try:
                         info = json.loads(open(norm, "r").read())
-                        if getattr(settings, "SAFESEARCH_DEBUG_LOG", False):
+                        if getattr(settings, "DEBUG", False) and getattr(
+                            settings, "SAFESEARCH_DEBUG_LOG", False
+                        ):
                             logger.info(
                                 f"SafeSearch service account email (file): {info.get('client_email')}"
                             )
@@ -83,7 +89,9 @@ def _get_client():
                         pass
                     return vision.ImageAnnotatorClient(credentials=credentials)
         except Exception as e:
-            if getattr(settings, "SAFESEARCH_DEBUG_LOG", False):
+            if getattr(settings, "DEBUG", False) and getattr(
+                settings, "SAFESEARCH_DEBUG_LOG", False
+            ):
                 logger.warning(f"Falling back to ADC due to error with file creds: {e}")
         # Ak nie je k dispozícii env JSON ani súbor a je prísny režim, nepoužívaj ADC
         if getattr(settings, "SAFESEARCH_STRICT_MODE", False):
@@ -92,7 +100,9 @@ def _get_client():
             )
         # Fallback na ADC (len ak nie je STRICT_MODE)
         try:
-            if getattr(settings, "SAFESEARCH_DEBUG_LOG", False):
+            if getattr(settings, "DEBUG", False) and getattr(
+                settings, "SAFESEARCH_DEBUG_LOG", False
+            ):
                 logger.info("SafeSearch using ADC (default application credentials)")
         except Exception:
             pass

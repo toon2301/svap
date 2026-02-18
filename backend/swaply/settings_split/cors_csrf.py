@@ -64,8 +64,8 @@ else:
     # V produkcii vynucuj CSRF pre API ako default (nezávisle od testov)
     CSRF_ENFORCE_API = True
 
-# Pri JWT (Authorization: Bearer ...) nie je CSRF potrebné – voliteľne vypnuteľné
-CSRF_SKIP_FOR_JWT = env_bool("CSRF_SKIP_FOR_JWT", True)
+# Čistý cookie-based auth: CSRF sa NEPRESKAKUJE na základe Authorization headeru.
+CSRF_SKIP_FOR_JWT = env_bool("CSRF_SKIP_FOR_JWT", False)
 SECURE_SSL_REDIRECT = env_bool("SECURE_SSL_REDIRECT", not DEBUG)
 SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
 SECURE_HSTS_SECONDS = 31536000 if not DEBUG else 0

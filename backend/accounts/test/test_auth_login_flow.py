@@ -29,7 +29,8 @@ class TestAuthLoginFlow(APITestCase):
             format="json",
         )
         assert r.status_code == status.HTTP_200_OK
-        assert "tokens" in r.data
+        assert "access_token" in r.cookies
+        assert "refresh_token" in r.cookies
 
     def test_login_invalid(self):
         url = reverse("accounts:login")

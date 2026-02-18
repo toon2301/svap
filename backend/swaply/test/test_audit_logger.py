@@ -44,6 +44,7 @@ class TestAuditLogger(TestCase):
         """Test logovania úspešného prihlásenia"""
         # Povoliť audit logging pre test
         mock_settings.AUDIT_LOGGING_ENABLED = True
+        mock_settings.DEBUG = False
 
         log_login_success(self.user, self.ip_address, self.user_agent)
 
@@ -52,18 +53,20 @@ class TestAuditLogger(TestCase):
 
         # Kontrola obsahu logu
         call_args = mock_audit_logger.info.call_args
-        extra_data = call_args[1]["extra"]
+        record = json.loads(call_args[0][0])
 
-        self.assertEqual(extra_data["action"], "login_success")
-        self.assertEqual(extra_data["user_id"], self.user.id)
-        self.assertEqual(extra_data["user_email"], self.user.email)
-        self.assertEqual(extra_data["ip_address"], self.ip_address)
-        self.assertEqual(extra_data["user_agent"], self.user_agent)
-        self.assertIn("timestamp", extra_data)
+        self.assertEqual(record["action"], "login_success")
+        self.assertEqual(record["user_id"], self.user.id)
+        self.assertIsNone(record["user_email"])
+        self.assertEqual(record["ip_address"], self.ip_address)
+        self.assertEqual(record["user_agent"], self.user_agent)
+        self.assertIn("timestamp", record)
 
     @patch("swaply.audit_logger.audit_logger")
-    def test_log_login_failed(self, mock_audit_logger):
+    @patch("swaply.audit_logger.settings")
+    def test_log_login_failed(self, mock_settings, mock_audit_logger):
         """Test logovania neúspešného prihlásenia"""
+        mock_settings.DEBUG = False
         email = "test@example.com"
         reason = "invalid_credentials"
 
@@ -74,14 +77,14 @@ class TestAuditLogger(TestCase):
 
         # Kontrola obsahu logu
         call_args = mock_audit_logger.warning.call_args
-        extra_data = call_args[1]["extra"]
+        record = json.loads(call_args[0][0])
 
-        self.assertEqual(extra_data["event_type"], "login_failed")
-        self.assertIsNone(extra_data["user_id"])
-        self.assertIsNone(extra_data["user_email"])
-        self.assertEqual(extra_data["ip_address"], self.ip_address)
-        self.assertEqual(extra_data["user_agent"], self.user_agent)
-        self.assertEqual(extra_data["details"]["reason"], reason)
+        self.assertEqual(record["event_type"], "login_failed")
+        self.assertIsNone(record["user_id"])
+        self.assertIsNone(record["user_email"])
+        self.assertEqual(record["ip_address"], self.ip_address)
+        self.assertEqual(record["user_agent"], self.user_agent)
+        self.assertEqual(record["details"]["reason"], reason)
 
     @patch("swaply.audit_logger.audit_logger")
     @patch("swaply.audit_logger.settings")
@@ -89,6 +92,7 @@ class TestAuditLogger(TestCase):
         """Test logovania úspešnej registrácie"""
         # Povoliť audit logging pre test
         mock_settings.AUDIT_LOGGING_ENABLED = True
+        mock_settings.DEBUG = False
         log_registration_success(self.user, self.ip_address, self.user_agent)
 
         # Kontrola, že sa zavolal audit_logger.info
@@ -96,19 +100,20 @@ class TestAuditLogger(TestCase):
 
         # Kontrola obsahu logu
         call_args = mock_audit_logger.info.call_args
-        extra_data = call_args[1]["extra"]
+        record = json.loads(call_args[0][0])
 
-        self.assertEqual(extra_data["action"], "registration_success")
-        self.assertEqual(extra_data["user_id"], self.user.id)
-        self.assertEqual(extra_data["user_email"], self.user.email)
-        self.assertEqual(extra_data["ip_address"], self.ip_address)
-        self.assertEqual(extra_data["user_agent"], self.user_agent)
+        self.assertEqual(record["action"], "registration_success")
+        self.assertEqual(record["user_id"], self.user.id)
+        self.assertIsNone(record["user_email"])
+        self.assertEqual(record["ip_address"], self.ip_address)
+        self.assertEqual(record["user_agent"], self.user_agent)
 
     @patch("swaply.audit_logger.audit_logger")
     @patch("swaply.audit_logger.settings")
     def test_log_email_verification_success(self, mock_settings, mock_audit_logger):
         # Povoliť audit logging pre test
         mock_settings.AUDIT_LOGGING_ENABLED = True
+        mock_settings.DEBUG = False
         """Test logovania úspešnej email verifikácie"""
         log_email_verification_success(self.user, self.ip_address, self.user_agent)
 
@@ -117,17 +122,19 @@ class TestAuditLogger(TestCase):
 
         # Kontrola obsahu logu
         call_args = mock_audit_logger.info.call_args
-        extra_data = call_args[1]["extra"]
+        record = json.loads(call_args[0][0])
 
-        self.assertEqual(extra_data["action"], "email_verification_success")
-        self.assertEqual(extra_data["user_id"], self.user.id)
-        self.assertEqual(extra_data["user_email"], self.user.email)
-        self.assertEqual(extra_data["ip_address"], self.ip_address)
-        self.assertEqual(extra_data["user_agent"], self.user_agent)
+        self.assertEqual(record["action"], "email_verification_success")
+        self.assertEqual(record["user_id"], self.user.id)
+        self.assertIsNone(record["user_email"])
+        self.assertEqual(record["ip_address"], self.ip_address)
+        self.assertEqual(record["user_agent"], self.user_agent)
 
     @patch("swaply.audit_logger.audit_logger")
-    def test_log_email_verification_failed(self, mock_audit_logger):
+    @patch("swaply.audit_logger.settings")
+    def test_log_email_verification_failed(self, mock_settings, mock_audit_logger):
         """Test logovania neúspešnej email verifikácie"""
+        mock_settings.DEBUG = False
         token = "test-token-123"
         reason = "invalid_or_expired"
 
@@ -138,21 +145,22 @@ class TestAuditLogger(TestCase):
 
         # Kontrola obsahu logu
         call_args = mock_audit_logger.warning.call_args
-        extra_data = call_args[1]["extra"]
+        record = json.loads(call_args[0][0])
 
-        self.assertEqual(extra_data["event_type"], "email_verification_failed")
-        self.assertIsNone(extra_data["user_id"])
-        self.assertIsNone(extra_data["user_email"])
-        self.assertEqual(extra_data["ip_address"], self.ip_address)
-        self.assertEqual(extra_data["user_agent"], self.user_agent)
-        self.assertIn("token", extra_data["details"])
-        self.assertEqual(extra_data["details"]["reason"], reason)
+        self.assertEqual(record["event_type"], "email_verification_failed")
+        self.assertIsNone(record["user_id"])
+        self.assertIsNone(record["user_email"])
+        self.assertEqual(record["ip_address"], self.ip_address)
+        self.assertEqual(record["user_agent"], self.user_agent)
+        self.assertIn("token", record["details"])
+        self.assertEqual(record["details"]["reason"], reason)
 
     @patch("swaply.audit_logger.audit_logger")
     @patch("swaply.audit_logger.settings")
     def test_log_profile_update(self, mock_settings, mock_audit_logger):
         # Povoliť audit logging pre test
         mock_settings.AUDIT_LOGGING_ENABLED = True
+        mock_settings.DEBUG = False
         """Test logovania aktualizácie profilu"""
         changes = {
             "first_name": {"old": "John", "new": "Jane"},
@@ -168,26 +176,27 @@ class TestAuditLogger(TestCase):
         calls = mock_audit_logger.info.call_args_list
 
         # Prvý call - data_change
-        first_call_extra = calls[0][1]["extra"]
-        self.assertEqual(first_call_extra["action"], "update")
-        self.assertEqual(first_call_extra["model_name"], "UserProfile")
+        first_record = json.loads(calls[0][0][0])
+        self.assertEqual(first_record["action"], "update")
+        self.assertEqual(first_record["model_name"], "UserProfile")
 
         # Druhý call - user_action
-        second_call_extra = calls[1][1]["extra"]
-        self.assertEqual(second_call_extra["action"], "profile_update")
-        self.assertEqual(second_call_extra["user_id"], self.user.id)
-        self.assertEqual(second_call_extra["user_email"], self.user.email)
+        second_record = json.loads(calls[1][0][0])
+        self.assertEqual(second_record["action"], "profile_update")
+        self.assertEqual(second_record["user_id"], self.user.id)
+        self.assertIsNone(second_record["user_email"])
 
     @patch("swaply.audit_logger.audit_logger")
     @patch("swaply.audit_logger.settings")
     def test_log_entry_structure(self, mock_settings, mock_audit_logger):
         # Povoliť audit logging pre test
         mock_settings.AUDIT_LOGGING_ENABLED = True
+        mock_settings.DEBUG = False
         """Test štruktúry log záznamu"""
         log_login_success(self.user, self.ip_address, self.user_agent)
 
         call_args = mock_audit_logger.info.call_args
-        extra_data = call_args[1]["extra"]
+        record = json.loads(call_args[0][0])
 
         # Kontrola povinných polí
         required_fields = [
@@ -200,13 +209,13 @@ class TestAuditLogger(TestCase):
             "details",
         ]
         for field in required_fields:
-            self.assertIn(field, extra_data)
+            self.assertIn(field, record)
 
         # Kontrola formátu timestamp
         from datetime import datetime
 
         try:
-            datetime.fromisoformat(extra_data["timestamp"].replace("Z", "+00:00"))
+            datetime.fromisoformat(record["timestamp"].replace("Z", "+00:00"))
         except ValueError:
             self.fail("Timestamp is not in valid ISO format")
 

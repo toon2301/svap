@@ -179,7 +179,8 @@ class TestEmailVerification:
         response = self.client.post(self.login_url, login_data)
 
         assert response.status_code == status.HTTP_200_OK
-        assert "tokens" in response.data
+        assert "access_token" in response.cookies
+        assert "refresh_token" in response.cookies
 
     @override_settings(RATE_LIMITING_ENABLED=False)
     def test_email_verification_success(self):
@@ -190,7 +191,8 @@ class TestEmailVerification:
 
         assert response.status_code == status.HTTP_200_OK
         assert response.data["verified"] is True
-        assert "tokens" in response.data
+        assert "access_token" in response.cookies
+        assert "refresh_token" in response.cookies
 
         # Skontroluj, či je používateľ overený
         self.user.refresh_from_db()
@@ -212,9 +214,8 @@ class TestEmailVerification:
         response = self.client.post(self.login_url, login_data)
 
         assert response.status_code == status.HTTP_200_OK
-        assert "tokens" in response.data
-        assert "access" in response.data["tokens"]
-        assert "refresh" in response.data["tokens"]
+        assert "access_token" in response.cookies
+        assert "refresh_token" in response.cookies
 
     @override_settings(RATE_LIMITING_ENABLED=False)
     def test_invalid_verification_token_fails(self):
@@ -311,4 +312,5 @@ class TestRegistrationFlow:
         # 5. Skontroluj, že sa teraz môže prihlásiť
         response = self.client.post(self.login_url, login_data)
         assert response.status_code == status.HTTP_200_OK
-        assert "tokens" in response.data
+        assert "access_token" in response.cookies
+        assert "refresh_token" in response.cookies

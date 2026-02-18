@@ -13,7 +13,7 @@ User = get_user_model()
 class TestAuthenticationBlacklistExtras:
     def test_is_token_blacklisted_fallback_no_jti(self):
         auth = SwaplyJWTAuthentication()
-        assert auth._is_token_blacklisted_fallback({}) is False
+        assert auth._is_token_blacklisted_fallback({}) is True
 
     def test_blacklist_fail_open_when_internal_errors(self):
         user = User.objects.create_user(

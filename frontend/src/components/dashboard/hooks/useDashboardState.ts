@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import type { User } from '../../../types';
-import { isAuthenticated, clearAuthTokens } from '../../../utils/auth';
+import { isAuthenticated, clearAuthState } from '../../../utils/auth';
 import { api, endpoints } from '../../../lib/api';
 import { setUserProfileToCache } from '../modules/profile/profileUserCache';
 import { invalidateSearchCacheForUser } from '../modules/SearchModule';
@@ -162,12 +162,14 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
 
       if (!initialUser) {
         try {
+          // Server-side overenie cookie auth (neľahni len na client-side flag)
+          await api.get('/auth/ping/');
           const response = await api.get(endpoints.auth.me);
           userRef.current = response.data;
           setUser(response.data);
         } catch (error) {
           console.error('Error fetching user data:', error);
-          clearAuthTokens();
+          clearAuthState();
           router.push('/');
         } finally {
           setIsLoading(false);
@@ -388,7 +390,7 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
-      clearAuthTokens();
+      clearAuthState();
       router.push('/');
     }
   }, [router]);

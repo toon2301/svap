@@ -38,18 +38,20 @@ class TestAuthEndpoints(APITestCase):
         assert r.status_code == status.HTTP_201_CREATED
         assert r.data["email_sent"] is True
 
-    def test_me_with_tokens(self):
+    def test_me(self):
         user = User.objects.create_user(
             username="meu",
             email="me@example.com",
             password="StrongPass123",
             is_verified=True,
         )
-        self.client.force_authenticate(user=user)
-        url = reverse("accounts:me") + "?with_tokens=true"
+        # cookie-only: otestuj me endpoint so server-side auth
+        refresh = RefreshToken.for_user(user)
+        self.client.cookies["access_token"] = str(refresh.access_token)
+        url = reverse("accounts:me")
         r = self.client.get(url)
         assert r.status_code == status.HTTP_200_OK
-        assert "tokens" in r.data
+        assert "email" in r.data
 
     def test_logout_with_refresh(self):
         user = User.objects.create_user(
@@ -58,16 +60,16 @@ class TestAuthEndpoints(APITestCase):
             password="StrongPass123",
             is_verified=True,
         )
-        self.client.force_authenticate(user=user)
         refresh = RefreshToken.for_user(user)
+        self.client.cookies["access_token"] = str(refresh.access_token)
+        self.client.cookies["refresh_token"] = str(refresh)
         url = reverse("accounts:logout")
-        r = self.client.post(url, {"refresh": str(refresh)}, format="json")
+        r = self.client.post(url, {}, format="json")
         assert r.status_code == status.HTTP_200_OK
         # Pokus o použitie zblacklistovaného refresh tokenu na získanie nového access tokenu by mal zlyhať
         refresh_token_url = reverse("token_refresh")
-        r2 = self.client.post(
-            refresh_token_url, {"refresh": str(refresh)}, format="json"
-        )
+        # refresh cookie-only
+        r2 = self.client.post(refresh_token_url, {}, format="json")
         assert r2.status_code in (
             status.HTTP_401_UNAUTHORIZED,
             status.HTTP_400_BAD_REQUEST,

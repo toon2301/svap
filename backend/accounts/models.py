@@ -271,7 +271,8 @@ class EmailVerification(models.Model):
         ordering = ["-created_at"]
 
     def __str__(self):
-        return f"Verifikácia pre {self.user.email}"
+        # Never include user email (PII) in string representation.
+        return f"Verifikácia pre user_id={self.user_id}"
 
     def is_expired(self):
         """Kontrola, či token neexpiroval (48 hodín)"""
@@ -283,10 +284,7 @@ class EmailVerification(models.Model):
 
         logger = logging.getLogger(__name__)
 
-        logger.info(f"📧 DEBUG EMAIL: Starting email send for user {self.user.email}")
-
         verification_url = self.get_verification_url(request)
-        logger.info(f"📧 DEBUG EMAIL: Verification URL: {verification_url}")
 
         subject = "Potvrdenie registrácie - Swaply"
         message = f"""
@@ -303,19 +301,21 @@ S pozdravom,
 Tím Swaply
         """
 
-        logger.info(f"📧 DEBUG EMAIL: Email subject: {subject}")
-        logger.info(f"📧 DEBUG EMAIL: From email: {settings.DEFAULT_FROM_EMAIL}")
-        logger.info(f"📧 DEBUG EMAIL: To email: {self.user.email}")
-
-        logger.info(f"📧 DEBUG EMAIL: EMAIL_BACKEND: {settings.EMAIL_BACKEND}")
-        if hasattr(settings, "EMAIL_HOST"):
-            logger.info(f"📧 DEBUG EMAIL: EMAIL_HOST: {settings.EMAIL_HOST}")
-            logger.info(f"📧 DEBUG EMAIL: EMAIL_PORT: {settings.EMAIL_PORT}")
-            logger.info(f"📧 DEBUG EMAIL: EMAIL_USE_TLS: {settings.EMAIL_USE_TLS}")
-            logger.info(f"📧 DEBUG EMAIL: EMAIL_HOST_USER: {settings.EMAIL_HOST_USER}")
-
         try:
-            logger.info("📧 DEBUG EMAIL: Calling send_mail()...")
+            if getattr(settings, "DEBUG", False):
+                logger.info(
+                    "📧 DEBUG EMAIL: Sending verification email",
+                    extra={
+                        "to_email": self.user.email,
+                        "email_backend": getattr(settings, "EMAIL_BACKEND", None),
+                        "email_host": getattr(settings, "EMAIL_HOST", None),
+                        "email_port": getattr(settings, "EMAIL_PORT", None),
+                        "email_use_tls": getattr(settings, "EMAIL_USE_TLS", None),
+                        "email_host_user": getattr(settings, "EMAIL_HOST_USER", None),
+                        "verification_url": verification_url,
+                        "subject": subject,
+                    },
+                )
             result = send_mail(
                 subject=subject,
                 message=message,
@@ -323,15 +323,17 @@ Tím Swaply
                 recipient_list=[self.user.email],
                 fail_silently=False,
             )
-            logger.info(f"📧 DEBUG EMAIL: send_mail() returned: {result}")
-            logger.info("📧 DEBUG EMAIL: Email sent successfully! ✅")
+            if getattr(settings, "DEBUG", False):
+                logger.info(f"📧 DEBUG EMAIL: send_mail() returned: {result}")
+            logger.info("Verification email sent")
             return True
         except Exception as e:
-            logger.error(f"📧 DEBUG EMAIL: Exception during send_mail(): {e}")
-            logger.error(f"Chyba pri odosielaní emailu: {e}")
-            import traceback
+            if getattr(settings, "DEBUG", False):
+                import traceback
 
-            logger.error(f"📧 DEBUG EMAIL: Traceback: {traceback.format_exc()}")
+                logger.error(f"📧 DEBUG EMAIL: Exception during send_mail(): {e}")
+                logger.error(f"📧 DEBUG EMAIL: Traceback: {traceback.format_exc()}")
+            logger.error("Verification email failed")
             return False
 
     def get_verification_url(self, request=None):

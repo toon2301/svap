@@ -55,14 +55,23 @@ class CustomGoogleOAuth2Adapter(GoogleOAuth2Adapter):
                 f"user_id={user.id}"
             )
 
-            logger.info(
-                f"Google OAuth login successful for user {user.email}, redirecting to {redirect_url}"
-            )
+            if getattr(settings, "DEBUG", False):
+                logger.info(
+                    f"Google OAuth login successful for user {user.email}, redirecting to {redirect_url}"
+                )
+            else:
+                logger.info(
+                    "Google OAuth login successful",
+                    extra={"user_id": getattr(user, "id", None)},
+                )
 
             return HttpResponseRedirect(redirect_url)
 
         except Exception as e:
-            logger.error(f"Google OAuth complete_login error: {str(e)}")
+            if getattr(settings, "DEBUG", False):
+                logger.error(f"Google OAuth complete_login error: {str(e)}")
+            else:
+                logger.error("Google OAuth complete_login error")
             # V prípade chyby presmeruj na frontend s chybovou správou
             frontend_callback = request.GET.get("state", "/auth/callback/")
             error_url = f"{frontend_callback}?error=oauth_failed"

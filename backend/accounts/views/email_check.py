@@ -46,13 +46,23 @@ def check_email_availability_view(request, email):
         )
 
     except ValidationError as e:
-        logger.warning(f"Email validation error: {str(e)}")
+        from django.conf import settings
+
+        if getattr(settings, "DEBUG", False):
+            logger.warning(f"Email validation error: {str(e)}")
+        else:
+            logger.warning("Email validation error")
         return Response(
             {"error": str(e), "available": False}, status=status.HTTP_400_BAD_REQUEST
         )
 
     except Exception as e:
-        logger.error(f"Check email availability error: {str(e)}")
+        from django.conf import settings
+
+        if getattr(settings, "DEBUG", False):
+            logger.error(f"Check email availability error: {str(e)}")
+        else:
+            logger.error("Check email availability error")
         return Response(
             {"error": "Chyba pri kontrole dostupnosti emailu", "available": False},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,

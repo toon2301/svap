@@ -47,10 +47,7 @@ describe('AuthContext', () => {
       first_name: 'Test',
       last_name: 'User',
     };
-    const mockTokens = { access: 'token', refresh: 'refresh' };
-    
     localStorage.setItem('user', JSON.stringify(mockUser));
-    localStorage.setItem('tokens', JSON.stringify(mockTokens));
     
     render(
       <AuthProvider>

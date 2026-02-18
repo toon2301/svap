@@ -35,14 +35,26 @@ def skills_list_view(request):
         import logging
 
         logger = logging.getLogger(__name__)
-        logger.info(f"POST /api/auth/skills/ - Data: {request.data}")
+        try:
+            from django.conf import settings
+
+            if getattr(settings, "DEBUG", False):
+                logger.info(f"POST /api/auth/skills/ - Data: {request.data}")
+        except Exception:
+            pass
 
         serializer = OfferedSkillSerializer(
             data=request.data, context={"request": request}
         )
 
         if not serializer.is_valid():
-            logger.warning(f"Serializer validation errors: {serializer.errors}")
+            try:
+                from django.conf import settings
+
+                if getattr(settings, "DEBUG", False):
+                    logger.warning(f"Serializer validation errors: {serializer.errors}")
+            except Exception:
+                pass
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         category = serializer.validated_data.get("category")
@@ -174,14 +186,26 @@ def skill_images_view(request, skill_id):
     import logging
 
     logger = logging.getLogger(__name__)
-    logger.info(
-        f"POST /api/auth/skills/{skill_id}/images/ - Files: {list(request.FILES.keys()) if request.FILES else 'No files'}"
-    )
+    try:
+        from django.conf import settings
+
+        if getattr(settings, "DEBUG", False):
+            logger.info(
+                f"POST /api/auth/skills/{skill_id}/images/ - Files: {list(request.FILES.keys()) if request.FILES else 'No files'}"
+            )
+    except Exception:
+        pass
 
     if "image" not in request.FILES:
-        logger.warning(
-            f"POST /api/auth/skills/{skill_id}/images/ - Missing 'image' field"
-        )
+        try:
+            from django.conf import settings
+
+            if getattr(settings, "DEBUG", False):
+                logger.warning(
+                    f"POST /api/auth/skills/{skill_id}/images/ - Missing 'image' field"
+                )
+        except Exception:
+            pass
         return Response(
             {"error": 'Pole "image" je povinné'}, status=status.HTTP_400_BAD_REQUEST
         )

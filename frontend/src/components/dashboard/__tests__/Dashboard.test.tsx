@@ -27,7 +27,7 @@ jest.mock('next/navigation', () => ({
 // Mock auth utils
 jest.mock('@/utils/auth', () => ({
   isAuthenticated: jest.fn(() => true),
-  clearAuthTokens: jest.fn(),
+  clearAuthState: jest.fn(),
 }));
 
 // Mock API
@@ -145,14 +145,14 @@ describe('Dashboard', () => {
   });
 
   it('clears tokens and redirects on API error', async () => {
-    const { isAuthenticated, clearAuthTokens } = require('@/utils/auth');
+    const { isAuthenticated, clearAuthState } = require('@/utils/auth');
     const { api } = require('@/lib/api');
     isAuthenticated.mockReturnValue(true);
     api.get.mockRejectedValue(new Error('network'));
     render(<Dashboard />);
 
     await waitFor(() => {
-      expect(clearAuthTokens).toHaveBeenCalled();
+      expect(clearAuthState).toHaveBeenCalled();
       expect(pushMock).toHaveBeenCalledWith('/');
     });
   });
@@ -210,7 +210,7 @@ describe('Dashboard', () => {
   it('calls logout when logout button is clicked', async () => {
     const { isAuthenticated } = require('@/utils/auth');
     const { api } = require('@/lib/api');
-    const { clearAuthTokens } = require('@/utils/auth');
+    const { clearAuthState } = require('@/utils/auth');
     
     isAuthenticated.mockReturnValue(true);
     api.post.mockResolvedValue({});
@@ -222,7 +222,7 @@ describe('Dashboard', () => {
     
     await waitFor(() => {
       expect(api.post).toHaveBeenCalledWith('/auth/logout/', {});
-      expect(clearAuthTokens).toHaveBeenCalled();
+      expect(clearAuthState).toHaveBeenCalled();
     });
   });
 

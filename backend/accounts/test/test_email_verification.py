@@ -41,7 +41,7 @@ class TestEmailVerificationModel(TestCase):
     def test_verification_str(self):
         """Test __str__ metódy"""
         verification = EmailVerification.objects.create(user=self.user)
-        expected = f"Verifikácia pre {self.user.email}"
+        expected = f"Verifikácia pre user_id={self.user.id}"
         self.assertEqual(str(verification), expected)
 
     def test_is_expired_fresh_token(self):
@@ -259,7 +259,8 @@ class TestRegistrationWithEmailVerification(APITestCase):
         response = self.client.post(url, data, format="json")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn("tokens", response.data)
+        self.assertIn("access_token", response.cookies)
+        self.assertIn("refresh_token", response.cookies)
 
     def test_login_with_verification_success(self):
         """Test, že prihlásenie s verifikáciou funguje"""
@@ -276,4 +277,5 @@ class TestRegistrationWithEmailVerification(APITestCase):
         response = self.client.post(url, data, format="json")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertIn("tokens", response.data)
+        self.assertIn("access_token", response.cookies)
+        self.assertIn("refresh_token", response.cookies)

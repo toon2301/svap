@@ -23,6 +23,7 @@ from swaply.rate_limiting import (
     login_rate_limit,
     register_rate_limit,
     email_verification_rate_limit,
+    api_rate_limit,
 )
 from swaply.audit_logger import (
     log_login_success,
@@ -30,6 +31,7 @@ from swaply.audit_logger import (
     log_registration_success,
     log_email_verification_success,
     log_email_verification_failed,
+    audit_api_access,
 )
 
 from ..models import UserProfile
@@ -75,9 +77,15 @@ def _set_auth_cookies(response, *, access: str, refresh: str) -> None:
     kwargs = _auth_cookie_kwargs()
     state_kwargs = _auth_state_cookie_kwargs()
     # Access token – kratšia životnosť
-    response.set_cookie("access_token", access, max_age=60 * 60, **kwargs)
+    response.set_cookie("access_token", access, max_age=15 * 60, **kwargs)
     # Refresh token – dlhšia životnosť
-    response.set_cookie("refresh_token", refresh, max_age=7 * 24 * 60 * 60, **kwargs)
+    # Požiadavka: v produkcii Strict
+    refresh_kwargs = dict(kwargs)
+    if not getattr(settings, "DEBUG", False):
+        refresh_kwargs["samesite"] = "Strict"
+    response.set_cookie(
+        "refresh_token", refresh, max_age=7 * 24 * 60 * 60, **refresh_kwargs
+    )
     # Stavový cookie pre UI (bez tokenov)
     response.set_cookie("auth_state", "1", max_age=7 * 24 * 60 * 60, **state_kwargs)
 
@@ -87,7 +95,10 @@ def _clear_auth_cookies(response) -> None:
     state_kwargs = _auth_state_cookie_kwargs()
     # delete_cookie nevie vždy nastaviť rovnaké samesite/secure v každej verzii, preto nastavíme expiráciu.
     response.set_cookie("access_token", "", max_age=0, **kwargs)
-    response.set_cookie("refresh_token", "", max_age=0, **kwargs)
+    refresh_kwargs = dict(kwargs)
+    if not getattr(settings, "DEBUG", False):
+        refresh_kwargs["samesite"] = "Strict"
+    response.set_cookie("refresh_token", "", max_age=0, **refresh_kwargs)
     response.set_cookie("auth_state", "", max_age=0, **state_kwargs)
 
 
@@ -113,7 +124,10 @@ def is_account_locked(email: str) -> bool:
         return bool(cache.get(lock_key))
     except Exception as e:
         # Fail-open: ak cache nie je dostupná, radšej nelockuj a nepadni na 500.
-        logger.warning(f"Lockout cache.get failed for {lock_key}: {e}")
+        if getattr(settings, "DEBUG", False):
+            logger.warning(f"Lockout cache.get failed for {lock_key}: {e}")
+        else:
+            logger.warning("Lockout cache.get failed")
         return False
 
 
@@ -130,7 +144,10 @@ def register_login_failure(email: str) -> bool:
     try:
         data = cache.get(fail_key, {"attempts": 0})
     except Exception as e:
-        logger.warning(f"Lockout cache.get failed for {fail_key}: {e}")
+        if getattr(settings, "DEBUG", False):
+            logger.warning(f"Lockout cache.get failed for {fail_key}: {e}")
+        else:
+            logger.warning("Lockout cache.get failed")
         return False
     attempts = int(data.get("attempts", 0)) + 1
     try:
@@ -140,13 +157,19 @@ def register_login_failure(email: str) -> bool:
             timeout=LOGIN_FAILURE_WINDOW_MINUTES * 60,
         )
     except Exception as e:
-        logger.warning(f"Lockout cache.set failed for {fail_key}: {e}")
+        if getattr(settings, "DEBUG", False):
+            logger.warning(f"Lockout cache.set failed for {fail_key}: {e}")
+        else:
+            logger.warning("Lockout cache.set failed")
         return False
     if attempts >= LOGIN_FAILURE_MAX_ATTEMPTS:
         try:
             cache.set(lock_key, True, timeout=ACCOUNT_LOCKOUT_MINUTES * 60)
         except Exception as e:
-            logger.warning(f"Lockout cache.set failed for {lock_key}: {e}")
+            if getattr(settings, "DEBUG", False):
+                logger.warning(f"Lockout cache.set failed for {lock_key}: {e}")
+            else:
+                logger.warning("Lockout cache.set failed")
             return False
         return True
     return False
@@ -159,11 +182,17 @@ def reset_login_failures(email: str) -> None:
     try:
         cache.delete(fail_key)
     except Exception as e:
-        logger.warning(f"Lockout cache.delete failed for {fail_key}: {e}")
+        if getattr(settings, "DEBUG", False):
+            logger.warning(f"Lockout cache.delete failed for {fail_key}: {e}")
+        else:
+            logger.warning("Lockout cache.delete failed")
     try:
         cache.delete(lock_key)
     except Exception as e:
-        logger.warning(f"Lockout cache.delete failed for {lock_key}: {e}")
+        if getattr(settings, "DEBUG", False):
+            logger.warning(f"Lockout cache.delete failed for {lock_key}: {e}")
+        else:
+            logger.warning("Lockout cache.delete failed")
 
 
 @api_view(["GET"])
@@ -185,8 +214,6 @@ def register_view(request):
 
     # Pre GET požiadavky vráť informácie o registračnom formulári
     if request.method == "GET":
-        from django.conf import settings
-
         return Response(
             {
                 "message": "Registračný endpoint",
@@ -215,52 +242,73 @@ def register_view(request):
         )
 
     # Pre POST požiadavky spracuj registráciu
-    logger.info("📝 DEBUG REGISTRATION: Starting registration process")
+    if getattr(settings, "DEBUG", False):
+        logger.info("📝 DEBUG REGISTRATION: Starting registration process")
 
     serializer = UserRegistrationSerializer(
         data=request.data, context={"request": request}
     )
 
     if serializer.is_valid():
-        logger.info("📝 DEBUG REGISTRATION: Serializer is valid")
+        if getattr(settings, "DEBUG", False):
+            logger.info("📝 DEBUG REGISTRATION: Serializer is valid")
         try:
             with transaction.atomic():
-                logger.info("📝 DEBUG REGISTRATION: Entering transaction")
+                if getattr(settings, "DEBUG", False):
+                    logger.info("📝 DEBUG REGISTRATION: Entering transaction")
 
                 user = serializer.save()
-                logger.info(f"📝 DEBUG REGISTRATION: User created - {user.email}")
+                if getattr(settings, "DEBUG", False):
+                    logger.info(
+                        f"📝 DEBUG REGISTRATION: User created - id={getattr(user, 'id', None)}"
+                    )
 
                 # Log úspešnú registráciu
                 ip_address = request.META.get("REMOTE_ADDR")
                 user_agent = request.META.get("HTTP_USER_AGENT")
                 log_registration_success(user, ip_address, user_agent)
-                logger.info("📝 DEBUG REGISTRATION: Registration logged successfully")
+                if getattr(settings, "DEBUG", False):
+                    logger.info(
+                        "📝 DEBUG REGISTRATION: Registration logged successfully"
+                    )
 
-                logger.info(
-                    "📝 DEBUG REGISTRATION: Transaction completed, returning response"
-                )
+                if getattr(settings, "DEBUG", False):
+                    logger.info(
+                        "📝 DEBUG REGISTRATION: Transaction completed, returning response"
+                    )
                 return Response(
                     {
                         "message": "Registrácia bola úspešná. Skontrolujte si email a potvrďte registráciu.",
-                        "user": UserProfileSerializer(user).data,
+                        "user": UserProfileSerializer(
+                            user,
+                            context={
+                                "request": __import__("types").SimpleNamespace(user=user)
+                            },
+                        ).data,
                         "email_sent": True,
                     },
                     status=status.HTTP_201_CREATED,
                 )
 
         except Exception as e:
-            # Log error for debugging but don't expose details to client
-            logger.error(f"📝 DEBUG REGISTRATION: Exception occurred - {str(e)}")
-            logger.error(f"Registration error: {str(e)}")
-            import traceback
+            # V produkcii neloguj serializer dáta / PII; v DEBUG ponechaj detail.
+            if getattr(settings, "DEBUG", False):
+                logger.error(f"📝 DEBUG REGISTRATION: Exception occurred - {str(e)}")
+                logger.error(f"Registration error: {str(e)}")
+                import traceback
 
-            logger.error(f"📝 DEBUG REGISTRATION: Traceback - {traceback.format_exc()}")
+                logger.error(
+                    f"📝 DEBUG REGISTRATION: Traceback - {traceback.format_exc()}"
+                )
+            else:
+                logger.error("Registration failed")
             return Response(
                 {"error": "Chyba pri vytváraní účtu"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-    logger.error(f"📝 DEBUG REGISTRATION: Serializer invalid - {serializer.errors}")
+    if getattr(settings, "DEBUG", False):
+        logger.error(f"📝 DEBUG REGISTRATION: Serializer invalid - {serializer.errors}")
     return Response(
         {"error": "Neplatné údaje", "details": serializer.errors},
         status=status.HTTP_400_BAD_REQUEST,
@@ -298,12 +346,14 @@ def login_view(request):
         resp = Response(
             {
                 "message": "Prihlásenie bolo úspešné",
-                "user": UserProfileSerializer(user).data,
-                "tokens": {"access": str(access_token), "refresh": str(refresh)},
+                "user": UserProfileSerializer(
+                    user,
+                    context={"request": __import__("types").SimpleNamespace(user=user)},
+                ).data,
             },
             status=status.HTTP_200_OK,
         )
-        # Nastav HttpOnly cookies (B mód). Zachovávame aj tokens v body kvôli BC.
+        # Nastav HttpOnly cookies (čistý cookie model).
         try:
             _set_auth_cookies(resp, access=str(access_token), refresh=str(refresh))
         except Exception as e:
@@ -341,9 +391,7 @@ def login_view(request):
 def logout_view(request):
     """Odhlásenie používateľa"""
     try:
-        refresh_token = request.data.get("refresh") or request.COOKIES.get(
-            "refresh_token"
-        )
+        refresh_token = request.COOKIES.get("refresh_token")
         if refresh_token:
             # Použi custom RefreshToken s Redis fallback
             from ..authentication import SwaplyRefreshToken
@@ -376,26 +424,6 @@ def logout_view(request):
 def me_view(request):
     """Získanie informácií o aktuálnom používateľovi"""
     serializer = UserProfileSerializer(request.user, context={"request": request})
-
-    # Pre OAuth callback - vrátime aj tokeny
-    if request.GET.get("with_tokens") == "true":
-        from ..authentication import SwaplyRefreshToken
-
-        refresh = SwaplyRefreshToken.for_user(request.user)
-        access_token = refresh.access_token
-
-        resp = Response(
-            {
-                "user": serializer.data,
-                "tokens": {"access": str(access_token), "refresh": str(refresh)},
-            }
-        )
-        # Voliteľne nastav cookies (užitočné pre legacy OAuth flow)
-        try:
-            _set_auth_cookies(resp, access=str(access_token), refresh=str(refresh))
-        except Exception:
-            pass
-        return resp
 
     return Response(serializer.data)
 
@@ -438,10 +466,6 @@ def verify_email_view(request):
                     {
                         "message": "Email bol úspešne overený",
                         "verified": True,
-                        "tokens": {
-                            "access": str(refresh.access_token),
-                            "refresh": str(refresh),
-                        },
                         "user": {
                             "id": verification.user.id,
                             "email": verification.user.email,
@@ -472,7 +496,10 @@ def verify_email_view(request):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
         except Exception as e:
-            logger.error(f"Email verification error: {str(e)}")
+            if getattr(settings, "DEBUG", False):
+                logger.error(f"Email verification error: {str(e)}")
+            else:
+                logger.error("Email verification failed")
             return Response(
                 {"error": "Chyba pri overovaní emailu"},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -512,10 +539,13 @@ def resend_verification_view(request):
             verification.send_verification_email(request)
 
             # Log znovu odoslanie
-            ip_address = request.META.get("REMOTE_ADDR")
-            logger.info(
-                f"Resend verification email for user {user.email} from {ip_address}"
-            )
+            if getattr(settings, "DEBUG", False):
+                logger.info(f"Resend verification email for user {user.email}")
+            else:
+                logger.info(
+                    "Resend verification email",
+                    extra={"user_id": getattr(user, "id", None)},
+                )
 
             return Response(
                 {"message": "Verifikačný email bol znovu odoslaný", "email_sent": True},
@@ -528,7 +558,10 @@ def resend_verification_view(request):
                 status=status.HTTP_404_NOT_FOUND,
             )
         except Exception as e:
-            logger.error(f"Resend verification error: {str(e)}")
+            if getattr(settings, "DEBUG", False):
+                logger.error(f"Resend verification error: {str(e)}")
+            else:
+                logger.error("Resend verification failed")
             return Response(
                 {"error": "Chyba pri odosielaní verifikačného emailu"},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -538,3 +571,60 @@ def resend_verification_view(request):
         {"error": "Neplatné údaje", "details": serializer.errors},
         status=status.HTTP_400_BAD_REQUEST,
     )
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+@api_rate_limit
+@audit_api_access(endpoint_name="/api/auth/ping/")
+def ping_view(request):
+    """
+    Autentifikovaný ping endpoint pre overenie prihlásenia.
+    
+    Bezpečnostné požiadavky:
+    - Overená autentifikácia: IsAuthenticated permission
+    - Explicitná autorizácia: IsAuthenticated zabezpečuje, že používateľ je prihlásený
+    - Rate limiting: api_rate_limit zabezpečuje ochranu proti DoS
+    - Auditovateľnosť: audit_api_access loguje všetky prístupy
+    - Validácia vstupov: GET endpoint bez vstupov, user_id je získané z autentifikovaného request.user
+    - Ochrana proti injection: Django REST Framework automaticky zabezpečuje
+    """
+    try:
+        # Explicitná kontrola, že používateľ je autentifikovaný a aktívny
+        if not request.user or not request.user.is_authenticated:
+            return Response(
+                {"error": "Autentifikácia je vyžadovaná"},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+        
+        # Kontrola, že používateľ je aktívny (dodatočná bezpečnostná kontrola)
+        if not request.user.is_active:
+            return Response(
+                {"error": "Účet nie je aktívny"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        
+        # Bezpečné získanie user_id (integer, nie string, aby sa zabránilo injection)
+        user_id = int(request.user.id)
+        
+        return Response(
+            {
+                "status": "ok",
+                "user_id": user_id,
+            },
+            status=status.HTTP_200_OK,
+        )
+    except (ValueError, TypeError, AttributeError) as e:
+        # Log chybu, ale nevracaj detaily používateľovi (security by default)
+        logger.error(f"Ping endpoint error: {e}", exc_info=True)
+        return Response(
+            {"error": "Chyba pri spracovaní požiadavky"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+    except Exception as e:
+        # Všeobecná chyba - loguj, ale nevracaj detaily
+        logger.error(f"Unexpected error in ping endpoint: {e}", exc_info=True)
+        return Response(
+            {"error": "Chyba pri spracovaní požiadavky"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )

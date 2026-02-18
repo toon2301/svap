@@ -124,7 +124,10 @@ def password_reset_request_view(request):
             fail_silently=False,
         )
 
-        logger.info(f"Password reset email sent to {user.email}")
+        if getattr(settings, "DEBUG", False):
+            logger.info(f"Password reset email sent to {user.email}")
+        else:
+            logger.info("Password reset email sent")
 
         return JsonResponse(
             {
@@ -134,7 +137,10 @@ def password_reset_request_view(request):
         )
 
     except Exception as e:
-        logger.error(f"Error sending password reset email: {e}")
+        if getattr(settings, "DEBUG", False):
+            logger.error(f"Error sending password reset email: {e}")
+        else:
+            logger.error("Password reset email failed")
         return JsonResponse(
             {"error": "Chyba pri odosielaní emailu. Skúste to neskôr."},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -176,7 +182,10 @@ def password_reset_confirm_view(request, uidb64, token):
         user.set_password(new_password)
         user.save()
 
-        logger.info(f"Password reset successful for user {user.email}")
+        if getattr(settings, "DEBUG", False):
+            logger.info(f"Password reset successful for user {user.email}")
+        else:
+            logger.info("Password reset successful")
 
         return JsonResponse(
             {
@@ -186,7 +195,10 @@ def password_reset_confirm_view(request, uidb64, token):
         )
 
     except Exception as e:
-        logger.error(f"Error resetting password: {e}")
+        if getattr(settings, "DEBUG", False):
+            logger.error(f"Error resetting password: {e}")
+        else:
+            logger.error("Password reset failed")
         return JsonResponse(
             {"error": "Chyba pri zmene hesla. Skúste to neskôr."},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,

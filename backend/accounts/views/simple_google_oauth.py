@@ -200,7 +200,13 @@ def google_callback_view(request):
                 is_verified=True,  # Google používatelia sú automaticky overení
             )
 
-            logger.info(f"Created new user via Google OAuth: {email}")
+            if getattr(settings, "DEBUG", False):
+                logger.info(f"Created new user via Google OAuth: {email}")
+            else:
+                logger.info(
+                    "Created new user via Google OAuth",
+                    extra={"user_id": getattr(user, "id", None)},
+                )
 
         # Generuj JWT tokeny
         refresh = RefreshToken.for_user(user)
@@ -214,8 +220,16 @@ def google_callback_view(request):
             f"user_id={user.id}"
         )
 
-        logger.info(f"Google OAuth login successful for user {user.email}")
-        logger.info(f"Redirecting to: {redirect_url[:200]}...")  # Log prvých 200 znakov
+        if getattr(settings, "DEBUG", False):
+            logger.info(f"Google OAuth login successful for user {user.email}")
+            logger.info(
+                f"Redirecting to: {redirect_url[:200]}..."
+            )  # obsahuje citlivé query parametre
+        else:
+            logger.info(
+                "Google OAuth login successful",
+                extra={"user_id": getattr(user, "id", None)},
+            )
 
         return HttpResponseRedirect(redirect_url)
 

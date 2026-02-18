@@ -68,7 +68,7 @@ class TestJWTAuthExtras:
 
     def test_is_token_blacklisted_no_jti_returns_false(self):
         auth = SwaplyJWTAuthentication()
-        assert auth._is_token_blacklisted({"user_id": 1}) is False
+        assert auth._is_token_blacklisted({"user_id": 1}) is True
 
     def test_redis_blacklist_check_exception_path_returns_user(self):
         user = User.objects.create_user(
@@ -83,8 +83,8 @@ class TestJWTAuthExtras:
             SwaplyJWTAuthentication, "_is_redis_available", return_value=True
         ):
             with patch("django.core.cache.cache.get", side_effect=Exception("boom")):
-                got = auth.get_user(validated_token=token)
-                assert got.id == user.id
+                with pytest.raises(InvalidToken):
+                    auth.get_user(validated_token=token)
 
     def test_refresh_blacklist_logs_base_failure_and_uses_fallback(self, caplog):
         user = User.objects.create_user(
@@ -133,7 +133,7 @@ class TestJWTAuthExtras:
     def test_is_token_blacklisted_fallback_exception_returns_false(self):
         auth = SwaplyJWTAuthentication()
         with patch("django.core.cache.cache.get", side_effect=Exception("err")):
-            assert auth._is_token_blacklisted_fallback({"jti": "x"}) is False
+            assert auth._is_token_blacklisted_fallback({"jti": "x"}) is True
 
     def test_redis_available_blacklisted_raises(self):
         user = User.objects.create_user(

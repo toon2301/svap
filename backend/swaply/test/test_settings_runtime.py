@@ -30,6 +30,11 @@ def test_prod_csrf_and_redis_enforced(monkeypatch):
         {
             "DEBUG": "False",
             "SECRET_KEY": "prod-secret",
+            "ALLOWED_HOSTS": "svaply.com,www.svaply.com,api.svaply.com,stunning-inspiration-svap.up.railway.app",
+            "EMAIL_HOST": "smtp.example.com",
+            "EMAIL_PORT": "587",
+            "EMAIL_HOST_USER": "smtp-user@example.com",
+            "EMAIL_HOST_PASSWORD": "smtp-pass",
             "REDIS_URL": "redis://localhost:6379/0",
             "CACHE_KEY_PREFIX": "swaply",
         },
@@ -86,6 +91,11 @@ def test_logging_stdout_mode(monkeypatch):
         {
             "DEBUG": "False",
             "SECRET_KEY": "prod",
+            "ALLOWED_HOSTS": "svaply.com,www.svaply.com,api.svaply.com,stunning-inspiration-svap.up.railway.app",
+            "EMAIL_HOST": "smtp.example.com",
+            "EMAIL_PORT": "587",
+            "EMAIL_HOST_USER": "smtp-user@example.com",
+            "EMAIL_HOST_PASSWORD": "smtp-pass",
             "LOG_TO_STDOUT": "1",
         },
     )
@@ -101,5 +111,33 @@ def test_missing_secret_key_raises_in_prod(monkeypatch):
             {
                 "DEBUG": "False",
                 "SECRET_KEY": "",
+            },
+        )
+
+
+def test_missing_allowed_hosts_raises_in_prod(monkeypatch):
+    with pytest.raises(ValueError):
+        load_settings_with_env(
+            monkeypatch,
+            {
+                "DEBUG": "False",
+                "SECRET_KEY": "prod",
+                "ALLOWED_HOSTS": "",
+            },
+        )
+
+
+def test_missing_email_envs_raises_in_prod(monkeypatch):
+    with pytest.raises(ValueError):
+        load_settings_with_env(
+            monkeypatch,
+            {
+                "DEBUG": "False",
+                "SECRET_KEY": "prod",
+                "ALLOWED_HOSTS": "svaply.com,www.svaply.com,api.svaply.com,stunning-inspiration-svap.up.railway.app",
+                "EMAIL_HOST": "",
+                "EMAIL_PORT": "",
+                "EMAIL_HOST_USER": "",
+                "EMAIL_HOST_PASSWORD": "",
             },
         )

@@ -27,7 +27,7 @@ else:
         print(f"{i}. ID: {u.id}")
         print(f"   Meno/Názov: {display_name}")
         print(f"   Username: {u.username}")
-        print(f"   Email: {u.email}")
+        print("   Email: <redacted>")
         print(f"   Typ: {user_type}")
         print(f"   Overený: {verified}")
         print(f'   Vytvorený: {u.date_joined.strftime("%Y-%m-%d %H:%M:%S")}')

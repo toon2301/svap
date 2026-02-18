@@ -15,6 +15,8 @@ from django.contrib.auth import get_user_model
 import logging
 import urllib.parse
 import os
+import secrets
+from django.core.cache import cache
 
 User = get_user_model()
 logger = logging.getLogger(__name__)
@@ -42,13 +44,24 @@ def google_login_view(request):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
-        # Frontend callback môže prísť v query parameteri `callback`, inak fallback na settings
-        frontend_callback = request.GET.get(
-            "callback",
-            getattr(
-                settings, "FRONTEND_CALLBACK_URL", "http://localhost:3000/auth/callback"
-            ),
+        default_frontend_callback = getattr(
+            settings, "FRONTEND_CALLBACK_URL", "http://localhost:3000/auth/callback"
         )
+        # Frontend callback môže prísť v query parameteri `callback`, ale musí byť na povolenej origin.
+        frontend_callback = request.GET.get("callback", default_frontend_callback)
+        try:
+            from urllib.parse import urlparse
+
+            parsed_default = urlparse(default_frontend_callback)
+            parsed_candidate = urlparse(frontend_callback)
+            # Povoliť len rovnakú scheme+host ako default callback (ochrana proti open redirect)
+            if (
+                parsed_candidate.scheme != parsed_default.scheme
+                or parsed_candidate.netloc != parsed_default.netloc
+            ):
+                frontend_callback = default_frontend_callback
+        except Exception:
+            frontend_callback = default_frontend_callback
 
         # Zostav redirect_uri – preferuj hodnotu zo settings, inak dynamicky podľa hostiteľa
         preferred_backend_callback = getattr(settings, "BACKEND_CALLBACK_URL", None)
@@ -58,6 +71,20 @@ def google_login_view(request):
             backend_callback = request.build_absolute_uri("/api/oauth/google/callback/")
 
         # Vytvor Google OAuth URL
+        # OAuth state: náhodná hodnota viazaná na callback (anti-CSRF + anti-open-redirect)
+        oauth_state = secrets.token_urlsafe(32)
+        try:
+            cache.set(f"oauth_state:{oauth_state}", frontend_callback, timeout=10 * 60)
+        except Exception:
+            # Ak cache nie je dostupná, fallback na default callback (bez custom callbacku)
+            frontend_callback = default_frontend_callback
+            try:
+                cache.set(
+                    f"oauth_state:{oauth_state}", frontend_callback, timeout=10 * 60
+                )
+            except Exception:
+                pass
+
         params = {
             "client_id": client_id,
             "redirect_uri": backend_callback,
@@ -65,7 +92,7 @@ def google_login_view(request):
             "response_type": "code",
             "access_type": "online",
             "prompt": "select_account",
-            "state": frontend_callback,
+            "state": oauth_state,
         }
 
         # Debug log - zobraz callback URL
@@ -75,7 +102,8 @@ def google_login_view(request):
         query_string = urllib.parse.urlencode(params)
         auth_url = f"https://accounts.google.com/o/oauth2/v2/auth?{query_string}"
 
-        logger.info(f"Google OAuth auth URL: {auth_url}")
+        # Neloguj celý auth_url (obsahuje state), stačí base informácia
+        logger.info("Google OAuth auth URL prepared")
 
         return HttpResponseRedirect(auth_url)
 
@@ -100,11 +128,18 @@ def google_callback_view(request):
             logger.error("No authorization code received")
             return redirect("http://localhost:3000/auth/callback/?error=no_code")
 
-        # Získaj frontend callback URL
         default_callback = getattr(
             settings, "FRONTEND_CALLBACK_URL", "http://localhost:3000/auth/callback/"
         )
-        frontend_callback = request.GET.get("state", default_callback)
+        oauth_state = request.GET.get("state")
+        frontend_callback = default_callback
+        if oauth_state:
+            try:
+                cached = cache.get(f"oauth_state:{oauth_state}")
+                if cached:
+                    frontend_callback = str(cached)
+            except Exception:
+                frontend_callback = default_callback
 
         # Získaj Google OAuth credentials z settings
         client_id = getattr(settings, "GOOGLE_OAUTH2_CLIENT_ID", None)
@@ -142,7 +177,7 @@ def google_callback_view(request):
         # Debug log (bez citlivých údajov)
         logger.info("Token exchange request initiated")
         logger.info(f"Client ID: {client_id[:10]}...")
-        logger.info(f"Code: {code[:10]}...")
+        # Neloguj authorization code
         logger.info(f"Redirect URI: {token_data['redirect_uri']}")
 
         token_response = requests.post(token_url, data=token_data, timeout=10)
@@ -219,14 +254,26 @@ def google_callback_view(request):
                 # Ulož zmeny ak sa niečo zmenilo
                 if name_changed:
                     user.save()
-                    logger.info(
-                        f"Updated user profile via Google OAuth (empty fields only): {email} - {user.first_name} {user.last_name}"
-                    )
+                    if getattr(settings, "DEBUG", False):
+                        logger.info(
+                            f"Updated user profile via Google OAuth (empty fields only): {email} - {user.first_name} {user.last_name}"
+                        )
+                    else:
+                        logger.info(
+                            "Updated user profile via Google OAuth (empty fields only)",
+                            extra={"user_id": getattr(user, "id", None)},
+                        )
             else:
                 # Používateľ manuálne upravil meno - zachovať jeho zmeny
-                logger.info(
-                    f"User {email} has manually modified name, skipping OAuth name update"
-                )
+                if getattr(settings, "DEBUG", False):
+                    logger.info(
+                        f"User {email} has manually modified name, skipping OAuth name update"
+                    )
+                else:
+                    logger.info(
+                        "User has manually modified name, skipping OAuth name update",
+                        extra={"user_id": getattr(user, "id", None)},
+                    )
 
         except User.DoesNotExist:
             # Vytvor nového používateľa
@@ -246,49 +293,35 @@ def google_callback_view(request):
                 is_active=True,  # Aktivuj používateľa
             )
 
-            logger.info(f"Created new user via Google OAuth: {email}")
+            if getattr(settings, "DEBUG", False):
+                logger.info(f"Created new user via Google OAuth: {email}")
+            else:
+                logger.info(
+                    "Created new user via Google OAuth",
+                    extra={"user_id": getattr(user, "id", None)},
+                )
 
         # Generuj JWT tokeny
         refresh = RefreshToken.for_user(user)
         access_token_jwt = refresh.access_token
 
-        # Cross-origin: ak frontend je na inej doméne, cookies sa nepošlú – pridaj tokeny do URL
-        from urllib.parse import urlparse
+        # Cookie-only: tokeny NESMÚ byť v URL (ani pri cross-origin).
+        redirect_url = f"{frontend_callback}?oauth=success&user_id={user.id}"
 
-        try:
-            frontend_host = urlparse(frontend_callback).netloc
-            backend_host = request.get_host().split(":")[0]
-            cross_origin = frontend_host != backend_host
-        except Exception:
-            cross_origin = False
-
-        base_params = f"oauth=success&user_id={user.id}"
-        if cross_origin:
-            # Fallback pre cross-origin: frontend uloží tokeny a pošle Authorization header
-            redirect_url = (
-                f"{frontend_callback}?"
-                f"{base_params}&"
-                f"token={urllib.parse.quote(str(access_token_jwt))}&"
-                f"refresh_token={urllib.parse.quote(str(refresh))}"
-            )
+        if getattr(settings, "DEBUG", False):
+            logger.info(f"Google OAuth login successful for user {user.email}")
         else:
-            redirect_url = f"{frontend_callback}?{base_params}"
-
-        logger.info(f"Google OAuth login successful for user {user.email}")
+            logger.info(
+                "Google OAuth login successful",
+                extra={"user_id": getattr(user, "id", None)},
+            )
 
         resp = HttpResponseRedirect(redirect_url)
         try:
-            from .auth import _auth_cookie_kwargs
+            from .auth import _set_auth_cookies, _auth_state_cookie_kwargs
 
-            kwargs = _auth_cookie_kwargs()
-            resp.set_cookie(
-                "access_token", str(access_token_jwt), max_age=60 * 60, **kwargs
-            )
-            resp.set_cookie(
-                "refresh_token", str(refresh), max_age=7 * 24 * 60 * 60, **kwargs
-            )
-            state_kwargs = dict(kwargs)
-            state_kwargs["httponly"] = False
+            _set_auth_cookies(resp, access=str(access_token_jwt), refresh=str(refresh))
+            state_kwargs = _auth_state_cookie_kwargs()
             resp.set_cookie("auth_state", "1", max_age=7 * 24 * 60 * 60, **state_kwargs)
         except Exception as e:
             logger.error(f"Failed to set OAuth auth cookies: {e}")
@@ -299,5 +332,13 @@ def google_callback_view(request):
         default_callback = getattr(
             settings, "FRONTEND_CALLBACK_URL", "http://localhost:3000/auth/callback/"
         )
-        frontend_callback = request.GET.get("state", default_callback)
+        frontend_callback = default_callback
+        try:
+            oauth_state = request.GET.get("state")
+            if oauth_state:
+                cached = cache.get(f"oauth_state:{oauth_state}")
+                if cached:
+                    frontend_callback = str(cached)
+        except Exception:
+            frontend_callback = default_callback
         return redirect(f"{frontend_callback}?error=oauth_failed")

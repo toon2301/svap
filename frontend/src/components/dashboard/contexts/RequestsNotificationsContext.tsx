@@ -2,7 +2,6 @@
 
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { api, endpoints } from '@/lib/api';
-import { getAccessToken } from '@/utils/auth';
 
 type RequestsNotificationsContextValue = {
   unreadCount: number;
@@ -49,14 +48,11 @@ function getBackendOrigin(): string {
   return 'http://localhost:8000';
 }
 
-function toWebSocketUrl(origin: string, token?: string | null): string {
+function toWebSocketUrl(origin: string): string {
   const wsOrigin = origin.startsWith('https://')
     ? origin.replace(/^https:\/\//, 'wss://')
     : origin.replace(/^http:\/\//, 'ws://');
   const baseUrl = `${wsOrigin}/ws/notifications/`;
-  if (token) {
-    return `${baseUrl}?token=${encodeURIComponent(token)}`;
-  }
   return baseUrl;
 }
 
@@ -142,9 +138,8 @@ export function RequestsNotificationsProvider({ children }: { children: React.Re
 
         if (disposed) return;
 
-        // Získaj access token z localStorage (pre cross-origin)
-        const token = getAccessToken();
-        const wsUrl = toWebSocketUrl(origin, token);
+        // Cookie-based auth: WS handshake pošle cookies automaticky pre backend doménu
+        const wsUrl = toWebSocketUrl(origin);
         const ws = new WebSocket(wsUrl);
         store.ws = ws;
 

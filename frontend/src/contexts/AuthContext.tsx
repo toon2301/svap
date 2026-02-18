@@ -2,6 +2,9 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
+import { api, endpoints } from '@/lib/api';
+import { clearAuthState, setAuthStateCookie } from '@/utils/auth';
+import { fetchCsrfToken, hasCsrfToken } from '@/utils/csrf';
 
 interface User {
   id: number;
@@ -49,16 +52,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const loadUser = () => {
       try {
         const storedUser = localStorage.getItem('user');
-        const storedTokens = localStorage.getItem('tokens');
-        
-        if (storedUser && storedTokens) {
+        if (storedUser) {
           const userData = JSON.parse(storedUser);
           setUser(userData);
         }
       } catch (error) {
         console.error('Error loading user from localStorage:', error);
         localStorage.removeItem('user');
-        localStorage.removeItem('tokens');
       } finally {
         setIsLoading(false);
       }
@@ -69,28 +69,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const login = async (email: string, password: string) => {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
-      const response = await fetch(`${apiUrl}/auth/login/`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Prihlásenie zlyhalo');
+      if (!hasCsrfToken()) {
+        await fetchCsrfToken();
+      }
+      const response = await api.post(endpoints.auth.login, { email, password });
+      const userData = response?.data?.user;
+      if (!userData) {
+        throw new Error('Prihlásenie zlyhalo');
       }
 
-      const { user: userData, tokens } = data;
-      
-      // Uloženie do localStorage
+      // Uloženie používateľa do localStorage (bez tokenov)
       localStorage.setItem('user', JSON.stringify(userData));
-      localStorage.setItem('tokens', JSON.stringify(tokens));
-      
       setUser(userData);
+      // UI-only flag na FE origin (tokeny sú iba v HttpOnly cookies na BE origin)
+      setAuthStateCookie();
       // Reset preferovaného modulu po prihlásení a nastav flag na vynútenie HOME
       if (typeof window !== 'undefined') {
         localStorage.setItem('activeModule', 'home');
@@ -105,19 +97,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const register = async (userData: any) => {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
-      const response = await fetch(`${apiUrl}/auth/register/`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(userData),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Registrácia zlyhala');
+      if (!hasCsrfToken()) {
+        await fetchCsrfToken();
+      }
+      const response = await api.post(endpoints.auth.register, userData);
+      if (!(response?.status >= 200 && response?.status < 300)) {
+        throw new Error('Registrácia zlyhala');
       }
 
       // Po registrácii používateľ nie je prihlásený, musí overiť email
@@ -134,10 +119,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
       localStorage.removeItem(`searchRecentResults_${user.id}`);
     }
     
+    try {
+      void api.post(endpoints.auth.logout, {});
+    } catch {
+      // ignore
+    }
     localStorage.removeItem('user');
-    localStorage.removeItem('tokens');
     localStorage.removeItem('activeModule');
     sessionStorage.removeItem('forceHome');
+    clearAuthState();
     setUser(null);
     router.push('/');
   };

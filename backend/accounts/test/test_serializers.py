@@ -3,6 +3,7 @@ Testy pre accounts serializátory
 """
 
 import pytest
+import types
 from django.test import TestCase
 from django.contrib.auth import get_user_model
 from rest_framework.test import APITestCase
@@ -202,7 +203,9 @@ class TestUserProfileSerializer(TestCase):
 
     def test_serialization(self):
         """Test serializácie používateľa"""
-        serializer = UserProfileSerializer(self.user)
+        # Owner context: má vidieť všetky polia (vrátane email)
+        req = types.SimpleNamespace(user=self.user)
+        serializer = UserProfileSerializer(self.user, context={"request": req})
         data = serializer.data
 
         self.assertIn("id", data)
@@ -210,6 +213,47 @@ class TestUserProfileSerializer(TestCase):
         self.assertIn("email", data)
         self.assertIn("user_type", data)
         self.assertIn("profile_completeness", data)
+
+    def test_serialization_non_owner_hides_sensitive_fields(self):
+        """Ne-owner nesmie dostať PII."""
+        other = UserFactory()
+        req = types.SimpleNamespace(user=other)
+        serializer = UserProfileSerializer(self.user, context={"request": req})
+        data = serializer.data
+
+        assert "email" not in data
+        assert "birth_date" not in data
+        assert "gender" not in data
+
+        # Phone only when visible
+        self.user.phone = "0900123456"
+        self.user.phone_visible = False
+        self.user.save()
+        data = UserProfileSerializer(self.user, context={"request": req}).data
+        assert "phone" not in data
+
+        self.user.phone_visible = True
+        self.user.save()
+        data = UserProfileSerializer(self.user, context={"request": req}).data
+        assert "phone" in data
+
+        # ICO only when visible
+        self.user.ico = "12345678"
+        self.user.ico_visible = False
+        self.user.save()
+        data = UserProfileSerializer(self.user, context={"request": req}).data
+        assert "ico" not in data
+
+        self.user.ico_visible = True
+        self.user.save()
+        data = UserProfileSerializer(self.user, context={"request": req}).data
+        assert "ico" in data
+
+        # contact_email requires contact_email_visible flag; without flag, never return
+        self.user.contact_email = "contact@example.com"
+        self.user.save()
+        data = UserProfileSerializer(self.user, context={"request": req}).data
+        assert "contact_email" not in data
 
     def test_read_only_fields(self):
         """Test read-only polí"""

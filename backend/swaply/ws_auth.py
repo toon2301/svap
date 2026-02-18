@@ -33,9 +33,8 @@ class JwtAuthMiddleware(BaseMiddleware):
     """
     JWT auth pre WebSocket (Channels).
 
-    Podpora:
-    - query param `?token=...`
-    - cookie `access_token=...`
+    Čistý cookie auth model:
+    - akceptuj iba cookie `access_token=...`
     """
 
     def __init__(self, inner):
@@ -53,10 +52,7 @@ class JwtAuthMiddleware(BaseMiddleware):
                 (scope.get("query_string") or b"").decode("utf-8", errors="ignore")
             )
             token = None
-            if "token" in qs and qs["token"]:
-                token = qs["token"][0]
-            if not token:
-                token = _get_cookie(scope.get("headers") or [], "access_token")
+            token = _get_cookie(scope.get("headers") or [], "access_token")
 
             if token:
                 # get_validated_token je sync a je OK; get_user robí DB/cache operácie,

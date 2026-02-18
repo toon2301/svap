@@ -35,7 +35,7 @@ jest.mock('next/navigation', () => ({
 
 jest.mock('../../../utils/auth', () => ({
   isAuthenticated: () => true,
-  clearAuthTokens: jest.fn(),
+  clearAuthState: jest.fn(),
 }));
 
 const user: User = {

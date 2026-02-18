@@ -23,22 +23,19 @@ class SwaplyJWTAuthentication(JWTAuthentication):
 
     def authenticate(self, request):
         """
-        Podpora HttpOnly cookie auth:
-        - Preferuj Authorization header (BC)
-        - Ak chýba, skús access token z cookies
+        Čistý HttpOnly cookie auth model:
+        - Ignoruj Authorization header (nepodporované)
+        - Akceptuj iba access token z HttpOnly cookie `access_token`
         """
-        header = self.get_header(request)
-        if header is None:
+        cookie_token = None
+        try:
+            cookie_token = request.COOKIES.get("access_token")
+        except Exception:
             cookie_token = None
-            try:
-                cookie_token = request.COOKIES.get("access_token")
-            except Exception:
-                cookie_token = None
-            if not cookie_token:
-                return None
-            validated_token = self.get_validated_token(cookie_token)
-            return self.get_user(validated_token), validated_token
-        return super().authenticate(request)
+        if not cookie_token:
+            return None
+        validated_token = self.get_validated_token(cookie_token)
+        return self.get_user(validated_token), validated_token
 
     def get_user(self, validated_token):
         """
@@ -91,7 +88,8 @@ class SwaplyJWTAuthentication(JWTAuthentication):
         try:
             jti = token.get("jti")
             if not jti:
-                return False
+                logger.warning("Blacklist check failed (missing jti) – fail-closed")
+                return True
 
             # Skontroluj v cache (Redis)
             blacklist_key = f"blacklist_{jti}"
@@ -99,7 +97,8 @@ class SwaplyJWTAuthentication(JWTAuthentication):
 
         except Exception as e:
             logger.warning(f"Redis blacklist check failed: {e}")
-            return False
+            # Fail-closed: ak nevieme overiť blacklist, token považuj za neplatný
+            return True
 
     def _is_token_blacklisted_fallback(self, token):
         """
@@ -108,11 +107,14 @@ class SwaplyJWTAuthentication(JWTAuthentication):
         try:
             jti = token.get("jti")
             if not jti:
-                return False
+                logger.warning("Fallback blacklist check failed (missing jti) – fail-closed")
+                return True
             blacklist_key = f"blacklist_{jti}"
             return cache.get(blacklist_key) is not None
-        except Exception:
-            return False
+        except Exception as e:
+            logger.warning(f"Fallback blacklist check failed: {e}")
+            # Fail-closed: ak nevieme overiť blacklist, token považuj za neplatný
+            return True
 
 
 class SwaplyRefreshToken(RefreshToken):

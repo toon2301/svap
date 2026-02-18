@@ -309,6 +309,49 @@ class UserProfileSerializer(serializers.ModelSerializer):
             return None
         return None
 
+    def to_representation(self, instance):
+        """
+        Object-aware privacy filter:
+        - Owner vidí všetko.
+        - Ne-owner:
+          - nikdy nevracaj: email, birth_date, gender
+          - phone len ak phone_visible=True
+          - ico len ak ico_visible=True
+          - contact_email len ak contact_email_visible=True (ak flag existuje), inak nikdy
+        """
+        ret = super().to_representation(instance)
+
+        request = self.context.get("request") if isinstance(getattr(self, "context", None), dict) else None
+        viewer = getattr(request, "user", None) if request is not None else None
+        is_owner = bool(
+            viewer
+            and getattr(viewer, "is_authenticated", False)
+            and getattr(viewer, "id", None) == getattr(instance, "id", None)
+        )
+        if is_owner:
+            return ret
+
+        # Never return these fields for non-owners
+        ret.pop("email", None)
+        ret.pop("birth_date", None)
+        ret.pop("gender", None)
+
+        # Conditional fields
+        if not getattr(instance, "phone_visible", False):
+            ret.pop("phone", None)
+
+        if not getattr(instance, "ico_visible", False):
+            ret.pop("ico", None)
+
+        if hasattr(instance, "contact_email_visible"):
+            if not getattr(instance, "contact_email_visible", False):
+                ret.pop("contact_email", None)
+        else:
+            # No visibility flag exists -> never return contact email for non-owners
+            ret.pop("contact_email", None)
+
+        return ret
+
     def validate_first_name(self, value):
         """Validácia mena"""
         if value:

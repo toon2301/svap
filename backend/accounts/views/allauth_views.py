@@ -59,9 +59,17 @@ def google_callback_redirect(request):
                 f"user_id={user.id}"
             )
 
-            logger.info(
-                f"Google OAuth login successful for user {user.email}, redirecting to {redirect_url}"
-            )
+            from django.conf import settings
+
+            if getattr(settings, "DEBUG", False):
+                logger.info(
+                    f"Google OAuth login successful for user {user.email}, redirecting to {redirect_url}"
+                )
+            else:
+                logger.info(
+                    "Google OAuth login successful",
+                    extra={"user_id": getattr(user, "id", None)},
+                )
 
             return HttpResponseRedirect(redirect_url)
 

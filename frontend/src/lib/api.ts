@@ -1,6 +1,6 @@
 import axios from 'axios';
 import Cookies from 'js-cookie';
-import { clearAuthTokens, getAuthHeader, getRefreshToken } from '@/utils/auth';
+import { clearAuthState } from '@/utils/auth';
 import { getCsrfToken } from '@/utils/csrf';
 
 // API URL konfigurácia - používa environment premenné
@@ -156,12 +156,6 @@ api.interceptors.request.use(
       }
     }
 
-    // Pri cross-origin OAuth sú tokeny v localStorage – posielame Authorization header
-    const authHeader = getAuthHeader();
-    if (authHeader) {
-      config.headers['Authorization'] = authHeader;
-    }
-
     // Pridaj CSRF token pre POST/PUT/PATCH/DELETE requesty
     const method = config.method?.toUpperCase();
     if (method && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
@@ -232,30 +226,17 @@ api.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        // Refresh: cookie (same-origin) alebo body (cross-origin, tokeny z localStorage)
-        const refreshToken = getRefreshToken();
+        // Cookie-only refresh: refresh token je iba v HttpOnly cookies
         const csrfToken = getCsrfToken();
-        const refreshResponse = await axios.post(
-          `${API_URL}/token/refresh/`,
-          refreshToken ? { refresh: refreshToken } : {},
-          {
-            withCredentials: true,
-            headers: csrfToken ? { 'X-CSRFToken': csrfToken } : undefined,
-          }
-        );
-        // Pri cross-origin nové tokeny neprídu v cookies – uložiť do localStorage
-        const data = refreshResponse?.data;
-        if (data?.access && typeof window !== 'undefined') {
-          try {
-            window.localStorage.setItem('access_token', data.access);
-            if (data.refresh) window.localStorage.setItem('refresh_token', data.refresh);
-          } catch {}
-        }
+        await axios.post(`${API_URL}/token/refresh/`, {}, {
+          withCredentials: true,
+          headers: csrfToken ? { 'X-CSRFToken': csrfToken } : undefined,
+        });
         return api(originalRequest);
       } catch (refreshError) {
         // Refresh zlyhal (400 = chýbajúci cookie pri cross-origin, 401 = neplatný/expired). Nevolať logout API – vyžaduje auth a vráti 401.
         if (typeof window !== 'undefined') {
-          clearAuthTokens();
+          clearAuthState();
           window.location.href = '/';
         }
       }
