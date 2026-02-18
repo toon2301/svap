@@ -8,20 +8,13 @@ const getApiUrl = () => {
   const explicitApi = process.env.NEXT_PUBLIC_API_URL;
   const backendOrigin = process.env.NEXT_PUBLIC_BACKEND_ORIGIN;
 
-  // Ak je explicitná absolútna API URL, použij ju (https://...)
-  if (explicitApi && /^https?:\/\//.test(explicitApi)) {
-    return explicitApi;
-  }
+  // Explicitná API URL má vždy prednosť.
+  // - Absolútna: https://... (priame volanie)
+  // - Relatívna: /api (same-origin cez proxy/rewrites)
+  if (explicitApi) return explicitApi;
 
-  // Preferuj BACKEND_ORIGIN, ak je k dispozícii (oddelený frontend/backend)
-  if (backendOrigin) {
-    return `${backendOrigin}/api`;
-  }
-
-  // Inak použi explicitnú (môže byť relatívna, napr. '/api')
-  if (explicitApi) {
-    return explicitApi;
-  }
+  // Ak nie je explicitná, použi BACKEND_ORIGIN (oddelený backend)
+  if (backendOrigin) return `${backendOrigin}/api`;
 
   // Fallback pre development
   return 'http://localhost:8000/api';

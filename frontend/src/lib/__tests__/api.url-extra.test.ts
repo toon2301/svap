@@ -32,6 +32,13 @@ describe('api url resolution branches', () => {
     expect((apiInstance as any).defaults.baseURL).toBe('https://backend.example/api');
   });
 
+  it('prefers explicit NEXT_PUBLIC_API_URL even when backend origin is set', async () => {
+    process.env.NEXT_PUBLIC_API_URL = '/api';
+    process.env.NEXT_PUBLIC_BACKEND_ORIGIN = 'https://backend.example';
+    const { default: apiInstance } = await import('../api');
+    expect((apiInstance as any).defaults.baseURL).toBe('/api');
+  });
+
   it('uses explicit NEXT_PUBLIC_API_URL when absolute', async () => {
     process.env.NEXT_PUBLIC_API_URL = 'https://abs.example/api';
     process.env.NEXT_PUBLIC_BACKEND_ORIGIN = '' as any;

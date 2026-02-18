@@ -38,13 +38,21 @@ const nextConfig = {
   },
 
   async rewrites() {
-    // V produkcii vypni proxy, aby nevznikol self-proxy loop a header overflow
-    if (process.env.NODE_ENV === 'production') {
-      return [];
-    }
-    const backendOrigin = process.env.BACKEND_ORIGIN;
+    // Proxy /api/* na backend (užitočné na Railway pri oddelenom FE/BE, aby cookies boli 1st-party)
+    const backendOrigin =
+      process.env.BACKEND_ORIGIN || process.env.NEXT_PUBLIC_BACKEND_ORIGIN;
+    const frontendOrigin =
+      process.env.FRONTEND_ORIGIN || process.env.NEXT_PUBLIC_FRONTEND_ORIGIN;
+
     if (!backendOrigin) return [];
-    return [{ source: '/api/:path*', destination: `${backendOrigin}/api/:path*` }];
+
+    const norm = (u) => String(u || '').trim().replace(/\/+$/, '');
+    const be = norm(backendOrigin);
+    const fe = norm(frontendOrigin);
+    // Zabráň self-proxy loopu, ak by niekto omylom nastavil backendOrigin == frontendOrigin
+    if (fe && be && be === fe) return [];
+
+    return [{ source: '/api/:path*', destination: `${be}/api/:path*` }];
   },
 
   compress: true,
