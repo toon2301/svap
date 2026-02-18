@@ -2,6 +2,11 @@ const path = require('path');
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Dôležité pre Django API s trailing slashmi:
+  // nechceme aby Next automaticky presmerovával `/api/.../` -> `/api/...`
+  // (inak vznikajú 301 na backende kvôli APPEND_SLASH).
+  skipTrailingSlashRedirect: true,
+
   experimental: {
     optimizePackageImports: ['lucide-react'],
   },

@@ -10,17 +10,12 @@ const getApiUrl = () => {
   const explicitApi = process.env.NEXT_PUBLIC_API_URL;
   const backendOrigin = process.env.NEXT_PUBLIC_BACKEND_ORIGIN;
 
-  if (explicitApi && /^https?:\/\//.test(explicitApi)) {
-    return explicitApi;
-  }
+  // Explicitná API URL má vždy prednosť:
+  // - absolútna https://.../api (priame volanie)
+  // - relatívna /api (same-origin cez proxy/rewrites)
+  if (explicitApi) return explicitApi;
 
-  if (backendOrigin) {
-    return `${backendOrigin}/api`;
-  }
-
-  if (explicitApi) {
-    return explicitApi;
-  }
+  if (backendOrigin) return `${backendOrigin}/api`;
 
   // Optional runtime override cez sessionStorage (len dev)
   if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
