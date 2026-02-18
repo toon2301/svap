@@ -56,7 +56,11 @@ ACCOUNT_LOCKOUT_MINUTES = 15
 def _is_cross_site_cookie_env() -> bool:
     """True ak bežíme v Railway / test cross-origin (FE a BE na rôznych doménach)."""
     v = (os.getenv("RAILWAY") or os.getenv("CROSS_SITE_COOKIES") or "").strip().lower()
-    return v in ("true", "1", "yes")
+    if v in ("true", "1", "yes"):
+        return True
+    # Ak je nastavený HTTPS frontend origin, ide o oddelený FE/BE – cookie musia byť cross-site
+    frontend = (os.getenv("FRONTEND_ORIGIN") or "").strip()
+    return frontend.startswith("https://")
 
 
 def _auth_cookie_kwargs() -> dict:

@@ -12,8 +12,10 @@ CORS_ALLOWED_ORIGINS = [
 # Railway / cross-site: pridaj frontend origin z env, aby CORS povolil credentials
 _railway = (os.getenv("RAILWAY") or os.getenv("CROSS_SITE_COOKIES") or "").strip().lower() in ("true", "1", "yes")
 _frontend_origin = (os.getenv("FRONTEND_ORIGIN") or "").strip()
-if _railway and _frontend_origin and _frontend_origin not in CORS_ALLOWED_ORIGINS:
+if _frontend_origin and _frontend_origin not in CORS_ALLOWED_ORIGINS:
     CORS_ALLOWED_ORIGINS = list(CORS_ALLOWED_ORIGINS) + [_frontend_origin]
+# Cross-site režim: RAILWAY/CROSS_SITE_COOKIES alebo FRONTEND_ORIGIN s https (oddelený FE/BE)
+_cross_site = _railway or (_frontend_origin and _frontend_origin.startswith("https://"))
 
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_ALL_ORIGINS = False
@@ -63,7 +65,7 @@ SESSION_COOKIE_HTTPONLY = env_bool("SESSION_COOKIE_HTTPONLY", True)
 CSRF_COOKIE_HTTPONLY = env_bool("CSRF_COOKIE_HTTPONLY", False)
 # Pri cross-origin (frontend na inej doméne) musí byť SameSite=None, inak prehliadač nepošle cookie pri POST
 # Railway/cross-site: vynucujeme SameSite=None a Secure aby CSRF cookie išla cross-site
-if _railway:
+if _cross_site:
     CSRF_COOKIE_SECURE = True
     CSRF_COOKIE_SAMESITE = "None"
 else:
