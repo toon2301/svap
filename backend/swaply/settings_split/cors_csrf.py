@@ -2,9 +2,18 @@ from .env import os, sys, env_bool
 from .security import DEBUG
 
 # CORS settings - nastavte v .env súbore pre produkciu (IP adresa pre mobile testovanie)
-CORS_ALLOWED_ORIGINS = os.getenv(
-    "CORS_ALLOWED_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000"
-).split(",")
+CORS_ALLOWED_ORIGINS = [
+    o.strip()
+    for o in os.getenv(
+        "CORS_ALLOWED_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000"
+    ).split(",")
+    if o.strip()
+]
+# Railway / cross-site: pridaj frontend origin z env, aby CORS povolil credentials
+_railway = (os.getenv("RAILWAY") or os.getenv("CROSS_SITE_COOKIES") or "").strip().lower() in ("true", "1", "yes")
+_frontend_origin = (os.getenv("FRONTEND_ORIGIN") or "").strip()
+if _railway and _frontend_origin and _frontend_origin not in CORS_ALLOWED_ORIGINS:
+    CORS_ALLOWED_ORIGINS = list(CORS_ALLOWED_ORIGINS) + [_frontend_origin]
 
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_ALL_ORIGINS = False
@@ -53,7 +62,12 @@ CSRF_COOKIE_SECURE = env_bool("CSRF_COOKIE_SECURE", not DEBUG)
 SESSION_COOKIE_HTTPONLY = env_bool("SESSION_COOKIE_HTTPONLY", True)
 CSRF_COOKIE_HTTPONLY = env_bool("CSRF_COOKIE_HTTPONLY", False)
 # Pri cross-origin (frontend na inej doméne) musí byť SameSite=None, inak prehliadač nepošle cookie pri POST
-CSRF_COOKIE_SAMESITE = "None" if (not DEBUG and CSRF_COOKIE_SECURE) else "Lax"
+# Railway/cross-site: vynucujeme SameSite=None a Secure aby CSRF cookie išla cross-site
+if _railway:
+    CSRF_COOKIE_SECURE = True
+    CSRF_COOKIE_SAMESITE = "None"
+else:
+    CSRF_COOKIE_SAMESITE = "None" if (not DEBUG and CSRF_COOKIE_SECURE) else "Lax"
 
 # Enforce CSRF pre API – v produkcii povoliť vždy; v testoch je možné vypnúť
 if DEBUG:

@@ -40,6 +40,9 @@ SAFESEARCH_MIN_RACY=LIKELY
 
 # ---------- Production / Railway (oddelený frontend a backend) ----------
 # DEBUG=False
+# Pre cross-site cookies (FE a BE na rôznych Railway URL) nastav:
+# RAILWAY=True
+# FRONTEND_ORIGIN=https://tvoja-frontend-app.up.railway.app
 # CORS_ALLOWED_ORIGINS=https://tvoja-frontend-app.up.railway.app
 # CSRF_TRUSTED_ORIGINS=https://tvoja-frontend-app.up.railway.app,https://tvoj-backend.up.railway.app
 # FRONTEND_CALLBACK_URL=https://tvoja-frontend-app.up.railway.app/auth/callback

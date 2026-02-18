@@ -15,6 +15,7 @@ from django.contrib.auth import get_user_model
 from django.db import transaction
 from django.core.cache import cache
 import logging
+import os
 from django.conf import settings
 from django.middleware.csrf import get_token
 from django.views.decorators.csrf import ensure_csrf_cookie
@@ -52,12 +53,28 @@ LOGIN_FAILURE_WINDOW_MINUTES = 15
 ACCOUNT_LOCKOUT_MINUTES = 15
 
 
+def _is_cross_site_cookie_env() -> bool:
+    """True ak bežíme v Railway / test cross-origin (FE a BE na rôznych doménach)."""
+    v = (os.getenv("RAILWAY") or os.getenv("CROSS_SITE_COOKIES") or "").strip().lower()
+    return v in ("true", "1", "yes")
+
+
 def _auth_cookie_kwargs() -> dict:
     """
     Bezpečné defaulty pre JWT cookies.
-    Poznámka: v produkcii používame SameSite=None + Secure, aby cookies fungovali aj pri oddelenom hostingu FE/BE.
+    - Cross-site (Railway/test): SameSite=None, Secure=True – cookie sa posiela cross-origin.
+    - Produkcia (svaply.com): access SameSite=None, refresh Strict; Secure=True.
+    - Lokál (DEBUG): Lax, Secure=False.
     """
     is_prod = not getattr(settings, "DEBUG", False)
+    cross_site = _is_cross_site_cookie_env()
+    if cross_site:
+        return {
+            "httponly": True,
+            "secure": True,
+            "samesite": "None",
+            "path": "/",
+        }
     return {
         "httponly": True,
         "secure": True if is_prod else False,
@@ -79,9 +96,9 @@ def _set_auth_cookies(response, *, access: str, refresh: str) -> None:
     # Access token – kratšia životnosť
     response.set_cookie("access_token", access, max_age=15 * 60, **kwargs)
     # Refresh token – dlhšia životnosť
-    # Požiadavka: v produkcii Strict
+    # Cross-site (Railway): SameSite=None. Produkcia (svaply.com): Strict.
     refresh_kwargs = dict(kwargs)
-    if not getattr(settings, "DEBUG", False):
+    if not _is_cross_site_cookie_env() and not getattr(settings, "DEBUG", False):
         refresh_kwargs["samesite"] = "Strict"
     response.set_cookie(
         "refresh_token", refresh, max_age=7 * 24 * 60 * 60, **refresh_kwargs
@@ -96,7 +113,7 @@ def _clear_auth_cookies(response) -> None:
     # delete_cookie nevie vždy nastaviť rovnaké samesite/secure v každej verzii, preto nastavíme expiráciu.
     response.set_cookie("access_token", "", max_age=0, **kwargs)
     refresh_kwargs = dict(kwargs)
-    if not getattr(settings, "DEBUG", False):
+    if not _is_cross_site_cookie_env() and not getattr(settings, "DEBUG", False):
         refresh_kwargs["samesite"] = "Strict"
     response.set_cookie("refresh_token", "", max_age=0, **refresh_kwargs)
     response.set_cookie("auth_state", "", max_age=0, **state_kwargs)
