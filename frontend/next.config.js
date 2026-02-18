@@ -57,7 +57,12 @@ const nextConfig = {
     // Zabráň self-proxy loopu, ak by niekto omylom nastavil backendOrigin == frontendOrigin
     if (fe && be && be === fe) return [];
 
-    return [{ source: '/api/:path*', destination: `${be}/api/:path*` }];
+    // Dôležité: zachovať trailing slash (Django/DRF ho používa).
+    // Next.js pri :path* často "zje" koncové `/`, takže pridáme osobitné pravidlo pre URL s `/`.
+    return [
+      { source: '/api/:path*/', destination: `${be}/api/:path*/` },
+      { source: '/api/:path*', destination: `${be}/api/:path*` },
+    ];
   },
 
   compress: true,
