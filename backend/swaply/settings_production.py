@@ -22,12 +22,13 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 if not SECRET_KEY:
     raise ValueError("SECRET_KEY must be set in production")
 
-# ALLOWED_HOSTS - nastavte v .env súbore pre produkciu
+# ALLOWED_HOSTS - nastavte v .env súbore pre produkciu (presne tieto hodnoty, žiadne wildcardy)
 _PROD_ALLOWED_HOSTS = {
     "svaply.com",
     "www.svaply.com",
     "api.svaply.com",
     "stunning-inspiration-svap.up.railway.app",
+    "exemplary-tranquility-svap.up.railway.app",  # backend Railway
 }
 
 raw_allowed_hosts = os.getenv("ALLOWED_HOSTS")

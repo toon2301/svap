@@ -14,6 +14,7 @@ _PROD_ALLOWED_HOSTS = {
     "www.svaply.com",
     "api.svaply.com",
     "stunning-inspiration-svap.up.railway.app",
+    "exemplary-tranquility-svap.up.railway.app",  # backend Railway
 }
 
 
