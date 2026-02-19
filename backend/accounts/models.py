@@ -637,6 +637,17 @@ class Review(models.Model):
         blank=True,
         help_text=_("Zoznam minusov (max 10 položiek)"),
     )
+    owner_response = models.TextField(
+        _("Odpoveď vlastníka ponuky"),
+        max_length=700,
+        null=True,
+        blank=True,
+    )
+    owner_responded_at = models.DateTimeField(
+        _("Odpoveď vlastníka dňa"),
+        null=True,
+        blank=True,
+    )
     created_at = models.DateTimeField(_("Vytvorené"), auto_now_add=True)
     updated_at = models.DateTimeField(_("Aktualizované"), auto_now=True)
 

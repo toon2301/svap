@@ -297,15 +297,19 @@ def register_view(request):
                     logger.info(
                         "📝 DEBUG REGISTRATION: Transaction completed, returning response"
                     )
+                _prev_user = getattr(request, "user", None)
+                request.user = user
+                try:
+                    user_data = UserProfileSerializer(
+                        user,
+                        context={"request": request},
+                    ).data
+                finally:
+                    request.user = _prev_user
                 return Response(
                     {
                         "message": "Registrácia bola úspešná. Skontrolujte si email a potvrďte registráciu.",
-                        "user": UserProfileSerializer(
-                            user,
-                            context={
-                                "request": __import__("types").SimpleNamespace(user=user)
-                            },
-                        ).data,
+                        "user": user_data,
                         "email_sent": True,
                     },
                     status=status.HTTP_201_CREATED,
@@ -342,44 +346,62 @@ def register_view(request):
 @login_rate_limit
 def login_view(request):
     """Prihlásenie používateľa"""
+    import traceback
+
     email = request.data.get("email")
     from django.conf import settings
 
     serializer = UserLoginSerializer(data=request.data)
 
     if serializer.is_valid():
-        user = serializer.validated_data["user"]
-
-        # Resetuj počítadlo neúspešných pokusov po úspechu
-        reset_login_failures(email)
-
-        # Generovanie JWT tokenov s custom RefreshToken
-        from ..authentication import SwaplyRefreshToken
-
-        refresh = SwaplyRefreshToken.for_user(user)
-        access_token = refresh.access_token
-
-        # Log úspešné prihlásenie
-        ip_address = request.META.get("REMOTE_ADDR")
-        user_agent = request.META.get("HTTP_USER_AGENT")
-        log_login_success(user, ip_address, user_agent)
-
-        resp = Response(
-            {
-                "message": "Prihlásenie bolo úspešné",
-                "user": UserProfileSerializer(
-                    user,
-                    context={"request": __import__("types").SimpleNamespace(user=user)},
-                ).data,
-            },
-            status=status.HTTP_200_OK,
-        )
-        # Nastav HttpOnly cookies (čistý cookie model).
         try:
-            _set_auth_cookies(resp, access=str(access_token), refresh=str(refresh))
+            user = serializer.validated_data["user"]
+
+            # Resetuj počítadlo neúspešných pokusov po úspechu
+            reset_login_failures(email)
+
+            # Generovanie JWT tokenov s custom RefreshToken
+            from ..authentication import SwaplyRefreshToken
+
+            refresh = SwaplyRefreshToken.for_user(user)
+            access_token = refresh.access_token
+
+            # Log úspešné prihlásenie
+            ip_address = request.META.get("REMOTE_ADDR")
+            user_agent = request.META.get("HTTP_USER_AGENT")
+            log_login_success(user, ip_address, user_agent)
+
+            # Pred serializáciou nastav request.user = user, aby serializer vrátil plné dáta (is_owner)
+            _prev_user = getattr(request, "user", None)
+            request.user = user
+            try:
+                user_data = UserProfileSerializer(
+                    user,
+                    context={"request": request},
+                ).data
+            finally:
+                request.user = _prev_user
+
+            resp = Response(
+                {
+                    "message": "Prihlásenie bolo úspešné",
+                    "user": user_data,
+                },
+                status=status.HTTP_200_OK,
+            )
+            # Nastav HttpOnly cookies (čistý cookie model).
+            try:
+                _set_auth_cookies(resp, access=str(access_token), refresh=str(refresh))
+            except Exception as e:
+                logger.error(f"Failed to set auth cookies: {e}")
+            return resp
         except Exception as e:
-            logger.error(f"Failed to set auth cookies: {e}")
-        return resp
+            logger.exception(
+                "Login success path failed: %s\n%s",
+                str(e),
+                traceback.format_exc(),
+            )
+            raise
 
     # Log neúspešné prihlásenie a registruj zlyhanie pre lockout
     email = request.data.get("email", "unknown")

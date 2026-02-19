@@ -1,12 +1,13 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { PlusIcon, ClockIcon } from '@heroicons/react/24/outline';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { Offer } from '../profile/profileOffersTypes';
 import OfferImageCarousel from '../shared/OfferImageCarousel';
 import ReviewCard, { type Review } from './ReviewCard';
 import ReviewSummary from './ReviewSummary';
+import { OwnerResponseModal } from './OwnerResponseModal';
 
 type OfferOwnerLike = {
   id?: number;
@@ -31,8 +32,10 @@ export type OfferReviewsDesktopProps = {
   reviewsLoading: boolean;
   isOwnOffer: boolean;
   isBusinessOwner: boolean;
-  /** false ak používateľ už pridal recenziu – tlačidlo Pridať recenziu sa nezobrazí */
-  canAddReview: boolean;
+  /** Z API detailu ponuky – môže pridať recenziu (accepted request, ešte nerecenzoval) */
+  can_review: boolean;
+  /** Z API detailu ponuky – už túto ponuku recenzoval */
+  already_reviewed: boolean;
   displayName: string;
   imageAlt: string;
   locationText: string | null;
@@ -45,6 +48,7 @@ export type OfferReviewsDesktopProps = {
   onEditReview: (review: Review) => void;
   onDeleteReviewClick: (reviewId: number) => void;
   onOpenHoursClick: () => void;
+  onOwnerResponseSaved: (reviewId: number, ownerResponse: string, ownerRespondedAt: string) => void;
 };
 
 export function OfferReviewsDesktop({
@@ -54,7 +58,8 @@ export function OfferReviewsDesktop({
   reviewsLoading,
   isOwnOffer,
   isBusinessOwner,
-  canAddReview,
+  can_review,
+  already_reviewed,
   displayName,
   imageAlt,
   locationText,
@@ -67,8 +72,11 @@ export function OfferReviewsDesktop({
   onEditReview,
   onDeleteReviewClick,
   onOpenHoursClick,
+  onOwnerResponseSaved,
 }: OfferReviewsDesktopProps) {
   const { t } = useLanguage();
+  const [ownerResponseModalReview, setOwnerResponseModalReview] = useState<Review | null>(null);
+  const [ownerResponseModalMode, setOwnerResponseModalMode] = useState<'read' | 'edit'>('read');
 
   return (
     <div className="w-full h-full pt-6 pr-6 pb-6 pl-12 sm:pl-16 xl:pl-24">
@@ -90,7 +98,7 @@ export function OfferReviewsDesktop({
             )}
           </div>
           <hr className="mt-6 mb-0 border-0 h-px bg-gradient-to-r from-transparent via-purple-300 dark:via-purple-600 to-transparent" />
-          {canAddReview && (
+          {can_review && !already_reviewed && (
             <button
               type="button"
               onClick={onAddReviewClick}
@@ -203,13 +211,52 @@ export function OfferReviewsDesktop({
                 key={review.id}
                 review={review}
                 currentUserId={currentUserId}
+                isOfferOwner={isOwnOffer}
                 onEdit={onEditReview}
                 onDeleteClick={onDeleteReviewClick}
+                onViewOwnerResponse={(r) => {
+                  setOwnerResponseModalReview(r);
+                  setOwnerResponseModalMode('read');
+                }}
+                onAddOwnerResponse={(r) => {
+                  setOwnerResponseModalReview(r);
+                  setOwnerResponseModalMode('edit');
+                }}
               />
             ))}
           </div>
         )}
       </div>
+
+      <OwnerResponseModal
+        open={ownerResponseModalReview !== null}
+        onClose={() => setOwnerResponseModalReview(null)}
+        reviewId={ownerResponseModalReview?.id ?? 0}
+        mode={ownerResponseModalMode}
+        ownerResponse={ownerResponseModalReview?.owner_response ?? ''}
+        ownerRespondedAt={ownerResponseModalReview?.owner_responded_at ?? null}
+        onSave={
+          ownerResponseModalReview
+            ? (ownerResponse, ownerRespondedAt) => {
+                onOwnerResponseSaved(
+                  ownerResponseModalReview.id,
+                  ownerResponse,
+                  ownerRespondedAt
+                );
+                setOwnerResponseModalReview((prev) =>
+                  prev
+                    ? { ...prev, owner_response: ownerResponse, owner_responded_at: ownerRespondedAt }
+                    : null
+                );
+              }
+            : undefined
+        }
+        onSwitchToEdit={
+          ownerResponseModalReview && isOwnOffer
+            ? () => setOwnerResponseModalMode('edit')
+            : undefined
+        }
+      />
     </div>
   );
 }

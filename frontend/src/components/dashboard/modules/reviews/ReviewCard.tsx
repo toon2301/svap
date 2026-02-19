@@ -14,6 +14,8 @@ export type Review = {
   text: string;
   pros: string[];
   cons: string[];
+  owner_response?: string | null;
+  owner_responded_at?: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -22,10 +24,16 @@ export type ReviewCardProps = {
   review: Review;
   /** ID prihláseného používateľa - na kontrolu, či môže editovať/vymazať */
   currentUserId?: number | null;
+  /** true ak aktuálny používateľ je vlastník ponuky (môže odpovedať) */
+  isOfferOwner?: boolean;
   /** Callback pre edit recenzie */
   onEdit?: (review: Review) => void;
   /** Callback pri kliknutí na vymazať – otvorí sa potvrdzovací modal */
   onDeleteClick?: (reviewId: number) => void;
+  /** Callback pri kliknutí na Zobraziť odpoveď */
+  onViewOwnerResponse?: (review: Review) => void;
+  /** Callback pri kliknutí na Odpovedať (iba pre vlastníka ponuky) */
+  onAddOwnerResponse?: (review: Review) => void;
 };
 
 function getInitials(name: string): string {
@@ -52,7 +60,15 @@ function formatDate(dateString: string): string {
   }
 }
 
-export default function ReviewCard({ review, currentUserId, onEdit, onDeleteClick }: ReviewCardProps) {
+export default function ReviewCard({
+  review,
+  currentUserId,
+  isOfferOwner,
+  onEdit,
+  onDeleteClick,
+  onViewOwnerResponse,
+  onAddOwnerResponse,
+}: ReviewCardProps) {
   const { t } = useLanguage();
   
   const isOwner = currentUserId != null && review.reviewer_id === currentUserId;
@@ -195,8 +211,8 @@ export default function ReviewCard({ review, currentUserId, onEdit, onDeleteClic
             </div>
           )}
 
-          {/* Akcie - Páči sa mi to a Komentovať */}
-          <div className="flex items-center gap-4 pt-2 border-t border-gray-300 dark:border-gray-700">
+          {/* Akcie - Páči sa mi to, Zobraziť odpoveď / Odpovedať */}
+          <div className="flex items-center gap-4 pt-2 border-t border-gray-300 dark:border-gray-700 flex-wrap">
             <button
               type="button"
               className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-sm text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors"
@@ -205,14 +221,28 @@ export default function ReviewCard({ review, currentUserId, onEdit, onDeleteClic
               <HeartIcon className="w-5 h-5" />
               <span>{t('reviews.like', 'Páči sa mi to')}</span>
             </button>
-            <button
-              type="button"
-              className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors"
-              aria-label={t('reviews.comment', 'Komentovať')}
-            >
-              <ChatBubbleLeftIcon className="w-5 h-5" />
-              <span>{t('reviews.comment', 'Komentovať')}</span>
-            </button>
+            {review.owner_response && onViewOwnerResponse && (
+              <button
+                type="button"
+                onClick={() => onViewOwnerResponse(review)}
+                className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-sm text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors"
+                aria-label={t('reviews.viewOwnerResponse', 'Zobraziť odpoveď')}
+              >
+                <ChatBubbleLeftIcon className="w-5 h-5" />
+                <span>{t('reviews.viewOwnerResponse', 'Zobraziť odpoveď')}</span>
+              </button>
+            )}
+            {!review.owner_response && isOfferOwner && onAddOwnerResponse && (
+              <button
+                type="button"
+                onClick={() => onAddOwnerResponse(review)}
+                className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-sm text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors"
+                aria-label={t('reviews.addOwnerResponse', 'Odpovedať')}
+              >
+                <ChatBubbleLeftIcon className="w-5 h-5" />
+                <span>{t('reviews.addOwnerResponse', 'Odpovedať')}</span>
+              </button>
+            )}
           </div>
         </div>
       </div>

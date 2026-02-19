@@ -6,6 +6,7 @@ import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { Offer } from '../profile/profileOffersTypes';
 import type { Review } from './ReviewCard';
+import { OwnerResponseModal } from './OwnerResponseModal';
 
 /** Meno recenzenta: pri pretečení zobrazí horizontálnu animáciu zo strany na stranu */
 function ReviewerName({ name }: { name: string }) {
@@ -68,8 +69,10 @@ export type OfferReviewsMobileProps = {
   reviewsLoading: boolean;
   isOwnOffer: boolean;
   isBusinessOwner: boolean;
-  /** false ak používateľ už pridal recenziu – Pridať recenziu sa nemá zobraziť / volať */
-  canAddReview: boolean;
+  /** Z API detailu ponuky – môže pridať recenziu (accepted request, ešte nerecenzoval) */
+  can_review: boolean;
+  /** Z API detailu ponuky – už túto ponuku recenzoval */
+  already_reviewed: boolean;
   displayName: string;
   imageAlt: string;
   locationText: string | null;
@@ -82,6 +85,7 @@ export type OfferReviewsMobileProps = {
   onEditReview: (review: Review) => void;
   onDeleteReviewClick: (reviewId: number) => void;
   onOpenHoursClick: () => void;
+  onOwnerResponseSaved: (reviewId: number, ownerResponse: string, ownerRespondedAt: string) => void;
 };
 
 export function OfferReviewsMobile({
@@ -91,7 +95,8 @@ export function OfferReviewsMobile({
   reviewsLoading,
   isOwnOffer,
   isBusinessOwner,
-  canAddReview,
+  can_review,
+  already_reviewed,
   displayName,
   imageAlt,
   locationText,
@@ -104,8 +109,11 @@ export function OfferReviewsMobile({
   onEditReview,
   onDeleteReviewClick,
   onOpenHoursClick,
+  onOwnerResponseSaved,
 }: OfferReviewsMobileProps) {
   const { t } = useLanguage();
+  const [ownerResponseModalReview, setOwnerResponseModalReview] = useState<Review | null>(null);
+  const [ownerResponseModalMode, setOwnerResponseModalMode] = useState<'read' | 'edit'>('read');
 
   const summary = useMemo(() => {
     if (reviews.length === 0) {
@@ -273,7 +281,7 @@ export function OfferReviewsMobile({
             )}
           </div>
 
-          {canAddReview && (
+          {can_review && !already_reviewed && (
             <button
               type="button"
               onClick={onAddReviewClick}
@@ -368,7 +376,7 @@ export function OfferReviewsMobile({
                     </p>
                   )}
 
-                  {/* Páči sa mi to, Komentovať a pri vlastnej recenzii Upraviť, Odstrániť */}
+                  {/* Páči sa mi to, Zobraziť odpoveď/Odpovedať a pri vlastnej recenzii Upraviť, Odstrániť */}
                   {(() => {
                     const isOwner = currentUserId != null && review.reviewer_id === currentUserId;
                     const Divider = () => (
@@ -385,16 +393,42 @@ export function OfferReviewsMobile({
                             <HeartIcon className="w-5 h-5" />
                           </button>
                         </div>
-                        <Divider />
-                        <div className="flex-1 flex items-center justify-center">
-                          <button
-                            type="button"
-                            className="p-2 rounded-lg text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors"
-                            aria-label={t('reviews.comment', 'Komentovať')}
-                          >
-                            <ChatBubbleLeftIcon className="w-5 h-5" />
-                          </button>
-                        </div>
+                        {review.owner_response && (
+                          <>
+                            <Divider />
+                            <div className="flex-1 flex items-center justify-center">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setOwnerResponseModalReview(review);
+                                  setOwnerResponseModalMode('read');
+                                }}
+                                className="p-2 rounded-lg text-gray-600 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors"
+                                aria-label={t('reviews.viewOwnerResponse', 'Zobraziť odpoveď')}
+                              >
+                                <ChatBubbleLeftIcon className="w-5 h-5" />
+                              </button>
+                            </div>
+                          </>
+                        )}
+                        {!review.owner_response && isOwnOffer && (
+                          <>
+                            <Divider />
+                            <div className="flex-1 flex items-center justify-center">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setOwnerResponseModalReview(review);
+                                  setOwnerResponseModalMode('edit');
+                                }}
+                                className="p-2 rounded-lg text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors"
+                                aria-label={t('reviews.addOwnerResponse', 'Odpovedať')}
+                              >
+                                <ChatBubbleLeftIcon className="w-5 h-5" />
+                              </button>
+                            </div>
+                          </>
+                        )}
                         {isOwner && (
                           <>
                             <Divider />
@@ -429,6 +463,36 @@ export function OfferReviewsMobile({
             </div>
           )}
       </div>
+
+      <OwnerResponseModal
+        open={ownerResponseModalReview !== null}
+        onClose={() => setOwnerResponseModalReview(null)}
+        reviewId={ownerResponseModalReview?.id ?? 0}
+        mode={ownerResponseModalMode}
+        ownerResponse={ownerResponseModalReview?.owner_response ?? ''}
+        ownerRespondedAt={ownerResponseModalReview?.owner_responded_at ?? null}
+        onSave={
+          ownerResponseModalReview
+            ? (ownerResponse, ownerRespondedAt) => {
+                onOwnerResponseSaved(
+                  ownerResponseModalReview.id,
+                  ownerResponse,
+                  ownerRespondedAt
+                );
+                setOwnerResponseModalReview((prev) =>
+                  prev
+                    ? { ...prev, owner_response: ownerResponse, owner_responded_at: ownerRespondedAt }
+                    : null
+                );
+              }
+            : undefined
+        }
+        onSwitchToEdit={
+          ownerResponseModalReview && isOwnOffer
+            ? () => setOwnerResponseModalMode('edit')
+            : undefined
+        }
+      />
     </div>
   );
 }

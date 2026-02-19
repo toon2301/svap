@@ -37,6 +37,10 @@ type OfferDetailLike = Offer & {
   price_per_hour?: number | null;
   city?: string | null;
   opening_hours?: Offer['opening_hours'];
+  /** Z API GET /api/auth/skills/<id>/ – môže používateľ pridať recenziu (má accepted request a ešte nerecenzoval) */
+  can_review?: boolean;
+  /** Z API GET /api/auth/skills/<id>/ – už túto ponuku recenzoval */
+  already_reviewed?: boolean;
 };
 
 export type OfferReviewsViewProps = {
@@ -145,12 +149,9 @@ export default function OfferReviewsView({
 
   const isOwnOffer = isBusinessOwner;
 
-  /** Jedna recenzia na používateľa – ak už má, tlačidlo „Pridať recenziu“ sa nezobrazí a ďalšiu pridať nemôže */
-  const hasUserReviewed = useMemo(
-    () => user?.id != null && reviews.some((r) => r.reviewer_id === user.id),
-    [user?.id, reviews]
-  );
-  const canAddReview = !isOwnOffer && !hasUserReviewed;
+  /** Z API detailu ponuky – tlačidlo „Pridať recenziu“ sa zobrazí iba ak can_review === true && already_reviewed === false */
+  const can_review = offer?.can_review === true;
+  const already_reviewed = offer?.already_reviewed === true;
 
   const displayName = useMemo(() => {
     if (!offer) return '';
@@ -230,7 +231,8 @@ export default function OfferReviewsView({
           reviewsLoading={reviewsLoading}
           isOwnOffer={isOwnOffer}
           isBusinessOwner={isBusinessOwner}
-          canAddReview={canAddReview}
+          can_review={can_review}
+          already_reviewed={already_reviewed}
           displayName={displayName}
           imageAlt={imageAlt}
           locationText={locationText}
@@ -239,13 +241,22 @@ export default function OfferReviewsView({
           headingText={headingText}
           todayHoursText={todayHoursText}
           currentUserId={user?.id ?? null}
-          onAddReviewClick={() => canAddReview && setIsAddReviewModalOpen(true)}
+          onAddReviewClick={() => (can_review && !already_reviewed) && setIsAddReviewModalOpen(true)}
           onEditReview={(review) => {
             setReviewToEdit(review);
             setIsAddReviewModalOpen(true);
           }}
           onDeleteReviewClick={(reviewId) => setReviewIdToDelete(reviewId)}
           onOpenHoursClick={() => setIsHoursModalOpen(true)}
+          onOwnerResponseSaved={(reviewId, ownerResponse, ownerRespondedAt) => {
+            setReviews((prev) =>
+              prev.map((r) =>
+                r.id === reviewId
+                  ? { ...r, owner_response: ownerResponse, owner_responded_at: ownerRespondedAt }
+                  : r
+              )
+            );
+          }}
         />
       </div>
 
@@ -258,7 +269,8 @@ export default function OfferReviewsView({
           reviewsLoading={reviewsLoading}
           isOwnOffer={isOwnOffer}
           isBusinessOwner={isBusinessOwner}
-          canAddReview={canAddReview}
+          can_review={can_review}
+          already_reviewed={already_reviewed}
           displayName={displayName}
           imageAlt={imageAlt}
           locationText={locationText}
@@ -274,6 +286,15 @@ export default function OfferReviewsView({
           }}
           onDeleteReviewClick={(reviewId) => setReviewIdToDelete(reviewId)}
           onOpenHoursClick={() => setIsHoursModalOpen(true)}
+          onOwnerResponseSaved={(reviewId, ownerResponse, ownerRespondedAt) => {
+            setReviews((prev) =>
+              prev.map((r) =>
+                r.id === reviewId
+                  ? { ...r, owner_response: ownerResponse, owner_responded_at: ownerRespondedAt }
+                  : r
+              )
+            );
+          }}
         />
       </div>
 

@@ -279,6 +279,7 @@ export const endpoints = {
   reviews: {
     list: (offerId: number) => `/auth/skills/${offerId}/reviews/`,
     detail: (reviewId: number) => `/auth/reviews/${reviewId}/`,
+    respond: (reviewId: number) => `/auth/reviews/${reviewId}/respond/`,
   },
   // Žiadosti
   requests: {

@@ -585,6 +585,8 @@ class OfferedSkillSerializer(serializers.ModelSerializer):
     user_id = serializers.IntegerField(source="user.id", read_only=True)
     # Typ účtu majiteľa karty (individual/company) – pre odlíšenie osobný vs firemný účet
     owner_user_type = serializers.CharField(source="user.user_type", read_only=True)
+    can_review = serializers.SerializerMethodField()
+    already_reviewed = serializers.SerializerMethodField()
 
     class Meta:
         model = OfferedSkill
@@ -613,6 +615,8 @@ class OfferedSkillSerializer(serializers.ModelSerializer):
             "user_display_name",
             "user_id",
             "owner_user_type",
+            "can_review",
+            "already_reviewed",
         ]
         read_only_fields = [
             "id",
@@ -621,6 +625,8 @@ class OfferedSkillSerializer(serializers.ModelSerializer):
             "user_display_name",
             "user_id",
             "owner_user_type",
+            "can_review",
+            "already_reviewed",
         ]
 
     def get_experience(self, obj):
@@ -650,6 +656,35 @@ class OfferedSkillSerializer(serializers.ModelSerializer):
         except Exception:
             pass
         return results
+
+    def get_can_review(self, obj):
+        request = self.context.get("request")
+        if not request or not request.user.is_authenticated:
+            return False
+
+        # nemôže recenzovať vlastnú ponuku
+        if obj.user_id == request.user.id:
+            return False
+
+        # už recenzoval
+        if Review.objects.filter(reviewer=request.user, offer=obj).exists():
+            return False
+
+        return SkillRequest.objects.filter(
+            requester=request.user,
+            offer=obj,
+            status=SkillRequestStatus.ACCEPTED,
+        ).exists()
+
+    def get_already_reviewed(self, obj):
+        request = self.context.get("request")
+        if not request or not request.user.is_authenticated:
+            return False
+
+        return Review.objects.filter(
+            reviewer=request.user,
+            offer=obj,
+        ).exists()
 
     def validate_district(self, value):
         """Validácia okresu - normalizuje prázdne hodnoty"""
@@ -917,6 +952,8 @@ class ReviewSerializer(serializers.ModelSerializer):
             "text",
             "pros",
             "cons",
+            "owner_response",
+            "owner_responded_at",
             "created_at",
             "updated_at",
         ]
@@ -926,6 +963,7 @@ class ReviewSerializer(serializers.ModelSerializer):
             "reviewer_display_name",
             "reviewer_avatar_url",
             "offer",
+            "owner_responded_at",
             "created_at",
             "updated_at",
         ]

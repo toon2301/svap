@@ -108,7 +108,12 @@ urlpatterns = [
         views.skill_image_detail_view,
         name="skill_image_detail",
     ),
-    # Recenzie detail
+    # Recenzie – respond musí byť pred detail (špecifickejšia cesta)
+    path(
+        "reviews/<int:review_id>/respond/",
+        views.review_respond_view,
+        name="review_respond",
+    ),
     path("reviews/<int:review_id>/", views.review_detail_view, name="review_detail"),
     # Žiadosti + notifikácie
     path("skill-requests/", views.skill_requests_view, name="skill_requests"),

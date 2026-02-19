@@ -7,10 +7,11 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.db.models import Q
+from django.utils import timezone
 
 from swaply.rate_limiting import api_rate_limit
 
-from ..models import Review, OfferedSkill
+from ..models import Review, OfferedSkill, SkillRequest, SkillRequestStatus
 from ..serializers import ReviewSerializer
 
 
@@ -59,6 +60,18 @@ def reviews_list_view(request, offer_id):
         if offer.user_id == request.user.id:
             return Response(
                 {"error": "Nemôžeš recenzovať vlastnú ponuku."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        # Musí existovať accepted SkillRequest: requester == request.user, offer == ponuka, status == accepted
+        has_accepted_request = SkillRequest.objects.filter(
+            requester=request.user,
+            offer=offer,
+            status=SkillRequestStatus.ACCEPTED,
+        ).exists()
+        if not has_accepted_request:
+            return Response(
+                {"error": "You can only review offers with an accepted request."},
                 status=status.HTTP_403_FORBIDDEN,
             )
 
@@ -144,3 +157,49 @@ def review_detail_view(request, review_id):
         return Response(
             {"message": "Recenzia bola odstránená"}, status=status.HTTP_204_NO_CONTENT
         )
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+@api_rate_limit
+def review_respond_view(request, review_id):
+    """
+    POST: Vytvorenie alebo úprava odpovede vlastníka ponuky na recenziu.
+    Iba vlastník ponuky (review.offer.user == request.user) môže odpovedať.
+    """
+    try:
+        review = Review.objects.select_related("reviewer", "offer", "offer__user").get(
+            id=review_id
+        )
+    except Review.DoesNotExist:
+        return Response(
+            {"error": "Recenzia nebola nájdená"}, status=status.HTTP_404_NOT_FOUND
+        )
+
+    # Iba vlastník ponuky môže odpovedať
+    if review.offer.user_id != request.user.id:
+        return Response(
+            {"error": "Nemáš oprávnenie odpovedať na túto recenziu."},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+
+    owner_response = request.data.get("owner_response")
+    if owner_response is None or (isinstance(owner_response, str) and not owner_response.strip()):
+        return Response(
+            {"error": "Pole owner_response je povinné a nesmie byť prázdne."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    owner_response = owner_response.strip() if isinstance(owner_response, str) else str(owner_response)
+    if len(owner_response) > 700:
+        return Response(
+            {"error": "Odpoveď môže mať maximálne 700 znakov."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    review.owner_response = owner_response
+    review.owner_responded_at = timezone.now()
+    review.save(update_fields=["owner_response", "owner_responded_at", "updated_at"])
+
+    serializer = ReviewSerializer(review, context={"request": request})
+    return Response(serializer.data, status=status.HTTP_200_OK)
