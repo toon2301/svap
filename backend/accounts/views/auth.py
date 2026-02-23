@@ -291,27 +291,49 @@ def register_view(request):
                         "📝 DEBUG REGISTRATION: Registration logged successfully"
                     )
 
-                if getattr(settings, "DEBUG", False):
-                    logger.info(
-                        "📝 DEBUG REGISTRATION: Transaction completed, returning response"
-                    )
-                _prev_user = getattr(request, "user", None)
-                request.user = user
-                try:
-                    user_data = UserProfileSerializer(
-                        user,
-                        context={"request": request},
-                    ).data
-                finally:
-                    request.user = _prev_user
-                return Response(
-                    {
-                        "message": "Registrácia bola úspešná. Skontrolujte si email a potvrďte registráciu.",
-                        "user": user_data,
-                        "email_sent": True,
-                    },
-                    status=status.HTTP_201_CREATED,
+            # Odošli verifikačný email MIMO transakcie a s ochranou pred timeoutom
+            verification = None
+            try:
+                from accounts.models import EmailVerification
+
+                verification = (
+                    EmailVerification.objects.filter(user=user)
+                    .order_by("-created_at")
+                    .first()
                 )
+                if verification:
+                    verification.send_verification_email(request)
+            except Exception as email_error:
+                logger.warning(
+                    "Verification email failed but registration succeeded",
+                    extra={
+                        "user_id": getattr(user, "id", None),
+                        "error": str(email_error),
+                    },
+                )
+                # Pokračuj - registrácia je úspešná aj bez emailu
+
+            if getattr(settings, "DEBUG", False):
+                logger.info(
+                    "📝 DEBUG REGISTRATION: Transaction completed, returning response"
+                )
+            _prev_user = getattr(request, "user", None)
+            request.user = user
+            try:
+                user_data = UserProfileSerializer(
+                    user,
+                    context={"request": request},
+                ).data
+            finally:
+                request.user = _prev_user
+            return Response(
+                {
+                    "message": "Registrácia bola úspešná. Skontrolujte si email a potvrďte registráciu.",
+                    "user": user_data,
+                    "email_sent": verification is not None,
+                },
+                status=status.HTTP_201_CREATED,
+            )
 
         except Exception as e:
             # V produkcii neloguj serializer dáta / PII; v DEBUG ponechaj detail.

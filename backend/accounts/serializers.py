@@ -179,10 +179,6 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         # Vytvorenie verifikačného tokenu
         verification = EmailVerification.objects.create(user=user)
 
-        # Odoslanie verifikačného emailu
-        request = self.context.get("request")
-        verification.send_verification_email(request)
-
         # Vymazanie hesla z validated_data pre bezpečnosť
         validated_data.pop("password", None)
 

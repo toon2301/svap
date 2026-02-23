@@ -63,13 +63,13 @@ def reviews_list_view(request, offer_id):
                 status=status.HTTP_403_FORBIDDEN,
             )
 
-        # Musí existovať accepted SkillRequest: requester == request.user, offer == ponuka, status == accepted
-        has_accepted_request = SkillRequest.objects.filter(
+        # Musí existovať completed SkillRequest: requester == request.user, offer == ponuka, status == completed
+        has_completed_request = SkillRequest.objects.filter(
             requester=request.user,
             offer=offer,
-            status=SkillRequestStatus.ACCEPTED,
+            status=SkillRequestStatus.COMPLETED,
         ).exists()
-        if not has_accepted_request:
+        if not has_completed_request:
             return Response(
                 {"error": "You can only review offers with an accepted request."},
                 status=status.HTTP_403_FORBIDDEN,

@@ -375,3 +375,42 @@ def skill_request_request_completion_view(request, request_id: int):
         SkillRequestSerializer(obj, context={"request": request}).data,
         status=status.HTTP_200_OK,
     )
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+@api_rate_limit
+def skill_request_confirm_completion_view(request, request_id: int):
+    """
+    POST /skill-requests/<id>/confirm-completion/
+
+    Iba requester môže potvrdiť dokončenie spolupráce.
+    Povolené iba ak status == completion_requested.
+    """
+    try:
+        obj = SkillRequest.objects.select_related(
+            "offer", "requester", "recipient"
+        ).get(id=request_id)
+    except SkillRequest.DoesNotExist:
+        return Response(
+            {"error": "Žiadosť neexistuje."}, status=status.HTTP_404_NOT_FOUND
+        )
+
+    # AuthZ: iba requester
+    if request.user.id != obj.requester_id:
+        return Response({"error": "Nemáš oprávnenie."}, status=status.HTTP_403_FORBIDDEN)
+
+    # Stavová podmienka: iba z completion_requested
+    if obj.status != SkillRequestStatus.COMPLETION_REQUESTED:
+        return Response(
+            {"error": "Žiadosť musí mať stav completion_requested."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    obj.status = SkillRequestStatus.COMPLETED
+    obj.save(update_fields=["status", "updated_at"])
+
+    return Response(
+        SkillRequestSerializer(obj, context={"request": request}).data,
+        status=status.HTTP_200_OK,
+    )
