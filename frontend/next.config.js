@@ -77,7 +77,7 @@ const nextConfig = {
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://www.gstatic.com/",
         "font-src 'self' https://fonts.gstatic.com",
         "img-src 'self' data: https://www.google.com https://www.gstatic.com",
-        "connect-src 'self' https://www.google.com https://www.google.com/recaptcha/ https://www.gstatic.com/ https://www.recaptcha.net/",
+        "connect-src 'self' https://www.google.com https://www.google.com/recaptcha/ https://www.gstatic.com/ https://www.recaptcha.net/ https://ipapi.co",
         "frame-src 'self' https://www.google.com/recaptcha/ https://recaptcha.google.com/recaptcha/ https://www.recaptcha.net/",
         "frame-ancestors 'none'",
         "object-src 'none'",

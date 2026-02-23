@@ -1,7 +1,7 @@
 // Pokročilý Service Worker pre Svaply
-const CACHE_NAME = 'svaply-cache-v3';
-const STATIC_CACHE = 'svaply-static-v3';
-const DYNAMIC_CACHE = 'svaply-dynamic-v3';
+const CACHE_NAME = 'svaply-cache-v4';
+const STATIC_CACHE = 'svaply-static-v4';
+const DYNAMIC_CACHE = 'svaply-dynamic-v4';
 
 const urlsToCache = [
   '/',
@@ -65,6 +65,13 @@ self.addEventListener('fetch', event => {
 
   // OAuth: okamžite fetch bez cache logiky (login/callback musia ísť na sieť)
   if (url.pathname.startsWith('/api/oauth/')) {
+    event.respondWith(fetch(request));
+    return;
+  }
+
+  // reCAPTCHA a ipapi: priamy fetch bez cache (CSP musí platiť pre hlavnú stránku)
+  if (url.origin.includes('google.com') || url.origin.includes('gstatic.com') ||
+      url.origin.includes('recaptcha.net') || url.origin.includes('ipapi.co')) {
     event.respondWith(fetch(request));
     return;
   }
