@@ -132,6 +132,9 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
       const callbackUrl = `${window.location.origin}/auth/callback`; // bez trailing slash
       const googleLoginUrl = `${baseApi}/oauth/google/login/?callback=${encodeURIComponent(callbackUrl)}`;
       
+      const oauthNonce = crypto.randomUUID();
+      localStorage.setItem('oauth_nonce', oauthNonce);
+      
       // Otvor Google OAuth v novom okne
       const popup = window.open(
         googleLoginUrl,
@@ -153,6 +156,11 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
         }
         
         if (event.data.type === 'OAUTH_SUCCESS') {
+          const storedNonce = localStorage.getItem('oauth_nonce');
+          if (!storedNonce || event.data.nonce !== storedNonce) {
+            return;
+          }
+          localStorage.removeItem('oauth_nonce');
           if (process.env.NODE_ENV !== 'production') {
             console.debug('OAuth success message received');
           }
@@ -201,29 +209,10 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
           }
           
           if (popupClosed) {
-            if (process.env.NODE_ENV !== 'production') {
-              console.debug('Popup closed without message, checking localStorage...');
-            }
             clearInterval(checkClosed);
             window.removeEventListener('message', handleMessage);
-            
-            // Fallback: over session cez backend (HttpOnly cookies)
-            try {
-              await api.get(endpoints.auth.me);
-              // Reset preferovaného modulu a nastav flag na vynútenie HOME
-              try {
-                localStorage.setItem('activeModule', 'home');
-                sessionStorage.setItem('forceHome', '1');
-              } catch (e) {}
-              setIsGoogleLoading(false);
-              router.push('/dashboard');
-            } catch (e) {
-              if (process.env.NODE_ENV !== 'production') {
-                console.debug('OAuth fallback session check failed');
-              }
-              setIsGoogleLoading(false);
-              setLoginErrors({ general: t('auth.googleLoginFailed') });
-            }
+            localStorage.removeItem('oauth_nonce');
+            setIsGoogleLoading(false);
           }
         } catch (error) {
           if (process.env.NODE_ENV !== 'production') {
