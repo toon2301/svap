@@ -73,12 +73,12 @@ const nextConfig = {
       // Statická CSP iba v produkcii (HTTP response header).
       const csp = [
         "default-src 'self'",
-        "script-src 'self' 'unsafe-inline' https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/ https://www.gstatic.com/",
+        "script-src 'self' 'unsafe-inline' https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/ https://www.gstatic.com/ https://www.recaptcha.net/",
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://www.gstatic.com/",
         "font-src 'self' https://fonts.gstatic.com",
         "img-src 'self' data: https://www.google.com https://www.gstatic.com",
-        "connect-src 'self' https://www.google.com https://www.google.com/recaptcha/ https://www.gstatic.com/",
-        "frame-src 'self' https://www.google.com/recaptcha/ https://recaptcha.google.com/recaptcha/",
+        "connect-src 'self' https://www.google.com https://www.google.com/recaptcha/ https://www.gstatic.com/ https://www.recaptcha.net/",
+        "frame-src 'self' https://www.google.com/recaptcha/ https://recaptcha.google.com/recaptcha/ https://www.recaptcha.net/",
         "frame-ancestors 'none'",
         "object-src 'none'",
         "base-uri 'self'",

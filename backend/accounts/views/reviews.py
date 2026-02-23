@@ -71,7 +71,7 @@ def reviews_list_view(request, offer_id):
         ).exists()
         if not has_completed_request:
             return Response(
-                {"error": "You can only review offers with an accepted request."},
+                {"error": "You can only review offers after a completed collaboration."},
                 status=status.HTTP_403_FORBIDDEN,
             )
 
