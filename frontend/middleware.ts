@@ -50,6 +50,14 @@ export function middleware(request: NextRequest) {
   });
 
   response.headers.set('Content-Security-Policy', csp);
+
+  // Prevent CDN/edge caching for HTML documents in production.
+  // Keep caching for static assets by excluding them in the matcher.
+  const accept = request.headers.get('accept') || '';
+  if (accept.includes('text/html')) {
+    response.headers.set('Cache-Control', 'no-store');
+  }
+
   return response;
 }
 
@@ -59,8 +67,10 @@ export const config = {
       // Match all request paths except for:
       // - api (backend proxy endpoints, not documents)
       // - _next/static, _next/image (static assets)
+      // - _next/data (internal data requests)
       // - favicon.ico
-      source: '/((?!api|_next/static|_next/image|favicon.ico).*)',
+      // - any file with an extension (public/static files like .png, .json, .xml, ...)
+      source: '/((?!api|_next/static|_next/image|_next/data|favicon.ico|.*\\..*).*)',
       // Ignore Next prefetches
       missing: [
         { type: 'header', key: 'next-router-prefetch' },
