@@ -24,11 +24,13 @@ class TestCookieAuthHttpOnly(APITestCase):
         )
         assert r.status_code == status.HTTP_200_OK
 
-        # Cookies set
+        # Cookies set (auth_state má rovnaké bezpečnostné nastavenia ako access_token)
         assert "access_token" in r.cookies
         assert "refresh_token" in r.cookies
+        assert "auth_state" in r.cookies
         assert r.cookies["access_token"]["httponly"] is True
         assert r.cookies["refresh_token"]["httponly"] is True
+        assert r.cookies["auth_state"]["httponly"] is True
 
         # Subsequent /me/ call should work via cookie auth (no Authorization header)
         me_url = reverse("accounts:me")

@@ -123,11 +123,10 @@ class TestAPIIntegration(APITestCase):
         logout_response = self.client.post(logout_url, {}, format="json")
         self.assertEqual(logout_response.status_code, status.HTTP_200_OK)
 
-        # Skontroluj, že token je už neplatný
+        # Skontroluj, že po odhlásení už nie sme autentifikovaní
         me_url = f"{self.base_url}/auth/me/"
         me_response = self.client.get(me_url)
-        # Po logout by mal byť token stále platný, ale refresh token je blacklisted
-        self.assertEqual(me_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(me_response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_profile_update_flow(self):
         """Test aktualizácie profilu"""

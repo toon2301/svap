@@ -88,10 +88,8 @@ def _auth_cookie_kwargs() -> dict:
 
 
 def _auth_state_cookie_kwargs() -> dict:
-    """Non-HttpOnly flag cookie pre client-side detekciu prihlásenia (neobsahuje token)."""
-    kwargs = _auth_cookie_kwargs()
-    kwargs["httponly"] = False
-    return kwargs
+    """Rovnaké bezpečnostné nastavenia ako access_token (HttpOnly, Secure, SameSite, Path)."""
+    return _auth_cookie_kwargs()
 
 
 def _set_auth_cookies(response, *, access: str, refresh: str) -> None:
