@@ -63,6 +63,12 @@ self.addEventListener('fetch', event => {
   const { request } = event;
   const url = new URL(request.url);
 
+  // OAuth: okamžite fetch bez cache logiky (login/callback musia ísť na sieť)
+  if (url.pathname.startsWith('/api/oauth/')) {
+    event.respondWith(fetch(request));
+    return;
+  }
+
   // Skip non-GET requests
   if (request.method !== 'GET') return;
 
