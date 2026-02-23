@@ -133,7 +133,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
       const googleLoginUrl = `${baseApi}/oauth/google/login/?callback=${encodeURIComponent(callbackUrl)}`;
       
       const oauthNonce = crypto.randomUUID();
-      localStorage.setItem('oauth_nonce', oauthNonce);
+      sessionStorage.setItem('oauth_nonce', oauthNonce);
       
       // Otvor Google OAuth v novom okne
       const popup = window.open(
@@ -156,11 +156,11 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
         }
         
         if (event.data.type === 'OAUTH_SUCCESS') {
-          const storedNonce = localStorage.getItem('oauth_nonce');
+          const storedNonce = sessionStorage.getItem('oauth_nonce');
           if (!storedNonce || event.data.nonce !== storedNonce) {
             return;
           }
-          localStorage.removeItem('oauth_nonce');
+          sessionStorage.removeItem('oauth_nonce');
           if (process.env.NODE_ENV !== 'production') {
             console.debug('OAuth success message received');
           }
@@ -211,7 +211,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
           if (popupClosed) {
             clearInterval(checkClosed);
             window.removeEventListener('message', handleMessage);
-            localStorage.removeItem('oauth_nonce');
+            sessionStorage.removeItem('oauth_nonce');
             setIsGoogleLoading(false);
           }
         } catch (error) {

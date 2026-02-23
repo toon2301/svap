@@ -65,12 +65,12 @@ function OAuthCallbackContent() {
           await api.get('/auth/me/');
           setStatus('success');
           if (window.opener) {
-            const oauthNonce = localStorage.getItem('oauth_nonce');
+            const oauthNonce = sessionStorage.getItem('oauth_nonce');
             window.opener.postMessage({
               type: 'OAUTH_SUCCESS',
               nonce: oauthNonce
             }, window.location.origin);
-            localStorage.removeItem('oauth_nonce');
+            sessionStorage.removeItem('oauth_nonce');
           }
           setTimeout(() => window.close(), 1000);
           return;

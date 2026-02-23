@@ -474,6 +474,8 @@ class SkillRequestStatus(models.TextChoices):
     ACCEPTED = "accepted", _("Prijaté")
     REJECTED = "rejected", _("Zamietnuté")
     CANCELLED = "cancelled", _("Zrušené")
+    COMPLETION_REQUESTED = "completion_requested", _("Completion requested")
+    COMPLETED = "completed", _("Completed")
 
 
 class SkillRequest(models.Model):
@@ -505,7 +507,7 @@ class SkillRequest(models.Model):
     )
     status = models.CharField(
         _("Stav"),
-        max_length=20,
+        max_length=25,
         choices=SkillRequestStatus.choices,
         default=SkillRequestStatus.PENDING,
     )
