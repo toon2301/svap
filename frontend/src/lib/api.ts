@@ -1,7 +1,76 @@
 import axios from 'axios';
-import Cookies from 'js-cookie';
 import { clearAuthState } from '@/utils/auth';
-import { getCsrfToken } from '@/utils/csrf';
+import { fetchCsrfToken, getCsrfToken } from '@/utils/csrf';
+
+// ============================================================
+// Cookie-only refresh control (HttpOnly cookies, no JS access)
+// ============================================================
+// Global refresh lock: only one refresh request at a time
+let refreshInFlight: Promise<boolean> | null = null;
+// Circuit breaker: after 429 cooldown or 401 disable until reload
+let refreshDisabledUntil: number | null = null;
+// Flag (best-effort): refresh makes sense only after we had a valid session at least once
+let mayHaveRefreshCookie = false;
+
+export function setMayHaveRefreshCookie(value: boolean): void {
+  mayHaveRefreshCookie = value;
+}
+
+function shouldSkipRefresh(url?: string): boolean {
+  const u = String(url || '');
+  // Never attempt refresh for these endpoints
+  return (
+    u.includes('/token/refresh/') ||
+    u.includes('/auth/login/') ||
+    u.includes('/auth/logout/') ||
+    u.includes('/auth/csrf-token/') ||
+    u.includes('/oauth/')
+  );
+}
+
+async function ensureRefreshed(): Promise<boolean> {
+  const now = Date.now();
+  if (refreshDisabledUntil && now < refreshDisabledUntil) return false;
+  if (!mayHaveRefreshCookie) return false;
+  if (refreshInFlight) return refreshInFlight;
+
+  refreshInFlight = (async () => {
+    try {
+      // Ensure CSRF token exists (refresh endpoint enforces CSRF)
+      if (!getCsrfToken()) {
+        await fetchCsrfToken();
+      }
+      const csrfToken = getCsrfToken();
+
+      await axios.post(
+        `${API_URL}/token/refresh/`,
+        {},
+        {
+          withCredentials: true,
+          headers: csrfToken ? { 'X-CSRFToken': csrfToken } : undefined,
+        }
+      );
+
+      mayHaveRefreshCookie = true;
+      return true;
+    } catch (e: any) {
+      const status = e?.response?.status;
+      if (status === 429) {
+        // Cooldown 60s on rate-limit
+        refreshDisabledUntil = Date.now() + 60_000;
+      } else if (status === 401) {
+        // Disable until reload (practically forever for this tab session)
+        refreshDisabledUntil = Number.MAX_SAFE_INTEGER;
+        mayHaveRefreshCookie = false;
+      }
+      return false;
+    } finally {
+      refreshInFlight = null;
+    }
+  })();
+
+  return refreshInFlight;
+}
 
 // API URL konfigurácia - používa environment premenné
 const getApiUrl = () => {
@@ -215,23 +284,21 @@ api.interceptors.response.use(
       }
     }
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    const status = error.response?.status;
+    const url = originalRequest?.url;
+    if (status === 401 && !originalRequest._retry && !shouldSkipRefresh(url)) {
       originalRequest._retry = true;
 
-      try {
-        // Cookie-only refresh: refresh token je iba v HttpOnly cookies
-        const csrfToken = getCsrfToken();
-        await axios.post(`${API_URL}/token/refresh/`, {}, {
-          withCredentials: true,
-          headers: csrfToken ? { 'X-CSRFToken': csrfToken } : undefined,
-        });
+      const refreshed = await ensureRefreshed();
+      if (refreshed) {
         return api(originalRequest);
-      } catch (refreshError) {
-        // Refresh zlyhal (400 = chýbajúci cookie pri cross-origin, 401 = neplatný/expired). Nevolať logout API – vyžaduje auth a vráti 401.
-        if (typeof window !== 'undefined') {
-          clearAuthState();
-          window.location.href = '/';
-        }
+      }
+
+      // Refresh zlyhal (401/429/...) alebo je zablokovaný circuit breakerom.
+      // 401 znamená neplatný refresh token → prejsť do logged-out stavu.
+      if (typeof window !== 'undefined' && refreshDisabledUntil === Number.MAX_SAFE_INTEGER) {
+        clearAuthState();
+        window.location.href = '/';
       }
     }
 

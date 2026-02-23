@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
-import { api, endpoints } from '@/lib/api';
+import { api, endpoints, setMayHaveRefreshCookie } from '@/lib/api';
 import { clearAuthState } from '@/utils/auth';
 import { fetchCsrfToken, hasCsrfToken } from '@/utils/csrf';
 
@@ -41,6 +41,9 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 interface AuthProviderProps {
   children: ReactNode;
 }
+
+// Global in-flight lock for /me calls (avoid parallel /me and refresh storms)
+let meInFlight: Promise<void> | null = null;
 
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
@@ -127,19 +130,33 @@ export function AuthProvider({ children }: AuthProviderProps) {
   };
 
   const refreshUser = async () => {
-    try {
-      // Použi centrálne axios API s interceptormi (Authorization z cookies)
-      const { api, endpoints } = await import('@/lib/api');
-      const resp = await api.get(endpoints.auth.me);
-      if (resp?.status === 200 && resp.data) {
-        setUser(resp.data);
-        return;
+    if (meInFlight) return meInFlight;
+
+    meInFlight = (async () => {
+      try {
+        const resp = await api.get(endpoints.auth.me);
+        if (resp?.status === 200 && resp.data) {
+          setUser(resp.data);
+          setMayHaveRefreshCookie(true);
+          return;
+        }
+        setUser(null);
+      } catch (error: any) {
+        const status = error?.response?.status;
+        // Pri 401 iba nastav user=null (žiadne ďalšie refresh pokusy tu)
+        if (status === 401) {
+          setUser(null);
+          setMayHaveRefreshCookie(false);
+          return;
+        }
+        console.error('Error refreshing user:', error);
+        setUser(null);
+      } finally {
+        meInFlight = null;
       }
-      setUser(null);
-    } catch (error) {
-      console.error('Error refreshing user:', error);
-      setUser(null);
-    }
+    })();
+
+    return meInFlight;
   };
 
   const value = {
