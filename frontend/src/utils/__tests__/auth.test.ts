@@ -1,45 +1,31 @@
 import {
   clearAuthState,
   isAuthenticated,
-  setAuthStateCookie,
-  AUTH_STATE_COOKIE,
 } from '../auth';
-import Cookies from 'js-cookie';
-
-jest.mock('js-cookie', () => ({
-  __esModule: true,
-  default: {
-    set: jest.fn(),
-    get: jest.fn(),
-    remove: jest.fn(),
-  },
-}));
 
 describe('utils/auth', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // @ts-expect-error - test mock
+    global.fetch = jest.fn();
   });
 
-  it('clearAuthState odstráni auth_state', () => {
-    clearAuthState();
-    expect((Cookies as any).remove).toHaveBeenCalledWith(AUTH_STATE_COOKIE, { path: '/' });
+  it('clearAuthState je no-op (žiadne cookie nastavovanie)', () => {
+    expect(() => clearAuthState()).not.toThrow();
   });
 
-  it('setAuthStateCookie nastaví auth_state na aktuálnej origin', () => {
-    setAuthStateCookie();
-    expect((Cookies as any).set).toHaveBeenCalledWith(
-      AUTH_STATE_COOKIE,
-      '1',
-      expect.objectContaining({ path: '/', sameSite: 'strict' })
+  it('isAuthenticated vracia true pri 200 z /api/auth/me/', async () => {
+    (global.fetch as jest.Mock).mockResolvedValue({ ok: true });
+    await expect(isAuthenticated()).resolves.toBe(true);
+    expect(global.fetch).toHaveBeenCalledWith(
+      '/api/auth/me/',
+      expect.objectContaining({ credentials: 'include' })
     );
   });
 
-  it('isAuthenticated vracia true ak existuje auth_state', () => {
-    (Cookies.get as jest.Mock).mockImplementation((name: string) => {
-      if (name === AUTH_STATE_COOKIE) return '1';
-      return undefined;
-    });
-    expect(isAuthenticated()).toBe(true);
+  it('isAuthenticated vracia false pri 401 z /api/auth/me/', async () => {
+    (global.fetch as jest.Mock).mockResolvedValue({ ok: false });
+    await expect(isAuthenticated()).resolves.toBe(false);
   });
 
   // getAuthHeader / access/refresh token helpers boli odstránené (cookie-only model)

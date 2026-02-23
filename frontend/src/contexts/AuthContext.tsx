@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { api, endpoints } from '@/lib/api';
-import { clearAuthState, setAuthStateCookie } from '@/utils/auth';
+import { clearAuthState } from '@/utils/auth';
 import { fetchCsrfToken, hasCsrfToken } from '@/utils/csrf';
 
 interface User {
@@ -47,24 +47,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
-  // Načítanie používateľa z localStorage pri inicializácii
+  // Auth stav určujeme výhradne cez `/api/auth/me/` (HttpOnly cookies).
   useEffect(() => {
-    const loadUser = () => {
+    const bootstrap = async () => {
       try {
-        const storedUser = localStorage.getItem('user');
-        if (storedUser) {
-          const userData = JSON.parse(storedUser);
-          setUser(userData);
-        }
-      } catch (error) {
-        console.error('Error loading user from localStorage:', error);
-        localStorage.removeItem('user');
+        await refreshUser();
       } finally {
         setIsLoading(false);
       }
     };
-
-    loadUser();
+    void bootstrap();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const login = async (email: string, password: string) => {
@@ -73,16 +66,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
         await fetchCsrfToken();
       }
       const response = await api.post(endpoints.auth.login, { email, password });
-      const userData = response?.data?.user;
-      if (!userData) {
+      if (!(response?.status >= 200 && response?.status < 300)) {
         throw new Error('Prihlásenie zlyhalo');
       }
-
-      // Uloženie používateľa do localStorage (bez tokenov)
-      localStorage.setItem('user', JSON.stringify(userData));
-      setUser(userData);
-      // UI-only flag na FE origin (tokeny sú iba v HttpOnly cookies na BE origin)
-      setAuthStateCookie();
+      // Overenie cez /me/ (cookie auth) – jediný zdroj pravdy pre auth stav
+      await refreshUser();
       // Reset preferovaného modulu po prihlásení a nastav flag na vynútenie HOME
       if (typeof window !== 'undefined') {
         localStorage.setItem('activeModule', 'home');
@@ -124,7 +112,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
     } catch {
       // ignore
     }
-    localStorage.removeItem('user');
     localStorage.removeItem('activeModule');
     sessionStorage.removeItem('forceHome');
     clearAuthState();
@@ -136,7 +123,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
     if (user) {
       const updatedUser = { ...user, ...userData };
       setUser(updatedUser);
-      localStorage.setItem('user', JSON.stringify(updatedUser));
     }
   };
 
@@ -147,10 +133,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const resp = await api.get(endpoints.auth.me);
       if (resp?.status === 200 && resp.data) {
         setUser(resp.data);
-        localStorage.setItem('user', JSON.stringify(resp.data));
+        return;
       }
+      setUser(null);
     } catch (error) {
       console.error('Error refreshing user:', error);
+      setUser(null);
     }
   };
 

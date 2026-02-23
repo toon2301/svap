@@ -15,17 +15,19 @@ export default function Home() {
   const router = useRouter();
   const { t, locale } = useLanguage();
   const [isAuth, setIsAuth] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   useEffect(() => {
-    const checkAuth = () => {
-      const auth = isAuthenticated();
+    const checkAuth = async () => {
+      const auth = await isAuthenticated();
       setIsAuth(auth);
+      setIsCheckingAuth(false);
       if (auth) router.push('/dashboard');
     };
-    checkAuth();
+    void checkAuth();
   }, [router]);
 
-  // Ak je používateľ prihlásený, zobraz loading
-  if (isAuth) {
+  // Loading počas overenia /me alebo počas presmerovania
+  if (isCheckingAuth || isAuth) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{background: 'var(--background)'}}>
         <div className="text-center">

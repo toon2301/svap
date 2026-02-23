@@ -1,28 +1,24 @@
-import Cookies from 'js-cookie';
-
-/** Cookie name pre stav prihlásenia (číta sa na frontende pri cross-origin) */
-export const AUTH_STATE_COOKIE = 'auth_state';
-
 /**
- * Nastaví na aktuálnej origin cookie auth_state=1, aby isAuthenticated() vrátil true.
- * Potrebné pri cross-origin (API na inej doméne): backend nastaví cookie len pre svoju doménu.
+ * Frontend nesmie manuálne nastavovať cookie `auth_state`.
+ * Autentifikačný stav sa overuje iba cez úspešné volanie `/api/auth/me/`
+ * (HttpOnly cookies sa posielajú automaticky, ale nie sú čitateľné cez JS).
  */
-export const setAuthStateCookie = (): void => {
-  Cookies.set(AUTH_STATE_COOKIE, '1', {
-    path: '/',
-    expires: 7, // 7 dní (rovnaký formát ako setAuthTokens)
-    sameSite: 'strict',
-    secure: process.env.NODE_ENV === 'production',
-  });
-};
 
 export const clearAuthState = (): void => {
-  Cookies.remove(AUTH_STATE_COOKIE, { path: '/' });
+  // Žiadne cookie manipulácie (HttpOnly cookie aj tak nemožno meniť cez JS).
+  // Nechávame tu len ako no-op helper pre existujúce call sites.
 };
 
-export const isAuthenticated = (): boolean => {
-  // Skontroluj stavový cookie (backend ho nastaví pre svoju doménu; pri cross-origin ho nastavuje frontend po prihlásení)
-  const state = Cookies.get(AUTH_STATE_COOKIE);
-  if (state === '1') return true;
-  return false;
+export const isAuthenticated = async (): Promise<boolean> => {
+  if (typeof window === 'undefined') return false;
+  try {
+    const res = await fetch('/api/auth/me/', {
+      method: 'GET',
+      credentials: 'include',
+      headers: { Accept: 'application/json' },
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
 };

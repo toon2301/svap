@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import type { User } from '../../../types';
-import { isAuthenticated, clearAuthState } from '../../../utils/auth';
+import { clearAuthState } from '../../../utils/auth';
 import { api, endpoints } from '../../../lib/api';
 import { setUserProfileToCache } from '../modules/profile/profileUserCache';
 import { invalidateSearchCacheForUser } from '../modules/SearchModule';
@@ -144,11 +144,6 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
     hasCheckedAuth.current = true;
 
     const checkAuth = async () => {
-      if (!isAuthenticated()) {
-        router.push('/');
-        return;
-      }
-
       if (typeof window !== 'undefined' && sessionStorage.getItem('forceHome') === '1') {
         setActiveModule('home');
         setIsRightSidebarOpen(false);

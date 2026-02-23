@@ -8,7 +8,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import Credentials from './login/Credentials';
 import GoogleLoginBlock from './login/GoogleLoginBlock';
 import { fetchCsrfToken } from '@/utils/csrf';
-import { setAuthStateCookie } from '@/utils/auth';
+// auth_state cookie sa nesmie nastavovať z frontendu
 
 interface LoginData {
   email: string;
@@ -146,7 +146,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
       }
 
       // Počúvaj na správy z popup okna
-      const handleMessage = (event: MessageEvent) => {
+      const handleMessage = async (event: MessageEvent) => {
         if (event.origin !== window.location.origin) return;
         if (process.env.NODE_ENV !== 'production') {
           console.debug('Received message from popup');
@@ -157,8 +157,15 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
             console.debug('OAuth success message received');
           }
           clearInterval(checkClosed);
-
-          setAuthStateCookie();
+          // Over session cez backend (HttpOnly cookies) – auth stav určujeme iba cez /me
+          try {
+            await api.get(endpoints.auth.me);
+          } catch {
+            // Ak /me zlyhá, neskúšaj presmerovať na dashboard
+            setIsGoogleLoading(false);
+            setLoginErrors({ general: t('auth.googleLoginFailed') });
+            return;
+          }
 
           // Reset preferovaného modulu a nastav flag na vynútenie HOME
           try {
@@ -243,10 +250,9 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
     setLoginErrors({});
 
     try {
-      const response = await api.post(endpoints.auth.login, loginData);
-
-      // Pri cross-origin backend nastaví cookies pre svoju doménu – frontend si nastaví auth_state na svojej origin, aby isAuthenticated() a presmerovanie fungovali
-      setAuthStateCookie();
+      await api.post(endpoints.auth.login, loginData);
+      // Overenie session cez /me (HttpOnly cookies)
+      await api.get(endpoints.auth.me);
 
       // Reset preferovaného modulu po prihlásení a nastav flag na vynútenie HOME
       if (typeof window !== 'undefined') {
