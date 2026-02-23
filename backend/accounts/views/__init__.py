@@ -24,6 +24,7 @@ from .skill_requests import (
     skill_requests_view,
     skill_requests_status_view,
     skill_request_detail_view,
+    skill_request_request_completion_view,
 )
 from .reviews import reviews_list_view, review_detail_view, review_respond_view
 from .notifications import (
@@ -61,6 +62,7 @@ __all__ = [
     "skill_requests_view",
     "skill_requests_status_view",
     "skill_request_detail_view",
+    "skill_request_request_completion_view",
     "reviews_list_view",
     "review_detail_view",
     "review_respond_view",

@@ -127,6 +127,11 @@ urlpatterns = [
         views.skill_request_detail_view,
         name="skill_request_detail",
     ),
+    path(
+        "skill-requests/<int:request_id>/request-completion/",
+        views.skill_request_request_completion_view,
+        name="skill_request_request_completion",
+    ),
     path("notifications/", views.notifications_list_view, name="notifications_list"),
     path(
         "notifications/unread-count/",
