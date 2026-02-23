@@ -6,6 +6,10 @@ import ClientComponents from "@/components/ClientComponents";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { LoadingProvider } from "@/contexts/LoadingContext";
 
+// Force App Router to be fully dynamic (disable static optimization / edge HTML caching).
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
