@@ -65,24 +65,25 @@ const nextConfig = {
     ];
   },
 
-  compress: true,
+  async headers() {
+    // CSP je nonce-based a nastavuje sa per-request v `middleware.ts` (iba produkcia).
+    // Tu ponecháme len dev hlavičky.
+    if (process.env.NODE_ENV !== 'development') return [];
 
-  // Disable aggressive caching in development
-  ...(process.env.NODE_ENV === 'development' && {
-    headers: async () => {
-      return [
-        {
-          source: '/:path*',
-          headers: [
-            {
-              key: 'Cache-Control',
-              value: 'no-store, no-cache, must-revalidate, proxy-revalidate',
-            },
-          ],
-        },
-      ];
-    },
-  }),
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'no-store, no-cache, must-revalidate, proxy-revalidate',
+          },
+        ],
+      },
+    ];
+  },
+
+  compress: true,
 
   // Server-side rendering pre Railway
   // output: 'export', // Zakomentované pre Railway deployment
