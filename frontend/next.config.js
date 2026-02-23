@@ -66,12 +66,30 @@ const nextConfig = {
   },
 
   async headers() {
-    // CSP je nonce-based a nastavuje sa per-request v `middleware.ts` (iba produkcia).
-    // Tu ponecháme len dev hlavičky.
-    if (process.env.NODE_ENV !== 'development') return [];
+    const isProd = process.env.NODE_ENV === 'production';
+    const headers = [];
 
-    return [
-      {
+    if (isProd) {
+      // Statická CSP iba v produkcii (HTTP response header).
+      const csp = [
+        "default-src 'self'",
+        "script-src 'self' 'unsafe-inline'",
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+        "font-src 'self' https://fonts.gstatic.com",
+        "img-src 'self' data:",
+        "connect-src 'self'",
+        "frame-ancestors 'none'",
+        "object-src 'none'",
+        "base-uri 'self'",
+        "form-action 'self'",
+        "upgrade-insecure-requests",
+      ].join('; ');
+      headers.push({
+        source: '/:path*',
+        headers: [{ key: 'Content-Security-Policy', value: csp }],
+      });
+    } else {
+      headers.push({
         source: '/:path*',
         headers: [
           {
@@ -79,8 +97,10 @@ const nextConfig = {
             value: 'no-store, no-cache, must-revalidate, proxy-revalidate',
           },
         ],
-      },
-    ];
+      });
+    }
+
+    return headers;
   },
 
   compress: true,
