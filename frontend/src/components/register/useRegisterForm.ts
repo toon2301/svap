@@ -353,8 +353,8 @@ export function useRegisterForm({ t }: UseRegisterFormParams) {
       } else {
         // eslint-disable-next-line no-console
         console.warn('reCAPTCHA nie je k dispozícii');
-        // V development mode môžeme pokračovať bez CAPTCHA
-        if (process.env.NODE_ENV === 'production') {
+        // S test kľúčom (test-site-key) alebo v development mode pokračujeme bez CAPTCHA
+        if (!isTestKey && process.env.NODE_ENV === 'production') {
           setErrors({ general: t('auth.captchaUnavailable') });
           setIsLoading(false);
           return;
