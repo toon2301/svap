@@ -9,6 +9,41 @@ import unicodedata
 import re
 from swaply.validators import validate_image_file
 
+# --- MFA secret encryption at rest (Fernet) ---
+from cryptography.fernet import Fernet
+from django.conf import settings as _settings
+
+
+def _get_fernet():
+    key = getattr(_settings, "MFA_ENCRYPTION_KEY", "")
+    if not key:
+        return None
+    try:
+        return Fernet(key.encode() if isinstance(key, str) else key)
+    except Exception:
+        return None
+
+
+def encrypt_mfa_secret(value: str) -> str:
+    if not value:
+        return value
+    f = _get_fernet()
+    if f is None:
+        return value  # fallback ak kľúč nie je nastavený
+    return f.encrypt(value.encode()).decode()
+
+
+def decrypt_mfa_secret(value: str) -> str:
+    if not value:
+        return value
+    f = _get_fernet()
+    if f is None:
+        return value
+    try:
+        return f.decrypt(value.encode()).decode()
+    except Exception:
+        return value  # ak nie je zašifrované (staré záznamy), vráť as-is
+
 
 class UserType(models.TextChoices):
     INDIVIDUAL = "individual", _("Osoba")
@@ -237,10 +272,10 @@ class UserProfile(models.Model):
     show_email = models.BooleanField(_("Zobraziť email"), default=False)
     show_phone = models.BooleanField(_("Zobraziť telefón"), default=False)
 
-    # 2FA
+    # 2FA (mfa_secret môže byť zašifrovaný Fernetom – potrebuje väčší max_length)
     mfa_enabled = models.BooleanField(_("Zapnuté 2FA"), default=False)
     mfa_secret = models.CharField(
-        _("2FA TOTP secret"), max_length=64, blank=True, default=""
+        _("2FA TOTP secret"), max_length=255, blank=True, default=""
     )
 
     created_at = models.DateTimeField(_("Vytvorené"), auto_now_add=True)
@@ -252,6 +287,12 @@ class UserProfile(models.Model):
 
     def __str__(self):
         return f"Profil {self.user.display_name}"
+
+    def save(self, *args, **kwargs):
+        # Pri zápise uložíme mfa_secret zašifrovaný (ak je kľúč nastavený)
+        if self.mfa_secret:
+            self.mfa_secret = encrypt_mfa_secret(decrypt_mfa_secret(self.mfa_secret))
+        super().save(*args, **kwargs)
 
 
 class EmailVerification(models.Model):

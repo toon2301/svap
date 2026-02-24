@@ -24,3 +24,4 @@ pytest-django==4.7.0
 pytest-cov==4.1.0
 whitenoise==6.6.0
 google-cloud-vision==3.4.5
+cryptography>=42.0.0

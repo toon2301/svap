@@ -16,6 +16,7 @@ from .models import (
     Notification,
     NotificationType,
     Review,
+    decrypt_mfa_secret,
 )
 from swaply.validators import (
     EmailValidator,
@@ -218,9 +219,10 @@ class UserLoginSerializer(serializers.Serializer):
                 try:
                     import pyotp
 
-                    mfa_secret = getattr(
+                    raw = getattr(
                         getattr(user, "profile", None), "mfa_secret", None
                     )
+                    mfa_secret = decrypt_mfa_secret(raw) if raw else None
                     if not mfa_secret:
                         raise serializers.ValidationError(
                             "2FA nie je správne nastavené."

@@ -25,3 +25,6 @@ from .logging_cfg import *  # noqa
 from .oauth import *  # noqa
 from .redirects import *  # noqa
 from .channels_cfg import *  # noqa
+
+# 2FA TOTP secret encryption at rest (Fernet). Empty = store plain (fallback).
+MFA_ENCRYPTION_KEY = os.getenv("MFA_ENCRYPTION_KEY", "")

@@ -2,7 +2,7 @@ from django.urls import path
 from . import views
 from .views import profile, password_reset, google_oauth_simple
 
-# from .views import oauth, google_oauth, allauth_views  # DOČASNE VYPNUTÉ
+# from .views import oauth, allauth_views  # DOČASNE VYPNUTÉ
 
 app_name = "accounts"
 

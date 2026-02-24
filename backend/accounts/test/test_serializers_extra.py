@@ -2,6 +2,7 @@ import pytest
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
+from accounts.models import UserProfile, encrypt_mfa_secret
 from accounts.serializers import (
     UserRegistrationSerializer,
     UserLoginSerializer,
@@ -172,7 +173,11 @@ class TestBioAnd2FAFlows(APITestCase):
             is_verified=True,
         )
         secret = pyotp.random_base32()
-        UserProfile.objects.create(user=user, mfa_enabled=True, mfa_secret=secret)
+        UserProfile.objects.create(
+            user=user,
+            mfa_enabled=True,
+            mfa_secret=encrypt_mfa_secret(secret),
+        )
         url = reverse("accounts:login")
         # Bez TOTP
         r = self.client.post(
