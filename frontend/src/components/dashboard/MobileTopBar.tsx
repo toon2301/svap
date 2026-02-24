@@ -50,7 +50,7 @@ export default function MobileTopBar({
         <div className="flex items-center h-full justify-start">
           {activeModule === 'requests' ? (
             <h1 className="text-base font-semibold text-gray-900 dark:text-white truncate">
-              {t('requests.title', 'Žiadosti')}
+              {t('requests.title', 'Spolupráce')}
             </h1>
           ) : (isEditMode || activeRightItem === 'language' || activeRightItem === 'account-type' || activeRightItem === 'privacy' || activeModule === 'notifications' || activeModule === 'account-type' || activeModule === 'privacy' || activeModule === 'skills' || activeModule === 'skills-offer' || activeModule === 'skills-search' || activeModule === 'skills-select-category' || activeModule === 'user-profile' || activeModule === 'offer-reviews') ? (
             <button

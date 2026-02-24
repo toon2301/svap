@@ -302,6 +302,19 @@ Tím Swaply
         """
 
         try:
+            import time
+
+            _start = time.time()
+            logger.info(
+                "EMAIL_SEND_START",
+                extra={
+                    "host": getattr(settings, "EMAIL_HOST", None),
+                    "port": getattr(settings, "EMAIL_PORT", None),
+                    "use_tls": getattr(settings, "EMAIL_USE_TLS", None),
+                    "timeout": getattr(settings, "EMAIL_TIMEOUT", None),
+                    "backend": getattr(settings, "EMAIL_BACKEND", None),
+                },
+            )
             if getattr(settings, "DEBUG", False):
                 logger.info(
                     "📧 DEBUG EMAIL: Sending verification email",
@@ -323,6 +336,10 @@ Tím Swaply
                 recipient_list=[self.user.email],
                 fail_silently=False,
             )
+            logger.info(
+                "EMAIL_SEND_DONE",
+                extra={"duration_ms": int((time.time() - _start) * 1000)},
+            )
             if getattr(settings, "DEBUG", False):
                 logger.info(f"📧 DEBUG EMAIL: send_mail() returned: {result}")
             logger.info("Verification email sent")
@@ -333,6 +350,13 @@ Tím Swaply
 
                 logger.error(f"📧 DEBUG EMAIL: Exception during send_mail(): {e}")
                 logger.error(f"📧 DEBUG EMAIL: Traceback: {traceback.format_exc()}")
+            logger.error(
+                "EMAIL_SEND_FAILED",
+                extra={
+                    "duration_ms": int((time.time() - _start) * 1000),
+                    "error": str(e),
+                },
+            )
             logger.error("Verification email failed")
             return False
 

@@ -13,11 +13,20 @@ import { RequestMobileCard } from './RequestMobileCard';
 import { RequestDetailModal } from './RequestDetailModal';
 
 type Tab = 'received' | 'sent';
+type StatusTab = 'pending' | 'active' | 'completed' | 'cancelled';
+
+const STATUS_PARAMS: Record<StatusTab, string> = {
+  pending: 'pending',
+  active: 'accepted,completion_requested',
+  completed: 'completed',
+  cancelled: 'cancelled,rejected',
+};
 
 export function RequestsMobile() {
   const { t } = useLanguage();
   const { markAllRead, unreadCount } = useRequestsNotifications();
 
+  const [statusTab, setStatusTab] = useState<StatusTab>('pending');
   const [tab, setTab] = useState<Tab>('received');
   const [data, setData] = useState<SkillRequestsResponse>({ received: [], sent: [] });
   const [isLoading, setIsLoading] = useState(false);
@@ -30,12 +39,13 @@ export function RequestsMobile() {
   const load = useCallback(async () => {
     setIsLoading(true);
     try {
-      const res = await fetchSkillRequests();
+      const statusQuery = STATUS_PARAMS[statusTab];
+      const res = await fetchSkillRequests(statusQuery);
       setData(res);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [statusTab]);
 
   useEffect(() => {
     void markAllRead();
@@ -58,13 +68,18 @@ export function RequestsMobile() {
   }, [load]);
 
   const items = useMemo(() => {
-    const arr = tab === 'received' ? data.received : data.sent.filter((x) => x.status !== 'cancelled');
+    const arr =
+      tab === 'received'
+        ? data.received
+        : statusTab === 'cancelled'
+          ? data.sent
+          : data.sent.filter((x) => x.status !== 'cancelled');
     return [...arr].sort((a, b) => {
       const ta = new Date(a.updated_at ?? a.created_at).getTime();
       const tb = new Date(b.updated_at ?? b.created_at).getTime();
       return tb - ta;
     });
-  }, [data, tab]);
+  }, [data, tab, statusTab]);
 
   const mutateItem = (updated: SkillRequest) => {
     setData((prev) => {
@@ -103,7 +118,8 @@ export function RequestsMobile() {
   };
 
   const receivedCount = data.received.length;
-  const sentCount = data.sent.filter((x) => x.status !== 'cancelled').length;
+  const sentCount =
+    statusTab === 'cancelled' ? data.sent.length : data.sent.filter((x) => x.status !== 'cancelled').length;
   const currentVariant: 'received' | 'sent' = tab;
 
   const handleConfirmAction = () => {
@@ -119,11 +135,43 @@ export function RequestsMobile() {
 
   return (
     <div className="space-y-0">
-      {/* Taby od okraja po okraj (breakout; rodič má pre žiadosti px-2 sm:px-4) */}
+      {/* 4 taby: Čakajúce, Aktívne, Dokončené, Zrušené */}
       <div className="-mt-8 -mx-2 w-[calc(100%+1rem)] sm:-mx-4 sm:w-[calc(100%+2rem)]">
         <div
           role="tablist"
-          aria-label={t('requests.title', 'Žiadosti')}
+          aria-label={t('requests.tabStatusLabel', 'Stav spoluprác')}
+          className="flex w-full items-stretch rounded-none bg-white dark:bg-gray-900 overflow-hidden min-w-0 border-b border-gray-200 dark:border-gray-800"
+        >
+          {(['pending', 'active', 'completed', 'cancelled'] as const).map((key) => (
+            <button
+              key={key}
+              type="button"
+              role="tab"
+              aria-selected={statusTab === key}
+              onClick={() => setStatusTab(key)}
+              className={[
+                'relative flex-1 py-2.5 px-1 transition-colors flex items-center justify-center min-w-0',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60',
+                statusTab === key
+                  ? 'bg-purple-50 text-purple-700 dark:bg-purple-900/40 dark:text-purple-200'
+                  : 'bg-white text-gray-600 hover:bg-gray-50 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800',
+              ].join(' ')}
+            >
+              <span className="text-[11px] font-semibold truncate">
+                {key === 'pending' && t('requests.tabPending', 'Čakajúce')}
+                {key === 'active' && t('requests.tabActive', 'Aktívne')}
+                {key === 'completed' && t('requests.tabCompleted', 'Dokončené')}
+                {key === 'cancelled' && t('requests.tabCancelled', 'Zrušené')}
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
+      {/* Prijaté / Odoslané */}
+      <div className="-mx-2 w-[calc(100%+1rem)] sm:-mx-4 sm:w-[calc(100%+2rem)]">
+        <div
+          role="tablist"
+          aria-label={t('requests.title', 'Spolupráce')}
           className="flex w-full items-stretch rounded-none bg-white dark:bg-gray-900 overflow-hidden min-w-0"
         >
           <button

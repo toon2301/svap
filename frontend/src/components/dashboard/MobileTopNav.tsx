@@ -19,7 +19,7 @@ export default function MobileTopNav({ activeItem, onItemClick }: MobileTopNavPr
   const navItems = [
     { id: 'home', icon: HomeIcon, label: 'Domov' },
     { id: 'search', icon: MagnifyingGlassIcon, label: 'Hľadať' },
-    { id: 'requests', icon: InboxIcon, label: 'Žiadosti' },
+    { id: 'requests', icon: InboxIcon, label: 'Spolupráce' },
     { id: 'messages', icon: ChatBubbleLeftRightIcon, label: 'Správy' },
     { id: 'notifications', icon: BellIcon, label: 'Upozornenia' },
   ];

@@ -25,7 +25,7 @@ jest.mock('../requests/requestsApi', () => ({
 describe('RequestsModule', () => {
   it('renders heading and empty state', async () => {
     render(<RequestsModule />);
-    expect(screen.getByText('Žiadosti')).toBeInTheDocument();
+    expect(screen.getByText('Spolupráce')).toBeInTheDocument();
 
     await waitFor(() => {
       expect(screen.getAllByText('Žiadne prijaté žiadosti').length).toBeGreaterThan(0);

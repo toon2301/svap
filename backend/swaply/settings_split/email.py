@@ -37,3 +37,6 @@ if EMAIL_BACKEND.endswith("smtp.EmailBackend"):
         EMAIL_HOST_PASSWORD = _require_env("EMAIL_HOST_PASSWORD")
         EMAIL_USE_TLS = env_bool("EMAIL_USE_TLS", True)
         DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL") or EMAIL_HOST_USER
+
+# Limit SMTP connection/response time (seconds)
+EMAIL_TIMEOUT = int(os.getenv("EMAIL_TIMEOUT", "10"))

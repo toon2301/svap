@@ -58,7 +58,7 @@ const sidebarItems: SidebarItem[] = [
   },
   {
     id: 'requests',
-    label: 'Žiadosti',
+    label: 'Spolupráce',
     icon: InboxIcon,
   },
   {

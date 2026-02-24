@@ -37,7 +37,7 @@ describe('MobileTopNav', () => {
     
     expect(screen.getByLabelText('Domov')).toBeInTheDocument();
     expect(screen.getByLabelText('Hľadať')).toBeInTheDocument();
-    expect(screen.getByLabelText('Žiadosti')).toBeInTheDocument();
+    expect(screen.getByLabelText('Spolupráce')).toBeInTheDocument();
     expect(screen.getByLabelText('Správy')).toBeInTheDocument();
     expect(screen.getByLabelText('Upozornenia')).toBeInTheDocument();
   });

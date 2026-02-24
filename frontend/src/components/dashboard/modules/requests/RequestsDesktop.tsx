@@ -11,11 +11,20 @@ import { RequestRow } from './RequestRow';
 import { RequestsSkeletonList } from './ui/RequestsSkeletonList';
 
 type Tab = 'received' | 'sent';
+type StatusTab = 'pending' | 'active' | 'completed' | 'cancelled';
+
+const STATUS_PARAMS: Record<StatusTab, string> = {
+  pending: 'pending',
+  active: 'accepted,completion_requested',
+  completed: 'completed',
+  cancelled: 'cancelled,rejected',
+};
 
 export function RequestsDesktop() {
   const { t } = useLanguage();
   const { markAllRead, unreadCount } = useRequestsNotifications();
 
+  const [statusTab, setStatusTab] = useState<StatusTab>('pending');
   const [tab, setTab] = useState<Tab>('received');
   const [data, setData] = useState<SkillRequestsResponse>({ received: [], sent: [] });
   const [isLoading, setIsLoading] = useState(false);
@@ -25,12 +34,13 @@ export function RequestsDesktop() {
   const load = useCallback(async () => {
     setIsLoading(true);
     try {
-      const res = await fetchSkillRequests();
+      const statusQuery = STATUS_PARAMS[statusTab];
+      const res = await fetchSkillRequests(statusQuery);
       setData(res);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [statusTab]);
 
   useEffect(() => {
     void markAllRead();
@@ -50,13 +60,15 @@ export function RequestsDesktop() {
     const arr =
       tab === 'received'
         ? data.received
-        : data.sent.filter((x) => x.status !== 'cancelled');
+        : statusTab === 'cancelled'
+          ? data.sent
+          : data.sent.filter((x) => x.status !== 'cancelled');
     return [...arr].sort((a, b) => {
       const ta = new Date(a.updated_at ?? a.created_at).getTime();
       const tb = new Date(b.updated_at ?? b.created_at).getTime();
       return tb - ta;
     });
-  }, [data, tab]);
+  }, [data, tab, statusTab]);
 
   const mutateItem = (updated: SkillRequest) => {
     setData((prev) => {
@@ -93,7 +105,8 @@ export function RequestsDesktop() {
   };
 
   const receivedCount = data.received.length;
-  const sentCount = data.sent.filter((x) => x.status !== 'cancelled').length;
+  const sentCount =
+    statusTab === 'cancelled' ? data.sent.length : data.sent.filter((x) => x.status !== 'cancelled').length;
 
   const handleConfirmAction = () => {
     if (!pendingConfirm) return;
@@ -110,7 +123,7 @@ export function RequestsDesktop() {
           <div className="relative flex items-start justify-between gap-4">
             <div>
               <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                {t('requests.title', 'Žiadosti')}
+                {t('requests.title', 'Spolupráce')}
               </h2>
               <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
                 {t('requests.subtitle', 'Prijaté a odoslané žiadosti o karty')}
@@ -126,10 +139,43 @@ export function RequestsDesktop() {
           </div>
         </div>
 
+        {/* 4 taby: Čakajúce, Aktívne, Dokončené, Zrušené */}
+        <div className="px-4 pt-2 pb-2">
+          <div
+            role="tablist"
+            aria-label={t('requests.tabStatusLabel', 'Stav spoluprác')}
+            className="flex w-full items-stretch rounded-2xl border border-gray-200 dark:border-gray-800 bg-white/60 dark:bg-[#0f0f10] shadow-sm overflow-hidden"
+          >
+            {(['pending', 'active', 'completed', 'cancelled'] as const).map((key) => (
+              <button
+                key={key}
+                type="button"
+                role="tab"
+                aria-selected={statusTab === key}
+                onClick={() => setStatusTab(key)}
+                className={[
+                  'relative flex-1 py-2.5 px-2 transition-all flex items-center justify-center',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60',
+                  statusTab === key
+                    ? 'bg-gradient-to-t from-purple-100 to-transparent text-purple-700 dark:from-purple-100/80 dark:to-purple-100/30 dark:text-purple-900'
+                    : 'text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-[#111214]',
+                ].join(' ')}
+              >
+                <span className="text-xs font-semibold">
+                  {key === 'pending' && t('requests.tabPending', 'Čakajúce')}
+                  {key === 'active' && t('requests.tabActive', 'Aktívne')}
+                  {key === 'completed' && t('requests.tabCompleted', 'Dokončené')}
+                  {key === 'cancelled' && t('requests.tabCancelled', 'Zrušené')}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+
         <div className="px-4 pb-4">
           <div
             role="tablist"
-            aria-label={t('requests.title', 'Žiadosti')}
+            aria-label={t('requests.title', 'Spolupráce')}
             className="flex w-full items-stretch rounded-2xl border border-gray-200 dark:border-gray-800 bg-white/60 dark:bg-[#0f0f10] shadow-sm overflow-hidden"
           >
             <button

@@ -66,6 +66,15 @@ def skill_requests_view(request):
             requester=request.user,
             hidden_by_requester=False,
         ).select_related("requester", "recipient", "offer", "offer__user")
+
+        status_param = request.query_params.get("status")
+        if status_param:
+            status_values = [s.strip().lower() for s in status_param.split(",") if s.strip()]
+            valid_statuses = {choice for choice, _ in SkillRequestStatus.choices}
+            status_filter = [s for s in status_values if s in valid_statuses]
+            if status_filter:
+                received = received.filter(status__in=status_filter)
+                sent = sent.filter(status__in=status_filter)
         received_serializer = SkillRequestSerializer(
             received, many=True, context={"request": request}
         )

@@ -292,6 +292,20 @@ def register_view(request):
                     )
 
             # Odošli verifikačný email MIMO transakcie a s ochranou pred timeoutom
+            import threading
+
+            def _send_email_async(verification, request):
+                try:
+                    verification.send_verification_email(request)
+                except Exception as email_error:
+                    logger.warning(
+                        "Verification email failed but registration succeeded",
+                        extra={
+                            "user_id": getattr(verification.user, "id", None),
+                            "error": str(email_error),
+                        },
+                    )
+
             verification = None
             try:
                 from accounts.models import EmailVerification
@@ -302,16 +316,14 @@ def register_view(request):
                     .first()
                 )
                 if verification:
-                    verification.send_verification_email(request)
-            except Exception as email_error:
-                logger.warning(
-                    "Verification email failed but registration succeeded",
-                    extra={
-                        "user_id": getattr(user, "id", None),
-                        "error": str(email_error),
-                    },
-                )
-                # Pokračuj - registrácia je úspešná aj bez emailu
+                    t = threading.Thread(
+                        target=_send_email_async,
+                        args=(verification, request),
+                        daemon=True,
+                    )
+                    t.start()
+            except Exception as e:
+                logger.warning("Could not start email thread", extra={"error": str(e)})
 
             if getattr(settings, "DEBUG", False):
                 logger.info(

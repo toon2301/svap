@@ -27,8 +27,13 @@
     "saving": "Ukladám..."
   },
   "requests": {
-    "title": "Žiadosti",
+    "title": "Spolupráce",
     "subtitle": "Prijaté a odoslané žiadosti o karty",
+    "tabPending": "Čakajúce",
+    "tabActive": "Aktívne",
+    "tabCompleted": "Dokončené",
+    "tabCancelled": "Zrušené",
+    "tabStatusLabel": "Stav spoluprác",
     "received": "Prijaté",
     "sent": "Odoslané",
     "accept": "Prijať",

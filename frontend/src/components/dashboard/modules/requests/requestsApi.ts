@@ -19,8 +19,11 @@ export function getApiErrorMessage(err: unknown, fallback: string): string {
   );
 }
 
-export async function fetchSkillRequests(): Promise<SkillRequestsResponse> {
-  const res = await api.get(endpoints.requests.list);
+export async function fetchSkillRequests(statusQuery?: string): Promise<SkillRequestsResponse> {
+  const url = statusQuery
+    ? `${endpoints.requests.list}?status=${encodeURIComponent(statusQuery)}`
+    : endpoints.requests.list;
+  const res = await api.get(url);
   const data = res?.data;
 
   return {
