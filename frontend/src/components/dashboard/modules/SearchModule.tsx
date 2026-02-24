@@ -121,7 +121,7 @@ export default function SearchModule({ user, onUserClick, onSkillClick, isOverla
   // Layout classes pre responsive dizajn
   const rootClassName = isOverlay ? 'w-full h-full' : 'max-w-6xl mx-auto';
   const layoutClassName = isOverlay ? 'h-full flex flex-col' : 'flex flex-col lg:flex-row gap-6';
-  const asideClassName = isOverlay ? 'w-full h-full' : 'w-full lg:w-96 flex-shrink-0';
+  const asideClassName = isOverlay ? 'w-full flex flex-col h-full' : 'w-full lg:w-96 flex-shrink-0';
 
   return (
     <div className={rootClassName}>
@@ -137,7 +137,7 @@ export default function SearchModule({ user, onUserClick, onSkillClick, isOverla
           />
           
           {/* Search results komponenta */}
-          <div className="px-4 sm:px-5">
+          <div className={isOverlay ? 'flex-1 overflow-y-auto min-h-0 px-4 sm:px-5' : 'px-4 sm:px-5'}>
             <SearchResults
               user={user}
               searchState={searchState}

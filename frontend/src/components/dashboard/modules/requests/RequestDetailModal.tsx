@@ -19,6 +19,9 @@ type Props = {
   onReject?: () => void;
   onCancel?: () => void;
   onHide?: () => void;
+  showCompletionActions?: boolean;
+  onRequestCompletion?: (id: number) => void;
+  onConfirmCompletion?: (id: number) => void;
 };
 
 function formatDateSk(iso?: string) {
@@ -42,6 +45,9 @@ export function RequestDetailModal({
   onReject,
   onCancel,
   onHide,
+  showCompletionActions = false,
+  onRequestCompletion,
+  onConfirmCompletion,
 }: Props) {
   const { t } = useLanguage();
   const router = useRouter();
@@ -285,6 +291,41 @@ export function RequestDetailModal({
                 >
                   {t('requests.cancel')}
                 </button>
+              )}
+            </>
+          )}
+
+          {showCompletionActions && item && (
+            <>
+              {variant === 'received' && item.status === 'accepted' && onRequestCompletion && (
+                <button
+                  type="button"
+                  onClick={() => onRequestCompletion(item.id)}
+                  disabled={isBusy}
+                  className="w-full py-3 rounded-xl font-semibold bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/60"
+                >
+                  {t('requests.markAsCompleted', 'Označiť ako dokončené')}
+                </button>
+              )}
+              {variant === 'sent' && item.status === 'completion_requested' && onConfirmCompletion && (
+                <button
+                  type="button"
+                  onClick={() => onConfirmCompletion(item.id)}
+                  disabled={isBusy}
+                  className="w-full py-3 rounded-xl font-semibold bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/60"
+                >
+                  {t('requests.confirmCompletion', 'Potvrdiť dokončenie')}
+                </button>
+              )}
+              {variant === 'sent' && item.status === 'accepted' && (
+                <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-2">
+                  {t('requests.completionInProgress', 'Spolupráca prebieha')}
+                </p>
+              )}
+              {variant === 'received' && item.status === 'completion_requested' && (
+                <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-2">
+                  {t('requests.completionAwaitingOther', 'Čaká sa na potvrdenie druhej strany')}
+                </p>
               )}
             </>
           )}

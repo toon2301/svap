@@ -158,8 +158,8 @@ class BioValidator:
         if not bio:
             return None  # Bio je voliteľné
 
-        if len(bio.strip()) < 10:
-            raise ValidationError(_("Bio musí mať aspoň 10 znakov"))
+        if len(bio.strip()) < 1:
+            raise ValidationError(_("Bio musí mať aspoň 1 znakov"))
 
         if len(bio.strip()) > 500:
             raise ValidationError(_("Bio môže mať maximálne 500 znakov"))

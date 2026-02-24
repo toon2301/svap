@@ -1,16 +1,25 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import toast from 'react-hot-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { useRequestsNotifications } from '../../contexts/RequestsNotificationsContext';
-import { fetchSkillRequests, getApiErrorMessage, updateSkillRequest } from './requestsApi';
+import {
+  fetchSkillRequests,
+  getApiErrorMessage,
+  updateSkillRequest,
+  requestCompletion,
+  confirmCompletion,
+} from './requestsApi';
 import type { SkillRequest, SkillRequestsResponse } from './types';
 import { RequestsSkeletonList } from './ui/RequestsSkeletonList';
 import { RequestsEmptyState } from './ui/RequestsEmptyState';
 import { RequestMobileCard } from './RequestMobileCard';
 import { RequestDetailModal } from './RequestDetailModal';
+import { AddReviewModal } from '../reviews/AddReviewModal';
+import { api, endpoints } from '@/lib/api';
 
 type Tab = 'received' | 'sent';
 type StatusTab = 'pending' | 'active' | 'completed' | 'cancelled';
@@ -24,6 +33,7 @@ const STATUS_PARAMS: Record<StatusTab, string> = {
 
 export function RequestsMobile() {
   const { t } = useLanguage();
+  const { user } = useAuth();
   const { markAllRead, unreadCount } = useRequestsNotifications();
 
   const [statusTab, setStatusTab] = useState<StatusTab>('pending');
@@ -35,6 +45,17 @@ export function RequestsMobile() {
   const [pendingConfirm, setPendingConfirm] = useState<{ action: 'reject' | 'cancel' | 'hide'; id: number } | null>(
     null,
   );
+
+  const [autoReviewOfferId, setAutoReviewOfferId] = useState<number | null>(null);
+  const [isAutoReviewOpen, setIsAutoReviewOpen] = useState(false);
+  const autoReviewOpenedForOfferIdsRef = useRef<Set<number>>(new Set());
+
+  const reviewerName = useMemo(() => {
+    if (!user) return '';
+    const n = [user.first_name, user.last_name].filter(Boolean).join(' ').trim();
+    return n || user.email || '';
+  }, [user]);
+  const reviewerAvatarUrl = user?.avatar_url || null;
 
   const load = useCallback(async () => {
     setIsLoading(true);
@@ -127,6 +148,66 @@ export function RequestsMobile() {
     const { id, action } = pendingConfirm;
     setPendingConfirm(null);
     void handleAction(id, action);
+  };
+
+  const handleRequestCompletion = async (id: number) => {
+    setBusyId(id);
+    try {
+      const res = await requestCompletion(id);
+      const updated = res?.data as SkillRequest;
+      if (updated && typeof updated.id === 'number') {
+        mutateItem(updated);
+      } else {
+        void load();
+      }
+    } catch (err: unknown) {
+      toast.error(getApiErrorMessage(err, t('common.error', 'Nastala chyba.')));
+      void load();
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const handleConfirmCompletion = async (id: number) => {
+    setBusyId(id);
+    try {
+      const res = await confirmCompletion(id);
+      const updated = res?.data as SkillRequest;
+      if (updated && typeof updated.id === 'number') {
+        mutateItem(updated);
+
+        // Po úspešnom potvrdení (status → completed): ak je používateľ requester a ešte nemá recenziu, otvor modal
+        if (updated.status === 'completed') {
+          const offerId = (updated.offer_summary?.id ?? updated.offer) as unknown;
+          const offerInt = typeof offerId === 'number' ? offerId : Number(offerId);
+          if (
+            Number.isFinite(offerInt) &&
+            offerInt > 0 &&
+            tab === 'sent' &&
+            !autoReviewOpenedForOfferIdsRef.current.has(offerInt)
+          ) {
+            try {
+              const { data: offerData } = await api.get<any>(endpoints.skills.detail(offerInt));
+              const alreadyReviewed = offerData?.already_reviewed === true;
+              if (!alreadyReviewed) {
+                autoReviewOpenedForOfferIdsRef.current.add(offerInt);
+                setAutoReviewOfferId(offerInt);
+                setIsAutoReviewOpen(true);
+              }
+            } catch {
+              // ak sa nepodarí zistiť already_reviewed, modal automaticky neotváraj
+            }
+          }
+        }
+      } else {
+        void load();
+      }
+    } catch (err: unknown) {
+      toast.error(getApiErrorMessage(err, t('common.error', 'Nastala chyba.')));
+      void load();
+    } finally {
+      setBusyId(null);
+    }
   };
 
   const selectedId = selected?.id ?? null;
@@ -291,6 +372,9 @@ export function RequestsMobile() {
             : undefined
         }
         onHide={selectedCanHide ? () => setPendingConfirm({ action: 'hide', id: selected!.id }) : undefined}
+        showCompletionActions={statusTab === 'active'}
+        onRequestCompletion={statusTab === 'active' ? handleRequestCompletion : undefined}
+        onConfirmCompletion={statusTab === 'active' ? handleConfirmCompletion : undefined}
       />
 
       {pendingConfirm &&
@@ -357,6 +441,45 @@ export function RequestsMobile() {
           </div>,
           document.body,
         )}
+
+      <AddReviewModal
+        key={autoReviewOfferId ?? 'auto-review-mobile'}
+        open={isAutoReviewOpen}
+        onClose={() => {
+          setIsAutoReviewOpen(false);
+          setAutoReviewOfferId(null);
+        }}
+        reviewerName={reviewerName}
+        reviewerAvatarUrl={reviewerAvatarUrl}
+        reviewToEdit={null}
+        onSubmit={async (rating, text, pros, cons) => {
+          if (autoReviewOfferId == null) throw new Error('Chýba ID ponuky');
+          if (rating === 0 || rating < 0 || rating > 5) {
+            throw new Error('Prosím, vyber hodnotenie (hviezdičky).');
+          }
+          try {
+            await api.post(endpoints.reviews.list(autoReviewOfferId), {
+              rating: Number(rating),
+              text: text.trim(),
+              pros: pros.filter((p) => p.trim().length > 0),
+              cons: cons.filter((c) => c.trim().length > 0),
+            });
+            setIsAutoReviewOpen(false);
+            setAutoReviewOfferId(null);
+            return { success: true };
+          } catch (error: any) {
+            const errorMessage =
+              error?.response?.data?.error ||
+              error?.response?.data?.rating?.[0] ||
+              error?.response?.data?.pros?.[0] ||
+              error?.response?.data?.cons?.[0] ||
+              error?.response?.data?.text?.[0] ||
+              error?.message ||
+              'Nepodarilo sa pridať recenziu. Skús to znova.';
+            throw new Error(errorMessage);
+          }
+        }}
+      />
     </div>
   );
 }

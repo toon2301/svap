@@ -4,11 +4,14 @@ import React from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { SkillRequestStatus } from '../types';
 
-const STATUS_KEYS: Record<SkillRequestStatus, string> = {
-  pending: 'requests.statusPending',
-  accepted: 'requests.statusAccepted',
-  rejected: 'requests.statusRejected',
-  cancelled: 'requests.statusCancelled',
+/** Mapovanie status → text pre badge v kartičkách spoluprác */
+const STATUS_BADGE_KEYS: Record<SkillRequestStatus, string> = {
+  pending: 'requests.statusBadgePending',
+  accepted: 'requests.statusBadgeActive',
+  completion_requested: 'requests.statusBadgeCompletionRequested',
+  completed: 'requests.statusBadgeCompleted',
+  cancelled: 'requests.statusBadgeCancelled',
+  rejected: 'requests.statusBadgeRejected',
 };
 
 const STATUS_CLASS: Record<SkillRequestStatus, string> = {
@@ -16,16 +19,20 @@ const STATUS_CLASS: Record<SkillRequestStatus, string> = {
     'bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-950/40 dark:text-amber-200 dark:border-amber-900/60',
   accepted:
     'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-200 dark:border-emerald-900/60',
-  rejected:
-    'bg-rose-50 text-rose-800 border-rose-200 dark:bg-rose-950/40 dark:text-rose-200 dark:border-rose-900/60',
+  completion_requested:
+    'bg-sky-50 text-sky-800 border-sky-200 dark:bg-sky-950/40 dark:text-sky-200 dark:border-sky-900/60',
+  completed:
+    'bg-violet-50 text-violet-800 border-violet-200 dark:bg-violet-950/40 dark:text-violet-200 dark:border-violet-900/60',
   cancelled:
     'bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-800',
+  rejected:
+    'bg-rose-50 text-rose-800 border-rose-200 dark:bg-rose-950/40 dark:text-rose-200 dark:border-rose-900/60',
 };
 
 export function StatusPill({ status }: { status: SkillRequestStatus }) {
   const { t } = useLanguage();
-  const s = status ?? 'pending';
-  const label = t(STATUS_KEYS[s]);
+  const s = (status ?? 'pending') as SkillRequestStatus;
+  const label = t(STATUS_BADGE_KEYS[s] ?? STATUS_BADGE_KEYS.pending);
   const className = STATUS_CLASS[s] ?? STATUS_CLASS.pending;
   return (
     <span
@@ -39,5 +46,3 @@ export function StatusPill({ status }: { status: SkillRequestStatus }) {
     </span>
   );
 }
-
-

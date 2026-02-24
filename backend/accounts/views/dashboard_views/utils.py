@@ -41,4 +41,4 @@ def _build_accent_insensitive_pattern(term: str) -> str:
             parts.append(re.escape(ch))
     if not parts:
         return ".*"
-    return ".*" + "".join(parts) + ".*"
+    return "".join(parts)

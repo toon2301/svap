@@ -137,10 +137,18 @@ class RateLimiter:
         return data["first_attempt"] + timezone.timedelta(minutes=self.window_minutes)
 
 
-def rate_limit(max_attempts=5, window_minutes=15, block_minutes=60, action="default"):
+def rate_limit(
+    max_attempts=5,
+    window_minutes=15,
+    block_minutes=60,
+    action="default",
+    message=None,
+):
     """
     Decorator pre rate limiting
     """
+    if message is None:
+        message = "Príliš veľa pokusov. Skúste to znovu neskôr."
 
     def decorator(view_func):
         @wraps(view_func)
@@ -210,7 +218,7 @@ def rate_limit(max_attempts=5, window_minutes=15, block_minutes=60, action="defa
                 return JsonResponse(
                     {
                         "error": True,
-                        "message": "Príliš veľa pokusov. Skúste to znovu neskôr.",
+                        "message": message,
                         "code": "RATE_LIMITED",
                         "remaining_attempts": remaining,
                         "reset_time": reset_time.isoformat() if reset_time else None,
@@ -227,25 +235,27 @@ def rate_limit(max_attempts=5, window_minutes=15, block_minutes=60, action="defa
 
 
 # Prednastavené rate limitery pre rôzne akcie
-# Login rate limit - menej prísny pre lepšiu používateľskú skúsenosť
-# Development: 20 pokusov, blokovanie 5 minút
-# Produkcia: 10 pokusov, blokovanie 30 minút
-_login_max_attempts = 20 if settings.DEBUG else 10
-_login_block_minutes = 5 if settings.DEBUG else 30
+# Login: max 10 pokusov za minútu per IP
 login_rate_limit = rate_limit(
-    max_attempts=_login_max_attempts,
-    window_minutes=15,
-    block_minutes=_login_block_minutes,
+    max_attempts=10,
+    window_minutes=1,
+    block_minutes=5,
     action="login",
+    message="Príliš veľa pokusov. Skúste znova o chvíľu.",
 )
 register_rate_limit = rate_limit(
     max_attempts=3, window_minutes=15, block_minutes=30, action="register"
 )
+# Password reset request: max 5 pokusov za hodinu per IP
 password_reset_rate_limit = rate_limit(
-    max_attempts=3, window_minutes=60, block_minutes=120, action="password_reset"
+    max_attempts=5, window_minutes=60, block_minutes=60, action="password_reset"
 )
 email_verification_rate_limit = rate_limit(
     max_attempts=5, window_minutes=15, block_minutes=60, action="email_verification"
+)
+# Resend verification email: max 3 pokusy za hodinu per IP
+resend_verification_rate_limit = rate_limit(
+    max_attempts=3, window_minutes=60, block_minutes=60, action="resend_verification"
 )
 api_rate_limit = rate_limit(
     max_attempts=1000, window_minutes=60, block_minutes=60, action="api"

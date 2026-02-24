@@ -112,9 +112,15 @@ export default function DashboardLayout({
     };
   }, [isSearchOpen, onSearchClose]);
 
-  const searchPanelWidthClasses = isRightSidebarOpen
-    ? 'w-[240px] xl:w-[280px] 2xl:w-[384px]'
-    : 'w-[280px] xl:w-[384px]';
+  const showSearchPanel = Boolean(isSearchOpen && searchOverlay);
+
+  const gridColsClassName = isRightSidebarOpen
+    ? showSearchPanel
+      ? 'lg:grid-cols-[240px_240px_1fr_240px] xl:grid-cols-[280px_280px_1fr_280px] 2xl:grid-cols-[384px_384px_1fr_384px]'
+      : 'lg:grid-cols-[240px_1fr_240px] xl:grid-cols-[280px_1fr_280px] 2xl:grid-cols-[384px_1fr_384px]'
+    : showSearchPanel
+      ? 'lg:grid-cols-[280px_280px_1fr] xl:grid-cols-[384px_384px_1fr]'
+      : 'lg:grid-cols-[280px_1fr] xl:grid-cols-[384px_1fr]';
 
   return (
     <div className="h-screen bg-[var(--background)] text-[var(--foreground)] overflow-hidden">
@@ -152,11 +158,7 @@ export default function DashboardLayout({
       />
 
       {/* Desktop Layout - CSS Grid */}
-      <div className={`h-full grid grid-cols-1 ${
-        isRightSidebarOpen 
-          ? 'lg:grid-cols-[240px_1fr_240px] xl:grid-cols-[280px_1fr_280px] 2xl:grid-cols-[384px_1fr_384px]'
-          : 'lg:grid-cols-[280px_1fr] xl:grid-cols-[384px_1fr]'
-      }`}>
+      <div className={`h-full grid grid-cols-1 ${gridColsClassName}`}>
         {/* Left Sidebar - Desktop only */}
         <div className="hidden lg:block h-screen overflow-hidden" data-sidebar="left">
           <Sidebar
@@ -166,6 +168,16 @@ export default function DashboardLayout({
             onSearchClick={onSidebarSearchClick}
           />
         </div>
+
+        {/* Desktop search panel – samostatný stĺpec v gride (vedľa ľavej navigácie) */}
+        {showSearchPanel && (
+          <div
+            ref={searchPanelRef}
+            className="hidden lg:flex h-screen flex-col overflow-y-auto overflow-x-hidden bg-[var(--background)] border-r border-gray-800/60 shadow-2xl"
+          >
+            {searchOverlay}
+          </div>
+        )}
 
         {/* Main Content */}
         <main className={`relative h-screen overflow-y-auto pb-24 lg:pt-0 lg:pb-0 elegant-scrollbar ${
@@ -209,18 +221,6 @@ export default function DashboardLayout({
               {children}
             </div>
           </div>
-
-          {/* Desktop search panel overlay – vysunutý vedľa ľavej navigácie */}
-          {isSearchOpen && searchOverlay && (
-            <div className="hidden lg:block absolute inset-y-0 left-0 z-30 pointer-events-none">
-              <div 
-                ref={searchPanelRef}
-                className={`h-full max-w-full pointer-events-auto bg-[var(--background)] border-r border-gray-800/60 shadow-2xl ${searchPanelWidthClasses}`}
-              >
-                {searchOverlay}
-              </div>
-            </div>
-          )}
         </main>
 
         {/* Right Sidebar - Desktop only, shows in grid when open */}

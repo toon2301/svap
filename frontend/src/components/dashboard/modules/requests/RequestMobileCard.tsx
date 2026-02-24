@@ -5,6 +5,7 @@ import type { SkillRequest, SkillRequestStatus } from './types';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { api } from '@/lib/api';
+import { StatusPill } from './ui/StatusPill';
 
 type Props = {
   item: SkillRequest;
@@ -61,6 +62,8 @@ function resolveMediaUrl(rawUrl: string, backendOrigin: string): string {
 const STATUS_GRADIENT_CLASS: Record<SkillRequestStatus, string> = {
   pending: 'from-amber-500/20 to-transparent',
   accepted: 'from-emerald-500/20 to-transparent',
+  completion_requested: 'from-sky-500/20 to-transparent',
+  completed: 'from-violet-500/20 to-transparent',
   rejected: 'from-rose-500/20 to-transparent',
   cancelled: 'from-gray-500/15 to-transparent',
 };
@@ -191,6 +194,7 @@ export function RequestMobileCard({ item, variant, onPress }: Props) {
                   {intentText}
                 </div>
               </div>
+              <StatusPill status={status} />
             </div>
 
             <div className="mt-2">

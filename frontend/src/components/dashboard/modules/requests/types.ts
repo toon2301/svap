@@ -1,4 +1,10 @@
-export type SkillRequestStatus = 'pending' | 'accepted' | 'rejected' | 'cancelled';
+export type SkillRequestStatus =
+  | 'pending'
+  | 'accepted'
+  | 'completion_requested'
+  | 'completed'
+  | 'cancelled'
+  | 'rejected';
 
 export type SkillRequestUserSummary = {
   id: number;

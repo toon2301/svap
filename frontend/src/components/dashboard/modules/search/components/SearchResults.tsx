@@ -39,6 +39,7 @@ export function SearchResults({
     results,
     error,
     hasSearched,
+    isSearching,
     isFromRecentSearch,
     showSkills,
     showUsers,
@@ -296,25 +297,32 @@ export function SearchResults({
         </div>
       )}
 
-      {/* Search results */}
-      {hasSearched && !error && results && (
+      {/* Search results – vždy zobraziť sekciu keď už bolo vyhľadávanie, aby sa nezobrazovala prázdna oblasť */}
+      {hasSearched && !error && (
         <div className="mt-4 space-y-1">
-          {/* Tlačidlo "Späť" na vrátenie sa k návrhom - len pri kliknutí na posledné vyhľadávanie */}
           {isFromRecentSearch && renderBackButton()}
-          
-          {hasPanelResults ? (
-            <>
-              {/* Skills results */}
-              {showSkills && filteredSkills.map((skill) => renderSkillCard(skill, 'skill'))}
 
-              {/* Users results */}
-              {showUsers && results.users.map(renderUserCard)}
+          {!results || isSearching ? (
+            <div className="text-xs text-gray-500 dark:text-gray-400 py-4 px-1" role="status" aria-live="polite">
+              {t('search.loadingResults', 'Načítavam výsledky...')}
+            </div>
+          ) : hasPanelResults ? (
+            <>
+              {showSkills && filteredSkills.map((skill) => renderSkillCard(skill, 'skill'))}
+              {showUsers && (results.users || []).map(renderUserCard)}
             </>
           ) : (
             <div className="text-xs text-gray-500 dark:text-gray-400">
               {t('search.noResults', 'Pre zadané vyhľadávanie sa nenašli žiadne výsledky.')}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Keď používateľ píše (min. 2 znaky) ale ešte neprebehlo vyhľadávanie – napr. čaká sa na debounce – zobraziť hint */}
+      {!error && searchQuery.trim().length >= 2 && !hasSearched && !isSearching && (
+        <div className="mt-4 text-xs text-gray-500 dark:text-gray-400 py-2 px-1">
+          {t('search.pressEnterToSearch', 'Stlačte Enter pre vyhľadanie')}
         </div>
       )}
     </div>

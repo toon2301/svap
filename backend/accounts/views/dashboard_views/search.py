@@ -48,6 +48,24 @@ def dashboard_search_view(request):
         "true",
         "yes",
     )
+
+    if not raw_query and not only_my_location:
+        return Response(
+            {
+                "skills": [],
+                "users": [],
+                "pagination": {
+                    "page": 1,
+                    "per_page": 20,
+                    "total_skills": 0,
+                    "total_users": 0,
+                    "total_pages_skills": 0,
+                    "total_pages_users": 0,
+                },
+            },
+            status=status.HTTP_200_OK,
+        )
+
     price_min_raw = (request.GET.get("price_min") or "").strip()
     price_max_raw = (request.GET.get("price_max") or "").strip()
 

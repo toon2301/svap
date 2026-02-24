@@ -12,9 +12,23 @@ type Props = {
   onCancel?: () => void;
   onHide?: () => void;
   isBusy?: boolean;
+  showCompletionActions?: boolean;
+  onRequestCompletion?: (id: number) => void;
+  onConfirmCompletion?: (id: number) => void;
 };
 
-export function RequestRow({ item, variant, onAccept, onReject, onCancel, onHide, isBusy = false }: Props) {
+export function RequestRow({
+  item,
+  variant,
+  onAccept,
+  onReject,
+  onCancel,
+  onHide,
+  isBusy = false,
+  showCompletionActions = false,
+  onRequestCompletion,
+  onConfirmCompletion,
+}: Props) {
   return (
     <RequestSummaryCard
       item={item}
@@ -24,6 +38,9 @@ export function RequestRow({ item, variant, onAccept, onReject, onCancel, onHide
       onCancel={onCancel}
       onHide={onHide}
       isBusy={isBusy}
+      showCompletionActions={showCompletionActions}
+      onRequestCompletion={onRequestCompletion}
+      onConfirmCompletion={onConfirmCompletion}
     />
   );
 }

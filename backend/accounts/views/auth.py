@@ -24,6 +24,7 @@ from swaply.rate_limiting import (
     login_rate_limit,
     register_rate_limit,
     email_verification_rate_limit,
+    resend_verification_rate_limit,
     api_rate_limit,
 )
 from swaply.audit_logger import (
@@ -588,7 +589,7 @@ def verify_email_view(request):
 
 @api_view(["POST"])
 @permission_classes([AllowAny])
-@email_verification_rate_limit
+@resend_verification_rate_limit
 def resend_verification_view(request):
     """Znovu odoslanie verifikačného emailu"""
     serializer = ResendVerificationSerializer(data=request.data)

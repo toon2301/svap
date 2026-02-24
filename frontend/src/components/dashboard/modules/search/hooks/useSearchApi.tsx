@@ -212,6 +212,8 @@ export function useSearchApi({ searchState, user }: UseSearchApiParams): SearchA
       // Ignoruj zrušené požiadavky (nové vyhľadávanie prebehlo skôr)
       if (e?.name === 'CanceledError' || e?.code === 'ERR_CANCELED') {
         console.log('⚠️ Search request canceled (new search started)');
+        setIsSearching(false);
+        searchAbortControllerRef.current = null;
         return;
       }
       console.error('❌ Chyba pri vyhľadávaní:', {

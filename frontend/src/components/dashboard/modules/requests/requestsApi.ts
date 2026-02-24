@@ -45,4 +45,20 @@ export async function updateSkillRequest(requestId: number, action: 'accept' | '
   });
 }
 
+export async function requestCompletion(requestId: number) {
+  const id = toPositiveInt(requestId);
+  if (!id) throw new Error('Neplatné ID žiadosti');
+  return api.post(endpoints.requests.requestCompletion(id), {}, {
+    headers: { 'Content-Type': 'application/json' },
+  });
+}
+
+export async function confirmCompletion(requestId: number) {
+  const id = toPositiveInt(requestId);
+  if (!id) throw new Error('Neplatné ID žiadosti');
+  return api.post(endpoints.requests.confirmCompletion(id), {}, {
+    headers: { 'Content-Type': 'application/json' },
+  });
+}
+
 

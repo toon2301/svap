@@ -134,14 +134,25 @@ def google_callback_view(request):
             settings, "FRONTEND_CALLBACK_URL", "http://localhost:3000/auth/callback/"
         )
         oauth_state = request.GET.get("state")
-        frontend_callback = default_callback
-        if oauth_state:
+
+        # CSRF ochrana: state musí byť prítomný a musí zodpovedať hodnote v cache
+        if not oauth_state or not oauth_state.strip():
+            logger.warning("Google OAuth callback: state parameter missing")
+            return redirect(f"{default_callback}?error=invalid_state")
+        try:
+            cached = cache.get(f"oauth_state:{oauth_state}")
+            if not cached:
+                logger.warning("Google OAuth callback: state not in cache or expired")
+                return redirect(f"{default_callback}?error=invalid_state")
+            frontend_callback = str(cached)
+            # Vymaž state z cache po overení (ochrana pred replay útokom)
             try:
-                cached = cache.get(f"oauth_state:{oauth_state}")
-                if cached:
-                    frontend_callback = str(cached)
+                cache.delete(f"oauth_state:{oauth_state}")
             except Exception:
-                frontend_callback = default_callback
+                pass
+        except Exception:
+            logger.warning("Google OAuth callback: state validation failed")
+            return redirect(f"{default_callback}?error=invalid_state")
 
         # Získaj Google OAuth credentials z settings
         client_id = getattr(settings, "GOOGLE_OAUTH2_CLIENT_ID", None)

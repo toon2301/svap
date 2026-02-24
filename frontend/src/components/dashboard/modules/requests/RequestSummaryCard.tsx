@@ -18,6 +18,10 @@ type Props = {
   onCancel?: () => void;
   onHide?: () => void;
   isBusy?: boolean;
+  /** Iba v tabe „Aktívne“: zobraziť tlačidlá / text pre dokončenie spolupráce */
+  showCompletionActions?: boolean;
+  onRequestCompletion?: (id: number) => void;
+  onConfirmCompletion?: (id: number) => void;
 };
 
 function initials(name?: string | null) {
@@ -84,7 +88,18 @@ function resolveMediaUrl(rawUrl: string, backendOrigin: string): string {
   return origin ? `${origin}/${raw}` : raw;
 }
 
-export function RequestSummaryCard({ item, variant, onAccept, onReject, onCancel, onHide, isBusy = false }: Props) {
+export function RequestSummaryCard({
+  item,
+  variant,
+  onAccept,
+  onReject,
+  onCancel,
+  onHide,
+  isBusy = false,
+  showCompletionActions = false,
+  onRequestCompletion,
+  onConfirmCompletion,
+}: Props) {
   const router = useRouter();
   const { user } = useAuth();
   const { t } = useLanguage();
@@ -338,6 +353,43 @@ export function RequestSummaryCard({ item, variant, onAccept, onReject, onCancel
           </>
         )}
         </div>
+
+        {/* Completion akcie – len v tabe Aktívne */}
+        {showCompletionActions && (
+          <div className="shrink-0 flex flex-col gap-1.5">
+            {variant === 'received' && item.status === 'accepted' && onRequestCompletion && (
+              <button
+                type="button"
+                onClick={() => onRequestCompletion(item.id)}
+                disabled={isBusy}
+                className="w-full inline-flex items-center justify-center gap-1.5 rounded-md bg-emerald-600 text-white px-2 py-2 text-[11px] sm:text-xs font-semibold hover:bg-emerald-700 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/60"
+              >
+                {t('requests.markAsCompleted', 'Označiť ako dokončené')}
+              </button>
+            )}
+            {variant === 'sent' && item.status === 'completion_requested' && onConfirmCompletion && (
+              <button
+                type="button"
+                onClick={() => onConfirmCompletion(item.id)}
+                disabled={isBusy}
+                className="w-full inline-flex items-center justify-center gap-1.5 rounded-md bg-emerald-600 text-white px-2 py-2 text-[11px] sm:text-xs font-semibold hover:bg-emerald-700 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/60"
+              >
+                {t('requests.confirmCompletion', 'Potvrdiť dokončenie')}
+              </button>
+            )}
+            {variant === 'sent' && item.status === 'accepted' && (
+              <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 text-center py-1">
+                {t('requests.completionInProgress', 'Spolupráca prebieha')}
+              </p>
+            )}
+            {variant === 'received' && item.status === 'completion_requested' && (
+              <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 text-center py-1">
+                {t('requests.completionAwaitingOther', 'Čaká sa na potvrdenie druhej strany')}
+              </p>
+            )}
+          </div>
+        )}
+
         {/* Suma a stav: v pravom dolnom rohu, rovnaká veľkosť */}
         <div className="shrink-0 pt-2 pb-2 flex flex-row items-center justify-end gap-3">
           {priceLabel && (

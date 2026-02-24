@@ -15,6 +15,7 @@ from django.http import JsonResponse
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework import status
+from swaply.rate_limiting import password_reset_rate_limit
 from ..models import User
 import logging
 
@@ -23,6 +24,7 @@ logger = logging.getLogger(__name__)
 
 @api_view(["POST"])
 @permission_classes([AllowAny])
+@password_reset_rate_limit
 def password_reset_request_view(request):
     """
     API endpoint pre požiadavku na reset hesla
