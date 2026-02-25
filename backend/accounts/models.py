@@ -785,3 +785,95 @@ class Review(models.Model):
             raise ValidationError(
                 {"text": "Text recenzie môže mať maximálne 300 znakov."}
             )
+
+
+class ReviewReport(models.Model):
+    """
+    Nahlásenie recenzie používateľom.
+    Jeden používateľ môže nahlásiť konkrétnu recenziu iba raz.
+    """
+
+    review = models.ForeignKey(
+        Review,
+        on_delete=models.CASCADE,
+        related_name="reports",
+        verbose_name=_("Recenzia"),
+    )
+    reported_by = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        verbose_name=_("Nahlásil"),
+    )
+    reason = models.CharField(
+        _("Dôvod"),
+        max_length=100,
+    )
+    description = models.TextField(
+        _("Popis"),
+        blank=True,
+    )
+    created_at = models.DateTimeField(_("Vytvorené"), auto_now_add=True)
+    is_resolved = models.BooleanField(_("Vyriešené"), default=False)
+
+    class Meta:
+        verbose_name = _("Nahlásenie recenzie")
+        verbose_name_plural = _("Nahlásenia recenzií")
+        ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["review", "reported_by"],
+                name="unique_review_report_per_user",
+            )
+        ]
+
+    def __str__(self):
+        return f"Nahlásenie #{self.id}: recenzia {self.review_id} od {self.reported_by}"
+
+
+class UserReport(models.Model):
+    """
+    Nahlásenie používateľa iným používateľom.
+    Používateľ nemôže nahlásiť sám seba.
+    Jeden používateľ môže nahlásiť konkrétneho používateľa iba raz.
+    """
+
+    reported_user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="reports_received",
+        verbose_name=_("Nahlásený používateľ"),
+    )
+    reported_by = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="reports_sent",
+        verbose_name=_("Nahlásil"),
+    )
+    reason = models.CharField(
+        _("Dôvod"),
+        max_length=100,
+    )
+    description = models.TextField(
+        _("Popis"),
+        blank=True,
+    )
+    created_at = models.DateTimeField(_("Vytvorené"), auto_now_add=True)
+    is_resolved = models.BooleanField(_("Vyriešené"), default=False)
+
+    class Meta:
+        verbose_name = _("Nahlásenie používateľa")
+        verbose_name_plural = _("Nahlásenia používateľov")
+        ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["reported_user", "reported_by"],
+                name="unique_user_report_per_reporter",
+            ),
+            models.CheckConstraint(
+                check=~models.Q(reported_user=models.F("reported_by")),
+                name="user_report_cannot_report_self",
+            ),
+        ]
+
+    def __str__(self):
+        return f"Nahlásenie #{self.id}: používateľ {self.reported_user_id} od {self.reported_by_id}"

@@ -53,8 +53,8 @@ export function ProfileDesktopHeader({
 
         <div className="flex flex-col flex-grow min-w-0">
           {/* Meno používateľa a sociálne siete v jednom riadku */}
-          <div className="flex items-center gap-20 mb-2">
-            <h2 className="text-[clamp(1.25rem,2vw,1.75rem)] font-semibold text-gray-900 dark:text-white">
+          <div className="flex items-center gap-20 mb-2 min-w-0">
+            <h2 className="text-[clamp(1.25rem,2vw,1.75rem)] font-semibold text-gray-900 dark:text-white truncate min-w-0">
               {accountType === 'business'
                 ? (displayUser.company_name || displayUser.username)
                 : ([displayUser.first_name, displayUser.last_name].filter(Boolean).join(' ').trim() || displayUser.username)}
@@ -178,7 +178,7 @@ export function ProfileDesktopHeader({
               console.log(isOtherUserProfile ? 'Poslať správu' : 'Upraviť profil');
             }
           }}
-          className="flex-1 px-[clamp(4rem,8vw,8rem)] xl:px-16 2xl:px-32 py-2 text-sm bg-purple-100 text-purple-800 border border-purple-200 rounded-2xl transition-colors hover:bg-purple-200 whitespace-nowrap min-w-[200px]"
+          className="flex-1 px-[clamp(4rem,8vw,8rem)] xl:px-16 2xl:px-32 py-2 text-sm bg-purple-100 text-purple-800 border border-purple-200 rounded-2xl transition-colors hover:bg-purple-200 whitespace-nowrap min-w-0"
         >
           {isOtherUserProfile ? t('profile.sendMessage', 'Poslať správu') : t('profile.editProfile')}
         </button>
@@ -191,7 +191,7 @@ export function ProfileDesktopHeader({
                   onAddToFavorites();
                 }
               }}
-              className="flex-1 px-[clamp(4rem,8vw,8rem)] xl:px-16 2xl:px-32 py-2 text-sm bg-purple-100 text-purple-800 border border-purple-200 rounded-2xl transition-colors hover:bg-purple-200 whitespace-nowrap min-w-[200px]"
+              className="flex-1 px-[clamp(4rem,8vw,8rem)] xl:px-16 2xl:px-32 py-2 text-sm bg-purple-100 text-purple-800 border border-purple-200 rounded-2xl transition-colors hover:bg-purple-200 whitespace-nowrap min-w-0"
             >
               {t('profile.addToFavorites', '+ Pridať k obľúbeným')}
             </button>
@@ -216,7 +216,7 @@ export function ProfileDesktopHeader({
                 console.log('Zručnosti');
               }
             }}
-            className="flex-1 px-[clamp(4rem,8vw,8rem)] xl:px-16 2xl:px-32 py-2 text-sm bg-purple-100 text-purple-800 border border-purple-200 rounded-2xl transition-colors hover:bg-purple-200 whitespace-nowrap min-w-[200px]"
+            className="flex-1 px-[clamp(4rem,8vw,8rem)] xl:px-16 2xl:px-32 py-2 text-sm bg-purple-100 text-purple-800 border border-purple-200 rounded-2xl transition-colors hover:bg-purple-200 whitespace-nowrap min-w-0"
           >
             {t('profile.skills', 'Ponúkam/Hľadám')}
           </button>

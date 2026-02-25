@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.utils.translation import gettext_lazy as _
-from .models import User, UserProfile, UserType, OfferedSkill, OfferedSkillImage, Review
+from .models import User, UserProfile, UserType, OfferedSkill, OfferedSkillImage, Review, ReviewReport, UserReport
 
 
 @admin.register(User)
@@ -188,6 +188,55 @@ class ReviewAdmin(admin.ModelAdmin):
             _("Dôležité dátumy"),
             {"fields": ("created_at", "updated_at"), "classes": ("collapse",)},
         ),
+    )
+
+
+@admin.register(ReviewReport)
+class ReviewReportAdmin(admin.ModelAdmin):
+    """Admin rozhranie pre ReviewReport model"""
+
+    list_display = ["id", "review", "reported_by", "reason", "is_resolved", "created_at"]
+    list_filter = ["is_resolved", "created_at"]
+    search_fields = [
+        "reason",
+        "description",
+        "review__id",
+        "reported_by__username",
+        "reported_by__email",
+    ]
+    ordering = ["-created_at"]
+    readonly_fields = ["created_at"]
+
+    fieldsets = (
+        (_("Recenzia a nahlásil"), {"fields": ("review", "reported_by")}),
+        (_("Nahlásenie"), {"fields": ("reason", "description")}),
+        (_("Stav"), {"fields": ("is_resolved",)}),
+        (_("Dôležité dátumy"), {"fields": ("created_at",), "classes": ("collapse",)}),
+    )
+
+
+@admin.register(UserReport)
+class UserReportAdmin(admin.ModelAdmin):
+    """Admin rozhranie pre UserReport model"""
+
+    list_display = ["id", "reported_user", "reported_by", "reason", "is_resolved", "created_at"]
+    list_filter = ["is_resolved", "created_at"]
+    search_fields = [
+        "reason",
+        "description",
+        "reported_user__username",
+        "reported_user__email",
+        "reported_by__username",
+        "reported_by__email",
+    ]
+    ordering = ["-created_at"]
+    readonly_fields = ["created_at"]
+
+    fieldsets = (
+        (_("Používatelia"), {"fields": ("reported_user", "reported_by")}),
+        (_("Nahlásenie"), {"fields": ("reason", "description")}),
+        (_("Stav"), {"fields": ("is_resolved",)}),
+        (_("Dôležité dátumy"), {"fields": ("created_at",), "classes": ("collapse",)}),
     )
 
 

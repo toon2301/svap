@@ -68,6 +68,11 @@ urlpatterns = [
     ),
     path("dashboard/profile/", views.dashboard_profile_view, name="dashboard_profile"),
     path(
+        "users/<int:user_id>/report/",
+        views.user_report_view,
+        name="user_report",
+    ),
+    path(
         "dashboard/users/<int:user_id>/profile/",
         views.dashboard_user_profile_detail_view,
         name="dashboard_user_profile_detail",
@@ -104,11 +109,16 @@ urlpatterns = [
         views.skill_image_detail_view,
         name="skill_image_detail",
     ),
-    # Recenzie – respond musí byť pred detail (špecifickejšia cesta)
+    # Recenzie – respond a report musia byť pred detail (špecifickejšie cesty)
     path(
         "reviews/<int:review_id>/respond/",
         views.review_respond_view,
         name="review_respond",
+    ),
+    path(
+        "reviews/<int:review_id>/report/",
+        views.review_report_view,
+        name="review_report",
     ),
     path("reviews/<int:review_id>/", views.review_detail_view, name="review_detail"),
     # Žiadosti + notifikácie

@@ -27,12 +27,13 @@ from .skill_requests import (
     skill_request_request_completion_view,
     skill_request_confirm_completion_view,
 )
-from .reviews import reviews_list_view, review_detail_view, review_respond_view
+from .reviews import reviews_list_view, review_detail_view, review_respond_view, review_report_view
 from .notifications import (
     notifications_list_view,
     notifications_unread_count_view,
     notifications_mark_all_read_view,
 )
+from .user_reports import user_report_view
 from .dashboard import (
     dashboard_home_view,
     dashboard_search_view,
@@ -68,6 +69,7 @@ __all__ = [
     "reviews_list_view",
     "review_detail_view",
     "review_respond_view",
+    "review_report_view",
     "notifications_list_view",
     "notifications_unread_count_view",
     "notifications_mark_all_read_view",
@@ -80,4 +82,5 @@ __all__ = [
     "dashboard_user_skills_view",
     "dashboard_user_skills_by_slug_view",
     "dashboard_settings_view",
+    "user_report_view",
 ]

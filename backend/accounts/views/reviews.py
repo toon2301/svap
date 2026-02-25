@@ -11,7 +11,7 @@ from django.utils import timezone
 
 from swaply.rate_limiting import api_rate_limit
 
-from ..models import Review, OfferedSkill, SkillRequest, SkillRequestStatus
+from ..models import Review, ReviewReport, OfferedSkill, SkillRequest, SkillRequestStatus
 from ..serializers import ReviewSerializer
 
 
@@ -157,6 +157,69 @@ def review_detail_view(request, review_id):
         return Response(
             {"message": "Recenzia bola odstránená"}, status=status.HTTP_204_NO_CONTENT
         )
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+@api_rate_limit
+def review_report_view(request, review_id):
+    """
+    POST: Nahlásenie recenzie.
+    Iba prihlásený používateľ môže nahlásiť recenziu.
+    Používateľ nemôže nahlásiť vlastnú recenziu.
+    Používateľ môže nahlásiť konkrétnu recenziu iba raz.
+    """
+    try:
+        review = Review.objects.select_related("reviewer").get(id=review_id)
+    except Review.DoesNotExist:
+        return Response(
+            {"error": "Recenzia nebola nájdená"}, status=status.HTTP_404_NOT_FOUND
+        )
+
+    # Používateľ nemôže nahlásiť vlastnú recenziu
+    if review.reviewer_id == request.user.id:
+        return Response(
+            {"error": "Nemôžeš nahlásiť vlastnú recenziu."},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+
+    # Používateľ môže nahlásiť konkrétnu recenziu iba raz
+    if ReviewReport.objects.filter(review=review, reported_by=request.user).exists():
+        return Response(
+            {"error": "Túto recenziu si už nahlásil."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    # Validácia body: reason (povinné), description (nepovinné)
+    reason = request.data.get("reason")
+    if reason is None or (isinstance(reason, str) and not reason.strip()):
+        return Response(
+            {"error": "Pole reason je povinné a nesmie byť prázdne."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    reason = reason.strip() if isinstance(reason, str) else str(reason)
+    if len(reason) > 100:
+        return Response(
+            {"error": "Dôvod môže mať maximálne 100 znakov."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    description = request.data.get("description", "")
+    if description is None:
+        description = ""
+    description = description.strip() if isinstance(description, str) else str(description)
+
+    ReviewReport.objects.create(
+        review=review,
+        reported_by=request.user,
+        reason=reason,
+        description=description,
+    )
+
+    return Response(
+        {"message": "Recenzia bola nahlásená."},
+        status=status.HTTP_201_CREATED,
+    )
 
 
 @api_view(["POST"])
