@@ -79,4 +79,3 @@ def user_report_view(request, user_id: int):
         {"message": "Používateľ bol nahlásený."},
         status=status.HTTP_201_CREATED,
     )
-
