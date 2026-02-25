@@ -630,8 +630,11 @@ def resend_verification_view(request):
 
         except User.DoesNotExist:
             return Response(
-                {"error": "Používateľ s týmto emailom neexistuje"},
-                status=status.HTTP_404_NOT_FOUND,
+                {
+                    "message": "Ak tento email existuje v systéme, verifikačný email bol odoslaný.",
+                    "email_sent": False,
+                },
+                status=status.HTTP_200_OK,
             )
         except Exception as e:
             if getattr(settings, "DEBUG", False):

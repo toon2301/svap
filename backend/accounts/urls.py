@@ -2,8 +2,6 @@ from django.urls import path
 from . import views
 from .views import profile, password_reset, google_oauth_simple
 
-# from .views import oauth, allauth_views  # DOČASNE VYPNUTÉ
-
 app_name = "accounts"
 
 urlpatterns = [
@@ -52,8 +50,6 @@ urlpatterns = [
         google_oauth_simple.google_callback_view,
         name="google_callback",
     ),
-    # Allauth custom redirects - DOČASNE VYPNUTÉ
-    # path('accounts/google/login/callback/', allauth_views.google_callback_redirect, name='google_callback_redirect'),
     # Debug OAuth - ODSTRÁNENÉ
     # path('debug/oauth/', debug_oauth.debug_google_oauth, name='debug_oauth'),
     # Profil

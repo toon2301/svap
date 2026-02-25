@@ -22,6 +22,8 @@ type Props = {
   showCompletionActions?: boolean;
   onRequestCompletion?: (id: number) => void;
   onConfirmCompletion?: (id: number) => void;
+  showReviewButton?: boolean;
+  onOpenReview?: (offerId: number) => void;
 };
 
 function formatDateSk(iso?: string) {
@@ -48,6 +50,8 @@ export function RequestDetailModal({
   showCompletionActions = false,
   onRequestCompletion,
   onConfirmCompletion,
+  showReviewButton = false,
+  onOpenReview,
 }: Props) {
   const { t } = useLanguage();
   const router = useRouter();
@@ -329,6 +333,22 @@ export function RequestDetailModal({
               )}
             </>
           )}
+
+          {showReviewButton &&
+            variant === 'sent' &&
+            item?.status === 'completed' &&
+            item?.offer_summary?.already_reviewed === false &&
+            onOpenReview &&
+            item?.offer_summary?.id != null && (
+              <button
+                type="button"
+                onClick={() => onOpenReview(item.offer_summary!.id)}
+                disabled={isBusy}
+                className="w-full py-3 rounded-xl font-semibold bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60"
+              >
+                {t('requests.writeReview', 'Napíš recenziu')}
+              </button>
+            )}
 
           {canHide && onHide && (
             <button

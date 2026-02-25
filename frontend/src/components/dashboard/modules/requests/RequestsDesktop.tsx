@@ -98,6 +98,27 @@ export function RequestsDesktop() {
     });
   };
 
+  const mutateOfferReviewed = (offerId: number) => {
+    setData((prev) => {
+      const upd = (x: SkillRequest) => {
+        const offer = x.offer_summary?.id ?? x.offer;
+        if (Number(offer) !== offerId) return x;
+        return {
+          ...x,
+          offer_summary: x.offer_summary
+            ? { ...x.offer_summary, already_reviewed: true }
+            : undefined,
+        };
+      };
+      return { received: prev.received.map(upd), sent: prev.sent.map(upd) };
+    });
+  };
+
+  const handleOpenReview = (offerId: number) => {
+    setAutoReviewOfferId(offerId);
+    setIsAutoReviewOpen(true);
+  };
+
   const handleAction = async (id: number, action: 'accept' | 'reject' | 'cancel' | 'hide') => {
     setBusyId(id);
     try {
@@ -345,6 +366,8 @@ export function RequestsDesktop() {
                 showCompletionActions={statusTab === 'active'}
                 onRequestCompletion={statusTab === 'active' ? handleRequestCompletion : undefined}
                 onConfirmCompletion={statusTab === 'active' ? handleConfirmCompletion : undefined}
+                showReviewButton={statusTab === 'completed'}
+                onOpenReview={statusTab === 'completed' ? handleOpenReview : undefined}
               />
             </React.Fragment>
           ))}
@@ -428,6 +451,7 @@ export function RequestsDesktop() {
               pros: pros.filter((p) => p.trim().length > 0),
               cons: cons.filter((c) => c.trim().length > 0),
             });
+            mutateOfferReviewed(autoReviewOfferId);
             setIsAutoReviewOpen(false);
             setAutoReviewOfferId(null);
             return { success: true };

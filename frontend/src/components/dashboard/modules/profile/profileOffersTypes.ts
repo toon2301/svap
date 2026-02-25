@@ -35,6 +35,10 @@ export interface Offer {
   urgency?: 'low' | 'medium' | 'high' | '';
   duration_type?: 'one_time' | 'long_term' | 'project' | '' | null;
   is_hidden?: boolean;
+  /** Priemerné hodnotenie (1–5), null ak nie sú recenzie */
+  average_rating?: number | null;
+  /** Počet recenzií, 0 ak nie sú */
+  reviews_count?: number;
 }
 
 export const HOURS_DAYS = [

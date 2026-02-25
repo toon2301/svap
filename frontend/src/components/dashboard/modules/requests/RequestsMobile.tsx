@@ -110,6 +110,38 @@ export function RequestsMobile() {
     setSelected((prev) => (prev?.id === updated.id ? updated : prev));
   };
 
+  const mutateOfferReviewed = (offerId: number) => {
+    setData((prev) => {
+      const upd = (x: SkillRequest) => {
+        const offer = x.offer_summary?.id ?? x.offer;
+        if (Number(offer) !== offerId) return x;
+        return {
+          ...x,
+          offer_summary: x.offer_summary
+            ? { ...x.offer_summary, already_reviewed: true }
+            : undefined,
+        };
+      };
+      return { received: prev.received.map(upd), sent: prev.sent.map(upd) };
+    });
+    setSelected((prev) => {
+      if (!prev) return prev;
+      const offer = prev.offer_summary?.id ?? prev.offer;
+      if (Number(offer) !== offerId) return prev;
+      return {
+        ...prev,
+        offer_summary: prev.offer_summary
+          ? { ...prev.offer_summary, already_reviewed: true }
+          : undefined,
+      };
+    });
+  };
+
+  const handleOpenReview = (offerId: number) => {
+    setAutoReviewOfferId(offerId);
+    setIsAutoReviewOpen(true);
+  };
+
   const handleAction = async (id: number, action: 'accept' | 'reject' | 'cancel' | 'hide') => {
     setBusyId(id);
     try {
@@ -375,6 +407,8 @@ export function RequestsMobile() {
         showCompletionActions={statusTab === 'active'}
         onRequestCompletion={statusTab === 'active' ? handleRequestCompletion : undefined}
         onConfirmCompletion={statusTab === 'active' ? handleConfirmCompletion : undefined}
+        showReviewButton={statusTab === 'completed'}
+        onOpenReview={statusTab === 'completed' ? handleOpenReview : undefined}
       />
 
       {pendingConfirm &&
@@ -464,6 +498,7 @@ export function RequestsMobile() {
               pros: pros.filter((p) => p.trim().length > 0),
               cons: cons.filter((c) => c.trim().length > 0),
             });
+            mutateOfferReviewed(autoReviewOfferId);
             setIsAutoReviewOpen(false);
             setAutoReviewOfferId(null);
             return { success: true };

@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from django.conf import settings
+from django.db.models import Avg, Count
 from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
@@ -587,6 +588,8 @@ class OfferedSkillSerializer(serializers.ModelSerializer):
     owner_user_type = serializers.CharField(source="user.user_type", read_only=True)
     can_review = serializers.SerializerMethodField()
     already_reviewed = serializers.SerializerMethodField()
+    average_rating = serializers.SerializerMethodField()
+    reviews_count = serializers.SerializerMethodField()
 
     class Meta:
         model = OfferedSkill
@@ -617,6 +620,8 @@ class OfferedSkillSerializer(serializers.ModelSerializer):
             "owner_user_type",
             "can_review",
             "already_reviewed",
+            "average_rating",
+            "reviews_count",
         ]
         read_only_fields = [
             "id",
@@ -627,6 +632,8 @@ class OfferedSkillSerializer(serializers.ModelSerializer):
             "owner_user_type",
             "can_review",
             "already_reviewed",
+            "average_rating",
+            "reviews_count",
         ]
 
     def get_experience(self, obj):
@@ -656,6 +663,30 @@ class OfferedSkillSerializer(serializers.ModelSerializer):
         except Exception:
             pass
         return results
+
+    def _get_review_stats(self, obj):
+        if not hasattr(self, "_review_stats_cache"):
+            self._review_stats_cache = {}
+        key = obj.pk if obj.pk is not None else id(obj)
+        if key not in self._review_stats_cache:
+            self._review_stats_cache[key] = obj.reviews.aggregate(
+                avg=Avg("rating"),
+                cnt=Count("id"),
+            )
+        return self._review_stats_cache[key]
+
+    def get_average_rating(self, obj):
+        agg = self._get_review_stats(obj)
+        if agg["cnt"] == 0:
+            return None
+        avg_val = agg["avg"]
+        if avg_val is None:
+            return None
+        return round(float(avg_val), 1)
+
+    def get_reviews_count(self, obj):
+        agg = self._get_review_stats(obj)
+        return agg["cnt"] or 0
 
     def get_can_review(self, obj):
         request = self.context.get("request")
@@ -862,6 +893,12 @@ class SkillRequestSerializer(serializers.ModelSerializer):
         if not offer:
             return None
         owner = getattr(offer, "user", None)
+        request = self.context.get("request")
+        already_reviewed = False
+        if request and request.user.is_authenticated:
+            already_reviewed = Review.objects.filter(
+                reviewer=request.user, offer=offer
+            ).exists()
         return {
             "id": offer.id,
             "subcategory": getattr(offer, "subcategory", "") or "",
@@ -877,6 +914,7 @@ class SkillRequestSerializer(serializers.ModelSerializer):
                 if owner is not None
                 else None
             ),
+            "already_reviewed": already_reviewed,
         }
 
     def to_representation(self, instance):

@@ -15,6 +15,8 @@ type Props = {
   showCompletionActions?: boolean;
   onRequestCompletion?: (id: number) => void;
   onConfirmCompletion?: (id: number) => void;
+  showReviewButton?: boolean;
+  onOpenReview?: (offerId: number) => void;
 };
 
 export function RequestRow({
@@ -28,6 +30,8 @@ export function RequestRow({
   showCompletionActions = false,
   onRequestCompletion,
   onConfirmCompletion,
+  showReviewButton = false,
+  onOpenReview,
 }: Props) {
   return (
     <RequestSummaryCard
@@ -41,6 +45,8 @@ export function RequestRow({
       showCompletionActions={showCompletionActions}
       onRequestCompletion={onRequestCompletion}
       onConfirmCompletion={onConfirmCompletion}
+      showReviewButton={showReviewButton}
+      onOpenReview={onOpenReview}
     />
   );
 }

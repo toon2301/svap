@@ -62,6 +62,12 @@ CSRF_TRUSTED_ORIGINS = os.getenv(
 SESSION_COOKIE_SECURE = env_bool("SESSION_COOKIE_SECURE", not DEBUG)
 CSRF_COOKIE_SECURE = env_bool("CSRF_COOKIE_SECURE", not DEBUG)
 SESSION_COOKIE_HTTPONLY = env_bool("SESSION_COOKIE_HTTPONLY", True)
+# Pri cross-origin (Railway) musí byť SameSite=None aby session cookie išla cross-site
+if _cross_site:
+    SESSION_COOKIE_SAMESITE = "None"
+    SESSION_COOKIE_SECURE = True  # SameSite=None vyžaduje Secure
+else:
+    SESSION_COOKIE_SAMESITE = "Lax"
 CSRF_COOKIE_HTTPONLY = env_bool("CSRF_COOKIE_HTTPONLY", False)
 # Pri cross-origin (frontend na inej doméne) musí byť SameSite=None, inak prehliadač nepošle cookie pri POST
 # Railway/cross-site: vynucujeme SameSite=None a Secure aby CSRF cookie išla cross-site

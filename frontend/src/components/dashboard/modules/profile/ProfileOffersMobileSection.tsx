@@ -230,6 +230,8 @@ export default function ProfileOffersMobileSection({
                 : '',
             duration_type: s.duration_type || null,
             is_hidden: s.is_hidden === true,
+            average_rating: s.average_rating,
+            reviews_count: s.reviews_count,
           };
         });
       });

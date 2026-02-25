@@ -25,6 +25,8 @@ from typing import Optional
 
 from ..realtime import notify_user
 
+MAX_SKILL_REQUESTS = 100
+
 
 def _notify_unread_count(user_id: int, notif: Optional[Notification] = None) -> None:
     try:
@@ -75,6 +77,8 @@ def skill_requests_view(request):
             if status_filter:
                 received = received.filter(status__in=status_filter)
                 sent = sent.filter(status__in=status_filter)
+        received = received.order_by("-created_at")[:MAX_SKILL_REQUESTS]
+        sent = sent.order_by("-created_at")[:MAX_SKILL_REQUESTS]
         received_serializer = SkillRequestSerializer(
             received, many=True, context={"request": request}
         )

@@ -62,6 +62,8 @@ export function RequestCardRow({ item, onAccept, onReject, isBusy = false }: Pro
           urgency: data.urgency || '',
           duration_type: data.duration_type || null,
           is_hidden: data.is_hidden === true,
+          average_rating: data.average_rating,
+          reviews_count: data.reviews_count,
         };
         
         setOffer(mappedOffer);

@@ -13,7 +13,11 @@ from swaply.rate_limiting import api_rate_limit
 from ...models import OfferedSkill
 from ...serializers import OfferedSkillSerializer
 from .smart_search import SMART_KEYWORD_GROUPS
-from .utils import _remove_diacritics, _build_accent_insensitive_pattern
+from .utils import (
+    _remove_diacritics,
+    _build_accent_insensitive_pattern,
+    _sanitize_search_term,
+)
 
 User = get_user_model()
 
@@ -36,6 +40,7 @@ def dashboard_search_view(request):
     """Dashboard search - vyhľadávanie zručností a používateľov"""
     # Základné parametre vyhľadávania
     raw_query = (request.GET.get("q") or "").strip()
+    raw_query = raw_query[:100]  # max 100 znakov
     raw_location = (request.GET.get("location") or "").strip()
     raw_district = (request.GET.get("district") or "").strip()
 
@@ -131,7 +136,7 @@ def dashboard_search_view(request):
     if skill_terms:
         skill_query = Q()
         for term in skill_terms:
-            pattern = _build_accent_insensitive_pattern(term)
+            pattern = _build_accent_insensitive_pattern(_sanitize_search_term(term))
             # Hľadanie podľa kategórie, podkategórie, tagov a lokality (miesto + okres)
             skill_query |= (
                 Q(category__iregex=pattern)
@@ -232,7 +237,7 @@ def dashboard_search_view(request):
     if user_terms:
         user_query = Q()
         for term in user_terms:
-            pattern = _build_accent_insensitive_pattern(term)
+            pattern = _build_accent_insensitive_pattern(_sanitize_search_term(term))
             # Hľadanie podľa mena, username a lokality (bez emailu / job title / firmy)
             user_query |= (
                 Q(first_name__iregex=pattern)

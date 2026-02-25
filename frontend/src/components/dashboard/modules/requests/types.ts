@@ -24,6 +24,7 @@ export type SkillRequestOfferSummary = {
     id: number | null;
     slug?: string | null;
   } | null;
+  already_reviewed?: boolean;
 };
 
 export type SkillRequest = {

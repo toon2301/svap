@@ -22,6 +22,9 @@ type Props = {
   showCompletionActions?: boolean;
   onRequestCompletion?: (id: number) => void;
   onConfirmCompletion?: (id: number) => void;
+  /** Iba v tabe „Dokončené“: zobraziť tlačidlo „Napíš recenziu“ */
+  showReviewButton?: boolean;
+  onOpenReview?: (offerId: number) => void;
 };
 
 function initials(name?: string | null) {
@@ -99,6 +102,8 @@ export function RequestSummaryCard({
   showCompletionActions = false,
   onRequestCompletion,
   onConfirmCompletion,
+  showReviewButton = false,
+  onOpenReview,
 }: Props) {
   const router = useRouter();
   const { user } = useAuth();
@@ -389,6 +394,22 @@ export function RequestSummaryCard({
             )}
           </div>
         )}
+
+        {/* Tlačidlo „Napíš recenziu“ – len v tabe Dokončené, requester, ešte nerecenzoval */}
+        {showReviewButton &&
+          variant === 'sent' &&
+          item.status === 'completed' &&
+          item.offer_summary?.already_reviewed === false &&
+          onOpenReview && (
+            <button
+              type="button"
+              onClick={() => onOpenReview(item.offer_summary!.id)}
+              disabled={isBusy}
+              className="shrink-0 w-full inline-flex items-center justify-center gap-1.5 rounded-md bg-purple-600 text-white px-2 py-2 text-[11px] sm:text-xs font-semibold hover:bg-purple-700 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60"
+            >
+              {t('requests.writeReview', 'Napíš recenziu')}
+            </button>
+          )}
 
         {/* Suma a stav: v pravom dolnom rohu, rovnaká veľkosť */}
         <div className="shrink-0 pt-2 pb-2 flex flex-row items-center justify-end gap-3">

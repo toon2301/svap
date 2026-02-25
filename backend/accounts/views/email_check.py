@@ -53,7 +53,8 @@ def check_email_availability_view(request, email):
         else:
             logger.warning("Email validation error")
         return Response(
-            {"error": str(e), "available": False}, status=status.HTTP_400_BAD_REQUEST
+            {"error": "Neplatný formát emailu.", "available": False},
+            status=status.HTTP_400_BAD_REQUEST,
         )
 
     except Exception as e:
