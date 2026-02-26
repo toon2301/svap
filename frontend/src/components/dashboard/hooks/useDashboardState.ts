@@ -4,9 +4,9 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import type { User } from '../../../types';
 import { clearAuthState } from '../../../utils/auth';
-import { api, endpoints } from '../../../lib/api';
 import { setUserProfileToCache } from '../modules/profile/profileUserCache';
 import { invalidateSearchCacheForUser } from '../modules/SearchModule';
+import { useAuth } from '@/contexts/AuthContext';
 
 type AccountType = 'personal' | 'business';
 
@@ -56,8 +56,9 @@ export interface UseDashboardStateResult {
 
 export function useDashboardState(initialUser?: User, initialModule?: string): UseDashboardStateResult {
   const router = useRouter();
-  const [user, setUser] = useState<User | null>(initialUser || null);
-  const userRef = useRef<User | null>(initialUser || null); // Ref pre sledovanie zmien slugu
+  const { user: authUser, isLoading: authLoading, refreshUser: refreshAuthUser, logout: authLogout, updateUser: updateAuthUser } = useAuth();
+  const [user, setUser] = useState<User | null>(initialUser || authUser || null);
+  const userRef = useRef<User | null>(initialUser || authUser || null); // Ref pre sledovanie zmien slugu
   const [isLoading, setIsLoading] = useState(!initialUser);
   const hasCheckedAuth = useRef(false);
   
@@ -155,28 +156,46 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
         }
       }
 
-      if (!initialUser) {
-        try {
-          // Server-side overenie cookie auth (neľahni len na client-side flag)
-          await api.get('/auth/ping/');
-          const response = await api.get(endpoints.auth.me);
-          userRef.current = response.data;
-          setUser(response.data);
-        } catch (error) {
-          console.error('Error fetching user data:', error);
-          clearAuthState();
-          router.push('/');
-        } finally {
-          setIsLoading(false);
-        }
-      } else {
+      if (initialUser) {
         setIsLoading(false);
+        return;
+      }
+
+      // Single source of truth pre identity: AuthContext (/auth/me s requestId guardom).
+      // Necháme AuthProvider rozhodnúť o user state; tu iba vyžiadame refresh, aby sme mali čerstvé dáta.
+      try {
+        await refreshAuthUser();
+      } catch {
+        // ignore - redirect riešime nižšie podľa authUser/authLoading
       }
     };
 
     checkAuth();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Prázdny dependency array - auth kontrola sa vykoná len raz pri mounte
+
+  // Mirror AuthContext user do dashboard state (bez vlastných /me requestov).
+  useEffect(() => {
+    if (initialUser) {
+      userRef.current = initialUser;
+      setUser(initialUser);
+      setIsLoading(false);
+      return;
+    }
+
+    if (authLoading) return;
+
+    if (authUser) {
+      userRef.current = authUser;
+      setUser(authUser);
+      setIsLoading(false);
+      return;
+    }
+
+    clearAuthState();
+    router.push('/');
+    setIsLoading(false);
+  }, [authUser, authLoading, initialUser, router]);
 
   const handleModuleChange = useCallback(
     (moduleId: string) => {
@@ -317,6 +336,7 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
       // Aktualizovať ref pred setUser, aby sme mali aktuálny stav
       userRef.current = updatedUser;
       setUser(updatedUser);
+      updateAuthUser(updatedUser);
       
       // Aktualizovať cache s novým používateľom (vrátane nového slugu)
       if (updatedUser.id) {
@@ -376,19 +396,19 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
         return 'edit-profile';
       });
     },
-    []
+    [updateAuthUser]
   );
 
   const handleLogout = useCallback(async () => {
     try {
-      await api.post(endpoints.auth.logout, {});
+      authLogout();
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
       clearAuthState();
       router.push('/');
     }
-  }, [router]);
+  }, [authLogout, router]);
 
   const getDescribeMode = () => {
     if (typeof window === 'undefined') return null;

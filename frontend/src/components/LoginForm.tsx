@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { api, endpoints } from '@/lib/api';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext';
 import Credentials from './login/Credentials';
 import GoogleLoginBlock from './login/GoogleLoginBlock';
 import { fetchCsrfToken } from '@/utils/csrf';
@@ -29,6 +30,7 @@ interface LoginFormProps {
 export default function LoginForm({ onSuccess }: LoginFormProps) {
   const router = useRouter();
   const { t } = useLanguage();
+  const { refreshUser } = useAuth();
   const [loginData, setLoginData] = useState<LoginData>({
     email: '',
     password: ''
@@ -167,7 +169,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
           clearInterval(checkClosed);
           // Over session cez backend (HttpOnly cookies) – auth stav určujeme iba cez /me
           try {
-            await api.get(endpoints.auth.me);
+            await refreshUser({ force: true });
           } catch {
             // Ak /me zlyhá, neskúšaj presmerovať na dashboard
             setIsGoogleLoading(false);
@@ -241,7 +243,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
     try {
       await api.post(endpoints.auth.login, loginData);
       // Overenie session cez /me (HttpOnly cookies)
-      await api.get(endpoints.auth.me);
+      await refreshUser({ force: true });
 
       // Reset preferovaného modulu po prihlásení a nastav flag na vynútenie HOME
       if (typeof window !== 'undefined') {

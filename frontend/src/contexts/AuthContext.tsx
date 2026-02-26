@@ -1,29 +1,11 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { api, endpoints, setMayHaveRefreshCookie } from '@/lib/api';
 import { clearAuthState } from '@/utils/auth';
 import { fetchCsrfToken, hasCsrfToken } from '@/utils/csrf';
-
-interface User {
-  id: number;
-  email: string;
-  first_name: string;
-  last_name: string;
-  company_name?: string;
-  avatar_url?: string;
-  is_verified: boolean;
-  bio?: string;
-  location?: string;
-  phone?: string;
-  website?: string;
-  linkedin?: string;
-  facebook?: string;
-  instagram?: string;
-  created_at: string;
-  updated_at: string;
-}
+import type { User } from '@/types';
 
 interface AuthContextType {
   user: User | null;
@@ -33,7 +15,7 @@ interface AuthContextType {
   register: (userData: any) => Promise<void>;
   logout: () => void;
   updateUser: (userData: Partial<User>) => void;
-  refreshUser: () => Promise<void>;
+  refreshUser: (options?: { force?: boolean }) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -42,13 +24,106 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
-// Global in-flight lock for /me calls (avoid parallel /me and refresh storms)
-let meInFlight: Promise<void> | null = null;
-
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
+
+  // Deterministic /me refresh:
+  // - Each refreshUser call gets a requestId and sets latestRequestId.
+  // - Only the latest request is allowed to update user state.
+  // - Forced refresh aborts any previous pending request.
+  const meAbortControllerRef = useRef<AbortController | null>(null);
+  const mePromiseRef = useRef<Promise<void> | null>(null);
+  const refreshSeqRef = useRef(0);
+  const latestRequestIdRef = useRef(0);
+
+  const refreshUser = useCallback(async (options?: { force?: boolean }) => {
+    const force = Boolean(options?.force);
+
+    const requestId = ++refreshSeqRef.current;
+    latestRequestIdRef.current = requestId;
+
+    // Abort previous pending /me request when forcing (and optionally when a new refresh becomes "latest").
+    // This prevents wasted work and ensures older responses cannot arrive later and overwrite state.
+    if (force && meAbortControllerRef.current) {
+      try {
+        meAbortControllerRef.current.abort();
+      } catch {
+        // ignore
+      }
+    } else if (!force && meAbortControllerRef.current && mePromiseRef.current) {
+      // Coalesce concurrent refreshes into the newest one.
+      try {
+        meAbortControllerRef.current.abort();
+      } catch {
+        // ignore
+      }
+    }
+
+    const controller = new AbortController();
+    meAbortControllerRef.current = controller;
+
+    const p: Promise<void> = (async () => {
+      try {
+        const resp = await api.get(endpoints.auth.me, { signal: controller.signal } as any);
+
+        // Identity guard: ignore stale responses
+        if (requestId !== latestRequestIdRef.current) return;
+
+        if (resp?.status === 200 && resp.data) {
+          setUser(resp.data);
+          setMayHaveRefreshCookie(true);
+          return;
+        }
+
+        setUser(null);
+      } catch (error: any) {
+        // Ignore stale errors
+        if (requestId !== latestRequestIdRef.current) return;
+
+        // Abort/cancel should be a no-op (a newer request is already in charge)
+        if (
+          error?.name === 'CanceledError' ||
+          error?.code === 'ERR_CANCELED' ||
+          error?.name === 'AbortError'
+        ) {
+          return;
+        }
+
+        const status = error?.response?.status;
+        // Pri 401 iba nastav user=null (žiadne ďalšie refresh pokusy tu)
+        if (status === 401) {
+          setUser(null);
+          setMayHaveRefreshCookie(false);
+          return;
+        }
+
+        console.error('Error refreshing user:', error);
+        setUser(null);
+      } finally {
+        // Clear refs only if this request is still the latest in charge.
+        if (requestId === latestRequestIdRef.current) {
+          mePromiseRef.current = null;
+        }
+        if (meAbortControllerRef.current === controller) meAbortControllerRef.current = null;
+      }
+    })();
+
+    mePromiseRef.current = p;
+    return p;
+  }, []);
+
+  // Cleanup: abort pending /me request on unmount
+  useEffect(() => {
+    return () => {
+      try {
+        meAbortControllerRef.current?.abort();
+      } catch {
+        // ignore
+      }
+    };
+  }, []);
 
   // Auth stav určujeme výhradne cez `/api/auth/me/` (HttpOnly cookies).
   useEffect(() => {
@@ -73,7 +148,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         throw new Error('Prihlásenie zlyhalo');
       }
       // Overenie cez /me/ (cookie auth) – jediný zdroj pravdy pre auth stav
-      await refreshUser();
+      await refreshUser({ force: true });
       // Reset preferovaného modulu po prihlásení a nastav flag na vynútenie HOME
       if (typeof window !== 'undefined') {
         localStorage.setItem('activeModule', 'home');
@@ -127,36 +202,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const updatedUser = { ...user, ...userData };
       setUser(updatedUser);
     }
-  };
-
-  const refreshUser = async () => {
-    if (meInFlight) return meInFlight;
-
-    meInFlight = (async () => {
-      try {
-        const resp = await api.get(endpoints.auth.me);
-        if (resp?.status === 200 && resp.data) {
-          setUser(resp.data);
-          setMayHaveRefreshCookie(true);
-          return;
-        }
-        setUser(null);
-      } catch (error: any) {
-        const status = error?.response?.status;
-        // Pri 401 iba nastav user=null (žiadne ďalšie refresh pokusy tu)
-        if (status === 401) {
-          setUser(null);
-          setMayHaveRefreshCookie(false);
-          return;
-        }
-        console.error('Error refreshing user:', error);
-        setUser(null);
-      } finally {
-        meInFlight = null;
-      }
-    })();
-
-    return meInFlight;
   };
 
   const value = {
