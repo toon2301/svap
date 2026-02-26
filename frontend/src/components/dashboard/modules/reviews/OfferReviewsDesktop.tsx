@@ -49,6 +49,8 @@ export type OfferReviewsDesktopProps = {
   onDeleteReviewClick: (reviewId: number) => void;
   onOpenHoursClick: () => void;
   onOwnerResponseSaved: (reviewId: number, ownerResponse: string, ownerRespondedAt: string) => void;
+  onReportReview?: (review: Review) => void;
+  reportedReviewIds?: Set<number>;
 };
 
 export function OfferReviewsDesktop({
@@ -73,6 +75,8 @@ export function OfferReviewsDesktop({
   onDeleteReviewClick,
   onOpenHoursClick,
   onOwnerResponseSaved,
+  onReportReview,
+  reportedReviewIds,
 }: OfferReviewsDesktopProps) {
   const { t } = useLanguage();
   const [ownerResponseModalReview, setOwnerResponseModalReview] = useState<Review | null>(null);
@@ -222,6 +226,8 @@ export function OfferReviewsDesktop({
                   setOwnerResponseModalReview(r);
                   setOwnerResponseModalMode('edit');
                 }}
+                onReportClick={onReportReview}
+                reportedReviewIds={reportedReviewIds}
               />
             ))}
           </div>

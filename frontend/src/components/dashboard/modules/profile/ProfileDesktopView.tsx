@@ -9,6 +9,7 @@ import UserInfo from './UserInfo';
 import { ProfileDesktopHeader } from './ProfileDesktopHeader';
 import { ProfileDesktopTabs } from './ProfileDesktopTabs';
 import { ProfileDesktopHamburgerModal } from './ProfileDesktopHamburgerModal';
+import { ReportUserModal } from './ReportUserModal';
 
 interface ProfileDesktopViewProps {
   user: User;
@@ -54,6 +55,8 @@ export default function ProfileDesktopView({
   highlightedSkillId,
 }: ProfileDesktopViewProps) {
   const [isHamburgerModalOpen, setIsHamburgerModalOpen] = useState(false);
+  const [reportModalOpen, setReportModalOpen] = useState(false);
+  const [reportedUserIds, setReportedUserIds] = useState<Set<number>>(() => new Set());
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -119,7 +122,23 @@ export default function ProfileDesktopView({
       </div>
 
       {isOtherUserProfile && mounted && (
-        <ProfileDesktopHamburgerModal open={isHamburgerModalOpen} onClose={() => setIsHamburgerModalOpen(false)} />
+        <>
+          <ProfileDesktopHamburgerModal
+            open={isHamburgerModalOpen}
+            onClose={() => setIsHamburgerModalOpen(false)}
+            onReportClick={() => setReportModalOpen(true)}
+            isReported={reportedUserIds.has(displayUser.id)}
+          />
+          <ReportUserModal
+            open={reportModalOpen}
+            onClose={() => setReportModalOpen(false)}
+            userId={displayUser.id}
+            onSuccess={() => {
+              setReportedUserIds((prev) => new Set(prev).add(displayUser.id));
+              setReportModalOpen(false);
+            }}
+          />
+        </>
       )}
     </div>
   );

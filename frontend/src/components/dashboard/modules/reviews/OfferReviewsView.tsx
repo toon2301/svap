@@ -11,6 +11,7 @@ import type { Offer } from '../profile/profileOffersTypes';
 import { slugifyLabel } from '../profile/profileOffersTypes';
 import { AddReviewModal } from './AddReviewModal';
 import { DeleteReviewConfirmModal } from './DeleteReviewConfirmModal';
+import { ReportReviewModal } from './ReportReviewModal';
 import { ProfileOpeningHoursMobileModal } from '../profile/ProfileOpeningHoursMobileModal';
 import { OfferReviewsDesktop } from './OfferReviewsDesktop';
 import { OfferReviewsMobile } from './OfferReviewsMobile';
@@ -95,6 +96,8 @@ export default function OfferReviewsView({
   const [reviewToEdit, setReviewToEdit] = useState<Review | null>(null);
   const [reviewIdToDelete, setReviewIdToDelete] = useState<number | null>(null);
   const [isDeletingReview, setIsDeletingReview] = useState(false);
+  const [reviewToReport, setReviewToReport] = useState<Review | null>(null);
+  const [reportedReviewIds, setReportedReviewIds] = useState<Set<number>>(() => new Set());
 
   useEffect(() => {
     if (offerId == null) {
@@ -257,6 +260,8 @@ export default function OfferReviewsView({
               )
             );
           }}
+          onReportReview={(review) => setReviewToReport(review)}
+          reportedReviewIds={reportedReviewIds}
         />
       </div>
 
@@ -295,6 +300,8 @@ export default function OfferReviewsView({
               )
             );
           }}
+          onReportReview={(review) => setReviewToReport(review)}
+          reportedReviewIds={reportedReviewIds}
         />
       </div>
 
@@ -384,6 +391,18 @@ export default function OfferReviewsView({
       {isHoursModalOpen && (
         <ProfileOpeningHoursMobileModal hours={offer?.opening_hours ?? null} onClose={() => setIsHoursModalOpen(false)} />
       )}
+
+      <ReportReviewModal
+        open={reviewToReport !== null}
+        onClose={() => setReviewToReport(null)}
+        reviewId={reviewToReport?.id ?? 0}
+        onSuccess={() => {
+          if (reviewToReport) {
+            setReportedReviewIds((prev) => new Set(prev).add(reviewToReport.id));
+          }
+          setReviewToReport(null);
+        }}
+      />
     </>
   );
 }

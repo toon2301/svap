@@ -8,12 +8,16 @@ interface ProfileMobileHamburgerModalProps {
   isOpen: boolean;
   mounted: boolean;
   onClose: () => void;
+  onReportClick?: () => void;
+  isReported?: boolean;
 }
 
 export default function ProfileMobileHamburgerModal({
   isOpen,
   mounted,
   onClose,
+  onReportClick,
+  isReported,
 }: ProfileMobileHamburgerModalProps) {
   const { t } = useLanguage();
 
@@ -41,14 +45,23 @@ export default function ProfileMobileHamburgerModal({
             >
               {t('profile.block', 'Zablokovať')}
             </button>
-            <button
-              onClick={() => {
-                // Nahlásiť - TODO: implementovať funkcionalitu
-              }}
-              className="w-full text-center px-4 py-3 text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-            >
-              {t('profile.report', 'Nahlásiť')}
-            </button>
+            {onReportClick && (
+              isReported ? (
+                <div className="w-full text-center px-4 py-3 text-gray-500 dark:text-gray-400 rounded-lg bg-gray-50 dark:bg-gray-800/50 cursor-not-allowed">
+                  {t('profile.reported', 'Nahlásené')}
+                </div>
+              ) : (
+                <button
+                  onClick={() => {
+                    onReportClick();
+                    onClose();
+                  }}
+                  className="w-full text-center px-4 py-3 text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                >
+                  {t('profile.report', 'Nahlásiť profil')}
+                </button>
+              )
+            )}
             <button
               onClick={() => {
                 // Zdieľať - TODO: implementovať funkcionalitu

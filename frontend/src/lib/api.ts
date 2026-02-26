@@ -428,6 +428,7 @@ export const endpoints = {
     list: (offerId: number) => `/auth/skills/${offerId}/reviews/`,
     detail: (reviewId: number) => `/auth/reviews/${reviewId}/`,
     respond: (reviewId: number) => `/auth/reviews/${reviewId}/respond/`,
+    report: (reviewId: number) => `/auth/reviews/${reviewId}/report/`,
   },
   // Žiadosti
   requests: {
@@ -436,6 +437,10 @@ export const endpoints = {
     status: '/auth/skill-requests/status/',
     requestCompletion: (id: number) => `/auth/skill-requests/${id}/request-completion/`,
     confirmCompletion: (id: number) => `/auth/skill-requests/${id}/confirm-completion/`,
+  },
+  // Nahlásenia používateľov
+  users: {
+    report: (userId: number) => `/auth/users/${userId}/report/`,
   },
   // Notifikácie
   notifications: {

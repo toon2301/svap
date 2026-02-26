@@ -34,6 +34,10 @@ export type ReviewCardProps = {
   onViewOwnerResponse?: (review: Review) => void;
   /** Callback pri kliknutí na Odpovedať (iba pre vlastníka ponuky) */
   onAddOwnerResponse?: (review: Review) => void;
+  /** Callback pri kliknutí na Nahlásiť (iba ak používateľ nie je autor recenzie) */
+  onReportClick?: (review: Review) => void;
+  /** Množina ID recenzií, ktoré používateľ už nahlásil */
+  reportedReviewIds?: Set<number>;
 };
 
 function getInitials(name: string): string {
@@ -68,10 +72,13 @@ export default function ReviewCard({
   onDeleteClick,
   onViewOwnerResponse,
   onAddOwnerResponse,
+  onReportClick,
+  reportedReviewIds,
 }: ReviewCardProps) {
   const { t } = useLanguage();
   
   const isOwner = currentUserId != null && review.reviewer_id === currentUserId;
+  const isReported = reportedReviewIds?.has(review.id) ?? false;
 
   const renderStars = (rating: number) => {
     const stars = [];
@@ -242,6 +249,22 @@ export default function ReviewCard({
                 <ChatBubbleLeftIcon className="w-5 h-5" />
                 <span>{t('reviews.addOwnerResponse', 'Odpovedať')}</span>
               </button>
+            )}
+            {!isOwner && onReportClick && (
+              isReported ? (
+                <span className="px-2 py-1.5 text-sm text-gray-500 dark:text-gray-400">
+                  {t('reviews.reported', 'Nahlásené')}
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => onReportClick(review)}
+                  className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-sm text-gray-600 dark:text-gray-400 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors"
+                  aria-label={t('reviews.report', 'Nahlásiť')}
+                >
+                  <span>{t('reviews.report', 'Nahlásiť')}</span>
+                </button>
+              )
             )}
           </div>
         </div>

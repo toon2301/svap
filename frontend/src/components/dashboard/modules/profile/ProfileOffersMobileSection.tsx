@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import toast from 'react-hot-toast';
 import { api, endpoints } from '../../../../lib/api';
+import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { OpeningHours } from '../skills/skillDescriptionModal/types';
 import type { Offer, ExperienceUnit } from './profileOffersTypes';
@@ -36,6 +37,7 @@ export default function ProfileOffersMobileSection({
   isOtherUserProfile = false,
 }: ProfileOffersMobileSectionProps) {
   const { t } = useLanguage();
+  const { user } = useAuth();
   const [offers, setOffers] = useState<Offer[]>([]);
   const [requestStatusByOfferId, setRequestStatusByOfferId] = useState<Record<number, string>>({});
   const [requestIdByOfferId, setRequestIdByOfferId] = useState<Record<number, number>>({});
@@ -47,6 +49,10 @@ export default function ProfileOffersMobileSection({
   const [tappedCards, setTappedCards] = useState<Set<number | string>>(() => new Set());
   const highlightedCardRef = useRef<HTMLDivElement | null>(null);
   const [isUnavailableModalOpen, setIsUnavailableModalOpen] = useState(false);
+  const statusPollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const statusFetchInFlightRef = useRef(false);
+  const statusAbortControllerRef = useRef<AbortController | null>(null);
+  const offerIdsRef = useRef<number[]>([]);
 
   const isOfferStillAvailable = useCallback(
     async (offerId: number) => {
@@ -264,25 +270,15 @@ export default function ProfileOffersMobileSection({
     }
   }, [ownerUserId, t]);
 
-  // Load offers on mount
+  // Skills: load once on mount (no interval)
   useEffect(() => {
     void loadOffers();
+  }, [loadOffers]);
 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ownerUserId]); // loadOffers je memoized
-
-  // Polling každých 20 sekúnd
+  // Keep latest offer IDs in a ref for polling ticks (no extra re-renders)
   useEffect(() => {
-    const intervalId = setInterval(() => {
-      // Pri polling-u preskočíme cache a neukazujeme loading, aby sa nebliklo UI
-      void loadOffers(true, false);
-    }, 20000); // 20 sekúnd
-
-    return () => {
-      clearInterval(intervalId);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ownerUserId]); // loadOffers je memoized
+    offerIdsRef.current = offers.map((o) => o.id).filter((id): id is number => typeof id === 'number');
+  }, [offers]);
 
   // Po načítaní ponúk a nastavení highlightedSkillId poscrolluj na danú kartu
   // Scroll len ak je highlightedSkillId nastavený (pri prvom zvýraznení)
@@ -302,14 +298,46 @@ export default function ProfileOffersMobileSection({
     }
   }, [highlightedSkillId, offers]);
 
-  // Na cudzom profile: načítaj statusy žiadostí pre aktuálne ponuky (rovnako ako desktop)
+  // Status polling: iba keď user, isOtherUserProfile, visible; single interval + cleanup + no overlap
   useEffect(() => {
-    if (!isOtherUserProfile) return;
-    const ids = offers.map((o) => o.id).filter((id): id is number => typeof id === 'number');
-    if (ids.length === 0) return;
-    void (async () => {
+    const shouldPoll = isOtherUserProfile && !!user;
+
+    const stop = () => {
+      if (statusPollIntervalRef.current) {
+        clearInterval(statusPollIntervalRef.current);
+        statusPollIntervalRef.current = null;
+      }
       try {
-        const res = await api.get(endpoints.requests.status, { params: { offer_ids: ids.join(',') } });
+        statusAbortControllerRef.current?.abort();
+      } catch {
+        // ignore
+      }
+      statusAbortControllerRef.current = null;
+      statusFetchInFlightRef.current = false;
+    };
+
+    if (!shouldPoll) {
+      stop();
+      return;
+    }
+
+    let cancelled = false;
+
+    const fetchStatus = async () => {
+      if (cancelled) return;
+      if (document.visibilityState !== 'visible') return;
+      const ids = offerIdsRef.current;
+      if (ids.length === 0) return;
+      if (statusFetchInFlightRef.current) return;
+
+      statusFetchInFlightRef.current = true;
+      const controller = new AbortController();
+      statusAbortControllerRef.current = controller;
+      try {
+        const res = await api.get(
+          endpoints.requests.status,
+          { params: { offer_ids: ids.join(',') }, signal: controller.signal } as any
+        );
         const data = res?.data && typeof res.data === 'object' ? (res.data as Record<string, unknown>) : {};
         const requestIdsRaw =
           data.request_ids && typeof data.request_ids === 'object'
@@ -321,19 +349,41 @@ export default function ProfileOffersMobileSection({
           const n = Number(k);
           if (Number.isFinite(n) && typeof v === 'string') normalized[n] = v;
         });
-        setRequestStatusByOfferId(normalized);
         const ridMap: Record<number, number> = {};
         Object.entries(requestIdsRaw).forEach(([k, v]) => {
           const n = Number(k);
           const id = typeof v === 'number' ? v : Number(v);
           if (Number.isFinite(n) && Number.isFinite(id) && id >= 1) ridMap[n] = id;
         });
-        setRequestIdByOfferId(ridMap);
-      } catch {
-        // ignore
+        if (!cancelled) {
+          setRequestStatusByOfferId(normalized);
+          setRequestIdByOfferId(ridMap);
+        }
+      } catch (e: any) {
+        if (e?.name === 'CanceledError' || e?.code === 'ERR_CANCELED' || e?.name === 'AbortError') return;
+      } finally {
+        if (statusAbortControllerRef.current === controller) statusAbortControllerRef.current = null;
+        statusFetchInFlightRef.current = false;
       }
-    })();
-  }, [offers, isOtherUserProfile]);
+    };
+
+    void fetchStatus();
+
+    statusPollIntervalRef.current = setInterval(() => {
+      void fetchStatus();
+    }, 20_000);
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') void fetchStatus();
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
+
+    return () => {
+      cancelled = true;
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+      stop();
+    };
+  }, [isOtherUserProfile, !!user]);
 
   const handleCardClick = (offer: Offer) => {
     const cardId = offer.id ?? `${offer.category || 'cat'}-${offer.subcategory || 'sub'}-${offer.description || 'desc'}`;

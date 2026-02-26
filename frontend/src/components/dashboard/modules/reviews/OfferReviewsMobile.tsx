@@ -86,6 +86,8 @@ export type OfferReviewsMobileProps = {
   onDeleteReviewClick: (reviewId: number) => void;
   onOpenHoursClick: () => void;
   onOwnerResponseSaved: (reviewId: number, ownerResponse: string, ownerRespondedAt: string) => void;
+  onReportReview?: (review: Review) => void;
+  reportedReviewIds?: Set<number>;
 };
 
 export function OfferReviewsMobile({
@@ -110,6 +112,8 @@ export function OfferReviewsMobile({
   onDeleteReviewClick,
   onOpenHoursClick,
   onOwnerResponseSaved,
+  onReportReview,
+  reportedReviewIds,
 }: OfferReviewsMobileProps) {
   const { t } = useLanguage();
   const [ownerResponseModalReview, setOwnerResponseModalReview] = useState<Review | null>(null);
@@ -452,6 +456,27 @@ export function OfferReviewsMobile({
                               >
                                 <TrashIcon className="w-5 h-5" />
                               </button>
+                            </div>
+                          </>
+                        )}
+                        {!isOwner && onReportReview && (
+                          <>
+                            <Divider />
+                            <div className="flex-1 flex items-center justify-center">
+                              {reportedReviewIds?.has(review.id) ? (
+                                <span className="text-xs text-gray-500 dark:text-gray-400">
+                                  {t('reviews.reported', 'Nahlásené')}
+                                </span>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => onReportReview(review)}
+                                  className="p-2 rounded-lg text-gray-600 dark:text-gray-400 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors"
+                                  aria-label={t('reviews.report', 'Nahlásiť')}
+                                >
+                                  <span className="text-xs font-medium">{t('reviews.report', 'Nahlásiť')}</span>
+                                </button>
+                              )}
                             </div>
                           </>
                         )}

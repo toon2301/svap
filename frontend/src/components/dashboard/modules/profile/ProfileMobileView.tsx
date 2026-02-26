@@ -10,6 +10,7 @@ import ProfileOffersMobileSection from './ProfileOffersMobileSection';
 import type { ProfileTab } from './profileTypes';
 import ProfileMobileSocialLinks from './ProfileMobileSocialLinks';
 import ProfileMobileHamburgerModal from './ProfileMobileHamburgerModal';
+import { ReportUserModal } from './ReportUserModal';
 import { InformationCircleIcon, ClipboardIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 import { createPortal } from 'react-dom';
@@ -61,6 +62,8 @@ export default function ProfileMobileView({
 }: ProfileMobileViewProps) {
   const { t } = useLanguage();
   const [isHamburgerModalOpen, setIsHamburgerModalOpen] = useState(false);
+  const [reportModalOpen, setReportModalOpen] = useState(false);
+  const [reportedUserIds, setReportedUserIds] = useState<Set<number>>(() => new Set());
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
 
@@ -515,11 +518,24 @@ export default function ProfileMobileView({
 
       {/* Hamburger Menu Modal - len na cudzom profile */}
       {isOtherUserProfile && (
-        <ProfileMobileHamburgerModal
-          isOpen={isHamburgerModalOpen}
-          mounted={mounted}
-          onClose={() => setIsHamburgerModalOpen(false)}
-        />
+        <>
+          <ProfileMobileHamburgerModal
+            isOpen={isHamburgerModalOpen}
+            mounted={mounted}
+            onClose={() => setIsHamburgerModalOpen(false)}
+            onReportClick={() => setReportModalOpen(true)}
+            isReported={reportedUserIds.has(displayUser.id)}
+          />
+          <ReportUserModal
+            open={reportModalOpen}
+            onClose={() => setReportModalOpen(false)}
+            userId={displayUser.id}
+            onSuccess={() => {
+              setReportedUserIds((prev) => new Set(prev).add(displayUser.id));
+              setReportModalOpen(false);
+            }}
+          />
+        </>
       )}
 
       {/* Email Modal - zobrazenie celého emailu */}
