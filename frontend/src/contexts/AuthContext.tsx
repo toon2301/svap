@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { api, endpoints, setMayHaveRefreshCookie } from '@/lib/api';
+import { api, endpoints, invalidateSession, setMayHaveRefreshCookie } from '@/lib/api';
 import { clearAuthState } from '@/utils/auth';
 import { fetchCsrfToken, hasCsrfToken } from '@/utils/csrf';
 import type { User } from '@/types';
@@ -125,6 +125,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
     };
   }, []);
 
+  // Hard-stop signal from axios interceptor (refresh 401)
+  useEffect(() => {
+    const handler = () => setUser(null);
+    window.addEventListener('auth:session-invalid', handler);
+    return () => window.removeEventListener('auth:session-invalid', handler);
+  }, []);
+
   // Auth stav určujeme výhradne cez `/api/auth/me/` (HttpOnly cookies).
   useEffect(() => {
     const bootstrap = async () => {
@@ -180,6 +187,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
   };
 
   const logout = () => {
+    // Deterministic: never allow refresh attempts after explicit logout
+    invalidateSession();
+
     // Vymazať posledné vyhľadávania aktuálneho používateľa
     if (user?.id) {
       localStorage.removeItem(`searchRecentResults_${user.id}`);
