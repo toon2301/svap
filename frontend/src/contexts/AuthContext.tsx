@@ -127,10 +127,25 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   // Hard-stop signal from axios interceptor (refresh 401)
   useEffect(() => {
-    const handler = () => setUser(null);
+    const handler = () => {
+      // Abort any in-flight /me request and deterministically clear identity
+      try {
+        meAbortControllerRef.current?.abort();
+      } catch {
+        // ignore
+      }
+      meAbortControllerRef.current = null;
+      mePromiseRef.current = null;
+
+      setMayHaveRefreshCookie(false);
+      setUser(null);
+
+      // Client-side navigation (no full reload => prevents /me storm)
+      router.replace('/');
+    };
     window.addEventListener('auth:session-invalid', handler);
     return () => window.removeEventListener('auth:session-invalid', handler);
-  }, []);
+  }, [router]);
 
   // Auth stav určujeme výhradne cez `/api/auth/me/` (HttpOnly cookies).
   useEffect(() => {

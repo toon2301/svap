@@ -342,13 +342,12 @@ api.interceptors.response.use(
 
     if (status === 401) {
       // If we already know the session is invalid, never refresh again.
-      // Just reject deterministically (and redirect at most once).
+      // Just reject deterministically (and signal AuthContext once).
       if (sessionInvalid) {
         if (typeof window !== 'undefined' && !redirectedAfterInvalidation) {
           redirectedAfterInvalidation = true;
           clearAuthState();
           dispatchSessionInvalid();
-          window.location.href = '/';
         }
         return Promise.reject(error);
       }
@@ -378,7 +377,8 @@ api.interceptors.response.use(
       markSessionInvalid();
       if (typeof window !== 'undefined' && !redirectedAfterInvalidation) {
         redirectedAfterInvalidation = true;
-        window.location.href = '/';
+        // No hard reload here; AuthContext will handle navigation (router.replace)
+        dispatchSessionInvalid();
       }
       return Promise.reject(error);
     }

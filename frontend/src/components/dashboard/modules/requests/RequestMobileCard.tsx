@@ -106,8 +106,7 @@ export function RequestMobileCard({ item, variant, onPress }: Props) {
     if (!whoAvatar) return '';
     const resolved = resolveMediaUrl(whoAvatar, getBackendOrigin());
     if (!resolved) return '';
-    const buster = `t=${Date.now()}`;
-    return resolved.includes('?') ? `${resolved}&${buster}` : `${resolved}?${buster}`;
+    return resolved;
   }, [whoAvatar]);
 
   useEffect(() => {
