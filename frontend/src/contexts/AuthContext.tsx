@@ -37,8 +37,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const mePromiseRef = useRef<Promise<void> | null>(null);
   const refreshSeqRef = useRef(0);
   const latestRequestIdRef = useRef(0);
+  const logoutInProgressRef = useRef(false);
 
   const refreshUser = useCallback(async (options?: { force?: boolean }) => {
+    // Explicit logout in progress => do not run /me requests.
+    if (logoutInProgressRef.current) return;
     const force = Boolean(options?.force);
 
     const requestId = ++refreshSeqRef.current;
@@ -70,6 +73,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
         // Identity guard: ignore stale responses
         if (requestId !== latestRequestIdRef.current) return;
+        if (logoutInProgressRef.current) return;
 
         if (resp?.status === 200 && resp.data) {
           setUser(resp.data);
@@ -81,6 +85,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       } catch (error: any) {
         // Ignore stale errors
         if (requestId !== latestRequestIdRef.current) return;
+        if (logoutInProgressRef.current) return;
 
         // Abort/cancel should be a no-op (a newer request is already in charge)
         if (
@@ -128,6 +133,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // Hard-stop signal from axios interceptor (refresh 401)
   useEffect(() => {
     const handler = () => {
+      if (logoutInProgressRef.current) return;
       // Abort any in-flight /me request and deterministically clear identity
       try {
         meAbortControllerRef.current?.abort();
@@ -202,24 +208,40 @@ export function AuthProvider({ children }: AuthProviderProps) {
   };
 
   const logout = () => {
+    if (logoutInProgressRef.current) return;
+    logoutInProgressRef.current = true;
+
     // Deterministic: never allow refresh attempts after explicit logout
     invalidateSession();
+    try {
+      meAbortControllerRef.current?.abort();
+    } catch {
+      // ignore
+    }
+    meAbortControllerRef.current = null;
+    mePromiseRef.current = null;
 
     // Vymazať posledné vyhľadávania aktuálneho používateľa
     if (user?.id) {
       localStorage.removeItem(`searchRecentResults_${user.id}`);
     }
-    
-    try {
-      void api.post(endpoints.auth.logout, {});
-    } catch {
-      // ignore
-    }
+
     localStorage.removeItem('activeModule');
     sessionStorage.removeItem('forceHome');
-    clearAuthState();
-    setUser(null);
-    router.push('/');
+
+    void (async () => {
+      try {
+        await api.post(endpoints.auth.logout, {});
+      } catch {
+        // ignore - local logout state must still be applied
+      } finally {
+        clearAuthState();
+        setUser(null);
+        setIsLoading(false);
+        logoutInProgressRef.current = false;
+        router.replace('/');
+      }
+    })();
   };
 
   const updateUser = (userData: Partial<User>) => {
