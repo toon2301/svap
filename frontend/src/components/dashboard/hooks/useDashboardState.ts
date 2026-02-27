@@ -164,15 +164,18 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
       // Single source of truth pre identity: AuthContext (/auth/me s requestId guardom).
       // Necháme AuthProvider rozhodnúť o user state; tu iba vyžiadame refresh, aby sme mali čerstvé dáta.
       try {
+        setIsLoading(true);
         await refreshAuthUser();
       } catch {
         // ignore - redirect riešime nižšie podľa authUser/authLoading
+      } finally {
+        setIsLoading(false);
       }
     };
 
     checkAuth();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Prázdny dependency array - auth kontrola sa vykoná len raz pri mounte
+  }, [initialUser, refreshAuthUser]); // Auth kontrola pri mounte (a pri zmene initialUser)
 
   // Mirror AuthContext user do dashboard state (bez vlastných /me requestov).
   useEffect(() => {
@@ -183,7 +186,8 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
       return;
     }
 
-    if (authLoading) return;
+    // Kľúčové: nepresmerovať, kým beží auth refresh iniciovaný checkAuth().
+    if (authLoading || isLoading) return;
 
     if (authUser) {
       userRef.current = authUser;
