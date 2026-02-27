@@ -19,6 +19,7 @@ import os
 from django.conf import settings
 from django.middleware.csrf import get_token
 from django.views.decorators.csrf import ensure_csrf_cookie
+import hashlib
 
 from swaply.rate_limiting import (
     login_rate_limit,
@@ -52,6 +53,72 @@ logger = logging.getLogger(__name__)
 LOGIN_FAILURE_MAX_ATTEMPTS = 5
 LOGIN_FAILURE_WINDOW_MINUTES = 15
 ACCOUNT_LOCKOUT_MINUTES = 15
+
+
+def _auth_cookie_debug_enabled() -> bool:
+    """
+    Bezpečná diagnostika pre problémy so starými/duplicitnými cookies.
+    Zapína sa iba explicitne:
+    - DEBUG=True, alebo
+    - env AUTH_COOKIE_DEBUG=true/1/yes
+    """
+    if getattr(settings, "DEBUG", False):
+        return True
+    v = (os.getenv("AUTH_COOKIE_DEBUG") or "").strip().lower()
+    return v in ("true", "1", "yes")
+
+
+def _fingerprint_secret(value: str) -> str:
+    """Nezvratný fingerprint (bez úniku tokenu)."""
+    try:
+        h = hashlib.sha256(value.encode("utf-8")).hexdigest()
+        return h[:10]
+    except Exception:
+        return "ERR"
+
+
+def _log_cookie_header_diagnostics(request, *, where: str) -> None:
+    """
+    Loguje iba metadáta z raw Cookie headera (počty a fingerprinty),
+    aby sme vedeli odhaliť duplicitné cookies s rovnakým menom.
+    NIKDY neloguje priamo tokeny.
+    """
+    if not _auth_cookie_debug_enabled():
+        return
+    raw = request.META.get("HTTP_COOKIE") or ""
+    if not raw:
+        logger.info("AUTH_COOKIE_DEBUG %s: no Cookie header", where)
+        return
+
+    # Very small, safe parse: split on ';' and count duplicates by name.
+    parts = [p.strip() for p in raw.split(";") if p.strip()]
+    by_name: dict[str, list[str]] = {}
+    for p in parts:
+        if "=" not in p:
+            continue
+        name, val = p.split("=", 1)
+        name = name.strip()
+        if not name:
+            continue
+        by_name.setdefault(name, []).append(val)
+
+    interesting = ("access_token", "refresh_token", "auth_state", "csrftoken")
+    summary = {}
+    for name in interesting:
+        vals = by_name.get(name) or []
+        if not vals:
+            continue
+        summary[name] = {
+            "count": len(vals),
+            "lengths": [len(v) for v in vals[:3]],
+            "fp": [_fingerprint_secret(v) for v in vals[:3]],
+        }
+
+    logger.info(
+        "AUTH_COOKIE_DEBUG %s: cookie_counts=%s",
+        where,
+        summary if summary else {"note": "no interesting cookies present"},
+    )
 
 
 def _is_cross_site_cookie_env() -> bool:
@@ -520,6 +587,7 @@ def logout_view(request):
 @permission_classes([IsAuthenticated])
 def me_view(request):
     """Získanie informácií o aktuálnom používateľovi"""
+    _log_cookie_header_diagnostics(request, where="me_view")
     serializer = UserProfileSerializer(request.user, context={"request": request})
     resp = Response(serializer.data)
     # Identity endpoint must never be cached (prevents stale-user / old-account effects behind proxies/CDNs).
