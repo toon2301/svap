@@ -7,8 +7,6 @@ const urlsToCache = [
   '/',
   '/manifest.json',
   '/icon.svg',
-  '/_next/static/css/',
-  '/_next/static/js/'
 ];
 
 // Install event
@@ -72,6 +70,15 @@ self.addEventListener('fetch', event => {
     return;
   }
 
+  // Next.js runtime assets and HTML documents must be network-only to avoid stale/mixed builds.
+  // This prevents redirect loops and hydration/theme flicker after deploys.
+  const isHTML = request.destination === 'document' || request.headers.get('accept')?.includes('text/html');
+  const isNextJS = url.origin === location.origin && url.pathname.startsWith('/_next/');
+  if (isHTML || isNextJS) {
+    event.respondWith(fetch(request));
+    return;
+  }
+
   // reCAPTCHA a ipapi: priamy fetch bez cache (CSP musí platiť pre hlavnú stránku)
   if (url.origin.includes('google.com') || url.origin.includes('gstatic.com') ||
       url.origin.includes('recaptcha.net') || url.origin.includes('ipapi.co')) {
@@ -84,79 +91,38 @@ self.addEventListener('fetch', event => {
 
   // Handle different types of requests
   if (url.origin === location.origin) {
-    // Same origin requests - Network First strategy for HTML and Next.js files
-    const isHTML = request.destination === 'document' || request.headers.get('accept')?.includes('text/html');
-    const isNextJS = url.pathname.startsWith('/_next/');
-    
-    if (isHTML || isNextJS) {
-      // Network First strategy - always try network first, fallback to cache
-      event.respondWith(
-        fetch(request)
-          .then(fetchResponse => {
-            // Check if response is valid
-            if (fetchResponse && fetchResponse.status === 200 && fetchResponse.type === 'basic') {
+    // Cache First strategy for static assets (images, fonts, etc.)
+    event.respondWith(
+      caches.match(request)
+        .then(response => {
+          if (response) {
+            return response;
+          }
+          
+          return fetch(request)
+            .then(fetchResponse => {
+              // Check if response is valid
+              if (!fetchResponse || fetchResponse.status !== 200 || fetchResponse.type !== 'basic') {
+                return fetchResponse;
+              }
+
               // Clone response for caching
               const responseToCache = fetchResponse.clone();
-              // Cache for offline use
+
+              // Cache dynamic content
               caches.open(DYNAMIC_CACHE)
                 .then(cache => {
                   cache.put(request, responseToCache);
                 });
-            }
-            return fetchResponse;
-          })
-          .catch(() => {
-            // Network failed, try cache
-            return caches.match(request)
-              .then(cachedResponse => {
-                if (cachedResponse) {
-                  return cachedResponse;
-                }
-                // Offline fallback for HTML
-                if (request.destination === 'document') {
-                  return caches.match('/');
-                }
-                return new Response('Offline', { status: 503 });
-              });
-          })
-      );
-    } else {
-      // Cache First strategy for static assets (images, fonts, etc.)
-      event.respondWith(
-        caches.match(request)
-          .then(response => {
-            if (response) {
-              return response;
-            }
-            
-            return fetch(request)
-              .then(fetchResponse => {
-                // Check if response is valid
-                if (!fetchResponse || fetchResponse.status !== 200 || fetchResponse.type !== 'basic') {
-                  return fetchResponse;
-                }
 
-                // Clone response for caching
-                const responseToCache = fetchResponse.clone();
-
-                // Cache dynamic content
-                caches.open(DYNAMIC_CACHE)
-                  .then(cache => {
-                    cache.put(request, responseToCache);
-                  });
-
-                return fetchResponse;
-              })
-              .catch(() => {
-                // Offline fallback
-                if (request.destination === 'document') {
-                  return caches.match('/');
-                }
-                return new Response('Offline', { status: 503 });
-              });
-          })
-      );
-    }
+              return fetchResponse;
+            })
+            .catch(() => {
+              return caches.match(request)
+                .then(cachedResponse => cachedResponse || new Response('Offline', { status: 503 }));
+            });
+        })
+    );
   } else {
     // External requests (APIs, images, etc.)
     event.respondWith(
