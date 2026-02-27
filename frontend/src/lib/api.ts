@@ -2,6 +2,51 @@ import axios from 'axios';
 import { clearAuthState } from '@/utils/auth';
 import { fetchCsrfToken, getCsrfToken } from '@/utils/csrf';
 
+type TraceMeta = Record<string, unknown>;
+
+const OAUTH_TRACE_ENABLED =
+  typeof window !== 'undefined' && process.env.NEXT_PUBLIC_OAUTH_TRACE === 'true';
+const OAUTH_TRACE_KEY = '__oauth_trace_v1__';
+const OAUTH_TRACE_MAX = 400;
+
+function oauthTrace(event: string, meta?: TraceMeta): void {
+  if (!OAUTH_TRACE_ENABLED || typeof window === 'undefined') return;
+  try {
+    const entry = {
+      ts: new Date().toISOString(),
+      event,
+      ...(meta || {}),
+    };
+    const raw = window.localStorage.getItem(OAUTH_TRACE_KEY);
+    const arr = raw ? JSON.parse(raw) : [];
+    const next = Array.isArray(arr) ? [...arr, entry].slice(-OAUTH_TRACE_MAX) : [entry];
+    window.localStorage.setItem(OAUTH_TRACE_KEY, JSON.stringify(next));
+  } catch {
+    // best-effort only
+  }
+}
+
+if (typeof window !== 'undefined' && OAUTH_TRACE_ENABLED) {
+  (window as any).__OAUTH_TRACE__ = {
+    log: (event: string, meta?: TraceMeta) => oauthTrace(event, meta),
+    dump: () => {
+      try {
+        return JSON.parse(window.localStorage.getItem(OAUTH_TRACE_KEY) || '[]');
+      } catch {
+        return [];
+      }
+    },
+    clear: () => {
+      try {
+        window.localStorage.removeItem(OAUTH_TRACE_KEY);
+      } catch {
+        // ignore
+      }
+    },
+  };
+  oauthTrace('trace_bootstrap', { href: window.location.href });
+}
+
 // ============================================================
 // Cookie-only refresh control (HttpOnly cookies, no JS access)
 // ============================================================
@@ -20,6 +65,7 @@ let refreshAbortController: AbortController | null = null;
 
 export function setMayHaveRefreshCookie(value: boolean): void {
   mayHaveRefreshCookie = value;
+  oauthTrace('set_may_have_refresh_cookie', { value });
   if (value) {
     sessionInvalid = false;
     redirectedAfterInvalidation = false;
@@ -28,6 +74,7 @@ export function setMayHaveRefreshCookie(value: boolean): void {
 
 /** Call on explicit logout to prevent any refresh attempts. */
 export function invalidateSession(): void {
+  oauthTrace('invalidate_session_called');
   sessionInvalid = true;
   refreshDisabledUntil = Number.MAX_SAFE_INTEGER;
   mayHaveRefreshCookie = false;
@@ -54,6 +101,7 @@ function shouldSkipRefresh(url?: string): boolean {
 }
 
 function dispatchSessionInvalid(): void {
+  oauthTrace('dispatch_session_invalid');
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent('auth:session-invalid'));
   }
@@ -61,6 +109,7 @@ function dispatchSessionInvalid(): void {
 
 function markSessionInvalid(): void {
   if (sessionInvalid) return;
+  oauthTrace('mark_session_invalid');
   sessionInvalid = true;
   refreshDisabledUntil = Number.MAX_SAFE_INTEGER;
   mayHaveRefreshCookie = false;
@@ -78,17 +127,32 @@ function markSessionInvalid(): void {
 }
 
 async function ensureRefreshed(): Promise<boolean> {
-  if (sessionInvalid) return false;
+  if (sessionInvalid) {
+    oauthTrace('refresh_skipped', { reason: 'session_invalid' });
+    return false;
+  }
   const now = Date.now();
-  if (refreshDisabledUntil && now < refreshDisabledUntil) return false;
-  if (!mayHaveRefreshCookie) return false;
-  if (refreshInFlight) return refreshInFlight;
+  if (refreshDisabledUntil && now < refreshDisabledUntil) {
+    oauthTrace('refresh_skipped', { reason: 'cooldown' });
+    return false;
+  }
+  if (!mayHaveRefreshCookie) {
+    oauthTrace('refresh_skipped', { reason: 'no_cookie_hint' });
+    return false;
+  }
+  if (refreshInFlight) {
+    oauthTrace('refresh_coalesced');
+    return refreshInFlight;
+  }
 
   refreshInFlight = (async () => {
     try {
+      oauthTrace('refresh_start');
       // Ensure CSRF token exists (refresh endpoint enforces CSRF)
       if (!getCsrfToken()) {
+        oauthTrace('refresh_fetch_csrf_start');
         await fetchCsrfToken();
+        oauthTrace('refresh_fetch_csrf_done');
       }
       const csrfToken = getCsrfToken();
       const controller = new AbortController();
@@ -105,9 +169,11 @@ async function ensureRefreshed(): Promise<boolean> {
       );
 
       mayHaveRefreshCookie = true;
+      oauthTrace('refresh_success');
       return true;
     } catch (e: any) {
       const status = e?.response?.status;
+      oauthTrace('refresh_failed', { status: status ?? null });
       if (status === 429) {
         // Cooldown 60s on rate-limit
         refreshDisabledUntil = Date.now() + 60_000;
@@ -224,6 +290,18 @@ if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
 // Request interceptor to add auth token and CSRF token
 api.interceptors.request.use(
   (config) => {
+    const traceUrl = String(config.url || '');
+    if (
+      traceUrl.includes('/oauth/') ||
+      traceUrl.includes('/auth/me/') ||
+      traceUrl.includes('/token/refresh/')
+    ) {
+      oauthTrace('api_request', {
+        method: (config.method || 'GET').toUpperCase(),
+        url: traceUrl,
+      });
+    }
+
     // DEBUGGING: Track request
     if (typeof window !== 'undefined' && (window as any).__API_DEBUG_STATS__) {
       const stats = (window as any).__API_DEBUG_STATS__;
@@ -290,6 +368,19 @@ api.interceptors.request.use(
 // Response interceptor to handle token refresh
 api.interceptors.response.use(
   (response) => {
+    const traceUrl = String(response?.config?.url || '');
+    if (
+      traceUrl.includes('/oauth/') ||
+      traceUrl.includes('/auth/me/') ||
+      traceUrl.includes('/token/refresh/')
+    ) {
+      oauthTrace('api_response', {
+        method: (response?.config?.method || 'GET').toUpperCase(),
+        url: traceUrl,
+        status: response.status,
+      });
+    }
+
     // DEBUGGING: Update request info with status
     if (typeof window !== 'undefined' && response.config && (response.config as any).__debugRequestInfo) {
       const stats = (window as any).__API_DEBUG_STATS__;
@@ -307,6 +398,18 @@ api.interceptors.response.use(
   },
   async (error) => {
     const originalRequest = error.config;
+    const traceUrl = String(originalRequest?.url || '');
+    if (
+      traceUrl.includes('/oauth/') ||
+      traceUrl.includes('/auth/me/') ||
+      traceUrl.includes('/token/refresh/')
+    ) {
+      oauthTrace('api_response_error', {
+        method: (originalRequest?.method || 'GET').toUpperCase(),
+        url: traceUrl,
+        status: error?.response?.status ?? null,
+      });
+    }
 
     // DEBUGGING: Update request info with error status
     if (typeof window !== 'undefined' && originalRequest && (originalRequest as any).__debugRequestInfo) {
@@ -341,6 +444,7 @@ api.interceptors.response.use(
     const url = originalRequest?.url;
 
     if (status === 401) {
+      oauthTrace('api_401_interceptor', { url: String(url || '') });
       // If we already know the session is invalid, never refresh again.
       // Just reject deterministically (and signal AuthContext once).
       if (sessionInvalid) {

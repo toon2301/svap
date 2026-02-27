@@ -15,6 +15,13 @@ function OAuthCallbackContent() {
   const { theme } = useTheme();
   const { t } = useLanguage();
   const handledRef = useRef(false);
+  const trace = (event: string, meta?: Record<string, unknown>) => {
+    try {
+      (window as any).__OAUTH_TRACE__?.log?.(event, meta);
+    } catch {
+      // best-effort debug only
+    }
+  };
 
   useEffect(() => {
     // Nastav dark mode pre popup okno
@@ -28,12 +35,21 @@ function OAuthCallbackContent() {
   useEffect(() => {
     const handleCallback = async () => {
       // One-shot: prevent duplicate postMessage + close loops due to re-renders (theme/language).
-      if (handledRef.current) return;
+      if (handledRef.current) {
+        trace('oauth_callback_skipped_duplicate');
+        return;
+      }
       handledRef.current = true;
 
       const userId = searchParams.get('user_id');
       const error = searchParams.get('error');
       const oauthSuccess = searchParams.get('oauth');
+      trace('oauth_callback_loaded', {
+        oauthSuccess,
+        hasUserId: Boolean(userId),
+        hasError: Boolean(error),
+        search: searchParams.toString(),
+      });
       
       const isProd = process.env.NODE_ENV === 'production';
       if (!isProd) {
@@ -44,12 +60,14 @@ function OAuthCallbackContent() {
       }
       
       if (error) {
+        trace('oauth_callback_error_param', { error });
         console.error('OAuth error from URL:', error);
         setError(`${t('auth.oauthLoginFailed')}: ${error}`);
         setStatus('error');
         
         // Pošli error správu do parent okna
         if (window.opener) {
+          trace('oauth_callback_postmessage_error');
           !isProd && console.debug('Sending error message to parent window');
           window.opener.postMessage({
             type: 'OAUTH_ERROR',
@@ -67,10 +85,15 @@ function OAuthCallbackContent() {
       if (oauthSuccess === 'success') {
         try {
           // Over session cez /me/ (ak prešlo, cookies fungujú)
+          trace('oauth_callback_me_check_start');
           await api.get('/auth/me/');
+          trace('oauth_callback_me_check_success');
           setStatus('success');
           if (window.opener) {
             const oauthNonce = sessionStorage.getItem('oauth_nonce');
+            trace('oauth_callback_postmessage_success', {
+              hasNonce: Boolean(oauthNonce),
+            });
             window.opener.postMessage({
               type: 'OAUTH_SUCCESS',
               nonce: oauthNonce
@@ -80,9 +103,11 @@ function OAuthCallbackContent() {
           setTimeout(() => window.close(), 1000);
           return;
         } catch (e) {
+          trace('oauth_callback_me_check_failed');
           setError(t('auth.missingGoogleTokens'));
           setStatus('error');
           if (window.opener) {
+            trace('oauth_callback_postmessage_missing_tokens');
             window.opener.postMessage({ type: 'OAUTH_ERROR', error: t('auth.missingGoogleTokens') }, window.location.origin);
           }
           setTimeout(() => window.close(), 3000);
@@ -92,7 +117,9 @@ function OAuthCallbackContent() {
 
       setError(t('auth.oauthLoginFailed'));
       setStatus('error');
+      trace('oauth_callback_unexpected_state');
       if (window.opener) {
+        trace('oauth_callback_postmessage_generic_error');
         window.opener.postMessage({ type: 'OAUTH_ERROR', error: t('auth.oauthLoginFailed') }, window.location.origin);
       }
       setTimeout(() => window.close(), 3000);

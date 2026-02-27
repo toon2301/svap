@@ -22,6 +22,20 @@ User = get_user_model()
 logger = logging.getLogger(__name__)
 
 
+def _oauth_trace_enabled():
+    return os.getenv("OAUTH_TRACE", "").strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _oauth_trace(event, **fields):
+    if not _oauth_trace_enabled():
+        return
+    try:
+        safe = {k: v for k, v in fields.items()}
+        logger.warning(f"OAUTH_TRACE {event} {safe}")
+    except Exception:
+        logger.warning(f"OAUTH_TRACE {event}")
+
+
 @api_view(["GET"])
 @permission_classes([AllowAny])
 @authentication_classes([])
@@ -30,6 +44,12 @@ def google_login_view(request):
     Jednoduchá Google OAuth login view
     """
     try:
+        _oauth_trace(
+            "google_login_start",
+            path=request.path,
+            has_callback=bool(request.GET.get("callback")),
+            host=request.get_host(),
+        )
         # Získaj Google OAuth credentials z environment premenných
         client_id = getattr(settings, "GOOGLE_OAUTH2_CLIENT_ID", None)
 
@@ -105,10 +125,16 @@ def google_login_view(request):
 
         # Neloguj celý auth_url (obsahuje state), stačí base informácia
         logger.info("Google OAuth auth URL prepared")
+        _oauth_trace(
+            "google_login_redirect",
+            backend_callback=backend_callback,
+            callback_origin=urllib.parse.urlparse(frontend_callback).netloc,
+        )
 
         return HttpResponseRedirect(auth_url)
 
     except Exception as e:
+        _oauth_trace("google_login_exception", error=str(e)[:120])
         logger.error(f"Google login view error: {str(e)}")
         return Response(
             {"error": "Chyba pri prihlásení cez Google"},
@@ -124,9 +150,17 @@ def google_callback_view(request):
     Google OAuth callback view
     """
     try:
+        _oauth_trace(
+            "google_callback_start",
+            path=request.path,
+            has_code=bool(request.GET.get("code")),
+            has_state=bool(request.GET.get("state")),
+            host=request.get_host(),
+        )
         # Získaj authorization code
         code = request.GET.get("code")
         if not code:
+            _oauth_trace("google_callback_no_code")
             logger.error("No authorization code received")
             return redirect("http://localhost:3000/auth/callback/?error=no_code")
 
@@ -137,11 +171,13 @@ def google_callback_view(request):
 
         # CSRF ochrana: state musí byť prítomný a musí zodpovedať hodnote v cache
         if not oauth_state or not oauth_state.strip():
+            _oauth_trace("google_callback_invalid_state_missing")
             logger.warning("Google OAuth callback: state parameter missing")
             return redirect(f"{default_callback}?error=invalid_state")
         try:
             cached = cache.get(f"oauth_state:{oauth_state}")
             if not cached:
+                _oauth_trace("google_callback_invalid_state_cache_miss")
                 logger.warning("Google OAuth callback: state not in cache or expired")
                 return redirect(f"{default_callback}?error=invalid_state")
             frontend_callback = str(cached)
@@ -151,6 +187,7 @@ def google_callback_view(request):
             except Exception:
                 pass
         except Exception:
+            _oauth_trace("google_callback_invalid_state_exception")
             logger.warning("Google OAuth callback: state validation failed")
             return redirect(f"{default_callback}?error=invalid_state")
 
@@ -195,6 +232,10 @@ def google_callback_view(request):
 
         token_response = requests.post(token_url, data=token_data, timeout=10)
         if token_response.status_code != 200:
+            _oauth_trace(
+                "google_callback_token_exchange_failed",
+                status=token_response.status_code,
+            )
             logger.error(f"Token exchange failed: Status {token_response.status_code}")
             logger.error(f"Response: {token_response.text}")
 
@@ -216,6 +257,7 @@ def google_callback_view(request):
         access_token = token_json.get("access_token")
 
         if not access_token:
+            _oauth_trace("google_callback_no_access_token")
             logger.error("No access token received")
             return redirect(f"{frontend_callback}?error=no_access_token")
 
@@ -228,6 +270,10 @@ def google_callback_view(request):
         )
 
         if user_info_response.status_code != 200:
+            _oauth_trace(
+                "google_callback_userinfo_failed",
+                status=user_info_response.status_code,
+            )
             logger.error(f"User info request failed: {user_info_response.text}")
             return redirect(f"{frontend_callback}?error=user_info_failed")
 
@@ -235,6 +281,7 @@ def google_callback_view(request):
         email = user_info.get("email")
 
         if not email:
+            _oauth_trace("google_callback_no_email")
             logger.error("No email in user info")
             return redirect(f"{frontend_callback}?error=no_email")
 
@@ -336,11 +383,18 @@ def google_callback_view(request):
             _set_auth_cookies(resp, access=str(access_token_jwt), refresh=str(refresh))
             state_kwargs = _auth_state_cookie_kwargs()
             resp.set_cookie("auth_state", "1", max_age=7 * 24 * 60 * 60, **state_kwargs)
+            _oauth_trace(
+                "google_callback_success",
+                user_id=getattr(user, "id", None),
+                redirect_target=frontend_callback,
+            )
         except Exception as e:
+            _oauth_trace("google_callback_set_cookie_failed", error=str(e)[:120])
             logger.error(f"Failed to set OAuth auth cookies: {e}")
         return resp
 
     except Exception as e:
+        _oauth_trace("google_callback_exception", error=str(e)[:120])
         logger.error(f"Google OAuth callback error: {str(e)}")
         default_callback = getattr(
             settings, "FRONTEND_CALLBACK_URL", "http://localhost:3000/auth/callback/"

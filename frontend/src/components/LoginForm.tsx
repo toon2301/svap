@@ -42,6 +42,13 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
   const [isResending, setIsResending] = useState(false);
   const [resendSuccess, setResendSuccess] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const trace = (event: string, meta?: Record<string, unknown>) => {
+    try {
+      (window as any).__OAUTH_TRACE__?.log?.(event, meta);
+    } catch {
+      // best-effort debug only
+    }
+  };
 
   useEffect(() => {
     // Získaj CSRF token z backendu – v testoch preskoč, aby sme nevolali sieťové requesty
@@ -124,6 +131,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
   };
 
   const handleGoogleLogin = async () => {
+    trace('login_google_start');
     setIsGoogleLoading(true);
     setLoginErrors({});
     oauthHandledRef.current = false;
@@ -135,9 +143,14 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
       const baseApi = axiosBase || (backendOrigin ? `${backendOrigin}/api` : (process.env.NEXT_PUBLIC_API_URL || '/api'));
       const callbackUrl = `${window.location.origin}/auth/callback`; // bez trailing slash
       const googleLoginUrl = `${baseApi}/oauth/google/login/?callback=${encodeURIComponent(callbackUrl)}`;
+      trace('login_google_url_prepared', {
+        baseApi,
+        callbackOrigin: window.location.origin,
+      });
       
       const oauthNonce = crypto.randomUUID();
       sessionStorage.setItem('oauth_nonce', oauthNonce);
+      trace('login_google_nonce_set');
       
       // Otvor Google OAuth v novom okne
       const popup = window.open(
@@ -147,13 +160,20 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
       );
 
       if (!popup) {
+        trace('login_google_popup_blocked');
         setLoginErrors({ general: t('auth.googleLoginFailed') });
         setIsGoogleLoading(false);
         return;
       }
+      trace('login_google_popup_opened');
 
       // Počúvaj na správy z popup okna
       const handleMessage = async (event: MessageEvent) => {
+        trace('login_google_popup_message', {
+          origin: event.origin,
+          type: event?.data?.type,
+          handled: oauthHandledRef.current,
+        });
         if (event.origin !== window.location.origin) return;
         if (oauthHandledRef.current) return;
         if (process.env.NODE_ENV !== 'production') {
@@ -162,6 +182,10 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
         
         if (event.data.type === 'OAUTH_SUCCESS') {
           const storedNonce = sessionStorage.getItem('oauth_nonce');
+          trace('login_google_success_msg_received', {
+            hasStoredNonce: Boolean(storedNonce),
+            nonceMatch: Boolean(storedNonce && event.data.nonce === storedNonce),
+          });
           if (!storedNonce || event.data.nonce !== storedNonce) {
             return;
           }
@@ -174,9 +198,12 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
           window.removeEventListener('message', handleMessage);
           // Over session cez backend (HttpOnly cookies) – auth stav určujeme iba cez /me
           try {
+            trace('login_google_refresh_user_start');
             await refreshUser({ force: true });
+            trace('login_google_refresh_user_success');
           } catch {
             // Ak /me zlyhá, neskúšaj presmerovať na dashboard
+            trace('login_google_refresh_user_failed');
             setIsGoogleLoading(false);
             setLoginErrors({ general: t('auth.googleLoginFailed') });
             return;
@@ -189,8 +216,10 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
           } catch (e) {}
 
           setIsGoogleLoading(false);
+          trace('login_google_router_push_dashboard');
           router.push('/dashboard');
         } else if (event.data.type === 'OAUTH_ERROR') {
+          trace('login_google_error_msg_received');
           if (process.env.NODE_ENV !== 'production') {
             console.debug('OAuth error message received');
           }
@@ -218,12 +247,14 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
           }
           
           if (popupClosed) {
+            trace('login_google_popup_closed_detected');
             clearInterval(checkClosed);
             window.removeEventListener('message', handleMessage);
             sessionStorage.removeItem('oauth_nonce');
             setIsGoogleLoading(false);
           }
         } catch (error) {
+          trace('login_google_popup_poll_error');
           if (process.env.NODE_ENV !== 'production') {
             console.debug('Error checking popup status');
           }
@@ -231,6 +262,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
       }, 1000);
 
     } catch (error: any) {
+      trace('login_google_exception', { status: error?.response?.status ?? null });
       console.error('Google login error:', error);
       setLoginErrors({ 
         general: error.response?.data?.error || t('auth.googleLoginFailed') 

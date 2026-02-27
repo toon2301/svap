@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.conf import settings
-from django.db.models import Avg, Count
+from django.db.models import Avg, Count, Q
 from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
@@ -246,6 +246,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
     # avatar ostáva zapisovateľné (ImageField na modeli)
     # avatar_url poskytuje plnú URL pre klienta
     avatar_url = serializers.SerializerMethodField()
+    completed_cooperations_count = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -284,6 +285,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
             "gender",
             "slug",
             "name_modified_by_user",
+            "completed_cooperations_count",
         ]
         read_only_fields = [
             "id",
@@ -295,7 +297,15 @@ class UserProfileSerializer(serializers.ModelSerializer):
             "profile_completeness",
             "slug",
             "name_modified_by_user",
+            "completed_cooperations_count",
         ]
+
+    def get_completed_cooperations_count(self, obj):
+        return SkillRequest.objects.filter(
+            status=SkillRequestStatus.COMPLETED
+        ).filter(
+            Q(requester=obj) | Q(recipient=obj)
+        ).count()
 
     def get_avatar_url(self, obj):
         """Vráti plnú URL k avataru (ak existuje)."""
