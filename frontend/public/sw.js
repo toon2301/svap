@@ -26,10 +26,7 @@ self.addEventListener('install', event => {
               return null; // Ignore failed cache requests
             })
           )
-        ).then(() => {
-          // Force activation of new service worker
-          return self.skipWaiting();
-        });
+        );
       })
   );
 });
@@ -65,6 +62,12 @@ self.addEventListener('fetch', event => {
 
   // OAuth: okamžite fetch bez cache logiky (login/callback musia ísť na sieť)
   if (url.pathname.startsWith('/api/oauth/')) {
+    event.respondWith(fetch(request));
+    return;
+  }
+
+  // API: nikdy necachuj /api/* (zabráni stale auth/me a nekonzistentnej identite)
+  if (url.pathname.startsWith('/api/')) {
     event.respondWith(fetch(request));
     return;
   }
