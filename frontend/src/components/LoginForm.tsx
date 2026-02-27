@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { api, endpoints } from '@/lib/api';
@@ -31,6 +31,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
   const router = useRouter();
   const { t } = useLanguage();
   const { refreshUser } = useAuth();
+  const oauthHandledRef = useRef(false);
   const [loginData, setLoginData] = useState<LoginData>({
     email: '',
     password: ''
@@ -125,6 +126,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
   const handleGoogleLogin = async () => {
     setIsGoogleLoading(true);
     setLoginErrors({});
+    oauthHandledRef.current = false;
 
     try {
       // Použi rovnakú baseURL ako Axios klient (rešpektuje dev runtime override cez sessionStorage)
@@ -153,6 +155,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
       // Počúvaj na správy z popup okna
       const handleMessage = async (event: MessageEvent) => {
         if (event.origin !== window.location.origin) return;
+        if (oauthHandledRef.current) return;
         if (process.env.NODE_ENV !== 'production') {
           console.debug('Received message from popup');
         }
@@ -162,11 +165,13 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
           if (!storedNonce || event.data.nonce !== storedNonce) {
             return;
           }
+          oauthHandledRef.current = true;
           sessionStorage.removeItem('oauth_nonce');
           if (process.env.NODE_ENV !== 'production') {
             console.debug('OAuth success message received');
           }
           clearInterval(checkClosed);
+          window.removeEventListener('message', handleMessage);
           // Over session cez backend (HttpOnly cookies) – auth stav určujeme iba cez /me
           try {
             await refreshUser({ force: true });
@@ -189,7 +194,9 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
           if (process.env.NODE_ENV !== 'production') {
             console.debug('OAuth error message received');
           }
+          oauthHandledRef.current = true;
           clearInterval(checkClosed);
+          window.removeEventListener('message', handleMessage);
           setIsGoogleLoading(false);
           setLoginErrors({ general: event.data.error });
         }

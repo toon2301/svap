@@ -2,7 +2,7 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useEffect, useState, Suspense } from 'react';
+import { useEffect, useRef, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { api } from '@/lib/api';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -14,6 +14,7 @@ function OAuthCallbackContent() {
   const [error, setError] = useState<string>('');
   const { theme } = useTheme();
   const { t } = useLanguage();
+  const handledRef = useRef(false);
 
   useEffect(() => {
     // Nastav dark mode pre popup okno
@@ -26,6 +27,10 @@ function OAuthCallbackContent() {
 
   useEffect(() => {
     const handleCallback = async () => {
+      // One-shot: prevent duplicate postMessage + close loops due to re-renders (theme/language).
+      if (handledRef.current) return;
+      handledRef.current = true;
+
       const userId = searchParams.get('user_id');
       const error = searchParams.get('error');
       const oauthSuccess = searchParams.get('oauth');
