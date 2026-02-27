@@ -160,11 +160,12 @@ def _auth_state_cookie_kwargs() -> dict:
     return _auth_cookie_kwargs()
 
 
-# Legacy paths cleanup:
-# In older deployments cookies may have been set with a more specific Path (e.g. "/api").
-# Browsers can then send multiple cookies with the same name and different paths.
-# Depending on parsing order, the backend can end up reading a stale token.
-_AUTH_COOKIE_PATHS_TO_CLEAR = ("/", "/api", "/api/")
+# NOTE:
+# Django's response cookie container is keyed by cookie name, so multiple set_cookie() calls
+# for the same cookie name (even with different Path) overwrite each other in the response.
+# To ensure reliable logout even if legacy cookies exist under different paths, logout_view
+# additionally sends Clear-Site-Data: "cookies" (see below).
+_AUTH_COOKIE_PATHS_TO_CLEAR = ("/",)
 
 
 def _with_path(kwargs: dict, path: str) -> dict:
@@ -574,6 +575,9 @@ def logout_view(request):
             _clear_auth_cookies(resp)
         except Exception:
             pass
+        # Robust logout: clear ALL cookies for this origin (covers legacy Path variants).
+        # This prevents "still logged in" due to stale cookies under a different Path.
+        resp["Clear-Site-Data"] = "\"cookies\""
         return resp
     except Exception as e:
         # Log error for debugging but don't expose details to client
