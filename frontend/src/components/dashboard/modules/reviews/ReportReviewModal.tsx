@@ -27,7 +27,7 @@ export function ReportReviewModal({
   onSuccess,
 }: ReportReviewModalProps) {
   const { t } = useLanguage();
-  const [mounted, setMounted] = useState(false);
+  const [mounted, setMounted] = useState(false); // keep portal mounting explicit
   const [reason, setReason] = useState<string>(REPORT_REASONS[0].value);
   const [description, setDescription] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
