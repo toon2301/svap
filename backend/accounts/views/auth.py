@@ -93,9 +93,24 @@ def _auth_state_cookie_kwargs() -> dict:
     return _auth_cookie_kwargs()
 
 
+# Legacy paths cleanup:
+# In older deployments cookies may have been set with a more specific Path (e.g. "/api").
+# Browsers can then send multiple cookies with the same name and different paths.
+# Depending on parsing order, the backend can end up reading a stale token.
+_AUTH_COOKIE_PATHS_TO_CLEAR = ("/", "/api", "/api/")
+
+
+def _with_path(kwargs: dict, path: str) -> dict:
+    k = dict(kwargs)
+    k["path"] = path
+    return k
+
+
 def _set_auth_cookies(response, *, access: str, refresh: str) -> None:
     kwargs = _auth_cookie_kwargs()
     state_kwargs = _auth_state_cookie_kwargs()
+    # Defensive: clear any legacy-path cookies first to prevent stale token precedence.
+    _clear_auth_cookies(response)
     # Access token – kratšia životnosť
     response.set_cookie("access_token", access, max_age=15 * 60, **kwargs)
     # Refresh token – dlhšia životnosť
@@ -114,12 +129,18 @@ def _clear_auth_cookies(response) -> None:
     kwargs = _auth_cookie_kwargs()
     state_kwargs = _auth_state_cookie_kwargs()
     # delete_cookie nevie vždy nastaviť rovnaké samesite/secure v každej verzii, preto nastavíme expiráciu.
-    response.set_cookie("access_token", "", max_age=0, **kwargs)
     refresh_kwargs = dict(kwargs)
     if not _is_cross_site_cookie_env() and not getattr(settings, "DEBUG", False):
         refresh_kwargs["samesite"] = "Strict"
-    response.set_cookie("refresh_token", "", max_age=0, **refresh_kwargs)
-    response.set_cookie("auth_state", "", max_age=0, **state_kwargs)
+
+    for path in _AUTH_COOKIE_PATHS_TO_CLEAR:
+        response.set_cookie("access_token", "", max_age=0, **_with_path(kwargs, path))
+        response.set_cookie(
+            "refresh_token", "", max_age=0, **_with_path(refresh_kwargs, path)
+        )
+        response.set_cookie(
+            "auth_state", "", max_age=0, **_with_path(state_kwargs, path)
+        )
 
 
 def _lock_keys_for_email(email: str):
@@ -500,8 +521,12 @@ def logout_view(request):
 def me_view(request):
     """Získanie informácií o aktuálnom používateľovi"""
     serializer = UserProfileSerializer(request.user, context={"request": request})
-
-    return Response(serializer.data)
+    resp = Response(serializer.data)
+    # Identity endpoint must never be cached (prevents stale-user / old-account effects behind proxies/CDNs).
+    resp["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    resp["Pragma"] = "no-cache"
+    resp["Vary"] = "Cookie"
+    return resp
 
 
 @api_view(["GET", "POST"])
