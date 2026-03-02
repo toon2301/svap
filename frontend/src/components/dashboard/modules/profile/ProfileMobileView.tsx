@@ -139,6 +139,11 @@ export default function ProfileMobileView({
                     : ([displayUser.first_name, displayUser.last_name].filter(Boolean).join(' ').trim() || displayUser.username)
                   }
                 </h2>
+                {(Number(displayUser.completed_cooperations_count) || 0) > 0 && (
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+                    Dokončené spolupráce: {displayUser.completed_cooperations_count}
+                  </p>
+                )}
                 {/* Email intentionally not shown here (kept in edit views) */}
                 {/* Lokalita - zobrazí mesto/dedinu ak je, inak okres ak je */}
                 {(displayUser.location || displayUser.district) && (() => {

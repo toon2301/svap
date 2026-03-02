@@ -30,6 +30,7 @@ export interface User {
   gender?: string;
   is_verified: boolean;
   is_public: boolean;
+  completed_cooperations_count?: number;
   created_at: string;
   updated_at: string;
   profile_completeness: number;

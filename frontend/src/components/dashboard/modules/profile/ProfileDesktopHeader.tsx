@@ -53,7 +53,7 @@ export function ProfileDesktopHeader({
 
         <div className="flex flex-col flex-grow min-w-0">
           {/* Meno používateľa a sociálne siete v jednom riadku */}
-          <div className="flex items-center gap-20 mb-2 min-w-0">
+          <div className="flex items-center gap-20 mb-1 min-w-0">
             <h2 className="text-[clamp(1.25rem,2vw,1.75rem)] font-semibold text-gray-900 dark:text-white truncate min-w-0">
               {accountType === 'business'
                 ? (displayUser.company_name || displayUser.username)
@@ -61,6 +61,12 @@ export function ProfileDesktopHeader({
             </h2>
             <ProfileDesktopSocialLinks user={displayUser} />
           </div>
+
+          {(Number(displayUser.completed_cooperations_count) || 0) > 0 && (
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-0">
+              Dokončené spolupráce: {displayUser.completed_cooperations_count}
+            </p>
+          )}
 
           {/* Email intentionally not shown here (kept in edit views) */}
           {/* Lokalita - zobrazí mesto/dedinu ak je, inak okres ak je */}
