@@ -408,11 +408,8 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
       authLogout();
     } catch (error) {
       console.error('Logout error:', error);
-    } finally {
-      clearAuthState();
-      router.push('/');
     }
-  }, [authLogout, router]);
+  }, [authLogout]);
 
   const getDescribeMode = () => {
     if (typeof window === 'undefined') return null;
