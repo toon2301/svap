@@ -34,6 +34,7 @@ from .notifications import (
     notifications_mark_all_read_view,
 )
 from .user_reports import user_report_view
+from .search import search_view
 from .dashboard import (
     dashboard_home_view,
     dashboard_search_view,
@@ -83,4 +84,5 @@ __all__ = [
     "dashboard_user_skills_by_slug_view",
     "dashboard_settings_view",
     "user_report_view",
+    "search_view",
 ]

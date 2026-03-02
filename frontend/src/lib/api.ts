@@ -546,6 +546,8 @@ export const endpoints = {
   users: {
     report: (userId: number) => `/auth/users/${userId}/report/`,
   },
+  // Verejné vyhľadávanie (OfferedSkill)
+  search: '/auth/search/',
   // Notifikácie
   notifications: {
     list: '/auth/notifications/',

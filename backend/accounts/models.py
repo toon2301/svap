@@ -508,6 +508,17 @@ class OfferedSkill(models.Model):
                 name="unique_user_skill_category",
             )
         ]
+        indexes = [
+            # Search endpoint filters/sorts (ORM only). Avoid indexes on icontains fields.
+            models.Index(fields=["created_at"], name="acc_off_skill_created_idx"),
+            models.Index(fields=["district"], name="acc_off_skill_district_idx"),
+            models.Index(fields=["price_from"], name="acc_off_skill_price_idx"),
+            # Composite indexes for frequent patterns:
+            # - base filter is_hidden=False + default sort -created_at
+            models.Index(fields=["is_hidden", "-created_at"], name="acc_off_skill_hidden_new_idx"),
+            # - type filter (is_seeking) + newest
+            models.Index(fields=["is_hidden", "is_seeking", "-created_at"], name="acc_off_skill_type_new_idx"),
+        ]
 
     def __str__(self):
         return f"{self.user.display_name} - {self.category} → {self.subcategory}"

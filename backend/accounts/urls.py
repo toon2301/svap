@@ -54,6 +54,8 @@ urlpatterns = [
     # path('debug/oauth/', debug_oauth.debug_google_oauth, name='debug_oauth'),
     # Profil
     path("profile/", views.update_profile_view, name="update_profile"),
+    # Isolated public search (new)
+    path("search/", views.search_view, name="search"),
     # Draft endpoints - pridáno bez narušenia existujúcich URL patterns
     path("draft/", profile.save_draft_view, name="save_draft"),
     path("draft/<str:draft_type>/", profile.get_draft_view, name="get_draft"),

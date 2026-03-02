@@ -112,15 +112,15 @@ export default function DashboardLayout({
     };
   }, [isSearchOpen, onSearchClose]);
 
-  const showSearchPanel = Boolean(isSearchOpen && searchOverlay);
-
+  // Desktop grid: search column always exists in DOM.
+  // When closed, its width is 0px; to avoid visual shift of main content, we apply a matching left padding to <main>.
   const gridColsClassName = isRightSidebarOpen
-    ? showSearchPanel
+    ? isSearchOpen
       ? 'lg:grid-cols-[240px_240px_1fr_240px] xl:grid-cols-[280px_280px_1fr_280px] 2xl:grid-cols-[384px_384px_1fr_384px]'
-      : 'lg:grid-cols-[240px_1fr_240px] xl:grid-cols-[280px_1fr_280px] 2xl:grid-cols-[384px_1fr_384px]'
-    : showSearchPanel
+      : 'lg:grid-cols-[240px_0px_1fr_240px] xl:grid-cols-[280px_0px_1fr_280px] 2xl:grid-cols-[384px_0px_1fr_384px]'
+    : isSearchOpen
       ? 'lg:grid-cols-[280px_280px_1fr] xl:grid-cols-[384px_384px_1fr]'
-      : 'lg:grid-cols-[280px_1fr] xl:grid-cols-[384px_1fr]';
+      : 'lg:grid-cols-[280px_0px_1fr] xl:grid-cols-[384px_0px_1fr]';
 
   return (
     <div className="h-screen bg-[var(--background)] text-[var(--foreground)] overflow-hidden">
@@ -170,14 +170,21 @@ export default function DashboardLayout({
         </div>
 
         {/* Desktop search panel – samostatný stĺpec v gride (vedľa ľavej navigácie) */}
-        {showSearchPanel && (
-          <div
-            ref={searchPanelRef}
-            className="hidden lg:flex h-screen flex-col overflow-y-auto overflow-x-hidden bg-[var(--background)] border-r border-gray-800/60 shadow-2xl"
-          >
-            {searchOverlay}
-          </div>
-        )}
+        <div
+          ref={searchPanelRef}
+          className={[
+            'hidden lg:flex h-screen flex-col overflow-hidden bg-[var(--background)]',
+            // Keep in DOM; when closed, width is 0 via grid template columns.
+            // Hide interaction + visuals without translate.
+            isSearchOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none',
+            // Only show separator/shadow when the column is visible
+            isSearchOpen ? 'border-r border-gray-800/60 shadow-2xl' : 'border-r-0 shadow-none',
+            'transition-opacity duration-200 ease-out',
+          ].join(' ')}
+          aria-hidden={!isSearchOpen}
+        >
+          {searchOverlay}
+        </div>
 
         {/* Main Content */}
         <main className={`relative h-screen overflow-y-auto pb-24 lg:pt-0 lg:pb-0 elegant-scrollbar ${

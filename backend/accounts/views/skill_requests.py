@@ -8,6 +8,8 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from django.db import IntegrityError, transaction
+
 from swaply.rate_limiting import api_rate_limit
 
 from ..models import (
@@ -112,39 +114,63 @@ def skill_requests_view(request):
 
     created = False
     try:
+        with transaction.atomic():
+            try:
+                obj = SkillRequest.objects.select_related(
+                    "offer", "requester", "recipient"
+                ).get(requester=request.user, offer=offer)
+                # Re-open pri zrušení / zamietnutí
+                if obj.status in (
+                    SkillRequestStatus.CANCELLED,
+                    SkillRequestStatus.REJECTED,
+                ):
+                    obj.status = SkillRequestStatus.PENDING
+                    obj.recipient = recipient
+                    # Ak bola žiadosť predtým „skrytá“ (vymazaná zo zoznamu),
+                    # pri opätovnom odoslaní ju musíme znovu zviditeľniť obom stranám.
+                    obj.hidden_by_requester = False
+                    obj.hidden_by_recipient = False
+                    obj.save(
+                        update_fields=[
+                            "status",
+                            "recipient",
+                            "hidden_by_requester",
+                            "hidden_by_recipient",
+                            "updated_at",
+                        ]
+                    )
+                else:
+                    return Response(
+                        SkillRequestSerializer(obj, context={"request": request}).data,
+                        status=status.HTTP_200_OK,
+                    )
+            except SkillRequest.DoesNotExist:
+                try:
+                    obj = SkillRequest.objects.create(
+                        requester=request.user,
+                        recipient=recipient,
+                        offer=offer,
+                        status=SkillRequestStatus.PENDING,
+                    )
+                    created = True
+                except IntegrityError:
+                    # Unique constraint race: (requester, offer) already created by a parallel request.
+                    obj = SkillRequest.objects.select_related(
+                        "offer", "requester", "recipient"
+                    ).get(requester=request.user, offer=offer)
+                    return Response(
+                        SkillRequestSerializer(obj, context={"request": request}).data,
+                        status=status.HTTP_200_OK,
+                    )
+    except IntegrityError:
+        # Safety net: if a DB-level race happens outside the inner block, return existing request.
         obj = SkillRequest.objects.select_related(
             "offer", "requester", "recipient"
         ).get(requester=request.user, offer=offer)
-        # Re-open pri zrušení / zamietnutí
-        if obj.status in (SkillRequestStatus.CANCELLED, SkillRequestStatus.REJECTED):
-            obj.status = SkillRequestStatus.PENDING
-            obj.recipient = recipient
-            # Ak bola žiadosť predtým „skrytá“ (vymazaná zo zoznamu),
-            # pri opätovnom odoslaní ju musíme znovu zviditeľniť obom stranám.
-            obj.hidden_by_requester = False
-            obj.hidden_by_recipient = False
-            obj.save(
-                update_fields=[
-                    "status",
-                    "recipient",
-                    "hidden_by_requester",
-                    "hidden_by_recipient",
-                    "updated_at",
-                ]
-            )
-        else:
-            return Response(
-                SkillRequestSerializer(obj, context={"request": request}).data,
-                status=status.HTTP_200_OK,
-            )
-    except SkillRequest.DoesNotExist:
-        obj = SkillRequest.objects.create(
-            requester=request.user,
-            recipient=recipient,
-            offer=offer,
-            status=SkillRequestStatus.PENDING,
+        return Response(
+            SkillRequestSerializer(obj, context={"request": request}).data,
+            status=status.HTTP_200_OK,
         )
-        created = True
 
     # Notifikácia pre vlastníka karty
     try:
@@ -217,138 +243,147 @@ def skill_request_detail_view(request, request_id: int):
     PATCH /skill-requests/<id>/
     Body: { action: 'accept'|'reject'|'cancel'|'hide' }
     """
-    try:
-        obj = SkillRequest.objects.select_related(
-            "offer", "requester", "recipient"
-        ).get(id=request_id)
-    except SkillRequest.DoesNotExist:
-        return Response(
-            {"error": "Žiadosť neexistuje."}, status=status.HTTP_404_NOT_FOUND
-        )
-
-    # AuthZ
-    if request.user.id not in (obj.requester_id, obj.recipient_id):
-        return Response({"error": "Nemáš prístup."}, status=status.HTTP_403_FORBIDDEN)
-
-    raw_action = (
-        request.data.get("action")
-        if hasattr(request, "data") and request.data
-        else None
-    )
-    if raw_action is None and getattr(request, "_request", None):
+    with transaction.atomic():
         try:
-            body = getattr(request._request, "body", b"")
-            if body:
-                data = json.loads(
-                    body.decode("utf-8") if isinstance(body, bytes) else body
+            obj = SkillRequest.objects.select_for_update().select_related(
+                "offer", "requester", "recipient"
+            ).get(id=request_id)
+        except SkillRequest.DoesNotExist:
+            return Response(
+                {"error": "Žiadosť neexistuje."}, status=status.HTTP_404_NOT_FOUND
+            )
+
+        # AuthZ
+        if request.user.id not in (obj.requester_id, obj.recipient_id):
+            return Response(
+                {"error": "Nemáš prístup."}, status=status.HTTP_403_FORBIDDEN
+            )
+
+        raw_action = (
+            request.data.get("action")
+            if hasattr(request, "data") and request.data
+            else None
+        )
+        if raw_action is None and getattr(request, "_request", None):
+            try:
+                body = getattr(request._request, "body", b"")
+                if body:
+                    data = json.loads(
+                        body.decode("utf-8") if isinstance(body, bytes) else body
+                    )
+                    raw_action = data.get("action")
+            except Exception:
+                pass
+        action = (
+            (raw_action or "").strip().lower()
+            if isinstance(raw_action, str)
+            else ""
+        )
+        if not raw_action or action not in {"accept", "reject", "cancel", "hide"}:
+            return Response(
+                {"error": "Neplatná akcia."}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Recipient môže accept/reject, requester môže cancel
+        if action in {"accept", "reject"} and request.user.id != obj.recipient_id:
+            return Response(
+                {"error": "Nemáš oprávnenie."}, status=status.HTTP_403_FORBIDDEN
+            )
+        if action == "cancel" and request.user.id != obj.requester_id:
+            return Response(
+                {"error": "Nemáš oprávnenie."}, status=status.HTTP_403_FORBIDDEN
+            )
+        # Hide môže urobiť len účastník žiadosti (už overené) a len na svojej strane
+
+        if action == "hide":
+            # Bezpečnosť: dovoľ len pre odmietnuté alebo zrušené.
+            if obj.status not in (
+                SkillRequestStatus.REJECTED,
+                SkillRequestStatus.CANCELLED,
+            ):
+                return Response(
+                    {
+                        "error": "Žiadosť môžeš skryť len ak je zrušená alebo zamietnutá."
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
                 )
-                raw_action = data.get("action")
+
+            if request.user.id == obj.requester_id:
+                if not obj.hidden_by_requester:
+                    obj.hidden_by_requester = True
+                    obj.save(update_fields=["hidden_by_requester", "updated_at"])
+            elif request.user.id == obj.recipient_id:
+                if not obj.hidden_by_recipient:
+                    obj.hidden_by_recipient = True
+                    obj.save(update_fields=["hidden_by_recipient", "updated_at"])
+            return Response(
+                SkillRequestSerializer(obj, context={"request": request}).data,
+                status=status.HTTP_200_OK,
+            )
+
+        # Stavové prechody
+        if action == "accept" and obj.status == SkillRequestStatus.PENDING:
+            obj.status = SkillRequestStatus.ACCEPTED
+            obj.save(update_fields=["status", "updated_at"])
+        elif action == "reject" and obj.status == SkillRequestStatus.PENDING:
+            obj.status = SkillRequestStatus.REJECTED
+            obj.save(update_fields=["status", "updated_at"])
+        elif action == "cancel" and obj.status == SkillRequestStatus.PENDING:
+            obj.status = SkillRequestStatus.CANCELLED
+            obj.save(update_fields=["status", "updated_at"])
+        else:
+            # nič nemeníme, ale vrátime aktuálny stav
+            return Response(
+                SkillRequestSerializer(obj, context={"request": request}).data,
+                status=status.HTTP_200_OK,
+            )
+
+        # Notifikácia pre druhú stranu (prijatie/zamietnutie)
+        try:
+            if obj.status == SkillRequestStatus.ACCEPTED:
+                notif_type = NotificationType.SKILL_REQUEST_ACCEPTED
+                title = "Žiadosť prijatá"
+                body = f"{obj.recipient.display_name} prijal/a tvoju žiadosť."
+                notif_user = obj.requester
+            elif obj.status == SkillRequestStatus.REJECTED:
+                notif_type = NotificationType.SKILL_REQUEST_REJECTED
+                title = "Žiadosť zamietnutá"
+                body = f"{obj.recipient.display_name} zamietol/a tvoju žiadosť."
+                notif_user = obj.requester
+            else:
+                notif_type = NotificationType.SKILL_REQUEST_CANCELLED
+                title = "Žiadosť zrušená"
+                body = f"{obj.requester.display_name} zrušil/a žiadosť."
+                notif_user = obj.recipient
+
+            notif = Notification.objects.create(
+                user=notif_user,
+                type=notif_type,
+                title=title,
+                body=body,
+                data={
+                    "skill_request_id": obj.id,
+                    "offer_id": obj.offer_id,
+                },
+                skill_request=obj,
+            )
+            # Badge aktualizujeme len pre SKILL_REQUEST typ (počet „neprečítaných žiadostí“)
+            if notif_user and notif_user.id:
+                _notify_unread_count(
+                    notif_user.id,
+                    notif if notif.type == NotificationType.SKILL_REQUEST else None,
+                )
         except Exception:
             pass
-    action = (raw_action or "").strip().lower() if isinstance(raw_action, str) else ""
-    if not raw_action or action not in {"accept", "reject", "cancel", "hide"}:
-        return Response(
-            {"error": "Neplatná akcia."}, status=status.HTTP_400_BAD_REQUEST
-        )
 
-    # Recipient môže accept/reject, requester môže cancel
-    if action in {"accept", "reject"} and request.user.id != obj.recipient_id:
-        return Response(
-            {"error": "Nemáš oprávnenie."}, status=status.HTTP_403_FORBIDDEN
-        )
-    if action == "cancel" and request.user.id != obj.requester_id:
-        return Response(
-            {"error": "Nemáš oprávnenie."}, status=status.HTTP_403_FORBIDDEN
-        )
-    # Hide môže urobiť len účastník žiadosti (už overené) a len na svojej strane
-
-    if action == "hide":
-        # Bezpečnosť: dovoľ len pre odmietnuté alebo zrušené.
-        if obj.status not in (
-            SkillRequestStatus.REJECTED,
-            SkillRequestStatus.CANCELLED,
-        ):
             return Response(
-                {"error": "Žiadosť môžeš skryť len ak je zrušená alebo zamietnutá."},
-                status=status.HTTP_400_BAD_REQUEST,
+                SkillRequestSerializer(obj, context={"request": request}).data,
+                status=status.HTTP_200_OK,
             )
-
-        if request.user.id == obj.requester_id:
-            if not obj.hidden_by_requester:
-                obj.hidden_by_requester = True
-                obj.save(update_fields=["hidden_by_requester", "updated_at"])
-        elif request.user.id == obj.recipient_id:
-            if not obj.hidden_by_recipient:
-                obj.hidden_by_recipient = True
-                obj.save(update_fields=["hidden_by_recipient", "updated_at"])
         return Response(
             SkillRequestSerializer(obj, context={"request": request}).data,
             status=status.HTTP_200_OK,
         )
-
-    # Stavové prechody
-    if action == "accept" and obj.status == SkillRequestStatus.PENDING:
-        obj.status = SkillRequestStatus.ACCEPTED
-        obj.save(update_fields=["status", "updated_at"])
-    elif action == "reject" and obj.status == SkillRequestStatus.PENDING:
-        obj.status = SkillRequestStatus.REJECTED
-        obj.save(update_fields=["status", "updated_at"])
-    elif action == "cancel" and obj.status == SkillRequestStatus.PENDING:
-        obj.status = SkillRequestStatus.CANCELLED
-        obj.save(update_fields=["status", "updated_at"])
-    else:
-        # nič nemeníme, ale vrátime aktuálny stav
-        return Response(
-            SkillRequestSerializer(obj, context={"request": request}).data,
-            status=status.HTTP_200_OK,
-        )
-
-    # Notifikácia pre druhú stranu (prijatie/zamietnutie)
-    try:
-        if obj.status == SkillRequestStatus.ACCEPTED:
-            notif_type = NotificationType.SKILL_REQUEST_ACCEPTED
-            title = "Žiadosť prijatá"
-            body = f"{obj.recipient.display_name} prijal/a tvoju žiadosť."
-            notif_user = obj.requester
-        elif obj.status == SkillRequestStatus.REJECTED:
-            notif_type = NotificationType.SKILL_REQUEST_REJECTED
-            title = "Žiadosť zamietnutá"
-            body = f"{obj.recipient.display_name} zamietol/a tvoju žiadosť."
-            notif_user = obj.requester
-        else:
-            notif_type = NotificationType.SKILL_REQUEST_CANCELLED
-            title = "Žiadosť zrušená"
-            body = f"{obj.requester.display_name} zrušil/a žiadosť."
-            notif_user = obj.recipient
-
-        notif = Notification.objects.create(
-            user=notif_user,
-            type=notif_type,
-            title=title,
-            body=body,
-            data={
-                "skill_request_id": obj.id,
-                "offer_id": obj.offer_id,
-            },
-            skill_request=obj,
-        )
-        # Badge aktualizujeme len pre SKILL_REQUEST typ (počet „neprečítaných žiadostí“)
-        if notif_user and notif_user.id:
-            _notify_unread_count(
-                notif_user.id,
-                notif if notif.type == NotificationType.SKILL_REQUEST else None,
-            )
-    except Exception:
-        pass
-
-        return Response(
-            SkillRequestSerializer(obj, context={"request": request}).data,
-            status=status.HTTP_200_OK,
-        )
-    return Response(
-        SkillRequestSerializer(obj, context={"request": request}).data,
-        status=status.HTTP_200_OK,
-    )
 
 
 @api_view(["POST"])
@@ -361,33 +396,37 @@ def skill_request_request_completion_view(request, request_id: int):
     Iba recipient (poskytovateľ) môže označiť spoluprácu ako dokončovanú.
     Povolené iba ak status == accepted.
     """
-    try:
-        obj = SkillRequest.objects.select_related(
-            "offer", "requester", "recipient"
-        ).get(id=request_id)
-    except SkillRequest.DoesNotExist:
+    with transaction.atomic():
+        try:
+            obj = SkillRequest.objects.select_for_update().select_related(
+                "offer", "requester", "recipient"
+            ).get(id=request_id)
+        except SkillRequest.DoesNotExist:
+            return Response(
+                {"error": "Žiadosť neexistuje."}, status=status.HTTP_404_NOT_FOUND
+            )
+
+        # AuthZ: iba recipient (poskytovateľ)
+        if request.user.id != obj.recipient_id:
+            return Response(
+                {"error": "Nemáš oprávnenie."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        # Stavová podmienka: iba z accepted
+        if obj.status != SkillRequestStatus.ACCEPTED:
+            return Response(
+                {"error": "Žiadosť musí byť prijatá (accepted)."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        obj.status = SkillRequestStatus.COMPLETION_REQUESTED
+        obj.save(update_fields=["status", "updated_at"])
+
         return Response(
-            {"error": "Žiadosť neexistuje."}, status=status.HTTP_404_NOT_FOUND
+            SkillRequestSerializer(obj, context={"request": request}).data,
+            status=status.HTTP_200_OK,
         )
-
-    # AuthZ: iba recipient (poskytovateľ)
-    if request.user.id != obj.recipient_id:
-        return Response({"error": "Nemáš oprávnenie."}, status=status.HTTP_403_FORBIDDEN)
-
-    # Stavová podmienka: iba z accepted
-    if obj.status != SkillRequestStatus.ACCEPTED:
-        return Response(
-            {"error": "Žiadosť musí byť prijatá (accepted)."},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
-
-    obj.status = SkillRequestStatus.COMPLETION_REQUESTED
-    obj.save(update_fields=["status", "updated_at"])
-
-    return Response(
-        SkillRequestSerializer(obj, context={"request": request}).data,
-        status=status.HTTP_200_OK,
-    )
 
 
 @api_view(["POST"])
@@ -400,30 +439,33 @@ def skill_request_confirm_completion_view(request, request_id: int):
     Iba requester môže potvrdiť dokončenie spolupráce.
     Povolené iba ak status == completion_requested.
     """
-    try:
-        obj = SkillRequest.objects.select_related(
-            "offer", "requester", "recipient"
-        ).get(id=request_id)
-    except SkillRequest.DoesNotExist:
+    with transaction.atomic():
+        try:
+            obj = SkillRequest.objects.select_for_update().select_related(
+                "offer", "requester", "recipient"
+            ).get(id=request_id)
+        except SkillRequest.DoesNotExist:
+            return Response(
+                {"error": "Žiadosť neexistuje."}, status=status.HTTP_404_NOT_FOUND
+            )
+
+        # AuthZ: iba requester
+        if request.user.id != obj.requester_id:
+            return Response(
+                {"error": "Nemáš oprávnenie."}, status=status.HTTP_403_FORBIDDEN
+            )
+
+        # Stavová podmienka: iba z completion_requested
+        if obj.status != SkillRequestStatus.COMPLETION_REQUESTED:
+            return Response(
+                {"error": "Žiadosť musí mať stav completion_requested."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        obj.status = SkillRequestStatus.COMPLETED
+        obj.save(update_fields=["status", "updated_at"])
+
         return Response(
-            {"error": "Žiadosť neexistuje."}, status=status.HTTP_404_NOT_FOUND
+            SkillRequestSerializer(obj, context={"request": request}).data,
+            status=status.HTTP_200_OK,
         )
-
-    # AuthZ: iba requester
-    if request.user.id != obj.requester_id:
-        return Response({"error": "Nemáš oprávnenie."}, status=status.HTTP_403_FORBIDDEN)
-
-    # Stavová podmienka: iba z completion_requested
-    if obj.status != SkillRequestStatus.COMPLETION_REQUESTED:
-        return Response(
-            {"error": "Žiadosť musí mať stav completion_requested."},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
-
-    obj.status = SkillRequestStatus.COMPLETED
-    obj.save(update_fields=["status", "updated_at"])
-
-    return Response(
-        SkillRequestSerializer(obj, context={"request": request}).data,
-        status=status.HTTP_200_OK,
-    )

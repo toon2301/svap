@@ -1,6 +1,7 @@
 "use client";
 
 import React from 'react';
+import { useRouter } from 'next/navigation';
 import { type User } from '@/types';
 import { type SearchResults, type SearchSkill, type SearchUserResult } from '../types';
 import { getUserInitials } from '../utils';
@@ -34,6 +35,7 @@ export function SearchResults({
   onSkillClick,
   t,
 }: SearchResultsProps) {
+  const router = useRouter();
   const {
     searchQuery,
     results,
@@ -43,13 +45,47 @@ export function SearchResults({
     isFromRecentSearch,
     showSkills,
     showUsers,
+    offerType,
+    onlyMyLocation,
+    priceMin,
+    priceMax,
     searchInputRef,
     clearSearch,
   } = searchState;
 
-  const { filteredSkills, hasPanelResults } = searchApi;
+  const { filteredSkills, hasPanelResults, hasResults } = searchApi;
   const { recentSearches: recentResults, handleRecentResultClick } = recentSearches;
   const { suggestedSkills, handleSuggestionClick } = suggestions;
+
+  const shouldShowViewAllButton =
+    hasSearched && !error && !isSearching && Boolean(searchQuery.trim()) && hasResults;
+
+  const handleViewAllClick = () => {
+    const q = searchQuery.trim();
+    if (!q) return;
+
+    const params = new URLSearchParams();
+    params.set('q', q);
+
+    // Zachovaj aktuálne filtre ako query parametre (aj keď /search ich zatiaľ nemusí používať).
+    params.set('showSkills', showSkills ? '1' : '0');
+    params.set('showUsers', showUsers ? '1' : '0');
+    if (offerType && offerType !== 'all') params.set('offerType', offerType);
+    if (onlyMyLocation) params.set('onlyMyLocation', '1');
+    if (priceMin.trim()) params.set('priceMin', priceMin.trim());
+    if (priceMax.trim()) params.set('priceMax', priceMax.trim());
+
+    router.push(`/search?${params.toString()}`);
+
+    // Po presmerovaní zavri search panel bez zásahu do dashboard logiky:
+    // spusti existujúcu "klik na ľavý sidebar zavrie search" logiku.
+    try {
+      const leftSidebar = document.querySelector('[data-sidebar="left"]');
+      leftSidebar?.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+    } catch {
+      // ignore
+    }
+  };
 
   // Render skill card
   const renderSkillCard = (skill: SearchSkill, keyPrefix: string) => {
@@ -301,6 +337,16 @@ export function SearchResults({
       {hasSearched && !error && (
         <div className="mt-4 space-y-1">
           {isFromRecentSearch && renderBackButton()}
+
+          {shouldShowViewAllButton && (
+            <button
+              type="button"
+              onClick={handleViewAllClick}
+              className="w-full text-center px-3 py-2.5 rounded-lg bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white text-sm font-semibold transition-colors mb-2"
+            >
+              Zobraziť všetko
+            </button>
+          )}
 
           {!results || isSearching ? (
             <div className="text-xs text-gray-500 dark:text-gray-400 py-4 px-1" role="status" aria-live="polite">
