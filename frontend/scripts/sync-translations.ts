@@ -1,8 +1,14 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
-type JsonValue = string | number | boolean | null | JsonObject | JsonValue[];
-type JsonObject = Record<string, JsonValue>;
+type JsonValue =
+  | string
+  | number
+  | boolean
+  | null
+  | JsonValue[]
+  | { [key: string]: JsonValue };
+type JsonObject = { [key: string]: JsonValue };
 
 const MESSAGES_DIR = path.join(process.cwd(), 'messages');
 const SOURCE_FILE = path.join(MESSAGES_DIR, 'sk.json');
