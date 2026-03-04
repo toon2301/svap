@@ -7,13 +7,14 @@ interface SearchInputProps {
   searchState: SearchStateProps;
   onSearch: (event?: React.FormEvent) => void;
   onKeyDown: (event: React.KeyboardEvent<HTMLInputElement>) => void;
+  onClose?: () => void;
   t: (key: string, fallback: string) => string;
 }
 
 /**
  * Search input komponent s filter buttonom
  */
-export function SearchInput({ searchState, onSearch, onKeyDown, t }: SearchInputProps) {
+export function SearchInput({ searchState, onSearch, onKeyDown, onClose, t }: SearchInputProps) {
   const {
     searchQuery,
     setSearchQuery,
@@ -28,9 +29,30 @@ export function SearchInput({ searchState, onSearch, onKeyDown, t }: SearchInput
       <div className="space-y-4">
         {/* Vyhľadávacie pole + Filter */}
         <div className="space-y-2">
-          <h3 className="hidden lg:block text-2xl font-semibold text-gray-900 dark:text-white mb-2">
-            Hľadať
-          </h3>
+          <div className="hidden lg:flex lg:items-center lg:justify-between lg:mb-2">
+            <h3 className="text-2xl font-semibold text-gray-900 dark:text-white">
+              Hľadať
+            </h3>
+            {onClose && (
+              <button
+                type="button"
+                onClick={onClose}
+                className="p-1.5 rounded-lg text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                aria-label={t('search.closePanel', 'Zatvoriť vyhľadávací panel')}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={2}
+                  stroke="currentColor"
+                  className="w-5 h-5"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
+          </div>
           <div className="flex items-center gap-2">
             <div className="relative flex-1">
               <input

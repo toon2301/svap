@@ -817,6 +817,21 @@ class OfferedSkillSerializer(serializers.ModelSerializer):
         return value
 
 
+class OfferedSkillSearchSerializer(OfferedSkillSerializer):
+    """Serializer pre /api/auth/search/ – dopĺňa relevance_score z annotate."""
+
+    relevance_score = serializers.SerializerMethodField()
+
+    class Meta(OfferedSkillSerializer.Meta):
+        fields = OfferedSkillSerializer.Meta.fields + ["relevance_score"]
+
+    def get_relevance_score(self, obj):
+        try:
+            return int(getattr(obj, "relevance_score", 0) or 0)
+        except Exception:
+            return 0
+
+
 class SkillRequestCreateSerializer(serializers.Serializer):
     """Vytvorenie žiadosti o kartu."""
 

@@ -161,8 +161,15 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
         return;
       }
 
+      // Ak authUser je už v AuthContext (napr. navigácia z /search), zobrazíme dashboard okamžite.
+      // Refresh spustíme na pozadí pre čerstvosť dát, ale neblokujeme UI.
+      if (authUser && !authLoading) {
+        setIsLoading(false);
+        void refreshAuthUser(); // background refresh
+        return;
+      }
+
       // Single source of truth pre identity: AuthContext (/auth/me s requestId guardom).
-      // Necháme AuthProvider rozhodnúť o user state; tu iba vyžiadame refresh, aby sme mali čerstvé dáta.
       try {
         setIsLoading(true);
         await refreshAuthUser();

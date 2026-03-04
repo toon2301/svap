@@ -1,10 +1,12 @@
 'use client';
 
-import React, { useEffect, useState, useCallback, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import React, { useEffect, useState, useCallback, Suspense, useRef } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { api, endpoints } from '@/lib/api';
 import { useLanguage } from '@/contexts/LanguageContext';
 import ProfileOfferCard from '@/components/dashboard/modules/profile/ProfileOfferCard';
+import { FilterChips } from '@/components/search/FilterChips';
+import { SearchResultSkeleton } from '@/components/search/SearchResultSkeleton';
 import type { Offer, ExperienceUnit } from '@/components/dashboard/modules/profile/profileOffersTypes';
 import type { OpeningHours } from '@/components/dashboard/modules/skills/skillDescriptionModal/types';
 
@@ -64,18 +66,109 @@ function mapSearchResultToOffer(s: Record<string, unknown>): Offer {
   } as Offer & { user_display_name?: string; owner_user_type?: string };
 }
 
+const SORT_OPTIONS = [
+  { value: 'newest', labelKey: 'search.sortNewest' },
+  { value: 'rating_desc', labelKey: 'search.sortRatingDesc' },
+  { value: 'price_asc', labelKey: 'search.sortPriceAsc' },
+  { value: 'price_desc', labelKey: 'search.sortPriceDesc' },
+] as const;
+const VALID_SORTS = new Set(SORT_OPTIONS.map((o) => o.value));
+const VALID_RATINGS = new Set(['2', '3', '4']);
+const VALID_TYPES = new Set(['offer', 'seeking']);
+
 function SearchResultsContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const q = searchParams.get('q') ?? '';
   const { t } = useLanguage();
 
+  const urlSort = searchParams.get('sort') ?? '';
+  const urlRating = searchParams.get('rating') ?? '';
+  const urlPriceMin = searchParams.get('price_min') ?? '';
+  const urlPriceMax = searchParams.get('price_max') ?? '';
+  const urlType = searchParams.get('type') ?? '';
+  const urlPage = searchParams.get('page') ?? '';
+
+  const parsedSort = VALID_SORTS.has(urlSort) ? urlSort : 'newest';
+  const parsedMinRating =
+    urlRating && VALID_RATINGS.has(urlRating) ? Number(urlRating) : null;
+  const parsedPriceMin = urlPriceMin;
+  const parsedPriceMax = urlPriceMax;
+  const parsedOfferType: 'all' | 'offer' | 'seeking' = VALID_TYPES.has(urlType)
+    ? (urlType as 'offer' | 'seeking')
+    : 'all';
+  const parsedPage = (() => {
+    const n = Number.parseInt(String(urlPage || ''), 10);
+    return Number.isFinite(n) && n >= 1 ? n : 1;
+  })();
+
+  const [sort, setSort] = useState<string>(parsedSort);
+  const [minRating, setMinRating] = useState<number | null>(parsedMinRating);
+  const [priceMin, setPriceMin] = useState<string>(parsedPriceMin);
+  const [priceMax, setPriceMax] = useState<string>(parsedPriceMax);
+  const [offerType, setOfferType] = useState<'all' | 'offer' | 'seeking'>(parsedOfferType);
   const [results, setResults] = useState<Offer[]>([]);
   const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(1);
+  const [page, setPage] = useState(parsedPage);
   const [totalPages, setTotalPages] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [flippedCards, setFlippedCards] = useState<Set<string>>(new Set());
+
+  const replaceSearchParams = useCallback(
+    (updates: Record<string, string | null | undefined>) => {
+      const params = new URLSearchParams(searchParams.toString());
+      for (const [key, value] of Object.entries(updates)) {
+        if (value === null || value === undefined || value === '') {
+          params.delete(key);
+        } else {
+          params.set(key, value);
+        }
+      }
+      const qs = params.toString();
+      if (qs === searchParams.toString()) return;
+      router.replace(qs ? `/search?${qs}` : '/search', { scroll: false });
+    },
+    [router, searchParams],
+  );
+
+  // URL is source of truth: sync state from query params (back/forward, shared links, manual edits).
+  useEffect(() => {
+    if (sort !== parsedSort) setSort(parsedSort);
+    if (minRating !== parsedMinRating) setMinRating(parsedMinRating);
+    if (priceMin !== parsedPriceMin) setPriceMin(parsedPriceMin);
+    if (priceMax !== parsedPriceMax) setPriceMax(parsedPriceMax);
+    if (offerType !== parsedOfferType) setOfferType(parsedOfferType);
+    if (page !== parsedPage) setPage(parsedPage);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [parsedSort, parsedMinRating, parsedPriceMin, parsedPriceMax, parsedOfferType, parsedPage]);
+
+  // page reset when filters/sort/query change (via URL): force page=1
+  const filterSignature = `${q.trim()}|${parsedSort}|${parsedMinRating ?? ''}|${parsedPriceMin}|${parsedPriceMax}|${parsedOfferType}`;
+  const prevSignatureRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (prevSignatureRef.current === null) {
+      prevSignatureRef.current = filterSignature;
+      return;
+    }
+    if (prevSignatureRef.current !== filterSignature) {
+      prevSignatureRef.current = filterSignature;
+      if (parsedPage !== 1) {
+        replaceSearchParams({ page: '1' });
+      }
+    }
+  }, [filterSignature, parsedPage, replaceSearchParams]);
+
+  // Scroll to top when filters, sort, or page change (skip initial mount)
+  const scrollParamsSignature = `${urlRating}|${urlPriceMin}|${urlPriceMax}|${urlType}|${urlSort}|${urlPage}`;
+  const isInitialMountRef = useRef(true);
+  useEffect(() => {
+    if (isInitialMountRef.current) {
+      isInitialMountRef.current = false;
+      return;
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [scrollParamsSignature]);
 
   const fetchSearch = useCallback(async () => {
     const trimmed = q.trim();
@@ -91,7 +184,16 @@ function SearchResultsContent() {
     setError(null);
     try {
       const { data } = await api.get(endpoints.search, {
-        params: { q: trimmed, page: 1, page_size: 12 },
+        params: {
+          q: trimmed,
+          page,
+          page_size: 12,
+          sort,
+          min_rating: minRating ?? undefined,
+          price_min: priceMin || undefined,
+          price_max: priceMax || undefined,
+          type: offerType === 'all' ? undefined : offerType,
+        },
       });
 
       const list = Array.isArray(data?.results) ? data.results : [];
@@ -111,11 +213,22 @@ function SearchResultsContent() {
     } finally {
       setLoading(false);
     }
-  }, [q]);
+  }, [q, sort, page, minRating, priceMin, priceMax, offerType]);
 
   useEffect(() => {
     void fetchSearch();
   }, [fetchSearch]);
+
+  const handleSortChange = useCallback(
+    (e: React.ChangeEvent<HTMLSelectElement>) => {
+      const newSort = e.target.value;
+      if (!VALID_SORTS.has(newSort)) return;
+      setSort(newSort);
+      setPage(1);
+      replaceSearchParams({ sort: newSort, page: '1' });
+    },
+    [replaceSearchParams],
+  );
 
   const handleToggleFlip = useCallback((cardId: string) => {
     setFlippedCards((prev) => {
@@ -126,41 +239,185 @@ function SearchResultsContent() {
     });
   }, []);
 
+  const hasActiveFilters =
+    (urlRating && VALID_RATINGS.has(urlRating)) ||
+    (urlPriceMin && urlPriceMin.trim() !== '') ||
+    (urlPriceMax && urlPriceMax.trim() !== '') ||
+    (urlType && VALID_TYPES.has(urlType));
+
+  const clearAllFilters = useCallback(() => {
+    replaceSearchParams({
+      rating: null,
+      price_min: null,
+      price_max: null,
+      type: null,
+      page: '1',
+    });
+  }, [replaceSearchParams]);
+
   const trimmedQ = q.trim();
   const displayQ = trimmedQ || '';
 
   return (
     <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)]">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
-        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-1">
-          Výsledky pre: „{displayQ || '…'}“
-        </h1>
-        <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
-          {loading ? 'Načítavam…' : `${total} výsledkov`}
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+          <div>
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-1">
+              {t('search.resultsFor', 'Výsledky pre:')} „{displayQ || '…'}“
+            </h1>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              {loading ? t('search.loading', 'Načítavam…') : t('search.resultsCount', '{{count}} výsledkov').replace('{{count}}', String(total))}
+            </p>
+          </div>
+          {trimmedQ && (
+            <select
+              value={sort}
+              onChange={handleSortChange}
+              className="text-sm rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400"
+            >
+              {SORT_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {t(opt.labelKey)}
+                </option>
+              ))}
+            </select>
+          )}
+      </div>
 
-        {error && (
-          <p className="text-sm text-red-600 dark:text-red-400 mb-4">{error}</p>
-        )}
+      {error && (
+        <p className="text-sm text-red-600 dark:text-red-400 mb-4">{error}</p>
+      )}
 
-        <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
-          {/* Desktop: sidebar placeholder */}
+        <div className="sticky top-0 z-20 bg-white dark:bg-gray-900 py-2">
+        <FilterChips />
+      </div>
+
+      <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
+          {/* Desktop: filter sidebar */}
           <aside className="hidden lg:block w-[260px] flex-shrink-0">
-            <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50 p-4 text-sm text-gray-500 dark:text-gray-400">
-              Filtre
+            <div className="space-y-4 text-sm">
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">
+                  ⭐ {t('search.ratingLabel', 'Hodnotenie')}
+                </label>
+                <select
+                  value={minRating ?? ''}
+                  onChange={(e) => {
+                    const next = e.target.value ? Number(e.target.value) : null;
+                    setMinRating(next);
+                    setPage(1);
+                    replaceSearchParams({
+                      rating: next ? String(next) : null,
+                      page: '1',
+                    });
+                  }}
+                  className="w-full px-2 py-1.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-black text-gray-900 dark:text-gray-100"
+                >
+                  <option value="">{t('search.offerTypeAll', 'Všetko')}</option>
+                  <option value="4">4+</option>
+                  <option value="3">3+</option>
+                  <option value="2">2+</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">
+                  💰 {t('search.priceTitle', 'Cena')}
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="number"
+                    placeholder={t('search.priceMin', 'Od')}
+                    value={priceMin}
+                    onChange={(e) => {
+                      const next = e.target.value;
+                      setPriceMin(next);
+                      setPage(1);
+                      replaceSearchParams({
+                        price_min: next || null,
+                        page: '1',
+                      });
+                    }}
+                    className="w-full px-2 py-1.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-black text-gray-900 dark:text-gray-100"
+                  />
+                  <input
+                    type="number"
+                    placeholder="Do"
+                    value={priceMax}
+                    onChange={(e) => {
+                      const next = e.target.value;
+                      setPriceMax(next);
+                      setPage(1);
+                      replaceSearchParams({
+                        price_max: next || null,
+                        page: '1',
+                      });
+                    }}
+                    className="w-full px-2 py-1.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-black text-gray-900 dark:text-gray-100"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">
+                  🔁 {t('search.offerTypeTitle', 'Typ ponuky')}
+                </label>
+                <select
+                  value={offerType}
+                  onChange={(e) => {
+                    const next = e.target.value as 'all' | 'offer' | 'seeking';
+                    setOfferType(next);
+                    setPage(1);
+                    replaceSearchParams({
+                      type: next === 'all' ? null : next,
+                      page: '1',
+                    });
+                  }}
+                  className="w-full px-2 py-1.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-black text-gray-900 dark:text-gray-100"
+                >
+                  <option value="all">{t('search.offerTypeAll', 'Všetko')}</option>
+                  <option value="offer">{t('search.offerTypeOffer', 'Ponúkam')}</option>
+                  <option value="seeking">{t('search.offerTypeSeeking', 'Hľadám')}</option>
+                </select>
+              </div>
             </div>
           </aside>
 
           {/* Grid */}
           <main className="flex-1 min-w-0">
             {loading && results.length === 0 ? (
-              <div className="flex items-center justify-center py-12">
-                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-purple-600" />
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-[clamp(1rem,2vw,1.5rem)]">
+                {Array.from({ length: 8 }, (_, i) => (
+                  <SearchResultSkeleton key={i} />
+                ))}
               </div>
             ) : results.length === 0 && !loading ? (
-              <p className="text-sm text-gray-500 dark:text-gray-400 py-8">
-                {trimmedQ ? 'Žiadne výsledky.' : 'Zadajte výraz do vyhľadávacieho poľa.'}
-              </p>
+              <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
+                <p className="text-base font-medium text-gray-900 dark:text-white mb-2">
+                  {trimmedQ
+                    ? t('search.emptyNoResults', 'Žiadne výsledky pre „{{q}}"').replace('{{q}}', trimmedQ)
+                    : t('search.emptyEnterQuery', 'Zadajte výraz do vyhľadávacieho poľa.')}
+                </p>
+                {trimmedQ && (
+                  <>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                      {t('search.emptyTry', 'Skús:')}
+                    </p>
+                    <ul className="text-sm text-gray-600 dark:text-gray-300 text-left list-disc list-inside space-y-1 mb-6">
+                      <li>{t('search.emptyTryRemoveFilters', 'odstrániť filtre')}</li>
+                      <li>{t('search.emptyTryShorterQuery', 'použiť kratší výraz')}</li>
+                      <li>{t('search.emptyTryChangePrice', 'zmeniť cenu')}</li>
+                    </ul>
+                    {hasActiveFilters && (
+                      <button
+                        type="button"
+                        onClick={clearAllFilters}
+                        className="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 transition-colors px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800"
+                      >
+                        {t('search.clearFilters', 'Vymazať filtre')}
+                      </button>
+                    )}
+                  </>
+                )}
+              </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-[clamp(1rem,2vw,1.5rem)]">
                 {results.map((offer) => {
@@ -192,9 +449,58 @@ function SearchResultsContent() {
                 })}
               </div>
             )}
+
+            {totalPages > 1 && (
+              <div className="flex items-center justify-center gap-2 mt-8">
+                <button
+                  type="button"
+                  disabled={page === 1}
+                  onClick={() => {
+                    setPage((p) => {
+                      const next = Math.max(1, p - 1);
+                      replaceSearchParams({ page: String(next) });
+                      return next;
+                    });
+                  }}
+                  className="px-3 py-1.5 text-sm rounded-lg border border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {t('search.paginationPrevious', 'Predošlá')}
+                </button>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((number) => (
+                  <button
+                    key={number}
+                    type="button"
+                    onClick={() => {
+                      setPage(number);
+                      replaceSearchParams({ page: String(number) });
+                    }}
+                    className={`px-3 py-1.5 text-sm rounded-lg border ${
+                      page === number
+                        ? 'bg-purple-600 text-white border-purple-600'
+                        : 'border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-900'
+                    }`}
+                  >
+                    {number}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  disabled={page === totalPages}
+                  onClick={() => {
+                    setPage((p) => {
+                      const next = Math.min(totalPages, p + 1);
+                      replaceSearchParams({ page: String(next) });
+                      return next;
+                    });
+                  }}
+                  className="px-3 py-1.5 text-sm rounded-lg border border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {t('search.paginationNext', 'Ďalšia')}
+                </button>
+              </div>
+            )}
           </main>
         </div>
-      </div>
     </div>
   );
 }

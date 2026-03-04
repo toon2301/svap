@@ -14,7 +14,7 @@ import { useSuggestions } from './search/hooks/useSuggestions';
 // Export funkcie pre invalidáciu search cache pre konkrétneho používateľa
 export { invalidateSearchCacheForUser } from './search/hooks/useSearchApi';
 
-export default function SearchModule({ user, onUserClick, onSkillClick, isOverlay = false }: SearchModuleProps) {
+export default function SearchModule({ user, onUserClick, onSkillClick, isOverlay = false, onClose }: SearchModuleProps) {
   const { t } = useLanguage();
   
   // Hooky pre state management
@@ -133,6 +133,7 @@ export default function SearchModule({ user, onUserClick, onSkillClick, isOverla
             searchState={searchState}
             onSearch={searchApi.handleSearch}
             onKeyDown={handleKeyDown}
+            onClose={onClose}
             t={t}
           />
           

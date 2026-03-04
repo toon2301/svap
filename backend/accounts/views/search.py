@@ -5,7 +5,7 @@ Isolated public search endpoint (no coupling to existing search views).
 from decimal import Decimal, InvalidOperation
 
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
-from django.db.models import Avg, Case, IntegerField, Q, Value, When
+from django.db.models import Avg, Case, ExpressionWrapper, FloatField, IntegerField, Q, Value, When
 from django.db.models.functions import Coalesce
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
@@ -13,7 +13,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from ..models import OfferedSkill
-from ..serializers import OfferedSkillSerializer
+from ..serializers import OfferedSkillSearchSerializer
 
 
 def _parse_decimal(value: str | None) -> Decimal | None:
@@ -62,6 +62,40 @@ def search_view(request):
             | Q(tags__icontains=q)
         )
 
+    # relevance_score (simple scoring for default sort)
+    if q:
+        relevance_score = ExpressionWrapper(
+            Case(
+                When(tags__icontains=q, then=Value(3)),
+                default=Value(0),
+                output_field=IntegerField(),
+            )
+            + Case(
+                When(subcategory__icontains=q, then=Value(2)),
+                default=Value(0),
+                output_field=IntegerField(),
+            )
+            + Case(
+                When(category__icontains=q, then=Value(2)),
+                default=Value(0),
+                output_field=IntegerField(),
+            )
+            + Case(
+                When(description__icontains=q, then=Value(1)),
+                default=Value(0),
+                output_field=IntegerField(),
+            )
+            + Case(
+                When(detailed_description__icontains=q, then=Value(1)),
+                default=Value(0),
+                output_field=IntegerField(),
+            ),
+            output_field=IntegerField(),
+        )
+        qs = qs.annotate(relevance_score=relevance_score)
+    else:
+        qs = qs.annotate(relevance_score=Value(0, output_field=IntegerField()))
+
     # type: offer|seeking
     type_param = (request.query_params.get("type") or "").strip().lower()
     if type_param == "offer":
@@ -109,14 +143,23 @@ def search_view(request):
     else:
         qs = qs.annotate(locality_priority=Value(1, output_field=IntegerField()))
 
-    needs_avg_rating = (request.query_params.get("sort") or "").strip().lower() == "rating_desc" or min_rating is not None
+    raw_sort = request.query_params.get("sort")
+    sort = (raw_sort or "").strip().lower()
+    sort_provided = raw_sort is not None and str(raw_sort).strip() != ""
+
+    needs_avg_rating = sort == "rating_desc" or min_rating is not None
     if needs_avg_rating:
-        qs = qs.annotate(_avg_rating=Coalesce(Avg("reviews__rating"), 0.0))
+        qs = qs.annotate(
+            _avg_rating=Coalesce(
+                Avg("reviews__rating"),
+                0.0,
+                output_field=FloatField(),
+            )
+        )
         if min_rating is not None:
             qs = qs.filter(_avg_rating__gte=min_rating)
 
     # sort whitelist
-    sort = (request.query_params.get("sort") or "").strip().lower()
     if sort == "rating_desc":
         qs = qs.order_by("locality_priority", "-_avg_rating")
     elif sort == "newest":
@@ -126,7 +169,10 @@ def search_view(request):
     elif sort == "price_desc":
         qs = qs.order_by("locality_priority", "-price_from", "-created_at")
     else:
-        qs = qs.order_by("locality_priority", "-created_at")
+        if sort_provided:
+            qs = qs.order_by("locality_priority", "-created_at")
+        else:
+            qs = qs.order_by("locality_priority", "-relevance_score", "-created_at")
 
     # pagination: page, page_size
     raw_page = request.query_params.get("page")
@@ -138,7 +184,9 @@ def search_view(request):
         except Exception:
             return _invalid_param()
         if page < 1:
-            return _invalid_param()
+            page = 1
+        if page > 100:
+            page = 100
 
     raw_page_size = request.query_params.get("page_size")
     if raw_page_size is None:
@@ -164,7 +212,7 @@ def search_view(request):
         page_obj = paginator.page(page) if paginator.num_pages > 0 else []
 
     items = list(page_obj) if page_obj else []
-    serializer = OfferedSkillSerializer(items, many=True, context={"request": request})
+    serializer = OfferedSkillSearchSerializer(items, many=True, context={"request": request})
 
     return Response(
         {
