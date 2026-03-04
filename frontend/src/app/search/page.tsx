@@ -89,7 +89,7 @@ function SearchResultsContent() {
   const urlType = searchParams.get('type') ?? '';
   const urlPage = searchParams.get('page') ?? '';
 
-  const parsedSort = VALID_SORTS.has(urlSort) ? urlSort : 'newest';
+  const parsedSort = (VALID_SORTS as Set<string>).has(urlSort) ? urlSort : 'newest';
   const parsedMinRating =
     urlRating && VALID_RATINGS.has(urlRating) ? Number(urlRating) : null;
   const parsedPriceMin = urlPriceMin;
