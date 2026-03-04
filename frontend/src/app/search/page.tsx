@@ -72,7 +72,7 @@ const SORT_OPTIONS = [
   { value: 'price_asc', labelKey: 'search.sortPriceAsc' },
   { value: 'price_desc', labelKey: 'search.sortPriceDesc' },
 ] as const;
-const VALID_SORTS = new Set(SORT_OPTIONS.map((o) => o.value));
+const VALID_SORTS = new Set<string>(SORT_OPTIONS.map((o) => o.value));
 const VALID_RATINGS = new Set(['2', '3', '4']);
 const VALID_TYPES = new Set(['offer', 'seeking']);
 
@@ -89,7 +89,7 @@ function SearchResultsContent() {
   const urlType = searchParams.get('type') ?? '';
   const urlPage = searchParams.get('page') ?? '';
 
-  const parsedSort = (VALID_SORTS as Set<string>).has(urlSort) ? urlSort : 'newest';
+  const parsedSort = VALID_SORTS.has(urlSort) ? urlSort : 'newest';
   const parsedMinRating =
     urlRating && VALID_RATINGS.has(urlRating) ? Number(urlRating) : null;
   const parsedPriceMin = urlPriceMin;
