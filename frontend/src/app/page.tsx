@@ -17,13 +17,16 @@ export default function Home() {
   const [isAuth, setIsAuth] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   useEffect(() => {
+    let cancelled = false;
     const checkAuth = async () => {
       const auth = await isAuthenticated();
+      if (cancelled) return;
       setIsAuth(auth);
       setIsCheckingAuth(false);
       if (auth) router.push('/dashboard');
     };
     void checkAuth();
+    return () => { cancelled = true; };
   }, [router]);
 
   // Loading počas overenia /me alebo počas presmerovania

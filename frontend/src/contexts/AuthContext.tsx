@@ -146,8 +146,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setMayHaveRefreshCookie(false);
       setUser(null);
 
-      // Client-side navigation (no full reload => prevents /me storm)
-      router.replace('/');
+      // Presmerovať len ak sme na chránenej trase – na verejných (/register, /login, …) nepresmerovať
+      const path = typeof window !== 'undefined' ? window.location.pathname : '';
+      const isProtectedRoute = path.startsWith('/dashboard') || path.startsWith('/search');
+      if (isProtectedRoute) {
+        router.replace('/');
+      }
     };
     window.addEventListener('auth:session-invalid', handler);
     return () => window.removeEventListener('auth:session-invalid', handler);

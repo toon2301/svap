@@ -96,6 +96,7 @@ function shouldSkipRefresh(url?: string): boolean {
     u.includes('/auth/login/') ||
     u.includes('/auth/logout/') ||
     u.includes('/auth/csrf-token/') ||
+    u.includes('/auth/me/') ||
     u.includes('/oauth/')
   );
 }
