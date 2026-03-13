@@ -92,6 +92,19 @@ const nextConfig = {
       const imgSrcUnique = [...new Set(imgSrcOrigins)];
 
       const imgSrc = imgSrcUnique.join(' ');
+      // connect-src: Fetch/XHR (vrátane Service Worker fetch pre obrázky z S3) musí mať povolené media origins
+      const connectSrcExtra = imgSrcUnique.filter((o) => o.startsWith('https')).join(' ');
+      const connectSrc = [
+        "'self'",
+        'https://www.google.com',
+        'https://www.google.com/recaptcha/',
+        'https://www.gstatic.com/',
+        'https://www.recaptcha.net/',
+        'https://ipapi.co',
+        connectSrcExtra,
+      ]
+        .filter(Boolean)
+        .join(' ');
 
       // Statická CSP iba v produkcii (HTTP response header).
       const csp = [
@@ -100,7 +113,7 @@ const nextConfig = {
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://www.gstatic.com/",
         "font-src 'self' https://fonts.gstatic.com",
         `img-src ${imgSrc}`,
-        "connect-src 'self' https://www.google.com https://www.google.com/recaptcha/ https://www.gstatic.com/ https://www.recaptcha.net/ https://ipapi.co",
+        `connect-src ${connectSrc}`,
         "frame-src 'self' https://www.google.com/recaptcha/ https://recaptcha.google.com/recaptcha/ https://www.recaptcha.net/",
         "frame-ancestors 'none'",
         "object-src 'none'",
