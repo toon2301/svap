@@ -1,7 +1,7 @@
 // Pokročilý Service Worker pre Svaply
-const CACHE_NAME = 'svaply-cache-v4';
-const STATIC_CACHE = 'svaply-static-v4';
-const DYNAMIC_CACHE = 'svaply-dynamic-v4';
+const CACHE_NAME = 'svaply-cache-v5';
+const STATIC_CACHE = 'svaply-static-v5';
+const DYNAMIC_CACHE = 'svaply-dynamic-v5';
 
 const urlsToCache = [
   '/',
@@ -12,6 +12,7 @@ const urlsToCache = [
 // Install event
 self.addEventListener('install', event => {
   console.log('Service Worker: Installing...');
+  self.skipWaiting(); // Okamžitá aktivácia (dôležité pre mobil)
   event.waitUntil(
     caches.open(STATIC_CACHE)
       .then(cache => {
@@ -84,6 +85,12 @@ self.addEventListener('fetch', event => {
       url.origin.includes('recaptcha.net') || url.origin.includes('ipapi.co')) {
     event.respondWith(fetch(request));
     return;
+  }
+
+  // S3/media obrázky: neinterceptovať – nech prehliadač načíta priamo (img-src, nie connect-src)
+  // Fix pre mobil, kde SW fetch mohol byť blokovaný inak ako natívne img
+  if (url.origin.includes('s3.') && url.origin.includes('amazonaws.com')) {
+    return; // Let browser handle natively – uses img-src
   }
 
   // Skip non-GET requests
