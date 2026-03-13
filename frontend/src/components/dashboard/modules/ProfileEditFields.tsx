@@ -202,7 +202,7 @@ export default function ProfileEditFields({
           <span className="text-gray-900 dark:text-white font-medium w-40 flex-shrink-0">Email</span>
           <div className="flex items-center flex-1 ml-4 min-w-0 overflow-hidden">
             <div className="w-px h-4 bg-gray-300 dark:bg-gray-700 mr-3 flex-shrink-0"></div>
-            <span className="text-gray-600 dark:text-gray-300 text-sm whitespace-nowrap overflow-hidden text-ellipsis block min-w-0">
+            <span className="text-gray-600 dark:text-gray-300 text-sm whitespace-nowrap overflow-hidden text-ellipsis block min-w-0 no-underline">
               {user.contact_email 
                 ? (user.contact_email.length > 20 
                     ? `${user.contact_email.slice(0, 20)}...` 

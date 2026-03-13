@@ -63,7 +63,7 @@ export default function RootLayout({
         <meta name="supported-color-schemes" content="light dark" />
         
         {/* Performance a SEO */}
-        <meta name="format-detection" content="telephone=no" />
+        <meta name="format-detection" content="telephone=no, email=no" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="application-name" content="Swaply" />
         
