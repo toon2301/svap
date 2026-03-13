@@ -99,6 +99,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
         const status = error?.response?.status;
         // Pri 401 iba nastav user=null (žiadne ďalšie refresh pokusy tu)
         if (status === 401) {
+          if (typeof window !== 'undefined') {
+            console.warn('[Auth Debug] /me vrátil 401 → setUser(null), setMayHaveRefreshCookie(false)');
+          }
           setUser(null);
           setMayHaveRefreshCookie(false);
           return;

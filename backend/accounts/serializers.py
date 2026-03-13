@@ -290,7 +290,6 @@ class UserProfileSerializer(serializers.ModelSerializer):
         read_only_fields = [
             "id",
             "email",
-            "user_type",
             "is_verified",
             "created_at",
             "updated_at",
@@ -375,6 +374,14 @@ class UserProfileSerializer(serializers.ModelSerializer):
         if value:
             value = SecurityValidator.validate_input_safety(value)
             return NameValidator.validate_name(value, "Priezvisko")
+        return value
+
+    def validate_user_type(self, value):
+        """Povoľuje len individual alebo company – bezpečnostná validácia pre produkciu."""
+        if value not in (UserType.INDIVIDUAL, UserType.COMPANY):
+            raise serializers.ValidationError(
+                "Typ účtu môže byť iba 'individual' alebo 'company'."
+            )
         return value
 
     def validate(self, attrs):
