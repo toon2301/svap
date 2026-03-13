@@ -11,7 +11,9 @@ interface BusinessFieldsSectionProps {
   onIcoVisibleToggle: () => void;
   contactEmail: string;
   setContactEmail: (v: string) => void;
+  contactEmailVisible: boolean;
   onContactEmailSave: () => void;
+  onContactEmailVisibleToggle: () => void;
 }
 
 export default function BusinessFieldsSection({
@@ -22,7 +24,9 @@ export default function BusinessFieldsSection({
   onIcoVisibleToggle,
   contactEmail,
   setContactEmail,
+  contactEmailVisible,
   onContactEmailSave,
+  onContactEmailVisibleToggle,
 }: BusinessFieldsSectionProps) {
   const { t } = useLanguage();
 
@@ -59,7 +63,7 @@ export default function BusinessFieldsSection({
           <button
             onClick={onIcoVisibleToggle}
             className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 ${
-              icoVisible ? 'bg-purple-400 border border-purple-400' : 'bg-gray-300 dark:bg-gray-600'
+              !icoVisible ? 'bg-purple-400 border border-purple-400' : 'bg-gray-300 dark:bg-gray-600'
             }`}
             style={{
               transform: 'scaleY(0.8)',
@@ -68,7 +72,7 @@ export default function BusinessFieldsSection({
           >
             <span
               className={`absolute h-4 w-4 rounded-full bg-white shadow-sm transition-all duration-200 ease-in-out ${
-                icoVisible ? 'left-6' : 'left-1'
+                !icoVisible ? 'left-6' : 'left-1'
               }`}
             />
           </button>
@@ -98,6 +102,28 @@ export default function BusinessFieldsSection({
           className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-1 focus:ring-purple-300 focus:border-transparent"
           placeholder="kontakt@firma.sk"
         />
+        {/* Prepínač pre zobrazenie kontaktného emailu */}
+        <div className="mt-3 flex items-center gap-2">
+          <button
+            onClick={onContactEmailVisibleToggle}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 ${
+              !contactEmailVisible ? 'bg-purple-400 border border-purple-400' : 'bg-gray-300 dark:bg-gray-600'
+            }`}
+            style={{
+              transform: 'scaleY(0.8)',
+              transformOrigin: 'left center',
+            }}
+          >
+            <span
+              className={`absolute h-4 w-4 rounded-full bg-white shadow-sm transition-all duration-200 ease-in-out ${
+                !contactEmailVisible ? 'left-6' : 'left-1'
+              }`}
+            />
+          </button>
+          <span className="text-xs text-gray-500 dark:text-gray-400">
+            {t('profile.hideContactEmailPublic', 'Skryť kontaktný email verejne')}
+          </span>
+        </div>
       </div>
     </>
   );

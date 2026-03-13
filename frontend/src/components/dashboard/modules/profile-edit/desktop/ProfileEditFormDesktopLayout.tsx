@@ -83,7 +83,9 @@ export function ProfileEditFormDesktopLayout({
               onIcoVisibleToggle={form.handleIcoVisibleToggle}
               contactEmail={form.contactEmail}
               setContactEmail={form.setContactEmail}
+              contactEmailVisible={form.contactEmailVisible}
               onContactEmailSave={form.handleContactEmailSave}
+              onContactEmailVisibleToggle={form.handleContactEmailVisibleToggle}
             />
           )}
 

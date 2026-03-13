@@ -63,6 +63,9 @@ class User(AbstractUser):
     phone = models.CharField(_("Telefón"), max_length=15, blank=True)
     phone_visible = models.BooleanField(_("Zobraziť telefón verejne"), default=False)
     contact_email = models.EmailField(_("Kontaktný email"), blank=True)
+    contact_email_visible = models.BooleanField(
+        _("Zobraziť kontaktný email verejne"), default=False
+    )
     bio = models.TextField(_("O mne"), blank=True)
     avatar = models.ImageField(
         _("Profilová fotka"),

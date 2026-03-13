@@ -33,7 +33,7 @@ export default function AccountTypeSection({
           {/* Obsah sekcie Typ účtu */}
           <div className="mt-8 w-full max-w-lg mx-auto">
             <div className="space-y-4">
-              <button onClick={() => setAccountType('personal')} className={`w-full py-4 px-6 rounded-lg transition-colors ${
+              <button onClick={() => setIsPersonalAccountModalOpen(true)} className={`w-full py-4 px-6 rounded-lg transition-colors ${
                 accountType === 'personal'
                   ? 'border-2 border-black dark:border-white'
                   : 'border-2 border-gray-300 dark:border-gray-700'
@@ -88,7 +88,7 @@ export default function AccountTypeSection({
           {t('accountType.selectAccountType', 'Zvoľ typ účtu')}
         </p>
         <div className="space-y-3">
-          <button onClick={() => setAccountType('personal')} className={`w-full py-4 px-6 rounded-lg transition-colors ${
+          <button onClick={() => setIsPersonalAccountModalOpen(true)} className={`w-full py-4 px-6 rounded-lg transition-colors ${
             accountType === 'personal'
               ? 'border-2 border-black dark:border-white'
               : 'border-2 border-gray-300 dark:border-gray-700'
@@ -109,7 +109,7 @@ export default function AccountTypeSection({
               )}
             </div>
           </button>
-          <button onClick={() => setAccountType('business')} className={`w-full py-4 px-6 rounded-lg transition-colors ${
+          <button onClick={() => setIsAccountTypeModalOpen(true)} className={`w-full py-4 px-6 rounded-lg transition-colors ${
             accountType === 'business'
               ? 'border-2 border-black dark:border-white'
               : 'border-2 border-gray-300 dark:border-gray-700'

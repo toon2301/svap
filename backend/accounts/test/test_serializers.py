@@ -245,6 +245,7 @@ class TestUserProfileSerializer(TestCase):
         assert "ico" not in data
 
         self.user.ico_visible = True
+
         self.user.save()
         data = UserProfileSerializer(self.user, context={"request": req}).data
         assert "ico" in data

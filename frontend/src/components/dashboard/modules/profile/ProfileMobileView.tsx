@@ -177,7 +177,7 @@ export default function ProfileMobileView({
                   );
                 })()}
                 {/* Telefónne číslo */}
-                {displayUser.phone && (!isOtherUserProfile || !displayUser.phone_visible) && (
+                {displayUser.phone && (!isOtherUserProfile || displayUser.phone_visible) && (
                   <p className="text-gray-600 dark:text-gray-300 text-sm flex items-center gap-1 min-w-0">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -225,12 +225,12 @@ export default function ProfileMobileView({
                   </div>
                 )}
                 {/* IČO - iba pre firemné účty */}
-                {accountType === 'business' && displayUser.ico && (!isOtherUserProfile || !displayUser.ico_visible) && (
+                {accountType === 'business' && displayUser.ico && (!isOtherUserProfile || displayUser.ico_visible) && (
                   <p className="text-gray-600 dark:text-gray-300 text-sm">IČO: {displayUser.ico}</p>
                 )}
 
                 {/* Profesia - len pre osobný účet */}
-                {accountType === 'personal' && displayUser.job_title && (!isOtherUserProfile || !displayUser.job_title_visible) && (
+                {accountType === 'personal' && displayUser.job_title && (!isOtherUserProfile || displayUser.job_title_visible) && (
                   <p className="text-gray-600 dark:text-gray-300 text-sm flex items-center gap-1">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"

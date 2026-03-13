@@ -46,6 +46,7 @@ interface ProfileEditModalsProps {
   phone: string;
   phoneVisible: boolean;
   contactEmail: string;
+  contactEmailVisible: boolean;
   profession: string;
   professionVisible: boolean;
   website: string;
@@ -66,6 +67,7 @@ interface ProfileEditModalsProps {
   originalPhone: string;
   originalPhoneVisible: boolean;
   originalContactEmail: string;
+  originalContactEmailVisible: boolean;
   originalProfession: string;
   originalProfessionVisible: boolean;
   originalWebsite: string;
@@ -86,6 +88,7 @@ interface ProfileEditModalsProps {
   setPhone: (value: string) => void;
   setPhoneVisible: (value: boolean) => void;
   setContactEmail: (value: string) => void;
+  setContactEmailVisible: (value: boolean) => void;
   setProfession: (value: string) => void;
   setProfessionVisible: (value: boolean) => void;
   setWebsite: (value: string) => void;
@@ -106,6 +109,7 @@ interface ProfileEditModalsProps {
   setOriginalPhone: (value: string) => void;
   setOriginalPhoneVisible: (value: boolean) => void;
   setOriginalContactEmail: (value: string) => void;
+  setOriginalContactEmailVisible: (value: boolean) => void;
   setOriginalProfession: (value: string) => void;
   setOriginalProfessionVisible: (value: boolean) => void;
   setOriginalWebsite: (value: string) => void;
@@ -156,6 +160,7 @@ export default function ProfileEditModals({
   phone,
   phoneVisible,
   contactEmail,
+  contactEmailVisible,
   profession,
   professionVisible,
   website,
@@ -174,6 +179,7 @@ export default function ProfileEditModals({
   originalPhone,
   originalPhoneVisible,
   originalContactEmail,
+  originalContactEmailVisible,
   originalProfession,
   originalProfessionVisible,
   originalWebsite,
@@ -192,6 +198,7 @@ export default function ProfileEditModals({
   setPhone,
   setPhoneVisible,
   setContactEmail,
+  setContactEmailVisible,
   setProfession,
   setProfessionVisible,
   setWebsite,
@@ -210,6 +217,7 @@ export default function ProfileEditModals({
   setOriginalPhone,
   setOriginalPhoneVisible,
   setOriginalContactEmail,
+  setOriginalContactEmailVisible,
   setOriginalProfession,
   setOriginalProfessionVisible,
   setOriginalWebsite,
@@ -311,9 +319,13 @@ export default function ProfileEditModals({
       <ContactEmailModal
         isOpen={isContactEmailModalOpen}
         contactEmail={contactEmail}
+        contactEmailVisible={contactEmailVisible}
         originalContactEmail={originalContactEmail}
+        originalContactEmailVisible={originalContactEmailVisible}
         setContactEmail={setContactEmail}
+        setContactEmailVisible={setContactEmailVisible}
         setOriginalContactEmail={setOriginalContactEmail}
+        setOriginalContactEmailVisible={setOriginalContactEmailVisible}
         onClose={() => setIsContactEmailModalOpen(false)}
         onUserUpdate={onUserUpdate}
       />

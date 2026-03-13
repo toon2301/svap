@@ -66,10 +66,10 @@ export default function IcoModal({ isOpen, ico, icoVisible, originalIco, origina
         <button
           onClick={() => setIcoVisible(!icoVisible)}
           className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 ${
-            icoVisible ? 'bg-purple-400 border border-purple-400' : 'bg-gray-300 dark:bg-gray-600'
+            !icoVisible ? 'bg-purple-400 border border-purple-400' : 'bg-gray-300 dark:bg-gray-600'
           }`}
         >
-          <span className={`absolute h-4 w-4 rounded-full bg-white shadow-sm transition-all duration-200 ease-in-out ${icoVisible ? 'left-6' : 'left-1'}`} />
+          <span className={`absolute h-4 w-4 rounded-full bg-white shadow-sm transition-all duration-200 ease-in-out ${!icoVisible ? 'left-6' : 'left-1'}`} />
         </button>
         <span className="text-xs text-gray-500 dark:text-gray-400">{t('profile.hideIco', 'Skryť IČO')}</span>
       </div>

@@ -53,6 +53,8 @@ def update_profile_view(request):
 
     if serializer.is_valid():
         serializer.save()
+        # Ensure we respond with DB-committed state (important for user_type, etc.)
+        request.user.refresh_from_db()
 
         # Ak sa menil avatar, zmaž starý súbor z úložiska
         try:

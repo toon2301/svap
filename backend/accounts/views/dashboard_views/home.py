@@ -5,6 +5,8 @@ from rest_framework.response import Response
 
 from swaply.rate_limiting import api_rate_limit
 
+from ...serializers import UserProfileSerializer
+
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
@@ -25,18 +27,20 @@ def dashboard_home_view(request):
     # Posledné aktivity (zatiaľ prázdne)
     recent_activities = []
 
-    return Response(
+    # User pre dashboard SSR/initial state musí obsahovať aj privacy flagy (napr. contact_email_visible),
+    # inak sa po reloade UI prepínače resetujú na defaulty.
+    user_data = UserProfileSerializer(user, context={"request": request}).data
+
+    resp = Response(
         {
             "stats": stats,
             "recent_activities": recent_activities,
-            "user": {
-                "id": user.id,
-                "first_name": user.first_name,
-                "last_name": user.last_name,
-                "username": user.username,
-                "profile_completeness": user.profile_completeness,
-                "slug": getattr(user, "slug", None),
-            },
+            "user": user_data,
         },
         status=status.HTTP_200_OK,
     )
+    # Dashboard home často slúži ako SSR/initial payload pre dashboard – nesmie sa cachovať.
+    resp["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    resp["Pragma"] = "no-cache"
+    resp["Vary"] = "Cookie"
+    return resp

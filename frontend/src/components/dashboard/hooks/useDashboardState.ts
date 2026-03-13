@@ -10,15 +10,8 @@ import { useAuth } from '@/contexts/AuthContext';
 
 type AccountType = 'personal' | 'business';
 
-const getInitialAccountType = (): AccountType => {
-  if (typeof window !== 'undefined') {
-    const saved = localStorage.getItem('accountType');
-    if (saved === 'business' || saved === 'personal') {
-      return saved;
-    }
-  }
-  return 'personal';
-};
+const accountTypeFromUser = (u: User | null | undefined): AccountType =>
+  u?.user_type === 'company' ? 'business' : 'personal';
 
 const getInitialModule = (): string => {
   if (typeof window !== 'undefined') {
@@ -92,19 +85,9 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
     return initialModule && rightSidebarItems.includes(initialModule) ? initialModule : 'edit-profile';
   });
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [accountType, setAccountType] = useState<AccountType>(() => getInitialAccountType());
+  const [accountType, setAccountType] = useState<AccountType>(() => accountTypeFromUser(initialUser || authUser || null));
   const [isAccountTypeModalOpen, setIsAccountTypeModalOpen] = useState(false);
   const [isPersonalAccountModalOpen, setIsPersonalAccountModalOpen] = useState(false);
-
-  useEffect(() => {
-    try {
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('accountType', accountType);
-      }
-    } catch {
-      // ignore
-    }
-  }, [accountType]);
 
   // Synchronizácia accountType s user.user_type z databázy
   useEffect(() => {
@@ -118,7 +101,7 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
         return currentAccountType;
       });
     }
-  }, [user?.user_type]);
+  }, [user?.id, user?.user_type]);
 
   useEffect(() => {
     const goToProfileHandler = () => {
@@ -348,6 +331,8 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
       userRef.current = updatedUser;
       setUser(updatedUser);
       updateAuthUser(updatedUser);
+      // Refetch z /auth/me/, aby sme prepísali prípadné staré odpovede a mali čerstvé dáta po reload
+      void refreshAuthUser({ force: true });
       
       // Aktualizovať cache s novým používateľom (vrátane nového slugu)
       if (updatedUser.id) {
@@ -407,7 +392,7 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
         return 'edit-profile';
       });
     },
-    [updateAuthUser]
+    [updateAuthUser, refreshAuthUser]
   );
 
   const handleLogout = useCallback(async () => {

@@ -31,6 +31,9 @@ export function useProfileEditFormDesktop({
     user.additional_websites || [],
   );
   const [contactEmail, setContactEmail] = useState(user.contact_email || '');
+  const [contactEmailVisible, setContactEmailVisible] = useState(
+    user.contact_email_visible ?? false,
+  );
   const [isUploading, setIsUploading] = useState(false);
   const [isActionsOpen, setIsActionsOpen] = useState(false);
   const [uploadError, setUploadError] = useState('');
@@ -51,6 +54,9 @@ export function useProfileEditFormDesktop({
     setWebsite(user.website || '');
     setAdditionalWebsites(user.additional_websites || []);
     setContactEmail(user.contact_email || '');
+    if (typeof user.contact_email_visible === 'boolean') {
+      setContactEmailVisible(user.contact_email_visible);
+    }
   }, [
     user.first_name,
     user.last_name,
@@ -66,6 +72,7 @@ export function useProfileEditFormDesktop({
     user.website,
     user.additional_websites,
     user.contact_email,
+    user.contact_email_visible,
   ]);
 
   const handleFullNameSave = async () => {
@@ -243,11 +250,33 @@ export function useProfileEditFormDesktop({
     }
   };
 
+  const handleContactEmailVisibleToggle = async () => {
+    const newValue = !contactEmailVisible;
+    setContactEmailVisible(newValue);
+    try {
+      const response = await api.patch('/auth/profile/', {
+        contact_email_visible: newValue,
+      });
+      const updated = response?.data?.user;
+      if (updated && typeof updated.contact_email_visible === 'boolean') {
+        setContactEmailVisible(updated.contact_email_visible);
+      }
+      if (onUserUpdate && updated) {
+        onUserUpdate(updated);
+      }
+    } catch (error: any) {
+      // eslint-disable-next-line no-console
+      console.error('Error saving contact email visibility:', error);
+      setContactEmailVisible(user.contact_email_visible ?? false);
+    }
+  };
+
   const handleContactEmailSave = async () => {
     if (contactEmail.trim() === user.contact_email) return;
     try {
       const response = await api.patch('/auth/profile/', {
         contact_email: contactEmail.trim(),
+        contact_email_visible: contactEmailVisible,
       });
       if (onUserUpdate && response.data.user) {
         onUserUpdate(response.data.user);
@@ -337,6 +366,7 @@ export function useProfileEditFormDesktop({
     website,
     additionalWebsites,
     contactEmail,
+    contactEmailVisible,
     isUploading,
     isActionsOpen,
     uploadError,
@@ -366,6 +396,7 @@ export function useProfileEditFormDesktop({
     handleProfessionSave,
     handleProfessionVisibleToggle,
     handleContactEmailSave,
+    handleContactEmailVisibleToggle,
     handlePhotoUpload,
     handlePhotoUploadClick,
     handleAvatarClick,

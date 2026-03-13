@@ -31,6 +31,8 @@ ENV/
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
+backend/db.sqlite3
+backend/db.sqlite3-journal
 media/
 staticfiles/
 
@@ -43,6 +45,7 @@ yarn-error.log*
 
 # Next.js
 .next/
+**/.next/
 out/
 build/
 

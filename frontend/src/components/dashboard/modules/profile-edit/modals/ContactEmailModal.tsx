@@ -3,24 +3,47 @@
 import React from 'react';
 import { User } from '@/types';
 import { api } from '@/lib/api';
+import { useLanguage } from '@/contexts/LanguageContext';
 import MobileFullScreenModal from '../shared/MobileFullScreenModal';
 
 interface ContactEmailModalProps {
   isOpen: boolean;
   contactEmail: string;
+  contactEmailVisible: boolean;
   originalContactEmail: string;
+  originalContactEmailVisible: boolean;
   setContactEmail: (v: string) => void;
+  setContactEmailVisible: (v: boolean) => void;
   setOriginalContactEmail?: (v: string) => void;
+  setOriginalContactEmailVisible?: (v: boolean) => void;
   onClose: () => void;
   onUserUpdate?: (u: User) => void;
 }
 
-export default function ContactEmailModal({ isOpen, contactEmail, originalContactEmail, setContactEmail, setOriginalContactEmail, onClose, onUserUpdate }: ContactEmailModalProps) {
+export default function ContactEmailModal({
+  isOpen,
+  contactEmail,
+  contactEmailVisible,
+  originalContactEmail,
+  originalContactEmailVisible,
+  setContactEmail,
+  setContactEmailVisible,
+  setOriginalContactEmail,
+  setOriginalContactEmailVisible,
+  onClose,
+  onUserUpdate,
+}: ContactEmailModalProps) {
+  const { t } = useLanguage();
+
   const handleSave = async () => {
     try {
-      const response = await api.patch('/auth/profile/', { contact_email: contactEmail });
+      const response = await api.patch('/auth/profile/', {
+        contact_email: contactEmail,
+        contact_email_visible: contactEmailVisible,
+      });
       onUserUpdate && response.data?.user && onUserUpdate(response.data.user);
       setOriginalContactEmail && setOriginalContactEmail(contactEmail);
+      setOriginalContactEmailVisible && setOriginalContactEmailVisible(contactEmailVisible);
       onClose();
     } catch (e) {
       console.error('Chyba pri ukladaní kontaktného emailu:', e);
@@ -29,6 +52,7 @@ export default function ContactEmailModal({ isOpen, contactEmail, originalContac
 
   const handleBack = () => {
     setContactEmail(originalContactEmail);
+    setContactEmailVisible(originalContactEmailVisible);
     onClose();
   };
 
@@ -44,6 +68,32 @@ export default function ContactEmailModal({ isOpen, contactEmail, originalContac
           className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-1 focus:ring-purple-300 focus:border-transparent"
           placeholder="Pridať email"
         />
+      </div>
+      <div className="flex items-center gap-2 mt-4">
+        <button
+          onClick={async () => {
+            const newVal = !contactEmailVisible;
+            setContactEmailVisible(newVal);
+            try {
+              const response = await api.patch('/auth/profile/', {
+                contact_email_visible: newVal,
+              });
+              if (onUserUpdate && response?.data?.user) onUserUpdate(response.data.user);
+              setOriginalContactEmailVisible?.(newVal);
+            } catch (e) {
+              console.error('Chyba pri ukladaní viditeľnosti emailu:', e);
+              setContactEmailVisible(contactEmailVisible);
+            }
+          }}
+          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 ${
+            !contactEmailVisible ? 'bg-purple-400 border border-purple-400' : 'bg-gray-300 dark:bg-gray-600'
+          }`}
+        >
+          <span className={`absolute h-4 w-4 rounded-full bg-white shadow-sm transition-all duration-200 ease-in-out ${!contactEmailVisible ? 'left-6' : 'left-1'}`} />
+        </button>
+        <span className="text-xs text-gray-500 dark:text-gray-400">
+          {t('profile.hideContactEmailPublic', 'Skryť kontaktný email verejne')}
+        </span>
       </div>
       <div className="mt-3">
         <p className="text-xs text-gray-500 dark:text-gray-400">Zadajte kontaktný email pre vašu firmu alebo organizáciu.</p>

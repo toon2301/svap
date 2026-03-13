@@ -260,6 +260,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
             "phone",
             "phone_visible",
             "contact_email",
+            "contact_email_visible",
             "bio",
             "avatar",
             "avatar_url",

@@ -10,6 +10,7 @@ import { skillsCategories } from '@/constants/skillsCategories';
 import { api, endpoints } from '../../lib/api';
 import type { DashboardSkill, UseSkillsModalsResult } from './hooks/useSkillsModals';
 import type { User } from '@/types';
+import { useAuth } from '@/contexts/AuthContext';
 
 type Translator = (key: string, fallback: string) => string;
 
@@ -40,6 +41,7 @@ export default function DashboardModals({
   user,
   onUserUpdate,
 }: DashboardModalsProps) {
+  const { refreshUser } = useAuth();
   const {
     selectedSkillsCategory,
     setSelectedSkillsCategory,
@@ -284,17 +286,14 @@ export default function DashboardModals({
         onClose={() => setIsAccountTypeModalOpen(false)}
         onConfirm={async () => {
           try {
-            // Odoslať zmenu user_type na backend
-            if (user) {
-              const response = await api.patch('/auth/profile/', {
-                user_type: 'company'
-              });
-              if (onUserUpdate && response.data?.user) {
-                onUserUpdate(response.data.user);
-              }
-            }
-            setAccountType('business');
+            // Odoslať zmenu user_type na backend (cookie auth – user nemusí byť v state)
+            const response = await api.patch('/auth/profile/', { user_type: 'company' });
+            if (response.data?.user) onUserUpdate?.(response.data.user);
             setIsAccountTypeModalOpen(false);
+            // /me je zdroj pravdy pri reload – vynúť refresh identity
+            await refreshUser({ force: true });
+            // Best-effort immediate UI sync
+            setAccountType('business');
           } catch (error: any) {
             console.error('Error changing account type to business:', error);
             alert(error?.response?.data?.error || error?.response?.data?.detail || 'Nepodarilo sa zmeniť typ účtu. Skús to znova.');
@@ -307,17 +306,14 @@ export default function DashboardModals({
         onClose={() => setIsPersonalAccountModalOpen(false)}
         onConfirm={async () => {
           try {
-            // Odoslať zmenu user_type na backend
-            if (user) {
-              const response = await api.patch('/auth/profile/', {
-                user_type: 'individual'
-              });
-              if (onUserUpdate && response.data?.user) {
-                onUserUpdate(response.data.user);
-              }
-            }
-            setAccountType('personal');
+            // Odoslať zmenu user_type na backend (cookie auth – user nemusí byť v state)
+            const response = await api.patch('/auth/profile/', { user_type: 'individual' });
+            if (response.data?.user) onUserUpdate?.(response.data.user);
             setIsPersonalAccountModalOpen(false);
+            // /me je zdroj pravdy pri reload – vynúť refresh identity
+            await refreshUser({ force: true });
+            // Best-effort immediate UI sync
+            setAccountType('personal');
           } catch (error: any) {
             console.error('Error changing account type to personal:', error);
             alert(error?.response?.data?.error || error?.response?.data?.detail || 'Nepodarilo sa zmeniť typ účtu. Skús to znova.');

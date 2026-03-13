@@ -66,12 +66,12 @@ export function SearchUserProfileModule({
       const { invalidateOffersCache } = await import('../profile/profileOffersCache');
       invalidateOffersCache(userId);
 
-      // Najprv skús cache profilu
+      // Najprv skús cache profilu (pre rýchle zobrazenie), ale vždy dotiahni čerstvé dáta z API.
+      // Inak sa po zmene súkromia (napr. contact_email_visible) môže profil javiť "zaseknutý" až do vypršania TTL.
       const cached = getUserProfileFromCache(userId);
       if (cached && !cancelled) {
         setProfileUser(cached);
         setIsLoading(false);
-        return;
       }
 
       try {

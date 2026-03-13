@@ -137,11 +137,11 @@ export default function ProfileEditFields({
           {/* Prepínač pre zobrazenie IČO */}
           <div className="mt-2">
             <MasterToggle
-              enabled={user.ico_visible || false}
+              enabled={!(user.ico_visible ?? false)}
               onChange={async (newVisibility) => {
                 try {
                   const response = await api.patch('/auth/profile/', {
-                    ico_visible: newVisibility,
+                    ico_visible: !newVisibility,
                   });
                   if (onUserUpdate && response.data?.user) {
                     onUserUpdate(response.data.user);
@@ -175,11 +175,11 @@ export default function ProfileEditFields({
         {/* Prepínač pre zobrazenie kontaktu */}
         <div className="mt-2">
           <MasterToggle
-            enabled={user.phone_visible || false}
+            enabled={!(user.phone_visible ?? false)}
             onChange={async (newVisibility) => {
               try {
                 const response = await api.patch('/auth/profile/', {
-                  phone_visible: newVisibility,
+                  phone_visible: !newVisibility,
                 });
                 if (onUserUpdate && response.data?.user) {
                   onUserUpdate(response.data.user);
@@ -196,19 +196,42 @@ export default function ProfileEditFields({
       {/* Email - len pre firemný účet */}
       {accountType === 'business' && (
         <div 
-          className="flex items-center py-4 px-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-900 border-t border-gray-100 dark:border-gray-800"
-          onClick={() => setIsContactEmailModalOpen(true)}
+          className="py-4 px-4 border-t border-gray-100 dark:border-gray-800"
         >
-          <span className="text-gray-900 dark:text-white font-medium w-40 flex-shrink-0">Email</span>
-          <div className="flex items-center flex-1 ml-4 min-w-0 overflow-hidden">
-            <div className="w-px h-4 bg-gray-300 dark:bg-gray-700 mr-3 flex-shrink-0"></div>
-            <span className="text-gray-600 dark:text-gray-300 text-sm whitespace-nowrap overflow-hidden text-ellipsis block min-w-0 no-underline">
-              {user.contact_email 
-                ? (user.contact_email.length > 20 
-                    ? `${user.contact_email.slice(0, 20)}...` 
-                    : user.contact_email)
-                : 'Pridať email'}
-            </span>
+          <div 
+            className="flex items-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-900 -mx-4 px-4 py-1"
+            onClick={() => setIsContactEmailModalOpen(true)}
+          >
+            <span className="text-gray-900 dark:text-white font-medium w-40 flex-shrink-0">Email</span>
+            <div className="flex items-center flex-1 ml-4 min-w-0 overflow-hidden">
+              <div className="w-px h-4 bg-gray-300 dark:bg-gray-700 mr-3 flex-shrink-0"></div>
+              <span className="text-gray-600 dark:text-gray-300 text-sm whitespace-nowrap overflow-hidden text-ellipsis block min-w-0 no-underline">
+                {user.contact_email 
+                  ? (user.contact_email.length > 20 
+                      ? `${user.contact_email.slice(0, 20)}...` 
+                      : user.contact_email)
+                  : 'Pridať email'}
+              </span>
+            </div>
+          </div>
+          {/* Prepínač pre zobrazenie kontaktného emailu */}
+          <div className="mt-2">
+            <MasterToggle
+              enabled={!(user.contact_email_visible ?? false)}
+              onChange={async (newVisibility) => {
+                try {
+                  const response = await api.patch('/auth/profile/', {
+                    contact_email_visible: !newVisibility,
+                  });
+                  if (onUserUpdate && response.data?.user) {
+                    onUserUpdate(response.data.user);
+                  }
+                } catch (error) {
+                  console.error('Chyba pri ukladaní viditeľnosti emailu:', error);
+                }
+              }}
+              label={t('profile.hideContactEmail', 'Skryť kontaktný email')}
+            />
           </div>
         </div>
       )}
@@ -231,14 +254,14 @@ export default function ProfileEditFields({
             </div>
           </div>
           
-          {/* Prepínač pre zobrazenie profese */}
+          {/* Prepínač pre zobrazenie profese – sivý = zobrazovať, fialový = skrývať (ako u kontaktného emailu) */}
           <div className="mt-2">
             <MasterToggle
-              enabled={user.job_title_visible || false}
+              enabled={!(user.job_title_visible ?? false)}
               onChange={async (newVisibility) => {
                 try {
                   const response = await api.patch('/auth/profile/', {
-                    job_title_visible: newVisibility,
+                    job_title_visible: !newVisibility,
                   });
                   if (onUserUpdate && response.data?.user) {
                     onUserUpdate(response.data.user);

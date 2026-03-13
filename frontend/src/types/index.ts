@@ -11,6 +11,7 @@ export interface User {
   phone?: string;
   phone_visible?: boolean;
   contact_email?: string;
+  contact_email_visible?: boolean;
   job_title?: string;
   job_title_visible?: boolean;
   bio?: string;
