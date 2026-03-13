@@ -8,7 +8,7 @@ from django.contrib.auth import get_user_model
 from django.urls import reverse
 from rest_framework.test import APITestCase
 from rest_framework import status
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 from datetime import timedelta
 from django.utils import timezone
 
@@ -209,9 +209,22 @@ class TestRegistrationWithEmailVerification(APITestCase):
     """Testy pre registráciu s email verifikáciou"""
 
     @patch("accounts.models.send_mail")
-    def test_registration_creates_verification(self, mock_send_mail):
+    @patch("threading.Thread")
+    def test_registration_creates_verification(self, mock_thread_class, mock_send_mail):
         """Test, že registrácia vytvorí verifikačný token"""
         mock_send_mail.return_value = True
+
+        # Spustiť email thread synchronne (inak test nechytí async send_mail)
+        def run_target_on_start():
+            if mock_thread_class.called:
+                target = mock_thread_class.call_args[1].get("target")
+                args = mock_thread_class.call_args[1].get("args", ())
+                if target:
+                    target(*args)
+
+        mock_thread = MagicMock()
+        mock_thread.start.side_effect = run_target_on_start
+        mock_thread_class.return_value = mock_thread
 
         url = reverse("accounts:register")
         data = {
@@ -241,7 +254,7 @@ class TestRegistrationWithEmailVerification(APITestCase):
         verification = EmailVerification.objects.get(user=user)
         self.assertIsNotNone(verification)
 
-        # Skontroluj, že email bol odoslaný
+        # Skontroluj, že email bol odoslaný (thread beží synchronne vďaka mocku)
         mock_send_mail.assert_called_once()
 
     def test_login_without_verification_allowed_temporarily(self):

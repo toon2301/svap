@@ -90,13 +90,13 @@ export function invalidateSession(): void {
 
 function shouldSkipRefresh(url?: string): boolean {
   const u = String(url || '');
-  // Never attempt refresh for these endpoints
+  // Never attempt refresh for these endpoints (login, logout, refresh samotný, oauth)
+  // /auth/me/ už nie je v skip – pri 401 skúsime refresh, ak uspeje, retry /me
   return (
     u.includes('/token/refresh/') ||
     u.includes('/auth/login/') ||
     u.includes('/auth/logout/') ||
     u.includes('/auth/csrf-token/') ||
-    u.includes('/auth/me/') ||
     u.includes('/oauth/')
   );
 }
@@ -130,26 +130,15 @@ function markSessionInvalid(): void {
 async function ensureRefreshed(): Promise<boolean> {
   if (sessionInvalid) {
     oauthTrace('refresh_skipped', { reason: 'session_invalid' });
-    if (typeof window !== 'undefined') {
-      console.warn('[Auth Debug] ensureRefreshed SKIP: sessionInvalid=true');
-    }
     return false;
   }
   const now = Date.now();
   if (refreshDisabledUntil && now < refreshDisabledUntil) {
     oauthTrace('refresh_skipped', { reason: 'cooldown' });
-    if (typeof window !== 'undefined') {
-      console.warn('[Auth Debug] ensureRefreshed SKIP: cooldown (rate limit)');
-    }
     return false;
   }
-  if (!mayHaveRefreshCookie) {
-    oauthTrace('refresh_skipped', { reason: 'no_cookie_hint' });
-    if (typeof window !== 'undefined') {
-      console.warn('[Auth Debug] ensureRefreshed SKIP: mayHaveRefreshCookie=false (nebol refresh vôbec skúšaný)');
-    }
-    return false;
-  }
+  // Pri reload je mayHaveRefreshCookie=false – vždy skúsime refresh pri 401,
+  // aby sme neodhlásili pri timing issue (cookie ešte neposlaná)
   if (refreshInFlight) {
     oauthTrace('refresh_coalesced');
     return refreshInFlight;
@@ -189,9 +178,6 @@ async function ensureRefreshed(): Promise<boolean> {
         refreshDisabledUntil = Date.now() + 60_000;
       } else if (status === 401) {
         // Hard stop: refresh token invalid (expired/logged out)
-        if (typeof window !== 'undefined') {
-          console.warn('[Auth Debug] refresh token vrátil 401 → markSessionInvalid (session skutočne vypršala)');
-        }
         markSessionInvalid();
       }
       return false;
@@ -479,9 +465,6 @@ api.interceptors.response.use(
 
       // Never attempt refresh for login/logout/refresh/csrf/oauth endpoints
       if (shouldSkipRefresh(url)) {
-        if (typeof window !== 'undefined') {
-          console.warn('[Auth Debug] 401 na', String(url), '→ shouldSkipRefresh=true, refresh sa NESPÚŠŤA');
-        }
         return Promise.reject(error);
       }
 
@@ -494,9 +477,6 @@ api.interceptors.response.use(
       }
 
       // Refresh failed -> hard stop. Subsequent 401 will not try refresh again.
-      if (typeof window !== 'undefined') {
-        console.warn('[Auth Debug] markSessionInvalid: 401 na', String(url), '→ ensureRefreshed vrátil false (refresh preskočený alebo zlyhal)');
-      }
       markSessionInvalid();
       if (typeof window !== 'undefined' && !redirectedAfterInvalidation) {
         redirectedAfterInvalidation = true;

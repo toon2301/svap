@@ -160,9 +160,9 @@ class TestProfileViews(APITestCase):
         self.assertEqual(response.data["user"]["first_name"], "Updated")
 
     def test_update_profile_invalid_data(self):
-        """Test aktualizácie profilu s neplatnými údajmi"""
+        """Test aktualizácie profilu s neplatnými údajmi (email je read_only, user_type validujeme)"""
         url = reverse("accounts:update_profile")
-        data = {"email": "invalid-email"}
+        data = {"user_type": "invalid_type"}
 
         response = self.client.patch(url, data, format="json")
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)

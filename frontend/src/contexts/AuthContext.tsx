@@ -97,13 +97,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
         }
 
         const status = error?.response?.status;
-        // Pri 401 iba nastav user=null (žiadne ďalšie refresh pokusy tu)
+        // Pri 401 interceptor už skúsil refresh; ak zlyhal, markSessionInvalid() je zavolaný.
+        // Iba nastav user=null – setMayHaveRefreshCookie nevoláme (interceptor to rieši).
         if (status === 401) {
-          if (typeof window !== 'undefined') {
-            console.warn('[Auth Debug] /me vrátil 401 → setUser(null), setMayHaveRefreshCookie(false)');
-          }
           setUser(null);
-          setMayHaveRefreshCookie(false);
           return;
         }
 
