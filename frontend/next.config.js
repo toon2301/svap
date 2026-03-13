@@ -70,13 +70,36 @@ const nextConfig = {
     const headers = [];
 
     if (isProd) {
+      // Povolené pôvody pre obrázky (avatary, media z S3 alebo backendu)
+      const imgSrcCandidates = [
+        "'self'",
+        'data:',
+        'https://www.google.com',
+        'https://www.gstatic.com',
+        process.env.NEXT_PUBLIC_MEDIA_ORIGIN?.trim(),
+        process.env.NEXT_PUBLIC_BACKEND_ORIGIN?.trim(),
+        'https://svaply-media.s3.amazonaws.com', // S3 bucket pre avatary (fallback ak nie je env)
+      ].filter(Boolean);
+
+      const isValidOrigin = (o) =>
+        o.startsWith("'") ||
+        o.startsWith('data') ||
+        /^https:\/\/[a-z0-9.-]+$/.test(String(o).replace(/\/+$/, ''));
+
+      const imgSrcOrigins = imgSrcCandidates
+        .filter(isValidOrigin)
+        .map((o) => (o.startsWith('https') ? String(o).replace(/\/+$/, '') : o));
+      const imgSrcUnique = [...new Set(imgSrcOrigins)];
+
+      const imgSrc = imgSrcUnique.join(' ');
+
       // Statická CSP iba v produkcii (HTTP response header).
       const csp = [
         "default-src 'self'",
         "script-src 'self' 'unsafe-inline' https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/ https://www.gstatic.com/ https://www.recaptcha.net/",
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://www.gstatic.com/",
         "font-src 'self' https://fonts.gstatic.com",
-        "img-src 'self' data: https://www.google.com https://www.gstatic.com",
+        `img-src ${imgSrc}`,
         "connect-src 'self' https://www.google.com https://www.google.com/recaptcha/ https://www.gstatic.com/ https://www.recaptcha.net/ https://ipapi.co",
         "frame-src 'self' https://www.google.com/recaptcha/ https://recaptcha.google.com/recaptcha/ https://www.recaptcha.net/",
         "frame-ancestors 'none'",
