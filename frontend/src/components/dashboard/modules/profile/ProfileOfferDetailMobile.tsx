@@ -70,12 +70,12 @@ export function ProfileOfferDetailMobile({
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center gap-3 px-4 pt-3 pb-2 border-b border-gray-200 dark:border-gray-800">
+        <div className="relative flex items-center gap-3 px-4 pt-3 pb-2 border-b border-gray-200 dark:border-gray-800">
           <button
             type="button"
             onClick={onClose}
             aria-label={t('common.back', 'Späť')}
-            className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-200"
+            className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-200 flex-shrink-0 z-10"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -92,13 +92,13 @@ export function ProfileOfferDetailMobile({
               />
             </svg>
           </button>
-          <div className="flex-1 flex items-center justify-center">
-            <div className="text-xs font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wide">
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <span className="text-xs font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wide">
               {t('skills.description', 'Popis')}
-            </div>
+            </span>
           </div>
           {accountType === 'business' && (
-            <span className="ml-1 px-2 py-0.5 text-[10px] font-semibold bg-purple-100 text-purple-700 rounded-full">
+            <span className="ml-auto px-2 py-0.5 text-[10px] font-semibold bg-purple-100 text-purple-700 rounded-full flex-shrink-0 z-10">
               PRO
             </span>
           )}
