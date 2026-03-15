@@ -1,10 +1,12 @@
 'use client';
 
 import React from 'react';
+import toast from 'react-hot-toast';
 import { User } from '@/types';
 import { api } from '@/lib/api';
 import { useLanguage } from '@/contexts/LanguageContext';
 import MobileFullScreenModal from '../shared/MobileFullScreenModal';
+import { getApiErrorMessage } from '../../requests/requestsApi';
 
 interface ContactModalProps {
   isOpen: boolean;
@@ -25,13 +27,18 @@ export default function ContactModal({ isOpen, phone, phoneVisible, originalPhon
 
   const handleSave = async () => {
     try {
-      const response = await api.patch('/auth/profile/', { phone, phone_visible: phoneVisible });
+      const response = await api.patch('/auth/profile/', { phone: phone.trim(), phone_visible: phoneVisible });
       onUserUpdate && response.data?.user && onUserUpdate(response.data.user);
-      setOriginalPhone && setOriginalPhone(phone);
+      setOriginalPhone && setOriginalPhone(phone.trim());
       setOriginalPhoneVisible && setOriginalPhoneVisible(phoneVisible);
       onClose();
-    } catch (e) {
-      console.error('Chyba pri ukladaní kontaktu:', e);
+    } catch (e: unknown) {
+      const err = e as { response?: { data?: { details?: { phone?: string[] } } } };
+      const data = err?.response?.data;
+      const details = data?.details;
+      const phoneMsg = typeof details?.phone?.[0] === 'string' ? details.phone[0] : null;
+      const message = phoneMsg ?? getApiErrorMessage(e, t('profile.phoneSaveFailed', 'Telefón sa nepodarilo uložiť.'));
+      toast.error(message);
     }
   };
 

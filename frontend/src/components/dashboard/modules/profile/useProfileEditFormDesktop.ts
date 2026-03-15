@@ -1,8 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import toast from 'react-hot-toast';
 import type { User } from '@/types';
 import { api } from '@/lib/api';
+import { getApiErrorMessage } from '../requests/requestsApi';
 
 interface UseProfileEditFormDesktopParams {
   user: User;
@@ -111,8 +113,11 @@ export function useProfileEditFormDesktop({
         onUserUpdate(response.data.user);
       }
     } catch (error: any) {
-      // eslint-disable-next-line no-console
-      console.error('Error saving bio:', error);
+      const data = error?.response?.data;
+      const details = data?.details;
+      const bioMsg = typeof details?.bio?.[0] === 'string' ? details.bio[0] : null;
+      const message = bioMsg ?? getApiErrorMessage(error, 'Bio sa nepodarilo uložiť.');
+      toast.error(message);
       setBio(user.bio || '');
     }
   };
@@ -132,8 +137,11 @@ export function useProfileEditFormDesktop({
         onUserUpdate(response.data.user);
       }
     } catch (error: any) {
-      // eslint-disable-next-line no-console
-      console.error('Error saving location:', error);
+      const data = error?.response?.data;
+      const details = data?.details;
+      const msg = [details?.location?.[0], details?.district?.[0]].find((m): m is string => typeof m === 'string');
+      const message = msg ?? getApiErrorMessage(error, 'Lokalitu sa nepodarilo uložiť.');
+      toast.error(message);
       setLocation(user.location || '');
       setDistrict(user.district || '');
     }
@@ -142,8 +150,7 @@ export function useProfileEditFormDesktop({
   const handleIcoSave = async () => {
     const icoCleaned = ico.replace(/\s/g, '').trim();
     if (icoCleaned && (icoCleaned.length < 8 || icoCleaned.length > 14)) {
-      // eslint-disable-next-line no-console
-      console.error('IČO musí mať 8 až 14 číslic');
+      toast.error('IČO musí mať 8 až 14 číslic.');
       return;
     }
     if (icoCleaned === (user.ico || '').replace(/\s/g, '')) return;
@@ -155,8 +162,12 @@ export function useProfileEditFormDesktop({
         onUserUpdate(response.data.user);
       }
     } catch (error: any) {
-      // eslint-disable-next-line no-console
-      console.error('Error saving ico:', error);
+      const data = error?.response?.data;
+      const details = data?.details;
+      const raw = details?.ico;
+      const msg = Array.isArray(raw) ? raw[0] : typeof raw === 'string' ? raw : null;
+      const message = (typeof msg === 'string' ? msg : null) ?? getApiErrorMessage(error, 'IČO sa nepodarilo uložiť.');
+      toast.error(message);
       setIco(user.ico || '');
     }
   };
@@ -172,8 +183,12 @@ export function useProfileEditFormDesktop({
         onUserUpdate(response.data.user);
       }
     } catch (error: any) {
-      // eslint-disable-next-line no-console
-      console.error('Error saving ico visibility:', error);
+      const data = error?.response?.data;
+      const details = data?.details;
+      const raw = details?.ico_visible ?? details?.ico;
+      const msg = Array.isArray(raw) ? raw[0] : typeof raw === 'string' ? raw : null;
+      const message = (typeof msg === 'string' ? msg : null) ?? getApiErrorMessage(error, 'IČO sa nepodarilo uložiť.');
+      toast.error(message);
       setIcoVisible(user.ico_visible || false);
     }
   };
@@ -188,8 +203,11 @@ export function useProfileEditFormDesktop({
         onUserUpdate(response.data.user);
       }
     } catch (error: any) {
-      // eslint-disable-next-line no-console
-      console.error('Error saving phone:', error);
+      const data = error?.response?.data;
+      const details = data?.details;
+      const phoneMsg = typeof details?.phone?.[0] === 'string' ? details.phone[0] : null;
+      const message = phoneMsg ?? getApiErrorMessage(error, 'Telefón sa nepodarilo uložiť.');
+      toast.error(message);
       setPhone(user.phone || '');
     }
   };
@@ -265,8 +283,11 @@ export function useProfileEditFormDesktop({
         onUserUpdate(updated);
       }
     } catch (error: any) {
-      // eslint-disable-next-line no-console
-      console.error('Error saving contact email visibility:', error);
+      const data = error?.response?.data;
+      const details = data?.details;
+      const msg = details?.contact_email_visible?.[0] ?? details?.contact_email?.[0];
+      const message = typeof msg === 'string' ? msg : getApiErrorMessage(error, 'Kontaktný email sa nepodarilo uložiť.');
+      toast.error(message);
       setContactEmailVisible(user.contact_email_visible ?? false);
     }
   };
@@ -282,8 +303,11 @@ export function useProfileEditFormDesktop({
         onUserUpdate(response.data.user);
       }
     } catch (error: any) {
-      // eslint-disable-next-line no-console
-      console.error('Error saving contact email:', error);
+      const data = error?.response?.data;
+      const details = data?.details;
+      const msg = typeof details?.contact_email?.[0] === 'string' ? details.contact_email[0] : null;
+      const message = msg ?? getApiErrorMessage(error, 'Kontaktný email sa nepodarilo uložiť.');
+      toast.error(message);
       setContactEmail(user.contact_email || '');
     }
   };

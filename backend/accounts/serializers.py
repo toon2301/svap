@@ -513,6 +513,15 @@ class UserProfileSerializer(serializers.ModelSerializer):
             return value.strip()
         return value
 
+    def validate_job_title(self, value):
+        """Validácia profesie (len pre osobný účet) – max 25 znakov"""
+        if value:
+            value = (value or "").strip()
+            if len(value) > 25:
+                raise serializers.ValidationError("Profesia môže mať maximálne 25 znakov")
+            return value
+        return value
+
     def validate_ico(self, value):
         """Validácia IČO"""
         if value:

@@ -1,10 +1,12 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
 import { User } from '@/types';
 import { api } from '@/lib/api';
 import { useLanguage } from '@/contexts/LanguageContext';
 import MobileFullScreenModal from '../shared/MobileFullScreenModal';
+import { getApiErrorMessage } from '../../requests/requestsApi';
 
 interface NameModalProps {
   isOpen: boolean;
@@ -97,9 +99,14 @@ export default function NameModal({ isOpen, firstName, lastName, originalFirstNa
         setOriginalLastName && setOriginalLastName(finalLastName.trim());
         onClose();
       }
-    } catch (e) {
-      console.error('Chyba pri ukladaní mena:', e);
-      // Revert na pôvodné hodnoty
+    } catch (e: any) {
+      const data = e?.response?.data;
+      const details = data?.details;
+      const firstMsg = [details?.first_name?.[0], details?.last_name?.[0], details?.company_name?.[0]].find(
+        (m): m is string => typeof m === 'string'
+      );
+      const message = firstMsg ?? getApiErrorMessage(e, t('profile.nameSaveFailed', 'Meno sa nepodarilo uložiť. Skontrolujte zadané údaje.'));
+      toast.error(message);
       if (accountType === 'business') {
         setFirstName(originalFirstName);
         setLastName('');

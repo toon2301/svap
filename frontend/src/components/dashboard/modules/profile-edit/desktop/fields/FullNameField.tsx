@@ -1,9 +1,11 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import toast from 'react-hot-toast';
 import { api } from '@/lib/api';
 import type { User } from '@/types';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { getApiErrorMessage } from '../../../requests/requestsApi';
 
 interface FullNameFieldProps {
   user: User;
@@ -78,9 +80,13 @@ export default function FullNameField({
           onUserUpdate(response.data.user);
         }
       } catch (error: any) {
-        // eslint-disable-next-line no-console
-        console.error('Error saving company name:', error);
-        // Revert na pôvodnú hodnotu
+        const data = error?.response?.data;
+        const details = data?.details;
+        const firstMsg = [details?.first_name?.[0], details?.last_name?.[0], details?.company_name?.[0]].find(
+          (m): m is string => typeof m === 'string'
+        );
+        const message = firstMsg ?? getApiErrorMessage(error, t('profile.nameSaveFailed', 'Meno sa nepodarilo uložiť. Skontrolujte zadané údaje.'));
+        toast.error(message);
         setFullNameInput(user.company_name || '');
       }
       return;
@@ -131,9 +137,13 @@ export default function FullNameField({
         onUserUpdate(response.data.user);
       }
     } catch (error: any) {
-      // eslint-disable-next-line no-console
-      console.error('Error saving full name:', error);
-      // Revert na pôvodné hodnoty
+      const data = error?.response?.data;
+      const details = data?.details;
+      const firstMsg = [details?.first_name?.[0], details?.last_name?.[0]].find(
+        (m): m is string => typeof m === 'string'
+      );
+      const message = firstMsg ?? getApiErrorMessage(error, t('profile.nameSaveFailed', 'Meno sa nepodarilo uložiť. Skontrolujte zadané údaje.'));
+      toast.error(message);
       setFirstName(user.first_name || '');
       setLastName(user.last_name || '');
       setFullNameInput(

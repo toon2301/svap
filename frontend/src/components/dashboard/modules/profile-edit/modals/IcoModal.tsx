@@ -1,10 +1,12 @@
 'use client';
 
 import React from 'react';
+import toast from 'react-hot-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { User } from '@/types';
 import { api } from '@/lib/api';
 import MobileFullScreenModal from '../shared/MobileFullScreenModal';
+import { getApiErrorMessage } from '../../requests/requestsApi';
 
 interface IcoModalProps {
   isOpen: boolean;
@@ -24,19 +26,23 @@ export default function IcoModal({ isOpen, ico, icoVisible, originalIco, origina
   const { t } = useLanguage();
   
   const handleSave = async () => {
+    const icoCleaned = ico.replace(/\s/g, '').trim();
+    if (icoCleaned && (icoCleaned.length < 8 || icoCleaned.length > 14)) {
+      toast.error(t('profile.icoInvalidLength', 'IČO musí mať 8 až 14 číslic.'));
+      return;
+    }
     try {
-      const icoCleaned = ico.replace(/\s/g, '').trim();
-      if (icoCleaned && (icoCleaned.length < 8 || icoCleaned.length > 14)) {
-        console.error('IČO musí mať 8 až 14 číslic');
-        return;
-      }
       const response = await api.patch('/auth/profile/', { ico: icoCleaned, ico_visible: icoVisible });
       onUserUpdate && response.data?.user && onUserUpdate(response.data.user);
       setOriginalIco && setOriginalIco(icoCleaned);
       setOriginalIcoVisible && setOriginalIcoVisible(icoVisible);
       onClose();
-    } catch (e) {
-      console.error('Chyba pri ukladaní IČO:', e);
+    } catch (e: unknown) {
+      const err = e as { response?: { data?: { details?: Record<string, unknown> } } };
+      const raw = err?.response?.data?.details?.ico;
+      const msg = Array.isArray(raw) ? raw[0] : typeof raw === 'string' ? raw : null;
+      const message = (typeof msg === 'string' ? msg : null) ?? getApiErrorMessage(e, t('profile.icoSaveFailed', 'IČO sa nepodarilo uložiť.'));
+      toast.error(message);
     }
   };
 

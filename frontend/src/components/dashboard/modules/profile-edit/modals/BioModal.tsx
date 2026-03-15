@@ -1,10 +1,12 @@
 'use client';
 
 import React from 'react';
+import toast from 'react-hot-toast';
 import { User } from '@/types';
 import { api } from '@/lib/api';
 import { useLanguage } from '@/contexts/LanguageContext';
 import MobileFullScreenModal from '../shared/MobileFullScreenModal';
+import { getApiErrorMessage } from '../../requests/requestsApi';
 
 interface BioModalProps {
   isOpen: boolean;
@@ -25,8 +27,12 @@ export default function BioModal({ isOpen, bio, originalBio, setBio, setOriginal
       onUserUpdate && response.data?.user && onUserUpdate(response.data.user);
       setOriginalBio && setOriginalBio(bio);
       onClose();
-    } catch (e) {
-      console.error('Chyba pri ukladaní bio:', e);
+    } catch (e: any) {
+      const data = e?.response?.data;
+      const details = data?.details;
+      const bioMsg = typeof details?.bio?.[0] === 'string' ? details.bio[0] : null;
+      const message = bioMsg ?? getApiErrorMessage(e, t('profile.bioSaveFailed', 'Bio sa nepodarilo uložiť.'));
+      toast.error(message);
     }
   };
 

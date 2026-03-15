@@ -94,12 +94,12 @@ class NameValidator:
         if len(name.strip()) > 50:
             raise ValidationError(_(f"{field_name} môže mať maximálne 50 znakov"))
 
-        # Kontrola na neplatné znaky
+        # Kontrola na neplatné znaky (písmená, čísla, medzery, pomlčky)
         if not re.match(
-            r"^[a-zA-ZáčďéěíĺľňóôŕšťúýžÁČĎÉĚÍĹĽŇÓÔŔŠŤÚÝŽ\s-]+$", name.strip()
+            r"^[a-zA-Z0-9áčďéěíĺľňóôŕšťúýžÁČĎÉĚÍĹĽŇÓÔŔŠŤÚÝŽ\s-]+$", name.strip()
         ):
             raise ValidationError(
-                _(f"{field_name} môže obsahovať len písmená, medzery a pomlčky")
+                _(f"{field_name} môže obsahovať len písmená, čísla, medzery a pomlčky")
             )
 
         return name.strip()

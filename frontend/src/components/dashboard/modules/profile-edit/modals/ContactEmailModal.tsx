@@ -1,10 +1,12 @@
 'use client';
 
 import React from 'react';
+import toast from 'react-hot-toast';
 import { User } from '@/types';
 import { api } from '@/lib/api';
 import { useLanguage } from '@/contexts/LanguageContext';
 import MobileFullScreenModal from '../shared/MobileFullScreenModal';
+import { getApiErrorMessage } from '../../requests/requestsApi';
 
 interface ContactEmailModalProps {
   isOpen: boolean;
@@ -45,8 +47,11 @@ export default function ContactEmailModal({
       setOriginalContactEmail && setOriginalContactEmail(contactEmail);
       setOriginalContactEmailVisible && setOriginalContactEmailVisible(contactEmailVisible);
       onClose();
-    } catch (e) {
-      console.error('Chyba pri ukladaní kontaktného emailu:', e);
+    } catch (e: unknown) {
+      const err = e as { response?: { data?: { details?: { contact_email?: string[] } } } };
+      const msg = err?.response?.data?.details?.contact_email?.[0];
+      const message = typeof msg === 'string' ? msg : getApiErrorMessage(e, t('profile.contactEmailSaveFailed', 'Kontaktný email sa nepodarilo uložiť.'));
+      toast.error(message);
     }
   };
 
@@ -80,8 +85,10 @@ export default function ContactEmailModal({
               });
               if (onUserUpdate && response?.data?.user) onUserUpdate(response.data.user);
               setOriginalContactEmailVisible?.(newVal);
-            } catch (e) {
-              console.error('Chyba pri ukladaní viditeľnosti emailu:', e);
+            } catch (e: unknown) {
+              const err = e as { response?: { data?: { details?: Record<string, string[]> } } };
+              const msg = err?.response?.data?.details?.contact_email_visible?.[0] ?? err?.response?.data?.details?.contact_email?.[0];
+              toast.error(typeof msg === 'string' ? msg : getApiErrorMessage(e, t('profile.contactEmailSaveFailed', 'Kontaktný email sa nepodarilo uložiť.')));
               setContactEmailVisible(contactEmailVisible);
             }
           }}

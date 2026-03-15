@@ -36,7 +36,7 @@ export default function ProfessionField({
             onSave();
           }
         }}
-        maxLength={100}
+        maxLength={25}
         className="w-full px-3 py-2 bg-white dark:bg-black border border-gray-300 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white focus:ring-1 focus:ring-purple-300 focus:border-transparent"
         placeholder={t('profile.enterProfession', 'Zadajte svoju profesiu')}
       />

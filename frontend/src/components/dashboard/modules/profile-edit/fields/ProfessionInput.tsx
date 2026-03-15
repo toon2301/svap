@@ -23,7 +23,7 @@ export default function ProfessionInput({ profession, setProfession, onSave, vis
         onKeyDown={(e) => {
           if (e.key === 'Enter') onSave();
         }}
-        maxLength={100}
+        maxLength={25}
         className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg focus:ring-1 focus:ring-purple-300 focus:border-transparent"
         placeholder="Zadajte svoju profesiu"
       />

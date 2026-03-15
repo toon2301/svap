@@ -1,11 +1,13 @@
 'use client';
 
 import React, { useState } from 'react';
+import toast from 'react-hot-toast';
 import { User } from '@/types';
 import { api } from '@/lib/api';
 import { useLanguage } from '@/contexts/LanguageContext';
 import MobileFullScreenModal from '../shared/MobileFullScreenModal';
 import LocationSection from '../../skills/skillDescriptionModal/sections/LocationSection';
+import { getApiErrorMessage } from '../../requests/requestsApi';
 
 interface LocationModalProps {
   isOpen: boolean;
@@ -65,12 +67,12 @@ export default function LocationModal({
       setOriginalDistrict && setOriginalDistrict(districtTrimmed);
       onClose();
     } catch (e: any) {
-      console.error('Chyba pri ukladaní lokality:', e);
-      const errorMessage = e?.response?.data?.details?.location?.[0] || 
-                          e?.response?.data?.details?.district?.[0] ||
-                          e?.response?.data?.error || 
-                          'Chyba pri ukladaní lokality';
-      setLocationError(errorMessage);
+      const data = e?.response?.data;
+      const details = data?.details;
+      const errorMessage = details?.location?.[0] || details?.district?.[0] ||
+        getApiErrorMessage(e, t('profile.locationSaveFailed', 'Lokalitu sa nepodarilo uložiť.'));
+      toast.error(typeof errorMessage === 'string' ? errorMessage : t('profile.locationSaveFailed', 'Lokalitu sa nepodarilo uložiť.'));
+      setLocationError(''); // Bez červeného textu pod poliami – stačí toast hore
     } finally {
       setIsSaving(false);
     }

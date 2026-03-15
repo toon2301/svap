@@ -1,10 +1,12 @@
 'use client';
 
 import React, { useState } from 'react';
+import toast from 'react-hot-toast';
 import { User } from '../../../types';
 import { api } from '../../../lib/api';
 import { useLanguage } from '@/contexts/LanguageContext';
 import MasterToggle from './notifications/MasterToggle';
+import { getApiErrorMessage } from './requests/requestsApi';
 
 interface ProfileEditFieldsProps {
   user: User;
@@ -146,8 +148,13 @@ export default function ProfileEditFields({
                   if (onUserUpdate && response.data?.user) {
                     onUserUpdate(response.data.user);
                   }
-                } catch (error) {
-                  console.error('Chyba pri ukladaní viditeľnosti IČO:', error);
+                } catch (error: any) {
+                  const data = error?.response?.data;
+                  const details = data?.details;
+                  const raw = details?.ico_visible ?? details?.ico;
+                  const msg = Array.isArray(raw) ? raw[0] : typeof raw === 'string' ? raw : null;
+                  const message = (typeof msg === 'string' ? msg : null) ?? getApiErrorMessage(error, t('profile.icoSaveFailed', 'IČO sa nepodarilo uložiť.'));
+                  toast.error(message);
                 }
               }}
               label={t('profile.hideIco', 'Skryť IČO')}
@@ -226,8 +233,12 @@ export default function ProfileEditFields({
                   if (onUserUpdate && response.data?.user) {
                     onUserUpdate(response.data.user);
                   }
-                } catch (error) {
-                  console.error('Chyba pri ukladaní viditeľnosti emailu:', error);
+                } catch (error: any) {
+                  const data = error?.response?.data;
+                  const details = data?.details;
+                  const msg = details?.contact_email_visible?.[0] ?? details?.contact_email?.[0];
+                  const message = typeof msg === 'string' ? msg : getApiErrorMessage(error, t('profile.contactEmailSaveFailed', 'Kontaktný email sa nepodarilo uložiť.'));
+                  toast.error(message);
                 }
               }}
               label={t('profile.hideContactEmail', 'Skryť kontaktný email')}
@@ -236,26 +247,38 @@ export default function ProfileEditFields({
         </div>
       )}
       
-      {/* Profesia - len pre osobný účet */}
+      {/* Profesia - len pre osobný účet (rovnako ako Lokalita) */}
       {accountType === 'personal' && (
-        <div 
-          className="py-4 px-4 border-t border-gray-100 dark:border-gray-800"
-        >
-          <div 
-            className="flex items-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-900 -mx-4 px-4 py-1"
+        <div className="border-t border-gray-100 dark:border-gray-800">
+          <div
+            className="flex items-center py-4 px-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-900"
             onClick={() => setIsProfessionModalOpen(true)}
           >
-            <span className="text-gray-900 dark:text-white font-medium w-40">{t('profile.profession', 'Profesia')}</span>
-            <div className="flex items-center flex-1 ml-4">
-              <div className="w-px h-4 bg-gray-300 dark:bg-gray-700 mr-3"></div>
-              <span className="text-gray-600 dark:text-gray-300 text-sm truncate">
-                {user.job_title || t('profile.addProfession', 'Pridať profesiu')}
-              </span>
+            <span className="text-gray-900 dark:text-white font-medium whitespace-nowrap">
+              {t('profile.profession', 'Profesia')}
+            </span>
+            <div className="flex items-center flex-1 min-w-0 justify-end pr-2 ml-4">
+              <div className="w-px h-4 bg-gray-300 dark:bg-gray-700 mr-3 flex-shrink-0" />
+              {(() => {
+                const displayText = user.job_title?.trim() || t('profile.addProfession', 'Pridať profesiu');
+                const isLong = displayText.length > 15;
+                return (
+                  <span
+                    className={`text-gray-600 dark:text-gray-300 ${
+                      isLong
+                        ? 'text-xs leading-tight break-words line-clamp-2 max-w-full flex-1 min-w-0'
+                        : 'text-sm whitespace-nowrap'
+                    }`}
+                  >
+                    {displayText}
+                  </span>
+                );
+              })()}
             </div>
           </div>
           
           {/* Prepínač pre zobrazenie profese – sivý = zobrazovať, fialový = skrývať (ako u kontaktného emailu) */}
-          <div className="mt-2">
+          <div className="mt-2 px-4 pb-4">
             <MasterToggle
               enabled={!(user.job_title_visible ?? false)}
               onChange={async (newVisibility) => {
