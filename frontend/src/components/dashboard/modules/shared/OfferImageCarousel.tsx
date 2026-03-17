@@ -9,7 +9,7 @@ interface OfferImage {
   image_url?: string | null;
   image?: string | null;
   order?: number | null;
-  status?: 'pending' | 'approved' | 'rejected' | string;
+  status?: 'pending' | 'approved' | 'rejected' | string | null;
   rejected_reason?: string | null;
 }
 
