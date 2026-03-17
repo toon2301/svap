@@ -2,12 +2,15 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import ImageWithStatusOverlay from '@/components/shared/ImageWithStatusOverlay';
 
 interface OfferImage {
   id?: number;
   image_url?: string | null;
   image?: string | null;
   order?: number | null;
+  status?: 'pending' | 'approved' | 'rejected' | string;
+  rejected_reason?: string | null;
 }
 
 interface OfferImageCarouselProps {
@@ -18,8 +21,10 @@ interface OfferImageCarouselProps {
 
 type PreparedImage = {
   key: string;
-  src: string;
+  src: string | null;
   order: number;
+  status?: OfferImage['status'];
+  rejected_reason?: OfferImage['rejected_reason'];
 };
 
 const DEFAULT_INTERVAL = 5000;
@@ -37,17 +42,18 @@ const OfferImageCarousel: React.FC<OfferImageCarouselProps> = ({
 
     return images
       .map((img, index) => {
-        const src = img?.image_url || img?.image || '';
+        const src = img?.image_url || img?.image || null;
         return {
-          key: String(img?.id ?? `${index}-${src}`),
+          key: String(img?.id ?? `${index}-${src ?? 'no-src'}`),
           src,
           order:
             typeof img?.order === 'number'
               ? img.order
               : index,
+          status: img?.status,
+          rejected_reason: img?.rejected_reason,
         };
       })
-      .filter((img) => Boolean(img.src))
       .sort((a, b) => a.order - b.order);
   }, [images]);
 
@@ -100,17 +106,22 @@ const OfferImageCarousel: React.FC<OfferImageCarouselProps> = ({
 
   return (
     <div className="absolute inset-0">
-      {preparedImages.map((img, idx) => (
-        <img
-          key={img.key}
-          src={img.src}
-          alt={alt}
-          className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-700 ease-in-out ${
-            idx === activeIndex ? 'opacity-100' : 'opacity-0'
-          }`}
-          loading={idx === 0 ? 'eager' : 'lazy'}
-        />
-      ))}
+      {preparedImages.map((img, idx) => {
+        const isActive = idx === activeIndex;
+        return (
+          <ImageWithStatusOverlay
+            key={img.key}
+            image_url={img.src}
+            alt={alt}
+            status={img.status}
+            rejected_reason={img.rejected_reason ?? null}
+            className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${
+              isActive ? 'opacity-100' : 'opacity-0 pointer-events-none'
+            }`}
+            imgClassName="h-full w-full object-cover"
+          />
+        );
+      })}
       <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-black/15 via-transparent to-transparent" />
     </div>
   );

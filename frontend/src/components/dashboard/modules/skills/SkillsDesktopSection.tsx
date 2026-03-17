@@ -51,7 +51,7 @@ function renderOfferCard(
           maximumFractionDigits: 2,
         })} ${item.price_currency || '€'}`
       : null;
-  const imageCount = item.images?.filter((img) => img?.image_url || img?.image).length || 0;
+  const imageCount = item.images?.length || 0;
   const hasMultipleImages = imageCount > 1;
 
   return (

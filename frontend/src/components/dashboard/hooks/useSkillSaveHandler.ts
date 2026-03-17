@@ -53,6 +53,19 @@ export function useSkillSaveHandler({
 
     const targetModule = isSeeking ? 'skills-search' : 'skills-offer';
 
+    // Globálne UX (najmä mobile): zobraz stav aj po presmerovaní.
+    try {
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('offer-save-start', {
+            detail: { label: 'Ukladám ponuku...' },
+          }),
+        );
+      }
+    } catch {
+      // ignore
+    }
+
     // UX: hneď po kliknutí na fajku presmeruj späť na obrazovku s výberom/pridaním kategórie.
     // Ukladanie prebehne na pozadí – po dokončení sa len aktualizuje zoznam kariet.
     setActiveModule(targetModule);
@@ -118,6 +131,9 @@ export function useSkillSaveHandler({
         const { data } = await api.patch(endpoints.skills.detail(skill.id), payload);
         savedSkill = toLocalSkill(data);
 
+        // UI: zobraz zmenu hneď, upload nech beží potom
+        applySkillUpdate(savedSkill);
+
         // Nahrať nové obrázky
         if (newImages.length > 0) {
           for (let i = 0; i < newImages.length; i++) {
@@ -138,6 +154,9 @@ export function useSkillSaveHandler({
         const { data } = await api.post(endpoints.skills.list, payload);
         savedSkill = toLocalSkill(data);
 
+        // UI: zobraz novú kartu hneď, upload nech beží potom
+        applySkillUpdate(savedSkill);
+
         // Nahrať nové obrázky
         if (newImages.length > 0 && savedSkill.id) {
           for (let i = 0; i < newImages.length; i++) {
@@ -155,9 +174,6 @@ export function useSkillSaveHandler({
         }
       }
 
-      // Úspešne uložené – aktualizuj zoznam kariet
-      applySkillUpdate(savedSkill);
-
       // Invalidovať cache ponúk, aby sa pri návrate na profil načítali nové dáta
       const { invalidateOffersCache } = await import('../modules/profile/profileOffersCache');
       invalidateOffersCache(ownerUserIdForOffersCache);
@@ -172,6 +188,25 @@ export function useSkillSaveHandler({
         error?.response?.data?.detail ||
         t('dashboard.skillSaveError', 'Nepodarilo sa uložiť zručnosť');
       alert(message);
+      try {
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(
+            new CustomEvent('offer-save-error', {
+              detail: { message },
+            }),
+          );
+        }
+      } catch {
+        // ignore
+      }
+    } finally {
+      try {
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('offer-save-done'));
+        }
+      } catch {
+        // ignore
+      }
     }
   }, [
     selectedSkillsCategory,

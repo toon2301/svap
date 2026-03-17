@@ -37,7 +37,7 @@ export default function SkillsMobileCard({
         })} ${item.price_currency || '€'}`
       : null;
   const imageAlt = headline || t('skills.offer', 'Ponúkam');
-  const imageCount = item.images?.filter((img) => img?.image_url || img?.image).length || 0;
+  const imageCount = item.images?.length || 0;
   const hasMultipleImages = imageCount > 1;
 
   return (
