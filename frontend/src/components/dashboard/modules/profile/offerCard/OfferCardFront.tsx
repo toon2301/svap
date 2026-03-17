@@ -60,7 +60,7 @@ export function OfferCardFront({
   return (
     <div className={showFront ? 'block' : 'hidden'} style={{ minHeight: '100%' }}>
       <div className="relative aspect-[3/2] bg-gray-100 dark:bg-[#0e0e0f] overflow-hidden rounded-t-2xl">
-        <OfferImageCarousel images={offer.images} alt={imageAlt} />
+        <OfferImageCarousel images={offer.images} alt={imageAlt} fit="contain" />
         {accountType === 'business' && (
           <span className="absolute top-2 left-2 px-1.5 py-0.5 text-[10px] font-semibold bg-black/80 text-white rounded">
             PRO

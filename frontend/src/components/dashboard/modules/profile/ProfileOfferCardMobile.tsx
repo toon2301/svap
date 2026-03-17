@@ -123,7 +123,7 @@ export function ProfileOfferCardMobile({
         </div>
       )}
       <div className="relative aspect-[4/3] bg-gray-100 dark:bg-[#0e0e0f] overflow-hidden">
-        <OfferImageCarousel images={offer.images} alt={imageAlt} />
+        <OfferImageCarousel images={offer.images} alt={imageAlt} fit="contain" />
         {accountType === 'business' && (
           <span className="absolute top-2 left-2 px-1.5 py-0.5 text-[10px] font-semibold bg-black/80 text-white rounded">
             PRO

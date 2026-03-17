@@ -17,6 +17,8 @@ interface OfferImageCarouselProps {
   images?: OfferImage[];
   alt: string;
   intervalMs?: number;
+  /** Ako sa má obrázok prispôsobiť kontajneru. Default: 'cover'. */
+  fit?: 'cover' | 'contain';
 }
 
 type PreparedImage = {
@@ -33,13 +35,13 @@ const OfferImageCarousel: React.FC<OfferImageCarouselProps> = ({
   images,
   alt,
   intervalMs = DEFAULT_INTERVAL,
+  fit = 'cover',
 }) => {
   const { t } = useLanguage();
   const preparedImages: PreparedImage[] = useMemo(() => {
     if (!Array.isArray(images)) {
       return [];
     }
-
     return images
       .map((img, index) => {
         const src = img?.image_url || img?.image || null;
@@ -60,6 +62,7 @@ const OfferImageCarousel: React.FC<OfferImageCarouselProps> = ({
   const [activeIndex, setActiveIndex] = useState(0);
 
   useEffect(() => {
+    // Vždy resetuj na prvý obrázok pri zmene zoznamu obrázkov
     setActiveIndex(0);
 
     if (preparedImages.length <= 1) {
@@ -106,22 +109,27 @@ const OfferImageCarousel: React.FC<OfferImageCarouselProps> = ({
 
   return (
     <div className="absolute inset-0">
-      {preparedImages.map((img, idx) => {
-        const isActive = idx === activeIndex;
-        return (
+      {preparedImages[activeIndex] && (
+        <>
+          {fit === 'contain' && preparedImages[activeIndex].src ? (
+            <img
+              src={preparedImages[activeIndex].src}
+              alt=""
+              aria-hidden
+              className="absolute inset-0 h-full w-full object-cover blur-xl scale-110 opacity-50"
+            />
+          ) : null}
           <ImageWithStatusOverlay
-            key={img.key}
-            image_url={img.src}
+            key={preparedImages[activeIndex].key}
+            image_url={preparedImages[activeIndex].src}
             alt={alt}
-            status={img.status}
-            rejected_reason={img.rejected_reason ?? null}
-            className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${
-              isActive ? 'opacity-100' : 'opacity-0 pointer-events-none'
-            }`}
-            imgClassName="h-full w-full object-cover"
+            status={preparedImages[activeIndex].status}
+            rejected_reason={preparedImages[activeIndex].rejected_reason ?? null}
+            className="absolute inset-0"
+            imgClassName={`h-full w-full ${fit === 'contain' ? 'object-contain' : 'object-cover'}`}
           />
-        );
-      })}
+        </>
+      )}
       <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-black/15 via-transparent to-transparent" />
     </div>
   );

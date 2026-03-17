@@ -4,9 +4,8 @@ import { useEffect } from 'react';
 
 export default function ServiceWorker() {
   useEffect(() => {
-    // In development, optionally disable Service Worker to avoid cache issues
-    // Uncomment the line below if you want to disable SW in development
-    // if (process.env.NODE_ENV === 'development') return;
+    // In development, disable Service Worker to avoid cache issues
+    if (process.env.NODE_ENV === 'development') return;
     
     if (!('serviceWorker' in navigator)) return;
 

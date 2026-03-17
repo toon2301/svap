@@ -19,7 +19,7 @@ export default function ImageWithStatusOverlay({
   rejected_reason,
   alt = '',
   className = '',
-  imgClassName = '',
+  imgClassName = 'object-cover',
 }: Props) {
   const isPending = status === 'pending';
   const isRejected = status === 'rejected';
@@ -28,7 +28,7 @@ export default function ImageWithStatusOverlay({
   return (
     <div className={`relative overflow-hidden ${className}`}>
       {image_url ? (
-        <img src={image_url} alt={alt} className={`w-full h-full object-cover ${imgClassName}`} />
+        <img src={image_url} alt={alt} className={`w-full h-full ${imgClassName}`} />
       ) : (
         <div className="w-full h-full bg-gray-100 dark:bg-gray-900/40 flex flex-col items-center justify-center gap-1 text-sm font-medium text-gray-700 dark:text-gray-200">
           {isPending ? (
