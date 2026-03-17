@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import DescriptionSection from './skillDescriptionModal/sections/DescriptionSection';
 import TagsSection from './skillDescriptionModal/sections/TagsSection';
@@ -90,9 +90,7 @@ export default function SkillDescriptionModal({
     // UX: show immediate feedback while the async save runs in parent
     const hasNewImages = Array.isArray(state.images) && state.images.length > 0;
     setSubmitLabel(
-      hasNewImages
-        ? t('skills.uploadingPhotos', 'Nahrávam fotky…')
-        : t('skills.savingOffer', 'Ukladám…')
+      t('skills.savingOfferLong', 'Ukladám ponuku…')
     );
     setIsSubmitting(true);
     const ok = await handleSave({
@@ -131,6 +129,25 @@ export default function SkillDescriptionModal({
       setSubmitLabel('');
     }
   };
+
+  // Switch label when actual upload starts (event dispatched by uploadOfferImage)
+  useEffect(() => {
+    if (!isSubmitting) return;
+    const hasNewImages = Array.isArray(state.images) && state.images.length > 0;
+    if (!hasNewImages) return;
+    const handler = () => {
+      setSubmitLabel(
+        t(
+          'skills.uploadingPhotosLong',
+          'Nahrávam fotky, môže to trvať pár sekúnd…'
+        )
+      );
+    };
+    window.addEventListener('offer-image-upload-start', handler as any);
+    return () => {
+      window.removeEventListener('offer-image-upload-start', handler as any);
+    };
+  }, [isSubmitting, state.images, t]);
 
   const onExperienceValueChange = (val: string) => {
     handleExperienceValueChange(val, state.setExperienceValue, state.setExperienceError);

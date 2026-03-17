@@ -25,6 +25,14 @@ export async function uploadOfferImage(skillId: number, file: File) {
   for (const [k, v] of Object.entries(init.fields)) fd.append(k, v);
   fd.append('file', file);
 
+  try {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('offer-image-upload-start'));
+    }
+  } catch {
+    // ignore
+  }
+
   const s3Resp = await fetch(init.url, { method: 'POST', body: fd });
   if (!s3Resp.ok) {
     throw new Error(`S3 upload failed (${s3Resp.status})`);
