@@ -41,14 +41,14 @@ interface HandleSaveParams {
     urgency?: 'low' | 'medium' | 'high' | '',
     durationType?: DurationOption | '' | null,
     isHidden?: boolean
-  ) => void;
+  ) => Promise<void> | void;
   setError: (error: string) => void;
   setExperienceError: (error: string) => void;
   setPriceError: (error: string) => void;
   t: (key: string, fallback?: string) => string;
 }
 
-export const handleSave = ({
+export const handleSave = async ({
   description,
   experienceValue,
   experienceUnit,
@@ -77,7 +77,7 @@ export const handleSave = ({
   setExperienceError,
   setPriceError,
   t,
-}: HandleSaveParams): void => {
+}: HandleSaveParams): Promise<boolean> => {
   const trimmed = description.trim();
 
   // Detekcia, či ide o editáciu existujúcej karty
@@ -95,12 +95,12 @@ export const handleSave = ({
   // Pri vytváraní novej karty je popis povinný, pri editácii existujúcej karty nie
   if (!isEditing && !trimmed) {
     setError(t('skills.descriptionRequired', 'Popis zručnosti je povinný'));
-    return;
+    return false;
   }
 
   if (trimmed && trimmed.length > 100) {
     setError(t('skills.descriptionTooLong', 'Popis zručnosti môže mať maximálne 100 znakov'));
-    return;
+    return false;
   }
 
   // Validácia experience
@@ -109,11 +109,11 @@ export const handleSave = ({
     const numValue = parseFloat(experienceValue.trim());
     if (isNaN(numValue) || numValue <= 0) {
       setExperienceError(t('skills.experiencePositive', 'Dĺžka praxe musí byť kladné číslo'));
-      return;
+      return false;
     }
     if (numValue > 100) {
       setExperienceError(t('skills.experienceTooLarge', 'Dĺžka praxe nemôže byť väčšia ako 100'));
-      return;
+      return false;
     }
     experience = {
       value: numValue,
@@ -129,7 +129,7 @@ export const handleSave = ({
     const parsed = parseFloat(priceFrom.trim().replace(',', '.'));
     if (isNaN(parsed) || parsed < 0) {
       setPriceError(t('skills.priceNonNegative', 'Cena musí byť nezáporné číslo'));
-      return;
+      return false;
     }
     priceValue = parsed;
   }
@@ -142,28 +142,39 @@ export const handleSave = ({
   if (districtValue) {
     if (!isValidDistrict(districtValue)) {
       scrollToDistrictInput();
-      return;
+      return false;
     }
   }
 
   const detailedValue = detailedDescription.trim();
   const openingHoursValue = Object.keys(openingHours).length > 0 ? openingHours : undefined;
   
-  onSave(
-    trimmed,
-    experience,
-    tags,
-    images,
-    priceValue,
-    priceCurrency,
-    locationValue,
-    detailedValue,
-    openingHoursValue,
-    districtValue,
-    urgency || 'low',
-    durationType || null,
-    isHidden
-  );
+  try {
+    await Promise.resolve(
+      onSave(
+        trimmed,
+        experience,
+        tags,
+        images,
+        priceValue,
+        priceCurrency,
+        locationValue,
+        detailedValue,
+        openingHoursValue,
+        districtValue,
+        urgency || 'low',
+        durationType || null,
+        isHidden
+      )
+    );
+    return true;
+  } catch (e: any) {
+    setError(
+      e?.message ||
+        t('skills.saveFailed', 'Nepodarilo sa uložiť kartu. Skús to znova.')
+    );
+    return false;
+  }
 };
 
 export const handleExperienceValueChange = (

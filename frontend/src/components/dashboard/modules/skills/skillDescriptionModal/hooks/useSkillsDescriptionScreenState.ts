@@ -82,8 +82,9 @@ export function useSkillsDescriptionScreenState({
     const seen = new Set<string>();
     for (const img of existingImages) {
       const src = img?.image_url || img?.image || '';
-      if (!src) continue;
-      const key = img?.id ? `id-${img.id}` : `src-${src}`;
+      const status = (img as any)?.status;
+      if (!src && status !== 'pending' && status !== 'rejected') continue;
+      const key = img?.id ? `id-${img.id}` : `src-${src || status || 'no-src'}`;
       if (seen.has(key)) continue;
       seen.add(key);
       result.push(img);

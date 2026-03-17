@@ -43,8 +43,10 @@ export default function ImagesSection({
     const seen = new Set<string>();
     for (const img of existingImages) {
       const src = img?.image_url || img?.image || '';
-      if (!src) continue;
-      const key = img?.id ? `id-${img.id}` : `src-${src}`;
+      const status = (img as any)?.status;
+      // Include pending/rejected placeholders even without src so user sees progress.
+      if (!src && status !== 'pending' && status !== 'rejected') continue;
+      const key = img?.id ? `id-${img.id}` : `src-${src || status || 'no-src'}`;
       if (seen.has(key)) continue;
       seen.add(key);
       result.push(img);
@@ -116,10 +118,37 @@ export default function ImagesSection({
         {validExistingImages.map((img) => {
           const src = img.image_url || img.image || '';
           const isRemoving = removingImageId === img.id;
+          const status = (img as any)?.status;
+          const isPending = status === 'pending' && !src;
+          const isRejected = status === 'rejected' && !src;
           return (
             <div key={`${img.id ?? src}`} className="relative w-20 h-20 rounded-lg overflow-hidden border border-gray-300 dark:border-gray-700">
-              <img src={src} alt={t('skills.existingPhotoAlt', 'Existujúca fotka')} className={`w-full h-full object-cover transition-opacity ${isRemoving ? 'opacity-50' : 'opacity-100'}`} />
-              {onRemoveExistingImage && img.id ? (
+              {src ? (
+                <img
+                  src={src}
+                  alt={t('skills.existingPhotoAlt', 'Existujúca fotka')}
+                  className={`w-full h-full object-cover transition-opacity ${isRemoving ? 'opacity-50' : 'opacity-100'}`}
+                />
+              ) : (
+                <div className="w-full h-full bg-gray-100 dark:bg-gray-900/40 flex flex-col items-center justify-center gap-1 text-[10px] text-gray-600 dark:text-gray-300">
+                  {isPending ? (
+                    <>
+                      <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 12a8 8 0 018-8" />
+                      </svg>
+                      <span>{t('skills.processingPhoto', 'Spracúva sa…')}</span>
+                    </>
+                  ) : isRejected ? (
+                    <>
+                      <span className="font-semibold text-red-600 dark:text-red-300">!</span>
+                      <span>{t('skills.photoRejected', 'Zamietnuté')}</span>
+                    </>
+                  ) : (
+                    <span>{t('skills.photo', 'Fotka')}</span>
+                  )}
+                </div>
+              )}
+              {onRemoveExistingImage && img.id && !isPending ? (
                 <button
                   type="button"
                   aria-label={t('skills.removeExistingPhoto', 'Odstrániť existujúcu fotku')}

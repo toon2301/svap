@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import DescriptionSection from './skillDescriptionModal/sections/DescriptionSection';
 import TagsSection from './skillDescriptionModal/sections/TagsSection';
@@ -50,6 +50,8 @@ export default function SkillDescriptionModal({
   initialIsHidden = false,
 }: SkillDescriptionModalProps) {
   const { locale, t } = useLanguage();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitLabel, setSubmitLabel] = useState('');
   const categorySlug = useMemo(() => (category ? slugifyLabel(category) : ''), [category]);
   const subcategorySlug = useMemo(() => (subcategory ? slugifyLabel(subcategory) : ''), [subcategory]);
   const translatedCategory = useMemo(() => {
@@ -83,8 +85,17 @@ export default function SkillDescriptionModal({
     initialIsHidden,
   });
 
-  const onSaveClick = () => {
-    handleSave({
+  const onSaveClick = async () => {
+    if (isSubmitting) return;
+    // UX: show immediate feedback while the async save runs in parent
+    const hasNewImages = Array.isArray(state.images) && state.images.length > 0;
+    setSubmitLabel(
+      hasNewImages
+        ? t('skills.uploadingPhotos', 'Nahrávam fotky…')
+        : t('skills.savingOffer', 'Ukladám…')
+    );
+    setIsSubmitting(true);
+    const ok = await handleSave({
       description: state.description,
       experienceValue: state.experienceValue,
       experienceUnit: state.experienceUnit,
@@ -114,6 +125,11 @@ export default function SkillDescriptionModal({
       setPriceError: state.setPriceError,
       t,
     });
+    // If validation failed, stop the loading state and keep modal open.
+    if (!ok) {
+      setIsSubmitting(false);
+      setSubmitLabel('');
+    }
   };
 
   const onExperienceValueChange = (val: string) => {
@@ -143,6 +159,7 @@ export default function SkillDescriptionModal({
       <div
         className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4"
         onClick={(e) => {
+          if (isSubmitting) return;
           if (e.target === e.currentTarget) onClose();
         }}
       >
@@ -159,8 +176,11 @@ export default function SkillDescriptionModal({
             </h2>
             <button 
               aria-label="Close" 
-              onClick={onClose} 
-              className="p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+              onClick={() => {
+                if (!isSubmitting) onClose();
+              }} 
+              className="p-2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 disabled:opacity-50"
+              disabled={isSubmitting}
             >
               <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -367,8 +387,11 @@ export default function SkillDescriptionModal({
 
             <div className="flex gap-3 mt-6">
               <button
-                onClick={onClose}
-                className="flex-1 px-4 py-2 rounded-2xl border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                onClick={() => {
+                  if (!isSubmitting) onClose();
+                }}
+                className="flex-1 px-4 py-2 rounded-2xl border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={isSubmitting}
               >
                 {t('common.cancel', 'Zrušiť')}
               </button>
@@ -376,14 +399,24 @@ export default function SkillDescriptionModal({
                 onClick={onSaveClick}
                 className="flex-1 px-4 py-2 rounded-2xl bg-purple-600 text-white hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 disabled={
+                  isSubmitting ||
                   state.existingImages.length > 0 || initialDescription || initialExperience || (initialTags && initialTags.length) || initialDetailedDescription || initialLocation || initialDistrict || (initialOpeningHours && Object.keys(initialOpeningHours).length > 0) || (initialPriceFrom !== null && initialPriceFrom > 0)
                     ? false
                     : !state.description.trim()
                 }
               >
-                {state.existingImages.length || initialDescription || initialExperience || (initialTags && initialTags.length)
-                  ? t('common.update', 'Aktualizovať')
-                  : t('common.add', 'Pridať')}
+                {isSubmitting ? (
+                  <span className="inline-flex items-center justify-center gap-2">
+                    <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 12a8 8 0 018-8" />
+                    </svg>
+                    <span>{submitLabel || t('skills.savingOffer', 'Ukladám…')}</span>
+                  </span>
+                ) : (
+                  state.existingImages.length || initialDescription || initialExperience || (initialTags && initialTags.length)
+                    ? t('common.update', 'Aktualizovať')
+                    : t('common.add', 'Pridať')
+                )}
               </button>
             </div>
           </div>

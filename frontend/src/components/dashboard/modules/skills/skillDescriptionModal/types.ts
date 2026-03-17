@@ -60,7 +60,7 @@ export interface SkillDescriptionModalProps {
     urgency?: 'low' | 'medium' | 'high' | '',
     durationType?: DurationOption | '' | null,
     isHidden?: boolean
-  ) => void;
+  ) => Promise<void> | void;
   initialDescription?: string;
   initialExperience?: ExperienceValue;
   initialTags?: string[];

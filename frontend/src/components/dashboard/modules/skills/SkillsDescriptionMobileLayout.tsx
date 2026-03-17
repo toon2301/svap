@@ -393,16 +393,39 @@ export default function SkillsDescriptionMobileLayout({
                 <div className="flex flex-wrap gap-3">
                   {validExistingImages.map((img) => {
                     const src = img.image_url || img.image || '';
+                    const status = (img as any)?.status;
+                    const isPending = status === 'pending' && !src;
+                    const isRejected = status === 'rejected' && !src;
                     return (
                       <div
                         key={`${img.id ?? src}`}
                         className="relative w-20 h-20 rounded-lg overflow-hidden border border-gray-300 dark:border-gray-700"
                       >
-                        <img
-                          src={src}
-                          alt={t('skills.existingPhotoAlt', 'Existujúca fotka')}
-                          className="w-full h-full object-cover"
-                        />
+                        {src ? (
+                          <img
+                            src={src}
+                            alt={t('skills.existingPhotoAlt', 'Existujúca fotka')}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gray-100 dark:bg-gray-900/40 flex flex-col items-center justify-center gap-1 text-[10px] text-gray-600 dark:text-gray-300">
+                            {isPending ? (
+                              <>
+                                <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 12a8 8 0 018-8" />
+                                </svg>
+                                <span>{t('skills.processingPhoto', 'Spracúva sa…')}</span>
+                              </>
+                            ) : isRejected ? (
+                              <>
+                                <span className="font-semibold text-red-600 dark:text-red-300">!</span>
+                                <span>{t('skills.photoRejected', 'Zamietnuté')}</span>
+                              </>
+                            ) : (
+                              <span>{t('skills.photo', 'Fotka')}</span>
+                            )}
+                          </div>
+                        )}
                         {canRemoveExistingImages && img.id && (
                           <button
                             type="button"
