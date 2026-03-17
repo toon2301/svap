@@ -7,15 +7,69 @@ type UploadInitResponse = {
   expires_in: number;
 };
 
-export async function uploadOfferImage(skillId: number, file: File) {
-  const { data: init } = await api.post<UploadInitResponse>(
-    endpoints.skills.imageUploadInit(skillId),
-    {
-      filename: file.name,
-      content_type: file.type || '',
-      size_bytes: file.size,
-    }
+function isStorageNotConfiguredError(err: any): boolean {
+  const status = err?.response?.status;
+  const message =
+    err?.response?.data?.error ||
+    err?.response?.data?.detail ||
+    err?.message ||
+    '';
+  return (
+    status === 500 &&
+    typeof message === 'string' &&
+    message.toLowerCase().includes('storage') &&
+    message.toLowerCase().includes('nakonfigurovan')
   );
+}
+
+function dispatchOfferImageEvent(name: string, detail?: Record<string, unknown>) {
+  try {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent(name, detail ? { detail } : undefined));
+    }
+  } catch {
+    // ignore
+  }
+}
+
+async function uploadOfferImageMultipart(skillId: number, file: File) {
+  dispatchOfferImageEvent('offer-image-upload-start');
+
+  const fd = new FormData();
+  // Legacy endpoint expects field name "image"
+  fd.append('image', file, file.name);
+
+  const { data } = await api.post(endpoints.skills.images(skillId), fd);
+
+  dispatchOfferImageEvent('offer-image-upload-done', {
+    skillId,
+    filename: file.name,
+    transport: 'multipart',
+  });
+
+  return data;
+}
+
+export async function uploadOfferImage(skillId: number, file: File) {
+  let init: UploadInitResponse;
+  try {
+    const resp = await api.post<UploadInitResponse>(
+      endpoints.skills.imageUploadInit(skillId),
+      {
+        filename: file.name,
+        content_type: file.type || '',
+        size_bytes: file.size,
+      }
+    );
+    init = resp.data as any;
+  } catch (e: any) {
+    // Local/dev fallback: if S3 storage isn't configured, use legacy multipart upload.
+    // In production (Railway) where S3 is configured, we never take this path.
+    if (isStorageNotConfiguredError(e)) {
+      return await uploadOfferImageMultipart(skillId, file);
+    }
+    throw e;
+  }
 
   if (!init?.url || !init?.fields || !init?.key) {
     throw new Error('Upload init failed: invalid response');
@@ -25,13 +79,7 @@ export async function uploadOfferImage(skillId: number, file: File) {
   for (const [k, v] of Object.entries(init.fields)) fd.append(k, v);
   fd.append('file', file);
 
-  try {
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('offer-image-upload-start'));
-    }
-  } catch {
-    // ignore
-  }
+  dispatchOfferImageEvent('offer-image-upload-start');
 
   const s3Resp = await fetch(init.url, { method: 'POST', body: fd });
   if (!s3Resp.ok) {
@@ -43,20 +91,11 @@ export async function uploadOfferImage(skillId: number, file: File) {
     { key: init.key, filename: file.name }
   );
 
-  try {
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(
-        new CustomEvent('offer-image-upload-done', {
-          detail: {
-            skillId,
-            filename: file.name,
-          },
-        }),
-      );
-    }
-  } catch {
-    // ignore
-  }
+  dispatchOfferImageEvent('offer-image-upload-done', {
+    skillId,
+    filename: file.name,
+    transport: 's3',
+  });
 
   return complete;
 }
