@@ -186,6 +186,9 @@ def skill_images_view(request, skill_id):
     import logging
 
     logger = logging.getLogger(__name__)
+    from time import perf_counter
+
+    req_t0 = perf_counter()
     try:
         from django.conf import settings
 
@@ -223,7 +226,9 @@ def skill_images_view(request, skill_id):
     from swaply.validators import validate_image_file
 
     try:
+        t0 = perf_counter()
         validate_image_file(file)
+        validate_ms = int((perf_counter() - t0) * 1000)
     except ValidationError as e:
         return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -231,9 +236,11 @@ def skill_images_view(request, skill_id):
     file.seek(0)
 
     try:
+        t1 = perf_counter()
         img = OfferedSkillImage.objects.create(
             skill=skill, image=file, order=skill.images.count()
         )
+        create_ms = int((perf_counter() - t1) * 1000)
     except ValidationError as e:
         return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -241,6 +248,24 @@ def skill_images_view(request, skill_id):
     url = img.image.url if img.image else None
     if request and url:
         url = request.build_absolute_uri(url)
+
+    try:
+        from django.conf import settings
+
+        if getattr(settings, "SAFESEARCH_TIMING_LOG", False) or getattr(
+            settings, "SAFESEARCH_DEBUG_LOG", False
+        ):
+            total_ms = int((perf_counter() - req_t0) * 1000)
+            logger.info(
+                "skill_images_view timing: total_ms=%s validate_ms=%s storage_create_ms=%s size=%s name=%s",
+                total_ms,
+                validate_ms,
+                create_ms,
+                getattr(file, "size", None),
+                getattr(file, "name", None),
+            )
+    except Exception:
+        pass
     return Response(
         {"id": img.id, "image_url": url, "order": img.order},
         status=status.HTTP_201_CREATED,

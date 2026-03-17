@@ -173,14 +173,25 @@ def check_image_safety(file_obj) -> None:
         return
 
     # Read bytes; reset cursor after
+    from time import perf_counter
+
     position = file_obj.tell() if hasattr(file_obj, "tell") else None
+    t0 = perf_counter()
     content = file_obj.read()
+    read_ms = int((perf_counter() - t0) * 1000)
     try:
         from google.cloud import vision
 
         image = vision.Image(content=content)
+        t_client0 = perf_counter()
         client = _get_client()
+        client_ms = int((perf_counter() - t_client0) * 1000)
+
+        t_api0 = perf_counter()
+        # NOTE: google-cloud-vision supports timeout kwarg, but behavior can vary by version.
+        # We intentionally log timing here to pinpoint production latency.
         response = client.safe_search_detection(image=image)
+        api_ms = int((perf_counter() - t_api0) * 1000)
 
         if response.error.message:
             raise RuntimeError(response.error.message)
@@ -199,6 +210,19 @@ def check_image_safety(file_obj) -> None:
                     getattr(result, "violence", None),
                     getattr(result, "racy", None),
                     thresholds,
+                )
+            except Exception:
+                pass
+        if getattr(settings, "SAFESEARCH_TIMING_LOG", False) or getattr(
+            settings, "SAFESEARCH_DEBUG_LOG", False
+        ):
+            try:
+                logger.info(
+                    "SafeSearch timing: read_ms=%s client_ms=%s api_ms=%s bytes=%s",
+                    read_ms,
+                    client_ms,
+                    api_ms,
+                    len(content) if content is not None else None,
                 )
             except Exception:
                 pass

@@ -10,6 +10,7 @@ SAFESEARCH_SKIP_IN_TESTS = env_bool("SAFESEARCH_SKIP_IN_TESTS", True)
 SAFESEARCH_ENFORCE_IN_DEBUG = env_bool("SAFESEARCH_ENFORCE_IN_DEBUG", False)
 SAFESEARCH_STRICT_MODE = env_bool("SAFESEARCH_STRICT_MODE", False)
 SAFESEARCH_DEBUG_LOG = env_bool("SAFESEARCH_DEBUG_LOG", DEBUG)
+SAFESEARCH_TIMING_LOG = env_bool("SAFESEARCH_TIMING_LOG", False)
 
 # Policy: ako vyhodnocovať racy vs adult
 # Ak False: racy samotné nikdy neblokuje (iba adult/violence). To umožní plavky,
