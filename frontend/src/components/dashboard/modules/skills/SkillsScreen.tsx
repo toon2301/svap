@@ -57,6 +57,12 @@ export default function SkillsScreen(props: SkillsScreenProps) {
       );
     };
 
+    const onUploadDone = () => {
+      // Fotka úspešne nahratá – skry bannner hneď
+      clearHideTimer();
+      setStatusLabel(null);
+    };
+
     const onSaveDone = () => {
       clearHideTimer();
       hideTimerRef.current = window.setTimeout(() => {
@@ -66,12 +72,14 @@ export default function SkillsScreen(props: SkillsScreenProps) {
 
     window.addEventListener('offer-save-start', onSaveStart);
     window.addEventListener('offer-image-upload-start', onUploadStart);
+    window.addEventListener('offer-image-upload-done', onUploadDone);
     window.addEventListener('offer-save-done', onSaveDone);
 
     return () => {
       clearHideTimer();
       window.removeEventListener('offer-save-start', onSaveStart);
       window.removeEventListener('offer-image-upload-start', onUploadStart);
+      window.removeEventListener('offer-image-upload-done', onUploadDone);
       window.removeEventListener('offer-save-done', onSaveDone);
     };
   }, [t]);

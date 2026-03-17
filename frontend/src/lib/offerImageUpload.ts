@@ -42,6 +42,22 @@ export async function uploadOfferImage(skillId: number, file: File) {
     endpoints.skills.imageUploadComplete(skillId),
     { key: init.key, filename: file.name }
   );
+
+  try {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(
+        new CustomEvent('offer-image-upload-done', {
+          detail: {
+            skillId,
+            filename: file.name,
+          },
+        }),
+      );
+    }
+  } catch {
+    // ignore
+  }
+
   return complete;
 }
 
