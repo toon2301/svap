@@ -60,7 +60,7 @@ def process_offered_skill_image(self, offered_skill_image_id: int) -> None:
     raw_bytes = obj["Body"].read()
 
     # Decode/convert with Pillow (HEIC support via pillow-heif if installed)
-    from PIL import Image
+    from PIL import Image, ImageOps
 
     try:
         from pillow_heif import register_heif_opener
@@ -73,6 +73,15 @@ def process_offered_skill_image(self, offered_skill_image_id: int) -> None:
     try:
         pil = Image.open(io.BytesIO(raw_bytes))
         pil.load()
+
+        # Normalize orientation based on EXIF before any resizing/conversion.
+        # This makes sure portrait photos (including ones rotated in desktop editors)
+        # are stored "physically" in the correct orientation and do not rely on EXIF.
+        try:
+            pil = ImageOps.exif_transpose(pil)
+        except Exception:
+            # If EXIF is missing or Pillow can't transpose, keep original.
+            pass
     except Exception as e:
         with transaction.atomic():
             img = OfferedSkillImage.objects.select_for_update().get(id=offered_skill_image_id)
