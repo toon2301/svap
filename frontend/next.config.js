@@ -74,11 +74,13 @@ const nextConfig = {
       const imgSrcCandidates = [
         "'self'",
         'data:',
+        'blob:',
         'https://www.google.com',
         'https://www.gstatic.com',
         process.env.NEXT_PUBLIC_MEDIA_ORIGIN?.trim(),
         process.env.NEXT_PUBLIC_BACKEND_ORIGIN?.trim(),
         'https://svaply-media.s3.amazonaws.com', // S3 bucket pre avatary (fallback ak nie je env)
+        'https://svaply-media.s3.eu-north-1.amazonaws.com', // S3 regional endpoint (offers/media)
       ].filter(Boolean);
 
       const isValidOrigin = (o) =>
