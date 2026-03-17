@@ -70,6 +70,27 @@ Backend kontroluje nahrávané profilové fotky proti Google Vision SafeSearch.
 ### Testovanie
 - Testy preskakujú Vision volanie cez `SAFESEARCH_SKIP_IN_TESTS=True`.
 
+## 🖼️ Obrázky ponúk (S3 uploads/ → Celery → media/)
+
+Pre produkciu (100k+ užívateľov) sa obrázky ponúk nahrávajú **priamo do S3** a spracovanie/moderácia beží **asynchrónne**:
+
+- **Upload (PENDING)**: klient získa presigned POST z backendu a nahrá do `uploads/…`
+- **Worker** (Celery):
+  - podporuje **HEIC/HEIF** (konverzia → WebP)
+  - resize + kompresia
+  - SafeSearch moderácia
+  - výstup uloží do `media/…` a označí obrázok ako `APPROVED` alebo `REJECTED`
+
+### Dôležité produkčné nastavenie S3 CORS
+Bucket musí povoľovať CORS pre frontend origin (kvôli presigned POST). Minimálne:
+- Methods: `POST`, `GET`, `HEAD`
+- AllowedOrigins: tvoj frontend (napr. `https://*.up.railway.app`)
+- AllowedHeaders: `*`
+
+### Celery na Railway
+Spusti samostatný worker service (Start Command):
+- `celery -A swaply worker -l info`
+
 ## 📁 Štruktúra
 ```
 swaply/

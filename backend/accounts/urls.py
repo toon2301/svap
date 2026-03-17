@@ -107,6 +107,16 @@ urlpatterns = [
     path("skills/<int:skill_id>/", views.skills_detail_view, name="skills_detail"),
     path("skills/<int:skill_id>/images/", views.skill_images_view, name="skill_images"),
     path(
+        "skills/<int:skill_id>/images/upload-init/",
+        views.skill_images_upload_init_view,
+        name="skill_images_upload_init",
+    ),
+    path(
+        "skills/<int:skill_id>/images/upload-complete/",
+        views.skill_images_upload_complete_view,
+        name="skill_images_upload_complete",
+    ),
+    path(
         "skills/<int:skill_id>/images/<int:image_id>/",
         views.skill_image_detail_view,
         name="skill_image_detail",

@@ -670,13 +670,28 @@ class OfferedSkillSerializer(serializers.ModelSerializer):
         return None
 
     def get_images(self, obj):
-        """Vráti zoznam obrázkov s absolútnou URL."""
+        """Vráti zoznam obrázkov s absolútnou URL.
+
+        BC:
+        - Staré záznamy používajú ImageField (`img.image.url`).
+        - Nové asynchrónne spracovanie používa `approved_key` a `status`.
+        """
         request = self.context.get("request")
         results = []
         try:
             for img in getattr(obj, "images", []).all():
                 url = None
-                if img.image and hasattr(img.image, "url"):
+                status = getattr(img, "status", None)
+
+                # Prefer approved_key when present and approved
+                approved_key = (getattr(img, "approved_key", "") or "").strip()
+                if approved_key and (status == "approved" or status is None):
+                    base = getattr(settings, "MEDIA_URL", "/media/")
+                    url = f"{base}{approved_key.lstrip('/')}"
+                    if request:
+                        url = request.build_absolute_uri(url)
+                elif img.image and hasattr(img.image, "url") and (status != "rejected"):
+                    # Legacy fallback (and also works for approved ImageField uploads)
                     url = img.image.url
                     if request:
                         url = request.build_absolute_uri(url)
@@ -685,6 +700,7 @@ class OfferedSkillSerializer(serializers.ModelSerializer):
                         "id": img.id,
                         "image_url": url,
                         "order": img.order,
+                        "status": status,
                     }
                 )
         except Exception:

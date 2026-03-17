@@ -9,7 +9,7 @@ export interface SkillItem {
   description?: string;
   experience?: { value: number; unit: 'years' | 'months' };
   tags?: string[];
-  images?: Array<{ id: number; image_url?: string | null; image?: string | null; order?: number }>;
+  images?: Array<{ id: number; image_url?: string | null; image?: string | null; order?: number; status?: string | null }>;
   price_from?: number | null;
   price_currency?: string;
   district?: string;

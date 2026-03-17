@@ -4,6 +4,7 @@ import SkillsCategoryModal from './SkillsCategoryModal';
 import SkillDescriptionModal from './SkillDescriptionModal';
 import { skillsCategories } from '@/constants/skillsCategories';
 import { api, endpoints } from '../../../../lib/api';
+import { uploadOfferImage } from '../../../../lib/offerImageUpload';
 
 type Experience = { value: number; unit: 'years' | 'months' } | undefined;
 type ImageItem = { id: number; image_url?: string | null; image?: string | null; order?: number } | any;
@@ -237,9 +238,7 @@ export default function SkillModals(props: Props) {
                     for (let i = 0; i < images.length; i++) {
                       const file = images[i];
                       try {
-                        const fd = new FormData();
-                        fd.append('image', file);
-                        await api.post(endpoints.skills.images(data.id), fd);
+                        await uploadOfferImage(data.id, file);
                       } catch (imgError: any) {
                         const imgMsg = imgError?.response?.data?.error || imgError?.response?.data?.detail || 'Nahrávanie obrázka zlyhalo';
                         alert(`Chyba pri nahrávaní obrázka ${i + 1}: ${imgMsg}`);
@@ -277,9 +276,7 @@ export default function SkillModals(props: Props) {
                     for (let i = 0; i < images.length; i++) {
                       const file = images[i];
                       try {
-                        const fd = new FormData();
-                        fd.append('image', file);
-                        await api.post(endpoints.skills.images(data.id), fd);
+                        await uploadOfferImage(data.id, file);
                       } catch (imgError: any) {
                         const imgMsg = imgError?.response?.data?.error || imgError?.response?.data?.detail || 'Nahrávanie obrázka zlyhalo';
                         alert(`Chyba pri nahrávaní obrázka ${i + 1}: ${imgMsg}`);
@@ -306,9 +303,7 @@ export default function SkillModals(props: Props) {
                     for (let i = 0; i < images.length; i++) {
                       const file = images[i];
                       try {
-                        const fd = new FormData();
-                        fd.append('image', file);
-                        await api.post(endpoints.skills.images(data.id), fd);
+                        await uploadOfferImage(data.id, file);
                       } catch (imgError: any) {
                         const imgMsg = imgError?.response?.data?.error || imgError?.response?.data?.detail || 'Nahrávanie obrázka zlyhalo';
                         alert(`Chyba pri nahrávaní obrázka ${i + 1}: ${imgMsg}`);
@@ -329,9 +324,7 @@ export default function SkillModals(props: Props) {
                       for (let i = 0; i < images.length; i++) {
                         const file = images[i];
                         try {
-                          const fd = new FormData();
-                          fd.append('image', file);
-                          await api.post(endpoints.skills.images(data.id), fd);
+                          await uploadOfferImage(data.id, file);
                         } catch (imgError: any) {
                           const imgMsg = imgError?.response?.data?.error || imgError?.response?.data?.detail || 'Nahrávanie obrázka zlyhalo';
                           alert(`Chyba pri nahrávaní obrázka ${i + 1}: ${imgMsg}`);
@@ -362,9 +355,7 @@ export default function SkillModals(props: Props) {
                       for (let i = 0; i < images.length; i++) {
                         const file = images[i];
                         try {
-                          const fd = new FormData();
-                          fd.append('image', file);
-                          await api.post(endpoints.skills.images(data.id), fd);
+                          await uploadOfferImage(data.id, file);
                         } catch (imgError: any) {
                           const imgMsg = imgError?.response?.data?.error || imgError?.response?.data?.detail || 'Nahrávanie obrázka zlyhalo';
                           alert(`Chyba pri nahrávaní obrázka ${i + 1}: ${imgMsg}`);

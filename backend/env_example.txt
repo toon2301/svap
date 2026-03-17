@@ -6,6 +6,9 @@ ALLOWED_HOSTS=localhost,127.0.0.1,0.0.0.0
 # Database
 DATABASE_URL=sqlite:///db.sqlite3
 
+# Redis (cache + Celery broker)
+REDIS_URL=redis://localhost:6379/0
+
 # CAPTCHA settings
 CAPTCHA_ENABLED=True
 CAPTCHA_SECRET_KEY=your-google-recaptcha-secret-key
@@ -31,9 +34,16 @@ AUDIT_LOGGING_ENABLED=True
 SAFESEARCH_ENABLED=True
 SAFESEARCH_FAIL_OPEN=True
 SAFESEARCH_TIMEOUT=5
+SAFESEARCH_TIMING_LOG=False
 SAFESEARCH_MIN_ADULT=POSSIBLE
 SAFESEARCH_MIN_VIOLENCE=LIKELY
 SAFESEARCH_MIN_RACY=LIKELY
+
+# Offer images pipeline (async)
+# - upload goes to S3 prefix: uploads/
+# - worker writes approved outputs to: media/
+OFFER_IMAGE_MAX_SIDE=1600
+OFFER_IMAGE_WEBP_QUALITY=82
 
 # Local credentials path (optional if using JSON in env)
 # GOOGLE_APPLICATION_CREDENTIALS=backend/.secrets/gcp-vision.json

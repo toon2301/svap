@@ -530,19 +530,48 @@ class OfferedSkill(models.Model):
 class OfferedSkillImage(models.Model):
     """Obrázok priradený k ponúkanej zručnosti (ponuke)."""
 
+    class Status(models.TextChoices):
+        PENDING = "pending", _("Čaká na spracovanie")
+        APPROVED = "approved", _("Schválené")
+        REJECTED = "rejected", _("Zamietnuté")
+
     skill = models.ForeignKey(
         OfferedSkill, on_delete=models.CASCADE, related_name="images"
     )
     image = models.ImageField(
-        _("Obrázok"), upload_to="offers/", validators=[validate_image_file]
+        _("Obrázok"),
+        upload_to="offers/",
+        validators=[validate_image_file],
+        blank=True,
+        null=True,
     )
     order = models.PositiveIntegerField(_("Poradie"), default=0)
+    status = models.CharField(
+        _("Stav"),
+        max_length=20,
+        choices=Status.choices,
+        default=Status.APPROVED,
+        help_text=_("PENDING/REJECTED sa používajú pri asynchrónnom spracovaní obrázkov."),
+    )
+    # S3 keys (prefixes are part of key): uploads/.. for pending, media/.. for approved.
+    pending_key = models.CharField(_("S3 kľúč (pending)"), max_length=1024, blank=True, default="")
+    approved_key = models.CharField(_("S3 kľúč (approved)"), max_length=1024, blank=True, default="")
+    original_filename = models.CharField(_("Pôvodný názov súboru"), max_length=255, blank=True, default="")
+    content_type = models.CharField(_("Content-Type"), max_length=100, blank=True, default="")
+    size_bytes = models.BigIntegerField(_("Veľkosť (bytes)"), null=True, blank=True)
+    width = models.IntegerField(_("Šírka"), null=True, blank=True)
+    height = models.IntegerField(_("Výška"), null=True, blank=True)
+    rejected_reason = models.CharField(_("Dôvod zamietnutia"), max_length=255, blank=True, default="")
+    processed_at = models.DateTimeField(_("Spracované o"), null=True, blank=True)
     created_at = models.DateTimeField(_("Vytvorené"), auto_now_add=True)
 
     class Meta:
         verbose_name = _("Obrázok ponuky")
         verbose_name_plural = _("Obrázky ponúk")
         ordering = ["order", "id"]
+        indexes = [
+            models.Index(fields=["skill", "status", "order", "id"], name="acc_offer_img_skill_status_idx"),
+        ]
 
     def __str__(self):
         return f"Obrázok #{self.id} pre {self.skill}"

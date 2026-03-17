@@ -524,6 +524,8 @@ export const endpoints = {
     detail: (id: number) => `/auth/skills/${id}/`,
     images: (skillId: number) => `/auth/skills/${skillId}/images/`,
     imageDetail: (skillId: number, imageId: number) => `/auth/skills/${skillId}/images/${imageId}/`,
+    imageUploadInit: (skillId: number) => `/auth/skills/${skillId}/images/upload-init/`,
+    imageUploadComplete: (skillId: number) => `/auth/skills/${skillId}/images/upload-complete/`,
     reviews: (offerId: number) => `/auth/skills/${offerId}/reviews/`,
   },
   // Recenzie

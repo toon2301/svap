@@ -16,6 +16,7 @@ from .rest_framework_cfg import *  # noqa
 from .jwt import *  # noqa
 from .cors_csrf import *  # noqa
 from .cache import *  # noqa
+from .celery_cfg import *  # noqa
 from .rate_limiting_cfg import *  # noqa
 from .captcha import *  # noqa
 from .safesearch import *  # noqa

@@ -5,6 +5,7 @@ export type SkillImage = {
   image_url?: string | null;
   image?: string | null;
   order?: number;
+  status?: 'pending' | 'approved' | 'rejected' | string | null;
 };
 
 export const CURRENCY_OPTIONS = ['€', 'Kč', '$', 'zł', 'Ft'] as const;

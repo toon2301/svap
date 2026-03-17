@@ -2,6 +2,7 @@
 
 import { useCallback } from 'react';
 import { api, endpoints } from '@/lib/api';
+import { uploadOfferImage } from '@/lib/offerImageUpload';
 import type { DashboardSkill } from './useSkillsModals';
 
 type Translator = (key: string, fallback: string) => string;
@@ -122,9 +123,7 @@ export function useSkillSaveHandler({
           for (let i = 0; i < newImages.length; i++) {
             const file = newImages[i];
             try {
-              const fd = new FormData();
-              fd.append('image', file);
-              await api.post(endpoints.skills.images(skill.id), fd);
+              await uploadOfferImage(skill.id, file);
             } catch (imgError: any) {
               const imgMsg =
                 imgError?.response?.data?.error ||
@@ -144,9 +143,7 @@ export function useSkillSaveHandler({
           for (let i = 0; i < newImages.length; i++) {
             const file = newImages[i];
             try {
-              const fd = new FormData();
-              fd.append('image', file);
-              await api.post(endpoints.skills.images(savedSkill.id), fd);
+              await uploadOfferImage(savedSkill.id, file);
             } catch (imgError: any) {
               const imgMsg =
                 imgError?.response?.data?.error ||

@@ -8,6 +8,7 @@ import SkillDescriptionModal from './modules/skills/SkillDescriptionModal';
 import AddCustomCategoryModal from './modules/skills/AddCustomCategoryModal';
 import { skillsCategories } from '@/constants/skillsCategories';
 import { api, endpoints } from '../../lib/api';
+import { uploadOfferImage } from '../../lib/offerImageUpload';
 import type { DashboardSkill, UseSkillsModalsResult } from './hooks/useSkillsModals';
 import type { User } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
@@ -87,9 +88,7 @@ export default function DashboardModals({
     for (let i = 0; i < images.length; i += 1) {
       const file = images[i];
       try {
-        const fd = new FormData();
-        fd.append('image', file);
-        await api.post(endpoints.skills.images(skillId), fd);
+        await uploadOfferImage(skillId, file);
       } catch (imgError: any) {
         const imgMsg = imgError?.response?.data?.error || imgError?.response?.data?.detail || 'Nahrávanie obrázka zlyhalo';
         alert(`Chyba pri nahrávaní obrázka ${i + 1}: ${imgMsg}`);
