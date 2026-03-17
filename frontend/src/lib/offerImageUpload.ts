@@ -7,6 +7,16 @@ type UploadInitResponse = {
   expires_in: number;
 };
 
+const STORAGE_FALLBACK_FLAG = '__offer_image_force_multipart__';
+let forceMultipartInDev = false;
+if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
+  try {
+    forceMultipartInDev = window.sessionStorage.getItem(STORAGE_FALLBACK_FLAG) === '1';
+  } catch {
+    // ignore
+  }
+}
+
 function isStorageNotConfiguredError(err: any): boolean {
   const status = err?.response?.status;
   const message =
@@ -51,6 +61,10 @@ async function uploadOfferImageMultipart(skillId: number, file: File) {
 }
 
 export async function uploadOfferImage(skillId: number, file: File) {
+  if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production' && forceMultipartInDev) {
+    return await uploadOfferImageMultipart(skillId, file);
+  }
+
   let init: UploadInitResponse;
   try {
     const resp = await api.post<UploadInitResponse>(
@@ -66,6 +80,14 @@ export async function uploadOfferImage(skillId: number, file: File) {
     // Local/dev fallback: if S3 storage isn't configured, use legacy multipart upload.
     // In production (Railway) where S3 is configured, we never take this path.
     if (isStorageNotConfiguredError(e)) {
+      if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
+        forceMultipartInDev = true;
+        try {
+          window.sessionStorage.setItem(STORAGE_FALLBACK_FLAG, '1');
+        } catch {
+          // ignore
+        }
+      }
       return await uploadOfferImageMultipart(skillId, file);
     }
     throw e;

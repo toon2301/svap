@@ -21,7 +21,14 @@ export type DashboardSkill = {
   detailed_description?: string;
   experience?: { value: number; unit: 'years' | 'months' };
   tags?: string[];
-  images?: Array<{ id: number; image_url?: string | null; image?: string | null; order?: number }>;
+  images?: Array<{
+    id: number;
+    image_url?: string | null;
+    image?: string | null;
+    order?: number;
+    status?: string | null;
+    rejected_reason?: string | null;
+  }>;
   price_from?: number | null;
   price_currency?: string;
   district?: string;
@@ -94,6 +101,8 @@ export function useSkillsModals(): UseSkillsModalsResult {
             id: im.id,
             image_url: im.image_url || im.image || null,
             order: im.order,
+            status: im.status ?? null,
+            rejected_reason: im.rejected_reason ?? null,
           }))
         : [],
       price_from: parsedPrice,
@@ -120,9 +129,17 @@ export function useSkillsModals(): UseSkillsModalsResult {
   const applySkillUpdate = useCallback((updated: DashboardSkill | null) => {
     if (!updated?.id) return;
     if (updated.category === updated.subcategory) {
-      setCustomCategories((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
+      setCustomCategories((prev) => {
+        const idx = prev.findIndex((item) => item.id === updated.id);
+        if (idx === -1) return [updated, ...prev];
+        return prev.map((item) => (item.id === updated.id ? updated : item));
+      });
     } else {
-      setStandardCategories((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
+      setStandardCategories((prev) => {
+        const idx = prev.findIndex((item) => item.id === updated.id);
+        if (idx === -1) return [updated, ...prev];
+        return prev.map((item) => (item.id === updated.id ? updated : item));
+      });
     }
   }, []);
 

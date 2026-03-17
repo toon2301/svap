@@ -125,6 +125,23 @@ export function useSkillSaveHandler({
 
       let savedSkill: DashboardSkill;
       const newImages = (skill as any)._newImages || [];
+      const mergeUploadedImage = (base: DashboardSkill, uploaded: any): DashboardSkill => {
+        if (!uploaded || !uploaded.id) return base;
+        const src = uploaded.image_url ?? uploaded.image ?? null;
+        const status = uploaded.status ?? (src ? 'approved' : 'pending');
+        const nextImg: any = {
+          id: uploaded.id,
+          image_url: src,
+          image: uploaded.image ?? null,
+          order: typeof uploaded.order === 'number' ? uploaded.order : undefined,
+          status,
+          rejected_reason: uploaded.rejected_reason ?? null,
+        };
+        const prevImages = Array.isArray(base.images) ? base.images : [];
+        const without = prevImages.filter((im: any) => im?.id !== nextImg.id);
+        const nextImages = [...without, nextImg].sort((a: any, b: any) => (a.order ?? 0) - (b.order ?? 0));
+        return { ...base, images: nextImages };
+      };
 
       if (skill.id) {
         // Update existujúcej karty
@@ -139,7 +156,9 @@ export function useSkillSaveHandler({
           for (let i = 0; i < newImages.length; i++) {
             const file = newImages[i];
             try {
-              await uploadOfferImage(skill.id, file);
+              const uploaded = await uploadOfferImage(skill.id, file);
+              savedSkill = mergeUploadedImage(savedSkill, uploaded);
+              applySkillUpdate(savedSkill);
             } catch (imgError: any) {
               const imgMsg =
                 imgError?.response?.data?.error ||
@@ -158,11 +177,14 @@ export function useSkillSaveHandler({
         applySkillUpdate(savedSkill);
 
         // Nahrať nové obrázky
-        if (newImages.length > 0 && savedSkill.id) {
+        const savedSkillId = savedSkill.id;
+        if (newImages.length > 0 && savedSkillId) {
           for (let i = 0; i < newImages.length; i++) {
             const file = newImages[i];
             try {
-              await uploadOfferImage(savedSkill.id, file);
+              const uploaded = await uploadOfferImage(savedSkillId, file);
+              savedSkill = mergeUploadedImage(savedSkill, uploaded);
+              applySkillUpdate(savedSkill);
             } catch (imgError: any) {
               const imgMsg =
                 imgError?.response?.data?.error ||
