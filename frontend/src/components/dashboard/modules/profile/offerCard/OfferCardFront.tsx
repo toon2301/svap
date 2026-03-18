@@ -56,6 +56,7 @@ export function OfferCardFront({
 }: OfferCardFrontProps) {
   const showFront = !isFlipped;
   const router = useRouter();
+  const isReviewIconFilled = isOtherUserProfile ? offer.already_reviewed === true : (offer.reviews_count ?? 0) > 0;
 
   return (
     <div className={showFront ? 'block' : 'hidden'} style={{ minHeight: '100%' }}>
@@ -132,7 +133,10 @@ export function OfferCardFront({
                 strokeLinejoin="round"
                 className="w-3 h-3"
               >
-                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                <polygon
+                  points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
+                  fill={isReviewIconFilled ? 'currentColor' : 'none'}
+                />
               </svg>
             </button>
           )}

@@ -42,6 +42,7 @@ export default function ProfileOffersSection({
   const [offers, setOffers] = useState<Offer[]>([]);
   const [requestStatusByOfferId, setRequestStatusByOfferId] = useState<Record<number, string>>({});
   const [requestIdByOfferId, setRequestIdByOfferId] = useState<Record<number, number>>({});
+  const [alreadyReviewedByOfferId, setAlreadyReviewedByOfferId] = useState<Record<number, boolean | undefined>>({});
   const [busyOfferId, setBusyOfferId] = useState<number | null>(null);
   const [flippedCards, setFlippedCards] = useState<Set<number | string>>(() => new Set());
   const [activeHoursOfferId, setActiveHoursOfferId] = useState<number | string | null>(null);
@@ -237,6 +238,7 @@ export default function ProfileOffersSection({
             is_hidden: s.is_hidden === true,
             average_rating: s.average_rating,
             reviews_count: s.reviews_count,
+            already_reviewed: typeof s.already_reviewed === 'boolean' ? s.already_reviewed : undefined,
           };
         });
       });
@@ -358,10 +360,27 @@ export default function ProfileOffersSection({
             : {};
 
         const normalized: Record<number, string> = {};
+        const alreadyReviewed: Record<number, boolean | undefined> = {};
         Object.entries(data).forEach(([k, v]) => {
           if (k === 'request_ids') return;
           const n = Number(k);
-          if (Number.isFinite(n) && typeof v === 'string') normalized[n] = v;
+          if (!Number.isFinite(n)) return;
+
+          if (typeof v === 'string') {
+            normalized[n] = v;
+            return;
+          }
+
+          if (v && typeof v === 'object') {
+            const vv = v as Record<string, unknown>;
+            const status = vv.status;
+            if (typeof status === 'string') normalized[n] = status;
+
+            const alreadyReviewedRaw = vv.already_reviewed;
+            if (typeof alreadyReviewedRaw === 'boolean') {
+              alreadyReviewed[n] = alreadyReviewedRaw === true;
+            }
+          }
         });
 
         const ridMap: Record<number, number> = {};
@@ -374,6 +393,7 @@ export default function ProfileOffersSection({
         if (!cancelled) {
           setRequestStatusByOfferId(normalized);
           setRequestIdByOfferId(ridMap);
+          setAlreadyReviewedByOfferId(alreadyReviewed);
         }
       } catch (e: any) {
         // Abort/cancel is expected on unmount/logout/tab switch
@@ -498,7 +518,11 @@ export default function ProfileOffersSection({
                 className="relative group"
               >
                 <ProfileOfferCard
-                  offer={offer}
+                  offer={
+                    isOtherUserProfile
+                      ? { ...offer, already_reviewed: alreadyReviewedByOfferId[offer.id] ?? offer.already_reviewed }
+                      : offer
+                  }
                   accountType={accountType}
                   t={t}
                   isFlipped={isFlipped}

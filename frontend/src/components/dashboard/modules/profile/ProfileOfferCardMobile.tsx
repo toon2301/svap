@@ -40,6 +40,7 @@ export function ProfileOfferCardMobile({
   const router = useRouter();
   const defaultRequestLabel = offer.is_seeking ? t('requests.offer', 'Ponúknuť') : t('requests.request', 'Požiadať');
   const requestLabel = requestLabelProp ?? defaultRequestLabel;
+  const isReviewIconFilled = isOtherUserProfile ? offer.already_reviewed === true : (offer.reviews_count ?? 0) > 0;
 
   const catSlug = offer.category ? slugifyLabel(offer.category) : '';
   const subSlug = offer.subcategory ? slugifyLabel(offer.subcategory) : '';
@@ -225,7 +226,10 @@ export function ProfileOfferCardMobile({
                 strokeLinejoin="round"
                 className="w-4 h-4"
               >
-                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                <polygon
+                  points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
+                  fill={isReviewIconFilled ? 'currentColor' : 'none'}
+                />
               </svg>
             </button>
           )}

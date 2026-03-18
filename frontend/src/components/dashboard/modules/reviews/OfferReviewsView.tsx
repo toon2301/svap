@@ -16,6 +16,7 @@ import { ProfileOpeningHoursMobileModal } from '../profile/ProfileOpeningHoursMo
 import { OfferReviewsDesktop } from './OfferReviewsDesktop';
 import { OfferReviewsMobile } from './OfferReviewsMobile';
 import type { Review } from './ReviewCard';
+import { invalidateOffersCache } from '../profile/profileOffersCache';
 
 type OfferOwnerLike = {
   id?: number;
@@ -85,6 +86,7 @@ export default function OfferReviewsView({
   const { t } = useLanguage();
   const { user: authUser } = useAuth();
   const user = dashboardUser ?? authUser;
+  const viewerUserId = user?.id ?? null;
   const searchParams = useSearchParams();
 
   const [offer, setOffer] = useState<OfferDetailLike | null>(null);
@@ -317,6 +319,12 @@ export default function OfferReviewsView({
             await api.delete(endpoints.reviews.detail(reviewIdToDelete));
             const { data } = await api.get<Review[]>(endpoints.reviews.list(offerId));
             setReviews(data);
+
+            // Po zmene recenzie invaliduj cache ponúk, aby sa ikona recenzií na profile prepnula hneď po návrate.
+            if (viewerUserId != null) invalidateOffersCache(viewerUserId);
+            const ownerUserIdForInvalidation = offer?.user_id ?? offer?.owner?.id;
+            if (typeof ownerUserIdForInvalidation === 'number') invalidateOffersCache(ownerUserIdForInvalidation);
+
             setReviewIdToDelete(null);
           } catch (error: any) {
             console.error('Chyba pri vymazávaní recenzie:', error);
@@ -369,6 +377,12 @@ export default function OfferReviewsView({
             // Obnoviť zoznam recenzií
             const { data } = await api.get<Review[]>(endpoints.reviews.list(offerId));
             setReviews(data);
+
+            // Po zmene recenzie invaliduj cache ponúk, aby sa ikona recenzií na profile prepnula hneď po návrate.
+            if (viewerUserId != null) invalidateOffersCache(viewerUserId);
+            const ownerUserIdForInvalidation = offer?.user_id ?? offer?.owner?.id;
+            if (typeof ownerUserIdForInvalidation === 'number') invalidateOffersCache(ownerUserIdForInvalidation);
+
             setIsAddReviewModalOpen(false);
             setReviewToEdit(null);
             

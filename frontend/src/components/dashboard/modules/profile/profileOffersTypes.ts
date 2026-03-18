@@ -17,6 +17,8 @@ export interface OfferImage {
 }
 
 export interface Offer {
+  /** Vlastnosť pre prepínanie ikonky recenzií (plná/outline) pre aktuálneho používateľa na cudzom profile. */
+  already_reviewed?: boolean;
   id: number;
   category: string;
   subcategory: string;
