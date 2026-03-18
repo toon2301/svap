@@ -64,16 +64,15 @@ export function RequestsDesktop() {
   }, [statusTab]);
 
   useEffect(() => {
-    void markAllRead();
     void load();
-  }, [load, markAllRead]);
+  }, [load]);
 
-  // Keď si v Žiadostiach a badge sa zobrazí (nové žiadosti), po 5 s automaticky označ ako prečítané
+  // Keď si v Žiadostiach a badge sa zobrazí (nové žiadosti), po krátkom čase ho označíme ako prečítané.
   useEffect(() => {
     if (unreadCount <= 0) return;
     const t = window.setTimeout(() => {
       markAllRead();
-    }, 5000);
+    }, 2500);
     return () => window.clearTimeout(t);
   }, [unreadCount, markAllRead]);
 

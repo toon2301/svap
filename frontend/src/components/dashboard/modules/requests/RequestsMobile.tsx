@@ -69,15 +69,14 @@ export function RequestsMobile() {
   }, [statusTab]);
 
   useEffect(() => {
-    void markAllRead();
     void load();
-  }, [load, markAllRead]);
+  }, [load]);
 
   useEffect(() => {
     if (unreadCount <= 0) return;
     const tmr = window.setTimeout(() => {
       markAllRead();
-    }, 5000);
+    }, 2500);
     return () => window.clearTimeout(tmr);
   }, [unreadCount, markAllRead]);
 
