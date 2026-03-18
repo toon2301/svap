@@ -86,6 +86,7 @@ const nextConfig = {
       const isValidOrigin = (o) =>
         o.startsWith("'") ||
         o.startsWith('data') ||
+        o.startsWith('blob:') ||
         /^https:\/\/[a-z0-9.-]+$/.test(String(o).replace(/\/+$/, ''));
 
       const imgSrcOrigins = imgSrcCandidates
