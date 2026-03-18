@@ -2,67 +2,51 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import ImageWithStatusOverlay from '@/components/shared/ImageWithStatusOverlay';
 
 interface OfferImage {
   id?: number;
   image_url?: string | null;
   image?: string | null;
   order?: number | null;
-  status?: 'pending' | 'approved' | 'rejected' | string | null;
-  rejected_reason?: string | null;
 }
 
 interface OfferImageCarouselProps {
   images?: OfferImage[];
   alt: string;
   intervalMs?: number;
-  /** Ako sa má obrázok prispôsobiť kontajneru. Default: 'cover'. */
-  fit?: 'cover' | 'contain';
 }
 
 type PreparedImage = {
   key: string;
-  src: string | null;
+  src: string;
   order: number;
-  status?: OfferImage['status'];
-  rejected_reason?: OfferImage['rejected_reason'];
 };
 
 const DEFAULT_INTERVAL = 5000;
 
-const OfferImageCarousel: React.FC<OfferImageCarouselProps> = ({
-  images,
-  alt,
-  intervalMs = DEFAULT_INTERVAL,
-  fit = 'cover',
-}) => {
+const OfferImageCarousel: React.FC<OfferImageCarouselProps> = ({ images, alt, intervalMs = DEFAULT_INTERVAL }) => {
   const { t } = useLanguage();
   const preparedImages: PreparedImage[] = useMemo(() => {
     if (!Array.isArray(images)) {
       return [];
     }
+
     return images
       .map((img, index) => {
-        const src = img?.image_url || img?.image || null;
+        const src = img?.image_url || img?.image || '';
         return {
-          key: String(img?.id ?? `${index}-${src ?? 'no-src'}`),
+          key: String(img?.id ?? `${index}-${src}`),
           src,
-          order:
-            typeof img?.order === 'number'
-              ? img.order
-              : index,
-          status: img?.status,
-          rejected_reason: img?.rejected_reason,
+          order: typeof img?.order === 'number' ? img.order : index,
         };
       })
+      .filter((img) => Boolean(img.src))
       .sort((a, b) => a.order - b.order);
   }, [images]);
 
   const [activeIndex, setActiveIndex] = useState(0);
 
   useEffect(() => {
-    // Vždy resetuj na prvý obrázok pri zmene zoznamu obrázkov
     setActiveIndex(0);
 
     if (preparedImages.length <= 1) {
@@ -93,15 +77,9 @@ const OfferImageCarousel: React.FC<OfferImageCarouselProps> = ({
               strokeLinejoin="round"
               d="M6.75 7.5l1.027-1.37A1.5 1.5 0 0 1 9 5.5h6a1.5 1.5 0 0 1 1.223.63L17.25 7.5H19.5A1.5 1.5 0 0 1 21 9v7.5a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 16.5V9A1.5 1.5 0 0 1 4.5 7.5h2.25Z"
             />
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"
-            />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" />
           </svg>
-          <span className="text-[11px] uppercase tracking-wide opacity-70">
-            {t('skills.noPhoto', 'Bez fotografie')}
-          </span>
+          <span className="text-[11px] uppercase tracking-wide opacity-70">{t('skills.noPhoto', 'Bez fotografie')}</span>
         </div>
       </div>
     );
@@ -109,32 +87,20 @@ const OfferImageCarousel: React.FC<OfferImageCarouselProps> = ({
 
   return (
     <div className="absolute inset-0">
-      {preparedImages[activeIndex] && (
-        <>
-          {fit === 'contain' && preparedImages[activeIndex].src ? (
-            <img
-              src={preparedImages[activeIndex].src}
-              alt=""
-              aria-hidden
-              className="absolute inset-0 h-full w-full object-cover blur-xl scale-110 opacity-50"
-            />
-          ) : null}
-          <ImageWithStatusOverlay
-            key={preparedImages[activeIndex].key}
-            image_url={preparedImages[activeIndex].src}
-            alt={alt}
-            status={preparedImages[activeIndex].status}
-            rejected_reason={preparedImages[activeIndex].rejected_reason ?? null}
-            className="absolute inset-0"
-            imgClassName={`h-full w-full ${fit === 'contain' ? 'object-contain' : 'object-cover'}`}
-          />
-        </>
-      )}
+      {preparedImages.map((img, idx) => (
+        <img
+          key={img.key}
+          src={img.src}
+          alt={alt}
+          className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-700 ease-in-out ${
+            idx === activeIndex ? 'opacity-100' : 'opacity-0'
+          }`}
+          loading={idx === 0 ? 'eager' : 'lazy'}
+        />
+      ))}
       <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-black/15 via-transparent to-transparent" />
     </div>
   );
 };
 
 export default OfferImageCarousel;
-
-

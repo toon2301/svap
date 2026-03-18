@@ -43,7 +43,7 @@ export default function SkillsMobileCard({
   return (
     <div className="w-full rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-[#0f0f10] shadow-sm">
       <div className="relative aspect-[4/3] bg-gray-100 dark:bg-[#0e0e0f] overflow-hidden">
-        <OfferImageCarousel images={item.images} alt={imageAlt} fit="contain" />
+        <OfferImageCarousel images={item.images} alt={imageAlt} />
         {hasMultipleImages && (
           <div className="absolute bottom-2 right-2 px-2 py-1 rounded-full bg-black/40 backdrop-blur-sm text-white/90 text-[10px] font-medium flex items-center gap-1">
             <svg

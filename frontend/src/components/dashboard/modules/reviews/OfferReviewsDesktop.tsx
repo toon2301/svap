@@ -98,7 +98,7 @@ export function OfferReviewsDesktop({
                 <div className="w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
               </div>
             ) : (
-              <OfferImageCarousel images={offer?.images ?? []} alt={imageAlt} intervalMs={4000} fit="contain" />
+              <OfferImageCarousel images={offer?.images ?? []} alt={imageAlt} intervalMs={4000} />
             )}
           </div>
           <hr className="mt-6 mb-0 border-0 h-px bg-gradient-to-r from-transparent via-purple-300 dark:via-purple-600 to-transparent" />

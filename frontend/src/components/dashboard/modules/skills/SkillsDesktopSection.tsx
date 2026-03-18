@@ -57,7 +57,7 @@ function renderOfferCard(
   return (
     <div className="relative rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-800 bg-white/70 dark:bg-[#0f0f10] shadow-sm hover:shadow-md hover:border-purple-200 dark:hover:border-purple-800/50 transition-all duration-300">
       <div className="relative aspect-[4/3] bg-gray-100 dark:bg-[#111112] overflow-hidden group">
-        <OfferImageCarousel images={item.images} alt={imageAlt} fit="contain" />
+        <OfferImageCarousel images={item.images} alt={imageAlt} />
         {hasMultipleImages && (
           <div className="absolute bottom-2 right-2 px-2 py-1 rounded-full bg-black/30 dark:bg-black/40 backdrop-blur-sm text-white/90 dark:text-white/80 text-[10px] font-medium flex items-center gap-1">
             <svg className="w-3 h-3 opacity-80" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
