@@ -123,6 +123,20 @@ export default function SkillDescriptionModal({
       setPriceError: state.setPriceError,
       t,
     });
+    if (ok && state.removedExistingImageIds.length > 0 && onRemoveExistingImage) {
+      setSubmitLabel(t('skills.deletingPhotosLong', 'Odstraňujem fotky…'));
+      for (const id of state.removedExistingImageIds) {
+        try {
+          // Skutočné zmazanie až po potvrdení "Aktualizovať"
+          // (onRemoveExistingImage je napojené na API delete)
+          // eslint-disable-next-line no-await-in-loop
+          await onRemoveExistingImage(id);
+        } catch {
+          // fail-soft: chybu už zobrazuje onRemoveExistingImage; pokračuj ďalej
+        }
+      }
+      state.setRemovedExistingImageIds([]);
+    }
     // If validation failed, stop the loading state and keep modal open.
     if (!ok) {
       setIsSubmitting(false);
@@ -254,7 +268,8 @@ export default function SkillDescriptionModal({
               setImagePreviews={state.setImagePreviews}
               existingImages={state.existingImages}
               setExistingImages={state.setExistingImages}
-              onRemoveExistingImage={onRemoveExistingImage}
+              removedExistingImageIds={state.removedExistingImageIds}
+              setRemovedExistingImageIds={state.setRemovedExistingImageIds}
               isOpen={isOpen}
             />
 

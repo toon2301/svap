@@ -12,7 +12,9 @@ interface ImagesSectionProps {
   setImagePreviews: React.Dispatch<React.SetStateAction<string[]>>;
   existingImages: SkillImage[];
   setExistingImages: React.Dispatch<React.SetStateAction<SkillImage[]>>;
-  onRemoveExistingImage?: (imageId: number) => Promise<SkillImage[] | void>;
+  /** IDčka existujúcich fotiek označených na zmazanie (pending, až po "Aktualizovať"). */
+  removedExistingImageIds: number[];
+  setRemovedExistingImageIds: React.Dispatch<React.SetStateAction<number[]>>;
   isOpen: boolean;
 }
 
@@ -25,17 +27,16 @@ export default function ImagesSection({
   setImagePreviews,
   existingImages,
   setExistingImages,
-  onRemoveExistingImage,
+  removedExistingImageIds,
+  setRemovedExistingImageIds,
   isOpen,
 }: ImagesSectionProps) {
   const { t } = useLanguage();
   const [imageError, setImageError] = useState('');
-  const [removingImageId, setRemovingImageId] = useState<number | null>(null);
 
   useEffect(() => {
     if (!isOpen) {
       setImageError('');
-      setRemovingImageId(null);
     }
   }, [isOpen]);
 
@@ -57,22 +58,10 @@ export default function ImagesSection({
 
   const totalImagesCount = validExistingImages.length + imagePreviews.length;
 
-  const handleRemoveExistingImage = async (imageId: number) => {
-    if (!onRemoveExistingImage) return;
-    setRemovingImageId(imageId);
-    try {
-      const updated = await onRemoveExistingImage(imageId);
-      if (Array.isArray(updated)) {
-        setExistingImages(updated);
-      } else {
-        setExistingImages((prev) => prev.filter((img) => img.id !== imageId));
-      }
-    } catch (err: any) {
-      const msg = err?.response?.data?.error || err?.message || t('skills.imageDeleteFailed', 'Odstránenie obrázka zlyhalo.');
-      alert(msg);
-    } finally {
-      setRemovingImageId(null);
-    }
+  const handleRemoveExistingImage = (imageId: number) => {
+    // Len lokálne označenie na zmazanie – skutočné mazanie prebehne až po "Aktualizovať".
+    setRemovedExistingImageIds((prev) => (prev.includes(imageId) ? prev : [...prev, imageId]));
+    setExistingImages((prev) => prev.filter((img) => img.id !== imageId));
   };
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -117,7 +106,7 @@ export default function ImagesSection({
           </div>
         )}
         {validExistingImages.map((img) => {
-          const isRemoving = removingImageId === img.id;
+          const isRemoving = Boolean(img.id && removedExistingImageIds.includes(img.id));
           return (
             <div key={`${img.id ?? img.image_url ?? img.image ?? 'placeholder'}`} className="relative w-20 h-20 rounded-lg overflow-hidden border border-gray-300 dark:border-gray-700">
               <ImageWithStatusOverlay
@@ -127,7 +116,7 @@ export default function ImagesSection({
                 alt={t('skills.existingPhotoAlt', 'Existujúca fotka')}
                 className={`w-full h-full ${isRemoving ? 'opacity-50' : 'opacity-100'} transition-opacity`}
               />
-              {onRemoveExistingImage && img.id ? (
+              {img.id ? (
                 <button
                   type="button"
                   aria-label={t('skills.removeExistingPhoto', 'Odstrániť existujúcu fotku')}
@@ -135,13 +124,7 @@ export default function ImagesSection({
                   onClick={() => handleRemoveExistingImage(img.id!)}
                   disabled={isRemoving}
                 >
-                  {isRemoving ? (
-                    <svg className="w-3 h-3 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 12a8 8 0 018-8" />
-                    </svg>
-                  ) : (
-                    '×'
-                  )}
+                  ×
                 </button>
               ) : null}
             </div>

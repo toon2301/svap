@@ -48,6 +48,7 @@ export const useSkillDescriptionState = ({
   const [images, setImages] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [existingImages, setExistingImages] = useState<SkillImage[]>([]);
+  const [removedExistingImageIds, setRemovedExistingImageIds] = useState<number[]>([]);
   const [priceFrom, setPriceFrom] = useState('');
   const [priceCurrency, setPriceCurrency] = useState<CurrencyOption>('€');
   const [userTouchedCurrency, setUserTouchedCurrency] = useState(false);
@@ -82,6 +83,7 @@ export const useSkillDescriptionState = ({
       setImages([]);
       setImagePreviews([]);
       setExistingImages(Array.isArray(initialImages) ? initialImages : []);
+      setRemovedExistingImageIds([]);
       setPriceFrom(initialPriceFrom !== null && initialPriceFrom !== undefined ? String(initialPriceFrom) : '');
       if ((initialPriceCurrency ?? '') === '' && (initialPriceFrom === null || initialPriceFrom === undefined)) {
         setPriceCurrency(currencyFromLocale(locale));
@@ -106,6 +108,7 @@ export const useSkillDescriptionState = ({
       setImages([]);
       setImagePreviews([]);
       setExistingImages([]);
+      setRemovedExistingImageIds([]);
       setPriceFrom('');
       setPriceCurrency(currencyFromLocale(locale));
       setUserTouchedCurrency(false);
@@ -143,9 +146,11 @@ export const useSkillDescriptionState = ({
       if (imagesChanged) {
         prevInitialImagesRef.current = currentImages;
         setExistingImages(currentImages);
+        setRemovedExistingImageIds([]);
       }
     } else {
       prevInitialImagesRef.current = [];
+      setRemovedExistingImageIds([]);
     }
   }, [initialImages, isOpen]);
 
@@ -218,6 +223,8 @@ export const useSkillDescriptionState = ({
     setImagePreviews,
     existingImages,
     setExistingImages,
+    removedExistingImageIds,
+    setRemovedExistingImageIds,
     priceFrom,
     setPriceFrom,
     priceCurrency,
