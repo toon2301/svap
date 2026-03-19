@@ -20,11 +20,12 @@ interface NameModalProps {
   setOriginalLastName?: (v: string) => void;
   onClose: () => void; // will reset values
   onUserUpdate?: (u: User) => void;
+  onEditableUserUpdate?: (partial: Partial<User>) => void;
   accountType?: 'personal' | 'business';
   user: User;
 }
 
-export default function NameModal({ isOpen, firstName, lastName, originalFirstName, originalLastName, setFirstName, setLastName, setOriginalFirstName, setOriginalLastName, onClose, onUserUpdate, accountType = 'personal', user }: NameModalProps) {
+export default function NameModal({ isOpen, firstName, lastName, originalFirstName, originalLastName, setFirstName, setLastName, setOriginalFirstName, setOriginalLastName, onClose, onUserUpdate, onEditableUserUpdate, accountType = 'personal', user }: NameModalProps) {
   const { t } = useLanguage();
   const [inputValue, setInputValue] = useState('');
 
@@ -58,10 +59,30 @@ export default function NameModal({ isOpen, firstName, lastName, originalFirstNa
   };
 
   const handleSave = async () => {
+    // Obmedziť na 25 znakov
+    const trimmedValue = inputValue.trim().slice(0, 25);
+
+    if (onEditableUserUpdate) {
+      if (accountType === 'business') {
+        onEditableUserUpdate({ company_name: trimmedValue, first_name: trimmedValue, last_name: '' });
+        setFirstName(trimmedValue);
+        setLastName('');
+        setOriginalFirstName?.(trimmedValue);
+        setOriginalLastName?.('');
+      } else {
+        const parts = trimmedValue.split(/\s+/).filter(Boolean);
+        const finalFirstName = parts.length === 0 ? '' : parts.length === 1 ? parts[0] : parts.slice(0, -1).join(' ');
+        const finalLastName = parts.length <= 1 ? '' : parts[parts.length - 1];
+        onEditableUserUpdate({ first_name: finalFirstName.trim(), last_name: finalLastName.trim(), company_name: trimmedValue });
+        parseAndUpdate(trimmedValue);
+        setOriginalFirstName?.(finalFirstName.trim());
+        setOriginalLastName?.(finalLastName.trim());
+      }
+      onClose();
+      return;
+    }
+
     try {
-      // Obmedziť na 25 znakov
-      const trimmedValue = inputValue.trim().slice(0, 25);
-      
       if (accountType === 'business') {
         // Pre firmy ukladať ako company_name a synchronizovať do first_name
         const response = await api.patch('/auth/profile/', { 

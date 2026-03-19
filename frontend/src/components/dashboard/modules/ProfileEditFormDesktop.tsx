@@ -8,34 +8,49 @@ import { ProfileEditFormDesktopLayout } from './profile-edit/desktop/ProfileEdit
 
 interface ProfileEditFormDesktopProps {
   user: User;
-  onUserUpdate?: (user: User) => void;
+  editableUser: User;
+  onEditableUserUpdate: (partial: Partial<User>) => void;
   onEditProfileClick?: () => void;
+  onEditCancel?: () => void;
+  onEditSave?: (mergedUser?: User) => Promise<void>;
   onPhotoUpload?: (file: File) => void;
+  onRemoveAvatar?: () => Promise<void>;
   isUploadingFromParent?: boolean;
   onAvatarClick?: () => void;
   accountType?: 'personal' | 'business';
 }
 
-export default function ProfileEditFormDesktop({ 
-  user, 
-  onUserUpdate, 
+export default function ProfileEditFormDesktop({
+  user,
+  editableUser,
+  onEditableUserUpdate,
   onEditProfileClick,
+  onEditCancel,
+  onEditSave,
   onPhotoUpload,
+  onRemoveAvatar,
   isUploadingFromParent,
   onAvatarClick,
-  accountType = 'personal'
+  accountType = 'personal',
 }: ProfileEditFormDesktopProps) {
   const { t } = useLanguage();
-  const form = useProfileEditFormDesktop({ user, onUserUpdate });
-
-  // full name / company name logika je presunutá do FullNameField (bez zmeny správania)
+  const form = useProfileEditFormDesktop({
+    user,
+    editableUser,
+    onEditableUserUpdate,
+    onEditSave,
+    onEditCancel,
+    onPhotoUpload,
+    onRemoveAvatar,
+  });
 
   return (
     <ProfileEditFormDesktopLayout
       user={user}
+      editableUser={editableUser}
       accountType={accountType}
       t={t}
-      onUserUpdate={onUserUpdate}
+      onEditableUserUpdate={onEditableUserUpdate}
       form={form}
     />
   );

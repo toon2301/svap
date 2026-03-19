@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { User } from '../../../types';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useIsMobile } from '@/hooks';
 import { api } from '../../../lib/api';
 import ProfileMobileView from './profile/ProfileMobileView';
 import ProfileDesktopView from './profile/ProfileDesktopView';
@@ -10,10 +11,32 @@ import ProfileAvatarActionsModal from './profile/ProfileAvatarActionsModal';
 import ProfileWebsitesModal from './profile/ProfileWebsitesModal';
 import type { ProfileTab } from './profile/profileTypes';
 
+/** Hlboká kópia user objektu (1 level, arrays cez spread). */
+function deepCloneUser(u: User): User {
+  return {
+    ...u,
+    additional_websites: u.additional_websites ? [...u.additional_websites] : undefined,
+  };
+}
+
+/** Writable polia pre PATCH (bez read-only). */
+function buildPatchPayload(editable: User): Record<string, unknown> {
+  const exclude = new Set([
+    'id', 'email', 'is_verified', 'created_at', 'updated_at',
+    'profile_completeness', 'slug', 'name_modified_by_user', 'completed_cooperations_count', 'avatar_url',
+  ]);
+  const payload: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(editable)) {
+    if (!exclude.has(k) && v !== undefined) payload[k] = v;
+  }
+  return payload;
+}
+
 interface ProfileModuleProps {
   user: User;
   onUserUpdate?: (updatedUser: User) => void;
   onEditProfileClick?: () => void;
+  onEditCancel?: () => void;
   onSkillsClick?: () => void;
   isEditMode?: boolean;
   accountType?: 'personal' | 'business';
@@ -23,11 +46,13 @@ export default function ProfileModule({
   user,
   onUserUpdate,
   onEditProfileClick,
+  onEditCancel,
   onSkillsClick,
   isEditMode = false,
   accountType = 'personal',
 }: ProfileModuleProps) {
   const { t } = useLanguage();
+  const isMobile = useIsMobile();
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string>('');
   const [uploadSuccess, setUploadSuccess] = useState(false);
@@ -35,28 +60,77 @@ export default function ProfileModule({
   const [mounted, setMounted] = useState(false);
   const [isAllWebsitesModalOpen, setIsAllWebsitesModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<ProfileTab>('offers');
-  /** Snapshot používateľa pri vstupe do edit módu. Používa sa LEN počas editovania. Mimo edit módu sa vždy zobrazuje aktuálny user. */
-  const [snapshotUser, setSnapshotUser] = useState<User | null>(null);
+
+  // Avatar preview URL (optimistic). Revoke to avoid memory leaks.
+  const avatarPreviewUrlRef = useRef<string | null>(null);
+  useEffect(() => {
+    return () => {
+      if (avatarPreviewUrlRef.current) {
+        URL.revokeObjectURL(avatarPreviewUrlRef.current);
+        avatarPreviewUrlRef.current = null;
+      }
+    };
+  }, []);
+
+  /**
+   * Editable working copy. Existuje LEN počas edit módu.
+   * - View komponenty: vždy user (read-only)
+   * - Edit komponenty: vždy editableUser
+   */
+  const [editableUser, setEditableUser] = useState<User | null>(null);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Správa snapshotu: vytvor pri vstupe do edit módu, vymaž pri výstupe (synchronne s isEditMode)
+  // Inicializácia editableUser pri vstupe do edit módu; reset pri výstupe
   useEffect(() => {
     if (isEditMode) {
-      if (!snapshotUser) setSnapshotUser({ ...user });
+      if (!editableUser) setEditableUser(deepCloneUser(user));
     } else {
-      setSnapshotUser(null);
+      setEditableUser(null);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- snapshot sa vytvára len pri vstupe do edit módu
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- editableUser sa vytvára len pri vstupe
   }, [isEditMode]);
 
-  /**
-   * Deterministická logika: mimo edit módu vždy aktuálny user.
-   * Počas edit módu snapshot (ak existuje) – edit form však zobrazuje user, nie displayUser.
-   */
-  const displayUser: User = isEditMode && snapshotUser ? snapshotUser : user;
+  const handleEditableUserUpdate = useCallback((partial: Partial<User>) => {
+    setEditableUser((prev) => (prev ? { ...prev, ...partial } : null));
+  }, []);
+
+  const handleSave = useCallback(async (mergedUser?: User) => {
+    const toSave = mergedUser ?? editableUser;
+    if (!toSave || !onUserUpdate || !onEditCancel) return;
+
+    // Optimistic update + rollback on failure
+    const previousUser = deepCloneUser(user);
+    onUserUpdate(toSave);
+
+    setIsUploading(true);
+    setUploadError('');
+    try {
+      const payload = buildPatchPayload(toSave);
+      const response = await api.patch('/auth/profile/', payload);
+      if (response.data?.user) {
+        // Sync with backend canonical response (e.g. normalized fields)
+        onUserUpdate(response.data.user);
+        setEditableUser(null);
+        onEditCancel();
+      }
+    } catch (e: unknown) {
+      onUserUpdate(previousUser);
+      const err = e as { response?: { data?: { details?: Record<string, string[]> } } };
+      const details = err?.response?.data?.details;
+      const firstMsg = details && Object.values(details).flat().find((m): m is string => typeof m === 'string');
+      setUploadError(firstMsg || 'Nepodarilo sa uložiť.');
+    } finally {
+      setIsUploading(false);
+    }
+  }, [editableUser, onUserUpdate, onEditCancel, user]);
+
+  const handleCancel = useCallback(() => {
+    setEditableUser(null);
+    onEditCancel?.();
+  }, [onEditCancel]);
 
   const handleTabsKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
     const order: ProfileTab[] = ['offers', 'portfolio', 'posts', 'tagged'];
@@ -73,6 +147,21 @@ export default function ProfileModule({
   };
 
   const handlePhotoUpload = async (file: File) => {
+    if (!onUserUpdate) return;
+
+    // Optimistic local preview (instant UI)
+    const previousUser = deepCloneUser(user);
+    if (avatarPreviewUrlRef.current) {
+      URL.revokeObjectURL(avatarPreviewUrlRef.current);
+      avatarPreviewUrlRef.current = null;
+    }
+    const previewUrl = URL.createObjectURL(file);
+    avatarPreviewUrlRef.current = previewUrl;
+    onUserUpdate({ ...user, avatar_url: previewUrl } as User);
+    if (isEditMode && editableUser) {
+      handleEditableUserUpdate({ avatar_url: previewUrl } as Partial<User>);
+    }
+
     setIsUploading(true);
     setUploadError('');
     setUploadSuccess(false);
@@ -81,22 +170,27 @@ export default function ProfileModule({
       const formData = new FormData();
       formData.append('avatar', file);
 
-      const response = await api.patch('/auth/profile/', formData);
-
-      // eslint-disable-next-line no-console
-      console.log('Upload response:', response.data);
-      if (onUserUpdate && response.data.user) {
-        // eslint-disable-next-line no-console
-        console.log('Updated user:', response.data.user);
+      const response = await api.patch<{ user: User }>('/auth/profile/', formData);
+      if (response.data?.user) {
         onUserUpdate(response.data.user);
+        if (isEditMode && editableUser) {
+          handleEditableUserUpdate(response.data.user);
+        }
       }
-
+      if (avatarPreviewUrlRef.current) {
+        URL.revokeObjectURL(avatarPreviewUrlRef.current);
+        avatarPreviewUrlRef.current = null;
+      }
       setUploadSuccess(true);
       setTimeout(() => setUploadSuccess(false), 3000);
     } catch (error: any) {
+      onUserUpdate(previousUser);
+      if (avatarPreviewUrlRef.current) {
+        URL.revokeObjectURL(avatarPreviewUrlRef.current);
+        avatarPreviewUrlRef.current = null;
+      }
       // eslint-disable-next-line no-console
       console.error('Photo upload error:', error);
-      // Pokús sa vytiahnuť konkrétnu validačnú správu z backendu
       const details = error?.response?.data?.details || error?.response?.data?.validation_errors;
       const avatarErrors: string[] | undefined = details?.avatar;
       const message =
@@ -118,16 +212,32 @@ export default function ProfileModule({
   };
 
   const handleRemoveAvatar = async () => {
+    if (!onUserUpdate) return;
+
+    // Optimistic remove + rollback
+    const previousUser = deepCloneUser(user);
+    onUserUpdate({ ...user, avatar: undefined, avatar_url: undefined } as User);
+    if (isEditMode && editableUser) {
+      handleEditableUserUpdate({ avatar: undefined, avatar_url: undefined } as Partial<User>);
+    }
+    if (avatarPreviewUrlRef.current) {
+      URL.revokeObjectURL(avatarPreviewUrlRef.current);
+      avatarPreviewUrlRef.current = null;
+    }
+
     try {
       setIsUploading(true);
       setUploadError('');
-      // Clear avatar by sending JSON null
-      const response = await api.patch('/auth/profile/', { avatar: null });
-      if (onUserUpdate && response.data.user) {
+      const response = await api.patch<{ user: User }>('/auth/profile/', { avatar: null });
+      if (response.data?.user) {
         onUserUpdate(response.data.user);
+        if (isEditMode && editableUser) {
+          handleEditableUserUpdate(response.data.user);
+        }
       }
       setIsActionsOpen(false);
     } catch (e: any) {
+      onUserUpdate(previousUser);
       const details = e?.response?.data?.details || e?.response?.data?.validation_errors;
       const avatarErrors: string[] | undefined = details?.avatar;
       const message =
@@ -144,41 +254,51 @@ export default function ProfileModule({
   return (
     <>
       <div className="max-w-2xl lg:max-w-full mx-auto lg:mx-0 text-[var(--foreground)] w-full">
-        <ProfileMobileView
-          user={user}
-          displayUser={displayUser}
-          isEditMode={isEditMode}
-          accountType={accountType}
-          isUploading={isUploading}
-          onUserUpdate={onUserUpdate}
-          onEditProfileClick={onEditProfileClick}
-          onPhotoUpload={handlePhotoUpload}
-          onAvatarClick={handleAvatarClick}
-          onSkillsClick={onSkillsClick}
-          activeTab={activeTab}
-          onChangeTab={setActiveTab}
-          onTabsKeyDown={handleTabsKeyDown}
-          onOpenAllWebsitesModal={() => setIsAllWebsitesModalOpen(true)}
-          offersOwnerId={displayUser.id}
-        />
-
-        <ProfileDesktopView
-          user={user}
-          displayUser={displayUser}
-          isEditMode={isEditMode}
-          accountType={accountType}
-          isUploading={isUploading}
-          onUserUpdate={onUserUpdate}
-          onEditProfileClick={onEditProfileClick}
-          onPhotoUpload={handlePhotoUpload}
-          onAvatarClick={handleAvatarClick}
-          onSkillsClick={onSkillsClick}
-          activeTab={activeTab}
-          onChangeTab={setActiveTab}
-          onTabsKeyDown={handleTabsKeyDown}
-          onOpenAllWebsitesModal={() => setIsAllWebsitesModalOpen(true)}
-          offersOwnerId={displayUser.id}
-        />
+        {isMobile ? (
+          <ProfileMobileView
+            user={user}
+            editableUser={editableUser}
+            isEditMode={isEditMode}
+            accountType={accountType}
+            isUploading={isUploading}
+            onUserUpdate={onUserUpdate}
+            onEditableUserUpdate={handleEditableUserUpdate}
+            onEditProfileClick={onEditProfileClick}
+            onEditCancel={handleCancel}
+            onEditSave={handleSave}
+            onPhotoUpload={handlePhotoUpload}
+            onRemoveAvatar={handleRemoveAvatar}
+            onAvatarClick={handleAvatarClick}
+            onSkillsClick={onSkillsClick}
+            activeTab={activeTab}
+            onChangeTab={setActiveTab}
+            onTabsKeyDown={handleTabsKeyDown}
+            onOpenAllWebsitesModal={() => setIsAllWebsitesModalOpen(true)}
+            offersOwnerId={user.id}
+          />
+        ) : (
+          <ProfileDesktopView
+            user={user}
+            editableUser={editableUser}
+            isEditMode={isEditMode}
+            accountType={accountType}
+            isUploading={isUploading}
+            onUserUpdate={onUserUpdate}
+            onEditableUserUpdate={handleEditableUserUpdate}
+            onEditProfileClick={onEditProfileClick}
+            onEditCancel={handleCancel}
+            onEditSave={handleSave}
+            onPhotoUpload={handlePhotoUpload}
+            onRemoveAvatar={handleRemoveAvatar}
+            onAvatarClick={handleAvatarClick}
+            onSkillsClick={onSkillsClick}
+            activeTab={activeTab}
+            onChangeTab={setActiveTab}
+            onTabsKeyDown={handleTabsKeyDown}
+            onOpenAllWebsitesModal={() => setIsAllWebsitesModalOpen(true)}
+            offersOwnerId={user.id}
+          />
+        )}
 
         {/* Success message */}
         {uploadSuccess && (

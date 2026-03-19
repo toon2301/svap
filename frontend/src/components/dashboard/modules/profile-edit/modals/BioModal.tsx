@@ -16,12 +16,19 @@ interface BioModalProps {
   setOriginalBio?: (v: string) => void;
   onClose: () => void;
   onUserUpdate?: (u: User) => void;
+  onEditableUserUpdate?: (partial: Partial<User>) => void;
 }
 
-export default function BioModal({ isOpen, bio, originalBio, setBio, setOriginalBio, onClose, onUserUpdate }: BioModalProps) {
+export default function BioModal({ isOpen, bio, originalBio, setBio, setOriginalBio, onClose, onUserUpdate, onEditableUserUpdate }: BioModalProps) {
   const { t } = useLanguage();
 
   const handleSave = async () => {
+    if (onEditableUserUpdate) {
+      onEditableUserUpdate({ bio });
+      setOriginalBio?.(bio);
+      onClose();
+      return;
+    }
     try {
       const response = await api.patch('/auth/profile/', { bio });
       onUserUpdate && response.data?.user && onUserUpdate(response.data.user);

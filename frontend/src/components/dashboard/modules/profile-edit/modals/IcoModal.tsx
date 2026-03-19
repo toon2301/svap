@@ -20,15 +20,23 @@ interface IcoModalProps {
   setOriginalIcoVisible?: (v: boolean) => void;
   onClose: () => void;
   onUserUpdate?: (u: User) => void;
+  onEditableUserUpdate?: (partial: Partial<User>) => void;
 }
 
-export default function IcoModal({ isOpen, ico, icoVisible, originalIco, originalIcoVisible, setIco, setIcoVisible, setOriginalIco, setOriginalIcoVisible, onClose, onUserUpdate }: IcoModalProps) {
+export default function IcoModal({ isOpen, ico, icoVisible, originalIco, originalIcoVisible, setIco, setIcoVisible, setOriginalIco, setOriginalIcoVisible, onClose, onUserUpdate, onEditableUserUpdate }: IcoModalProps) {
   const { t } = useLanguage();
   
   const handleSave = async () => {
     const icoCleaned = ico.replace(/\s/g, '').trim();
     if (icoCleaned && (icoCleaned.length < 8 || icoCleaned.length > 14)) {
       toast.error(t('profile.icoInvalidLength', 'IČO musí mať 8 až 14 číslic.'));
+      return;
+    }
+    if (onEditableUserUpdate) {
+      onEditableUserUpdate({ ico: icoCleaned, ico_visible: icoVisible });
+      setOriginalIco?.(icoCleaned);
+      setOriginalIcoVisible?.(icoVisible);
+      onClose();
       return;
     }
     try {

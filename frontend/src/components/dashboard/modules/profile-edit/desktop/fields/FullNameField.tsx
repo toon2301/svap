@@ -1,102 +1,72 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import toast from 'react-hot-toast';
-import { api } from '@/lib/api';
 import type { User } from '@/types';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { getApiErrorMessage } from '../../../requests/requestsApi';
 
 interface FullNameFieldProps {
-  user: User;
+  editableUser: User;
   accountType: 'personal' | 'business';
   firstName: string;
   lastName: string;
   setFirstName: (v: string) => void;
   setLastName: (v: string) => void;
-  onUserUpdate?: (user: User) => void;
+  onEditableUserUpdate: (partial: Partial<User>) => void;
+  onBlur?: () => void;
 }
 
 /**
- * Meno / Názov field (desktop) – presunuté z ProfileEditFormDesktop bez zmeny správania.
+ * Meno / Názov field (desktop) – používa editableUser, sync na blur bez API.
  * - personal: parsovanie do first_name/last_name
  * - business: ukladanie do company_name
  */
 export default function FullNameField({
-  user,
+  editableUser,
   accountType,
   firstName,
   lastName,
   setFirstName,
   setLastName,
-  onUserUpdate,
+  onEditableUserUpdate,
+  onBlur,
 }: FullNameFieldProps) {
   const { t } = useLanguage();
 
-  // Lokálny state pre input hodnotu mena - zachová medzery počas písania
   const [fullNameInput, setFullNameInput] = useState('');
 
-  // Synchronizovať lokálny state s firstName a lastName (pre osobné účty) alebo company_name (pre firemné účty)
-  // Preferovať synchronizované meno - ak existuje first_name, použiť ho aj pre business
   useEffect(() => {
     if (accountType === 'business') {
-      // Pre firmy používame company_name, ale ak existuje first_name (synchronizované), preferovať ho
-      const nameToUse = user.first_name || user.company_name || '';
+      const nameToUse = editableUser.first_name || editableUser.company_name || '';
       setFullNameInput(nameToUse);
     } else {
-      // Pre osobné účty používame first_name + last_name
-      // Ak existuje company_name (synchronizované), použiť ho ako first_name ak first_name nie je
-      const firstNameToUse = firstName || user.company_name || '';
+      const firstNameToUse = firstName || editableUser.company_name || '';
       const fullName =
         firstNameToUse && lastName ? `${firstNameToUse} ${lastName}` : firstNameToUse || lastName || '';
       setFullNameInput(fullName);
     }
-  }, [firstName, lastName, accountType, user.company_name, user.first_name]);
+  }, [firstName, lastName, accountType, editableUser.company_name, editableUser.first_name]);
 
-  // Wrapper pre handleFullNameSave, ktorý parsuje input hodnotu pred uložením
-  const handleFullNameSaveWithParse = async () => {
-    // Obmedziť na 25 znakov
+  const handleBlur = () => {
     const trimmedValue = fullNameInput.trim().slice(0, 25);
 
-    // Pre firemné účty ukladať ako company_name
     if (accountType === 'business') {
       const newCompanyName = trimmedValue;
+      if (newCompanyName === (editableUser.company_name || '').trim()) return;
 
-      // Porovnať s aktuálnou hodnotou
-      if (newCompanyName === (user.company_name || '').trim()) {
-        // Žiadna zmena
-        return;
-      }
-
-      try {
-        // Volať API priamo s company_name a synchronizovať do first_name
-        const response = await api.patch('/auth/profile/', {
-          company_name: newCompanyName,
-          first_name: newCompanyName, // Synchronizovať do first_name
-          last_name: '' // Vymazať last_name
-        });
-
-        if (onUserUpdate && response.data?.user) {
-          onUserUpdate(response.data.user);
-        }
-      } catch (error: any) {
-        const data = error?.response?.data;
-        const details = data?.details;
-        const firstMsg = [details?.first_name?.[0], details?.last_name?.[0], details?.company_name?.[0]].find(
-          (m): m is string => typeof m === 'string'
-        );
-        const message = firstMsg ?? getApiErrorMessage(error, t('profile.nameSaveFailed', 'Meno sa nepodarilo uložiť. Skontrolujte zadané údaje.'));
-        toast.error(message);
-        setFullNameInput(user.company_name || '');
-      }
+      setFirstName(newCompanyName);
+      setLastName('');
+      onEditableUserUpdate({
+        company_name: newCompanyName,
+        first_name: newCompanyName,
+        last_name: '',
+      });
+      onBlur?.();
       return;
     }
 
-    // Pre osobné účty používame existujúcu logiku
     const parts = trimmedValue.split(/\s+/).filter(Boolean);
     let newFirstName = '';
     let newLastName = '';
-
     if (parts.length === 0) {
       newFirstName = '';
       newLastName = '';
@@ -108,48 +78,23 @@ export default function FullNameField({
       newLastName = parts[parts.length - 1];
     }
 
-    // Porovnať s aktuálnymi hodnotami
     const f = newFirstName.trim();
     const l = newLastName.trim();
-    if (f === (user.first_name || '').trim() && l === (user.last_name || '').trim()) {
-      // Žiadna zmena - len aktualizovať lokálny state
+    if (f === (editableUser.first_name || '').trim() && l === (editableUser.last_name || '').trim()) {
       setFirstName(newFirstName);
       setLastName(newLastName);
       return;
     }
 
-    try {
-      // Spojiť first_name a last_name pre company_name
-      const fullNameForCompany = (f && l ? `${f} ${l}` : f || l).trim();
-      
-      // Volať API priamo s novými hodnotami a synchronizovať do company_name
-      const response = await api.patch('/auth/profile/', {
-        first_name: f,
-        last_name: l,
-        company_name: fullNameForCompany, // Synchronizovať do company_name
-      });
-
-      // Aktualizovať state
-      setFirstName(newFirstName);
-      setLastName(newLastName);
-
-      if (onUserUpdate && response.data?.user) {
-        onUserUpdate(response.data.user);
-      }
-    } catch (error: any) {
-      const data = error?.response?.data;
-      const details = data?.details;
-      const firstMsg = [details?.first_name?.[0], details?.last_name?.[0]].find(
-        (m): m is string => typeof m === 'string'
-      );
-      const message = firstMsg ?? getApiErrorMessage(error, t('profile.nameSaveFailed', 'Meno sa nepodarilo uložiť. Skontrolujte zadané údaje.'));
-      toast.error(message);
-      setFirstName(user.first_name || '');
-      setLastName(user.last_name || '');
-      setFullNameInput(
-        firstName && lastName ? `${firstName} ${lastName}` : firstName || lastName || '',
-      );
-    }
+    setFirstName(newFirstName);
+    setLastName(newLastName);
+    const fullNameForCompany = (f && l ? `${f} ${l}` : f || l).trim();
+    onEditableUserUpdate({
+      first_name: f,
+      last_name: l,
+      company_name: fullNameForCompany,
+    });
+    onBlur?.();
   };
 
   return (
@@ -163,16 +108,11 @@ export default function FullNameField({
         value={fullNameInput}
         onChange={(e) => {
           const value = e.target.value;
-          // Obmedziť na 25 znakov
-          if (value.length <= 25) {
-            setFullNameInput(value);
-          }
+          if (value.length <= 25) setFullNameInput(value);
         }}
-        onBlur={handleFullNameSaveWithParse}
+        onBlur={handleBlur}
         onKeyDown={(e) => {
-          if (e.key === 'Enter') {
-            handleFullNameSaveWithParse();
-          }
+          if (e.key === 'Enter') handleBlur();
         }}
         maxLength={25}
         className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-1 focus:ring-purple-300 focus:border-transparent"
@@ -184,5 +124,3 @@ export default function FullNameField({
     </div>
   );
 }
-
-

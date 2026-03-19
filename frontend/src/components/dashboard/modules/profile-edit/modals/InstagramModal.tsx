@@ -14,11 +14,18 @@ interface InstagramModalProps {
   setOriginalInstagram?: (v: string) => void;
   onClose: () => void;
   onUserUpdate?: (u: User) => void;
+  onEditableUserUpdate?: (partial: Partial<User>) => void;
 }
 
-export default function InstagramModal({ isOpen, instagram, originalInstagram, setInstagram, setOriginalInstagram, onClose, onUserUpdate }: InstagramModalProps) {
+export default function InstagramModal({ isOpen, instagram, originalInstagram, setInstagram, setOriginalInstagram, onClose, onUserUpdate, onEditableUserUpdate }: InstagramModalProps) {
   const { t } = useLanguage();
   const handleSave = async () => {
+    if (onEditableUserUpdate) {
+      onEditableUserUpdate({ instagram });
+      setOriginalInstagram?.(instagram);
+      onClose();
+      return;
+    }
     try {
       const response = await api.patch('/auth/profile/', { instagram });
       onUserUpdate && response.data?.user && onUserUpdate(response.data.user);

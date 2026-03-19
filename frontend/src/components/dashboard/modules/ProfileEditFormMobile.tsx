@@ -11,24 +11,35 @@ import { api } from '../../../lib/api';
 
 interface ProfileEditFormMobileProps {
   user: User;
+  editableUser: User;
+  onEditableUserUpdate?: (partial: Partial<User>) => void;
   onUserUpdate?: (user: User) => void;
   onEditProfileClick?: () => void;
+  onEditCancel?: () => void;
+  onEditSave?: (mergedUser?: User) => Promise<void>;
   onPhotoUpload?: (file: File) => void;
+  onRemoveAvatar?: () => Promise<void>;
   isUploading?: boolean;
   onAvatarClick?: () => void;
   accountType?: 'personal' | 'business';
 }
 
-export default function ProfileEditFormMobile({ 
-  user, 
-  onUserUpdate, 
+export default function ProfileEditFormMobile({
+  user,
+  editableUser,
+  onEditableUserUpdate,
+  onUserUpdate,
   onEditProfileClick,
+  onEditCancel,
+  onEditSave,
   onPhotoUpload,
+  onRemoveAvatar,
   isUploading,
   onAvatarClick,
-  accountType = 'personal'
+  accountType = 'personal',
 }: ProfileEditFormMobileProps) {
   const { t } = useLanguage();
+  const [isSaving, setIsSaving] = useState(false);
   // Modal states
   const [isNameModalOpen, setIsNameModalOpen] = useState(false);
   const [isBioModalOpen, setIsBioModalOpen] = useState(false);
@@ -44,133 +55,128 @@ export default function ProfileEditFormMobile({
   const [isIcoModalOpen, setIsIcoModalOpen] = useState(false);
   const [isActionsOpen, setIsActionsOpen] = useState(false);
   
+  const source = editableUser;
   // Field values
-  // Pre firmy používame company_name, pre osobné účty first_name + last_name
   const [firstName, setFirstName] = useState(
-    accountType === 'business' ? (user.company_name || '') : (user.first_name || '')
+    accountType === 'business' ? (source.company_name || '') : (source.first_name || '')
   );
   const [lastName, setLastName] = useState(
-    accountType === 'business' ? '' : (user.last_name || '')
+    accountType === 'business' ? '' : (source.last_name || '')
   );
-  const [bio, setBio] = useState(user.bio || '');
-  const [location, setLocation] = useState(user.location || '');
-  const [district, setDistrict] = useState(user.district || '');
-  const [ico, setIco] = useState(user.ico || '');
-  const [icoVisible, setIcoVisible] = useState(user.ico_visible || false);
-  const [phone, setPhone] = useState(user.phone || '');
-  const [phoneVisible, setPhoneVisible] = useState(user.phone_visible || false);
-  const [contactEmail, setContactEmail] = useState(user.contact_email || '');
-  const [contactEmailVisible, setContactEmailVisible] = useState(user.contact_email_visible ?? false);
-  const [profession, setProfession] = useState(user.job_title || '');
-  const [professionVisible, setProfessionVisible] = useState(user.job_title_visible || false);
-  const [website, setWebsite] = useState(user.website || '');
-  const [additionalWebsites, setAdditionalWebsites] = useState<string[]>(user.additional_websites || []);
-  const [instagram, setInstagram] = useState(user.instagram || '');
-  const [facebook, setFacebook] = useState(user.facebook || '');
-  const [linkedin, setLinkedin] = useState(user.linkedin || '');
-  const [youtube, setYoutube] = useState(user.youtube || '');
+  const [bio, setBio] = useState(source.bio || '');
+  const [location, setLocation] = useState(source.location || '');
+  const [district, setDistrict] = useState(source.district || '');
+  const [ico, setIco] = useState(source.ico || '');
+  const [icoVisible, setIcoVisible] = useState(source.ico_visible || false);
+  const [phone, setPhone] = useState(source.phone || '');
+  const [phoneVisible, setPhoneVisible] = useState(source.phone_visible || false);
+  const [contactEmail, setContactEmail] = useState(source.contact_email || '');
+  const [contactEmailVisible, setContactEmailVisible] = useState(source.contact_email_visible ?? false);
+  const [profession, setProfession] = useState(source.job_title || '');
+  const [professionVisible, setProfessionVisible] = useState(source.job_title_visible || false);
+  const [website, setWebsite] = useState(source.website || '');
+  const [additionalWebsites, setAdditionalWebsites] = useState<string[]>(source.additional_websites || []);
+  const [instagram, setInstagram] = useState(source.instagram || '');
+  const [facebook, setFacebook] = useState(source.facebook || '');
+  const [linkedin, setLinkedin] = useState(source.linkedin || '');
+  const [youtube, setYoutube] = useState(source.youtube || '');
   
   // Original values for cancel functionality
   const [originalFirstName, setOriginalFirstName] = useState(
-    accountType === 'business' ? (user.company_name || '') : (user.first_name || '')
+    accountType === 'business' ? (source.company_name || '') : (source.first_name || '')
   );
   const [originalLastName, setOriginalLastName] = useState(
-    accountType === 'business' ? '' : (user.last_name || '')
+    accountType === 'business' ? '' : (source.last_name || '')
   );
-  const [originalBio, setOriginalBio] = useState(user.bio || '');
-  const [originalLocation, setOriginalLocation] = useState(user.location || '');
-  const [originalDistrict, setOriginalDistrict] = useState(user.district || '');
-  const [originalIco, setOriginalIco] = useState(user.ico || '');
-  const [originalIcoVisible, setOriginalIcoVisible] = useState(user.ico_visible || false);
-  const [originalPhone, setOriginalPhone] = useState(user.phone || '');
-  const [originalPhoneVisible, setOriginalPhoneVisible] = useState(user.phone_visible || false);
-  const [originalContactEmail, setOriginalContactEmail] = useState(user.contact_email || '');
-  const [originalContactEmailVisible, setOriginalContactEmailVisible] = useState(user.contact_email_visible ?? false);
-  const [originalProfession, setOriginalProfession] = useState(user.job_title || '');
-  const [originalProfessionVisible, setOriginalProfessionVisible] = useState(user.job_title_visible || false);
-  const [originalWebsite, setOriginalWebsite] = useState(user.website || '');
-  const [originalAdditionalWebsites, setOriginalAdditionalWebsites] = useState<string[]>(user.additional_websites || []);
-  const [originalInstagram, setOriginalInstagram] = useState(user.instagram || '');
-  const [originalFacebook, setOriginalFacebook] = useState(user.facebook || '');
-  const [originalLinkedin, setOriginalLinkedin] = useState(user.linkedin || '');
-  const [originalYoutube, setOriginalYoutube] = useState(user.youtube || '');
+  const [originalBio, setOriginalBio] = useState(source.bio || '');
+  const [originalLocation, setOriginalLocation] = useState(source.location || '');
+  const [originalDistrict, setOriginalDistrict] = useState(source.district || '');
+  const [originalIco, setOriginalIco] = useState(source.ico || '');
+  const [originalIcoVisible, setOriginalIcoVisible] = useState(source.ico_visible || false);
+  const [originalPhone, setOriginalPhone] = useState(source.phone || '');
+  const [originalPhoneVisible, setOriginalPhoneVisible] = useState(source.phone_visible || false);
+  const [originalContactEmail, setOriginalContactEmail] = useState(source.contact_email || '');
+  const [originalContactEmailVisible, setOriginalContactEmailVisible] = useState(source.contact_email_visible ?? false);
+  const [originalProfession, setOriginalProfession] = useState(source.job_title || '');
+  const [originalProfessionVisible, setOriginalProfessionVisible] = useState(source.job_title_visible || false);
+  const [originalWebsite, setOriginalWebsite] = useState(source.website || '');
+  const [originalAdditionalWebsites, setOriginalAdditionalWebsites] = useState<string[]>(source.additional_websites || []);
+  const [originalInstagram, setOriginalInstagram] = useState(source.instagram || '');
+  const [originalFacebook, setOriginalFacebook] = useState(source.facebook || '');
+  const [originalLinkedin, setOriginalLinkedin] = useState(source.linkedin || '');
+  const [originalYoutube, setOriginalYoutube] = useState(source.youtube || '');
 
-  // Synchronizovať firstName a lastName s user objektom (pre firmy používame company_name)
-  // Preferovať synchronizované meno - ak existuje first_name, použiť ho aj pre business
   React.useEffect(() => {
     if (accountType === 'business') {
-      // Pre firmy používame company_name, ale ak existuje first_name (synchronizované), preferovať ho
-      const nameToUse = user.first_name || user.company_name || '';
+      const nameToUse = editableUser.first_name || editableUser.company_name || '';
       setFirstName(nameToUse);
       setLastName('');
       setOriginalFirstName(nameToUse);
       setOriginalLastName('');
     } else {
-      // Pre osobné účty používame first_name + last_name
-      // Ak existuje company_name (synchronizované), použiť ho ako first_name
-      const firstNameToUse = user.first_name || user.company_name || '';
+      const firstNameToUse = editableUser.first_name || editableUser.company_name || '';
       setFirstName(firstNameToUse);
-      setLastName(user.last_name || '');
+      setLastName(editableUser.last_name || '');
       setOriginalFirstName(firstNameToUse);
-      setOriginalLastName(user.last_name || '');
+      setOriginalLastName(editableUser.last_name || '');
     }
-  }, [user.company_name, user.first_name, user.last_name, accountType]);
-
-  // Update states when user prop changes
-  React.useEffect(() => {
-    setAdditionalWebsites(user.additional_websites || []);
-    setOriginalAdditionalWebsites(user.additional_websites || []);
-  }, [user.additional_websites]);
+  }, [editableUser.company_name, editableUser.first_name, editableUser.last_name, accountType]);
 
   React.useEffect(() => {
-    setContactEmail(user.contact_email || '');
-    setOriginalContactEmail(user.contact_email || '');
-    if (typeof user.contact_email_visible === 'boolean') {
-      setContactEmailVisible(user.contact_email_visible);
-      setOriginalContactEmailVisible(user.contact_email_visible);
+    setAdditionalWebsites(editableUser.additional_websites || []);
+    setOriginalAdditionalWebsites(editableUser.additional_websites || []);
+  }, [editableUser.additional_websites]);
+
+  React.useEffect(() => {
+    setContactEmail(editableUser.contact_email || '');
+    setOriginalContactEmail(editableUser.contact_email || '');
+    if (typeof editableUser.contact_email_visible === 'boolean') {
+      setContactEmailVisible(editableUser.contact_email_visible);
+      setOriginalContactEmailVisible(editableUser.contact_email_visible);
     }
-  }, [user.contact_email, user.contact_email_visible]);
+  }, [editableUser.contact_email, editableUser.contact_email_visible]);
 
   React.useEffect(() => {
-    setIco(user.ico || '');
-    setIcoVisible(user.ico_visible || false);
-    setOriginalIco(user.ico || '');
-    setOriginalIcoVisible(user.ico_visible || false);
-  }, [user.ico, user.ico_visible]);
+    setIco(editableUser.ico || '');
+    setIcoVisible(editableUser.ico_visible || false);
+    setOriginalIco(editableUser.ico || '');
+    setOriginalIcoVisible(editableUser.ico_visible || false);
+  }, [editableUser.ico, editableUser.ico_visible]);
 
   React.useEffect(() => {
-    setLocation(user.location || '');
-    setDistrict(user.district || '');
-    setOriginalLocation(user.location || '');
-    setOriginalDistrict(user.district || '');
-  }, [user.location, user.district]);
+    setLocation(editableUser.location || '');
+    setDistrict(editableUser.district || '');
+    setOriginalLocation(editableUser.location || '');
+    setOriginalDistrict(editableUser.district || '');
+  }, [editableUser.location, editableUser.district]);
 
   React.useEffect(() => {
-    setInstagram(user.instagram || '');
-    setFacebook(user.facebook || '');
-    setLinkedin(user.linkedin || '');
-    setYoutube(user.youtube || '');
-    setOriginalInstagram(user.instagram || '');
-    setOriginalFacebook(user.facebook || '');
-    setOriginalLinkedin(user.linkedin || '');
-    setOriginalYoutube(user.youtube || '');
-  }, [user.instagram, user.facebook, user.linkedin, user.youtube]);
+    setInstagram(editableUser.instagram || '');
+    setFacebook(editableUser.facebook || '');
+    setLinkedin(editableUser.linkedin || '');
+    setYoutube(editableUser.youtube || '');
+    setOriginalInstagram(editableUser.instagram || '');
+    setOriginalFacebook(editableUser.facebook || '');
+    setOriginalLinkedin(editableUser.linkedin || '');
+    setOriginalYoutube(editableUser.youtube || '');
+  }, [editableUser.instagram, editableUser.facebook, editableUser.linkedin, editableUser.youtube]);
 
   const handleAvatarClick = () => {
     setIsActionsOpen(true);
   };
 
   const handleRemoveAvatar = async () => {
-    if (!onPhotoUpload) return;
-    
-    try {
-      const response = await api.patch('/auth/profile/', { avatar: null });
-      if (onUserUpdate && response.data.user) {
-        onUserUpdate(response.data.user);
-      }
+    if (onRemoveAvatar) {
+      await onRemoveAvatar();
       setIsActionsOpen(false);
-    } catch (e: any) {
-      console.error('Error removing avatar:', e);
+    } else if (onUserUpdate) {
+      try {
+        const response = await api.patch('/auth/profile/', { avatar: null });
+        if (response.data?.user) onUserUpdate(response.data.user);
+        setIsActionsOpen(false);
+      } catch (e: any) {
+        console.error('Error removing avatar:', e);
+      }
     }
   };
 
@@ -178,21 +184,42 @@ export default function ProfileEditFormMobile({
     if (onPhotoUpload) {
       onPhotoUpload(file);
       setIsActionsOpen(false);
-    } else {
-      // Fallback: implementácia uploadu priamo tu
+    } else if (onUserUpdate) {
       try {
         const formData = new FormData();
         formData.append('avatar', file);
         const response = await api.patch('/auth/profile/', formData);
-        if (onUserUpdate && response.data.user) {
-          onUserUpdate(response.data.user);
-        }
+        if (response.data?.user) onUserUpdate(response.data.user);
         setIsActionsOpen(false);
       } catch (e: any) {
         console.error('Error uploading photo:', e);
       }
     }
   };
+
+  const buildMergedUser = (): User => ({
+    ...editableUser,
+    first_name: accountType === 'business' ? (firstName || '').trim() : (firstName || '').trim(),
+    last_name: accountType === 'business' ? '' : (lastName || '').trim(),
+    company_name: accountType === 'business' ? (firstName || '').trim() : `${(firstName || '').trim()} ${(lastName || '').trim()}`.trim(),
+    bio: bio.trim(),
+    location: location.trim(),
+    district: district.trim(),
+    ico: ico.replace(/\s/g, '').trim(),
+    ico_visible: icoVisible,
+    phone: phone.trim(),
+    phone_visible: phoneVisible,
+    contact_email: contactEmail.trim(),
+    contact_email_visible: contactEmailVisible,
+    job_title: profession.trim(),
+    job_title_visible: professionVisible,
+    website: website.trim(),
+    additional_websites: additionalWebsites.filter((w) => (w || '').trim() !== ''),
+    instagram: instagram.trim(),
+    facebook: facebook.trim(),
+    linkedin: linkedin.trim(),
+    youtube: youtube.trim(),
+  });
 
   return (
     <div className="pt-2 pb-8">
@@ -210,7 +237,7 @@ export default function ProfileEditFormMobile({
 
       {/* List položiek */}
       <ProfileEditFields
-        user={user}
+        user={editableUser}
         onUserUpdate={onUserUpdate}
         accountType={accountType}
         setIsNameModalOpen={setIsNameModalOpen}
@@ -229,8 +256,9 @@ export default function ProfileEditFormMobile({
 
       {/* Modaly */}
       <ProfileEditModals
-        user={user}
+        user={editableUser}
         onUserUpdate={onUserUpdate}
+        onEditableUserUpdate={onEditableUserUpdate}
         accountType={accountType}
         isNameModalOpen={isNameModalOpen}
         isBioModalOpen={isBioModalOpen}
@@ -334,6 +362,39 @@ export default function ProfileEditFormMobile({
         setIsIcoModalOpen={setIsIcoModalOpen}
       />
       
+      {/* Save / Cancel */}
+      {(onEditSave || onEditCancel) && (
+        <div className="flex gap-3 mt-6 px-4">
+          {onEditCancel && (
+            <button
+              type="button"
+              onClick={onEditCancel}
+              disabled={isSaving}
+              className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300"
+            >
+              {t('common.cancel', 'Zrušiť')}
+            </button>
+          )}
+          {onEditSave && (
+            <button
+              type="button"
+              onClick={async () => {
+                try {
+                  setIsSaving(true);
+                  await onEditSave(buildMergedUser());
+                } finally {
+                  setIsSaving(false);
+                }
+              }}
+              disabled={isSaving}
+              className="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg disabled:opacity-50"
+            >
+              {isSaving ? t('common.loading', 'Ukladám...') : t('common.save', 'Uložiť')}
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Overenie profilu - placeholder */}
       <div className="mt-6 px-4">
         <span className="text-sm text-purple-600 font-medium">

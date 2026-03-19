@@ -108,6 +108,7 @@ export default function ModuleRouter({
         user={user}
         onUserUpdate={onUserUpdate}
         onEditProfileClick={onEditProfileClick ?? handleRightSidebarToggle}
+        onEditCancel={handleRightSidebarToggle}
         onSkillsClick={() => {
           setActiveModule('skills');
           try {

@@ -19,6 +19,7 @@ import YouTubeModal from './profile-edit/modals/YouTubeModal';
 interface ProfileEditModalsProps {
   user: User;
   onUserUpdate?: (user: User) => void;
+  onEditableUserUpdate?: (partial: Partial<User>) => void;
   accountType?: 'personal' | 'business';
   
   // Modal states
@@ -137,6 +138,7 @@ interface ProfileEditModalsProps {
 export default function ProfileEditModals({
   user,
   onUserUpdate,
+  onEditableUserUpdate,
   accountType = 'personal',
   isNameModalOpen,
   isBioModalOpen,
@@ -255,6 +257,7 @@ export default function ProfileEditModals({
         setOriginalLastName={setOriginalLastName}
         onClose={() => setIsNameModalOpen(false)}
         onUserUpdate={onUserUpdate}
+        onEditableUserUpdate={onEditableUserUpdate}
         accountType={accountType}
         user={user}
       />
@@ -268,6 +271,7 @@ export default function ProfileEditModals({
         setOriginalBio={setOriginalBio}
         onClose={() => setIsBioModalOpen(false)}
         onUserUpdate={onUserUpdate}
+        onEditableUserUpdate={onEditableUserUpdate}
       />
 
       {/* Modal pre úpravu lokality */}
@@ -283,6 +287,7 @@ export default function ProfileEditModals({
         setOriginalDistrict={setOriginalDistrict}
         onClose={() => setIsLocationModalOpen(false)}
         onUserUpdate={onUserUpdate}
+        onEditableUserUpdate={onEditableUserUpdate}
       />
 
       {/* Modal pre úpravu kontaktu */}
@@ -298,6 +303,7 @@ export default function ProfileEditModals({
         setOriginalPhoneVisible={setOriginalPhoneVisible}
         onClose={() => setIsContactModalOpen(false)}
         onUserUpdate={onUserUpdate}
+        onEditableUserUpdate={onEditableUserUpdate}
       />
 
       {/* Modal pre úpravu IČO */}
@@ -313,6 +319,7 @@ export default function ProfileEditModals({
         setOriginalIcoVisible={setOriginalIcoVisible}
         onClose={() => setIsIcoModalOpen(false)}
         onUserUpdate={onUserUpdate}
+        onEditableUserUpdate={onEditableUserUpdate}
       />
 
       {/* Modal pre úpravu kontaktného emailu */}
@@ -343,6 +350,7 @@ export default function ProfileEditModals({
         setOriginalProfessionVisible={setOriginalProfessionVisible}
         onClose={() => setIsProfessionModalOpen(false)}
         onUserUpdate={onUserUpdate}
+        onEditableUserUpdate={onEditableUserUpdate}
       />
 
       {/* Modal pre úpravu webu */}
@@ -369,6 +377,7 @@ export default function ProfileEditModals({
         setOriginalInstagram={setOriginalInstagram}
         onClose={() => setIsInstagramModalOpen(false)}
         onUserUpdate={onUserUpdate}
+        onEditableUserUpdate={onEditableUserUpdate}
       />
 
       {/* Modal pre úpravu Facebooku */}
@@ -380,6 +389,7 @@ export default function ProfileEditModals({
         setOriginalFacebook={setOriginalFacebook}
         onClose={() => setIsFacebookModalOpen(false)}
         onUserUpdate={onUserUpdate}
+        onEditableUserUpdate={onEditableUserUpdate}
       />
 
       {/* Modal pre úpravu LinkedIn */}
@@ -402,6 +412,7 @@ export default function ProfileEditModals({
         setOriginalYoutube={setOriginalYoutube}
         onClose={() => setIsYouTubeModalOpen(false)}
         onUserUpdate={onUserUpdate}
+        onEditableUserUpdate={onEditableUserUpdate}
       />
 
     </>

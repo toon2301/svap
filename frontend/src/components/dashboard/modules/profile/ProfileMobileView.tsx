@@ -17,13 +17,19 @@ import { createPortal } from 'react-dom';
 
 interface ProfileMobileViewProps {
   user: User;
-  displayUser: User;
+  /** Pre view (source of truth). Pri cudzom profile = profileUser; pri vlastnom = user. */
+  displayUser?: User;
+  editableUser?: User | null;
   isEditMode: boolean;
   accountType?: 'personal' | 'business';
   isUploading: boolean;
   onUserUpdate?: (updatedUser: User) => void;
+  onEditableUserUpdate?: (partial: Partial<User>) => void;
   onEditProfileClick?: () => void;
+  onEditCancel?: () => void;
+  onEditSave?: (mergedUser?: User) => Promise<void>;
   onPhotoUpload: (file: File) => void;
+  onRemoveAvatar?: () => Promise<void>;
   onAvatarClick: () => void;
   onSkillsClick?: () => void;
   activeTab: ProfileTab;
@@ -40,13 +46,18 @@ interface ProfileMobileViewProps {
 
 export default function ProfileMobileView({
   user,
-  displayUser,
+  displayUser: displayUserProp,
+  editableUser,
   isEditMode,
   accountType = 'personal',
   isUploading,
   onUserUpdate,
+  onEditableUserUpdate,
   onEditProfileClick,
+  onEditCancel,
+  onEditSave,
   onPhotoUpload,
+  onRemoveAvatar,
   onAvatarClick,
   onSkillsClick,
   activeTab,
@@ -60,6 +71,7 @@ export default function ProfileMobileView({
   onHamburgerMenuClick,
   highlightedSkillId,
 }: ProfileMobileViewProps) {
+  const displayUser = displayUserProp ?? user;
   const { t } = useLanguage();
   const [isHamburgerModalOpen, setIsHamburgerModalOpen] = useState(false);
   const [reportModalOpen, setReportModalOpen] = useState(false);
@@ -106,13 +118,16 @@ export default function ProfileMobileView({
 
   return (
     <div className="lg:hidden">
-      {isEditMode ? (
-        // Edit mode - show ProfileEditFormMobile
+      {isEditMode && editableUser && onEditableUserUpdate ? (
         <ProfileEditFormMobile
           user={user}
-          onUserUpdate={onUserUpdate}
+          editableUser={editableUser}
+          onEditableUserUpdate={onEditableUserUpdate}
           onEditProfileClick={onEditProfileClick}
+          onEditCancel={onEditCancel}
+          onEditSave={onEditSave}
           onPhotoUpload={onPhotoUpload}
+          onRemoveAvatar={onRemoveAvatar}
           isUploading={isUploading}
           onAvatarClick={onAvatarClick}
           accountType={accountType}
@@ -124,7 +139,7 @@ export default function ProfileMobileView({
             <div className="flex gap-3 items-start">
               <div className="flex-shrink-0">
                 <UserAvatar
-                  user={displayUser}
+                  user={user}
                   size="medium"
                   onPhotoUpload={isOtherUserProfile ? undefined : onPhotoUpload}
                   isUploading={isUploading}

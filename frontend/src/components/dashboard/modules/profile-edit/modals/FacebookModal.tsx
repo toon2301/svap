@@ -14,11 +14,18 @@ interface FacebookModalProps {
   setOriginalFacebook?: (v: string) => void;
   onClose: () => void;
   onUserUpdate?: (u: User) => void;
+  onEditableUserUpdate?: (partial: Partial<User>) => void;
 }
 
-export default function FacebookModal({ isOpen, facebook, originalFacebook, setFacebook, setOriginalFacebook, onClose, onUserUpdate }: FacebookModalProps) {
+export default function FacebookModal({ isOpen, facebook, originalFacebook, setFacebook, setOriginalFacebook, onClose, onUserUpdate, onEditableUserUpdate }: FacebookModalProps) {
   const { t } = useLanguage();
   const handleSave = async () => {
+    if (onEditableUserUpdate) {
+      onEditableUserUpdate({ facebook });
+      setOriginalFacebook?.(facebook);
+      onClose();
+      return;
+    }
     try {
       const response = await api.patch('/auth/profile/', { facebook });
       onUserUpdate && response.data?.user && onUserUpdate(response.data.user);

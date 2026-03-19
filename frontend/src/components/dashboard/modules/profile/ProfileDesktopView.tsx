@@ -13,13 +13,19 @@ import { ReportUserModal } from './ReportUserModal';
 
 interface ProfileDesktopViewProps {
   user: User;
-  displayUser: User;
+  /** Pre view (source of truth). Pri cudzom profile = profileUser; pri vlastnom = user. */
+  displayUser?: User;
+  editableUser?: User | null;
   isEditMode: boolean;
   accountType?: 'personal' | 'business';
   isUploading: boolean;
   onUserUpdate?: (updatedUser: User) => void;
+  onEditableUserUpdate?: (partial: Partial<User>) => void;
   onEditProfileClick?: () => void;
+  onEditCancel?: () => void;
+  onEditSave?: (mergedUser?: User) => Promise<void>;
   onPhotoUpload: (file: File) => void;
+  onRemoveAvatar?: () => Promise<void>;
   onAvatarClick: () => void;
   onSkillsClick?: () => void;
   activeTab: ProfileTab;
@@ -35,13 +41,18 @@ interface ProfileDesktopViewProps {
 
 export default function ProfileDesktopView({
   user,
-  displayUser,
+  displayUser: displayUserProp,
+  editableUser,
   isEditMode,
   accountType = 'personal',
   isUploading,
   onUserUpdate,
+  onEditableUserUpdate,
   onEditProfileClick,
+  onEditCancel,
+  onEditSave,
   onPhotoUpload,
+  onRemoveAvatar,
   onAvatarClick,
   onSkillsClick,
   activeTab,
@@ -54,6 +65,7 @@ export default function ProfileDesktopView({
   onAddToFavorites,
   highlightedSkillId,
 }: ProfileDesktopViewProps) {
+  const displayUser = displayUserProp ?? user;
   const [isHamburgerModalOpen, setIsHamburgerModalOpen] = useState(false);
   const [reportModalOpen, setReportModalOpen] = useState(false);
   const [reportedUserIds, setReportedUserIds] = useState<Set<number>>(() => new Set());
@@ -68,13 +80,17 @@ export default function ProfileDesktopView({
       <div className="flex flex-col items-stretch w-full gap-[clamp(1rem,2vw,1.5rem)]">
         {/* Pôvodný desktop obsah */}
         <div className="w-full">
-          {isEditMode ? (
+          {isEditMode && editableUser && onEditableUserUpdate ? (
             <ProfileEditFormDesktop
               user={user}
-              onUserUpdate={onUserUpdate}
+              editableUser={editableUser}
+              onEditableUserUpdate={onEditableUserUpdate}
               onEditProfileClick={onEditProfileClick}
-              onPhotoUpload={onPhotoUpload}
-              isUploadingFromParent={isUploading}
+              onEditCancel={onEditCancel}
+          onEditSave={onEditSave}
+          onPhotoUpload={onPhotoUpload}
+          onRemoveAvatar={onRemoveAvatar}
+          isUploadingFromParent={isUploading}
               onAvatarClick={onAvatarClick}
               accountType={accountType}
             />

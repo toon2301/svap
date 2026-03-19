@@ -14,17 +14,25 @@ interface YouTubeModalProps {
   setOriginalYoutube?: (v: string) => void;
   onClose: () => void;
   onUserUpdate?: (u: User) => void;
+  onEditableUserUpdate?: (partial: Partial<User>) => void;
 }
 
-export default function YouTubeModal({ isOpen, youtube, originalYoutube, setYoutube, setOriginalYoutube, onClose, onUserUpdate }: YouTubeModalProps) {
+export default function YouTubeModal({ isOpen, youtube, originalYoutube, setYoutube, setOriginalYoutube, onClose, onUserUpdate, onEditableUserUpdate }: YouTubeModalProps) {
   const { t } = useLanguage();
   const handleSave = async () => {
+    const trimmed = youtube.trim();
+    if (onEditableUserUpdate) {
+      onEditableUserUpdate({ youtube: trimmed });
+      setOriginalYoutube?.(trimmed);
+      onClose();
+      return;
+    }
     try {
-      const response = await api.patch('/auth/profile/', { youtube: youtube.trim() });
+      const response = await api.patch('/auth/profile/', { youtube: trimmed });
       if (response.data?.user) {
         onUserUpdate?.(response.data.user);
       }
-      setOriginalYoutube?.(youtube.trim());
+      setOriginalYoutube?.(trimmed);
       onClose();
     } catch (e) {
       console.error('Chyba pri ukladaní YouTube:', e);

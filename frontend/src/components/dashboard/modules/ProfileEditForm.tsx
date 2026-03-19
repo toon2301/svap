@@ -384,9 +384,9 @@ export default function ProfileEditForm({ user, onUserUpdate, onEditProfileClick
         <WebsiteInput website={website} setWebsite={setWebsite} onSave={handleWebsiteSave} />
         
         {/* Sociálne siete */}
-        <SocialMediaInputs 
-          user={user}
-          onUserUpdate={onUserUpdate}
+        <SocialMediaInputs
+          editableUser={user}
+          onEditableUserUpdate={(partial) => onUserUpdate?.({ ...user, ...partial })}
         />
         
         {/* Button Uložiť */}

@@ -20,12 +20,20 @@ interface ContactModalProps {
   setOriginalPhoneVisible?: (v: boolean) => void;
   onClose: () => void;
   onUserUpdate?: (u: User) => void;
+  onEditableUserUpdate?: (partial: Partial<User>) => void;
 }
 
-export default function ContactModal({ isOpen, phone, phoneVisible, originalPhone, originalPhoneVisible, setPhone, setPhoneVisible, setOriginalPhone, setOriginalPhoneVisible, onClose, onUserUpdate }: ContactModalProps) {
+export default function ContactModal({ isOpen, phone, phoneVisible, originalPhone, originalPhoneVisible, setPhone, setPhoneVisible, setOriginalPhone, setOriginalPhoneVisible, onClose, onUserUpdate, onEditableUserUpdate }: ContactModalProps) {
   const { t } = useLanguage();
 
   const handleSave = async () => {
+    if (onEditableUserUpdate) {
+      onEditableUserUpdate({ phone: phone.trim(), phone_visible: phoneVisible });
+      setOriginalPhone?.(phone.trim());
+      setOriginalPhoneVisible?.(phoneVisible);
+      onClose();
+      return;
+    }
     try {
       const response = await api.patch('/auth/profile/', { phone: phone.trim(), phone_visible: phoneVisible });
       onUserUpdate && response.data?.user && onUserUpdate(response.data.user);

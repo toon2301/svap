@@ -21,6 +21,7 @@ interface LocationModalProps {
   setOriginalDistrict?: (v: string) => void;
   onClose: () => void;
   onUserUpdate?: (u: User) => void;
+  onEditableUserUpdate?: (partial: Partial<User>) => void;
 }
 
 export default function LocationModal({ 
@@ -34,7 +35,8 @@ export default function LocationModal({
   setOriginalLocation, 
   setOriginalDistrict,
   onClose, 
-  onUserUpdate 
+  onUserUpdate,
+  onEditableUserUpdate
 }: LocationModalProps) {
   const { t } = useLanguage();
   const [locationError, setLocationError] = useState('');
@@ -46,6 +48,14 @@ export default function LocationModal({
     
     // Ak sa nič nezmenilo, len zatvor modal
     if (locTrimmed === originalLocation && districtTrimmed === originalDistrict) {
+      onClose();
+      return;
+    }
+
+    if (onEditableUserUpdate) {
+      onEditableUserUpdate({ location: locTrimmed, district: districtTrimmed });
+      setOriginalLocation?.(locTrimmed);
+      setOriginalDistrict?.(districtTrimmed);
       onClose();
       return;
     }

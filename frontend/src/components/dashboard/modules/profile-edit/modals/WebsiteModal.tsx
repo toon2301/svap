@@ -18,9 +18,10 @@ interface WebsiteModalProps {
   setOriginalAdditionalWebsites?: (v: string[]) => void;
   onClose: () => void;
   onUserUpdate?: (u: User) => void;
+  onEditableUserUpdate?: (partial: Partial<User>) => void;
 }
 
-export default function WebsiteModal({ isOpen, website, additionalWebsites, originalWebsite, originalAdditionalWebsites, setWebsite, setAdditionalWebsites, setOriginalWebsite, setOriginalAdditionalWebsites, onClose, onUserUpdate }: WebsiteModalProps) {
+export default function WebsiteModal({ isOpen, website, additionalWebsites, originalWebsite, originalAdditionalWebsites, setWebsite, setAdditionalWebsites, setOriginalWebsite, setOriginalAdditionalWebsites, onClose, onUserUpdate, onEditableUserUpdate }: WebsiteModalProps) {
   const { t } = useLanguage();
   const safeAdditionalWebsites = Array.isArray(additionalWebsites) ? additionalWebsites : [];
   const safeOriginalAdditionalWebsites = Array.isArray(originalAdditionalWebsites) ? originalAdditionalWebsites : [];
@@ -34,6 +35,13 @@ export default function WebsiteModal({ isOpen, website, additionalWebsites, orig
       if (extras.length > allowedAdditional) {
         extras = extras.slice(0, allowedAdditional);
         setAdditionalWebsites(extras);
+      }
+      if (onEditableUserUpdate) {
+        onEditableUserUpdate({ website: main, additional_websites: extras });
+        setOriginalWebsite?.(main);
+        setOriginalAdditionalWebsites?.(extras);
+        onClose();
+        return;
       }
       const response = await api.patch('/auth/profile/', { website: main, additional_websites: extras });
       onUserUpdate && response.data?.user && onUserUpdate(response.data.user);

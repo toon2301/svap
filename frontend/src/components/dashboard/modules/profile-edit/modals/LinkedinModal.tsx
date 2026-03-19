@@ -14,11 +14,18 @@ interface LinkedinModalProps {
   setOriginalLinkedin?: (v: string) => void;
   onClose: () => void;
   onUserUpdate?: (u: User) => void;
+  onEditableUserUpdate?: (partial: Partial<User>) => void;
 }
 
-export default function LinkedinModal({ isOpen, linkedin, originalLinkedin, setLinkedin, setOriginalLinkedin, onClose, onUserUpdate }: LinkedinModalProps) {
+export default function LinkedinModal({ isOpen, linkedin, originalLinkedin, setLinkedin, setOriginalLinkedin, onClose, onUserUpdate, onEditableUserUpdate }: LinkedinModalProps) {
   const { t } = useLanguage();
   const handleSave = async () => {
+    if (onEditableUserUpdate) {
+      onEditableUserUpdate({ linkedin });
+      setOriginalLinkedin?.(linkedin);
+      onClose();
+      return;
+    }
     try {
       const response = await api.patch('/auth/profile/', { linkedin });
       onUserUpdate && response.data?.user && onUserUpdate(response.data.user);

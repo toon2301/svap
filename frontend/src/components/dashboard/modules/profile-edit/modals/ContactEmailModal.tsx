@@ -20,6 +20,7 @@ interface ContactEmailModalProps {
   setOriginalContactEmailVisible?: (v: boolean) => void;
   onClose: () => void;
   onUserUpdate?: (u: User) => void;
+  onEditableUserUpdate?: (partial: Partial<User>) => void;
 }
 
 export default function ContactEmailModal({
@@ -34,10 +35,18 @@ export default function ContactEmailModal({
   setOriginalContactEmailVisible,
   onClose,
   onUserUpdate,
+  onEditableUserUpdate,
 }: ContactEmailModalProps) {
   const { t } = useLanguage();
 
   const handleSave = async () => {
+    if (onEditableUserUpdate) {
+      onEditableUserUpdate({ contact_email: contactEmail, contact_email_visible: contactEmailVisible });
+      setOriginalContactEmail?.(contactEmail);
+      setOriginalContactEmailVisible?.(contactEmailVisible);
+      onClose();
+      return;
+    }
     try {
       const response = await api.patch('/auth/profile/', {
         contact_email: contactEmail,
@@ -79,6 +88,11 @@ export default function ContactEmailModal({
           onClick={async () => {
             const newVal = !contactEmailVisible;
             setContactEmailVisible(newVal);
+            if (onEditableUserUpdate) {
+              onEditableUserUpdate({ contact_email_visible: newVal });
+              setOriginalContactEmailVisible?.(newVal);
+              return;
+            }
             try {
               const response = await api.patch('/auth/profile/', {
                 contact_email_visible: newVal,

@@ -3,114 +3,51 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { User } from '../../../types';
-import { api } from '../../../lib/api';
-
 interface SocialMediaInputsProps {
-  user: User;
-  onUserUpdate?: (updatedUser: User) => void;
+  editableUser: User;
+  onEditableUserUpdate: (partial: Partial<User>) => void;
 }
 
-export default function SocialMediaInputs({ user, onUserUpdate }: SocialMediaInputsProps) {
+export default function SocialMediaInputs({ editableUser, onEditableUserUpdate }: SocialMediaInputsProps) {
   const { t } = useLanguage();
-  const [instagram, setInstagram] = useState(user.instagram || '');
-  const [facebook, setFacebook] = useState(user.facebook || '');
-  const [linkedin, setLinkedin] = useState(user.linkedin || '');
-  const [youtube, setYoutube] = useState(user.youtube || '');
+  const [instagram, setInstagram] = useState(editableUser.instagram || '');
+  const [facebook, setFacebook] = useState(editableUser.facebook || '');
+  const [linkedin, setLinkedin] = useState(editableUser.linkedin || '');
+  const [youtube, setYoutube] = useState(editableUser.youtube || '');
   const [showInstagramInput, setShowInstagramInput] = useState(false);
   const [showFacebookInput, setShowFacebookInput] = useState(false);
   const [showLinkedinInput, setShowLinkedinInput] = useState(false);
   const [showYouTubeInput, setShowYouTubeInput] = useState(false);
 
-  // Update social media values when user changes
   useEffect(() => {
-    setInstagram(user.instagram || '');
-    setFacebook(user.facebook || '');
-    setLinkedin(user.linkedin || '');
-    setYoutube(user.youtube || '');
-  }, [user.instagram, user.facebook, user.linkedin, user.youtube]);
+    setInstagram(editableUser.instagram || '');
+    setFacebook(editableUser.facebook || '');
+    setLinkedin(editableUser.linkedin || '');
+    setYoutube(editableUser.youtube || '');
+  }, [editableUser.instagram, editableUser.facebook, editableUser.linkedin, editableUser.youtube]);
 
-  const handleInstagramSave = async () => {
-    // Always hide input
+  const handleInstagramSave = () => {
     setShowInstagramInput(false);
-    
-    if (instagram.trim() === user.instagram) return; // No change
-    
-    try {
-      const response = await api.patch('/auth/profile/', {
-        instagram: instagram.trim()
-      });
-      
-      if (onUserUpdate && response.data.user) {
-        onUserUpdate(response.data.user);
-      }
-    } catch (error: any) {
-      console.error('Error saving instagram:', error);
-      // Revert on error
-      setInstagram(user.instagram || '');
-    }
+    if (instagram.trim() === (editableUser.instagram || '')) return;
+    onEditableUserUpdate({ instagram: instagram.trim() });
   };
 
-  const handleFacebookSave = async () => {
-    // Always hide input
+  const handleFacebookSave = () => {
     setShowFacebookInput(false);
-    
-    if (facebook.trim() === user.facebook) return; // No change
-    
-    try {
-      const response = await api.patch('/auth/profile/', {
-        facebook: facebook.trim()
-      });
-      
-      if (onUserUpdate && response.data.user) {
-        onUserUpdate(response.data.user);
-      }
-    } catch (error: any) {
-      console.error('Error saving facebook:', error);
-      // Revert on error
-      setFacebook(user.facebook || '');
-    }
+    if (facebook.trim() === (editableUser.facebook || '')) return;
+    onEditableUserUpdate({ facebook: facebook.trim() });
   };
 
-  const handleLinkedinSave = async () => {
-    // Always hide input
+  const handleLinkedinSave = () => {
     setShowLinkedinInput(false);
-    
-    if (linkedin.trim() === user.linkedin) return; // No change
-    
-    try {
-      const response = await api.patch('/auth/profile/', {
-        linkedin: linkedin.trim()
-      });
-      
-      if (onUserUpdate && response.data.user) {
-        onUserUpdate(response.data.user);
-      }
-    } catch (error: any) {
-      console.error('Error saving linkedin:', error);
-      // Revert on error
-      setLinkedin(user.linkedin || '');
-    }
+    if (linkedin.trim() === (editableUser.linkedin || '')) return;
+    onEditableUserUpdate({ linkedin: linkedin.trim() });
   };
 
-  const handleYouTubeSave = async () => {
-    // Always hide input
+  const handleYouTubeSave = () => {
     setShowYouTubeInput(false);
-    
-    if (youtube.trim() === user.youtube) return; // No change
-    
-    try {
-      const response = await api.patch('/auth/profile/', {
-        youtube: youtube.trim()
-      });
-      
-      if (onUserUpdate && response.data.user) {
-        onUserUpdate(response.data.user);
-      }
-    } catch (error: any) {
-      console.error('Error saving youtube:', error);
-      // Revert on error
-      setYoutube(user.youtube || '');
-    }
+    if (youtube.trim() === (editableUser.youtube || '')) return;
+    onEditableUserUpdate({ youtube: youtube.trim() });
   };
 
 

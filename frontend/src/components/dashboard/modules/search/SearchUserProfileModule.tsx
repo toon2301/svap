@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useIsMobile } from "@/hooks";
 import { api, endpoints } from "@/lib/api";
 import type { User } from "@/types";
 import type { SearchUserResult } from "./types";
@@ -194,53 +195,56 @@ export function SearchUserProfileModule({
 
   // Určiť accountType na základe user_type používateľa
   const accountType = profileUser.user_type === 'company' ? 'business' : 'personal';
+  const isMobile = useIsMobile();
 
   return (
     <>
       <div className="max-w-2xl lg:max-w-full mx-auto lg:mx-0 text-[var(--foreground)] w-full">
-        <ProfileMobileView
-          user={profileUser}
-          displayUser={profileUser}
-          isEditMode={false}
-          accountType={accountType}
-          isUploading={false}
-          onUserUpdate={undefined}
-          onEditProfileClick={undefined}
-          onPhotoUpload={() => {}}
-          onAvatarClick={() => {}}
-          onSkillsClick={undefined}
-          activeTab={activeTab}
-          onChangeTab={setActiveTab}
-          onTabsKeyDown={handleTabsKeyDown}
-          onOpenAllWebsitesModal={() => setIsAllWebsitesModalOpen(true)}
-          offersOwnerId={profileUser.id}
-          isOtherUserProfile={true}
-          highlightedSkillId={highlightedSkillId}
-          onSendMessage={handleSendMessage}
-          onAddToFavorites={handleAddToFavorites}
-        />
-
-        <ProfileDesktopView
-          user={profileUser}
-          displayUser={profileUser}
-          isEditMode={false}
-          accountType={accountType}
-          isUploading={false}
-          onUserUpdate={undefined}
-          onEditProfileClick={undefined}
-          onPhotoUpload={() => {}}
-          onAvatarClick={() => {}}
-          onSkillsClick={undefined}
-          activeTab={activeTab}
-          onChangeTab={setActiveTab}
-          onTabsKeyDown={handleTabsKeyDown}
-          onOpenAllWebsitesModal={() => setIsAllWebsitesModalOpen(true)}
-          offersOwnerId={profileUser.id}
-          isOtherUserProfile={true}
-          highlightedSkillId={highlightedSkillId}
-          onSendMessage={handleSendMessage}
-          onAddToFavorites={handleAddToFavorites}
-        />
+        {isMobile ? (
+          <ProfileMobileView
+            user={profileUser}
+            displayUser={profileUser}
+            isEditMode={false}
+            accountType={accountType}
+            isUploading={false}
+            onUserUpdate={undefined}
+            onEditProfileClick={undefined}
+            onPhotoUpload={() => {}}
+            onAvatarClick={() => {}}
+            onSkillsClick={undefined}
+            activeTab={activeTab}
+            onChangeTab={setActiveTab}
+            onTabsKeyDown={handleTabsKeyDown}
+            onOpenAllWebsitesModal={() => setIsAllWebsitesModalOpen(true)}
+            offersOwnerId={profileUser.id}
+            isOtherUserProfile={true}
+            highlightedSkillId={highlightedSkillId}
+            onSendMessage={handleSendMessage}
+            onAddToFavorites={handleAddToFavorites}
+          />
+        ) : (
+          <ProfileDesktopView
+            user={profileUser}
+            displayUser={profileUser}
+            isEditMode={false}
+            accountType={accountType}
+            isUploading={false}
+            onUserUpdate={undefined}
+            onEditProfileClick={undefined}
+            onPhotoUpload={() => {}}
+            onAvatarClick={() => {}}
+            onSkillsClick={undefined}
+            activeTab={activeTab}
+            onChangeTab={setActiveTab}
+            onTabsKeyDown={handleTabsKeyDown}
+            onOpenAllWebsitesModal={() => setIsAllWebsitesModalOpen(true)}
+            offersOwnerId={profileUser.id}
+            isOtherUserProfile={true}
+            highlightedSkillId={highlightedSkillId}
+            onSendMessage={handleSendMessage}
+            onAddToFavorites={handleAddToFavorites}
+          />
+        )}
       </div>
 
       <ProfileWebsitesModal

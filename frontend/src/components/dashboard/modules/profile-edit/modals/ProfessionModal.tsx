@@ -18,12 +18,20 @@ interface ProfessionModalProps {
   setOriginalProfessionVisible?: (v: boolean) => void;
   onClose: () => void;
   onUserUpdate?: (u: User) => void;
+  onEditableUserUpdate?: (partial: Partial<User>) => void;
 }
 
-export default function ProfessionModal({ isOpen, profession, originalProfession, professionVisible, originalProfessionVisible, setProfession, setProfessionVisible, setOriginalProfession, setOriginalProfessionVisible, onClose, onUserUpdate }: ProfessionModalProps) {
+export default function ProfessionModal({ isOpen, profession, originalProfession, professionVisible, originalProfessionVisible, setProfession, setProfessionVisible, setOriginalProfession, setOriginalProfessionVisible, onClose, onUserUpdate, onEditableUserUpdate }: ProfessionModalProps) {
   const { t } = useLanguage();
 
   const handleSave = async () => {
+    if (onEditableUserUpdate) {
+      onEditableUserUpdate({ job_title: profession, job_title_visible: professionVisible });
+      setOriginalProfession?.(profession);
+      setOriginalProfessionVisible?.(professionVisible);
+      onClose();
+      return;
+    }
     try {
       const response = await api.patch('/auth/profile/', { job_title: profession, job_title_visible: professionVisible });
       onUserUpdate && response.data?.user && onUserUpdate(response.data.user);

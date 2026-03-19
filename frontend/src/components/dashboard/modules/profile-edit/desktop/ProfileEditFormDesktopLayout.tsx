@@ -18,17 +18,19 @@ import ProfileAvatarActionsModal from '../../profile/ProfileAvatarActionsModal';
 
 interface ProfileEditFormDesktopLayoutProps {
   user: User;
+  editableUser: User;
   accountType: 'personal' | 'business';
   t: (key: string, defaultValue: string) => string;
-  onUserUpdate?: (user: User) => void;
+  onEditableUserUpdate: (partial: Partial<User>) => void;
   form: UseProfileEditFormDesktopReturn;
 }
 
 export function ProfileEditFormDesktopLayout({
   user,
+  editableUser,
   accountType,
   t,
-  onUserUpdate,
+  onEditableUserUpdate,
   form,
 }: ProfileEditFormDesktopLayoutProps) {
   return (
@@ -52,13 +54,14 @@ export function ProfileEditFormDesktopLayout({
         {/* Formulár pre úpravu profilu */}
         <div className="space-y-3">
           <FullNameField
-            user={user}
+            editableUser={editableUser}
             accountType={accountType}
             firstName={form.firstName}
             lastName={form.lastName}
             setFirstName={form.setFirstName}
             setLastName={form.setLastName}
-            onUserUpdate={onUserUpdate}
+            onEditableUserUpdate={onEditableUserUpdate}
+            onBlur={form.handleFullNameBlur}
           />
           {/* Priezvisko zrušené – unified v jednom vstupe */}
 
@@ -110,16 +113,39 @@ export function ProfileEditFormDesktopLayout({
 
           {/* Web */}
           <WebsitesField
-            user={user}
+            editableUser={editableUser}
             website={form.website}
             additionalWebsites={form.additionalWebsites}
             setWebsite={form.setWebsite}
             setAdditionalWebsites={form.setAdditionalWebsites}
-            onUserUpdate={onUserUpdate}
+            onEditableUserUpdate={onEditableUserUpdate}
           />
 
           {/* Sociálne siete */}
-          <SocialMediaInputs user={user} onUserUpdate={onUserUpdate} />
+          <SocialMediaInputs editableUser={editableUser} onEditableUserUpdate={onEditableUserUpdate} />
+
+          {/* Save / Cancel */}
+          <div className="flex gap-3 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+            {form.onEditCancel ? (
+                <button
+                  type="button"
+                  onClick={form.onEditCancel}
+                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
+                >
+                  {t('common.cancel', 'Zrušiť')}
+                </button>
+            ) : null}
+            {form.handleSave ? (
+              <button
+                type="button"
+                onClick={form.handleSave}
+                disabled={form.isSaving}
+                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50"
+              >
+                {form.isSaving ? t('common.loading', 'Ukladám...') : t('common.save', 'Uložiť')}
+              </button>
+            ) : null}
+          </div>
         </div>
       </div>
 
