@@ -6,13 +6,44 @@ from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from django.db.models import Q, F
+from django.db.models import Q, F, Avg, Count
 
 from swaply.rate_limiting import api_rate_limit
 
-from ..models import OfferedSkill, OfferedSkillImage
+from ..models import OfferedSkill, OfferedSkillImage, Review, SkillRequest, SkillRequestStatus
 from ..serializers import OfferedSkillSerializer
 from django.core.exceptions import ValidationError
+
+
+def _skills_list_queryset(base_qs):
+    """Optimalizovaný queryset: select_related, prefetch_related, annotate – zníženie N+1."""
+    return (
+        base_qs.select_related("user")
+        .prefetch_related("images")
+        .annotate(
+            _avg_rating=Avg("reviews__rating"),
+            _reviews_count=Count("reviews", distinct=True),
+        )
+    )
+
+
+def _skills_list_context(request, offer_ids):
+    """Bulk dotazy pre can_review a already_reviewed – namiesto N+1."""
+    if not offer_ids:
+        return {}
+    reviewed = set(
+        Review.objects.filter(offer_id__in=offer_ids, reviewer=request.user).values_list(
+            "offer_id", flat=True
+        )
+    )
+    can_review = set(
+        SkillRequest.objects.filter(
+            offer_id__in=offer_ids,
+            requester=request.user,
+            status=SkillRequestStatus.ACCEPTED,
+        ).values_list("offer_id", flat=True)
+    )
+    return {"reviewed_offer_ids": reviewed, "can_review_offer_ids": can_review}
 
 
 @api_view(["GET", "POST"])
@@ -24,10 +55,12 @@ def skills_list_view(request):
     POST: Vytvorenie novej zručnosti
     """
     if request.method == "GET":
-        skills = OfferedSkill.objects.filter(user=request.user)
-        serializer = OfferedSkillSerializer(
-            skills, many=True, context={"request": request}
-        )
+        base = OfferedSkill.objects.filter(user=request.user)
+        skills_qs = _skills_list_queryset(base)
+        skills_list = list(skills_qs)
+        offer_ids = [s.id for s in skills_list]
+        ctx = {"request": request, **_skills_list_context(request, offer_ids)}
+        serializer = OfferedSkillSerializer(skills_list, many=True, context=ctx)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     elif request.method == "POST":

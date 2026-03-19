@@ -7,7 +7,6 @@ from rest_framework.response import Response
 from swaply.rate_limiting import api_rate_limit
 
 from ...models import OfferedSkill
-from ...serializers import OfferedSkillSerializer
 
 User = get_user_model()
 
@@ -69,6 +68,19 @@ def dashboard_user_profile_detail_by_slug_view(request, slug: str):
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 
+def _optimized_skills_serialize(request, skills_qs):
+    """Použije optimalizovaný queryset a context pre OfferedSkillSerializer."""
+    from ..views.skills import _skills_list_queryset, _skills_list_context
+
+    optimized = _skills_list_queryset(skills_qs)
+    skills_list = list(optimized)
+    offer_ids = [s.id for s in skills_list]
+    ctx = {"request": request, **_skills_list_context(request, offer_ids)}
+    from ..serializers import OfferedSkillSerializer
+
+    return OfferedSkillSerializer(skills_list, many=True, context=ctx)
+
+
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 @api_rate_limit
@@ -86,12 +98,9 @@ def dashboard_user_skills_view(request, user_id: int):
         return privacy_resp
 
     skills_qs = OfferedSkill.objects.filter(user_id=user_id).order_by("-updated_at")
-    # Pre cudzí profil filtruj skryté karty, pre vlastný profil zobraz všetky
     if user_id != request.user.id:
         skills_qs = skills_qs.filter(is_hidden=False)
-    serializer = OfferedSkillSerializer(
-        skills_qs, many=True, context={"request": request}
-    )
+    serializer = _optimized_skills_serialize(request, skills_qs)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 
@@ -112,10 +121,7 @@ def dashboard_user_skills_by_slug_view(request, slug: str):
         return privacy_resp
 
     skills_qs = OfferedSkill.objects.filter(user_id=user.id).order_by("-updated_at")
-    # Pre cudzí profil filtruj skryté karty, pre vlastný profil zobraz všetky
     if user.id != request.user.id:
         skills_qs = skills_qs.filter(is_hidden=False)
-    serializer = OfferedSkillSerializer(
-        skills_qs, many=True, context={"request": request}
-    )
+    serializer = _optimized_skills_serialize(request, skills_qs)
     return Response(serializer.data, status=status.HTTP_200_OK)

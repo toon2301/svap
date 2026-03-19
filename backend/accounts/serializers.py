@@ -708,6 +708,9 @@ class OfferedSkillSerializer(serializers.ModelSerializer):
         return results
 
     def _get_review_stats(self, obj):
+        # Preferuj annotované hodnoty (_avg_rating, _reviews_count) z optimalizovaného querysetu
+        if hasattr(obj, "_avg_rating") and hasattr(obj, "_reviews_count"):
+            return {"avg": obj._avg_rating, "cnt": obj._reviews_count}
         if not hasattr(self, "_review_stats_cache"):
             self._review_stats_cache = {}
         key = obj.pk if obj.pk is not None else id(obj)
@@ -735,15 +738,12 @@ class OfferedSkillSerializer(serializers.ModelSerializer):
         request = self.context.get("request")
         if not request or not request.user.is_authenticated:
             return False
-
-        # nemôže recenzovať vlastnú ponuku
         if obj.user_id == request.user.id:
             return False
-
-        # už recenzoval
-        if Review.objects.filter(reviewer=request.user, offer=obj).exists():
+        if "reviewed_offer_ids" in self.context and obj.id in self.context["reviewed_offer_ids"]:
             return False
-
+        if "can_review_offer_ids" in self.context:
+            return obj.id in self.context["can_review_offer_ids"]
         return SkillRequest.objects.filter(
             requester=request.user,
             offer=obj,
@@ -754,7 +754,8 @@ class OfferedSkillSerializer(serializers.ModelSerializer):
         request = self.context.get("request")
         if not request or not request.user.is_authenticated:
             return False
-
+        if "reviewed_offer_ids" in self.context:
+            return obj.id in self.context["reviewed_offer_ids"]
         return Review.objects.filter(
             reviewer=request.user,
             offer=obj,
