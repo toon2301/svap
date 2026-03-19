@@ -165,9 +165,10 @@ def skill_requests_view(request):
         )
 
         received_data = received_serializer.data
+        # Ensure cache payload is plain Python types (avoid pickling issues with DRF ReturnList/ReturnDict).
         payload = {
-            "received": received_data,
-            "sent": sent_serializer.data,
+            "received": list(received_data),
+            "sent": list(sent_serializer.data),
         }
         t_ser1 = perf_counter()
         try:

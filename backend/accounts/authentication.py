@@ -22,6 +22,52 @@ _USER_REDIS_TTL_SECONDS = int(os.getenv("AUTH_USER_REDIS_CACHE_TTL_SECONDS", "30
 _USER_CACHE_LOCK = threading.Lock()
 _USER_CACHE: "OrderedDict[int, tuple[float, object]]" = OrderedDict()
 
+_BLACKLIST_CACHE_TTL_SECONDS = int(os.getenv("AUTH_BLACKLIST_CACHE_TTL_SECONDS", "60") or "60")
+_BLACKLIST_CACHE_MAX = int(os.getenv("AUTH_BLACKLIST_CACHE_MAX", "20000") or "20000")
+_BLACKLIST_CACHE_LOCK = threading.Lock()
+_BLACKLIST_CACHE: "OrderedDict[str, tuple[float, bool]]" = OrderedDict()
+
+
+def _bl_cache_get(jti: str) -> bool | None:
+    if _BLACKLIST_CACHE_TTL_SECONDS <= 0 or _BLACKLIST_CACHE_MAX <= 0:
+        return None
+    now = time.time()
+    key = str(jti)
+    with _BLACKLIST_CACHE_LOCK:
+        item = _BLACKLIST_CACHE.get(key)
+        if not item:
+            return None
+        exp, val = item
+        if exp < now:
+            try:
+                _BLACKLIST_CACHE.pop(key, None)
+            except Exception:
+                pass
+            return None
+        try:
+            _BLACKLIST_CACHE.move_to_end(key)
+        except Exception:
+            pass
+        return bool(val)
+
+
+def _bl_cache_set(jti: str, val: bool) -> None:
+    if _BLACKLIST_CACHE_TTL_SECONDS <= 0 or _BLACKLIST_CACHE_MAX <= 0:
+        return
+    now = time.time()
+    key = str(jti)
+    with _BLACKLIST_CACHE_LOCK:
+        _BLACKLIST_CACHE[key] = (now + float(_BLACKLIST_CACHE_TTL_SECONDS), bool(val))
+        try:
+            _BLACKLIST_CACHE.move_to_end(key)
+        except Exception:
+            pass
+        while len(_BLACKLIST_CACHE) > _BLACKLIST_CACHE_MAX:
+            try:
+                _BLACKLIST_CACHE.popitem(last=False)
+            except Exception:
+                break
+
 
 def _user_cache_get(user_id: int):
     if _USER_CACHE_TTL_SECONDS <= 0 or _USER_CACHE_MAX <= 0:
@@ -288,18 +334,27 @@ class SwaplyJWTAuthentication(JWTAuthentication):
             logger.warning("Blacklist check failed (missing jti) – fail-closed")
             return True
 
+        # In-process cache avoids Redis roundtrip on every request for same access token.
+        cached = _bl_cache_get(str(jti))
+        if cached is not None:
+            return bool(cached)
+
         blacklist_key = f"blacklist_{jti}"
         t0 = time.perf_counter()
         try:
             # Fast-path (Redis)
-            return cache.get(blacklist_key) is not None
+            is_bl = cache.get(blacklist_key) is not None
+            _bl_cache_set(str(jti), bool(is_bl))
+            return is_bl
         except Exception as e:
             logger.warning(f"Redis blacklist check failed, falling back to DB: {e}")
             # Fallback (DB): rest_framework_simplejwt.token_blacklist
             try:
                 from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken
 
-                return BlacklistedToken.objects.filter(token__jti=jti).exists()
+                is_bl = BlacklistedToken.objects.filter(token__jti=jti).exists()
+                _bl_cache_set(str(jti), bool(is_bl))
+                return is_bl
             except Exception as e2:
                 # Fail-closed: ak nevieme overiť blacklist ani v DB, token považuj za neplatný
                 logger.warning(f"DB blacklist check failed: {e2}")

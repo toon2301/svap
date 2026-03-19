@@ -99,7 +99,8 @@ def skills_list_view(request):
         ctx = {"request": request, **_skills_list_context(request, offer_ids)}
         t_ser0 = perf_counter()
         serializer = OfferedSkillSerializer(skills_list, many=True, context=ctx)
-        data = serializer.data
+        # Ensure cache payload is plain list (avoid pickling issues with DRF ReturnList).
+        data = list(serializer.data)
         t_ser1 = perf_counter()
         try:
             cache.set(_skills_list_cache_key(request.user.id), data, timeout=SKILLS_LIST_CACHE_TTL_SECONDS)
