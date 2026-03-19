@@ -70,13 +70,15 @@ def dashboard_user_profile_detail_by_slug_view(request, slug: str):
 
 def _optimized_skills_serialize(request, skills_qs):
     """Použije optimalizovaný queryset a context pre OfferedSkillSerializer."""
-    from ..views.skills import _skills_list_queryset, _skills_list_context
+    # `public_profiles` je v package `accounts.views.dashboard_views`.
+    # Optimized helper je v `accounts.views.skills`.
+    from ..skills import _skills_list_queryset, _skills_list_context
 
     optimized = _skills_list_queryset(skills_qs)
     skills_list = list(optimized)
     offer_ids = [s.id for s in skills_list]
     ctx = {"request": request, **_skills_list_context(request, offer_ids)}
-    from ..serializers import OfferedSkillSerializer
+    from ...serializers import OfferedSkillSerializer
 
     return OfferedSkillSerializer(skills_list, many=True, context=ctx)
 
