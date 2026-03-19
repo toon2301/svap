@@ -1,4 +1,5 @@
 # Swaply - Skills Exchange Platform
+<!-- dummy -->
 
 Swaply je inovatívna webová platforma, ktorá umožňuje ľuďom vymieňať si zručnosti namiesto platenia. Je to ako "Tinder pre zručnosti" - ty môžeš naučiť niekoho svoju zručnosť a on zase teba svoju.
 
