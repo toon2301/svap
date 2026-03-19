@@ -9,6 +9,7 @@ from rest_framework.response import Response
 
 from django.utils import timezone
 from time import perf_counter
+from django.db import connections
 
 from swaply.rate_limiting import api_rate_limit
 
@@ -62,14 +63,30 @@ def notifications_unread_count_view(request):
     notif_type = (
         request.query_params.get("type") or NotificationType.SKILL_REQUEST
     ).strip()
-    t0 = perf_counter()
+    conn = connections["default"]
+    was_none = False
+    try:
+        was_none = conn.connection is None
+    except Exception:
+        was_none = False
+
+    t_conn0 = perf_counter()
+    try:
+        conn.ensure_connection()
+    except Exception:
+        # fail-open: query below will handle exception
+        pass
+    db_connect_ms = (perf_counter() - t_conn0) * 1000.0
+
+    t_sql0 = perf_counter()
     try:
         count = Notification.objects.filter(
             user=request.user, type=notif_type, is_read=False
         ).count()
     except Exception:
         count = 0
-    db_ms = (perf_counter() - t0) * 1000.0
+    notif_sql_ms = (perf_counter() - t_sql0) * 1000.0
+    db_ms = db_connect_ms + notif_sql_ms
     resp = Response({"count": count}, status=status.HTTP_200_OK)
     # Timing headers (safe): allow diagnosing DB vs other overhead
     try:
@@ -79,7 +96,10 @@ def notifications_unread_count_view(request):
         st = getattr(base_req, "_server_timing", None)
         if not isinstance(st, dict):
             st = {}
+        st["db_connect"] = db_connect_ms
+        st["notif_sql"] = notif_sql_ms
         st["notif_count"] = db_ms
+        st["db_conn_new_notif"] = 0.1 if was_none else 0.0
         base_req._server_timing = st
     except Exception:
         pass
