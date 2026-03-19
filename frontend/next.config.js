@@ -60,11 +60,13 @@ const nextConfig = {
     // Dôležité: zachovať trailing slash (Django/DRF ho používa).
     // Next.js pri :path* často "zje" koncové `/`, takže pridáme osobitné pravidlo pre URL s `/`.
     // /ws/* proxy pre WebSocket (notifikácie v reálnom čase) – same-origin = cookies fungujú.
+    // /media/* proxy pre avatary/media (keď backend servuje /media/, napr. lokálne alebo s volume)
     return [
       { source: '/api/:path*/', destination: `${be}/api/:path*/` },
       { source: '/api/:path*', destination: `${be}/api/:path*` },
       { source: '/ws/:path*/', destination: `${be}/ws/:path*/` },
       { source: '/ws/:path*', destination: `${be}/ws/:path*` },
+      { source: '/media/:path*', destination: `${be}/media/:path*` },
     ];
   },
 
@@ -82,15 +84,22 @@ const nextConfig = {
         'https://www.gstatic.com',
         process.env.NEXT_PUBLIC_MEDIA_ORIGIN?.trim(),
         process.env.NEXT_PUBLIC_BACKEND_ORIGIN?.trim(),
-        'https://svaply-media.s3.amazonaws.com', // S3 bucket pre avatary (fallback ak nie je env)
-        'https://svaply-media.s3.eu-north-1.amazonaws.com', // S3 regional endpoint (offers/media)
+        // Špecifické buckety (ak NEXT_PUBLIC_MEDIA_ORIGIN nie je nastavený)
+        'https://svaply-media.s3.amazonaws.com',
+        'https://svaply-media.s3.eu-north-1.amazonaws.com',
+        // Wildcards pre ľubovoľný S3 bucket (Railway môže použiť vlastný bucket)
+        'https://*.s3.amazonaws.com',
+        'https://*.s3.eu-north-1.amazonaws.com',
+        'https://*.s3.eu-central-1.amazonaws.com',
+        'https://*.s3.us-east-1.amazonaws.com',
+        'https://*.s3.eu-west-1.amazonaws.com',
       ].filter(Boolean);
 
       const isValidOrigin = (o) =>
         o.startsWith("'") ||
         o.startsWith('data') ||
         o.startsWith('blob:') ||
-        /^https:\/\/[a-z0-9.-]+$/.test(String(o).replace(/\/+$/, ''));
+        /^https:\/\/[a-z0-9.*.-]+$/.test(String(o).replace(/\/+$/, '')); // * pre S3 wildcard subdomény
 
       const imgSrcOrigins = imgSrcCandidates
         .filter(isValidOrigin)

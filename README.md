@@ -70,6 +70,48 @@ Backend kontroluje nahrávané profilové fotky proti Google Vision SafeSearch.
 ### Testovanie
 - Testy preskakujú Vision volanie cez `SAFESEARCH_SKIP_IN_TESTS=True`.
 
+## 👤 Avatary na Railway (S3)
+
+Profilové fotky (avatary) sa v produkcii ukladajú do **S3**. Bez nastavených AWS premenných sa avatar na profile nezobrazí.
+
+### Backend – Railway Variables (backend service)
+Nastav v Railway → Project → Variables (pre backend službu):
+
+| Premenná | Popis |
+|----------|-------|
+| `AWS_ACCESS_KEY_ID` | IAM access key |
+| `AWS_SECRET_ACCESS_KEY` | IAM secret |
+| `AWS_STORAGE_BUCKET_NAME` | Názov S3 bucketu |
+| `AWS_S3_REGION_NAME` | Región, napr. `eu-north-1` |
+| `AWS_S3_CUSTOM_DOMAIN` | (voliteľné) CloudFront alebo custom doména |
+
+### S3 bucket – verejné čítanie
+Bucket alebo prefix pre avatary musí byť verejne čitateľný (public-read). V S3 bucket policy pridaj:
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Effect": "Allow",
+    "Principal": "*",
+    "Action": "s3:GetObject",
+    "Resource": "arn:aws:s3:::TvojBucket/*"
+  }]
+}
+```
+
+### Frontend – Railway Variables (frontend service)
+Ak používaš iný S3 bucket alebo CloudFront doménu:
+- `NEXT_PUBLIC_MEDIA_ORIGIN` – base URL pre media (napr. `https://tvoj-bucket.s3.eu-north-1.amazonaws.com`)
+- `NEXT_PUBLIC_BACKEND_ORIGIN` – URL backendu (pre CSP, napr. `https://tvoj-backend.up.railway.app`)
+
+### Diagnostika
+Ak sa avatar stále nezobrazuje:
+1. Skontroluj v DevTools (Network), či požiadavka na obrázok vracia 200 alebo 403/404.
+2. Over v API odpovedi (`/api/auth/me/`), či `avatar_url` obsahuje platnú absolútnu URL (napr. `https://...s3...amazonaws.com/avatars/...`).
+3. Over, či sú všetky AWS premenné nastavené na backende.
+
+---
+
 ## 🖼️ Obrázky ponúk (S3 uploads/ → Celery → media/)
 
 Pre produkciu (100k+ užívateľov) sa obrázky ponúk nahrávajú **priamo do S3** a spracovanie/moderácia beží **asynchrónne**:

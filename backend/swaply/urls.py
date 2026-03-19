@@ -83,6 +83,10 @@ urlpatterns = [
     # path('accounts/', include('allauth.urls')),
 ]
 
-# Media files (len pre development)
-if settings.DEBUG:
+# Media files: v developmente vždy; v produkcii aj keď S3 nie je nakonfigurovaný (MEDIA_URL začína /media/)
+_serve_media = settings.DEBUG or (
+    getattr(settings, "MEDIA_URL", "").startswith("/")
+    and getattr(settings, "MEDIA_ROOT", None)
+)
+if _serve_media:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
