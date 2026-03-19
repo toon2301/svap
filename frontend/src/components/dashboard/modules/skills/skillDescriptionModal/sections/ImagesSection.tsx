@@ -98,7 +98,7 @@ export default function ImagesSection({
 
   return (
     <div className="mb-0">
-      {imageError && <p className="text-sm text-red-500 mb-2">{imageError}</p>}
+      {imageError && <div className="mb-2 error-alert-modern text-sm py-2 px-3">{imageError}</div>}
       <div className="flex flex-wrap gap-3">
         {validExistingImages.length > 0 && (
           <div className="basis-full text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">

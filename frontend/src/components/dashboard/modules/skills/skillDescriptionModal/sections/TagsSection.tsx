@@ -201,7 +201,7 @@ const TagsSection = forwardRef<TagsSectionRef, TagsSectionProps>(
       )}
 
       {tagError && (
-        <p className="text-sm text-red-500 mt-1">{tagError}</p>
+        <div className="mt-2 error-alert-modern text-sm py-2 px-3">{tagError}</div>
       )}
     </div>
   );

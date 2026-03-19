@@ -11,6 +11,8 @@ from swaply.rate_limiting import api_rate_limit
 @api_rate_limit
 def dashboard_profile_view(request):
     """Dashboard profile - zobrazenie a úprava profilu"""
+    # Načítaj plný objekt z DB - request.user môže byť z cache bez created_at
+    request.user.refresh_from_db()
     user = request.user
 
     if request.method == "GET":

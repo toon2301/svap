@@ -39,24 +39,51 @@ export function Providers({ children }: { children: React.ReactNode }) {
           </LanguageProvider>
           <Toaster
             position="top-right"
+            containerClassName="toast-modern"
+            gutter={12}
             toastOptions={{
               duration: 4000,
               style: {
-                background: '#363636',
-                color: '#fff',
+                background: 'var(--toast-bg)',
+                color: 'var(--toast-text)',
+                borderRadius: '16px',
+                padding: '16px 20px',
+                boxShadow: 'var(--toast-shadow)',
+                border: '1px solid var(--toast-border)',
+                fontSize: '14px',
+                fontWeight: 500,
+                maxWidth: '380px',
               },
               success: {
                 duration: 3000,
+                style: {
+                  background: 'var(--toast-success-bg)',
+                  color: 'var(--toast-success-text)',
+                  border: '1px solid var(--toast-success-border)',
+                  borderLeft: '5px solid var(--toast-success-accent)',
+                  borderRadius: '16px',
+                  padding: '16px 20px',
+                  boxShadow: 'var(--toast-shadow)',
+                },
                 iconTheme: {
-                  primary: '#10B981',
-                  secondary: '#fff',
+                  primary: '#fff',
+                  secondary: 'var(--toast-success-accent)',
                 },
               },
               error: {
                 duration: 5000,
+                style: {
+                  background: 'var(--toast-error-bg)',
+                  color: 'var(--toast-error-text)',
+                  border: 'none',
+                  borderLeft: '5px solid var(--toast-error-accent)',
+                  borderRadius: '16px',
+                  padding: '16px 20px',
+                  boxShadow: 'var(--toast-shadow)',
+                },
                 iconTheme: {
-                  primary: '#EF4444',
-                  secondary: '#fff',
+                  primary: '#fff',
+                  secondary: 'var(--toast-error-accent)',
                 },
               },
             }}

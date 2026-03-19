@@ -202,7 +202,7 @@ export default function DetailedDescriptionModal({
                 {remaining}
               </div>
             </div>
-            {error && <p className="text-sm text-red-500">{error}</p>}
+            {error && <div className="mt-2 error-alert-modern text-sm">{error}</div>}
 
             <div className="flex gap-3 pt-2">
               <button

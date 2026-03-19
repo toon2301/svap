@@ -198,7 +198,7 @@ export default function ForgotPasswordPage() {
 
             {errors.general && (
               <motion.div 
-                className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6"
+                className="error-alert-modern mb-6"
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.3 }}

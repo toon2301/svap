@@ -23,9 +23,13 @@ export default function HeaderCard({ user, firstName, lastName, isUploading, onP
         <UserAvatar user={user} size="medium" onPhotoUpload={onPhotoUploadClick} isUploading={isUploading} onAvatarClick={onAvatarClick} />
         <div className="text-base text-gray-800 dark:text-gray-200 flex-1">
           <div className="font-bold text-gray-800 dark:text-white">
-            {accountType === 'business' 
-              ? (user.company_name || user.username)
-              : (`${(firstName || user.first_name || '').trim()} ${(lastName || user.last_name || '').trim()}`.trim() || user.username)
+            {accountType === 'business'
+              ? ((firstName || '').trim() || user.company_name || user.username)
+              : (() => {
+                  const f = (firstName !== '' ? firstName : user.first_name || '').trim();
+                  const l = (lastName !== '' ? lastName : user.last_name || '').trim();
+                  return (f && l ? `${f} ${l}` : f || l) || user.username;
+                })()
             }
           </div>
           <div className="text-gray-600 dark:text-gray-300">{user.email}</div>

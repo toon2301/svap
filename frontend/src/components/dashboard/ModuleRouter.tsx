@@ -102,31 +102,6 @@ export default function ModuleRouter({
 }: ModuleRouterProps) {
   const { t } = useLanguage();
 
-  if (isRightSidebarOpen && activeRightItem === 'edit-profile') {
-    return (
-      <ProfileModule
-        user={user}
-        onUserUpdate={onUserUpdate}
-        onEditProfileClick={onEditProfileClick ?? handleRightSidebarToggle}
-        onEditCancel={handleRightSidebarToggle}
-        onSkillsClick={() => {
-          setActiveModule('skills');
-          try {
-            localStorage.setItem('activeModule', 'skills');
-          } catch {
-            // ignore
-          }
-          // Zmeniť URL bez reloadu - window.history.pushState mení URL bez prerenderovania stránky
-          if (typeof window !== 'undefined') {
-            window.history.pushState(null, '', '/dashboard/skills');
-          }
-        }}
-        isEditMode={true}
-        accountType={accountType}
-      />
-    );
-  }
-
   if (isRightSidebarOpen && activeRightItem === 'notifications') {
     return <NotificationsModule />;
   }
@@ -204,19 +179,19 @@ export default function ModuleRouter({
           user={user}
           onUserUpdate={onUserUpdate}
           onEditProfileClick={onEditProfileClick ?? handleRightSidebarToggle}
-        onSkillsClick={onSkillsClick || (() => {
-          setActiveModule('skills');
-          try {
-            localStorage.setItem('activeModule', 'skills');
-          } catch {
-            // ignore
-          }
-          // Zmeniť URL bez reloadu - window.history.pushState mení URL bez prerenderovania stránky
-          if (typeof window !== 'undefined') {
-            window.history.pushState(null, '', '/dashboard/skills');
-          }
-        })}
-          isEditMode={isRightSidebarOpen}
+          onEditCancel={handleRightSidebarToggle}
+          onSkillsClick={onSkillsClick || (() => {
+            setActiveModule('skills');
+            try {
+              localStorage.setItem('activeModule', 'skills');
+            } catch {
+              // ignore
+            }
+            if (typeof window !== 'undefined') {
+              window.history.pushState(null, '', '/dashboard/skills');
+            }
+          })}
+          isEditMode={isRightSidebarOpen && activeRightItem === 'edit-profile'}
           accountType={accountType}
         />
       );

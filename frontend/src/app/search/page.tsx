@@ -285,7 +285,7 @@ function SearchResultsContent() {
       </div>
 
       {error && (
-        <p className="text-sm text-red-600 dark:text-red-400 mb-4">{error}</p>
+        <div className="mb-4 error-alert-modern text-sm">{error}</div>
       )}
 
         <div className="sticky top-0 z-20 bg-white dark:bg-gray-900 py-2">

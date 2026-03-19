@@ -436,7 +436,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
 
         {loginErrors.general && (
           <motion.div 
-            className="bg-red-100 border border-red-400 text-red-700 px-3 py-3 rounded mb-4 max-lg:px-4 max-lg:py-4"
+            className="error-alert-modern mb-4 max-lg:px-4 max-lg:py-4"
             role="alert"
             aria-live="assertive"
             initial={{ opacity: 0, scale: 0.95 }}

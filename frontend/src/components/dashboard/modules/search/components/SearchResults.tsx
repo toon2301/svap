@@ -253,7 +253,7 @@ export function SearchResults({
     <div className="space-y-4">
       {/* Error message */}
       {error && (
-        <div className="mt-4 bg-red-50 border border-red-100 text-red-700 text-xs rounded-xl px-3 py-2">
+        <div className="mt-4 error-alert-modern text-xs">
           {error}
         </div>
       )}

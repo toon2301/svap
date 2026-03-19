@@ -144,7 +144,7 @@ export default function DescriptionSection({
         )}
       </div>
 
-      {error && <p className="mt-1 text-sm text-red-500">{error}</p>}
+      {error && <div className="mt-2 error-alert-modern text-sm">{error}</div>}
       <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
         {isSeeking
           ? t('skills.descriptionHintSeeking', 'Sem napíš krátky a výstižný popis čo hľadáš')

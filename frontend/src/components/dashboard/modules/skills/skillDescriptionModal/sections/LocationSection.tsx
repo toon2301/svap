@@ -354,9 +354,9 @@ export default function LocationSection({
         </p>
       )}
       {(districtError || error) && (
-        <p className="mt-2 text-xs leading-snug text-red-500 whitespace-normal break-words">
+        <div className="mt-2 error-alert-modern text-xs py-2 px-3">
           {districtError || error}
-        </p>
+        </div>
       )}
     </div>
   );

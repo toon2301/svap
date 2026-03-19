@@ -24,6 +24,8 @@ User = get_user_model()
 @api_rate_limit
 def update_profile_view(request):
     """Aktualizácia profilu používateľa"""
+    # Načítaj plný objekt z DB - request.user môže byť z cache bez created_at
+    request.user.refresh_from_db()
     # Ulož pôvodné hodnoty pre audit log
     original_data = {
         "first_name": request.user.first_name,

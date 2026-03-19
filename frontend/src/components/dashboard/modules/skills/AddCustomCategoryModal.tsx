@@ -87,7 +87,7 @@ export default function AddCustomCategoryModal({
               <div className="flex items-center justify-between mt-2">
                 <div className="flex-1">
                   {error && (
-                    <p className="text-sm text-red-500">{error}</p>
+                    <div className="error-alert-modern text-sm py-2 px-3">{error}</div>
                   )}
                 </div>
                 <p className={`text-xs ${remainingChars < 10 ? 'text-red-500' : 'text-gray-500 dark:text-gray-400'}`}>

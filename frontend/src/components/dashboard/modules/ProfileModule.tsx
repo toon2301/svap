@@ -24,10 +24,11 @@ function buildPatchPayload(editable: User): Record<string, unknown> {
   const exclude = new Set([
     'id', 'email', 'is_verified', 'created_at', 'updated_at',
     'profile_completeness', 'slug', 'name_modified_by_user', 'completed_cooperations_count', 'avatar_url',
+    'avatar', 'birth_date', 'gender', 'username',
   ]);
   const payload: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(editable)) {
-    if (!exclude.has(k) && v !== undefined) payload[k] = v;
+    if (!exclude.has(k) && v !== undefined && v !== null && v !== '') payload[k] = v;
   }
   return payload;
 }
@@ -138,8 +139,10 @@ export default function ProfileModule({
   useEffect(() => {
     if (isEditMode) {
       if (!editableUser) setEditableUser(deepCloneUser(user));
+      setUploadError('');
     } else {
       setEditableUser(null);
+      setUploadError('');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- editableUser sa vytvára len pri vstupe
   }, [isEditMode]);
@@ -166,7 +169,7 @@ export default function ProfileModule({
       const response = await api.patch('/auth/profile/', payload);
       if (activeActionIdRef.current !== actionId) return;
       if (response.data?.user) {
-        // Sync with backend canonical response: only update touched fields + a few derived fields.
+        setUploadError('');
         const touchedKeys = Object.keys(payload);
         const derivedKeys: (keyof User)[] = ['slug', 'profile_completeness', 'updated_at'];
         const nextPartial: Partial<User> = {};
@@ -179,9 +182,29 @@ export default function ProfileModule({
         for (const key of derivedKeys) {
           if (key in response.data.user) nextPartial[key] = response.data.user[key];
         }
-        mergeUserIfChanged(nextPartial);
-        setEditableUser(null);
-        onEditCancel();
+        try {
+          const scrollEl = document.querySelector('[data-dashboard-main]') as HTMLElement | null;
+          const scrollTop = scrollEl?.scrollTop ?? 0;
+          mergeUserIfChanged(nextPartial);
+          setEditableUser(null);
+          onEditCancel();
+          // Zachovať scroll – po save sa obsah prepne a prehliadač resetuje scroll; obnoviť po re-renderi
+          const restoreScroll = () => {
+            const el = document.querySelector('[data-dashboard-main]') as HTMLElement | null;
+            if (el && scrollTop > 0) {
+              el.scrollTop = scrollTop;
+            }
+          };
+          requestAnimationFrame(() => {
+            requestAnimationFrame(restoreScroll);
+          });
+          setTimeout(restoreScroll, 50);
+          setTimeout(restoreScroll, 150);
+        } catch (postSuccessError) {
+          console.error('Error after successful save:', postSuccessError);
+          setEditableUser(null);
+          onEditCancel();
+        }
       }
     } catch (e: unknown) {
       if (activeActionIdRef.current !== actionId) return;
@@ -198,6 +221,7 @@ export default function ProfileModule({
 
   const handleCancel = useCallback(() => {
     setEditableUser(null);
+    setUploadError('');
     onEditCancel?.();
   }, [onEditCancel]);
 
@@ -391,14 +415,14 @@ export default function ProfileModule({
 
         {/* Success message */}
         {uploadSuccess && (
-          <div className="mt-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
+          <div className="mt-4 success-alert-modern">
             ✓ {t('profile.photoUploaded', 'Fotka bola úspešne nahraná!')}
           </div>
         )}
 
         {/* Error message */}
         {uploadError && (
-          <div className="mt-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+          <div className="mt-4 error-alert-modern">
             {uploadError}
           </div>
         )}

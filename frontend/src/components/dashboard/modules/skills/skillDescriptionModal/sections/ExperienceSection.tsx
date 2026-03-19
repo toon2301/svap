@@ -39,7 +39,7 @@ export default function ExperienceSection({ value, onChange, unit, onUnitChange,
         <ExperienceUnitSelect value={unit} onChange={onUnitChange} />
       </div>
       {error && (
-        <p className="text-sm text-red-500 mt-1">{error}</p>
+        <div className="mt-2 error-alert-modern text-sm py-2 px-3">{error}</div>
       )}
     </div>
   );

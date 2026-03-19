@@ -148,7 +148,7 @@ export default function SkillsDescriptionMobileModals({ state }: SkillsDescripti
           </div>
         </div>
 
-        {detailedError && <p className="mt-1 text-sm text-red-500">{detailedError}</p>}
+        {detailedError && <div className="mt-2 error-alert-modern text-sm">{detailedError}</div>}
         <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
           {isSeeking
             ? t(

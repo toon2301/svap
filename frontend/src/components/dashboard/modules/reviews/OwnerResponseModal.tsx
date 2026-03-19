@@ -184,7 +184,7 @@ export function OwnerResponseModal({
                 {text.length} / {MAX_LENGTH}
               </p>
               {error && (
-                <p className="mt-2 text-sm text-red-600 dark:text-red-400">{error}</p>
+                <div className="mt-3 error-alert-modern text-sm">{error}</div>
               )}
               <div className="mt-6 flex gap-3 justify-end">
                 <button

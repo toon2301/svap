@@ -247,9 +247,9 @@ export default function ResetPasswordClient() {
             <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg"
+              className="mb-4 error-alert-modern"
             >
-              <p className="text-red-600 text-sm">{errors.general}</p>
+              <p className="text-sm">{errors.general}</p>
             </motion.div>
           )}
 

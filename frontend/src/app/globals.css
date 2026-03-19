@@ -130,6 +130,19 @@ input[type="number"] {
   --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
   --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
   --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+
+  /* Toast – modern design (referencia: dark maroon error) */
+  --toast-bg: #ffffff;
+  --toast-text: #1f2937;
+  --toast-border: #e5e7eb;
+  --toast-error-bg: #2D0A0A;
+  --toast-error-text: #fafafa;
+  --toast-error-accent: #EF4444;
+  --toast-success-bg: #052e16;
+  --toast-success-text: #f0fdf4;
+  --toast-success-accent: #10B981;
+  --toast-success-border: #166534;
+  --toast-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.08);
 }
 
 /* Dark theme using class on html/body */
@@ -140,6 +153,19 @@ input[type="number"] {
   --muted-foreground: #A3A3A3;
   --border: #1F1F1F;
   --input: #0F0F0F;
+
+  /* Toast – dark mode (rovnaký štýl ako light – tmavý maroon / dark green) */
+  --toast-bg: #1f2937;
+  --toast-text: #f9fafb;
+  --toast-border: #374151;
+  --toast-error-bg: #2D0A0A;
+  --toast-error-text: #fafafa;
+  --toast-error-accent: #EF4444;
+  --toast-success-bg: #052e16;
+  --toast-success-text: #f0fdf4;
+  --toast-success-accent: #10B981;
+  --toast-success-border: #166534;
+  --toast-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05);
 }
 
 /* Desktop zoom reset (moved from inline style in layout.tsx) */
@@ -1023,4 +1049,35 @@ button:focus-visible {
               0 0 60px 10px rgba(167, 139, 250, 0.5),
               0 0 80px 15px rgba(196, 181, 253, 0.3) !important;
   transform: scale(1.02);
+}
+
+/* Toast – modern container */
+.toast-modern {
+  z-index: 9999;
+}
+
+/* Inline error alert – rovnaký štýl ako error toast (dark maroon, biela text, červený akcent) */
+.error-alert-modern {
+  background: var(--toast-error-bg);
+  color: var(--toast-error-text);
+  border: none;
+  border-left: 5px solid var(--toast-error-accent);
+  border-radius: 16px;
+  padding: 16px 20px;
+  box-shadow: var(--toast-shadow);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* Success alert – rovnaký štýl ako success toast */
+.success-alert-modern {
+  background: var(--toast-success-bg);
+  color: var(--toast-success-text);
+  border: 1px solid var(--toast-success-border);
+  border-left: 5px solid var(--toast-success-accent);
+  border-radius: 16px;
+  padding: 16px 20px;
+  box-shadow: var(--toast-shadow);
+  font-size: 14px;
+  font-weight: 500;
 }

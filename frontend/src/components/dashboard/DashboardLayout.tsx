@@ -186,8 +186,8 @@ export default function DashboardLayout({
           {searchOverlay}
         </div>
 
-        {/* Main Content */}
-        <main className={`relative h-screen overflow-y-auto pb-24 lg:pt-0 lg:pb-0 elegant-scrollbar ${
+        {/* Main Content - data attr pre scroll preservation */}
+        <main data-dashboard-main className={`relative h-screen overflow-y-auto pb-24 lg:pt-0 lg:pb-0 elegant-scrollbar ${
           activeModule === 'search'
             ? 'pt-0'
             : activeModule === 'offer-reviews'

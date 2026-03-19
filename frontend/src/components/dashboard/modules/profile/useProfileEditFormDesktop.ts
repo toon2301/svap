@@ -98,9 +98,41 @@ export function useProfileEditFormDesktop({
     });
   }, [firstName, lastName, onEditableUserUpdate]);
 
-  const handleFullNameBlur = useCallback(() => {
+  const handleFullNameBlur = useCallback(async () => {
+    const f = (firstName || '').trim();
+    const l = (lastName || '').trim();
+    const fullNameForCompany = (f && l ? `${f} ${l}` : f || l).trim();
+
+    const currentFirst = (editableUser.first_name || '').trim();
+    const currentLast = (editableUser.last_name || '').trim();
+
+    if (f === currentFirst && l === currentLast) return;
+
     syncFullName();
-  }, [syncFullName]);
+
+    try {
+      const { api } = await import('@/lib/api');
+      const response = await api.patch('/auth/profile/', {
+        first_name: f,
+        last_name: l,
+        company_name: fullNameForCompany,
+      });
+      if (response.data?.user) {
+        onEditableUserUpdate({
+          first_name: response.data.user.first_name,
+          last_name: response.data.user.last_name,
+          company_name: response.data.user.company_name,
+        });
+      }
+    } catch (error) {
+      console.error('Error saving full name:', error);
+      onEditableUserUpdate({
+        first_name: editableUser.first_name,
+        last_name: editableUser.last_name,
+        company_name: editableUser.company_name,
+      });
+    }
+  }, [firstName, lastName, editableUser, syncFullName, onEditableUserUpdate]);
 
   const handleBioSave = useCallback(() => {
     onEditableUserUpdate({ bio: bio.trim() });

@@ -228,6 +228,8 @@ class User(AbstractUser):
         Pri prvom uložení používateľa vygeneruje slug, ak chýba.
         Ak sa zmení meno (first_name, last_name alebo company_name), slug sa automaticky aktualizuje.
         """
+        update_fields = kwargs.get('update_fields')
+
         # Ak už existuje v DB, načítame starý objekt na porovnanie
         old_instance = None
         if self.pk:
@@ -237,8 +239,10 @@ class User(AbstractUser):
                 pass
 
         # Ak nemáme slug, vygenerujeme ho
+        slug_changed = False
         if not self.slug:
             self.ensure_slug(commit=False)
+            slug_changed = True
         # Ak sa zmenilo meno (používame display_name, ktorý pokrýva oba typy účtov), aktualizujeme slug
         elif old_instance:
             old_display_name = old_instance.display_name
@@ -246,6 +250,12 @@ class User(AbstractUser):
             if old_display_name != new_display_name:
                 # Meno sa zmenilo - aktualizujeme slug
                 self.ensure_slug(commit=False, force_update=True)
+                slug_changed = True
+
+        # Ak update_fields je nastavené a slug sa zmenil, pridaj slug do update_fields
+        # aby sa predišlo INSERT namiesto UPDATE na deferred objektoch
+        if update_fields is not None and slug_changed:
+            kwargs['update_fields'] = list(update_fields) + ['slug']
 
         super().save(*args, **kwargs)
 
