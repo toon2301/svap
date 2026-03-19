@@ -8,6 +8,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from django.utils import timezone
+from time import perf_counter
 
 from swaply.rate_limiting import api_rate_limit
 
@@ -61,13 +62,28 @@ def notifications_unread_count_view(request):
     notif_type = (
         request.query_params.get("type") or NotificationType.SKILL_REQUEST
     ).strip()
+    t0 = perf_counter()
     try:
         count = Notification.objects.filter(
             user=request.user, type=notif_type, is_read=False
         ).count()
     except Exception:
         count = 0
-    return Response({"count": count}, status=status.HTTP_200_OK)
+    db_ms = (perf_counter() - t0) * 1000.0
+    resp = Response({"count": count}, status=status.HTTP_200_OK)
+    # Timing headers (safe): allow diagnosing DB vs other overhead
+    try:
+        resp["Server-Timing"] = f"notif_count;dur={db_ms:.1f}"
+        resp["X-Notif-Count-Ms"] = str(int(db_ms))
+        # also expose to ServerTimingMiddleware aggregation
+        st = getattr(request, "_server_timing", None)
+        if not isinstance(st, dict):
+            st = {}
+        st["notif_count"] = db_ms
+        request._server_timing = st
+    except Exception:
+        pass
+    return resp
 
 
 @api_view(["POST"])

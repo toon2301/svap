@@ -10,6 +10,7 @@ from functools import wraps
 import hashlib
 import json
 import logging
+import time
 from rest_framework.exceptions import Throttled
 
 logger = logging.getLogger(__name__)
@@ -199,7 +200,18 @@ def rate_limit(
                 local_max_attempts, local_window_minutes, local_block_minutes
             )
 
+            # Timing: rate limiting overhead (cache/redis) per request
+            _t0_rl = time.perf_counter()
             if not limiter.is_allowed(identifier, action):
+                _rl_ms = (time.perf_counter() - _t0_rl) * 1000.0
+                try:
+                    st = getattr(request, "_server_timing", None)
+                    if not isinstance(st, dict):
+                        st = {}
+                    st["rl"] = _rl_ms
+                    request._server_timing = st
+                except Exception:
+                    pass
                 remaining = limiter.get_remaining_attempts(identifier, action)
                 reset_time = limiter.get_reset_time(identifier, action)
 
@@ -226,6 +238,19 @@ def rate_limit(
                     },
                     status=429,
                 )
+
+            _rl_ms = (time.perf_counter() - _t0_rl) * 1000.0
+            try:
+                st = getattr(request, "_server_timing", None)
+                if not isinstance(st, dict):
+                    st = {}
+                # keep the max if multiple decorators/middlewares set it
+                prev = st.get("rl")
+                if prev is None or _rl_ms > float(prev):
+                    st["rl"] = _rl_ms
+                request._server_timing = st
+            except Exception:
+                pass
 
             return view_func(request, *args, **kwargs)
 

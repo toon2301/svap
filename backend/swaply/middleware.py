@@ -32,7 +32,26 @@ class ServerTimingMiddleware:
         response = self.get_response(request)
         dur_ms = (time.perf_counter() - t0) * 1000.0
         try:
-            entry = f"app;dur={dur_ms:.1f}"
+            # Allow views / decorators to contribute their own timings via request._server_timing (ms).
+            parts = []
+            try:
+                extra = getattr(request, "_server_timing", None)
+                if isinstance(extra, dict):
+                    for k, v in extra.items():
+                        if not k:
+                            continue
+                        try:
+                            fv = float(v)
+                        except Exception:
+                            continue
+                        if fv < 0:
+                            continue
+                        parts.append(f"{k};dur={fv:.1f}")
+            except Exception:
+                pass
+
+            parts.append(f"app;dur={dur_ms:.1f}")
+            entry = ", ".join(parts)
             existing = None
             try:
                 existing = response.headers.get("Server-Timing")
