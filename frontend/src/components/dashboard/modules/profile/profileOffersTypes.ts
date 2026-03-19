@@ -41,6 +41,8 @@ export interface Offer {
   average_rating?: number | null;
   /** Počet recenzií, 0 ak nie sú */
   reviews_count?: number;
+  /** Stav žiadosti aktuálneho používateľa (z API) – pre okamžité zobrazenie pri načítaní */
+  my_request_status?: string | null;
 }
 
 export const HOURS_DAYS = [

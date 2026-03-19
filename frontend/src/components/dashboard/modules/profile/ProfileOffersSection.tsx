@@ -16,6 +16,7 @@ import {
   makeOffersCacheKey,
   setOffersToCache,
   getOrCreateOffersRequest,
+  invalidateOffersCache,
 } from './profileOffersCache';
 import { fetchSkillRequests, getApiErrorMessage, updateSkillRequest } from '../requests/requestsApi';
 
@@ -112,7 +113,8 @@ export default function ProfileOffersSection({
     async (offerId: number) => {
       if (!isOtherUserProfile) return;
       if (busyOfferId === offerId) return;
-      const current = requestStatusByOfferId[offerId];
+      const offer = offers.find((o) => o.id === offerId);
+      const current = requestStatusByOfferId[offerId] ?? offer?.my_request_status ?? '';
       if (current === 'accepted') return;
 
       // Ak je pending, klik znamená zrušenie žiadosti.
@@ -126,6 +128,7 @@ export default function ProfileOffersSection({
           }
           await updateSkillRequest(requestId, 'cancel');
           setRequestStatusByOfferId((prev) => ({ ...prev, [offerId]: '' }));
+          invalidateOffersCache(ownerUserId);
           setRequestIdByOfferId((prev) => {
             const next = { ...prev };
             delete next[offerId];
@@ -149,6 +152,7 @@ export default function ProfileOffersSection({
         setBusyOfferId(offerId);
         const { data } = await api.post(endpoints.requests.list, { offer_id: offerId });
         setRequestStatusByOfferId((prev) => ({ ...prev, [offerId]: 'pending' }));
+        invalidateOffersCache(ownerUserId);
         const createdId = data?.id != null ? Number(data.id) : NaN;
         if (Number.isFinite(createdId) && createdId >= 1) {
           setRequestIdByOfferId((prev) => ({ ...prev, [offerId]: createdId }));
@@ -159,7 +163,7 @@ export default function ProfileOffersSection({
         setBusyOfferId(null);
       }
     },
-    [isOtherUserProfile, isOfferStillAvailable, requestStatusByOfferId, busyOfferId, resolvePendingRequestIdForOffer, t],
+    [isOtherUserProfile, isOfferStillAvailable, requestStatusByOfferId, busyOfferId, resolvePendingRequestIdForOffer, offers, ownerUserId, t],
   );
 
   // Load offers function (použitá pre prvotné načítanie aj polling)
@@ -173,6 +177,15 @@ export default function ProfileOffersSection({
         const cached = getOffersFromCache(cacheKey);
         if (cached) {
           setOffers(cached);
+          setRequestStatusByOfferId((prev) => {
+            const next = { ...prev };
+            for (const o of cached) {
+              if (typeof o.id === 'number' && typeof o.my_request_status === 'string' && o.my_request_status) {
+                next[o.id] = o.my_request_status;
+              }
+            }
+            return next;
+          });
           return;
         }
       }
@@ -239,11 +252,21 @@ export default function ProfileOffersSection({
             average_rating: s.average_rating,
             reviews_count: s.reviews_count,
             already_reviewed: typeof s.already_reviewed === 'boolean' ? s.already_reviewed : undefined,
+            my_request_status: typeof s.my_request_status === 'string' ? s.my_request_status : undefined,
           };
         });
       });
 
       setOffers(mappedOffers);
+      setRequestStatusByOfferId((prev) => {
+        const next = { ...prev };
+        for (const o of mappedOffers) {
+          if (typeof o.id === 'number' && typeof o.my_request_status === 'string' && o.my_request_status) {
+            next[o.id] = o.my_request_status;
+          }
+        }
+        return next;
+      });
       setOffersToCache(cacheKey, mappedOffers);
     } catch (error: any) {
       // Pri 429 ponechaj posledné ponuky (z cache alebo prázdne) a zobraz jemnú hlášku
@@ -536,7 +559,7 @@ export default function ProfileOffersSection({
                   requestLabel={(() => {
                     const defaultRequest = offer.is_seeking ? t('requests.offer', 'Ponúknuť') : t('requests.request', 'Požiadať');
                     if (typeof offer.id !== 'number') return defaultRequest;
-                    const raw = requestStatusByOfferId[offer.id];
+                    const raw = requestStatusByOfferId[offer.id] ?? offer.my_request_status ?? '';
                     const st = raw === 'pending' || raw === 'accepted' || raw === 'rejected' || raw === 'cancelled' ? raw : '';
                     if (st === 'accepted') return t('requests.statusAccepted', 'Prijaté');
                     if (st === 'pending') {
@@ -551,7 +574,7 @@ export default function ProfileOffersSection({
                   })()}
                   isRequestDisabled={(() => {
                     if (typeof offer.id !== 'number') return false;
-                    const raw = requestStatusByOfferId[offer.id];
+                    const raw = requestStatusByOfferId[offer.id] ?? offer.my_request_status ?? '';
                     const st = raw === 'pending' || raw === 'accepted' || raw === 'rejected' || raw === 'cancelled' ? raw : '';
                     return st === 'accepted' || busyOfferId === offer.id;
                   })()}

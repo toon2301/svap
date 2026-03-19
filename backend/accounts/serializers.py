@@ -617,6 +617,7 @@ class OfferedSkillSerializer(serializers.ModelSerializer):
     already_reviewed = serializers.SerializerMethodField()
     average_rating = serializers.SerializerMethodField()
     reviews_count = serializers.SerializerMethodField()
+    my_request_status = serializers.SerializerMethodField()
 
     class Meta:
         model = OfferedSkill
@@ -649,6 +650,7 @@ class OfferedSkillSerializer(serializers.ModelSerializer):
             "already_reviewed",
             "average_rating",
             "reviews_count",
+            "my_request_status",
         ]
         read_only_fields = [
             "id",
@@ -661,7 +663,15 @@ class OfferedSkillSerializer(serializers.ModelSerializer):
             "already_reviewed",
             "average_rating",
             "reviews_count",
+            "my_request_status",
         ]
+
+    def get_my_request_status(self, obj):
+        """Stav žiadosti aktuálneho používateľa pre túto ponuku (pending/accepted/rejected/cancelled)."""
+        m = self.context.get("request_status_by_offer_id")
+        if not m or not isinstance(m, dict):
+            return None
+        return m.get(obj.id)
 
     def get_experience(self, obj):
         """Vráti experience ako objekt (ak existuje)"""

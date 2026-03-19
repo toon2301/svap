@@ -31,7 +31,7 @@ def _skills_list_queryset(base_qs):
 
 
 def _skills_list_context(request, offer_ids):
-    """Bulk dotazy pre can_review a already_reviewed – namiesto N+1."""
+    """Bulk dotazy pre can_review, already_reviewed a request_status – namiesto N+1."""
     if not offer_ids:
         return {}
     reviewed = set(
@@ -46,7 +46,16 @@ def _skills_list_context(request, offer_ids):
             status=SkillRequestStatus.ACCEPTED,
         ).values_list("offer_id", flat=True)
     )
-    return {"reviewed_offer_ids": reviewed, "can_review_offer_ids": can_review}
+    request_status_by_offer = dict(
+        SkillRequest.objects.filter(
+            requester=request.user, offer_id__in=offer_ids
+        ).values_list("offer_id", "status")
+    )
+    return {
+        "reviewed_offer_ids": reviewed,
+        "can_review_offer_ids": can_review,
+        "request_status_by_offer_id": request_status_by_offer,
+    }
 
 SKILLS_LIST_CACHE_TTL_SECONDS = int(os.getenv("SKILLS_LIST_CACHE_TTL_SECONDS", "10") or "10")
 
