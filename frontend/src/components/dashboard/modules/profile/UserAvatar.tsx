@@ -68,6 +68,7 @@ export default function UserAvatar({ user, size = 'large', onPhotoUpload, isUplo
           className={`${sizeClass} rounded-full mx-auto object-cover border-4 border-purple-100 ${onAvatarClick ? 'cursor-pointer' : 'cursor-default'}`}
           onError={handleImageError}
           onClick={onAvatarClick}
+          referrerPolicy="no-referrer"
         />
       ) : (
         <div 

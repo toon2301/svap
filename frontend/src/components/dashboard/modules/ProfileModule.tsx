@@ -35,36 +35,28 @@ export default function ProfileModule({
   const [mounted, setMounted] = useState(false);
   const [isAllWebsitesModalOpen, setIsAllWebsitesModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<ProfileTab>('offers');
-  // Snapshot user objektu na začiatku edit módu - používa sa v normálnom zobrazení, kým sa edit mode neukončí
+  /** Snapshot používateľa pri vstupe do edit módu. Používa sa LEN počas editovania. Mimo edit módu sa vždy zobrazuje aktuálny user. */
   const [snapshotUser, setSnapshotUser] = useState<User | null>(null);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Vytvorenie snapshotu user objektu na začiatku edit módu
-  // OPRAVA: Použiť user.id namiesto celého user objektu, aby sa zabránilo nekonečnej slučke
+  // Správa snapshotu: vytvor pri vstupe do edit módu, vymaž pri výstupe (synchronne s isEditMode)
   useEffect(() => {
-    if (isEditMode && !snapshotUser) {
-      // Vytvoríme hlbokú kópiu user objektu
-      setSnapshotUser({ ...user });
-    } else if (!isEditMode && snapshotUser) {
-      // Keď sa edit mode vypne, vymazeme snapshot a použijeme aktuálny user
+    if (isEditMode) {
+      if (!snapshotUser) setSnapshotUser({ ...user });
+    } else {
       setSnapshotUser(null);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isEditMode, user.id]);
-
-  // Aktualizácia snapshotu, keď sa user zmení a nie sme v edit móde
-  // OPRAVA: Odstrániť user z dependencies - nie je potrebný pre túto logiku
-  useEffect(() => {
-    if (!isEditMode) {
-      setSnapshotUser(null);
-    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- snapshot sa vytvára len pri vstupe do edit módu
   }, [isEditMode]);
 
-  // User objekt pre normálne zobrazenie - používa snapshotUser, ak existuje (keď sme v edit móde), inak aktuálny user
-  const displayUser = snapshotUser || user;
+  /**
+   * Deterministická logika: mimo edit módu vždy aktuálny user.
+   * Počas edit módu snapshot (ak existuje) – edit form však zobrazuje user, nie displayUser.
+   */
+  const displayUser: User = isEditMode && snapshotUser ? snapshotUser : user;
 
   const handleTabsKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
     const order: ProfileTab[] = ['offers', 'portfolio', 'posts', 'tagged'];
