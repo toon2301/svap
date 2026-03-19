@@ -420,7 +420,7 @@ export default function ProfileOffersSection({
       document.removeEventListener('visibilitychange', onVisibilityChange);
       stop();
     };
-  }, [activeTab, isOtherUserProfile, !!user]);
+  }, [activeTab, isOtherUserProfile, !!user, offers]);
 
   if (activeTab !== 'offers') {
     return null;
@@ -540,14 +540,13 @@ export default function ProfileOffersSection({
                     const st = raw === 'pending' || raw === 'accepted' || raw === 'rejected' || raw === 'cancelled' ? raw : '';
                     if (st === 'accepted') return t('requests.statusAccepted', 'Prijaté');
                     if (st === 'pending') {
-                      // Ak používateľ hľadá (is_seeking), po kliknutí na "Ponúknuť" → "Ponúknuté"
-                      // Ak používateľ ponúka (nie is_seeking), po kliknutí na "Požiadať" → "Požiadané"
+                      // Klik zruší žiadosť – jasne uviesť akciu
                       return offer.is_seeking
-                        ? t('requests.offered', 'Ponúknuté')
-                        : t('requests.requested', 'Požiadané');
+                        ? t('requests.cancelOffer', 'Zrušiť ponuku')
+                        : t('requests.cancelRequest', 'Zrušiť žiadosť');
                     }
                     if (st === 'rejected') return t('requests.statusRejected', 'Odmietnuté');
-                    if (st === 'cancelled') return t('requests.statusCancelled', 'Zrušené');
+                    if (st === 'cancelled') return defaultRequest;
                     return defaultRequest;
                   })()}
                   isRequestDisabled={(() => {
