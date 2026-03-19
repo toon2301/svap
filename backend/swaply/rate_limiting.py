@@ -162,6 +162,19 @@ def rate_limit(
             ):
                 return view_func(request, *args, **kwargs)
 
+            # Perf: for authenticated, read-only requests, rate limiting adds significant latency
+            # (Redis roundtrips) while providing little value. Keep rate limiting for unauth and
+            # state-changing methods.
+            try:
+                if (
+                    getattr(request, "method", "").upper() in {"GET", "HEAD", "OPTIONS"}
+                    and hasattr(request, "user")
+                    and getattr(request.user, "is_authenticated", False)
+                ):
+                    return view_func(request, *args, **kwargs)
+            except Exception:
+                pass
+
             # Povoliť bypass podľa cesty (užitočné pre testovacie scenáre)
             try:
                 allow_paths = set(getattr(settings, "RATE_LIMIT_ALLOW_PATHS", []) or [])

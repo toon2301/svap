@@ -4,6 +4,9 @@ Custom JWT authentication pre Swaply s Redis fallback
 
 import logging
 import time
+import os
+import threading
+from collections import OrderedDict
 from django.core.cache import cache
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
@@ -11,6 +14,52 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from django.conf import settings
 
 logger = logging.getLogger(__name__)
+
+_USER_CACHE_TTL_SECONDS = int(os.getenv("AUTH_USER_CACHE_TTL_SECONDS", "30") or "30")
+_USER_CACHE_MAX = int(os.getenv("AUTH_USER_CACHE_MAX", "5000") or "5000")
+_USER_CACHE_LOCK = threading.Lock()
+_USER_CACHE: "OrderedDict[int, tuple[float, object]]" = OrderedDict()
+
+
+def _user_cache_get(user_id: int):
+    if _USER_CACHE_TTL_SECONDS <= 0 or _USER_CACHE_MAX <= 0:
+        return None
+    now = time.time()
+    with _USER_CACHE_LOCK:
+        item = _USER_CACHE.get(int(user_id))
+        if not item:
+            return None
+        exp, user = item
+        if exp < now:
+            try:
+                _USER_CACHE.pop(int(user_id), None)
+            except Exception:
+                pass
+            return None
+        # LRU touch
+        try:
+            _USER_CACHE.move_to_end(int(user_id))
+        except Exception:
+            pass
+        return user
+
+
+def _user_cache_set(user_id: int, user):
+    if _USER_CACHE_TTL_SECONDS <= 0 or _USER_CACHE_MAX <= 0:
+        return
+    now = time.time()
+    with _USER_CACHE_LOCK:
+        _USER_CACHE[int(user_id)] = (now + float(_USER_CACHE_TTL_SECONDS), user)
+        try:
+            _USER_CACHE.move_to_end(int(user_id))
+        except Exception:
+            pass
+        # Evict oldest
+        while len(_USER_CACHE) > _USER_CACHE_MAX:
+            try:
+                _USER_CACHE.popitem(last=False)
+            except Exception:
+                break
 
 
 class SwaplyJWTAuthentication(JWTAuthentication):
@@ -91,7 +140,17 @@ class SwaplyJWTAuthentication(JWTAuthentication):
             except Exception:
                 conn_was_none = False
             t_db0 = time.perf_counter()
-            user = User.objects.get(**{self.user_id_field: user_id})
+            cached = _user_cache_get(int(user_id))
+            if cached is not None:
+                user = cached
+            else:
+                user = User.objects.get(**{self.user_id_field: user_id})
+                # Cache only active users; TTL is short to avoid stale auth after deactivation.
+                try:
+                    if getattr(user, "is_active", False):
+                        _user_cache_set(int(user_id), user)
+                except Exception:
+                    pass
             t_db1 = time.perf_counter()
 
             if not user.is_active:
