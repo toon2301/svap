@@ -35,6 +35,7 @@ export function SearchUserProfileModule({
 }: SearchUserProfileModuleProps) {
   const router = useRouter();
   const { t } = useLanguage();
+  const isMobile = useIsMobile();
   const [profileUser, setProfileUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -195,7 +196,6 @@ export function SearchUserProfileModule({
 
   // Určiť accountType na základe user_type používateľa
   const accountType = profileUser.user_type === 'company' ? 'business' : 'personal';
-  const isMobile = useIsMobile();
 
   return (
     <>
