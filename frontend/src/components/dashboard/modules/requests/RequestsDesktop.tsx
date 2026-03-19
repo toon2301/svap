@@ -137,7 +137,11 @@ export function RequestsDesktop() {
           ? t('requests.toastCancelFailed', 'Zrušenie žiadosti zlyhalo.')
           : action === 'hide'
             ? t('requests.toastDeleteFailed', 'Odstránenie žiadosti zlyhalo.')
-            : t('common.error', 'Nastala chyba.');
+            : action === 'accept'
+              ? t('requests.toastRequestCancelled', 'Žiadosť bola zrušená používateľom.')
+              : action === 'reject'
+                ? t('requests.toastRequestAlreadyProcessed', 'Žiadosť už bola spracovaná.')
+                : t('common.error', 'Nastala chyba.');
       toast.error(getApiErrorMessage(err, fallback));
       void load();
     } finally {

@@ -430,6 +430,28 @@ def skill_request_detail_view(request, request_id: int):
                 status=status.HTTP_200_OK,
             )
 
+        # Accept/reject iba na pending žiadosti – ak už nie je pending, vráť jasnú chybu
+        if action in {"accept", "reject"} and obj.status != SkillRequestStatus.PENDING:
+            if obj.status == SkillRequestStatus.CANCELLED:
+                return Response(
+                    {"error": "Žiadosť bola zrušená používateľom."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            if obj.status == SkillRequestStatus.REJECTED:
+                return Response(
+                    {"error": "Žiadosť už bola zamietnutá."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            if obj.status == SkillRequestStatus.ACCEPTED:
+                return Response(
+                    {"error": "Žiadosť už bola prijatá."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            return Response(
+                {"error": "Žiadosť už nie je čakajúca."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         # Stavové prechody
         if action == "accept" and obj.status == SkillRequestStatus.PENDING:
             obj.status = SkillRequestStatus.ACCEPTED

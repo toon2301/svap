@@ -89,7 +89,9 @@
     "offered": "Ponúknuté",
     "openDetail": "Otvoriť detail žiadosti",
     "openProfile": "Otvoriť profil",
-    "toastCancelFailed": "Zrušenie žiadosti zlyhalo."
+    "toastCancelFailed": "Zrušenie žiadosti zlyhalo.",
+    "toastRequestCancelled": "Žiadosť bola zrušená používateľom.",
+    "toastRequestAlreadyProcessed": "Žiadosť už bola spracovaná."
   },
   "navigation": {
     "home": "Nástenka",
