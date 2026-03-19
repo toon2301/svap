@@ -26,7 +26,7 @@ interface ModuleRouterProps {
   activeRightItem: string;
   isRightSidebarOpen: boolean;
   accountType: 'personal' | 'business';
-  onUserUpdate: (updatedUser: User) => void;
+  onUserUpdate: (updatedUserOrUpdater: User | ((prev: User | null) => User | null)) => void;
   handleRightSidebarToggle: () => void;
   setActiveModule: (module: string) => void;
   setIsSkillsCategoryModalOpen: (value: boolean) => void;

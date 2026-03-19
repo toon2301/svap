@@ -19,7 +19,7 @@ interface ProfileDesktopViewProps {
   isEditMode: boolean;
   accountType?: 'personal' | 'business';
   isUploading: boolean;
-  onUserUpdate?: (updatedUser: User) => void;
+  onUserUpdate?: (updatedUserOrUpdater: User | ((prev: User | null) => User | null)) => void;
   onEditableUserUpdate?: (partial: Partial<User>) => void;
   onEditProfileClick?: () => void;
   onEditCancel?: () => void;

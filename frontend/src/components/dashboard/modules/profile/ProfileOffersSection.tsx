@@ -300,7 +300,7 @@ export default function ProfileOffersSection({
     if (hasLoadedOffersRef.current) return;
     hasLoadedOffersRef.current = true;
     void loadOffers();
-  }, [activeTab, loadOffers]);
+  }, [activeTab, ownerUserId, loadOffers]);
 
   // Keep latest offer IDs in a ref for polling ticks
   useEffect(() => {

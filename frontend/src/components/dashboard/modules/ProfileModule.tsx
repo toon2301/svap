@@ -32,9 +32,11 @@ function buildPatchPayload(editable: User): Record<string, unknown> {
   return payload;
 }
 
+type UserUpdateArg = User | ((prev: User | null) => User | null);
+
 interface ProfileModuleProps {
   user: User;
-  onUserUpdate?: (updatedUser: User) => void;
+  onUserUpdate?: (updatedUserOrUpdater: UserUpdateArg) => void;
   onEditProfileClick?: () => void;
   onEditCancel?: () => void;
   onSkillsClick?: () => void;
@@ -60,6 +62,55 @@ export default function ProfileModule({
   const [mounted, setMounted] = useState(false);
   const [isAllWebsitesModalOpen, setIsAllWebsitesModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<ProfileTab>('offers');
+
+  // Keep latest user snapshot for deterministic rollback and to avoid stale closures.
+  const latestUserRef = useRef<User>(user);
+  useEffect(() => {
+    latestUserRef.current = user;
+  }, [user]);
+
+  // Async action isolation (out-of-order protection) + simple lock to avoid conflicting parallel actions.
+  const actionSeqRef = useRef(0);
+  const activeActionIdRef = useRef<number | null>(null);
+  const busyRef = useRef(false);
+
+  const beginAction = useCallback((): number | null => {
+    if (busyRef.current) return null;
+    const id = ++actionSeqRef.current;
+    busyRef.current = true;
+    activeActionIdRef.current = id;
+    setIsUploading(true);
+    setUploadError('');
+    return id;
+  }, []);
+
+  const endAction = useCallback((actionId: number) => {
+    if (activeActionIdRef.current !== actionId) return;
+    activeActionIdRef.current = null;
+    busyRef.current = false;
+    setIsUploading(false);
+  }, []);
+
+  const mergeUserIfChanged = useCallback(
+    (partial: Partial<User>) => {
+      if (!onUserUpdate) return;
+      onUserUpdate((prev) => {
+        if (!prev) return prev;
+        let changed = false;
+        const next: User = { ...prev };
+        for (const [k, v] of Object.entries(partial)) {
+          const key = k as keyof User;
+          if (next[key] !== v) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (next as any)[key] = v;
+            changed = true;
+          }
+        }
+        return changed ? next : prev;
+      });
+    },
+    [onUserUpdate]
+  );
 
   // Avatar preview URL (optimistic). Revoke to avoid memory leaks.
   const avatarPreviewUrlRef = useRef<string | null>(null);
@@ -100,32 +151,50 @@ export default function ProfileModule({
   const handleSave = useCallback(async (mergedUser?: User) => {
     const toSave = mergedUser ?? editableUser;
     if (!toSave || !onUserUpdate || !onEditCancel) return;
+    const actionId = beginAction();
+    if (actionId == null) return;
 
-    // Optimistic update + rollback on failure
-    const previousUser = deepCloneUser(user);
-    onUserUpdate(toSave);
-
-    setIsUploading(true);
-    setUploadError('');
+    // Deterministic rollback snapshot (full user object).
+    const previousUser = deepCloneUser(latestUserRef.current);
     try {
       const payload = buildPatchPayload(toSave);
+      // Optimistic update: apply only fields we actually PATCH.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const optimisticPartial = payload as any as Partial<User>;
+      mergeUserIfChanged(optimisticPartial);
+
       const response = await api.patch('/auth/profile/', payload);
+      if (activeActionIdRef.current !== actionId) return;
       if (response.data?.user) {
-        // Sync with backend canonical response (e.g. normalized fields)
-        onUserUpdate(response.data.user);
+        // Sync with backend canonical response: only update touched fields + a few derived fields.
+        const touchedKeys = Object.keys(payload);
+        const derivedKeys: (keyof User)[] = ['slug', 'profile_completeness', 'updated_at'];
+        const nextPartial: Partial<User> = {};
+        for (const k of touchedKeys) {
+          if (k in response.data.user) {
+            const key = k as keyof User;
+            nextPartial[key] = response.data.user[key];
+          }
+        }
+        for (const key of derivedKeys) {
+          if (key in response.data.user) nextPartial[key] = response.data.user[key];
+        }
+        mergeUserIfChanged(nextPartial);
         setEditableUser(null);
         onEditCancel();
       }
     } catch (e: unknown) {
-      onUserUpdate(previousUser);
+      if (activeActionIdRef.current !== actionId) return;
+      // Deterministic rollback: restore exact snapshot from before the action.
+      onUserUpdate(() => previousUser);
       const err = e as { response?: { data?: { details?: Record<string, string[]> } } };
       const details = err?.response?.data?.details;
       const firstMsg = details && Object.values(details).flat().find((m): m is string => typeof m === 'string');
       setUploadError(firstMsg || 'Nepodarilo sa uložiť.');
     } finally {
-      setIsUploading(false);
+      endAction(actionId);
     }
-  }, [editableUser, onUserUpdate, onEditCancel, user]);
+  }, [editableUser, onUserUpdate, onEditCancel, beginAction, endAction, mergeUserIfChanged]);
 
   const handleCancel = useCallback(() => {
     setEditableUser(null);
@@ -148,22 +217,23 @@ export default function ProfileModule({
 
   const handlePhotoUpload = async (file: File) => {
     if (!onUserUpdate) return;
+    const actionId = beginAction();
+    if (actionId == null) return;
 
     // Optimistic local preview (instant UI)
-    const previousUser = deepCloneUser(user);
+    const previousUser = deepCloneUser(latestUserRef.current);
     if (avatarPreviewUrlRef.current) {
       URL.revokeObjectURL(avatarPreviewUrlRef.current);
       avatarPreviewUrlRef.current = null;
     }
     const previewUrl = URL.createObjectURL(file);
+    const previewUrlForThisAction = previewUrl;
     avatarPreviewUrlRef.current = previewUrl;
-    onUserUpdate({ ...user, avatar_url: previewUrl } as User);
+    mergeUserIfChanged({ avatar_url: previewUrl });
     if (isEditMode && editableUser) {
       handleEditableUserUpdate({ avatar_url: previewUrl } as Partial<User>);
     }
 
-    setIsUploading(true);
-    setUploadError('');
     setUploadSuccess(false);
 
     try {
@@ -171,22 +241,32 @@ export default function ProfileModule({
       formData.append('avatar', file);
 
       const response = await api.patch<{ user: User }>('/auth/profile/', formData);
+      if (activeActionIdRef.current !== actionId) return;
       if (response.data?.user) {
-        onUserUpdate(response.data.user);
+        mergeUserIfChanged({
+          avatar_url: response.data.user.avatar_url,
+          avatar: response.data.user.avatar,
+        });
         if (isEditMode && editableUser) {
-          handleEditableUserUpdate(response.data.user);
+          handleEditableUserUpdate({
+            avatar_url: response.data.user.avatar_url,
+            avatar: response.data.user.avatar,
+          });
         }
       }
-      if (avatarPreviewUrlRef.current) {
-        URL.revokeObjectURL(avatarPreviewUrlRef.current);
+      // Revoke preview only if it's still the current optimistic URL.
+      if (avatarPreviewUrlRef.current === previewUrlForThisAction) {
+        URL.revokeObjectURL(previewUrlForThisAction);
         avatarPreviewUrlRef.current = null;
       }
       setUploadSuccess(true);
       setTimeout(() => setUploadSuccess(false), 3000);
     } catch (error: any) {
-      onUserUpdate(previousUser);
-      if (avatarPreviewUrlRef.current) {
-        URL.revokeObjectURL(avatarPreviewUrlRef.current);
+      if (activeActionIdRef.current !== actionId) return;
+      // Deterministic rollback: restore exact snapshot from before the action.
+      onUserUpdate(() => previousUser);
+      if (avatarPreviewUrlRef.current === previewUrlForThisAction) {
+        URL.revokeObjectURL(previewUrlForThisAction);
         avatarPreviewUrlRef.current = null;
       }
       // eslint-disable-next-line no-console
@@ -200,7 +280,7 @@ export default function ProfileModule({
         'Nepodarilo sa nahrať fotku. Skús to znova.';
       setUploadError(message);
     } finally {
-      setIsUploading(false);
+      endAction(actionId);
     }
   };
 
@@ -213,10 +293,12 @@ export default function ProfileModule({
 
   const handleRemoveAvatar = async () => {
     if (!onUserUpdate) return;
+    const actionId = beginAction();
+    if (actionId == null) return;
 
-    // Optimistic remove + rollback
-    const previousUser = deepCloneUser(user);
-    onUserUpdate({ ...user, avatar: undefined, avatar_url: undefined } as User);
+    // Optimistic remove + rollback (functional form avoids race conditions)
+    const previousUser = deepCloneUser(latestUserRef.current);
+    mergeUserIfChanged({ avatar: undefined, avatar_url: undefined });
     if (isEditMode && editableUser) {
       handleEditableUserUpdate({ avatar: undefined, avatar_url: undefined } as Partial<User>);
     }
@@ -226,18 +308,25 @@ export default function ProfileModule({
     }
 
     try {
-      setIsUploading(true);
-      setUploadError('');
       const response = await api.patch<{ user: User }>('/auth/profile/', { avatar: null });
+      if (activeActionIdRef.current !== actionId) return;
       if (response.data?.user) {
-        onUserUpdate(response.data.user);
+        mergeUserIfChanged({
+          avatar: response.data.user.avatar,
+          avatar_url: response.data.user.avatar_url,
+        });
         if (isEditMode && editableUser) {
-          handleEditableUserUpdate(response.data.user);
+          handleEditableUserUpdate({
+            avatar: response.data.user.avatar,
+            avatar_url: response.data.user.avatar_url,
+          });
         }
       }
       setIsActionsOpen(false);
     } catch (e: any) {
-      onUserUpdate(previousUser);
+      if (activeActionIdRef.current !== actionId) return;
+      // Deterministic rollback: restore exact snapshot from before the action.
+      onUserUpdate(() => previousUser);
       const details = e?.response?.data?.details || e?.response?.data?.validation_errors;
       const avatarErrors: string[] | undefined = details?.avatar;
       const message =
@@ -247,7 +336,7 @@ export default function ProfileModule({
         'Nepodarilo sa odstrániť fotku. Skúste znova.';
       setUploadError(message);
     } finally {
-      setIsUploading(false);
+      endAction(actionId);
     }
   };
 

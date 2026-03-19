@@ -13,7 +13,7 @@ interface ProfileEditFormMobileProps {
   user: User;
   editableUser: User;
   onEditableUserUpdate?: (partial: Partial<User>) => void;
-  onUserUpdate?: (user: User) => void;
+  onUserUpdate?: (userOrUpdater: User | ((prev: User | null) => User | null)) => void;
   onEditProfileClick?: () => void;
   onEditCancel?: () => void;
   onEditSave?: (mergedUser?: User) => Promise<void>;
@@ -172,7 +172,12 @@ export default function ProfileEditFormMobile({
     } else if (onUserUpdate) {
       try {
         const response = await api.patch('/auth/profile/', { avatar: null });
-        if (response.data?.user) onUserUpdate(response.data.user);
+        if (response.data?.user)
+          onUserUpdate((prev) =>
+            prev
+              ? { ...prev, avatar: response.data!.user!.avatar, avatar_url: response.data!.user!.avatar_url }
+              : prev
+          );
         setIsActionsOpen(false);
       } catch (e: any) {
         console.error('Error removing avatar:', e);
@@ -189,7 +194,12 @@ export default function ProfileEditFormMobile({
         const formData = new FormData();
         formData.append('avatar', file);
         const response = await api.patch('/auth/profile/', formData);
-        if (response.data?.user) onUserUpdate(response.data.user);
+        if (response.data?.user)
+          onUserUpdate((prev) =>
+            prev
+              ? { ...prev, avatar_url: response.data!.user!.avatar_url, avatar: response.data!.user!.avatar }
+              : prev
+          );
         setIsActionsOpen(false);
       } catch (e: any) {
         console.error('Error uploading photo:', e);

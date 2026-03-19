@@ -42,7 +42,7 @@ export interface UseDashboardStateResult {
   handleModuleChange: (moduleId: string) => void;
   handleRightSidebarToggle: () => void;
   handleRightItemClick: (itemId: string) => void;
-  handleUserUpdate: (updatedUser: User) => void;
+  handleUserUpdate: (updatedUserOrUpdater: User | ((prev: User | null) => User | null)) => void;
   handleLogout: () => Promise<void>;
   handleMobileBack: (isInSubcategories?: boolean) => void;
 }
@@ -322,11 +322,17 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
   );
 
   const handleUserUpdate = useCallback(
-    (updatedUser: User) => {
+    (updatedUserOrUpdater: User | ((prev: User | null) => User | null)) => {
+      const updatedUser =
+        typeof updatedUserOrUpdater === 'function'
+          ? updatedUserOrUpdater(userRef.current)
+          : updatedUserOrUpdater;
+      if (updatedUser == null) return;
+
       // Skontrolovať, či sa zmenil slug (porovnať so starým user objektom z ref)
       const oldUser = userRef.current;
       const slugChanged = oldUser && oldUser.slug !== updatedUser.slug;
-      
+
       // Aktualizovať ref pred setUser, aby sme mali aktuálny stav
       userRef.current = updatedUser;
       setUser(updatedUser);

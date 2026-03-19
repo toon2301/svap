@@ -56,6 +56,7 @@ export default function ProfileOffersMobileSection({
   const statusFetchInFlightRef = useRef(false);
   const statusAbortControllerRef = useRef<AbortController | null>(null);
   const offerIdsRef = useRef<number[]>([]);
+  const hasLoadedOffersRef = useRef(false);
 
   const isOfferStillAvailable = useCallback(
     async (offerId: number) => {
@@ -298,10 +299,17 @@ export default function ProfileOffersMobileSection({
     }
   }, [ownerUserId, t]);
 
-  // Skills: load once on mount (no interval)
+  // Reset "loaded once" guard when owner changes
   useEffect(() => {
+    hasLoadedOffersRef.current = false;
+  }, [ownerUserId]);
+
+  // Skills: load once per ownerUserId
+  useEffect(() => {
+    if (hasLoadedOffersRef.current) return;
+    hasLoadedOffersRef.current = true;
     void loadOffers();
-  }, [loadOffers]);
+  }, [ownerUserId, loadOffers]);
 
   // Keep latest offer IDs in a ref for polling ticks (no extra re-renders)
   useEffect(() => {
