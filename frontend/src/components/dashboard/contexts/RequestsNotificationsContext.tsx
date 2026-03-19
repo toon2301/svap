@@ -48,6 +48,15 @@ function getBackendOrigin(): string {
   return 'http://localhost:8000';
 }
 
+/** Keď API je proxy (/api), WS smeruje na frontend (same-origin) aby sa poslali cookies. */
+function getWebSocketOrigin(): string {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+  if (typeof window !== 'undefined' && apiUrl && apiUrl.startsWith('/')) {
+    return window.location.origin;
+  }
+  return getBackendOrigin();
+}
+
 function toWebSocketUrl(origin: string): string {
   const wsOrigin = origin.startsWith('https://')
     ? origin.replace(/^https:\/\//, 'wss://')
@@ -88,8 +97,17 @@ export function RequestsNotificationsProvider({ children }: { children: React.Re
     void refreshUnreadCount();
   }, [refreshUnreadCount]);
 
+  // Polling fallback: keď WebSocket nefunguje (Railway cross-origin), notifikácie sa zobrazia do ~10s.
+  const POLL_INTERVAL_MS = 10000;
   useEffect(() => {
-    const origin = getBackendOrigin();
+    const id = window.setInterval(() => {
+      void refreshUnreadCount();
+    }, POLL_INTERVAL_MS);
+    return () => window.clearInterval(id);
+  }, [refreshUnreadCount]);
+
+  useEffect(() => {
+    const origin = getWebSocketOrigin();
     let disposed = false;
     const store = getWsStore();
 

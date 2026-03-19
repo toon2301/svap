@@ -59,9 +59,12 @@ const nextConfig = {
 
     // Dôležité: zachovať trailing slash (Django/DRF ho používa).
     // Next.js pri :path* často "zje" koncové `/`, takže pridáme osobitné pravidlo pre URL s `/`.
+    // /ws/* proxy pre WebSocket (notifikácie v reálnom čase) – same-origin = cookies fungujú.
     return [
       { source: '/api/:path*/', destination: `${be}/api/:path*/` },
       { source: '/api/:path*', destination: `${be}/api/:path*` },
+      { source: '/ws/:path*/', destination: `${be}/ws/:path*/` },
+      { source: '/ws/:path*', destination: `${be}/ws/:path*` },
     ];
   },
 
