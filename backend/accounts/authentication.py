@@ -17,7 +17,8 @@ logger = logging.getLogger(__name__)
 
 _USER_CACHE_TTL_SECONDS = int(os.getenv("AUTH_USER_CACHE_TTL_SECONDS", "30") or "30")
 _USER_CACHE_MAX = int(os.getenv("AUTH_USER_CACHE_MAX", "5000") or "5000")
-_USER_REDIS_TTL_SECONDS = int(os.getenv("AUTH_USER_REDIS_CACHE_TTL_SECONDS", "60") or "60")
+# Cross-process cache TTL (Redis via Django cache). Keep short to avoid stale role/state.
+_USER_REDIS_TTL_SECONDS = int(os.getenv("AUTH_USER_REDIS_CACHE_TTL_SECONDS", "300") or "300")
 _USER_CACHE_LOCK = threading.Lock()
 _USER_CACHE: "OrderedDict[int, tuple[float, object]]" = OrderedDict()
 
@@ -64,7 +65,61 @@ def _user_cache_set(user_id: int, user):
 
 
 def _redis_user_cache_key(user_id: int) -> str:
-    return f"auth_user:{int(user_id)}"
+    # v2: store a small dict (safe to pickle), not a full Django model instance
+    return f"auth_user_v2:{int(user_id)}"
+
+
+def _serialize_user_for_cache(user) -> dict:
+    # Minimal subset used by permissions + UI; avoids DB hit per request.
+    # Keep conservative; add fields if something breaks.
+    try:
+        return {
+            "id": int(getattr(user, "id", 0) or 0),
+            "is_active": bool(getattr(user, "is_active", False)),
+            "is_staff": bool(getattr(user, "is_staff", False)),
+            "is_superuser": bool(getattr(user, "is_superuser", False)),
+            "is_public": bool(getattr(user, "is_public", True)),
+            "is_verified": bool(getattr(user, "is_verified", False)),
+            "user_type": getattr(user, "user_type", None),
+            "email": getattr(user, "email", None),
+            "username": getattr(user, "username", None),
+            "first_name": getattr(user, "first_name", None),
+            "last_name": getattr(user, "last_name", None),
+            "company_name": getattr(user, "company_name", None),
+            "slug": getattr(user, "slug", None),
+        }
+    except Exception:
+        return {}
+
+
+def _build_user_from_cache(UserModel, data: dict):
+    try:
+        uid = int(data.get("id") or 0)
+        if uid <= 0:
+            return None
+        user = UserModel(
+            id=uid,
+            is_active=bool(data.get("is_active", True)),
+            is_staff=bool(data.get("is_staff", False)),
+            is_superuser=bool(data.get("is_superuser", False)),
+            is_public=bool(data.get("is_public", True)),
+            is_verified=bool(data.get("is_verified", False)),
+            user_type=data.get("user_type") or getattr(UserModel, "user_type", None),
+            email=data.get("email") or "",
+            username=data.get("username") or "",
+            first_name=data.get("first_name") or "",
+            last_name=data.get("last_name") or "",
+            company_name=data.get("company_name") or "",
+            slug=data.get("slug"),
+        )
+        try:
+            user._state.adding = False
+            user._state.db = "default"
+        except Exception:
+            pass
+        return user
+    except Exception:
+        return None
 
 
 class SwaplyJWTAuthentication(JWTAuthentication):
@@ -153,11 +208,31 @@ class SwaplyJWTAuthentication(JWTAuthentication):
                 user = None
                 if _USER_REDIS_TTL_SECONDS > 0:
                     try:
-                        user = cache.get(_redis_user_cache_key(int(user_id)))
+                        cached_data = cache.get(_redis_user_cache_key(int(user_id)))
+                        if isinstance(cached_data, dict):
+                            user = _build_user_from_cache(User, cached_data)
                     except Exception:
                         user = None
                 if user is None:
-                    user = User.objects.get(**{self.user_id_field: user_id})
+                    # Fetch minimal fields only (connection cost dominates, but keep row small).
+                    user = (
+                        User.objects.only(
+                            "id",
+                            "is_active",
+                            "is_staff",
+                            "is_superuser",
+                            "is_public",
+                            "is_verified",
+                            "user_type",
+                            "email",
+                            "username",
+                            "first_name",
+                            "last_name",
+                            "company_name",
+                            "slug",
+                        )
+                        .get(**{self.user_id_field: user_id})
+                    )
                     # Cache only active users; TTL is short to avoid stale auth after deactivation.
                     try:
                         if getattr(user, "is_active", False):
@@ -165,7 +240,7 @@ class SwaplyJWTAuthentication(JWTAuthentication):
                                 try:
                                     cache.set(
                                         _redis_user_cache_key(int(user_id)),
-                                        user,
+                                        _serialize_user_for_cache(user),
                                         timeout=_USER_REDIS_TTL_SECONDS,
                                     )
                                 except Exception:
