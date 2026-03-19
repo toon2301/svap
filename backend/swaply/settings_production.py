@@ -89,8 +89,15 @@ else:
 # Safe for production; tune via env if needed.
 try:
     if DATABASES.get("default", {}).get("ENGINE") == "django.db.backends.postgresql":
-        DATABASES["default"]["CONN_MAX_AGE"] = int(os.getenv("DB_CONN_MAX_AGE", "60"))
+        DATABASES["default"]["CONN_MAX_AGE"] = int(os.getenv("DB_CONN_MAX_AGE", "300"))
         DATABASES["default"]["CONN_HEALTH_CHECKS"] = True
+        DATABASES["default"]["OPTIONS"] = {
+            "connect_timeout": int(os.getenv("DB_CONNECT_TIMEOUT", "5")),
+            "keepalives": 1,
+            "keepalives_idle": int(os.getenv("DB_KEEPALIVES_IDLE", "30")),
+            "keepalives_interval": int(os.getenv("DB_KEEPALIVES_INTERVAL", "10")),
+            "keepalives_count": int(os.getenv("DB_KEEPALIVES_COUNT", "5")),
+        }
 except Exception:
     pass
 # Static files storage - bez manifest pre Railway
