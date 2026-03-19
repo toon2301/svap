@@ -102,6 +102,18 @@ def _skill_requests_cache_refresh_for_user(user, request) -> None:
         cache.set(_skill_requests_cache_key(user.id, key), payload, timeout=SKILL_REQUESTS_CACHE_TTL_SECONDS)
 
 
+def _skill_requests_cache_invalidate_for_user(user) -> None:
+    """
+    Invaliduje cache žiadostí pre používateľa. Bezpečné pre produkciu – len mazanie
+    kľúčov, žiadne DB dotazy. Ďalší GET znovu vybuduje cache.
+    """
+    for key in _SKILLREQ_STATUS_KEYS:
+        try:
+            cache.delete(_skill_requests_cache_key(user.id, key))
+        except Exception:
+            pass
+
+
 def _notify_unread_count(user_id: int, notif: Optional[Notification] = None) -> None:
     try:
         unread = Notification.objects.filter(
@@ -197,20 +209,7 @@ def skill_requests_view(request):
 
     recipient = offer.user
 
-    # Diagnostika: meranie času jednotlivých krokov (Server-Timing)
-    def _st(key: str, ms: float) -> None:
-        try:
-            base = getattr(request, "_request", request)
-            st = getattr(base, "_server_timing", None)
-            if not isinstance(st, dict):
-                st = {}
-            st[key] = ms
-            base._server_timing = st
-        except Exception:
-            pass
-
     created = False
-    t_db0 = perf_counter()
     try:
         with transaction.atomic():
             try:
@@ -270,10 +269,7 @@ def skill_requests_view(request):
             status=status.HTTP_200_OK,
         )
 
-    _st("skillreq_db", (perf_counter() - t_db0) * 1000.0)
-
     # Notifikácia pre vlastníka karty
-    t_notif0 = perf_counter()
     try:
         if offer.is_seeking:
             title = "Nová žiadosť"
@@ -299,16 +295,13 @@ def skill_requests_view(request):
     except Exception:
         # fail-open: žiadosť je dôležitejšia ako notifikácia
         pass
-    _st("skillreq_notify", (perf_counter() - t_notif0) * 1000.0)
 
-    # Invalidate caches for both participants
-    t_cache0 = perf_counter()
+    # Invalidácia cache pre oboch účastníkov (rýchle, bez DB)
     try:
-        _skill_requests_cache_refresh_for_user(request.user, request)
-        _skill_requests_cache_refresh_for_user(recipient, request)
+        _skill_requests_cache_invalidate_for_user(request.user)
+        _skill_requests_cache_invalidate_for_user(recipient)
     except Exception:
         pass
-    _st("skillreq_cache_refresh", (perf_counter() - t_cache0) * 1000.0)
 
     return Response(
         SkillRequestSerializer(obj, context={"request": request}).data,
@@ -427,10 +420,9 @@ def skill_request_detail_view(request, request_id: int):
                 if not obj.hidden_by_recipient:
                     obj.hidden_by_recipient = True
                     obj.save(update_fields=["hidden_by_recipient", "updated_at"])
-            # Refresh caches after hide
             try:
-                _skill_requests_cache_refresh_for_user(obj.requester, request)
-                _skill_requests_cache_refresh_for_user(obj.recipient, request)
+                _skill_requests_cache_invalidate_for_user(obj.requester)
+                _skill_requests_cache_invalidate_for_user(obj.recipient)
             except Exception:
                 pass
             return Response(
@@ -450,8 +442,8 @@ def skill_request_detail_view(request, request_id: int):
             obj.save(update_fields=["status", "updated_at"])
 
         try:
-            _skill_requests_cache_refresh_for_user(obj.requester, request)
-            _skill_requests_cache_refresh_for_user(obj.recipient, request)
+            _skill_requests_cache_invalidate_for_user(obj.requester)
+            _skill_requests_cache_invalidate_for_user(obj.recipient)
         except Exception:
             pass
         else:
