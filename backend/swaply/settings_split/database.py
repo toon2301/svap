@@ -38,3 +38,12 @@ else:
             "NAME": BASE_DIR / "db.sqlite3",
         }
     }
+
+# Prod-friendly defaults for Postgres connection reuse.
+# Keeps DB connections open to reduce per-request latency.
+try:
+    if DATABASES.get("default", {}).get("ENGINE") == "django.db.backends.postgresql":
+        DATABASES["default"]["CONN_MAX_AGE"] = int(os.getenv("DB_CONN_MAX_AGE", "60"))
+        DATABASES["default"]["CONN_HEALTH_CHECKS"] = True
+except Exception:
+    pass

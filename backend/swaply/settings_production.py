@@ -83,6 +83,16 @@ else:
             "NAME": BASE_DIR / "db.sqlite3",
         }
     }
+
+# DB connection reuse (prod):
+# Keep connections open to avoid paying TLS/DNS/handshake per request on Railway.
+# Safe for production; tune via env if needed.
+try:
+    if DATABASES.get("default", {}).get("ENGINE") == "django.db.backends.postgresql":
+        DATABASES["default"]["CONN_MAX_AGE"] = int(os.getenv("DB_CONN_MAX_AGE", "60"))
+        DATABASES["default"]["CONN_HEALTH_CHECKS"] = True
+except Exception:
+    pass
 # Static files storage - bez manifest pre Railway
 STATICFILES_STORAGE = "django.contrib.staticfiles.storage.StaticFilesStorage"
 
