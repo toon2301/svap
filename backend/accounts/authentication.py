@@ -3,6 +3,7 @@ Custom JWT authentication pre Swaply s Redis fallback
 """
 
 import logging
+import time
 from django.core.cache import cache
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
@@ -27,6 +28,7 @@ class SwaplyJWTAuthentication(JWTAuthentication):
         - Ignoruj Authorization header (nepodporované)
         - Akceptuj iba access token z HttpOnly cookie `access_token`
         """
+        t0 = time.perf_counter()
         cookie_token = None
         try:
             cookie_token = request.COOKIES.get("access_token")
@@ -34,8 +36,23 @@ class SwaplyJWTAuthentication(JWTAuthentication):
             cookie_token = None
         if not cookie_token:
             return None
+        t1 = time.perf_counter()
         validated_token = self.get_validated_token(cookie_token)
-        return self.get_user(validated_token), validated_token
+        t2 = time.perf_counter()
+        user = self.get_user(validated_token)
+        t3 = time.perf_counter()
+        # Server-Timing aggregation (safe, no tokens)
+        try:
+            st = getattr(request, "_server_timing", None)
+            if not isinstance(st, dict):
+                st = {}
+            st["auth"] = (t3 - t0) * 1000.0
+            st["auth_validate"] = (t2 - t1) * 1000.0
+            st["auth_user"] = (t3 - t2) * 1000.0
+            request._server_timing = st
+        except Exception:
+            pass
+        return user, validated_token
 
     def get_user(self, validated_token):
         """
@@ -78,6 +95,7 @@ class SwaplyJWTAuthentication(JWTAuthentication):
             return True
 
         blacklist_key = f"blacklist_{jti}"
+        t0 = time.perf_counter()
         try:
             # Fast-path (Redis)
             return cache.get(blacklist_key) is not None
@@ -92,6 +110,14 @@ class SwaplyJWTAuthentication(JWTAuthentication):
                 # Fail-closed: ak nevieme overiť blacklist ani v DB, token považuj za neplatný
                 logger.warning(f"DB blacklist check failed: {e2}")
                 return True
+        finally:
+            # Best-effort measure blacklist check time (can be used in views that call authenticate)
+            try:
+                ms = (time.perf_counter() - t0) * 1000.0
+                # No direct request reference here; higher-level authenticate() will capture auth_user anyway.
+                _ = ms
+            except Exception:
+                pass
 
 
 class SwaplyRefreshToken(RefreshToken):

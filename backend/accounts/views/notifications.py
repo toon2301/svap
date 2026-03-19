@@ -73,7 +73,6 @@ def notifications_unread_count_view(request):
     resp = Response({"count": count}, status=status.HTTP_200_OK)
     # Timing headers (safe): allow diagnosing DB vs other overhead
     try:
-        resp["Server-Timing"] = f"notif_count;dur={db_ms:.1f}"
         resp["X-Notif-Count-Ms"] = str(int(db_ms))
         # also expose to ServerTimingMiddleware aggregation
         base_req = getattr(request, "_request", request)  # DRF Request -> Django HttpRequest
