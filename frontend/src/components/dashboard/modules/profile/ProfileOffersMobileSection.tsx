@@ -12,6 +12,7 @@ import { HOURS_DAYS } from './profileOffersTypes';
 import { ProfileOfferDetailMobile } from './ProfileOfferDetailMobile';
 import { ProfileOpeningHoursMobileModal } from './ProfileOpeningHoursMobileModal';
 import { ProfileOfferCardMobile } from './ProfileOfferCardMobile';
+import { ProfileOfferCardSkeleton } from './ProfileOfferCardSkeleton';
 import {
   getOffersFromCache,
   makeOffersCacheKey,
@@ -456,8 +457,10 @@ export default function ProfileOffersMobileSection({
 
   if (isLoading && offers.length === 0) {
     return (
-      <div className="mt-3 text-sm text-gray-500 dark:text-gray-400">
-        {t('profile.offersLoading', 'Načítavam tvoje karty...')}
+      <div className="mt-3 space-y-3">
+        {[1, 2, 3, 4].map((i) => (
+          <ProfileOfferCardSkeleton key={i} />
+        ))}
       </div>
     );
   }

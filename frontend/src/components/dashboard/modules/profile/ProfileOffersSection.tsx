@@ -11,6 +11,7 @@ import type { Offer, ExperienceUnit } from './profileOffersTypes';
 import { HOURS_DAYS } from './profileOffersTypes';
 import type { OpeningHours } from '../skills/skillDescriptionModal/types';
 import ProfileOfferCard from './ProfileOfferCard';
+import { ProfileOfferCardSkeleton } from './ProfileOfferCardSkeleton';
 import {
   getOffersFromCache,
   makeOffersCacheKey,
@@ -51,6 +52,7 @@ export default function ProfileOffersSection({
   const [activeOpeningHours, setActiveOpeningHours] = useState<OpeningHours | null>(null);
   const highlightedCardRef = useRef<HTMLDivElement | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const [isUnavailableModalOpen, setIsUnavailableModalOpen] = useState(false);
   const hasLoadedOffersRef = useRef(false);
 
@@ -170,6 +172,7 @@ export default function ProfileOffersSection({
   const loadOffers = useCallback(async (skipCache = false) => {
     try {
       setLoadError(null);
+      setIsLoading(true);
       const cacheKey = makeOffersCacheKey(ownerUserId);
       
       // Ak nie je skipCache, skús najprv cache
@@ -186,9 +189,12 @@ export default function ProfileOffersSection({
             }
             return next;
           });
+          setIsLoading(false);
           return;
         }
       }
+
+      setIsLoading(true);
 
       // Request deduplication - použij existujúci in-flight request alebo vytvor nový
       const endpoint = ownerUserId
@@ -278,6 +284,8 @@ export default function ProfileOffersSection({
           ),
         );
       }
+    } finally {
+      setIsLoading(false);
     }
   }, [ownerUserId, t]);
 
@@ -447,6 +455,18 @@ export default function ProfileOffersSection({
 
   if (activeTab !== 'offers') {
     return null;
+  }
+
+  if (isLoading && offers.length === 0) {
+    return (
+      <div className="mt-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-[clamp(1rem,2vw,1.5rem)]">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <ProfileOfferCardSkeleton key={i} />
+          ))}
+        </div>
+      </div>
+    );
   }
 
   return (
