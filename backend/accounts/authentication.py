@@ -48,14 +48,11 @@ class SwaplyJWTAuthentication(JWTAuthentication):
                     "Token contained no recognizable user identification"
                 )
 
-            # Skús Redis blacklist check
-            if self._is_redis_available():
-                if self._is_token_blacklisted(validated_token):
-                    raise InvalidToken("Token is blacklisted")
-            else:
-                # Fallback: jednoduchá kontrola v databáze
-                if self._is_token_blacklisted_fallback(validated_token):
-                    raise InvalidToken("Token is blacklisted")
+            # Blacklist check:
+            # - prefer Redis (cache) for speed
+            # - fallback to DB token_blacklist (safe) when Redis is unavailable
+            if self._is_token_blacklisted(validated_token):
+                raise InvalidToken("Token is blacklisted")
 
             from django.contrib.auth import get_user_model
 
@@ -71,50 +68,30 @@ class SwaplyJWTAuthentication(JWTAuthentication):
             logger.error(f"JWT authentication error: {e}")
             raise InvalidToken("Token is invalid")
 
-    def _is_redis_available(self):
-        """
-        Skontroluj, či je Redis dostupný
-        """
-        try:
-            cache.get("test_key")
-            return True
-        except Exception:
-            return False
-
     def _is_token_blacklisted(self, token):
         """
-        Skontroluj blacklist v Redis
+        Skontroluj blacklist v Redis cache; ak zlyhá, fallback na DB blacklist.
         """
-        try:
-            jti = token.get("jti")
-            if not jti:
-                logger.warning("Blacklist check failed (missing jti) – fail-closed")
-                return True
-
-            # Skontroluj v cache (Redis)
-            blacklist_key = f"blacklist_{jti}"
-            return cache.get(blacklist_key) is not None
-
-        except Exception as e:
-            logger.warning(f"Redis blacklist check failed: {e}")
-            # Fail-closed: ak nevieme overiť blacklist, token považuj za neplatný
+        jti = token.get("jti")
+        if not jti:
+            logger.warning("Blacklist check failed (missing jti) – fail-closed")
             return True
 
-    def _is_token_blacklisted_fallback(self, token):
-        """
-        Fallback blacklist check bez Redis
-        """
+        blacklist_key = f"blacklist_{jti}"
         try:
-            jti = token.get("jti")
-            if not jti:
-                logger.warning("Fallback blacklist check failed (missing jti) – fail-closed")
-                return True
-            blacklist_key = f"blacklist_{jti}"
+            # Fast-path (Redis)
             return cache.get(blacklist_key) is not None
         except Exception as e:
-            logger.warning(f"Fallback blacklist check failed: {e}")
-            # Fail-closed: ak nevieme overiť blacklist, token považuj za neplatný
-            return True
+            logger.warning(f"Redis blacklist check failed, falling back to DB: {e}")
+            # Fallback (DB): rest_framework_simplejwt.token_blacklist
+            try:
+                from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken
+
+                return BlacklistedToken.objects.filter(token__jti=jti).exists()
+            except Exception as e2:
+                # Fail-closed: ak nevieme overiť blacklist ani v DB, token považuj za neplatný
+                logger.warning(f"DB blacklist check failed: {e2}")
+                return True
 
 
 class SwaplyRefreshToken(RefreshToken):
