@@ -955,9 +955,16 @@ class SkillRequestSerializer(serializers.ModelSerializer):
         request = self.context.get("request")
         already_reviewed = False
         if request and request.user.is_authenticated:
-            already_reviewed = Review.objects.filter(
-                reviewer=request.user, offer=offer
-            ).exists()
+            # Prefer bulk precomputed set from view to avoid N+1 queries.
+            if "reviewed_offer_ids" in self.context:
+                try:
+                    already_reviewed = offer.id in (self.context.get("reviewed_offer_ids") or set())
+                except Exception:
+                    already_reviewed = False
+            else:
+                already_reviewed = Review.objects.filter(
+                    reviewer=request.user, offer=offer
+                ).exists()
         return {
             "id": offer.id,
             "subcategory": getattr(offer, "subcategory", "") or "",

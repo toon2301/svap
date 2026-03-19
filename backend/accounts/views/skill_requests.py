@@ -19,6 +19,7 @@ from ..models import (
     Notification,
     NotificationType,
 )
+from ..models import Review
 from ..serializers import (
     SkillRequestCreateSerializer,
     SkillRequestSerializer,
@@ -91,11 +92,26 @@ def skill_requests_view(request):
                 sent = sent.filter(status__in=status_filter)
         received = received.order_by("-created_at")[:MAX_SKILL_REQUESTS]
         sent = sent.order_by("-created_at")[:MAX_SKILL_REQUESTS]
+        # Bulk compute already_reviewed for offer_summary to avoid N+1 Review.exists().
+        try:
+            received_list = list(received)
+            sent_list = list(sent)
+            offer_ids = [r.offer_id for r in received_list] + [r.offer_id for r in sent_list]
+            offer_ids = [oid for oid in offer_ids if oid]
+            reviewed_offer_ids = set()
+            if offer_ids:
+                reviewed_offer_ids = set(
+                    Review.objects.filter(reviewer=request.user, offer_id__in=offer_ids).values_list("offer_id", flat=True)
+                )
+        except Exception:
+            received_list = list(received)
+            sent_list = list(sent)
+            reviewed_offer_ids = set()
         received_serializer = SkillRequestSerializer(
-            received, many=True, context={"request": request}
+            received_list, many=True, context={"request": request, "reviewed_offer_ids": reviewed_offer_ids}
         )
         sent_serializer = SkillRequestSerializer(
-            sent, many=True, context={"request": request}
+            sent_list, many=True, context={"request": request, "reviewed_offer_ids": reviewed_offer_ids}
         )
 
         received_data = received_serializer.data
