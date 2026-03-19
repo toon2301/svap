@@ -28,6 +28,15 @@ class ServerTimingMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
+        # Initialize timing bucket on the underlying Django request.
+        # DRF wraps it into rest_framework.request.Request in views, so storing here
+        # ensures we can read it back in middleware.
+        try:
+            if not isinstance(getattr(request, "_server_timing", None), dict):
+                request._server_timing = {}
+        except Exception:
+            pass
+
         t0 = time.perf_counter()
         response = self.get_response(request)
         dur_ms = (time.perf_counter() - t0) * 1000.0

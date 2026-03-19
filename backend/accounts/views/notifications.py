@@ -76,11 +76,12 @@ def notifications_unread_count_view(request):
         resp["Server-Timing"] = f"notif_count;dur={db_ms:.1f}"
         resp["X-Notif-Count-Ms"] = str(int(db_ms))
         # also expose to ServerTimingMiddleware aggregation
-        st = getattr(request, "_server_timing", None)
+        base_req = getattr(request, "_request", request)  # DRF Request -> Django HttpRequest
+        st = getattr(base_req, "_server_timing", None)
         if not isinstance(st, dict):
             st = {}
         st["notif_count"] = db_ms
-        request._server_timing = st
+        base_req._server_timing = st
     except Exception:
         pass
     return resp
