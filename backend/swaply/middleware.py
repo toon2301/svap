@@ -3,6 +3,7 @@ Custom middleware pre Swaply
 """
 
 import logging
+import time
 import traceback
 from django.http import JsonResponse
 from django.conf import settings
@@ -14,6 +15,38 @@ from django.middleware.csrf import CsrfViewMiddleware
 from django.http import HttpResponseForbidden
 
 logger = logging.getLogger(__name__)
+
+class ServerTimingMiddleware:
+    """
+    Adds Server-Timing and X-App-Duration-Ms headers.
+
+    Purpose: help diagnose where latency is spent in production (backend vs proxy/network),
+    without logging sensitive data.
+    """
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        t0 = time.perf_counter()
+        response = self.get_response(request)
+        dur_ms = (time.perf_counter() - t0) * 1000.0
+        try:
+            entry = f"app;dur={dur_ms:.1f}"
+            existing = None
+            try:
+                existing = response.headers.get("Server-Timing")
+            except Exception:
+                existing = response.get("Server-Timing")
+            if existing:
+                response["Server-Timing"] = f"{existing}, {entry}"
+            else:
+                response["Server-Timing"] = entry
+            response["X-App-Duration-Ms"] = str(int(dur_ms))
+        except Exception:
+            # fail-open: never break responses
+            pass
+        return response
 
 
 class GlobalErrorHandlingMiddleware(MiddlewareMixin):
