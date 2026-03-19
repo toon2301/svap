@@ -3,6 +3,8 @@ Skill request (Žiadosti) API views.
 """
 
 import json
+import os
+from time import perf_counter
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
@@ -31,6 +33,24 @@ from ..realtime import notify_user
 from .notifications import _unread_cache_key, UNREAD_COUNT_CACHE_TTL_SECONDS
 
 MAX_SKILL_REQUESTS = 100
+SKILL_REQUESTS_CACHE_TTL_SECONDS = int(os.getenv("SKILL_REQUESTS_CACHE_TTL_SECONDS", "10") or "10")
+
+
+def _skill_requests_cache_key(user_id: int, status_param: str | None) -> str:
+    s = (status_param or "").strip().lower()
+    return f"skill_requests_v1:{int(user_id)}:{s}"
+
+
+def _skill_requests_cache_invalidate(user_id: int) -> None:
+    # Best-effort: delete the most common keys.
+    try:
+        cache.delete(_skill_requests_cache_key(user_id, ""))
+        cache.delete(_skill_requests_cache_key(user_id, "pending"))
+        cache.delete(_skill_requests_cache_key(user_id, "accepted,completion_requested"))
+        cache.delete(_skill_requests_cache_key(user_id, "completed"))
+        cache.delete(_skill_requests_cache_key(user_id, "cancelled,rejected"))
+    except Exception:
+        pass
 
 
 def _notify_unread_count(user_id: int, notif: Optional[Notification] = None) -> None:
@@ -73,6 +93,28 @@ def skill_requests_view(request):
     POST: vytvorí žiadosť o kartu (offer_id)
     """
     if request.method == "GET":
+        status_param = request.query_params.get("status")
+        # Cache-first: avoids DB connect cost on Railway.
+        t_cache0 = perf_counter()
+        cached = None
+        try:
+            cached = cache.get(_skill_requests_cache_key(request.user.id, status_param))
+        except Exception:
+            cached = None
+        cache_ms = (perf_counter() - t_cache0) * 1000.0
+        if isinstance(cached, dict) and "received" in cached and "sent" in cached:
+            try:
+                base_req = getattr(request, "_request", request)
+                st = getattr(base_req, "_server_timing", None)
+                if not isinstance(st, dict):
+                    st = {}
+                st["skillreq_cache"] = cache_ms
+                base_req._server_timing = st
+            except Exception:
+                pass
+            return Response(cached, status=status.HTTP_200_OK)
+
+        t_db0 = perf_counter()
         received = SkillRequest.objects.filter(
             recipient=request.user,
             hidden_by_recipient=False,
@@ -82,7 +124,6 @@ def skill_requests_view(request):
             hidden_by_requester=False,
         ).select_related("requester", "recipient", "offer", "offer__user")
 
-        status_param = request.query_params.get("status")
         if status_param:
             status_values = [s.strip().lower() for s in status_param.split(",") if s.strip()]
             valid_statuses = {choice for choice, _ in SkillRequestStatus.choices}
@@ -92,21 +133,30 @@ def skill_requests_view(request):
                 sent = sent.filter(status__in=status_filter)
         received = received.order_by("-created_at")[:MAX_SKILL_REQUESTS]
         sent = sent.order_by("-created_at")[:MAX_SKILL_REQUESTS]
+        t_db1 = perf_counter()
         # Bulk compute already_reviewed for offer_summary to avoid N+1 Review.exists().
         try:
+            t_list0 = perf_counter()
             received_list = list(received)
             sent_list = list(sent)
+            t_list1 = perf_counter()
             offer_ids = [r.offer_id for r in received_list] + [r.offer_id for r in sent_list]
             offer_ids = [oid for oid in offer_ids if oid]
             reviewed_offer_ids = set()
             if offer_ids:
+                t_rev0 = perf_counter()
                 reviewed_offer_ids = set(
                     Review.objects.filter(reviewer=request.user, offer_id__in=offer_ids).values_list("offer_id", flat=True)
                 )
+                t_rev1 = perf_counter()
+            else:
+                t_rev0 = t_rev1 = perf_counter()
         except Exception:
             received_list = list(received)
             sent_list = list(sent)
             reviewed_offer_ids = set()
+            t_list0 = t_list1 = t_rev0 = t_rev1 = perf_counter()
+        t_ser0 = perf_counter()
         received_serializer = SkillRequestSerializer(
             received_list, many=True, context={"request": request, "reviewed_offer_ids": reviewed_offer_ids}
         )
@@ -115,13 +165,33 @@ def skill_requests_view(request):
         )
 
         received_data = received_serializer.data
-        return Response(
-            {
-                "received": received_data,
-                "sent": sent_serializer.data,
-            },
-            status=status.HTTP_200_OK,
-        )
+        payload = {
+            "received": received_data,
+            "sent": sent_serializer.data,
+        }
+        t_ser1 = perf_counter()
+        try:
+            cache.set(
+                _skill_requests_cache_key(request.user.id, status_param),
+                payload,
+                timeout=SKILL_REQUESTS_CACHE_TTL_SECONDS,
+            )
+        except Exception:
+            pass
+        # Timing breakdown
+        try:
+            base_req = getattr(request, "_request", request)
+            st = getattr(base_req, "_server_timing", None)
+            if not isinstance(st, dict):
+                st = {}
+            st["skillreq_qs"] = (t_db1 - t_db0) * 1000.0
+            st["skillreq_list"] = (t_list1 - t_list0) * 1000.0
+            st["skillreq_review_bulk"] = (t_rev1 - t_rev0) * 1000.0
+            st["skillreq_serialize"] = (t_ser1 - t_ser0) * 1000.0
+            base_req._server_timing = st
+        except Exception:
+            pass
+        return Response(payload, status=status.HTTP_200_OK)
 
     # POST
     create_serializer = SkillRequestCreateSerializer(
@@ -224,6 +294,10 @@ def skill_requests_view(request):
     except Exception:
         # fail-open: žiadosť je dôležitejšia ako notifikácia
         pass
+
+    # Invalidate caches for both participants
+    _skill_requests_cache_invalidate(request.user.id)
+    _skill_requests_cache_invalidate(recipient.id)
 
     return Response(
         SkillRequestSerializer(obj, context={"request": request}).data,
@@ -357,6 +431,13 @@ def skill_request_detail_view(request, request_id: int):
         elif action == "cancel" and obj.status == SkillRequestStatus.PENDING:
             obj.status = SkillRequestStatus.CANCELLED
             obj.save(update_fields=["status", "updated_at"])
+
+        # Invalidate caches after state change
+        try:
+            _skill_requests_cache_invalidate(obj.requester_id)
+            _skill_requests_cache_invalidate(obj.recipient_id)
+        except Exception:
+            pass
         else:
             # nič nemeníme, ale vrátime aktuálny stav
             return Response(

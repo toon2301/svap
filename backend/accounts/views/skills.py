@@ -2,11 +2,14 @@
 Skills views pre Swaply
 """
 
+import os
+from time import perf_counter
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.db.models import Q, F, Avg, Count
+from django.core.cache import cache
 
 from swaply.rate_limiting import api_rate_limit
 
@@ -45,6 +48,19 @@ def _skills_list_context(request, offer_ids):
     )
     return {"reviewed_offer_ids": reviewed, "can_review_offer_ids": can_review}
 
+SKILLS_LIST_CACHE_TTL_SECONDS = int(os.getenv("SKILLS_LIST_CACHE_TTL_SECONDS", "10") or "10")
+
+
+def _skills_list_cache_key(user_id: int) -> str:
+    return f"skills_list_v1:{int(user_id)}"
+
+
+def _skills_list_cache_invalidate(user_id: int) -> None:
+    try:
+        cache.delete(_skills_list_cache_key(user_id))
+    except Exception:
+        pass
+
 
 @api_view(["GET", "POST"])
 @permission_classes([IsAuthenticated])
@@ -55,13 +71,51 @@ def skills_list_view(request):
     POST: Vytvorenie novej zručnosti
     """
     if request.method == "GET":
+        t_cache0 = perf_counter()
+        cached = None
+        try:
+            cached = cache.get(_skills_list_cache_key(request.user.id))
+        except Exception:
+            cached = None
+        cache_ms = (perf_counter() - t_cache0) * 1000.0
+        if isinstance(cached, list):
+            try:
+                base_req = getattr(request, "_request", request)
+                st = getattr(base_req, "_server_timing", None)
+                if not isinstance(st, dict):
+                    st = {}
+                st["skills_cache"] = cache_ms
+                base_req._server_timing = st
+            except Exception:
+                pass
+            return Response(cached, status=status.HTTP_200_OK)
+
+        t_db0 = perf_counter()
         base = OfferedSkill.objects.filter(user=request.user)
         skills_qs = _skills_list_queryset(base)
         skills_list = list(skills_qs)
+        t_db1 = perf_counter()
         offer_ids = [s.id for s in skills_list]
         ctx = {"request": request, **_skills_list_context(request, offer_ids)}
+        t_ser0 = perf_counter()
         serializer = OfferedSkillSerializer(skills_list, many=True, context=ctx)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        data = serializer.data
+        t_ser1 = perf_counter()
+        try:
+            cache.set(_skills_list_cache_key(request.user.id), data, timeout=SKILLS_LIST_CACHE_TTL_SECONDS)
+        except Exception:
+            pass
+        try:
+            base_req = getattr(request, "_request", request)
+            st = getattr(base_req, "_server_timing", None)
+            if not isinstance(st, dict):
+                st = {}
+            st["skills_qs"] = (t_db1 - t_db0) * 1000.0
+            st["skills_serialize"] = (t_ser1 - t_ser0) * 1000.0
+            base_req._server_timing = st
+        except Exception:
+            pass
+        return Response(data, status=status.HTTP_200_OK)
 
     elif request.method == "POST":
         # Log pre debugging (len v development)
@@ -115,6 +169,7 @@ def skills_list_view(request):
             )
 
         serializer.save(user=request.user)
+        _skills_list_cache_invalidate(request.user.id)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
@@ -181,12 +236,14 @@ def skills_detail_view(request, skill_id):
                     )
 
             serializer.save()
+            _skills_list_cache_invalidate(request.user.id)
             return Response(serializer.data, status=status.HTTP_200_OK)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     elif request.method == "DELETE":
         skill.delete()
+        _skills_list_cache_invalidate(request.user.id)
         return Response(
             {"message": "Zručnosť bola odstránená"}, status=status.HTTP_204_NO_CONTENT
         )
@@ -276,6 +333,8 @@ def skill_images_view(request, skill_id):
         create_ms = int((perf_counter() - t1) * 1000)
     except ValidationError as e:
         return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    _skills_list_cache_invalidate(request.user.id)
 
     # Vráť jednoduché info o obrázku
     url = img.image.url if img.image else None
@@ -482,6 +541,7 @@ def skill_images_upload_complete_view(request, skill_id):
         content_type=content_type,
         size_bytes=size_bytes or None,
     )
+    _skills_list_cache_invalidate(request.user.id)
 
     # Enqueue background job (lazy import to avoid hard dependency if worker not deployed yet)
     try:
@@ -521,4 +581,5 @@ def skill_image_detail_view(request, skill_id, image_id):
         )
 
     image.delete()
+    _skills_list_cache_invalidate(request.user.id)
     return Response(status=status.HTTP_204_NO_CONTENT)
