@@ -197,7 +197,20 @@ def skill_requests_view(request):
 
     recipient = offer.user
 
+    # Diagnostika: meranie času jednotlivých krokov (Server-Timing)
+    def _st(key: str, ms: float) -> None:
+        try:
+            base = getattr(request, "_request", request)
+            st = getattr(base, "_server_timing", None)
+            if not isinstance(st, dict):
+                st = {}
+            st[key] = ms
+            base._server_timing = st
+        except Exception:
+            pass
+
     created = False
+    t_db0 = perf_counter()
     try:
         with transaction.atomic():
             try:
@@ -257,7 +270,10 @@ def skill_requests_view(request):
             status=status.HTTP_200_OK,
         )
 
+    _st("skillreq_db", (perf_counter() - t_db0) * 1000.0)
+
     # Notifikácia pre vlastníka karty
+    t_notif0 = perf_counter()
     try:
         if offer.is_seeking:
             title = "Nová žiadosť"
@@ -283,13 +299,16 @@ def skill_requests_view(request):
     except Exception:
         # fail-open: žiadosť je dôležitejšia ako notifikácia
         pass
+    _st("skillreq_notify", (perf_counter() - t_notif0) * 1000.0)
 
     # Invalidate caches for both participants
+    t_cache0 = perf_counter()
     try:
         _skill_requests_cache_refresh_for_user(request.user, request)
         _skill_requests_cache_refresh_for_user(recipient, request)
     except Exception:
         pass
+    _st("skillreq_cache_refresh", (perf_counter() - t_cache0) * 1000.0)
 
     return Response(
         SkillRequestSerializer(obj, context={"request": request}).data,
