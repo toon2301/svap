@@ -30,6 +30,11 @@ class SwaplyJWTAuthentication(JWTAuthentication):
         """
         # DRF posiela rest_framework.request.Request, middleware však agreguje timing z Django HttpRequest.
         base_req = getattr(request, "_request", request)
+        # Keep reference for get_user() timing breakdown (per-request instance in DRF).
+        try:
+            self._timing_request = base_req
+        except Exception:
+            self._timing_request = None
         t0 = time.perf_counter()
         cookie_token = None
         try:
@@ -67,19 +72,45 @@ class SwaplyJWTAuthentication(JWTAuthentication):
                     "Token contained no recognizable user identification"
                 )
 
+            t_bl0 = time.perf_counter()
             # Blacklist check:
             # - prefer Redis (cache) for speed
             # - fallback to DB token_blacklist (safe) when Redis is unavailable
             if self._is_token_blacklisted(validated_token):
                 raise InvalidToken("Token is blacklisted")
+            t_bl1 = time.perf_counter()
 
             from django.contrib.auth import get_user_model
+            from django.db import connections
 
             User = get_user_model()
+            conn = connections["default"]
+            conn_was_none = False
+            try:
+                conn_was_none = conn.connection is None
+            except Exception:
+                conn_was_none = False
+            t_db0 = time.perf_counter()
             user = User.objects.get(**{self.user_id_field: user_id})
+            t_db1 = time.perf_counter()
 
             if not user.is_active:
                 raise InvalidToken("User is inactive")
+
+            # Timing breakdown (safe): auth blacklist + user DB fetch (incl. connection open).
+            try:
+                base_req = getattr(self, "_timing_request", None)
+                if base_req is not None:
+                    st = getattr(base_req, "_server_timing", None)
+                    if not isinstance(st, dict):
+                        st = {}
+                    st["auth_blacklist"] = (t_bl1 - t_bl0) * 1000.0
+                    st["auth_user_db"] = (t_db1 - t_db0) * 1000.0
+                    # Encode "was connection already open" as tiny timing bucket (0ms/0.1ms)
+                    st["db_conn_new"] = 0.1 if conn_was_none else 0.0
+                    base_req._server_timing = st
+            except Exception:
+                pass
 
             return user
 
