@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 
 _USER_CACHE_TTL_SECONDS = int(os.getenv("AUTH_USER_CACHE_TTL_SECONDS", "30") or "30")
 _USER_CACHE_MAX = int(os.getenv("AUTH_USER_CACHE_MAX", "5000") or "5000")
+_USER_REDIS_TTL_SECONDS = int(os.getenv("AUTH_USER_REDIS_CACHE_TTL_SECONDS", "60") or "60")
 _USER_CACHE_LOCK = threading.Lock()
 _USER_CACHE: "OrderedDict[int, tuple[float, object]]" = OrderedDict()
 
@@ -60,6 +61,10 @@ def _user_cache_set(user_id: int, user):
                 _USER_CACHE.popitem(last=False)
             except Exception:
                 break
+
+
+def _redis_user_cache_key(user_id: int) -> str:
+    return f"auth_user:{int(user_id)}"
 
 
 class SwaplyJWTAuthentication(JWTAuthentication):
@@ -144,7 +149,29 @@ class SwaplyJWTAuthentication(JWTAuthentication):
             if cached is not None:
                 user = cached
             else:
-                user = User.objects.get(**{self.user_id_field: user_id})
+                # Cross-thread/process cache (Redis via Django cache) – avoids DB connects on every request.
+                user = None
+                if _USER_REDIS_TTL_SECONDS > 0:
+                    try:
+                        user = cache.get(_redis_user_cache_key(int(user_id)))
+                    except Exception:
+                        user = None
+                if user is None:
+                    user = User.objects.get(**{self.user_id_field: user_id})
+                    # Cache only active users; TTL is short to avoid stale auth after deactivation.
+                    try:
+                        if getattr(user, "is_active", False):
+                            if _USER_REDIS_TTL_SECONDS > 0:
+                                try:
+                                    cache.set(
+                                        _redis_user_cache_key(int(user_id)),
+                                        user,
+                                        timeout=_USER_REDIS_TTL_SECONDS,
+                                    )
+                                except Exception:
+                                    pass
+                    except Exception:
+                        pass
                 # Cache only active users; TTL is short to avoid stale auth after deactivation.
                 try:
                     if getattr(user, "is_active", False):
