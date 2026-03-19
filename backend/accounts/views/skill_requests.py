@@ -33,7 +33,7 @@ from ..realtime import notify_user
 from .notifications import _unread_cache_key, UNREAD_COUNT_CACHE_TTL_SECONDS
 
 MAX_SKILL_REQUESTS = 100
-SKILL_REQUESTS_CACHE_TTL_SECONDS = int(os.getenv("SKILL_REQUESTS_CACHE_TTL_SECONDS", "10") or "10")
+SKILL_REQUESTS_CACHE_TTL_SECONDS = int(os.getenv("SKILL_REQUESTS_CACHE_TTL_SECONDS", "120") or "120")
 
 
 def _skill_requests_cache_key(user_id: int, status_param: str | None) -> str:
@@ -41,16 +41,65 @@ def _skill_requests_cache_key(user_id: int, status_param: str | None) -> str:
     return f"skill_requests_v1:{int(user_id)}:{s}"
 
 
-def _skill_requests_cache_invalidate(user_id: int) -> None:
-    # Best-effort: delete the most common keys.
-    try:
-        cache.delete(_skill_requests_cache_key(user_id, ""))
-        cache.delete(_skill_requests_cache_key(user_id, "pending"))
-        cache.delete(_skill_requests_cache_key(user_id, "accepted,completion_requested"))
-        cache.delete(_skill_requests_cache_key(user_id, "completed"))
-        cache.delete(_skill_requests_cache_key(user_id, "cancelled,rejected"))
-    except Exception:
-        pass
+_SKILLREQ_STATUS_KEYS: tuple[str, ...] = (
+    "",
+    "pending",
+    "accepted,completion_requested",
+    "completed",
+    "cancelled,rejected",
+)
+
+
+def _compute_skill_requests_payload(*, viewer, request, status_param: str | None):
+    received = SkillRequest.objects.filter(
+        recipient=viewer,
+        hidden_by_recipient=False,
+    ).select_related("requester", "recipient", "offer", "offer__user")
+    sent = SkillRequest.objects.filter(
+        requester=viewer,
+        hidden_by_requester=False,
+    ).select_related("requester", "recipient", "offer", "offer__user")
+
+    if status_param:
+        status_values = [s.strip().lower() for s in status_param.split(",") if s.strip()]
+        valid_statuses = {choice for choice, _ in SkillRequestStatus.choices}
+        status_filter = [s for s in status_values if s in valid_statuses]
+        if status_filter:
+            received = received.filter(status__in=status_filter)
+            sent = sent.filter(status__in=status_filter)
+
+    received = received.order_by("-created_at")[:MAX_SKILL_REQUESTS]
+    sent = sent.order_by("-created_at")[:MAX_SKILL_REQUESTS]
+
+    received_list = list(received)
+    sent_list = list(sent)
+
+    offer_ids = [r.offer_id for r in received_list] + [r.offer_id for r in sent_list]
+    offer_ids = [oid for oid in offer_ids if oid]
+    reviewed_offer_ids = set()
+    if offer_ids:
+        reviewed_offer_ids = set(
+            Review.objects.filter(reviewer=viewer, offer_id__in=offer_ids).values_list("offer_id", flat=True)
+        )
+
+    received_ser = SkillRequestSerializer(
+        received_list, many=True, context={"request": request, "reviewed_offer_ids": reviewed_offer_ids}
+    )
+    sent_ser = SkillRequestSerializer(
+        sent_list, many=True, context={"request": request, "reviewed_offer_ids": reviewed_offer_ids}
+    )
+    return {
+        "received": list(received_ser.data),
+        "sent": list(sent_ser.data),
+    }
+
+
+def _skill_requests_cache_refresh_for_user(user, request) -> None:
+    # Write-through cache: keeps first navigation fast (no cold cache).
+    for key in _SKILLREQ_STATUS_KEYS:
+        status_param = key if key else None
+        payload = _compute_skill_requests_payload(viewer=user, request=request, status_param=status_param)
+        cache.set(_skill_requests_cache_key(user.id, key), payload, timeout=SKILL_REQUESTS_CACHE_TTL_SECONDS)
 
 
 def _notify_unread_count(user_id: int, notif: Optional[Notification] = None) -> None:
@@ -114,81 +163,20 @@ def skill_requests_view(request):
                 pass
             return Response(cached, status=status.HTTP_200_OK)
 
-        t_db0 = perf_counter()
-        received = SkillRequest.objects.filter(
-            recipient=request.user,
-            hidden_by_recipient=False,
-        ).select_related("requester", "recipient", "offer", "offer__user")
-        sent = SkillRequest.objects.filter(
-            requester=request.user,
-            hidden_by_requester=False,
-        ).select_related("requester", "recipient", "offer", "offer__user")
-
-        if status_param:
-            status_values = [s.strip().lower() for s in status_param.split(",") if s.strip()]
-            valid_statuses = {choice for choice, _ in SkillRequestStatus.choices}
-            status_filter = [s for s in status_values if s in valid_statuses]
-            if status_filter:
-                received = received.filter(status__in=status_filter)
-                sent = sent.filter(status__in=status_filter)
-        received = received.order_by("-created_at")[:MAX_SKILL_REQUESTS]
-        sent = sent.order_by("-created_at")[:MAX_SKILL_REQUESTS]
-        t_db1 = perf_counter()
-        # Bulk compute already_reviewed for offer_summary to avoid N+1 Review.exists().
+        # Cold-cache fallback (should be rare once write-through is active)
+        t_build0 = perf_counter()
+        payload = _compute_skill_requests_payload(viewer=request.user, request=request, status_param=status_param)
+        t_build1 = perf_counter()
         try:
-            t_list0 = perf_counter()
-            received_list = list(received)
-            sent_list = list(sent)
-            t_list1 = perf_counter()
-            offer_ids = [r.offer_id for r in received_list] + [r.offer_id for r in sent_list]
-            offer_ids = [oid for oid in offer_ids if oid]
-            reviewed_offer_ids = set()
-            if offer_ids:
-                t_rev0 = perf_counter()
-                reviewed_offer_ids = set(
-                    Review.objects.filter(reviewer=request.user, offer_id__in=offer_ids).values_list("offer_id", flat=True)
-                )
-                t_rev1 = perf_counter()
-            else:
-                t_rev0 = t_rev1 = perf_counter()
-        except Exception:
-            received_list = list(received)
-            sent_list = list(sent)
-            reviewed_offer_ids = set()
-            t_list0 = t_list1 = t_rev0 = t_rev1 = perf_counter()
-        t_ser0 = perf_counter()
-        received_serializer = SkillRequestSerializer(
-            received_list, many=True, context={"request": request, "reviewed_offer_ids": reviewed_offer_ids}
-        )
-        sent_serializer = SkillRequestSerializer(
-            sent_list, many=True, context={"request": request, "reviewed_offer_ids": reviewed_offer_ids}
-        )
-
-        received_data = received_serializer.data
-        # Ensure cache payload is plain Python types (avoid pickling issues with DRF ReturnList/ReturnDict).
-        payload = {
-            "received": list(received_data),
-            "sent": list(sent_serializer.data),
-        }
-        t_ser1 = perf_counter()
-        try:
-            cache.set(
-                _skill_requests_cache_key(request.user.id, status_param),
-                payload,
-                timeout=SKILL_REQUESTS_CACHE_TTL_SECONDS,
-            )
+            cache.set(_skill_requests_cache_key(request.user.id, status_param), payload, timeout=SKILL_REQUESTS_CACHE_TTL_SECONDS)
         except Exception:
             pass
-        # Timing breakdown
         try:
             base_req = getattr(request, "_request", request)
             st = getattr(base_req, "_server_timing", None)
             if not isinstance(st, dict):
                 st = {}
-            st["skillreq_qs"] = (t_db1 - t_db0) * 1000.0
-            st["skillreq_list"] = (t_list1 - t_list0) * 1000.0
-            st["skillreq_review_bulk"] = (t_rev1 - t_rev0) * 1000.0
-            st["skillreq_serialize"] = (t_ser1 - t_ser0) * 1000.0
+            st["skillreq_build"] = (t_build1 - t_build0) * 1000.0
             base_req._server_timing = st
         except Exception:
             pass
@@ -297,8 +285,11 @@ def skill_requests_view(request):
         pass
 
     # Invalidate caches for both participants
-    _skill_requests_cache_invalidate(request.user.id)
-    _skill_requests_cache_invalidate(recipient.id)
+    try:
+        _skill_requests_cache_refresh_for_user(request.user, request)
+        _skill_requests_cache_refresh_for_user(recipient, request)
+    except Exception:
+        pass
 
     return Response(
         SkillRequestSerializer(obj, context={"request": request}).data,
@@ -417,6 +408,12 @@ def skill_request_detail_view(request, request_id: int):
                 if not obj.hidden_by_recipient:
                     obj.hidden_by_recipient = True
                     obj.save(update_fields=["hidden_by_recipient", "updated_at"])
+            # Refresh caches after hide
+            try:
+                _skill_requests_cache_refresh_for_user(obj.requester, request)
+                _skill_requests_cache_refresh_for_user(obj.recipient, request)
+            except Exception:
+                pass
             return Response(
                 SkillRequestSerializer(obj, context={"request": request}).data,
                 status=status.HTTP_200_OK,
@@ -433,10 +430,9 @@ def skill_request_detail_view(request, request_id: int):
             obj.status = SkillRequestStatus.CANCELLED
             obj.save(update_fields=["status", "updated_at"])
 
-        # Invalidate caches after state change
         try:
-            _skill_requests_cache_invalidate(obj.requester_id)
-            _skill_requests_cache_invalidate(obj.recipient_id)
+            _skill_requests_cache_refresh_for_user(obj.requester, request)
+            _skill_requests_cache_refresh_for_user(obj.recipient, request)
         except Exception:
             pass
         else:
