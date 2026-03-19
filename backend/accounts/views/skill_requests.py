@@ -9,6 +9,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from django.db import IntegrityError, transaction
+from django.core.cache import cache
 
 from swaply.rate_limiting import api_rate_limit
 
@@ -26,6 +27,7 @@ from ..serializers import (
 from typing import Optional
 
 from ..realtime import notify_user
+from .notifications import _unread_cache_key, UNREAD_COUNT_CACHE_TTL_SECONDS
 
 MAX_SKILL_REQUESTS = 100
 
@@ -39,6 +41,14 @@ def _notify_unread_count(user_id: int, notif: Optional[Notification] = None) -> 
         ).count()
     except Exception:
         unread = 0
+    try:
+        cache.set(
+            _unread_cache_key(user_id, NotificationType.SKILL_REQUEST),
+            int(unread),
+            timeout=UNREAD_COUNT_CACHE_TTL_SECONDS,
+        )
+    except Exception:
+        pass
 
     event = {
         "type": "skill_request",

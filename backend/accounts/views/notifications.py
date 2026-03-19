@@ -2,6 +2,7 @@
 Notifications API (pre badge + Requests module).
 """
 
+import os
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
@@ -10,12 +11,20 @@ from rest_framework.response import Response
 from django.utils import timezone
 from time import perf_counter
 from django.db import connections
+from django.core.cache import cache
 
 from swaply.rate_limiting import api_rate_limit
 
 from ..models import Notification, NotificationType
 from ..serializers import NotificationSerializer
 from ..realtime import notify_user
+
+
+UNREAD_COUNT_CACHE_TTL_SECONDS = int(os.getenv("UNREAD_COUNT_CACHE_TTL_SECONDS", "60") or "60")
+
+
+def _unread_cache_key(user_id: int, notif_type: str) -> str:
+    return f"notif_unread_count:{int(user_id)}:{str(notif_type).strip()}"
 
 
 def _send_unread_count(user_id: int) -> None:
@@ -27,6 +36,14 @@ def _send_unread_count(user_id: int) -> None:
         ).count()
     except Exception:
         unread = 0
+    try:
+        cache.set(
+            _unread_cache_key(user_id, NotificationType.SKILL_REQUEST),
+            int(unread),
+            timeout=UNREAD_COUNT_CACHE_TTL_SECONDS,
+        )
+    except Exception:
+        pass
     notify_user(user_id, {"type": "skill_request", "unread_count": unread})
 
 
@@ -63,6 +80,30 @@ def notifications_unread_count_view(request):
     notif_type = (
         request.query_params.get("type") or NotificationType.SKILL_REQUEST
     ).strip()
+
+    # Fast-path: Redis cache hit avoids slow DB connect on Railway.
+    cache_key = _unread_cache_key(request.user.id, notif_type)
+    t_cache0 = perf_counter()
+    try:
+        cached = cache.get(cache_key)
+    except Exception:
+        cached = None
+    cache_ms = (perf_counter() - t_cache0) * 1000.0
+    if isinstance(cached, int):
+        resp = Response({"count": int(cached)}, status=status.HTTP_200_OK)
+        try:
+            resp["X-Notif-Count-Source"] = "cache"
+            resp["X-Notif-Cache-Ms"] = str(int(cache_ms))
+            base_req = getattr(request, "_request", request)
+            st = getattr(base_req, "_server_timing", None)
+            if not isinstance(st, dict):
+                st = {}
+            st["unread_cache"] = cache_ms
+            base_req._server_timing = st
+        except Exception:
+            pass
+        return resp
+
     conn = connections["default"]
     was_none = False
     try:
@@ -87,10 +128,15 @@ def notifications_unread_count_view(request):
         count = 0
     notif_sql_ms = (perf_counter() - t_sql0) * 1000.0
     db_ms = db_connect_ms + notif_sql_ms
+    try:
+        cache.set(cache_key, int(count), timeout=UNREAD_COUNT_CACHE_TTL_SECONDS)
+    except Exception:
+        pass
     resp = Response({"count": count}, status=status.HTTP_200_OK)
     # Timing headers (safe): allow diagnosing DB vs other overhead
     try:
         resp["X-Notif-Count-Ms"] = str(int(db_ms))
+        resp["X-Notif-Count-Source"] = "db"
         # also expose to ServerTimingMiddleware aggregation
         base_req = getattr(request, "_request", request)  # DRF Request -> Django HttpRequest
         st = getattr(base_req, "_server_timing", None)
@@ -116,6 +162,16 @@ def notifications_mark_all_read_view(request):
         Notification.objects.filter(
             user=request.user, type=notif_type, is_read=False
         ).update(is_read=True, read_at=now)
+    except Exception:
+        pass
+
+    # Keep cache in sync (avoid DB hit in unread-count).
+    try:
+        cache.set(
+            _unread_cache_key(request.user.id, notif_type),
+            0,
+            timeout=UNREAD_COUNT_CACHE_TTL_SECONDS,
+        )
     except Exception:
         pass
 
