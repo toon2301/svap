@@ -28,6 +28,8 @@ class SwaplyJWTAuthentication(JWTAuthentication):
         - Ignoruj Authorization header (nepodporované)
         - Akceptuj iba access token z HttpOnly cookie `access_token`
         """
+        # DRF posiela rest_framework.request.Request, middleware však agreguje timing z Django HttpRequest.
+        base_req = getattr(request, "_request", request)
         t0 = time.perf_counter()
         cookie_token = None
         try:
@@ -43,13 +45,13 @@ class SwaplyJWTAuthentication(JWTAuthentication):
         t3 = time.perf_counter()
         # Server-Timing aggregation (safe, no tokens)
         try:
-            st = getattr(request, "_server_timing", None)
+            st = getattr(base_req, "_server_timing", None)
             if not isinstance(st, dict):
                 st = {}
             st["auth"] = (t3 - t0) * 1000.0
             st["auth_validate"] = (t2 - t1) * 1000.0
             st["auth_user"] = (t3 - t2) * 1000.0
-            request._server_timing = st
+            base_req._server_timing = st
         except Exception:
             pass
         return user, validated_token
