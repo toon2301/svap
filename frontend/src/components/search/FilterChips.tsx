@@ -54,7 +54,7 @@ export function FilterChips() {
 
   return (
     <div
-      className="flex flex-nowrap items-center gap-2 mb-4 overflow-x-auto whitespace-nowrap [scrollbar-width:thin] [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-track]:transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-300 dark:[&::-webkit-scrollbar-thumb]:bg-gray-600"
+      className="sticky top-0 z-20 py-2 flex flex-nowrap items-center gap-2 mb-4 overflow-x-auto whitespace-nowrap [scrollbar-width:thin] [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-track]:transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-300 dark:[&::-webkit-scrollbar-thumb]:bg-gray-600"
       style={{ WebkitOverflowScrolling: 'touch' } as React.CSSProperties}
     >
       {chips.map(({ param, label }) => (

@@ -7,6 +7,8 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import ProfileOfferCard from '@/components/dashboard/modules/profile/ProfileOfferCard';
 import { FilterChips } from '@/components/search/FilterChips';
 import { SearchResultSkeleton } from '@/components/search/SearchResultSkeleton';
+import SearchSortSelect from '@/components/search/SearchSortSelect';
+import SearchFilterSelect from '@/components/search/SearchFilterSelect';
 import type { Offer, ExperienceUnit } from '@/components/dashboard/modules/profile/profileOffersTypes';
 import type { OpeningHours } from '@/components/dashboard/modules/skills/skillDescriptionModal/types';
 
@@ -270,17 +272,24 @@ function SearchResultsContent() {
             </p>
           </div>
           {trimmedQ && (
-            <select
-              value={sort}
-              onChange={handleSortChange}
-              className="text-sm rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400"
-            >
-              {SORT_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {t(opt.labelKey)}
-                </option>
-              ))}
-            </select>
+            <>
+              {/* Desktop: custom dropdown ako v modale na vytvorenie karty */}
+              <div className="hidden lg:block min-w-[180px]">
+                <SearchSortSelect value={sort} onChange={(v) => { if (VALID_SORTS.has(v)) { setSort(v); replaceSearchParams({ sort: v, page: '1' }); } }} />
+              </div>
+              {/* Mobile: natívny select */}
+              <select
+                value={sort}
+                onChange={handleSortChange}
+                className="lg:hidden text-sm rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400"
+              >
+                {SORT_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {t(opt.labelKey)}
+                  </option>
+                ))}
+              </select>
+            </>
           )}
       </div>
 
@@ -288,22 +297,26 @@ function SearchResultsContent() {
         <div className="mb-4 error-alert-modern text-sm">{error}</div>
       )}
 
-        <div className="sticky top-0 z-20 bg-white dark:bg-gray-900 py-2">
         <FilterChips />
-      </div>
 
       <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
-          {/* Desktop: filter sidebar */}
+          {/* Desktop: filter sidebar – custom dropdowny ako v modale */}
           <aside className="hidden lg:block w-[260px] flex-shrink-0">
             <div className="space-y-4 text-sm">
               <div>
                 <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">
                   ⭐ {t('search.ratingLabel', 'Hodnotenie')}
                 </label>
-                <select
-                  value={minRating ?? ''}
-                  onChange={(e) => {
-                    const next = e.target.value ? Number(e.target.value) : null;
+                <SearchFilterSelect
+                  value={minRating != null ? String(minRating) : ''}
+                  options={[
+                    { value: '', label: t('search.offerTypeAll', 'Všetko') },
+                    { value: '4', label: '4+' },
+                    { value: '3', label: '3+' },
+                    { value: '2', label: '2+' },
+                  ]}
+                  onChange={(v) => {
+                    const next = v ? Number(v) : null;
                     setMinRating(next);
                     setPage(1);
                     replaceSearchParams({
@@ -311,13 +324,7 @@ function SearchResultsContent() {
                       page: '1',
                     });
                   }}
-                  className="w-full px-2 py-1.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-black text-gray-900 dark:text-gray-100"
-                >
-                  <option value="">{t('search.offerTypeAll', 'Všetko')}</option>
-                  <option value="4">4+</option>
-                  <option value="3">3+</option>
-                  <option value="2">2+</option>
-                </select>
+                />
               </div>
               <div>
                 <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">
@@ -360,10 +367,15 @@ function SearchResultsContent() {
                 <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">
                   🔁 {t('search.offerTypeTitle', 'Typ ponuky')}
                 </label>
-                <select
+                <SearchFilterSelect
                   value={offerType}
-                  onChange={(e) => {
-                    const next = e.target.value as 'all' | 'offer' | 'seeking';
+                  options={[
+                    { value: 'all', label: t('search.offerTypeAll', 'Všetko') },
+                    { value: 'offer', label: t('search.offerTypeOffer', 'Ponúkam') },
+                    { value: 'seeking', label: t('search.offerTypeSeeking', 'Hľadám') },
+                  ]}
+                  onChange={(v) => {
+                    const next = v as 'all' | 'offer' | 'seeking';
                     setOfferType(next);
                     setPage(1);
                     replaceSearchParams({
@@ -371,12 +383,7 @@ function SearchResultsContent() {
                       page: '1',
                     });
                   }}
-                  className="w-full px-2 py-1.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-black text-gray-900 dark:text-gray-100"
-                >
-                  <option value="all">{t('search.offerTypeAll', 'Všetko')}</option>
-                  <option value="offer">{t('search.offerTypeOffer', 'Ponúkam')}</option>
-                  <option value="seeking">{t('search.offerTypeSeeking', 'Hľadám')}</option>
-                </select>
+                />
               </div>
             </div>
           </aside>
