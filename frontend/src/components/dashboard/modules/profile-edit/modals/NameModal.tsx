@@ -73,7 +73,7 @@ export default function NameModal({ isOpen, firstName, lastName, originalFirstNa
         const parts = trimmedValue.split(/\s+/).filter(Boolean);
         const finalFirstName = parts.length === 0 ? '' : parts.length === 1 ? parts[0] : parts.slice(0, -1).join(' ');
         const finalLastName = parts.length <= 1 ? '' : parts[parts.length - 1];
-        onEditableUserUpdate({ first_name: finalFirstName.trim(), last_name: finalLastName.trim(), company_name: trimmedValue });
+        onEditableUserUpdate({ first_name: finalFirstName.trim(), last_name: finalLastName.trim(), company_name: '' });
         parseAndUpdate(trimmedValue);
         setOriginalFirstName?.(finalFirstName.trim());
         setOriginalLastName?.(finalLastName.trim());
@@ -87,7 +87,6 @@ export default function NameModal({ isOpen, firstName, lastName, originalFirstNa
         // Pre firmy ukladať ako company_name a synchronizovať do first_name
         const response = await api.patch('/auth/profile/', { 
           company_name: trimmedValue,
-          first_name: trimmedValue, // Synchronizovať do first_name
           last_name: '' // Vymazať last_name
         });
         if (onUserUpdate && response.data?.user) {
@@ -103,7 +102,7 @@ export default function NameModal({ isOpen, firstName, lastName, originalFirstNa
         const parts = trimmedValue.split(/\s+/).filter(Boolean);
         const finalFirstName = parts.length === 0 ? '' : parts.length === 1 ? parts[0] : parts.slice(0, -1).join(' ');
         const finalLastName = parts.length <= 1 ? '' : parts[parts.length - 1];
-        const fullNameForCompany = trimmedValue; // Celé meno pre company_name
+        
         
         // Parsovať hodnotu a aktualizovať state
         parseAndUpdate(trimmedValue);
@@ -111,7 +110,7 @@ export default function NameModal({ isOpen, firstName, lastName, originalFirstNa
         const response = await api.patch('/auth/profile/', { 
           first_name: finalFirstName.trim(), 
           last_name: finalLastName.trim(),
-          company_name: fullNameForCompany // Synchronizovať do company_name
+          company_name: ''
         });
         if (onUserUpdate && response.data?.user) {
           onUserUpdate(response.data.user);

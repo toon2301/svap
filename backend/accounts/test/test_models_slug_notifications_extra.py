@@ -14,7 +14,7 @@ User = get_user_model()
 
 @pytest.mark.django_db
 class TestModelsSlugAndNotifications:
-    def test_company_display_name_falls_back_to_first_last_when_no_company_name(self):
+    def test_company_display_name_falls_back_to_username_when_no_company_name(self):
         u = User.objects.create_user(
             username="compuser",
             email="comp@example.com",
@@ -25,7 +25,7 @@ class TestModelsSlugAndNotifications:
             company_name="",
             is_verified=True,
         )
-        assert u.display_name == "ACME s.r.o."
+        assert u.display_name == "compuser"
 
     def test_generate_base_slug_fallback_when_no_name(self):
         # Force empty display_name AND username (edge-case branch coverage)

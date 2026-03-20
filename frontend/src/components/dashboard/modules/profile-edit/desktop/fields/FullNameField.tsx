@@ -36,15 +36,15 @@ export default function FullNameField({
 
   useEffect(() => {
     if (accountType === 'business') {
-      const nameToUse = editableUser.first_name || editableUser.company_name || '';
+      const nameToUse = editableUser.company_name || '';
       setFullNameInput(nameToUse);
     } else {
-      const firstNameToUse = firstName || editableUser.company_name || '';
+      const firstNameToUse = firstName || editableUser.first_name || '';
       const fullName =
         firstNameToUse && lastName ? `${firstNameToUse} ${lastName}` : firstNameToUse || lastName || '';
       setFullNameInput(fullName);
     }
-  }, [firstName, lastName, accountType, editableUser.company_name, editableUser.first_name]);
+  }, [firstName, lastName, accountType, editableUser.company_name, editableUser.first_name, editableUser.last_name]);
 
   const handleBlur = () => {
     const trimmedValue = fullNameInput.trim().slice(0, 25);
@@ -88,11 +88,10 @@ export default function FullNameField({
 
     setFirstName(newFirstName);
     setLastName(newLastName);
-    const fullNameForCompany = (f && l ? `${f} ${l}` : f || l).trim();
     onEditableUserUpdate({
       first_name: f,
       last_name: l,
-      company_name: fullNameForCompany,
+      company_name: '',
     });
     onBlur?.();
   };

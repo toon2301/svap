@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { User } from '../../../types';
 import { api } from '../../../lib/api';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { getProfileDisplayName } from '@/lib/profileDisplayName';
 import MasterToggle from './notifications/MasterToggle';
 import { getApiErrorMessage } from './requests/requestsApi';
 
@@ -57,10 +58,7 @@ export default function ProfileEditFields({
         <div className="flex items-center flex-1 ml-4">
           <div className="w-px h-4 bg-gray-300 dark:bg-gray-700 mr-3"></div>
           <span className="text-gray-600 dark:text-gray-300 text-sm truncate">
-            {accountType === 'business' 
-              ? (user.company_name || user.username)
-              : (`${(user.first_name || '').trim()} ${(user.last_name || '').trim()}`.trim() || user.username)
-            }
+            {getProfileDisplayName(user, accountType)}
           </span>
         </div>
       </div>

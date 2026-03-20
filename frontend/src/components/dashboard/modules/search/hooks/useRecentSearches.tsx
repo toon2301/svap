@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { api, endpoints } from '@/lib/api';
+import { getProfileDisplayName } from '@/lib/profileDisplayName';
 import { type User } from '@/types';
 import { type SearchResults, type SearchUserResult } from '../types';
 import { getUserProfileFromCache } from '../../profile/profileUserCache';
@@ -74,10 +75,7 @@ export function useRecentSearches({ user, searchState }: UseRecentSearchesParams
         const newUsers = result.users?.map((u) => {
           // 1. Kontrola či je to aktuálny používateľ
           if (u.id === user.id) {
-            const newName =
-              user.user_type === 'individual'
-                ? [user.first_name, user.last_name].filter(Boolean).join(' ').trim() || user.username
-                : user.company_name || [user.first_name, user.last_name].filter(Boolean).join(' ').trim() || user.username;
+            const newName = getProfileDisplayName(user);
 
             if (u.display_name !== newName || u.slug !== user.slug) {
               hasChanges = true;
@@ -89,10 +87,7 @@ export function useRecentSearches({ user, searchState }: UseRecentSearchesParams
           else {
             const cachedUser = getUserProfileFromCache(u.id);
             if (cachedUser) {
-              const newName =
-                cachedUser.user_type === 'individual'
-                  ? [cachedUser.first_name, cachedUser.last_name].filter(Boolean).join(' ').trim() || cachedUser.username
-                  : cachedUser.company_name || [cachedUser.first_name, cachedUser.last_name].filter(Boolean).join(' ').trim() || cachedUser.username;
+              const newName = getProfileDisplayName(cachedUser);
               
               if (u.display_name !== newName || u.slug !== cachedUser.slug) {
                 hasChanges = true;
@@ -108,10 +103,7 @@ export function useRecentSearches({ user, searchState }: UseRecentSearchesParams
         const newSkills = result.skills?.map((s) => {
           // 1. Kontrola či je to aktuálny používateľ
           if (s.user_id === user.id) {
-            const newName =
-              user.user_type === 'individual'
-                ? [user.first_name, user.last_name].filter(Boolean).join(' ').trim() || user.username
-                : user.company_name || [user.first_name, user.last_name].filter(Boolean).join(' ').trim() || user.username;
+            const newName = getProfileDisplayName(user);
 
             const currentName = (s as any).user_display_name;
             if (currentName && currentName !== newName) {
@@ -124,10 +116,7 @@ export function useRecentSearches({ user, searchState }: UseRecentSearchesParams
           else if (s.user_id) {
              const cachedUser = getUserProfileFromCache(s.user_id);
              if (cachedUser) {
-               const newName =
-                cachedUser.user_type === 'individual'
-                  ? [cachedUser.first_name, cachedUser.last_name].filter(Boolean).join(' ').trim() || cachedUser.username
-                  : cachedUser.company_name || [cachedUser.first_name, cachedUser.last_name].filter(Boolean).join(' ').trim() || cachedUser.username;
+               const newName = getProfileDisplayName(cachedUser);
                
                const currentName = (s as any).user_display_name;
                if (currentName && currentName !== newName) {
@@ -202,10 +191,7 @@ export function useRecentSearches({ user, searchState }: UseRecentSearchesParams
       updatedResult.users = updatedResult.users.map(u => {
         // 1. Ak je to aktuálny používateľ, použi jeho aktuálne dáta
         if (user && u.id === user.id) {
-          const newName =
-            user.user_type === 'individual'
-              ? [user.first_name, user.last_name].filter(Boolean).join(' ').trim() || user.username
-              : user.company_name || [user.first_name, user.last_name].filter(Boolean).join(' ').trim() || user.username;
+          const newName = getProfileDisplayName(user);
           
           if (u.display_name !== newName || u.slug !== user.slug) {
             return { ...u, display_name: newName, slug: user.slug };
@@ -215,10 +201,7 @@ export function useRecentSearches({ user, searchState }: UseRecentSearchesParams
         else {
           const cachedUser = getUserProfileFromCache(u.id);
           if (cachedUser) {
-            const newName =
-              cachedUser.user_type === 'individual'
-                ? [cachedUser.first_name, cachedUser.last_name].filter(Boolean).join(' ').trim() || cachedUser.username
-                : cachedUser.company_name || [cachedUser.first_name, cachedUser.last_name].filter(Boolean).join(' ').trim() || cachedUser.username;
+            const newName = getProfileDisplayName(cachedUser);
             
             if (u.display_name !== newName || u.slug !== cachedUser.slug) {
               return { ...u, display_name: newName, slug: cachedUser.slug };
@@ -247,10 +230,7 @@ export function useRecentSearches({ user, searchState }: UseRecentSearchesParams
           
           // Ak sme dostali čerstvé dáta, aktualizujeme UI ak sa niečo zmenilo
           if (freshUser) {
-             const freshName =
-              freshUser.user_type === 'individual'
-                ? [freshUser.first_name, freshUser.last_name].filter(Boolean).join(' ').trim() || freshUser.username
-                : freshUser.company_name || [freshUser.first_name, freshUser.last_name].filter(Boolean).join(' ').trim() || freshUser.username;
+             const freshName = getProfileDisplayName(freshUser);
              
              // Ak sa líši meno alebo slug, aktualizuj results state
              if (freshUser.slug !== u.slug || freshName !== u.display_name) {

@@ -30,6 +30,11 @@ from swaply.validators import (
     CAPTCHAValidator,
 )
 from swaply.validators import HtmlSanitizer
+from .name_normalization import (
+    build_individual_display_name,
+    clean_name_value,
+    normalize_profile_name_fields,
+)
 
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
@@ -122,6 +127,14 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
                 attrs["birth_date"] = birth_date
             except ValueError:
                 raise serializers.ValidationError("Neplatný dátum narodenia.")
+
+        normalized_names = normalize_profile_name_fields(
+            user_type=attrs.get("user_type", UserType.INDIVIDUAL),
+            first_name=attrs.get("first_name", ""),
+            last_name=attrs.get("last_name", ""),
+            company_name=attrs.get("company_name", ""),
+        )
+        attrs.update(normalized_names)
 
         return attrs
 
@@ -389,9 +402,42 @@ class UserProfileSerializer(serializers.ModelSerializer):
         """Globálna validácia pre závislé polia (meno + limit počtu webov)."""
         validated = super().validate(attrs)
         instance = getattr(self, "instance", None)
+        next_user_type = validated.get(
+            "user_type",
+            getattr(instance, "user_type", UserType.INDIVIDUAL),
+        )
+        current_first = (
+            validated.get("first_name")
+            if "first_name" in validated
+            else (getattr(instance, "first_name", "") if instance else "")
+        )
+        current_last = (
+            validated.get("last_name")
+            if "last_name" in validated
+            else (getattr(instance, "last_name", "") if instance else "")
+        )
+        current_company = (
+            validated.get("company_name")
+            if "company_name" in validated
+            else (getattr(instance, "company_name", "") if instance else "")
+        )
+        normalized_names = normalize_profile_name_fields(
+            user_type=next_user_type,
+            first_name=current_first,
+            last_name=current_last,
+            company_name=current_company,
+        )
+        if next_user_type == UserType.COMPANY and not clean_name_value(
+            normalized_names["company_name"]
+        ):
+            raise serializers.ValidationError(
+                {"company_name": "Názov firmy je povinný."}
+            )
 
         # Ak sa mení first_name alebo last_name, skontroluj celkovú dĺžku
-        if "first_name" in validated or "last_name" in validated:
+        if next_user_type == UserType.INDIVIDUAL and (
+            "first_name" in validated or "last_name" in validated
+        ):
             current_first = (
                 validated.get("first_name")
                 if "first_name" in validated
@@ -403,11 +449,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
                 else (getattr(instance, "last_name", "") if instance else "")
             )
 
-            full_name = (
-                f"{current_first} {current_last}".strip()
-                if current_first and current_last
-                else (current_first or current_last or "")
-            )
+            full_name = build_individual_display_name(current_first, current_last)
             if len(full_name) > 35:
                 raise serializers.ValidationError(
                     {
@@ -438,6 +480,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
         if "category_sub" in validated:
             validated.pop("category_sub", None)
 
+        validated.update(normalized_names)
         return validated
 
     def validate_phone(self, value):

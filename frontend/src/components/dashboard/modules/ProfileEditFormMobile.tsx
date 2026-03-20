@@ -108,13 +108,13 @@ export default function ProfileEditFormMobile({
 
   React.useEffect(() => {
     if (accountType === 'business') {
-      const nameToUse = editableUser.first_name || editableUser.company_name || '';
+      const nameToUse = editableUser.company_name || '';
       setFirstName(nameToUse);
       setLastName('');
       setOriginalFirstName(nameToUse);
       setOriginalLastName('');
     } else {
-      const firstNameToUse = editableUser.first_name || editableUser.company_name || '';
+      const firstNameToUse = editableUser.first_name || '';
       setFirstName(firstNameToUse);
       setLastName(editableUser.last_name || '');
       setOriginalFirstName(firstNameToUse);
@@ -211,7 +211,7 @@ export default function ProfileEditFormMobile({
     ...editableUser,
     first_name: accountType === 'business' ? (firstName || '').trim() : (firstName || '').trim(),
     last_name: accountType === 'business' ? '' : (lastName || '').trim(),
-    company_name: accountType === 'business' ? (firstName || '').trim() : `${(firstName || '').trim()} ${(lastName || '').trim()}`.trim(),
+    company_name: accountType === 'business' ? (firstName || '').trim() : '',
     bio: bio.trim(),
     location: location.trim(),
     district: district.trim(),

@@ -151,6 +151,7 @@ def test_profile_patch_invalidates_auth_cache_and_me_returns_fresh_profile_after
     )
     assert patch_response.status_code == status.HTTP_200_OK
     assert patch_response.data["user"]["first_name"] == "Alicia"
+    assert patch_response.data["user"]["last_name"] == ""
     assert patch_response.data["user"]["bio"] == "New bio"
     assert patch_response.data["user"]["location"] == "Kosice"
     assert patch_response.data["user"]["website"] == "https://new.example.com"
@@ -160,6 +161,7 @@ def test_profile_patch_invalidates_auth_cache_and_me_returns_fresh_profile_after
 
     user.refresh_from_db()
     assert user.first_name == "Alicia"
+    assert user.last_name == ""
     assert user.bio == "New bio"
     assert user.location == "Kosice"
     assert user.website == "https://new.example.com"
@@ -180,7 +182,7 @@ def test_profile_patch_invalidates_auth_cache_and_me_returns_fresh_profile_after
     me_response = api_client.get(reverse("accounts:me"))
     assert me_response.status_code == status.HTTP_200_OK
     assert me_response.data["first_name"] == "Alicia"
-    assert me_response.data["last_name"] == "Updated"
+    assert me_response.data["last_name"] == ""
     assert me_response.data["bio"] == "New bio"
     assert me_response.data["location"] == "Kosice"
     assert me_response.data["website"] == "https://new.example.com"

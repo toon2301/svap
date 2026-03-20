@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { User } from '../../../../types';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { getProfileDisplayName } from '@/lib/profileDisplayName';
 import UserAvatar from './UserAvatar';
 import UserInfo from './UserInfo';
 import ProfileEditFormMobile from '../ProfileEditFormMobile';
@@ -149,10 +150,7 @@ export default function ProfileMobileView({
               <div className="flex flex-col justify-center min-w-0 flex-1 overflow-hidden">
                 {/* Meno používateľa */}
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
-                  {accountType === 'business' 
-                    ? (displayUser.company_name || displayUser.username)
-                    : ([displayUser.first_name, displayUser.last_name].filter(Boolean).join(' ').trim() || displayUser.username)
-                  }
+                  {getProfileDisplayName(displayUser, accountType)}
                 </h2>
                 {(Number(displayUser.completed_cooperations_count) || 0) > 0 && (
                   <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
@@ -526,12 +524,7 @@ export default function ProfileMobileView({
             <ProfileOffersMobileSection
               accountType={accountType}
               ownerUserId={offersOwnerId ?? displayUser.id}
-              ownerDisplayName={
-                (displayUser.company_name && displayUser.company_name.trim()) ||
-                [displayUser.first_name, displayUser.last_name].filter(Boolean).join(' ').trim() ||
-                displayUser.username ||
-                ''
-              }
+              ownerDisplayName={getProfileDisplayName(displayUser, accountType)}
               highlightedSkillId={highlightedSkillId ?? null}
               isOtherUserProfile={isOtherUserProfile}
             />

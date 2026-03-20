@@ -8,6 +8,7 @@ interface UseProfileEditFormDesktopParams {
   user: User;
   /** Working copy pre edit - všetky zmeny idú sem. */
   editableUser: User;
+  accountType: 'personal' | 'business';
   onEditableUserUpdate: (partial: Partial<User>) => void;
   onEditSave?: (mergedUser?: User) => Promise<void>;
   onEditCancel?: () => void;
@@ -18,14 +19,19 @@ interface UseProfileEditFormDesktopParams {
 export function useProfileEditFormDesktop({
   user,
   editableUser,
+  accountType,
   onEditableUserUpdate,
   onEditSave,
   onEditCancel,
   onPhotoUpload,
   onRemoveAvatar,
 }: UseProfileEditFormDesktopParams) {
-  const [firstName, setFirstName] = useState(editableUser.first_name || '');
-  const [lastName, setLastName] = useState(editableUser.last_name || '');
+  const [firstName, setFirstName] = useState(
+    accountType === 'business' ? (editableUser.company_name || '') : (editableUser.first_name || ''),
+  );
+  const [lastName, setLastName] = useState(
+    accountType === 'business' ? '' : (editableUser.last_name || ''),
+  );
   const [bio, setBio] = useState(editableUser.bio || '');
   const [location, setLocation] = useState(editableUser.location || '');
   const [district, setDistrict] = useState(editableUser.district || '');
@@ -52,8 +58,8 @@ export function useProfileEditFormDesktop({
 
   // Synchronizácia stavu z editableUser (napr. po fotke z parent)
   useEffect(() => {
-    setFirstName(editableUser.first_name || '');
-    setLastName(editableUser.last_name || '');
+    setFirstName(accountType === 'business' ? (editableUser.company_name || '') : (editableUser.first_name || ''));
+    setLastName(accountType === 'business' ? '' : (editableUser.last_name || ''));
     setBio(editableUser.bio || '');
     setLocation(editableUser.location || '');
     setDistrict(editableUser.district || '');
@@ -85,26 +91,35 @@ export function useProfileEditFormDesktop({
     editableUser.additional_websites,
     editableUser.contact_email,
     editableUser.contact_email_visible,
+    accountType,
   ]);
 
   const syncFullName = useCallback(() => {
     const f = (firstName || '').trim();
     const l = (lastName || '').trim();
-    const fullNameForCompany = (f && l ? `${f} ${l}` : f || l).trim();
+    if (accountType === 'business') {
+      onEditableUserUpdate({
+        first_name: f,
+        last_name: '',
+        company_name: f,
+      });
+      return;
+    }
+
     onEditableUserUpdate({
       first_name: f,
       last_name: l,
-      company_name: fullNameForCompany,
+      company_name: '',
     });
-  }, [firstName, lastName, onEditableUserUpdate]);
+  }, [accountType, firstName, lastName, onEditableUserUpdate]);
 
   const handleFullNameBlur = useCallback(async () => {
     const f = (firstName || '').trim();
     const l = (lastName || '').trim();
-    const fullNameForCompany = (f && l ? `${f} ${l}` : f || l).trim();
-
-    const currentFirst = (editableUser.first_name || '').trim();
-    const currentLast = (editableUser.last_name || '').trim();
+    const currentFirst = (
+      accountType === 'business' ? (editableUser.company_name || '') : (editableUser.first_name || '')
+    ).trim();
+    const currentLast = (accountType === 'business' ? '' : (editableUser.last_name || '')).trim();
 
     if (f === currentFirst && l === currentLast) return;
 
@@ -112,11 +127,19 @@ export function useProfileEditFormDesktop({
 
     try {
       const { api } = await import('@/lib/api');
-      const response = await api.patch('/auth/profile/', {
-        first_name: f,
-        last_name: l,
-        company_name: fullNameForCompany,
-      });
+      const response = await api.patch(
+        '/auth/profile/',
+        accountType === 'business'
+          ? {
+              last_name: '',
+              company_name: f,
+            }
+          : {
+              first_name: f,
+              last_name: l,
+              company_name: '',
+            },
+      );
       if (response.data?.user) {
         onEditableUserUpdate({
           first_name: response.data.user.first_name,
@@ -132,7 +155,7 @@ export function useProfileEditFormDesktop({
         company_name: editableUser.company_name,
       });
     }
-  }, [firstName, lastName, editableUser, syncFullName, onEditableUserUpdate]);
+  }, [accountType, firstName, lastName, editableUser, syncFullName, onEditableUserUpdate]);
 
   const handleBioSave = useCallback(() => {
     onEditableUserUpdate({ bio: bio.trim() });
@@ -226,12 +249,11 @@ export function useProfileEditFormDesktop({
     if (!onEditSave) return;
     const f = (firstName || '').trim();
     const l = (lastName || '').trim();
-    const fullNameForCompany = (f && l ? `${f} ${l}` : f || l).trim();
     const mergedUser: User = {
       ...editableUser,
       first_name: f,
-      last_name: l,
-      company_name: fullNameForCompany,
+      last_name: accountType === 'business' ? '' : l,
+      company_name: accountType === 'business' ? f : '',
       bio: bio.trim(),
       location: location.trim(),
       district: (district || '').trim(),
@@ -270,6 +292,7 @@ export function useProfileEditFormDesktop({
     contactEmailVisible,
     website,
     additionalWebsites,
+    accountType,
   ]);
 
   return {

@@ -37,6 +37,7 @@ export default function ProfileEditFormDesktop({
   const form = useProfileEditFormDesktop({
     user,
     editableUser,
+    accountType,
     onEditableUserUpdate,
     onEditSave,
     onEditCancel,

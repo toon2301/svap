@@ -3,6 +3,7 @@
 import React from 'react';
 import type { User } from '../../../../types';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { getProfileDisplayName } from '@/lib/profileDisplayName';
 import UserAvatar from './UserAvatar';
 import WebsitesRow from './view/WebsitesRow';
 import { ProfileDesktopSocialLinks } from './ProfileDesktopSocialLinks';
@@ -55,9 +56,7 @@ export function ProfileDesktopHeader({
           {/* Meno používateľa a sociálne siete v jednom riadku */}
           <div className="flex items-center gap-20 mb-1 min-w-0">
             <h2 className="text-[clamp(1.25rem,2vw,1.75rem)] font-semibold text-gray-900 dark:text-white truncate min-w-0">
-              {accountType === 'business'
-                ? (displayUser.company_name || displayUser.username)
-                : ([displayUser.first_name, displayUser.last_name].filter(Boolean).join(' ').trim() || displayUser.username)}
+              {getProfileDisplayName(displayUser, accountType)}
             </h2>
             <ProfileDesktopSocialLinks user={displayUser} />
           </div>
@@ -231,4 +230,3 @@ export function ProfileDesktopHeader({
     </div>
   );
 }
-

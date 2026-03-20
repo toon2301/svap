@@ -57,9 +57,8 @@ export default function ProfileEditForm({ user, onUserUpdate, onEditProfileClick
     if (l !== currentLast) payload.last_name = l;
     
     // Synchronizovať do company_name
-    const fullNameForCompany = (f && l ? `${f} ${l}` : f || l).trim();
-    if (fullNameForCompany !== (user.company_name || '').trim()) {
-      payload.company_name = fullNameForCompany;
+    if ((user.company_name || '').trim() !== '') {
+      payload.company_name = '';
     }
     
     if (Object.keys(payload).length === 0) return;

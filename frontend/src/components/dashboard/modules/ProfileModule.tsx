@@ -66,10 +66,24 @@ function assignUserField<K extends keyof User>(
   target[key] = source[key];
 }
 
+function shouldIncludeProfilePatchKey(editable: User, key: ProfilePatchKey): boolean {
+  const isCompany = editable.user_type === 'company';
+  if (isCompany && (key === 'first_name' || key === 'last_name')) {
+    return false;
+  }
+  if (!isCompany && key === 'company_name') {
+    return false;
+  }
+  return true;
+}
+
 /** Writable polia pre PATCH (bez read-only). */
 function buildPatchPayload(editable: User): ProfilePatchPayload {
   const payload: ProfilePatchPayload = {};
   for (const key of PROFILE_PATCH_KEYS) {
+    if (!shouldIncludeProfilePatchKey(editable, key)) {
+      continue;
+    }
     assignProfilePatchField(payload, editable, key);
   }
   return payload;

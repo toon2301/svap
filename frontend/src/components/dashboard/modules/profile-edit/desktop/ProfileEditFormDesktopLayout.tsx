@@ -125,12 +125,12 @@ export function ProfileEditFormDesktopLayout({
           <SocialMediaInputs editableUser={editableUser} onEditableUserUpdate={onEditableUserUpdate} />
 
           {/* Save / Cancel */}
-          <div className="flex gap-3 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+          <div className="flex gap-3 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700 w-full">
             {form.onEditCancel ? (
                 <button
                   type="button"
                   onClick={form.onEditCancel}
-                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
+                  className="flex-1 py-3 px-4 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 font-medium"
                 >
                   {t('common.cancel', 'Zrušiť')}
                 </button>
@@ -140,7 +140,7 @@ export function ProfileEditFormDesktopLayout({
                 type="button"
                 onClick={form.handleSave}
                 disabled={form.isSaving}
-                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50"
+                className="flex-1 py-3 px-4 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 font-medium"
               >
                 {form.isSaving ? t('common.loading', 'Ukladám...') : t('common.save', 'Uložiť')}
               </button>

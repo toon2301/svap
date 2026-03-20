@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import type { User } from '../../../../types';
+import { getProfileDisplayName } from '@/lib/profileDisplayName';
 import ProfileEditFormDesktop from '../ProfileEditFormDesktop';
 import ProfileOffersSection from './ProfileOffersSection';
 import type { ProfileTab } from './profileTypes';
@@ -119,12 +120,7 @@ export default function ProfileDesktopView({
                 activeTab={activeTab}
                 accountType={accountType}
                 ownerUserId={offersOwnerId ?? displayUser.id}
-                ownerDisplayName={
-                  (displayUser.company_name && displayUser.company_name.trim()) ||
-                  [displayUser.first_name, displayUser.last_name].filter(Boolean).join(' ').trim() ||
-                  displayUser.username ||
-                  ''
-                }
+                ownerDisplayName={getProfileDisplayName(displayUser, accountType)}
                 highlightedSkillId={highlightedSkillId ?? null}
                 isOtherUserProfile={isOtherUserProfile}
               />

@@ -8,6 +8,7 @@ import uuid
 import unicodedata
 import re
 from swaply.validators import validate_image_file
+from .name_normalization import get_canonical_display_name
 
 # --- MFA secret encryption at rest (Fernet) ---
 from cryptography.fernet import Fernet
@@ -145,6 +146,13 @@ class User(AbstractUser):
 
     @property
     def display_name(self):
+        return get_canonical_display_name(
+            user_type=self.user_type,
+            first_name=self.first_name,
+            last_name=self.last_name,
+            company_name=self.company_name,
+            username=self.username,
+        )
         """Vráti zobrazovací názov používateľa"""
         if self.user_type == UserType.INDIVIDUAL:
             name = f"{self.first_name} {self.last_name}".strip()

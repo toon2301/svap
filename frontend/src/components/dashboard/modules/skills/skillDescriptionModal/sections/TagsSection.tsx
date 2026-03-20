@@ -121,7 +121,7 @@ const TagsSection = forwardRef<TagsSectionRef, TagsSectionProps>(
       </label>
 
       {tags.length > 0 && (
-        <div className="mb-2 flex flex-wrap gap-x-2 gap-y-px leading-[12px] skill-modal-tags">
+        <div className="mb-4 flex flex-wrap gap-x-2 gap-y-px leading-[12px] skill-modal-tags">
           {tags.map((tag, idx) => (
             <span key={`${tag}-${idx}`} className="text-[11px] text-purple-700 dark:text-purple-300 leading-[12px]">
               #{tag}

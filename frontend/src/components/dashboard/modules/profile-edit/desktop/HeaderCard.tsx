@@ -4,6 +4,7 @@ import React from 'react';
 import { User } from '@/types';
 import UserAvatar from '../../profile/UserAvatar';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { getProfileDisplayName } from '@/lib/profileDisplayName';
 
 interface HeaderCardProps {
   user: User;
@@ -17,20 +18,29 @@ interface HeaderCardProps {
 
 export default function HeaderCard({ user, firstName, lastName, isUploading, onPhotoUploadClick, onAvatarClick, accountType }: HeaderCardProps) {
   const { t } = useLanguage();
+  const previewUser: User = accountType === 'business'
+    ? {
+        ...user,
+        user_type: 'company',
+        first_name: (firstName || '').trim() || user.first_name,
+        last_name: '',
+        company_name: (firstName || '').trim() || user.company_name,
+      }
+    : {
+        ...user,
+        user_type: 'individual',
+        first_name: (firstName !== '' ? firstName : user.first_name || '').trim(),
+        last_name: (lastName !== '' ? lastName : user.last_name || '').trim(),
+        company_name: '',
+      };
+
   return (
     <div className="bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg px-6 py-1 mb-6 shadow-sm">
       <div className="flex items-center gap-6">
         <UserAvatar user={user} size="medium" onPhotoUpload={onPhotoUploadClick} isUploading={isUploading} onAvatarClick={onAvatarClick} />
         <div className="text-base text-gray-800 dark:text-gray-200 flex-1">
           <div className="font-bold text-gray-800 dark:text-white">
-            {accountType === 'business'
-              ? ((firstName || '').trim() || user.company_name || user.username)
-              : (() => {
-                  const f = (firstName !== '' ? firstName : user.first_name || '').trim();
-                  const l = (lastName !== '' ? lastName : user.last_name || '').trim();
-                  return (f && l ? `${f} ${l}` : f || l) || user.username;
-                })()
-            }
+            {getProfileDisplayName(previewUser, accountType)}
           </div>
           <div className="text-gray-600 dark:text-gray-300">{user.email}</div>
           {/* Lokalita - zobrazí mesto/dedinu ak je, inak okres ak je */}
