@@ -13,6 +13,7 @@ from django.core.files.storage import default_storage
 from swaply.rate_limiting import api_rate_limit
 from swaply.audit_logger import log_profile_update
 
+from ..authentication import invalidate_user_auth_cache
 from ..serializers import UserProfileSerializer
 
 User = get_user_model()
@@ -105,6 +106,8 @@ def update_profile_view(request):
             log_profile_update(request.user, changes, ip_address, user_agent)
 
         # Vráť aktualizované údaje s plnou URL avatara
+        invalidate_user_auth_cache(request.user.id)
+
         response_serializer = UserProfileSerializer(
             request.user, context={"request": request}
         )

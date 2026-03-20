@@ -592,7 +592,14 @@ def logout_view(request):
 def me_view(request):
     """Získanie informácií o aktuálnom používateľovi"""
     _log_cookie_header_diagnostics(request, where="me_view")
-    serializer = UserProfileSerializer(request.user, context={"request": request})
+    try:
+        user = User.objects.get(pk=request.user.id)
+    except User.DoesNotExist:
+        return Response(
+            {"detail": "Authentication credentials were not provided."},
+            status=status.HTTP_401_UNAUTHORIZED,
+        )
+    serializer = UserProfileSerializer(user, context={"request": request})
     resp = Response(serializer.data)
     # Identity endpoint must never be cached (prevents stale-user / old-account effects behind proxies/CDNs).
     resp["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
