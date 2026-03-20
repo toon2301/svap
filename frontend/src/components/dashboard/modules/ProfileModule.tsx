@@ -19,16 +19,58 @@ function deepCloneUser(u: User): User {
   };
 }
 
+const PROFILE_PATCH_KEYS = [
+  'first_name',
+  'last_name',
+  'user_type',
+  'phone',
+  'phone_visible',
+  'contact_email',
+  'contact_email_visible',
+  'job_title',
+  'job_title_visible',
+  'bio',
+  'location',
+  'district',
+  'ico',
+  'ico_visible',
+  'company_name',
+  'website',
+  'additional_websites',
+  'linkedin',
+  'facebook',
+  'instagram',
+  'youtube',
+  'is_public',
+] as const satisfies readonly (keyof User)[];
+
+type ProfilePatchKey = (typeof PROFILE_PATCH_KEYS)[number];
+type ProfilePatchPayload = Partial<Pick<User, ProfilePatchKey>>;
+
+function assignProfilePatchField<K extends ProfilePatchKey>(
+  target: ProfilePatchPayload,
+  source: User,
+  key: K
+): void {
+  const value = source[key];
+  if (value !== undefined && value !== null && value !== '') {
+    target[key] = value;
+  }
+}
+
+function assignUserField<K extends keyof User>(
+  target: Partial<User>,
+  source: User,
+  key: K
+): void {
+  target[key] = source[key];
+}
+
 /** Writable polia pre PATCH (bez read-only). */
-function buildPatchPayload(editable: User): Record<string, unknown> {
-  const exclude = new Set([
-    'id', 'email', 'is_verified', 'created_at', 'updated_at',
-    'profile_completeness', 'slug', 'name_modified_by_user', 'completed_cooperations_count', 'avatar_url',
-    'avatar', 'birth_date', 'gender', 'username',
-  ]);
-  const payload: Record<string, unknown> = {};
-  for (const [k, v] of Object.entries(editable)) {
-    if (!exclude.has(k) && v !== undefined && v !== null && v !== '') payload[k] = v;
+function buildPatchPayload(editable: User): ProfilePatchPayload {
+  const payload: ProfilePatchPayload = {};
+  for (const key of PROFILE_PATCH_KEYS) {
+    assignProfilePatchField(payload, editable, key);
   }
   return payload;
 }
@@ -163,8 +205,7 @@ export default function ProfileModule({
     try {
       const payload = buildPatchPayload(toSave);
       // Optimistic update: apply only fields we actually PATCH.
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const optimisticPartial = payload as any as Partial<User>;
+      const optimisticPartial: Partial<User> = payload;
       mergeUserIfChanged(optimisticPartial);
 
       const response = await api.patch('/auth/profile/', payload);
@@ -172,17 +213,14 @@ export default function ProfileModule({
       if (response.data?.user) {
         const responseUser = response.data.user as User;
         setUploadError('');
-        const touchedKeys = Object.keys(payload);
+        const touchedKeys = Object.keys(payload) as ProfilePatchKey[];
         const derivedKeys: (keyof User)[] = ['slug', 'profile_completeness', 'updated_at'];
         const nextPartial: Partial<User> = {};
-        for (const k of touchedKeys) {
-          if (k in responseUser) {
-            const key = k as keyof User;
-            nextPartial[key] = responseUser[key];
-          }
+        for (const key of touchedKeys) {
+          assignUserField(nextPartial, responseUser, key);
         }
         for (const key of derivedKeys) {
-          if (key in responseUser) nextPartial[key] = responseUser[key];
+          assignUserField(nextPartial, responseUser, key);
         }
         try {
           const scrollEl = document.querySelector('[data-dashboard-main]') as HTMLElement | null;
