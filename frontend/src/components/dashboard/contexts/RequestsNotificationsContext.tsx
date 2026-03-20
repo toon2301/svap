@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { api, endpoints } from '@/lib/api';
+import { api, endpoints, ensureSessionRefreshed } from '@/lib/api';
 
 type RequestsNotificationsContextValue = {
   unreadCount: number;
@@ -133,9 +133,8 @@ export function RequestsNotificationsProvider({ children }: { children: React.Re
     const refreshAccessToken = async (): Promise<string | null> => {
       authRefreshInFlightRef.current = true;
       try {
-        // HttpOnly cookies: refresh token nie je dostupný v JS, backend ho zoberie z cookies.
-        await api.post(endpoints.auth.refresh, {});
-        return 'ok';
+        const result = await ensureSessionRefreshed();
+        return result === 'refreshed' ? 'ok' : null;
       } catch {
         return null;
       } finally {

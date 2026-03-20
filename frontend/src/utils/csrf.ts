@@ -4,30 +4,7 @@
  */
 import axios from 'axios';
 import Cookies from 'js-cookie';
-
-// API URL - použijeme rovnakú logiku ako v api.ts
-const getApiUrl = () => {
-  const explicitApi = process.env.NEXT_PUBLIC_API_URL;
-  const backendOrigin = process.env.NEXT_PUBLIC_BACKEND_ORIGIN;
-
-  // Explicitná API URL má vždy prednosť:
-  // - absolútna https://.../api (priame volanie)
-  // - relatívna /api (same-origin cez proxy/rewrites)
-  if (explicitApi) return explicitApi;
-
-  if (backendOrigin) return `${backendOrigin}/api`;
-
-  // Optional runtime override cez sessionStorage (len dev)
-  if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
-    try {
-      const saved = window.sessionStorage.getItem('API_BASE_URL');
-      if (saved && /^https?:\/\//.test(saved)) {
-        return saved.replace(/\/$/, '')
-      }
-    } catch {}
-  }
-  return 'http://localhost:8000/api';
-};
+import { buildApiUrl } from '@/lib/apiUrl';
 
 /** Pri cross-origin (frontend ≠ backend) cookie csrftoken nie je čitateľná – držíme token z response body. */
 let csrfTokenFromResponse: string | null = null;
@@ -39,8 +16,7 @@ let csrfTokenFromResponse: string | null = null;
  */
 export const fetchCsrfToken = async (): Promise<void> => {
   try {
-    const apiUrl = getApiUrl();
-    const res = await axios.get<{ csrf_token?: string }>(`${apiUrl}/auth/csrf-token/`, {
+    const res = await axios.get<{ csrf_token?: string }>(buildApiUrl('/auth/csrf-token/'), {
       withCredentials: true,
     });
     const token = res?.data?.csrf_token;

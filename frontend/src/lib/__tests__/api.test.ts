@@ -1,6 +1,6 @@
 import axios from 'axios';
 import Cookies from 'js-cookie';
-import api, { endpoints } from '../api';
+import api, { endpoints, setMayHaveRefreshCookie } from '../api';
 
 // Zamedz reálnym HTTP requestom v jsdom
 jest.mock('axios', () => {
@@ -41,6 +41,7 @@ describe('lib/api axios instance', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    setMayHaveRefreshCookie(true);
     // Stub adapter to zabrániť reálnym HTTP volaniam
     (api as any).defaults.adapter = async (config: any) => {
       return {
@@ -60,41 +61,67 @@ describe('lib/api axios instance', () => {
   });
 
   it('pri 401 sa pokúsi o refresh a znovu odošle request (response interceptor)', async () => {
-  // CSRF token header for refresh
-  (Cookies.get as jest.Mock).mockImplementation((key: string) => (key === 'csrftoken' ? 'csrf123' : undefined));
+    (Cookies.get as jest.Mock).mockImplementation((key: string) => (key === 'csrftoken' ? 'csrf123' : undefined));
 
-  const postSpy = jest.spyOn(axios as any, 'post').mockResolvedValueOnce({ data: { access: 'access-new' } } as any);
-  const rejected = (api as any).interceptors.response.handlers[0].rejected;
-  const originalRequest: any = { headers: {} };
-  const res = await rejected({ response: { status: 401 }, config: originalRequest });
+    const postSpy = jest.spyOn(axios as any, 'post').mockResolvedValueOnce({ status: 200 } as any);
+    const rejected = (api as any).interceptors.response.handlers[0].rejected;
+    const originalRequest: any = { url: '/auth/me/', headers: {} };
+    const res = await rejected({ response: { status: 401 }, config: originalRequest });
 
-  expect(postSpy).toHaveBeenCalledWith(
-    expect.stringMatching(/\/token\/refresh\/$/),
-    {},
-    expect.objectContaining({
-      withCredentials: true,
-      headers: { 'X-CSRFToken': 'csrf123' },
-    })
-  );
-  expect(originalRequest.headers.Authorization).toBeUndefined();
-  expect(res.data.ok).toBe(true);
-  postSpy.mockRestore();
-});
+    expect(postSpy).toHaveBeenCalledWith(
+      expect.stringMatching(/\/token\/refresh\/$/),
+      {},
+      expect.objectContaining({
+        withCredentials: true,
+        headers: { 'X-CSRFToken': 'csrf123' },
+      })
+    );
+    expect(originalRequest.headers.Authorization).toBeUndefined();
+    expect(res.data.ok).toBe(true);
+    postSpy.mockRestore();
+  });
 
-  it('pri zlyhaní refreshu odstráni cookies a presmeruje na /login (response interceptor)', async () => {
-  (Cookies.get as jest.Mock).mockImplementation((key: string) => (key === 'csrftoken' ? 'csrf123' : undefined));
+  it('pri refresh 401 skúsi recovery cez /auth/me/ a zachová session', async () => {
+    (Cookies.get as jest.Mock).mockImplementation((key: string) => (key === 'csrftoken' ? 'csrf123' : undefined));
 
-  const postSpy = jest.spyOn(axios as any, 'post').mockRejectedValueOnce(new Error('refresh fail'));
-  const logoutSpy = jest.spyOn(api, 'post').mockResolvedValueOnce({ data: { ok: true } } as any);
+    const postSpy = jest
+      .spyOn(axios as any, 'post')
+      .mockRejectedValueOnce({ response: { status: 401 } } as any);
+    const getSpy = jest.spyOn(axios as any, 'get').mockResolvedValueOnce({ status: 200, data: { id: 1 } } as any);
+    const dispatchSpy = jest.spyOn(window, 'dispatchEvent');
 
     const rejected = (api as any).interceptors.response.handlers[0].rejected;
-    await rejected({ response: { status: 401 }, config: { headers: {} } }).catch(() => {});
+    const res = await rejected({ response: { status: 401 }, config: { url: '/auth/me/', headers: {} } });
 
-  expect(logoutSpy).toHaveBeenCalled();
-  expect(window.location.href).toBe('/login');
+    expect(postSpy).toHaveBeenCalledTimes(1);
+    expect(getSpy).toHaveBeenCalledWith(
+      expect.stringMatching(/\/auth\/me\/$/),
+      expect.objectContaining({ withCredentials: true })
+    );
+    expect(dispatchSpy).not.toHaveBeenCalled();
+    expect(res.data.ok).toBe(true);
 
-  postSpy.mockRestore();
-});
+    postSpy.mockRestore();
+    getSpy.mockRestore();
+    dispatchSpy.mockRestore();
+  });
+
+  it('pri transientnom zlyhaní refreshu neinvaliduje session', async () => {
+    (Cookies.get as jest.Mock).mockImplementation((key: string) => (key === 'csrftoken' ? 'csrf123' : undefined));
+
+    const postSpy = jest.spyOn(axios as any, 'post').mockRejectedValueOnce(new Error('refresh fail'));
+    const dispatchSpy = jest.spyOn(window, 'dispatchEvent');
+
+    const rejected = (api as any).interceptors.response.handlers[0].rejected;
+    await expect(
+      rejected({ response: { status: 401 }, config: { url: '/auth/me/', headers: {} } })
+    ).rejects.toMatchObject({ __svaplyAuthFailure: 'transient_refresh_failure' });
+
+    expect(dispatchSpy).not.toHaveBeenCalled();
+
+    postSpy.mockRestore();
+    dispatchSpy.mockRestore();
+  });
 
   it('exportuje endpoints', () => {
     expect(endpoints.auth.login).toBe('/auth/login/');

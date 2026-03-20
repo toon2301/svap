@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { api, endpoints, invalidateSession, setMayHaveRefreshCookie } from '@/lib/api';
+import { api, endpoints, invalidateSession, isTransientAuthFailureError, setMayHaveRefreshCookie } from '@/lib/api';
 import { clearAuthState } from '@/utils/auth';
 import { fetchCsrfToken, hasCsrfToken } from '@/utils/csrf';
 import type { User } from '@/types';
@@ -28,6 +28,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
+  const userRef = useRef<User | null>(null);
 
   // Deterministic /me refresh:
   // - Each refreshUser call gets a requestId and sets latestRequestId.
@@ -38,6 +39,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const refreshSeqRef = useRef(0);
   const latestRequestIdRef = useRef(0);
   const logoutInProgressRef = useRef(false);
+
+  useEffect(() => {
+    userRef.current = user;
+  }, [user]);
 
   const refreshUser = useCallback(async (options?: { force?: boolean }) => {
     // Explicit logout in progress => do not run /me requests.
@@ -76,11 +81,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
         if (logoutInProgressRef.current) return;
 
         if (resp?.status === 200 && resp.data) {
+          userRef.current = resp.data;
           setUser(resp.data);
           setMayHaveRefreshCookie(true);
           return;
         }
 
+        userRef.current = null;
         setUser(null);
       } catch (error: any) {
         // Ignore stale errors
@@ -97,14 +104,22 @@ export function AuthProvider({ children }: AuthProviderProps) {
         }
 
         const status = error?.response?.status;
+        if (isTransientAuthFailureError(error) || !status || status >= 500) {
+          if (userRef.current) return;
+          throw error;
+        }
+
         // Pri 401 interceptor už skúsil refresh; ak zlyhal, markSessionInvalid() je zavolaný.
         // Iba nastav user=null – setMayHaveRefreshCookie nevoláme (interceptor to rieši).
         if (status === 401) {
+          userRef.current = null;
           setUser(null);
           return;
         }
 
         console.error('Error refreshing user:', error);
+        if (userRef.current) return;
+        userRef.current = null;
         setUser(null);
       } finally {
         // Clear refs only if this request is still the latest in charge.
@@ -144,6 +159,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       mePromiseRef.current = null;
 
       setMayHaveRefreshCookie(false);
+      userRef.current = null;
       setUser(null);
 
       // Presmerovať len ak sme na chránenej trase – na verejných (/register, /login, …) nepresmerovať
@@ -159,14 +175,45 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   // Auth stav určujeme výhradne cez `/api/auth/me/` (HttpOnly cookies).
   useEffect(() => {
+    let cancelled = false;
+
+    const wait = async (ms: number) =>
+      new Promise<void>((resolve) => {
+        window.setTimeout(resolve, ms);
+      });
+
     const bootstrap = async () => {
+      let attempt = 0;
       try {
-        await refreshUser();
+        while (!cancelled) {
+          try {
+            await refreshUser();
+            return;
+          } catch (error: any) {
+            const status = error?.response?.status;
+            const retryable = isTransientAuthFailureError(error) || !status || status >= 500;
+
+            attempt += 1;
+            if (!retryable || attempt >= 3) {
+              if (!retryable) {
+                console.error('Initial auth bootstrap failed:', error);
+              }
+              return;
+            }
+
+            await wait(500 * attempt);
+          }
+        }
       } finally {
-        setIsLoading(false);
+        if (!cancelled) {
+          setIsLoading(false);
+        }
       }
     };
     void bootstrap();
+    return () => {
+      cancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -240,6 +287,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         // ignore - local logout state must still be applied
       } finally {
         clearAuthState();
+        userRef.current = null;
         setUser(null);
         setIsLoading(false);
         logoutInProgressRef.current = false;
@@ -251,6 +299,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const updateUser = (userData: Partial<User>) => {
     if (user) {
       const updatedUser = { ...user, ...userData };
+      userRef.current = updatedUser;
       setUser(updatedUser);
     }
   };

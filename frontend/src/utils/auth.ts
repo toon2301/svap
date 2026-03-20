@@ -3,6 +3,7 @@
  * Autentifikačný stav sa overuje iba cez úspešné volanie `/api/auth/me/`
  * (HttpOnly cookies sa posielajú automaticky, ale nie sú čitateľné cez JS).
  */
+import { api, endpoints } from '@/lib/api';
 
 export const clearAuthState = (): void => {
   // Žiadne cookie manipulácie (HttpOnly cookie aj tak nemožno meniť cez JS).
@@ -12,12 +13,10 @@ export const clearAuthState = (): void => {
 export const isAuthenticated = async (): Promise<boolean> => {
   if (typeof window === 'undefined') return false;
   try {
-    const res = await fetch('/api/auth/me/', {
-      method: 'GET',
-      credentials: 'include',
+    const res = await api.get(endpoints.auth.me, {
       headers: { Accept: 'application/json' },
     });
-    return res.ok;
+    return res.status === 200;
   } catch {
     return false;
   }

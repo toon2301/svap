@@ -1,3 +1,16 @@
+jest.mock('@/lib/api', () => ({
+  __esModule: true,
+  api: {
+    get: jest.fn(),
+  },
+  endpoints: {
+    auth: {
+      me: '/auth/me/',
+    },
+  },
+}));
+
+import { api } from '@/lib/api';
 import {
   clearAuthState,
   isAuthenticated,
@@ -6,8 +19,6 @@ import {
 describe('utils/auth', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    // @ts-expect-error - test mock
-    global.fetch = jest.fn();
   });
 
   it('clearAuthState je no-op (žiadne cookie nastavovanie)', () => {
@@ -15,16 +26,18 @@ describe('utils/auth', () => {
   });
 
   it('isAuthenticated vracia true pri 200 z /api/auth/me/', async () => {
-    (global.fetch as jest.Mock).mockResolvedValue({ ok: true });
+    (api.get as jest.Mock).mockResolvedValue({ status: 200 });
     await expect(isAuthenticated()).resolves.toBe(true);
-    expect(global.fetch).toHaveBeenCalledWith(
-      '/api/auth/me/',
-      expect.objectContaining({ credentials: 'include' })
+    expect(api.get).toHaveBeenCalledWith(
+      '/auth/me/',
+      expect.objectContaining({
+        headers: { Accept: 'application/json' },
+      })
     );
   });
 
   it('isAuthenticated vracia false pri 401 z /api/auth/me/', async () => {
-    (global.fetch as jest.Mock).mockResolvedValue({ ok: false });
+    (api.get as jest.Mock).mockRejectedValue({ response: { status: 401 } });
     await expect(isAuthenticated()).resolves.toBe(false);
   });
 

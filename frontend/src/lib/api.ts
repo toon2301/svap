@@ -1,8 +1,13 @@
 import axios from 'axios';
-import { clearAuthState } from '@/utils/auth';
 import { fetchCsrfToken, getCsrfToken } from '@/utils/csrf';
+import { buildApiUrl, getConfiguredApiUrl } from '@/lib/apiUrl';
 
 type TraceMeta = Record<string, unknown>;
+type RefreshResult = 'refreshed' | 'invalid_session' | 'transient_failure';
+type AuthFailureKind = 'invalid_session' | 'transient_refresh_failure';
+type AuthTaggedError = Error & {
+  __svaplyAuthFailure?: AuthFailureKind;
+};
 
 const OAUTH_TRACE_ENABLED =
   typeof window !== 'undefined' && process.env.NEXT_PUBLIC_OAUTH_TRACE === 'true';
@@ -51,11 +56,9 @@ if (typeof window !== 'undefined' && OAUTH_TRACE_ENABLED) {
 // Cookie-only refresh control (HttpOnly cookies, no JS access)
 // ============================================================
 // Global refresh lock: only one refresh request at a time
-let refreshInFlight: Promise<boolean> | null = null;
+let refreshInFlight: Promise<RefreshResult> | null = null;
 // Circuit breaker: after 429 cooldown or 401 disable until reload
 let refreshDisabledUntil: number | null = null;
-// Flag (best-effort): refresh makes sense only after we had a valid session at least once
-let mayHaveRefreshCookie = false;
 // Hard stop: after refresh 401 or explicit logout, never attempt refresh again until reload/login
 let sessionInvalid = false;
 // Avoid redirect storms after invalidation
@@ -64,9 +67,9 @@ let redirectedAfterInvalidation = false;
 let refreshAbortController: AbortController | null = null;
 
 export function setMayHaveRefreshCookie(value: boolean): void {
-  mayHaveRefreshCookie = value;
   oauthTrace('set_may_have_refresh_cookie', { value });
   if (value) {
+    refreshDisabledUntil = null;
     sessionInvalid = false;
     redirectedAfterInvalidation = false;
   }
@@ -77,7 +80,6 @@ export function invalidateSession(): void {
   oauthTrace('invalidate_session_called');
   sessionInvalid = true;
   refreshDisabledUntil = Number.MAX_SAFE_INTEGER;
-  mayHaveRefreshCookie = false;
   redirectedAfterInvalidation = false;
   try {
     refreshAbortController?.abort();
@@ -113,8 +115,8 @@ function markSessionInvalid(): void {
   oauthTrace('mark_session_invalid');
   sessionInvalid = true;
   refreshDisabledUntil = Number.MAX_SAFE_INTEGER;
-  mayHaveRefreshCookie = false;
   refreshInFlight = null;
+  redirectedAfterInvalidation = true;
   try {
     refreshAbortController?.abort();
   } catch {
@@ -122,23 +124,46 @@ function markSessionInvalid(): void {
   }
   refreshAbortController = null;
   if (typeof window !== 'undefined') {
-    clearAuthState();
     dispatchSessionInvalid();
   }
 }
 
-async function ensureRefreshed(): Promise<boolean> {
+function tagAuthFailure<T extends Error>(error: T, failure: AuthFailureKind): T {
+  (error as AuthTaggedError).__svaplyAuthFailure = failure;
+  return error;
+}
+
+export function isTransientAuthFailureError(error: unknown): boolean {
+  return (error as AuthTaggedError | undefined)?.__svaplyAuthFailure === 'transient_refresh_failure';
+}
+
+async function probeSessionAfterRefresh401(): Promise<boolean> {
+  if (typeof window === 'undefined') return false;
+
+  try {
+    await new Promise((resolve) => window.setTimeout(resolve, 250));
+    const response = await axios.get(buildApiUrl('/auth/me/'), {
+      withCredentials: true,
+      headers: { Accept: 'application/json' },
+    });
+    return response.status === 200;
+  } catch {
+    return false;
+  }
+}
+
+export async function ensureSessionRefreshed(): Promise<RefreshResult> {
   if (sessionInvalid) {
     oauthTrace('refresh_skipped', { reason: 'session_invalid' });
-    return false;
+    return 'invalid_session';
   }
   const now = Date.now();
   if (refreshDisabledUntil && now < refreshDisabledUntil) {
     oauthTrace('refresh_skipped', { reason: 'cooldown' });
-    return false;
+    return 'transient_failure';
   }
-  // Pri reload je mayHaveRefreshCookie=false – vždy skúsime refresh pri 401,
-  // aby sme neodhlásili pri timing issue (cookie ešte neposlaná)
+  // Pri 401 vždy skúsime refresh, aby sme session neodhlásili pri timing issue
+  // alebo pri rotácii cookies medzi paralelnými requestmi/tabmi.
   if (refreshInFlight) {
     oauthTrace('refresh_coalesced');
     return refreshInFlight;
@@ -158,7 +183,7 @@ async function ensureRefreshed(): Promise<boolean> {
       refreshAbortController = controller;
 
       await axios.post(
-        `${API_URL}/token/refresh/`,
+        buildApiUrl('/token/refresh/'),
         {},
         {
           withCredentials: true,
@@ -167,20 +192,29 @@ async function ensureRefreshed(): Promise<boolean> {
         }
       );
 
-      mayHaveRefreshCookie = true;
+      refreshDisabledUntil = null;
       oauthTrace('refresh_success');
-      return true;
+      return 'refreshed';
     } catch (e: any) {
       const status = e?.response?.status;
       oauthTrace('refresh_failed', { status: status ?? null });
       if (status === 429) {
         // Cooldown 60s on rate-limit
         refreshDisabledUntil = Date.now() + 60_000;
-      } else if (status === 401) {
-        // Hard stop: refresh token invalid (expired/logged out)
-        markSessionInvalid();
+        return 'transient_failure';
       }
-      return false;
+      if (status === 401) {
+        const recovered = await probeSessionAfterRefresh401();
+        if (recovered) {
+          refreshDisabledUntil = null;
+          sessionInvalid = false;
+          redirectedAfterInvalidation = false;
+          oauthTrace('refresh_recovered_after_401');
+          return 'refreshed';
+        }
+        return 'invalid_session';
+      }
+      return 'transient_failure';
     } finally {
       refreshInFlight = null;
       refreshAbortController = null;
@@ -190,34 +224,8 @@ async function ensureRefreshed(): Promise<boolean> {
   return refreshInFlight;
 }
 
-// API URL konfigurácia - používa environment premenné
-const getApiUrl = () => {
-  const explicitApi = process.env.NEXT_PUBLIC_API_URL;
-  const backendOrigin = process.env.NEXT_PUBLIC_BACKEND_ORIGIN;
-
-  // Explicitná API URL má vždy prednosť.
-  // - Absolútna: https://... (priame volanie)
-  // - Relatívna: /api (same-origin cez proxy/rewrites)
-  if (explicitApi) return explicitApi;
-
-  // Ak nie je explicitná, použi BACKEND_ORIGIN (oddelený backend)
-  if (backendOrigin) return `${backendOrigin}/api`;
-
-  // Fallback pre development
-  return 'http://localhost:8000/api';
-};
-
-const API_URL = getApiUrl();
-let RUNTIME_API_URL = API_URL;
-// Allow dev-time runtime override based on sessionStorage
-if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
-  try {
-    const saved = window.sessionStorage.getItem('API_BASE_URL');
-    if (saved && /^https?:\/\//.test(saved)) {
-      RUNTIME_API_URL = saved;
-    }
-  } catch {}
-}
+const API_URL = getConfiguredApiUrl();
+const RUNTIME_API_URL = API_URL;
 
 // Create axios instance
 export const api = axios.create({
@@ -449,7 +457,6 @@ api.interceptors.response.use(
       if (sessionInvalid) {
         if (typeof window !== 'undefined' && !redirectedAfterInvalidation) {
           redirectedAfterInvalidation = true;
-          clearAuthState();
           dispatchSessionInvalid();
         }
         return Promise.reject(error);
@@ -470,20 +477,18 @@ api.interceptors.response.use(
 
       // Try refresh exactly once per original request
       (originalRequest as any)._retry = true;
-      const refreshed = await ensureRefreshed();
+      const refreshed = await ensureSessionRefreshed();
 
-      if (refreshed) {
+      if (refreshed === 'refreshed') {
         return api(originalRequest);
       }
 
-      // Refresh failed -> hard stop. Subsequent 401 will not try refresh again.
-      markSessionInvalid();
-      if (typeof window !== 'undefined' && !redirectedAfterInvalidation) {
-        redirectedAfterInvalidation = true;
-        // No hard reload here; AuthContext will handle navigation (router.replace)
-        dispatchSessionInvalid();
+      if (refreshed === 'invalid_session') {
+        markSessionInvalid();
+        return Promise.reject(tagAuthFailure(error, 'invalid_session'));
       }
-      return Promise.reject(error);
+
+      return Promise.reject(tagAuthFailure(error, 'transient_refresh_failure'));
     }
 
     return Promise.reject(error);

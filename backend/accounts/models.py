@@ -62,10 +62,10 @@ class User(AbstractUser):
         default=UserType.INDIVIDUAL,
     )
     phone = models.CharField(_("Telefón"), max_length=15, blank=True)
-    phone_visible = models.BooleanField(_("Zobraziť telefón verejne"), default=False)
+    phone_visible = models.BooleanField(_("Zobraziť telefón verejne"), default=True)
     contact_email = models.EmailField(_("Kontaktný email"), blank=True)
     contact_email_visible = models.BooleanField(
-        _("Zobraziť kontaktný email verejne"), default=False
+        _("Zobraziť kontaktný email verejne"), default=True
     )
     bio = models.TextField(_("O mne"), blank=True)
     avatar = models.ImageField(
@@ -78,10 +78,10 @@ class User(AbstractUser):
     location = models.CharField(_("Lokalita"), max_length=25, blank=True)
     district = models.CharField(_("Okres"), max_length=100, blank=True)
     ico = models.CharField(_("IČO"), max_length=14, blank=True)
-    ico_visible = models.BooleanField(_("Zobraziť IČO verejne"), default=False)
+    ico_visible = models.BooleanField(_("Zobraziť IČO verejne"), default=True)
     job_title = models.CharField(_("Profesia"), max_length=100, blank=True)
     job_title_visible = models.BooleanField(
-        _("Zobraziť profesiu verejne"), default=False
+        _("Zobraziť profesiu verejne"), default=True
     )
 
     # Dátum narodenia a pohlavie
