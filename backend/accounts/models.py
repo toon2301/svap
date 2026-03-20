@@ -236,11 +236,27 @@ class User(AbstractUser):
         Pri prvom uložení používateľa vygeneruje slug, ak chýba.
         Ak sa zmení meno (first_name, last_name alebo company_name), slug sa automaticky aktualizuje.
         """
-        update_fields = kwargs.get('update_fields')
+        update_fields = kwargs.get("update_fields")
+        update_fields_set = set(update_fields) if update_fields is not None else None
+        slug_source_fields = {
+            "first_name",
+            "last_name",
+            "company_name",
+            "user_type",
+            "username",
+        }
 
-        # Ak už existuje v DB, načítame starý objekt na porovnanie
+        # Ak už existuje v DB a menia sa slug-sensitive polia, načítame starý objekt.
         old_instance = None
-        if self.pk:
+        should_compare_display_name = bool(
+            self.pk
+            and self.slug
+            and (
+                update_fields_set is None
+                or bool(update_fields_set & slug_source_fields)
+            )
+        )
+        if should_compare_display_name:
             try:
                 old_instance = type(self).objects.get(pk=self.pk)
             except type(self).DoesNotExist:
@@ -262,8 +278,8 @@ class User(AbstractUser):
 
         # Ak update_fields je nastavené a slug sa zmenil, pridaj slug do update_fields
         # aby sa predišlo INSERT namiesto UPDATE na deferred objektoch
-        if update_fields is not None and slug_changed:
-            kwargs['update_fields'] = list(update_fields) + ['slug']
+        if update_fields_set is not None and slug_changed:
+            kwargs["update_fields"] = list(update_fields_set | {"slug"})
 
         super().save(*args, **kwargs)
 

@@ -25,8 +25,6 @@ User = get_user_model()
 @api_rate_limit
 def update_profile_view(request):
     """Aktualizácia profilu používateľa"""
-    # Načítaj plný objekt z DB - request.user môže byť z cache bez created_at
-    request.user.refresh_from_db()
     # Ulož pôvodné hodnoty pre audit log
     original_data = {
         "first_name": request.user.first_name,
@@ -55,15 +53,13 @@ def update_profile_view(request):
     )
 
     if serializer.is_valid():
-        serializer.save()
-        # Ensure we respond with DB-committed state (important for user_type, etc.)
-        request.user.refresh_from_db()
+        updated_user = serializer.save()
 
         # Ak sa menil avatar, zmaž starý súbor z úložiska
         try:
             if "avatar" in serializer.validated_data:
                 new_avatar_name = getattr(
-                    getattr(request.user, "avatar", None), "name", None
+                    getattr(updated_user, "avatar", None), "name", None
                 )
                 # Zmaž, ak existoval starý a líši sa od nového (alebo bol nový odstránený)
                 if old_avatar_name and old_avatar_name != new_avatar_name:
@@ -84,8 +80,6 @@ def update_profile_view(request):
             "first_name" in serializer.validated_data
             or "last_name" in serializer.validated_data
         ):
-            # Načítaj používateľa znova z DB, aby sme mali aktuálne hodnoty po uložení
-            request.user.refresh_from_db()
             # Nastav flag, ak používateľ skutočne zmenil meno alebo priezvisko
             name_was_changed = (
                 "first_name" in serializer.validated_data
@@ -97,19 +91,19 @@ def update_profile_view(request):
                 != original_data.get("last_name")
             )
             if name_was_changed:
-                request.user.name_modified_by_user = True
-                request.user.save(update_fields=["name_modified_by_user"])
+                updated_user.name_modified_by_user = True
+                updated_user.save(update_fields=["name_modified_by_user"])
 
         if changes:
             ip_address = request.META.get("REMOTE_ADDR")
             user_agent = request.META.get("HTTP_USER_AGENT")
-            log_profile_update(request.user, changes, ip_address, user_agent)
+            log_profile_update(updated_user, changes, ip_address, user_agent)
 
         # Vráť aktualizované údaje s plnou URL avatara
-        invalidate_user_auth_cache(request.user.id)
+        invalidate_user_auth_cache(updated_user.id)
 
         response_serializer = UserProfileSerializer(
-            request.user, context={"request": request}
+            updated_user, context={"request": request}
         )
         return Response(
             {

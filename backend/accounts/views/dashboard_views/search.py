@@ -33,6 +33,38 @@ for group in SMART_KEYWORD_GROUPS:
         SMART_KEYWORD_INDEX[no_accents] = lowered
 
 
+def _serialize_search_skills_page(request, skills_page):
+    """
+    Serialize only the current page with the optimized skills queryset/context.
+
+    This preserves the existing paginator behavior while avoiding per-skill
+    queries for images, reviews, and request status fields.
+    """
+    page_skill_ids = [skill.id for skill in skills_page.object_list]
+    if not page_skill_ids:
+        return []
+
+    from ..skills import _skills_list_queryset, _skills_list_context
+
+    preserved_order = Case(
+        *[When(pk=pk, then=position) for position, pk in enumerate(page_skill_ids)],
+        output_field=IntegerField(),
+    )
+    optimized_qs = _skills_list_queryset(
+        OfferedSkill.objects.filter(pk__in=page_skill_ids)
+    ).order_by(preserved_order)
+    optimized_skills = list(optimized_qs)
+    serializer_context = {
+        "request": request,
+        **_skills_list_context(request, page_skill_ids),
+    }
+    return OfferedSkillSerializer(
+        optimized_skills,
+        many=True,
+        context=serializer_context,
+    ).data
+
+
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 @api_rate_limit
@@ -221,12 +253,7 @@ def dashboard_search_view(request):
 
     skills_paginator = Paginator(skills_qs, per_page)
     skills_page = skills_paginator.get_page(page)
-
-    skills_data = OfferedSkillSerializer(
-        skills_page.object_list,
-        many=True,
-        context={"request": request},
-    ).data
+    skills_data = _serialize_search_skills_page(request, skills_page)
 
     # =========================
     #  Vyhľadávanie v používateľoch (User)

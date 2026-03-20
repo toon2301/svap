@@ -3,11 +3,15 @@ Testy pre dashboard views
 """
 
 from django.test import TestCase
+from django.db import connection
 from django.urls import reverse
+from django.test.utils import CaptureQueriesContext
 from rest_framework.test import APIClient
 from rest_framework import status
 from django.contrib.auth import get_user_model
 from unittest.mock import patch
+
+from accounts.models import OfferedSkill
 
 User = get_user_model()
 
@@ -88,6 +92,50 @@ class DashboardViewsTestCase(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn("skills", response.data)
         self.assertIn("users", response.data)
+
+    def test_dashboard_search_avoids_per_skill_query_explosion(self):
+        owner = User.objects.create_user(
+            username="owner",
+            email="owner@example.com",
+            password="testpass123",
+            first_name="Owner",
+            last_name="User",
+            user_type="individual",
+            is_public=True,
+            location="Bratislava",
+            district="Bratislava I",
+        )
+        for index in range(6):
+            OfferedSkill.objects.create(
+                user=owner,
+                category=f"Skill {index}",
+                subcategory="Sub",
+                description=f"Description {index}",
+                detailed_description="Details",
+                location="Bratislava",
+                district="Bratislava I",
+                is_hidden=False,
+                is_seeking=False,
+            )
+
+        self.user.location = "Bratislava"
+        self.user.district = "Bratislava I"
+        self.user.save(update_fields=["location", "district"])
+
+        url = reverse("accounts:dashboard_search")
+        with CaptureQueriesContext(connection) as ctx:
+            response = self.client.get(
+                url,
+                {"only_my_location": "1", "per_page": "5", "page": "1"},
+            )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data["skills"]), 5)
+        self.assertLessEqual(
+            len(ctx.captured_queries),
+            10,
+            f"Expected optimized search query count, got {len(ctx.captured_queries)}",
+        )
 
     def test_dashboard_favorites_get_success(self):
         """Test získania obľúbených"""

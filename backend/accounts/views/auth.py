@@ -592,9 +592,8 @@ def logout_view(request):
 def me_view(request):
     """Získanie informácií o aktuálnom používateľovi"""
     _log_cookie_header_diagnostics(request, where="me_view")
-    try:
-        user = User.objects.get(pk=request.user.id)
-    except User.DoesNotExist:
+    user = getattr(request, "user", None)
+    if not user or not getattr(user, "is_authenticated", False):
         return Response(
             {"detail": "Authentication credentials were not provided."},
             status=status.HTTP_401_UNAUTHORIZED,

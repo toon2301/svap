@@ -252,6 +252,7 @@ class TestUserProfileSerializer(TestCase):
 
         # contact_email requires contact_email_visible flag; without flag, never return
         self.user.contact_email = "contact@example.com"
+        self.user.contact_email_visible = False
         self.user.save()
         data = UserProfileSerializer(self.user, context={"request": req}).data
         assert "contact_email" not in data

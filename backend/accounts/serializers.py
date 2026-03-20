@@ -314,6 +314,9 @@ class UserProfileSerializer(serializers.ModelSerializer):
         ]
 
     def get_completed_cooperations_count(self, obj):
+        annotated_count = getattr(obj, "_completed_cooperations_count", None)
+        if annotated_count is not None:
+            return int(annotated_count)
         return SkillRequest.objects.filter(
             status=SkillRequestStatus.COMPLETED
         ).filter(
@@ -402,9 +405,10 @@ class UserProfileSerializer(serializers.ModelSerializer):
         """Globálna validácia pre závislé polia (meno + limit počtu webov)."""
         validated = super().validate(attrs)
         instance = getattr(self, "instance", None)
+        current_user_type = getattr(instance, "user_type", UserType.INDIVIDUAL)
         next_user_type = validated.get(
             "user_type",
-            getattr(instance, "user_type", UserType.INDIVIDUAL),
+            current_user_type,
         )
         current_first = (
             validated.get("first_name")
@@ -421,6 +425,12 @@ class UserProfileSerializer(serializers.ModelSerializer):
             if "company_name" in validated
             else (getattr(instance, "company_name", "") if instance else "")
         )
+        if (
+            next_user_type == UserType.COMPANY
+            and current_user_type != UserType.COMPANY
+            and "company_name" not in validated
+        ):
+            current_company = ""
         normalized_names = normalize_profile_name_fields(
             user_type=next_user_type,
             first_name=current_first,
@@ -480,8 +490,24 @@ class UserProfileSerializer(serializers.ModelSerializer):
         if "category_sub" in validated:
             validated.pop("category_sub", None)
 
-        validated.update(normalized_names)
+        name_or_type_changed = "user_type" in validated or any(
+            field in validated for field in ("first_name", "last_name", "company_name")
+        )
+        if name_or_type_changed:
+            validated.update(normalized_names)
         return validated
+
+    def update(self, instance, validated_data):
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+
+        if not validated_data:
+            return instance
+
+        update_fields = set(validated_data.keys())
+        update_fields.add("updated_at")
+        instance.save(update_fields=list(update_fields))
+        return instance
 
     def validate_phone(self, value):
         """Validácia telefónu"""

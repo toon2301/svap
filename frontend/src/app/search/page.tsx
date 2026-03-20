@@ -299,95 +299,96 @@ function SearchResultsContent() {
 
         <FilterChips />
 
-      <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
-          {/* Desktop: filter sidebar – custom dropdowny ako v modale */}
-          <aside className="hidden lg:block w-[260px] flex-shrink-0">
-            <div className="space-y-4 text-sm">
-              <div>
-                <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">
-                  ⭐ {t('search.ratingLabel', 'Hodnotenie')}
-                </label>
-                <SearchFilterSelect
-                  value={minRating != null ? String(minRating) : ''}
-                  options={[
-                    { value: '', label: t('search.offerTypeAll', 'Všetko') },
-                    { value: '4', label: '4+' },
-                    { value: '3', label: '3+' },
-                    { value: '2', label: '2+' },
-                  ]}
-                  onChange={(v) => {
-                    const next = v ? Number(v) : null;
-                    setMinRating(next);
+      {/* Desktop: filtre vedľa seba v jednom riadku */}
+          <div className="hidden lg:flex flex-wrap items-end gap-4 mb-6">
+            <div className="min-w-[140px]">
+              <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5">
+                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                </svg>
+                {t('search.ratingLabel', 'Hodnotenie')}
+              </label>
+              <SearchFilterSelect
+                value={minRating != null ? String(minRating) : ''}
+                options={[
+                  { value: '', label: t('search.offerTypeAll', 'Všetko') },
+                  { value: '4', label: '4+' },
+                  { value: '3', label: '3+' },
+                  { value: '2', label: '2+' },
+                ]}
+                onChange={(v) => {
+                  const next = v ? Number(v) : null;
+                  setMinRating(next);
+                  setPage(1);
+                  replaceSearchParams({
+                    rating: next ? String(next) : null,
+                    page: '1',
+                  });
+                }}
+              />
+            </div>
+            <div className="min-w-[180px]">
+              <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">
+                💰 {t('search.priceTitle', 'Cena')}
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="number"
+                  placeholder={t('search.priceMin', 'Od')}
+                  value={priceMin}
+                  onChange={(e) => {
+                    const next = e.target.value;
+                    setPriceMin(next);
                     setPage(1);
                     replaceSearchParams({
-                      rating: next ? String(next) : null,
+                      price_min: next || null,
                       page: '1',
                     });
                   }}
+                  className="w-full px-2 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-black text-gray-900 dark:text-gray-100"
                 />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">
-                  💰 {t('search.priceTitle', 'Cena')}
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    type="number"
-                    placeholder={t('search.priceMin', 'Od')}
-                    value={priceMin}
-                    onChange={(e) => {
-                      const next = e.target.value;
-                      setPriceMin(next);
-                      setPage(1);
-                      replaceSearchParams({
-                        price_min: next || null,
-                        page: '1',
-                      });
-                    }}
-                    className="w-full px-2 py-1.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-black text-gray-900 dark:text-gray-100"
-                  />
-                  <input
-                    type="number"
-                    placeholder="Do"
-                    value={priceMax}
-                    onChange={(e) => {
-                      const next = e.target.value;
-                      setPriceMax(next);
-                      setPage(1);
-                      replaceSearchParams({
-                        price_max: next || null,
-                        page: '1',
-                      });
-                    }}
-                    className="w-full px-2 py-1.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-black text-gray-900 dark:text-gray-100"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">
-                  🔁 {t('search.offerTypeTitle', 'Typ ponuky')}
-                </label>
-                <SearchFilterSelect
-                  value={offerType}
-                  options={[
-                    { value: 'all', label: t('search.offerTypeAll', 'Všetko') },
-                    { value: 'offer', label: t('search.offerTypeOffer', 'Ponúkam') },
-                    { value: 'seeking', label: t('search.offerTypeSeeking', 'Hľadám') },
-                  ]}
-                  onChange={(v) => {
-                    const next = v as 'all' | 'offer' | 'seeking';
-                    setOfferType(next);
+                <input
+                  type="number"
+                  placeholder="Do"
+                  value={priceMax}
+                  onChange={(e) => {
+                    const next = e.target.value;
+                    setPriceMax(next);
                     setPage(1);
                     replaceSearchParams({
-                      type: next === 'all' ? null : next,
+                      price_max: next || null,
                       page: '1',
                     });
                   }}
+                  className="w-full px-2 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-black text-gray-900 dark:text-gray-100"
                 />
               </div>
             </div>
-          </aside>
+            <div className="min-w-[140px]">
+              <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">
+                🔁 {t('search.offerTypeTitle', 'Typ ponuky')}
+              </label>
+              <SearchFilterSelect
+                value={offerType}
+                options={[
+                  { value: 'all', label: t('search.offerTypeAll', 'Všetko') },
+                  { value: 'offer', label: t('search.offerTypeOffer', 'Ponúkam') },
+                  { value: 'seeking', label: t('search.offerTypeSeeking', 'Hľadám') },
+                ]}
+                onChange={(v) => {
+                  const next = v as 'all' | 'offer' | 'seeking';
+                  setOfferType(next);
+                  setPage(1);
+                  replaceSearchParams({
+                    type: next === 'all' ? null : next,
+                    page: '1',
+                  });
+                }}
+              />
+            </div>
+          </div>
 
+      <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
           {/* Grid */}
           <main className="flex-1 min-w-0">
             {loading && results.length === 0 ? (

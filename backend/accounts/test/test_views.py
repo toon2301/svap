@@ -5,8 +5,10 @@ Testy pre accounts views
 import pytest
 import json
 from django.test import TestCase
+from django.db import connection
 from django.contrib.auth import get_user_model
 from django.urls import reverse
+from django.test.utils import CaptureQueriesContext
 from rest_framework.test import APITestCase
 from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -115,6 +117,21 @@ class TestAuthViews(APITestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["email"], self.user.email)
+
+    def test_me_view_avoids_duplicate_user_fetch(self):
+        url = reverse("accounts:me")
+        refresh = RefreshToken.for_user(self.user)
+        self.client.cookies["access_token"] = str(refresh.access_token)
+
+        with CaptureQueriesContext(connection) as ctx:
+            response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            len(ctx.captured_queries),
+            2,
+            f"Expected auth user lookup plus completed count, got {len(ctx.captured_queries)} queries",
+        )
 
     def test_me_view_unauthenticated(self):
         """Test získania informácií o neprihlásenom používateľovi"""
