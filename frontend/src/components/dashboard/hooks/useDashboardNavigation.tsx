@@ -51,9 +51,13 @@ export function useDashboardNavigation({
   const router = useRouter();
   
   const {
+    activeModule,
+    activeRightItem,
     setActiveModule,
     setIsRightSidebarOpen,
     setActiveRightItem,
+    openOwnProfileEdit,
+    closeOwnProfileEdit,
     handleModuleChange,
     setIsMobileMenuOpen,
   } = dashboardState;
@@ -126,22 +130,10 @@ export function useDashboardNavigation({
   // Edit profile navigácia
   const handleEditProfileClick = useCallback(() => {
     // Nastaviť edit mód priamo (bez toggle) - otvoriť sidebar a nastaviť edit-profile
-    setActiveModule('profile');
-    setIsRightSidebarOpen(true);
-    setActiveRightItem('edit-profile');
+    openOwnProfileEdit();
 
     // Zmeniť URL bez reloadu - window.history.pushState mení URL bez prerenderovania stránky
-    const identifier = user?.slug || String(user?.id);
-    const url = `/dashboard/users/${identifier}/edit`;
-    if (typeof window !== 'undefined') {
-      window.history.pushState(null, '', url);
-      try {
-        localStorage.setItem('activeModule', 'profile');
-      } catch {
-        // ignore
-      }
-    }
-  }, [user, setActiveModule, setIsRightSidebarOpen, setActiveRightItem]);
+  }, [openOwnProfileEdit]);
 
   // Navigácia na profil používateľa s konkrétnou kartou na zvýraznenie
   const handleViewUserSkillFromSearch = useCallback((
@@ -302,9 +294,13 @@ export function useDashboardNavigation({
   }, [setActiveModule, setIsRightSidebarOpen, setActiveRightItem]);
 
   const handleRightSidebarClose = useCallback(() => {
+    if (activeModule === 'profile' && activeRightItem === 'edit-profile') {
+      closeOwnProfileEdit();
+      return;
+    }
     setIsRightSidebarOpen(false);
     setActiveRightItem('');
-  }, [setIsRightSidebarOpen, setActiveRightItem]);
+  }, [activeModule, activeRightItem, closeOwnProfileEdit, setIsRightSidebarOpen, setActiveRightItem]);
 
   return {
     handleMainModuleChange,

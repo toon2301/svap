@@ -28,6 +28,7 @@ interface ModuleRouterProps {
   accountType: 'personal' | 'business';
   onUserUpdate: (updatedUserOrUpdater: User | ((prev: User | null) => User | null)) => void;
   handleRightSidebarToggle: () => void;
+  closeOwnProfileEdit: (targetUser?: Pick<User, 'id' | 'slug'> | null) => void;
   setActiveModule: (module: string) => void;
   setIsSkillsCategoryModalOpen: (value: boolean) => void;
   setSelectedSkillsCategory: (value: DashboardSkill | null) => void;
@@ -69,6 +70,7 @@ export default function ModuleRouter({
   accountType,
   onUserUpdate,
   handleRightSidebarToggle,
+  closeOwnProfileEdit,
   setActiveModule,
   setIsSkillsCategoryModalOpen,
   setSelectedSkillsCategory,
@@ -179,7 +181,7 @@ export default function ModuleRouter({
           user={user}
           onUserUpdate={onUserUpdate}
           onEditProfileClick={onEditProfileClick ?? handleRightSidebarToggle}
-          onEditCancel={handleRightSidebarToggle}
+          onEditCancel={closeOwnProfileEdit}
           onSkillsClick={onSkillsClick || (() => {
             setActiveModule('skills');
             try {

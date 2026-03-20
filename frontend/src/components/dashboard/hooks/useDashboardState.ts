@@ -39,6 +39,8 @@ export interface UseDashboardStateResult {
   setIsAccountTypeModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
   isPersonalAccountModalOpen: boolean;
   setIsPersonalAccountModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  openOwnProfileEdit: () => void;
+  closeOwnProfileEdit: (targetUser?: Pick<User, 'id' | 'slug'> | null) => void;
   handleModuleChange: (moduleId: string) => void;
   handleRightSidebarToggle: () => void;
   handleRightItemClick: (itemId: string) => void;
@@ -88,6 +90,56 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
   const [accountType, setAccountType] = useState<AccountType>(() => accountTypeFromUser(initialUser || authUser || null));
   const [isAccountTypeModalOpen, setIsAccountTypeModalOpen] = useState(false);
   const [isPersonalAccountModalOpen, setIsPersonalAccountModalOpen] = useState(false);
+  const getOwnProfileIdentifier = useCallback(
+    (targetUser?: Pick<User, 'id' | 'slug'> | null) => {
+      const slug = targetUser?.slug ?? userRef.current?.slug;
+      if (slug) return slug;
+      const id = targetUser?.id ?? userRef.current?.id;
+      return id != null ? String(id) : null;
+    },
+    []
+  );
+
+  const openOwnProfileEdit = useCallback(() => {
+    setActiveModule('profile');
+    setIsRightSidebarOpen(true);
+    setActiveRightItem('edit-profile');
+
+    try {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('activeModule', 'profile');
+      }
+    } catch {
+      // ignore
+    }
+
+    const identifier = getOwnProfileIdentifier();
+    if (identifier && typeof window !== 'undefined') {
+      window.history.pushState(null, '', `/dashboard/users/${identifier}/edit`);
+    }
+  }, [getOwnProfileIdentifier]);
+
+  const closeOwnProfileEdit = useCallback(
+    (targetUser?: Pick<User, 'id' | 'slug'> | null) => {
+      setActiveModule('profile');
+      setIsRightSidebarOpen(false);
+      setActiveRightItem('');
+
+      try {
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('activeModule', 'profile');
+        }
+      } catch {
+        // ignore
+      }
+
+      const identifier = getOwnProfileIdentifier(targetUser);
+      if (identifier && typeof window !== 'undefined') {
+        window.history.replaceState(null, '', `/dashboard/users/${identifier}`);
+      }
+    },
+    [getOwnProfileIdentifier]
+  );
 
   // Synchronizácia accountType s user.user_type z databázy
   useEffect(() => {
@@ -230,44 +282,31 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
   );
 
   const handleRightSidebarToggle = useCallback(() => {
-    setIsRightSidebarOpen((prev) => {
-      const next = !prev;
-      if (!next) {
-        setActiveModule('profile');
-        if (typeof window !== 'undefined') {
-          try {
-            localStorage.setItem('activeModule', 'profile');
-          } catch {
-            // ignore
-          }
-        }
-        setActiveRightItem('');
-      } else {
-        setActiveRightItem('edit-profile');
-      }
-      return next;
-    });
-  }, []);
+    const isClosingOwnEdit =
+      activeModule === 'profile' && isRightSidebarOpen && activeRightItem === 'edit-profile';
+    if (isClosingOwnEdit) {
+      closeOwnProfileEdit();
+      return;
+    }
+
+    if (!isRightSidebarOpen) {
+      openOwnProfileEdit();
+      return;
+    }
+
+    setIsRightSidebarOpen(false);
+    setActiveRightItem('');
+  }, [activeModule, activeRightItem, closeOwnProfileEdit, isRightSidebarOpen, openOwnProfileEdit]);
 
   const handleRightItemClick = useCallback(
     (itemId: string) => {
       setActiveRightItem(itemId);
       if (itemId === 'edit-profile') {
+        openOwnProfileEdit();
+        return;
         // Nastaviť edit mód - otvoriť sidebar a nastaviť edit-profile
-        setActiveModule('profile');
-        setIsRightSidebarOpen(true);
         
         // Zmeniť URL bez reloadu - window.history.pushState mení URL bez prerenderovania stránky
-        const identifier = user?.slug || String(user?.id);
-        const url = `/dashboard/users/${identifier}/edit`;
-        if (typeof window !== 'undefined') {
-          window.history.pushState(null, '', url);
-          try {
-            localStorage.setItem('activeModule', 'profile');
-          } catch {
-            // ignore
-          }
-        }
       } else if (itemId === 'notifications') {
         setActiveModule('notifications');
         const url = '/dashboard/notifications';
@@ -318,7 +357,7 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
         }
       }
     },
-    [user]
+    [openOwnProfileEdit, user]
   );
 
   const handleUserUpdate = useCallback(
@@ -388,14 +427,14 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
       setActiveRightItem((prev) => {
         // Ak už sme v edit-profile, zachovať to
         if (prev === 'edit-profile') {
-          return 'edit-profile';
+          return prev;
         }
         // Ak sme v nastaveniach súkromia alebo iných, zachovať to
         if (prev === 'privacy' || prev === 'language' || prev === 'account-type' || prev === 'notifications') {
           return prev;
         }
         // Inak nastaviť edit-profile
-        return 'edit-profile';
+        return prev;
       });
     },
     [updateAuthUser, refreshAuthUser]
@@ -418,15 +457,9 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
   const handleMobileBack = useCallback((isInSubcategories: boolean = false) => {
     // Ak sme v edit profile móde, vráť sa na normálny profile view
     if (activeModule === 'profile' && activeRightItem === 'edit-profile') {
-      setIsRightSidebarOpen(false);
-      setActiveRightItem('');
-      // Aktualizovať URL - odstrániť /edit časť
-      const identifier = user?.slug || String(user?.id);
-      const url = `/dashboard/users/${identifier}`;
-      if (typeof window !== 'undefined') {
-        window.history.replaceState(null, '', url);
-      }
+      closeOwnProfileEdit();
       return;
+      // Aktualizovať URL - odstrániť /edit časť
     }
 
     // Ak sme na cudzom profile, vráť sa na predchádzajúcu stránku (Žiadosti, Vyhľadávanie, …)
@@ -519,7 +552,7 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
     }
     setIsRightSidebarOpen(false);
     setActiveRightItem('');
-  }, [activeModule, activeRightItem, user?.slug, user?.id, router]);
+  }, [activeModule, activeRightItem, closeOwnProfileEdit, router, user?.id, user?.slug]);
 
   return {
     user,
@@ -539,6 +572,8 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
     setIsAccountTypeModalOpen,
     isPersonalAccountModalOpen,
     setIsPersonalAccountModalOpen,
+    openOwnProfileEdit,
+    closeOwnProfileEdit,
     handleModuleChange,
     handleRightSidebarToggle,
     handleRightItemClick,

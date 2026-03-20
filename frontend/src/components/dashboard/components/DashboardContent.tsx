@@ -111,6 +111,7 @@ export default function DashboardContent({
     accountType,
     handleModuleChange,
     handleRightSidebarToggle,
+    closeOwnProfileEdit,
     handleRightItemClick,
     handleUserUpdate,
     handleLogout,
@@ -422,6 +423,7 @@ export default function DashboardContent({
       accountType={accountType}
       onUserUpdate={handleUserUpdate}
       handleRightSidebarToggle={handleRightSidebarToggle}
+      closeOwnProfileEdit={closeOwnProfileEdit}
       setActiveModule={setActiveModule}
       setIsSkillsCategoryModalOpen={setIsSkillsCategoryModalOpen}
       setSelectedSkillsCategory={setSelectedSkillsCategory}

@@ -34,12 +34,13 @@ function buildPatchPayload(editable: User): Record<string, unknown> {
 }
 
 type UserUpdateArg = User | ((prev: User | null) => User | null);
+type ProfileEditCloseTarget = Pick<User, 'id' | 'slug'>;
 
 interface ProfileModuleProps {
   user: User;
   onUserUpdate?: (updatedUserOrUpdater: UserUpdateArg) => void;
   onEditProfileClick?: () => void;
-  onEditCancel?: () => void;
+  onEditCancel?: (targetUser?: ProfileEditCloseTarget | null) => void;
   onSkillsClick?: () => void;
   isEditMode?: boolean;
   accountType?: 'personal' | 'business';
@@ -169,25 +170,25 @@ export default function ProfileModule({
       const response = await api.patch('/auth/profile/', payload);
       if (activeActionIdRef.current !== actionId) return;
       if (response.data?.user) {
+        const responseUser = response.data.user as User;
         setUploadError('');
         const touchedKeys = Object.keys(payload);
         const derivedKeys: (keyof User)[] = ['slug', 'profile_completeness', 'updated_at'];
         const nextPartial: Partial<User> = {};
         for (const k of touchedKeys) {
-          if (k in response.data.user) {
+          if (k in responseUser) {
             const key = k as keyof User;
-            nextPartial[key] = response.data.user[key];
+            nextPartial[key] = responseUser[key];
           }
         }
         for (const key of derivedKeys) {
-          if (key in response.data.user) nextPartial[key] = response.data.user[key];
+          if (key in responseUser) nextPartial[key] = responseUser[key];
         }
         try {
           const scrollEl = document.querySelector('[data-dashboard-main]') as HTMLElement | null;
           const scrollTop = scrollEl?.scrollTop ?? 0;
           mergeUserIfChanged(nextPartial);
-          setEditableUser(null);
-          onEditCancel();
+          onEditCancel(responseUser);
           // Zachovať scroll – po save sa obsah prepne a prehliadač resetuje scroll; obnoviť po re-renderi
           const restoreScroll = () => {
             const el = document.querySelector('[data-dashboard-main]') as HTMLElement | null;
@@ -202,8 +203,7 @@ export default function ProfileModule({
           setTimeout(restoreScroll, 150);
         } catch (postSuccessError) {
           console.error('Error after successful save:', postSuccessError);
-          setEditableUser(null);
-          onEditCancel();
+          onEditCancel(responseUser);
         }
       }
     } catch (e: unknown) {
@@ -220,7 +220,6 @@ export default function ProfileModule({
   }, [editableUser, onUserUpdate, onEditCancel, beginAction, endAction, mergeUserIfChanged]);
 
   const handleCancel = useCallback(() => {
-    setEditableUser(null);
     setUploadError('');
     onEditCancel?.();
   }, [onEditCancel]);
