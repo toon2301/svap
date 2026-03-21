@@ -31,7 +31,7 @@ _USER_CACHE_MAX = 0
 # Cross-process cache TTL (Redis via Django cache). We keep only auth metadata
 # here, never profile fields or unnecessary PII.
 _USER_REDIS_TTL_SECONDS = int(
-    os.getenv("AUTH_USER_REDIS_CACHE_TTL_SECONDS", "300") or "300"
+    os.getenv("AUTH_USER_REDIS_CACHE_TTL_SECONDS", "3600") or "3600"
 )
 _AUTH_LAZY_USER_ENABLED = (
     (os.getenv("AUTH_LAZY_USER_ENABLED") or "1").strip().lower()
@@ -227,6 +227,40 @@ def invalidate_user_auth_cache(user_id: int | None) -> None:
             _USER_CACHE.pop(int(user_id), None)
     except Exception:
         pass
+
+
+def warm_user_auth_cache(user) -> bool:
+    """
+    Best-effort warm-up for the minimal cross-process auth cache.
+
+    This keeps the auth cache GDPR-minimal and avoids pushing the first
+    protected request after login/refresh through the full cold auth path.
+    """
+
+    if _USER_REDIS_TTL_SECONDS <= 0 or user is None:
+        return False
+
+    try:
+        user_id = int(getattr(user, "pk", None) or getattr(user, "id", None) or 0)
+    except Exception:
+        user_id = 0
+    if user_id <= 0:
+        return False
+
+    payload = _serialize_user_for_cache(user)
+    if not payload:
+        return False
+
+    try:
+        cache.set(
+            _redis_user_cache_key(user_id),
+            payload,
+            timeout=_USER_REDIS_TTL_SECONDS,
+        )
+        return True
+    except Exception as exc:
+        logger.warning("Auth user cache warm-up failed for user_id=%s: %s", user_id, exc)
+        return False
 
 
 class SwaplyJWTAuthentication(JWTAuthentication):

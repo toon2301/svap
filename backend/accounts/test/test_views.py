@@ -99,6 +99,21 @@ class TestAuthViews(APITestCase):
         self.assertIn("access_token", response.cookies)
         self.assertIn("refresh_token", response.cookies)
 
+    def test_login_view_warms_auth_cache(self):
+        self.user.is_verified = True
+        self.user.save()
+        url = reverse("accounts:login")
+        data = {"email": self.user.email, "password": "testpass123"}
+        cache.clear()
+
+        response = self.client.post(url, data, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            cache.get(_redis_user_cache_key(self.user.id)),
+            _serialize_user_for_cache(self.user),
+        )
+
     def test_login_view_invalid_credentials(self):
         """Test prihlásenia s neplatnými údajmi"""
         url = reverse("accounts:login")

@@ -530,6 +530,13 @@ def login_view(request):
             finally:
                 request.user = _prev_user
 
+            try:
+                from ..authentication import warm_user_auth_cache
+
+                warm_user_auth_cache(user)
+            except Exception:
+                pass
+
             resp = Response(
                 {
                     "message": "Prihlásenie bolo úspešné",
@@ -667,6 +674,13 @@ def verify_email_view(request):
                 from ..authentication import SwaplyRefreshToken
 
                 refresh = SwaplyRefreshToken.for_user(verification.user)
+
+                try:
+                    from ..authentication import warm_user_auth_cache
+
+                    warm_user_auth_cache(verification.user)
+                except Exception:
+                    pass
 
                 resp = Response(
                     {

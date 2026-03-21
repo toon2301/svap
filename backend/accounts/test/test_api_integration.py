@@ -6,6 +6,7 @@ import pytest
 import json
 from django.test import TestCase
 from django.contrib.auth import get_user_model
+from django.core.cache import cache
 from django.urls import reverse
 from rest_framework.test import APITestCase
 from rest_framework import status
@@ -13,6 +14,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from factory import Faker, SubFactory
 from factory.django import DjangoModelFactory
 
+from accounts.authentication import _redis_user_cache_key, _serialize_user_for_cache
 from accounts.models import UserType
 
 User = get_user_model()
@@ -108,6 +110,23 @@ class TestAPIIntegration(APITestCase):
         refresh_response = self.client.post(refresh_url, {}, format="json")
         self.assertEqual(refresh_response.status_code, status.HTTP_200_OK)
         self.assertIn("access_token", refresh_response.cookies)
+
+    def test_token_refresh_warms_auth_cache(self):
+        login_url = f"{self.base_url}/auth/login/"
+        login_data = {"email": self.user.email, "password": "testpass123"}
+
+        login_response = self.client.post(login_url, login_data, format="json")
+        self.assertEqual(login_response.status_code, status.HTTP_200_OK)
+
+        cache.clear()
+        refresh_url = "/api/token/refresh/"
+        refresh_response = self.client.post(refresh_url, {}, format="json")
+
+        self.assertEqual(refresh_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            cache.get(_redis_user_cache_key(self.user.id)),
+            _serialize_user_for_cache(self.user),
+        )
 
     def test_logout_flow(self):
         """Test odhlasovacieho toku"""

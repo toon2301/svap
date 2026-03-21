@@ -20,8 +20,10 @@ from ..serializers import OfferedSkillSearchSerializer
 
 User = get_user_model()
 
-USERS_LIMIT = 20
-OFFERS_LIMIT = 20
+DEFAULT_USERS_PAGE_SIZE = 24
+MAX_USERS_PAGE_SIZE = 50
+DEFAULT_OFFERS_PAGE_SIZE = 20
+MAX_OFFERS_PAGE_SIZE = 50
 MAX_Q_LEN = 100
 
 
@@ -57,20 +59,30 @@ def _split_terms(q: str) -> list[str]:
     return [term for term in q.replace(",", " ").split() if term]
 
 
+def _parse_page_param(val: str | None, default: int = 1) -> int:
+    try:
+        n = int(val or default)
+        return max(1, n)
+    except (TypeError, ValueError):
+        return default
+
+
+def _parse_page_size(val: str | None, default: int, max_val: int) -> int:
+    try:
+        n = int(val or default)
+        return min(max_val, max(1, n))
+    except (TypeError, ValueError):
+        return default
+
+
 @api_view(["GET"])
 @permission_classes([AllowAny])
 @api_rate_limit
 def global_search_view(request):
     """
-    GET /api/auth/search/global/?q=...
+    GET /api/auth/search/global/?q=...&users_page=1&users_page_size=24&offers_page=1&offers_page_size=8
 
-    Response:
-    {
-      "users": [...],
-      "offers": [...],
-      "users_count": number,
-      "offers_count": number
-    }
+    Optional params: users_page, users_page_size, offers_page, offers_page_size, include_offers (default true)
     """
     q = (request.query_params.get("q") or "").strip()
     if len(q) > MAX_Q_LEN:
@@ -81,9 +93,24 @@ def global_search_view(request):
 
     if not q:
         return Response(
-            {"users": [], "offers": [], "users_count": 0, "offers_count": 0},
+            {
+                "users": [],
+                "offers": [],
+                "users_count": 0,
+                "offers_count": 0,
+                "users_total_pages": 0,
+                "users_page": 1,
+            },
             status=status.HTTP_200_OK,
         )
+
+    users_page = _parse_page_param(request.query_params.get("users_page"), 1)
+    users_page_size = _parse_page_size(
+        request.query_params.get("users_page_size"),
+        DEFAULT_USERS_PAGE_SIZE,
+        MAX_USERS_PAGE_SIZE,
+    )
+    include_offers = str(request.query_params.get("include_offers", "true")).lower() not in ("false", "0")
 
     terms = _split_terms(q)
 
@@ -95,7 +122,6 @@ def global_search_view(request):
         .exclude(is_staff=True)
         .exclude(is_superuser=True)
     )
-    # NOTE: keep DB-portable lookups only (no regex operators).
     if terms:
         uq = Q()
         for term in terms:
@@ -125,55 +151,68 @@ def global_search_view(request):
     ).order_by("-relevance", "-is_verified", "-updated_at")
 
     users_count = users_qs.count()
-    users = list(users_qs[:USERS_LIMIT])
+    users_total_pages = max(1, (users_count + users_page_size - 1) // users_page_size)
+    page = min(users_page, users_total_pages)
+    offset = (page - 1) * users_page_size
+    users = list(users_qs[offset : offset + users_page_size])
     users_data = SearchUserResultSerializer(
         users, many=True, context={"request": request}
     ).data
 
     # =========================
-    # Offers search (existing OfferedSkill search logic; unhidden only)
+    # Offers search (optional, for tab "all" preview)
     # =========================
-    offers_qs = (
-        OfferedSkill.objects.filter(is_hidden=False, user__is_active=True, user__is_public=True)
-        .select_related("user")
-    )
-    if q:
-        offers_qs = offers_qs.filter(
-            Q(category__icontains=q)
-            | Q(subcategory__icontains=q)
-            | Q(description__icontains=q)
-            | Q(detailed_description__icontains=q)
-            | Q(tags__icontains=q)
-        )
+    offers_data = []
+    offers_count = 0
 
-    # Keep relevance_score for OfferedSkillSearchSerializer compatibility.
-    offers_qs = offers_qs.annotate(
-        relevance_score=(
-            Case(When(tags__icontains=q, then=Value(3)), default=Value(0), output_field=IntegerField())
-            + Case(
-                When(subcategory__icontains=q, then=Value(2)),
-                default=Value(0),
-                output_field=IntegerField(),
-            )
-            + Case(When(category__icontains=q, then=Value(2)), default=Value(0), output_field=IntegerField())
-            + Case(
-                When(description__icontains=q, then=Value(1)),
-                default=Value(0),
-                output_field=IntegerField(),
-            )
-            + Case(
-                When(detailed_description__icontains=q, then=Value(1)),
-                default=Value(0),
-                output_field=IntegerField(),
-            )
+    if include_offers:
+        offers_page = _parse_page_param(request.query_params.get("offers_page"), 1)
+        offers_page_size = _parse_page_size(
+            request.query_params.get("offers_page_size"),
+            DEFAULT_OFFERS_PAGE_SIZE,
+            MAX_OFFERS_PAGE_SIZE,
         )
-    ).order_by("-relevance_score", "-created_at")
-
-    offers_count = offers_qs.count()
-    offers = list(offers_qs[:OFFERS_LIMIT])
-    offers_data = OfferedSkillSearchSerializer(
-        offers, many=True, context={"request": request}
-    ).data
+        offers_qs = (
+            OfferedSkill.objects.filter(is_hidden=False, user__is_active=True, user__is_public=True)
+            .select_related("user")
+        )
+        if q:
+            offers_qs = offers_qs.filter(
+                Q(category__icontains=q)
+                | Q(subcategory__icontains=q)
+                | Q(description__icontains=q)
+                | Q(detailed_description__icontains=q)
+                | Q(tags__icontains=q)
+            )
+        offers_qs = offers_qs.annotate(
+            relevance_score=(
+                Case(When(tags__icontains=q, then=Value(3)), default=Value(0), output_field=IntegerField())
+                + Case(
+                    When(subcategory__icontains=q, then=Value(2)),
+                    default=Value(0),
+                    output_field=IntegerField(),
+                )
+                + Case(When(category__icontains=q, then=Value(2)), default=Value(0), output_field=IntegerField())
+                + Case(
+                    When(description__icontains=q, then=Value(1)),
+                    default=Value(0),
+                    output_field=IntegerField(),
+                )
+                + Case(
+                    When(detailed_description__icontains=q, then=Value(1)),
+                    default=Value(0),
+                    output_field=IntegerField(),
+                )
+            )
+        ).order_by("-relevance_score", "-created_at")
+        offers_count = offers_qs.count()
+        offers_total_pages = max(1, (offers_count + offers_page_size - 1) // offers_page_size)
+        op = min(offers_page, offers_total_pages)
+        ooffset = (op - 1) * offers_page_size
+        offers = list(offers_qs[ooffset : ooffset + offers_page_size])
+        offers_data = OfferedSkillSearchSerializer(
+            offers, many=True, context={"request": request}
+        ).data
 
     return Response(
         {
@@ -181,6 +220,8 @@ def global_search_view(request):
             "offers": offers_data,
             "users_count": users_count,
             "offers_count": offers_count,
+            "users_total_pages": users_total_pages,
+            "users_page": page,
         },
         status=status.HTTP_200_OK,
     )

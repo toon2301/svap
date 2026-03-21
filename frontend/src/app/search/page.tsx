@@ -44,6 +44,7 @@ function SearchResultsContent() {
   const urlPriceMax = searchParams.get('price_max') ?? '';
   const urlType = searchParams.get('type') ?? '';
   const urlPage = searchParams.get('page') ?? '';
+  const urlUsersPage = searchParams.get('users_page') ?? '';
 
   const parsedSort = VALID_SORTS.has(urlSort) ? urlSort : 'newest';
   const parsedMinRating =
@@ -55,6 +56,10 @@ function SearchResultsContent() {
     : 'all';
   const parsedPage = (() => {
     const n = Number.parseInt(String(urlPage || ''), 10);
+    return Number.isFinite(n) && n >= 1 ? n : 1;
+  })();
+  const parsedUsersPage = (() => {
+    const n = Number.parseInt(String(urlUsersPage || ''), 10);
     return Number.isFinite(n) && n >= 1 ? n : 1;
   })();
 
@@ -76,6 +81,7 @@ function SearchResultsContent() {
   const [globalOffers, setGlobalOffers] = useState<Offer[]>([]);
   const [globalUsersCount, setGlobalUsersCount] = useState(0);
   const [globalOffersCount, setGlobalOffersCount] = useState(0);
+  const [globalUsersTotalPages, setGlobalUsersTotalPages] = useState(0);
   const [globalLoading, setGlobalLoading] = useState(false);
   const [globalError, setGlobalError] = useState<string | null>(null);
 
@@ -123,8 +129,23 @@ function SearchResultsContent() {
     }
   }, [filterSignature, parsedPage, replaceSearchParams]);
 
+  // users_page reset when query changes
+  const usersQueryRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (usersQueryRef.current === null) {
+      usersQueryRef.current = q.trim();
+      return;
+    }
+    if (usersQueryRef.current !== q.trim()) {
+      usersQueryRef.current = q.trim();
+      if (parsedUsersPage !== 1) {
+        replaceSearchParams({ users_page: null });
+      }
+    }
+  }, [q, parsedUsersPage, replaceSearchParams]);
+
   // Scroll to top when filters, sort, or page change (skip initial mount)
-  const scrollParamsSignature = `${urlRating}|${urlPriceMin}|${urlPriceMax}|${urlType}|${urlSort}|${urlPage}`;
+  const scrollParamsSignature = `${urlRating}|${urlPriceMin}|${urlPriceMax}|${urlType}|${urlSort}|${urlPage}|${urlUsersPage}`;
   const isInitialMountRef = useRef(true);
   useEffect(() => {
     if (isInitialMountRef.current) {
@@ -221,6 +242,8 @@ function SearchResultsContent() {
     });
   }, [replaceSearchParams]);
 
+  const USERS_PAGE_SIZE = 24;
+
   const fetchGlobal = useCallback(async () => {
     const trimmed = q.trim();
     if (!trimmed) {
@@ -228,6 +251,7 @@ function SearchResultsContent() {
       setGlobalOffers([]);
       setGlobalUsersCount(0);
       setGlobalOffersCount(0);
+      setGlobalUsersTotalPages(0);
       setGlobalError(null);
       setGlobalLoading(false);
       return;
@@ -235,10 +259,19 @@ function SearchResultsContent() {
 
     setGlobalLoading(true);
     setGlobalError(null);
+    const isUsersTab = tab === 'users';
+    const params: Record<string, string | number> = {
+      q: trimmed,
+      users_page: isUsersTab ? parsedUsersPage : 1,
+      users_page_size: isUsersTab ? USERS_PAGE_SIZE : 5,
+      include_offers: isUsersTab ? 'false' : 'true',
+    };
+    if (!isUsersTab) {
+      params.offers_page = 1;
+      params.offers_page_size = 9;
+    }
     try {
-      const { data } = await api.get(endpoints.searchGlobal, {
-        params: { q: trimmed },
-      });
+      const { data } = await api.get(endpoints.searchGlobal, { params });
       const users = Array.isArray(data?.users) ? (data.users as GlobalSearchUser[]) : [];
       const offersRaw = Array.isArray(data?.offers) ? (data.offers as Record<string, unknown>[]) : [];
       const offers = offersRaw.map((s) => mapSearchResultToOffer(s));
@@ -246,11 +279,13 @@ function SearchResultsContent() {
       setGlobalOffers(offers);
       setGlobalUsersCount(Number(data?.users_count) ?? users.length);
       setGlobalOffersCount(Number(data?.offers_count) ?? offers.length);
+      setGlobalUsersTotalPages(Number(data?.users_total_pages) ?? 0);
     } catch (err: unknown) {
       setGlobalUsers([]);
       setGlobalOffers([]);
       setGlobalUsersCount(0);
       setGlobalOffersCount(0);
+      setGlobalUsersTotalPages(0);
       const msg = err && typeof err === 'object' && 'response' in err
         ? (err as { response?: { data?: { error?: string } } }).response?.data?.error
         : null;
@@ -258,7 +293,7 @@ function SearchResultsContent() {
     } finally {
       setGlobalLoading(false);
     }
-  }, [q]);
+  }, [q, tab, parsedUsersPage]);
 
   useEffect(() => {
     if (tab === 'offers') return;
@@ -297,13 +332,14 @@ function SearchResultsContent() {
                   replaceSearchParams({
                     tab: item.id === 'all' ? null : item.id,
                     page: item.id === 'offers' ? '1' : null,
+                    users_page: item.id === 'users' ? '1' : null,
                   });
                 }}
                 className={[
                   'px-4 py-2 text-sm font-semibold rounded-2xl transition-colors',
                   active
-                    ? 'bg-purple-600 text-white'
-                    : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-[#141416]',
+                    ? 'bg-purple-100 text-purple-800 border border-purple-200'
+                    : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-[#141416] border border-transparent',
                 ].join(' ')}
               >
                 {item.label}
@@ -409,13 +445,66 @@ function SearchResultsContent() {
             </div>
           ) : (
             <div className="space-y-6">
+              {/* Tab "all" = preview (max 5 users); tab "users" = full list */}
               <SearchUsersResults
                 title="Ľudia"
-                users={globalUsers}
+                users={tab === 'all' ? globalUsers.slice(0, 5) : globalUsers}
                 loading={globalLoading}
                 count={globalUsersCount}
                 currentUserId={user?.id ?? null}
               />
+              {tab === 'all' && globalUsersCount > 5 && (
+                <button
+                  type="button"
+                  onClick={() => replaceSearchParams({ tab: 'users', users_page: null })}
+                  className="mt-2 w-full text-center text-sm font-semibold text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300"
+                >
+                  Zobraziť viac ľudí
+                </button>
+              )}
+
+              {tab === 'users' && globalUsersTotalPages > 1 && (
+                <div className="flex items-center justify-center gap-2 mt-6">
+                  <button
+                    type="button"
+                    disabled={parsedUsersPage === 1}
+                    onClick={() =>
+                      replaceSearchParams({ users_page: String(Math.max(1, parsedUsersPage - 1)) })
+                    }
+                    className="px-3 py-1.5 text-sm rounded-lg border border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-900 disabled:opacity-50 disabled:cursor-not-allowed text-gray-900 dark:text-white"
+                  >
+                    {t('search.paginationPrevious', 'Predošlá')}
+                  </button>
+                  {Array.from({ length: globalUsersTotalPages }, (_, i) => i + 1).map(
+                    (number) => (
+                      <button
+                        key={number}
+                        type="button"
+                        onClick={() => replaceSearchParams({ users_page: String(number) })}
+                        className={`px-3 py-1.5 text-sm rounded-lg border ${
+                          parsedUsersPage === number
+                            ? 'bg-purple-600 text-white border-purple-600'
+                            : 'border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-900 text-gray-900 dark:text-white'
+                        }`}
+                      >
+                        {number}
+                      </button>
+                    ),
+                  )}
+                  <button
+                    type="button"
+                    disabled={parsedUsersPage >= globalUsersTotalPages}
+                    onClick={() =>
+                      replaceSearchParams({
+                        users_page: String(Math.min(globalUsersTotalPages, parsedUsersPage + 1)),
+                      })
+                    }
+                    className="px-3 py-1.5 text-sm rounded-lg border border-gray-300 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-900 disabled:opacity-50 disabled:cursor-not-allowed text-gray-900 dark:text-white"
+                  >
+                    {t('search.paginationNext', 'Ďalšia')}
+                  </button>
+                </div>
+              )}
 
               {tab === 'all' && (
                 <section className="w-full">
@@ -437,8 +526,9 @@ function SearchResultsContent() {
                       Žiadne ponuky.
                     </div>
                   ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-[clamp(1rem,2vw,1.5rem)]">
-                      {globalOffers.map((offer) => {
+                    <>
+                      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-[clamp(1rem,2vw,1.5rem)]">
+                        {globalOffers.slice(0, 9).map((offer) => {
                         const cardId =
                           offer.id != null
                             ? String(offer.id)
@@ -465,7 +555,17 @@ function SearchResultsContent() {
                           </div>
                         );
                       })}
-                    </div>
+                      </div>
+                      {globalOffersCount > 9 && (
+                        <button
+                          type="button"
+                          onClick={() => replaceSearchParams({ tab: 'offers', page: '1' })}
+                          className="mt-2 w-full text-center text-sm font-semibold text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300"
+                        >
+                          Zobraziť viac ponúk
+                        </button>
+                      )}
+                    </>
                   )}
                 </section>
               )}

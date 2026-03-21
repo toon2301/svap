@@ -5,6 +5,7 @@ Testy pre email verifikáciu
 import pytest
 from django.test import TestCase
 from django.contrib.auth import get_user_model
+from django.core.cache import cache
 from django.urls import reverse
 from rest_framework.test import APITestCase
 from rest_framework import status
@@ -12,6 +13,7 @@ from unittest.mock import patch, MagicMock
 from datetime import timedelta
 from django.utils import timezone
 
+from accounts.authentication import _redis_user_cache_key, _serialize_user_for_cache
 from accounts.models import EmailVerification, UserType
 
 User = get_user_model()
@@ -155,6 +157,19 @@ class TestEmailVerificationAPI(APITestCase):
         # Skontroluj, že token je označený ako použitý
         self.verification.refresh_from_db()
         self.assertTrue(self.verification.is_used)
+
+    def test_verify_email_success_warms_auth_cache(self):
+        url = reverse("accounts:verify_email")
+        data = {"token": str(self.verification.token)}
+        cache.clear()
+
+        response = self.client.post(url, data, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            cache.get(_redis_user_cache_key(self.user.id)),
+            _serialize_user_for_cache(self.user),
+        )
 
     def test_verify_email_invalid_token(self):
         """Test overenia s neplatným tokenom"""

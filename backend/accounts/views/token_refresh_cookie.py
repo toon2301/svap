@@ -192,6 +192,29 @@ def token_refresh_cookie_view(request):
 
         access = data.get("access")
         new_refresh_str = data.get("refresh")
+
+        try:
+            from django.contrib.auth import get_user_model
+            from rest_framework_simplejwt.tokens import AccessToken
+
+            from ..authentication import warm_user_auth_cache
+
+            access_token = AccessToken(str(access))
+            user_id = int(access_token.get("user_id") or 0)
+            if user_id > 0:
+                user_model = get_user_model()
+                cache_user = (
+                    user_model.objects.only(
+                        "id",
+                        "is_active",
+                        "is_staff",
+                        "is_superuser",
+                    ).get(pk=user_id)
+                )
+                warm_user_auth_cache(cache_user)
+        except Exception:
+            pass
+
         resp = Response({"status": "ok"}, status=status.HTTP_200_OK)
 
         # Nastav cookies: access vždy, refresh len ak sme vydali nový

@@ -379,7 +379,9 @@ def google_callback_view(request):
         resp = HttpResponseRedirect(redirect_url)
         try:
             from .auth import _set_auth_cookies, _auth_state_cookie_kwargs
+            from ..authentication import warm_user_auth_cache
 
+            warm_user_auth_cache(user)
             _set_auth_cookies(resp, access=str(access_token_jwt), refresh=str(refresh))
             state_kwargs = _auth_state_cookie_kwargs()
             resp.set_cookie("auth_state", "1", max_age=7 * 24 * 60 * 60, **state_kwargs)
