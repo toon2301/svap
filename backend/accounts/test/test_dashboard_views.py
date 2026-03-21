@@ -12,7 +12,13 @@ from rest_framework import status
 from django.contrib.auth import get_user_model
 from unittest.mock import patch
 
-from accounts.models import OfferedSkill, OfferedSkillImage, Review
+from accounts.models import (
+    OfferedSkill,
+    OfferedSkillImage,
+    Review,
+    SkillRequest,
+    SkillRequestStatus,
+)
 
 User = get_user_model()
 
@@ -242,6 +248,89 @@ class DashboardViewsTestCase(TestCase):
         second = self.client.get(url)
         self.assertEqual(second.status_code, status.HTTP_200_OK)
         self.assertEqual(len(second.data[0]["images"]), 1)
+
+    def test_dashboard_user_skills_owner_cache_hit_avoids_db_queries(self):
+        OfferedSkill.objects.create(
+            user=self.user,
+            category="Owner Skill",
+            subcategory="Sub",
+            description="Description",
+            detailed_description="Details",
+        )
+        url = reverse("accounts:dashboard_user_skills", args=[self.user.id])
+
+        first = self.client.get(url)
+        self.assertEqual(first.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(first.data), 1)
+
+        with CaptureQueriesContext(connection) as ctx:
+            second = self.client.get(url)
+
+        self.assertEqual(second.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(second.data), 1)
+        self.assertEqual(
+            len(ctx.captured_queries),
+            0,
+            f"Expected dashboard owner skills cache hit without SQL queries, got {len(ctx.captured_queries)}",
+        )
+
+    def test_dashboard_user_skills_cache_is_viewer_specific_and_updates_after_skill_request(self):
+        owner = User.objects.create_user(
+            username="publicowner",
+            email="publicowner@example.com",
+            password="testpass123",
+            first_name="Public",
+            last_name="Owner",
+            user_type="individual",
+            is_public=True,
+        )
+        viewer_a = User.objects.create_user(
+            username="viewera",
+            email="viewera@example.com",
+            password="testpass123",
+            first_name="Viewer",
+            last_name="A",
+            user_type="individual",
+        )
+        viewer_b = User.objects.create_user(
+            username="viewerb",
+            email="viewerb@example.com",
+            password="testpass123",
+            first_name="Viewer",
+            last_name="B",
+            user_type="individual",
+        )
+        skill = OfferedSkill.objects.create(
+            user=owner,
+            category="Public Skill",
+            subcategory="Sub",
+            description="Description",
+            detailed_description="Details",
+        )
+        url = reverse("accounts:dashboard_user_skills", args=[owner.id])
+
+        client_a = APIClient()
+        client_a.force_authenticate(user=viewer_a)
+        first_a = client_a.get(url)
+        self.assertEqual(first_a.status_code, status.HTTP_200_OK)
+        self.assertIsNone(first_a.data[0]["my_request_status"])
+
+        SkillRequest.objects.create(
+            requester=viewer_a,
+            recipient=owner,
+            offer=skill,
+            status=SkillRequestStatus.PENDING,
+        )
+
+        second_a = client_a.get(url)
+        self.assertEqual(second_a.status_code, status.HTTP_200_OK)
+        self.assertEqual(second_a.data[0]["my_request_status"], SkillRequestStatus.PENDING)
+
+        client_b = APIClient()
+        client_b.force_authenticate(user=viewer_b)
+        response_b = client_b.get(url)
+        self.assertEqual(response_b.status_code, status.HTTP_200_OK)
+        self.assertIsNone(response_b.data[0]["my_request_status"])
 
     def test_dashboard_favorites_get_success(self):
         """Test získania obľúbených"""

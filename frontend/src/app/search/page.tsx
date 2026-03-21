@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useCallback, Suspense, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { api, endpoints } from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import ProfileOfferCard from '@/components/dashboard/modules/profile/ProfileOfferCard';
 import { SearchResultSkeleton } from '@/components/search/SearchResultSkeleton';
@@ -31,6 +32,7 @@ function parseTab(value: string | null): SearchTab {
 function SearchResultsContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { user } = useAuth();
   const q = searchParams.get('q') ?? '';
   const { t } = useLanguage();
 
@@ -412,6 +414,7 @@ function SearchResultsContent() {
                 users={globalUsers}
                 loading={globalLoading}
                 count={globalUsersCount}
+                currentUserId={user?.id ?? null}
               />
 
               {tab === 'all' && (

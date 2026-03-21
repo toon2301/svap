@@ -2,6 +2,7 @@
 
 import React, { useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export type GlobalSearchUser = {
   id: number;
@@ -37,13 +38,16 @@ export function SearchUsersResults({
   loading,
   title,
   count,
+  currentUserId,
 }: {
   users: GlobalSearchUser[];
   loading?: boolean;
   title: string;
   count?: number | null;
+  currentUserId?: number | null;
 }) {
   const router = useRouter();
+  const { t } = useLanguage();
 
   const items = useMemo(() => (Array.isArray(users) ? users : []), [users]);
 
@@ -74,7 +78,10 @@ export function SearchUsersResults({
       ) : (
         <div className="space-y-2">
           {items.map((u) => {
-            const displayName = String(u.display_name || '').trim() || `Používateľ #${u.id}`;
+            const displayName =
+              currentUserId != null && u.id === currentUserId
+                ? t('search.you', 'Vy')
+                : (String(u.display_name || '').trim() || `Používateľ #${u.id}`);
             const badge = userTypeLabel(u.user_type);
             const location = String(u.location || '').trim();
             const district = String(u.district || '').trim();
