@@ -1,5 +1,5 @@
 from django.contrib.auth import get_user_model
-from django.db.models.signals import post_save
+from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
 
 from .authentication import invalidate_user_auth_cache
@@ -16,4 +16,9 @@ def invalidate_auth_cache_after_user_save(sender, instance, **kwargs):
     request must observe fresh state immediately.
     """
 
+    invalidate_user_auth_cache(getattr(instance, "pk", None))
+
+
+@receiver(post_delete, sender=User)
+def invalidate_auth_cache_after_user_delete(sender, instance, **kwargs):
     invalidate_user_auth_cache(getattr(instance, "pk", None))

@@ -72,7 +72,12 @@ export default function DashboardLayout({
 
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node;
-      
+
+      // Otvorený filter modal (SearchModule) – nezatváraj panel pri kliknutí do overlay
+      if (typeof document !== 'undefined' && document.body.classList.contains('filter-modal-open')) {
+        return;
+      }
+
       // Ak klikneme na vyhľadávací panel alebo jeho obsah, nič nerob
       if (searchPanelRef.current && searchPanelRef.current.contains(target)) {
         return;
@@ -81,11 +86,16 @@ export default function DashboardLayout({
       // Ak klikneme na ľavú navigáciu (Sidebar), zatvor vyhľadávanie
       const leftSidebar = document.querySelector('[data-sidebar="left"]');
       if (leftSidebar && leftSidebar.contains(target)) {
+        // Tlačidlo „Vyhľadávanie“ – necháme iba onClick (toggle), nie mousedown-close
+        const el = target as HTMLElement;
+        if (el.closest?.('[data-sidebar-nav-item="search"]')) {
+          return;
+        }
         onSearchClose();
         return;
       }
 
-      // Inak zatvor vyhľadávanie (kliknutie kdekoľvek inde)
+      // Klik na hlavný obsah (výsledky) alebo inde mimo panelu – zatvor panel
       onSearchClose();
     };
 

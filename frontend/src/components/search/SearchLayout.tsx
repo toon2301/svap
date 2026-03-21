@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import Sidebar from '@/components/dashboard/Sidebar';
@@ -58,6 +58,55 @@ export function SearchLayout({ children }: SearchLayoutProps) {
 
   const handleCloseSearchPanel = useCallback(() => setIsSearchPanelOpen(false), []);
 
+  const searchPanelRef = useRef<HTMLDivElement>(null);
+
+  // Zatvor vyhľadávací panel pri kliknutí mimo neho (rovnaká logika ako DashboardLayout)
+  useEffect(() => {
+    if (!isSearchPanelOpen) return;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
+
+      if (typeof document !== 'undefined' && document.body.classList.contains('filter-modal-open')) {
+        return;
+      }
+
+      if (searchPanelRef.current?.contains(target)) {
+        return;
+      }
+
+      const leftSidebar = document.querySelector('[data-sidebar="left"]');
+      if (leftSidebar?.contains(target)) {
+        const el = target as HTMLElement;
+        if (el.closest?.('[data-sidebar-nav-item="search"]')) {
+          return;
+        }
+        handleCloseSearchPanel();
+        return;
+      }
+
+      handleCloseSearchPanel();
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      const el = event.target as HTMLElement;
+      const isInFilterModal =
+        el.closest('[role="dialog"]') !== null || document.body.classList.contains('filter-modal-open');
+      if (!isInFilterModal) {
+        event.preventDefault();
+        handleCloseSearchPanel();
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isSearchPanelOpen, handleCloseSearchPanel]);
+
   const gridColsClassName = isSearchPanelOpen
     ? 'lg:grid-cols-[280px_280px_1fr] xl:grid-cols-[384px_384px_1fr]'
     : 'lg:grid-cols-[280px_0px_1fr] xl:grid-cols-[384px_0px_1fr]';
@@ -78,6 +127,7 @@ export function SearchLayout({ children }: SearchLayoutProps) {
 
           {/* Search panel - Desktop only */}
           <div
+            ref={searchPanelRef}
             className={[
               'hidden lg:flex h-screen flex-col overflow-hidden bg-[var(--background)] transition-opacity duration-200',
               isSearchPanelOpen ? 'opacity-100 pointer-events-auto border-r border-gray-200 dark:border-gray-800' : 'opacity-0 pointer-events-none border-r-0',
@@ -95,8 +145,8 @@ export function SearchLayout({ children }: SearchLayoutProps) {
             ) : null}
           </div>
 
-          {/* Main Content - rovnaká šírka ako profil */}
-          <main className="relative h-screen overflow-y-auto elegant-scrollbar">
+          {/* Main Content - rovnaká šírka ako profil; klik mimo ľavého panelu zatvára search (cez useEffect) */}
+          <main data-dashboard-main className="relative h-screen overflow-y-auto elegant-scrollbar">
             <div className="py-4 lg:py-8 px-4 sm:px-6 lg:px-8">
               <div className="w-full mx-auto max-w-7xl">
                 {children}

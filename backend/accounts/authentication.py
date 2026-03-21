@@ -3,8 +3,9 @@ Custom JWT authentication for Swaply.
 
 - Uses Redis/Django cache for blacklist checks.
 - Keeps only minimal auth metadata in cross-process cache.
-- Always returns a full DB-backed User object so views/serializers never read
-  profile data from auth cache.
+- Returns a real User model instance on every request.
+- On auth-cache hit it may return a deferred/lazy User that materializes the
+  full DB row only when non-auth profile fields are actually accessed.
 """
 
 import logging
@@ -12,6 +13,7 @@ import os
 import threading
 import time
 from collections import OrderedDict
+from types import MethodType
 
 from django.core.cache import cache
 from rest_framework_simplejwt.authentication import JWTAuthentication
@@ -31,6 +33,11 @@ _USER_CACHE_MAX = 0
 _USER_REDIS_TTL_SECONDS = int(
     os.getenv("AUTH_USER_REDIS_CACHE_TTL_SECONDS", "300") or "300"
 )
+_AUTH_LAZY_USER_ENABLED = (
+    (os.getenv("AUTH_LAZY_USER_ENABLED") or "1").strip().lower()
+    not in {"0", "false", "no"}
+)
+_AUTH_CACHE_FIELD_NAMES = ("id", "is_active", "is_staff", "is_superuser")
 _USER_CACHE_LOCK = threading.Lock()
 _USER_CACHE: "OrderedDict[int, tuple[float, object]]" = OrderedDict()
 
@@ -137,6 +144,69 @@ def _parse_cached_auth_state(data: dict | None) -> dict | None:
         return None
 
 
+def _hydrate_user_instance_from_db(target_user, full_user) -> None:
+    for field in target_user._meta.concrete_fields:
+        setattr(target_user, field.attname, getattr(full_user, field.attname))
+
+    try:
+        target_user._state.db = full_user._state.db
+        target_user._state.adding = full_user._state.adding
+    except Exception:
+        pass
+
+    try:
+        target_user._prefetched_objects_cache = getattr(
+            full_user, "_prefetched_objects_cache", {}
+        )
+    except Exception:
+        pass
+
+
+def _lazy_auth_refresh_from_db(self, using=None, fields=None, from_queryset=None):
+    original_refresh = getattr(self, "_swaply_auth_original_refresh_from_db", None)
+    if getattr(self, "_swaply_auth_fully_loaded", False):
+        if callable(original_refresh):
+            return original_refresh(
+                using=using, fields=fields, from_queryset=from_queryset
+            )
+        return None
+
+    from django.contrib.auth import get_user_model
+
+    using = using or getattr(getattr(self, "_state", None), "db", None) or "default"
+    user_model = get_user_model()
+    queryset = from_queryset or user_model._default_manager.using(using)
+    full_user = queryset.get(pk=self.pk)
+    _hydrate_user_instance_from_db(self, full_user)
+    self._swaply_auth_fully_loaded = True
+    return None
+
+
+def _build_lazy_auth_user(user_model, cached_state: dict):
+    field_names = []
+    values = []
+    for field in user_model._meta.concrete_fields:
+        if field.attname in cached_state:
+            field_names.append(field.attname)
+            values.append(cached_state[field.attname])
+    user = user_model.from_db("default", field_names, values)
+    user._swaply_auth_lazy = True
+    user._swaply_auth_fully_loaded = False
+    user._swaply_auth_original_refresh_from_db = user.refresh_from_db
+    user.refresh_from_db = MethodType(_lazy_auth_refresh_from_db, user)
+    return user
+
+
+def materialize_auth_user(user):
+    if user is None:
+        return None
+    if getattr(user, "_swaply_auth_lazy", False) and not getattr(
+        user, "_swaply_auth_fully_loaded", False
+    ):
+        user.refresh_from_db()
+    return user
+
+
 def invalidate_user_auth_cache(user_id: int | None) -> None:
     """
     Best-effort invalidation for all auth-related user cache layers.
@@ -210,11 +280,13 @@ class SwaplyJWTAuthentication(JWTAuthentication):
 
     def get_user(self, validated_token):
         """
-        Always return a full DB-backed User object.
+        Return a real User model instance.
 
-        Auth cache may store tiny auth metadata, but it is never used as the
-        source of profile data because many views/serializers expect the complete
-        model state.
+        On auth-cache hit we may return a lazy/deferred User instance that only
+        carries minimal auth fields immediately and materializes the full row on
+        first access to non-auth fields. This keeps permissions and ORM
+        compatibility while avoiding an unconditional DB fetch on every
+        protected request.
         """
 
         try:
@@ -239,34 +311,51 @@ class SwaplyJWTAuthentication(JWTAuthentication):
             except Exception:
                 conn_was_none = False
 
-            t_db0 = time.perf_counter()
             cached_state = None
+            cache_get_ms = 0.0
             if _USER_REDIS_TTL_SECONDS > 0:
+                t_cache0 = time.perf_counter()
                 try:
                     cached_state = _parse_cached_auth_state(
                         cache.get(_redis_user_cache_key(int(user_id)))
                     )
                 except Exception:
                     cached_state = None
+                finally:
+                    cache_get_ms = (time.perf_counter() - t_cache0) * 1000.0
 
-            user = User.objects.get(**{self.user_id_field: user_id})
-            t_db1 = time.perf_counter()
+            db_get_ms = 0.0
+            cache_set_ms = 0.0
+            if cached_state is not None and _AUTH_LAZY_USER_ENABLED:
+                if not cached_state["is_active"]:
+                    invalidate_user_auth_cache(int(user_id))
+                    raise InvalidToken("User is inactive")
+                user = _build_lazy_auth_user(User, cached_state)
+            else:
+                t_db0 = time.perf_counter()
+                user = User.objects.get(**{self.user_id_field: user_id})
+                db_get_ms = (time.perf_counter() - t_db0) * 1000.0
 
-            if not user.is_active:
-                invalidate_user_auth_cache(int(user_id))
-                raise InvalidToken("User is inactive")
+                if not user.is_active:
+                    invalidate_user_auth_cache(int(user_id))
+                    raise InvalidToken("User is inactive")
 
-            try:
                 if _USER_REDIS_TTL_SECONDS > 0:
-                    fresh_payload = _serialize_user_for_cache(user)
-                    if cached_state != fresh_payload:
-                        cache.set(
-                            _redis_user_cache_key(int(user_id)),
-                            fresh_payload,
-                            timeout=_USER_REDIS_TTL_SECONDS,
-                        )
-            except Exception:
-                pass
+                    t_cache_set0 = time.perf_counter()
+                    try:
+                        fresh_payload = _serialize_user_for_cache(user)
+                        if cached_state != fresh_payload:
+                            cache.set(
+                                _redis_user_cache_key(int(user_id)),
+                                fresh_payload,
+                                timeout=_USER_REDIS_TTL_SECONDS,
+                            )
+                    except Exception:
+                        pass
+                    finally:
+                        cache_set_ms = (
+                            time.perf_counter() - t_cache_set0
+                        ) * 1000.0
 
             try:
                 base_req = getattr(self, "_timing_request", None)
@@ -275,7 +364,10 @@ class SwaplyJWTAuthentication(JWTAuthentication):
                     if not isinstance(st, dict):
                         st = {}
                     st["auth_blacklist"] = (t_bl1 - t_bl0) * 1000.0
-                    st["auth_user_db"] = (t_db1 - t_db0) * 1000.0
+                    st["auth_user_cache_get"] = cache_get_ms
+                    st["auth_user_db_get"] = db_get_ms
+                    st["auth_user_cache_set"] = cache_set_ms
+                    st["auth_user_db"] = db_get_ms
                     st["db_conn_new"] = 0.1 if conn_was_none else 0.0
                     base_req._server_timing = st
             except Exception:

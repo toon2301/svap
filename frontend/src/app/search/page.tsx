@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useCallback, Suspense, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
+import { BanknotesIcon } from '@heroicons/react/24/outline';
 import { api, endpoints } from '@/lib/api';
 import { useLanguage } from '@/contexts/LanguageContext';
 import ProfileOfferCard from '@/components/dashboard/modules/profile/ProfileOfferCard';
@@ -328,8 +329,9 @@ function SearchResultsContent() {
               />
             </div>
             <div className="min-w-[180px]">
-              <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">
-                💰 {t('search.priceTitle', 'Cena')}
+              <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">
+                <BanknotesIcon className="w-3.5 h-3.5" />
+                {t('search.priceTitle', 'Cena')}
               </label>
               <div className="flex gap-2">
                 <input

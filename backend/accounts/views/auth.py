@@ -598,6 +598,9 @@ def me_view(request):
             {"detail": "Authentication credentials were not provided."},
             status=status.HTTP_401_UNAUTHORIZED,
         )
+    from ..authentication import materialize_auth_user
+
+    user = materialize_auth_user(user)
     serializer = UserProfileSerializer(user, context={"request": request})
     resp = Response(serializer.data)
     # Identity endpoint must never be cached (prevents stale-user / old-account effects behind proxies/CDNs).

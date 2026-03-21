@@ -282,3 +282,18 @@ def test_user_post_save_signal_invalidates_auth_cache_and_me_reads_fresh_db_stat
     assert me_response.status_code == status.HTTP_200_OK
     assert me_response.data["first_name"] == "Signal"
     assert me_response.data["bio"] == "Signal fresh bio"
+
+
+@pytest.mark.django_db
+def test_user_post_delete_signal_invalidates_auth_cache(user):
+    user_id = user.id
+    cache.set(
+        _redis_user_cache_key(user_id),
+        {"id": user_id, "is_active": True, "is_staff": False, "is_superuser": False},
+        timeout=300,
+    )
+    assert cache.get(_redis_user_cache_key(user_id)) is not None
+
+    user.delete()
+
+    assert cache.get(_redis_user_cache_key(user_id)) is None

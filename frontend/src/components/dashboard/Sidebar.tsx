@@ -170,6 +170,8 @@ export default function Sidebar({
             return (
               <button
                 key={item.id}
+                type="button"
+                data-sidebar-nav-item={item.id}
                 onClick={() => handleItemClick(item.id)}
                 className={`w-full flex items-center px-2 py-2 text-sm font-medium rounded-2xl transition-all duration-200 lg:px-2 lg:py-2 xl:px-3 xl:py-2.5 ${
                   isActive
