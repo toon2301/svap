@@ -7,7 +7,38 @@ import string
 import pytest
 
 
+_TEST_ENV_KEYS = {
+    "ALLOWED_HOSTS",
+    "BACKEND_ORIGIN",
+    "CACHE_IGNORE_EXCEPTIONS",
+    "CACHE_KEY_PREFIX",
+    "CACHE_REDIS_MAX_CONNECTIONS",
+    "CACHE_REDIS_URL",
+    "CACHE_SOCKET_CONNECT_TIMEOUT",
+    "CACHE_SOCKET_TIMEOUT",
+    "CELERY_BROKER_URL",
+    "CELERY_REDIS_URL",
+    "CELERY_RESULT_BACKEND",
+    "CHANNELS_REDIS_URL",
+    "DATABASE_URL",
+    "DEBUG",
+    "DEFAULT_FROM_EMAIL",
+    "EMAIL_BACKEND",
+    "EMAIL_HOST",
+    "EMAIL_HOST_PASSWORD",
+    "EMAIL_HOST_USER",
+    "EMAIL_PORT",
+    "EMAIL_USE_TLS",
+    "LOG_TO_STDOUT",
+    "REDIS_URL",
+    "SECRET_KEY",
+}
+
+
 def load_settings_with_env(monkeypatch, env_overrides: dict):
+    for key in _TEST_ENV_KEYS:
+        if key not in env_overrides:
+            monkeypatch.delenv(key, raising=False)
     for k, v in env_overrides.items():
         if v is None:
             monkeypatch.delenv(k, raising=False)
@@ -30,7 +61,7 @@ def test_prod_csrf_and_redis_enforced(monkeypatch):
         {
             "DEBUG": "False",
             "SECRET_KEY": "prod-secret",
-            "ALLOWED_HOSTS": "svaply.com,www.svaply.com,api.svaply.com,stunning-inspiration-svap.up.railway.app",
+            "ALLOWED_HOSTS": "svaply.com,www.svaply.com,api.svaply.com,stunning-inspiration-svap.up.railway.app,exemplary-tranquility-svap.up.railway.app",
             "EMAIL_HOST": "smtp.example.com",
             "EMAIL_PORT": "587",
             "EMAIL_HOST_USER": "smtp-user@example.com",
@@ -44,6 +75,74 @@ def test_prod_csrf_and_redis_enforced(monkeypatch):
     assert mod.SECRET_KEY == "prod-secret"
     assert "redis" in mod.CACHES["default"]["BACKEND"]
     assert mod.CACHES["default"]["KEY_PREFIX"] == "swaply"
+    assert mod.CACHE_REDIS_URL == "redis://localhost:6379/0"
+    assert mod.CACHES["default"]["LOCATION"] == "redis://localhost:6379/0"
+    assert mod.CACHES["default"]["OPTIONS"]["SOCKET_TIMEOUT"] == 0.3
+    assert mod.CACHES["default"]["OPTIONS"]["SOCKET_CONNECT_TIMEOUT"] == 0.2
+    assert mod.CACHES["default"]["OPTIONS"]["IGNORE_EXCEPTIONS"] is True
+
+
+def test_cache_redis_url_takes_precedence_and_applies_cache_options(monkeypatch):
+    mod = load_settings_with_env(
+        monkeypatch,
+        {
+            "DEBUG": "False",
+            "SECRET_KEY": "prod-secret",
+            "ALLOWED_HOSTS": "svaply.com,www.svaply.com,api.svaply.com,stunning-inspiration-svap.up.railway.app,exemplary-tranquility-svap.up.railway.app",
+            "EMAIL_HOST": "smtp.example.com",
+            "EMAIL_PORT": "587",
+            "EMAIL_HOST_USER": "smtp-user@example.com",
+            "EMAIL_HOST_PASSWORD": "smtp-pass",
+            "REDIS_URL": "redis://shared.example.com:6379/0",
+            "CACHE_REDIS_URL": "redis://cache.example.com:6379/1",
+            "CACHE_KEY_PREFIX": "swaply-auth",
+            "CACHE_SOCKET_TIMEOUT": "0.45",
+            "CACHE_SOCKET_CONNECT_TIMEOUT": "0.15",
+            "CACHE_IGNORE_EXCEPTIONS": "0",
+            "CACHE_REDIS_MAX_CONNECTIONS": "123",
+        },
+    )
+    assert mod.CACHE_REDIS_URL == "redis://cache.example.com:6379/1"
+    assert mod.CACHES["default"]["LOCATION"] == "redis://cache.example.com:6379/1"
+    assert mod.CACHES["default"]["KEY_PREFIX"] == "swaply-auth"
+    assert mod.CACHES["default"]["OPTIONS"]["SOCKET_TIMEOUT"] == 0.45
+    assert mod.CACHES["default"]["OPTIONS"]["SOCKET_CONNECT_TIMEOUT"] == 0.15
+    assert mod.CACHES["default"]["OPTIONS"]["IGNORE_EXCEPTIONS"] is False
+    assert (
+        mod.CACHES["default"]["OPTIONS"]["CONNECTION_POOL_KWARGS"]["max_connections"]
+        == 123
+    )
+
+
+def test_channels_redis_url_takes_precedence_over_shared_redis(monkeypatch):
+    mod = load_settings_with_env(
+        monkeypatch,
+        {
+            "DEBUG": "True",
+            "SECRET_KEY": "dev-secret",
+            "REDIS_URL": "redis://shared.example.com:6379/0",
+            "CHANNELS_REDIS_URL": "redis://channels.example.com:6379/2",
+        },
+    )
+    assert mod.CHANNELS_REDIS_URL == "redis://channels.example.com:6379/2"
+    assert mod.CHANNEL_LAYERS["default"]["CONFIG"]["hosts"] == [
+        "redis://channels.example.com:6379/2"
+    ]
+
+
+def test_celery_redis_url_takes_precedence_before_shared_redis(monkeypatch):
+    mod = load_settings_with_env(
+        monkeypatch,
+        {
+            "DEBUG": "True",
+            "SECRET_KEY": "dev-secret",
+            "REDIS_URL": "redis://shared.example.com:6379/0",
+            "CELERY_REDIS_URL": "redis://celery.example.com:6379/3",
+        },
+    )
+    assert mod.CELERY_REDIS_URL == "redis://celery.example.com:6379/3"
+    assert mod.CELERY_BROKER_URL == "redis://celery.example.com:6379/3"
+    assert mod.CELERY_RESULT_BACKEND == "redis://celery.example.com:6379/3"
 
 
 def test_dev_locmem_and_rate_allow_paths(monkeypatch):
@@ -91,7 +190,7 @@ def test_logging_stdout_mode(monkeypatch):
         {
             "DEBUG": "False",
             "SECRET_KEY": "prod",
-            "ALLOWED_HOSTS": "svaply.com,www.svaply.com,api.svaply.com,stunning-inspiration-svap.up.railway.app",
+            "ALLOWED_HOSTS": "svaply.com,www.svaply.com,api.svaply.com,stunning-inspiration-svap.up.railway.app,exemplary-tranquility-svap.up.railway.app",
             "EMAIL_HOST": "smtp.example.com",
             "EMAIL_PORT": "587",
             "EMAIL_HOST_USER": "smtp-user@example.com",
@@ -134,7 +233,7 @@ def test_missing_email_envs_raises_in_prod(monkeypatch):
             {
                 "DEBUG": "False",
                 "SECRET_KEY": "prod",
-                "ALLOWED_HOSTS": "svaply.com,www.svaply.com,api.svaply.com,stunning-inspiration-svap.up.railway.app",
+                "ALLOWED_HOSTS": "svaply.com,www.svaply.com,api.svaply.com,stunning-inspiration-svap.up.railway.app,exemplary-tranquility-svap.up.railway.app",
                 "EMAIL_HOST": "",
                 "EMAIL_PORT": "",
                 "EMAIL_HOST_USER": "",

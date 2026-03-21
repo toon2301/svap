@@ -4,12 +4,13 @@ from .env import os
 ASGI_APPLICATION = "swaply.asgi.application"
 
 REDIS_URL = os.getenv("REDIS_URL", None)
+CHANNELS_REDIS_URL = os.getenv("CHANNELS_REDIS_URL", None) or REDIS_URL
 
-if REDIS_URL:
+if CHANNELS_REDIS_URL:
     CHANNEL_LAYERS = {
         "default": {
             "BACKEND": "channels_redis.core.RedisChannelLayer",
-            "CONFIG": {"hosts": [REDIS_URL]},
+            "CONFIG": {"hosts": [CHANNELS_REDIS_URL]},
         }
     }
 else:

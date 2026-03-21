@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useCallback, Suspense, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { BanknotesIcon } from '@heroicons/react/24/outline';
+import { BanknotesIcon, ArrowsRightLeftIcon } from '@heroicons/react/24/outline';
 import { api, endpoints } from '@/lib/api';
 import { useLanguage } from '@/contexts/LanguageContext';
 import ProfileOfferCard from '@/components/dashboard/modules/profile/ProfileOfferCard';
@@ -294,6 +294,10 @@ function SearchResultsContent() {
           )}
       </div>
 
+      <div className="w-full mb-6">
+        <div className="border-t border-gray-200 dark:border-gray-700" />
+      </div>
+
       {error && (
         <div className="mb-4 error-alert-modern text-sm">{error}</div>
       )}
@@ -367,8 +371,9 @@ function SearchResultsContent() {
               </div>
             </div>
             <div className="min-w-[140px]">
-              <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">
-                🔁 {t('search.offerTypeTitle', 'Typ ponuky')}
+              <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">
+                <ArrowsRightLeftIcon className="w-3.5 h-3.5" />
+                {t('search.offerTypeTitle', 'Typ ponuky')}
               </label>
               <SearchFilterSelect
                 value={offerType}
