@@ -554,6 +554,8 @@ export const endpoints = {
   },
   // Verejné vyhľadávanie (OfferedSkill)
   search: '/auth/search/',
+  // Globálne verejné vyhľadávanie (users + offers)
+  searchGlobal: '/auth/search/global/',
   // Notifikácie
   notifications: {
     list: '/auth/notifications/',

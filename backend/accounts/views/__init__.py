@@ -37,6 +37,7 @@ from .notifications import (
 )
 from .user_reports import user_report_view
 from .search import search_view
+from .search_global import global_search_view
 from .dashboard import (
     dashboard_home_view,
     dashboard_search_view,
@@ -89,4 +90,5 @@ __all__ = [
     "dashboard_settings_view",
     "user_report_view",
     "search_view",
+    "global_search_view",
 ]

@@ -57,7 +57,9 @@ def _skills_list_context(request, offer_ids):
         "request_status_by_offer_id": request_status_by_offer,
     }
 
-SKILLS_LIST_CACHE_TTL_SECONDS = int(os.getenv("SKILLS_LIST_CACHE_TTL_SECONDS", "10") or "10")
+SKILLS_LIST_CACHE_TTL_SECONDS = int(
+    os.getenv("SKILLS_LIST_CACHE_TTL_SECONDS", "60") or "60"
+)
 
 
 def _skills_list_cache_key(user_id: int) -> str:
@@ -67,6 +69,18 @@ def _skills_list_cache_key(user_id: int) -> str:
 def _skills_list_cache_invalidate(user_id: int) -> None:
     try:
         cache.delete(_skills_list_cache_key(user_id))
+    except Exception:
+        pass
+
+
+def _record_skills_timing(request, **entries) -> None:
+    try:
+        base_req = getattr(request, "_request", request)
+        st = getattr(base_req, "_server_timing", None)
+        if not isinstance(st, dict):
+            st = {}
+        st.update(entries)
+        base_req._server_timing = st
     except Exception:
         pass
 
@@ -88,15 +102,12 @@ def skills_list_view(request):
             cached = None
         cache_ms = (perf_counter() - t_cache0) * 1000.0
         if isinstance(cached, list):
-            try:
-                base_req = getattr(request, "_request", request)
-                st = getattr(base_req, "_server_timing", None)
-                if not isinstance(st, dict):
-                    st = {}
-                st["skills_cache"] = cache_ms
-                base_req._server_timing = st
-            except Exception:
-                pass
+            _record_skills_timing(
+                request,
+                skills_cache=cache_ms,
+                skills_cache_get=cache_ms,
+                skills_cache_set=0.0,
+            )
             return Response(cached, status=status.HTTP_200_OK)
 
         t_db0 = perf_counter()
@@ -111,20 +122,19 @@ def skills_list_view(request):
         # Ensure cache payload is plain list (avoid pickling issues with DRF ReturnList).
         data = list(serializer.data)
         t_ser1 = perf_counter()
+        t_cache_set0 = perf_counter()
         try:
             cache.set(_skills_list_cache_key(request.user.id), data, timeout=SKILLS_LIST_CACHE_TTL_SECONDS)
         except Exception:
             pass
-        try:
-            base_req = getattr(request, "_request", request)
-            st = getattr(base_req, "_server_timing", None)
-            if not isinstance(st, dict):
-                st = {}
-            st["skills_qs"] = (t_db1 - t_db0) * 1000.0
-            st["skills_serialize"] = (t_ser1 - t_ser0) * 1000.0
-            base_req._server_timing = st
-        except Exception:
-            pass
+        cache_set_ms = (perf_counter() - t_cache_set0) * 1000.0
+        _record_skills_timing(
+            request,
+            skills_cache_get=cache_ms,
+            skills_cache_set=cache_set_ms,
+            skills_qs=(t_db1 - t_db0) * 1000.0,
+            skills_serialize=(t_ser1 - t_ser0) * 1000.0,
+        )
         return Response(data, status=status.HTTP_200_OK)
 
     elif request.method == "POST":

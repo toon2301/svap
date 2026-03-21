@@ -4,6 +4,7 @@ Testy pre dashboard views
 
 from django.test import TestCase
 from django.db import connection
+from django.core.cache import cache
 from django.urls import reverse
 from django.test.utils import CaptureQueriesContext
 from rest_framework.test import APIClient
@@ -11,7 +12,7 @@ from rest_framework import status
 from django.contrib.auth import get_user_model
 from unittest.mock import patch
 
-from accounts.models import OfferedSkill
+from accounts.models import OfferedSkill, OfferedSkillImage, Review
 
 User = get_user_model()
 
@@ -19,6 +20,7 @@ User = get_user_model()
 class DashboardViewsTestCase(TestCase):
     def setUp(self):
         self.client = APIClient()
+        cache.clear()
         self.user = User.objects.create_user(
             username="testuser",
             email="test@example.com",
@@ -136,6 +138,110 @@ class DashboardViewsTestCase(TestCase):
             10,
             f"Expected optimized search query count, got {len(ctx.captured_queries)}",
         )
+
+    def test_skills_list_cache_hit_avoids_db_queries(self):
+        OfferedSkill.objects.create(
+            user=self.user,
+            category="Skill",
+            subcategory="Sub",
+            description="Description",
+            detailed_description="Details",
+        )
+
+        url = reverse("accounts:skills_list")
+        first = self.client.get(url)
+        self.assertEqual(first.status_code, status.HTTP_200_OK)
+
+        with CaptureQueriesContext(connection) as ctx:
+            second = self.client.get(url)
+
+        self.assertEqual(second.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(second.data), 1)
+        self.assertEqual(
+            len(ctx.captured_queries),
+            0,
+            f"Expected skills cache hit without SQL queries, got {len(ctx.captured_queries)}",
+        )
+
+    def test_skills_list_cache_invalidates_on_direct_skill_save(self):
+        skill = OfferedSkill.objects.create(
+            user=self.user,
+            category="Old Skill",
+            subcategory="Sub",
+            description="Description",
+            detailed_description="Details",
+        )
+        url = reverse("accounts:skills_list")
+        first = self.client.get(url)
+        self.assertEqual(first.status_code, status.HTTP_200_OK)
+        self.assertEqual(first.data[0]["category"], "Old Skill")
+
+        skill.category = "Updated Skill"
+        skill.save(update_fields=["category"])
+
+        second = self.client.get(url)
+        self.assertEqual(second.status_code, status.HTTP_200_OK)
+        self.assertEqual(second.data[0]["category"], "Updated Skill")
+
+    def test_skills_list_cache_invalidates_on_review_change(self):
+        skill = OfferedSkill.objects.create(
+            user=self.user,
+            category="Rated Skill",
+            subcategory="Sub",
+            description="Description",
+            detailed_description="Details",
+        )
+        reviewer = User.objects.create_user(
+            username="reviewer",
+            email="reviewer@example.com",
+            password="testpass123",
+            first_name="Review",
+            last_name="User",
+            user_type="individual",
+        )
+        url = reverse("accounts:skills_list")
+
+        first = self.client.get(url)
+        self.assertEqual(first.status_code, status.HTTP_200_OK)
+        self.assertEqual(first.data[0]["reviews_count"], 0)
+        self.assertIsNone(first.data[0]["average_rating"])
+
+        Review.objects.create(
+            reviewer=reviewer,
+            offer=skill,
+            rating="4.5",
+            text="Great collaboration",
+        )
+
+        second = self.client.get(url)
+        self.assertEqual(second.status_code, status.HTTP_200_OK)
+        self.assertEqual(second.data[0]["reviews_count"], 1)
+        self.assertEqual(second.data[0]["average_rating"], 4.5)
+
+    def test_skills_list_cache_invalidates_on_image_change(self):
+        skill = OfferedSkill.objects.create(
+            user=self.user,
+            category="Visual Skill",
+            subcategory="Sub",
+            description="Description",
+            detailed_description="Details",
+        )
+        url = reverse("accounts:skills_list")
+
+        first = self.client.get(url)
+        self.assertEqual(first.status_code, status.HTTP_200_OK)
+        self.assertEqual(first.data[0]["images"], [])
+
+        OfferedSkillImage.objects.create(
+            skill=skill,
+            order=0,
+            status=OfferedSkillImage.Status.APPROVED,
+            approved_key="offers/test-image.jpg",
+        )
+
+        second = self.client.get(url)
+        self.assertEqual(second.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(second.data[0]["images"]), 1)
 
     def test_dashboard_favorites_get_success(self):
         """Test získania obľúbených"""

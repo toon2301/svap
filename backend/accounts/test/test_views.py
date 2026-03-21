@@ -4,6 +4,7 @@ Testy pre accounts views
 
 import pytest
 import json
+from django.core.cache import cache
 from django.test import TestCase
 from django.db import connection
 from django.contrib.auth import get_user_model
@@ -16,6 +17,7 @@ from factory import Faker, SubFactory
 from factory.django import DjangoModelFactory
 from unittest.mock import patch
 
+from accounts.authentication import _redis_user_cache_key, _serialize_user_for_cache
 from accounts.models import UserType
 
 User = get_user_model()
@@ -122,6 +124,7 @@ class TestAuthViews(APITestCase):
         url = reverse("accounts:me")
         refresh = RefreshToken.for_user(self.user)
         self.client.cookies["access_token"] = str(refresh.access_token)
+        cache.clear()
 
         with CaptureQueriesContext(connection) as ctx:
             response = self.client.get(url)
@@ -131,6 +134,28 @@ class TestAuthViews(APITestCase):
             len(ctx.captured_queries),
             2,
             f"Expected auth user lookup plus completed count, got {len(ctx.captured_queries)} queries",
+        )
+
+    def test_me_view_uses_single_post_auth_query_when_auth_cache_is_warm(self):
+        url = reverse("accounts:me")
+        refresh = RefreshToken.for_user(self.user)
+        self.client.cookies["access_token"] = str(refresh.access_token)
+        cache.clear()
+        cache.set(
+            _redis_user_cache_key(self.user.id),
+            _serialize_user_for_cache(self.user),
+            timeout=300,
+        )
+
+        with CaptureQueriesContext(connection) as ctx:
+            response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["completed_cooperations_count"], 0)
+        self.assertEqual(
+            len(ctx.captured_queries),
+            1,
+            f"Expected a single annotated /me query on warm auth cache, got {len(ctx.captured_queries)} queries",
         )
 
     def test_me_view_unauthenticated(self):

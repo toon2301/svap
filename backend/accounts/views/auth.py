@@ -13,6 +13,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from django.contrib.auth import get_user_model
 from django.db import transaction
+from django.db.models import Count, F, Q
 from django.core.cache import cache
 import logging
 import os
@@ -37,7 +38,7 @@ from swaply.audit_logger import (
     audit_api_access,
 )
 
-from ..models import UserProfile
+from ..models import UserProfile, SkillRequestStatus
 from ..serializers import (
     UserRegistrationSerializer,
     UserLoginSerializer,
@@ -53,6 +54,31 @@ logger = logging.getLogger(__name__)
 LOGIN_FAILURE_MAX_ATTEMPTS = 5
 LOGIN_FAILURE_WINDOW_MINUTES = 15
 ACCOUNT_LOCKOUT_MINUTES = 15
+
+
+def _me_user_queryset():
+    """
+    Load the full current user row and completed cooperation counters in one query.
+    """
+    return User.objects.annotate(
+        _completed_sent_count=Count(
+            "sent_skill_requests",
+            filter=Q(
+                sent_skill_requests__status=SkillRequestStatus.COMPLETED,
+            ),
+            distinct=True,
+        ),
+        _completed_received_count=Count(
+            "received_skill_requests",
+            filter=Q(
+                received_skill_requests__status=SkillRequestStatus.COMPLETED,
+            ),
+            distinct=True,
+        ),
+    ).annotate(
+        _completed_cooperations_count=F("_completed_sent_count")
+        + F("_completed_received_count")
+    )
 
 
 def _auth_cookie_debug_enabled() -> bool:
@@ -598,9 +624,7 @@ def me_view(request):
             {"detail": "Authentication credentials were not provided."},
             status=status.HTTP_401_UNAUTHORIZED,
         )
-    from ..authentication import materialize_auth_user
-
-    user = materialize_auth_user(user)
+    user = _me_user_queryset().get(pk=user.pk)
     serializer = UserProfileSerializer(user, context={"request": request})
     resp = Response(serializer.data)
     # Identity endpoint must never be cached (prevents stale-user / old-account effects behind proxies/CDNs).

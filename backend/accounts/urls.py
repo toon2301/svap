@@ -56,6 +56,8 @@ urlpatterns = [
     path("profile/", views.update_profile_view, name="update_profile"),
     # Isolated public search (new)
     path("search/", views.search_view, name="search"),
+    # Global public search (new, isolated)
+    path("search/global/", views.global_search_view, name="search_global"),
     # Draft endpoints - pridáno bez narušenia existujúcich URL patterns
     path("draft/", profile.save_draft_view, name="save_draft"),
     path("draft/<str:draft_type>/", profile.get_draft_view, name="get_draft"),
