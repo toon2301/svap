@@ -145,6 +145,116 @@ class DashboardViewsTestCase(TestCase):
             f"Expected optimized search query count, got {len(ctx.captured_queries)}",
         )
 
+    def test_dashboard_search_only_my_location_filters_skills_before_pagination(self):
+        self.user.location = "Bratislava"
+        self.user.district = "Bratislava I"
+        self.user.save(update_fields=["location", "district"])
+
+        local_owner = User.objects.create_user(
+            username="localowner",
+            email="localowner@example.com",
+            password="testpass123",
+            first_name="Local",
+            last_name="Owner",
+            user_type="individual",
+            is_public=True,
+            location="Bratislava",
+            district="Bratislava I",
+            is_verified=True,
+        )
+        remote_owner = User.objects.create_user(
+            username="remoteowner",
+            email="remoteowner@example.com",
+            password="testpass123",
+            first_name="Remote",
+            last_name="Owner",
+            user_type="individual",
+            is_public=True,
+            location="Kosice",
+            district="Kosice I",
+            is_verified=True,
+        )
+
+        for index in range(2):
+            OfferedSkill.objects.create(
+                user=local_owner,
+                category=f"Local {index}",
+                subcategory="Sub",
+                description="Description",
+                detailed_description="Details",
+                location="Bratislava",
+                district="Bratislava I",
+                is_hidden=False,
+                is_seeking=False,
+            )
+
+        for index in range(6):
+            OfferedSkill.objects.create(
+                user=remote_owner,
+                category=f"Remote {index}",
+                subcategory="Sub",
+                description="Description",
+                detailed_description="Details",
+                location="Kosice",
+                district="Kosice I",
+                is_hidden=False,
+                is_seeking=False,
+            )
+
+        url = reverse("accounts:dashboard_search")
+        response = self.client.get(
+            url,
+            {"only_my_location": "1", "per_page": "5", "page": "1"},
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data["skills"]), 2)
+        self.assertTrue(
+            all(skill["district"] == "Bratislava I" for skill in response.data["skills"])
+        )
+
+    def test_dashboard_search_exposes_server_timing_breakdown(self):
+        owner = User.objects.create_user(
+            username="timingowner",
+            email="timingowner@example.com",
+            password="testpass123",
+            first_name="Timing",
+            last_name="Owner",
+            user_type="individual",
+            is_public=True,
+            location="Bratislava",
+            district="Bratislava I",
+        )
+        OfferedSkill.objects.create(
+            user=owner,
+            category="Skill",
+            subcategory="Sub",
+            description="Description",
+            detailed_description="Details",
+            location="Bratislava",
+            district="Bratislava I",
+            is_hidden=False,
+            is_seeking=False,
+        )
+
+        self.user.location = "Bratislava"
+        self.user.district = "Bratislava I"
+        self.user.save(update_fields=["location", "district"])
+
+        url = reverse("accounts:dashboard_search")
+        response = self.client.get(
+            url,
+            {"only_my_location": "1", "per_page": "5", "page": "1"},
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        server_timing = response.headers.get("Server-Timing", "")
+        self.assertIn("dashboard_search_skills_count", server_timing)
+        self.assertIn("dashboard_search_skills_page_ids", server_timing)
+        self.assertIn("dashboard_search_skills_page_load", server_timing)
+        self.assertIn("dashboard_search_users_count", server_timing)
+        self.assertIn("dashboard_search_users_page", server_timing)
+
     def test_skills_list_cache_hit_avoids_db_queries(self):
         OfferedSkill.objects.create(
             user=self.user,

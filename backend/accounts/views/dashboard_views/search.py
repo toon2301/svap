@@ -1,8 +1,9 @@
 from decimal import Decimal, InvalidOperation
+from time import perf_counter
 
 from django.contrib.auth import get_user_model
 from django.core.paginator import Paginator
-from django.db.models import Q, Case, When, IntegerField
+from django.db.models import Case, IntegerField, Q, When
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
@@ -14,37 +15,37 @@ from ...models import OfferedSkill
 from ...serializers import OfferedSkillSerializer
 from .smart_search import SMART_KEYWORD_GROUPS
 from .utils import (
-    _remove_diacritics,
     _build_accent_insensitive_pattern,
+    _remove_diacritics,
     _sanitize_search_term,
 )
 
 User = get_user_model()
 
 
-# Index pre smart search – presunuté z dashboard.py bez zmeny správania
+# Index pre smart search - presunute z dashboard.py bez zmeny spravania
 SMART_KEYWORD_INDEX = {}
 for group in SMART_KEYWORD_GROUPS:
     lowered = [w.lower() for w in group]
     for word in lowered:
-        # Mapuj aj diakritické aj bezdiakritické verzie na tú istú skupinu
+        # Mapuj aj diakriticke aj bezdiakriticke verzie na tu istu skupinu.
         SMART_KEYWORD_INDEX[word] = lowered
         no_accents = _remove_diacritics(word)
         SMART_KEYWORD_INDEX[no_accents] = lowered
 
 
-def _serialize_search_skills_page(request, skills_page):
+def _serialize_search_skills_page(request, page_skill_ids):
     """
     Serialize only the current page with the optimized skills queryset/context.
 
-    This preserves the existing paginator behavior while avoiding per-skill
-    queries for images, reviews, and request status fields.
+    The page is first sliced on plain skill ids and then loaded once via the
+    optimized queryset, which avoids fetching the full page of skills twice.
     """
-    page_skill_ids = [skill.id for skill in skills_page.object_list]
+    page_skill_ids = list(page_skill_ids)
     if not page_skill_ids:
         return []
 
-    from ..skills import _skills_list_queryset, _skills_list_context
+    from ..skills import _skills_list_context, _skills_list_queryset
 
     preserved_order = Case(
         *[When(pk=pk, then=position) for position, pk in enumerate(page_skill_ids)],
@@ -65,21 +66,47 @@ def _serialize_search_skills_page(request, skills_page):
     ).data
 
 
+def _record_dashboard_search_timing(request, **entries) -> None:
+    try:
+        base_req = getattr(request, "_request", request)
+        st = getattr(base_req, "_server_timing", None)
+        if not isinstance(st, dict):
+            st = {}
+        st.update(entries)
+        base_req._server_timing = st
+    except Exception:
+        pass
+
+
+def _build_only_my_location_filters(profile_user):
+    user_loc_q = Q()
+    skill_loc_q = Q()
+
+    if getattr(profile_user, "location", None):
+        user_loc_q |= Q(location__icontains=profile_user.location)
+        skill_loc_q |= Q(location__icontains=profile_user.location) | Q(
+            user__location__icontains=profile_user.location
+        )
+    if getattr(profile_user, "district", None):
+        user_loc_q |= Q(district__icontains=profile_user.district)
+        skill_loc_q |= Q(district__icontains=profile_user.district) | Q(
+            user__district__icontains=profile_user.district
+        )
+
+    return user_loc_q, skill_loc_q
+
+
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 @api_rate_limit
 def dashboard_search_view(request):
-    """Dashboard search - vyhľadávanie zručností a používateľov"""
-    # Základné parametre vyhľadávania
+    """Dashboard search - vyhladavanie zrucnosti a pouzivatelov."""
     raw_query = (request.GET.get("q") or "").strip()
-    raw_query = raw_query[:100]  # max 100 znakov
+    raw_query = raw_query[:100]
     raw_location = (request.GET.get("location") or "").strip()
     raw_district = (request.GET.get("district") or "").strip()
 
-    # Pokročilé filtre pre ponuky
-    offer_type = (
-        (request.GET.get("offer_type") or "").strip().lower()
-    )  # 'offer' | 'seeking' | ''
+    offer_type = ((request.GET.get("offer_type") or "").strip().lower())
     only_my_location = (request.GET.get("only_my_location") or "").strip().lower() in (
         "1",
         "true",
@@ -105,13 +132,8 @@ def dashboard_search_view(request):
 
     price_min_raw = (request.GET.get("price_min") or "").strip()
     price_max_raw = (request.GET.get("price_max") or "").strip()
+    country_filter = ((request.GET.get("country") or "").strip().upper())
 
-    # Filter podľa krajiny
-    country_filter = (
-        (request.GET.get("country") or "").strip().upper()
-    )  # 'SK' | 'CZ' | 'PL' | etc.
-
-    # Paginácia – bezpečné limity
     try:
         page = int(request.GET.get("page", 1))
     except (TypeError, ValueError):
@@ -126,30 +148,25 @@ def dashboard_search_view(request):
         per_page = 20
     per_page = min(per_page, 50)
 
-    # Rozdelenie query na jednotlivé výrazy (napr. "auto upratovanie")
     base_terms = [term for term in raw_query.replace(",", " ").split() if term]
 
-    # Location parametre môžu dopĺňať dotaz (napr. ak by bol samostatný input)
     location_terms = []
     if raw_district:
         location_terms.append(raw_district)
     if raw_location and raw_location not in location_terms:
         location_terms.append(raw_location)
 
-    # Základné vyhľadávacie termíny pre zručnosti – query + prípadná lokalita
     skill_terms = set()
     for term in base_terms + location_terms:
         normalized = term.strip()
         if not normalized:
             continue
         skill_terms.add(normalized)
-        # Smart search – ak term zodpovedá niektorej synonymickej skupine, pridaj aj jej členov
         group = SMART_KEYWORD_INDEX.get(normalized.lower())
         if group:
-            for g in group:
-                skill_terms.add(g)
+            for group_term in group:
+                skill_terms.add(group_term)
 
-    # Termíny pre používateľov – meno / username / lokalita
     user_terms = set()
     for term in base_terms + location_terms:
         normalized = term.strip()
@@ -157,23 +174,20 @@ def dashboard_search_view(request):
             user_terms.add(normalized)
 
     # =========================
-    #  Vyhľadávanie v zručnostiach (OfferedSkill)
+    # Skills search
     # =========================
     skills_qs = OfferedSkill.objects.select_related("user").filter(user__is_public=True)
-    # Vylúčiť vlastné ponuky používateľa z výsledkov vyhľadávania
     skills_qs = skills_qs.exclude(user=request.user)
-    # Vylúčiť skryté karty
     skills_qs = skills_qs.filter(is_hidden=False)
 
     if skill_terms:
         skill_query = Q()
         for term in skill_terms:
             pattern = _build_accent_insensitive_pattern(_sanitize_search_term(term))
-            # Hľadanie podľa kategórie, podkategórie, tagov a lokality (miesto + okres)
             skill_query |= (
                 Q(category__iregex=pattern)
                 | Q(subcategory__iregex=pattern)
-                | Q(tags__icontains=term)  # JSON pole – ponecháme icontains
+                | Q(tags__icontains=term)
                 | Q(location__iregex=pattern)
                 | Q(district__iregex=pattern)
                 | Q(user__location__iregex=pattern)
@@ -181,23 +195,19 @@ def dashboard_search_view(request):
             )
         skills_qs = skills_qs.filter(skill_query)
 
-    # Filter: typ ponuky (PONÚKAM / HĽADÁM)
     if offer_type == "offer":
         skills_qs = skills_qs.filter(is_seeking=False)
     elif offer_type == "seeking":
         skills_qs = skills_qs.filter(is_seeking=True)
 
-    # Filter: krajina používateľa
-    # POZNÁMKA: Country filter je menej prísny - aplikuje sa len ak by vracal výsledky
-    # Ak country filter vracia prázdne výsledky, preskočí sa (nefiltruje sa)
     if country_filter:
         country_location_mapping = {
             "SK": ["slovakia", "slovensko", "slovak"],
-            "CZ": ["czech", "česko", "česká", "ceska"],
-            "PL": ["poland", "poľsko", "polsko", "polish"],
-            "HU": ["hungary", "maďarsko", "madarska", "hungarian"],
+            "CZ": ["czech", "\u010desko", "\u010desk\u00e1", "cesko", "ceska"],
+            "PL": ["poland", "po\u013esko", "polsko", "polish"],
+            "HU": ["hungary", "ma\u010farsko", "madarsko", "hungarian"],
             "DE": ["germany", "nemecko", "deutschland", "german"],
-            "AT": ["austria", "rakúsko", "rakusko", "österreich"],
+            "AT": ["austria", "rak\u00fasko", "rakusko", "\u00f6sterreich", "osterreich"],
         }
 
         if country_filter in country_location_mapping:
@@ -208,15 +218,10 @@ def dashboard_search_view(request):
                     user__district__icontains=term
                 )
 
-            # Skontroluj, či country filter vracia nejaké výsledky
-            # Ak nie, neaplikuj ho (nefiltruj podľa krajiny)
             test_qs = skills_qs.filter(country_query)
             if test_qs.exists():
-                # Country filter vracia výsledky, aplikuj ho
                 skills_qs = skills_qs.filter(country_query)
-            # Ak country filter nevracia výsledky, preskoč ho (nefiltruj)
 
-    # Filter: cena od / do
     price_min = None
     price_max = None
     if price_min_raw:
@@ -235,7 +240,11 @@ def dashboard_search_view(request):
     if price_max is not None:
         skills_qs = skills_qs.filter(price_from__lte=price_max)
 
-    # Uprednostniť overených používateľov, novšie a relevantnejšie ponuky
+    if only_my_location:
+        _, skill_loc_q = _build_only_my_location_filters(request.user)
+        if skill_loc_q:
+            skills_qs = skills_qs.filter(skill_loc_q)
+
     if raw_query:
         skills_qs = skills_qs.annotate(
             relevance=Case(
@@ -251,13 +260,23 @@ def dashboard_search_view(request):
     else:
         skills_qs = skills_qs.order_by("-user__is_verified", "-created_at")
 
-    skills_paginator = Paginator(skills_qs, per_page)
+    t_sk_count0 = perf_counter()
+    skills_paginator = Paginator(skills_qs.values_list("id", flat=True), per_page)
+    total_skills = skills_paginator.count
+    total_pages_skills = skills_paginator.num_pages
+    t_sk_count1 = perf_counter()
+
+    t_sk_page0 = perf_counter()
     skills_page = skills_paginator.get_page(page)
-    skills_data = _serialize_search_skills_page(request, skills_page)
+    page_skill_ids = list(skills_page.object_list)
+    t_sk_page1 = perf_counter()
+
+    t_sk_load0 = perf_counter()
+    skills_data = _serialize_search_skills_page(request, page_skill_ids)
+    t_sk_load1 = perf_counter()
 
     # =========================
-    #  Vyhľadávanie v používateľoch (User)
-    #  (dočasne neobmedzujeme na is_public, aby sa dali nájsť všetci testovací používatelia)
+    # Users search
     # =========================
     users_qs = User.objects.filter(is_active=True)
 
@@ -265,7 +284,6 @@ def dashboard_search_view(request):
         user_query = Q()
         for term in user_terms:
             pattern = _build_accent_insensitive_pattern(_sanitize_search_term(term))
-            # Hľadanie podľa mena, username a lokality (bez emailu / job title / firmy)
             user_query |= (
                 Q(first_name__iregex=pattern)
                 | Q(last_name__iregex=pattern)
@@ -275,17 +293,14 @@ def dashboard_search_view(request):
             )
         users_qs = users_qs.filter(user_query)
 
-    # Filter: krajina používateľa
-    # POZNÁMKA: Country filter je menej prísny - aplikuje sa len ak by vracal výsledky
-    # Ak country filter vracia prázdne výsledky, preskočí sa (nefiltruje sa)
     if country_filter:
         country_location_mapping = {
             "SK": ["slovakia", "slovensko", "slovak"],
-            "CZ": ["czech", "česko", "česká", "ceska"],
-            "PL": ["poland", "poľsko", "polsko", "polish"],
-            "HU": ["hungary", "maďarsko", "madarska", "hungarian"],
+            "CZ": ["czech", "\u010desko", "\u010desk\u00e1", "cesko", "ceska"],
+            "PL": ["poland", "po\u013esko", "polsko", "polish"],
+            "HU": ["hungary", "ma\u010farsko", "madarsko", "hungarian"],
             "DE": ["germany", "nemecko", "deutschland", "german"],
-            "AT": ["austria", "rakúsko", "rakusko", "österreich"],
+            "AT": ["austria", "rak\u00fasko", "rakusko", "\u00f6sterreich", "osterreich"],
         }
 
         if country_filter in country_location_mapping:
@@ -296,39 +311,15 @@ def dashboard_search_view(request):
                     district__icontains=term
                 )
 
-            # Skontroluj, či country filter vracia nejaké výsledky
-            # Ak nie, neaplikuj ho (nefiltruj podľa krajiny)
             test_qs = users_qs.filter(user_country_query)
             if test_qs.exists():
-                # Country filter vracia výsledky, aplikuj ho
                 users_qs = users_qs.filter(user_country_query)
-            # Ak country filter nevracia výsledky, preskoč ho (nefiltruj)
 
-    # Filter: len v mojej lokalite (podľa profilu)
     if only_my_location:
-        profile_loc_q = Q()
-        profile_user = request.user
-        if getattr(profile_user, "location", None):
-            profile_loc_q |= Q(location__icontains=profile_user.location)
-        if getattr(profile_user, "district", None):
-            profile_loc_q |= Q(district__icontains=profile_user.district)
+        user_loc_q, _ = _build_only_my_location_filters(request.user)
+        if user_loc_q:
+            users_qs = users_qs.filter(user_loc_q)
 
-        if profile_loc_q:
-            users_qs = users_qs.filter(profile_loc_q)
-
-        skill_loc_q = Q()
-        if getattr(profile_user, "location", None):
-            skill_loc_q |= Q(location__icontains=profile_user.location) | Q(
-                user__location__icontains=profile_user.location
-            )
-        if getattr(profile_user, "district", None):
-            skill_loc_q |= Q(district__icontains=profile_user.district) | Q(
-                user__district__icontains=profile_user.district
-            )
-        if skill_loc_q:
-            skills_qs = skills_qs.filter(skill_loc_q)
-
-    # Overení, aktívnejší a relevantnejší používatelia vyššie
     if raw_query:
         users_qs = users_qs.annotate(
             relevance=Case(
@@ -344,20 +335,23 @@ def dashboard_search_view(request):
     else:
         users_qs = users_qs.order_by("-is_verified", "-updated_at")
 
+    t_users_count0 = perf_counter()
     users_paginator = Paginator(users_qs, per_page)
-    users_page = users_paginator.get_page(page)
+    total_users = users_paginator.count
+    total_pages_users = users_paginator.num_pages
+    t_users_count1 = perf_counter()
 
-    # Serializácia používateľov – jednoduché, bezpečné pole
+    t_users_page0 = perf_counter()
+    users_page = users_paginator.get_page(page)
+    t_users_page1 = perf_counter()
+
     users_data = []
     for user in users_page.object_list:
         avatar_url = None
         try:
             if getattr(user, "avatar", None) and hasattr(user.avatar, "url"):
                 url = user.avatar.url
-                if request:
-                    avatar_url = request.build_absolute_uri(url)
-                else:
-                    avatar_url = url
+                avatar_url = request.build_absolute_uri(url) if request else url
         except Exception:
             avatar_url = None
 
@@ -373,17 +367,27 @@ def dashboard_search_view(request):
             }
         )
 
-    results = {
-        "skills": skills_data,
-        "users": users_data,
-        "pagination": {
-            "page": page,
-            "per_page": per_page,
-            "total_skills": skills_paginator.count,
-            "total_users": users_paginator.count,
-            "total_pages_skills": skills_paginator.num_pages,
-            "total_pages_users": users_paginator.num_pages,
-        },
-    }
+    _record_dashboard_search_timing(
+        request,
+        dashboard_search_skills_count=(t_sk_count1 - t_sk_count0) * 1000.0,
+        dashboard_search_skills_page_ids=(t_sk_page1 - t_sk_page0) * 1000.0,
+        dashboard_search_skills_page_load=(t_sk_load1 - t_sk_load0) * 1000.0,
+        dashboard_search_users_count=(t_users_count1 - t_users_count0) * 1000.0,
+        dashboard_search_users_page=(t_users_page1 - t_users_page0) * 1000.0,
+    )
 
-    return Response(results, status=status.HTTP_200_OK)
+    return Response(
+        {
+            "skills": skills_data,
+            "users": users_data,
+            "pagination": {
+                "page": page,
+                "per_page": per_page,
+                "total_skills": total_skills,
+                "total_users": total_users,
+                "total_pages_skills": total_pages_skills,
+                "total_pages_users": total_pages_users,
+            },
+        },
+        status=status.HTTP_200_OK,
+    )
