@@ -24,6 +24,23 @@ from .utils import (
 User = get_user_model()
 
 
+class _CountedPaginator(Paginator):
+    """
+    Paginator with externally supplied total count.
+
+    This lets us keep Django's page-number semantics while executing the skills
+    count on a lighter queryset than the ordered page queryset.
+    """
+
+    def __init__(self, object_list, per_page, total_count, *args, **kwargs):
+        self._provided_count = max(int(total_count or 0), 0)
+        super().__init__(object_list, per_page, *args, **kwargs)
+
+    @property
+    def count(self):
+        return self._provided_count
+
+
 # Index pre smart search - presunute z dashboard.py bez zmeny spravania
 SMART_KEYWORD_INDEX = {}
 for group in SMART_KEYWORD_GROUPS:
@@ -271,8 +288,10 @@ def dashboard_search_view(request):
     if only_my_location and skill_loc_q:
         skills_qs = skills_qs.filter(skill_loc_q)
 
+    skills_filtered_qs = skills_qs
+
     if raw_query:
-        skills_qs = skills_qs.annotate(
+        skills_page_qs = skills_filtered_qs.annotate(
             relevance=Case(
                 When(category__icontains=raw_query, then=3),
                 When(subcategory__icontains=raw_query, then=3),
@@ -284,13 +303,24 @@ def dashboard_search_view(request):
             )
         ).order_by("-relevance", "-user__is_verified", "-created_at")
     else:
-        skills_qs = skills_qs.order_by("-user__is_verified", "-created_at")
+        skills_page_qs = skills_filtered_qs.order_by("-user__is_verified", "-created_at")
 
-    t_sk_count0 = perf_counter()
-    skills_paginator = Paginator(skills_qs.values_list("id", flat=True), per_page)
-    total_skills = skills_paginator.count
+    t_sk_count_base0 = perf_counter()
+    skills_count_qs = skills_filtered_qs.order_by()
+    t_sk_count_base1 = perf_counter()
+
+    t_sk_count_exec0 = perf_counter()
+    total_skills = skills_count_qs.count()
+    t_sk_count_exec1 = perf_counter()
+
+    t_sk_count0 = t_sk_count_base0
+    skills_paginator = _CountedPaginator(
+        skills_page_qs.values_list("id", flat=True),
+        per_page,
+        total_skills,
+    )
     total_pages_skills = skills_paginator.num_pages
-    t_sk_count1 = perf_counter()
+    t_sk_count1 = t_sk_count_exec1
 
     t_sk_page0 = perf_counter()
     skills_page = skills_paginator.get_page(page)
@@ -401,6 +431,14 @@ def dashboard_search_view(request):
 
     _record_dashboard_search_timing(
         request,
+        dashboard_search_skills_count_base=(
+            t_sk_count_base1 - t_sk_count_base0
+        )
+        * 1000.0,
+        dashboard_search_skills_count_exec=(
+            t_sk_count_exec1 - t_sk_count_exec0
+        )
+        * 1000.0,
         dashboard_search_skills_count=(t_sk_count1 - t_sk_count0) * 1000.0,
         dashboard_search_skills_page_ids=(t_sk_page1 - t_sk_page0) * 1000.0,
         dashboard_search_skills_page_load=(t_sk_load1 - t_sk_load0) * 1000.0,

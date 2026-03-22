@@ -183,7 +183,12 @@ function SearchResultsContent() {
       });
 
       const list = Array.isArray(data?.results) ? data.results : [];
-      setResults(list.map((s: Record<string, unknown>) => mapSearchResultToOffer(s)));
+      const mapped = list.map((s: Record<string, unknown>) => mapSearchResultToOffer(s));
+      const currentUserId = user?.id ?? null;
+      const filtered = currentUserId != null
+        ? mapped.filter((o) => (o as Offer & { user_id?: number }).user_id !== currentUserId)
+        : mapped;
+      setResults(filtered);
       setTotal(Number(data?.total) ?? 0);
       setPage(Number(data?.page) ?? 1);
       setTotalPages(Number(data?.total_pages) ?? 0);
@@ -199,7 +204,7 @@ function SearchResultsContent() {
     } finally {
       setLoading(false);
     }
-  }, [q, sort, page, minRating, priceMin, priceMax, offerType]);
+  }, [q, sort, page, minRating, priceMin, priceMax, offerType, user?.id]);
 
   useEffect(() => {
     if (tab !== 'offers') return;
@@ -275,11 +280,15 @@ function SearchResultsContent() {
       const { data } = await api.get(endpoints.searchGlobal, { params });
       const users = Array.isArray(data?.users) ? (data.users as GlobalSearchUser[]) : [];
       const offersRaw = Array.isArray(data?.offers) ? (data.offers as Record<string, unknown>[]) : [];
-      const offers = offersRaw.map((s) => mapSearchResultToOffer(s));
+      const offersMapped = offersRaw.map((s) => mapSearchResultToOffer(s));
+      const currentUserId = user?.id ?? null;
+      const offersFiltered = currentUserId != null
+        ? offersMapped.filter((o) => (o as Offer & { user_id?: number }).user_id !== currentUserId)
+        : offersMapped;
       setGlobalUsers(users);
-      setGlobalOffers(offers);
+      setGlobalOffers(offersFiltered);
       setGlobalUsersCount(Number(data?.users_count) ?? users.length);
-      setGlobalOffersCount(Number(data?.offers_count) ?? offers.length);
+      setGlobalOffersCount(Number(data?.offers_count) ?? offersFiltered.length);
       setGlobalUsersTotalPages(Number(data?.users_total_pages) ?? 0);
     } catch (err: unknown) {
       setGlobalUsers([]);
@@ -294,7 +303,7 @@ function SearchResultsContent() {
     } finally {
       setGlobalLoading(false);
     }
-  }, [q, tab, parsedUsersPage]);
+  }, [q, tab, parsedUsersPage, user?.id]);
 
   useEffect(() => {
     if (tab === 'offers') return;

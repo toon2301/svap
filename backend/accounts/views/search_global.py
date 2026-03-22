@@ -205,6 +205,8 @@ def global_search_view(request):
                 )
             )
         ).order_by("-relevance_score", "-created_at")
+        if request.user and request.user.is_authenticated:
+            offers_qs = offers_qs.exclude(user_id=request.user.id)
         offers_count = offers_qs.count()
         offers_total_pages = max(1, (offers_count + offers_page_size - 1) // offers_page_size)
         op = min(offers_page, offers_total_pages)

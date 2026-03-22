@@ -215,6 +215,7 @@ class DashboardViewsTestCase(TestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data["skills"]), 2)
+        self.assertEqual(response.data["pagination"]["total_skills"], 2)
         self.assertTrue(
             all(skill["district"] == "Bratislava I" for skill in response.data["skills"])
         )
@@ -255,6 +256,8 @@ class DashboardViewsTestCase(TestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         server_timing = response.headers.get("Server-Timing", "")
+        self.assertIn("dashboard_search_skills_count_base", server_timing)
+        self.assertIn("dashboard_search_skills_count_exec", server_timing)
         self.assertIn("dashboard_search_skills_count", server_timing)
         self.assertIn("dashboard_search_skills_page_ids", server_timing)
         self.assertIn("dashboard_search_skills_page_load", server_timing)

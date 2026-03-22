@@ -45,6 +45,8 @@ def search_view(request):
         OfferedSkill.objects.filter(is_hidden=False)
         .select_related("user")
     )
+    if request.user and request.user.is_authenticated:
+        qs = qs.exclude(user_id=request.user.id)
 
     # q (max 100)
     q = (request.query_params.get("q") or "").strip()
