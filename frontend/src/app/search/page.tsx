@@ -14,6 +14,8 @@ import { mapSearchResultToOffer } from '@/components/search/mapSearchResultToOff
 import { SearchUsersResults, type GlobalSearchUser } from '@/components/search/SearchUsersResults';
 import { SearchOffersTab } from '@/components/search/SearchOffersTab';
 
+type SearchOffer = Offer & { user_id?: number };
+
 const SORT_OPTIONS = [
   { value: 'newest', labelKey: 'search.sortNewest' },
   { value: 'rating_desc', labelKey: 'search.sortRatingDesc' },
@@ -183,10 +185,12 @@ function SearchResultsContent() {
       });
 
       const list = Array.isArray(data?.results) ? data.results : [];
-      const mapped = list.map((s: Record<string, unknown>) => mapSearchResultToOffer(s));
+      const mapped: SearchOffer[] = list.map((s: Record<string, unknown>) =>
+        mapSearchResultToOffer(s) as SearchOffer,
+      );
       const currentUserId = user?.id ?? null;
       const filtered = currentUserId != null
-        ? mapped.filter((o) => (o as Offer & { user_id?: number }).user_id !== currentUserId)
+        ? mapped.filter((o: SearchOffer) => o.user_id !== currentUserId)
         : mapped;
       setResults(filtered);
       setTotal(Number(data?.total) ?? 0);
