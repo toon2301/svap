@@ -43,10 +43,15 @@ def _serialize_search_skills_page(request, page_skill_ids):
     """
     page_skill_ids = list(page_skill_ids)
     if not page_skill_ids:
-        return []
+        return [], {
+            "dashboard_search_skills_queryset_load": 0.0,
+            "dashboard_search_skills_context": 0.0,
+            "dashboard_search_skills_serialize": 0.0,
+        }
 
     from ..skills import _skills_list_context, _skills_list_queryset
 
+    t_qs0 = perf_counter()
     preserved_order = Case(
         *[When(pk=pk, then=position) for position, pk in enumerate(page_skill_ids)],
         output_field=IntegerField(),
@@ -55,15 +60,28 @@ def _serialize_search_skills_page(request, page_skill_ids):
         OfferedSkill.objects.filter(pk__in=page_skill_ids)
     ).order_by(preserved_order)
     optimized_skills = list(optimized_qs)
+    t_qs1 = perf_counter()
+
+    t_ctx0 = perf_counter()
     serializer_context = {
         "request": request,
         **_skills_list_context(request, page_skill_ids),
     }
-    return OfferedSkillSerializer(
+    t_ctx1 = perf_counter()
+
+    t_ser0 = perf_counter()
+    data = OfferedSkillSerializer(
         optimized_skills,
         many=True,
         context=serializer_context,
     ).data
+    t_ser1 = perf_counter()
+
+    return data, {
+        "dashboard_search_skills_queryset_load": (t_qs1 - t_qs0) * 1000.0,
+        "dashboard_search_skills_context": (t_ctx1 - t_ctx0) * 1000.0,
+        "dashboard_search_skills_serialize": (t_ser1 - t_ser0) * 1000.0,
+    }
 
 
 def _record_dashboard_search_timing(request, **entries) -> None:
@@ -101,6 +119,7 @@ def _build_only_my_location_filters(profile_user):
 @api_rate_limit
 def dashboard_search_view(request):
     """Dashboard search - vyhladavanie zrucnosti a pouzivatelov."""
+    t_view0 = perf_counter()
     raw_query = (request.GET.get("q") or "").strip()
     raw_query = raw_query[:100]
     raw_location = (request.GET.get("location") or "").strip()
@@ -272,7 +291,9 @@ def dashboard_search_view(request):
     t_sk_page1 = perf_counter()
 
     t_sk_load0 = perf_counter()
-    skills_data = _serialize_search_skills_page(request, page_skill_ids)
+    skills_data, skills_page_timing = _serialize_search_skills_page(
+        request, page_skill_ids
+    )
     t_sk_load1 = perf_counter()
 
     # =========================
@@ -378,6 +399,7 @@ def dashboard_search_view(request):
         dashboard_search_skills_count=(t_sk_count1 - t_sk_count0) * 1000.0,
         dashboard_search_skills_page_ids=(t_sk_page1 - t_sk_page0) * 1000.0,
         dashboard_search_skills_page_load=(t_sk_load1 - t_sk_load0) * 1000.0,
+        **skills_page_timing,
         dashboard_search_users_count=(t_users_count1 - t_users_count0) * 1000.0,
         dashboard_search_users_page=(t_users_page1 - t_users_page0) * 1000.0,
         dashboard_search_users_page_load=(t_users_load1 - t_users_load0) * 1000.0,
@@ -387,7 +409,8 @@ def dashboard_search_view(request):
         * 1000.0,
     )
 
-    return Response(
+    t_resp0 = perf_counter()
+    response = Response(
         {
             "skills": skills_data,
             "users": users_data,
@@ -402,3 +425,11 @@ def dashboard_search_view(request):
         },
         status=status.HTTP_200_OK,
     )
+    t_resp1 = perf_counter()
+
+    _record_dashboard_search_timing(
+        request,
+        dashboard_search_response_build=(t_resp1 - t_resp0) * 1000.0,
+        dashboard_search_view_total=(t_resp1 - t_view0) * 1000.0,
+    )
+    return response
