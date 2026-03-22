@@ -345,8 +345,13 @@ def dashboard_search_view(request):
     users_page = users_paginator.get_page(page)
     t_users_page1 = perf_counter()
 
+    t_users_load0 = perf_counter()
+    page_users = list(users_page.object_list)
+    t_users_load1 = perf_counter()
+
+    t_users_serialize0 = perf_counter()
     users_data = []
-    for user in users_page.object_list:
+    for user in page_users:
         avatar_url = None
         try:
             if getattr(user, "avatar", None) and hasattr(user.avatar, "url"):
@@ -366,6 +371,7 @@ def dashboard_search_view(request):
                 "slug": getattr(user, "slug", None),
             }
         )
+    t_users_serialize1 = perf_counter()
 
     _record_dashboard_search_timing(
         request,
@@ -374,6 +380,11 @@ def dashboard_search_view(request):
         dashboard_search_skills_page_load=(t_sk_load1 - t_sk_load0) * 1000.0,
         dashboard_search_users_count=(t_users_count1 - t_users_count0) * 1000.0,
         dashboard_search_users_page=(t_users_page1 - t_users_page0) * 1000.0,
+        dashboard_search_users_page_load=(t_users_load1 - t_users_load0) * 1000.0,
+        dashboard_search_users_serialize=(
+            t_users_serialize1 - t_users_serialize0
+        )
+        * 1000.0,
     )
 
     return Response(

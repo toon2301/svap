@@ -254,6 +254,8 @@ class DashboardViewsTestCase(TestCase):
         self.assertIn("dashboard_search_skills_page_load", server_timing)
         self.assertIn("dashboard_search_users_count", server_timing)
         self.assertIn("dashboard_search_users_page", server_timing)
+        self.assertIn("dashboard_search_users_page_load", server_timing)
+        self.assertIn("dashboard_search_users_serialize", server_timing)
 
     def test_skills_list_cache_hit_avoids_db_queries(self):
         OfferedSkill.objects.create(
