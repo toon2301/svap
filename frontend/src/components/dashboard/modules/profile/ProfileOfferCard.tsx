@@ -21,6 +21,8 @@ interface ProfileOfferCardProps {
   onMessageClick?: (offerId: number) => void;
   requestLabel?: string;
   isRequestDisabled?: boolean;
+  /** Keď true, karta nemá zaoblený horný okraj ani horný border – pre použitie pod SearchOfferCardAuthorHeader. */
+  compactTop?: boolean;
 }
 
 export default function ProfileOfferCard({
@@ -37,6 +39,7 @@ export default function ProfileOfferCard({
   onMessageClick,
   requestLabel,
   isRequestDisabled = false,
+  compactTop = false,
 }: ProfileOfferCardProps) {
   const catSlug = offer.category ? slugifyLabel(offer.category) : '';
   const subSlug = offer.subcategory ? slugifyLabel(offer.subcategory) : '';
@@ -79,9 +82,9 @@ export default function ProfileOfferCard({
 
   return (
     <div
-      className={`group rounded-2xl overflow-visible border border-gray-200 dark:border-gray-800 bg-white/70 dark:bg-[#0f0f10] shadow-sm hover:shadow transition-shadow relative ${
-        isHighlighted ? 'highlight-offer-card' : ''
-      } ${isHidden ? 'opacity-60' : ''}`}
+      className={`group overflow-visible border border-gray-200 dark:border-gray-800 bg-white/70 dark:bg-[#0f0f10] shadow-sm hover:shadow transition-shadow relative ${
+        compactTop ? 'rounded-b-2xl border-0 shadow-none' : 'rounded-2xl'
+      } ${isHighlighted ? 'highlight-offer-card' : ''} ${isHidden ? 'opacity-60' : ''}`}
     >
       {/* Označenie skrytej karty - len vo vlastnom profile */}
       {isHidden && (
@@ -136,6 +139,7 @@ export default function ProfileOfferCard({
         onMessageClick={onMessageClick}
         requestLabel={requestLabel}
         isRequestDisabled={isRequestDisabled}
+        compactTop={compactTop}
       />
 
       <OfferCardBack
@@ -146,6 +150,7 @@ export default function ProfileOfferCard({
         onOpenHoursClick={onOpenHoursClick}
         isFlipped={isFlipped}
         ownerDisplayName={ownerDisplayName}
+        compactTop={compactTop}
       />
     </div>
   );

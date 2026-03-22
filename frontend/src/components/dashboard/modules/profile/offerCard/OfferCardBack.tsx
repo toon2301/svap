@@ -14,6 +14,7 @@ export type OfferCardBackProps = {
   isFlipped: boolean;
   /** Meno/názov majiteľa profilu (kvôli recenziám v URL). */
   ownerDisplayName?: string;
+  compactTop?: boolean;
 };
 
 export function OfferCardBack({
@@ -24,10 +25,11 @@ export function OfferCardBack({
   onOpenHoursClick,
   isFlipped,
   ownerDisplayName,
+  compactTop = false,
 }: OfferCardBackProps) {
   return (
     <div className={isFlipped ? 'block' : 'hidden'} style={{ minHeight: '100%' }}>
-      <div className="relative aspect-[3/2] rounded-t-2xl border-b border-gray-200/70 dark:border-gray-700/50 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-[#101012] dark:to-[#151518]">
+      <div className={`relative aspect-[3/2] border-b border-gray-200/70 dark:border-gray-700/50 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-[#101012] dark:to-[#151518] ${compactTop ? 'rounded-t-none' : 'rounded-t-2xl'}`}>
         <div
           className="absolute inset-0 p-4 overflow-y-auto subtle-scrollbar"
           style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(156, 163, 175, 0.2) transparent' }}

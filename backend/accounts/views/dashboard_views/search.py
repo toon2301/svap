@@ -100,18 +100,49 @@ def _build_only_my_location_filters(profile_user):
     user_loc_q = Q()
     skill_loc_q = Q()
 
-    if getattr(profile_user, "location", None):
-        user_loc_q |= Q(location__icontains=profile_user.location)
-        skill_loc_q |= Q(location__icontains=profile_user.location) | Q(
-            user__location__icontains=profile_user.location
+    if profile_user[0]:
+        user_loc_q |= Q(location__icontains=profile_user[0])
+        skill_loc_q |= Q(location__icontains=profile_user[0]) | Q(
+            user__location__icontains=profile_user[0]
         )
-    if getattr(profile_user, "district", None):
-        user_loc_q |= Q(district__icontains=profile_user.district)
-        skill_loc_q |= Q(district__icontains=profile_user.district) | Q(
-            user__district__icontains=profile_user.district
+    if profile_user[1]:
+        user_loc_q |= Q(district__icontains=profile_user[1])
+        skill_loc_q |= Q(district__icontains=profile_user[1]) | Q(
+            user__district__icontains=profile_user[1]
         )
 
     return user_loc_q, skill_loc_q
+
+
+def _viewer_location_snapshot(user):
+    """
+    Load only the location fields needed for only_my_location filters.
+
+    When auth returned a lazy user, avoid touching profile fields directly on
+    request.user because that would materialize the full User row. We only need
+    location and district here, so fetch just those columns.
+    """
+
+    if user is None:
+        return ("", "")
+
+    is_lazy = bool(getattr(user, "_swaply_auth_lazy", False))
+    is_fully_loaded = bool(getattr(user, "_swaply_auth_fully_loaded", True))
+    if is_lazy and not is_fully_loaded:
+        try:
+            location, district = (
+                User.objects.filter(pk=user.pk)
+                .values_list("location", "district")
+                .get()
+            )
+            return (location or "", district or "")
+        except User.DoesNotExist:
+            return ("", "")
+
+    return (
+        getattr(user, "location", None) or "",
+        getattr(user, "district", None) or "",
+    )
 
 
 @api_view(["GET"])
@@ -192,6 +223,14 @@ def dashboard_search_view(request):
         if normalized:
             user_terms.add(normalized)
 
+    viewer_location = ("", "")
+    viewer_location_ms = 0.0
+    if only_my_location:
+        t_viewer_loc0 = perf_counter()
+        viewer_location = _viewer_location_snapshot(request.user)
+        viewer_location_ms = (perf_counter() - t_viewer_loc0) * 1000.0
+    user_loc_q, skill_loc_q = _build_only_my_location_filters(viewer_location)
+
     # =========================
     # Skills search
     # =========================
@@ -259,10 +298,8 @@ def dashboard_search_view(request):
     if price_max is not None:
         skills_qs = skills_qs.filter(price_from__lte=price_max)
 
-    if only_my_location:
-        _, skill_loc_q = _build_only_my_location_filters(request.user)
-        if skill_loc_q:
-            skills_qs = skills_qs.filter(skill_loc_q)
+    if only_my_location and skill_loc_q:
+        skills_qs = skills_qs.filter(skill_loc_q)
 
     if raw_query:
         skills_qs = skills_qs.annotate(
@@ -336,10 +373,8 @@ def dashboard_search_view(request):
             if test_qs.exists():
                 users_qs = users_qs.filter(user_country_query)
 
-    if only_my_location:
-        user_loc_q, _ = _build_only_my_location_filters(request.user)
-        if user_loc_q:
-            users_qs = users_qs.filter(user_loc_q)
+    if only_my_location and user_loc_q:
+        users_qs = users_qs.filter(user_loc_q)
 
     if raw_query:
         users_qs = users_qs.annotate(
@@ -400,6 +435,7 @@ def dashboard_search_view(request):
         dashboard_search_skills_page_ids=(t_sk_page1 - t_sk_page0) * 1000.0,
         dashboard_search_skills_page_load=(t_sk_load1 - t_sk_load0) * 1000.0,
         **skills_page_timing,
+        dashboard_search_viewer_location_load=viewer_location_ms,
         dashboard_search_users_count=(t_users_count1 - t_users_count0) * 1000.0,
         dashboard_search_users_page=(t_users_page1 - t_users_page0) * 1000.0,
         dashboard_search_users_page_load=(t_users_load1 - t_users_load0) * 1000.0,

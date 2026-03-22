@@ -12,6 +12,7 @@ from rest_framework import status
 from django.contrib.auth import get_user_model
 from unittest.mock import patch
 
+from accounts.authentication import _build_lazy_auth_user, _serialize_user_for_cache
 from accounts.models import (
     OfferedSkill,
     OfferedSkillImage,
@@ -19,6 +20,7 @@ from accounts.models import (
     SkillRequest,
     SkillRequestStatus,
 )
+from accounts.views.dashboard_views.search import _viewer_location_snapshot
 
 User = get_user_model()
 
@@ -255,12 +257,30 @@ class DashboardViewsTestCase(TestCase):
         self.assertIn("dashboard_search_skills_queryset_load", server_timing)
         self.assertIn("dashboard_search_skills_context", server_timing)
         self.assertIn("dashboard_search_skills_serialize", server_timing)
+        self.assertIn("dashboard_search_viewer_location_load", server_timing)
         self.assertIn("dashboard_search_users_count", server_timing)
         self.assertIn("dashboard_search_users_page", server_timing)
         self.assertIn("dashboard_search_users_page_load", server_timing)
         self.assertIn("dashboard_search_users_serialize", server_timing)
         self.assertIn("dashboard_search_response_build", server_timing)
         self.assertIn("dashboard_search_view_total", server_timing)
+
+    def test_viewer_location_snapshot_avoids_full_lazy_user_materialization(self):
+        self.user.location = "Bratislava"
+        self.user.district = "Bratislava I"
+        self.user.save(update_fields=["location", "district"])
+
+        lazy_user = _build_lazy_auth_user(User, _serialize_user_for_cache(self.user))
+        self.assertFalse(lazy_user._swaply_auth_fully_loaded)
+
+        location, district = _viewer_location_snapshot(lazy_user)
+
+        self.assertEqual(location, "Bratislava")
+        self.assertEqual(district, "Bratislava I")
+        self.assertFalse(
+            lazy_user._swaply_auth_fully_loaded,
+            "Location snapshot should not materialize the full lazy auth user",
+        )
 
     def test_skills_list_cache_hit_avoids_db_queries(self):
         OfferedSkill.objects.create(

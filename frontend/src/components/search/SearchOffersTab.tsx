@@ -1,9 +1,11 @@
 'use client';
 
 import React from 'react';
+import { useRouter } from 'next/navigation';
 import { BanknotesIcon, ArrowsRightLeftIcon } from '@heroicons/react/24/outline';
 
 import ProfileOfferCard from '@/components/dashboard/modules/profile/ProfileOfferCard';
+import { SearchOfferCardAuthorHeader } from '@/components/search/SearchOfferCardAuthorHeader';
 import { FilterChips } from '@/components/search/FilterChips';
 import { SearchResultSkeleton } from '@/components/search/SearchResultSkeleton';
 import SearchFilterSelect from '@/components/search/SearchFilterSelect';
@@ -50,6 +52,8 @@ export function SearchOffersTab({
   totalPages: number;
   onPageChange: (next: number) => void;
 }) {
+  const router = useRouter();
+
   return (
     <>
       <FilterChips />
@@ -160,24 +164,40 @@ export function SearchOffersTab({
                     ? String(offer.id)
                     : `${offer.category || 'cat'}-${offer.subcategory || 'sub'}-${offer.description || 'desc'}`;
                 const isFlipped = flippedCards.has(cardId);
-                const ext = offer as Offer & { user_display_name?: string; owner_user_type?: string };
+                const ext = offer as Offer & {
+                  user_display_name?: string;
+                  owner_user_type?: string;
+                  user_id?: number;
+                  owner_slug?: string;
+                  owner_avatar_url?: string;
+                };
                 const ownerDisplayName = typeof ext.user_display_name === 'string' ? ext.user_display_name : '';
+                const identifier = (ext.owner_slug && ext.owner_slug.trim()) || (ext.user_id != null ? String(ext.user_id) : '');
 
                 return (
                   <div key={offer.id} className="relative group">
-                    <ProfileOfferCard
-                      offer={offer}
-                      accountType={ext.owner_user_type === 'company' ? 'business' : 'personal'}
-                      t={t}
-                      isFlipped={isFlipped}
-                      onToggleFlip={() => onToggleFlip(cardId)}
-                      isOtherUserProfile={true}
-                      ownerDisplayName={ownerDisplayName || undefined}
-                      onRequestClick={undefined}
-                      onMessageClick={undefined}
-                      requestLabel={undefined}
-                      isRequestDisabled={false}
-                    />
+                    <div className="rounded-2xl overflow-visible border border-gray-200 dark:border-gray-800 bg-white/70 dark:bg-[#0f0f10] shadow-sm hover:shadow transition-shadow">
+                      <SearchOfferCardAuthorHeader
+                        displayName={ownerDisplayName || 'Používateľ'}
+                        avatarUrl={ext.owner_avatar_url}
+                        ownerUserType={ext.owner_user_type}
+                        onProfileClick={() => identifier && router.push(`/dashboard/users/${identifier}`)}
+                      />
+                      <ProfileOfferCard
+                        offer={offer}
+                        accountType={ext.owner_user_type === 'company' ? 'business' : 'personal'}
+                        t={t}
+                        isFlipped={isFlipped}
+                        onToggleFlip={() => onToggleFlip(cardId)}
+                        isOtherUserProfile={true}
+                        ownerDisplayName={ownerDisplayName || undefined}
+                        onRequestClick={undefined}
+                        onMessageClick={undefined}
+                        requestLabel={undefined}
+                        isRequestDisabled={false}
+                        compactTop={true}
+                      />
+                    </div>
                   </div>
                 );
               })}

@@ -682,6 +682,9 @@ class OfferedSkillSerializer(serializers.ModelSerializer):
     user_id = serializers.IntegerField(source="user.id", read_only=True)
     # Typ účtu majiteľa karty (individual/company) – pre odlíšenie osobný vs firemný účet
     owner_user_type = serializers.CharField(source="user.user_type", read_only=True)
+    # Slug a avatar majiteľa pre odkaz na profil vo vyhľadávaní
+    owner_slug = serializers.SerializerMethodField()
+    owner_avatar_url = serializers.SerializerMethodField()
     can_review = serializers.SerializerMethodField()
     already_reviewed = serializers.SerializerMethodField()
     average_rating = serializers.SerializerMethodField()
@@ -715,6 +718,8 @@ class OfferedSkillSerializer(serializers.ModelSerializer):
             "user_display_name",
             "user_id",
             "owner_user_type",
+            "owner_slug",
+            "owner_avatar_url",
             "can_review",
             "already_reviewed",
             "average_rating",
@@ -728,6 +733,8 @@ class OfferedSkillSerializer(serializers.ModelSerializer):
             "user_display_name",
             "user_id",
             "owner_user_type",
+            "owner_slug",
+            "owner_avatar_url",
             "can_review",
             "already_reviewed",
             "average_rating",
@@ -741,6 +748,27 @@ class OfferedSkillSerializer(serializers.ModelSerializer):
         if not m or not isinstance(m, dict):
             return None
         return m.get(obj.id)
+
+    def get_owner_slug(self, obj):
+        """Slug majiteľa pre odkaz na profil."""
+        user = getattr(obj, "user", None)
+        if user is None:
+            return None
+        return getattr(user, "slug", None)
+
+    def get_owner_avatar_url(self, obj):
+        """URL avatara majiteľa pre hlavičku autora vo vyhľadávaní."""
+        user = getattr(obj, "user", None)
+        if user is None:
+            return None
+        request = self.context.get("request")
+        try:
+            if getattr(user, "avatar", None) and hasattr(user.avatar, "url"):
+                url = user.avatar.url
+                return request.build_absolute_uri(url) if request else url
+        except Exception:
+            return None
+        return None
 
     def get_experience(self, obj):
         """Vráti experience ako objekt (ak existuje)"""

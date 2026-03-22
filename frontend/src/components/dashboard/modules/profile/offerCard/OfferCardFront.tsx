@@ -30,6 +30,7 @@ export type OfferCardFrontProps = {
   onMessageClick?: (offerId: number) => void;
   requestLabel?: string;
   isRequestDisabled?: boolean;
+  compactTop?: boolean;
 };
 
 export function OfferCardFront({
@@ -53,6 +54,7 @@ export function OfferCardFront({
   onMessageClick,
   requestLabel,
   isRequestDisabled = false,
+  compactTop = false,
 }: OfferCardFrontProps) {
   const showFront = !isFlipped;
   const router = useRouter();
@@ -60,7 +62,7 @@ export function OfferCardFront({
 
   return (
     <div className={showFront ? 'block' : 'hidden'} style={{ minHeight: '100%' }}>
-      <div className="relative aspect-[3/2] bg-gray-100 dark:bg-[#0e0e0f] overflow-hidden rounded-t-2xl">
+      <div className={`relative aspect-[3/2] bg-gray-100 dark:bg-[#0e0e0f] overflow-hidden ${compactTop ? 'rounded-t-none' : 'rounded-t-2xl'}`}>
         <OfferImageCarousel images={offer.images} alt={imageAlt} />
         {accountType === 'business' && (
           <span className="absolute top-2 left-2 px-1.5 py-0.5 text-[10px] font-semibold bg-black/80 text-white rounded">

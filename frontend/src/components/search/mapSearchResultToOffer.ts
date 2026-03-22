@@ -54,6 +54,9 @@ export function mapSearchResultToOffer(s: Record<string, unknown>): Offer {
     ...base,
     user_display_name: typeof s.user_display_name === 'string' ? s.user_display_name : '',
     owner_user_type: typeof s.owner_user_type === 'string' ? s.owner_user_type : 'individual',
-  } as Offer & { user_display_name?: string; owner_user_type?: string };
+    user_id: typeof s.user_id === 'number' ? s.user_id : undefined,
+    owner_slug: typeof s.owner_slug === 'string' && s.owner_slug.trim() ? s.owner_slug : undefined,
+    owner_avatar_url: typeof s.owner_avatar_url === 'string' && s.owner_avatar_url.trim() ? s.owner_avatar_url : undefined,
+  } as Offer & { user_display_name?: string; owner_user_type?: string; user_id?: number; owner_slug?: string; owner_avatar_url?: string };
 }
 
