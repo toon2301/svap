@@ -144,6 +144,70 @@ def _public_user_ids_qs(*, exclude_user_id=None, user_filter=None):
     return qs.values_list("pk", flat=True)
 
 
+def _apply_skill_search_scalar_filters(qs, *, offer_type, price_min, price_max):
+    if offer_type == "offer":
+        qs = qs.filter(is_seeking=False)
+    elif offer_type == "seeking":
+        qs = qs.filter(is_seeking=True)
+
+    if price_min is not None:
+        qs = qs.filter(price_from__gte=price_min)
+    if price_max is not None:
+        qs = qs.filter(price_from__lte=price_max)
+
+    return qs
+
+
+def _build_only_my_location_count_qs(
+    *,
+    viewer_user_id,
+    user_loc_q,
+    skill_direct_loc_q,
+    offer_type,
+    price_min,
+    price_max,
+):
+    base_public_user_ids = _public_user_ids_qs(exclude_user_id=viewer_user_id)
+    base_skills_qs = OfferedSkill.objects.filter(
+        user_id__in=base_public_user_ids,
+        is_hidden=False,
+    )
+    base_skills_qs = _apply_skill_search_scalar_filters(
+        base_skills_qs,
+        offer_type=offer_type,
+        price_min=price_min,
+        price_max=price_max,
+    )
+
+    skill_ids_qs = None
+    if skill_direct_loc_q:
+        skill_ids_qs = (
+            base_skills_qs.filter(skill_direct_loc_q).order_by().values_list(
+                "id", flat=True
+            )
+        )
+
+    user_ids_qs = None
+    if user_loc_q:
+        public_geo_user_ids = _public_user_ids_qs(
+            exclude_user_id=viewer_user_id,
+            user_filter=user_loc_q,
+        )
+        user_ids_qs = (
+            base_skills_qs.filter(user_id__in=public_geo_user_ids)
+            .order_by()
+            .values_list("id", flat=True)
+        )
+
+    if skill_ids_qs is not None and user_ids_qs is not None:
+        return skill_ids_qs.union(user_ids_qs)
+    if skill_ids_qs is not None:
+        return skill_ids_qs
+    if user_ids_qs is not None:
+        return user_ids_qs
+    return OfferedSkill.objects.none().values_list("id", flat=True)
+
+
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 @api_rate_limit
@@ -254,11 +318,6 @@ def dashboard_search_view(request):
             )
         skills_qs = skills_qs.filter(skill_query)
 
-    if offer_type == "offer":
-        skills_qs = skills_qs.filter(is_seeking=False)
-    elif offer_type == "seeking":
-        skills_qs = skills_qs.filter(is_seeking=True)
-
     if country_filter:
         country_location_mapping = {
             "SK": ["slovakia", "slovensko", "slovak"],
@@ -294,10 +353,12 @@ def dashboard_search_view(request):
         except InvalidOperation:
             price_max = None
 
-    if price_min is not None:
-        skills_qs = skills_qs.filter(price_from__gte=price_min)
-    if price_max is not None:
-        skills_qs = skills_qs.filter(price_from__lte=price_max)
+    skills_qs = _apply_skill_search_scalar_filters(
+        skills_qs,
+        offer_type=offer_type,
+        price_min=price_min,
+        price_max=price_max,
+    )
 
     if only_my_location and skill_loc_q:
         skills_qs = skills_qs.filter(skill_loc_q)
@@ -327,30 +388,14 @@ def dashboard_search_view(request):
         and not country_filter
     )
     if use_skills_count_fast_path:
-        public_user_ids = _public_user_ids_qs(exclude_user_id=request.user.pk)
-        skills_count_qs = OfferedSkill.objects.filter(
-            user_id__in=public_user_ids,
-            is_hidden=False,
+        skills_count_qs = _build_only_my_location_count_qs(
+            viewer_user_id=request.user.pk,
+            user_loc_q=user_loc_q,
+            skill_direct_loc_q=skill_direct_loc_q,
+            offer_type=offer_type,
+            price_min=price_min,
+            price_max=price_max,
         )
-        if offer_type == "offer":
-            skills_count_qs = skills_count_qs.filter(is_seeking=False)
-        elif offer_type == "seeking":
-            skills_count_qs = skills_count_qs.filter(is_seeking=True)
-
-        if price_min is not None:
-            skills_count_qs = skills_count_qs.filter(price_from__gte=price_min)
-        if price_max is not None:
-            skills_count_qs = skills_count_qs.filter(price_from__lte=price_max)
-
-        geo_match_q = skill_direct_loc_q
-        if user_loc_q:
-            user_geo_q = Q(
-                user_id__in=_public_user_ids_qs(
-                    exclude_user_id=request.user.pk, user_filter=user_loc_q
-                )
-            )
-            geo_match_q = geo_match_q | user_geo_q if geo_match_q else user_geo_q
-        skills_count_qs = skills_count_qs.filter(geo_match_q).order_by()
     else:
         skills_count_qs = skills_filtered_qs.order_by()
     t_sk_count_base1 = perf_counter()

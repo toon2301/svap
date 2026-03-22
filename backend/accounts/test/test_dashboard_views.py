@@ -331,15 +331,17 @@ class DashboardViewsTestCase(TestCase):
             )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["pagination"]["total_skills"], 1)
         count_queries = [
             query["sql"]
             for query in ctx.captured_queries
-            if 'COUNT(*) AS "__count"' in query["sql"]
+            if "SELECT COUNT(*) FROM (" in query["sql"]
             and "accounts_offeredskill" in query["sql"]
         ]
         self.assertTrue(count_queries, "Expected offered skill count query to be captured")
         skills_count_sql = count_queries[0].upper()
         self.assertIn("IN (SELECT", skills_count_sql)
+        self.assertIn("UNION", skills_count_sql)
         self.assertNotIn('INNER JOIN "ACCOUNTS_USER"', skills_count_sql)
 
     def test_viewer_location_snapshot_avoids_full_lazy_user_materialization(self):
