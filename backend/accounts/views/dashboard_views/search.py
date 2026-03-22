@@ -117,19 +117,31 @@ def _record_dashboard_search_timing(request, **entries) -> None:
 def _build_only_my_location_filters(location_snapshot):
     user_loc_q = Q()
     skill_loc_q = Q()
+    skill_direct_loc_q = Q()
 
     if location_snapshot[0]:
         user_loc_q |= Q(location__icontains=location_snapshot[0])
+        skill_direct_loc_q |= Q(location__icontains=location_snapshot[0])
         skill_loc_q |= Q(location__icontains=location_snapshot[0]) | Q(
             user__location__icontains=location_snapshot[0]
         )
     if location_snapshot[1]:
         user_loc_q |= Q(district__icontains=location_snapshot[1])
+        skill_direct_loc_q |= Q(district__icontains=location_snapshot[1])
         skill_loc_q |= Q(district__icontains=location_snapshot[1]) | Q(
             user__district__icontains=location_snapshot[1]
         )
 
-    return user_loc_q, skill_loc_q
+    return user_loc_q, skill_loc_q, skill_direct_loc_q
+
+
+def _public_user_ids_qs(*, exclude_user_id=None, user_filter=None):
+    qs = User.objects.filter(is_public=True)
+    if exclude_user_id is not None:
+        qs = qs.exclude(pk=exclude_user_id)
+    if user_filter:
+        qs = qs.filter(user_filter)
+    return qs.values_list("pk", flat=True)
 
 
 @api_view(["GET"])
@@ -216,7 +228,9 @@ def dashboard_search_view(request):
         t_viewer_loc0 = perf_counter()
         viewer_location = get_viewer_location_snapshot(request.user)
         viewer_location_ms = (perf_counter() - t_viewer_loc0) * 1000.0
-    user_loc_q, skill_loc_q = _build_only_my_location_filters(viewer_location)
+    user_loc_q, skill_loc_q, skill_direct_loc_q = _build_only_my_location_filters(
+        viewer_location
+    )
 
     # =========================
     # Skills search
@@ -306,7 +320,39 @@ def dashboard_search_view(request):
         skills_page_qs = skills_filtered_qs.order_by("-user__is_verified", "-created_at")
 
     t_sk_count_base0 = perf_counter()
-    skills_count_qs = skills_filtered_qs.order_by()
+    use_skills_count_fast_path = (
+        only_my_location
+        and bool(skill_loc_q)
+        and not skill_terms
+        and not country_filter
+    )
+    if use_skills_count_fast_path:
+        public_user_ids = _public_user_ids_qs(exclude_user_id=request.user.pk)
+        skills_count_qs = OfferedSkill.objects.filter(
+            user_id__in=public_user_ids,
+            is_hidden=False,
+        )
+        if offer_type == "offer":
+            skills_count_qs = skills_count_qs.filter(is_seeking=False)
+        elif offer_type == "seeking":
+            skills_count_qs = skills_count_qs.filter(is_seeking=True)
+
+        if price_min is not None:
+            skills_count_qs = skills_count_qs.filter(price_from__gte=price_min)
+        if price_max is not None:
+            skills_count_qs = skills_count_qs.filter(price_from__lte=price_max)
+
+        geo_match_q = skill_direct_loc_q
+        if user_loc_q:
+            user_geo_q = Q(
+                user_id__in=_public_user_ids_qs(
+                    exclude_user_id=request.user.pk, user_filter=user_loc_q
+                )
+            )
+            geo_match_q = geo_match_q | user_geo_q if geo_match_q else user_geo_q
+        skills_count_qs = skills_count_qs.filter(geo_match_q).order_by()
+    else:
+        skills_count_qs = skills_filtered_qs.order_by()
     t_sk_count_base1 = perf_counter()
 
     t_sk_count_exec0 = perf_counter()

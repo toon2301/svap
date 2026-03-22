@@ -42,6 +42,10 @@ class SearchUserResultSerializer(serializers.ModelSerializer):
             "district",
             "is_verified",
             "avatar_url",
+            "facebook",
+            "instagram",
+            "linkedin",
+            "youtube",
         ]
 
     def get_avatar_url(self, obj):

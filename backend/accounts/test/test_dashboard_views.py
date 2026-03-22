@@ -272,6 +272,76 @@ class DashboardViewsTestCase(TestCase):
         self.assertIn("dashboard_search_response_build", server_timing)
         self.assertIn("dashboard_search_view_total", server_timing)
 
+    def test_dashboard_search_only_my_location_count_uses_user_id_subquery(self):
+        self.user.location = "Bratislava"
+        self.user.district = "Bratislava I"
+        self.user.save(update_fields=["location", "district"])
+
+        local_owner = User.objects.create_user(
+            username="countlocalowner",
+            email="countlocalowner@example.com",
+            password="testpass123",
+            first_name="Local",
+            last_name="Owner",
+            user_type="individual",
+            is_public=True,
+            location="Bratislava",
+            district="Bratislava I",
+        )
+        remote_owner = User.objects.create_user(
+            username="countremoteowner",
+            email="countremoteowner@example.com",
+            password="testpass123",
+            first_name="Remote",
+            last_name="Owner",
+            user_type="individual",
+            is_public=True,
+            location="Kosice",
+            district="Kosice I",
+        )
+
+        OfferedSkill.objects.create(
+            user=local_owner,
+            category="Local skill",
+            subcategory="Sub",
+            description="Description",
+            detailed_description="Details",
+            location="Bratislava",
+            district="Bratislava I",
+            is_hidden=False,
+            is_seeking=False,
+        )
+        OfferedSkill.objects.create(
+            user=remote_owner,
+            category="Remote skill",
+            subcategory="Sub",
+            description="Description",
+            detailed_description="Details",
+            location="Kosice",
+            district="Kosice I",
+            is_hidden=False,
+            is_seeking=False,
+        )
+
+        url = reverse("accounts:dashboard_search")
+        with CaptureQueriesContext(connection) as ctx:
+            response = self.client.get(
+                url,
+                {"only_my_location": "1", "per_page": "5", "page": "1"},
+            )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        count_queries = [
+            query["sql"]
+            for query in ctx.captured_queries
+            if 'COUNT(*) AS "__count"' in query["sql"]
+            and "accounts_offeredskill" in query["sql"]
+        ]
+        self.assertTrue(count_queries, "Expected offered skill count query to be captured")
+        skills_count_sql = count_queries[0].upper()
+        self.assertIn("IN (SELECT", skills_count_sql)
+        self.assertNotIn('INNER JOIN "ACCOUNTS_USER"', skills_count_sql)
+
     def test_viewer_location_snapshot_avoids_full_lazy_user_materialization(self):
         self.user.location = "Bratislava"
         self.user.district = "Bratislava I"
