@@ -13,6 +13,7 @@ from swaply.rate_limiting import api_rate_limit
 
 from ...models import OfferedSkill
 from ...serializers import OfferedSkillSerializer
+from ...viewer_location_cache import get_viewer_location_snapshot
 from .smart_search import SMART_KEYWORD_GROUPS
 from .utils import (
     _build_accent_insensitive_pattern,
@@ -96,53 +97,22 @@ def _record_dashboard_search_timing(request, **entries) -> None:
         pass
 
 
-def _build_only_my_location_filters(profile_user):
+def _build_only_my_location_filters(location_snapshot):
     user_loc_q = Q()
     skill_loc_q = Q()
 
-    if profile_user[0]:
-        user_loc_q |= Q(location__icontains=profile_user[0])
-        skill_loc_q |= Q(location__icontains=profile_user[0]) | Q(
-            user__location__icontains=profile_user[0]
+    if location_snapshot[0]:
+        user_loc_q |= Q(location__icontains=location_snapshot[0])
+        skill_loc_q |= Q(location__icontains=location_snapshot[0]) | Q(
+            user__location__icontains=location_snapshot[0]
         )
-    if profile_user[1]:
-        user_loc_q |= Q(district__icontains=profile_user[1])
-        skill_loc_q |= Q(district__icontains=profile_user[1]) | Q(
-            user__district__icontains=profile_user[1]
+    if location_snapshot[1]:
+        user_loc_q |= Q(district__icontains=location_snapshot[1])
+        skill_loc_q |= Q(district__icontains=location_snapshot[1]) | Q(
+            user__district__icontains=location_snapshot[1]
         )
 
     return user_loc_q, skill_loc_q
-
-
-def _viewer_location_snapshot(user):
-    """
-    Load only the location fields needed for only_my_location filters.
-
-    When auth returned a lazy user, avoid touching profile fields directly on
-    request.user because that would materialize the full User row. We only need
-    location and district here, so fetch just those columns.
-    """
-
-    if user is None:
-        return ("", "")
-
-    is_lazy = bool(getattr(user, "_swaply_auth_lazy", False))
-    is_fully_loaded = bool(getattr(user, "_swaply_auth_fully_loaded", True))
-    if is_lazy and not is_fully_loaded:
-        try:
-            location, district = (
-                User.objects.filter(pk=user.pk)
-                .values_list("location", "district")
-                .get()
-            )
-            return (location or "", district or "")
-        except User.DoesNotExist:
-            return ("", "")
-
-    return (
-        getattr(user, "location", None) or "",
-        getattr(user, "district", None) or "",
-    )
 
 
 @api_view(["GET"])
@@ -227,7 +197,7 @@ def dashboard_search_view(request):
     viewer_location_ms = 0.0
     if only_my_location:
         t_viewer_loc0 = perf_counter()
-        viewer_location = _viewer_location_snapshot(request.user)
+        viewer_location = get_viewer_location_snapshot(request.user)
         viewer_location_ms = (perf_counter() - t_viewer_loc0) * 1000.0
     user_loc_q, skill_loc_q = _build_only_my_location_filters(viewer_location)
 

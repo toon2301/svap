@@ -15,6 +15,7 @@ from django.utils import timezone
 
 from accounts.authentication import _redis_user_cache_key, _serialize_user_for_cache
 from accounts.models import EmailVerification, UserType
+from accounts.viewer_location_cache import _viewer_location_cache_key
 
 User = get_user_model()
 
@@ -161,6 +162,9 @@ class TestEmailVerificationAPI(APITestCase):
     def test_verify_email_success_warms_auth_cache(self):
         url = reverse("accounts:verify_email")
         data = {"token": str(self.verification.token)}
+        self.user.location = "Bratislava"
+        self.user.district = "Bratislava I"
+        self.user.save(update_fields=["location", "district"])
         cache.clear()
 
         response = self.client.post(url, data, format="json")
@@ -169,6 +173,10 @@ class TestEmailVerificationAPI(APITestCase):
         self.assertEqual(
             cache.get(_redis_user_cache_key(self.user.id)),
             _serialize_user_for_cache(self.user),
+        )
+        self.assertEqual(
+            cache.get(_viewer_location_cache_key(self.user.id)),
+            {"location": "Bratislava", "district": "Bratislava I"},
         )
 
     def test_verify_email_invalid_token(self):

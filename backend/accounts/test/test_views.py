@@ -18,6 +18,7 @@ from factory.django import DjangoModelFactory
 from unittest.mock import patch
 
 from accounts.authentication import _redis_user_cache_key, _serialize_user_for_cache
+from accounts.viewer_location_cache import _viewer_location_cache_key
 from accounts.models import UserType
 
 User = get_user_model()
@@ -101,6 +102,8 @@ class TestAuthViews(APITestCase):
 
     def test_login_view_warms_auth_cache(self):
         self.user.is_verified = True
+        self.user.location = "Bratislava"
+        self.user.district = "Bratislava I"
         self.user.save()
         url = reverse("accounts:login")
         data = {"email": self.user.email, "password": "testpass123"}
@@ -112,6 +115,10 @@ class TestAuthViews(APITestCase):
         self.assertEqual(
             cache.get(_redis_user_cache_key(self.user.id)),
             _serialize_user_for_cache(self.user),
+        )
+        self.assertEqual(
+            cache.get(_viewer_location_cache_key(self.user.id)),
+            {"location": "Bratislava", "district": "Bratislava I"},
         )
 
     def test_login_view_invalid_credentials(self):

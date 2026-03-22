@@ -532,8 +532,10 @@ def login_view(request):
 
             try:
                 from ..authentication import warm_user_auth_cache
+                from ..viewer_location_cache import warm_viewer_location_snapshot_cache
 
                 warm_user_auth_cache(user)
+                warm_viewer_location_snapshot_cache(user)
             except Exception:
                 pass
 
@@ -677,8 +679,12 @@ def verify_email_view(request):
 
                 try:
                     from ..authentication import warm_user_auth_cache
+                    from ..viewer_location_cache import (
+                        warm_viewer_location_snapshot_cache,
+                    )
 
                     warm_user_auth_cache(verification.user)
+                    warm_viewer_location_snapshot_cache(verification.user)
                 except Exception:
                     pass
 

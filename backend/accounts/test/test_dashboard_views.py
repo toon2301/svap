@@ -20,7 +20,11 @@ from accounts.models import (
     SkillRequest,
     SkillRequestStatus,
 )
-from accounts.views.dashboard_views.search import _viewer_location_snapshot
+from accounts.viewer_location_cache import (
+    _viewer_location_cache_key,
+    get_viewer_location_snapshot,
+    warm_viewer_location_snapshot_cache,
+)
 
 User = get_user_model()
 
@@ -273,7 +277,7 @@ class DashboardViewsTestCase(TestCase):
         lazy_user = _build_lazy_auth_user(User, _serialize_user_for_cache(self.user))
         self.assertFalse(lazy_user._swaply_auth_fully_loaded)
 
-        location, district = _viewer_location_snapshot(lazy_user)
+        location, district = get_viewer_location_snapshot(lazy_user)
 
         self.assertEqual(location, "Bratislava")
         self.assertEqual(district, "Bratislava I")
@@ -281,6 +285,22 @@ class DashboardViewsTestCase(TestCase):
             lazy_user._swaply_auth_fully_loaded,
             "Location snapshot should not materialize the full lazy auth user",
         )
+
+    def test_viewer_location_snapshot_cache_invalidates_on_user_save(self):
+        self.user.location = "Bratislava"
+        self.user.district = "Bratislava I"
+        self.user.save(update_fields=["location", "district"])
+        warm_viewer_location_snapshot_cache(self.user)
+
+        self.assertEqual(
+            cache.get(_viewer_location_cache_key(self.user.id)),
+            {"location": "Bratislava", "district": "Bratislava I"},
+        )
+
+        self.user.location = "Kosice"
+        self.user.save(update_fields=["location"])
+
+        self.assertIsNone(cache.get(_viewer_location_cache_key(self.user.id)))
 
     def test_skills_list_cache_hit_avoids_db_queries(self):
         OfferedSkill.objects.create(

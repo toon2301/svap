@@ -198,6 +198,7 @@ def token_refresh_cookie_view(request):
             from rest_framework_simplejwt.tokens import AccessToken
 
             from ..authentication import warm_user_auth_cache
+            from ..viewer_location_cache import warm_viewer_location_snapshot_cache
 
             access_token = AccessToken(str(access))
             user_id = int(access_token.get("user_id") or 0)
@@ -209,9 +210,12 @@ def token_refresh_cookie_view(request):
                         "is_active",
                         "is_staff",
                         "is_superuser",
+                        "location",
+                        "district",
                     ).get(pk=user_id)
                 )
                 warm_user_auth_cache(cache_user)
+                warm_viewer_location_snapshot_cache(cache_user)
         except Exception:
             pass
 

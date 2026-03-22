@@ -16,6 +16,7 @@ from factory.django import DjangoModelFactory
 
 from accounts.authentication import _redis_user_cache_key, _serialize_user_for_cache
 from accounts.models import UserType
+from accounts.viewer_location_cache import _viewer_location_cache_key
 
 User = get_user_model()
 
@@ -43,6 +44,8 @@ class TestAPIIntegration(APITestCase):
         self.user = UserFactory()
         self.user.set_password("testpass123")
         self.user.is_verified = True  # Overiť používateľa pre testy
+        self.user.location = "Bratislava"
+        self.user.district = "Bratislava I"
         self.user.save()
 
     def test_registration_flow(self):
@@ -126,6 +129,10 @@ class TestAPIIntegration(APITestCase):
         self.assertEqual(
             cache.get(_redis_user_cache_key(self.user.id)),
             _serialize_user_for_cache(self.user),
+        )
+        self.assertEqual(
+            cache.get(_viewer_location_cache_key(self.user.id)),
+            {"location": "Bratislava", "district": "Bratislava I"},
         )
 
     def test_logout_flow(self):
