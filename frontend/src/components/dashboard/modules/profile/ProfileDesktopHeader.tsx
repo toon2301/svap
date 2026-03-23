@@ -170,8 +170,8 @@ export function ProfileDesktopHeader({
         </div>
       )}
 
-      {/* Tlačidlá pod fotkou */}
-      <div className="flex gap-[clamp(0.5rem,1vw,0.5rem)] mt-[clamp(0.75rem,1.5vw,0.75rem)]">
+      {/* Tlačidlá pod fotkou – 1024–1190px: celá šírka, rovnako veľké, vycentrované */}
+      <div className="flex gap-[clamp(0.5rem,1vw,0.5rem)] mt-[clamp(0.75rem,1.5vw,0.75rem)] lg:w-full xl:w-auto">
         <button
           onClick={() => {
             if (isOtherUserProfile && onSendMessage) {
@@ -183,7 +183,7 @@ export function ProfileDesktopHeader({
               console.log(isOtherUserProfile ? 'Poslať správu' : 'Upraviť profil');
             }
           }}
-          className="flex-1 px-[clamp(4rem,8vw,8rem)] xl:px-16 2xl:px-32 py-2 text-sm bg-purple-100 text-purple-800 border border-purple-200 rounded-2xl transition-colors hover:bg-purple-200 whitespace-nowrap min-w-0"
+          className="flex-1 px-[clamp(4rem,8vw,8rem)] xl:px-16 2xl:px-32 py-2 text-sm bg-purple-100 text-purple-800 border border-purple-200 rounded-2xl transition-colors hover:bg-purple-200 whitespace-nowrap lg:min-w-0 lg:px-5 lg:text-center xl:min-w-auto xl:text-left"
         >
           {isOtherUserProfile ? t('profile.sendMessage', 'Poslať správu') : t('profile.editProfile')}
         </button>
@@ -196,13 +196,13 @@ export function ProfileDesktopHeader({
                   onAddToFavorites();
                 }
               }}
-              className="flex-1 px-[clamp(4rem,8vw,8rem)] xl:px-16 2xl:px-32 py-2 text-sm bg-purple-100 text-purple-800 border border-purple-200 rounded-2xl transition-colors hover:bg-purple-200 whitespace-nowrap min-w-0"
+              className="flex-1 px-[clamp(4rem,8vw,8rem)] xl:px-16 2xl:px-32 py-2 text-sm bg-purple-100 text-purple-800 border border-purple-200 rounded-2xl transition-colors hover:bg-purple-200 whitespace-nowrap lg:min-w-0 lg:px-5 lg:text-center xl:min-w-auto xl:text-left"
             >
               {t('profile.addToFavorites', '+ Pridať k obľúbeným')}
             </button>
             <button
               onClick={onHamburgerOpen}
-              className="px-3 py-2 bg-purple-100 text-purple-800 border border-purple-200 rounded-2xl transition-colors hover:bg-purple-200 flex items-center justify-center"
+              className="px-3 py-2 bg-purple-100 text-purple-800 border border-purple-200 rounded-2xl transition-colors hover:bg-purple-200 flex items-center justify-center lg:shrink-0 xl:shrink"
               aria-label="Menu"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -221,7 +221,7 @@ export function ProfileDesktopHeader({
                 console.log('Zručnosti');
               }
             }}
-            className="flex-1 px-[clamp(4rem,8vw,8rem)] xl:px-16 2xl:px-32 py-2 text-sm bg-purple-100 text-purple-800 border border-purple-200 rounded-2xl transition-colors hover:bg-purple-200 whitespace-nowrap min-w-0"
+            className="flex-1 px-[clamp(4rem,8vw,8rem)] xl:px-16 2xl:px-32 py-2 text-sm bg-purple-100 text-purple-800 border border-purple-200 rounded-2xl transition-colors hover:bg-purple-200 whitespace-nowrap lg:min-w-0 lg:px-5 lg:text-center xl:min-w-auto xl:text-left"
           >
             {t('profile.skills', 'Ponúkam/Hľadám')}
           </button>

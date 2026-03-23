@@ -145,6 +145,7 @@ class DashboardViewsTestCase(TestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data["skills"]), 5)
+        self.assertTrue(response.data["pagination"]["has_next_skills"])
         self.assertLessEqual(
             len(ctx.captured_queries),
             10,
@@ -215,7 +216,9 @@ class DashboardViewsTestCase(TestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data["skills"]), 2)
-        self.assertEqual(response.data["pagination"]["total_skills"], 2)
+        self.assertIsNone(response.data["pagination"]["total_skills"])
+        self.assertIsNone(response.data["pagination"]["total_pages_skills"])
+        self.assertFalse(response.data["pagination"]["has_next_skills"])
         self.assertTrue(
             all(skill["district"] == "Bratislava I" for skill in response.data["skills"])
         )
@@ -272,7 +275,7 @@ class DashboardViewsTestCase(TestCase):
         self.assertIn("dashboard_search_response_build", server_timing)
         self.assertIn("dashboard_search_view_total", server_timing)
 
-    def test_dashboard_search_only_my_location_count_uses_user_id_subquery(self):
+    def test_dashboard_search_only_my_location_skips_exact_skills_count_query(self):
         self.user.location = "Bratislava"
         self.user.district = "Bratislava I"
         self.user.save(update_fields=["location", "district"])
@@ -331,18 +334,17 @@ class DashboardViewsTestCase(TestCase):
             )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data["pagination"]["total_skills"], 1)
-        count_queries = [
-            query["sql"]
-            for query in ctx.captured_queries
-            if "SELECT COUNT(*) FROM (" in query["sql"]
-            and "accounts_offeredskill" in query["sql"]
-        ]
-        self.assertTrue(count_queries, "Expected offered skill count query to be captured")
-        skills_count_sql = count_queries[0].upper()
-        self.assertIn("IN (SELECT", skills_count_sql)
-        self.assertIn("UNION", skills_count_sql)
-        self.assertNotIn('INNER JOIN "ACCOUNTS_USER"', skills_count_sql)
+        self.assertIsNone(response.data["pagination"]["total_skills"])
+        self.assertFalse(response.data["pagination"]["has_next_skills"])
+        skills_count_queries = []
+        for query in ctx.captured_queries:
+            normalized_sql = query["sql"].upper().strip()
+            if normalized_sql.startswith("SELECT COUNT(") and "ACCOUNTS_OFFERSKILL" in normalized_sql:
+                skills_count_queries.append(query["sql"])
+        self.assertFalse(
+            skills_count_queries,
+            f"Expected dashboard search skills branch to skip exact COUNT(*), got: {skills_count_queries}",
+        )
 
     def test_viewer_location_snapshot_avoids_full_lazy_user_materialization(self):
         self.user.location = "Bratislava"

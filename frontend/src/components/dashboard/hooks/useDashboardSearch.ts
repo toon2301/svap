@@ -12,7 +12,7 @@ interface BackendSkill {
   detailed_description?: string;
   experience?: {
     value: number;
-    unit: 'years' | 'months';
+    unit: "years" | "months";
   } | null;
   tags?: string[];
   price_from?: number | string | null;
@@ -34,18 +34,21 @@ interface BackendUserSummary {
   avatar_url?: string | null;
 }
 
+interface SearchPagination {
+  page: number;
+  per_page: number;
+  total_skills: number | null;
+  total_users: number;
+  total_pages_skills: number | null;
+  total_pages_users: number;
+  has_next_skills?: boolean;
+  has_next_users?: boolean;
+}
+
 interface SearchResults {
   skills: BackendSkill[];
   users: BackendUserSummary[];
-  // Pagination môžeš v UI využiť neskôr; teraz stačí mať ho pripravené
-  pagination?: {
-    page: number;
-    per_page: number;
-    total_skills: number;
-    total_users: number;
-    total_pages_skills: number;
-    total_pages_users: number;
-  };
+  pagination?: SearchPagination;
 }
 
 interface UseDashboardSearchOptions {
@@ -53,10 +56,10 @@ interface UseDashboardSearchOptions {
 }
 
 export function useDashboardSearch({ user }: UseDashboardSearchOptions) {
-  const [query, setQuery] = useState('');
-  // Predvolená lokalita podľa profilu – okres alebo mesto, ak existujú
+  const [query, setQuery] = useState("");
+  // Default search location follows the viewer profile when available.
   const [location, setLocation] = useState<string>(
-    (user?.district || user?.location || '').trim(),
+    (user?.district || user?.location || "").trim(),
   );
   const [results, setResults] = useState<SearchResults | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -79,18 +82,18 @@ export function useDashboardSearch({ user }: UseDashboardSearchOptions) {
       });
 
       setResults({
-        skills: Array.isArray((data as any)?.skills) ? (data as any).skills : [],
-        users: Array.isArray((data as any)?.users) ? (data as any).users : [],
-        pagination: (data as any)?.pagination,
+        skills: Array.isArray(data?.skills) ? data.skills : [],
+        users: Array.isArray(data?.users) ? data.users : [],
+        pagination: data?.pagination,
       });
       setHasSearched(true);
     } catch (err: any) {
-      console.error('Search error', err);
+      console.error("Search error", err);
       const msg =
         err?.response?.data?.error ||
         err?.response?.data?.detail ||
         err?.message ||
-        'Vyhľadávanie zlyhalo. Skúste to znova.';
+        "Vyhladavanie zlyhalo. Skuste to znova.";
       setError(msg);
       setHasSearched(true);
     } finally {
@@ -119,5 +122,3 @@ export function useDashboardSearch({ user }: UseDashboardSearchOptions) {
     runSearch,
   };
 }
-
-

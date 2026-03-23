@@ -24,23 +24,6 @@ from .utils import (
 User = get_user_model()
 
 
-class _CountedPaginator(Paginator):
-    """
-    Paginator with externally supplied total count.
-
-    This lets us keep Django's page-number semantics while executing the skills
-    count on a lighter queryset than the ordered page queryset.
-    """
-
-    def __init__(self, object_list, per_page, total_count, *args, **kwargs):
-        self._provided_count = max(int(total_count or 0), 0)
-        super().__init__(object_list, per_page, *args, **kwargs)
-
-    @property
-    def count(self):
-        return self._provided_count
-
-
 # Index pre smart search - presunute z dashboard.py bez zmeny spravania
 SMART_KEYWORD_INDEX = {}
 for group in SMART_KEYWORD_GROUPS:
@@ -117,31 +100,19 @@ def _record_dashboard_search_timing(request, **entries) -> None:
 def _build_only_my_location_filters(location_snapshot):
     user_loc_q = Q()
     skill_loc_q = Q()
-    skill_direct_loc_q = Q()
 
     if location_snapshot[0]:
         user_loc_q |= Q(location__icontains=location_snapshot[0])
-        skill_direct_loc_q |= Q(location__icontains=location_snapshot[0])
         skill_loc_q |= Q(location__icontains=location_snapshot[0]) | Q(
             user__location__icontains=location_snapshot[0]
         )
     if location_snapshot[1]:
         user_loc_q |= Q(district__icontains=location_snapshot[1])
-        skill_direct_loc_q |= Q(district__icontains=location_snapshot[1])
         skill_loc_q |= Q(district__icontains=location_snapshot[1]) | Q(
             user__district__icontains=location_snapshot[1]
         )
 
-    return user_loc_q, skill_loc_q, skill_direct_loc_q
-
-
-def _public_user_ids_qs(*, exclude_user_id=None, user_filter=None):
-    qs = User.objects.filter(is_public=True)
-    if exclude_user_id is not None:
-        qs = qs.exclude(pk=exclude_user_id)
-    if user_filter:
-        qs = qs.filter(user_filter)
-    return qs.values_list("pk", flat=True)
+    return user_loc_q, skill_loc_q
 
 
 def _apply_skill_search_scalar_filters(qs, *, offer_type, price_min, price_max):
@@ -158,54 +129,20 @@ def _apply_skill_search_scalar_filters(qs, *, offer_type, price_min, price_max):
     return qs
 
 
-def _build_only_my_location_count_qs(
-    *,
-    viewer_user_id,
-    user_loc_q,
-    skill_direct_loc_q,
-    offer_type,
-    price_min,
-    price_max,
-):
-    base_public_user_ids = _public_user_ids_qs(exclude_user_id=viewer_user_id)
-    base_skills_qs = OfferedSkill.objects.filter(
-        user_id__in=base_public_user_ids,
-        is_hidden=False,
-    )
-    base_skills_qs = _apply_skill_search_scalar_filters(
-        base_skills_qs,
-        offer_type=offer_type,
-        price_min=price_min,
-        price_max=price_max,
-    )
+def _slice_page_ids(qs, *, page: int, per_page: int):
+    """
+    Slice one page plus one sentinel row to determine whether a next page exists.
 
-    skill_ids_qs = None
-    if skill_direct_loc_q:
-        skill_ids_qs = (
-            base_skills_qs.filter(skill_direct_loc_q).order_by().values_list(
-                "id", flat=True
-            )
-        )
+    This avoids exact COUNT(*) on the skills branch, which is the main source of
+    production latency for dashboard search.
+    """
 
-    user_ids_qs = None
-    if user_loc_q:
-        public_geo_user_ids = _public_user_ids_qs(
-            exclude_user_id=viewer_user_id,
-            user_filter=user_loc_q,
-        )
-        user_ids_qs = (
-            base_skills_qs.filter(user_id__in=public_geo_user_ids)
-            .order_by()
-            .values_list("id", flat=True)
-        )
-
-    if skill_ids_qs is not None and user_ids_qs is not None:
-        return skill_ids_qs.union(user_ids_qs)
-    if skill_ids_qs is not None:
-        return skill_ids_qs
-    if user_ids_qs is not None:
-        return user_ids_qs
-    return OfferedSkill.objects.none().values_list("id", flat=True)
+    safe_page = max(int(page or 1), 1)
+    safe_per_page = max(int(per_page or 1), 1)
+    offset = (safe_page - 1) * safe_per_page
+    raw_ids = list(qs.values_list("id", flat=True)[offset : offset + safe_per_page + 1])
+    has_next = len(raw_ids) > safe_per_page
+    return raw_ids[:safe_per_page], has_next
 
 
 @api_view(["GET"])
@@ -238,6 +175,8 @@ def dashboard_search_view(request):
                     "total_users": 0,
                     "total_pages_skills": 0,
                     "total_pages_users": 0,
+                    "has_next_skills": False,
+                    "has_next_users": False,
                 },
             },
             status=status.HTTP_200_OK,
@@ -292,9 +231,7 @@ def dashboard_search_view(request):
         t_viewer_loc0 = perf_counter()
         viewer_location = get_viewer_location_snapshot(request.user)
         viewer_location_ms = (perf_counter() - t_viewer_loc0) * 1000.0
-    user_loc_q, skill_loc_q, skill_direct_loc_q = _build_only_my_location_filters(
-        viewer_location
-    )
+    user_loc_q, skill_loc_q = _build_only_my_location_filters(viewer_location)
 
     # =========================
     # Skills search
@@ -380,42 +317,12 @@ def dashboard_search_view(request):
     else:
         skills_page_qs = skills_filtered_qs.order_by("-user__is_verified", "-created_at")
 
-    t_sk_count_base0 = perf_counter()
-    use_skills_count_fast_path = (
-        only_my_location
-        and bool(skill_loc_q)
-        and not skill_terms
-        and not country_filter
-    )
-    if use_skills_count_fast_path:
-        skills_count_qs = _build_only_my_location_count_qs(
-            viewer_user_id=request.user.pk,
-            user_loc_q=user_loc_q,
-            skill_direct_loc_q=skill_direct_loc_q,
-            offer_type=offer_type,
-            price_min=price_min,
-            price_max=price_max,
-        )
-    else:
-        skills_count_qs = skills_filtered_qs.order_by()
-    t_sk_count_base1 = perf_counter()
-
-    t_sk_count_exec0 = perf_counter()
-    total_skills = skills_count_qs.count()
-    t_sk_count_exec1 = perf_counter()
-
-    t_sk_count0 = t_sk_count_base0
-    skills_paginator = _CountedPaginator(
-        skills_page_qs.values_list("id", flat=True),
-        per_page,
-        total_skills,
-    )
-    total_pages_skills = skills_paginator.num_pages
-    t_sk_count1 = t_sk_count_exec1
-
     t_sk_page0 = perf_counter()
-    skills_page = skills_paginator.get_page(page)
-    page_skill_ids = list(skills_page.object_list)
+    page_skill_ids, has_next_skills = _slice_page_ids(
+        skills_page_qs,
+        page=page,
+        per_page=per_page,
+    )
     t_sk_page1 = perf_counter()
 
     t_sk_load0 = perf_counter()
@@ -495,6 +402,7 @@ def dashboard_search_view(request):
     t_users_load0 = perf_counter()
     page_users = list(users_page.object_list)
     t_users_load1 = perf_counter()
+    has_next_users = users_page.has_next()
 
     t_users_serialize0 = perf_counter()
     users_data = []
@@ -522,15 +430,9 @@ def dashboard_search_view(request):
 
     _record_dashboard_search_timing(
         request,
-        dashboard_search_skills_count_base=(
-            t_sk_count_base1 - t_sk_count_base0
-        )
-        * 1000.0,
-        dashboard_search_skills_count_exec=(
-            t_sk_count_exec1 - t_sk_count_exec0
-        )
-        * 1000.0,
-        dashboard_search_skills_count=(t_sk_count1 - t_sk_count0) * 1000.0,
+        dashboard_search_skills_count_base=0.0,
+        dashboard_search_skills_count_exec=0.0,
+        dashboard_search_skills_count=0.0,
         dashboard_search_skills_page_ids=(t_sk_page1 - t_sk_page0) * 1000.0,
         dashboard_search_skills_page_load=(t_sk_load1 - t_sk_load0) * 1000.0,
         **skills_page_timing,
@@ -552,10 +454,12 @@ def dashboard_search_view(request):
             "pagination": {
                 "page": page,
                 "per_page": per_page,
-                "total_skills": total_skills,
+                "total_skills": None,
                 "total_users": total_users,
-                "total_pages_skills": total_pages_skills,
+                "total_pages_skills": None,
                 "total_pages_users": total_pages_users,
+                "has_next_skills": has_next_skills,
+                "has_next_users": has_next_users,
             },
         },
         status=status.HTTP_200_OK,
