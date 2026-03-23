@@ -330,7 +330,31 @@ function SearchResultsContent() {
   })();
 
   return (
-    <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)]">
+    <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)] pt-12 lg:pt-0">
+      {/* Mobile top bar (iba mobil): späť na vyhľadávanie v dashboarde */}
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-30 bg-white dark:bg-black border-b border-gray-200 dark:border-gray-800 shadow-sm">
+        <div className="grid grid-cols-3 items-center px-3 h-12">
+          <div className="flex items-center justify-start h-full">
+            <button
+              type="button"
+              onClick={() => router.push('/dashboard/search')}
+              className="p-2 -ml-2"
+              aria-label={t('search.back', 'Späť')}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+              </svg>
+            </button>
+          </div>
+          <div className="text-center flex items-center justify-center h-full">
+            <h1 className="text-lg font-semibold text-gray-900 dark:text-white whitespace-nowrap">
+              {t('navigation.search', 'Vyhľadávanie')}
+            </h1>
+          </div>
+          <div />
+        </div>
+      </div>
+
       <div className="mb-4">
         <div className="inline-flex p-1 rounded-2xl border border-gray-200 dark:border-gray-800 bg-white/60 dark:bg-[#0f0f10]">
           {([
