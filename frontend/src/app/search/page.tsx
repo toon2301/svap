@@ -36,18 +36,19 @@ function SearchResultsContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { user } = useAuth();
-  const q = searchParams.get('q') ?? '';
+  const safeGet = (key: string) => searchParams?.get(key) ?? null;
+  const q = safeGet('q') ?? '';
   const { t } = useLanguage();
 
-  const tab = parseTab(searchParams.get('tab'));
+  const tab = parseTab(safeGet('tab'));
 
-  const urlSort = searchParams.get('sort') ?? '';
-  const urlRating = searchParams.get('rating') ?? '';
-  const urlPriceMin = searchParams.get('price_min') ?? '';
-  const urlPriceMax = searchParams.get('price_max') ?? '';
-  const urlType = searchParams.get('type') ?? '';
-  const urlPage = searchParams.get('page') ?? '';
-  const urlUsersPage = searchParams.get('users_page') ?? '';
+  const urlSort = safeGet('sort') ?? '';
+  const urlRating = safeGet('rating') ?? '';
+  const urlPriceMin = safeGet('price_min') ?? '';
+  const urlPriceMax = safeGet('price_max') ?? '';
+  const urlType = safeGet('type') ?? '';
+  const urlPage = safeGet('page') ?? '';
+  const urlUsersPage = safeGet('users_page') ?? '';
 
   const parsedSort = VALID_SORTS.has(urlSort) ? urlSort : 'newest';
   const parsedMinRating =
@@ -90,7 +91,7 @@ function SearchResultsContent() {
 
   const replaceSearchParams = useCallback(
     (updates: Record<string, string | null | undefined>) => {
-      const params = new URLSearchParams(searchParams.toString());
+      const params = new URLSearchParams(searchParams?.toString() ?? '');
       for (const [key, value] of Object.entries(updates)) {
         if (value === null || value === undefined || value === '') {
           params.delete(key);
@@ -99,7 +100,7 @@ function SearchResultsContent() {
         }
       }
       const qs = params.toString();
-      if (qs === searchParams.toString()) return;
+      if (qs === (searchParams?.toString() ?? '')) return;
       router.replace(qs ? `/search?${qs}` : '/search', { scroll: false });
     },
     [router, searchParams],
