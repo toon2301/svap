@@ -7,6 +7,7 @@ from unittest.mock import patch
 from rest_framework_simplejwt.exceptions import InvalidToken
 from accounts.authentication import (
     SwaplyJWTAuthentication,
+    _USER_REDIS_TTL_SECONDS,
     _redis_user_cache_key,
     _serialize_user_for_cache,
     materialize_auth_user,
@@ -20,6 +21,9 @@ User = get_user_model()
 
 @pytest.mark.django_db
 class TestJWTAuthExtras:
+    def test_default_auth_user_redis_ttl_is_one_day(self):
+        assert _USER_REDIS_TTL_SECONDS == 86400
+
     def test_get_user_missing_user_id_raises(self):
         auth = SwaplyJWTAuthentication()
         with pytest.raises(InvalidToken):

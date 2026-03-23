@@ -31,7 +31,7 @@ _USER_CACHE_MAX = 0
 # Cross-process cache TTL (Redis via Django cache). We keep only auth metadata
 # here, never profile fields or unnecessary PII.
 _USER_REDIS_TTL_SECONDS = int(
-    os.getenv("AUTH_USER_REDIS_CACHE_TTL_SECONDS", "3600") or "3600"
+    os.getenv("AUTH_USER_REDIS_CACHE_TTL_SECONDS", "86400") or "86400"
 )
 _AUTH_LAZY_USER_ENABLED = (
     (os.getenv("AUTH_LAZY_USER_ENABLED") or "1").strip().lower()
