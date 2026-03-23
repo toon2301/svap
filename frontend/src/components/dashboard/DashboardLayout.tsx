@@ -171,6 +171,8 @@ export default function DashboardLayout({
       <div
         className={`h-full grid grid-cols-1 ${gridColsClassName}`}
         data-search-open={isSearchOpen ? 'true' : 'false'}
+        data-right-sidebar-open={isRightSidebarOpen ? 'true' : 'false'}
+        data-profile-edit={isProfileEditMode ? 'true' : 'false'}
       >
         {/* Left Sidebar - Desktop only */}
         <div className="hidden lg:block h-screen overflow-hidden" data-sidebar="left">
@@ -245,7 +247,7 @@ export default function DashboardLayout({
 
         {/* Right Sidebar - Desktop only, shows in grid when open */}
         {isRightSidebarOpen && (
-          <div className="hidden lg:block h-screen overflow-hidden">
+          <div className="svap-right-sidebar-col hidden lg:block h-screen overflow-hidden">
             <RightSidebar
               isOpen={isRightSidebarOpen}
               onClose={onRightSidebarClose}

@@ -65,9 +65,36 @@ let sessionInvalid = false;
 let redirectedAfterInvalidation = false;
 // Allow aborting refresh in-flight (e.g. logout)
 let refreshAbortController: AbortController | null = null;
+const REFRESH_HINT_STORAGE_KEY = '__svaply_refresh_hint__';
+
+function readRefreshHint(): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    return window.localStorage.getItem(REFRESH_HINT_STORAGE_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function writeRefreshHint(value: boolean): void {
+  if (typeof window === 'undefined') return;
+  try {
+    if (value) {
+      window.localStorage.setItem(REFRESH_HINT_STORAGE_KEY, '1');
+    } else {
+      window.localStorage.removeItem(REFRESH_HINT_STORAGE_KEY);
+    }
+  } catch {
+    // best-effort only
+  }
+}
+
+let mayHaveRefreshCookieHint = readRefreshHint();
 
 export function setMayHaveRefreshCookie(value: boolean): void {
   oauthTrace('set_may_have_refresh_cookie', { value });
+  mayHaveRefreshCookieHint = value;
+  writeRefreshHint(value);
   if (value) {
     refreshDisabledUntil = null;
     sessionInvalid = false;
@@ -78,6 +105,8 @@ export function setMayHaveRefreshCookie(value: boolean): void {
 /** Call on explicit logout to prevent any refresh attempts. */
 export function invalidateSession(): void {
   oauthTrace('invalidate_session_called');
+  mayHaveRefreshCookieHint = false;
+  writeRefreshHint(false);
   sessionInvalid = true;
   refreshDisabledUntil = Number.MAX_SAFE_INTEGER;
   redirectedAfterInvalidation = false;
@@ -113,6 +142,8 @@ function dispatchSessionInvalid(): void {
 function markSessionInvalid(): void {
   if (sessionInvalid) return;
   oauthTrace('mark_session_invalid');
+  mayHaveRefreshCookieHint = false;
+  writeRefreshHint(false);
   sessionInvalid = true;
   refreshDisabledUntil = Number.MAX_SAFE_INTEGER;
   refreshInFlight = null;
@@ -472,6 +503,21 @@ api.interceptors.response.use(
 
       // Never attempt refresh for login/logout/refresh/csrf/oauth endpoints
       if (shouldSkipRefresh(url)) {
+        return Promise.reject(error);
+      }
+
+      // Anonymous bootstrap on public routes should not trigger refresh/probe loops.
+      // We only attempt refresh if we have some signal that a refresh cookie may exist.
+      const requestUrl = String(url || '');
+      const isMeBootstrapRequest =
+        requestUrl.includes('/auth/me/') &&
+        String(originalRequest?.method || 'get').toLowerCase() === 'get';
+
+      if (isMeBootstrapRequest && !mayHaveRefreshCookieHint) {
+        oauthTrace('refresh_skipped', {
+          reason: 'no_refresh_hint',
+          url: requestUrl,
+        });
         return Promise.reject(error);
       }
 

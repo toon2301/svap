@@ -17,6 +17,17 @@ body.filter-modal-open .filter-modal-flip-button {
   }
 }
 
+/* Profile edit: 1024–1190px + otvorený search panel => skry pravú navigáciu */
+@media (min-width: 1024px) and (max-width: 1190px) {
+  [data-right-sidebar-open='true'][data-profile-edit='true'][data-search-open='true'] {
+    grid-template-columns: 240px 240px 1fr 0px !important;
+  }
+
+  [data-right-sidebar-open='true'][data-profile-edit='true'][data-search-open='true'] .svap-right-sidebar-col {
+    display: none !important;
+  }
+}
+
 /* Skryť spinner kontroly (šípky hore/dole) pri number input poliach */
 input[type="number"]::-webkit-inner-spin-button,
 input[type="number"]::-webkit-outer-spin-button {
