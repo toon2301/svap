@@ -2,6 +2,7 @@
 
 import { lazy, Suspense, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 
 import LoginForm from '../components/LoginForm';
@@ -62,9 +63,14 @@ export default function Home() {
             >
               {t('homepage.welcome', 'Víta ťa')}
             </span>
-            <img
+            <Image
               src="/Logotyp _svaply_ na fialovom pozadí.png"
               alt="Svaply"
+              width={1024}
+              height={1024}
+              priority
+              quality={80}
+              sizes="(max-width: 640px) 220px, (max-width: 1024px) 300px, 400px"
               className="w-auto h-[clamp(140px,22vw,400px)] -mt-10 lg:-ml-[clamp(30px,3vw,50px)] lg:mt-[clamp(8px,1.5vw,20px)]"
             />
           </motion.div>
