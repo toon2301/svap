@@ -22,8 +22,15 @@ interface ResetPasswordErrors {
 export default function ResetPasswordClient() {
   const router = useRouter();
   const params = useParams();
-  const uidb64 = params.uidb64 as string;
-  const token = params.token as string;
+
+  const pickParam = (value: unknown): string => {
+    if (typeof value === 'string') return value;
+    if (Array.isArray(value) && typeof value[0] === 'string') return value[0];
+    return '';
+  };
+
+  const uidb64 = pickParam((params as Record<string, unknown> | null)?.uidb64);
+  const token = pickParam((params as Record<string, unknown> | null)?.token);
   
   const [formData, setFormData] = useState<ResetPasswordData>({
     password: '',

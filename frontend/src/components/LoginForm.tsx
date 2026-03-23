@@ -8,7 +8,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import Credentials from './login/Credentials';
 import GoogleLoginBlock from './login/GoogleLoginBlock';
-import { fetchCsrfToken } from '@/utils/csrf';
+import { fetchCsrfToken, hasCsrfToken } from '@/utils/csrf';
 // auth_state cookie sa nesmie nastavovať z frontendu
 
 interface LoginData {
@@ -53,9 +53,15 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
   useEffect(() => {
     // Získaj CSRF token z backendu – v testoch preskoč, aby sme nevolali sieťové requesty
     if (process.env.NODE_ENV !== 'test') {
-      fetchCsrfToken().catch(() => {});
+      return;
     }
   }, []);
+
+  const ensureCsrfToken = async () => {
+    if (!hasCsrfToken()) {
+      await fetchCsrfToken();
+    }
+  };
 
   const handleLoginInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -112,6 +118,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
     setLoginErrors({});
 
     try {
+      await ensureCsrfToken();
       const response = await api.post(endpoints.auth.resendVerification, {
         email: loginData.email
       });
@@ -280,6 +287,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
     setLoginErrors({});
 
     try {
+      await ensureCsrfToken();
       await api.post(endpoints.auth.login, loginData);
       // Overenie session cez /me (HttpOnly cookies)
       await refreshUser({ force: true });

@@ -41,20 +41,20 @@ function OAuthCallbackContent() {
       }
       handledRef.current = true;
 
-      const userId = searchParams.get('user_id');
-      const error = searchParams.get('error');
-      const oauthSuccess = searchParams.get('oauth');
+      const userId = searchParams?.get('user_id') ?? null;
+      const error = searchParams?.get('error') ?? null;
+      const oauthSuccess = searchParams?.get('oauth') ?? null;
       trace('oauth_callback_loaded', {
         oauthSuccess,
         hasUserId: Boolean(userId),
         hasError: Boolean(error),
-        search: searchParams.toString(),
+        search: searchParams?.toString() ?? '',
       });
       
       const isProd = process.env.NODE_ENV === 'production';
       if (!isProd) {
         console.debug('OAuth callback loaded');
-        console.debug('Search params:', searchParams.toString());
+        console.debug('Search params:', searchParams?.toString() ?? '');
         console.debug('User ID:', userId);
         console.debug('Error:', error);
       }

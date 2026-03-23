@@ -5,10 +5,21 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { useRouter } from 'next/navigation';
 import LoginForm from '../LoginForm';
 import { api } from '@/lib/api';
+import { fetchCsrfToken, hasCsrfToken } from '@/utils/csrf';
+import { useAuth } from '@/contexts/AuthContext';
 
 // Mock Next.js router
 jest.mock('next/navigation', () => ({
   useRouter: jest.fn(),
+}));
+
+jest.mock('@/contexts/AuthContext', () => ({
+  useAuth: jest.fn(),
+}));
+
+jest.mock('@/utils/csrf', () => ({
+  fetchCsrfToken: jest.fn(),
+  hasCsrfToken: jest.fn(),
 }));
 
 // Mock API
@@ -25,13 +36,24 @@ jest.mock('@/lib/api', () => ({
 
 const mockPush = jest.fn();
 const mockApiPost = api.post as jest.MockedFunction<typeof api.post>;
+const mockFetchCsrfToken = fetchCsrfToken as jest.MockedFunction<typeof fetchCsrfToken>;
+const mockHasCsrfToken = hasCsrfToken as jest.MockedFunction<typeof hasCsrfToken>;
+const mockRefreshUser = jest.fn();
 
 describe('LoginForm', () => {
   beforeEach(() => {
     (useRouter as jest.Mock).mockReturnValue({
       push: mockPush,
     });
+    (useAuth as jest.Mock).mockReturnValue({
+      refreshUser: mockRefreshUser,
+    });
     mockApiPost.mockClear();
+    mockFetchCsrfToken.mockClear();
+    mockHasCsrfToken.mockReset();
+    mockHasCsrfToken.mockReturnValue(true);
+    mockRefreshUser.mockReset();
+    mockRefreshUser.mockResolvedValue(undefined);
     mockPush.mockClear();
   });
 

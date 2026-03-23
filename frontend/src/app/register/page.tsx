@@ -1,7 +1,12 @@
 'use client';
 
 import RegisterForm from '../../components/RegisterForm';
+import ReCaptchaProvider from '@/components/ReCaptchaProvider';
 
 export default function RegisterPage() {
-  return <RegisterForm />;
+  return (
+    <ReCaptchaProvider>
+      <RegisterForm />
+    </ReCaptchaProvider>
+  );
 }
