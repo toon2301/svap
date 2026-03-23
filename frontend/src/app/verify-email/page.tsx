@@ -23,7 +23,7 @@ function VerifyEmailContent() {
 
   useEffect(() => {
     const verifyEmail = async () => {
-      const token = searchParams.get('token');
+      const token = searchParams?.get('token') ?? null;
       
       if (!token) {
         setVerificationStatus({

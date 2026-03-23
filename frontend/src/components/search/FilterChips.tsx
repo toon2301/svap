@@ -22,7 +22,7 @@ export function FilterChips() {
 
   const removeParam = useCallback(
     (param: string) => {
-      const params = new URLSearchParams(searchParams.toString());
+      const params = new URLSearchParams(searchParams?.toString() ?? '');
       params.delete(param);
       params.set('page', '1');
       const qs = params.toString();
@@ -33,8 +33,8 @@ export function FilterChips() {
 
   const clearAllFilters = useCallback(() => {
     const params = new URLSearchParams();
-    const q = searchParams.get('q');
-    const sort = searchParams.get('sort');
+    const q = searchParams?.get('q') ?? null;
+    const sort = searchParams?.get('sort') ?? null;
     if (q != null && q.trim() !== '') params.set('q', q.trim());
     if (sort != null && sort.trim() !== '') params.set('sort', sort.trim());
     const qs = params.toString();
@@ -44,7 +44,7 @@ export function FilterChips() {
   const chips: Array<{ param: string; label: string }> = [];
 
   for (const { param, label } of CHIP_CONFIG) {
-    const value = searchParams.get(param);
+    const value = searchParams?.get(param) ?? null;
     if (value != null && value.trim() !== '') {
       chips.push({ param, label: label(value.trim()) });
     }

@@ -60,7 +60,7 @@ export function useDashboardHighlighting({
       return;
     }
 
-    const highlightParam = searchParams.get('highlight');
+    const highlightParam = searchParams?.get('highlight') ?? null;
     if (highlightParam) {
       const id = Number(highlightParam);
       if (!isNaN(id)) {
