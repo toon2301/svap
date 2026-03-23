@@ -3,6 +3,7 @@ from time import perf_counter
 
 from django.contrib.auth import get_user_model
 from django.core.paginator import Paginator
+from django.db import DatabaseError
 from django.db.models import Case, IntegerField, Q, When
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
@@ -11,7 +12,7 @@ from rest_framework.response import Response
 
 from swaply.rate_limiting import api_rate_limit
 
-from ...models import OfferedSkill
+from ...models import DashboardSkillSearchProjection, OfferedSkill
 from ...serializers import OfferedSkillSerializer
 from ...viewer_location_cache import get_viewer_location_snapshot
 from .smart_search import SMART_KEYWORD_GROUPS
@@ -33,6 +34,16 @@ for group in SMART_KEYWORD_GROUPS:
         SMART_KEYWORD_INDEX[word] = lowered
         no_accents = _remove_diacritics(word)
         SMART_KEYWORD_INDEX[no_accents] = lowered
+
+
+COUNTRY_LOCATION_MAPPING = {
+    "SK": ["slovakia", "slovensko", "slovak"],
+    "CZ": ["czech", "\u010desko", "\u010desk\u00e1", "cesko", "ceska"],
+    "PL": ["poland", "po\u013esko", "polsko", "polish"],
+    "HU": ["hungary", "ma\u010farsko", "madarsko", "hungarian"],
+    "DE": ["germany", "nemecko", "deutschland", "german"],
+    "AT": ["austria", "rak\u00fasko", "rakusko", "\u00f6sterreich", "osterreich"],
+}
 
 
 def _serialize_search_skills_page(request, page_skill_ids):
@@ -115,6 +126,70 @@ def _build_only_my_location_filters(location_snapshot):
     return user_loc_q, skill_loc_q
 
 
+def _build_projection_only_my_location_filters(location_snapshot):
+    skill_loc_q = Q()
+
+    if location_snapshot[0]:
+        skill_loc_q |= Q(skill_location__icontains=location_snapshot[0]) | Q(
+            user_location__icontains=location_snapshot[0]
+        )
+    if location_snapshot[1]:
+        skill_loc_q |= Q(skill_district__icontains=location_snapshot[1]) | Q(
+            user_district__icontains=location_snapshot[1]
+        )
+
+    return skill_loc_q
+
+
+def _build_skill_search_query(skill_terms, *, projection=False):
+    skill_query = Q()
+    for term in skill_terms:
+        pattern = _build_accent_insensitive_pattern(_sanitize_search_term(term))
+        if projection:
+            skill_query |= (
+                Q(category__iregex=pattern)
+                | Q(subcategory__iregex=pattern)
+                | Q(tags_text__icontains=term)
+                | Q(skill_location__iregex=pattern)
+                | Q(skill_district__iregex=pattern)
+                | Q(user_location__iregex=pattern)
+                | Q(user_district__iregex=pattern)
+            )
+        else:
+            skill_query |= (
+                Q(category__iregex=pattern)
+                | Q(subcategory__iregex=pattern)
+                | Q(tags__icontains=term)
+                | Q(location__iregex=pattern)
+                | Q(district__iregex=pattern)
+                | Q(user__location__iregex=pattern)
+                | Q(user__district__iregex=pattern)
+            )
+    return skill_query
+
+
+def _apply_skill_country_filter(qs, country_filter, *, projection=False):
+    country_terms = COUNTRY_LOCATION_MAPPING.get(country_filter)
+    if not country_terms:
+        return qs
+
+    country_query = Q()
+    for term in country_terms:
+        if projection:
+            country_query |= Q(user_location__icontains=term) | Q(
+                user_district__icontains=term
+            )
+        else:
+            country_query |= Q(user__location__icontains=term) | Q(
+                user__district__icontains=term
+            )
+
+    test_qs = qs.filter(country_query)
+    if test_qs.exists():
+        return qs.filter(country_query)
+    return qs
+
+
 def _apply_skill_search_scalar_filters(qs, *, offer_type, price_min, price_max):
     if offer_type == "offer":
         qs = qs.filter(is_seeking=False)
@@ -129,7 +204,7 @@ def _apply_skill_search_scalar_filters(qs, *, offer_type, price_min, price_max):
     return qs
 
 
-def _slice_page_ids(qs, *, page: int, per_page: int):
+def _slice_page_ids(qs, *, page: int, per_page: int, id_field: str = "id"):
     """
     Slice one page plus one sentinel row to determine whether a next page exists.
 
@@ -140,9 +215,113 @@ def _slice_page_ids(qs, *, page: int, per_page: int):
     safe_page = max(int(page or 1), 1)
     safe_per_page = max(int(per_page or 1), 1)
     offset = (safe_page - 1) * safe_per_page
-    raw_ids = list(qs.values_list("id", flat=True)[offset : offset + safe_per_page + 1])
+    raw_ids = list(
+        qs.values_list(id_field, flat=True)[offset : offset + safe_per_page + 1]
+    )
     has_next = len(raw_ids) > safe_per_page
     return raw_ids[:safe_per_page], has_next
+
+
+def _build_projection_skills_page_qs(
+    *,
+    viewer_user_id,
+    raw_query,
+    skill_terms,
+    country_filter,
+    offer_type,
+    price_min,
+    price_max,
+    projection_skill_loc_q,
+    only_my_location,
+):
+    skills_qs = DashboardSkillSearchProjection.objects.filter(user_is_public=True)
+    skills_qs = skills_qs.exclude(user_id=viewer_user_id)
+    skills_qs = skills_qs.filter(is_hidden=False)
+
+    if skill_terms:
+        skills_qs = skills_qs.filter(
+            _build_skill_search_query(skill_terms, projection=True)
+        )
+
+    if country_filter:
+        skills_qs = _apply_skill_country_filter(
+            skills_qs,
+            country_filter,
+            projection=True,
+        )
+
+    skills_qs = _apply_skill_search_scalar_filters(
+        skills_qs,
+        offer_type=offer_type,
+        price_min=price_min,
+        price_max=price_max,
+    )
+
+    if only_my_location and projection_skill_loc_q:
+        skills_qs = skills_qs.filter(projection_skill_loc_q)
+
+    if raw_query:
+        return skills_qs.annotate(
+            relevance=Case(
+                When(category__icontains=raw_query, then=3),
+                When(subcategory__icontains=raw_query, then=3),
+                When(tags_text__icontains=raw_query, then=2),
+                When(skill_location__icontains=raw_query, then=1),
+                When(skill_district__icontains=raw_query, then=1),
+                default=0,
+                output_field=IntegerField(),
+            )
+        ).order_by("-relevance", "-user_is_verified", "-created_at")
+
+    return skills_qs.order_by("-user_is_verified", "-created_at")
+
+
+def _build_legacy_skills_page_qs(
+    *,
+    viewer_user,
+    raw_query,
+    skill_terms,
+    country_filter,
+    offer_type,
+    price_min,
+    price_max,
+    skill_loc_q,
+    only_my_location,
+):
+    skills_qs = OfferedSkill.objects.select_related("user").filter(user__is_public=True)
+    skills_qs = skills_qs.exclude(user=viewer_user)
+    skills_qs = skills_qs.filter(is_hidden=False)
+
+    if skill_terms:
+        skills_qs = skills_qs.filter(_build_skill_search_query(skill_terms))
+
+    if country_filter:
+        skills_qs = _apply_skill_country_filter(skills_qs, country_filter)
+
+    skills_qs = _apply_skill_search_scalar_filters(
+        skills_qs,
+        offer_type=offer_type,
+        price_min=price_min,
+        price_max=price_max,
+    )
+
+    if only_my_location and skill_loc_q:
+        skills_qs = skills_qs.filter(skill_loc_q)
+
+    if raw_query:
+        return skills_qs.annotate(
+            relevance=Case(
+                When(category__icontains=raw_query, then=3),
+                When(subcategory__icontains=raw_query, then=3),
+                When(tags__icontains=raw_query, then=2),
+                When(location__icontains=raw_query, then=1),
+                When(district__icontains=raw_query, then=1),
+                default=0,
+                output_field=IntegerField(),
+            )
+        ).order_by("-relevance", "-user__is_verified", "-created_at")
+
+    return skills_qs.order_by("-user__is_verified", "-created_at")
 
 
 @api_view(["GET"])
@@ -232,51 +411,13 @@ def dashboard_search_view(request):
         viewer_location = get_viewer_location_snapshot(request.user)
         viewer_location_ms = (perf_counter() - t_viewer_loc0) * 1000.0
     user_loc_q, skill_loc_q = _build_only_my_location_filters(viewer_location)
+    projection_skill_loc_q = _build_projection_only_my_location_filters(
+        viewer_location
+    )
 
     # =========================
     # Skills search
     # =========================
-    skills_qs = OfferedSkill.objects.select_related("user").filter(user__is_public=True)
-    skills_qs = skills_qs.exclude(user=request.user)
-    skills_qs = skills_qs.filter(is_hidden=False)
-
-    if skill_terms:
-        skill_query = Q()
-        for term in skill_terms:
-            pattern = _build_accent_insensitive_pattern(_sanitize_search_term(term))
-            skill_query |= (
-                Q(category__iregex=pattern)
-                | Q(subcategory__iregex=pattern)
-                | Q(tags__icontains=term)
-                | Q(location__iregex=pattern)
-                | Q(district__iregex=pattern)
-                | Q(user__location__iregex=pattern)
-                | Q(user__district__iregex=pattern)
-            )
-        skills_qs = skills_qs.filter(skill_query)
-
-    if country_filter:
-        country_location_mapping = {
-            "SK": ["slovakia", "slovensko", "slovak"],
-            "CZ": ["czech", "\u010desko", "\u010desk\u00e1", "cesko", "ceska"],
-            "PL": ["poland", "po\u013esko", "polsko", "polish"],
-            "HU": ["hungary", "ma\u010farsko", "madarsko", "hungarian"],
-            "DE": ["germany", "nemecko", "deutschland", "german"],
-            "AT": ["austria", "rak\u00fasko", "rakusko", "\u00f6sterreich", "osterreich"],
-        }
-
-        if country_filter in country_location_mapping:
-            country_terms = country_location_mapping[country_filter]
-            country_query = Q()
-            for term in country_terms:
-                country_query |= Q(user__location__icontains=term) | Q(
-                    user__district__icontains=term
-                )
-
-            test_qs = skills_qs.filter(country_query)
-            if test_qs.exists():
-                skills_qs = skills_qs.filter(country_query)
-
     price_min = None
     price_max = None
     if price_min_raw:
@@ -290,39 +431,42 @@ def dashboard_search_view(request):
         except InvalidOperation:
             price_max = None
 
-    skills_qs = _apply_skill_search_scalar_filters(
-        skills_qs,
-        offer_type=offer_type,
-        price_min=price_min,
-        price_max=price_max,
-    )
-
-    if only_my_location and skill_loc_q:
-        skills_qs = skills_qs.filter(skill_loc_q)
-
-    skills_filtered_qs = skills_qs
-
-    if raw_query:
-        skills_page_qs = skills_filtered_qs.annotate(
-            relevance=Case(
-                When(category__icontains=raw_query, then=3),
-                When(subcategory__icontains=raw_query, then=3),
-                When(tags__icontains=raw_query, then=2),
-                When(location__icontains=raw_query, then=1),
-                When(district__icontains=raw_query, then=1),
-                default=0,
-                output_field=IntegerField(),
-            )
-        ).order_by("-relevance", "-user__is_verified", "-created_at")
-    else:
-        skills_page_qs = skills_filtered_qs.order_by("-user__is_verified", "-created_at")
-
     t_sk_page0 = perf_counter()
-    page_skill_ids, has_next_skills = _slice_page_ids(
-        skills_page_qs,
-        page=page,
-        per_page=per_page,
-    )
+    try:
+        projection_skills_page_qs = _build_projection_skills_page_qs(
+            viewer_user_id=request.user.pk,
+            raw_query=raw_query,
+            skill_terms=skill_terms,
+            country_filter=country_filter,
+            offer_type=offer_type,
+            price_min=price_min,
+            price_max=price_max,
+            projection_skill_loc_q=projection_skill_loc_q,
+            only_my_location=only_my_location,
+        )
+        page_skill_ids, has_next_skills = _slice_page_ids(
+            projection_skills_page_qs,
+            page=page,
+            per_page=per_page,
+            id_field="skill_id",
+        )
+    except DatabaseError:
+        legacy_skills_page_qs = _build_legacy_skills_page_qs(
+            viewer_user=request.user,
+            raw_query=raw_query,
+            skill_terms=skill_terms,
+            country_filter=country_filter,
+            offer_type=offer_type,
+            price_min=price_min,
+            price_max=price_max,
+            skill_loc_q=skill_loc_q,
+            only_my_location=only_my_location,
+        )
+        page_skill_ids, has_next_skills = _slice_page_ids(
+            legacy_skills_page_qs,
+            page=page,
+            per_page=per_page,
+        )
     t_sk_page1 = perf_counter()
 
     t_sk_load0 = perf_counter()

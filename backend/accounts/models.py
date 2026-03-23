@@ -561,6 +561,68 @@ class OfferedSkill(models.Model):
         return f"{self.user.display_name} - {self.category} → {self.subcategory}"
 
 
+class DashboardSkillSearchProjection(models.Model):
+    """
+    Flattened dashboard skills search projection.
+
+    The dashboard search endpoint uses this table only to fetch ordered skill
+    ids. The final response is still serialized from real OfferedSkill rows.
+    """
+
+    skill = models.OneToOneField(
+        OfferedSkill,
+        on_delete=models.CASCADE,
+        related_name="dashboard_search_projection",
+        verbose_name=_("ZruÄnosÅ¥"),
+    )
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="dashboard_skill_search_projections",
+        verbose_name=_("PouÅ¾Ã­vateÄ¾"),
+    )
+    category = models.CharField(_("KategÃ³ria"), max_length=100)
+    subcategory = models.CharField(_("PodkategÃ³ria"), max_length=100)
+    tags_text = models.TextField(_("Tagy pre vyhÄ¾adÃ¡vanie"), blank=True, default="")
+    skill_location = models.CharField(_("Miesto zruÄnosti"), max_length=35, blank=True)
+    skill_district = models.CharField(_("Okres zruÄnosti"), max_length=100, blank=True)
+    user_location = models.CharField(_("Lokalita pouÅ¾Ã­vateÄ¾a"), max_length=25, blank=True)
+    user_district = models.CharField(_("Okres pouÅ¾Ã­vateÄ¾a"), max_length=100, blank=True)
+    user_is_public = models.BooleanField(_("VerejnÃ½ profil"), default=True)
+    user_is_verified = models.BooleanField(_("OverenÃ½ profil"), default=False)
+    is_hidden = models.BooleanField(_("SkrytÃ¡ zruÄnosÅ¥"), default=False)
+    is_seeking = models.BooleanField(_("HÄ¾adÃ¡m"), default=False)
+    price_from = models.DecimalField(
+        _("Cena od"), max_digits=10, decimal_places=2, null=True, blank=True
+    )
+    created_at = models.DateTimeField(_("VytvorenÃ©"))
+    updated_at = models.DateTimeField(_("AktualizovanÃ©"), auto_now=True)
+
+    class Meta:
+        verbose_name = _("Dashboard search projekcia zruÄnosti")
+        verbose_name_plural = _("Dashboard search projekcie zruÄnostÃ­")
+        indexes = [
+            models.Index(
+                fields=["is_hidden", "user_is_public", "-user_is_verified", "-created_at"],
+                name="acc_dash_skill_proj_sort_idx",
+            ),
+            models.Index(
+                fields=[
+                    "is_hidden",
+                    "user_is_public",
+                    "is_seeking",
+                    "-user_is_verified",
+                    "-created_at",
+                ],
+                name="acc_dsh_skl_prj_type_idx",
+            ),
+            models.Index(fields=["user", "-created_at"], name="acc_dash_skill_proj_user_idx"),
+        ]
+
+    def __str__(self):
+        return f"Search projection pre skill_id={self.skill_id}"
+
+
 class OfferedSkillImage(models.Model):
     """Obrázok priradený k ponúkanej zručnosti (ponuke)."""
 

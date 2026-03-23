@@ -1,12 +1,26 @@
 'use client';
 
-import React from 'react';
+import React, { useSyncExternalStore } from 'react';
 import type { User } from '../../../../types';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { getProfileDisplayName } from '@/lib/profileDisplayName';
 import UserAvatar from './UserAvatar';
 import WebsitesRow from './view/WebsitesRow';
 import { ProfileDesktopSocialLinks } from './ProfileDesktopSocialLinks';
+
+function useMediaQuery(query: string) {
+  return useSyncExternalStore(
+    (onStoreChange) => {
+      if (typeof window === 'undefined') return () => {};
+      const mql = window.matchMedia(query);
+      const handler = () => onStoreChange();
+      mql.addEventListener('change', handler);
+      return () => mql.removeEventListener('change', handler);
+    },
+    () => (typeof window !== 'undefined' ? window.matchMedia(query).matches : false),
+    () => false,
+  );
+}
 
 type Props = {
   displayUser: User;
@@ -38,9 +52,10 @@ export function ProfileDesktopHeader({
   onHamburgerOpen,
 }: Props) {
   const { t } = useLanguage();
+  const is1024to1190 = useMediaQuery('(min-width: 1024px) and (max-width: 1190px)');
 
   return (
-    <div className="flex flex-col items-start w-full">
+    <div className="flex flex-col items-start w-full lg:items-stretch xl:items-start">
       <div className="flex gap-[clamp(1rem,2vw,2rem)] items-start lg:items-center w-full">
         <div className="flex-shrink-0">
           <UserAvatar
@@ -58,7 +73,7 @@ export function ProfileDesktopHeader({
             <h2 className="text-[clamp(1.25rem,2vw,1.75rem)] font-semibold text-gray-900 dark:text-white truncate min-w-0">
               {getProfileDisplayName(displayUser, accountType)}
             </h2>
-            <ProfileDesktopSocialLinks user={displayUser} />
+            {!is1024to1190 && <ProfileDesktopSocialLinks user={displayUser} />}
           </div>
 
           {(Number(displayUser.completed_cooperations_count) || 0) > 0 && (
@@ -170,8 +185,14 @@ export function ProfileDesktopHeader({
         </div>
       )}
 
+      {is1024to1190 && (
+        <div className="mt-3 w-full flex justify-start">
+          <ProfileDesktopSocialLinks user={displayUser} />
+        </div>
+      )}
+
       {/* Tlačidlá pod fotkou – 1024–1190px: celá šírka, rovnako veľké, vycentrované */}
-      <div className="flex gap-[clamp(0.5rem,1vw,0.5rem)] mt-[clamp(0.75rem,1.5vw,0.75rem)] lg:w-full xl:w-auto">
+      <div className="flex gap-[clamp(0.5rem,1vw,0.5rem)] mt-[clamp(0.75rem,1.5vw,0.75rem)] lg:w-full lg:min-w-full lg:self-stretch xl:w-auto xl:min-w-0 xl:self-auto">
         <button
           onClick={() => {
             if (isOtherUserProfile && onSendMessage) {

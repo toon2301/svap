@@ -1,11 +1,34 @@
 from django.contrib.auth import get_user_model
+from django.db import DatabaseError
 from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
 
 from .models import OfferedSkill, OfferedSkillImage, Review, SkillRequest
 from .authentication import invalidate_user_auth_cache
+from .search_projection import (
+    sync_dashboard_skill_search_projection,
+    sync_dashboard_skill_search_projections_for_user,
+)
 
 User = get_user_model()
+
+
+def _sync_dashboard_search_projection_for_user_safely(user_id):
+    if not user_id:
+        return
+    try:
+        sync_dashboard_skill_search_projections_for_user(user_id=user_id)
+    except DatabaseError:
+        pass
+
+
+def _sync_dashboard_search_projection_for_skill_safely(skill_id):
+    if not skill_id:
+        return
+    try:
+        sync_dashboard_skill_search_projection(skill_id=skill_id)
+    except DatabaseError:
+        pass
 
 
 @receiver(post_save, sender=User)
@@ -20,6 +43,7 @@ def invalidate_auth_cache_after_user_save(sender, instance, **kwargs):
     invalidate_user_auth_cache(getattr(instance, "pk", None))
     _invalidate_dashboard_user_skills_cache_for_user(getattr(instance, "pk", None))
     _invalidate_viewer_location_snapshot_cache_for_user(getattr(instance, "pk", None))
+    _sync_dashboard_search_projection_for_user_safely(getattr(instance, "pk", None))
 
 
 @receiver(post_delete, sender=User)
@@ -113,6 +137,7 @@ def _owner_id_for_skill_request(instance):
 @receiver(post_delete, sender=OfferedSkill)
 def invalidate_skills_cache_after_skill_change(sender, instance, **kwargs):
     user_id = getattr(instance, "user_id", None)
+    _sync_dashboard_search_projection_for_skill_safely(getattr(instance, "pk", None))
     _invalidate_skills_list_cache_for_user(user_id)
     _invalidate_dashboard_user_skills_cache_for_user(user_id)
 

@@ -10,6 +10,13 @@ body.filter-modal-open .filter-modal-flip-button {
   pointer-events: none !important;
 }
 
+/* Profile offers: 1024–1190px + otvorený search panel => 1 karta na riadok */
+@media (min-width: 1024px) and (max-width: 1190px) {
+  [data-search-open='true'] .svap-profile-offers-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
 /* Skryť spinner kontroly (šípky hore/dole) pri number input poliach */
 input[type="number"]::-webkit-inner-spin-button,
 input[type="number"]::-webkit-outer-spin-button {

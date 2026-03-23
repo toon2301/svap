@@ -460,7 +460,7 @@ export default function ProfileOffersSection({
   if (isLoading && offers.length === 0) {
     return (
       <div className="mt-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-[clamp(1rem,2vw,1.5rem)]">
+        <div className="svap-profile-offers-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-[clamp(1rem,2vw,1.5rem)]">
           {[1, 2, 3, 4, 5, 6].map((i) => (
             <ProfileOfferCardSkeleton key={i} />
           ))}
@@ -479,7 +479,7 @@ export default function ProfileOffersSection({
           )}
         </p>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-[clamp(1rem,2vw,1.5rem)]">
+        <div className="svap-profile-offers-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-[clamp(1rem,2vw,1.5rem)]">
           {offers.map((offer) => {
             const cardId =
               offer.id ??

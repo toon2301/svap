@@ -168,7 +168,10 @@ export default function DashboardLayout({
       />
 
       {/* Desktop Layout - CSS Grid */}
-      <div className={`h-full grid grid-cols-1 ${gridColsClassName}`}>
+      <div
+        className={`h-full grid grid-cols-1 ${gridColsClassName}`}
+        data-search-open={isSearchOpen ? 'true' : 'false'}
+      >
         {/* Left Sidebar - Desktop only */}
         <div className="hidden lg:block h-screen overflow-hidden" data-sidebar="left">
           <Sidebar

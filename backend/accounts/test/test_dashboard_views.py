@@ -14,6 +14,7 @@ from unittest.mock import patch
 
 from accounts.authentication import _build_lazy_auth_user, _serialize_user_for_cache
 from accounts.models import (
+    DashboardSkillSearchProjection,
     OfferedSkill,
     OfferedSkillImage,
     Review,
@@ -345,6 +346,101 @@ class DashboardViewsTestCase(TestCase):
             skills_count_queries,
             f"Expected dashboard search skills branch to skip exact COUNT(*), got: {skills_count_queries}",
         )
+
+    def test_dashboard_search_projection_syncs_skill_and_user_fields(self):
+        owner = User.objects.create_user(
+            username="projectionowner",
+            email="projectionowner@example.com",
+            password="testpass123",
+            first_name="Projection",
+            last_name="Owner",
+            user_type="individual",
+            is_public=True,
+            is_verified=False,
+            location="Bratislava",
+            district="Bratislava I",
+        )
+        skill = OfferedSkill.objects.create(
+            user=owner,
+            category="Painter",
+            subcategory="Interiors",
+            description="Description",
+            detailed_description="Details",
+            tags=["wall", "paint"],
+            location="Bratislava",
+            district="Bratislava I",
+            is_hidden=False,
+            is_seeking=False,
+        )
+
+        projection = DashboardSkillSearchProjection.objects.get(skill=skill)
+        self.assertEqual(projection.user_id, owner.id)
+        self.assertEqual(projection.category, "Painter")
+        self.assertEqual(projection.tags_text, "wall paint")
+        self.assertEqual(projection.user_location, "Bratislava")
+        self.assertFalse(projection.user_is_verified)
+
+        owner.is_verified = True
+        owner.location = "Kosice"
+        owner.district = "Kosice I"
+        owner.save(update_fields=["is_verified", "location", "district"])
+
+        projection.refresh_from_db()
+        self.assertTrue(projection.user_is_verified)
+        self.assertEqual(projection.user_location, "Kosice")
+        self.assertEqual(projection.user_district, "Kosice I")
+
+    def test_dashboard_search_skills_page_id_query_uses_projection_table(self):
+        self.user.location = "Bratislava"
+        self.user.district = "Bratislava I"
+        self.user.save(update_fields=["location", "district"])
+
+        owner = User.objects.create_user(
+            username="projectionqueryowner",
+            email="projectionqueryowner@example.com",
+            password="testpass123",
+            first_name="Projection",
+            last_name="Query",
+            user_type="individual",
+            is_public=True,
+            is_verified=True,
+            location="Bratislava",
+            district="Bratislava I",
+        )
+        OfferedSkill.objects.create(
+            user=owner,
+            category="Local skill",
+            subcategory="Sub",
+            description="Description",
+            detailed_description="Details",
+            tags=["local"],
+            location="Bratislava",
+            district="Bratislava I",
+            is_hidden=False,
+            is_seeking=False,
+        )
+
+        url = reverse("accounts:dashboard_search")
+        with CaptureQueriesContext(connection) as ctx:
+            response = self.client.get(
+                url,
+                {"only_my_location": "1", "per_page": "5", "page": "1"},
+            )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        projection_queries = [
+            query["sql"]
+            for query in ctx.captured_queries
+            if '"accounts_dashboardskillsearchprojection"' in query["sql"]
+            and "SELECT" in query["sql"].upper()
+        ]
+        self.assertTrue(
+            projection_queries,
+            "Expected dashboard search to read skill page ids from projection table",
+        )
+        page_id_query = projection_queries[0].upper()
+        self.assertIn("ORDER BY", page_id_query)
+        self.assertNotIn('INNER JOIN "ACCOUNTS_USER"', page_id_query)
 
     def test_viewer_location_snapshot_avoids_full_lazy_user_materialization(self):
         self.user.location = "Bratislava"
