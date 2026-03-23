@@ -64,7 +64,7 @@ export default function Home() {
               {t('homepage.welcome', 'Víta ťa')}
             </span>
             <Image
-              src="/Logotyp _svaply_ na fialovom pozadí.png"
+              src="/svaply-logo-hero.png"
               alt="Svaply"
               width={1024}
               height={1024}
