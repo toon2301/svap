@@ -328,9 +328,10 @@ class UserProfileSerializer(serializers.ModelSerializer):
 
     def get_completed_cooperations_count(self, obj):
         t0 = perf_counter()
-        annotated_count = getattr(obj, "_completed_cooperations_count", None)
-        if annotated_count is not None:
-            result = int(annotated_count)
+        sent_count = getattr(obj, "_completed_sent_count", None)
+        received_count = getattr(obj, "_completed_received_count", None)
+        if sent_count is not None and received_count is not None:
+            result = int(sent_count) + int(received_count)
             self._record_me_serializer_timing("me_serialize_completed_count", t0)
             return result
         result = SkillRequest.objects.filter(

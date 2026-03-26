@@ -13,7 +13,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from django.contrib.auth import get_user_model
 from django.db import transaction
-from django.db.models import Count, F, IntegerField, OuterRef, Q, Subquery, Value
+from django.db.models import Count, IntegerField, OuterRef, Q, Subquery, Value
 from django.db.models.functions import Coalesce
 from django.core.cache import cache
 import logging
@@ -94,9 +94,6 @@ def _me_user_queryset():
             Value(0),
             output_field=IntegerField(),
         ),
-    ).annotate(
-        _completed_cooperations_count=F("_completed_sent_count")
-        + F("_completed_received_count")
     )
 
 
