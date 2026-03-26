@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { api, endpoints } from '@/lib/api';
@@ -49,13 +49,6 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
       // best-effort debug only
     }
   };
-
-  useEffect(() => {
-    // Získaj CSRF token z backendu – v testoch preskoč, aby sme nevolali sieťové requesty
-    if (process.env.NODE_ENV !== 'test') {
-      return;
-    }
-  }, []);
 
   const ensureCsrfToken = async () => {
     if (!hasCsrfToken()) {

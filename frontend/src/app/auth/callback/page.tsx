@@ -4,7 +4,6 @@ export const dynamic = 'force-dynamic';
 
 import { useEffect, useRef, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { api } from '@/lib/api';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 
@@ -81,38 +80,24 @@ function OAuthCallbackContent() {
         return;
       }
       
-      // Cookie-only mód: backend nastaví HttpOnly cookies, tokeny NESMÚ byť v URL
+      // Cookie-only mód: backend nastaví HttpOnly cookies, tokeny NESMÚ byť v URL.
+      // Parent window aj tak spraví autoritatívny refreshUser({ force: true }),
+      // takže popup nemusí robiť druhý /auth/me/ request.
       if (oauthSuccess === 'success') {
-        try {
-          // Over session cez /me/ (ak prešlo, cookies fungujú)
-          trace('oauth_callback_me_check_start');
-          await api.get('/auth/me/');
-          trace('oauth_callback_me_check_success');
-          setStatus('success');
-          if (window.opener) {
-            const oauthNonce = sessionStorage.getItem('oauth_nonce');
-            trace('oauth_callback_postmessage_success', {
-              hasNonce: Boolean(oauthNonce),
-            });
-            window.opener.postMessage({
-              type: 'OAUTH_SUCCESS',
-              nonce: oauthNonce
-            }, window.location.origin);
-            sessionStorage.removeItem('oauth_nonce');
-          }
-          setTimeout(() => window.close(), 1000);
-          return;
-        } catch (e) {
-          trace('oauth_callback_me_check_failed');
-          setError(t('auth.missingGoogleTokens'));
-          setStatus('error');
-          if (window.opener) {
-            trace('oauth_callback_postmessage_missing_tokens');
-            window.opener.postMessage({ type: 'OAUTH_ERROR', error: t('auth.missingGoogleTokens') }, window.location.origin);
-          }
-          setTimeout(() => window.close(), 3000);
-          return;
+        setStatus('success');
+        if (window.opener) {
+          const oauthNonce = sessionStorage.getItem('oauth_nonce');
+          trace('oauth_callback_postmessage_success', {
+            hasNonce: Boolean(oauthNonce),
+          });
+          window.opener.postMessage({
+            type: 'OAUTH_SUCCESS',
+            nonce: oauthNonce
+          }, window.location.origin);
+          sessionStorage.removeItem('oauth_nonce');
         }
+        setTimeout(() => window.close(), 1000);
+        return;
       }
 
       setError(t('auth.oauthLoginFailed'));
