@@ -12,6 +12,7 @@ type RequestsNotificationsContextValue = {
 const RequestsNotificationsContext = createContext<RequestsNotificationsContextValue | null>(null);
 
 const POLL_INTERVAL_MS = 10000;
+const UNREAD_COUNT_FRESH_MS = 15000;
 const WS_CLOSE_GRACE_MS = 750;
 const WS_REAUTH_RECONNECT_DELAY_MS = 250;
 
@@ -297,7 +298,7 @@ export function RequestsNotificationsProvider({ children }: { children: React.Re
 
   const isMountedRef = useRef(true);
 
-  const isUnreadCountFresh = useCallback((maxAgeMs = 5000) => {
+  const isUnreadCountFresh = useCallback((maxAgeMs = UNREAD_COUNT_FRESH_MS) => {
     return Date.now() - getUnreadCountStore().lastSuccessfulRefreshAt < maxAgeMs;
   }, []);
 
@@ -383,13 +384,14 @@ export function RequestsNotificationsProvider({ children }: { children: React.Re
 
     const intervalId = window.setInterval(() => {
       if (!isDocumentVisible()) return;
+      if (isUnreadCountFresh()) return;
       void refreshUnreadCount();
     }, POLL_INTERVAL_MS);
 
     return () => {
       window.clearInterval(intervalId);
     };
-  }, [isRealtimeConnected, refreshUnreadCount]);
+  }, [isRealtimeConnected, isUnreadCountFresh, refreshUnreadCount]);
 
   useEffect(() => {
     const origin = getWebSocketOrigin();

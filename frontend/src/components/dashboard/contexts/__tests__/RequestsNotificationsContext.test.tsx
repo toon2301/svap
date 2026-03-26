@@ -111,7 +111,7 @@ describe('RequestsNotificationsProvider', () => {
     jest.useRealTimers();
   });
 
-  it('polls unread count only as websocket fallback', async () => {
+  it('polls unread count only after the fresh bootstrap window expires', async () => {
     render(
       <RequestsNotificationsProvider>
         <Consumer />
@@ -125,12 +125,12 @@ describe('RequestsNotificationsProvider', () => {
     });
 
     act(() => {
-      jest.advanceTimersByTime(9999);
+      jest.advanceTimersByTime(10000);
     });
     expect(mockApiGet).toHaveBeenCalledTimes(1);
 
     act(() => {
-      jest.advanceTimersByTime(1);
+      jest.advanceTimersByTime(10000);
     });
 
     await waitFor(() => {
