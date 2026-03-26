@@ -11,6 +11,7 @@ from django.core.cache import cache
 from django.utils import timezone
 import hashlib
 import logging
+from time import perf_counter
 
 logger = logging.getLogger(__name__)
 
@@ -197,7 +198,8 @@ def token_refresh_cookie_view(request):
             from django.contrib.auth import get_user_model
             from rest_framework_simplejwt.tokens import AccessToken
 
-            from ..authentication import warm_user_auth_cache
+            from .auth import _record_auth_view_timing
+            from ..authentication import warm_user_auth_cache_with_timing
             from ..viewer_location_cache import warm_viewer_location_snapshot_cache
 
             access_token = AccessToken(str(access))
@@ -214,8 +216,19 @@ def token_refresh_cookie_view(request):
                         "district",
                     ).get(pk=user_id)
                 )
-                warm_user_auth_cache(cache_user)
-                warm_viewer_location_snapshot_cache(cache_user)
+                warm_auth_ok, warm_auth_ms = warm_user_auth_cache_with_timing(
+                    cache_user
+                )
+                t_viewer0 = perf_counter()
+                warm_viewer_ok = warm_viewer_location_snapshot_cache(cache_user)
+                warm_viewer_ms = (perf_counter() - t_viewer0) * 1000.0
+                _record_auth_view_timing(
+                    request,
+                    auth_user_cache_warm=warm_auth_ms,
+                    auth_user_cache_warm_ok=1.0 if warm_auth_ok else 0.0,
+                    viewer_location_cache_warm=warm_viewer_ms,
+                    viewer_location_cache_warm_ok=1.0 if warm_viewer_ok else 0.0,
+                )
         except Exception:
             pass
 

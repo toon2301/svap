@@ -17,6 +17,7 @@ import urllib.parse
 import os
 import secrets
 from django.core.cache import cache
+from time import perf_counter
 
 User = get_user_model()
 logger = logging.getLogger(__name__)
@@ -378,12 +379,25 @@ def google_callback_view(request):
 
         resp = HttpResponseRedirect(redirect_url)
         try:
-            from .auth import _set_auth_cookies, _auth_state_cookie_kwargs
-            from ..authentication import warm_user_auth_cache
+            from .auth import (
+                _record_auth_view_timing,
+                _set_auth_cookies,
+                _auth_state_cookie_kwargs,
+            )
+            from ..authentication import warm_user_auth_cache_with_timing
             from ..viewer_location_cache import warm_viewer_location_snapshot_cache
 
-            warm_user_auth_cache(user)
-            warm_viewer_location_snapshot_cache(user)
+            warm_auth_ok, warm_auth_ms = warm_user_auth_cache_with_timing(user)
+            t_viewer0 = perf_counter()
+            warm_viewer_ok = warm_viewer_location_snapshot_cache(user)
+            warm_viewer_ms = (perf_counter() - t_viewer0) * 1000.0
+            _record_auth_view_timing(
+                request,
+                auth_user_cache_warm=warm_auth_ms,
+                auth_user_cache_warm_ok=1.0 if warm_auth_ok else 0.0,
+                viewer_location_cache_warm=warm_viewer_ms,
+                viewer_location_cache_warm_ok=1.0 if warm_viewer_ok else 0.0,
+            )
             _set_auth_cookies(resp, access=str(access_token_jwt), refresh=str(refresh))
             state_kwargs = _auth_state_cookie_kwargs()
             resp.set_cookie("auth_state", "1", max_age=7 * 24 * 60 * 60, **state_kwargs)

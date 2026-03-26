@@ -560,11 +560,20 @@ def login_view(request):
                 request.user = _prev_user
 
             try:
-                from ..authentication import warm_user_auth_cache
+                from ..authentication import warm_user_auth_cache_with_timing
                 from ..viewer_location_cache import warm_viewer_location_snapshot_cache
 
-                warm_user_auth_cache(user)
-                warm_viewer_location_snapshot_cache(user)
+                warm_auth_ok, warm_auth_ms = warm_user_auth_cache_with_timing(user)
+                t_viewer0 = perf_counter()
+                warm_viewer_ok = warm_viewer_location_snapshot_cache(user)
+                warm_viewer_ms = (perf_counter() - t_viewer0) * 1000.0
+                _record_auth_view_timing(
+                    request,
+                    auth_user_cache_warm=warm_auth_ms,
+                    auth_user_cache_warm_ok=1.0 if warm_auth_ok else 0.0,
+                    viewer_location_cache_warm=warm_viewer_ms,
+                    viewer_location_cache_warm_ok=1.0 if warm_viewer_ok else 0.0,
+                )
             except Exception:
                 pass
 
@@ -731,13 +740,26 @@ def verify_email_view(request):
                 refresh = SwaplyRefreshToken.for_user(verification.user)
 
                 try:
-                    from ..authentication import warm_user_auth_cache
+                    from ..authentication import warm_user_auth_cache_with_timing
                     from ..viewer_location_cache import (
                         warm_viewer_location_snapshot_cache,
                     )
 
-                    warm_user_auth_cache(verification.user)
-                    warm_viewer_location_snapshot_cache(verification.user)
+                    warm_auth_ok, warm_auth_ms = warm_user_auth_cache_with_timing(
+                        verification.user
+                    )
+                    t_viewer0 = perf_counter()
+                    warm_viewer_ok = warm_viewer_location_snapshot_cache(
+                        verification.user
+                    )
+                    warm_viewer_ms = (perf_counter() - t_viewer0) * 1000.0
+                    _record_auth_view_timing(
+                        request,
+                        auth_user_cache_warm=warm_auth_ms,
+                        auth_user_cache_warm_ok=1.0 if warm_auth_ok else 0.0,
+                        viewer_location_cache_warm=warm_viewer_ms,
+                        viewer_location_cache_warm_ok=1.0 if warm_viewer_ok else 0.0,
+                    )
                 except Exception:
                     pass
 

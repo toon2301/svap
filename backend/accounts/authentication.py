@@ -286,6 +286,20 @@ def warm_user_auth_cache(user) -> bool:
         return False
 
 
+def warm_user_auth_cache_with_timing(user) -> tuple[bool, float]:
+    """
+    Best-effort helper for auth warm-up observability.
+
+    Returns:
+    - success flag
+    - total duration in milliseconds
+    """
+
+    t0 = time.perf_counter()
+    ok = warm_user_auth_cache(user)
+    return ok, (time.perf_counter() - t0) * 1000.0
+
+
 class SwaplyJWTAuthentication(JWTAuthentication):
     """
     Custom JWT authentication with Redis/Django-cache blacklist fallback.

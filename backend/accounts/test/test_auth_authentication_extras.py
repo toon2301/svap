@@ -13,6 +13,7 @@ from accounts.authentication import (
     _should_skip_auth_user_cache_set,
     _serialize_user_for_cache,
     materialize_auth_user,
+    warm_user_auth_cache_with_timing,
 )
 from accounts.authentication import RefreshToken as _BaseRefreshToken
 from accounts.authentication import SwaplyRefreshToken
@@ -183,6 +184,20 @@ class TestJWTAuthExtras:
 
         assert got.id == user.id
         mock_set.assert_called_once()
+
+    def test_warm_user_auth_cache_with_timing_reports_success_and_duration(self):
+        user = User.objects.create_user(
+            username="warmtimed",
+            email="warmtimed@example.com",
+            password="StrongPass123",
+            is_active=True,
+        )
+
+        ok, duration_ms = warm_user_auth_cache_with_timing(user)
+
+        assert ok is True
+        assert duration_ms >= 0.0
+        assert cache.get(_redis_user_cache_key(user.id)) == _serialize_user_for_cache(user)
 
     def test_is_token_blacklisted_no_jti_returns_false(self):
         auth = SwaplyJWTAuthentication()
