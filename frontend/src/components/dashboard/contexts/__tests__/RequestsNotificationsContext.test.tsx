@@ -98,6 +98,7 @@ describe('RequestsNotificationsProvider', () => {
       value: MockWebSocket,
     });
     delete (globalThis as typeof globalThis & { __SWAPLY_REQ_WS_STORE__?: unknown }).__SWAPLY_REQ_WS_STORE__;
+    delete (globalThis as typeof globalThis & { __SWAPLY_REQ_UNREAD_STORE__?: unknown }).__SWAPLY_REQ_UNREAD_STORE__;
     mockApiGet.mockResolvedValue({ data: { count: 4 } });
     mockApiPost.mockResolvedValue({ data: { ok: true } });
     mockEnsureSessionRefreshed.mockResolvedValue('refreshed');
@@ -241,5 +242,31 @@ describe('RequestsNotificationsProvider', () => {
     });
 
     expect(mockApiGet).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not refetch unread count after a fast provider remount', async () => {
+    const firstRender = render(
+      <RequestsNotificationsProvider>
+        <Consumer />
+      </RequestsNotificationsProvider>,
+    );
+    await flushAsyncEffects();
+
+    await waitFor(() => {
+      expect(mockApiGet).toHaveBeenCalledTimes(1);
+      expect(screen.getByTestId('count')).toHaveTextContent('4');
+    });
+
+    firstRender.unmount();
+
+    render(
+      <RequestsNotificationsProvider>
+        <Consumer />
+      </RequestsNotificationsProvider>,
+    );
+    await flushAsyncEffects();
+
+    expect(mockApiGet).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId('count')).toHaveTextContent('4');
   });
 });

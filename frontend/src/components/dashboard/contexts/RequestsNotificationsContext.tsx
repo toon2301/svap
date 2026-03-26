@@ -22,6 +22,7 @@ type WsNotificationPayload = {
 
 type WsListener = (payload: WsNotificationPayload) => void;
 type WsStatusListener = (connected: boolean) => void;
+type UnreadCountListener = (count: number) => void;
 
 type WsStore = {
   ws: WebSocket | null;
@@ -35,6 +36,13 @@ type WsStore = {
   statusListeners: Set<WsStatusListener>;
   isOpen: boolean;
   origin: string | null;
+};
+
+type UnreadCountStore = {
+  unreadCount: number;
+  lastSuccessfulRefreshAt: number;
+  refreshPromise: Promise<void> | null;
+  listeners: Set<UnreadCountListener>;
 };
 
 function getWsStore(): WsStore {
@@ -59,6 +67,34 @@ function getWsStore(): WsStore {
   }
 
   return globalScope.__SWAPLY_REQ_WS_STORE__;
+}
+
+function getUnreadCountStore(): UnreadCountStore {
+  const globalScope = globalThis as typeof globalThis & {
+    __SWAPLY_REQ_UNREAD_STORE__?: UnreadCountStore;
+  };
+
+  if (!globalScope.__SWAPLY_REQ_UNREAD_STORE__) {
+    globalScope.__SWAPLY_REQ_UNREAD_STORE__ = {
+      unreadCount: 0,
+      lastSuccessfulRefreshAt: 0,
+      refreshPromise: null,
+      listeners: new Set(),
+    };
+  }
+
+  return globalScope.__SWAPLY_REQ_UNREAD_STORE__;
+}
+
+function publishUnreadCount(store: UnreadCountStore, count: number): void {
+  store.unreadCount = count;
+  store.listeners.forEach((listener) => {
+    try {
+      listener(count);
+    } catch {
+      // ignore listener failures
+    }
+  });
 }
 
 function notifyWsStatus(store: WsStore, connected: boolean): void {
@@ -253,29 +289,38 @@ function scheduleWsRelease(store: WsStore): void {
 }
 
 export function RequestsNotificationsProvider({ children }: { children: React.ReactNode }) {
-  const [unreadCount, setUnreadCount] = useState(0);
+  const [unreadCount, setUnreadCount] = useState(() => getUnreadCountStore().unreadCount);
   const [isRealtimeConnected, setIsRealtimeConnected] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false;
     return getWsStore().isOpen;
   });
 
   const isMountedRef = useRef(true);
-  const refreshUnreadCountInFlightRef = useRef<Promise<void> | null>(null);
-  const lastSuccessfulRefreshAtRef = useRef(0);
 
   const isUnreadCountFresh = useCallback((maxAgeMs = 5000) => {
-    return Date.now() - lastSuccessfulRefreshAtRef.current < maxAgeMs;
+    return Date.now() - getUnreadCountStore().lastSuccessfulRefreshAt < maxAgeMs;
   }, []);
 
   useEffect(() => {
+    const store = getUnreadCountStore();
+    const listener: UnreadCountListener = (count) => {
+      if (isMountedRef.current) {
+        setUnreadCount(count);
+      }
+    };
+
+    store.listeners.add(listener);
+
     return () => {
+      store.listeners.delete(listener);
       isMountedRef.current = false;
     };
   }, []);
 
   const refreshUnreadCount = useCallback(async () => {
-    if (refreshUnreadCountInFlightRef.current) {
-      return refreshUnreadCountInFlightRef.current;
+    const store = getUnreadCountStore();
+    if (store.refreshPromise) {
+      return store.refreshPromise;
     }
 
     let requestPromise: Promise<void> | null = null;
@@ -285,29 +330,27 @@ export function RequestsNotificationsProvider({ children }: { children: React.Re
           params: { type: 'skill_request' },
         });
         const count = typeof response?.data?.count === 'number' ? response.data.count : 0;
-        if (isMountedRef.current) {
-          setUnreadCount(count);
-        }
-        lastSuccessfulRefreshAtRef.current = Date.now();
+        store.lastSuccessfulRefreshAt = Date.now();
+        publishUnreadCount(store, count);
       } catch {
         // fail-open
       } finally {
-        if (refreshUnreadCountInFlightRef.current === requestPromise) {
-          refreshUnreadCountInFlightRef.current = null;
+        if (store.refreshPromise === requestPromise) {
+          store.refreshPromise = null;
         }
       }
     })();
 
-    refreshUnreadCountInFlightRef.current = requestPromise;
+    store.refreshPromise = requestPromise;
     return requestPromise;
   }, []);
 
   const markAllRead = useCallback(async () => {
     try {
       await api.post(endpoints.notifications.markAllRead, { type: 'skill_request' });
-      if (isMountedRef.current) {
-        setUnreadCount(0);
-      }
+      const store = getUnreadCountStore();
+      store.lastSuccessfulRefreshAt = Date.now();
+      publishUnreadCount(store, 0);
     } catch {
       // fail-open
     }
@@ -315,8 +358,9 @@ export function RequestsNotificationsProvider({ children }: { children: React.Re
 
   useEffect(() => {
     if (!isDocumentVisible()) return;
+    if (isUnreadCountFresh()) return;
     void refreshUnreadCount();
-  }, [refreshUnreadCount]);
+  }, [isUnreadCountFresh, refreshUnreadCount]);
 
   useEffect(() => {
     const refreshIfVisible = () => {
