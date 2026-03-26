@@ -1,6 +1,6 @@
 'use client';
 
-import React, {createContext, useCallback, useContext, useEffect, useMemo, useState} from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import enMessages from '../../messages/en.json';
 import skMessages from '../../messages/sk.json';
 import plMessages from '../../messages/pl.json';
@@ -10,6 +10,12 @@ import huMessages from '../../messages/hu.json';
 
 type SupportedLocale = 'sk' | 'en' | 'pl' | 'cs' | 'de' | 'hu';
 type CountryCode = 'SK' | 'CZ' | 'PL' | 'HU' | 'AT' | 'DE' | null;
+type StoredCountryCode = Exclude<CountryCode, null>;
+type GeoDetectionCache = {
+  country: StoredCountryCode | null;
+  detectedAt: number;
+  status: 'ok' | 'failed';
+};
 
 type LanguageContextValue = {
   locale: SupportedLocale;
@@ -21,6 +27,67 @@ type LanguageContextValue = {
 
 const LanguageContext = createContext<LanguageContextValue | undefined>(undefined);
 
+export const GEO_DETECTION_CACHE_KEY = 'appGeoDetectionCacheV1';
+export const GEO_DETECTION_SUCCESS_TTL_MS = 1000 * 60 * 60 * 24 * 14;
+export const GEO_DETECTION_FAILURE_TTL_MS = 1000 * 60 * 60 * 6;
+
+export function isSupportedCountryCode(value: unknown): value is StoredCountryCode {
+  return value === 'SK' || value === 'CZ' || value === 'PL' || value === 'HU' || value === 'AT' || value === 'DE';
+}
+
+export function localeFromCountry(country: CountryCode): SupportedLocale | null {
+  if (country === 'PL') return 'pl';
+  if (country === 'SK') return 'sk';
+  if (country === 'CZ') return 'cs';
+  if (country === 'DE' || country === 'AT') return 'de';
+  if (country === 'HU') return 'hu';
+  return null;
+}
+
+export function localeFromBrowser(): SupportedLocale {
+  try {
+    const navLang = (navigator.languages && navigator.languages[0]) || navigator.language || '';
+    const value = navLang.toLowerCase();
+    if (value.startsWith('pl')) return 'pl';
+    if (value.startsWith('sk')) return 'sk';
+    if (value.startsWith('cs') || value.startsWith('cz')) return 'cs';
+    if (value.startsWith('de')) return 'de';
+    if (value.startsWith('hu')) return 'hu';
+    if (value.startsWith('en')) return 'en';
+  } catch {}
+  return 'sk';
+}
+
+export function readGeoDetectionCache(): GeoDetectionCache | null {
+  try {
+    const raw = window.localStorage.getItem(GEO_DETECTION_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<GeoDetectionCache> | null;
+    if (!parsed || typeof parsed !== 'object') return null;
+    if (typeof parsed.detectedAt !== 'number') return null;
+    if (parsed.status !== 'ok' && parsed.status !== 'failed') return null;
+    if (parsed.country !== null && !isSupportedCountryCode(parsed.country)) return null;
+    return {
+      country: parsed.country ?? null,
+      detectedAt: parsed.detectedAt,
+      status: parsed.status,
+    };
+  } catch {
+    return null;
+  }
+}
+
+export function writeGeoDetectionCache(entry: GeoDetectionCache): void {
+  try {
+    window.localStorage.setItem(GEO_DETECTION_CACHE_KEY, JSON.stringify(entry));
+  } catch {}
+}
+
+export function isGeoDetectionCacheFresh(entry: GeoDetectionCache): boolean {
+  const ttlMs = entry.status === 'ok' ? GEO_DETECTION_SUCCESS_TTL_MS : GEO_DETECTION_FAILURE_TTL_MS;
+  return Date.now() - entry.detectedAt < ttlMs;
+}
+
 function getByPath(messages: Record<string, any>, key: string): unknown {
   return key.split('.').reduce<unknown>((obj, segment) => {
     if (obj && typeof obj === 'object' && segment in (obj as any)) {
@@ -31,12 +98,10 @@ function getByPath(messages: Record<string, any>, key: string): unknown {
 }
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
-  // Start with default to match server-rendered HTML, then hydrate from storage
   const [locale, setLocaleState] = useState<SupportedLocale>('sk');
   const [country, setCountryState] = useState<CountryCode>(null);
-  
+
   useEffect(() => {
-    // Priority 1: persisted value
     let hasSavedLocale = false;
     try {
       const saved = window.localStorage.getItem('appLocale');
@@ -46,58 +111,62 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
       }
     } catch {}
 
-    // Priority 2: geolocation by IP (best-effort)
-    // Vždy detekujeme krajinu (pre výber okresov), aj keď máme uložený jazyk
+    const applyDetectedCountry = (nextCountry: CountryCode) => {
+      if (nextCountry) {
+        setCountryState(nextCountry);
+      }
+      if (!hasSavedLocale) {
+        setLocaleState(localeFromCountry(nextCountry) ?? localeFromBrowser());
+      }
+    };
+
+    const cachedGeo = readGeoDetectionCache();
+    if (cachedGeo && isGeoDetectionCacheFresh(cachedGeo)) {
+      if (cachedGeo.country) {
+        applyDetectedCountry(cachedGeo.country);
+      } else if (!hasSavedLocale) {
+        setLocaleState(localeFromBrowser());
+      }
+      return;
+    }
+
     let cancelled = false;
+
     const detectByIp = async () => {
       try {
         const res = await fetch('https://ipapi.co/json/');
         if (!res.ok) throw new Error('ipapi failed');
         const data = await res.json();
         if (cancelled) return;
-        const code = (data?.country_code || '').toUpperCase();
-        
-        // Vždy nastav krajinu (pre výber okresov)
-        if (code === 'SK' || code === 'CZ' || code === 'PL' || code === 'HU' || code === 'AT' || code === 'DE') {
-          setCountryState(code as CountryCode);
-        }
-        
-        // Nastav jazyk podľa krajiny len ak nie je uložený
-        if (!hasSavedLocale) {
-          if (code === 'PL') { setLocaleState('pl'); return; }
-          if (code === 'SK') { setLocaleState('sk'); return; }
-          if (code === 'CZ') { setLocaleState('cs'); return; }
-          if (code === 'DE' || code === 'AT') { setLocaleState('de'); return; }
-          if (code === 'HU') { setLocaleState('hu'); return; }
-          // No decisive country → try browser language
-          detectByBrowser();
-        }
+
+        const rawCode = String(data?.country_code || '').toUpperCase();
+        const detectedCountry = isSupportedCountryCode(rawCode) ? rawCode : null;
+
+        writeGeoDetectionCache({
+          country: detectedCountry,
+          detectedAt: Date.now(),
+          status: 'ok',
+        });
+        applyDetectedCountry(detectedCountry);
       } catch {
-        // If IP fails, try browser (len ak nie je uložený jazyk)
+        if (!cancelled) {
+          writeGeoDetectionCache({
+            country: null,
+            detectedAt: Date.now(),
+            status: 'failed',
+          });
+        }
         if (!hasSavedLocale) {
-          detectByBrowser();
+          setLocaleState(localeFromBrowser());
         }
       }
     };
 
-    // Priority 3: browser language
-    const detectByBrowser = () => {
-      try {
-        const navLang = (navigator.languages && navigator.languages[0]) || navigator.language || '';
-        const l = navLang.toLowerCase();
-        if (l.startsWith('pl')) { setLocaleState('pl'); return; }
-        if (l.startsWith('sk')) { setLocaleState('sk'); return; }
-        if (l.startsWith('cs') || l.startsWith('cz')) { setLocaleState('cs'); return; }
-        if (l.startsWith('de')) { setLocaleState('de'); return; }
-        if (l.startsWith('hu')) { setLocaleState('hu'); return; }
-        if (l.startsWith('en')) { setLocaleState('en'); return; }
-      } catch {}
-      // Priority 4: fallback
-      setLocaleState('sk');
-    };
+    void detectByIp();
 
-    detectByIp();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const setLocale = useCallback((next: SupportedLocale) => {
@@ -129,7 +198,10 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     [messages]
   );
 
-  const value = useMemo<LanguageContextValue>(() => ({ locale, setLocale, t, country, setCountry }), [locale, setLocale, t, country, setCountry]);
+  const value = useMemo<LanguageContextValue>(
+    () => ({ locale, setLocale, t, country, setCountry }),
+    [locale, setLocale, t, country, setCountry]
+  );
 
   return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
 }
@@ -139,5 +211,3 @@ export function useLanguage(): LanguageContextValue {
   if (!ctx) throw new Error('useLanguage must be used within LanguageProvider');
   return ctx;
 }
-
-
