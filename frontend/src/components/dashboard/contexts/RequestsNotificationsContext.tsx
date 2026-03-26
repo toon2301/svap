@@ -261,6 +261,7 @@ export function RequestsNotificationsProvider({ children }: { children: React.Re
 
   const isMountedRef = useRef(true);
   const refreshUnreadCountInFlightRef = useRef<Promise<void> | null>(null);
+  const lastSuccessfulRefreshAtRef = useRef(0);
 
   useEffect(() => {
     return () => {
@@ -283,6 +284,7 @@ export function RequestsNotificationsProvider({ children }: { children: React.Re
         if (isMountedRef.current) {
           setUnreadCount(count);
         }
+        lastSuccessfulRefreshAtRef.current = Date.now();
       } catch {
         // fail-open
       } finally {
@@ -351,6 +353,9 @@ export function RequestsNotificationsProvider({ children }: { children: React.Re
     };
 
     const onOpen = () => {
+      if (Date.now() - lastSuccessfulRefreshAtRef.current < 5000) {
+        return;
+      }
       void refreshUnreadCount();
     };
 

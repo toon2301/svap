@@ -10,6 +10,8 @@ const mockLogout = jest.fn();
 const mockUpdateUser = jest.fn();
 const mockInvalidateSearchCacheForUser = jest.fn();
 const mockSetUserProfileToCache = jest.fn();
+let mockAuthUser: User | null = null;
+let mockAuthLoading = false;
 
 jest.mock('next/navigation', () => ({
   useRouter: () => ({
@@ -20,8 +22,8 @@ jest.mock('next/navigation', () => ({
 
 jest.mock('@/contexts/AuthContext', () => ({
   useAuth: () => ({
-    user: null,
-    isLoading: false,
+    user: mockAuthUser,
+    isLoading: mockAuthLoading,
     refreshUser: mockRefreshUser,
     logout: mockLogout,
     updateUser: mockUpdateUser,
@@ -56,7 +58,23 @@ describe('profile edit navigation flow', () => {
     jest.clearAllMocks();
     localStorage.clear();
     sessionStorage.clear();
+    mockAuthUser = null;
+    mockAuthLoading = false;
     window.history.replaceState(null, '', '/dashboard/users/test-user');
+  });
+
+  it('uses the existing auth user without triggering a duplicate auth refresh on mount', async () => {
+    mockAuthUser = baseUser;
+
+    const { result } = renderHook(() => useDashboardState(undefined, 'home'));
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(result.current.isLoading).toBe(false);
+    expect(result.current.user?.id).toBe(baseUser.id);
+    expect(mockRefreshUser).not.toHaveBeenCalled();
   });
 
   it('opens and cleanly closes own profile edit with synchronized URL', () => {

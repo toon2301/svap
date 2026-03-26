@@ -138,7 +138,7 @@ describe('RequestsNotificationsProvider', () => {
     expect(screen.getByTestId('count')).toHaveTextContent('4');
   });
 
-  it('stops polling after websocket opens and refreshes once on connect', async () => {
+  it('stops polling after websocket opens without duplicating a fresh initial unread request', async () => {
     render(
       <RequestsNotificationsProvider>
         <Consumer />
@@ -156,15 +156,13 @@ describe('RequestsNotificationsProvider', () => {
       MockWebSocket.instances[0].emitOpen();
     });
 
-    await waitFor(() => {
-      expect(mockApiGet).toHaveBeenCalledTimes(2);
-    });
+    expect(mockApiGet).toHaveBeenCalledTimes(1);
 
     act(() => {
       jest.advanceTimersByTime(30000);
     });
 
-    expect(mockApiGet).toHaveBeenCalledTimes(2);
+    expect(mockApiGet).toHaveBeenCalledTimes(1);
   });
 
   it('deduplicates unread refresh while a request is already in flight', async () => {

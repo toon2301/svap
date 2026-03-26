@@ -397,30 +397,17 @@ function SearchResultsContent() {
         </div>
 
         {trimmedQ && tab === 'offers' && (
-          <>
-            <div className="hidden lg:block min-w-[180px]">
-              <SearchSortSelect
-                value={sort}
-                onChange={(v) => {
-                  if (VALID_SORTS.has(v)) {
-                    setSort(v);
-                    replaceSearchParams({ sort: v, page: '1' });
-                  }
-                }}
-              />
-            </div>
-            <select
+          <div className="w-full sm:w-auto sm:min-w-[180px]">
+            <SearchSortSelect
               value={sort}
-              onChange={handleSortChange}
-              className="lg:hidden text-sm rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500 dark:focus:ring-purple-400"
-            >
-              {SORT_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {t(opt.labelKey)}
-                </option>
-              ))}
-            </select>
-          </>
+              onChange={(v) => {
+                if (VALID_SORTS.has(v)) {
+                  setSort(v);
+                  replaceSearchParams({ sort: v, page: '1' });
+                }
+              }}
+            />
+          </div>
         )}
       </div>
 

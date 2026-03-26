@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -138,9 +139,13 @@ export default function Sidebar({
       {/* Logo - Desktop only */}
       {!isMobile && (
         <div className="flex items-center justify-center py-1 border-b border-gray-200 dark:border-gray-800">
-          <img 
-            src="/Logotyp _svaply_ na fialovom pozadí.png" 
-            alt="Swaply" 
+          <Image
+            src="/svaply-logo-hero.png"
+            alt="Swaply"
+            width={1024}
+            height={512}
+            quality={80}
+            sizes="(max-width: 1279px) 128px, 192px"
             className="h-16 w-auto lg:h-16 xl:h-24"
           />
         </div>

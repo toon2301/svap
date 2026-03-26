@@ -197,10 +197,13 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
       }
 
       // Ak authUser je už v AuthContext (napr. navigácia z /search), zobrazíme dashboard okamžite.
-      // Refresh spustíme na pozadí pre čerstvosť dát, ale neblokujeme UI.
+      // Nepúšťame hneď druhý /auth/me/ refresh:
+      // po login/Google OAuth už AuthContext drží čerstvého používateľa a
+      // tento extra background call len duplikuje sieťový bootstrap dashboardu.
       if (authUser && !authLoading) {
+        userRef.current = authUser;
+        setUser(authUser);
         setIsLoading(false);
-        void refreshAuthUser(); // background refresh
         return;
       }
 
