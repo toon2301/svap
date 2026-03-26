@@ -11,6 +11,7 @@ export type ConversationListItem = {
   other_user: MessagingUserBrief | null;
   last_message_preview: string | null;
   last_message_at: string | null;
+  last_message_sender_id?: number | null;
   last_read_at: string | null;
   has_unread: boolean;
   updated_at: string;

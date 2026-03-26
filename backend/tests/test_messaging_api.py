@@ -1,5 +1,7 @@
 import pytest
 from django.contrib.auth import get_user_model
+from django.core.cache import cache
+from django.test import override_settings
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
@@ -13,6 +15,7 @@ User = get_user_model()
 @pytest.mark.django_db
 class TestMessagingApi(APITestCase):
     def setUp(self):
+        cache.clear()
         self.u1 = User.objects.create_user(
             username="u1",
             email="u1@example.com",
@@ -34,6 +37,9 @@ class TestMessagingApi(APITestCase):
             is_verified=True,
             is_active=True,
         )
+
+    def tearDown(self):
+        cache.clear()
 
     def test_open_conversation_is_idempotent(self):
         self.client.force_authenticate(user=self.u1)
@@ -96,4 +102,72 @@ class TestMessagingApi(APITestCase):
 
         participant = ConversationParticipant.objects.get(conversation_id=convo_id, user=self.u1)
         assert participant.last_read_at is not None
+
+    @override_settings(
+        RATE_LIMITING_ENABLED=True,
+        RATE_LIMIT_DISABLED=False,
+        RATE_LIMIT_ALLOW_PATHS=[],
+        RATE_LIMIT_OVERRIDES={
+            "messaging_open": {"max_attempts": 1, "window_minutes": 1, "block_minutes": 1},
+        },
+    )
+    def test_open_conversation_is_rate_limited_after_override_threshold(self):
+        self.client.force_authenticate(user=self.u1)
+        url = reverse("accounts:messaging_open")
+
+        first = self.client.post(url, {"target_user_id": self.u2.id}, format="json")
+        second = self.client.post(url, {"target_user_id": self.u3.id}, format="json")
+
+        assert first.status_code == status.HTTP_200_OK
+        assert second.status_code == status.HTTP_429_TOO_MANY_REQUESTS
+        assert second.json()["code"] == "RATE_LIMITED"
+
+    @override_settings(
+        RATE_LIMITING_ENABLED=True,
+        RATE_LIMIT_DISABLED=False,
+        RATE_LIMIT_ALLOW_PATHS=[],
+        RATE_LIMIT_OVERRIDES={
+            "messaging_send": {"max_attempts": 1, "window_minutes": 1, "block_minutes": 1},
+        },
+    )
+    def test_send_message_is_rate_limited_after_override_threshold(self):
+        self.client.force_authenticate(user=self.u1)
+        open_url = reverse("accounts:messaging_open")
+        opened = self.client.post(open_url, {"target_user_id": self.u2.id}, format="json")
+        convo_id = int(opened.data["id"])
+
+        send_url = reverse("accounts:messaging_send_message", kwargs={"conversation_id": convo_id})
+        first = self.client.post(send_url, {"text": "Ahoj"}, format="json")
+        second = self.client.post(send_url, {"text": "Znova"}, format="json")
+
+        assert first.status_code == status.HTTP_201_CREATED
+        assert second.status_code == status.HTTP_429_TOO_MANY_REQUESTS
+        assert second.json()["code"] == "RATE_LIMITED"
+
+    @override_settings(
+        RATE_LIMITING_ENABLED=True,
+        RATE_LIMIT_DISABLED=False,
+        RATE_LIMIT_ALLOW_PATHS=[],
+        RATE_LIMIT_OVERRIDES={
+            "messaging_mark_read": {"max_attempts": 1, "window_minutes": 1, "block_minutes": 1},
+        },
+    )
+    def test_mark_read_is_rate_limited_after_override_threshold(self):
+        self.client.force_authenticate(user=self.u1)
+        open_url = reverse("accounts:messaging_open")
+        opened = self.client.post(open_url, {"target_user_id": self.u2.id}, format="json")
+        convo_id = int(opened.data["id"])
+
+        self.client.force_authenticate(user=self.u2)
+        send_url = reverse("accounts:messaging_send_message", kwargs={"conversation_id": convo_id})
+        assert self.client.post(send_url, {"text": "Ahoj"}, format="json").status_code == status.HTTP_201_CREATED
+
+        self.client.force_authenticate(user=self.u1)
+        read_url = reverse("accounts:messaging_mark_read", kwargs={"conversation_id": convo_id})
+        first = self.client.post(read_url, {}, format="json")
+        second = self.client.post(read_url, {}, format="json")
+
+        assert first.status_code == status.HTTP_200_OK
+        assert second.status_code == status.HTTP_429_TOO_MANY_REQUESTS
+        assert second.json()["code"] == "RATE_LIMITED"
 

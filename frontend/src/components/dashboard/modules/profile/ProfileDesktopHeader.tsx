@@ -32,6 +32,7 @@ type Props = {
   onOpenAllWebsitesModal: () => void;
   onEditProfileClick?: () => void;
   onSendMessage?: () => void;
+  isOpeningConversation?: boolean;
   onAddToFavorites?: () => void;
   onSkillsClick?: () => void;
   onHamburgerOpen: () => void;
@@ -47,12 +48,18 @@ export function ProfileDesktopHeader({
   onOpenAllWebsitesModal,
   onEditProfileClick,
   onSendMessage,
+  isOpeningConversation = false,
   onAddToFavorites,
   onSkillsClick,
   onHamburgerOpen,
 }: Props) {
   const { t } = useLanguage();
   const is1024to1190 = useMediaQuery('(min-width: 1024px) and (max-width: 1190px)');
+  const primaryActionLabel = isOtherUserProfile
+    ? isOpeningConversation
+      ? t('messages.opening', 'Otváram…')
+      : t('profile.sendMessage', 'Poslať správu')
+    : t('profile.editProfile');
 
   return (
     <div className="flex flex-col items-start w-full lg:items-stretch xl:items-start">
@@ -194,7 +201,9 @@ export function ProfileDesktopHeader({
       {/* Tlačidlá pod fotkou – 1024–1190px: celá šírka, rovnako veľké, vycentrované */}
       <div className="flex gap-[clamp(0.5rem,1vw,0.5rem)] mt-[clamp(0.75rem,1.5vw,0.75rem)] lg:w-full lg:min-w-full lg:self-stretch xl:w-auto xl:min-w-0 xl:self-auto">
         <button
+          type="button"
           onClick={() => {
+            if (isOtherUserProfile && isOpeningConversation) return;
             if (isOtherUserProfile && onSendMessage) {
               onSendMessage();
             } else if (onEditProfileClick) {
@@ -204,9 +213,10 @@ export function ProfileDesktopHeader({
               console.log(isOtherUserProfile ? 'Poslať správu' : 'Upraviť profil');
             }
           }}
-          className="flex-1 px-[clamp(4rem,8vw,8rem)] xl:px-16 2xl:px-32 py-2 text-sm bg-purple-100 text-purple-800 border border-purple-200 rounded-2xl transition-colors hover:bg-purple-200 whitespace-nowrap lg:min-w-0 lg:px-5 lg:text-center xl:min-w-auto xl:text-left"
+          disabled={isOtherUserProfile && isOpeningConversation}
+          className="flex-1 px-[clamp(4rem,8vw,8rem)] xl:px-16 2xl:px-32 py-2 text-sm bg-purple-100 text-purple-800 border border-purple-200 rounded-2xl transition-colors hover:bg-purple-200 whitespace-nowrap lg:min-w-0 lg:px-5 lg:text-center xl:min-w-auto xl:text-left disabled:opacity-60 disabled:cursor-not-allowed"
         >
-          {isOtherUserProfile ? t('profile.sendMessage', 'Poslať správu') : t('profile.editProfile')}
+          {primaryActionLabel}
         </button>
 
         {isOtherUserProfile ? (

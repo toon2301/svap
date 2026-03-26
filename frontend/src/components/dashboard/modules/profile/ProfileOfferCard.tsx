@@ -21,6 +21,8 @@ interface ProfileOfferCardProps {
   onMessageClick?: (offerId: number) => void;
   requestLabel?: string;
   isRequestDisabled?: boolean;
+  messageLabel?: string;
+  isMessageDisabled?: boolean;
   /** Keď true, karta nemá zaoblený horný okraj ani horný border – pre použitie pod SearchOfferCardAuthorHeader. */
   compactTop?: boolean;
 }
@@ -39,6 +41,8 @@ export default function ProfileOfferCard({
   onMessageClick,
   requestLabel,
   isRequestDisabled = false,
+  messageLabel,
+  isMessageDisabled = false,
   compactTop = false,
 }: ProfileOfferCardProps) {
   const catSlug = offer.category ? slugifyLabel(offer.category) : '';
@@ -139,6 +143,8 @@ export default function ProfileOfferCard({
         onMessageClick={onMessageClick}
         requestLabel={requestLabel}
         isRequestDisabled={isRequestDisabled}
+        messageLabel={messageLabel}
+        isMessageDisabled={isMessageDisabled}
         compactTop={compactTop}
       />
 
@@ -155,5 +161,3 @@ export default function ProfileOfferCard({
     </div>
   );
 }
-
-

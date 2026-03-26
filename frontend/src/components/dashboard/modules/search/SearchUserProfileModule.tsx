@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import toast from 'react-hot-toast';
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useIsMobile } from "@/hooks";
 import { api, endpoints } from "@/lib/api";
@@ -16,6 +17,7 @@ import ProfileDesktopView from "../profile/ProfileDesktopView";
 import ProfileWebsitesModal from "../profile/ProfileWebsitesModal";
 import type { ProfileTab } from "../profile/profileTypes";
 import { openConversation } from "../messages/messagingApi";
+import { getMessagingErrorMessage } from "../messages/messagingApi";
 
 interface SearchUserProfileModuleProps {
   userId: number;
@@ -42,6 +44,7 @@ export function SearchUserProfileModule({
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<ProfileTab>(initialTab ?? "offers");
   const [isAllWebsitesModalOpen, setIsAllWebsitesModalOpen] = useState(false);
+  const [isOpeningConversation, setIsOpeningConversation] = useState(false);
 
   const handleTabsKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
     const order: ProfileTab[] = ["offers", "portfolio", "posts", "tagged"];
@@ -136,14 +139,22 @@ export function SearchUserProfileModule({
 
   const handleSendMessage = () => {
     const targetId = profileUser?.id;
-    if (!targetId) return;
+    if (!targetId || isOpeningConversation) return;
     void (async () => {
+      setIsOpeningConversation(true);
       try {
         const convo = await openConversation(targetId);
         router.push(`/dashboard/messages/${convo.id}`);
-      } catch {
-        // fail-open
-        if (onSendMessage) onSendMessage();
+      } catch (error) {
+        toast.error(
+          getMessagingErrorMessage(error, {
+            fallback: t('messages.openFailed', 'Nepodarilo sa otvoriť konverzáciu. Skúste to znova.'),
+            rateLimitFallback: t('messages.openRateLimited', 'Konverzácie otvárate príliš rýchlo. Skúste chvíľu počkať.'),
+            unavailableFallback: t('messages.openUnavailable', 'Používateľovi momentálne nie je možné napísať.'),
+          }),
+        );
+      } finally {
+        setIsOpeningConversation(false);
       }
     })();
   };
@@ -226,6 +237,7 @@ export function SearchUserProfileModule({
             isOtherUserProfile={true}
             highlightedSkillId={highlightedSkillId}
             onSendMessage={handleSendMessage}
+            isOpeningConversation={isOpeningConversation}
             onAddToFavorites={handleAddToFavorites}
           />
         ) : (
@@ -248,6 +260,7 @@ export function SearchUserProfileModule({
             isOtherUserProfile={true}
             highlightedSkillId={highlightedSkillId}
             onSendMessage={handleSendMessage}
+            isOpeningConversation={isOpeningConversation}
             onAddToFavorites={handleAddToFavorites}
           />
         )}

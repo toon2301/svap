@@ -36,6 +36,7 @@ interface ProfileDesktopViewProps {
   offersOwnerId?: number;
   isOtherUserProfile?: boolean;
   onSendMessage?: () => void;
+  isOpeningConversation?: boolean;
   onAddToFavorites?: () => void;
   highlightedSkillId?: number | null;
 }
@@ -63,6 +64,7 @@ export default function ProfileDesktopView({
   offersOwnerId,
   isOtherUserProfile = false,
   onSendMessage,
+  isOpeningConversation = false,
   onAddToFavorites,
   highlightedSkillId,
 }: ProfileDesktopViewProps) {
@@ -108,6 +110,7 @@ export default function ProfileDesktopView({
                   onOpenAllWebsitesModal={onOpenAllWebsitesModal}
                   onEditProfileClick={onEditProfileClick}
                   onSendMessage={onSendMessage}
+                  isOpeningConversation={isOpeningConversation}
                   onAddToFavorites={onAddToFavorites}
                   onSkillsClick={onSkillsClick}
                   onHamburgerOpen={() => setIsHamburgerModalOpen(true)}

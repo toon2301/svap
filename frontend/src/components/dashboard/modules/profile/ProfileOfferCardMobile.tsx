@@ -21,6 +21,8 @@ interface ProfileOfferCardMobileProps {
   /** Rovnako ako desktop: Ponúknuť (is_seeking) / Požiadať, alebo stav: Požiadané, Prijaté, atď. */
   requestLabel?: string;
   isRequestDisabled?: boolean;
+  messageLabel?: string;
+  isMessageDisabled?: boolean;
 }
 
 export function ProfileOfferCardMobile({
@@ -35,6 +37,8 @@ export function ProfileOfferCardMobile({
   onMessageClick,
   requestLabel: requestLabelProp,
   isRequestDisabled = false,
+  messageLabel,
+  isMessageDisabled = false,
 }: ProfileOfferCardMobileProps) {
   const { t } = useLanguage();
   const router = useRouter();
@@ -295,13 +299,19 @@ export function ProfileOfferCardMobile({
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
+                if (isMessageDisabled) return;
                 if (typeof offer.id === 'number' && onMessageClick) {
                   onMessageClick(offer.id);
                 }
               }}
-              className="flex-1 px-3 py-1.5 text-xs font-medium bg-purple-100 text-purple-800 border border-purple-200 rounded-lg transition-colors hover:bg-purple-200 dark:bg-purple-900/40 dark:text-purple-300 dark:border-purple-800/60 dark:hover:bg-purple-900/60"
+              disabled={isMessageDisabled}
+              className={`flex-1 px-3 py-1.5 text-xs font-medium bg-purple-100 text-purple-800 border border-purple-200 rounded-lg transition-colors dark:bg-purple-900/40 dark:text-purple-300 dark:border-purple-800/60 ${
+                isMessageDisabled
+                  ? 'opacity-70 cursor-not-allowed'
+                  : 'hover:bg-purple-200 dark:hover:bg-purple-900/60'
+              }`}
             >
-              Správa
+              {messageLabel ?? t('skills.message', 'Správa')}
             </button>
           </div>
         )}
@@ -309,5 +319,3 @@ export function ProfileOfferCardMobile({
     </div>
   );
 }
-
-

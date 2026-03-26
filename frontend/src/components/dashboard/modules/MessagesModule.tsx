@@ -31,7 +31,7 @@ export default function MessagesModule({
       {conversationId ? (
         <ConversationDetail conversationId={conversationId} currentUserId={currentUserId} />
       ) : (
-        <ConversationsList />
+        <ConversationsList currentUserId={currentUserId} />
       )}
     </div>
   );

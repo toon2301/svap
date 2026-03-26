@@ -40,6 +40,7 @@ interface ProfileMobileViewProps {
   offersOwnerId?: number;
   isOtherUserProfile?: boolean;
   onSendMessage?: () => void;
+  isOpeningConversation?: boolean;
   onAddToFavorites?: () => void;
   onHamburgerMenuClick?: () => void;
    highlightedSkillId?: number | null;
@@ -68,6 +69,7 @@ export default function ProfileMobileView({
   offersOwnerId,
   isOtherUserProfile = false,
   onSendMessage,
+  isOpeningConversation = false,
   onAddToFavorites,
   onHamburgerMenuClick,
   highlightedSkillId,
@@ -79,6 +81,11 @@ export default function ProfileMobileView({
   const [reportedUserIds, setReportedUserIds] = useState<Set<number>>(() => new Set());
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const primaryActionLabel = isOtherUserProfile
+    ? isOpeningConversation
+      ? t('messages.opening', 'Otváram…')
+      : t('profile.sendMessage', 'Poslať správu')
+    : t('profile.editProfile', 'Upraviť profil');
 
   // Skrátiť email ak je príliš dlhý (viac ako 20 znakov)
   const MAX_EMAIL_DISPLAY_LENGTH = 20;
@@ -342,7 +349,9 @@ export default function ProfileMobileView({
             {/* Tlačidlá POD webovou stránkou */}
             <div className="flex gap-2 mt-2">
               <button
+                type="button"
                 onClick={() => {
+                  if (isOtherUserProfile && isOpeningConversation) return;
                   if (isOtherUserProfile && onSendMessage) {
                     onSendMessage();
                   } else if (onEditProfileClick) {
@@ -352,11 +361,10 @@ export default function ProfileMobileView({
                     console.log(isOtherUserProfile ? 'Poslať správu' : 'Upraviť profil');
                   }
                 }}
-                className="flex-1 px-3 py-1.5 text-xs bg-purple-100 text-purple-800 border border-purple-200 rounded-2xl transition-colors hover:bg-purple-200 whitespace-nowrap min-w-0"
+                disabled={isOtherUserProfile && isOpeningConversation}
+                className="flex-1 px-3 py-1.5 text-xs bg-purple-100 text-purple-800 border border-purple-200 rounded-2xl transition-colors hover:bg-purple-200 whitespace-nowrap min-w-0 disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                {isOtherUserProfile
-                  ? t('profile.sendMessage', 'Poslať správu')
-                  : t('profile.editProfile', 'Upraviť profil')}
+                {primaryActionLabel}
               </button>
               {isOtherUserProfile ? (
                 <button

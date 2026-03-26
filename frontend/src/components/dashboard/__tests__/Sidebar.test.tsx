@@ -146,4 +146,11 @@ describe('Sidebar', () => {
     // Logo je obrázok s alt tagom
     expect(screen.getByAltText('Swaply')).toBeInTheDocument();
   });
+  it('routes to messages when the messages item is clicked', () => {
+    render(<ThemeProvider><Sidebar {...defaultProps} onLogout={() => {}} /></ThemeProvider>);
+
+    fireEvent.click(screen.getByText('Spr\u00e1vy'));
+
+    expect(mockOnItemClick).toHaveBeenCalledWith('messages');
+  });
 });

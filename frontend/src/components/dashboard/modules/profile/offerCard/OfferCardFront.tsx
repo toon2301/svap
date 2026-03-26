@@ -30,6 +30,8 @@ export type OfferCardFrontProps = {
   onMessageClick?: (offerId: number) => void;
   requestLabel?: string;
   isRequestDisabled?: boolean;
+  messageLabel?: string;
+  isMessageDisabled?: boolean;
   compactTop?: boolean;
 };
 
@@ -54,6 +56,8 @@ export function OfferCardFront({
   onMessageClick,
   requestLabel,
   isRequestDisabled = false,
+  messageLabel,
+  isMessageDisabled = false,
   compactTop = false,
 }: OfferCardFrontProps) {
   const showFront = !isFlipped;
@@ -206,13 +210,17 @@ export function OfferCardFront({
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
+                  if (isMessageDisabled) return;
                   if (typeof offer.id === 'number' && onMessageClick) {
                     onMessageClick(offer.id);
                   }
                 }}
-                className="flex-1 px-3 py-1.5 text-xs font-medium bg-purple-100 text-purple-800 border border-purple-200 rounded-lg transition-colors hover:bg-purple-200 dark:bg-purple-900/40 dark:text-purple-300 dark:border-purple-800/60 dark:hover:bg-purple-900/60"
+                disabled={isMessageDisabled}
+                className={`flex-1 px-3 py-1.5 text-xs font-medium bg-purple-100 text-purple-800 border border-purple-200 rounded-lg transition-colors dark:bg-purple-900/40 dark:text-purple-300 dark:border-purple-800/60 ${
+                  isMessageDisabled ? 'opacity-70 cursor-not-allowed' : 'hover:bg-purple-200 dark:hover:bg-purple-900/60'
+                }`}
               >
-                {t('skills.message', 'Správa')}
+                {messageLabel ?? t('skills.message', 'Správa')}
               </button>
             </div>
           )}

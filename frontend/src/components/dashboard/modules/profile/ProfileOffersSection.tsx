@@ -21,7 +21,7 @@ import {
   invalidateOffersCache,
 } from './profileOffersCache';
 import { fetchSkillRequests, getApiErrorMessage, updateSkillRequest } from '../requests/requestsApi';
-import { openConversation } from '../messages/messagingApi';
+import { getMessagingErrorMessage, openConversation } from '../messages/messagingApi';
 
 interface ProfileOffersSectionProps {
   activeTab: ProfileTab;
@@ -49,6 +49,7 @@ export default function ProfileOffersSection({
   const [requestIdByOfferId, setRequestIdByOfferId] = useState<Record<number, number>>({});
   const [alreadyReviewedByOfferId, setAlreadyReviewedByOfferId] = useState<Record<number, boolean | undefined>>({});
   const [busyOfferId, setBusyOfferId] = useState<number | null>(null);
+  const [busyMessageOfferId, setBusyMessageOfferId] = useState<number | null>(null);
   const [flippedCards, setFlippedCards] = useState<Set<number | string>>(() => new Set());
   const [activeHoursOfferId, setActiveHoursOfferId] = useState<number | string | null>(null);
   const [hoursPopoverPosition, setHoursPopoverPosition] = useState<{ top: number; left: number } | null>(null);
@@ -95,6 +96,7 @@ export default function ProfileOffersSection({
   const handleMessageClick = useCallback(
     async (offerId: number) => {
       if (!isOtherUserProfile) return;
+      if (busyMessageOfferId === offerId) return;
       const ok = await isOfferStillAvailable(offerId);
       if (!ok) {
         setIsUnavailableModalOpen(true);
@@ -102,13 +104,22 @@ export default function ProfileOffersSection({
       }
       if (!ownerUserId) return;
       try {
+        setBusyMessageOfferId(offerId);
         const convo = await openConversation(ownerUserId);
         router.push(`/dashboard/messages/${convo.id}`);
-      } catch {
-        // ignore
+      } catch (error) {
+        toast.error(
+          getMessagingErrorMessage(error, {
+            fallback: t('messages.openFailed', 'Nepodarilo sa otvoriť konverzáciu. Skúste to znova.'),
+            rateLimitFallback: t('messages.openRateLimited', 'Konverzácie otvárate príliš rýchlo. Skúste chvíľu počkať.'),
+            unavailableFallback: t('messages.openUnavailable', 'Používateľovi momentálne nie je možné napísať.'),
+          }),
+        );
+      } finally {
+        setBusyMessageOfferId(null);
       }
     },
-    [isOtherUserProfile, isOfferStillAvailable, ownerUserId, router],
+    [busyMessageOfferId, isOtherUserProfile, isOfferStillAvailable, ownerUserId, router, t],
   );
 
   const resolvePendingRequestIdForOffer = useCallback(
@@ -598,6 +609,7 @@ export default function ProfileOffersSection({
                   ownerDisplayName={ownerDisplayName}
                   onRequestClick={handleRequestClick}
                   onMessageClick={handleMessageClick}
+                  messageLabel={busyMessageOfferId === offer.id ? t('messages.opening', 'Otváram…') : undefined}
                   requestLabel={(() => {
                     const defaultRequest = offer.is_seeking ? t('requests.offer', 'Ponúknuť') : t('requests.request', 'Požiadať');
                     if (typeof offer.id !== 'number') return defaultRequest;
@@ -638,6 +650,7 @@ export default function ProfileOffersSection({
                         : '';
                     return st === 'accepted' || st === 'completion_requested' || busyOfferId === offer.id;
                   })()}
+                  isMessageDisabled={busyMessageOfferId === offer.id}
                 />
               </div>
             );

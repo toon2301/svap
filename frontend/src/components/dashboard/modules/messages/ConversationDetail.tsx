@@ -2,8 +2,9 @@
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import toast from 'react-hot-toast';
 import type { MessageItem } from './types';
-import { listConversations, listMessages, markConversationRead, sendMessage } from './messagingApi';
+import { getMessagingErrorMessage, listConversations, listMessages, markConversationRead, sendMessage } from './messagingApi';
 import { CreateRequestCta } from './CreateRequestCta';
 import { CreateRequestModal } from './CreateRequestModal';
 import type { ConversationListItem } from './types';
@@ -30,9 +31,21 @@ export function ConversationDetail({ conversationId, currentUserId }: { conversa
     return [...messages].reverse();
   }, [messages]);
 
-  const refresh = async () => {
-    const list = await listMessages(conversationId, 100);
-    setMessages(list);
+  const refresh = async ({ showError = true }: { showError?: boolean } = {}) => {
+    try {
+      const list = await listMessages(conversationId, 100);
+      setMessages(list);
+    } catch (error) {
+      if (showError) {
+        toast.error(
+          getMessagingErrorMessage(error, {
+            fallback: t('messages.loadFailed', 'Nepodarilo sa načítať správy. Skúste to znova.'),
+            rateLimitFallback: t('messages.loadRateLimited', 'Správy načítavate príliš rýchlo. Skúste chvíľu počkať.'),
+          }),
+        );
+      }
+      throw error;
+    }
   };
 
   useEffect(() => {
@@ -48,12 +61,14 @@ export function ConversationDetail({ conversationId, currentUserId }: { conversa
         } catch {
           // ignore
         }
-        await Promise.all([
-          refresh(),
-          markConversationRead(conversationId),
-        ]);
+        await refresh();
+        try {
+          await markConversationRead(conversationId);
+        } catch {
+          // best-effort
+        }
       } catch {
-        // ignore
+        // refresh already surfaced a user-facing error
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -75,10 +90,20 @@ export function ConversationDetail({ conversationId, currentUserId }: { conversa
     try {
       await sendMessage(conversationId, clean);
       setText('');
-      await refresh();
-      await markConversationRead(conversationId);
-    } catch {
-      // fail-open
+      await refresh({ showError: false });
+      try {
+        await markConversationRead(conversationId);
+      } catch {
+        // best-effort
+      }
+    } catch (error) {
+      toast.error(
+        getMessagingErrorMessage(error, {
+          fallback: t('messages.sendFailed', 'Správu sa nepodarilo odoslať. Skúste to znova.'),
+          rateLimitFallback: t('messages.sendRateLimited', 'Posielate príliš rýchlo. Skúste chvíľu počkať.'),
+          unavailableFallback: t('messages.sendUnavailable', 'Konverzácia už nie je dostupná.'),
+        }),
+      );
     } finally {
       setSending(false);
     }
@@ -139,7 +164,7 @@ export function ConversationDetail({ conversationId, currentUserId }: { conversa
                   ].join(' ')}
                 >
                   <div className="whitespace-pre-wrap break-words">
-                    {m.text ?? t('messages.deleted', 'Správa bola odstránená')}
+                    {mine ? `Ty:${m.text ?? t('messages.deleted', 'Správa bola odstránená')}` : m.text ?? t('messages.deleted', 'Správa bola odstránená')}
                   </div>
                   <div className={`mt-1 text-[10px] tabular-nums ${mine ? 'text-white/80' : 'text-gray-500 dark:text-gray-400'}`}>
                     {formatTime(m.created_at)}
@@ -156,6 +181,7 @@ export function ConversationDetail({ conversationId, currentUserId }: { conversa
         <input
           value={text}
           onChange={(e) => setText(e.target.value)}
+          disabled={sending}
           onKeyDown={(e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
               e.preventDefault();
@@ -171,7 +197,7 @@ export function ConversationDetail({ conversationId, currentUserId }: { conversa
           onClick={() => void handleSend()}
           className="px-4 py-2 rounded-2xl bg-purple-600 text-white text-sm font-semibold disabled:opacity-60 disabled:cursor-not-allowed hover:bg-purple-700 transition-colors"
         >
-          {t('messages.send', 'Odoslať')}
+          {sending ? t('common.sending', 'Odosielam…') : t('messages.send', 'Odoslať')}
         </button>
       </div>
 

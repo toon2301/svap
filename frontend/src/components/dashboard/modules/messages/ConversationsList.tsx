@@ -13,7 +13,7 @@ function formatDate(value: string | null): string {
   return d.toLocaleString('sk-SK', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' });
 }
 
-export function ConversationsList() {
+export function ConversationsList({ currentUserId }: { currentUserId: number }) {
   const { t } = useLanguage();
   const router = useRouter();
   const [items, setItems] = useState<ConversationListItem[]>([]);
@@ -67,7 +67,14 @@ export function ConversationsList() {
       {items.map((c) => {
         const other = c.other_user;
         const title = other?.display_name || t('messages.unknownUser', 'Používateľ');
-        const preview = c.last_message_preview || (c.last_message_at ? t('messages.noPreview', 'Správa') : t('messages.noMessagesYet', 'Zatiaľ bez správ'));
+        const rawPreview =
+          c.last_message_preview ||
+          (c.last_message_at
+            ? t('messages.noPreview', 'Správa')
+            : t('messages.noMessagesYet', 'Zatiaľ bez správ'));
+        const isMine =
+          typeof c.last_message_sender_id === 'number' && c.last_message_sender_id === currentUserId;
+        const preview = isMine ? `Ty:${rawPreview}` : rawPreview;
         const when = formatDate(c.last_message_at);
         return (
           <button

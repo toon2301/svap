@@ -4,12 +4,19 @@ from django.contrib.auth import get_user_model
 from django.db.models import BooleanField, Case, F, OuterRef, Subquery, Value, When
 from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404
+from django.utils.decorators import method_decorator
 from rest_framework import status
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.generics import ListAPIView
+
+from swaply.rate_limiting import (
+    messaging_mark_read_rate_limit,
+    messaging_open_rate_limit,
+    messaging_send_rate_limit,
+)
 
 from ..models import Conversation, ConversationParticipant, Message
 from ..services.conversations import SelfConversationNotAllowed, open_or_create_direct_conversation
@@ -80,6 +87,7 @@ def _conversation_list_queryset_for_user(user):
 class OpenConversationView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @method_decorator(messaging_open_rate_limit)
     def post(self, request):
         serializer = OpenConversationSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -141,6 +149,7 @@ class MessageListView(ListAPIView):
 class SendMessageView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @method_decorator(messaging_send_rate_limit)
     def post(self, request, conversation_id: int):
         convo = _conversation_for_user_or_404(conversation_id=conversation_id, user=request.user)
         serializer = SendMessageSerializer(data=request.data)
@@ -164,6 +173,7 @@ class SendMessageView(APIView):
 class MarkConversationReadView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @method_decorator(messaging_mark_read_rate_limit)
     def post(self, request, conversation_id: int):
         convo = _conversation_for_user_or_404(conversation_id=conversation_id, user=request.user)
         serializer = MarkReadSerializer(data=request.data)

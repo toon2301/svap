@@ -301,6 +301,27 @@ api_rate_limit = rate_limit(
 email_check_rate_limit = rate_limit(
     max_attempts=30, window_minutes=10, block_minutes=30, action="email_check"
 )
+messaging_open_rate_limit = rate_limit(
+    max_attempts=30,
+    window_minutes=5,
+    block_minutes=15,
+    action="messaging_open",
+    message="Prilis vela pokusov o otvorenie konverzacii. Skuste to prosim znova neskor.",
+)
+messaging_send_rate_limit = rate_limit(
+    max_attempts=120,
+    window_minutes=5,
+    block_minutes=10,
+    action="messaging_send",
+    message="Prilis vela odoslanych sprav. Skuste to prosim znova neskor.",
+)
+messaging_mark_read_rate_limit = rate_limit(
+    max_attempts=300,
+    window_minutes=5,
+    block_minutes=5,
+    action="messaging_mark_read",
+    message="Prilis vela poziadaviek na oznacenie sprav ako precitanych. Skuste to prosim znova neskor.",
+)
 
 
 def get_client_ip(request):
