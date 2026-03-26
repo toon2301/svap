@@ -173,7 +173,7 @@ export function SearchUsersResults({
                         {displayName}
                       </span>
                       {badge && (
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 flex-shrink-0">
+                        <span className="hidden lg:inline-flex text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 flex-shrink-0">
                           {badge}
                         </span>
                       )}
@@ -183,16 +183,25 @@ export function SearchUsersResults({
                         </span>
                       ) : null}
                     </div>
-                    {locality ? (
-                      <div className="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">
-                        {locality}
+                    {(locality || badge) && (
+                      <div className="mt-0.5 flex items-center gap-2 min-w-0">
+                        {locality ? (
+                          <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                            {locality}
+                          </div>
+                        ) : null}
+                        {badge && (
+                          <span className="inline-flex lg:hidden text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 flex-shrink-0">
+                            {badge}
+                          </span>
+                        )}
                       </div>
-                    ) : null}
+                    )}
                   </div>
                 </div>
 
                 {hasSocial ? (
-                  <div className="flex items-center gap-1 flex-shrink-0">
+                  <div className="hidden lg:flex items-center gap-1 flex-shrink-0">
                     {facebook && (
                       <SocialIconLink href={facebook} label="Facebook">
                         <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">

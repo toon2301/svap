@@ -356,7 +356,7 @@ function SearchResultsContent() {
       </div>
 
       <div className="mb-4">
-        <div className="inline-flex p-1 rounded-2xl border border-gray-200 dark:border-gray-800 bg-white/60 dark:bg-[#0f0f10]">
+        <div className="flex w-full p-1 rounded-2xl border border-gray-200 dark:border-gray-800 bg-white/60 dark:bg-[#0f0f10]">
           {([
             { id: 'all', label: 'Všetko' },
             { id: 'users', label: 'Ľudia' },
@@ -375,7 +375,7 @@ function SearchResultsContent() {
                   });
                 }}
                 className={[
-                  'px-4 py-2 text-sm font-semibold rounded-2xl transition-colors',
+                  'flex-1 text-center px-4 py-2 text-sm font-semibold rounded-2xl transition-colors',
                   active
                     ? 'bg-purple-100 text-purple-800 border border-purple-200'
                     : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-[#141416] border border-transparent',

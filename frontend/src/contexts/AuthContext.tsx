@@ -282,9 +282,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     void (async () => {
       try {
+        if (!hasCsrfToken()) {
+          await fetchCsrfToken();
+        }
         await api.post(endpoints.auth.logout, {});
       } catch {
-        // ignore - local logout state must still be applied
+        try {
+          // Google/cookie-only sessions may not have a readable CSRF token loaded yet.
+          // Retry once after explicitly fetching a fresh token so backend cookies are
+          // actually cleared and a hard reload cannot resurrect the old session.
+          await fetchCsrfToken();
+          await api.post(endpoints.auth.logout, {});
+        } catch {
+          // ignore - local logout state must still be applied
+        }
       } finally {
         clearAuthState();
         userRef.current = null;
