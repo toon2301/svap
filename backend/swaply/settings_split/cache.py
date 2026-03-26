@@ -32,6 +32,7 @@ CACHE_SOCKET_CONNECT_TIMEOUT = _env_float(
     "CACHE_SOCKET_CONNECT_TIMEOUT", 0.2 if CACHE_REDIS_URL else None
 )
 CACHE_IGNORE_EXCEPTIONS = _env_bool("CACHE_IGNORE_EXCEPTIONS", True)
+CACHE_RETRY_ON_TIMEOUT = _env_bool("CACHE_RETRY_ON_TIMEOUT", False)
 CACHE_REDIS_MAX_CONNECTIONS = _env_int("CACHE_REDIS_MAX_CONNECTIONS", None)
 
 CACHES = build_caches(
@@ -41,4 +42,5 @@ CACHES = build_caches(
     socket_connect_timeout=CACHE_SOCKET_CONNECT_TIMEOUT,
     ignore_exceptions=CACHE_IGNORE_EXCEPTIONS,
     max_connections=CACHE_REDIS_MAX_CONNECTIONS,
+    retry_on_timeout=CACHE_RETRY_ON_TIMEOUT,
 )

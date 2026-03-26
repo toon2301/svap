@@ -3,7 +3,10 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { MessageItem } from './types';
-import { listMessages, markConversationRead, sendMessage } from './messagingApi';
+import { listConversations, listMessages, markConversationRead, sendMessage } from './messagingApi';
+import { CreateRequestCta } from './CreateRequestCta';
+import { CreateRequestModal } from './CreateRequestModal';
+import type { ConversationListItem } from './types';
 
 function formatTime(value: string): string {
   const d = new Date(value);
@@ -18,6 +21,9 @@ export function ConversationDetail({ conversationId, currentUserId }: { conversa
   const [sending, setSending] = useState(false);
   const [text, setText] = useState('');
   const bottomRef = useRef<HTMLDivElement | null>(null);
+  const [otherConversation, setOtherConversation] = useState<ConversationListItem | null>(null);
+  const [isCreateRequestOpen, setIsCreateRequestOpen] = useState(false);
+  const [requestCreatedInfo, setRequestCreatedInfo] = useState<string | null>(null);
 
   const ordered = useMemo(() => {
     // API vracia najnovšie prvé – v UI chceme chronologicky
@@ -34,6 +40,14 @@ export function ConversationDetail({ conversationId, currentUserId }: { conversa
     void (async () => {
       try {
         setLoading(true);
+        // Načítaj other_user z list endpointu (MVP nemá detail endpoint).
+        try {
+          const list = await listConversations();
+          const found = Array.isArray(list) ? list.find((x) => x?.id === conversationId) : null;
+          if (!cancelled) setOtherConversation(found ?? null);
+        } catch {
+          // ignore
+        }
         await Promise.all([
           refresh(),
           markConversationRead(conversationId),
@@ -80,8 +94,32 @@ export function ConversationDetail({ conversationId, currentUserId }: { conversa
     );
   }
 
+  const targetUserId = otherConversation?.other_user?.id ?? null;
+  const targetUserName =
+    (otherConversation?.other_user?.display_name || '').trim() || t('messages.unknownUser', 'Používateľ');
+
   return (
     <div className="max-w-4xl mx-auto flex flex-col h-[calc(100vh-8rem)]">
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <div className="min-w-0">
+          <div className="text-sm font-semibold text-gray-900 dark:text-white truncate">
+            {targetUserName}
+          </div>
+          {requestCreatedInfo ? (
+            <div className="mt-0.5 text-xs text-purple-700 dark:text-purple-300">
+              {requestCreatedInfo}
+            </div>
+          ) : null}
+        </div>
+        <CreateRequestCta
+          disabled={!targetUserId}
+          onClick={() => {
+            if (!targetUserId) return;
+            setIsCreateRequestOpen(true);
+          }}
+        />
+      </div>
+
       <div className="flex-1 overflow-y-auto elegant-scrollbar rounded-2xl border border-gray-200 dark:border-gray-800 bg-white/60 dark:bg-[#0f0f10] p-4 space-y-2">
         {ordered.length === 0 ? (
           <div className="text-sm text-gray-600 dark:text-gray-400 text-center py-8">
@@ -136,6 +174,21 @@ export function ConversationDetail({ conversationId, currentUserId }: { conversa
           {t('messages.send', 'Odoslať')}
         </button>
       </div>
+
+      {targetUserId ? (
+        <CreateRequestModal
+          open={isCreateRequestOpen}
+          conversationId={conversationId}
+          targetUserId={targetUserId}
+          targetUserName={targetUserName}
+          onClose={() => setIsCreateRequestOpen(false)}
+          onCreated={() => {
+            setRequestCreatedInfo(t('requests.createdInfo', 'Žiadosť bola vytvorená'));
+            void refresh();
+            void markConversationRead(conversationId);
+          }}
+        />
+      ) : null}
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import pytest
+import accounts.authentication as auth_module
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
 from django.db import connection
@@ -9,6 +10,7 @@ from accounts.authentication import (
     SwaplyJWTAuthentication,
     _USER_REDIS_TTL_SECONDS,
     _redis_user_cache_key,
+    _should_skip_auth_user_cache_set,
     _serialize_user_for_cache,
     materialize_auth_user,
 )
@@ -123,6 +125,64 @@ class TestJWTAuthExtras:
                         "token_type": "refresh",
                     }
                 )
+
+    def test_should_skip_auth_user_cache_set_when_cache_get_is_too_slow(self, monkeypatch):
+        monkeypatch.setattr(
+            auth_module, "_AUTH_USER_CACHE_SLOW_GET_SKIP_SET_MS", 250.0
+        )
+        assert _should_skip_auth_user_cache_set(250.0) is True
+        assert _should_skip_auth_user_cache_set(500.0) is True
+        assert _should_skip_auth_user_cache_set(249.9) is False
+
+    def test_get_user_skips_cache_set_after_slow_cache_get(self):
+        user = User.objects.create_user(
+            username="skipset",
+            email="skipset@example.com",
+            password="StrongPass123",
+            is_active=True,
+        )
+        auth = SwaplyJWTAuthentication()
+
+        with patch.object(
+            SwaplyJWTAuthentication, "_is_token_blacklisted", return_value=False
+        ):
+            with patch("accounts.authentication.cache.get", return_value=None):
+                with patch(
+                    "accounts.authentication._should_skip_auth_user_cache_set",
+                    return_value=True,
+                ):
+                    with patch("accounts.authentication.cache.set") as mock_set:
+                        got = auth.get_user(
+                            validated_token={"user_id": user.id, "jti": "skipset-jti"}
+                        )
+
+        assert got.id == user.id
+        mock_set.assert_not_called()
+
+    def test_get_user_still_warms_cache_when_cache_get_is_healthy(self):
+        user = User.objects.create_user(
+            username="warmset",
+            email="warmset@example.com",
+            password="StrongPass123",
+            is_active=True,
+        )
+        auth = SwaplyJWTAuthentication()
+
+        with patch.object(
+            SwaplyJWTAuthentication, "_is_token_blacklisted", return_value=False
+        ):
+            with patch("accounts.authentication.cache.get", return_value=None):
+                with patch(
+                    "accounts.authentication._should_skip_auth_user_cache_set",
+                    return_value=False,
+                ):
+                    with patch("accounts.authentication.cache.set") as mock_set:
+                        got = auth.get_user(
+                            validated_token={"user_id": user.id, "jti": "warmset-jti"}
+                        )
+
+        assert got.id == user.id
+        mock_set.assert_called_once()
 
     def test_is_token_blacklisted_no_jti_returns_false(self):
         auth = SwaplyJWTAuthentication()

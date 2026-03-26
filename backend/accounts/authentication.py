@@ -33,6 +33,9 @@ _USER_CACHE_MAX = 0
 _USER_REDIS_TTL_SECONDS = int(
     os.getenv("AUTH_USER_REDIS_CACHE_TTL_SECONDS", "86400") or "86400"
 )
+_AUTH_USER_CACHE_SLOW_GET_SKIP_SET_MS = float(
+    os.getenv("AUTH_USER_CACHE_SLOW_GET_SKIP_SET_MS", "250") or "250"
+)
 _AUTH_LAZY_USER_ENABLED = (
     (os.getenv("AUTH_LAZY_USER_ENABLED") or "1").strip().lower()
     not in {"0", "false", "no"}
@@ -106,6 +109,26 @@ def _user_cache_set(user_id: int, user):
 
 def _redis_user_cache_key(user_id: int) -> str:
     return f"auth_user_v2:{int(user_id)}"
+
+
+def _should_skip_auth_user_cache_set(cache_get_ms: float) -> bool:
+    """
+    If the preceding cache.get path was already slow, avoid paying for a second
+    remote Redis hop on the same cold-miss request.
+
+    This keeps auth fail-open and correct while preferring user-visible latency
+    over best-effort warm-up during a degraded cache window.
+    """
+
+    try:
+        threshold_ms = float(_AUTH_USER_CACHE_SLOW_GET_SKIP_SET_MS)
+        measured_ms = float(cache_get_ms)
+    except Exception:
+        return False
+
+    if threshold_ms <= 0:
+        return False
+    return measured_ms >= threshold_ms
 
 
 def _serialize_user_for_cache(user) -> dict:
@@ -376,7 +399,9 @@ class SwaplyJWTAuthentication(JWTAuthentication):
                     invalidate_user_auth_cache(int(user_id))
                     raise InvalidToken("User is inactive")
 
-                if _USER_REDIS_TTL_SECONDS > 0:
+                if _USER_REDIS_TTL_SECONDS > 0 and not _should_skip_auth_user_cache_set(
+                    cache_get_ms
+                ):
                     t_cache_set0 = time.perf_counter()
                     try:
                         fresh_payload = _serialize_user_for_cache(user)
@@ -392,6 +417,12 @@ class SwaplyJWTAuthentication(JWTAuthentication):
                         cache_set_ms = (
                             time.perf_counter() - t_cache_set0
                         ) * 1000.0
+                elif _USER_REDIS_TTL_SECONDS > 0:
+                    logger.debug(
+                        "Skipping auth user cache set after slow cache get for user_id=%s (%.1f ms)",
+                        user_id,
+                        cache_get_ms,
+                    )
 
             try:
                 base_req = getattr(self, "_timing_request", None)

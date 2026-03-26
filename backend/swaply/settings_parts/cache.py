@@ -10,6 +10,7 @@ def build_caches(
     socket_connect_timeout: float | None = None,
     ignore_exceptions: bool = False,
     max_connections: int | None = None,
+    retry_on_timeout: bool = False,
 ) -> Dict[str, Any]:
     """
     Vytvor CACHES konfiguraciu. Ak je nastaveny Redis URL, pouzije RedisCache,
@@ -17,7 +18,7 @@ def build_caches(
     """
     if redis_url:
         pool_kwargs = {
-            "retry_on_timeout": True,
+            "retry_on_timeout": bool(retry_on_timeout),
             "socket_keepalive": True,
             "socket_keepalive_options": {},
         }

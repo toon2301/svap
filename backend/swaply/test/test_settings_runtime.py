@@ -14,6 +14,7 @@ _TEST_ENV_KEYS = {
     "CACHE_KEY_PREFIX",
     "CACHE_REDIS_MAX_CONNECTIONS",
     "CACHE_REDIS_URL",
+    "CACHE_RETRY_ON_TIMEOUT",
     "CACHE_SOCKET_CONNECT_TIMEOUT",
     "CACHE_SOCKET_TIMEOUT",
     "CELERY_BROKER_URL",
@@ -80,6 +81,10 @@ def test_prod_csrf_and_redis_enforced(monkeypatch):
     assert mod.CACHES["default"]["OPTIONS"]["SOCKET_TIMEOUT"] == 0.3
     assert mod.CACHES["default"]["OPTIONS"]["SOCKET_CONNECT_TIMEOUT"] == 0.2
     assert mod.CACHES["default"]["OPTIONS"]["IGNORE_EXCEPTIONS"] is True
+    assert (
+        mod.CACHES["default"]["OPTIONS"]["CONNECTION_POOL_KWARGS"]["retry_on_timeout"]
+        is False
+    )
 
 
 def test_cache_redis_url_takes_precedence_and_applies_cache_options(monkeypatch):
@@ -99,6 +104,7 @@ def test_cache_redis_url_takes_precedence_and_applies_cache_options(monkeypatch)
             "CACHE_SOCKET_TIMEOUT": "0.45",
             "CACHE_SOCKET_CONNECT_TIMEOUT": "0.15",
             "CACHE_IGNORE_EXCEPTIONS": "0",
+            "CACHE_RETRY_ON_TIMEOUT": "1",
             "CACHE_REDIS_MAX_CONNECTIONS": "123",
         },
     )
@@ -108,6 +114,10 @@ def test_cache_redis_url_takes_precedence_and_applies_cache_options(monkeypatch)
     assert mod.CACHES["default"]["OPTIONS"]["SOCKET_TIMEOUT"] == 0.45
     assert mod.CACHES["default"]["OPTIONS"]["SOCKET_CONNECT_TIMEOUT"] == 0.15
     assert mod.CACHES["default"]["OPTIONS"]["IGNORE_EXCEPTIONS"] is False
+    assert (
+        mod.CACHES["default"]["OPTIONS"]["CONNECTION_POOL_KWARGS"]["retry_on_timeout"]
+        is True
+    )
     assert (
         mod.CACHES["default"]["OPTIONS"]["CONNECTION_POOL_KWARGS"]["max_connections"]
         == 123
