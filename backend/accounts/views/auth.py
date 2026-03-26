@@ -670,8 +670,10 @@ def me_view(request):
     user = _me_user_queryset().get(pk=user.pk)
     t_db1 = perf_counter()
     t_serialize0 = perf_counter()
-    serializer = UserProfileSerializer(user, context={"request": request})
+    serializer_context = {"request": request, "_me_serializer_timing": {}}
+    serializer = UserProfileSerializer(user, context=serializer_context)
     serializer_data = serializer.data
+    serializer_timing = serializer_context.get("_me_serializer_timing", {})
     t_serialize1 = perf_counter()
     t_response0 = perf_counter()
     resp = Response(serializer_data)
@@ -686,6 +688,7 @@ def me_view(request):
         me_serialize=(t_serialize1 - t_serialize0) * 1000.0,
         me_response_build=(t_response1 - t_response0) * 1000.0,
         me_total=(t_response1 - t_view0) * 1000.0,
+        **serializer_timing,
     )
     return resp
 

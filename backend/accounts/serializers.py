@@ -5,6 +5,7 @@ from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from datetime import datetime, date
+from time import perf_counter
 from .models import (
     User,
     UserProfile,
@@ -313,27 +314,50 @@ class UserProfileSerializer(serializers.ModelSerializer):
             "completed_cooperations_count",
         ]
 
+    def _record_me_serializer_timing(self, name, started_at):
+        try:
+            context = getattr(self, "context", None)
+            if not isinstance(context, dict):
+                return
+            bucket = context.setdefault("_me_serializer_timing", {})
+            if not isinstance(bucket, dict):
+                return
+            bucket[name] = (perf_counter() - started_at) * 1000.0
+        except Exception:
+            pass
+
     def get_completed_cooperations_count(self, obj):
+        t0 = perf_counter()
         annotated_count = getattr(obj, "_completed_cooperations_count", None)
         if annotated_count is not None:
-            return int(annotated_count)
-        return SkillRequest.objects.filter(
+            result = int(annotated_count)
+            self._record_me_serializer_timing("me_serialize_completed_count", t0)
+            return result
+        result = SkillRequest.objects.filter(
             status=SkillRequestStatus.COMPLETED
         ).filter(
             Q(requester=obj) | Q(recipient=obj)
         ).count()
+        self._record_me_serializer_timing("me_serialize_completed_count", t0)
+        return result
 
     def get_avatar_url(self, obj):
         """Vráti plnú URL k avataru (ak existuje)."""
+        t0 = perf_counter()
         try:
             if obj.avatar and hasattr(obj.avatar, "url"):
                 request = self.context.get("request")
                 url = obj.avatar.url
                 if request:
-                    return request.build_absolute_uri(url)
+                    result = request.build_absolute_uri(url)
+                    self._record_me_serializer_timing("me_serialize_avatar_url", t0)
+                    return result
+                self._record_me_serializer_timing("me_serialize_avatar_url", t0)
                 return url
         except Exception:
+            self._record_me_serializer_timing("me_serialize_avatar_url", t0)
             return None
+        self._record_me_serializer_timing("me_serialize_avatar_url", t0)
         return None
 
     def to_representation(self, instance):
@@ -346,8 +370,11 @@ class UserProfileSerializer(serializers.ModelSerializer):
           - ico len ak ico_visible=True
           - contact_email len ak contact_email_visible=True (ak flag existuje), inak nikdy
         """
+        t_super0 = perf_counter()
         ret = super().to_representation(instance)
+        self._record_me_serializer_timing("me_serialize_representation", t_super0)
 
+        t_privacy0 = perf_counter()
         request = self.context.get("request") if isinstance(getattr(self, "context", None), dict) else None
         viewer = getattr(request, "user", None) if request is not None else None
         is_owner = bool(
@@ -356,6 +383,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
             and getattr(viewer, "id", None) == getattr(instance, "id", None)
         )
         if is_owner:
+            self._record_me_serializer_timing("me_serialize_privacy_filter", t_privacy0)
             return ret
 
         # Never return these fields for non-owners
@@ -377,6 +405,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
             # No visibility flag exists -> never return contact email for non-owners
             ret.pop("contact_email", None)
 
+        self._record_me_serializer_timing("me_serialize_privacy_filter", t_privacy0)
         return ret
 
     def validate_first_name(self, value):

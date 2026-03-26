@@ -198,6 +198,10 @@ class TestAuthViews(APITestCase):
         server_timing = response.headers.get("Server-Timing", "")
         self.assertIn("me_db_get", server_timing)
         self.assertIn("me_serialize", server_timing)
+        self.assertIn("me_serialize_completed_count", server_timing)
+        self.assertIn("me_serialize_avatar_url", server_timing)
+        self.assertIn("me_serialize_representation", server_timing)
+        self.assertIn("me_serialize_privacy_filter", server_timing)
         self.assertIn("me_response_build", server_timing)
         self.assertIn("me_total", server_timing)
 
