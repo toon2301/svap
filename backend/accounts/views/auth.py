@@ -17,6 +17,7 @@ from django.db.models import Count, F, Q
 from django.core.cache import cache
 import logging
 import os
+from time import perf_counter
 from django.conf import settings
 from django.middleware.csrf import get_token
 from django.views.decorators.csrf import ensure_csrf_cookie
@@ -79,6 +80,19 @@ def _me_user_queryset():
         _completed_cooperations_count=F("_completed_sent_count")
         + F("_completed_received_count")
     )
+
+
+def _record_auth_view_timing(request, **entries) -> None:
+    """Best-effort Server-Timing enrichment for auth views."""
+    try:
+        base_req = getattr(request, "_request", request)
+        st = getattr(base_req, "_server_timing", None)
+        if not isinstance(st, dict):
+            st = {}
+        st.update(entries)
+        base_req._server_timing = st
+    except Exception:
+        pass
 
 
 def _auth_cookie_debug_enabled() -> bool:
@@ -626,6 +640,7 @@ def logout_view(request):
 @permission_classes([IsAuthenticated])
 def me_view(request):
     """Získanie informácií o aktuálnom používateľovi"""
+    t_view0 = perf_counter()
     _log_cookie_header_diagnostics(request, where="me_view")
     user = getattr(request, "user", None)
     if not user or not getattr(user, "is_authenticated", False):
@@ -633,13 +648,27 @@ def me_view(request):
             {"detail": "Authentication credentials were not provided."},
             status=status.HTTP_401_UNAUTHORIZED,
         )
+    t_db0 = perf_counter()
     user = _me_user_queryset().get(pk=user.pk)
+    t_db1 = perf_counter()
+    t_serialize0 = perf_counter()
     serializer = UserProfileSerializer(user, context={"request": request})
-    resp = Response(serializer.data)
+    serializer_data = serializer.data
+    t_serialize1 = perf_counter()
+    t_response0 = perf_counter()
+    resp = Response(serializer_data)
     # Identity endpoint must never be cached (prevents stale-user / old-account effects behind proxies/CDNs).
     resp["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
     resp["Pragma"] = "no-cache"
     resp["Vary"] = "Cookie"
+    t_response1 = perf_counter()
+    _record_auth_view_timing(
+        request,
+        me_db_get=(t_db1 - t_db0) * 1000.0,
+        me_serialize=(t_serialize1 - t_serialize0) * 1000.0,
+        me_response_build=(t_response1 - t_response0) * 1000.0,
+        me_total=(t_response1 - t_view0) * 1000.0,
+    )
     return resp
 
 

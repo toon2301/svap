@@ -180,6 +180,26 @@ class TestAuthViews(APITestCase):
             f"Expected a single annotated /me query on warm auth cache, got {len(ctx.captured_queries)} queries",
         )
 
+    def test_me_view_exposes_server_timing_breakdown(self):
+        url = reverse("accounts:me")
+        refresh = RefreshToken.for_user(self.user)
+        self.client.cookies["access_token"] = str(refresh.access_token)
+        cache.clear()
+        cache.set(
+            _redis_user_cache_key(self.user.id),
+            _serialize_user_for_cache(self.user),
+            timeout=300,
+        )
+
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        server_timing = response.headers.get("Server-Timing", "")
+        self.assertIn("me_db_get", server_timing)
+        self.assertIn("me_serialize", server_timing)
+        self.assertIn("me_response_build", server_timing)
+        self.assertIn("me_total", server_timing)
+
     def test_me_view_unauthenticated(self):
         """Test získania informácií o neprihlásenom používateľovi"""
         url = reverse("accounts:me")
