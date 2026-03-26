@@ -15,6 +15,7 @@ import ProfileMobileView from "../profile/ProfileMobileView";
 import ProfileDesktopView from "../profile/ProfileDesktopView";
 import ProfileWebsitesModal from "../profile/ProfileWebsitesModal";
 import type { ProfileTab } from "../profile/profileTypes";
+import { openConversation } from "../messages/messagingApi";
 
 interface SearchUserProfileModuleProps {
   userId: number;
@@ -134,12 +135,17 @@ export function SearchUserProfileModule({
   }, [userId]);
 
   const handleSendMessage = () => {
-    if (onSendMessage) {
-      onSendMessage();
-    } else {
-      // Fallback: dispatch custom event to navigate to messages
-      window.dispatchEvent(new CustomEvent('goToMessages', { detail: { userId: profileUser?.id } }));
-    }
+    const targetId = profileUser?.id;
+    if (!targetId) return;
+    void (async () => {
+      try {
+        const convo = await openConversation(targetId);
+        router.push(`/dashboard/messages/${convo.id}`);
+      } catch {
+        // fail-open
+        if (onSendMessage) onSendMessage();
+      }
+    })();
   };
 
   const handleAddToFavorites = async () => {

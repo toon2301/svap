@@ -56,6 +56,11 @@ export default function DashboardContent({
     return m ? Number(m[1]) : null;
   }, [pathname]);
 
+  const conversationIdFromMessagesPath = React.useMemo(() => {
+    const m = pathname?.match(/^\/dashboard\/messages\/(\d+)\/?$/);
+    return m ? Number(m[1]) : null;
+  }, [pathname]);
+
   // Core Dashboard State
   const dashboardState = useDashboardState(initialUser, initialRoute);
   const skillsState = useSkillsModals();
@@ -203,6 +208,8 @@ export default function DashboardContent({
         moduleId = 'requests';
       } else if (p.match(/^\/dashboard\/search\/?$/)) {
         moduleId = 'search';
+      } else if (p.match(/^\/dashboard\/messages\/?$/) || p.match(/^\/dashboard\/messages\/\d+\/?$/)) {
+        moduleId = 'messages';
       } else if (p === '/dashboard' || p === '/dashboard/') {
         moduleId = 'home';
       } else if (p.match(/^\/dashboard\/profile\/?$/)) {
@@ -455,6 +462,11 @@ export default function DashboardContent({
       onSkillsOfferClick={navigation.handleSkillsOfferClick}
       onSkillsSearchClick={navigation.handleSkillsSearchClick}
       offerIdForReviews={effectiveOfferIdForReviews}
+      conversationIdForMessages={
+        conversationIdFromMessagesPath != null && Number.isFinite(conversationIdFromMessagesPath)
+          ? conversationIdFromMessagesPath
+          : null
+      }
     />
   );
 

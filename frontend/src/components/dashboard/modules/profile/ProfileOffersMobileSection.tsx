@@ -2,6 +2,7 @@
  
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { api, endpoints } from '../../../../lib/api';
 import { useAuth } from '@/contexts/AuthContext';
@@ -21,6 +22,7 @@ import {
   invalidateOffersCache,
 } from './profileOffersCache';
 import { fetchSkillRequests, getApiErrorMessage, updateSkillRequest } from '../requests/requestsApi';
+import { openConversation } from '../messages/messagingApi';
 
 interface ProfileOffersMobileSectionProps {
   accountType?: 'personal' | 'business';
@@ -39,6 +41,7 @@ export default function ProfileOffersMobileSection({
   isOtherUserProfile = false,
 }: ProfileOffersMobileSectionProps) {
   const { t } = useLanguage();
+  const router = useRouter();
   const { user } = useAuth();
   const [offers, setOffers] = useState<Offer[]>([]);
   const [requestStatusByOfferId, setRequestStatusByOfferId] = useState<Record<number, string>>({});
@@ -79,6 +82,25 @@ export default function ProfileOffersMobileSection({
       if (!ok) setIsUnavailableModalOpen(true);
     },
     [isOfferStillAvailable],
+  );
+
+  const handleMessageClick = useCallback(
+    async (offerId: number) => {
+      if (!isOtherUserProfile) return;
+      const ok = await isOfferStillAvailable(offerId);
+      if (!ok) {
+        setIsUnavailableModalOpen(true);
+        return;
+      }
+      if (!ownerUserId) return;
+      try {
+        const convo = await openConversation(ownerUserId);
+        router.push(`/dashboard/messages/${convo.id}`);
+      } catch {
+        // ignore
+      }
+    },
+    [isOtherUserProfile, isOfferStillAvailable, ownerUserId, router],
   );
 
   const resolvePendingRequestIdForOffer = useCallback(
@@ -612,7 +634,7 @@ export default function ProfileOffersMobileSection({
                 isOtherUserProfile={isOtherUserProfile}
                 ownerDisplayName={ownerDisplayName}
                 onRequestClick={handleRequestClick}
-                onMessageClick={checkOfferStillAvailable}
+                onMessageClick={handleMessageClick}
                 requestLabel={(() => {
                   const defaultRequest = offer.is_seeking ? t('requests.offer', 'Ponúknuť') : t('requests.request', 'Požiadať');
                   if (typeof offer.id !== 'number') return defaultRequest;

@@ -331,7 +331,9 @@ class SwaplyJWTAuthentication(JWTAuthentication):
                 )
 
             t_bl0 = time.perf_counter()
-            if self._is_token_blacklisted(validated_token):
+            if self._should_check_blacklist(validated_token) and self._is_token_blacklisted(
+                validated_token
+            ):
                 raise InvalidToken("Token is blacklisted")
             t_bl1 = time.perf_counter()
 
@@ -412,6 +414,14 @@ class SwaplyJWTAuthentication(JWTAuthentication):
         except Exception as exc:
             logger.error("JWT authentication error: %s", exc)
             raise InvalidToken("Token is invalid")
+
+    def _should_check_blacklist(self, token) -> bool:
+        """
+        Access tokens are short-lived and are not the token type persisted in the
+        SimpleJWT blacklist model. Skip their blacklist lookup to avoid an extra
+        remote cache hop on every authenticated request.
+        """
+        return str(token.get("token_type") or "").lower() != "access"
 
     def _is_redis_available(self):
         """Compatibility helper used by existing tests and diagnostics."""

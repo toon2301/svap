@@ -19,7 +19,8 @@ from unittest.mock import patch
 
 from accounts.authentication import _redis_user_cache_key, _serialize_user_for_cache
 from accounts.viewer_location_cache import _viewer_location_cache_key
-from accounts.models import UserType
+from accounts.models import OfferedSkill, SkillRequest, SkillRequestStatus, UserType
+from accounts.views.auth import _me_user_queryset
 
 User = get_user_model()
 
@@ -199,6 +200,61 @@ class TestAuthViews(APITestCase):
         self.assertIn("me_serialize", server_timing)
         self.assertIn("me_response_build", server_timing)
         self.assertIn("me_total", server_timing)
+
+    def test_me_view_completed_cooperations_count_is_correct(self):
+        sender_peer = UserFactory()
+        receiver_peer = UserFactory()
+        offer_for_peer = OfferedSkill.objects.create(
+            user=sender_peer,
+            category="Design",
+            subcategory="Logo",
+            description="Branding",
+        )
+        own_offer = OfferedSkill.objects.create(
+            user=self.user,
+            category="Dev",
+            subcategory="Backend",
+            description="Python",
+        )
+        extra_offer = OfferedSkill.objects.create(
+            user=receiver_peer,
+            category="Marketing",
+            subcategory="Ads",
+            description="Campaigns",
+        )
+        SkillRequest.objects.create(
+            requester=self.user,
+            recipient=sender_peer,
+            offer=offer_for_peer,
+            status=SkillRequestStatus.COMPLETED,
+        )
+        SkillRequest.objects.create(
+            requester=receiver_peer,
+            recipient=self.user,
+            offer=own_offer,
+            status=SkillRequestStatus.COMPLETED,
+        )
+        SkillRequest.objects.create(
+            requester=self.user,
+            recipient=receiver_peer,
+            offer=extra_offer,
+            status=SkillRequestStatus.PENDING,
+        )
+
+        url = reverse("accounts:me")
+        refresh = RefreshToken.for_user(self.user)
+        self.client.cookies["access_token"] = str(refresh.access_token)
+
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["completed_cooperations_count"], 2)
+
+    def test_me_queryset_uses_subquery_counts_without_distinct_join_multiplication(self):
+        sql = str(_me_user_queryset().filter(pk=self.user.pk).query)
+
+        self.assertNotIn("COUNT(DISTINCT", sql)
+        self.assertNotIn('LEFT OUTER JOIN "accounts_skillrequest"', sql)
 
     def test_me_view_unauthenticated(self):
         """Test získania informácií o neprihlásenom používateľovi"""

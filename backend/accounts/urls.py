@@ -1,4 +1,4 @@
-from django.urls import path
+from django.urls import include, path
 from . import views
 from .views import profile, password_reset, google_oauth_simple
 
@@ -65,6 +65,8 @@ urlpatterns = [
     # Dashboard
     path("dashboard/home/", views.dashboard_home_view, name="dashboard_home"),
     path("dashboard/search/", views.dashboard_search_view, name="dashboard_search"),
+    # Messaging (1:1)
+    path("messaging/", include("messaging.urls")),
     path(
         "dashboard/favorites/",
         views.dashboard_favorites_view,

@@ -60,6 +60,8 @@ interface ModuleRouterProps {
   onSkillsSearchClick?: () => void;
   /** ID karty (ponuky) pre view recenzií. */
   offerIdForReviews?: number | null;
+  /** Conversation ID for messages detail view (from URL). */
+  conversationIdForMessages?: number | null;
 }
 
 export default function ModuleRouter({
@@ -101,6 +103,7 @@ export default function ModuleRouter({
   onSkillsOfferClick,
   onSkillsSearchClick,
   offerIdForReviews,
+  conversationIdForMessages,
 }: ModuleRouterProps) {
   const { t } = useLanguage();
 
@@ -230,7 +233,7 @@ export default function ModuleRouter({
     case 'create':
       return <CreateModule />;
     case 'messages':
-      return <MessagesModule />;
+      return <MessagesModule conversationId={conversationIdForMessages ?? null} currentUserId={user.id} />;
     case 'requests':
       return <RequestsModule />;
     case 'notifications':

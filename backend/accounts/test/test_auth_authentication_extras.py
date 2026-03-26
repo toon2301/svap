@@ -79,6 +79,51 @@ class TestJWTAuthExtras:
                 got = auth.get_user(validated_token=token)
                 assert got.id == user.id
 
+    def test_get_user_skips_blacklist_lookup_for_access_tokens(self):
+        user = User.objects.create_user(
+            username="accessskip",
+            email="accessskip@example.com",
+            password="StrongPass123",
+            is_active=True,
+        )
+        auth = SwaplyJWTAuthentication()
+
+        with patch.object(
+            SwaplyJWTAuthentication,
+            "_is_token_blacklisted",
+            side_effect=AssertionError("access tokens should skip blacklist lookup"),
+        ):
+            got = auth.get_user(
+                validated_token={
+                    "user_id": user.id,
+                    "jti": "access-jti",
+                    "token_type": "access",
+                }
+            )
+
+        assert got.id == user.id
+
+    def test_get_user_still_checks_blacklist_for_refresh_tokens(self):
+        user = User.objects.create_user(
+            username="refreshcheck",
+            email="refreshcheck@example.com",
+            password="StrongPass123",
+            is_active=True,
+        )
+        auth = SwaplyJWTAuthentication()
+
+        with patch.object(
+            SwaplyJWTAuthentication, "_is_token_blacklisted", return_value=True
+        ):
+            with pytest.raises(InvalidToken):
+                auth.get_user(
+                    validated_token={
+                        "user_id": user.id,
+                        "jti": "refresh-jti",
+                        "token_type": "refresh",
+                    }
+                )
+
     def test_is_token_blacklisted_no_jti_returns_false(self):
         auth = SwaplyJWTAuthentication()
         assert auth._is_token_blacklisted({"user_id": 1}) is True

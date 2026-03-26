@@ -1,28 +1,38 @@
+/* eslint-disable @next/next/no-img-element */
 'use client';
 
-import { ChatBubbleLeftRightIcon, InboxIcon } from '@heroicons/react/24/outline';
+import React from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { ConversationsList } from './messages/ConversationsList';
+import { ConversationDetail } from './messages/ConversationDetail';
 
-export default function MessagesModule() {
+export default function MessagesModule({
+  conversationId,
+  currentUserId,
+}: {
+  conversationId?: number | null;
+  currentUserId: number;
+}) {
   const { t } = useLanguage();
-  return (
-    <div className="max-w-4xl mx-auto">
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">{t('messages.title', 'Správy')}</h2>
-        <p className="text-gray-600">{t('messages.subtitle', 'Vaše konverzácie')}</p>
-      </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
-        <InboxIcon className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-        <h3 className="text-lg font-medium text-gray-900 mb-2">{t('messages.none', 'Žiadne správy')}</h3>
-        <p className="text-gray-500 mb-6">
-          {t('messages.hint', 'Keď vám niekto pošle správu, objaví sa tu')}
-        </p>
-        <div className="inline-flex items-center text-sm text-purple-600">
-          <ChatBubbleLeftRightIcon className="w-5 h-5 mr-2" />
-          <span>{t('messages.soon', 'Funkcia správ bude dostupná čoskoro')}</span>
+  return (
+    <div className="w-full">
+      <div className="max-w-4xl mx-auto mb-4">
+        <div className="bg-white dark:bg-black rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-5">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+            {t('messages.title', 'Správy')}
+          </h2>
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            {t('messages.subtitle', 'Vaše konverzácie')}
+          </p>
         </div>
       </div>
+
+      {conversationId ? (
+        <ConversationDetail conversationId={conversationId} currentUserId={currentUserId} />
+      ) : (
+        <ConversationsList />
+      )}
     </div>
   );
 }

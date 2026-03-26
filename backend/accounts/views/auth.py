@@ -13,7 +13,8 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from django.contrib.auth import get_user_model
 from django.db import transaction
-from django.db.models import Count, F, Q
+from django.db.models import Count, F, IntegerField, OuterRef, Q, Subquery, Value
+from django.db.models.functions import Coalesce
 from django.core.cache import cache
 import logging
 import os
@@ -39,7 +40,7 @@ from swaply.audit_logger import (
     audit_api_access,
 )
 
-from ..models import UserProfile, SkillRequestStatus
+from ..models import SkillRequest, UserProfile, SkillRequestStatus
 from ..serializers import (
     UserRegistrationSerializer,
     UserLoginSerializer,
@@ -61,20 +62,37 @@ def _me_user_queryset():
     """
     Load the full current user row and completed cooperation counters in one query.
     """
+    completed_sent_count = Subquery(
+        SkillRequest.objects.filter(
+            requester=OuterRef("pk"),
+            status=SkillRequestStatus.COMPLETED,
+        )
+        .values("requester")
+        .annotate(total=Count("pk"))
+        .values("total")[:1],
+        output_field=IntegerField(),
+    )
+    completed_received_count = Subquery(
+        SkillRequest.objects.filter(
+            recipient=OuterRef("pk"),
+            status=SkillRequestStatus.COMPLETED,
+        )
+        .values("recipient")
+        .annotate(total=Count("pk"))
+        .values("total")[:1],
+        output_field=IntegerField(),
+    )
+
     return User.objects.annotate(
-        _completed_sent_count=Count(
-            "sent_skill_requests",
-            filter=Q(
-                sent_skill_requests__status=SkillRequestStatus.COMPLETED,
-            ),
-            distinct=True,
+        _completed_sent_count=Coalesce(
+            completed_sent_count,
+            Value(0),
+            output_field=IntegerField(),
         ),
-        _completed_received_count=Count(
-            "received_skill_requests",
-            filter=Q(
-                received_skill_requests__status=SkillRequestStatus.COMPLETED,
-            ),
-            distinct=True,
+        _completed_received_count=Coalesce(
+            completed_received_count,
+            Value(0),
+            output_field=IntegerField(),
         ),
     ).annotate(
         _completed_cooperations_count=F("_completed_sent_count")
