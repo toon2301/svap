@@ -12,7 +12,7 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from django.contrib.auth import get_user_model
-from django.db import transaction
+from django.db import connections, transaction
 from django.db.models import Count, IntegerField, OuterRef, Q, Subquery, Value
 from django.db.models.functions import Coalesce
 from django.core.cache import cache
@@ -663,6 +663,10 @@ def me_view(request):
             {"detail": "Authentication credentials were not provided."},
             status=status.HTTP_401_UNAUTHORIZED,
         )
+    db_conn = connections["default"]
+    t_db_connect0 = perf_counter()
+    db_conn.ensure_connection()
+    t_db_connect1 = perf_counter()
     t_db0 = perf_counter()
     user = _me_user_queryset().get(pk=user.pk)
     t_db1 = perf_counter()
@@ -681,7 +685,9 @@ def me_view(request):
     t_response1 = perf_counter()
     _record_auth_view_timing(
         request,
-        me_db_get=(t_db1 - t_db0) * 1000.0,
+        me_db_connect=(t_db_connect1 - t_db_connect0) * 1000.0,
+        me_db_query=(t_db1 - t_db0) * 1000.0,
+        me_db_get=(t_db1 - t_db_connect0) * 1000.0,
         me_serialize=(t_serialize1 - t_serialize0) * 1000.0,
         me_response_build=(t_response1 - t_response0) * 1000.0,
         me_total=(t_response1 - t_view0) * 1000.0,

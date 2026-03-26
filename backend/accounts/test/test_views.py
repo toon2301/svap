@@ -196,6 +196,8 @@ class TestAuthViews(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         server_timing = response.headers.get("Server-Timing", "")
+        self.assertIn("me_db_connect", server_timing)
+        self.assertIn("me_db_query", server_timing)
         self.assertIn("me_db_get", server_timing)
         self.assertIn("me_serialize", server_timing)
         self.assertIn("me_serialize_completed_count", server_timing)
