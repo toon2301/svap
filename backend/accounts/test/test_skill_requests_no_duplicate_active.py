@@ -81,7 +81,34 @@ class TestSkillRequestsNoDuplicateActive(APITestCase):
         again = self.client.post(
             f"{self.base}/skill-requests/", {"offer_id": self.offer.id}, format="json"
         )
-        self.assertEqual(again.status_code, status.HTTP_200_OK)
-        self.assertEqual(again.data["id"], req_id)
+        self.assertEqual(again.status_code, status.HTTP_201_CREATED)
+        self.assertNotEqual(again.data["id"], req_id)
         self.assertEqual(again.data["status"], SkillRequestStatus.PENDING)
+        self.assertEqual(
+            SkillRequest.objects.filter(requester=self.requester, offer=self.offer).count(),
+            2,
+        )
+
+    def test_only_inactive_exists_creates_new_not_reopen(self):
+        self.client.force_authenticate(user=self.requester)
+
+        r1 = self.client.post(
+            f"{self.base}/skill-requests/", {"offer_id": self.offer.id}, format="json"
+        )
+        self.assertEqual(r1.status_code, status.HTTP_201_CREATED)
+        first_id = r1.data["id"]
+
+        # Zruš request cez API (prejde do cancelled = neaktívny)
+        upd = self.client.patch(
+            f"{self.base}/skill-requests/{first_id}/", {"action": "cancel"}, format="json"
+        )
+        self.assertEqual(upd.status_code, status.HTTP_200_OK)
+        self.assertEqual(upd.data["status"], SkillRequestStatus.CANCELLED)
+
+        r2 = self.client.post(
+            f"{self.base}/skill-requests/", {"offer_id": self.offer.id}, format="json"
+        )
+        self.assertEqual(r2.status_code, status.HTTP_201_CREATED)
+        self.assertNotEqual(r2.data["id"], first_id)
+        self.assertEqual(r2.data["status"], SkillRequestStatus.PENDING)
 

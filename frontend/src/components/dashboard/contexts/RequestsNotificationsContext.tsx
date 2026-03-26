@@ -2,6 +2,7 @@
 
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { api, endpoints, ensureSessionRefreshed } from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
 
 type RequestsNotificationsContextValue = {
   unreadCount: number;
@@ -290,7 +291,15 @@ function scheduleWsRelease(store: WsStore): void {
 }
 
 export function RequestsNotificationsProvider({ children }: { children: React.ReactNode }) {
-  const [unreadCount, setUnreadCount] = useState(() => getUnreadCountStore().unreadCount);
+  const { isLoading, user } = useAuth();
+  const [unreadCount, setUnreadCount] = useState(() => {
+    const store = getUnreadCountStore();
+    if (typeof user?.unread_skill_request_count === 'number') {
+      store.unreadCount = user.unread_skill_request_count;
+      return user.unread_skill_request_count;
+    }
+    return store.unreadCount;
+  });
   const [isRealtimeConnected, setIsRealtimeConnected] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false;
     return getWsStore().isOpen;
@@ -301,6 +310,15 @@ export function RequestsNotificationsProvider({ children }: { children: React.Re
   const isUnreadCountFresh = useCallback((maxAgeMs = UNREAD_COUNT_FRESH_MS) => {
     return Date.now() - getUnreadCountStore().lastSuccessfulRefreshAt < maxAgeMs;
   }, []);
+
+  useEffect(() => {
+    const store = getUnreadCountStore();
+
+    if (typeof user?.unread_skill_request_count === 'number') {
+      store.lastSuccessfulRefreshAt = Date.now();
+      publishUnreadCount(store, user.unread_skill_request_count);
+    }
+  }, [user?.unread_skill_request_count]);
 
   useEffect(() => {
     const store = getUnreadCountStore();
@@ -358,13 +376,15 @@ export function RequestsNotificationsProvider({ children }: { children: React.Re
   }, []);
 
   useEffect(() => {
+    if (isLoading) return;
     if (!isDocumentVisible()) return;
     if (isUnreadCountFresh()) return;
     void refreshUnreadCount();
-  }, [isUnreadCountFresh, refreshUnreadCount]);
+  }, [isLoading, isUnreadCountFresh, refreshUnreadCount]);
 
   useEffect(() => {
     const refreshIfVisible = () => {
+      if (isLoading) return;
       if (!isDocumentVisible()) return;
       if (isUnreadCountFresh()) return;
       void refreshUnreadCount();
@@ -377,12 +397,14 @@ export function RequestsNotificationsProvider({ children }: { children: React.Re
       document.removeEventListener('visibilitychange', refreshIfVisible);
       window.removeEventListener('focus', refreshIfVisible);
     };
-  }, [isUnreadCountFresh, refreshUnreadCount]);
+  }, [isLoading, isUnreadCountFresh, refreshUnreadCount]);
 
   useEffect(() => {
+    if (isLoading) return;
     if (isRealtimeConnected || !isDocumentVisible()) return;
 
     const intervalId = window.setInterval(() => {
+      if (isLoading) return;
       if (!isDocumentVisible()) return;
       if (isUnreadCountFresh()) return;
       void refreshUnreadCount();
@@ -391,7 +413,7 @@ export function RequestsNotificationsProvider({ children }: { children: React.Re
     return () => {
       window.clearInterval(intervalId);
     };
-  }, [isRealtimeConnected, isUnreadCountFresh, refreshUnreadCount]);
+  }, [isLoading, isRealtimeConnected, isUnreadCountFresh, refreshUnreadCount]);
 
   useEffect(() => {
     const origin = getWebSocketOrigin();
@@ -399,11 +421,14 @@ export function RequestsNotificationsProvider({ children }: { children: React.Re
 
     const onPayload: WsListener = (payload) => {
       if (payload.type === 'skill_request' && typeof payload.unread_count === 'number') {
-        setUnreadCount(payload.unread_count);
+        const unreadStore = getUnreadCountStore();
+        unreadStore.lastSuccessfulRefreshAt = Date.now();
+        publishUnreadCount(unreadStore, payload.unread_count);
       }
     };
 
     const onOpen = () => {
+      if (isLoading) return;
       if (isUnreadCountFresh()) {
         return;
       }
@@ -440,7 +465,7 @@ export function RequestsNotificationsProvider({ children }: { children: React.Re
         scheduleWsRelease(store);
       }
     };
-  }, [isUnreadCountFresh, refreshUnreadCount]);
+  }, [isLoading, isUnreadCountFresh, refreshUnreadCount]);
 
   const value = useMemo<RequestsNotificationsContextValue>(
     () => ({ unreadCount, refreshUnreadCount, markAllRead }),

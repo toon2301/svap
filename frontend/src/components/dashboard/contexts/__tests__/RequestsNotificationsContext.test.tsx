@@ -6,6 +6,10 @@ import { RequestsNotificationsProvider, useRequestsNotifications } from '../Requ
 const mockApiGet = jest.fn();
 const mockApiPost = jest.fn();
 const mockEnsureSessionRefreshed = jest.fn();
+let mockAuthState: { isLoading: boolean; user: { id: number; unread_skill_request_count?: number } | null } = {
+  isLoading: false,
+  user: null,
+};
 
 jest.mock('@/lib/api', () => ({
   __esModule: true,
@@ -20,6 +24,11 @@ jest.mock('@/lib/api', () => ({
     },
   },
   ensureSessionRefreshed: (...args: unknown[]) => mockEnsureSessionRefreshed(...args),
+}));
+
+jest.mock('@/contexts/AuthContext', () => ({
+  __esModule: true,
+  useAuth: () => mockAuthState,
 }));
 
 function Consumer() {
@@ -90,6 +99,7 @@ describe('RequestsNotificationsProvider', () => {
   beforeEach(() => {
     jest.useFakeTimers();
     jest.clearAllMocks();
+    mockAuthState = { isLoading: false, user: null };
     MockWebSocket.instances = [];
     setVisibilityState('visible');
     Object.defineProperty(window, 'WebSocket', {
@@ -137,6 +147,23 @@ describe('RequestsNotificationsProvider', () => {
       expect(mockApiGet).toHaveBeenCalledTimes(2);
     });
     expect(screen.getByTestId('count')).toHaveTextContent('4');
+  });
+
+  it('uses unread count from auth bootstrap without firing an immediate unread-count request', async () => {
+    mockAuthState = {
+      isLoading: false,
+      user: { id: 1, unread_skill_request_count: 7 },
+    };
+
+    render(
+      <RequestsNotificationsProvider>
+        <Consumer />
+      </RequestsNotificationsProvider>,
+    );
+    await flushAsyncEffects();
+
+    expect(mockApiGet).not.toHaveBeenCalled();
+    expect(screen.getByTestId('count')).toHaveTextContent('7');
   });
 
   it('stops polling after websocket opens without duplicating a fresh initial unread request', async () => {

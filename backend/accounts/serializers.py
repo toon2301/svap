@@ -261,6 +261,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
     # avatar_url poskytuje plnú URL pre klienta
     avatar_url = serializers.SerializerMethodField()
     completed_cooperations_count = serializers.SerializerMethodField()
+    unread_skill_request_count = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -301,6 +302,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
             "slug",
             "name_modified_by_user",
             "completed_cooperations_count",
+            "unread_skill_request_count",
         ]
         read_only_fields = [
             "id",
@@ -312,6 +314,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
             "slug",
             "name_modified_by_user",
             "completed_cooperations_count",
+            "unread_skill_request_count",
         ]
 
     def _record_me_serializer_timing(self, name, started_at):
@@ -341,6 +344,16 @@ class UserProfileSerializer(serializers.ModelSerializer):
         ).count()
         self._record_me_serializer_timing("me_serialize_completed_count", t0)
         return result
+
+    def get_unread_skill_request_count(self, obj):
+        unread_count = getattr(obj, "_unread_skill_request_count", None)
+        if unread_count is not None:
+            return int(unread_count)
+        return Notification.objects.filter(
+            user=obj,
+            type=NotificationType.SKILL_REQUEST,
+            is_read=False,
+        ).count()
 
     def get_avatar_url(self, obj):
         """Vráti plnú URL k avataru (ak existuje)."""
@@ -391,6 +404,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
         ret.pop("email", None)
         ret.pop("birth_date", None)
         ret.pop("gender", None)
+        ret.pop("unread_skill_request_count", None)
 
         # Conditional fields
         if not getattr(instance, "phone_visible", False):

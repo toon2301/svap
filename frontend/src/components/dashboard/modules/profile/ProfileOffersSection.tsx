@@ -602,8 +602,17 @@ export default function ProfileOffersSection({
                     const defaultRequest = offer.is_seeking ? t('requests.offer', 'Ponúknuť') : t('requests.request', 'Požiadať');
                     if (typeof offer.id !== 'number') return defaultRequest;
                     const raw = requestStatusByOfferId[offer.id] ?? offer.my_request_status ?? '';
-                    const st = raw === 'pending' || raw === 'accepted' || raw === 'rejected' || raw === 'cancelled' ? raw : '';
+                    const st =
+                      raw === 'pending' ||
+                      raw === 'accepted' ||
+                      raw === 'completion_requested' ||
+                      raw === 'rejected' ||
+                      raw === 'cancelled' ||
+                      raw === 'completed'
+                        ? raw
+                        : '';
                     if (st === 'accepted') return t('requests.statusAccepted', 'Prijaté');
+                    if (st === 'completion_requested') return t('requests.statusSent', 'Žiadosť odoslaná');
                     if (st === 'pending') {
                       // Klik zruší žiadosť – jasne uviesť akciu
                       return offer.is_seeking
@@ -612,13 +621,22 @@ export default function ProfileOffersSection({
                     }
                     if (st === 'rejected') return t('requests.statusRejected', 'Odmietnuté');
                     if (st === 'cancelled') return defaultRequest;
+                    if (st === 'completed') return defaultRequest;
                     return defaultRequest;
                   })()}
                   isRequestDisabled={(() => {
                     if (typeof offer.id !== 'number') return false;
                     const raw = requestStatusByOfferId[offer.id] ?? offer.my_request_status ?? '';
-                    const st = raw === 'pending' || raw === 'accepted' || raw === 'rejected' || raw === 'cancelled' ? raw : '';
-                    return st === 'accepted' || busyOfferId === offer.id;
+                    const st =
+                      raw === 'pending' ||
+                      raw === 'accepted' ||
+                      raw === 'completion_requested' ||
+                      raw === 'rejected' ||
+                      raw === 'cancelled' ||
+                      raw === 'completed'
+                        ? raw
+                        : '';
+                    return st === 'accepted' || st === 'completion_requested' || busyOfferId === offer.id;
                   })()}
                 />
               </div>

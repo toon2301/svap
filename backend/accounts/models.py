@@ -1,5 +1,6 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
 from django.core.mail import send_mail
@@ -729,6 +730,13 @@ class SkillRequest(models.Model):
         constraints = [
             models.UniqueConstraint(
                 fields=["requester", "offer"],
+                condition=Q(
+                    status__in=[
+                        SkillRequestStatus.PENDING,
+                        SkillRequestStatus.ACCEPTED,
+                        SkillRequestStatus.COMPLETION_REQUESTED,
+                    ]
+                ),
                 name="unique_skill_request_per_requester_offer",
             )
         ]

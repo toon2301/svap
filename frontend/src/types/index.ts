@@ -32,6 +32,7 @@ export interface User {
   is_verified: boolean;
   is_public: boolean;
   completed_cooperations_count?: number;
+  unread_skill_request_count?: number;
   created_at: string;
   updated_at: string;
   profile_completeness: number;

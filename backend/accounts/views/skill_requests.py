@@ -20,6 +20,8 @@ from ..models import (
     SkillRequestStatus,
     Notification,
     NotificationType,
+    OfferedSkill,
+    User,
 )
 from ..models import Review
 from ..serializers import (
@@ -224,6 +226,10 @@ def skill_requests_view(request):
     created = False
     try:
         with transaction.atomic():
+            # Race-safe: lock requester + offer rows so two parallel POSTs can't both create.
+            list(User.objects.select_for_update().filter(id=request.user.id).values_list("id", flat=True))
+            list(OfferedSkill.objects.select_for_update().filter(id=offer.id).values_list("id", flat=True))
+
             # Robustné aj keď už v DB existujú duplicity (legacy dáta):
             # nikdy nepoužívaj .get() na requester+offer.
             qs = (
@@ -242,46 +248,33 @@ def skill_requests_view(request):
                     status=status.HTTP_200_OK,
                 )
 
-            # 2) Ak existuje len neaktívna žiadosť, dovoľ "nový request" tým,
-            # že poslednú žiadosť re-openeme na pending.
-            if existing:
-                obj = existing[0]
-                obj.status = SkillRequestStatus.PENDING
-                obj.recipient = recipient
-                obj.hidden_by_requester = False
-                obj.hidden_by_recipient = False
-                obj.save(
-                    update_fields=[
-                        "status",
-                        "recipient",
-                        "hidden_by_requester",
-                        "hidden_by_recipient",
-                        "updated_at",
-                    ]
+            # 2) Ak existujú iba neaktívne žiadosti, NEre-open – vytvor úplne novú.
+            try:
+                obj = SkillRequest.objects.create(
+                    requester=request.user,
+                    recipient=recipient,
+                    offer=offer,
+                    status=SkillRequestStatus.PENDING,
                 )
-            else:
-                try:
-                    obj = SkillRequest.objects.create(
+                created = True
+            except IntegrityError:
+                # Partial unique constraint race (active-only): parallel request created an active row.
+                obj = (
+                    SkillRequest.objects.select_related("offer", "requester", "recipient")
+                    .filter(
                         requester=request.user,
-                        recipient=recipient,
                         offer=offer,
-                        status=SkillRequestStatus.PENDING,
+                        status__in=ACTIVE_SKILL_REQUEST_STATUSES,
                     )
-                    created = True
-                except IntegrityError:
-                    # Unique constraint race: (requester, offer) already created by a parallel request.
-                    obj = (
-                        SkillRequest.objects.select_related("offer", "requester", "recipient")
-                        .filter(requester=request.user, offer=offer)
-                        .order_by("-updated_at", "-id")
-                        .first()
-                    )
-                    if not obj:
-                        raise
-                    return Response(
-                        SkillRequestSerializer(obj, context={"request": request}).data,
-                        status=status.HTTP_200_OK,
-                    )
+                    .order_by("-updated_at", "-id")
+                    .first()
+                )
+                if not obj:
+                    raise
+                return Response(
+                    SkillRequestSerializer(obj, context={"request": request}).data,
+                    status=status.HTTP_200_OK,
+                )
     except IntegrityError:
         # Safety net: if a DB-level race happens outside the inner block, return existing request.
         obj = (

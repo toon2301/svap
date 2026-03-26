@@ -40,7 +40,13 @@ from swaply.audit_logger import (
     audit_api_access,
 )
 
-from ..models import SkillRequest, UserProfile, SkillRequestStatus
+from ..models import (
+    Notification,
+    NotificationType,
+    SkillRequest,
+    UserProfile,
+    SkillRequestStatus,
+)
 from ..serializers import (
     UserRegistrationSerializer,
     UserLoginSerializer,
@@ -82,6 +88,17 @@ def _me_user_queryset():
         .values("total")[:1],
         output_field=IntegerField(),
     )
+    unread_skill_request_count = Subquery(
+        Notification.objects.filter(
+            user_id=OuterRef("pk"),
+            type=NotificationType.SKILL_REQUEST,
+            is_read=False,
+        )
+        .values("user_id")
+        .annotate(total=Count("pk"))
+        .values("total")[:1],
+        output_field=IntegerField(),
+    )
 
     return User.objects.annotate(
         _completed_sent_count=Coalesce(
@@ -91,6 +108,11 @@ def _me_user_queryset():
         ),
         _completed_received_count=Coalesce(
             completed_received_count,
+            Value(0),
+            output_field=IntegerField(),
+        ),
+        _unread_skill_request_count=Coalesce(
+            unread_skill_request_count,
             Value(0),
             output_field=IntegerField(),
         ),

@@ -19,7 +19,14 @@ from unittest.mock import patch
 
 from accounts.authentication import _redis_user_cache_key, _serialize_user_for_cache
 from accounts.viewer_location_cache import _viewer_location_cache_key
-from accounts.models import OfferedSkill, SkillRequest, SkillRequestStatus, UserType
+from accounts.models import (
+    Notification,
+    NotificationType,
+    OfferedSkill,
+    SkillRequest,
+    SkillRequestStatus,
+    UserType,
+)
 from accounts.views.auth import _me_user_queryset
 
 User = get_user_model()
@@ -147,6 +154,32 @@ class TestAuthViews(APITestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["email"], self.user.email)
+        self.assertEqual(response.data["unread_skill_request_count"], 0)
+
+    def test_me_view_includes_unread_skill_request_count(self):
+        Notification.objects.create(
+            user=self.user,
+            type=NotificationType.SKILL_REQUEST,
+            title="Nova poziadavka",
+            body="Mas novu poziadavku",
+            is_read=False,
+        )
+        Notification.objects.create(
+            user=self.user,
+            type=NotificationType.SKILL_REQUEST,
+            title="Precitana poziadavka",
+            body="Tato sa do countu nerata",
+            is_read=True,
+        )
+
+        url = reverse("accounts:me")
+        refresh = RefreshToken.for_user(self.user)
+        self.client.cookies["access_token"] = str(refresh.access_token)
+
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["unread_skill_request_count"], 1)
 
     def test_me_view_avoids_duplicate_user_fetch(self):
         url = reverse("accounts:me")
@@ -267,7 +300,8 @@ class TestAuthViews(APITestCase):
         self.assertNotIn("COUNT(DISTINCT", sql)
         self.assertNotIn('LEFT OUTER JOIN "accounts_skillrequest"', sql)
         self.assertNotIn('_completed_cooperations_count', sql)
-        self.assertEqual(sql.count('SELECT COUNT('), 2)
+        self.assertIn('"accounts_notification"', sql)
+        self.assertEqual(sql.count('SELECT COUNT('), 3)
 
     def test_me_view_unauthenticated(self):
         """Test získania informácií o neprihlásenom používateľovi"""
