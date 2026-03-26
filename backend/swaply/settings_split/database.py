@@ -1,4 +1,4 @@
-from .env import os, urlparse, BASE_DIR
+from .env import os, urlparse, BASE_DIR, env_bool
 
 # Database
 # Prefer DATABASE_URL if provided; fallback to sqlite3
@@ -46,6 +46,9 @@ try:
         # Increase default max age to keep connections warm on Railway/internal networking.
         DATABASES["default"]["CONN_MAX_AGE"] = int(os.getenv("DB_CONN_MAX_AGE", "300"))
         DATABASES["default"]["CONN_HEALTH_CHECKS"] = True
+        DATABASES["default"]["DISABLE_SERVER_SIDE_CURSORS"] = env_bool(
+            "DB_DISABLE_SERVER_SIDE_CURSORS", False
+        )
         # Socket keepalives reduce unexpected connection drops; connect_timeout caps stalls.
         DATABASES["default"]["OPTIONS"] = {
             "connect_timeout": int(os.getenv("DB_CONNECT_TIMEOUT", "5")),

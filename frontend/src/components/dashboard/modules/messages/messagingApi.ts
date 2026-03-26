@@ -16,8 +16,12 @@ export async function openConversation(targetUserId: number): Promise<Conversati
 }
 
 export async function listConversations(): Promise<ConversationListItem[]> {
-  const { data } = await api.get<ConversationListItem[]>('/auth/messaging/conversations/');
-  return data;
+  const { data } = await api.get<ConversationListItem[] | Paginated<ConversationListItem>>('/auth/messaging/conversations/');
+  if (Array.isArray(data)) return data;
+  if (data && Array.isArray((data as Paginated<ConversationListItem>).results)) {
+    return (data as Paginated<ConversationListItem>).results;
+  }
+  return [];
 }
 
 export async function listMessages(conversationId: number, pageSize = 100): Promise<MessageItem[]> {

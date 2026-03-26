@@ -22,6 +22,7 @@ _TEST_ENV_KEYS = {
     "CELERY_RESULT_BACKEND",
     "CHANNELS_REDIS_URL",
     "DATABASE_URL",
+    "DB_DISABLE_SERVER_SIDE_CURSORS",
     "DEBUG",
     "DEFAULT_FROM_EMAIL",
     "EMAIL_BACKEND",
@@ -122,6 +123,25 @@ def test_cache_redis_url_takes_precedence_and_applies_cache_options(monkeypatch)
         mod.CACHES["default"]["OPTIONS"]["CONNECTION_POOL_KWARGS"]["max_connections"]
         == 123
     )
+
+
+def test_postgres_can_disable_server_side_cursors_for_transaction_pooling(monkeypatch):
+    mod = load_settings_with_env(
+        monkeypatch,
+        {
+            "DEBUG": "False",
+            "SECRET_KEY": "prod-secret",
+            "ALLOWED_HOSTS": "svaply.com,www.svaply.com,api.svaply.com,stunning-inspiration-svap.up.railway.app,exemplary-tranquility-svap.up.railway.app",
+            "EMAIL_HOST": "smtp.example.com",
+            "EMAIL_PORT": "587",
+            "EMAIL_HOST_USER": "smtp-user@example.com",
+            "EMAIL_HOST_PASSWORD": "smtp-pass",
+            "DATABASE_URL": "postgresql://user:pass@pgbouncer.railway.internal:6432/railway",
+            "DB_DISABLE_SERVER_SIDE_CURSORS": "1",
+        },
+    )
+    assert mod.DATABASES["default"]["ENGINE"] == "django.db.backends.postgresql"
+    assert mod.DATABASES["default"]["DISABLE_SERVER_SIDE_CURSORS"] is True
 
 
 def test_channels_redis_url_takes_precedence_over_shared_redis(monkeypatch):
