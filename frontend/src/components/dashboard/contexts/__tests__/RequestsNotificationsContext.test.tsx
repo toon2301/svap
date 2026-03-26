@@ -222,4 +222,24 @@ describe('RequestsNotificationsProvider', () => {
       expect(mockApiGet).toHaveBeenCalledTimes(1);
     });
   });
+
+  it('skips immediate focus refresh when unread count was fetched just moments ago', async () => {
+    render(
+      <RequestsNotificationsProvider>
+        <Consumer />
+      </RequestsNotificationsProvider>,
+    );
+    await flushAsyncEffects();
+
+    await waitFor(() => {
+      expect(mockApiGet).toHaveBeenCalledTimes(1);
+    });
+
+    act(() => {
+      window.dispatchEvent(new Event('focus'));
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+
+    expect(mockApiGet).toHaveBeenCalledTimes(1);
+  });
 });

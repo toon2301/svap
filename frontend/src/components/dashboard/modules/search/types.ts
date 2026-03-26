@@ -35,6 +35,7 @@ export interface SearchModuleProps {
   onSkillClick?: (userId: number, skillId: number, slug?: string | null) => void;
   // true ak je SearchModule použitý v ľavom overlay paneli vedľa navigácie
   isOverlay?: boolean;
+  isActive?: boolean;
   // Voliteľný callback na zatvorenie search panelu (zobrazí sa križik)
   onClose?: () => void;
 }

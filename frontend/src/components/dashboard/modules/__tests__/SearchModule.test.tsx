@@ -1,6 +1,7 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import SearchModule from '../SearchModule';
+import { api } from '@/lib/api';
 import type { User } from '../../../../types';
 
 jest.mock('@/lib/api', () => ({
@@ -30,7 +31,16 @@ const mockUser: User = {
   profile_completeness: 0,
 };
 
+const mockApiGet = api.get as jest.MockedFunction<typeof api.get>;
+
 describe('SearchModule', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockApiGet.mockResolvedValue({
+      data: { skills: [], users: [] },
+    } as any);
+  });
+
   it('renders heading and inputs', () => {
     render(<SearchModule user={mockUser} />);
 
@@ -64,5 +74,11 @@ describe('SearchModule', () => {
         screen.getByText(/Pre zadané vyhľadávanie sa nenašli žiadne výsledky/i),
       ).toBeInTheDocument(),
     );
+  });
+
+  it('does not eager-load suggestions while an overlay instance is hidden', () => {
+    render(<SearchModule user={mockUser} isOverlay isActive={false} />);
+
+    expect(mockApiGet).not.toHaveBeenCalled();
   });
 });

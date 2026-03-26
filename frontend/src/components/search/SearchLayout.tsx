@@ -140,6 +140,7 @@ export function SearchLayout({ children }: SearchLayoutProps) {
                 onUserClick={handleViewUserProfile}
                 onSkillClick={handleViewUserSkill}
                 isOverlay
+                isActive={isSearchPanelOpen}
                 onClose={handleCloseSearchPanel}
               />
             ) : null}

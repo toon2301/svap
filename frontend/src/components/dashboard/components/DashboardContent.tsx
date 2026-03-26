@@ -486,6 +486,7 @@ export default function DashboardContent({
               onUserClick={navigation.handleViewUserProfileFromSearch}
               onSkillClick={navigation.handleViewUserSkillFromSearch}
               isOverlay
+              isActive={isSearchOpen}
             />
           ) : null
         }

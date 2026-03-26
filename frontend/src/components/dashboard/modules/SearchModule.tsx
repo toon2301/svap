@@ -14,17 +14,25 @@ import { useSuggestions } from './search/hooks/useSuggestions';
 // Export funkcie pre invalidáciu search cache pre konkrétneho používateľa
 export { invalidateSearchCacheForUser } from './search/hooks/useSearchApi';
 
-export default function SearchModule({ user, onUserClick, onSkillClick, isOverlay = false, onClose }: SearchModuleProps) {
+export default function SearchModule({
+  user,
+  onUserClick,
+  onSkillClick,
+  isOverlay = false,
+  isActive = true,
+  onClose,
+}: SearchModuleProps) {
   const { t } = useLanguage();
   
   // Hooky pre state management
   const searchState = useSearchState();
   const searchApi = useSearchApi({ searchState, user });
   const recentSearches = useRecentSearches({ user, searchState });
-  const suggestions = useSuggestions({ user, searchState, onSkillClick });
+  const suggestions = useSuggestions({ user, searchState, onSkillClick, enabled: isActive });
 
   // Skryť FlipButton ikony v kartách keď je filter modal otvorený
   useEffect(() => {
+    if (!isActive) return;
     if (typeof document === 'undefined') return;
     
     if (searchState.isFilterOpen) {
@@ -37,10 +45,11 @@ export default function SearchModule({ user, onUserClick, onSkillClick, isOverla
     return () => {
       document.body.classList.remove('filter-modal-open');
     };
-  }, [searchState.isFilterOpen]);
+  }, [isActive, searchState.isFilterOpen]);
 
   // Klávesové skratky v SearchModule
   useEffect(() => {
+    if (!isActive) return;
     if (typeof document === 'undefined') return;
 
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -77,11 +86,12 @@ export default function SearchModule({ user, onUserClick, onSkillClick, isOverla
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [searchState.isFilterOpen, searchState.setIsFilterOpen, searchState.searchInputRef]);
+  }, [isActive, searchState.isFilterOpen, searchState.setIsFilterOpen, searchState.searchInputRef]);
 
   // Resetovať hasSearched keď sa searchQuery stane prázdnym (používateľ vymazal text)
   // Ale NERESETOVAŤ ak je isFromRecentSearch true - vtedy chceme zobraziť výsledky z recent search
   useEffect(() => {
+    if (!isActive) return;
     const q = searchState.searchQuery.trim();
     
     if (!q && searchState.hasSearched && !searchState.isFromRecentSearch) {
@@ -110,7 +120,7 @@ export default function SearchModule({ user, onUserClick, onSkillClick, isOverla
     }, 400);
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchState.searchQuery, searchApi.handleSearch]);
+  }, [isActive, searchState.searchQuery, searchApi.handleSearch]);
 
   const handleKeyDown = (event: ReactKeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'Enter') {
@@ -182,4 +192,3 @@ export default function SearchModule({ user, onUserClick, onSkillClick, isOverla
     </div>
   );
 }
-

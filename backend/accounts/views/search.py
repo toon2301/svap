@@ -14,6 +14,7 @@ from rest_framework.response import Response
 
 from ..models import OfferedSkill
 from ..serializers import OfferedSkillSearchSerializer
+from .dashboard_views.utils import _build_accent_insensitive_pattern, _sanitize_search_term
 
 
 def _parse_decimal(value: str | None) -> Decimal | None:
@@ -55,12 +56,15 @@ def search_view(request):
             {"error": "Parameter q môže mať maximálne 100 znakov."},
             status=status.HTTP_400_BAD_REQUEST,
         )
+    q_pattern = None
+    if q:
+        q_pattern = _build_accent_insensitive_pattern(_sanitize_search_term(q))
     if q:
         qs = qs.filter(
-            Q(category__icontains=q)
-            | Q(subcategory__icontains=q)
-            | Q(description__icontains=q)
-            | Q(detailed_description__icontains=q)
+            Q(category__iregex=q_pattern)
+            | Q(subcategory__iregex=q_pattern)
+            | Q(description__iregex=q_pattern)
+            | Q(detailed_description__iregex=q_pattern)
             | Q(tags__icontains=q)
         )
 
@@ -73,22 +77,22 @@ def search_view(request):
                 output_field=IntegerField(),
             )
             + Case(
-                When(subcategory__icontains=q, then=Value(2)),
+                When(subcategory__iregex=q_pattern, then=Value(2)),
                 default=Value(0),
                 output_field=IntegerField(),
             )
             + Case(
-                When(category__icontains=q, then=Value(2)),
+                When(category__iregex=q_pattern, then=Value(2)),
                 default=Value(0),
                 output_field=IntegerField(),
             )
             + Case(
-                When(description__icontains=q, then=Value(1)),
+                When(description__iregex=q_pattern, then=Value(1)),
                 default=Value(0),
                 output_field=IntegerField(),
             )
             + Case(
-                When(detailed_description__icontains=q, then=Value(1)),
+                When(detailed_description__iregex=q_pattern, then=Value(1)),
                 default=Value(0),
                 output_field=IntegerField(),
             ),

@@ -15,12 +15,13 @@ interface UseSuggestionsParams {
   user: User;
   searchState: SearchStateProps;
   onSkillClick?: (userId: number, skillId: number, slug?: string | null) => void;
+  enabled?: boolean;
 }
 
 /**
  * Custom hook pre spravovanie návrhov pre používateľa
  */
-export function useSuggestions({ user, searchState, onSkillClick }: UseSuggestionsParams): SuggestionsProps {
+export function useSuggestions({ user, searchState, onSkillClick, enabled = true }: UseSuggestionsParams): SuggestionsProps {
   const [suggestedSkills, setSuggestedSkills] = useState<SearchSkill[]>([]);
   
   // Cache pre návrhy (suggestedSkills) – kľúč je ID aktuálneho používateľa
@@ -31,6 +32,7 @@ export function useSuggestions({ user, searchState, onSkillClick }: UseSuggestio
   // Načítať návrhy pre používateľa (z kariet v jeho lokalite)
   // OPRAVA: Použiť user?.id namiesto celého user objektu, aby sa zabránilo nekonečnej slučke
   useEffect(() => {
+    if (!enabled) return;
     if (!user?.id) return;
 
     let cancelled = false;
@@ -170,7 +172,7 @@ export function useSuggestions({ user, searchState, onSkillClick }: UseSuggestio
     return () => {
       cancelled = true;
     };
-  }, [user?.id]);
+  }, [enabled, user?.id]);
 
   // Handler pre kliknutie na návrh
   const handleSuggestionClick = useCallback((skill: SearchSkill) => {

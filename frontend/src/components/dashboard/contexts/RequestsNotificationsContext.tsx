@@ -263,6 +263,10 @@ export function RequestsNotificationsProvider({ children }: { children: React.Re
   const refreshUnreadCountInFlightRef = useRef<Promise<void> | null>(null);
   const lastSuccessfulRefreshAtRef = useRef(0);
 
+  const isUnreadCountFresh = useCallback((maxAgeMs = 5000) => {
+    return Date.now() - lastSuccessfulRefreshAtRef.current < maxAgeMs;
+  }, []);
+
   useEffect(() => {
     return () => {
       isMountedRef.current = false;
@@ -317,6 +321,7 @@ export function RequestsNotificationsProvider({ children }: { children: React.Re
   useEffect(() => {
     const refreshIfVisible = () => {
       if (!isDocumentVisible()) return;
+      if (isUnreadCountFresh()) return;
       void refreshUnreadCount();
     };
 
@@ -327,7 +332,7 @@ export function RequestsNotificationsProvider({ children }: { children: React.Re
       document.removeEventListener('visibilitychange', refreshIfVisible);
       window.removeEventListener('focus', refreshIfVisible);
     };
-  }, [refreshUnreadCount]);
+  }, [isUnreadCountFresh, refreshUnreadCount]);
 
   useEffect(() => {
     if (isRealtimeConnected || !isDocumentVisible()) return;
@@ -353,7 +358,7 @@ export function RequestsNotificationsProvider({ children }: { children: React.Re
     };
 
     const onOpen = () => {
-      if (Date.now() - lastSuccessfulRefreshAtRef.current < 5000) {
+      if (isUnreadCountFresh()) {
         return;
       }
       void refreshUnreadCount();
@@ -389,7 +394,7 @@ export function RequestsNotificationsProvider({ children }: { children: React.Re
         scheduleWsRelease(store);
       }
     };
-  }, [refreshUnreadCount]);
+  }, [isUnreadCountFresh, refreshUnreadCount]);
 
   const value = useMemo<RequestsNotificationsContextValue>(
     () => ({ unreadCount, refreshUnreadCount, markAllRead }),

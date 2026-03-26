@@ -17,6 +17,7 @@ from swaply.rate_limiting import api_rate_limit
 
 from ..models import OfferedSkill
 from ..serializers import OfferedSkillSearchSerializer
+from .dashboard_views.utils import _build_accent_insensitive_pattern, _sanitize_search_term
 
 User = get_user_model()
 
@@ -115,6 +116,7 @@ def global_search_view(request):
         MAX_USERS_PAGE_SIZE,
     )
     include_offers = str(request.query_params.get("include_offers", "true")).lower() not in ("false", "0")
+    q_pattern = _build_accent_insensitive_pattern(_sanitize_search_term(q))
 
     terms = _split_terms(q)
 
@@ -129,26 +131,27 @@ def global_search_view(request):
     if terms:
         uq = Q()
         for term in terms:
+            term_pattern = _build_accent_insensitive_pattern(_sanitize_search_term(term))
             uq |= (
-                Q(first_name__icontains=term)
-                | Q(last_name__icontains=term)
-                | Q(username__icontains=term)
-                | Q(company_name__icontains=term)
-                | Q(slug__icontains=term)
-                | Q(location__icontains=term)
-                | Q(district__icontains=term)
+                Q(first_name__iregex=term_pattern)
+                | Q(last_name__iregex=term_pattern)
+                | Q(username__iregex=term_pattern)
+                | Q(company_name__iregex=term_pattern)
+                | Q(slug__iregex=term_pattern)
+                | Q(location__iregex=term_pattern)
+                | Q(district__iregex=term_pattern)
             )
         users_qs = users_qs.filter(uq)
 
     users_qs = users_qs.annotate(
         relevance=Case(
-            When(username__icontains=q, then=Value(4)),
-            When(slug__icontains=q, then=Value(3)),
-            When(company_name__icontains=q, then=Value(3)),
-            When(first_name__icontains=q, then=Value(2)),
-            When(last_name__icontains=q, then=Value(2)),
-            When(location__icontains=q, then=Value(1)),
-            When(district__icontains=q, then=Value(1)),
+            When(username__iregex=q_pattern, then=Value(4)),
+            When(slug__iregex=q_pattern, then=Value(3)),
+            When(company_name__iregex=q_pattern, then=Value(3)),
+            When(first_name__iregex=q_pattern, then=Value(2)),
+            When(last_name__iregex=q_pattern, then=Value(2)),
+            When(location__iregex=q_pattern, then=Value(1)),
+            When(district__iregex=q_pattern, then=Value(1)),
             default=Value(0),
             output_field=IntegerField(),
         )
@@ -182,28 +185,28 @@ def global_search_view(request):
         )
         if q:
             offers_qs = offers_qs.filter(
-                Q(category__icontains=q)
-                | Q(subcategory__icontains=q)
-                | Q(description__icontains=q)
-                | Q(detailed_description__icontains=q)
+                Q(category__iregex=q_pattern)
+                | Q(subcategory__iregex=q_pattern)
+                | Q(description__iregex=q_pattern)
+                | Q(detailed_description__iregex=q_pattern)
                 | Q(tags__icontains=q)
             )
         offers_qs = offers_qs.annotate(
             relevance_score=(
                 Case(When(tags__icontains=q, then=Value(3)), default=Value(0), output_field=IntegerField())
                 + Case(
-                    When(subcategory__icontains=q, then=Value(2)),
+                    When(subcategory__iregex=q_pattern, then=Value(2)),
                     default=Value(0),
                     output_field=IntegerField(),
                 )
-                + Case(When(category__icontains=q, then=Value(2)), default=Value(0), output_field=IntegerField())
+                + Case(When(category__iregex=q_pattern, then=Value(2)), default=Value(0), output_field=IntegerField())
                 + Case(
-                    When(description__icontains=q, then=Value(1)),
+                    When(description__iregex=q_pattern, then=Value(1)),
                     default=Value(0),
                     output_field=IntegerField(),
                 )
                 + Case(
-                    When(detailed_description__icontains=q, then=Value(1)),
+                    When(detailed_description__iregex=q_pattern, then=Value(1)),
                     default=Value(0),
                     output_field=IntegerField(),
                 )
