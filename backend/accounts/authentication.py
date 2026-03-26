@@ -286,18 +286,47 @@ def warm_user_auth_cache(user) -> bool:
         return False
 
 
-def warm_user_auth_cache_with_timing(user) -> tuple[bool, float]:
+def warm_user_auth_cache_with_timing(user) -> dict[str, float | bool]:
     """
     Best-effort helper for auth warm-up observability.
 
-    Returns:
-    - success flag
-    - total duration in milliseconds
+    Returns a small metrics dict with:
+    - ok: whether cache.set path completed successfully
+    - duration_ms: total write duration
+    - verify_ok: whether the value is immediately readable back
+    - verify_ms: read-after-write verification duration
     """
 
     t0 = time.perf_counter()
     ok = warm_user_auth_cache(user)
-    return ok, (time.perf_counter() - t0) * 1000.0
+    duration_ms = (time.perf_counter() - t0) * 1000.0
+
+    verify_ok = False
+    verify_ms = 0.0
+    if ok:
+        t_verify0 = time.perf_counter()
+        try:
+            user_id = int(getattr(user, "pk", None) or getattr(user, "id", None) or 0)
+        except Exception:
+            user_id = 0
+        try:
+            if user_id > 0:
+                expected = _parse_cached_auth_state(_serialize_user_for_cache(user))
+                actual = _parse_cached_auth_state(
+                    cache.get(_redis_user_cache_key(user_id))
+                )
+                verify_ok = bool(expected and actual and actual == expected)
+        except Exception:
+            verify_ok = False
+        finally:
+            verify_ms = (time.perf_counter() - t_verify0) * 1000.0
+
+    return {
+        "ok": ok,
+        "duration_ms": duration_ms,
+        "verify_ok": verify_ok,
+        "verify_ms": verify_ms,
+    }
 
 
 class SwaplyJWTAuthentication(JWTAuthentication):

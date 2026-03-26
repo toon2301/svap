@@ -35,6 +35,18 @@ from .notifications import _unread_cache_key, UNREAD_COUNT_CACHE_TTL_SECONDS
 MAX_SKILL_REQUESTS = 100
 SKILL_REQUESTS_CACHE_TTL_SECONDS = int(os.getenv("SKILL_REQUESTS_CACHE_TTL_SECONDS", "120") or "120")
 
+ACTIVE_SKILL_REQUEST_STATUSES: tuple[str, ...] = (
+    SkillRequestStatus.PENDING,
+    SkillRequestStatus.ACCEPTED,
+    SkillRequestStatus.COMPLETION_REQUESTED,
+)
+
+INACTIVE_SKILL_REQUEST_STATUSES: tuple[str, ...] = (
+    SkillRequestStatus.REJECTED,
+    SkillRequestStatus.CANCELLED,
+    SkillRequestStatus.COMPLETED,
+)
+
 
 def _skill_requests_cache_key(user_id: int, status_param: str | None) -> str:
     s = (status_param or "").strip().lower()
@@ -212,36 +224,42 @@ def skill_requests_view(request):
     created = False
     try:
         with transaction.atomic():
-            try:
-                obj = SkillRequest.objects.select_related(
-                    "offer", "requester", "recipient"
-                ).get(requester=request.user, offer=offer)
-                # Re-open pri zrušení / zamietnutí
-                if obj.status in (
-                    SkillRequestStatus.CANCELLED,
-                    SkillRequestStatus.REJECTED,
-                ):
-                    obj.status = SkillRequestStatus.PENDING
-                    obj.recipient = recipient
-                    # Ak bola žiadosť predtým „skrytá“ (vymazaná zo zoznamu),
-                    # pri opätovnom odoslaní ju musíme znovu zviditeľniť obom stranám.
-                    obj.hidden_by_requester = False
-                    obj.hidden_by_recipient = False
-                    obj.save(
-                        update_fields=[
-                            "status",
-                            "recipient",
-                            "hidden_by_requester",
-                            "hidden_by_recipient",
-                            "updated_at",
-                        ]
-                    )
-                else:
-                    return Response(
-                        SkillRequestSerializer(obj, context={"request": request}).data,
-                        status=status.HTTP_200_OK,
-                    )
-            except SkillRequest.DoesNotExist:
+            # Robustné aj keď už v DB existujú duplicity (legacy dáta):
+            # nikdy nepoužívaj .get() na requester+offer.
+            qs = (
+                SkillRequest.objects.select_for_update()
+                .select_related("offer", "requester", "recipient")
+                .filter(requester=request.user, offer=offer)
+                .order_by("-updated_at", "-id")
+            )
+            existing = list(qs)
+
+            # 1) Ak existuje aspoň 1 aktívna žiadosť, vráť ju (nezakladaj novú).
+            active = next((r for r in existing if r.status in ACTIVE_SKILL_REQUEST_STATUSES), None)
+            if active is not None:
+                return Response(
+                    SkillRequestSerializer(active, context={"request": request}).data,
+                    status=status.HTTP_200_OK,
+                )
+
+            # 2) Ak existuje len neaktívna žiadosť, dovoľ "nový request" tým,
+            # že poslednú žiadosť re-openeme na pending.
+            if existing:
+                obj = existing[0]
+                obj.status = SkillRequestStatus.PENDING
+                obj.recipient = recipient
+                obj.hidden_by_requester = False
+                obj.hidden_by_recipient = False
+                obj.save(
+                    update_fields=[
+                        "status",
+                        "recipient",
+                        "hidden_by_requester",
+                        "hidden_by_recipient",
+                        "updated_at",
+                    ]
+                )
+            else:
                 try:
                     obj = SkillRequest.objects.create(
                         requester=request.user,
@@ -252,18 +270,28 @@ def skill_requests_view(request):
                     created = True
                 except IntegrityError:
                     # Unique constraint race: (requester, offer) already created by a parallel request.
-                    obj = SkillRequest.objects.select_related(
-                        "offer", "requester", "recipient"
-                    ).get(requester=request.user, offer=offer)
+                    obj = (
+                        SkillRequest.objects.select_related("offer", "requester", "recipient")
+                        .filter(requester=request.user, offer=offer)
+                        .order_by("-updated_at", "-id")
+                        .first()
+                    )
+                    if not obj:
+                        raise
                     return Response(
                         SkillRequestSerializer(obj, context={"request": request}).data,
                         status=status.HTTP_200_OK,
                     )
     except IntegrityError:
         # Safety net: if a DB-level race happens outside the inner block, return existing request.
-        obj = SkillRequest.objects.select_related(
-            "offer", "requester", "recipient"
-        ).get(requester=request.user, offer=offer)
+        obj = (
+            SkillRequest.objects.select_related("offer", "requester", "recipient")
+            .filter(requester=request.user, offer=offer)
+            .order_by("-updated_at", "-id")
+            .first()
+        )
+        if not obj:
+            raise
         return Response(
             SkillRequestSerializer(obj, context={"request": request}).data,
             status=status.HTTP_200_OK,
@@ -334,8 +362,27 @@ def skill_requests_status_view(request):
     if not ids:
         return Response({}, status=status.HTTP_200_OK)
 
-    qs = SkillRequest.objects.filter(requester=request.user, offer_id__in=ids)
-    result = {str(r.offer_id): r.status for r in qs}
+    # Bezpečné aj pri legacy duplicitách: vráť 1 status na offer_id.
+    qs = SkillRequest.objects.filter(requester=request.user, offer_id__in=ids).order_by(
+        "-updated_at", "-id"
+    )
+    best_by_offer: dict[int, SkillRequest] = {}
+    for r in qs:
+        oid = int(r.offer_id) if r.offer_id else None
+        if not oid:
+            continue
+        current = best_by_offer.get(oid)
+        if current is None:
+            best_by_offer[oid] = r
+            continue
+
+        # Preferuj aktívny status nad neaktívnym; inak nechaj najnovší podľa ordering.
+        cur_active = current.status in ACTIVE_SKILL_REQUEST_STATUSES
+        r_active = r.status in ACTIVE_SKILL_REQUEST_STATUSES
+        if r_active and not cur_active:
+            best_by_offer[oid] = r
+
+    result = {str(oid): obj.status for oid, obj in best_by_offer.items()}
     return Response(result, status=status.HTTP_200_OK)
 
 

@@ -121,6 +121,11 @@ class TestAuthViews(APITestCase):
             cache.get(_viewer_location_cache_key(self.user.id)),
             {"location": "Bratislava", "district": "Bratislava I"},
         )
+        server_timing = response.headers.get("Server-Timing", "")
+        self.assertIn("auth_user_cache_warm", server_timing)
+        self.assertIn("auth_user_cache_warm_ok", server_timing)
+        self.assertIn("auth_user_cache_warm_verify", server_timing)
+        self.assertIn("auth_user_cache_warm_verify_ok", server_timing)
 
     def test_login_view_invalid_credentials(self):
         """Test prihlásenia s neplatnými údajmi"""

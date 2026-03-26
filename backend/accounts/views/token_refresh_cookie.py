@@ -216,16 +216,18 @@ def token_refresh_cookie_view(request):
                         "district",
                     ).get(pk=user_id)
                 )
-                warm_auth_ok, warm_auth_ms = warm_user_auth_cache_with_timing(
-                    cache_user
-                )
+                warm_auth = warm_user_auth_cache_with_timing(cache_user)
                 t_viewer0 = perf_counter()
                 warm_viewer_ok = warm_viewer_location_snapshot_cache(cache_user)
                 warm_viewer_ms = (perf_counter() - t_viewer0) * 1000.0
                 _record_auth_view_timing(
                     request,
-                    auth_user_cache_warm=warm_auth_ms,
-                    auth_user_cache_warm_ok=1.0 if warm_auth_ok else 0.0,
+                    auth_user_cache_warm=float(warm_auth["duration_ms"]),
+                    auth_user_cache_warm_ok=1.0 if warm_auth["ok"] else 0.0,
+                    auth_user_cache_warm_verify=float(warm_auth["verify_ms"]),
+                    auth_user_cache_warm_verify_ok=1.0
+                    if warm_auth["verify_ok"]
+                    else 0.0,
                     viewer_location_cache_warm=warm_viewer_ms,
                     viewer_location_cache_warm_ok=1.0 if warm_viewer_ok else 0.0,
                 )

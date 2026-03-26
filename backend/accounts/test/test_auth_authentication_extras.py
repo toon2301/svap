@@ -193,11 +193,28 @@ class TestJWTAuthExtras:
             is_active=True,
         )
 
-        ok, duration_ms = warm_user_auth_cache_with_timing(user)
+        result = warm_user_auth_cache_with_timing(user)
 
-        assert ok is True
-        assert duration_ms >= 0.0
+        assert result["ok"] is True
+        assert result["duration_ms"] >= 0.0
+        assert result["verify_ms"] >= 0.0
+        assert result["verify_ok"] is True
         assert cache.get(_redis_user_cache_key(user.id)) == _serialize_user_for_cache(user)
+
+    def test_warm_user_auth_cache_with_timing_reports_verify_failure(self):
+        user = User.objects.create_user(
+            username="warmverifyfail",
+            email="warmverifyfail@example.com",
+            password="StrongPass123",
+            is_active=True,
+        )
+
+        with patch("accounts.authentication.cache.get", return_value=None):
+            result = warm_user_auth_cache_with_timing(user)
+
+        assert result["ok"] is True
+        assert result["verify_ok"] is False
+        assert result["verify_ms"] >= 0.0
 
     def test_is_token_blacklisted_no_jti_returns_false(self):
         auth = SwaplyJWTAuthentication()
