@@ -48,6 +48,21 @@ const nextConfig = {
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || '/api',
   },
 
+  async redirects() {
+    return [
+      {
+        source: '/dashboard/messages/:conversationId',
+        destination: '/dashboard/messages?conversationId=:conversationId',
+        permanent: false,
+      },
+      {
+        source: '/dashboard/messages/:conversationId/',
+        destination: '/dashboard/messages?conversationId=:conversationId',
+        permanent: false,
+      },
+    ];
+  },
+
   async rewrites() {
     // Proxy /api/* na backend (užitočné na Railway pri oddelenom FE/BE, aby cookies boli 1st-party)
     const backendOrigin =

@@ -11,6 +11,7 @@ import ModuleRouter from '../ModuleRouter';
 import DashboardModals from '../DashboardModals';
 import SearchModule from '../modules/SearchModule';
 import { MessagesDesktopRail } from '../modules/messages/MessagesDesktopRail';
+import { parseConversationId } from '../modules/messages/messagesRouting';
 import { useDashboardState } from '../hooks/useDashboardState';
 import { useSkillsModals } from '../hooks/useSkillsModals';
 import { useDashboardNavigation } from '../hooks/useDashboardNavigation';
@@ -61,6 +62,13 @@ export default function DashboardContent({
     const m = pathname?.match(/^\/dashboard\/messages\/(\d+)\/?$/);
     return m ? Number(m[1]) : null;
   }, [pathname]);
+
+  const conversationIdFromMessagesQuery = React.useMemo(
+    () => parseConversationId(searchParams?.get('conversationId')),
+    [searchParams],
+  );
+
+  const selectedConversationId = conversationIdFromMessagesQuery ?? conversationIdFromMessagesPath ?? null;
 
   // Core Dashboard State
   const dashboardState = useDashboardState(initialUser, initialRoute);
@@ -464,9 +472,7 @@ export default function DashboardContent({
       onSkillsSearchClick={navigation.handleSkillsSearchClick}
       offerIdForReviews={effectiveOfferIdForReviews}
       conversationIdForMessages={
-        conversationIdFromMessagesPath != null && Number.isFinite(conversationIdFromMessagesPath)
-          ? conversationIdFromMessagesPath
-          : null
+        selectedConversationId != null && Number.isFinite(selectedConversationId) ? selectedConversationId : null
       }
     />
   );
@@ -508,8 +514,8 @@ export default function DashboardContent({
             <MessagesDesktopRail
               currentUserId={user.id}
               selectedConversationId={
-                conversationIdFromMessagesPath != null && Number.isFinite(conversationIdFromMessagesPath)
-                  ? conversationIdFromMessagesPath
+                selectedConversationId != null && Number.isFinite(selectedConversationId)
+                  ? selectedConversationId
                   : null
               }
             />

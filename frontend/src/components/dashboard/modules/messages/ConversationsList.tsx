@@ -6,6 +6,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import type { ConversationListItem } from './types';
 import { listConversations } from './messagingApi';
 import { MESSAGING_CONVERSATIONS_REFRESH_EVENT } from './messagesEvents';
+import { buildMessagesUrl } from './messagesRouting';
 
 const CONVERSATIONS_POLL_INTERVAL_MS = 10_000;
 
@@ -200,7 +201,7 @@ export function ConversationsList({
                   item.id === conversation.id ? { ...item, has_unread: false } : item,
                 ),
               );
-              router.push(`/dashboard/messages/${conversation.id}`);
+              router.push(buildMessagesUrl(conversation.id));
             }}
             className={`w-full text-left flex items-center gap-3 rounded-2xl border transition-colors ${
               isSelected

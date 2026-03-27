@@ -1,9 +1,18 @@
 import pytest
-from django.urls import reverse
+from urllib.parse import parse_qs, urlparse
+from unittest.mock import Mock, patch
+
 from django.contrib.auth import get_user_model
-from rest_framework.test import APITestCase
+from django.core.cache import cache
+from django.test import override_settings
+from django.urls import reverse
 from rest_framework import status
-from unittest.mock import patch, Mock
+from rest_framework.test import APITestCase
+
+from accounts.views.google_oauth_simple import (
+    _OAUTH_STATE_COOKIE_NAME,
+    _OAUTH_STATE_TTL_SECONDS,
+)
 
 
 User = get_user_model()
@@ -19,42 +28,56 @@ class TestAuthMisc(APITestCase):
             is_verified=True,
         )
 
+    def _start_google_login(self):
+        login_url = reverse("accounts:google_login")
+        response = self.client.get(
+            login_url,
+            {"callback": "http://localhost:3000/auth/callback"},
+        )
+        assert response.status_code == status.HTTP_302_FOUND
+        query = parse_qs(urlparse(response["Location"]).query)
+        state = query["state"][0]
+        callback_path = urlparse(query["redirect_uri"][0]).path
+        return response, state, callback_path
+
     def test_me_requires_auth(self):
         url = reverse("accounts:me")
         response = self.client.get(url)
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
     def test_logout_without_token_is_ok(self):
-        # simulate authenticated request
         self.client.force_authenticate(user=self.user)
         url = reverse("accounts:logout")
         response = self.client.post(url, data={"refresh": ""}, format="json")
         assert response.status_code == status.HTTP_200_OK
 
-    @patch("requests.post")
-    @patch("requests.get")
-    def test_google_oauth_success_and_bad_token(self, mock_get, mock_post):
-        from django.conf import settings
+    @override_settings(
+        GOOGLE_OAUTH2_CLIENT_ID="id",
+        GOOGLE_OAUTH2_SECRET="secret",
+        FRONTEND_CALLBACK_URL="http://localhost:3000/auth/callback",
+        BACKEND_CALLBACK_URL="http://localhost:8000/api/oauth/google/callback/",
+    )
+    def test_google_login_sets_signed_state_cookie(self):
+        response, _, callback_path = self._start_google_login()
 
-        settings.GOOGLE_OAUTH2_CLIENT_ID = "id"
-        settings.GOOGLE_OAUTH2_SECRET = "secret"
+        assert _OAUTH_STATE_COOKIE_NAME in response.cookies
+        cookie = response.cookies[_OAUTH_STATE_COOKIE_NAME]
+        assert cookie.value
+        assert cookie["httponly"] is True
+        assert cookie["path"] == callback_path
+        assert int(cookie["max-age"]) == _OAUTH_STATE_TTL_SECONDS
 
-        # 1) Bad token exchange
-        mock_post.return_value = Mock(
-            status_code=400, json=lambda: {"error": "invalid_grant"}
-        )
-        login_url = reverse("accounts:google_login")
-        r_login = self.client.get(login_url)
-        assert r_login.status_code in (302, 500)
-
-        callback_url = (
-            reverse("accounts:google_callback")
-            + "?code=bad&state=http://localhost:3000/auth/callback/"
-        )
-        r_cb_bad = self.client.get(callback_url)
-        assert r_cb_bad.status_code in (302, 200)
-
-        # 2) Success exchange
+    @override_settings(
+        GOOGLE_OAUTH2_CLIENT_ID="id",
+        GOOGLE_OAUTH2_SECRET="secret",
+        FRONTEND_CALLBACK_URL="http://localhost:3000/auth/callback",
+        BACKEND_CALLBACK_URL="http://localhost:8000/api/oauth/google/callback/",
+    )
+    @patch("accounts.views.google_oauth_simple.requests.get")
+    @patch("accounts.views.google_oauth_simple.requests.post")
+    def test_google_oauth_success_even_when_cache_entry_is_missing(
+        self, mock_post, mock_get
+    ):
         mock_post.return_value = Mock(
             status_code=200, json=lambda: {"access_token": "at"}
         )
@@ -66,9 +89,67 @@ class TestAuthMisc(APITestCase):
                 "family_name": "Auth",
             },
         )
-        callback_url_ok = (
-            reverse("accounts:google_callback")
-            + "?code=ok&state=http://localhost:3000/auth/callback/"
+
+        _, state, callback_path = self._start_google_login()
+        cache.delete(f"oauth_state:{state}")
+
+        response = self.client.get(f"{callback_path}?code=ok&state={state}")
+
+        assert response.status_code == status.HTTP_302_FOUND
+        assert "oauth=success" in response["Location"]
+        assert "access_token" in response.cookies
+        assert response.cookies[_OAUTH_STATE_COOKIE_NAME].value == ""
+        assert int(response.cookies[_OAUTH_STATE_COOKIE_NAME]["max-age"]) == 0
+
+    @override_settings(
+        GOOGLE_OAUTH2_CLIENT_ID="id",
+        GOOGLE_OAUTH2_SECRET="secret",
+        FRONTEND_CALLBACK_URL="http://localhost:3000/auth/callback",
+        BACKEND_CALLBACK_URL="http://localhost:8000/api/oauth/google/callback/",
+    )
+    @patch("accounts.views.google_oauth_simple.requests.get")
+    @patch("accounts.views.google_oauth_simple.requests.post")
+    def test_google_oauth_rejects_missing_state_cookie_even_when_cache_entry_exists(
+        self, mock_post, mock_get
+    ):
+        mock_post.return_value = Mock(
+            status_code=200, json=lambda: {"access_token": "at"}
         )
-        r_cb_ok = self.client.get(callback_url_ok)
-        assert r_cb_ok.status_code == 302
+        mock_get.return_value = Mock(
+            status_code=200,
+            json=lambda: {
+                "email": "oauth@example.com",
+                "given_name": "O",
+                "family_name": "Auth",
+            },
+        )
+
+        _, state, callback_path = self._start_google_login()
+        del self.client.cookies[_OAUTH_STATE_COOKIE_NAME]
+
+        response = self.client.get(f"{callback_path}?code=ok&state={state}")
+
+        assert response.status_code == status.HTTP_302_FOUND
+        assert "error=invalid_state" in response["Location"]
+
+    @override_settings(
+        GOOGLE_OAUTH2_CLIENT_ID="id",
+        GOOGLE_OAUTH2_SECRET="secret",
+        FRONTEND_CALLBACK_URL="http://localhost:3000/auth/callback",
+        BACKEND_CALLBACK_URL="http://localhost:8000/api/oauth/google/callback/",
+    )
+    @patch("accounts.views.google_oauth_simple.requests.post")
+    def test_google_oauth_bad_token_exchange_uses_real_signed_state(
+        self, mock_post
+    ):
+        mock_post.return_value = Mock(
+            status_code=400,
+            text='{"error":"invalid_grant"}',
+            json=lambda: {"error": "invalid_grant"},
+        )
+
+        _, state, callback_path = self._start_google_login()
+        response = self.client.get(f"{callback_path}?code=bad&state={state}")
+
+        assert response.status_code == status.HTTP_302_FOUND
+        assert "error=token_exchange_failed" in response["Location"]

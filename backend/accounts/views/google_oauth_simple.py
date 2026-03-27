@@ -17,10 +17,15 @@ import urllib.parse
 import os
 import secrets
 from django.core.cache import cache
+from django.core import signing
 from time import perf_counter
 
 User = get_user_model()
 logger = logging.getLogger(__name__)
+
+_OAUTH_STATE_COOKIE_NAME = "google_oauth_state"
+_OAUTH_STATE_COOKIE_SALT = "accounts.google_oauth_state"
+_OAUTH_STATE_TTL_SECONDS = 10 * 60
 
 
 def _oauth_trace_enabled():
@@ -35,6 +40,117 @@ def _oauth_trace(event, **fields):
         logger.warning(f"OAUTH_TRACE {event} {safe}")
     except Exception:
         logger.warning(f"OAUTH_TRACE {event}")
+
+
+def _normalize_frontend_callback(candidate: str | None, default_callback: str) -> str:
+    candidate = candidate or default_callback
+    try:
+        parsed_default = urllib.parse.urlparse(default_callback)
+        parsed_candidate = urllib.parse.urlparse(candidate)
+        if (
+            parsed_candidate.scheme != parsed_default.scheme
+            or parsed_candidate.netloc != parsed_default.netloc
+        ):
+            return default_callback
+    except Exception:
+        return default_callback
+    return candidate
+
+
+def _oauth_state_cookie_path(backend_callback: str | None) -> str:
+    try:
+        path = urllib.parse.urlparse(backend_callback or "").path or "/"
+    except Exception:
+        path = "/"
+    return path if path.startswith("/") else "/"
+
+
+def _oauth_state_cookie_kwargs(backend_callback: str | None) -> dict:
+    from .auth import _auth_state_cookie_kwargs
+
+    kwargs = _auth_state_cookie_kwargs()
+    kwargs["path"] = _oauth_state_cookie_path(backend_callback)
+    return kwargs
+
+
+def _set_oauth_state_cookie(
+    response,
+    *,
+    oauth_state: str,
+    frontend_callback: str,
+    backend_callback: str | None,
+) -> None:
+    signed_payload = signing.dumps(
+        {"state": oauth_state, "frontend_callback": frontend_callback},
+        salt=_OAUTH_STATE_COOKIE_SALT,
+    )
+    response.set_cookie(
+        _OAUTH_STATE_COOKIE_NAME,
+        signed_payload,
+        max_age=_OAUTH_STATE_TTL_SECONDS,
+        **_oauth_state_cookie_kwargs(backend_callback),
+    )
+
+
+def _clear_oauth_state_cookie(
+    response,
+    *,
+    backend_callback: str | None = None,
+    request_path: str | None = None,
+) -> None:
+    cookie_target = backend_callback or request_path or "/"
+    response.set_cookie(
+        _OAUTH_STATE_COOKIE_NAME,
+        "",
+        max_age=0,
+        **_oauth_state_cookie_kwargs(cookie_target),
+    )
+
+
+def _frontend_callback_from_state_cache(
+    oauth_state: str | None, default_callback: str
+) -> str:
+    if not oauth_state:
+        return default_callback
+    try:
+        cached = cache.get(f"oauth_state:{oauth_state}")
+    except Exception:
+        return default_callback
+    if not cached:
+        return default_callback
+    return _normalize_frontend_callback(str(cached), default_callback)
+
+
+def _validated_frontend_callback_from_state_cookie(
+    request, *, oauth_state: str, default_callback: str
+) -> str:
+    signed_cookie = request.COOKIES.get(_OAUTH_STATE_COOKIE_NAME)
+    if not signed_cookie:
+        _oauth_trace("google_callback_invalid_state_cookie_missing")
+        raise ValueError("missing_cookie")
+
+    try:
+        payload = signing.loads(
+            signed_cookie,
+            salt=_OAUTH_STATE_COOKIE_SALT,
+            max_age=_OAUTH_STATE_TTL_SECONDS,
+        )
+    except signing.SignatureExpired as exc:
+        _oauth_trace("google_callback_invalid_state_cookie_expired")
+        raise ValueError("expired_cookie") from exc
+    except signing.BadSignature as exc:
+        _oauth_trace("google_callback_invalid_state_cookie_bad_signature")
+        raise ValueError("bad_cookie_signature") from exc
+
+    frontend_callback = _normalize_frontend_callback(
+        str(payload.get("frontend_callback") or ""), default_callback
+    )
+    cookie_state = str(payload.get("state") or "")
+    if not cookie_state or not secrets.compare_digest(cookie_state, oauth_state):
+        _oauth_trace("google_callback_invalid_state_cookie_mismatch")
+        raise ValueError("state_mismatch")
+
+    return frontend_callback
 
 
 @api_view(["GET"])
@@ -70,7 +186,10 @@ def google_login_view(request):
             settings, "FRONTEND_CALLBACK_URL", "http://localhost:3000/auth/callback"
         )
         # Frontend callback môže prísť v query parameteri `callback`, ale musí byť na povolenej origin.
-        frontend_callback = request.GET.get("callback", default_frontend_callback)
+        frontend_callback = _normalize_frontend_callback(
+            request.GET.get("callback", default_frontend_callback),
+            default_frontend_callback,
+        )
         try:
             from urllib.parse import urlparse
 
@@ -132,7 +251,23 @@ def google_login_view(request):
             callback_origin=urllib.parse.urlparse(frontend_callback).netloc,
         )
 
-        return HttpResponseRedirect(auth_url)
+        response = HttpResponseRedirect(auth_url)
+        try:
+            _set_oauth_state_cookie(
+                response,
+                oauth_state=oauth_state,
+                frontend_callback=frontend_callback,
+                backend_callback=backend_callback,
+            )
+        except Exception as e:
+            _oauth_trace("google_login_state_cookie_failed", error=str(e)[:120])
+            logger.error(f"Google login state cookie error: {str(e)}")
+            return Response(
+                {"error": "Chyba pri prihlÃ¡senÃ­ cez Google"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+        return response
 
     except Exception as e:
         _oauth_trace("google_login_exception", error=str(e)[:120])
@@ -174,23 +309,29 @@ def google_callback_view(request):
         if not oauth_state or not oauth_state.strip():
             _oauth_trace("google_callback_invalid_state_missing")
             logger.warning("Google OAuth callback: state parameter missing")
-            return redirect(f"{default_callback}?error=invalid_state")
+            response = redirect(f"{default_callback}?error=invalid_state")
+            _clear_oauth_state_cookie(response, request_path=request.path)
+            return response
         try:
-            cached = cache.get(f"oauth_state:{oauth_state}")
-            if not cached:
-                _oauth_trace("google_callback_invalid_state_cache_miss")
-                logger.warning("Google OAuth callback: state not in cache or expired")
-                return redirect(f"{default_callback}?error=invalid_state")
-            frontend_callback = str(cached)
+            frontend_callback = _validated_frontend_callback_from_state_cookie(
+                request,
+                oauth_state=oauth_state,
+                default_callback=default_callback,
+            )
             # Vymaž state z cache po overení (ochrana pred replay útokom)
             try:
                 cache.delete(f"oauth_state:{oauth_state}")
             except Exception:
                 pass
         except Exception:
+            frontend_callback = _frontend_callback_from_state_cache(
+                oauth_state, default_callback
+            )
             _oauth_trace("google_callback_invalid_state_exception")
-            logger.warning("Google OAuth callback: state validation failed")
-            return redirect(f"{default_callback}?error=invalid_state")
+            logger.warning("Google OAuth callback: state cookie missing, invalid or expired")
+            response = redirect(f"{frontend_callback}?error=invalid_state")
+            _clear_oauth_state_cookie(response, request_path=request.path)
+            return response
 
         # Získaj Google OAuth credentials z settings
         client_id = getattr(settings, "GOOGLE_OAUTH2_CLIENT_ID", None)
@@ -403,6 +544,7 @@ def google_callback_view(request):
             _set_auth_cookies(resp, access=str(access_token_jwt), refresh=str(refresh))
             state_kwargs = _auth_state_cookie_kwargs()
             resp.set_cookie("auth_state", "1", max_age=7 * 24 * 60 * 60, **state_kwargs)
+            _clear_oauth_state_cookie(resp, request_path=request.path)
             _oauth_trace(
                 "google_callback_success",
                 user_id=getattr(user, "id", None),
@@ -423,9 +565,11 @@ def google_callback_view(request):
         try:
             oauth_state = request.GET.get("state")
             if oauth_state:
-                cached = cache.get(f"oauth_state:{oauth_state}")
-                if cached:
-                    frontend_callback = str(cached)
+                frontend_callback = _frontend_callback_from_state_cache(
+                    oauth_state, default_callback
+                )
         except Exception:
             frontend_callback = default_callback
-        return redirect(f"{frontend_callback}?error=oauth_failed")
+        response = redirect(f"{frontend_callback}?error=oauth_failed")
+        _clear_oauth_state_cookie(response, request_path=request.path)
+        return response

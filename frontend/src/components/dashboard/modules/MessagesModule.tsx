@@ -42,7 +42,7 @@ export default function MessagesModule({
   }
 
   return (
-    <div className="pt-4 pb-8 pl-0 text-[var(--foreground)] profile-edit-column">
+    <div className="w-full pt-0 pb-8 pl-0 text-[var(--foreground)]">
       {conversationId ? (
         <ConversationDetail
           conversationId={conversationId}

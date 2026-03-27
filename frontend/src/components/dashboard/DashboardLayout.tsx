@@ -221,6 +221,8 @@ export default function DashboardLayout({
             } ${
               activeModule === 'search'
                 ? 'px-0 sm:px-2 lg:px-8' // mobil: ešte menší padding, maximálne rozšírený obsah pre vyhľadávanie
+                : activeModule === 'messages'
+                  ? 'px-0'
                 : activeModule === 'requests'
                   ? 'px-2 sm:px-4 lg:px-8' // mobil: menší padding pre žiadosti (viac šírky pre zoznam)
                 : activeModule === 'offer-reviews'
@@ -237,6 +239,7 @@ export default function DashboardLayout({
                 (activeModule === 'profile' && !isProfileEditMode) ||
                 activeModule === 'user-profile' ||
                 activeModule === 'requests' ||
+                activeModule === 'messages' ||
                 isSkillsModule
                   ? 'max-w-7xl'
                   : activeModule === 'offer-reviews'

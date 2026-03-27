@@ -125,4 +125,18 @@ describe('SearchUserProfileModule', () => {
 
     expect(pushMock).not.toHaveBeenCalled();
   });
+
+  it('navigates to the stable messages route with query param when conversation opens', async () => {
+    (openConversation as jest.Mock).mockResolvedValue({ id: 77 });
+
+    render(<SearchUserProfileModule userId={42} />);
+
+    const button = await screen.findByRole('button', { name: 'open message' });
+    fireEvent.click(button);
+
+    await waitFor(() => {
+      expect(openConversation).toHaveBeenCalledWith(42);
+      expect(pushMock).toHaveBeenCalledWith('/dashboard/messages?conversationId=77');
+    });
+  });
 });

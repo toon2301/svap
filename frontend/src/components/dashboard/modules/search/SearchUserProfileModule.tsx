@@ -18,6 +18,7 @@ import ProfileWebsitesModal from "../profile/ProfileWebsitesModal";
 import type { ProfileTab } from "../profile/profileTypes";
 import { openConversation } from "../messages/messagingApi";
 import { getMessagingErrorMessage } from "../messages/messagingApi";
+import { buildMessagesUrl } from "../messages/messagesRouting";
 
 interface SearchUserProfileModuleProps {
   userId: number;
@@ -144,7 +145,7 @@ export function SearchUserProfileModule({
       setIsOpeningConversation(true);
       try {
         const convo = await openConversation(targetId);
-        router.push(`/dashboard/messages/${convo.id}`);
+        router.push(buildMessagesUrl(convo.id));
       } catch (error) {
         toast.error(
           getMessagingErrorMessage(error, {

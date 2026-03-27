@@ -2,6 +2,8 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useIsMobile } from '@/hooks';
+import { Bars3Icon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 import type { MessageItem } from './types';
 import { getMessagingErrorMessage, listConversations, listMessages, markConversationRead, sendMessage } from './messagingApi';
@@ -28,6 +30,7 @@ export function ConversationDetail({
   className?: string;
 }) {
   const { t } = useLanguage();
+  const isMobile = useIsMobile();
   const [messages, setMessages] = useState<MessageItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
@@ -40,6 +43,8 @@ export function ConversationDetail({
   const [otherConversation, setOtherConversation] = useState<ConversationListItem | null>(null);
   const [isCreateRequestOpen, setIsCreateRequestOpen] = useState(false);
   const [requestCreatedInfo, setRequestCreatedInfo] = useState<string | null>(null);
+  const [isHeaderMenuOpen, setIsHeaderMenuOpen] = useState(false);
+  const headerMenuRef = useRef<HTMLDivElement | null>(null);
 
   const ordered = useMemo(() => {
     // API vracia najnovšie prvé – v UI chceme chronologicky
@@ -197,6 +202,20 @@ export function ConversationDetail({
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [ordered.length]);
 
+  useEffect(() => {
+    if (!isHeaderMenuOpen) return;
+    const onPointerDown = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (headerMenuRef.current && !headerMenuRef.current.contains(target)) {
+        setIsHeaderMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', onPointerDown);
+    return () => {
+      document.removeEventListener('mousedown', onPointerDown);
+    };
+  }, [isHeaderMenuOpen]);
+
   const handleSend = async () => {
     const clean = text.trim();
     if (!clean || sending) return;
@@ -235,27 +254,83 @@ export function ConversationDetail({
 
   return (
     <div className={`${className} flex flex-col h-[calc(100vh-8rem)]`}>
-      <div className="mb-2 flex items-center justify-between gap-2">
-        <div className="min-w-0">
-          <div className="text-sm font-semibold text-gray-900 dark:text-white truncate">
-            {targetUserName}
+      {isMobile ? (
+        <div className="mb-2 flex items-center justify-between gap-2">
+          <div className="min-w-0">
+            <div className="text-sm font-semibold text-gray-900 dark:text-white truncate">
+              {targetUserName}
+            </div>
+            {requestCreatedInfo ? (
+              <div className="mt-0.5 text-xs text-purple-700 dark:text-purple-300">
+                {requestCreatedInfo}
+              </div>
+            ) : null}
+          </div>
+          <CreateRequestCta
+            disabled={!targetUserId}
+            onClick={() => {
+              if (!targetUserId) return;
+              setIsCreateRequestOpen(true);
+            }}
+          />
+        </div>
+      ) : (
+        <div className="-mt-4 lg:-mt-8 -mx-4 sm:-mx-6 lg:-mx-8 mb-3 relative">
+          <div className="w-full border-b border-gray-200 dark:border-gray-800 px-4 sm:px-6 lg:px-8 py-2.5">
+            <div className="flex items-center justify-center">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full overflow-hidden bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center flex-shrink-0">
+                  {otherConversation?.other_user?.avatar_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={otherConversation.other_user.avatar_url} alt={targetUserName} className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-xs font-bold text-purple-700 dark:text-purple-300">
+                      {(targetUserName || 'U').slice(0, 1).toUpperCase()}
+                    </span>
+                  )}
+                </div>
+                <div className="text-sm font-semibold text-gray-900 dark:text-white truncate max-w-[24rem]">
+                  {targetUserName}
+                </div>
+                <div className="relative" ref={headerMenuRef}>
+                  <button
+                    type="button"
+                    className="p-1.5 rounded-xl text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-[#161618] transition-colors"
+                    aria-label={t('common.menu', 'Menu')}
+                    onClick={() => setIsHeaderMenuOpen((prev) => !prev)}
+                  >
+                    <Bars3Icon className="w-5 h-5" />
+                  </button>
+
+                  {isHeaderMenuOpen ? (
+                    <div className="absolute left-0 top-full mt-2 min-w-[170px] rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#0f0f10] shadow-xl p-1 z-20">
+                      <button
+                        type="button"
+                        disabled={!targetUserId}
+                        onClick={() => {
+                          setIsHeaderMenuOpen(false);
+                          if (!targetUserId) return;
+                          setIsCreateRequestOpen(true);
+                        }}
+                        className="w-full text-left px-3 py-2 rounded-xl text-sm font-medium text-gray-800 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-[#161618] disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {t('requests.createFromChat', 'Vytvoriť žiadosť')}
+                      </button>
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+            </div>
           </div>
           {requestCreatedInfo ? (
-            <div className="mt-0.5 text-xs text-purple-700 dark:text-purple-300">
+            <div className="mt-1 px-4 sm:px-6 lg:px-8 text-center text-xs text-purple-700 dark:text-purple-300">
               {requestCreatedInfo}
             </div>
           ) : null}
         </div>
-        <CreateRequestCta
-          disabled={!targetUserId}
-          onClick={() => {
-            if (!targetUserId) return;
-            setIsCreateRequestOpen(true);
-          }}
-        />
-      </div>
+      )}
 
-      <div className="flex-1 overflow-y-auto elegant-scrollbar rounded-2xl border border-gray-200 dark:border-gray-800 bg-white/60 dark:bg-[#0f0f10] p-4 space-y-2">
+      <div className="flex-1 overflow-y-auto elegant-scrollbar p-4 space-y-2">
         {ordered.length === 0 ? (
           <div className="text-sm text-gray-600 dark:text-gray-400 text-center py-8">
             {t('messages.noMessagesYet', 'Zatiaľ bez správ')}
@@ -274,7 +349,7 @@ export function ConversationDetail({
                   ].join(' ')}
                 >
                   <div className="whitespace-pre-wrap break-words">
-                    {mine ? `Ty:${m.text ?? t('messages.deleted', 'Správa bola odstránená')}` : m.text ?? t('messages.deleted', 'Správa bola odstránená')}
+                    {m.text ?? t('messages.deleted', 'Správa bola odstránená')}
                   </div>
                   <div className={`mt-1 text-[10px] tabular-nums ${mine ? 'text-white/80' : 'text-gray-500 dark:text-gray-400'}`}>
                     {formatTime(m.created_at)}

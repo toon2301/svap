@@ -22,6 +22,7 @@ import {
 } from './profileOffersCache';
 import { fetchSkillRequests, getApiErrorMessage, updateSkillRequest } from '../requests/requestsApi';
 import { getMessagingErrorMessage, openConversation } from '../messages/messagingApi';
+import { buildMessagesUrl } from '../messages/messagesRouting';
 
 interface ProfileOffersSectionProps {
   activeTab: ProfileTab;
@@ -106,7 +107,7 @@ export default function ProfileOffersSection({
       try {
         setBusyMessageOfferId(offerId);
         const convo = await openConversation(ownerUserId);
-        router.push(`/dashboard/messages/${convo.id}`);
+        router.push(buildMessagesUrl(convo.id));
       } catch (error) {
         toast.error(
           getMessagingErrorMessage(error, {
