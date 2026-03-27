@@ -191,7 +191,7 @@ export function ConversationsList({
         const preview = isMine ? `Ty: ${rawPreview}` : rawPreview;
         const when = formatDate(conversation.last_message_at);
         const isSelected = selectedConversationId === conversation.id;
-        const isUnread = conversation.has_unread && !isSelected;
+        const isUnread = conversation.has_unread && !isSelected && !isMine;
 
         return (
           <button
@@ -250,7 +250,7 @@ export function ConversationsList({
                 >
                   {title}
                 </span>
-                {conversation.has_unread ? (
+                {isUnread ? (
                   <span
                     className="h-2 w-2 rounded-full bg-purple-600 flex-shrink-0"
                     aria-label="Unread"

@@ -45,6 +45,7 @@ export function ConversationDetail({
   const [requestCreatedInfo, setRequestCreatedInfo] = useState<string | null>(null);
   const [isHeaderMenuOpen, setIsHeaderMenuOpen] = useState(false);
   const headerMenuRef = useRef<HTMLDivElement | null>(null);
+  const messagesScrollRef = useRef<HTMLDivElement | null>(null);
 
   const ordered = useMemo(() => {
     // API vracia najnovšie prvé – v UI chceme chronologicky
@@ -199,8 +200,24 @@ export function ConversationDetail({
   }, [refresh]);
 
   useEffect(() => {
+    // Pri nových správach jemne doroluj na spodok (ak už je konverzácia otvorená).
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [ordered.length]);
+
+  useEffect(() => {
+    // Pri každom otvorení/refreshi konverzácie sa vráť na najnovšie správy.
+    // Toto prepíše browser scroll-restoration aj po reload-e.
+    const scrollToLatest = () => {
+      if (messagesScrollRef.current) {
+        messagesScrollRef.current.scrollTop = messagesScrollRef.current.scrollHeight;
+      } else {
+        bottomRef.current?.scrollIntoView({ behavior: 'auto' });
+      }
+    };
+    requestAnimationFrame(() => {
+      requestAnimationFrame(scrollToLatest);
+    });
+  }, [conversationId, loading, ordered.length]);
 
   useEffect(() => {
     if (!isHeaderMenuOpen) return;
@@ -330,7 +347,7 @@ export function ConversationDetail({
         </div>
       )}
 
-      <div className="flex-1 overflow-y-auto elegant-scrollbar p-4 space-y-2">
+      <div ref={messagesScrollRef} className="flex-1 overflow-y-auto elegant-scrollbar p-4 space-y-2">
         {ordered.length === 0 ? (
           <div className="text-sm text-gray-600 dark:text-gray-400 text-center py-8">
             {t('messages.noMessagesYet', 'Zatiaľ bez správ')}

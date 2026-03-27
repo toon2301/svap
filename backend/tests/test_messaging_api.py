@@ -103,6 +103,27 @@ class TestMessagingApi(APITestCase):
         participant = ConversationParticipant.objects.get(conversation_id=convo_id, user=self.u1)
         assert participant.last_read_at is not None
 
+    def test_conversation_list_exposes_server_timing_breakdown(self):
+        self.client.force_authenticate(user=self.u1)
+        open_url = reverse("accounts:messaging_open")
+        opened = self.client.post(open_url, {"target_user_id": self.u2.id}, format="json")
+        convo_id = int(opened.data["id"])
+
+        self.client.force_authenticate(user=self.u2)
+        send_url = reverse("accounts:messaging_send_message", kwargs={"conversation_id": convo_id})
+        assert self.client.post(send_url, {"text": "Ahoj"}, format="json").status_code == status.HTTP_201_CREATED
+
+        self.client.force_authenticate(user=self.u1)
+        list_url = reverse("accounts:messaging_list_conversations")
+        response = self.client.get(list_url)
+
+        assert response.status_code == status.HTTP_200_OK
+        server_timing = response.headers.get("Server-Timing", "")
+        assert "conversations_db_connect" in server_timing
+        assert "conversations_sql" in server_timing
+        assert "conversations_serialize" in server_timing
+        assert "conversations_total" in server_timing
+
     @override_settings(
         RATE_LIMITING_ENABLED=True,
         RATE_LIMIT_DISABLED=False,
