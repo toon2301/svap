@@ -340,19 +340,25 @@ export function ConversationDetail({
             const mine = m.sender?.id === currentUserId;
             return (
               <div key={m.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
-                <div
-                  className={[
-                    'max-w-[80%] rounded-2xl px-3 py-2 text-sm',
-                    mine
-                      ? 'bg-purple-600 text-white'
-                      : 'bg-gray-100 dark:bg-[#141416] text-gray-900 dark:text-gray-100 border border-gray-200/60 dark:border-gray-800',
-                  ].join(' ')}
-                >
-                  <div className="whitespace-pre-wrap break-words">
-                    {m.text ?? t('messages.deleted', 'Správa bola odstránená')}
-                  </div>
-                  <div className={`mt-1 text-[10px] tabular-nums ${mine ? 'text-white/80' : 'text-gray-500 dark:text-gray-400'}`}>
+                <div className="max-w-[80%]">
+                  <div
+                    className={`mb-1 text-[10px] tabular-nums ${
+                      mine ? 'text-right text-gray-500 dark:text-gray-400' : 'text-left text-gray-500 dark:text-gray-400'
+                    }`}
+                  >
                     {formatTime(m.created_at)}
+                  </div>
+                  <div
+                    className={[
+                      'rounded-2xl px-3 py-2 text-sm',
+                      mine
+                        ? 'bg-[var(--primary)] text-white'
+                        : 'bg-gray-100 dark:bg-[#141416] text-gray-900 dark:text-gray-100 border border-gray-200/60 dark:border-gray-800',
+                    ].join(' ')}
+                  >
+                    <div className="whitespace-pre-wrap break-words">
+                      {m.text ?? t('messages.deleted', 'Správa bola odstránená')}
+                    </div>
                   </div>
                 </div>
               </div>

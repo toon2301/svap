@@ -8,7 +8,7 @@ import { listConversations } from './messagingApi';
 import { MESSAGING_CONVERSATIONS_REFRESH_EVENT } from './messagesEvents';
 import { buildMessagesUrl } from './messagesRouting';
 
-const CONVERSATIONS_POLL_INTERVAL_MS = 10_000;
+const IDLE_CONVERSATIONS_POLL_INTERVAL_MS = 30_000;
 
 function formatDate(value: string | null): string {
   if (!value) return '';
@@ -42,6 +42,7 @@ export function ConversationsList({
   const isSidebar = variant === 'sidebar';
   const isRail = variant === 'rail';
   const isCompact = isSidebar || isRail;
+  const shouldUseIntervalPolling = selectedConversationId == null;
 
   const refresh = useCallback(
     async ({
@@ -104,9 +105,11 @@ export function ConversationsList({
       void refresh();
     };
 
-    pollIntervalRef.current = setInterval(() => {
-      refreshIfVisible();
-    }, CONVERSATIONS_POLL_INTERVAL_MS);
+    if (shouldUseIntervalPolling) {
+      pollIntervalRef.current = setInterval(() => {
+        refreshIfVisible();
+      }, IDLE_CONVERSATIONS_POLL_INTERVAL_MS);
+    }
 
     window.addEventListener('focus', refreshIfVisible);
     document.addEventListener('visibilitychange', refreshIfVisible);
@@ -118,7 +121,7 @@ export function ConversationsList({
       document.removeEventListener('visibilitychange', refreshIfVisible);
       window.removeEventListener(MESSAGING_CONVERSATIONS_REFRESH_EVENT, refreshIfVisible);
     };
-  }, [refresh]);
+  }, [refresh, shouldUseIntervalPolling]);
 
   if (loading) {
     return (

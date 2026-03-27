@@ -25,6 +25,10 @@ describe('ConversationsList', () => {
     setVisibilityState('visible');
   });
 
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
   it('refreshes the list when a conversation refresh event is dispatched', async () => {
     (listConversations as jest.Mock)
       .mockResolvedValueOnce([
@@ -102,6 +106,74 @@ describe('ConversationsList', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Viditeľná správa')).toBeInTheDocument();
+      expect(listConversations).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  it('does not run interval polling while a specific conversation is open', async () => {
+    jest.useFakeTimers();
+
+    (listConversations as jest.Mock).mockResolvedValue([
+      {
+        id: 9,
+        other_user: { id: 2, display_name: 'Tester' },
+        last_message_preview: 'Stabilná správa',
+        last_message_at: '2026-03-27T10:00:00Z',
+        last_message_sender_id: 2,
+        has_unread: false,
+      },
+    ]);
+
+    render(<ConversationsList currentUserId={1} variant="rail" selectedConversationId={9} />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Stabilná správa')).toBeInTheDocument();
+    });
+
+    await act(async () => {
+      jest.advanceTimersByTime(35_000);
+    });
+
+    expect(listConversations).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps a slower fallback interval when no conversation is selected', async () => {
+    jest.useFakeTimers();
+
+    (listConversations as jest.Mock)
+      .mockResolvedValueOnce([
+        {
+          id: 9,
+          other_user: { id: 2, display_name: 'Tester' },
+          last_message_preview: 'Prvá správa',
+          last_message_at: '2026-03-27T10:00:00Z',
+          last_message_sender_id: 2,
+          has_unread: false,
+        },
+      ])
+      .mockResolvedValueOnce([
+        {
+          id: 9,
+          other_user: { id: 2, display_name: 'Tester' },
+          last_message_preview: 'Druhá správa',
+          last_message_at: '2026-03-27T10:00:30Z',
+          last_message_sender_id: 2,
+          has_unread: true,
+        },
+      ]);
+
+    render(<ConversationsList currentUserId={1} variant="rail" />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Prvá správa')).toBeInTheDocument();
+    });
+
+    await act(async () => {
+      jest.advanceTimersByTime(30_000);
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('Druhá správa')).toBeInTheDocument();
       expect(listConversations).toHaveBeenCalledTimes(2);
     });
   });
