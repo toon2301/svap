@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import toast from 'react-hot-toast';
 import type { MessageItem } from './types';
@@ -8,6 +8,9 @@ import { getMessagingErrorMessage, listConversations, listMessages, markConversa
 import { CreateRequestCta } from './CreateRequestCta';
 import { CreateRequestModal } from './CreateRequestModal';
 import type { ConversationListItem } from './types';
+import { requestConversationsRefresh } from './messagesEvents';
+
+const MESSAGE_POLL_INTERVAL_MS = 10_000;
 
 function formatTime(value: string): string {
   const d = new Date(value);
@@ -15,13 +18,25 @@ function formatTime(value: string): string {
   return d.toLocaleString('sk-SK', { hour: '2-digit', minute: '2-digit' });
 }
 
-export function ConversationDetail({ conversationId, currentUserId }: { conversationId: number; currentUserId: number }) {
+export function ConversationDetail({
+  conversationId,
+  currentUserId,
+  className = 'max-w-4xl mx-auto',
+}: {
+  conversationId: number;
+  currentUserId: number;
+  className?: string;
+}) {
   const { t } = useLanguage();
   const [messages, setMessages] = useState<MessageItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [text, setText] = useState('');
   const bottomRef = useRef<HTMLDivElement | null>(null);
+  const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const refreshInFlightRef = useRef<Promise<MessageItem[]> | null>(null);
+  const lastMarkedIncomingMessageIdRef = useRef<number | null>(null);
+  const latestKnownMessageIdRef = useRef<number | null>(null);
   const [otherConversation, setOtherConversation] = useState<ConversationListItem | null>(null);
   const [isCreateRequestOpen, setIsCreateRequestOpen] = useState(false);
   const [requestCreatedInfo, setRequestCreatedInfo] = useState<string | null>(null);
@@ -31,25 +46,103 @@ export function ConversationDetail({ conversationId, currentUserId }: { conversa
     return [...messages].reverse();
   }, [messages]);
 
-  const refresh = async ({ showError = true }: { showError?: boolean } = {}) => {
-    try {
-      const list = await listMessages(conversationId, 100);
-      setMessages(list);
-    } catch (error) {
-      if (showError) {
-        toast.error(
-          getMessagingErrorMessage(error, {
-            fallback: t('messages.loadFailed', 'Nepodarilo sa načítať správy. Skúste to znova.'),
-            rateLimitFallback: t('messages.loadRateLimited', 'Správy načítavate príliš rýchlo. Skúste chvíľu počkať.'),
-          }),
-        );
+  const showLoadErrorToast = useCallback(
+    (error: unknown) => {
+      toast.error(
+        getMessagingErrorMessage(error, {
+          fallback: t('messages.loadFailed', 'Nepodarilo sa načítať správy. Skúste to znova.'),
+          rateLimitFallback: t('messages.loadRateLimited', 'Správy načítavate príliš rýchlo. Skúste chvíľu počkať.'),
+        }),
+      );
+    },
+    [t],
+  );
+
+  const maybeMarkConversationRead = useCallback(
+    async (list: MessageItem[]) => {
+      const newestMessage = list[0] ?? null;
+      if (!newestMessage) return;
+      if (newestMessage.sender?.id === currentUserId) return;
+      if (lastMarkedIncomingMessageIdRef.current === newestMessage.id) return;
+
+      try {
+        await markConversationRead(conversationId);
+        lastMarkedIncomingMessageIdRef.current = newestMessage.id;
+      } catch {
+        // best-effort
       }
-      throw error;
-    }
-  };
+    },
+    [conversationId, currentUserId],
+  );
+
+  const refresh = useCallback(
+    async (
+      {
+        showError = true,
+        markAsRead = false,
+        syncConversations = false,
+      }: {
+        showError?: boolean;
+        markAsRead?: boolean;
+        syncConversations?: boolean;
+      } = {},
+    ) => {
+      if (refreshInFlightRef.current) {
+        try {
+          const sharedList = await refreshInFlightRef.current;
+          if (markAsRead) {
+            await maybeMarkConversationRead(sharedList);
+          }
+          return sharedList;
+        } catch (error) {
+          if (showError) {
+            showLoadErrorToast(error);
+          }
+          throw error;
+        }
+      }
+
+      const request = (async () => {
+        const list = await listMessages(conversationId, 100);
+        const newestMessageId = list[0]?.id ?? null;
+        const previousNewestMessageId = latestKnownMessageIdRef.current;
+        latestKnownMessageIdRef.current = newestMessageId;
+        setMessages(list);
+        if (
+          syncConversations &&
+          newestMessageId !== previousNewestMessageId
+        ) {
+          requestConversationsRefresh();
+        }
+        return list;
+      })();
+
+      refreshInFlightRef.current = request;
+
+      try {
+        const list = await request;
+        if (markAsRead) {
+          await maybeMarkConversationRead(list);
+        }
+        return list;
+      } catch (error) {
+        if (showError) {
+          showLoadErrorToast(error);
+        }
+        throw error;
+      } finally {
+        if (refreshInFlightRef.current === request) {
+          refreshInFlightRef.current = null;
+        }
+      }
+    },
+    [conversationId, maybeMarkConversationRead, showLoadErrorToast],
+  );
 
   useEffect(() => {
     let cancelled = false;
+    lastMarkedIncomingMessageIdRef.current = null;
+    latestKnownMessageIdRef.current = null;
     void (async () => {
       try {
         setLoading(true);
@@ -61,12 +154,7 @@ export function ConversationDetail({ conversationId, currentUserId }: { conversa
         } catch {
           // ignore
         }
-        await refresh();
-        try {
-          await markConversationRead(conversationId);
-        } catch {
-          // best-effort
-        }
+        await refresh({ markAsRead: true });
       } catch {
         // refresh already surfaced a user-facing error
       } finally {
@@ -76,8 +164,34 @@ export function ConversationDetail({ conversationId, currentUserId }: { conversa
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [conversationId]);
+  }, [conversationId, refresh]);
+
+  useEffect(() => {
+    const stopPolling = () => {
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+        pollIntervalRef.current = null;
+      }
+    };
+
+    const refreshIfVisible = () => {
+      if (document.visibilityState !== 'visible') return;
+      void refresh({ showError: false, markAsRead: true, syncConversations: true });
+    };
+
+    pollIntervalRef.current = setInterval(() => {
+      refreshIfVisible();
+    }, MESSAGE_POLL_INTERVAL_MS);
+
+    window.addEventListener('focus', refreshIfVisible);
+    document.addEventListener('visibilitychange', refreshIfVisible);
+
+    return () => {
+      stopPolling();
+      window.removeEventListener('focus', refreshIfVisible);
+      document.removeEventListener('visibilitychange', refreshIfVisible);
+    };
+  }, [refresh]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -90,12 +204,8 @@ export function ConversationDetail({ conversationId, currentUserId }: { conversa
     try {
       await sendMessage(conversationId, clean);
       setText('');
-      await refresh({ showError: false });
-      try {
-        await markConversationRead(conversationId);
-      } catch {
-        // best-effort
-      }
+      await refresh({ showError: false, markAsRead: true });
+      requestConversationsRefresh();
     } catch (error) {
       toast.error(
         getMessagingErrorMessage(error, {
@@ -111,7 +221,7 @@ export function ConversationDetail({ conversationId, currentUserId }: { conversa
 
   if (loading) {
     return (
-      <div className="max-w-4xl mx-auto">
+      <div className={className}>
         <div className="bg-white dark:bg-black rounded-2xl border border-gray-200 dark:border-gray-800 p-4">
           <div className="text-sm text-gray-600 dark:text-gray-400">{t('messages.loading', 'Načítavam…')}</div>
         </div>
@@ -124,7 +234,7 @@ export function ConversationDetail({ conversationId, currentUserId }: { conversa
     (otherConversation?.other_user?.display_name || '').trim() || t('messages.unknownUser', 'Používateľ');
 
   return (
-    <div className="max-w-4xl mx-auto flex flex-col h-[calc(100vh-8rem)]">
+    <div className={`${className} flex flex-col h-[calc(100vh-8rem)]`}>
       <div className="mb-2 flex items-center justify-between gap-2">
         <div className="min-w-0">
           <div className="text-sm font-semibold text-gray-900 dark:text-white truncate">
@@ -210,8 +320,7 @@ export function ConversationDetail({ conversationId, currentUserId }: { conversa
           onClose={() => setIsCreateRequestOpen(false)}
           onCreated={() => {
             setRequestCreatedInfo(t('requests.createdInfo', 'Žiadosť bola vytvorená'));
-            void refresh();
-            void markConversationRead(conversationId);
+            void refresh({ showError: false, markAsRead: true });
           }}
         />
       ) : null}

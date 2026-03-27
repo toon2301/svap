@@ -134,7 +134,10 @@
     "subtitle": "Vaše konverzácie",
     "none": "Žiadne správy",
     "hint": "Keď vám niekto napíše, zobrazí sa to tu",
-    "soon": "Funkcia správ bude čoskoro dostupná"
+    "soon": "Funkcia správ bude čoskoro dostupná",
+    "sidebarSubtitle": "Zoznam konverzácií",
+    "pickConversationTitle": "Vyber konverzáciu",
+    "pickConversationHint": "Na pravej strane si zvoľ konverzáciu, ktorú chceš otvoriť."
   },
   "search": {
     "title": "Vyhľadávanie",

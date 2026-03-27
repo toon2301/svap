@@ -10,6 +10,7 @@ import DashboardLayout from '../DashboardLayout';
 import ModuleRouter from '../ModuleRouter';
 import DashboardModals from '../DashboardModals';
 import SearchModule from '../modules/SearchModule';
+import { MessagesDesktopRail } from '../modules/messages/MessagesDesktopRail';
 import { useDashboardState } from '../hooks/useDashboardState';
 import { useSkillsModals } from '../hooks/useSkillsModals';
 import { useDashboardNavigation } from '../hooks/useDashboardNavigation';
@@ -499,6 +500,18 @@ export default function DashboardContent({
               onSkillClick={navigation.handleViewUserSkillFromSearch}
               isOverlay
               isActive={isSearchOpen}
+            />
+          ) : null
+        }
+        desktopRightRail={
+          activeModule === 'messages' ? (
+            <MessagesDesktopRail
+              currentUserId={user.id}
+              selectedConversationId={
+                conversationIdFromMessagesPath != null && Number.isFinite(conversationIdFromMessagesPath)
+                  ? conversationIdFromMessagesPath
+                  : null
+              }
             />
           ) : null
         }

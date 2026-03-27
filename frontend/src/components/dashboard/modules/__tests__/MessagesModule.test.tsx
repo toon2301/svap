@@ -2,37 +2,59 @@ import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import MessagesModule from '../MessagesModule';
 
-// Mock heroicons
-jest.mock('@heroicons/react/24/outline', () => ({
-  ChatBubbleLeftRightIcon: () => <div>ChatIcon</div>,
-  InboxIcon: () => <div>InboxIcon</div>,
+jest.mock('@/hooks', () => ({
+  __esModule: true,
+  useIsMobile: jest.fn(),
 }));
 
+jest.mock('../messages/ConversationsList', () => ({
+  __esModule: true,
+  ConversationsList: ({ selectedConversationId }: { selectedConversationId?: number | null }) => (
+    <div>ConversationsList:{selectedConversationId ?? 'none'}</div>
+  ),
+}));
+
+jest.mock('../messages/ConversationDetail', () => ({
+  __esModule: true,
+  ConversationDetail: ({ conversationId }: { conversationId: number }) => (
+    <div>ConversationDetail:{conversationId}</div>
+  ),
+}));
+
+const { useIsMobile } = jest.requireMock('@/hooks') as {
+  useIsMobile: jest.Mock;
+};
+
 describe('MessagesModule', () => {
-  it('renders heading', () => {
-    render(<MessagesModule />);
-    
-    expect(screen.getByText('Správy')).toBeInTheDocument();
+  beforeEach(() => {
+    jest.clearAllMocks();
   });
 
-  it('shows empty state', () => {
-    render(<MessagesModule />);
-    
-    expect(screen.getByText('Žiadne správy')).toBeInTheDocument();
-    expect(screen.getByText(/Keď vám niekto/i)).toBeInTheDocument();
+  it('renders desktop empty state without embedding the conversations rail', () => {
+    useIsMobile.mockReturnValue(false);
+
+    render(<MessagesModule currentUserId={1} />);
+
+    expect(screen.getAllByText('Správy').length).toBeGreaterThan(0);
+    expect(screen.getByText('Vyber konverzáciu')).toBeInTheDocument();
+    expect(screen.queryByText('ConversationsList:none')).not.toBeInTheDocument();
   });
 
-  it('shows placeholder message', () => {
-    render(<MessagesModule />);
-    
-    expect(screen.getByText(/Funkcia správ bude.*čoskoro/i)).toBeInTheDocument();
+  it('renders desktop detail content without the in-module conversations rail', () => {
+    useIsMobile.mockReturnValue(false);
+
+    render(<MessagesModule currentUserId={1} conversationId={7} />);
+
+    expect(screen.getByText('ConversationDetail:7')).toBeInTheDocument();
+    expect(screen.queryByText('ConversationsList:7')).not.toBeInTheDocument();
   });
 
-  it('renders empty inbox icon', () => {
-    const { container } = render(<MessagesModule />);
-    
-    const icon = container.querySelector('div');
-    expect(icon).toBeInTheDocument();
+  it('keeps the mobile list flow unchanged', () => {
+    useIsMobile.mockReturnValue(true);
+
+    render(<MessagesModule currentUserId={1} />);
+
+    expect(screen.getByText('ConversationsList:none')).toBeInTheDocument();
+    expect(screen.queryByText('Vyber konverzáciu')).not.toBeInTheDocument();
   });
 });
-

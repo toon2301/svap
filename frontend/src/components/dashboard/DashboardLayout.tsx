@@ -26,6 +26,7 @@ interface DashboardLayoutProps {
   onSidebarSearchClick?: () => void;
   onSearchClose?: () => void;
   searchOverlay?: React.ReactNode;
+  desktopRightRail?: React.ReactNode;
   subcategory?: string | null;
   onSkillSaveClick?: () => void;
   children: React.ReactNode;
@@ -51,6 +52,7 @@ export default function DashboardLayout({
   onSidebarSearchClick,
   onSearchClose,
   searchOverlay,
+  desktopRightRail,
   subcategory,
   onSkillSaveClick,
   children,
@@ -65,6 +67,8 @@ export default function DashboardLayout({
 
   const activeSidebarItem = isSearchOpen ? 'search' : activeModule;
   const searchPanelRef = useRef<HTMLDivElement>(null);
+  const hasAuxiliaryRightRail = !isRightSidebarOpen && Boolean(desktopRightRail);
+  const hasDesktopRightColumn = isRightSidebarOpen || hasAuxiliaryRightRail;
 
   // Zatvor vyhľadávací panel pri kliknutí mimo neho alebo pri stlačení Esc
   useEffect(() => {
@@ -124,7 +128,7 @@ export default function DashboardLayout({
 
   // Desktop grid: search column always exists in DOM.
   // When closed, its width is 0px; to avoid visual shift of main content, we apply a matching left padding to <main>.
-  const gridColsClassName = isRightSidebarOpen
+  const gridColsClassName = hasDesktopRightColumn
     ? isSearchOpen
       ? 'lg:grid-cols-[240px_240px_1fr_240px] xl:grid-cols-[280px_280px_1fr_280px] 2xl:grid-cols-[384px_384px_1fr_384px]'
       : 'lg:grid-cols-[240px_0px_1fr_240px] xl:grid-cols-[280px_0px_1fr_280px] 2xl:grid-cols-[384px_0px_1fr_384px]'
@@ -245,20 +249,23 @@ export default function DashboardLayout({
           </div>
         </main>
 
-        {/* Right Sidebar - Desktop only, shows in grid when open */}
-        {isRightSidebarOpen && (
+        {/* Right rail - Desktop only, shows in grid when open */}
+        {hasDesktopRightColumn && (
           <div className="svap-right-sidebar-col hidden lg:block h-screen overflow-hidden">
-            <RightSidebar
-              isOpen={isRightSidebarOpen}
-              onClose={onRightSidebarClose}
-              activeItem={activeRightItem}
-              onItemClick={onRightItemClick}
-              isMobile={false}
-            />
+            {isRightSidebarOpen ? (
+              <RightSidebar
+                isOpen={isRightSidebarOpen}
+                onClose={onRightSidebarClose}
+                activeItem={activeRightItem}
+                onItemClick={onRightItemClick}
+                isMobile={false}
+              />
+            ) : (
+              desktopRightRail
+            )}
           </div>
         )}
       </div>
     </div>
   );
 }
-

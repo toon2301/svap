@@ -11,16 +11,22 @@ const nextConfig = {
     optimizePackageImports: ['lucide-react'],
   },
   
-  webpack: (config) => {
+  webpack: (config, { dev }) => {
     config.resolve.alias = {
       ...config.resolve.alias,
       '@': path.resolve(__dirname, 'src'),
     };
+
+    if (dev) {
+      // Avoid unstable filesystem cache state on Windows dev runs.
+      // We prefer slightly slower recompiles over broken chunk graphs in .next/server.
+      config.cache = false;
+    }
+
     return config;
   },
   
   images: {
-    domains: ['localhost', '127.0.0.1'],
     remotePatterns: [
       {
         protocol: 'http',
