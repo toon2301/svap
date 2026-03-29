@@ -1,5 +1,17 @@
 const path = require('path');
 
+function normalizeOrigin(value) {
+  return String(value || '').trim().replace(/\/+$/, '');
+}
+
+function toWsConnectSrc(origin) {
+  const normalized = normalizeOrigin(origin);
+  if (!normalized) return '';
+  if (normalized.startsWith('https://')) return normalized.replace(/^https:\/\//, 'wss://');
+  if (normalized.startsWith('http://')) return normalized.replace(/^http:\/\//, 'ws://');
+  return '';
+}
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Dôležité pre Django API s trailing slashmi:
@@ -65,29 +77,33 @@ const nextConfig = {
 
   async rewrites() {
     // Proxy /api/* na backend (užitočné na Railway pri oddelenom FE/BE, aby cookies boli 1st-party)
-    const backendOrigin =
+    const backendHttpOrigin =
       process.env.BACKEND_ORIGIN || process.env.NEXT_PUBLIC_BACKEND_ORIGIN;
+    const backendWsOrigin =
+      process.env.BACKEND_WS_ORIGIN ||
+      process.env.NEXT_PUBLIC_BACKEND_WS_ORIGIN ||
+      backendHttpOrigin;
     const frontendOrigin =
       process.env.FRONTEND_ORIGIN || process.env.NEXT_PUBLIC_FRONTEND_ORIGIN;
 
-    if (!backendOrigin) return [];
+    if (!backendHttpOrigin) return [];
 
-    const norm = (u) => String(u || '').trim().replace(/\/+$/, '');
-    const be = norm(backendOrigin);
-    const fe = norm(frontendOrigin);
+    const beHttp = normalizeOrigin(backendHttpOrigin);
+    const beWs = normalizeOrigin(backendWsOrigin);
+    const fe = normalizeOrigin(frontendOrigin);
     // Zabráň self-proxy loopu, ak by niekto omylom nastavil backendOrigin == frontendOrigin
-    if (fe && be && be === fe) return [];
+    if (fe && beHttp && beHttp === fe && (!beWs || beWs === fe)) return [];
 
     // Dôležité: zachovať trailing slash (Django/DRF ho používa).
     // Next.js pri :path* často "zje" koncové `/`, takže pridáme osobitné pravidlo pre URL s `/`.
     // /ws/* proxy pre WebSocket (notifikácie v reálnom čase) – same-origin = cookies fungujú.
     // /media/* proxy pre avatary/media (keď backend servuje /media/, napr. lokálne alebo s volume)
     return [
-      { source: '/api/:path*/', destination: `${be}/api/:path*/` },
-      { source: '/api/:path*', destination: `${be}/api/:path*` },
-      { source: '/ws/:path*/', destination: `${be}/ws/:path*/` },
-      { source: '/ws/:path*', destination: `${be}/ws/:path*` },
-      { source: '/media/:path*', destination: `${be}/media/:path*` },
+      { source: '/api/:path*/', destination: `${beHttp}/api/:path*/` },
+      { source: '/api/:path*', destination: `${beHttp}/api/:path*` },
+      { source: '/ws/:path*/', destination: `${beWs}/ws/:path*/` },
+      { source: '/ws/:path*', destination: `${beWs}/ws/:path*` },
+      { source: '/media/:path*', destination: `${beHttp}/media/:path*` },
     ];
   },
 
@@ -130,6 +146,16 @@ const nextConfig = {
       const imgSrc = imgSrcUnique.join(' ');
       // connect-src: Fetch/XHR (vrátane Service Worker fetch pre obrázky z S3) musí mať povolené media origins
       const connectSrcExtra = imgSrcUnique.filter((o) => o.startsWith('https')).join(' ');
+      const backendConnectCandidates = [
+        process.env.NEXT_PUBLIC_BACKEND_ORIGIN?.trim(),
+        process.env.NEXT_PUBLIC_BACKEND_WS_ORIGIN?.trim(),
+      ]
+        .filter(Boolean)
+        .map((origin) => normalizeOrigin(origin));
+      const wsConnectExtra = backendConnectCandidates
+        .map((origin) => toWsConnectSrc(origin))
+        .filter(Boolean)
+        .join(' ');
       const connectSrc = [
         "'self'",
         'https://www.google.com',
@@ -138,6 +164,7 @@ const nextConfig = {
         'https://www.recaptcha.net/',
         'https://ipapi.co',
         connectSrcExtra,
+        wsConnectExtra,
       ]
         .filter(Boolean)
         .join(' ');

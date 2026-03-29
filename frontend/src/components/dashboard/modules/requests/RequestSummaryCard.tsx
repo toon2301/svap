@@ -268,7 +268,7 @@ export function RequestSummaryCard({
   };
 
   return (
-    <div className="group relative overflow-hidden pt-4 pb-4 min-h-[11rem]">
+    <div className="group relative pt-4 pb-4">
       {/* Pri skrytej karte: hláška o skrytí v pôvodnom mieste (v strede hore) */}
       {isOfferHidden && (
         <div className="w-full text-center pt-1 pb-1">
@@ -277,9 +277,78 @@ export function RequestSummaryCard({
           </div>
         </div>
       )}
-      {/* Pravý panel: od 1109px dole aj od 1110px hore dátum a tlačidlá úplne vpravo (right-0). */}
+      <div className="flex flex-row items-start gap-3 sm:gap-4">
+      <div className="flex min-w-0 flex-1 flex-col">
+        {/* Avatar, meno – klikateľné, presmerujú na profil */}
+        <div className="px-3 pt-0 pb-2 flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleProfileClick}
+            className="w-8 h-8 sm:w-9 sm:h-9 flex-shrink-0 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800 p-0 border-0 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 focus-visible:ring-offset-1"
+            aria-label={t('requests.openProfile', 'Otvoriť profil')}
+          >
+            {hasAvatar ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={avatarSrc}
+                alt=""
+                className="h-full w-full object-cover"
+                onError={() => setAvatarError(true)}
+              />
+            ) : (
+              <div className="h-full w-full grid place-items-center">
+                <span className="text-xs sm:text-sm font-bold text-gray-700 dark:text-gray-200">
+                  {initials(whoName)}
+                </span>
+              </div>
+            )}
+          </button>
+          <div className="min-w-0 flex-1 text-xs sm:text-sm leading-tight">
+            {isOfferHidden ? (
+              <button
+                type="button"
+                onClick={handleProfileClick}
+                className="font-semibold text-gray-900 dark:text-white bg-transparent border-0 p-0 cursor-pointer text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 rounded"
+                aria-label={t('requests.openProfile', 'Otvoriť profil')}
+              >
+                {whoName || t('requests.userFallback')}
+              </button>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={handleProfileClick}
+                  className="font-semibold text-gray-900 dark:text-white bg-transparent border-0 p-0 cursor-pointer text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 rounded"
+                  aria-label={t('requests.openProfile', 'Otvoriť profil')}
+                >
+                  {whoName || t('requests.userFallback')}
+                </button>
+                <span className="font-semibold text-purple-700 dark:text-purple-300">
+                  {' '}{intentText}
+                </span>
+              </>
+            )}
+          </div>
+        </div>
+
+        <div className="flex-1 p-0.5 pt-0 pb-0.5 min-w-0 relative flex flex-col">
+          <div className="mt-2 flex-1 px-3">
+            <div className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white leading-tight">
+              {subcategory || t('requests.noTitle')}
+            </div>
+            {description && (
+              <div className="mt-1 text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 leading-tight italic">
+                &ldquo;{description}&rdquo;
+              </div>
+            )}
+          </div>
+          <div className="mt-auto" />
+        </div>
+      </div>
+
+      {/* Pravý panel: výška podľa obsahu — flex namiesto absolute, aby sa karta prispôsobila */}
       <div
-        className="absolute inset-y-0 right-6 sm:right-8 compact-max:right-0 compact:right-0 flex flex-col items-stretch justify-start px-2 sm:px-3 compact-max:pl-3 compact-max:pr-0 compact:pl-3 compact:pr-0 pt-3 sm:pt-4 gap-3 sm:gap-4 w-56 sm:w-64 md:w-72 compact:w-96 wide:w-80"
+        className="shrink-0 flex flex-col items-stretch justify-start px-0 sm:px-1 compact-max:pl-2 compact-max:pr-0 compact:pl-2 compact:pr-0 pt-0 sm:pt-0 gap-3 sm:gap-4 w-56 sm:w-64 md:w-72 compact:w-96 wide:w-80"
         aria-label="Akcie"
       >
         <div className="shrink-0 flex items-center justify-end gap-2">
@@ -420,73 +489,6 @@ export function RequestSummaryCard({
           <StatusPill status={item.status} />
         </div>
       </div>
-
-      <div className="flex flex-col pr-[15.5rem] sm:pr-72 md:pr-80 compact-max:pr-[22rem] compact:pr-[26rem] wide:pr-[22rem] min-w-0">
-        {/* Avatar, meno – klikateľné, presmerujú na profil */}
-        <div className="px-3 pt-0 pb-2 flex items-center gap-2">
-          <button
-            type="button"
-            onClick={handleProfileClick}
-            className="w-8 h-8 sm:w-9 sm:h-9 flex-shrink-0 overflow-hidden rounded-full bg-gray-100 dark:bg-gray-800 p-0 border-0 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 focus-visible:ring-offset-1"
-            aria-label={t('requests.openProfile', 'Otvoriť profil')}
-          >
-            {hasAvatar ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={avatarSrc}
-                alt=""
-                className="h-full w-full object-cover"
-                onError={() => setAvatarError(true)}
-              />
-            ) : (
-              <div className="h-full w-full grid place-items-center">
-                <span className="text-xs sm:text-sm font-bold text-gray-700 dark:text-gray-200">
-                  {initials(whoName)}
-                </span>
-              </div>
-            )}
-          </button>
-          <div className="min-w-0 flex-1 text-xs sm:text-sm leading-tight">
-            {isOfferHidden ? (
-              <button
-                type="button"
-                onClick={handleProfileClick}
-                className="font-semibold text-gray-900 dark:text-white bg-transparent border-0 p-0 cursor-pointer text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 rounded"
-                aria-label={t('requests.openProfile', 'Otvoriť profil')}
-              >
-                {whoName || t('requests.userFallback')}
-              </button>
-            ) : (
-              <>
-                <button
-                  type="button"
-                  onClick={handleProfileClick}
-                  className="font-semibold text-gray-900 dark:text-white bg-transparent border-0 p-0 cursor-pointer text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 rounded"
-                  aria-label={t('requests.openProfile', 'Otvoriť profil')}
-                >
-                  {whoName || t('requests.userFallback')}
-                </button>
-                <span className="font-semibold text-purple-700 dark:text-purple-300">
-                  {' '}{intentText}
-                </span>
-              </>
-            )}
-          </div>
-        </div>
-
-        <div className="flex-1 p-0.5 pt-0 pb-0.5 min-w-0 relative flex flex-col">
-          <div className="mt-2 flex-1 px-3">
-            <div className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white leading-tight">
-              {subcategory || t('requests.noTitle')}
-            </div>
-            {description && (
-              <div className="mt-1 text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 leading-tight italic">
-                &ldquo;{description}&rdquo;
-              </div>
-            )}
-          </div>
-          <div className="mt-auto" />
-        </div>
       </div>
     </div>
   );

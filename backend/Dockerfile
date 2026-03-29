@@ -21,8 +21,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy project files
 COPY . .
 
-# Make start script executable
-RUN chmod +x start.sh
+# Make start scripts executable
+RUN chmod +x start.sh start-common.sh start-http.sh start-ws.sh
 
 # Create non-root user
 RUN adduser --disabled-password --gecos '' appuser && \
@@ -32,6 +32,8 @@ USER appuser
 # Expose port
 EXPOSE 8000
 
-# Start: použije start.sh, ktorý vždy spustí daphne (ASGI) pre WebSocket
-# Railway môže prepísať CMD cez Start Command v Settings - v tom prípade nastav: ./start.sh
+# Start: použije start.sh, ktorý podľa APP_SERVER_MODE spustí
+# - gunicorn pre HTTP (`http`)
+# - daphne pre WebSocket (`ws`)
+# - alebo kompatibilný daphne all-in-one režim (`all`, default)
 CMD ["./start.sh"]

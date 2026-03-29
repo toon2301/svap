@@ -1,4 +1,6 @@
-# ASGI server (daphne) – potrebné pre WebSocket /ws/notifications/. Nepoužívaj gunicorn.
-web: daphne -b 0.0.0.0 -p $PORT swaply.asgi:application
+# Default kompatibilný runtime. Na Railway môžeš použiť:
+# - APP_SERVER_MODE=http pre gunicorn HTTP service
+# - APP_SERVER_MODE=ws   pre daphne WebSocket service
+web: ./start.sh
 worker: celery -A swaply worker -l info
 

@@ -190,14 +190,8 @@ export function RequestsDesktop() {
   const handleRequestCompletion = async (id: number) => {
     setBusyId(id);
     try {
-      const res = await requestCompletion(id);
-      const updated = res?.data as SkillRequest;
-      if (updated && typeof updated.id === 'number') {
-        mutateItem(updated);
-        void refreshActiveTabBadge();
-      } else {
-        void load();
-      }
+      await requestCompletion(id);
+      void load();
     } catch (err: unknown) {
       toast.error(getApiErrorMessage(err, t('common.error', 'Nastala chyba.')));
       void load();
@@ -212,9 +206,6 @@ export function RequestsDesktop() {
       const res = await confirmCompletion(id);
       const updated = res?.data as SkillRequest;
       if (updated && typeof updated.id === 'number') {
-        mutateItem(updated);
-        void refreshActiveTabBadge();
-
         // Po úspešnom potvrdení (status → completed): ak je používateľ requester a ešte nemá recenziu, otvor modal
         if (updated.status === 'completed') {
           const offerId = (updated.offer_summary?.id ?? updated.offer) as unknown;
@@ -238,6 +229,7 @@ export function RequestsDesktop() {
             }
           }
         }
+        void load();
       } else {
         void load();
       }

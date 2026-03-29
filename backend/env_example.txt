@@ -12,6 +12,8 @@ REDIS_URL=redis://localhost:6379/0
 # AUTH_USER_REDIS_CACHE_TTL_SECONDS=86400
 # Optional: required when using PgBouncer transaction pooling with Django
 # DB_DISABLE_SERVER_SIDE_CURSORS=True
+# Optional: keep DB connections warm in WSGI HTTP service (default in code is 300)
+# DB_CONN_MAX_AGE=300
 # Optional: fail fast on slow Redis instead of retrying timed-out cache ops
 # CACHE_RETRY_ON_TIMEOUT=False
 # Optional: on a degraded cold miss, skip the second slow auth cache write
@@ -67,6 +69,22 @@ OFFER_IMAGE_WEBP_QUALITY=82
 # BACKEND_CALLBACK_URL=https://tvoj-backend.up.railway.app/api/oauth/google/callback/
 # Pri cross-origin OAuth backend automaticky pridá tokeny do redirect URL, aby prihlásenie fungovalo.
 #
-# WebSocket: backend musí bežať cez ASGI (daphne), nie gunicorn. V Railway Service → Settings → Start Command
-# nastav (alebo nechaj prázdne, ak používaš Procfile/nixpacks.toml):
-#   python manage.py migrate --noinput && python manage.py init_db && daphne -b 0.0.0.0 -p $PORT swaply.asgi:application
+# Split runtime pre vyšší výkon na Railway:
+# 1. HTTP service:
+#    APP_SERVER_MODE=http
+#    RUN_STARTUP_TASKS=1
+#    Start Command: ./start.sh
+# 2. WebSocket service:
+#    APP_SERVER_MODE=ws
+#    RUN_STARTUP_TASKS=0
+#    Start Command: ./start.sh
+#
+# Frontend proxy:
+#    BACKEND_ORIGIN=https://tvoj-http-backend.up.railway.app
+#    BACKEND_WS_ORIGIN=https://tvoj-ws-backend.up.railway.app
+#    NEXT_PUBLIC_BACKEND_ORIGIN=https://tvoj-http-backend.up.railway.app
+#    NEXT_PUBLIC_BACKEND_WS_ORIGIN=https://tvoj-ws-backend.up.railway.app
+#
+# Kompatibilný fallback (jeden backend service):
+#    APP_SERVER_MODE=all
+#    Start Command: ./start.sh

@@ -1,7 +1,9 @@
-# Nixpacks: vynútiť ASGI server (daphne) namiesto gunicorn, aby fungoval WebSocket /ws/notifications/
-# Bez tohto môže Railway/Nixpacks zvoliť gunicorn a WebSocket vráti 404.
+# Nixpacks: štart ide cez start.sh a výber runtime riadi APP_SERVER_MODE.
+# - APP_SERVER_MODE=all  -> kompatibilný daphne režim (HTTP + WS)
+# - APP_SERVER_MODE=http -> gunicorn pre API
+# - APP_SERVER_MODE=ws   -> daphne pre WebSockety
 [start]
-cmd = "daphne -b 0.0.0.0 -p ${PORT:-8000} swaply.asgi:application"
+cmd = "./start.sh"
 
 [phases.setup]
 aptPkgs = ["libheif-dev", "libde265-dev"]

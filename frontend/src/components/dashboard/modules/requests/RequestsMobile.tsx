@@ -219,7 +219,7 @@ export function RequestsMobile() {
       const updated = res?.data as SkillRequest;
       if (updated && typeof updated.id === 'number') {
         mutateItem(updated);
-        void refreshActiveTabBadge();
+        void load();
       } else {
         void load();
       }
@@ -238,7 +238,6 @@ export function RequestsMobile() {
       const updated = res?.data as SkillRequest;
       if (updated && typeof updated.id === 'number') {
         mutateItem(updated);
-        void refreshActiveTabBadge();
 
         // Po úspešnom potvrdení (status → completed): ak je používateľ requester a ešte nemá recenziu, otvor modal
         if (updated.status === 'completed') {
@@ -263,6 +262,7 @@ export function RequestsMobile() {
             }
           }
         }
+        void load();
       } else {
         void load();
       }

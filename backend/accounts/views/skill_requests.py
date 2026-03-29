@@ -508,12 +508,6 @@ def skill_request_detail_view(request, request_id: int):
             _skill_requests_cache_invalidate_for_user(obj.recipient)
         except Exception:
             pass
-        else:
-            # nič nemeníme, ale vrátime aktuálny stav
-            return Response(
-                SkillRequestSerializer(obj, context={"request": request}).data,
-                status=status.HTTP_200_OK,
-            )
 
         # Notifikácia pre druhú stranu (prijatie/zamietnutie)
         try:
@@ -553,10 +547,6 @@ def skill_request_detail_view(request, request_id: int):
         except Exception:
             pass
 
-            return Response(
-                SkillRequestSerializer(obj, context={"request": request}).data,
-                status=status.HTTP_200_OK,
-            )
         return Response(
             SkillRequestSerializer(obj, context={"request": request}).data,
             status=status.HTTP_200_OK,
@@ -600,6 +590,12 @@ def skill_request_request_completion_view(request, request_id: int):
         obj.status = SkillRequestStatus.COMPLETION_REQUESTED
         obj.save(update_fields=["status", "updated_at"])
 
+        try:
+            _skill_requests_cache_invalidate_for_user(obj.requester)
+            _skill_requests_cache_invalidate_for_user(obj.recipient)
+        except Exception:
+            pass
+
         return Response(
             SkillRequestSerializer(obj, context={"request": request}).data,
             status=status.HTTP_200_OK,
@@ -641,6 +637,12 @@ def skill_request_confirm_completion_view(request, request_id: int):
 
         obj.status = SkillRequestStatus.COMPLETED
         obj.save(update_fields=["status", "updated_at"])
+
+        try:
+            _skill_requests_cache_invalidate_for_user(obj.requester)
+            _skill_requests_cache_invalidate_for_user(obj.recipient)
+        except Exception:
+            pass
 
         return Response(
             SkillRequestSerializer(obj, context={"request": request}).data,

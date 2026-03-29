@@ -99,6 +99,7 @@ describe('RequestsNotificationsProvider', () => {
   beforeEach(() => {
     jest.useFakeTimers();
     jest.clearAllMocks();
+    process.env.NEXT_PUBLIC_BACKEND_WS_ORIGIN = '';
     mockAuthState = { isLoading: false, user: null };
     MockWebSocket.instances = [];
     setVisibilityState('visible');
@@ -119,6 +120,7 @@ describe('RequestsNotificationsProvider', () => {
       jest.runOnlyPendingTimers();
     });
     jest.useRealTimers();
+    process.env.NEXT_PUBLIC_BACKEND_WS_ORIGIN = '';
   });
 
   it('polls unread count only after the fresh bootstrap window expires', async () => {
@@ -191,6 +193,20 @@ describe('RequestsNotificationsProvider', () => {
     });
 
     expect(mockApiGet).toHaveBeenCalledTimes(1);
+  });
+
+  it('uses explicit websocket origin when NEXT_PUBLIC_BACKEND_WS_ORIGIN is set', async () => {
+    process.env.NEXT_PUBLIC_BACKEND_WS_ORIGIN = 'https://ws.example.com';
+
+    render(
+      <RequestsNotificationsProvider>
+        <Consumer />
+      </RequestsNotificationsProvider>,
+    );
+    await flushAsyncEffects();
+
+    expect(MockWebSocket.instances).toHaveLength(1);
+    expect(MockWebSocket.instances[0].url).toBe('wss://ws.example.com/ws/notifications/');
   });
 
   it('deduplicates unread refresh while a request is already in flight', async () => {
