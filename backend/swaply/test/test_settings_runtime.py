@@ -232,6 +232,23 @@ def test_logging_stdout_mode(monkeypatch):
     assert "console_json" in mod.LOGGING.get("handlers", {})
 
 
+def test_prod_adds_runtime_railway_public_domain_to_allowed_hosts(monkeypatch):
+    mod = load_settings_with_env(
+        monkeypatch,
+        {
+            "DEBUG": "False",
+            "SECRET_KEY": "prod-secret",
+            "ALLOWED_HOSTS": "svaply.com,www.svaply.com,api.svaply.com,stunning-inspiration-svap.up.railway.app,exemplary-tranquility-svap.up.railway.app",
+            "RAILWAY_PUBLIC_DOMAIN": "backend-http-svap.up.railway.app",
+            "EMAIL_HOST": "smtp.example.com",
+            "EMAIL_PORT": "587",
+            "EMAIL_HOST_USER": "smtp-user@example.com",
+            "EMAIL_HOST_PASSWORD": "smtp-pass",
+        },
+    )
+    assert "backend-http-svap.up.railway.app" in mod.ALLOWED_HOSTS
+
+
 def test_missing_secret_key_raises_in_prod(monkeypatch):
     # Ak nie je SECRET_KEY a DEBUG=False, settings.py by mal vyhodiť ValueError
     with pytest.raises(ValueError):

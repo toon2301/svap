@@ -99,6 +99,7 @@ describe('RequestsNotificationsProvider', () => {
   beforeEach(() => {
     jest.useFakeTimers();
     jest.clearAllMocks();
+    process.env.NEXT_PUBLIC_API_URL = '/api';
     process.env.NEXT_PUBLIC_BACKEND_WS_ORIGIN = '';
     mockAuthState = { isLoading: false, user: null };
     MockWebSocket.instances = [];
@@ -120,6 +121,7 @@ describe('RequestsNotificationsProvider', () => {
       jest.runOnlyPendingTimers();
     });
     jest.useRealTimers();
+    process.env.NEXT_PUBLIC_API_URL = '/api';
     process.env.NEXT_PUBLIC_BACKEND_WS_ORIGIN = '';
   });
 
@@ -195,7 +197,22 @@ describe('RequestsNotificationsProvider', () => {
     expect(mockApiGet).toHaveBeenCalledTimes(1);
   });
 
-  it('uses explicit websocket origin when NEXT_PUBLIC_BACKEND_WS_ORIGIN is set', async () => {
+  it('keeps websocket same-origin when api uses relative proxy paths', async () => {
+    process.env.NEXT_PUBLIC_BACKEND_WS_ORIGIN = 'https://ws.example.com';
+
+    render(
+      <RequestsNotificationsProvider>
+        <Consumer />
+      </RequestsNotificationsProvider>,
+    );
+    await flushAsyncEffects();
+
+    expect(MockWebSocket.instances).toHaveLength(1);
+    expect(MockWebSocket.instances[0].url).toBe('ws://localhost/ws/notifications/');
+  });
+
+  it('uses explicit websocket origin only when api origin is absolute', async () => {
+    process.env.NEXT_PUBLIC_API_URL = 'https://backend.example/api';
     process.env.NEXT_PUBLIC_BACKEND_WS_ORIGIN = 'https://ws.example.com';
 
     render(

@@ -31,20 +31,66 @@ _PROD_ALLOWED_HOSTS = {
     "exemplary-tranquility-svap.up.railway.app",  # backend Railway
 }
 
+
+def _collect_env_allowed_hosts() -> list[str]:
+    extra_hosts: list[str] = []
+    host_env_names = (
+        "RAILWAY_PUBLIC_DOMAIN",
+        "SITE_DOMAIN",
+    )
+    origin_env_names = (
+        "BACKEND_ORIGIN",
+        "BACKEND_WS_ORIGIN",
+        "FRONTEND_ORIGIN",
+        "FRONTEND_URL",
+        "FRONTEND_CALLBACK_URL",
+        "BACKEND_CALLBACK_URL",
+    )
+
+    for env_name in host_env_names:
+        value = (os.getenv(env_name) or "").strip()
+        if value:
+            extra_hosts.append(value)
+
+    for env_name in origin_env_names:
+        value = (os.getenv(env_name) or "").strip()
+        if not value:
+            continue
+        try:
+            parsed = urlparse(value)
+        except Exception:
+            continue
+        if parsed.hostname:
+            extra_hosts.append(parsed.hostname)
+
+    deduped: list[str] = []
+    for host in extra_hosts:
+        cleaned = host.strip().strip("/")
+        if not cleaned or cleaned in deduped:
+            continue
+        deduped.append(cleaned)
+    return deduped
+
 raw_allowed_hosts = os.getenv("ALLOWED_HOSTS")
 if not raw_allowed_hosts:
     raise ValueError("ALLOWED_HOSTS must be set in production")
 
-ALLOWED_HOSTS = [h.strip() for h in raw_allowed_hosts.split(",") if h and h.strip()]
-for h in ALLOWED_HOSTS:
+configured_allowed_hosts = [h.strip() for h in raw_allowed_hosts.split(",") if h and h.strip()]
+for h in configured_allowed_hosts:
     if "*" in h or h.startswith("."):
         raise ValueError(f"Wildcard hosts are not allowed in ALLOWED_HOSTS: {h!r}")
 
-if set(ALLOWED_HOSTS) != _PROD_ALLOWED_HOSTS:
+missing_required_hosts = sorted(_PROD_ALLOWED_HOSTS.difference(configured_allowed_hosts))
+if missing_required_hosts:
     raise ValueError(
-        "Invalid ALLOWED_HOSTS for production. Must match exactly: "
-        + ", ".join(sorted(_PROD_ALLOWED_HOSTS))
+        "Invalid ALLOWED_HOSTS for production. Missing required hosts: "
+        + ", ".join(missing_required_hosts)
     )
+
+ALLOWED_HOSTS = list(configured_allowed_hosts)
+for host in _collect_env_allowed_hosts():
+    if host not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append(host)
 
 # Database – preferuj DATABASE_URL, inak fallback na sqlite
 db_url = os.getenv("DATABASE_URL")

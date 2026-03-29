@@ -125,13 +125,16 @@ function getBackendOrigin(): string {
 }
 
 function getWebSocketOrigin(): string {
+  if (typeof window !== 'undefined') {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+    if (!apiUrl || apiUrl.startsWith('/')) {
+      return window.location.origin.replace(/\/+$/, '');
+    }
+  }
+
   const explicitWsOrigin = process.env.NEXT_PUBLIC_BACKEND_WS_ORIGIN;
   if (explicitWsOrigin) return explicitWsOrigin.replace(/\/+$/, '');
 
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-  if (typeof window !== 'undefined' && apiUrl && apiUrl.startsWith('/')) {
-    return window.location.origin;
-  }
   return getBackendOrigin();
 }
 
