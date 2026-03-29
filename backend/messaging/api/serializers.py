@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+from django.core.files.storage import default_storage
 from django.contrib.auth import get_user_model
 from django.db.models import QuerySet
 from rest_framework import serializers
 
+from accounts.name_normalization import get_canonical_display_name
 from ..models import Conversation, ConversationParticipant, Message
 
 User = get_user_model()
@@ -32,6 +34,16 @@ def _avatar_url(request, user) -> str | None:
     return None
 
 
+def _avatar_name_url(request, avatar_name: str | None) -> str | None:
+    if not avatar_name:
+        return None
+    try:
+        url = default_storage.url(avatar_name)
+        return request.build_absolute_uri(url) if request else url
+    except Exception:
+        return None
+
+
 class ConversationListItemSerializer(serializers.ModelSerializer):
     other_user = serializers.SerializerMethodField()
     last_message_preview = serializers.SerializerMethodField()
@@ -56,6 +68,24 @@ class ConversationListItemSerializer(serializers.ModelSerializer):
 
     def get_other_user(self, obj: Conversation):
         request = self.context.get("request")
+        annotated_other_user_id = getattr(obj, "other_user_id", None)
+        if annotated_other_user_id:
+            return {
+                "id": annotated_other_user_id,
+                "display_name": get_canonical_display_name(
+                    user_type=getattr(obj, "other_user_type", "") or "",
+                    first_name=getattr(obj, "other_user_first_name", "") or "",
+                    last_name=getattr(obj, "other_user_last_name", "") or "",
+                    company_name=getattr(obj, "other_user_company_name", "") or "",
+                    username=getattr(obj, "other_user_username", "") or "",
+                ),
+                "slug": getattr(obj, "other_user_slug", None),
+                "user_type": getattr(obj, "other_user_type", None),
+                "avatar_url": _avatar_name_url(
+                    request, getattr(obj, "other_user_avatar_name", None)
+                ),
+            }
+
         me = request.user if request else None
         participants: QuerySet[ConversationParticipant] | list[ConversationParticipant] = getattr(
             obj, "_prefetched_participants", None

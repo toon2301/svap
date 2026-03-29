@@ -103,6 +103,26 @@ class TestMessagingApi(APITestCase):
         participant = ConversationParticipant.objects.get(conversation_id=convo_id, user=self.u1)
         assert participant.last_read_at is not None
 
+    def test_conversation_list_returns_other_user_from_annotations(self):
+        self.client.force_authenticate(user=self.u1)
+        open_url = reverse("accounts:messaging_open")
+        opened = self.client.post(open_url, {"target_user_id": self.u2.id}, format="json")
+        convo_id = int(opened.data["id"])
+
+        self.client.force_authenticate(user=self.u2)
+        send_url = reverse("accounts:messaging_send_message", kwargs={"conversation_id": convo_id})
+        assert self.client.post(send_url, {"text": "Ahoj"}, format="json").status_code == status.HTTP_201_CREATED
+
+        self.client.force_authenticate(user=self.u1)
+        list_url = reverse("accounts:messaging_list_conversations")
+        response = self.client.get(list_url)
+
+        assert response.status_code == status.HTTP_200_OK
+        results = response.data.get("results", [])
+        assert len(results) == 1
+        assert results[0]["other_user"]["id"] == self.u2.id
+        assert results[0]["other_user"]["display_name"]
+
     def test_conversation_list_exposes_server_timing_breakdown(self):
         self.client.force_authenticate(user=self.u1)
         open_url = reverse("accounts:messaging_open")

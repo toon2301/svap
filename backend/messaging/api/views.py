@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from django.contrib.auth import get_user_model
 from django.db import connections
-from django.db.models import Prefetch
 from django.db.models import BooleanField, Case, F, OuterRef, Subquery, Value, When
 from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404
@@ -108,14 +107,6 @@ def _conversation_for_user_or_404(*, conversation_id: int, user) -> Conversation
     )
 
 
-def _conversation_participants_prefetch() -> Prefetch:
-    return Prefetch(
-        "participants",
-        queryset=ConversationParticipant.objects.select_related("user"),
-        to_attr="_prefetched_participants",
-    )
-
-
 def _conversation_list_queryset_for_user(user):
     """
     Conversations where the user is a participant, annotated for MVP UI:
@@ -131,6 +122,9 @@ def _conversation_list_queryset_for_user(user):
     last_read_qs = ConversationParticipant.objects.filter(
         conversation_id=OuterRef("pk"), user_id=user.id
     ).values("last_read_at")[:1]
+    other_participant_qs = ConversationParticipant.objects.filter(
+        conversation_id=OuterRef("pk")
+    ).exclude(user_id=user.id)
 
     qs = (
         Conversation.objects.filter(participants__user=user)
@@ -144,6 +138,16 @@ def _conversation_list_queryset_for_user(user):
                 output_field=BooleanField(),
             ),
             last_read_at=Subquery(last_read_qs),
+            other_user_id=Subquery(other_participant_qs.values("user_id")[:1]),
+            other_user_first_name=Subquery(other_participant_qs.values("user__first_name")[:1]),
+            other_user_last_name=Subquery(other_participant_qs.values("user__last_name")[:1]),
+            other_user_company_name=Subquery(
+                other_participant_qs.values("user__company_name")[:1]
+            ),
+            other_user_username=Subquery(other_participant_qs.values("user__username")[:1]),
+            other_user_slug=Subquery(other_participant_qs.values("user__slug")[:1]),
+            other_user_type=Subquery(other_participant_qs.values("user__user_type")[:1]),
+            other_user_avatar_name=Subquery(other_participant_qs.values("user__avatar")[:1]),
         )
         .annotate(
             has_unread=Case(
@@ -237,7 +241,6 @@ class OpenConversationView(APIView):
         convo = (
             _conversation_list_queryset_for_user(request.user)
             .filter(id=result.conversation.id)
-            .prefetch_related(_conversation_participants_prefetch())
             .first()
         ) or result.conversation
         data = ConversationListItemSerializer(convo, context={"request": request}).data
@@ -253,9 +256,7 @@ class ConversationListView(ListAPIView):
     def get_queryset(self):
         qs = _conversation_list_queryset_for_user(self.request.user)
         # Ordering: newest activity first
-        return qs.order_by("-last_message_at", "-updated_at", "-id").prefetch_related(
-            _conversation_participants_prefetch()
-        )
+        return qs.order_by("-last_message_at", "-updated_at", "-id")
 
     def list(self, request, *args, **kwargs):
         conn = connections["default"]

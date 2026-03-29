@@ -31,6 +31,11 @@ const STATUS_PARAMS: Record<StatusTab, string> = {
   cancelled: 'cancelled,rejected',
 };
 
+function totalActiveCollaborations(res: SkillRequestsResponse): number {
+  const sentLen = res.sent.filter((x) => x.status !== 'cancelled').length;
+  return res.received.length + sentLen;
+}
+
 export function RequestsMobile() {
   const { t } = useLanguage();
   const { user } = useAuth();
@@ -39,6 +44,7 @@ export function RequestsMobile() {
   const [statusTab, setStatusTab] = useState<StatusTab>('pending');
   const [tab, setTab] = useState<Tab>('received');
   const [data, setData] = useState<SkillRequestsResponse>({ received: [], sent: [] });
+  const [activeTabTotal, setActiveTabTotal] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [busyId, setBusyId] = useState<number | null>(null);
   const [selected, setSelected] = useState<SkillRequest | null>(null);
@@ -61,12 +67,31 @@ export function RequestsMobile() {
     setIsLoading(true);
     try {
       const statusQuery = STATUS_PARAMS[statusTab];
-      const res = await fetchSkillRequests(statusQuery);
-      setData(res);
+      if (statusTab === 'active') {
+        const res = await fetchSkillRequests(statusQuery);
+        setData(res);
+        setActiveTabTotal(totalActiveCollaborations(res));
+      } else {
+        const [res, activeRes] = await Promise.all([
+          fetchSkillRequests(statusQuery),
+          fetchSkillRequests(STATUS_PARAMS.active),
+        ]);
+        setData(res);
+        setActiveTabTotal(totalActiveCollaborations(activeRes));
+      }
     } finally {
       setIsLoading(false);
     }
   }, [statusTab]);
+
+  const refreshActiveTabBadge = useCallback(async () => {
+    try {
+      const activeRes = await fetchSkillRequests(STATUS_PARAMS.active);
+      setActiveTabTotal(totalActiveCollaborations(activeRes));
+    } catch {
+      /* odznak môže ostať z predchádzajúceho načítania */
+    }
+  }, []);
 
   useEffect(() => {
     void load();
@@ -151,6 +176,8 @@ export function RequestsMobile() {
         if (action === 'cancel' || action === 'hide') {
           setSelected((prev) => (prev?.id === id ? null : prev));
           void load();
+        } else {
+          void refreshActiveTabBadge();
         }
       } else {
         void load();
@@ -192,6 +219,7 @@ export function RequestsMobile() {
       const updated = res?.data as SkillRequest;
       if (updated && typeof updated.id === 'number') {
         mutateItem(updated);
+        void refreshActiveTabBadge();
       } else {
         void load();
       }
@@ -210,6 +238,7 @@ export function RequestsMobile() {
       const updated = res?.data as SkillRequest;
       if (updated && typeof updated.id === 'number') {
         mutateItem(updated);
+        void refreshActiveTabBadge();
 
         // Po úspešnom potvrdení (status → completed): ak je používateľ requester a ešte nemá recenziu, otvor modal
         if (updated.status === 'completed') {
@@ -266,18 +295,30 @@ export function RequestsMobile() {
               aria-selected={statusTab === key}
               onClick={() => setStatusTab(key)}
               className={[
-                'relative flex-1 py-2.5 px-1 transition-colors flex items-center justify-center min-w-0',
+                'relative flex-1 py-2.5 px-1 transition-colors flex items-center justify-center gap-1 min-w-0',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60',
                 statusTab === key
                   ? 'bg-purple-50 text-purple-700 dark:bg-purple-900/40 dark:text-purple-200'
                   : 'bg-white text-gray-600 hover:bg-gray-50 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800',
               ].join(' ')}
             >
-              <span className="text-[11px] font-semibold truncate">
-                {key === 'pending' && t('requests.tabPending', 'Čakajúce')}
-                {key === 'active' && t('requests.tabActive', 'Aktívne')}
-                {key === 'completed' && t('requests.tabCompleted', 'Dokončené')}
-                {key === 'cancelled' && t('requests.tabCancelled', 'Zrušené')}
+              <span className="text-[11px] font-semibold inline-flex items-center justify-center gap-1 max-w-full min-w-0">
+                {key === 'pending' && <span className="truncate">{t('requests.tabPending', 'Čakajúce')}</span>}
+                {key === 'active' && <span className="truncate">{t('requests.tabActive', 'Aktívne')}</span>}
+                {key === 'completed' && <span className="truncate">{t('requests.tabCompleted', 'Dokončené')}</span>}
+                {key === 'cancelled' && <span className="truncate">{t('requests.tabCancelled', 'Zrušené')}</span>}
+                {key === 'active' && activeTabTotal != null && activeTabTotal > 0 ? (
+                  <span
+                    className={[
+                      'shrink-0 min-w-6 px-1.5 py-0.5 rounded-full text-[10px] font-bold border tabular-nums',
+                      statusTab === key
+                        ? 'bg-white border-purple-200 text-purple-700 dark:bg-purple-800/50 dark:border-purple-600 dark:text-purple-200'
+                        : 'bg-white border-gray-200 text-gray-700 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200',
+                    ].join(' ')}
+                  >
+                    {activeTabTotal > 99 ? '99+' : activeTabTotal}
+                  </span>
+                ) : null}
               </span>
             </button>
           ))}
