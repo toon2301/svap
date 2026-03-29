@@ -18,6 +18,7 @@ import { RequestRow } from './RequestRow';
 import { RequestsSkeletonList } from './ui/RequestsSkeletonList';
 import { AddReviewModal } from '../reviews/AddReviewModal';
 import { api, endpoints } from '@/lib/api';
+import { useRequestUnreadAutoRead } from './useRequestUnreadAutoRead';
 
 type Tab = 'received' | 'sent';
 type StatusTab = 'pending' | 'active' | 'completed' | 'cancelled';
@@ -92,14 +93,13 @@ export function RequestsDesktop() {
     void load();
   }, [load]);
 
-  // Keď si v Žiadostiach a badge sa zobrazí (nové žiadosti), po krátkom čase ho označíme ako prečítané.
-  useEffect(() => {
-    if (unreadCount <= 0) return;
-    const t = window.setTimeout(() => {
-      markAllRead();
-    }, 2500);
-    return () => window.clearTimeout(t);
-  }, [unreadCount, markAllRead]);
+  useRequestUnreadAutoRead({
+    isLoading,
+    unreadCount,
+    tab,
+    statusTab,
+    markAllRead,
+  });
 
   const items = useMemo(() => {
     const arr =

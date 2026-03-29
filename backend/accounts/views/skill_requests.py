@@ -3,6 +3,7 @@ Skill request (Žiadosti) API views.
 """
 
 import json
+import logging
 import os
 from time import perf_counter
 from rest_framework import status
@@ -33,6 +34,8 @@ from typing import Optional
 
 from ..realtime import notify_user
 from .notifications import _unread_cache_key, UNREAD_COUNT_CACHE_TTL_SECONDS
+
+logger = logging.getLogger(__name__)
 
 MAX_SKILL_REQUESTS = 100
 SKILL_REQUESTS_CACHE_TTL_SECONDS = int(os.getenv("SKILL_REQUESTS_CACHE_TTL_SECONDS", "120") or "120")
@@ -314,8 +317,17 @@ def skill_requests_view(request):
         )
         _notify_unread_count(recipient.id, notif)
     except Exception:
-        # fail-open: žiadosť je dôležitejšia ako notifikácia
-        pass
+        # Fail-open: samotná žiadosť je dôležitejšia ako notifikácia,
+        # ale produkčne potrebujeme vidieť, keď badge/realtime vetva zlyhá.
+        logger.exception(
+            "Skill request notification dispatch failed",
+            extra={
+                "requester_id": getattr(request.user, "id", None),
+                "recipient_id": getattr(recipient, "id", None),
+                "offer_id": getattr(offer, "id", None),
+                "skill_request_id": getattr(obj, "id", None),
+            },
+        )
 
     # Invalidácia cache pre oboch účastníkov (rýchle, bez DB)
     try:
@@ -506,44 +518,6 @@ def skill_request_detail_view(request, request_id: int):
         try:
             _skill_requests_cache_invalidate_for_user(obj.requester)
             _skill_requests_cache_invalidate_for_user(obj.recipient)
-        except Exception:
-            pass
-
-        # Notifikácia pre druhú stranu (prijatie/zamietnutie)
-        try:
-            if obj.status == SkillRequestStatus.ACCEPTED:
-                notif_type = NotificationType.SKILL_REQUEST_ACCEPTED
-                title = "Žiadosť prijatá"
-                body = f"{obj.recipient.display_name} prijal/a tvoju žiadosť."
-                notif_user = obj.requester
-            elif obj.status == SkillRequestStatus.REJECTED:
-                notif_type = NotificationType.SKILL_REQUEST_REJECTED
-                title = "Žiadosť zamietnutá"
-                body = f"{obj.recipient.display_name} zamietol/a tvoju žiadosť."
-                notif_user = obj.requester
-            else:
-                notif_type = NotificationType.SKILL_REQUEST_CANCELLED
-                title = "Žiadosť zrušená"
-                body = f"{obj.requester.display_name} zrušil/a žiadosť."
-                notif_user = obj.recipient
-
-            notif = Notification.objects.create(
-                user=notif_user,
-                type=notif_type,
-                title=title,
-                body=body,
-                data={
-                    "skill_request_id": obj.id,
-                    "offer_id": obj.offer_id,
-                },
-                skill_request=obj,
-            )
-            # Badge aktualizujeme len pre SKILL_REQUEST typ (počet „neprečítaných žiadostí“)
-            if notif_user and notif_user.id:
-                _notify_unread_count(
-                    notif_user.id,
-                    notif if notif.type == NotificationType.SKILL_REQUEST else None,
-                )
         except Exception:
             pass
 

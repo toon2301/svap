@@ -1,11 +1,12 @@
 import pytest
+from unittest.mock import patch
 from django.contrib.auth import get_user_model
 from rest_framework.test import APITestCase
 from rest_framework import status
 from factory import Faker
 from factory.django import DjangoModelFactory
 
-from accounts.models import UserType, OfferedSkill
+from accounts.models import UserType, OfferedSkill, Notification, NotificationType, SkillRequest
 
 User = get_user_model()
 
@@ -110,3 +111,39 @@ class TestSkillRequestsAndNotifications(APITestCase):
             f"{self.base}/notifications/unread-count/", {"type": "skill_request"}
         )
         self.assertEqual(c.data.get("count"), 0)
+
+    def test_accept_request_does_not_create_unused_status_notifications(self):
+        self.client.force_authenticate(user=self.requester)
+        created = self.client.post(
+            f"{self.base}/skill-requests/", {"offer_id": self.offer.id}, format="json"
+        )
+        req_id = created.data["id"]
+
+        self.assertEqual(Notification.objects.filter(skill_request_id=req_id).count(), 1)
+        self.assertTrue(Notification.objects.filter(type=NotificationType.SKILL_REQUEST).exists())
+
+        self.client.force_authenticate(user=self.owner)
+        upd = self.client.patch(
+            f"{self.base}/skill-requests/{req_id}/", {"action": "accept"}, format="json"
+        )
+
+        self.assertEqual(upd.status_code, status.HTTP_200_OK)
+        self.assertEqual(Notification.objects.filter(skill_request_id=req_id).count(), 1)
+        self.assertFalse(Notification.objects.filter(type=NotificationType.SKILL_REQUEST_ACCEPTED).exists())
+        self.assertFalse(Notification.objects.filter(type=NotificationType.SKILL_REQUEST_REJECTED).exists())
+        self.assertFalse(Notification.objects.filter(type=NotificationType.SKILL_REQUEST_CANCELLED).exists())
+
+    def test_create_request_logs_notification_failure_but_preserves_request(self):
+        self.client.force_authenticate(user=self.requester)
+
+        with patch("accounts.views.skill_requests.Notification.objects.create", side_effect=RuntimeError("boom")), patch(
+            "accounts.views.skill_requests.logger.exception"
+        ) as mocked_log:
+            response = self.client.post(
+                f"{self.base}/skill-requests/", {"offer_id": self.offer.id}, format="json"
+            )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(SkillRequest.objects.count(), 1)
+        self.assertEqual(Notification.objects.count(), 0)
+        mocked_log.assert_called_once()

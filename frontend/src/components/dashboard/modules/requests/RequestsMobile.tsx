@@ -20,6 +20,7 @@ import { RequestMobileCard } from './RequestMobileCard';
 import { RequestDetailModal } from './RequestDetailModal';
 import { AddReviewModal } from '../reviews/AddReviewModal';
 import { api, endpoints } from '@/lib/api';
+import { useRequestUnreadAutoRead } from './useRequestUnreadAutoRead';
 
 type Tab = 'received' | 'sent';
 type StatusTab = 'pending' | 'active' | 'completed' | 'cancelled';
@@ -97,13 +98,13 @@ export function RequestsMobile() {
     void load();
   }, [load]);
 
-  useEffect(() => {
-    if (unreadCount <= 0) return;
-    const tmr = window.setTimeout(() => {
-      markAllRead();
-    }, 2500);
-    return () => window.clearTimeout(tmr);
-  }, [unreadCount, markAllRead]);
+  useRequestUnreadAutoRead({
+    isLoading,
+    unreadCount,
+    tab,
+    statusTab,
+    markAllRead,
+  });
 
   // Obnoviť z hornej lišty (custom event z MobileTopBar)
   useEffect(() => {
