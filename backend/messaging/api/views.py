@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from django.contrib.auth import get_user_model
 from django.db import connections
+from django.db.models import Prefetch
 from django.db.models import BooleanField, Case, F, OuterRef, Subquery, Value, When
 from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404
@@ -10,9 +11,11 @@ from time import perf_counter
 from rest_framework import status
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.exceptions import NotFound
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.generics import ListAPIView
+from rest_framework.utils.urls import remove_query_param, replace_query_param
 
 from swaply.rate_limiting import (
     messaging_mark_read_rate_limit,
@@ -105,6 +108,14 @@ def _conversation_for_user_or_404(*, conversation_id: int, user) -> Conversation
     )
 
 
+def _conversation_participants_prefetch() -> Prefetch:
+    return Prefetch(
+        "participants",
+        queryset=ConversationParticipant.objects.select_related("user"),
+        to_attr="_prefetched_participants",
+    )
+
+
 def _conversation_list_queryset_for_user(user):
     """
     Conversations where the user is a participant, annotated for MVP UI:
@@ -150,6 +161,61 @@ def _conversation_list_queryset_for_user(user):
     return qs
 
 
+class ConversationListPagination(PageNumberPagination):
+    page_size = 20
+    page_size_query_param = "page_size"
+    max_page_size = 100
+
+    def paginate_queryset(self, queryset, request, view=None):
+        self.request = request
+        self.page_size_value = self.get_page_size(request) or self.page_size
+        page_number = request.query_params.get(self.page_query_param, 1)
+
+        try:
+            self.page_number = int(page_number)
+        except (TypeError, ValueError):
+            raise NotFound("Invalid page.")
+
+        if self.page_number < 1:
+            raise NotFound("Invalid page.")
+
+        offset = (self.page_number - 1) * self.page_size_value
+        limit = offset + self.page_size_value + 1
+        items = list(queryset[offset:limit])
+
+        self.has_next = len(items) > self.page_size_value
+        self.has_previous = self.page_number > 1
+
+        if self.has_next:
+            items = items[: self.page_size_value]
+
+        return items
+
+    def get_next_link(self):
+        if not getattr(self, "has_next", False):
+            return None
+        url = self.request.build_absolute_uri()
+        return replace_query_param(url, self.page_query_param, self.page_number + 1)
+
+    def get_previous_link(self):
+        if not getattr(self, "has_previous", False):
+            return None
+
+        url = self.request.build_absolute_uri()
+        if self.page_number <= 2:
+            return remove_query_param(url, self.page_query_param)
+        return replace_query_param(url, self.page_query_param, self.page_number - 1)
+
+    def get_paginated_response(self, data):
+        return Response(
+            {
+                "next": self.get_next_link(),
+                "previous": self.get_previous_link(),
+                "results": data,
+            }
+        )
+
+
 class OpenConversationView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -171,7 +237,7 @@ class OpenConversationView(APIView):
         convo = (
             _conversation_list_queryset_for_user(request.user)
             .filter(id=result.conversation.id)
-            .prefetch_related("participants__user")
+            .prefetch_related(_conversation_participants_prefetch())
             .first()
         ) or result.conversation
         data = ConversationListItemSerializer(convo, context={"request": request}).data
@@ -182,12 +248,13 @@ class OpenConversationView(APIView):
 class ConversationListView(ListAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = ConversationListItemSerializer
+    pagination_class = ConversationListPagination
 
     def get_queryset(self):
         qs = _conversation_list_queryset_for_user(self.request.user)
         # Ordering: newest activity first
         return qs.order_by("-last_message_at", "-updated_at", "-id").prefetch_related(
-            "participants__user"
+            _conversation_participants_prefetch()
         )
 
     def list(self, request, *args, **kwargs):
