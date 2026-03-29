@@ -121,6 +121,10 @@ class TestMessagingApi(APITestCase):
         server_timing = response.headers.get("Server-Timing", "")
         assert "conversations_db_connect" in server_timing
         assert "conversations_sql" in server_timing
+        assert "conversations_sql_count" in server_timing
+        assert "conversations_sql_page" in server_timing
+        assert "conversations_sql_prefetch_participants" in server_timing
+        assert "conversations_sql_prefetch_users" in server_timing
         assert "conversations_serialize" in server_timing
         assert "conversations_total" in server_timing
 

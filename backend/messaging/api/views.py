@@ -47,6 +47,57 @@ def _record_messaging_timing(request, **entries) -> None:
         pass
 
 
+def _classify_conversations_sql(sql: str) -> str:
+    normalized = " ".join(str(sql).lower().split())
+
+    if (
+        'select count(*) from (select distinct "messaging_conversation"' in normalized
+        and 'from "messaging_conversation"' in normalized
+    ):
+        return "count"
+
+    if (
+        'from "messaging_conversation"' in normalized
+        and 'order by "messaging_conversation"."last_message_at" desc' in normalized
+    ):
+        return "page"
+
+    if (
+        'from "messaging_conversationparticipant"' in normalized
+        and 'where "messaging_conversationparticipant"."conversation_id" in' in normalized
+    ):
+        return "prefetch_participants"
+
+    if (
+        'from "accounts_user"' in normalized
+        and 'where "accounts_user"."id" in' in normalized
+    ):
+        return "prefetch_users"
+
+    return "other"
+
+
+class _ConversationsQueryTimingCollector:
+    def __init__(self) -> None:
+        self.timings = {
+            "count": 0.0,
+            "page": 0.0,
+            "prefetch_participants": 0.0,
+            "prefetch_users": 0.0,
+            "other": 0.0,
+        }
+
+    def __call__(self, execute, sql, params, many, context):
+        t0 = perf_counter()
+        try:
+            return execute(sql, params, many, context)
+        finally:
+            bucket = _classify_conversations_sql(sql)
+            self.timings[bucket] = self.timings.get(bucket, 0.0) + (
+                (perf_counter() - t0) * 1000.0
+            )
+
+
 def _conversation_for_user_or_404(*, conversation_id: int, user) -> Conversation:
     return get_object_or_404(
         Conversation.objects.filter(participants__user=user).distinct(),
@@ -158,10 +209,12 @@ class ConversationListView(ListAPIView):
         db_connect_ms = (perf_counter() - t_conn0) * 1000.0
 
         queryset = self.filter_queryset(self.get_queryset())
+        query_collector = _ConversationsQueryTimingCollector()
 
         t_sql0 = perf_counter()
-        page = self.paginate_queryset(queryset)
-        items = page if page is not None else list(queryset)
+        with conn.execute_wrapper(query_collector):
+            page = self.paginate_queryset(queryset)
+            items = page if page is not None else list(queryset)
         conversations_sql_ms = (perf_counter() - t_sql0) * 1000.0
 
         t_ser0 = perf_counter()
@@ -177,6 +230,15 @@ class ConversationListView(ListAPIView):
             request,
             conversations_db_connect=db_connect_ms,
             conversations_sql=conversations_sql_ms,
+            conversations_sql_count=query_collector.timings.get("count", 0.0),
+            conversations_sql_page=query_collector.timings.get("page", 0.0),
+            conversations_sql_prefetch_participants=query_collector.timings.get(
+                "prefetch_participants", 0.0
+            ),
+            conversations_sql_prefetch_users=query_collector.timings.get(
+                "prefetch_users", 0.0
+            ),
+            conversations_sql_other=query_collector.timings.get("other", 0.0),
             conversations_db=db_connect_ms + conversations_sql_ms,
             conversations_serialize=conversations_serialize_ms,
             conversations_total=conversations_total_ms,
