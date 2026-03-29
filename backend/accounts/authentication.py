@@ -415,28 +415,42 @@ class SwaplyJWTAuthentication(JWTAuthentication):
 
             cached_state = None
             cache_get_ms = 0.0
+            cache_hit = False
             if _USER_REDIS_TTL_SECONDS > 0:
                 t_cache0 = time.perf_counter()
                 try:
                     cached_state = _parse_cached_auth_state(
                         cache.get(_redis_user_cache_key(int(user_id)))
                     )
+                    cache_hit = cached_state is not None
                 except Exception:
                     cached_state = None
+                    cache_hit = False
                 finally:
                     cache_get_ms = (time.perf_counter() - t_cache0) * 1000.0
 
+            db_connect_ms = 0.0
+            db_query_ms = 0.0
             db_get_ms = 0.0
             cache_set_ms = 0.0
+            cache_set_skipped = False
             if cached_state is not None and _AUTH_LAZY_USER_ENABLED:
                 if not cached_state["is_active"]:
                     invalidate_user_auth_cache(int(user_id))
                     raise InvalidToken("User is inactive")
                 user = _build_lazy_auth_user(User, cached_state)
             else:
-                t_db0 = time.perf_counter()
+                t_db_connect0 = time.perf_counter()
+                try:
+                    conn.ensure_connection()
+                except Exception:
+                    pass
+                db_connect_ms = (time.perf_counter() - t_db_connect0) * 1000.0
+
+                t_db_query0 = time.perf_counter()
                 user = User.objects.get(**{self.user_id_field: user_id})
-                db_get_ms = (time.perf_counter() - t_db0) * 1000.0
+                db_query_ms = (time.perf_counter() - t_db_query0) * 1000.0
+                db_get_ms = db_connect_ms + db_query_ms
 
                 if not user.is_active:
                     invalidate_user_auth_cache(int(user_id))
@@ -461,6 +475,7 @@ class SwaplyJWTAuthentication(JWTAuthentication):
                             time.perf_counter() - t_cache_set0
                         ) * 1000.0
                 elif _USER_REDIS_TTL_SECONDS > 0:
+                    cache_set_skipped = True
                     logger.debug(
                         "Skipping auth user cache set after slow cache get for user_id=%s (%.1f ms)",
                         user_id,
@@ -475,8 +490,13 @@ class SwaplyJWTAuthentication(JWTAuthentication):
                         st = {}
                     st["auth_blacklist"] = (t_bl1 - t_bl0) * 1000.0
                     st["auth_user_cache_get"] = cache_get_ms
+                    st["auth_user_cache_hit"] = 1.0 if cache_hit else 0.0
+                    st["auth_user_cache_miss"] = 0.0 if cache_hit else 1.0
+                    st["auth_user_db_connect"] = db_connect_ms
+                    st["auth_user_db_query"] = db_query_ms
                     st["auth_user_db_get"] = db_get_ms
                     st["auth_user_cache_set"] = cache_set_ms
+                    st["auth_user_cache_set_skipped"] = 1.0 if cache_set_skipped else 0.0
                     st["auth_user_db"] = db_get_ms
                     st["db_conn_new"] = 0.1 if conn_was_none else 0.0
                     base_req._server_timing = st
