@@ -16,6 +16,7 @@ from rest_framework.views import APIView
 from rest_framework.generics import ListAPIView
 from rest_framework.utils.urls import remove_query_param, replace_query_param
 
+from accounts.realtime import notify_user
 from swaply.rate_limiting import (
     messaging_mark_read_rate_limit,
     messaging_open_rate_limit,
@@ -353,6 +354,22 @@ class SendMessageView(APIView):
         except NotParticipant:
             # Do not leak existence; treat as not found
             return Response(status=status.HTTP_404_NOT_FOUND)
+
+        participant_ids = list(
+            ConversationParticipant.objects.filter(conversation_id=convo.id)
+            .exclude(user_id=request.user.id)
+            .values_list("user_id", flat=True)
+        )
+
+        event = {
+            "type": "messaging_message",
+            "conversation_id": convo.id,
+            "message_id": result.message.id,
+            "sender_id": request.user.id,
+            "created_at": result.message.created_at.isoformat(),
+        }
+        for participant_id in participant_ids:
+            notify_user(participant_id, event)
 
         return Response(
             MessageSerializer(result.message, context={"request": request}).data,

@@ -11,7 +11,10 @@ import {
   markConversationRead,
   sendMessage,
 } from './messagingApi';
-import { MESSAGING_CONVERSATIONS_REFRESH_EVENT } from './messagesEvents';
+import {
+  MESSAGING_CONVERSATIONS_REFRESH_EVENT,
+  MESSAGING_REALTIME_MESSAGE_EVENT,
+} from './messagesEvents';
 
 jest.mock('react-hot-toast', () => ({
   __esModule: true,
@@ -99,7 +102,7 @@ describe('ConversationDetail', () => {
     const input = screen.getByRole('textbox');
     fireEvent.change(input, { target: { value: 'Ahoj' } });
 
-    const sendButton = screen.getByRole('button');
+    const sendButton = screen.getByRole('button', { name: 'Odoslať' });
     fireEvent.click(sendButton);
 
     await waitFor(() => {
@@ -166,7 +169,7 @@ describe('ConversationDetail', () => {
 
     await waitFor(() => {
       expect(listMessages).toHaveBeenCalledTimes(1);
-      expect(screen.getByText('Ty:Moja sprava')).toBeInTheDocument();
+      expect(screen.getByText('Moja sprava')).toBeInTheDocument();
     });
 
     expect(markConversationRead).not.toHaveBeenCalled();
@@ -179,6 +182,73 @@ describe('ConversationDetail', () => {
     await waitFor(() => {
       expect(listMessages).toHaveBeenCalledTimes(2);
       expect(screen.getByText('Nova odpoved')).toBeInTheDocument();
+      expect(markConversationRead).toHaveBeenCalledWith(9);
+      expect(conversationsRefreshSpy).toHaveBeenCalledTimes(1);
+    });
+
+    window.removeEventListener(MESSAGING_CONVERSATIONS_REFRESH_EVENT, conversationsRefreshSpy);
+  });
+
+  it('refreshes immediately when a realtime event arrives for the open conversation', async () => {
+    const conversationsRefreshSpy = jest.fn();
+    window.addEventListener(MESSAGING_CONVERSATIONS_REFRESH_EVENT, conversationsRefreshSpy);
+
+    (listMessages as jest.Mock)
+      .mockResolvedValueOnce([
+        {
+          id: 1,
+          conversation: 9,
+          sender: { id: 1, display_name: 'Me' },
+          text: 'Moja sprava',
+          created_at: '2026-03-27T10:00:00Z',
+          edited_at: null,
+          is_deleted: false,
+        },
+      ])
+      .mockResolvedValueOnce([
+        {
+          id: 2,
+          conversation: 9,
+          sender: { id: 77, display_name: 'Tester' },
+          text: 'Realtime odpoved',
+          created_at: '2026-03-27T10:01:00Z',
+          edited_at: null,
+          is_deleted: false,
+        },
+        {
+          id: 1,
+          conversation: 9,
+          sender: { id: 1, display_name: 'Me' },
+          text: 'Moja sprava',
+          created_at: '2026-03-27T10:00:00Z',
+          edited_at: null,
+          is_deleted: false,
+        },
+      ]);
+
+    render(<ConversationDetail conversationId={9} currentUserId={1} />);
+
+    await waitFor(() => {
+      expect(listMessages).toHaveBeenCalledTimes(1);
+      expect(screen.getByText('Moja sprava')).toBeInTheDocument();
+    });
+
+    act(() => {
+      window.dispatchEvent(
+        new CustomEvent(MESSAGING_REALTIME_MESSAGE_EVENT, {
+          detail: {
+            conversationId: 9,
+            messageId: 2,
+            senderId: 77,
+            createdAt: '2026-03-27T10:01:00Z',
+          },
+        }),
+      );
+    });
+
+    await waitFor(() => {
+      expect(listMessages).toHaveBeenCalledTimes(2);
+      expect(screen.getByText('Realtime odpoved')).toBeInTheDocument();
       expect(markConversationRead).toHaveBeenCalledWith(9);
       expect(conversationsRefreshSpy).toHaveBeenCalledTimes(1);
     });

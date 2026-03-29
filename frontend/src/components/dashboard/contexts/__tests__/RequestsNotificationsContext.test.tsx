@@ -2,6 +2,7 @@ import React from 'react';
 import { act } from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import { RequestsNotificationsProvider, useRequestsNotifications } from '../RequestsNotificationsContext';
+import { MESSAGING_CONVERSATIONS_REFRESH_EVENT, MESSAGING_REALTIME_MESSAGE_EVENT } from '@/components/dashboard/modules/messages/messagesEvents';
 
 const mockApiGet = jest.fn();
 const mockApiPost = jest.fn();
@@ -328,5 +329,37 @@ describe('RequestsNotificationsProvider', () => {
 
     expect(mockApiGet).toHaveBeenCalledTimes(1);
     expect(screen.getByTestId('count')).toHaveTextContent('4');
+  });
+
+  it('bridges messaging websocket payloads into browser events for message modules', async () => {
+    const conversationsRefreshSpy = jest.fn();
+    const realtimeSpy = jest.fn();
+    window.addEventListener(MESSAGING_CONVERSATIONS_REFRESH_EVENT, conversationsRefreshSpy);
+    window.addEventListener(MESSAGING_REALTIME_MESSAGE_EVENT, realtimeSpy);
+
+    render(
+      <RequestsNotificationsProvider>
+        <Consumer />
+      </RequestsNotificationsProvider>,
+    );
+    await flushAsyncEffects();
+
+    expect(MockWebSocket.instances).toHaveLength(1);
+
+    act(() => {
+      MockWebSocket.instances[0].emitMessage({
+        type: 'messaging_message',
+        conversation_id: 9,
+        message_id: 12,
+        sender_id: 77,
+        created_at: '2026-03-29T10:00:00Z',
+      });
+    });
+
+    expect(conversationsRefreshSpy).toHaveBeenCalledTimes(1);
+    expect(realtimeSpy).toHaveBeenCalledTimes(1);
+
+    window.removeEventListener(MESSAGING_CONVERSATIONS_REFRESH_EVENT, conversationsRefreshSpy);
+    window.removeEventListener(MESSAGING_REALTIME_MESSAGE_EVENT, realtimeSpy);
   });
 });

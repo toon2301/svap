@@ -10,7 +10,11 @@ import { getMessagingErrorMessage, listConversations, listMessages, markConversa
 import { CreateRequestCta } from './CreateRequestCta';
 import { CreateRequestModal } from './CreateRequestModal';
 import type { ConversationListItem } from './types';
-import { requestConversationsRefresh } from './messagesEvents';
+import {
+  MESSAGING_REALTIME_MESSAGE_EVENT,
+  requestConversationsRefresh,
+  type MessagingRealtimeMessagePayload,
+} from './messagesEvents';
 
 const MESSAGE_POLL_INTERVAL_MS = 10_000;
 
@@ -18,6 +22,13 @@ function formatTime(value: string): string {
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return '';
   return d.toLocaleString('sk-SK', { hour: '2-digit', minute: '2-digit' });
+}
+
+/** Kľúč minúty v lokálnom čase — na zoskupenie časových pečiatok pri viacerých správach za sebou. */
+function minuteBucketKey(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}-${d.getHours()}-${d.getMinutes()}`;
 }
 
 export function ConversationDetail({
@@ -200,6 +211,20 @@ export function ConversationDetail({
   }, [refresh]);
 
   useEffect(() => {
+    const handleRealtimeMessage = (event: Event) => {
+      const detail = (event as CustomEvent<MessagingRealtimeMessagePayload>).detail;
+      if (!detail || detail.conversationId !== conversationId) return;
+      void refresh({ showError: false, markAsRead: true, syncConversations: true });
+    };
+
+    window.addEventListener(MESSAGING_REALTIME_MESSAGE_EVENT, handleRealtimeMessage);
+
+    return () => {
+      window.removeEventListener(MESSAGING_REALTIME_MESSAGE_EVENT, handleRealtimeMessage);
+    };
+  }, [conversationId, refresh]);
+
+  useEffect(() => {
     // Pri nových správach jemne doroluj na spodok (ak už je konverzácia otvorená).
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [ordered.length]);
@@ -353,18 +378,27 @@ export function ConversationDetail({
             {t('messages.noMessagesYet', 'Zatiaľ bez správ')}
           </div>
         ) : (
-          ordered.map((m) => {
+          ordered.map((m, index) => {
             const mine = m.sender?.id === currentUserId;
+            const prev = index > 0 ? ordered[index - 1] : null;
+            const prevSenderId = prev?.sender?.id ?? null;
+            const curSenderId = m.sender?.id ?? null;
+            const showTimestamp =
+              !prev ||
+              prevSenderId !== curSenderId ||
+              minuteBucketKey(prev.created_at) !== minuteBucketKey(m.created_at);
             return (
               <div key={m.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
                 <div className="max-w-[80%]">
-                  <div
-                    className={`mb-1 text-[10px] tabular-nums ${
-                      mine ? 'text-right text-gray-500 dark:text-gray-400' : 'text-left text-gray-500 dark:text-gray-400'
-                    }`}
-                  >
-                    {formatTime(m.created_at)}
-                  </div>
+                  {showTimestamp ? (
+                    <div
+                      className={`mb-1 text-[10px] tabular-nums ${
+                        mine ? 'text-right text-gray-500 dark:text-gray-400' : 'text-left text-gray-500 dark:text-gray-400'
+                      }`}
+                    >
+                      {formatTime(m.created_at)}
+                    </div>
+                  ) : null}
                   <div
                     className={[
                       'rounded-2xl px-3 py-2 text-sm',

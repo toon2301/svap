@@ -5,6 +5,7 @@ from django.test import override_settings
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
+from unittest.mock import patch
 
 from messaging.models import Conversation, ConversationParticipant, Message
 
@@ -81,6 +82,27 @@ class TestMessagingApi(APITestCase):
         r2 = self.client.post(send_url, {"text": "hi"}, format="json")
         assert r2.status_code == status.HTTP_404_NOT_FOUND
         assert Message.objects.count() == 0
+
+    def test_send_message_emits_realtime_event_for_other_participants(self):
+        self.client.force_authenticate(user=self.u1)
+        open_url = reverse("accounts:messaging_open")
+        r = self.client.post(open_url, {"target_user_id": self.u2.id}, format="json")
+        convo_id = int(r.data["id"])
+
+        send_url = reverse("accounts:messaging_send_message", kwargs={"conversation_id": convo_id})
+
+        with patch("messaging.api.views.notify_user") as notify_user_mock:
+            response = self.client.post(send_url, {"text": "Ahoj"}, format="json")
+
+        assert response.status_code == status.HTTP_201_CREATED
+        notify_user_mock.assert_called_once()
+        called_user_id, event = notify_user_mock.call_args.args
+        assert called_user_id == self.u2.id
+        assert event["type"] == "messaging_message"
+        assert event["conversation_id"] == convo_id
+        assert event["message_id"] == response.data["id"]
+        assert event["sender_id"] == self.u1.id
+        assert isinstance(event["created_at"], str)
 
     def test_mark_read_updates_last_read_at(self):
         self.client.force_authenticate(user=self.u1)

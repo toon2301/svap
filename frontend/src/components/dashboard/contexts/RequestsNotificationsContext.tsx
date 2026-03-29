@@ -3,6 +3,10 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { api, endpoints, ensureSessionRefreshed } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
+import {
+  dispatchMessagingRealtimeMessage,
+  requestConversationsRefresh,
+} from '@/components/dashboard/modules/messages/messagesEvents';
 
 type RequestsNotificationsContextValue = {
   unreadCount: number;
@@ -20,6 +24,10 @@ const WS_REAUTH_RECONNECT_DELAY_MS = 250;
 type WsNotificationPayload = {
   type?: string;
   unread_count?: number;
+  conversation_id?: number;
+  message_id?: number;
+  sender_id?: number;
+  created_at?: string;
 };
 
 type WsListener = (payload: WsNotificationPayload) => void;
@@ -430,6 +438,23 @@ export function RequestsNotificationsProvider({ children }: { children: React.Re
         const unreadStore = getUnreadCountStore();
         unreadStore.lastSuccessfulRefreshAt = Date.now();
         publishUnreadCount(unreadStore, payload.unread_count);
+        return;
+      }
+
+      if (
+        payload.type === 'messaging_message' &&
+        typeof payload.conversation_id === 'number' &&
+        typeof payload.message_id === 'number' &&
+        typeof payload.sender_id === 'number' &&
+        typeof payload.created_at === 'string'
+      ) {
+        requestConversationsRefresh();
+        dispatchMessagingRealtimeMessage({
+          conversationId: payload.conversation_id,
+          messageId: payload.message_id,
+          senderId: payload.sender_id,
+          createdAt: payload.created_at,
+        });
       }
     };
 
