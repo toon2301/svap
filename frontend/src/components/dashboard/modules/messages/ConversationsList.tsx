@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Bars3Icon } from '@heroicons/react/24/outline';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { ConversationListItem } from './types';
@@ -9,18 +10,6 @@ import { MESSAGING_CONVERSATIONS_REFRESH_EVENT } from './messagesEvents';
 import { buildMessagesUrl } from './messagesRouting';
 
 const IDLE_CONVERSATIONS_POLL_INTERVAL_MS = 30_000;
-
-function formatDate(value: string | null): string {
-  if (!value) return '';
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return '';
-  return d.toLocaleString('sk-SK', {
-    hour: '2-digit',
-    minute: '2-digit',
-    day: '2-digit',
-    month: '2-digit',
-  });
-}
 
 export function ConversationsList({
   currentUserId,
@@ -42,6 +31,7 @@ export function ConversationsList({
   const isSidebar = variant === 'sidebar';
   const isRail = variant === 'rail';
   const isCompact = isSidebar || isRail;
+  const showHoverAction = isRail;
   const shouldUseIntervalPolling = selectedConversationId == null;
 
   const refresh = useCallback(
@@ -189,7 +179,6 @@ export function ConversationsList({
           typeof conversation.last_message_sender_id === 'number' &&
           conversation.last_message_sender_id === currentUserId;
         const preview = isMine ? `Ty: ${rawPreview}` : rawPreview;
-        const when = formatDate(conversation.last_message_at);
         const isSelected = selectedConversationId === conversation.id;
         const isUnread = conversation.has_unread && !isSelected && !isMine;
 
@@ -206,7 +195,7 @@ export function ConversationsList({
               );
               router.push(buildMessagesUrl(conversation.id));
             }}
-            className={`w-full text-left flex items-center gap-3 rounded-2xl border transition-colors ${
+            className={`group relative w-full text-left flex items-center gap-3 rounded-2xl border transition-colors ${
               isSelected
                 ? 'border-purple-300 bg-purple-50/90 text-purple-900 dark:border-purple-700 dark:bg-purple-900/25 dark:text-white'
                 : isRail
@@ -241,9 +230,14 @@ export function ConversationsList({
               )}
             </div>
 
-            <div className="min-w-0 flex-1">
+            <div
+              className={`min-w-0 flex-1 transition-[padding-right] duration-150 ${
+                showHoverAction ? 'group-hover:pr-7 group-focus-visible:pr-7' : ''
+              }`}
+            >
               <div className="flex items-center gap-2 min-w-0">
                 <span
+                  data-testid={showHoverAction ? `conversation-title-${conversation.id}` : undefined}
                   className={`truncate ${
                     isCompact ? 'text-xs' : 'text-sm'
                   } font-semibold ${isSelected ? 'text-purple-900 dark:text-white' : 'text-gray-900 dark:text-white'}`}
@@ -270,17 +264,19 @@ export function ConversationsList({
               </div>
             </div>
 
-            <div
-              className={`flex-shrink-0 tabular-nums ${
-                isCompact ? 'text-[10px]' : 'text-[11px]'
-              } ${
-                isSelected
-                  ? 'text-purple-700/80 dark:text-purple-200/80'
-                  : 'text-gray-500 dark:text-gray-400'
-              }`}
-            >
-              {when}
-            </div>
+            {showHoverAction ? (
+              <span
+                aria-hidden="true"
+                data-testid={`conversation-hover-action-${conversation.id}`}
+                className={`pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 opacity-0 transition-opacity duration-150 group-hover:opacity-100 ${
+                  isSelected
+                    ? 'text-purple-700 dark:text-purple-200'
+                    : 'text-gray-400 dark:text-gray-500'
+                }`}
+              >
+                <Bars3Icon className="h-4 w-4" />
+              </span>
+            ) : null}
           </button>
         );
       })}

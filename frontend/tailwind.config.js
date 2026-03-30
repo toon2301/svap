@@ -11,6 +11,14 @@ module.exports = {
   ],
   theme: {
     extend: {
+      colors: {
+        /** Značková fialová (logo, --primary v globals.css) — nie Tailwind `purple-*` */
+        brand: {
+          DEFAULT: 'var(--primary)',
+          dark: 'var(--primary-dark)',
+          light: 'var(--primary-light)',
+        },
+      },
       screens: {
         // Zmenšenie UI už od 1440px nadol
         hd: '1440px',

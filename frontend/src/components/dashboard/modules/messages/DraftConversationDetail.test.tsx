@@ -3,6 +3,20 @@ import '@testing-library/jest-dom';
 import { DraftConversationDetail } from './DraftConversationDetail';
 import { openConversation } from './messagingApi';
 
+jest.mock('@emoji-mart/data', () => ({}));
+
+jest.mock('@emoji-mart/react', () => ({
+  __esModule: true,
+  default: ({ onEmojiSelect }: { onEmojiSelect: (value: { native: string }) => void }) => (
+    <button
+      type="button"
+      onClick={() => onEmojiSelect({ native: String.fromCodePoint(0x1f642) })}
+    >
+      Mock emoji
+    </button>
+  ),
+}));
+
 const replaceMock = jest.fn();
 
 jest.mock('next/navigation', () => ({
@@ -19,6 +33,8 @@ jest.mock('@/hooks', () => ({
 jest.mock('./messagingApi', () => ({
   __esModule: true,
   openConversation: jest.fn(),
+  sendDirectMessage: jest.fn(),
+  getMessagingErrorMessage: jest.fn(),
 }));
 
 const { useIsMobile } = jest.requireMock('@/hooks') as {
@@ -69,8 +85,17 @@ describe('DraftConversationDetail', () => {
 
     render(<DraftConversationDetail targetUserId={42} />);
 
-    expect(await screen.findByText('Začnite konverzáciu')).toBeInTheDocument();
-    expect(screen.getByPlaceholderText('Napíš správu…')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(openConversation).toHaveBeenCalledWith(42);
+    });
+    expect(await screen.findByText(/začnite konverzáciu/i)).toBeInTheDocument();
+    const textbox = await screen.findByRole('textbox');
+    expect(textbox).toBeInTheDocument();
+    expect(screen.getByRole('heading')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /emoji/i })).toBeInTheDocument();
+    const header = screen.getByTestId('draft-conversation-header');
+    const draftScroll = screen.getByTestId('draft-conversation-scroll');
+    expect(header.className).not.toContain('sticky');
+    expect(draftScroll.className).toContain('overflow-y-auto');
   });
-
 });

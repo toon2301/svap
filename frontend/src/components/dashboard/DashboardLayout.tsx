@@ -206,7 +206,9 @@ export default function DashboardLayout({
         </div>
 
         {/* Main Content - data attr pre scroll preservation */}
-        <main data-dashboard-main className={`relative h-screen overflow-y-auto pb-24 lg:pt-0 lg:pb-0 elegant-scrollbar ${
+        <main data-dashboard-main className={`relative h-screen pb-24 lg:pt-0 lg:pb-0 elegant-scrollbar ${
+          activeModule === 'messages' ? 'overflow-y-auto lg:overflow-hidden' : 'overflow-y-auto'
+        } ${
           activeModule === 'search'
             ? 'pt-0'
             : activeModule === 'offer-reviews'
@@ -217,7 +219,9 @@ export default function DashboardLayout({
             className={`${
               activeModule === 'offer-reviews'
                 ? 'pt-0 pb-4 lg:py-8' // recenzie: žiadna medzera medzi hornou lištou a tabmi
-                : 'py-4 lg:py-8'
+                : activeModule === 'messages'
+                  ? 'pt-4 pb-2 lg:py-0' // správy: desktop bez extra vertikálneho scroll priestoru
+                  : 'py-4 lg:py-8'
             } ${
               activeModule === 'search'
                 ? 'px-0 sm:px-2 lg:px-8' // mobil: ešte menší padding, maximálne rozšírený obsah pre vyhľadávanie
@@ -228,7 +232,7 @@ export default function DashboardLayout({
                 : activeModule === 'offer-reviews'
                   ? 'px-0' // žiadny padding pre recenzie (taby sú od kraja po kraj)
                   : 'px-4 sm:px-6 lg:px-8'
-            }`}
+            } ${activeModule === 'messages' ? 'lg:h-full' : ''}`}
           >
             <div
               className={`w-full ${
@@ -245,7 +249,7 @@ export default function DashboardLayout({
                   : activeModule === 'offer-reviews'
                     ? '' // žiadne max-width pre recenzie
                     : 'max-w-4xl'
-              }`}
+              } ${activeModule === 'messages' ? 'h-full min-h-0' : ''}`}
             >
               {children}
             </div>

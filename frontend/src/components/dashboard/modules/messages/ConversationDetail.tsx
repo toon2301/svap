@@ -9,6 +9,7 @@ import type { MessageItem } from './types';
 import { getMessagingErrorMessage, listConversations, listMessages, markConversationRead, sendMessage } from './messagingApi';
 import { CreateRequestCta } from './CreateRequestCta';
 import { CreateRequestModal } from './CreateRequestModal';
+import { DesktopEmojiPickerButton } from './DesktopEmojiPickerButton';
 import type { ConversationListItem } from './types';
 import {
   MESSAGING_REALTIME_MESSAGE_EVENT,
@@ -21,7 +22,13 @@ const MESSAGE_POLL_INTERVAL_MS = 10_000;
 function formatTime(value: string): string {
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return '';
-  return d.toLocaleString('sk-SK', { hour: '2-digit', minute: '2-digit' });
+  return d.toLocaleString('sk-SK', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 }
 
 /** Kľúč minúty v lokálnom čase — na zoskupenie časových pečiatok pri viacerých správach za sebou. */
@@ -57,6 +64,25 @@ export function ConversationDetail({
   const [isHeaderMenuOpen, setIsHeaderMenuOpen] = useState(false);
   const headerMenuRef = useRef<HTMLDivElement | null>(null);
   const messagesScrollRef = useRef<HTMLDivElement | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+
+  const focusComposer = useCallback(() => {
+    if (isMobile) return;
+
+    requestAnimationFrame(() => {
+      const input = inputRef.current;
+      if (!input || input.disabled) return;
+
+      try {
+        input.focus({ preventScroll: true });
+      } catch {
+        input.focus();
+      }
+
+      const end = input.value.length;
+      input.setSelectionRange(end, end);
+    });
+  }, [isMobile]);
 
   const ordered = useMemo(() => {
     // API vracia najnovšie prvé – v UI chceme chronologicky
@@ -245,6 +271,11 @@ export function ConversationDetail({
   }, [conversationId, loading, ordered.length]);
 
   useEffect(() => {
+    if (loading) return;
+    focusComposer();
+  }, [conversationId, focusComposer, loading]);
+
+  useEffect(() => {
     if (!isHeaderMenuOpen) return;
     const onPointerDown = (event: MouseEvent) => {
       const target = event.target as Node;
@@ -277,8 +308,27 @@ export function ConversationDetail({
       );
     } finally {
       setSending(false);
+      focusComposer();
     }
   };
+
+  const handleEmojiSelect = useCallback((emoji: string) => {
+    const input = inputRef.current;
+    if (!input) {
+      setText((current) => current + emoji);
+      return;
+    }
+
+    const start = input.selectionStart ?? input.value.length;
+    const end = input.selectionEnd ?? input.value.length;
+    setText((current) => current.slice(0, start) + emoji + current.slice(end));
+
+    requestAnimationFrame(() => {
+      const nextPosition = start + emoji.length;
+      input.focus();
+      input.setSelectionRange(nextPosition, nextPosition);
+    });
+  }, []);
 
   if (loading) {
     return (
@@ -295,7 +345,7 @@ export function ConversationDetail({
     (otherConversation?.other_user?.display_name || '').trim() || t('messages.unknownUser', 'Používateľ');
 
   return (
-    <div className={`${className} flex flex-col h-[calc(100vh-8rem)]`}>
+    <div className={`${className} flex flex-col min-h-0 h-[calc(100vh-4rem)] lg:h-full overflow-hidden`}>
       {isMobile ? (
         <div className="mb-2 flex items-center justify-between gap-2">
           <div className="min-w-0">
@@ -317,7 +367,10 @@ export function ConversationDetail({
           />
         </div>
       ) : (
-        <div className="-mt-4 lg:-mt-8 -mx-4 sm:-mx-6 lg:-mx-8 mb-3 relative">
+        <div
+          data-testid="conversation-header"
+          className="mb-3"
+        >
           <div className="w-full border-b border-gray-200 dark:border-gray-800 px-4 sm:px-6 lg:px-8 py-2.5">
             <div className="flex items-center justify-center">
               <div className="flex items-center gap-3">
@@ -372,7 +425,11 @@ export function ConversationDetail({
         </div>
       )}
 
-      <div ref={messagesScrollRef} className="flex-1 overflow-y-auto elegant-scrollbar p-4 space-y-2">
+      <div
+        ref={messagesScrollRef}
+        data-testid="conversation-messages-scroll"
+        className="flex-1 min-h-0 overflow-y-auto elegant-scrollbar p-4 space-y-2"
+      >
         {ordered.length === 0 ? (
           <div className="text-sm text-gray-600 dark:text-gray-400 text-center py-8">
             {t('messages.noMessagesYet', 'Zatiaľ bez správ')}
@@ -389,9 +446,10 @@ export function ConversationDetail({
               minuteBucketKey(prev.created_at) !== minuteBucketKey(m.created_at);
             return (
               <div key={m.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
-                <div className="max-w-[80%]">
+                <div className={`max-w-[80%] ${mine ? 'flex flex-col items-end' : ''}`}>
                   {showTimestamp ? (
                     <div
+                      data-testid={`message-timestamp-${m.id}`}
                       className={`mb-1 text-[10px] tabular-nums ${
                         mine ? 'text-right text-gray-500 dark:text-gray-400' : 'text-left text-gray-500 dark:text-gray-400'
                       }`}
@@ -400,10 +458,11 @@ export function ConversationDetail({
                     </div>
                   ) : null}
                   <div
+                    data-testid={`message-bubble-${m.id}`}
                     className={[
-                      'rounded-2xl px-3 py-2 text-sm',
+                      'w-fit max-w-full rounded-2xl px-3 py-2 text-sm',
                       mine
-                        ? 'bg-[var(--primary)] text-white'
+                        ? 'bg-brand text-white'
                         : 'bg-gray-100 dark:bg-[#141416] text-gray-900 dark:text-gray-100 border border-gray-200/60 dark:border-gray-800',
                     ].join(' ')}
                   >
@@ -419,25 +478,38 @@ export function ConversationDetail({
         <div ref={bottomRef} />
       </div>
 
-      <div className="mt-3 flex w-full gap-2 lg:mx-auto lg:max-w-[min(100%,64rem)]">
-        <input
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          disabled={sending}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-              e.preventDefault();
-              void handleSend();
-            }
-          }}
-          className="flex-1 rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-black px-4 py-2 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500/40"
-          placeholder={t('messages.type', 'Napíš správu…')}
-        />
+      <div className="mt-2 flex w-full min-w-0 shrink-0 gap-2 px-4 sm:px-6 lg:px-8 mx-auto pb-[max(1rem,env(safe-area-inset-bottom,0px))] lg:pb-[max(1.25rem,env(safe-area-inset-bottom,0px))] sm:max-w-[min(100%,36rem)] md:max-w-[min(100%,44rem)] lg:max-w-[min(100%,52rem)] xl:max-w-[min(100%,64rem)]">
+        <div className="relative min-w-0 flex-1">
+          <input
+            ref={inputRef}
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            disabled={sending}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                void handleSend();
+              }
+            }}
+            className={`min-w-0 w-full rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-black px-4 py-2 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand/40 ${
+              !isMobile ? 'pr-12' : ''
+            }`}
+            placeholder={t('messages.type', 'Napíš správu…')}
+          />
+          {!isMobile ? (
+            <DesktopEmojiPickerButton
+              ariaLabel={t('messages.addEmoji', 'Pridať emoji')}
+              disabled={sending}
+              onSelect={handleEmojiSelect}
+              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-[#141416] dark:hover:text-gray-200"
+            />
+          ) : null}
+        </div>
         <button
           type="button"
           disabled={sending || text.trim().length === 0}
           onClick={() => void handleSend()}
-          className="px-4 py-2 rounded-2xl bg-purple-600 text-white text-sm font-semibold disabled:opacity-60 disabled:cursor-not-allowed hover:bg-purple-700 transition-colors"
+          className="px-4 py-2 rounded-2xl bg-brand text-white text-sm font-semibold disabled:opacity-60 disabled:cursor-not-allowed hover:bg-brand-dark transition-colors"
         >
           {sending ? t('common.sending', 'Odosielam…') : t('messages.send', 'Odoslať')}
         </button>

@@ -16,6 +16,25 @@ import {
   MESSAGING_REALTIME_MESSAGE_EVENT,
 } from './messagesEvents';
 
+jest.mock('@/hooks', () => ({
+  __esModule: true,
+  useIsMobile: jest.fn(),
+}));
+
+jest.mock('@emoji-mart/data', () => ({}));
+
+jest.mock('@emoji-mart/react', () => ({
+  __esModule: true,
+  default: ({ onEmojiSelect }: { onEmojiSelect: (value: { native: string }) => void }) => (
+    <button
+      type="button"
+      onClick={() => onEmojiSelect({ native: String.fromCodePoint(0x1f642) })}
+    >
+      Mock emoji
+    </button>
+  ),
+}));
+
 jest.mock('react-hot-toast', () => ({
   __esModule: true,
   default: {
@@ -60,9 +79,14 @@ function setVisibilityState(state: 'visible' | 'hidden') {
   });
 }
 
+const { useIsMobile } = jest.requireMock('@/hooks') as {
+  useIsMobile: jest.Mock;
+};
+
 describe('ConversationDetail', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    useIsMobile.mockReturnValue(false);
     setVisibilityState('visible');
     Object.defineProperty(Element.prototype, 'scrollIntoView', {
       configurable: true,
@@ -102,7 +126,7 @@ describe('ConversationDetail', () => {
     const input = screen.getByRole('textbox');
     fireEvent.change(input, { target: { value: 'Ahoj' } });
 
-    const sendButton = screen.getByRole('button', { name: 'Odoslať' });
+    const sendButton = screen.getByRole('button', { name: /odosla/i });
     fireEvent.click(sendButton);
 
     await waitFor(() => {
@@ -125,6 +149,96 @@ describe('ConversationDetail', () => {
     });
 
     expect((input as HTMLInputElement).value).toBe('Ahoj');
+  });
+
+  it('inserts emoji into the desktop composer input', async () => {
+    render(<ConversationDetail conversationId={9} currentUserId={1} />);
+
+    const input = (await screen.findByRole('textbox')) as HTMLInputElement;
+    fireEvent.change(input, { target: { value: 'Ahoj ' } });
+    input.focus();
+    input.setSelectionRange(5, 5);
+
+    fireEvent.click(screen.getByRole('button', { name: /emoji/i }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Mock emoji' }));
+
+    await waitFor(() => {
+      expect(input.value).toBe(`Ahoj ${String.fromCodePoint(0x1f642)}`);
+    });
+  });
+
+  it('focuses the desktop composer on open and after sending a message', async () => {
+    (sendMessage as jest.Mock).mockResolvedValue(undefined);
+
+    render(<ConversationDetail conversationId={9} currentUserId={1} />);
+
+    const input = (await screen.findByRole('textbox')) as HTMLInputElement;
+    await waitFor(() => {
+      expect(input).toHaveFocus();
+    });
+
+    fireEvent.change(input, { target: { value: 'Ahoj' } });
+
+    const sendButton = screen.getByRole('button', { name: /odosla/i });
+    sendButton.focus();
+    fireEvent.click(sendButton);
+
+    await waitFor(() => {
+      expect(sendMessage).toHaveBeenCalledWith(9, 'Ahoj');
+    });
+
+    await waitFor(() => {
+      expect(input).toHaveFocus();
+      expect(input.value).toBe('');
+    });
+  });
+
+  it('keeps the desktop conversation header fixed while only the messages area scrolls', async () => {
+    render(<ConversationDetail conversationId={9} currentUserId={1} />);
+
+    const header = await screen.findByTestId('conversation-header');
+    const messagesScroll = screen.getByTestId('conversation-messages-scroll');
+    expect(header.className).not.toContain('sticky');
+    expect(messagesScroll.className).toContain('overflow-y-auto');
+  });
+
+  it('shows full date and time in message timestamps', async () => {
+    (listMessages as jest.Mock).mockResolvedValueOnce([
+      {
+        id: 1,
+        conversation: 9,
+        sender: { id: 77, display_name: 'Tester' },
+        text: 'Sprava s datumom',
+        created_at: '2026-03-27T10:00:00Z',
+        edited_at: null,
+        is_deleted: false,
+      },
+    ]);
+
+    render(<ConversationDetail conversationId={9} currentUserId={1} />);
+
+    expect(await screen.findByText('Sprava s datumom')).toBeInTheDocument();
+    expect(screen.getByTestId('message-timestamp-1').textContent).toContain('2026');
+    expect(screen.getByTestId('message-timestamp-1').textContent).toContain('27.');
+  });
+
+  it('keeps the message bubble width independent from the timestamp width', async () => {
+    (listMessages as jest.Mock).mockResolvedValueOnce([
+      {
+        id: 1,
+        conversation: 9,
+        sender: { id: 1, display_name: 'Me' },
+        text: '1',
+        created_at: '2026-03-30T18:52:00Z',
+        edited_at: null,
+        is_deleted: false,
+      },
+    ]);
+
+    render(<ConversationDetail conversationId={9} currentUserId={1} />);
+
+    expect(await screen.findByText('1')).toBeInTheDocument();
+    expect(screen.getByTestId('message-bubble-1').className).toContain('w-fit');
   });
 
   it('refreshes the conversation and notifies the conversations rail when the tab becomes visible again', async () => {

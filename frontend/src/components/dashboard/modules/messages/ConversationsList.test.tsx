@@ -177,4 +177,25 @@ describe('ConversationsList', () => {
       expect(listConversations).toHaveBeenCalledTimes(2);
     });
   });
+  it('renders a hover-only hamburger action slot for rail conversations', async () => {
+    (listConversations as jest.Mock).mockResolvedValue([
+      {
+        id: 9,
+        other_user: { id: 2, display_name: 'VeÄ¾mi dlhÃ½ nÃ¡zov konverzÃ¡cie' },
+        last_message_preview: 'UkÃ¡Å¾ka sprÃ¡vy',
+        last_message_at: '2026-03-27T10:00:00Z',
+        last_message_sender_id: 2,
+        has_unread: false,
+      },
+    ]);
+
+    render(<ConversationsList currentUserId={1} variant="rail" />);
+
+    const title = await screen.findByTestId('conversation-title-9');
+    const action = screen.getByTestId('conversation-hover-action-9');
+
+    expect(title.className).toContain('truncate');
+    expect(action.className).toContain('opacity-0');
+    expect(action.className).toContain('group-hover:opacity-100');
+  });
 });

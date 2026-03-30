@@ -47,7 +47,7 @@ export default function MessagesModule({
   }
 
   return (
-    <div className="w-full pt-0 pb-8 pl-0 text-[var(--foreground)]">
+    <div className="flex h-full min-h-0 w-full flex-col pt-0 pb-0 pl-0 text-[var(--foreground)]">
       {conversationId ? (
         <ConversationDetail
           conversationId={conversationId}
@@ -57,7 +57,7 @@ export default function MessagesModule({
       ) : targetUserId ? (
         <DraftConversationDetail targetUserId={targetUserId} className="max-w-none mx-0" />
       ) : (
-        <div className="h-[calc(100vh-10rem)] flex items-center justify-center">
+        <div className="flex h-full min-h-0 items-center justify-center">
           <div className="flex flex-col items-center text-center">
             <ChatBubbleLeftRightIcon className="w-28 h-28 text-black dark:text-white mb-4" />
             <h2 className="text-4xl font-semibold text-gray-900 dark:text-white">
