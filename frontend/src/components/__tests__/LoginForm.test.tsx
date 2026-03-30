@@ -26,6 +26,9 @@ jest.mock('@/utils/csrf', () => ({
 jest.mock('@/lib/api', () => ({
   api: {
     post: jest.fn(),
+    defaults: {
+      baseURL: '',
+    },
   },
   endpoints: {
     auth: {
@@ -187,5 +190,45 @@ describe('LoginForm', () => {
     
     expect(screen.getByText('Prihlasujem sa...')).toBeInTheDocument();
     expect(submitButton).toBeDisabled();
+  });
+
+  it('primes CSRF after successful Google login before redirecting to dashboard', async () => {
+    const popup = { closed: false } as Window;
+    const openSpy = jest.spyOn(window, 'open').mockReturnValue(popup);
+    const originalCrypto = global.crypto;
+    Object.defineProperty(global, 'crypto', {
+      value: {
+        ...(originalCrypto || {}),
+        randomUUID: () => 'oauth-nonce',
+      },
+      configurable: true,
+    });
+    mockHasCsrfToken.mockReturnValue(false);
+
+    render(<LoginForm />);
+
+    fireEvent.click(screen.getByRole('button', { name: /Google/i }));
+
+    window.dispatchEvent(
+      new MessageEvent('message', {
+        origin: window.location.origin,
+        data: {
+          type: 'OAUTH_SUCCESS',
+          nonce: 'oauth-nonce',
+        },
+      }),
+    );
+
+    await waitFor(() => {
+      expect(mockRefreshUser).toHaveBeenCalledWith({ force: true });
+      expect(mockFetchCsrfToken).toHaveBeenCalledTimes(1);
+      expect(mockPush).toHaveBeenCalledWith('/dashboard');
+    });
+
+    openSpy.mockRestore();
+    Object.defineProperty(global, 'crypto', {
+      value: originalCrypto,
+      configurable: true,
+    });
   });
 });

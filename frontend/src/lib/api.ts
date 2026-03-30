@@ -132,6 +132,51 @@ function shouldSkipRefresh(url?: string): boolean {
   );
 }
 
+function isMutatingMethod(method?: string): boolean {
+  const normalized = String(method || '').toUpperCase();
+  return normalized === 'POST' || normalized === 'PUT' || normalized === 'PATCH' || normalized === 'DELETE';
+}
+
+function extractResponseMessage(data: unknown): string {
+  if (typeof data === 'string') {
+    return data;
+  }
+
+  if (data && typeof data === 'object') {
+    const record = data as Record<string, unknown>;
+    return (
+      (typeof record.detail === 'string' && record.detail) ||
+      (typeof record.error === 'string' && record.error) ||
+      (typeof record.message === 'string' && record.message) ||
+      ''
+    );
+  }
+
+  return '';
+}
+
+function shouldRetryWithFreshCsrf(error: any): boolean {
+  const originalRequest = error?.config;
+  if (!originalRequest || error?.response?.status !== 403) {
+    return false;
+  }
+
+  if ((originalRequest as any)._csrfRetry === true) {
+    return false;
+  }
+
+  if (!isMutatingMethod(originalRequest?.method)) {
+    return false;
+  }
+
+  const requestUrl = String(originalRequest?.url || '');
+  if (requestUrl.includes('/auth/csrf-token/')) {
+    return false;
+  }
+
+  return extractResponseMessage(error?.response?.data).toLowerCase().includes('csrf');
+}
+
 function dispatchSessionInvalid(): void {
   oauthTrace('dispatch_session_invalid');
   if (typeof window !== 'undefined') {
@@ -480,6 +525,30 @@ api.interceptors.response.use(
 
     const status = error.response?.status;
     const url = originalRequest?.url;
+
+    if (shouldRetryWithFreshCsrf(error)) {
+      (originalRequest as any)._csrfRetry = true;
+      oauthTrace('csrf_retry_start', {
+        method: String(originalRequest?.method || 'GET').toUpperCase(),
+        url: String(url || ''),
+      });
+
+      await fetchCsrfToken();
+      const csrfToken = getCsrfToken();
+
+      if (csrfToken) {
+        originalRequest.headers = originalRequest.headers || {};
+        (originalRequest.headers as Record<string, string>)['X-CSRFToken'] = csrfToken;
+        oauthTrace('csrf_retry_success', {
+          url: String(url || ''),
+        });
+        return api(originalRequest);
+      }
+
+      oauthTrace('csrf_retry_missing_token', {
+        url: String(url || ''),
+      });
+    }
 
     if (status === 401) {
       oauthTrace('api_401_interceptor', { url: String(url || '') });

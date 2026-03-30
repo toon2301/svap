@@ -201,6 +201,11 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
             trace('login_google_refresh_user_start');
             await refreshUser({ force: true });
             trace('login_google_refresh_user_success');
+            trace('login_google_csrf_prime_start');
+            await fetchCsrfToken();
+            trace('login_google_csrf_prime_done', {
+              hasCsrf: hasCsrfToken(),
+            });
           } catch {
             // Ak /me zlyhá, neskúšaj presmerovať na dashboard
             trace('login_google_refresh_user_failed');

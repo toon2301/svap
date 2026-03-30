@@ -163,6 +163,37 @@ describe('lib/api axios instance', () => {
     getSpy.mockRestore();
   });
 
+  it('pri CSRF 403 dotiahne novy token a request zopakuje len raz', async () => {
+    (Cookies.get as jest.Mock).mockImplementation((key: string) =>
+      key === 'csrftoken' ? 'csrf123' : undefined,
+    );
+
+    const getSpy = jest
+      .spyOn(axios as any, 'get')
+      .mockResolvedValueOnce({ status: 200, data: { csrf_token: 'csrf123' } } as any);
+    const rejected = (api as any).interceptors.response.handlers[0].rejected;
+    const originalRequest: any = {
+      url: '/auth/messaging/conversations/open/',
+      method: 'post',
+      headers: {},
+    };
+
+    const res = await rejected({
+      response: { status: 403, data: 'CSRF token missing' },
+      config: originalRequest,
+    });
+
+    expect(getSpy).toHaveBeenCalledWith(
+      expect.stringMatching(/\/auth\/csrf-token\/$/),
+      expect.objectContaining({ withCredentials: true }),
+    );
+    expect(originalRequest.headers['X-CSRFToken']).toBe('csrf123');
+    expect((originalRequest as any)._csrfRetry).toBe(true);
+    expect(res.data.ok).toBe(true);
+
+    getSpy.mockRestore();
+  });
+
   it('exportuje endpoints', () => {
     expect(endpoints.auth.login).toBe('/auth/login/');
   });
