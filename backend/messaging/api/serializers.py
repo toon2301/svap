@@ -23,6 +23,16 @@ class UserBriefSerializer(serializers.Serializer):
     avatar_url = serializers.CharField(allow_null=True, required=False)
 
 
+def serialize_user_brief(user, request=None):
+    return {
+        "id": user.id,
+        "display_name": getattr(user, "display_name", "") or "",
+        "slug": getattr(user, "slug", None),
+        "user_type": getattr(user, "user_type", None),
+        "avatar_url": _avatar_url(request, user),
+    }
+
+
 def _avatar_url(request, user) -> str | None:
     try:
         avatar = getattr(user, "avatar", None)
@@ -97,13 +107,7 @@ class ConversationListItemSerializer(serializers.ModelSerializer):
                 break
         if other is None:
             return None
-        return {
-            "id": other.id,
-            "display_name": getattr(other, "display_name", "") or "",
-            "slug": getattr(other, "slug", None),
-            "user_type": getattr(other, "user_type", None),
-            "avatar_url": _avatar_url(request, other),
-        }
+        return serialize_user_brief(other, request)
 
     def get_last_message_preview(self, obj: Conversation):
         if getattr(obj, "last_message_is_deleted", False):
@@ -137,6 +141,11 @@ class MessageSerializer(serializers.ModelSerializer):
 
 
 class SendMessageSerializer(serializers.Serializer):
+    text = serializers.CharField(allow_blank=False, trim_whitespace=True, max_length=5000)
+
+
+class StartDirectMessageSerializer(serializers.Serializer):
+    target_user_id = serializers.IntegerField(min_value=1)
     text = serializers.CharField(allow_blank=False, trim_whitespace=True, max_length=5000)
 
 

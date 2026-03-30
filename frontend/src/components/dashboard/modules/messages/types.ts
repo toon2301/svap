@@ -16,7 +16,25 @@ export type ConversationListItem = {
   has_unread: boolean;
   updated_at: string;
   created?: boolean;
+  is_draft?: false;
+  target_user_id?: number | null;
 };
+
+export type ConversationDraft = {
+  id: null;
+  other_user: MessagingUserBrief | null;
+  last_message_preview: null;
+  last_message_at: null;
+  last_message_sender_id?: null;
+  last_read_at: null;
+  has_unread: false;
+  updated_at: null;
+  created?: boolean;
+  is_draft: true;
+  target_user_id: number;
+};
+
+export type OpenConversationResult = ConversationListItem | ConversationDraft;
 
 export type MessageItem = {
   id: number;
@@ -26,5 +44,11 @@ export type MessageItem = {
   created_at: string;
   edited_at: string | null;
   is_deleted: boolean;
+};
+
+export type DirectMessageStartResult = {
+  conversation_id: number;
+  conversation_created: boolean;
+  message: MessageItem;
 };
 

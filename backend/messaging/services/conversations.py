@@ -7,7 +7,7 @@ from django.db import transaction
 from django.db.models import Count
 from django.utils import timezone
 
-from ..models import Conversation, ConversationParticipant
+from ..models import Conversation, ConversationParticipant, Message
 
 User = get_user_model()
 
@@ -26,6 +26,13 @@ class OpenConversationResult:
     created: bool
 
 
+@dataclass(frozen=True)
+class StartDirectMessageResult:
+    conversation: Conversation
+    created_conversation: bool
+    message: Message
+
+
 def _lock_users_for_direct_conversation(*, user_a_id: int, user_b_id: int) -> None:
     """
     Transaction-scoped lock to prevent duplicate 1:1 conversations under race.
@@ -41,6 +48,31 @@ def _lock_users_for_direct_conversation(*, user_a_id: int, user_b_id: int) -> No
     )
 
 
+def _direct_conversation_queryset_for_pair(*, user_a_id: int, user_b_id: int):
+    pair_ids = (
+        ConversationParticipant.objects.filter(user_id__in=[user_a_id, user_b_id])
+        .values("conversation_id")
+        .annotate(users_count=Count("user_id", distinct=True))
+        .filter(users_count=2)
+        .values_list("conversation_id", flat=True)
+    )
+    return (
+        Conversation.objects.filter(id__in=pair_ids)
+        .annotate(pcount=Count("participants", distinct=True))
+        .filter(pcount=2)
+    )
+
+
+def find_direct_conversation(*, actor: User, target: User, require_started: bool = False) -> Conversation | None:
+    if actor.id == target.id:
+        raise SelfConversationNotAllowed("Cannot open a conversation with self.")
+
+    qs = _direct_conversation_queryset_for_pair(user_a_id=actor.id, user_b_id=target.id)
+    if require_started:
+        qs = qs.filter(last_message_at__isnull=False)
+    return qs.order_by("-last_message_at", "-updated_at", "-id").first()
+
+
 def open_or_create_direct_conversation(*, actor: User, target: User) -> OpenConversationResult:
     """
     Open or create a 1:1 conversation between actor and target.
@@ -53,21 +85,7 @@ def open_or_create_direct_conversation(*, actor: User, target: User) -> OpenConv
 
     with transaction.atomic():
         _lock_users_for_direct_conversation(user_a_id=actor.id, user_b_id=target.id)
-
-        pair_ids = (
-            ConversationParticipant.objects.filter(user_id__in=[actor.id, target.id])
-            .values("conversation_id")
-            .annotate(users_count=Count("user_id", distinct=True))
-            .filter(users_count=2)
-            .values_list("conversation_id", flat=True)
-        )
-        existing = (
-            Conversation.objects.filter(id__in=pair_ids)
-            .annotate(pcount=Count("participants", distinct=True))
-            .filter(pcount=2)
-            .order_by("-last_message_at", "-updated_at", "-id")
-            .first()
-        )
+        existing = find_direct_conversation(actor=actor, target=target, require_started=False)
         if existing:
             return OpenConversationResult(conversation=existing, created=False)
 
@@ -80,4 +98,44 @@ def open_or_create_direct_conversation(*, actor: User, target: User) -> OpenConv
             ]
         )
         return OpenConversationResult(conversation=convo, created=True)
+
+
+def send_direct_message(*, actor: User, target: User, text: str) -> StartDirectMessageResult:
+    clean = (text or "").strip()
+    if not clean:
+        raise ValueError("Message text cannot be empty.")
+    if actor.id == target.id:
+        raise SelfConversationNotAllowed("Cannot open a conversation with self.")
+
+    now = timezone.now()
+    with transaction.atomic():
+        _lock_users_for_direct_conversation(user_a_id=actor.id, user_b_id=target.id)
+
+        convo = find_direct_conversation(actor=actor, target=target, require_started=False)
+        created_conversation = False
+
+        if convo is None:
+            convo = Conversation.objects.create(created_by=actor)
+            ConversationParticipant.objects.bulk_create(
+                [
+                    ConversationParticipant(conversation=convo, user=actor, joined_at=now),
+                    ConversationParticipant(conversation=convo, user=target, joined_at=now),
+                ]
+            )
+            created_conversation = True
+
+        msg = Message.objects.create(
+            conversation=convo,
+            sender=actor,
+            text=clean,
+            created_at=now,
+        )
+        convo.last_message_at = now
+        convo.save(update_fields=["last_message_at", "updated_at"])
+
+        return StartDirectMessageResult(
+            conversation=convo,
+            created_conversation=created_conversation,
+            message=msg,
+        )
 

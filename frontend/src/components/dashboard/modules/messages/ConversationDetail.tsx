@@ -419,7 +419,7 @@ export function ConversationDetail({
         <div ref={bottomRef} />
       </div>
 
-      <div className="mt-3 flex gap-2">
+      <div className="mt-3 flex w-full gap-2 lg:mx-auto lg:max-w-[min(100%,64rem)]">
         <input
           value={text}
           onChange={(e) => setText(e.target.value)}

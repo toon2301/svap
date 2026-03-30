@@ -6,10 +6,16 @@ from .api.views import (
     MessageListView,
     OpenConversationView,
     SendMessageView,
+    StartDirectMessageView,
 )
 
 urlpatterns = [
     path("conversations/open/", OpenConversationView.as_view(), name="messaging_open"),
+    path(
+        "conversations/direct/send/",
+        StartDirectMessageView.as_view(),
+        name="messaging_send_direct_message",
+    ),
     path("conversations/", ConversationListView.as_view(), name="messaging_list_conversations"),
     path(
         "conversations/<int:conversation_id>/messages/",

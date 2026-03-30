@@ -62,6 +62,8 @@ interface ModuleRouterProps {
   offerIdForReviews?: number | null;
   /** Conversation ID for messages detail view (from URL). */
   conversationIdForMessages?: number | null;
+  /** Target user ID for draft compose flow (from URL). */
+  targetUserIdForMessages?: number | null;
 }
 
 export default function ModuleRouter({
@@ -104,6 +106,7 @@ export default function ModuleRouter({
   onSkillsSearchClick,
   offerIdForReviews,
   conversationIdForMessages,
+  targetUserIdForMessages,
 }: ModuleRouterProps) {
   const { t } = useLanguage();
 
@@ -233,7 +236,13 @@ export default function ModuleRouter({
     case 'create':
       return <CreateModule />;
     case 'messages':
-      return <MessagesModule conversationId={conversationIdForMessages ?? null} currentUserId={user.id} />;
+      return (
+        <MessagesModule
+          conversationId={conversationIdForMessages ?? null}
+          targetUserId={targetUserIdForMessages ?? null}
+          currentUserId={user.id}
+        />
+      );
     case 'requests':
       return <RequestsModule />;
     case 'notifications':

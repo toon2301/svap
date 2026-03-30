@@ -7,12 +7,15 @@ import { useIsMobile } from '@/hooks';
 import { ChatBubbleLeftRightIcon } from '@heroicons/react/24/outline';
 import { ConversationsList } from './messages/ConversationsList';
 import { ConversationDetail } from './messages/ConversationDetail';
+import { DraftConversationDetail } from './messages/DraftConversationDetail';
 
 export default function MessagesModule({
   conversationId,
+  targetUserId,
   currentUserId,
 }: {
   conversationId?: number | null;
+  targetUserId?: number | null;
   currentUserId: number;
 }) {
   const { t } = useLanguage();
@@ -34,6 +37,8 @@ export default function MessagesModule({
 
         {conversationId ? (
           <ConversationDetail conversationId={conversationId} currentUserId={currentUserId} />
+        ) : targetUserId ? (
+          <DraftConversationDetail targetUserId={targetUserId} />
         ) : (
           <ConversationsList currentUserId={currentUserId} />
         )}
@@ -49,6 +54,8 @@ export default function MessagesModule({
           currentUserId={currentUserId}
           className="max-w-none mx-0"
         />
+      ) : targetUserId ? (
+        <DraftConversationDetail targetUserId={targetUserId} className="max-w-none mx-0" />
       ) : (
         <div className="h-[calc(100vh-10rem)] flex items-center justify-center">
           <div className="flex flex-col items-center text-center">

@@ -24,7 +24,11 @@ from swaply.rate_limiting import (
 )
 
 from ..models import Conversation, ConversationParticipant, Message
-from ..services.conversations import SelfConversationNotAllowed, open_or_create_direct_conversation
+from ..services.conversations import (
+    SelfConversationNotAllowed,
+    find_direct_conversation,
+    send_direct_message,
+)
 from ..services.messages import NotParticipant, mark_conversation_read, send_message
 from .serializers import (
     ConversationListItemSerializer,
@@ -32,6 +36,8 @@ from .serializers import (
     MessageSerializer,
     OpenConversationSerializer,
     SendMessageSerializer,
+    StartDirectMessageSerializer,
+    serialize_user_brief,
 )
 
 User = get_user_model()
@@ -128,7 +134,7 @@ def _conversation_list_queryset_for_user(user):
     ).exclude(user_id=user.id)
 
     qs = (
-        Conversation.objects.filter(participants__user=user)
+        Conversation.objects.filter(participants__user=user, last_message_at__isnull=False)
         .distinct()
         .annotate(
             last_message_preview=Subquery(last_msg_qs.values("text")[:1]),
@@ -231,21 +237,43 @@ class OpenConversationView(APIView):
         target_user_id = serializer.validated_data["target_user_id"]
         target = get_object_or_404(User, id=target_user_id, is_active=True)
         try:
-            result = open_or_create_direct_conversation(actor=request.user, target=target)
+            existing = find_direct_conversation(
+                actor=request.user,
+                target=target,
+                require_started=True,
+            )
         except SelfConversationNotAllowed:
             return Response(
                 {"error": "Nemôžete začať konverzáciu sami so sebou."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # Return as list-item shape so FE can render immediately.
-        convo = (
-            _conversation_list_queryset_for_user(request.user)
-            .filter(id=result.conversation.id)
-            .first()
-        ) or result.conversation
-        data = ConversationListItemSerializer(convo, context={"request": request}).data
-        data["created"] = result.created
+        if existing is not None:
+            convo = (
+                _conversation_list_queryset_for_user(request.user)
+                .filter(id=existing.id)
+                .first()
+            ) or existing
+            data = ConversationListItemSerializer(convo, context={"request": request}).data
+            data["created"] = False
+            data["is_draft"] = False
+            data["target_user_id"] = target.id
+            return Response(data, status=status.HTTP_200_OK)
+
+        data = {
+            "id": None,
+            "other_user": serialize_user_brief(target, request),
+            "last_message_at": None,
+            "last_message_preview": None,
+            "last_message_sender_id": None,
+            "last_message_is_deleted": False,
+            "last_read_at": None,
+            "has_unread": False,
+            "updated_at": None,
+            "created": False,
+            "is_draft": True,
+            "target_user_id": target.id,
+        }
         return Response(data, status=status.HTTP_200_OK)
 
 
@@ -373,6 +401,57 @@ class SendMessageView(APIView):
 
         return Response(
             MessageSerializer(result.message, context={"request": request}).data,
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class StartDirectMessageView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @method_decorator(messaging_send_rate_limit)
+    def post(self, request):
+        serializer = StartDirectMessageSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        target_user_id = serializer.validated_data["target_user_id"]
+        target = get_object_or_404(User, id=target_user_id, is_active=True)
+
+        try:
+            result = send_direct_message(
+                actor=request.user,
+                target=target,
+                text=serializer.validated_data["text"],
+            )
+        except SelfConversationNotAllowed:
+            return Response(
+                {"error": "NemÃ´Å¾ete zaÄaÅ¥ konverzÃ¡ciu sami so sebou."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        participant_ids = list(
+            ConversationParticipant.objects.filter(conversation_id=result.conversation.id)
+            .exclude(user_id=request.user.id)
+            .values_list("user_id", flat=True)
+        )
+
+        event = {
+            "type": "messaging_message",
+            "conversation_id": result.conversation.id,
+            "message_id": result.message.id,
+            "sender_id": request.user.id,
+            "created_at": result.message.created_at.isoformat(),
+        }
+        for participant_id in participant_ids:
+            notify_user(participant_id, event)
+
+        return Response(
+            {
+                "conversation_id": result.conversation.id,
+                "conversation_created": result.created_conversation,
+                "message": MessageSerializer(
+                    result.message, context={"request": request}
+                ).data,
+            },
             status=status.HTTP_201_CREATED,
         )
 

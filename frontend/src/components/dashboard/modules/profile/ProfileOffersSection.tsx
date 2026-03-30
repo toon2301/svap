@@ -21,7 +21,7 @@ import {
   invalidateOffersCache,
 } from './profileOffersCache';
 import { fetchSkillRequests, getApiErrorMessage, updateSkillRequest } from '../requests/requestsApi';
-import { getMessagingErrorMessage, openConversation } from '../messages/messagingApi';
+import { getMessagingErrorMessage } from '../messages/messagingApi';
 import { buildMessagesUrl } from '../messages/messagesRouting';
 
 interface ProfileOffersSectionProps {
@@ -106,8 +106,7 @@ export default function ProfileOffersSection({
       if (!ownerUserId) return;
       try {
         setBusyMessageOfferId(offerId);
-        const convo = await openConversation(ownerUserId);
-        router.push(buildMessagesUrl(convo.id));
+        router.push(buildMessagesUrl(null, { targetUserId: ownerUserId }));
       } catch (error) {
         toast.error(
           getMessagingErrorMessage(error, {

@@ -1,5 +1,10 @@
 import { api } from '@/lib/api';
-import type { ConversationListItem, MessageItem } from './types';
+import type {
+  ConversationListItem,
+  DirectMessageStartResult,
+  MessageItem,
+  OpenConversationResult,
+} from './types';
 
 type Paginated<T> = {
   count?: number;
@@ -40,10 +45,24 @@ export function getMessagingErrorMessage(
   return responseMessage || fallback;
 }
 
-export async function openConversation(targetUserId: number): Promise<ConversationListItem> {
-  const { data } = await api.post<ConversationListItem>('/auth/messaging/conversations/open/', {
+export async function openConversation(targetUserId: number): Promise<OpenConversationResult> {
+  const { data } = await api.post<OpenConversationResult>('/auth/messaging/conversations/open/', {
     target_user_id: targetUserId,
   });
+  return data;
+}
+
+export async function sendDirectMessage(
+  targetUserId: number,
+  text: string,
+): Promise<DirectMessageStartResult> {
+  const { data } = await api.post<DirectMessageStartResult>(
+    '/auth/messaging/conversations/direct/send/',
+    {
+      target_user_id: targetUserId,
+      text,
+    },
+  );
   return data;
 }
 
