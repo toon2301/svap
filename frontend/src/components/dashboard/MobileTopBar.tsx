@@ -13,6 +13,10 @@ interface MobileTopBarProps {
   activeRightItem?: string;
   subcategory?: string | null;
   onSaveClick?: () => void;
+  accountName?: string;
+  messagePeerName?: string;
+  messagePeerAvatarUrl?: string | null;
+  isMessageConversationOpen?: boolean;
 }
 
 export default function MobileTopBar({
@@ -24,6 +28,10 @@ export default function MobileTopBar({
   activeRightItem,
   subcategory,
   onSaveClick,
+  accountName,
+  messagePeerName,
+  messagePeerAvatarUrl,
+  isMessageConversationOpen = false,
 }: MobileTopBarProps) {
   const { t } = useLanguage();
   const [describeMode, setDescribeMode] = React.useState<'offer' | 'search' | null>(null);
@@ -47,8 +55,16 @@ export default function MobileTopBar({
     <div className="lg:hidden fixed top-0 left-0 right-0 z-30 bg-white dark:bg-black border-b border-gray-200 dark:border-gray-800 shadow-sm">
       <div className="grid grid-cols-3 items-center px-3 py-0 h-12">
         {/* Ľavá strana - Žiadosti (nadpis) alebo Šipka späť alebo prázdne */}
-        <div className="flex items-center h-full justify-start">
-          {activeModule === 'requests' ? (
+        <div
+          className={`flex items-center h-full justify-start ${
+            activeModule === 'messages' && !isMessageConversationOpen ? 'col-span-2 pr-2' : ''
+          }`}
+        >
+          {activeModule === 'messages' && !isMessageConversationOpen ? (
+            <h1 className="text-sm font-semibold leading-tight text-gray-900 dark:text-white whitespace-normal break-words">
+              {accountName || t('navigation.profile', 'Profil')}
+            </h1>
+          ) : activeModule === 'requests' ? (
             <h1 className="text-base font-semibold text-gray-900 dark:text-white truncate">
               {t('requests.title', 'Spolupráce')}
             </h1>
@@ -76,7 +92,32 @@ export default function MobileTopBar({
         </div>
         
         {/* Stred - Nadpis (pre requests je nadpis vľavo) */}
-        <div className="text-center flex items-center justify-center h-full">
+        <div
+          className={`text-center flex items-center justify-center h-full ${
+            activeModule === 'messages' && isMessageConversationOpen
+              ? 'col-span-3'
+              : activeModule === 'messages' && !isMessageConversationOpen
+                ? 'hidden'
+                : ''
+          }`}
+        >
+          {activeModule === 'messages' && isMessageConversationOpen ? (
+            <div className="mx-auto flex w-full min-w-0 max-w-[calc(100vw-1.5rem)] items-center justify-center gap-2 px-1">
+              <div className="h-8 w-8 flex-shrink-0 overflow-hidden rounded-full bg-purple-100 dark:bg-purple-900/40">
+                {messagePeerAvatarUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={messagePeerAvatarUrl} alt={messagePeerName || t('messages.unknownUser', 'Používateľ')} className="h-full w-full object-cover" />
+                ) : (
+                  <span className="flex h-full w-full items-center justify-center text-[10px] font-bold text-purple-700 dark:text-purple-300">
+                    {(messagePeerName || 'U').slice(0, 1).toUpperCase()}
+                  </span>
+                )}
+              </div>
+              <h1 className="truncate text-[15px] font-semibold text-gray-900 dark:text-white">
+                {messagePeerName || t('messages.unknownUser', 'Používateľ')}
+              </h1>
+            </div>
+          ) : null}
           {isEditMode && (
             <h1 className="text-lg font-semibold text-gray-900 dark:text-white whitespace-nowrap">{t('profile.editProfile', 'Upraviť profil')}</h1>
           )}
@@ -120,7 +161,11 @@ export default function MobileTopBar({
         </div>
         
         {/* Pravá strana - Obnoviť (žiadosti), Profil, Hamburger alebo Krížik */}
-        <div className="flex items-center justify-end h-full space-x-2">
+        <div
+          className={`flex items-center justify-end h-full space-x-2 ${
+            activeModule === 'messages' && isMessageConversationOpen ? 'hidden' : ''
+          }`}
+        >
           {/* Obnoviť pre modul Žiadosti */}
           {activeModule === 'requests' && (
             <button
@@ -156,7 +201,7 @@ export default function MobileTopBar({
           )}
 
           {/* Ikona profilu – rýchly prechod na profil (skrytá v upozorneniach, účte a súkromí) */}
-          {onProfileClick && activeModule !== 'profile' && activeModule !== 'user-profile' && activeModule !== 'skills-describe' && activeModule !== 'requests' && activeModule !== 'offer-reviews' && activeModule !== 'notifications' && activeModule !== 'account-type' && activeRightItem !== 'account-type' && activeModule !== 'privacy' && activeRightItem !== 'privacy' && (
+          {onProfileClick && activeModule !== 'profile' && activeModule !== 'user-profile' && activeModule !== 'skills-describe' && activeModule !== 'requests' && activeModule !== 'messages' && activeModule !== 'offer-reviews' && activeModule !== 'notifications' && activeModule !== 'account-type' && activeRightItem !== 'account-type' && activeModule !== 'privacy' && activeRightItem !== 'privacy' && (
             <button
               onClick={onProfileClick}
               className="p-1.5 rounded-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-black text-gray-600 dark:text-gray-300 shadow-sm hover:border-purple-400 hover:text-purple-600 hover:bg-gray-50 dark:hover:bg-gray-900 transition-all"

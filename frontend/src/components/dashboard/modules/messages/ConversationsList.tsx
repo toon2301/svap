@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Bars3Icon } from '@heroicons/react/24/outline';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { syncMessageUnreadCountFromConversations } from '@/components/dashboard/contexts/messageUnreadStore';
 import type { ConversationListItem } from './types';
 import { listConversations } from './messagingApi';
 import { MESSAGING_CONVERSATIONS_REFRESH_EVENT } from './messagesEvents';
@@ -53,6 +54,7 @@ export function ConversationsList({
       const request = (async () => {
         const data = await listConversations();
         const safeItems = Array.isArray(data) ? data : [];
+        syncMessageUnreadCountFromConversations(safeItems);
         setItems(safeItems);
         return safeItems;
       })();
@@ -79,7 +81,7 @@ export function ConversationsList({
   );
 
   useEffect(() => {
-    void refresh({ showLoader: true, clearOnError: true });
+    void refresh({ showLoader: true, clearOnError: true }).catch(() => undefined);
   }, [refresh]);
 
   useEffect(() => {
@@ -92,7 +94,7 @@ export function ConversationsList({
 
     const refreshIfVisible = () => {
       if (document.visibilityState !== 'visible') return;
-      void refresh();
+      void refresh().catch(() => undefined);
     };
 
     if (shouldUseIntervalPolling) {
@@ -180,7 +182,13 @@ export function ConversationsList({
           conversation.last_message_sender_id === currentUserId;
         const preview = isMine ? `Ty: ${rawPreview}` : rawPreview;
         const isSelected = selectedConversationId === conversation.id;
-        const isUnread = conversation.has_unread && !isSelected && !isMine;
+        const unreadCount =
+          typeof conversation.unread_count === 'number'
+            ? conversation.unread_count
+            : conversation.has_unread
+              ? 1
+              : 0;
+        const isUnread = unreadCount > 0 && !isSelected && !isMine;
 
         return (
           <button
@@ -190,17 +198,25 @@ export function ConversationsList({
               // Optimistic UI: after opening the conversation, stop highlighting it as unread.
               setItems((prev) =>
                 prev.map((item) =>
-                  item.id === conversation.id ? { ...item, has_unread: false } : item,
+                  item.id === conversation.id
+                    ? { ...item, has_unread: false, unread_count: 0 }
+                    : item,
                 ),
               );
               router.push(buildMessagesUrl(conversation.id));
             }}
-            className={`group relative w-full text-left flex items-center gap-3 rounded-2xl border transition-colors ${
-              isSelected
-                ? 'border-purple-300 bg-purple-50/90 text-purple-900 dark:border-purple-700 dark:bg-purple-900/25 dark:text-white'
-                : isRail
-                  ? 'border-transparent bg-transparent text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-900 hover:text-gray-900 dark:hover:text-white'
-                  : 'border-gray-200 dark:border-gray-800 bg-white/60 dark:bg-[#0f0f10] hover:bg-white/80 dark:hover:bg-[#141416]'
+            className={`group relative w-full text-left flex items-center gap-3 transition-colors ${
+              isRail
+                ? `rounded-2xl border ${
+                    isSelected
+                      ? 'border-purple-300 bg-purple-50/90 text-purple-900 dark:border-purple-700 dark:bg-purple-900/25 dark:text-white'
+                      : 'border-transparent bg-transparent text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-900 hover:text-gray-900 dark:hover:text-white'
+                  }`
+                : `${
+                    isSelected
+                      ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/25 dark:text-white'
+                      : 'bg-transparent text-gray-700 dark:text-gray-300'
+                  }`
             } ${isCompact ? 'px-3 py-2.5' : 'px-4 py-3'}`}
           >
             <div
@@ -246,9 +262,11 @@ export function ConversationsList({
                 </span>
                 {isUnread ? (
                   <span
-                    className="h-2 w-2 rounded-full bg-purple-600 flex-shrink-0"
-                    aria-label="Unread"
-                  />
+                    className="inline-flex min-w-5 h-5 items-center justify-center rounded-full bg-purple-600 px-1.5 text-[10px] font-bold text-white flex-shrink-0"
+                    aria-label={`${unreadCount} unread messages`}
+                  >
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
                 ) : null}
               </div>
               <div

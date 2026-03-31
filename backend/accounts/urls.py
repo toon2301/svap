@@ -170,4 +170,19 @@ urlpatterns = [
         views.notifications_mark_all_read_view,
         name="notifications_mark_all_read",
     ),
+    path(
+        "push/vapid-public-key/",
+        views.push_vapid_public_key_view,
+        name="push_vapid_public_key",
+    ),
+    path(
+        "push/subscriptions/",
+        views.push_subscriptions_view,
+        name="push_subscriptions",
+    ),
+    path(
+        "push/subscriptions/current/",
+        views.push_subscription_current_view,
+        name="push_subscription_current",
+    ),
 ]

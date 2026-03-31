@@ -37,6 +37,7 @@ export function DraftConversationDetail({
   const [text, setText] = useState('');
   const resolvedTargetIdRef = useRef<number>(targetUserId);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const shouldRestoreFocusRef = useRef(false);
 
   const focusComposer = useCallback(() => {
     if (isMobile) return;
@@ -114,10 +115,17 @@ export function DraftConversationDetail({
     focusComposer();
   }, [draft, focusComposer, loading, targetUserId]);
 
+  useEffect(() => {
+    if (sending || loading || !draft || !shouldRestoreFocusRef.current) return;
+    shouldRestoreFocusRef.current = false;
+    focusComposer();
+  }, [draft, focusComposer, loading, sending]);
+
   const handleSend = async () => {
     const clean = text.trim();
     if (!clean || sending) return;
 
+    shouldRestoreFocusRef.current = true;
     setSending(true);
     try {
       const result = await sendDirectMessage(resolvedTargetIdRef.current, clean);
@@ -140,7 +148,6 @@ export function DraftConversationDetail({
       );
     } finally {
       setSending(false);
-      focusComposer();
     }
   };
 

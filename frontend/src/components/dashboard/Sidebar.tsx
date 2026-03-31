@@ -20,7 +20,10 @@ import {
 } from '@heroicons/react/24/outline';
 import { SunIcon, MoonIcon } from '@heroicons/react/24/outline';
 import { useTheme } from '@/contexts/ThemeContext';
-import { useRequestsNotifications } from './contexts/RequestsNotificationsContext';
+import {
+  useMessagesNotifications,
+  useRequestsNotifications,
+} from './contexts/RequestsNotificationsContext';
 
 export interface SidebarItem {
   id: string;
@@ -95,6 +98,7 @@ export default function Sidebar({
   const { t } = useLanguage();
   const { theme, toggleTheme } = useTheme();
   const { unreadCount, markAllRead } = useRequestsNotifications();
+  const { unreadCount: messageUnreadCount } = useMessagesNotifications();
   const handleItemClick = (itemId: string) => {
     // Desktop: pre vyhľadávanie otvor špeciálny search panel namiesto zmeny hlavného modulu
     if (itemId === 'search' && onSearchClick && !isMobile) {
@@ -205,6 +209,11 @@ export default function Sidebar({
                     return item.label;
                   })()}
                 </span>
+                {item.id === 'messages' && activeItem !== 'messages' && messageUnreadCount > 0 && (
+                  <span className="ml-auto inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-purple-600 text-white text-[11px] font-bold">
+                    {messageUnreadCount > 99 ? '99+' : messageUnreadCount}
+                  </span>
+                )}
                 {item.id === 'requests' && unreadCount > 0 && (
                   <span className="ml-auto inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-purple-600 text-white text-[11px] font-bold">
                     {unreadCount > 99 ? '99+' : unreadCount}

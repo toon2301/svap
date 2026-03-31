@@ -2,7 +2,18 @@ from __future__ import annotations
 
 from django.contrib.auth import get_user_model
 from django.db import connections
-from django.db.models import BooleanField, Case, F, OuterRef, Subquery, Value, When
+from django.db.models import (
+    BooleanField,
+    Case,
+    Count,
+    F,
+    IntegerField,
+    OuterRef,
+    Q,
+    Subquery,
+    Value,
+    When,
+)
 from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
@@ -114,6 +125,82 @@ def _conversation_for_user_or_404(*, conversation_id: int, user) -> Conversation
     )
 
 
+def _conversation_unread_count_expression_for_user(user):
+    return Count(
+        "messages",
+        filter=Q(participants__user=user)
+        & ~Q(messages__sender_id=user.id)
+        & (
+            Q(participants__last_read_at__isnull=True)
+            | Q(messages__created_at__gt=F("participants__last_read_at"))
+        ),
+        distinct=True,
+        output_field=IntegerField(),
+    )
+
+
+def _conversation_unread_messages_count_for_user(*, conversation_id: int, user_id: int) -> int:
+    participant = (
+        ConversationParticipant.objects.filter(
+            conversation_id=conversation_id, user_id=user_id
+        )
+        .values("last_read_at")
+        .first()
+    )
+    if participant is None:
+        return 0
+
+    last_read_at = participant.get("last_read_at")
+    qs = Message.objects.filter(conversation_id=conversation_id).exclude(sender_id=user_id)
+    if last_read_at is not None:
+        qs = qs.filter(created_at__gt=last_read_at)
+    return int(qs.count())
+
+
+def _total_unread_messages_count_for_user(user) -> int:
+    total = (
+        ConversationParticipant.objects.filter(
+            user=user,
+            conversation__last_message_at__isnull=False,
+        ).aggregate(
+            total=Count(
+                "conversation__messages",
+                filter=~Q(conversation__messages__sender_id=user.id)
+                & (
+                    Q(last_read_at__isnull=True)
+                    | Q(conversation__messages__created_at__gt=F("last_read_at"))
+                ),
+                distinct=True,
+                output_field=IntegerField(),
+            )
+        )["total"]
+        or 0
+    )
+    return int(total)
+
+
+def _total_unread_messages_count_for_user_id(user_id: int) -> int:
+    total = (
+        ConversationParticipant.objects.filter(
+            user_id=user_id,
+            conversation__last_message_at__isnull=False,
+        ).aggregate(
+            total=Count(
+                "conversation__messages",
+                filter=~Q(conversation__messages__sender_id=user_id)
+                & (
+                    Q(last_read_at__isnull=True)
+                    | Q(conversation__messages__created_at__gt=F("last_read_at"))
+                ),
+                distinct=True,
+                output_field=IntegerField(),
+            )
+        )["total"]
+        or 0
+    )
+    return int(total)
+
+
 def _conversation_list_queryset_for_user(user):
     """
     Conversations where the user is a participant, annotated for MVP UI:
@@ -155,15 +242,11 @@ def _conversation_list_queryset_for_user(user):
             other_user_slug=Subquery(other_participant_qs.values("user__slug")[:1]),
             other_user_type=Subquery(other_participant_qs.values("user__user_type")[:1]),
             other_user_avatar_name=Subquery(other_participant_qs.values("user__avatar")[:1]),
+            unread_count=_conversation_unread_count_expression_for_user(user),
         )
         .annotate(
             has_unread=Case(
-                # no last_message_at -> nothing to read
-                When(last_message_at__isnull=True, then=Value(False)),
-                # no last_read_at -> unread if there's a last_message_at
-                When(last_read_at__isnull=True, then=Value(True)),
-                # otherwise compare timestamps
-                When(last_message_at__gt=F("last_read_at"), then=Value(True)),
+                When(unread_count__gt=0, then=Value(True)),
                 default=Value(False),
                 output_field=BooleanField(),
             )
@@ -227,6 +310,16 @@ class ConversationListPagination(PageNumberPagination):
         )
 
 
+class UnreadMessagesSummaryView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        return Response(
+            {"count": _total_unread_messages_count_for_user(request.user)},
+            status=status.HTTP_200_OK,
+        )
+
+
 class OpenConversationView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -269,6 +362,7 @@ class OpenConversationView(APIView):
             "last_message_is_deleted": False,
             "last_read_at": None,
             "has_unread": False,
+            "unread_count": 0,
             "updated_at": None,
             "created": False,
             "is_draft": True,
@@ -397,7 +491,19 @@ class SendMessageView(APIView):
             "created_at": result.message.created_at.isoformat(),
         }
         for participant_id in participant_ids:
-            notify_user(participant_id, event)
+            notify_user(
+                participant_id,
+                {
+                    **event,
+                    "total_unread_count": _total_unread_messages_count_for_user_id(
+                        participant_id
+                    ),
+                    "conversation_unread_count": _conversation_unread_messages_count_for_user(
+                        conversation_id=convo.id,
+                        user_id=participant_id,
+                    ),
+                },
+            )
 
         return Response(
             MessageSerializer(result.message, context={"request": request}).data,
@@ -442,7 +548,19 @@ class StartDirectMessageView(APIView):
             "created_at": result.message.created_at.isoformat(),
         }
         for participant_id in participant_ids:
-            notify_user(participant_id, event)
+            notify_user(
+                participant_id,
+                {
+                    **event,
+                    "total_unread_count": _total_unread_messages_count_for_user_id(
+                        participant_id
+                    ),
+                    "conversation_unread_count": _conversation_unread_messages_count_for_user(
+                        conversation_id=result.conversation.id,
+                        user_id=participant_id,
+                    ),
+                },
+            )
 
         return Response(
             {
@@ -469,8 +587,24 @@ class MarkConversationReadView(APIView):
         except NotParticipant:
             return Response(status=status.HTTP_404_NOT_FOUND)
 
+        total_unread_count = _total_unread_messages_count_for_user(request.user)
+        notify_user(
+            request.user.id,
+            {
+                "type": "messaging_read",
+                "conversation_id": convo.id,
+                "conversation_unread_count": 0,
+                "total_unread_count": total_unread_count,
+            },
+        )
+
         return Response(
-            {"conversation_id": convo.id, "last_read_at": participant.last_read_at},
+            {
+                "conversation_id": convo.id,
+                "last_read_at": participant.last_read_at,
+                "conversation_unread_count": 0,
+                "total_unread_count": total_unread_count,
+            },
             status=status.HTTP_200_OK,
         )
 

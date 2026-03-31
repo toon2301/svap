@@ -118,6 +118,8 @@ class TestMessagingApi(APITestCase):
         assert event["message_id"] == response.data["message"]["id"]
         assert event["sender_id"] == self.u1.id
         assert isinstance(event["created_at"], str)
+        assert event["conversation_unread_count"] == 1
+        assert event["total_unread_count"] == 1
 
     def test_non_participant_cannot_read_messages(self):
         convo = self._create_direct_conversation(actor=self.u1, target=self.u2)
@@ -148,11 +150,21 @@ class TestMessagingApi(APITestCase):
 
         self.client.force_authenticate(user=self.u1)
         read_url = reverse("accounts:messaging_mark_read", kwargs={"conversation_id": convo.id})
-        read_response = self.client.post(read_url, {}, format="json")
+        with patch("messaging.api.views.notify_user") as notify_user_mock:
+            read_response = self.client.post(read_url, {}, format="json")
 
         assert read_response.status_code == status.HTTP_200_OK
+        assert read_response.data["conversation_unread_count"] == 0
+        assert read_response.data["total_unread_count"] == 0
         participant = ConversationParticipant.objects.get(conversation_id=convo.id, user=self.u1)
         assert participant.last_read_at is not None
+        notify_user_mock.assert_called_once()
+        called_user_id, event = notify_user_mock.call_args.args
+        assert called_user_id == self.u1.id
+        assert event["type"] == "messaging_read"
+        assert event["conversation_id"] == convo.id
+        assert event["conversation_unread_count"] == 0
+        assert event["total_unread_count"] == 0
 
     def test_conversation_list_returns_only_started_conversations_with_other_user(self):
         empty_convo = self._create_direct_conversation(actor=self.u1, target=self.u2)
@@ -172,7 +184,33 @@ class TestMessagingApi(APITestCase):
         assert results[0]["id"] == started_convo.id
         assert results[0]["other_user"]["id"] == self.u3.id
         assert results[0]["other_user"]["display_name"]
+        assert results[0]["unread_count"] == 0
         assert all(item["id"] != empty_convo.id for item in results)
+
+    def test_conversation_list_includes_unread_count_and_summary_endpoint_returns_total(self):
+        convo = self._create_direct_conversation(actor=self.u2, target=self.u1)
+
+        self.client.force_authenticate(user=self.u2)
+        send_url = reverse("accounts:messaging_send_message", kwargs={"conversation_id": convo.id})
+        assert self.client.post(send_url, {"text": "Prva"}, format="json").status_code == status.HTTP_201_CREATED
+        assert self.client.post(send_url, {"text": "Druha"}, format="json").status_code == status.HTTP_201_CREATED
+
+        self.client.force_authenticate(user=self.u1)
+        list_url = reverse("accounts:messaging_list_conversations")
+        list_response = self.client.get(list_url)
+
+        assert list_response.status_code == status.HTTP_200_OK
+        results = list_response.data.get("results", [])
+        assert len(results) == 1
+        assert results[0]["id"] == convo.id
+        assert results[0]["has_unread"] is True
+        assert results[0]["unread_count"] == 2
+
+        summary_url = reverse("accounts:messaging_unread_summary")
+        summary_response = self.client.get(summary_url)
+
+        assert summary_response.status_code == status.HTTP_200_OK
+        assert summary_response.data["count"] == 2
 
     def test_conversation_list_exposes_server_timing_breakdown(self):
         convo = self._create_direct_conversation(actor=self.u1, target=self.u2)

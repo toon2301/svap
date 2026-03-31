@@ -61,6 +61,7 @@ class ConversationListItemSerializer(serializers.ModelSerializer):
     last_message_is_deleted = serializers.BooleanField(read_only=True)
     last_read_at = serializers.DateTimeField(read_only=True, allow_null=True)
     has_unread = serializers.BooleanField(read_only=True)
+    unread_count = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = Conversation
@@ -73,6 +74,7 @@ class ConversationListItemSerializer(serializers.ModelSerializer):
             "other_user",
             "last_read_at",
             "has_unread",
+            "unread_count",
             "updated_at",
         ]
 

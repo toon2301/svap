@@ -7,10 +7,16 @@ from .api.views import (
     OpenConversationView,
     SendMessageView,
     StartDirectMessageView,
+    UnreadMessagesSummaryView,
 )
 
 urlpatterns = [
     path("conversations/open/", OpenConversationView.as_view(), name="messaging_open"),
+    path(
+        "conversations/unread-summary/",
+        UnreadMessagesSummaryView.as_view(),
+        name="messaging_unread_summary",
+    ),
     path(
         "conversations/direct/send/",
         StartDirectMessageView.as_view(),

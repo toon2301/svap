@@ -5,11 +5,17 @@ import { act, render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { ConversationsList } from './ConversationsList';
 import { listConversations } from './messagingApi';
+import { syncMessageUnreadCountFromConversations } from '@/components/dashboard/contexts/messageUnreadStore';
 import { requestConversationsRefresh } from './messagesEvents';
 
 jest.mock('./messagingApi', () => ({
   __esModule: true,
   listConversations: jest.fn(),
+}));
+
+jest.mock('@/components/dashboard/contexts/messageUnreadStore', () => ({
+  __esModule: true,
+  syncMessageUnreadCountFromConversations: jest.fn(),
 }));
 
 function setVisibilityState(state: 'visible' | 'hidden') {
@@ -27,6 +33,33 @@ describe('ConversationsList', () => {
 
   afterEach(() => {
     jest.useRealTimers();
+  });
+
+  it('syncs the global message unread count from the fetched conversations list', async () => {
+    (listConversations as jest.Mock).mockResolvedValue([
+      {
+        id: 9,
+        other_user: { id: 2, display_name: 'Tester' },
+        last_message_preview: 'Nova sprava',
+        last_message_at: '2026-03-27T10:00:00Z',
+        last_message_sender_id: 2,
+        has_unread: true,
+        unread_count: 2,
+      },
+    ]);
+
+    render(<ConversationsList currentUserId={1} variant="rail" />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Nova sprava')).toBeInTheDocument();
+    });
+
+    expect(syncMessageUnreadCountFromConversations).toHaveBeenCalledWith([
+      expect.objectContaining({
+        id: 9,
+        unread_count: 2,
+      }),
+    ]);
   });
 
   it('refreshes the list when a conversation refresh event is dispatched', async () => {

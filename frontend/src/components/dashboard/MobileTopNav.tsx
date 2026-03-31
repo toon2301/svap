@@ -7,7 +7,10 @@ import {
   ChatBubbleLeftRightIcon,
   BellIcon 
 } from '@heroicons/react/24/outline';
-import { useRequestsNotifications } from './contexts/RequestsNotificationsContext';
+import {
+  useMessagesNotifications,
+  useRequestsNotifications,
+} from './contexts/RequestsNotificationsContext';
 
 interface MobileTopNavProps {
   activeItem: string;
@@ -16,11 +19,12 @@ interface MobileTopNavProps {
 
 export default function MobileTopNav({ activeItem, onItemClick }: MobileTopNavProps) {
   const { unreadCount } = useRequestsNotifications();
+  const { unreadCount: messageUnreadCount } = useMessagesNotifications();
   const navItems = [
     { id: 'home', icon: HomeIcon, label: 'Domov' },
     { id: 'search', icon: MagnifyingGlassIcon, label: 'Hľadať' },
-    { id: 'requests', icon: InboxIcon, label: 'Spolupráce' },
     { id: 'messages', icon: ChatBubbleLeftRightIcon, label: 'Správy' },
+    { id: 'requests', icon: InboxIcon, label: 'Spolupráce' },
     { id: 'notifications', icon: BellIcon, label: 'Upozornenia' },
   ];
 
@@ -46,6 +50,14 @@ export default function MobileTopNav({ activeItem, onItemClick }: MobileTopNavPr
             >
               <span className="relative inline-block overflow-visible">
                 <Icon className="w-6 h-6 shrink-0" strokeWidth={isActive ? 2.5 : 2} />
+                {item.id === 'messages' && activeItem !== 'messages' && messageUnreadCount > 0 && (
+                  <span
+                    className="absolute top-0 right-0 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full bg-purple-600 text-white text-[11px] font-bold -translate-y-1/2 translate-x-1/2 z-10"
+                    aria-label={`${messageUnreadCount} ${messageUnreadCount === 1 ? 'nová správa' : 'nové správy'}`}
+                  >
+                    {messageUnreadCount > 99 ? '99+' : messageUnreadCount}
+                  </span>
+                )}
                 {item.id === 'requests' && unreadCount > 0 && (
                   <span
                     className="absolute top-0 right-0 min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full bg-purple-600 text-white text-[11px] font-bold -translate-y-1/2 translate-x-1/2 z-10"

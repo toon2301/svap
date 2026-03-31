@@ -3,12 +3,21 @@ import '@testing-library/jest-dom';
 import Sidebar from '../Sidebar';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 
+let mockRequestsUnreadCount = 0;
+let mockMessageUnreadCount = 0;
+
 jest.mock('../contexts/RequestsNotificationsContext', () => ({
   __esModule: true,
   useRequestsNotifications: () => ({
-    unreadCount: 0,
+    unreadCount: mockRequestsUnreadCount,
     refreshUnreadCount: jest.fn(),
     markAllRead: jest.fn(),
+  }),
+  useMessagesNotifications: () => ({
+    unreadCount: mockMessageUnreadCount,
+    refreshUnreadCount: jest.fn(),
+    setActiveConversationId: jest.fn(),
+    syncConversationReadState: jest.fn(),
   }),
 }));
 
@@ -31,6 +40,8 @@ describe('Sidebar', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    mockRequestsUnreadCount = 0;
+    mockMessageUnreadCount = 0;
   });
 
   it('renders all navigation items', () => {
@@ -152,5 +163,25 @@ describe('Sidebar', () => {
     fireEvent.click(screen.getByText('Spr\u00e1vy'));
 
     expect(mockOnItemClick).toHaveBeenCalledWith('messages');
+  });
+
+  it('shows a message unread badge only when messages module is not active', () => {
+    mockMessageUnreadCount = 5;
+
+    const { rerender } = render(
+      <ThemeProvider>
+        <Sidebar {...defaultProps} onLogout={() => {}} activeItem="home" />
+      </ThemeProvider>,
+    );
+
+    expect(screen.getByText('5')).toBeInTheDocument();
+
+    rerender(
+      <ThemeProvider>
+        <Sidebar {...defaultProps} onLogout={() => {}} activeItem="messages" />
+      </ThemeProvider>,
+    );
+
+    expect(screen.queryByText('5')).not.toBeInTheDocument();
   });
 });

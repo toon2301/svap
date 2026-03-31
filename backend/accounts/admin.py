@@ -1,12 +1,23 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.utils.translation import gettext_lazy as _
-from .models import User, UserProfile, UserType, OfferedSkill, OfferedSkillImage, Review, ReviewReport, UserReport
+
+from .models import (
+    OfferedSkill,
+    OfferedSkillImage,
+    Review,
+    ReviewReport,
+    User,
+    UserProfile,
+    UserReport,
+    UserType,
+    WebPushSubscription,
+)
 
 
 @admin.register(User)
 class UserAdmin(BaseUserAdmin):
-    """Admin rozhranie pre User model"""
+    """Admin interface for the custom User model."""
 
     list_display = [
         "username",
@@ -30,7 +41,7 @@ class UserAdmin(BaseUserAdmin):
     fieldsets = (
         (None, {"fields": ("username", "password")}),
         (
-            _("Osobné informácie"),
+            _("Osobne informacie"),
             {
                 "fields": (
                     "first_name",
@@ -43,9 +54,9 @@ class UserAdmin(BaseUserAdmin):
                 )
             },
         ),
-        (_("Typ účtu"), {"fields": ("user_type", "company_name", "website")}),
+        (_("Typ uctu"), {"fields": ("user_type", "company_name", "website")}),
         (
-            _("Sociálne siete"),
+            _("Socialne siete"),
             {"fields": ("linkedin", "facebook", "instagram"), "classes": ("collapse",)},
         ),
         (
@@ -62,14 +73,14 @@ class UserAdmin(BaseUserAdmin):
             },
         ),
         (
-            _("Dôležité dátumy"),
+            _("Dolezite datumy"),
             {
                 "fields": ("last_login", "date_joined", "created_at", "updated_at"),
                 "classes": ("collapse",),
             },
         ),
         (
-            _("Oprávnenia"),
+            _("Opravnenia"),
             {"fields": ("groups", "user_permissions"), "classes": ("collapse",)},
         ),
     )
@@ -89,7 +100,7 @@ class UserAdmin(BaseUserAdmin):
 
 @admin.register(UserProfile)
 class UserProfileAdmin(admin.ModelAdmin):
-    """Admin rozhranie pre UserProfile model"""
+    """Admin interface for UserProfile."""
 
     list_display = [
         "user",
@@ -112,12 +123,12 @@ class UserProfileAdmin(admin.ModelAdmin):
     ordering = ["-created_at"]
 
     fieldsets = (
-        (_("Používateľ"), {"fields": ("user",)}),
+        (_("Pouzivatel"), {"fields": ("user",)}),
         (_("Preferencie"), {"fields": ("preferred_communication",)}),
-        (_("Notifikácie"), {"fields": ("email_notifications", "push_notifications")}),
-        (_("Súkromie"), {"fields": ("show_email", "show_phone")}),
+        (_("Notifikacie"), {"fields": ("email_notifications", "push_notifications")}),
+        (_("Sukromie"), {"fields": ("show_email", "show_phone")}),
         (
-            _("Dôležité dátumy"),
+            _("Dolezite datumy"),
             {"fields": ("created_at", "updated_at"), "classes": ("collapse",)},
         ),
     )
@@ -127,7 +138,7 @@ class UserProfileAdmin(admin.ModelAdmin):
 
 @admin.register(OfferedSkill)
 class OfferedSkillAdmin(admin.ModelAdmin):
-    """Admin rozhranie pre OfferedSkill model"""
+    """Admin interface for offered skills."""
 
     list_display = ["user", "category", "subcategory", "created_at"]
     list_filter = ["category", "created_at"]
@@ -142,12 +153,12 @@ class OfferedSkillAdmin(admin.ModelAdmin):
     readonly_fields = ["created_at", "updated_at"]
 
     fieldsets = (
-        (_("Používateľ"), {"fields": ("user",)}),
-        (_("Zručnosť"), {"fields": ("category", "subcategory", "description")}),
+        (_("Pouzivatel"), {"fields": ("user",)}),
+        (_("Zrucnost"), {"fields": ("category", "subcategory", "description")}),
         (_("Praxe"), {"fields": ("experience_value", "experience_unit")}),
         (_("Tagy"), {"fields": ("tags",)}),
         (
-            _("Dôležité dátumy"),
+            _("Dolezite datumy"),
             {"fields": ("created_at", "updated_at"), "classes": ("collapse",)},
         ),
     )
@@ -155,7 +166,7 @@ class OfferedSkillAdmin(admin.ModelAdmin):
 
 @admin.register(OfferedSkillImage)
 class OfferedSkillImageAdmin(admin.ModelAdmin):
-    """Admin pre obrázky ponúk"""
+    """Admin interface for offer images."""
 
     list_display = ["id", "skill", "order", "created_at"]
     list_filter = ["created_at"]
@@ -166,7 +177,7 @@ class OfferedSkillImageAdmin(admin.ModelAdmin):
 
 @admin.register(Review)
 class ReviewAdmin(admin.ModelAdmin):
-    """Admin rozhranie pre Review model"""
+    """Admin interface for reviews."""
 
     list_display = ["id", "reviewer", "offer", "rating", "created_at"]
     list_filter = ["rating", "created_at"]
@@ -185,15 +196,73 @@ class ReviewAdmin(admin.ModelAdmin):
         (_("Hodnotenie"), {"fields": ("rating",)}),
         (_("Obsah recenzie"), {"fields": ("text", "pros", "cons")}),
         (
-            _("Dôležité dátumy"),
+            _("Dolezite datumy"),
             {"fields": ("created_at", "updated_at"), "classes": ("collapse",)},
+        ),
+    )
+
+
+@admin.register(WebPushSubscription)
+class WebPushSubscriptionAdmin(admin.ModelAdmin):
+    """Admin interface for stored web push subscriptions."""
+
+    list_display = [
+        "id",
+        "user",
+        "is_active",
+        "failure_count",
+        "last_seen_at",
+        "updated_at",
+    ]
+    list_filter = ["is_active", "created_at", "updated_at"]
+    search_fields = ["user__username", "user__email", "endpoint_hash", "device_label"]
+    ordering = ["-updated_at"]
+    readonly_fields = [
+        "endpoint_hash",
+        "endpoint_encrypted",
+        "p256dh_encrypted",
+        "auth_encrypted",
+        "created_at",
+        "updated_at",
+        "last_seen_at",
+        "last_success_at",
+        "last_failure_at",
+    ]
+
+    fieldsets = (
+        (_("Pouzivatel"), {"fields": ("user", "device_label", "user_agent")}),
+        (
+            _("Subscription"),
+            {
+                "fields": (
+                    "endpoint_hash",
+                    "endpoint_encrypted",
+                    "p256dh_encrypted",
+                    "auth_encrypted",
+                    "is_active",
+                    "failure_count",
+                )
+            },
+        ),
+        (
+            _("Dolezite datumy"),
+            {
+                "fields": (
+                    "last_seen_at",
+                    "last_success_at",
+                    "last_failure_at",
+                    "created_at",
+                    "updated_at",
+                ),
+                "classes": ("collapse",),
+            },
         ),
     )
 
 
 @admin.register(ReviewReport)
 class ReviewReportAdmin(admin.ModelAdmin):
-    """Admin rozhranie pre ReviewReport model"""
+    """Admin interface for review reports."""
 
     list_display = ["id", "review", "reported_by", "reason", "is_resolved", "created_at"]
     list_filter = ["is_resolved", "created_at"]
@@ -208,16 +277,16 @@ class ReviewReportAdmin(admin.ModelAdmin):
     readonly_fields = ["created_at"]
 
     fieldsets = (
-        (_("Recenzia a nahlásil"), {"fields": ("review", "reported_by")}),
-        (_("Nahlásenie"), {"fields": ("reason", "description")}),
+        (_("Recenzia a nahlasil"), {"fields": ("review", "reported_by")}),
+        (_("Nahlasenie"), {"fields": ("reason", "description")}),
         (_("Stav"), {"fields": ("is_resolved",)}),
-        (_("Dôležité dátumy"), {"fields": ("created_at",), "classes": ("collapse",)}),
+        (_("Dolezite datumy"), {"fields": ("created_at",), "classes": ("collapse",)}),
     )
 
 
 @admin.register(UserReport)
 class UserReportAdmin(admin.ModelAdmin):
-    """Admin rozhranie pre UserReport model"""
+    """Admin interface for user reports."""
 
     list_display = ["id", "reported_user", "reported_by", "reason", "is_resolved", "created_at"]
     list_filter = ["is_resolved", "created_at"]
@@ -233,14 +302,13 @@ class UserReportAdmin(admin.ModelAdmin):
     readonly_fields = ["created_at"]
 
     fieldsets = (
-        (_("Používatelia"), {"fields": ("reported_user", "reported_by")}),
-        (_("Nahlásenie"), {"fields": ("reason", "description")}),
+        (_("Pouzivatelia"), {"fields": ("reported_user", "reported_by")}),
+        (_("Nahlasenie"), {"fields": ("reason", "description")}),
         (_("Stav"), {"fields": ("is_resolved",)}),
-        (_("Dôležité dátumy"), {"fields": ("created_at",), "classes": ("collapse",)}),
+        (_("Dolezite datumy"), {"fields": ("created_at",), "classes": ("collapse",)}),
     )
 
 
-# Vlastné nastavenia admin rozhrania
 admin.site.site_header = "Swaply Admin"
 admin.site.site_title = "Swaply Admin"
-admin.site.index_title = "Správa Swaply"
+admin.site.index_title = "Sprava Swaply"

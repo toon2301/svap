@@ -2,12 +2,21 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import MobileTopNav from '../MobileTopNav';
 
+let mockRequestsUnreadCount = 0;
+let mockMessageUnreadCount = 0;
+
 jest.mock('../contexts/RequestsNotificationsContext', () => ({
   __esModule: true,
   useRequestsNotifications: () => ({
-    unreadCount: 0,
+    unreadCount: mockRequestsUnreadCount,
     refreshUnreadCount: jest.fn(),
     markAllRead: jest.fn(),
+  }),
+  useMessagesNotifications: () => ({
+    unreadCount: mockMessageUnreadCount,
+    refreshUnreadCount: jest.fn(),
+    setActiveConversationId: jest.fn(),
+    syncConversationReadState: jest.fn(),
   }),
 }));
 
@@ -30,6 +39,8 @@ describe('MobileTopNav', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    mockRequestsUnreadCount = 0;
+    mockMessageUnreadCount = 0;
   });
 
   it('renders all navigation items', () => {
@@ -67,5 +78,16 @@ describe('MobileTopNav', () => {
   });
 
   // Create button bol nahradený requests; coverage ponecháme na existujúcich testoch.
+  it('shows a message unread badge only when messages is not active', () => {
+    mockMessageUnreadCount = 4;
+
+    const { rerender } = render(<MobileTopNav {...defaultProps} activeItem="home" />);
+
+    expect(screen.getByLabelText(/4 nové správy/i)).toBeInTheDocument();
+
+    rerender(<MobileTopNav {...defaultProps} activeItem="messages" />);
+
+    expect(screen.queryByLabelText(/4 nové správy/i)).not.toBeInTheDocument();
+  });
 });
 

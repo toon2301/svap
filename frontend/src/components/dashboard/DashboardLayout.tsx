@@ -29,6 +29,10 @@ interface DashboardLayoutProps {
   desktopRightRail?: React.ReactNode;
   subcategory?: string | null;
   onSkillSaveClick?: () => void;
+  mobileAccountName?: string;
+  mobileMessagePeerName?: string;
+  mobileMessagePeerAvatarUrl?: string | null;
+  isMobileMessageConversationOpen?: boolean;
   children: React.ReactNode;
 }
 
@@ -55,6 +59,10 @@ export default function DashboardLayout({
   desktopRightRail,
   subcategory,
   onSkillSaveClick,
+  mobileAccountName,
+  mobileMessagePeerName,
+  mobileMessagePeerAvatarUrl,
+  isMobileMessageConversationOpen,
   children,
 }: DashboardLayoutProps) {
   const isProfileEditMode =
@@ -149,11 +157,18 @@ export default function DashboardLayout({
           activeRightItem={activeRightItem}
           subcategory={subcategory}
           onSaveClick={onSkillSaveClick}
+          accountName={mobileAccountName}
+          messagePeerName={mobileMessagePeerName}
+          messagePeerAvatarUrl={mobileMessagePeerAvatarUrl}
+          isMessageConversationOpen={isMobileMessageConversationOpen}
         />
       )}
 
       {/* Mobile Bottom Nav */}
-      {!(isRightSidebarOpen && activeModule === 'profile') && activeModule !== 'skills-describe' && activeModule !== 'user-profile' && (
+      {!(isRightSidebarOpen && activeModule === 'profile') &&
+        activeModule !== 'skills-describe' &&
+        activeModule !== 'user-profile' &&
+        !(activeModule === 'messages' && isMobileMessageConversationOpen) && (
         <MobileTopNav activeItem={activeModule} onItemClick={onModuleChange} />
       )}
 
@@ -211,6 +226,8 @@ export default function DashboardLayout({
         } ${
           activeModule === 'search'
             ? 'pt-0'
+            : activeModule === 'messages'
+              ? 'pt-12 lg:pt-0' // mobil: h-12 = výška vrchnej lišty, bez extra medzery
             : activeModule === 'offer-reviews'
               ? 'pt-12 lg:pt-0' // mobil: h-12 = výška lišty, žiadna medzera; desktop bez pt
               : 'pt-16'
@@ -220,7 +237,7 @@ export default function DashboardLayout({
               activeModule === 'offer-reviews'
                 ? 'pt-0 pb-4 lg:py-8' // recenzie: žiadna medzera medzi hornou lištou a tabmi
                 : activeModule === 'messages'
-                  ? 'pt-4 pb-2 lg:py-0' // správy: desktop bez extra vertikálneho scroll priestoru
+                  ? 'pt-0 pb-2 lg:py-0' // správy: na mobile bez medzery pod vrchnou lištou
                   : 'py-4 lg:py-8'
             } ${
               activeModule === 'search'

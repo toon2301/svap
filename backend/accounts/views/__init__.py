@@ -35,6 +35,11 @@ from .notifications import (
     notifications_unread_count_view,
     notifications_mark_all_read_view,
 )
+from .push import (
+    push_vapid_public_key_view,
+    push_subscriptions_view,
+    push_subscription_current_view,
+)
 from .user_reports import user_report_view
 from .search import search_view
 from .search_global import global_search_view
@@ -79,6 +84,9 @@ __all__ = [
     "notifications_list_view",
     "notifications_unread_count_view",
     "notifications_mark_all_read_view",
+    "push_vapid_public_key_view",
+    "push_subscriptions_view",
+    "push_subscription_current_view",
     "dashboard_home_view",
     "dashboard_search_view",
     "dashboard_favorites_view",

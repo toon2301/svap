@@ -14,6 +14,7 @@ export type ConversationListItem = {
   last_message_sender_id?: number | null;
   last_read_at: string | null;
   has_unread: boolean;
+  unread_count?: number;
   updated_at: string;
   created?: boolean;
   is_draft?: false;
@@ -28,6 +29,7 @@ export type ConversationDraft = {
   last_message_sender_id?: null;
   last_read_at: null;
   has_unread: false;
+  unread_count: 0;
   updated_at: null;
   created?: boolean;
   is_draft: true;
@@ -50,5 +52,9 @@ export type DirectMessageStartResult = {
   conversation_id: number;
   conversation_created: boolean;
   message: MessageItem;
+};
+
+export type MessagingUnreadSummary = {
+  count: number;
 };
 

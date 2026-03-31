@@ -3,28 +3,48 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { api, endpoints, ensureSessionRefreshed } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
+import { getUnreadMessagesSummary } from '@/components/dashboard/modules/messages/messagingApi';
 import {
   dispatchMessagingRealtimeMessage,
   requestConversationsRefresh,
 } from '@/components/dashboard/modules/messages/messagesEvents';
+import {
+  applyIncomingMessageUnreadEvent,
+  bindMessageUnreadCountStoreToUser,
+  getMessageUnreadCountStore,
+  isMessageUnreadCountFresh,
+  publishMessageUnreadCount,
+  subscribeToMessageUnreadCount,
+} from './messageUnreadStore';
 
-type RequestsNotificationsContextValue = {
+type DashboardNotificationsContextValue = {
   unreadCount: number;
   refreshUnreadCount: () => Promise<void>;
   markAllRead: () => Promise<void>;
+  messageUnreadCount: number;
+  refreshMessageUnreadCount: () => Promise<void>;
+  setActiveConversationId: (conversationId: number | null) => void;
+  syncConversationReadState: (options: {
+    conversationId: number;
+    totalUnreadCount?: number | null;
+  }) => void;
 };
 
-const RequestsNotificationsContext = createContext<RequestsNotificationsContextValue | null>(null);
+const RequestsNotificationsContext = createContext<DashboardNotificationsContextValue | null>(null);
 
 const POLL_INTERVAL_MS = 10000;
 const UNREAD_COUNT_FRESH_MS = 15000;
 const WS_CLOSE_GRACE_MS = 750;
 const WS_REAUTH_RECONNECT_DELAY_MS = 250;
+const MESSAGE_SOUND_COOLDOWN_MS = 750;
+const MESSAGE_NOTIFICATION_SOUND_SRC = '/sounds/universfield-new-notification-040-493469.mp3';
 
 type WsNotificationPayload = {
   type?: string;
   unread_count?: number;
   conversation_id?: number;
+  conversation_unread_count?: number;
+  total_unread_count?: number;
   message_id?: number;
   sender_id?: number;
   created_at?: string;
@@ -48,17 +68,22 @@ type WsStore = {
   origin: string | null;
 };
 
-type UnreadCountStore = {
+type CountStore = {
   unreadCount: number;
   lastSuccessfulRefreshAt: number;
   refreshPromise: Promise<void> | null;
   listeners: Set<UnreadCountListener>;
 };
 
+type GlobalScopeWithStores = typeof globalThis & {
+  __SWAPLY_REQ_WS_STORE__?: WsStore;
+  __SWAPLY_REQ_UNREAD_STORE__?: CountStore;
+  __SWAPLY_MSG_AUDIO_CTX__?: AudioContext;
+  __SWAPLY_MSG_AUDIO__?: HTMLAudioElement;
+};
+
 function getWsStore(): WsStore {
-  const globalScope = globalThis as typeof globalThis & {
-    __SWAPLY_REQ_WS_STORE__?: WsStore;
-  };
+  const globalScope = globalThis as GlobalScopeWithStores;
 
   if (!globalScope.__SWAPLY_REQ_WS_STORE__) {
     globalScope.__SWAPLY_REQ_WS_STORE__ = {
@@ -79,28 +104,31 @@ function getWsStore(): WsStore {
   return globalScope.__SWAPLY_REQ_WS_STORE__;
 }
 
-function getUnreadCountStore(): UnreadCountStore {
-  const globalScope = globalThis as typeof globalThis & {
-    __SWAPLY_REQ_UNREAD_STORE__?: UnreadCountStore;
+function createCountStore(): CountStore {
+  return {
+    unreadCount: 0,
+    lastSuccessfulRefreshAt: 0,
+    refreshPromise: null,
+    listeners: new Set(),
   };
+}
+
+function getRequestUnreadCountStore(): CountStore {
+  const globalScope = globalThis as GlobalScopeWithStores;
 
   if (!globalScope.__SWAPLY_REQ_UNREAD_STORE__) {
-    globalScope.__SWAPLY_REQ_UNREAD_STORE__ = {
-      unreadCount: 0,
-      lastSuccessfulRefreshAt: 0,
-      refreshPromise: null,
-      listeners: new Set(),
-    };
+    globalScope.__SWAPLY_REQ_UNREAD_STORE__ = createCountStore();
   }
 
   return globalScope.__SWAPLY_REQ_UNREAD_STORE__;
 }
 
-function publishUnreadCount(store: UnreadCountStore, count: number): void {
-  store.unreadCount = count;
+function publishUnreadCount(store: CountStore, count: number): void {
+  const safeCount = Math.max(0, Number.isFinite(count) ? count : 0);
+  store.unreadCount = safeCount;
   store.listeners.forEach((listener) => {
     try {
-      listener(count);
+      listener(safeCount);
     } catch {
       // ignore listener failures
     }
@@ -157,6 +185,80 @@ function toWebSocketUrl(origin: string): string {
 function isDocumentVisible(): boolean {
   if (typeof document === 'undefined') return true;
   return document.visibilityState !== 'hidden';
+}
+
+function playFallbackMessageNotificationTone(): void {
+  if (typeof window === 'undefined') return;
+
+  try {
+    const AudioCtor =
+      window.AudioContext ||
+      (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!AudioCtor) return;
+
+    const globalScope = globalThis as GlobalScopeWithStores;
+    if (!globalScope.__SWAPLY_MSG_AUDIO_CTX__) {
+      globalScope.__SWAPLY_MSG_AUDIO_CTX__ = new AudioCtor();
+    }
+
+    const audioContext = globalScope.__SWAPLY_MSG_AUDIO_CTX__;
+    if (!audioContext) return;
+
+    if (audioContext.state === 'suspended') {
+      void audioContext.resume().catch(() => {
+        // best-effort only
+      });
+    }
+
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    const now = audioContext.currentTime;
+
+    oscillator.type = 'sine';
+    oscillator.frequency.setValueAtTime(880, now);
+
+    gainNode.gain.setValueAtTime(0.0001, now);
+    gainNode.gain.exponentialRampToValueAtTime(0.03, now + 0.01);
+    gainNode.gain.exponentialRampToValueAtTime(0.0001, now + 0.14);
+
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+
+    oscillator.start(now);
+    oscillator.stop(now + 0.15);
+  } catch {
+    // fail-open
+  }
+}
+
+function playMessageNotificationTone(): void {
+  if (typeof window === 'undefined') return;
+
+  try {
+    const globalScope = globalThis as GlobalScopeWithStores;
+    if (!globalScope.__SWAPLY_MSG_AUDIO__) {
+      const audio = new Audio(MESSAGE_NOTIFICATION_SOUND_SRC);
+      audio.preload = 'auto';
+      audio.volume = 0.45;
+      globalScope.__SWAPLY_MSG_AUDIO__ = audio;
+    }
+
+    const notificationAudio = globalScope.__SWAPLY_MSG_AUDIO__;
+    if (!notificationAudio) {
+      playFallbackMessageNotificationTone();
+      return;
+    }
+
+    notificationAudio.currentTime = 0;
+    const playPromise = notificationAudio.play();
+    if (playPromise && typeof playPromise.catch === 'function') {
+      void playPromise.catch(() => {
+        playFallbackMessageNotificationTone();
+      });
+    }
+  } catch {
+    playFallbackMessageNotificationTone();
+  }
 }
 
 async function refreshAccessTokenForWs(store: WsStore): Promise<boolean> {
@@ -307,26 +409,44 @@ function scheduleWsRelease(store: WsStore): void {
 export function RequestsNotificationsProvider({ children }: { children: React.ReactNode }) {
   const { isLoading, user } = useAuth();
   const [unreadCount, setUnreadCount] = useState(() => {
-    const store = getUnreadCountStore();
+    const store = getRequestUnreadCountStore();
     if (typeof user?.unread_skill_request_count === 'number') {
       store.unreadCount = user.unread_skill_request_count;
       return user.unread_skill_request_count;
     }
     return store.unreadCount;
   });
+  const [messageUnreadCount, setMessageUnreadCount] = useState(
+    () => getMessageUnreadCountStore().unreadCount,
+  );
   const [isRealtimeConnected, setIsRealtimeConnected] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false;
     return getWsStore().isOpen;
   });
 
   const isMountedRef = useRef(true);
+  const activeConversationIdRef = useRef<number | null>(null);
+  const lastMessageSoundAtRef = useRef(0);
 
   const isUnreadCountFresh = useCallback((maxAgeMs = UNREAD_COUNT_FRESH_MS) => {
-    return Date.now() - getUnreadCountStore().lastSuccessfulRefreshAt < maxAgeMs;
+    return Date.now() - getRequestUnreadCountStore().lastSuccessfulRefreshAt < maxAgeMs;
+  }, []);
+
+  const isMessageUnreadCountFreshEnough = useCallback(
+    (maxAgeMs = UNREAD_COUNT_FRESH_MS) => isMessageUnreadCountFresh(maxAgeMs),
+    [],
+  );
+
+  useEffect(() => {
+    isMountedRef.current = true;
+
+    return () => {
+      isMountedRef.current = false;
+    };
   }, []);
 
   useEffect(() => {
-    const store = getUnreadCountStore();
+    const store = getRequestUnreadCountStore();
 
     if (typeof user?.unread_skill_request_count === 'number') {
       store.lastSuccessfulRefreshAt = Date.now();
@@ -335,23 +455,38 @@ export function RequestsNotificationsProvider({ children }: { children: React.Re
   }, [user?.unread_skill_request_count]);
 
   useEffect(() => {
-    const store = getUnreadCountStore();
-    const listener: UnreadCountListener = (count) => {
+    const didRebind = bindMessageUnreadCountStoreToUser(user?.id ?? null);
+    if (!didRebind) return;
+    if (user?.id && !isLoading && isDocumentVisible()) {
+      void refreshMessageUnreadCount();
+    }
+  }, [isLoading, user?.id]);
+
+  useEffect(() => {
+    const requestStore = getRequestUnreadCountStore();
+    const requestListener: UnreadCountListener = (count) => {
       if (isMountedRef.current) {
         setUnreadCount(count);
       }
     };
 
-    store.listeners.add(listener);
+    requestStore.listeners.add(requestListener);
 
     return () => {
-      store.listeners.delete(listener);
-      isMountedRef.current = false;
+      requestStore.listeners.delete(requestListener);
     };
   }, []);
 
+  useEffect(() => {
+    return subscribeToMessageUnreadCount((count) => {
+      if (isMountedRef.current) {
+        setMessageUnreadCount(count);
+      }
+    });
+  }, []);
+
   const refreshUnreadCount = useCallback(async () => {
-    const store = getUnreadCountStore();
+    const store = getRequestUnreadCountStore();
     if (store.refreshPromise) {
       return store.refreshPromise;
     }
@@ -378,10 +513,34 @@ export function RequestsNotificationsProvider({ children }: { children: React.Re
     return requestPromise;
   }, []);
 
+  const refreshMessageUnreadCount = useCallback(async () => {
+    const store = getMessageUnreadCountStore();
+    if (store.refreshPromise) {
+      return store.refreshPromise;
+    }
+
+    let requestPromise: Promise<void> | null = null;
+    requestPromise = (async () => {
+      try {
+        const summary = await getUnreadMessagesSummary();
+        publishMessageUnreadCount(summary.count);
+      } catch {
+        // fail-open
+      } finally {
+        if (store.refreshPromise === requestPromise) {
+          store.refreshPromise = null;
+        }
+      }
+    })();
+
+    store.refreshPromise = requestPromise;
+    return requestPromise;
+  }, []);
+
   const markAllRead = useCallback(async () => {
     try {
       await api.post(endpoints.notifications.markAllRead, { type: 'skill_request' });
-      const store = getUnreadCountStore();
+      const store = getRequestUnreadCountStore();
       store.lastSuccessfulRefreshAt = Date.now();
       publishUnreadCount(store, 0);
     } catch {
@@ -389,19 +548,57 @@ export function RequestsNotificationsProvider({ children }: { children: React.Re
     }
   }, []);
 
+  const setActiveConversationId = useCallback((conversationId: number | null) => {
+    activeConversationIdRef.current = conversationId;
+  }, []);
+
+  const syncConversationReadState = useCallback(
+    ({
+      conversationId,
+      totalUnreadCount,
+    }: {
+      conversationId: number;
+      totalUnreadCount?: number | null;
+    }) => {
+      if (typeof totalUnreadCount === 'number') {
+        publishMessageUnreadCount(totalUnreadCount);
+      }
+      if (activeConversationIdRef.current === conversationId) {
+        activeConversationIdRef.current = conversationId;
+      }
+      requestConversationsRefresh();
+    },
+    [],
+  );
+
   useEffect(() => {
     if (isLoading) return;
     if (!isDocumentVisible()) return;
-    if (isUnreadCountFresh()) return;
-    void refreshUnreadCount();
-  }, [isLoading, isUnreadCountFresh, refreshUnreadCount]);
+
+    if (!isUnreadCountFresh()) {
+      void refreshUnreadCount();
+    }
+    if (!isMessageUnreadCountFreshEnough()) {
+      void refreshMessageUnreadCount();
+    }
+  }, [
+    isLoading,
+    isMessageUnreadCountFreshEnough,
+    isUnreadCountFresh,
+    refreshMessageUnreadCount,
+    refreshUnreadCount,
+  ]);
 
   useEffect(() => {
     const refreshIfVisible = () => {
       if (isLoading) return;
       if (!isDocumentVisible()) return;
-      if (isUnreadCountFresh()) return;
-      void refreshUnreadCount();
+      if (!isUnreadCountFresh()) {
+        void refreshUnreadCount();
+      }
+      if (!isMessageUnreadCountFreshEnough()) {
+        void refreshMessageUnreadCount();
+      }
     };
 
     document.addEventListener('visibilitychange', refreshIfVisible);
@@ -411,7 +608,13 @@ export function RequestsNotificationsProvider({ children }: { children: React.Re
       document.removeEventListener('visibilitychange', refreshIfVisible);
       window.removeEventListener('focus', refreshIfVisible);
     };
-  }, [isLoading, isUnreadCountFresh, refreshUnreadCount]);
+  }, [
+    isLoading,
+    isMessageUnreadCountFreshEnough,
+    isUnreadCountFresh,
+    refreshMessageUnreadCount,
+    refreshUnreadCount,
+  ]);
 
   useEffect(() => {
     if (isLoading) return;
@@ -420,14 +623,25 @@ export function RequestsNotificationsProvider({ children }: { children: React.Re
     const intervalId = window.setInterval(() => {
       if (isLoading) return;
       if (!isDocumentVisible()) return;
-      if (isUnreadCountFresh()) return;
-      void refreshUnreadCount();
+      if (!isUnreadCountFresh()) {
+        void refreshUnreadCount();
+      }
+      if (!isMessageUnreadCountFreshEnough()) {
+        void refreshMessageUnreadCount();
+      }
     }, POLL_INTERVAL_MS);
 
     return () => {
       window.clearInterval(intervalId);
     };
-  }, [isLoading, isRealtimeConnected, isUnreadCountFresh, refreshUnreadCount]);
+  }, [
+    isLoading,
+    isMessageUnreadCountFreshEnough,
+    isRealtimeConnected,
+    isUnreadCountFresh,
+    refreshMessageUnreadCount,
+    refreshUnreadCount,
+  ]);
 
   useEffect(() => {
     const origin = getWebSocketOrigin();
@@ -435,9 +649,15 @@ export function RequestsNotificationsProvider({ children }: { children: React.Re
 
     const onPayload: WsListener = (payload) => {
       if (payload.type === 'skill_request' && typeof payload.unread_count === 'number') {
-        const unreadStore = getUnreadCountStore();
+        const unreadStore = getRequestUnreadCountStore();
         unreadStore.lastSuccessfulRefreshAt = Date.now();
         publishUnreadCount(unreadStore, payload.unread_count);
+        return;
+      }
+
+      if (payload.type === 'messaging_read' && typeof payload.total_unread_count === 'number') {
+        publishMessageUnreadCount(payload.total_unread_count);
+        requestConversationsRefresh();
         return;
       }
 
@@ -448,6 +668,14 @@ export function RequestsNotificationsProvider({ children }: { children: React.Re
         typeof payload.sender_id === 'number' &&
         typeof payload.created_at === 'string'
       ) {
+        applyIncomingMessageUnreadEvent({
+          totalUnreadCount: payload.total_unread_count,
+          conversationId: payload.conversation_id,
+          activeConversationId: activeConversationIdRef.current,
+          senderId: payload.sender_id,
+          currentUserId: user?.id,
+        });
+
         requestConversationsRefresh();
         dispatchMessagingRealtimeMessage({
           conversationId: payload.conversation_id,
@@ -455,15 +683,30 @@ export function RequestsNotificationsProvider({ children }: { children: React.Re
           senderId: payload.sender_id,
           createdAt: payload.created_at,
         });
+
+        const shouldPlayTone =
+          isDocumentVisible() &&
+          activeConversationIdRef.current !== payload.conversation_id &&
+          payload.sender_id !== user?.id;
+
+        if (shouldPlayTone) {
+          const now = Date.now();
+          if (now - lastMessageSoundAtRef.current >= MESSAGE_SOUND_COOLDOWN_MS) {
+            lastMessageSoundAtRef.current = now;
+            playMessageNotificationTone();
+          }
+        }
       }
     };
 
     const onOpen = () => {
       if (isLoading) return;
-      if (isUnreadCountFresh()) {
-        return;
+      if (!isUnreadCountFresh()) {
+        void refreshUnreadCount();
       }
-      void refreshUnreadCount();
+      if (!isMessageUnreadCountFreshEnough()) {
+        void refreshMessageUnreadCount();
+      }
     };
 
     const onStatusChange: WsStatusListener = (connected) => {
@@ -496,20 +739,63 @@ export function RequestsNotificationsProvider({ children }: { children: React.Re
         scheduleWsRelease(store);
       }
     };
-  }, [isLoading, isUnreadCountFresh, refreshUnreadCount]);
+  }, [
+    isLoading,
+    isMessageUnreadCountFreshEnough,
+    isUnreadCountFresh,
+    refreshMessageUnreadCount,
+    refreshUnreadCount,
+    user?.id,
+  ]);
 
-  const value = useMemo<RequestsNotificationsContextValue>(
-    () => ({ unreadCount, refreshUnreadCount, markAllRead }),
-    [markAllRead, refreshUnreadCount, unreadCount],
+  const value = useMemo<DashboardNotificationsContextValue>(
+    () => ({
+      unreadCount,
+      refreshUnreadCount,
+      markAllRead,
+      messageUnreadCount,
+      refreshMessageUnreadCount,
+      setActiveConversationId,
+      syncConversationReadState,
+    }),
+    [
+      markAllRead,
+      messageUnreadCount,
+      refreshMessageUnreadCount,
+      refreshUnreadCount,
+      setActiveConversationId,
+      syncConversationReadState,
+      unreadCount,
+    ],
   );
 
   return <RequestsNotificationsContext.Provider value={value}>{children}</RequestsNotificationsContext.Provider>;
 }
 
-export function useRequestsNotifications() {
+function useDashboardNotificationsContext() {
   const context = useContext(RequestsNotificationsContext);
   if (!context) {
     throw new Error('useRequestsNotifications must be used within RequestsNotificationsProvider');
   }
   return context;
+}
+
+export function useRequestsNotifications() {
+  const { unreadCount, refreshUnreadCount, markAllRead } = useDashboardNotificationsContext();
+  return { unreadCount, refreshUnreadCount, markAllRead };
+}
+
+export function useMessagesNotifications() {
+  const {
+    messageUnreadCount,
+    refreshMessageUnreadCount,
+    setActiveConversationId,
+    syncConversationReadState,
+  } = useDashboardNotificationsContext();
+  return {
+    unreadCount: messageUnreadCount,
+    refreshUnreadCount: refreshMessageUnreadCount,
+    setActiveConversationId,
+    syncConversationReadState,
+  };
 }

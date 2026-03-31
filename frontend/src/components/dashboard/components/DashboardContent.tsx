@@ -12,6 +12,8 @@ import DashboardModals from '../DashboardModals';
 import SearchModule from '../modules/SearchModule';
 import { MessagesDesktopRail } from '../modules/messages/MessagesDesktopRail';
 import { parseConversationId, parseTargetUserId } from '../modules/messages/messagesRouting';
+import { listConversations, openConversation } from '../modules/messages/messagingApi';
+import type { MessagingUserBrief } from '../modules/messages/types';
 import { useDashboardState } from '../hooks/useDashboardState';
 import { useSkillsModals } from '../hooks/useSkillsModals';
 import { useDashboardNavigation } from '../hooks/useDashboardNavigation';
@@ -81,6 +83,7 @@ export default function DashboardContent({
   // Local component state
   const [isInSubcategories, setIsInSubcategories] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [mobileMessagePeer, setMobileMessagePeer] = useState<MessagingUserBrief | null>(null);
   const skillsCategoryBackHandlerRef = useRef<(() => void) | null>(null);
 
   // Custom hooks pre rozdelenie logiky
@@ -212,6 +215,69 @@ export default function DashboardContent({
   const setViewedUserId = userProfile.setViewedUserId;
   const setViewedUserSlug = userProfile.setViewedUserSlug;
   const setViewedUserSummary = userProfile.setViewedUserSummary;
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (activeModule !== 'messages') {
+      setMobileMessagePeer(null);
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    const targetUserId =
+      targetUserIdFromMessagesQuery != null && Number.isFinite(targetUserIdFromMessagesQuery)
+        ? targetUserIdFromMessagesQuery
+        : null;
+
+    if (targetUserId != null) {
+      void (async () => {
+        try {
+          const result = await openConversation(targetUserId);
+          if (cancelled) return;
+          setMobileMessagePeer(result.other_user ?? null);
+        } catch {
+          if (!cancelled) {
+            setMobileMessagePeer(null);
+          }
+        }
+      })();
+
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    const conversationId =
+      selectedConversationId != null && Number.isFinite(selectedConversationId)
+        ? selectedConversationId
+        : null;
+
+    if (conversationId == null) {
+      setMobileMessagePeer(null);
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    void (async () => {
+      try {
+        const conversations = await listConversations();
+        if (cancelled) return;
+        const match = conversations.find((item) => item.id === conversationId) ?? null;
+        setMobileMessagePeer(match?.other_user ?? null);
+      } catch {
+        if (!cancelled) {
+          setMobileMessagePeer(null);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeModule, selectedConversationId, targetUserIdFromMessagesQuery]);
   useEffect(() => {
     const syncModuleFromPath = () => {
       if (typeof window === 'undefined') return;
@@ -486,6 +552,12 @@ export default function DashboardContent({
     />
   );
 
+  const mobileAccountName =
+    [user?.first_name, user?.last_name].filter(Boolean).join(' ').trim() ||
+    (user?.company_name || '').trim() ||
+    (user?.username || '').trim() ||
+    t('navigation.profile', 'Profil');
+
   return (
     <RequestsNotificationsProvider>
       <DashboardLayout
@@ -532,6 +604,13 @@ export default function DashboardContent({
         }
         subcategory={activeModule === 'skills-describe' ? selectedSkillsCategory?.subcategory : null}
         onSkillSaveClick={activeModule === 'skills-describe' ? handleSkillSave : undefined}
+        mobileAccountName={mobileAccountName}
+        mobileMessagePeerName={(mobileMessagePeer?.display_name || '').trim() || undefined}
+        mobileMessagePeerAvatarUrl={mobileMessagePeer?.avatar_url ?? null}
+        isMobileMessageConversationOpen={Boolean(
+          activeModule === 'messages' &&
+            (selectedConversationId != null || targetUserIdFromMessagesQuery != null),
+        )}
       >
         {moduleContent}
       </DashboardLayout>

@@ -3,6 +3,7 @@ import type {
   ConversationListItem,
   DirectMessageStartResult,
   MessageItem,
+  MessagingUnreadSummary,
   OpenConversationResult,
 } from './types';
 
@@ -75,6 +76,15 @@ export async function listConversations(): Promise<ConversationListItem[]> {
   return [];
 }
 
+export async function getUnreadMessagesSummary(): Promise<MessagingUnreadSummary> {
+  const { data } = await api.get<MessagingUnreadSummary>(
+    '/auth/messaging/conversations/unread-summary/',
+  );
+  return {
+    count: typeof data?.count === 'number' ? data.count : 0,
+  };
+}
+
 export async function listMessages(conversationId: number, pageSize = 100): Promise<MessageItem[]> {
   const { data } = await api.get<Paginated<MessageItem>>(
     `/auth/messaging/conversations/${conversationId}/messages/`,
@@ -91,8 +101,18 @@ export async function sendMessage(conversationId: number, text: string): Promise
   return data;
 }
 
-export async function markConversationRead(conversationId: number): Promise<{ conversation_id: number; last_read_at: string | null }> {
-  const { data } = await api.post<{ conversation_id: number; last_read_at: string | null }>(
+export async function markConversationRead(conversationId: number): Promise<{
+  conversation_id: number;
+  last_read_at: string | null;
+  conversation_unread_count?: number;
+  total_unread_count?: number;
+}> {
+  const { data } = await api.post<{
+    conversation_id: number;
+    last_read_at: string | null;
+    conversation_unread_count?: number;
+    total_unread_count?: number;
+  }>(
     `/auth/messaging/conversations/${conversationId}/read/`,
     {},
   );

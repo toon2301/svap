@@ -731,11 +731,11 @@ class SkillRequest(models.Model):
             models.UniqueConstraint(
                 fields=["requester", "offer"],
                 condition=Q(
-                    status__in=[
+                    status__in=(
                         SkillRequestStatus.PENDING,
                         SkillRequestStatus.ACCEPTED,
                         SkillRequestStatus.COMPLETION_REQUESTED,
-                    ]
+                    )
                 ),
                 name="unique_skill_request_per_requester_offer",
             )
@@ -1024,3 +1024,5 @@ class UserReport(models.Model):
 
     def __str__(self):
         return f"Nahlásenie #{self.id}: používateľ {self.reported_user_id} od {self.reported_by_id}"
+
+from .webpush_models import WebPushSubscription  # noqa: E402,F401

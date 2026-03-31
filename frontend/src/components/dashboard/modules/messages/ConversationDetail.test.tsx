@@ -21,6 +21,19 @@ jest.mock('@/hooks', () => ({
   useIsMobile: jest.fn(),
 }));
 
+const mockSetActiveConversationId = jest.fn();
+const mockSyncConversationReadState = jest.fn();
+
+jest.mock('@/components/dashboard/contexts/RequestsNotificationsContext', () => ({
+  __esModule: true,
+  useMessagesNotifications: () => ({
+    unreadCount: 0,
+    refreshUnreadCount: jest.fn(),
+    setActiveConversationId: mockSetActiveConversationId,
+    syncConversationReadState: mockSyncConversationReadState,
+  }),
+}));
+
 jest.mock('@emoji-mart/data', () => ({}));
 
 jest.mock('@emoji-mart/react', () => ({

@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useMessagesNotifications } from '@/components/dashboard/contexts/RequestsNotificationsContext';
 import { useIsMobile } from '@/hooks';
 import { Bars3Icon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
@@ -49,6 +50,7 @@ export function ConversationDetail({
 }) {
   const { t } = useLanguage();
   const isMobile = useIsMobile();
+  const { setActiveConversationId, syncConversationReadState } = useMessagesNotifications();
   const [messages, setMessages] = useState<MessageItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
@@ -65,6 +67,7 @@ export function ConversationDetail({
   const headerMenuRef = useRef<HTMLDivElement | null>(null);
   const messagesScrollRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const shouldRestoreFocusRef = useRef(false);
 
   const focusComposer = useCallback(() => {
     if (isMobile) return;
@@ -109,13 +112,17 @@ export function ConversationDetail({
       if (lastMarkedIncomingMessageIdRef.current === newestMessage.id) return;
 
       try {
-        await markConversationRead(conversationId);
+        const result = await markConversationRead(conversationId);
         lastMarkedIncomingMessageIdRef.current = newestMessage.id;
+        syncConversationReadState({
+          conversationId,
+          totalUnreadCount: result?.total_unread_count,
+        });
       } catch {
         // best-effort
       }
     },
-    [conversationId, currentUserId],
+    [conversationId, currentUserId, syncConversationReadState],
   );
 
   const refresh = useCallback(
@@ -276,6 +283,19 @@ export function ConversationDetail({
   }, [conversationId, focusComposer, loading]);
 
   useEffect(() => {
+    if (sending || loading || !shouldRestoreFocusRef.current) return;
+    shouldRestoreFocusRef.current = false;
+    focusComposer();
+  }, [focusComposer, loading, sending]);
+
+  useEffect(() => {
+    setActiveConversationId(conversationId);
+    return () => {
+      setActiveConversationId(null);
+    };
+  }, [conversationId, setActiveConversationId]);
+
+  useEffect(() => {
     if (!isHeaderMenuOpen) return;
     const onPointerDown = (event: MouseEvent) => {
       const target = event.target as Node;
@@ -292,6 +312,7 @@ export function ConversationDetail({
   const handleSend = async () => {
     const clean = text.trim();
     if (!clean || sending) return;
+    shouldRestoreFocusRef.current = true;
     setSending(true);
     try {
       await sendMessage(conversationId, clean);
@@ -308,7 +329,6 @@ export function ConversationDetail({
       );
     } finally {
       setSending(false);
-      focusComposer();
     }
   };
 

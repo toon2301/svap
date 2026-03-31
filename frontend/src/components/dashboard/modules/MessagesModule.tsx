@@ -24,17 +24,6 @@ export default function MessagesModule({
   if (isMobile) {
     return (
       <div className="w-full">
-        <div className="max-w-4xl mx-auto mb-4">
-          <div className="bg-white dark:bg-black rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-5">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-              {t('messages.title', 'Messages')}
-            </h2>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              {t('messages.subtitle', 'Your conversations')}
-            </p>
-          </div>
-        </div>
-
         {conversationId ? (
           <ConversationDetail conversationId={conversationId} currentUserId={currentUserId} />
         ) : targetUserId ? (
