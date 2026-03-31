@@ -7,8 +7,13 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from accounts.push_serializers import (
+    PushPreferencesSerializer,
     WebPushSubscriptionCreateSerializer,
     WebPushSubscriptionDeleteSerializer,
+)
+from accounts.services.settings import (
+    get_notification_preferences,
+    update_notification_preferences,
 )
 from accounts.services.webpush_crypto import get_web_push_vapid_public_key
 from accounts.services.webpush_subscriptions import (
@@ -103,3 +108,28 @@ def push_subscription_current_view(request):
         {"ok": True, "deleted": bool(deleted)},
         status=status.HTTP_200_OK,
     )
+
+
+@api_view(["GET", "PATCH"])
+@permission_classes([IsAuthenticated])
+@api_rate_limit
+def push_preferences_view(request):
+    if request.method == "GET":
+        return Response(
+            get_notification_preferences(request.user),
+            status=status.HTTP_200_OK,
+        )
+
+    serializer = PushPreferencesSerializer(data=request.data, partial=True)
+    if not serializer.is_valid():
+        return Response(
+            {"error": "Neplatné údaje", "details": serializer.errors},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    preferences = update_notification_preferences(
+        request.user,
+        email_notifications=serializer.validated_data.get("email_notifications"),
+        push_notifications=serializer.validated_data.get("push_notifications"),
+    )
+    return Response(preferences, status=status.HTTP_200_OK)

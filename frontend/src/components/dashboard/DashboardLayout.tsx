@@ -33,6 +33,7 @@ interface DashboardLayoutProps {
   mobileMessagePeerName?: string;
   mobileMessagePeerAvatarUrl?: string | null;
   isMobileMessageConversationOpen?: boolean;
+  onMobileMessagesBack?: () => void;
   children: React.ReactNode;
 }
 
@@ -63,6 +64,7 @@ export default function DashboardLayout({
   mobileMessagePeerName,
   mobileMessagePeerAvatarUrl,
   isMobileMessageConversationOpen,
+  onMobileMessagesBack,
   children,
 }: DashboardLayoutProps) {
   const isProfileEditMode =
@@ -161,6 +163,7 @@ export default function DashboardLayout({
           messagePeerName={mobileMessagePeerName}
           messagePeerAvatarUrl={mobileMessagePeerAvatarUrl}
           isMessageConversationOpen={isMobileMessageConversationOpen}
+          onMessagesBackClick={onMobileMessagesBack}
         />
       )}
 

@@ -367,17 +367,12 @@ export function ConversationDetail({
   return (
     <div className={`${className} flex flex-col min-h-0 h-[calc(100vh-4rem)] lg:h-full overflow-hidden`}>
       {isMobile ? (
-        <div className="mb-2 flex items-center justify-between gap-2">
-          <div className="min-w-0">
-            <div className="text-sm font-semibold text-gray-900 dark:text-white truncate">
-              {targetUserName}
+        <div className="mb-2 flex items-center justify-end gap-2">
+          {requestCreatedInfo ? (
+            <div className="mr-auto text-xs text-purple-700 dark:text-purple-300">
+              {requestCreatedInfo}
             </div>
-            {requestCreatedInfo ? (
-              <div className="mt-0.5 text-xs text-purple-700 dark:text-purple-300">
-                {requestCreatedInfo}
-              </div>
-            ) : null}
-          </div>
+          ) : null}
           <CreateRequestCta
             disabled={!targetUserId}
             onClick={() => {
@@ -448,7 +443,9 @@ export function ConversationDetail({
       <div
         ref={messagesScrollRef}
         data-testid="conversation-messages-scroll"
-        className="flex-1 min-h-0 overflow-y-auto elegant-scrollbar p-4 space-y-2"
+        className={`flex-1 min-h-0 overflow-y-auto elegant-scrollbar p-4 space-y-2 ${
+          isMobile ? 'pb-28' : ''
+        }`}
       >
         {ordered.length === 0 ? (
           <div className="text-sm text-gray-600 dark:text-gray-400 text-center py-8">
@@ -498,7 +495,13 @@ export function ConversationDetail({
         <div ref={bottomRef} />
       </div>
 
-      <div className="mt-2 flex w-full min-w-0 shrink-0 gap-2 px-4 sm:px-6 lg:px-8 mx-auto pb-[max(1rem,env(safe-area-inset-bottom,0px))] lg:pb-[max(1.25rem,env(safe-area-inset-bottom,0px))] sm:max-w-[min(100%,36rem)] md:max-w-[min(100%,44rem)] lg:max-w-[min(100%,52rem)] xl:max-w-[min(100%,64rem)]">
+      <div
+        className={
+          isMobile
+            ? 'fixed inset-x-0 bottom-0 z-40 flex w-full min-w-0 shrink-0 gap-2 border-t border-gray-200 bg-white px-4 py-2 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] dark:border-gray-800 dark:bg-black'
+            : 'mt-2 flex w-full min-w-0 shrink-0 gap-2 px-4 sm:px-6 lg:px-8 mx-auto pb-[max(1rem,env(safe-area-inset-bottom,0px))] lg:pb-[max(1.25rem,env(safe-area-inset-bottom,0px))] sm:max-w-[min(100%,36rem)] md:max-w-[min(100%,44rem)] lg:max-w-[min(100%,52rem)] xl:max-w-[min(100%,64rem)]'
+        }
+      >
         <div className="relative min-w-0 flex-1">
           <input
             ref={inputRef}

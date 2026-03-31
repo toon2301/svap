@@ -185,4 +185,9 @@ urlpatterns = [
         views.push_subscription_current_view,
         name="push_subscription_current",
     ),
+    path(
+        "push/preferences/",
+        views.push_preferences_view,
+        name="push_preferences",
+    ),
 ]

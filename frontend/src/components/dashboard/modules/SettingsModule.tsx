@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { User } from '../../../types';
+import { useNotificationPreferences } from './settings/useNotificationPreferences';
 import { 
   Cog6ToothIcon,
   BellIcon,
@@ -19,12 +20,17 @@ interface SettingsModuleProps {
 
 export default function SettingsModule({ user }: SettingsModuleProps) {
   const [activeTab, setActiveTab] = useState<'general' | 'privacy' | 'notifications' | 'security' | 'account'>('general');
+  const {
+    preferences,
+    loading: loadingNotificationPreferences,
+    savingKey,
+    error: notificationPreferencesError,
+    updatePreference,
+  } = useNotificationPreferences();
   const [settings, setSettings] = useState({
-    emailNotifications: true,
-    pushNotifications: false,
-    profileVisibility: 'public' as 'public' | 'private',
-    showEmail: false,
-    showPhone: false,
+    profileVisibility: (user.is_public ? 'public' : 'private') as 'public' | 'private',
+    showEmail: Boolean(user.contact_email_visible),
+    showPhone: Boolean(user.phone_visible),
     twoFactorAuth: false,
   });
 
@@ -208,8 +214,11 @@ export default function SettingsModule({ user }: SettingsModuleProps) {
                 </div>
                 <input
                   type="checkbox"
-                  checked={settings.emailNotifications}
-                  onChange={(e) => handleSettingChange('emailNotifications', e.target.checked)}
+                  checked={preferences.emailNotifications}
+                  disabled={loadingNotificationPreferences || savingKey === 'emailNotifications'}
+                  onChange={(e) => {
+                    void updatePreference('emailNotifications', e.target.checked);
+                  }}
                   className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
                 />
               </div>
@@ -225,11 +234,26 @@ export default function SettingsModule({ user }: SettingsModuleProps) {
                 </div>
                 <input
                   type="checkbox"
-                  checked={settings.pushNotifications}
-                  onChange={(e) => handleSettingChange('pushNotifications', e.target.checked)}
+                  checked={preferences.pushNotifications}
+                  disabled={loadingNotificationPreferences || savingKey === 'pushNotifications'}
+                  onChange={(e) => {
+                    void updatePreference('pushNotifications', e.target.checked);
+                  }}
                   className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
                 />
               </div>
+
+              {loadingNotificationPreferences && (
+                <p className="text-xs text-gray-500">
+                  Načítavam nastavenia upozornení...
+                </p>
+              )}
+
+              {notificationPreferencesError && (
+                <p className="text-sm text-red-600">
+                  {notificationPreferencesError}
+                </p>
+              )}
             </div>
           </div>
         )}

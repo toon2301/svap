@@ -247,7 +247,9 @@ export function DraftConversationDetail({
 
       <div
         data-testid={!isMobile ? 'draft-conversation-scroll' : undefined}
-        className="flex-1 min-h-0 overflow-y-auto elegant-scrollbar p-4"
+        className={`flex-1 min-h-0 overflow-y-auto elegant-scrollbar p-4 ${
+          isMobile ? 'pb-28' : ''
+        }`}
       >
         <div className="h-full flex items-center justify-center">
           <div className="flex flex-col items-center text-center max-w-md">
@@ -265,7 +267,13 @@ export function DraftConversationDetail({
         </div>
       </div>
 
-      <div className="mt-2 flex w-full min-w-0 shrink-0 gap-2 px-4 sm:px-6 lg:px-8 mx-auto pb-[max(1rem,env(safe-area-inset-bottom,0px))] lg:pb-[max(1.25rem,env(safe-area-inset-bottom,0px))] sm:max-w-[min(100%,36rem)] md:max-w-[min(100%,44rem)] lg:max-w-[min(100%,52rem)] xl:max-w-[min(100%,64rem)]">
+      <div
+        className={
+          isMobile
+            ? 'fixed inset-x-0 bottom-0 z-40 flex w-full min-w-0 shrink-0 gap-2 border-t border-gray-200 bg-white px-4 py-2 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] dark:border-gray-800 dark:bg-black'
+            : 'mt-2 flex w-full min-w-0 shrink-0 gap-2 px-4 sm:px-6 lg:px-8 mx-auto pb-[max(1rem,env(safe-area-inset-bottom,0px))] lg:pb-[max(1.25rem,env(safe-area-inset-bottom,0px))] sm:max-w-[min(100%,36rem)] md:max-w-[min(100%,44rem)] lg:max-w-[min(100%,52rem)] xl:max-w-[min(100%,64rem)]'
+        }
+      >
         <div className="relative min-w-0 flex-1">
           <input
             ref={inputRef}

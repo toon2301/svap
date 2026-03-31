@@ -17,6 +17,7 @@ interface MobileTopBarProps {
   messagePeerName?: string;
   messagePeerAvatarUrl?: string | null;
   isMessageConversationOpen?: boolean;
+  onMessagesBackClick?: () => void;
 }
 
 export default function MobileTopBar({
@@ -32,9 +33,11 @@ export default function MobileTopBar({
   messagePeerName,
   messagePeerAvatarUrl,
   isMessageConversationOpen = false,
+  onMessagesBackClick,
 }: MobileTopBarProps) {
   const { t } = useLanguage();
   const [describeMode, setDescribeMode] = React.useState<'offer' | 'search' | null>(null);
+  const isOpenMessagesConversation = activeModule === 'messages' && isMessageConversationOpen;
 
   React.useEffect(() => {
     if (activeModule === 'skills-describe') {
@@ -53,14 +56,29 @@ export default function MobileTopBar({
 
   return (
     <div className="lg:hidden fixed top-0 left-0 right-0 z-30 bg-white dark:bg-black border-b border-gray-200 dark:border-gray-800 shadow-sm">
-      <div className="grid grid-cols-3 items-center px-3 py-0 h-12">
+      <div
+        className={`grid items-center px-3 py-0 h-12 ${
+          isOpenMessagesConversation ? 'grid-cols-[2.5rem_1fr_2.5rem]' : 'grid-cols-3'
+        }`}
+      >
         {/* Ľavá strana - Žiadosti (nadpis) alebo Šipka späť alebo prázdne */}
         <div
           className={`flex items-center h-full justify-start ${
             activeModule === 'messages' && !isMessageConversationOpen ? 'col-span-2 pr-2' : ''
           }`}
         >
-          {activeModule === 'messages' && !isMessageConversationOpen ? (
+          {activeModule === 'messages' && isMessageConversationOpen ? (
+            <button
+              type="button"
+              onClick={onMessagesBackClick}
+              className="p-2 -ml-2 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-[#161618] transition-colors"
+              aria-label={t('common.back', 'Späť')}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" className="w-5 h-5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+              </svg>
+            </button>
+          ) : activeModule === 'messages' && !isMessageConversationOpen ? (
             <h1 className="text-sm font-semibold leading-tight text-gray-900 dark:text-white whitespace-normal break-words">
               {accountName || t('navigation.profile', 'Profil')}
             </h1>
@@ -95,14 +113,14 @@ export default function MobileTopBar({
         <div
           className={`text-center flex items-center justify-center h-full ${
             activeModule === 'messages' && isMessageConversationOpen
-              ? 'col-span-3'
+              ? ''
               : activeModule === 'messages' && !isMessageConversationOpen
                 ? 'hidden'
                 : ''
           }`}
         >
           {activeModule === 'messages' && isMessageConversationOpen ? (
-            <div className="mx-auto flex w-full min-w-0 max-w-[calc(100vw-1.5rem)] items-center justify-center gap-2 px-1">
+            <div className="mx-auto flex w-full min-w-0 max-w-[calc(100vw-6rem)] items-center justify-center gap-2 px-1">
               <div className="h-8 w-8 flex-shrink-0 overflow-hidden rounded-full bg-purple-100 dark:bg-purple-900/40">
                 {messagePeerAvatarUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -163,8 +181,9 @@ export default function MobileTopBar({
         {/* Pravá strana - Obnoviť (žiadosti), Profil, Hamburger alebo Krížik */}
         <div
           className={`flex items-center justify-end h-full space-x-2 ${
-            activeModule === 'messages' && isMessageConversationOpen ? 'hidden' : ''
+            activeModule === 'messages' && isMessageConversationOpen ? 'opacity-0 pointer-events-none' : ''
           }`}
+          aria-hidden={activeModule === 'messages' && isMessageConversationOpen ? true : undefined}
         >
           {/* Obnoviť pre modul Žiadosti */}
           {activeModule === 'requests' && (

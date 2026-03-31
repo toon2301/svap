@@ -39,6 +39,7 @@ from .push import (
     push_vapid_public_key_view,
     push_subscriptions_view,
     push_subscription_current_view,
+    push_preferences_view,
 )
 from .user_reports import user_report_view
 from .search import search_view
@@ -87,6 +88,7 @@ __all__ = [
     "push_vapid_public_key_view",
     "push_subscriptions_view",
     "push_subscription_current_view",
+    "push_preferences_view",
     "dashboard_home_view",
     "dashboard_search_view",
     "dashboard_favorites_view",

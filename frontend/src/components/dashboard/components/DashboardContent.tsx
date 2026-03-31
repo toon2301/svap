@@ -11,7 +11,7 @@ import ModuleRouter from '../ModuleRouter';
 import DashboardModals from '../DashboardModals';
 import SearchModule from '../modules/SearchModule';
 import { MessagesDesktopRail } from '../modules/messages/MessagesDesktopRail';
-import { parseConversationId, parseTargetUserId } from '../modules/messages/messagesRouting';
+import { buildMessagesUrl, parseConversationId, parseTargetUserId } from '../modules/messages/messagesRouting';
 import { listConversations, openConversation } from '../modules/messages/messagingApi';
 import type { MessagingUserBrief } from '../modules/messages/types';
 import { useDashboardState } from '../hooks/useDashboardState';
@@ -471,6 +471,14 @@ export default function DashboardContent({
     highlighting,
   ]);
 
+  const handleMobileMessagesBack = useCallback(() => {
+    setActiveModule('messages');
+    setIsRightSidebarOpen(false);
+    setActiveRightItem('');
+    setIsMobileMenuOpen(false);
+    router.push(buildMessagesUrl());
+  }, [router, setActiveModule, setActiveRightItem, setIsMobileMenuOpen, setIsRightSidebarOpen]);
+
   // Early returns pre loading a error states
   if (isLoading) {
     return (
@@ -611,6 +619,7 @@ export default function DashboardContent({
           activeModule === 'messages' &&
             (selectedConversationId != null || targetUserIdFromMessagesQuery != null),
         )}
+        onMobileMessagesBack={handleMobileMessagesBack}
       >
         {moduleContent}
       </DashboardLayout>

@@ -677,6 +677,13 @@ export const endpoints = {
     unreadCount: '/auth/notifications/unread-count/',
     markAllRead: '/auth/notifications/mark-all-read/',
   },
+  // Web push
+  push: {
+    vapidPublicKey: '/auth/push/vapid-public-key/',
+    subscriptions: '/auth/push/subscriptions/',
+    subscriptionCurrent: '/auth/push/subscriptions/current/',
+    preferences: '/auth/push/preferences/',
+  },
 };
 
 export default api;

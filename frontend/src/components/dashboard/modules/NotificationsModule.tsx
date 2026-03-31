@@ -1,12 +1,23 @@
 'use client';
 
 import { useState } from 'react';
+
 import { useLanguage } from '@/contexts/LanguageContext';
+
 import Desktop from './notifications/Desktop';
 import Mobile from './notifications/Mobile';
+import { useNotificationPreferences } from './notifications/useNotificationPreferences';
 
 export default function NotificationsModule() {
   const { t } = useLanguage();
+  const {
+    preferences,
+    loading: loadingNotificationPreferences,
+    savingKey,
+    error: notificationPreferencesError,
+    updatePreference,
+  } = useNotificationPreferences();
+
   const [masterToggleEnabled, setMasterToggleEnabled] = useState(false);
   const [likesEnabled, setLikesEnabled] = useState(false);
   const [likesCommentsEnabled, setLikesCommentsEnabled] = useState(false);
@@ -48,23 +59,55 @@ export default function NotificationsModule() {
 
   const labels = {
     title: t('notifications.title', 'Upozornenia'),
-    turnOffAll: t('notifications.turnOffAll', 'Vypnúť všetko'),
-    turnOffAllDesc: t('notifications.turnOffAllDesc', 'Dočasne vypnúť všetky upozornenia'),
-    likes: t('notifications.likes', 'Páči sa mi to'),
-    likesDesc: t('notifications.likesDesc', "Zapnite alebo vypnite upozornenia na 'Páči sa mi to'."),
-    likesAndComments: t('notifications.likesAndComments', 'Páči sa mi to a komentáre'),
-    likesAndCommentsDesc: t('notifications.likesAndCommentsDesc', 'Reakcie a komentáre na fotkách, kde ste označení'),
-    comments: t('notifications.comments', 'Komentáre'),
-    commentsDesc: t('notifications.commentsDesc', 'Zapnite alebo vypnite upozornenia na komentáre.'),
-    likesForComments: t('notifications.likesForComments', 'Páči sa mi to pre komentáre'),
-    likesForCommentsDesc: t('notifications.likesForCommentsDesc', "Zapnite alebo vypnite upozornenia na 'Páči sa mi to' pre komentáre."),
-    skillRequest: t('notifications.skillRequest', 'Žiadosť o zručnosť'),
-    skillRequestDesc: t('notifications.skillRequestDesc', 'Zapnite alebo vypnite upozornenia na žiadosti o zručnosť.'),
+    turnOffAll: t('notifications.turnOffAll', 'Vypnut vsetko'),
+    turnOffAllDesc: t(
+      'notifications.turnOffAllDesc',
+      'Docasne vypnut vsetky upozornenia',
+    ),
+    messagesPush: t(
+      'notifications.messagesPush',
+      'Push upozornenia na spravy',
+    ),
+    messagesPushDesc: t(
+      'notifications.messagesPushDesc',
+      'Zapnite alebo vypnite push upozornenia na nove spravy, ked nie ste v aktivnom chate.',
+    ),
+    likes: t('notifications.likes', 'Paci sa mi to'),
+    likesDesc: t(
+      'notifications.likesDesc',
+      "Zapnite alebo vypnite upozornenia na 'Paci sa mi to'.",
+    ),
+    likesAndComments: t(
+      'notifications.likesAndComments',
+      'Paci sa mi to a komentare',
+    ),
+    likesAndCommentsDesc: t(
+      'notifications.likesAndCommentsDesc',
+      'Reakcie a komentare na fotkach, kde ste oznaceni',
+    ),
+    comments: t('notifications.comments', 'Komentare'),
+    commentsDesc: t(
+      'notifications.commentsDesc',
+      'Zapnite alebo vypnite upozornenia na komentare.',
+    ),
+    likesForComments: t(
+      'notifications.likesForComments',
+      'Paci sa mi to pre komentare',
+    ),
+    likesForCommentsDesc: t(
+      'notifications.likesForCommentsDesc',
+      "Zapnite alebo vypnite upozornenia na 'Paci sa mi to' pre komentare.",
+    ),
+    skillRequest: t('notifications.skillRequest', 'Ziadost o zrucnost'),
+    skillRequestDesc: t(
+      'notifications.skillRequestDesc',
+      'Zapnite alebo vypnite upozornenia na ziadosti o zrucnost.',
+    ),
   };
 
   const labelsCommon = {
-    off: t('notifications.off', 'Vypnuté'),
-    on: t('notifications.on', 'Zapnuté'),
+    off: t('notifications.off', 'Vypnute'),
+    on: t('notifications.on', 'Zapnute'),
   };
 
   const state = {
@@ -75,6 +118,7 @@ export default function NotificationsModule() {
     likesForComments: likesForCommentsEnabled,
     skillRequest: skillRequestEnabled,
   };
+
   const setState = {
     setMaster: handleMasterToggleChange,
     setLikes: setLikesEnabled,
@@ -84,11 +128,33 @@ export default function NotificationsModule() {
     setSkillRequest: setSkillRequestEnabled,
   };
 
+  const pushMessages = {
+    value: preferences.pushNotifications,
+    disabled:
+      loadingNotificationPreferences || savingKey === 'pushNotifications',
+    loading: loadingNotificationPreferences,
+    error: notificationPreferencesError,
+    onChange: (enabled: boolean) => {
+      void updatePreference('pushNotifications', enabled);
+    },
+  };
+
   return (
     <>
-      <Desktop labels={labels as any} labelsCommon={labelsCommon} state={state} setState={setState} />
-      <Mobile labels={labels as any} labelsCommon={labelsCommon} state={state} setState={setState} />
+      <Desktop
+        labels={labels}
+        labelsCommon={labelsCommon}
+        state={state}
+        setState={setState}
+        pushMessages={pushMessages}
+      />
+      <Mobile
+        labels={labels}
+        labelsCommon={labelsCommon}
+        state={state}
+        setState={setState}
+        pushMessages={pushMessages}
+      />
     </>
   );
 }
-

@@ -1,8 +1,27 @@
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
+
 import SettingsModule from '../SettingsModule';
 import { User } from '@/types';
+
+jest.mock('framer-motion', () => ({
+  motion: {
+    div: ({ children, ...props }: any) => <div {...props}>{children}</div>,
+  },
+}));
+
+jest.mock('@/lib/api', () => ({
+  api: {
+    get: jest.fn(),
+    patch: jest.fn(),
+  },
+  endpoints: {
+    push: {
+      preferences: '/auth/push/preferences/',
+    },
+  },
+}));
 
 const user: User = {
   id: 1,
@@ -18,27 +37,59 @@ const user: User = {
   profile_completeness: 50,
 };
 
-describe('SettingsModule extra coverage', () => {
-  it('switches tabs and toggles checkboxes', () => {
-    render(<SettingsModule user={user} />);
+async function renderSettingsModule() {
+  const { api } = require('@/lib/api');
+  render(<SettingsModule user={user} />);
+  await waitFor(() => {
+    expect(api.get).toHaveBeenCalledWith('/auth/push/preferences/');
+  });
+}
 
-    // go to privacy tab and toggle showEmail
+describe('SettingsModule extra coverage', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    const { api } = require('@/lib/api');
+    api.get.mockResolvedValue({
+      data: {
+        email_notifications: true,
+        push_notifications: false,
+      },
+    });
+    api.patch.mockImplementation(async (_url: string, payload: any) => ({
+      data: {
+        email_notifications:
+          typeof payload?.email_notifications === 'boolean'
+            ? payload.email_notifications
+            : true,
+        push_notifications:
+          typeof payload?.push_notifications === 'boolean'
+            ? payload.push_notifications
+            : false,
+      },
+    }));
+  });
+
+  it('switches tabs and toggles checkboxes', async () => {
+    const { api } = require('@/lib/api');
+
+    await renderSettingsModule();
+
     fireEvent.click(screen.getByLabelText('Súkromie'));
     const emailToggle = screen.getByLabelText('Zobraziť email');
     fireEvent.click(emailToggle);
 
-    // go to notifications and toggle push (no htmlFor on label, target checkbox directly)
     fireEvent.click(screen.getByLabelText('Upozornenia'));
     const checkboxesNotif = screen.getAllByRole('checkbox');
-    // second checkbox on notifications is push
     fireEvent.click(checkboxesNotif[1]);
 
-    // go to security and toggle 2FA
     fireEvent.click(screen.getByLabelText('Bezpečnosť'));
     const twoFaCheckbox = screen.getByRole('checkbox');
     fireEvent.click(twoFaCheckbox);
 
-    expect(true).toBe(true);
+    await waitFor(() => {
+      expect(api.patch).toHaveBeenCalledWith('/auth/push/preferences/', {
+        push_notifications: true,
+      });
+    });
   });
 });
-
