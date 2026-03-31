@@ -60,11 +60,11 @@ export default function NotificationsModule() {
     ),
     messagesPush: t(
       'notifications.messagesPush',
-      'Push upozornenia na spravy',
+      'Správy',
     ),
     messagesPushDesc: t(
       'notifications.messagesPushDesc',
-      'Zapnite alebo vypnite push upozornenia na nove spravy, ked nie ste v aktivnom chate.',
+      'Zapnite alebo vypnite upozornenia na  spravy, ked nie ste v aktivnom chate.',
     ),
     likes: t('notifications.likes', 'Paci sa mi to'),
     likesDesc: t(

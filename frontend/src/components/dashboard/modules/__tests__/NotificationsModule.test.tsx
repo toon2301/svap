@@ -190,7 +190,7 @@ describe('NotificationsModule', () => {
 
     expect(screen.getByText('Upozornenia')).toBeInTheDocument();
     expect(
-      screen.getAllByText('Push upozornenia na spravy').length,
+      screen.getAllByText('Správy').length,
     ).toBeGreaterThan(0);
     expect(
       screen.getByTestId('notifications-push-messages-mobile'),
