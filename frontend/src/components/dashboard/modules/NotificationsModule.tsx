@@ -6,17 +6,11 @@ import { useLanguage } from '@/contexts/LanguageContext';
 
 import Desktop from './notifications/Desktop';
 import Mobile from './notifications/Mobile';
-import { useNotificationPreferences } from './notifications/useNotificationPreferences';
+import { usePushMessagesPreference } from './notifications/usePushMessagesPreference';
 
 export default function NotificationsModule() {
   const { t } = useLanguage();
-  const {
-    preferences,
-    loading: loadingNotificationPreferences,
-    savingKey,
-    error: notificationPreferencesError,
-    updatePreference,
-  } = useNotificationPreferences();
+  const pushMessages = usePushMessagesPreference();
 
   const [masterToggleEnabled, setMasterToggleEnabled] = useState(false);
   const [likesEnabled, setLikesEnabled] = useState(false);
@@ -126,17 +120,6 @@ export default function NotificationsModule() {
     setComments: setCommentsEnabled,
     setLikesForComments: setLikesForCommentsEnabled,
     setSkillRequest: setSkillRequestEnabled,
-  };
-
-  const pushMessages = {
-    value: preferences.pushNotifications,
-    disabled:
-      loadingNotificationPreferences || savingKey === 'pushNotifications',
-    loading: loadingNotificationPreferences,
-    error: notificationPreferencesError,
-    onChange: (enabled: boolean) => {
-      void updatePreference('pushNotifications', enabled);
-    },
   };
 
   return (

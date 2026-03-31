@@ -87,7 +87,10 @@ export function useNotificationPreferences() {
     };
   }, []);
 
-  async function updatePreference(key: NotificationPreferenceKey, value: boolean) {
+  async function updatePreference(
+    key: NotificationPreferenceKey,
+    value: boolean,
+  ): Promise<boolean> {
     const previous = preferences;
     setPreferences((current) => ({ ...current, [key]: value }));
     setSavingKey(key);
@@ -99,10 +102,12 @@ export function useNotificationPreferences() {
         mapStatePatchToApiPatch(key, value),
       );
       setPreferences(mapApiPayloadToState(response.data));
+      return true;
     } catch (saveError) {
       console.error('Failed to update notification preferences:', saveError);
       setPreferences(previous);
       setError('Nepodarilo sa ulozit nastavenia upozorneni.');
+      return false;
     } finally {
       setSavingKey((current) => (current === key ? null : current));
     }

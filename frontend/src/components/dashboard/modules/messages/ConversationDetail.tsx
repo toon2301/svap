@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useMessagesNotifications } from '@/components/dashboard/contexts/RequestsNotificationsContext';
 import { useIsMobile } from '@/hooks';
-import { Bars3Icon } from '@heroicons/react/24/outline';
+import { Bars3Icon, PaperAirplaneIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 import type { MessageItem } from './types';
 import { getMessagingErrorMessage, listConversations, listMessages, markConversationRead, sendMessage } from './messagingApi';
@@ -363,6 +363,7 @@ export function ConversationDetail({
   const targetUserId = otherConversation?.other_user?.id ?? null;
   const targetUserName =
     (otherConversation?.other_user?.display_name || '').trim() || t('messages.unknownUser', 'Používateľ');
+  const hasTextToSend = text.trim().length > 0;
 
   return (
     <div className={`${className} flex flex-col min-h-0 h-[calc(100vh-4rem)] lg:h-full overflow-hidden`}>
@@ -498,11 +499,17 @@ export function ConversationDetail({
       <div
         className={
           isMobile
-            ? 'fixed inset-x-0 bottom-0 z-40 flex w-full min-w-0 shrink-0 gap-2 border-t border-gray-200 bg-white px-4 py-2 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] dark:border-gray-800 dark:bg-black'
+            ? 'fixed inset-x-0 bottom-0 z-40 flex w-full min-w-0 shrink-0 items-center border-t border-gray-200 bg-white px-4 py-2 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] dark:border-gray-800 dark:bg-black'
             : 'mt-2 flex w-full min-w-0 shrink-0 gap-2 px-4 sm:px-6 lg:px-8 mx-auto pb-[max(1rem,env(safe-area-inset-bottom,0px))] lg:pb-[max(1.25rem,env(safe-area-inset-bottom,0px))] sm:max-w-[min(100%,36rem)] md:max-w-[min(100%,44rem)] lg:max-w-[min(100%,52rem)] xl:max-w-[min(100%,64rem)]'
         }
       >
-        <div className="relative min-w-0 flex-1">
+        <div
+          className={`relative min-w-0 flex-1 ${
+            isMobile
+              ? 'flex items-center rounded-2xl border border-gray-200 bg-white px-2 dark:border-gray-800 dark:bg-black'
+              : ''
+          }`}
+        >
           <input
             ref={inputRef}
             value={text}
@@ -514,11 +521,26 @@ export function ConversationDetail({
                 void handleSend();
               }
             }}
-            className={`min-w-0 w-full rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-black px-4 py-2 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-brand/40 ${
-              !isMobile ? 'pr-12' : ''
+            className={`min-w-0 w-full text-sm text-gray-900 dark:text-gray-100 ${
+              isMobile
+                ? `border-0 bg-transparent px-2 py-2 focus:outline-none ${
+                    hasTextToSend ? 'pr-12' : ''
+                  }`
+                : 'rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-black px-4 py-2 focus:outline-none focus:ring-2 focus:ring-brand/40 pr-12'
             }`}
             placeholder={t('messages.type', 'Napíš správu…')}
           />
+          {isMobile && hasTextToSend ? (
+            <button
+              type="button"
+              disabled={sending}
+              onClick={() => void handleSend()}
+              className="absolute right-1.5 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-brand text-white transition-colors hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-60"
+              aria-label={t('messages.send', 'Odoslať')}
+            >
+              <PaperAirplaneIcon className="h-4 w-4 -rotate-45" />
+            </button>
+          ) : null}
           {!isMobile ? (
             <DesktopEmojiPickerButton
               ariaLabel={t('messages.addEmoji', 'Pridať emoji')}
@@ -528,14 +550,16 @@ export function ConversationDetail({
             />
           ) : null}
         </div>
-        <button
-          type="button"
-          disabled={sending || text.trim().length === 0}
-          onClick={() => void handleSend()}
-          className="px-4 py-2 rounded-2xl bg-brand text-white text-sm font-semibold disabled:opacity-60 disabled:cursor-not-allowed hover:bg-brand-dark transition-colors"
-        >
-          {sending ? t('common.sending', 'Odosielam…') : t('messages.send', 'Odoslať')}
-        </button>
+        {isMobile ? null : (
+          <button
+            type="button"
+            disabled={sending || !hasTextToSend}
+            onClick={() => void handleSend()}
+            className="px-4 py-2 rounded-2xl bg-brand text-white text-sm font-semibold disabled:opacity-60 disabled:cursor-not-allowed hover:bg-brand-dark transition-colors"
+          >
+            {sending ? t('common.sending', 'Odosielam…') : t('messages.send', 'Odoslať')}
+          </button>
+        )}
       </div>
 
       {targetUserId ? (
