@@ -312,7 +312,7 @@ describe('ConversationDetail', () => {
 
     await waitFor(() => {
       expect(composer).toHaveStyle({ bottom: '14px' });
-      expect(messagesScroll).toHaveStyle({ paddingBottom: '58px' });
+      expect(messagesScroll).toHaveStyle({ paddingBottom: '72px' });
     });
 
     viewport.setMetrics({ height: 650 });
@@ -322,21 +322,78 @@ describe('ConversationDetail', () => {
 
     await waitFor(() => {
       expect(composer).toHaveStyle({ bottom: '14px' });
-      expect(messagesScroll).toHaveStyle({ paddingBottom: '58px' });
+      expect(messagesScroll).toHaveStyle({ paddingBottom: '72px' });
     });
 
     fireEvent.focus(input);
 
     await waitFor(() => {
       expect(composer).toHaveStyle({ bottom: '264px' });
-      expect(messagesScroll).toHaveStyle({ paddingBottom: '308px' });
+      expect(messagesScroll).toHaveStyle({ paddingBottom: '322px' });
     });
 
     fireEvent.blur(input);
 
     await waitFor(() => {
       expect(composer).toHaveStyle({ bottom: '14px' });
-      expect(messagesScroll).toHaveStyle({ paddingBottom: '58px' });
+      expect(messagesScroll).toHaveStyle({ paddingBottom: '72px' });
+    });
+  });
+
+  it('re-aligns the scroll container to the true bottom after mobile composer spacing is measured', async () => {
+    useIsMobile.mockReturnValue(true);
+    const viewport = mockVisualViewport();
+
+    (listMessages as jest.Mock).mockResolvedValueOnce(
+      messagePage([
+        message({
+          id: 2,
+          text: 'Nova sprava',
+          created_at: '2026-03-27T10:01:00Z',
+        }),
+        message({
+          id: 1,
+          sender: { id: 1, display_name: 'Me' },
+          text: 'Starsia sprava',
+          created_at: '2026-03-27T10:00:00Z',
+        }),
+      ]),
+    );
+
+    render(<ConversationDetail conversationId={9} currentUserId={1} />);
+
+    expect(await screen.findByText('Nova sprava')).toBeInTheDocument();
+
+    const composer = screen.getByTestId('conversation-composer');
+    const messagesScroll = screen.getByTestId('conversation-messages-scroll');
+
+    let currentScrollTop = 0;
+    let currentScrollHeight = 640;
+
+    Object.defineProperty(messagesScroll, 'scrollTop', {
+      configurable: true,
+      get: () => currentScrollTop,
+      set: (value: number) => {
+        currentScrollTop = value;
+      },
+    });
+    Object.defineProperty(messagesScroll, 'scrollHeight', {
+      configurable: true,
+      get: () => currentScrollHeight,
+    });
+    Object.defineProperty(composer, 'offsetHeight', {
+      configurable: true,
+      get: () => 50,
+    });
+
+    currentScrollHeight = 712;
+    act(() => {
+      viewport.dispatch('resize');
+    });
+
+    await waitFor(() => {
+      expect(currentScrollTop).toBe(712);
+      expect(messagesScroll).toHaveStyle({ paddingBottom: '72px' });
     });
   });
 

@@ -51,7 +51,7 @@ export function DraftConversationDetail({
     composerElement,
     isMobile,
     8,
-    visualViewportBottomInset,
+    mobileComposerBottomOffset,
   );
 
   const focusComposer = useCallback(() => {

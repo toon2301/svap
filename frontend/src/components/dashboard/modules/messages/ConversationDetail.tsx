@@ -88,7 +88,7 @@ export function ConversationDetail({
     composerElement,
     isMobile,
     8,
-    visualViewportBottomInset,
+    mobileComposerBottomOffset,
   );
 
   const focusComposer = useCallback(() => {
@@ -129,6 +129,16 @@ export function ConversationDetail({
   const handleComposerRef = useCallback((node: HTMLDivElement | null) => {
     composerRef.current = node;
     setComposerElement(node);
+  }, []);
+
+  const scrollMessagesToLatest = useCallback(() => {
+    const scrollContainer = messagesScrollRef.current;
+    if (scrollContainer) {
+      scrollContainer.scrollTop = scrollContainer.scrollHeight;
+      return;
+    }
+
+    bottomRef.current?.scrollIntoView({ behavior: 'auto' });
   }, []);
 
   const ordered = useMemo(() => {
@@ -318,25 +328,19 @@ export function ConversationDetail({
       return;
     }
 
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [ordered.length]);
+    scrollMessagesToLatest();
+  }, [ordered.length, scrollMessagesToLatest]);
 
   useEffect(() => {
     // Pri každom otvorení/refreshi konverzácie sa vráť na najnovšie správy.
     // Toto prepíše browser scroll-restoration aj po reload-e.
     if (loading) return;
+    if (isMobile && !composerElement) return;
 
-    const scrollToLatest = () => {
-      if (messagesScrollRef.current) {
-        messagesScrollRef.current.scrollTop = messagesScrollRef.current.scrollHeight;
-      } else {
-        bottomRef.current?.scrollIntoView({ behavior: 'auto' });
-      }
-    };
     requestAnimationFrame(() => {
-      requestAnimationFrame(scrollToLatest);
+      requestAnimationFrame(scrollMessagesToLatest);
     });
-  }, [conversationId, loading]);
+  }, [composerElement, conversationId, isMobile, loading, mobileComposerReservedSpace, scrollMessagesToLatest]);
 
   useEffect(() => {
     if (loading) return;
