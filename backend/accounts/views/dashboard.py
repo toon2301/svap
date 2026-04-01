@@ -9,6 +9,7 @@ Skutočná implementácia je rozdelená v `accounts/views/dashboard_views/*`.
 """
 
 from .dashboard_views.home import dashboard_home_view
+from .dashboard_views.recommendations import dashboard_recommendations_view
 from .dashboard_views.search import dashboard_search_view
 from .dashboard_views.favorites import dashboard_favorites_view
 from .dashboard_views.profile import dashboard_profile_view, dashboard_settings_view

@@ -11,7 +11,6 @@ import { useSearchApi } from './search/hooks/useSearchApi';
 import { useRecentSearches } from './search/hooks/useRecentSearches';
 import { useSuggestions } from './search/hooks/useSuggestions';
 
-// Export funkcie pre invalidáciu search cache pre konkrétneho používateľa
 export { invalidateSearchCacheForUser } from './search/hooks/useSearchApi';
 
 export default function SearchModule({
@@ -23,20 +22,29 @@ export default function SearchModule({
   onClose,
 }: SearchModuleProps) {
   const { t } = useLanguage();
-  
-  // Hooky pre state management
+
   const searchState = useSearchState();
   const searchApi = useSearchApi({ searchState, user });
   const recentSearches = useRecentSearches({ user, searchState });
   const suggestions = useSuggestions({ user, searchState, onSkillClick, enabled: isActive });
+  const { handleSearch } = searchApi;
+  const {
+    hasSearched,
+    isFilterOpen,
+    isFromRecentSearch,
+    searchDebounceRef,
+    searchInputRef,
+    searchQuery,
+    setError,
+    setHasSearched,
+    setIsFilterOpen,
+    setResults,
+  } = searchState;
 
-  // Skryť FlipButton ikony v kartách keď je filter modal otvorený
   useEffect(() => {
-    if (!isActive) return;
-    if (typeof document === 'undefined') return;
-    
-    if (searchState.isFilterOpen) {
-      // Pridaj class na body aby sme mohli skryť FlipButton cez CSS
+    if (!isActive || typeof document === 'undefined') return;
+
+    if (isFilterOpen) {
       document.body.classList.add('filter-modal-open');
     } else {
       document.body.classList.remove('filter-modal-open');
@@ -45,38 +53,31 @@ export default function SearchModule({
     return () => {
       document.body.classList.remove('filter-modal-open');
     };
-  }, [isActive, searchState.isFilterOpen]);
+  }, [isActive, isFilterOpen]);
 
-  // Klávesové skratky v SearchModule
   useEffect(() => {
-    if (!isActive) return;
-    if (typeof document === 'undefined') return;
+    if (!isActive || typeof document === 'undefined') return;
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      // Ignoruj, ak používateľ píše do inputu, textarey alebo je v modale
       const target = event.target as HTMLElement;
-      const isInputActive = 
-        target.tagName === 'INPUT' || 
-        target.tagName === 'TEXTAREA' || 
+      const isInputActive =
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
         target.isContentEditable ||
         target.closest('[role="dialog"]') !== null ||
         target.closest('[role="textbox"]') !== null;
 
-      // Esc - zatvor filter modal ak je otvorený
-      if (event.key === 'Escape' && searchState.isFilterOpen) {
+      if (event.key === 'Escape' && isFilterOpen) {
         event.preventDefault();
-        searchState.setIsFilterOpen(false);
+        setIsFilterOpen(false);
         return;
       }
 
-      // "/" - focus do search inputu (len ak nie je aktívny žiadny input a nie je filter modal)
-      if (event.key === '/' && !isInputActive && !searchState.isFilterOpen) {
-        // Skontroluj, či sme na desktop verzii (lg a vyššie)
+      if (event.key === '/' && !isInputActive && !isFilterOpen) {
         if (window.innerWidth >= 1024) {
           event.preventDefault();
-          // Malé oneskorenie, aby sa zabezpečilo, že search panel je už otvorený
-          setTimeout(() => {
-            searchState.searchInputRef.current?.focus();
+          window.setTimeout(() => {
+            searchInputRef.current?.focus();
           }, 100);
         }
       }
@@ -86,49 +87,66 @@ export default function SearchModule({
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isActive, searchState.isFilterOpen, searchState.setIsFilterOpen, searchState.searchInputRef]);
+  }, [isActive, isFilterOpen, setIsFilterOpen, searchInputRef]);
 
-  // Resetovať hasSearched keď sa searchQuery stane prázdnym (používateľ vymazal text)
-  // Ale NERESETOVAŤ ak je isFromRecentSearch true - vtedy chceme zobraziť výsledky z recent search
   useEffect(() => {
     if (!isActive) return;
-    const q = searchState.searchQuery.trim();
-    
-    if (!q && searchState.hasSearched && !searchState.isFromRecentSearch) {
-      // Keď používateľ vymaže text, resetovať hasSearched, aby sa zobrazili recent searches a suggestions
-      // Ale len ak to nie je z recent search (vtedy chceme zobraziť výsledky)
-      searchState.setHasSearched(false);
-      searchState.setResults(null);
-      searchState.setError(null);
+    const q = searchQuery.trim();
+
+    if (!q && hasSearched && !isFromRecentSearch) {
+      setHasSearched(false);
+      setResults(null);
+      setError(null);
     }
-  }, [searchState.searchQuery, searchState.hasSearched, searchState.isFromRecentSearch, searchState.setHasSearched, searchState.setResults, searchState.setError]);
+  }, [
+    isActive,
+    searchQuery,
+    hasSearched,
+    isFromRecentSearch,
+    setHasSearched,
+    setResults,
+    setError,
+  ]);
 
-  // Dynamické vyhľadávanie – rýchle návrhy počas písania
   useEffect(() => {
-    const q = searchState.searchQuery.trim();
+    if (!isActive) return;
 
+    const q = searchQuery.trim();
     if (!q || q.length < 2) {
+      if (searchDebounceRef.current) {
+        clearTimeout(searchDebounceRef.current);
+        searchDebounceRef.current = null;
+      }
       return;
     }
 
-    if (searchState.searchDebounceRef.current) {
-      clearTimeout(searchState.searchDebounceRef.current);
+    if (searchDebounceRef.current) {
+      clearTimeout(searchDebounceRef.current);
     }
 
-    searchState.searchDebounceRef.current = setTimeout(() => {
-      void searchApi.handleSearch();
+    searchDebounceRef.current = setTimeout(() => {
+      void handleSearch();
     }, 400);
 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isActive, searchState.searchQuery, searchApi.handleSearch]);
+    return () => {
+      if (searchDebounceRef.current) {
+        clearTimeout(searchDebounceRef.current);
+        searchDebounceRef.current = null;
+      }
+    };
+  }, [isActive, searchQuery, searchDebounceRef, handleSearch]);
 
   const handleKeyDown = (event: ReactKeyboardEvent<HTMLInputElement>) => {
-    if (event.key === 'Enter') {
-      void searchApi.handleSearch();
+    if (event.key !== 'Enter') return;
+
+    event.preventDefault();
+    if (searchDebounceRef.current) {
+      clearTimeout(searchDebounceRef.current);
+      searchDebounceRef.current = null;
     }
+    void handleSearch();
   };
 
-  // Layout classes pre responsive dizajn
   const rootClassName = isOverlay ? 'w-full h-full' : 'max-w-6xl mx-auto';
   const layoutClassName = isOverlay ? 'h-full flex flex-col' : 'flex flex-col lg:flex-row gap-6';
   const asideClassName = isOverlay ? 'w-full flex flex-col h-full' : 'w-full lg:w-96 flex-shrink-0';
@@ -136,18 +154,15 @@ export default function SearchModule({
   return (
     <div className={rootClassName}>
       <div className={layoutClassName}>
-        {/* Sekundárny panel vedľa ľavej navigácie */}
         <aside className={asideClassName}>
-          {/* Search input komponenta */}
           <SearchInput
             searchState={searchState}
-            onSearch={searchApi.handleSearch}
+            onSearch={handleSearch}
             onKeyDown={handleKeyDown}
             onClose={onClose}
             t={t}
           />
-          
-          {/* Search results komponenta */}
+
           <div className={isOverlay ? 'flex-1 overflow-y-auto min-h-0 px-4 sm:px-5' : 'px-4 sm:px-5'}>
             <SearchResults
               user={user}
@@ -162,11 +177,9 @@ export default function SearchModule({
           </div>
         </aside>
 
-        {/* Hlavná časť – zatiaľ bez výsledkov, všetko je v search paneli */}
         {!isOverlay && <main className="flex-1" />}
       </div>
 
-      {/* Filter modal – nad obsahom, bez straty stavu */}
       <FilterModal
         isOpen={searchState.isFilterOpen}
         onClose={() => searchState.setIsFilterOpen(false)}
@@ -184,8 +197,8 @@ export default function SearchModule({
         setPriceMax={searchState.setPriceMax}
         onReset={searchState.resetFilters}
         onApply={() => {
-          searchState.setIsFilterOpen(false);
-          void searchApi.handleSearch();
+          setIsFilterOpen(false);
+          void handleSearch();
         }}
         t={t}
       />

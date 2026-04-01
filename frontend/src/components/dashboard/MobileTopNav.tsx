@@ -30,7 +30,7 @@ export default function MobileTopNav({ activeItem, onItemClick }: MobileTopNavPr
 
   return (
     <div className="lg:hidden fixed bottom-0 left-0 right-0 z-[60] bg-white dark:bg-black border-t border-gray-200 dark:border-gray-800 shadow-lg overflow-visible">
-      <div className="flex items-start justify-between overflow-visible px-2 pt-1 pb-[max(0.5rem,env(safe-area-inset-bottom,0px))]">
+      <div className="flex items-start justify-between overflow-visible px-2 pt-1 pb-[max(1.5rem,env(safe-area-inset-bottom,0px))]">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = activeItem === item.id;
@@ -49,7 +49,7 @@ export default function MobileTopNav({ activeItem, onItemClick }: MobileTopNavPr
               aria-label={item.label}
             >
               <span className="relative inline-block overflow-visible">
-                <Icon className="h-5 w-5 shrink-0" strokeWidth={isActive ? 2.5 : 2} />
+                <Icon className="h-6 w-6 shrink-0" strokeWidth={isActive ? 2.5 : 2} />
                 {item.id === 'messages' && activeItem !== 'messages' && messageUnreadCount > 0 && (
                   <span
                     className="absolute right-0 top-0 z-10 flex h-4 min-w-[16px] -translate-y-1/2 translate-x-1/2 items-center justify-center rounded-full bg-purple-600 px-0.5 text-[10px] font-bold text-white"

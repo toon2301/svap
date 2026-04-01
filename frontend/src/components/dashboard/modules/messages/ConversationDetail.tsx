@@ -18,6 +18,7 @@ import {
   type MessagingRealtimeMessagePayload,
 } from './messagesEvents';
 import { useVisualViewportBottomInset } from './useVisualViewportBottomInset';
+import { useComposerReservedSpace } from './useComposerReservedSpace';
 
 const MESSAGE_POLL_INTERVAL_MS = 10_000;
 
@@ -68,8 +69,10 @@ export function ConversationDetail({
   const [isHeaderMenuOpen, setIsHeaderMenuOpen] = useState(false);
   const headerMenuRef = useRef<HTMLDivElement | null>(null);
   const messagesScrollRef = useRef<HTMLDivElement | null>(null);
+  const composerRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const shouldRestoreFocusRef = useRef(false);
+  const mobileComposerReservedSpace = useComposerReservedSpace(composerRef.current, isMobile, 8);
 
   const focusComposer = useCallback(() => {
     if (isMobile) return;
@@ -369,7 +372,7 @@ export function ConversationDetail({
 
   return (
     <div
-      className={`${className} flex flex-col min-h-0 h-[calc(100dvh-4rem)] lg:h-full overflow-hidden`}
+      className={`${className} flex flex-col min-h-0 h-[calc(100dvh-4rem)] lg:h-full overflow-hidden overscroll-none`}
     >
       {isMobile ? (
         <div className="mb-2 flex items-center justify-end gap-2">
@@ -448,9 +451,8 @@ export function ConversationDetail({
       <div
         ref={messagesScrollRef}
         data-testid="conversation-messages-scroll"
-        className={`flex-1 min-h-0 overflow-y-auto elegant-scrollbar p-4 space-y-2 ${
-          isMobile ? 'pb-28' : ''
-        }`}
+        className="flex-1 min-h-0 overflow-y-auto overscroll-y-contain touch-pan-y elegant-scrollbar p-4 space-y-2"
+        style={isMobile ? { paddingBottom: mobileComposerReservedSpace } : undefined}
       >
         {ordered.length === 0 ? (
           <div className="text-sm text-gray-600 dark:text-gray-400 text-center py-8">
@@ -501,12 +503,13 @@ export function ConversationDetail({
       </div>
 
       <div
+        ref={composerRef}
         className={
           isMobile
-            ? 'fixed inset-x-0 z-40 flex w-full min-w-0 shrink-0 items-center overflow-x-hidden border-t border-gray-200 bg-white px-4 py-2 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] dark:border-gray-800 dark:bg-black'
+            ? 'fixed inset-x-0 z-40 flex w-full min-w-0 shrink-0 items-center overflow-x-hidden touch-none border-t border-gray-200 bg-white px-4 py-2 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] dark:border-gray-800 dark:bg-black'
             : 'mt-2 flex w-full min-w-0 shrink-0 gap-2 px-4 sm:px-6 lg:px-8 mx-auto pb-[max(1rem,env(safe-area-inset-bottom,0px))] lg:pb-[max(1.25rem,env(safe-area-inset-bottom,0px))] sm:max-w-[min(100%,36rem)] md:max-w-[min(100%,44rem)] lg:max-w-[min(100%,52rem)] xl:max-w-[min(100%,64rem)]'
         }
-        style={isMobile ? { bottom: visualViewportBottomInset } : undefined}
+        style={isMobile ? { bottom: visualViewportBottomInset + 14 } : undefined}
       >
         <div
           className={`relative min-w-0 flex-1 ${

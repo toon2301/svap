@@ -101,6 +101,7 @@ export default function SkillsDescriptionMobileModals({ state }: SkillsDescripti
           error={error}
           onErrorChange={setError}
           isOpen={isDescriptionModalOpen}
+          showEmojiButton={false}
         />
       </MobileFullScreenModal>
 

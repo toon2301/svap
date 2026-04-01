@@ -8,6 +8,8 @@ export type SearchSkill = Offer & {
   user_display_name?: string | null;
   // ID používateľa pre identifikáciu vlastných ponúk
   user_id?: number | null;
+  // Voliteľný slug vlastníka ponuky pre priamu navigáciu z panelu
+  owner_slug?: string | null;
 };
 
 export interface SearchUserResult {

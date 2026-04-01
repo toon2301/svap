@@ -226,7 +226,7 @@ export default function DashboardLayout({
         {/* Main Content - data attr pre scroll preservation */}
         <main
           data-dashboard-main
-          className={`relative h-screen pb-24 lg:pt-0 lg:pb-0 elegant-scrollbar ${
+          className={`relative h-screen pb-28 lg:pt-0 lg:pb-0 elegant-scrollbar ${
             activeModule === 'messages'
               ? isMobileMessageConversationOpen
                 ? 'overflow-hidden lg:overflow-hidden'

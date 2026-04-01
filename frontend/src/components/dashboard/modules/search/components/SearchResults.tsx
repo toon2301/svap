@@ -49,7 +49,6 @@ export function SearchResults({
     onlyMyLocation,
     priceMin,
     priceMax,
-    searchInputRef,
     clearSearch,
   } = searchState;
 
@@ -67,13 +66,12 @@ export function SearchResults({
     const params = new URLSearchParams();
     params.set('q', q);
 
-    // Zachovaj aktuálne filtre ako query parametre (aj keď /search ich zatiaľ nemusí používať).
-    params.set('showSkills', showSkills ? '1' : '0');
-    params.set('showUsers', showUsers ? '1' : '0');
-    if (offerType && offerType !== 'all') params.set('offerType', offerType);
+    if (showSkills && !showUsers) params.set('tab', 'offers');
+    if (showUsers && !showSkills) params.set('tab', 'users');
+    if (offerType && offerType !== 'all') params.set('type', offerType);
     if (onlyMyLocation) params.set('onlyMyLocation', '1');
-    if (priceMin.trim()) params.set('priceMin', priceMin.trim());
-    if (priceMax.trim()) params.set('priceMax', priceMax.trim());
+    if (priceMin.trim()) params.set('price_min', priceMin.trim());
+    if (priceMax.trim()) params.set('price_max', priceMax.trim());
 
     router.push(`/search?${params.toString()}`);
 
@@ -88,12 +86,16 @@ export function SearchResults({
   };
 
   // Render skill card
-  const renderSkillCard = (skill: SearchSkill, keyPrefix: string) => {
+  const renderSkillCard = (
+    skill: SearchSkill,
+    keyPrefix: string,
+    onCardClick?: () => void,
+  ) => {
     const isSeeking = skill.is_seeking === true;
     const locationLabel = skill.location || skill.district || t('search.noLocation', 'Bez lokality');
-    const ownerName = skill.user_id === user.id 
+    const ownerName = skill.user_id === user.id
       ? t('search.you', 'Vy')
-      : (skill as any).user_display_name || '';
+      : skill.user_display_name || '';
     const skillTitle = skill.subcategory || skill.category;
 
     // Formátovanie ceny podľa typu ponuky
@@ -107,12 +109,20 @@ export function SearchResults({
       : null;
 
     const handleSkillCardClick = () => {
+      if (onCardClick) {
+        onCardClick();
+        return;
+      }
       if (typeof onSkillClick === 'function') {
         const ownerId = skill.user_id ?? null;
         if (ownerId) {
+          const inlineOwnerSlug =
+            typeof skill.owner_slug === 'string' && skill.owner_slug.trim()
+              ? skill.owner_slug.trim()
+              : null;
           // Skús nájsť slug používateľa z results.users podľa ID (len ak máme results)
           const owner = results?.users.find((u) => u.id === ownerId) ?? null;
-          const ownerSlug = owner?.slug ?? null;
+          const ownerSlug = inlineOwnerSlug || owner?.slug || null;
           onSkillClick(ownerId, skill.id as number, ownerSlug);
         }
       }
@@ -328,7 +338,9 @@ export function SearchResults({
             {t('search.suggestionsForYou', 'Návrhy pre vás')}
           </h4>
           <div className="space-y-1">
-            {suggestedSkills.map((skill) => renderSkillCard(skill, 'suggest'))}
+            {suggestedSkills.map((skill) =>
+              renderSkillCard(skill, 'suggest', () => handleSuggestionClick(skill)),
+            )}
           </div>
         </div>
       )}

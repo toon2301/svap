@@ -629,6 +629,7 @@ export const endpoints = {
   dashboard: {
     home: '/auth/dashboard/home/',
     search: '/auth/dashboard/search/',
+    searchRecommendations: '/auth/dashboard/search/recommendations/',
     favorites: '/auth/dashboard/favorites/',
     profile: '/auth/dashboard/profile/',
     userProfile: (id: number) => `/auth/dashboard/users/${id}/profile/`,

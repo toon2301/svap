@@ -478,7 +478,9 @@ def dashboard_search_view(request):
     # =========================
     # Users search
     # =========================
-    users_qs = User.objects.filter(is_active=True)
+    users_qs = User.objects.filter(is_active=True).filter(
+        Q(is_public=True) | Q(pk=request.user.pk)
+    )
 
     if user_terms:
         user_query = Q()

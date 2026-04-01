@@ -46,6 +46,7 @@ from .search import search_view
 from .search_global import global_search_view
 from .dashboard import (
     dashboard_home_view,
+    dashboard_recommendations_view,
     dashboard_search_view,
     dashboard_favorites_view,
     dashboard_profile_view,
@@ -90,6 +91,7 @@ __all__ = [
     "push_subscription_current_view",
     "push_preferences_view",
     "dashboard_home_view",
+    "dashboard_recommendations_view",
     "dashboard_search_view",
     "dashboard_favorites_view",
     "dashboard_profile_view",

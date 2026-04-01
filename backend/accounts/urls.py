@@ -64,6 +64,11 @@ urlpatterns = [
     path("draft/<str:draft_type>/clear/", profile.clear_draft_view, name="clear_draft"),
     # Dashboard
     path("dashboard/home/", views.dashboard_home_view, name="dashboard_home"),
+    path(
+        "dashboard/search/recommendations/",
+        views.dashboard_recommendations_view,
+        name="dashboard_search_recommendations",
+    ),
     path("dashboard/search/", views.dashboard_search_view, name="dashboard_search"),
     # Messaging (1:1)
     path("messaging/", include("messaging.urls")),

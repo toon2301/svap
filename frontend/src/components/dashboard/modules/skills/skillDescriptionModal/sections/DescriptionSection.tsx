@@ -12,6 +12,7 @@ interface DescriptionSectionProps {
   onErrorChange: (value: string) => void;
   isOpen: boolean;
   isSeeking?: boolean;
+  showEmojiButton?: boolean;
 }
 
 export default function DescriptionSection({
@@ -21,6 +22,7 @@ export default function DescriptionSection({
   onErrorChange,
   isOpen,
   isSeeking = false,
+  showEmojiButton = true,
 }: DescriptionSectionProps) {
   const { t } = useLanguage();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -89,26 +91,30 @@ export default function DescriptionSection({
           value={description}
           onChange={(e) => handleChange(e.target.value)}
           placeholder=""
-          className="w-full px-3 pt-2 pb-6 pr-16 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-1 focus:ring-purple-300 focus:border-transparent resize-none skill-description-textarea-scrollbar"
+          className={`w-full px-3 pt-2 pb-6 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-1 focus:ring-purple-300 focus:border-transparent resize-none skill-description-textarea-scrollbar ${
+            showEmojiButton ? 'pr-16' : 'pr-3'
+          }`}
           rows={2}
           maxLength={100}
           autoFocus
         />
-        <button
-          type="button"
-          onClick={() => setShowEmojiPicker((s) => !s)}
-          className="absolute right-1.5 top-0.5 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded transition-colors"
-          aria-label={t('skills.addEmoji', 'Pridať emoji')}
-        >
-          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
-        </button>
+        {showEmojiButton ? (
+          <button
+            type="button"
+            onClick={() => setShowEmojiPicker((s) => !s)}
+            className="absolute right-1.5 top-0.5 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded transition-colors"
+            aria-label={t('skills.addEmoji', 'Pridať emoji')}
+          >
+            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+          </button>
+        ) : null}
         <div className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-end pr-3 pb-2">
           <span
             className={`text-xs font-medium ${
@@ -122,7 +128,7 @@ export default function DescriptionSection({
           </span>
         </div>
 
-        {showEmojiPicker && (
+        {showEmojiButton && showEmojiPicker && (
           <div
             ref={emojiWrapperRef}
             className="absolute z-20 right-0 top-10 shadow-lg border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-black"
