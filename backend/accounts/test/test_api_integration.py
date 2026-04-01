@@ -113,6 +113,8 @@ class TestAPIIntegration(APITestCase):
         refresh_response = self.client.post(refresh_url, {}, format="json")
         self.assertEqual(refresh_response.status_code, status.HTTP_200_OK)
         self.assertIn("access_token", refresh_response.cookies)
+        self.assertIn("X-Swaply-Access-Expires-At", refresh_response.headers)
+        self.assertIn("X-Swaply-Access-Expires-In", refresh_response.headers)
 
     def test_token_refresh_warms_auth_cache(self):
         login_url = f"{self.base_url}/auth/login/"

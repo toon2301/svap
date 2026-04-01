@@ -1,8 +1,15 @@
 import React from 'react';
 import { act, render, waitFor } from '@testing-library/react';
 
+import { ensureFreshSessionForBackgroundWork, isSessionFreshEnough } from '@/lib/api';
 import { useConversationPresenceHeartbeat } from './useConversationPresenceHeartbeat';
 import { updateMessagingPresence } from './messagingApi';
+
+jest.mock('@/lib/api', () => ({
+  __esModule: true,
+  ensureFreshSessionForBackgroundWork: jest.fn(() => Promise.resolve('ready')),
+  isSessionFreshEnough: jest.fn(() => true),
+}));
 
 jest.mock('./messagingApi', () => ({
   __esModule: true,
@@ -18,11 +25,20 @@ describe('useConversationPresenceHeartbeat', () => {
   const mockedUpdateMessagingPresence = updateMessagingPresence as jest.MockedFunction<
     typeof updateMessagingPresence
   >;
+  const mockedEnsureFreshSessionForBackgroundWork =
+    ensureFreshSessionForBackgroundWork as jest.MockedFunction<
+      typeof ensureFreshSessionForBackgroundWork
+    >;
+  const mockedIsSessionFreshEnough = isSessionFreshEnough as jest.MockedFunction<
+    typeof isSessionFreshEnough
+  >;
   let visibilityState: DocumentVisibilityState = 'visible';
 
   beforeEach(() => {
     jest.useFakeTimers();
     mockedUpdateMessagingPresence.mockClear();
+    mockedEnsureFreshSessionForBackgroundWork.mockResolvedValue('ready');
+    mockedIsSessionFreshEnough.mockReturnValue(true);
     visibilityState = 'visible';
     Object.defineProperty(document, 'visibilityState', {
       configurable: true,
@@ -132,6 +148,33 @@ describe('useConversationPresenceHeartbeat', () => {
 
     await waitFor(() => {
       expect(mockedUpdateMessagingPresence).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it('suppresses a duplicate forced visible sync when visibilitychange is immediately followed by focus', async () => {
+    render(<PresenceHeartbeatHarness conversationId={41} />);
+
+    await waitFor(() => {
+      expect(mockedUpdateMessagingPresence).toHaveBeenCalledTimes(1);
+    });
+
+    act(() => {
+      visibilityState = 'hidden';
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+
+    await waitFor(() => {
+      expect(mockedUpdateMessagingPresence).toHaveBeenCalledTimes(2);
+    });
+
+    act(() => {
+      visibilityState = 'visible';
+      document.dispatchEvent(new Event('visibilitychange'));
+      window.dispatchEvent(new Event('focus'));
+    });
+
+    await waitFor(() => {
+      expect(mockedUpdateMessagingPresence).toHaveBeenCalledTimes(3);
     });
   });
 });

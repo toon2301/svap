@@ -4,6 +4,7 @@ import { buildApiUrl, getConfiguredApiUrl } from '@/lib/apiUrl';
 
 type TraceMeta = Record<string, unknown>;
 type RefreshResult = 'refreshed' | 'invalid_session' | 'transient_failure';
+type BackgroundSessionResult = 'ready' | RefreshResult;
 type AuthFailureKind = 'invalid_session' | 'transient_refresh_failure';
 type AuthTaggedError = Error & {
   __svaplyAuthFailure?: AuthFailureKind;
@@ -66,6 +67,97 @@ let redirectedAfterInvalidation = false;
 // Allow aborting refresh in-flight (e.g. logout)
 let refreshAbortController: AbortController | null = null;
 const REFRESH_HINT_STORAGE_KEY = '__svaply_refresh_hint__';
+const ACCESS_EXPIRY_STORAGE_KEY = '__svaply_access_expiry__';
+const ACCESS_EXPIRY_HEADER = 'x-swaply-access-expires-at';
+const ACCESS_EXPIRY_IN_HEADER = 'x-swaply-access-expires-in';
+const BACKGROUND_REFRESH_SKEW_MS = 30_000;
+
+function readAccessExpiryHint(): number | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = window.sessionStorage.getItem(ACCESS_EXPIRY_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = Number.parseInt(raw, 10);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeAccessExpiryHint(value: number | null): void {
+  if (typeof window === 'undefined') return;
+  try {
+    if (typeof value === 'number' && Number.isFinite(value) && value > 0) {
+      window.sessionStorage.setItem(ACCESS_EXPIRY_STORAGE_KEY, String(Math.trunc(value)));
+    } else {
+      window.sessionStorage.removeItem(ACCESS_EXPIRY_STORAGE_KEY);
+    }
+  } catch {
+    // best-effort only
+  }
+}
+
+let accessExpiryEpochMs: number | null = readAccessExpiryHint();
+
+function setAccessExpiryHint(value: number | null): void {
+  accessExpiryEpochMs = value;
+  writeAccessExpiryHint(value);
+}
+
+function readHeaderValue(headers: unknown, headerName: string): string | null {
+  if (!headers || typeof headers !== 'object') return null;
+  const record = headers as Record<string, unknown>;
+  const direct = record[headerName];
+  if (typeof direct === 'string' && direct.trim()) {
+    return direct.trim();
+  }
+
+  const normalizedHeaderName = headerName.toLowerCase();
+  for (const [key, value] of Object.entries(record)) {
+    if (key.toLowerCase() !== normalizedHeaderName) continue;
+    if (typeof value === 'string' && value.trim()) {
+      return value.trim();
+    }
+  }
+
+  return null;
+}
+
+function parseAccessExpiryEpochMs(headers: unknown): number | null {
+  const expiresAt = readHeaderValue(headers, ACCESS_EXPIRY_HEADER);
+  if (expiresAt) {
+    const parsed = Date.parse(expiresAt);
+    if (Number.isFinite(parsed) && parsed > 0) {
+      return parsed;
+    }
+  }
+
+  const expiresInRaw = readHeaderValue(headers, ACCESS_EXPIRY_IN_HEADER);
+  if (expiresInRaw) {
+    const expiresInSeconds = Number.parseInt(expiresInRaw, 10);
+    if (Number.isFinite(expiresInSeconds) && expiresInSeconds > 0) {
+      return Date.now() + expiresInSeconds * 1000;
+    }
+  }
+
+  return null;
+}
+
+function syncAccessExpiryHintFromHeaders(headers: unknown): void {
+  const nextExpiry = parseAccessExpiryEpochMs(headers);
+  if (nextExpiry == null) return;
+  setAccessExpiryHint(nextExpiry);
+  setMayHaveRefreshCookie(true);
+}
+
+function hasFreshAccessToken(minValidityMs = 0): boolean {
+  if (accessExpiryEpochMs == null) return false;
+  return accessExpiryEpochMs - Date.now() > Math.max(0, minValidityMs);
+}
+
+export function isSessionFreshEnough(minValidityMs = 0): boolean {
+  return hasFreshAccessToken(minValidityMs);
+}
 
 function readRefreshHint(): boolean {
   if (typeof window === 'undefined') return false;
@@ -107,6 +199,7 @@ export function invalidateSession(): void {
   oauthTrace('invalidate_session_called');
   mayHaveRefreshCookieHint = false;
   writeRefreshHint(false);
+  setAccessExpiryHint(null);
   sessionInvalid = true;
   refreshDisabledUntil = Number.MAX_SAFE_INTEGER;
   redirectedAfterInvalidation = false;
@@ -189,6 +282,7 @@ function markSessionInvalid(): void {
   oauthTrace('mark_session_invalid');
   mayHaveRefreshCookieHint = false;
   writeRefreshHint(false);
+  setAccessExpiryHint(null);
   sessionInvalid = true;
   refreshDisabledUntil = Number.MAX_SAFE_INTEGER;
   refreshInFlight = null;
@@ -222,6 +316,8 @@ async function probeSessionAfterRefresh401(): Promise<boolean> {
       withCredentials: true,
       headers: { Accept: 'application/json' },
     });
+    syncAccessExpiryHintFromHeaders(response?.headers);
+    setMayHaveRefreshCookie(true);
     return response.status === 200;
   } catch {
     return false;
@@ -258,7 +354,7 @@ export async function ensureSessionRefreshed(): Promise<RefreshResult> {
       const controller = new AbortController();
       refreshAbortController = controller;
 
-      await axios.post(
+      const refreshResponse = await axios.post(
         buildApiUrl('/token/refresh/'),
         {},
         {
@@ -268,6 +364,8 @@ export async function ensureSessionRefreshed(): Promise<RefreshResult> {
         }
       );
 
+      syncAccessExpiryHintFromHeaders(refreshResponse?.headers);
+      setMayHaveRefreshCookie(true);
       refreshDisabledUntil = null;
       oauthTrace('refresh_success');
       return 'refreshed';
@@ -298,6 +396,25 @@ export async function ensureSessionRefreshed(): Promise<RefreshResult> {
   })();
 
   return refreshInFlight;
+}
+
+export async function ensureFreshSessionForBackgroundWork(options?: {
+  minValidityMs?: number;
+}): Promise<BackgroundSessionResult> {
+  if (sessionInvalid) {
+    return 'invalid_session';
+  }
+
+  const minValidityMs = Math.max(0, options?.minValidityMs ?? BACKGROUND_REFRESH_SKEW_MS);
+  if (hasFreshAccessToken(minValidityMs)) {
+    return 'ready';
+  }
+
+  if (!mayHaveRefreshCookieHint && accessExpiryEpochMs == null) {
+    return 'ready';
+  }
+
+  return ensureSessionRefreshed();
 }
 
 const API_URL = getConfiguredApiUrl();
@@ -451,6 +568,7 @@ api.interceptors.request.use(
 // Response interceptor to handle token refresh
 api.interceptors.response.use(
   (response) => {
+    syncAccessExpiryHintFromHeaders(response?.headers);
     const traceUrl = String(response?.config?.url || '');
     if (
       traceUrl.includes('/oauth/') ||

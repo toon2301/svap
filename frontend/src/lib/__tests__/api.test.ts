@@ -1,7 +1,12 @@
 import axios from 'axios';
 import Cookies from 'js-cookie';
 
-import api, { endpoints, setMayHaveRefreshCookie } from '../api';
+import api, {
+  endpoints,
+  ensureFreshSessionForBackgroundWork,
+  isSessionFreshEnough,
+  setMayHaveRefreshCookie,
+} from '../api';
 
 jest.mock('axios', () => {
   const actual = jest.requireActual('axios');
@@ -43,6 +48,7 @@ describe('lib/api axios instance', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     localStorage.clear();
+    sessionStorage.clear();
     setMayHaveRefreshCookie(true);
     (api as any).defaults.adapter = async (config: any) => {
       return {
@@ -192,6 +198,51 @@ describe('lib/api axios instance', () => {
     expect(res.data.ok).toBe(true);
 
     getSpy.mockRestore();
+  });
+
+  it('z auth expiry headerov odvodí čerstvosť session a nevolá zbytočný refresh pre background work', async () => {
+    const fulfilled = (api as any).interceptors.response.handlers[0].fulfilled;
+    await fulfilled({
+      status: 200,
+      data: { ok: true },
+      headers: { 'x-swaply-access-expires-in': '900' },
+      config: { url: '/auth/me/', method: 'get' },
+    });
+
+    const postSpy = jest.spyOn(axios as any, 'post');
+
+    await expect(ensureFreshSessionForBackgroundWork()).resolves.toBe('ready');
+    expect(isSessionFreshEnough(1_000)).toBe(true);
+    expect(postSpy).not.toHaveBeenCalled();
+
+    postSpy.mockRestore();
+  });
+
+  it('pre background work preventívne refreshne session, keď access cookie čoskoro expiruje', async () => {
+    const fulfilled = (api as any).interceptors.response.handlers[0].fulfilled;
+    await fulfilled({
+      status: 200,
+      data: { ok: true },
+      headers: { 'x-swaply-access-expires-in': '1' },
+      config: { url: '/auth/me/', method: 'get' },
+    });
+
+    (Cookies.get as jest.Mock).mockImplementation((key: string) =>
+      key === 'csrftoken' ? 'csrf123' : undefined,
+    );
+
+    const postSpy = jest.spyOn(axios as any, 'post').mockResolvedValueOnce({
+      status: 200,
+      headers: { 'x-swaply-access-expires-in': '900' },
+    } as any);
+
+    await expect(
+      ensureFreshSessionForBackgroundWork({ minValidityMs: 5_000 }),
+    ).resolves.toBe('refreshed');
+    expect(postSpy).toHaveBeenCalledTimes(1);
+    expect(isSessionFreshEnough(1_000)).toBe(true);
+
+    postSpy.mockRestore();
   });
 
   it('exportuje endpoints', () => {

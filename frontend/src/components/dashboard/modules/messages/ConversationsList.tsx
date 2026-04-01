@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Bars3Icon } from '@heroicons/react/24/outline';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { ensureFreshSessionForBackgroundWork } from '@/lib/api';
 import { syncMessageUnreadCountFromConversations } from '@/components/dashboard/contexts/messageUnreadStore';
 import type { ConversationListItem } from './types';
 import { listConversations } from './messagingApi';
@@ -94,7 +95,15 @@ export function ConversationsList({
 
     const refreshIfVisible = () => {
       if (document.visibilityState !== 'visible') return;
-      void refresh().catch(() => undefined);
+      void (async () => {
+        const sessionState = await ensureFreshSessionForBackgroundWork({
+          minValidityMs: IDLE_CONVERSATIONS_POLL_INTERVAL_MS + 5_000,
+        });
+        if (sessionState === 'invalid_session' || sessionState === 'transient_failure') {
+          return;
+        }
+        await refresh().catch(() => undefined);
+      })();
     };
 
     if (shouldUseIntervalPolling) {

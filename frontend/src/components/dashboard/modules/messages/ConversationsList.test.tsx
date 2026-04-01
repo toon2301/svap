@@ -5,6 +5,7 @@ import { act, render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { ConversationsList } from './ConversationsList';
 import { listConversations } from './messagingApi';
+import { ensureFreshSessionForBackgroundWork } from '@/lib/api';
 import { syncMessageUnreadCountFromConversations } from '@/components/dashboard/contexts/messageUnreadStore';
 import { requestConversationsRefresh } from './messagesEvents';
 
@@ -18,6 +19,11 @@ jest.mock('@/components/dashboard/contexts/messageUnreadStore', () => ({
   syncMessageUnreadCountFromConversations: jest.fn(),
 }));
 
+jest.mock('@/lib/api', () => ({
+  __esModule: true,
+  ensureFreshSessionForBackgroundWork: jest.fn(() => Promise.resolve('ready')),
+}));
+
 function setVisibilityState(state: 'visible' | 'hidden') {
   Object.defineProperty(document, 'visibilityState', {
     configurable: true,
@@ -29,6 +35,7 @@ describe('ConversationsList', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     setVisibilityState('visible');
+    (ensureFreshSessionForBackgroundWork as jest.Mock).mockResolvedValue('ready');
   });
 
   afterEach(() => {
@@ -209,6 +216,35 @@ describe('ConversationsList', () => {
       expect(screen.getByText('Druhá správa')).toBeInTheDocument();
       expect(listConversations).toHaveBeenCalledTimes(2);
     });
+  });
+
+  it('skips background refresh when auth preflight reports a transient failure', async () => {
+    jest.useFakeTimers();
+    (ensureFreshSessionForBackgroundWork as jest.Mock).mockResolvedValue('transient_failure');
+    (listConversations as jest.Mock).mockResolvedValue([
+      {
+        id: 9,
+        other_user: { id: 2, display_name: 'Tester' },
+        last_message_preview: 'Prva sprava',
+        last_message_at: '2026-03-27T10:00:00Z',
+        last_message_sender_id: 2,
+        has_unread: false,
+      },
+    ]);
+
+    render(<ConversationsList currentUserId={1} variant="rail" />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Prva sprava')).toBeInTheDocument();
+    });
+
+    act(() => {
+      window.dispatchEvent(new Event('focus'));
+      document.dispatchEvent(new Event('visibilitychange'));
+      jest.advanceTimersByTime(30_000);
+    });
+
+    expect(listConversations).toHaveBeenCalledTimes(1);
   });
   it('renders a hover-only hamburger action slot for rail conversations', async () => {
     (listConversations as jest.Mock).mockResolvedValue([

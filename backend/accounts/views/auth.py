@@ -19,9 +19,11 @@ from django.core.cache import cache
 import logging
 import os
 from time import perf_counter
+from datetime import timedelta
 from django.conf import settings
 from django.middleware.csrf import get_token
 from django.views.decorators.csrf import ensure_csrf_cookie
+from django.utils import timezone
 import hashlib
 
 from swaply.rate_limiting import (
@@ -62,6 +64,20 @@ logger = logging.getLogger(__name__)
 LOGIN_FAILURE_MAX_ATTEMPTS = 5
 LOGIN_FAILURE_WINDOW_MINUTES = 15
 ACCOUNT_LOCKOUT_MINUTES = 15
+
+
+def _access_token_lifetime_seconds() -> int:
+    lifetime = settings.SIMPLE_JWT.get("ACCESS_TOKEN_LIFETIME")
+    if isinstance(lifetime, timedelta):
+        return max(0, int(lifetime.total_seconds()))
+    return 15 * 60
+
+
+def _set_auth_session_headers(response: Response) -> None:
+    access_lifetime_seconds = _access_token_lifetime_seconds()
+    access_expires_at = timezone.now() + timedelta(seconds=access_lifetime_seconds)
+    response["X-Swaply-Access-Expires-At"] = access_expires_at.isoformat()
+    response["X-Swaply-Access-Expires-In"] = str(access_lifetime_seconds)
 
 
 def _me_user_queryset():
@@ -615,6 +631,7 @@ def login_view(request):
                 _set_auth_cookies(resp, access=str(access_token), refresh=str(refresh))
             except Exception as e:
                 logger.error(f"Failed to set auth cookies: {e}")
+            _set_auth_session_headers(resp)
             return resp
         except Exception as e:
             logger.exception(
@@ -717,6 +734,7 @@ def me_view(request):
     resp["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
     resp["Pragma"] = "no-cache"
     resp["Vary"] = "Cookie"
+    _set_auth_session_headers(resp)
     t_response1 = perf_counter()
     _record_auth_view_timing(
         request,

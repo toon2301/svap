@@ -10,10 +10,11 @@ import { MESSAGING_CONVERSATIONS_REFRESH_EVENT, MESSAGING_REALTIME_MESSAGE_EVENT
 
 const mockApiGet = jest.fn();
 const mockApiPost = jest.fn();
+const mockEnsureFreshSessionForBackgroundWork = jest.fn();
 const mockEnsureSessionRefreshed = jest.fn();
 let mockAuthState: { isLoading: boolean; user: { id: number; unread_skill_request_count?: number } | null } = {
   isLoading: false,
-  user: null,
+  user: { id: 1 },
 };
 const mockAudioPlay = jest.fn();
 const mockAudioPause = jest.fn();
@@ -31,6 +32,8 @@ jest.mock('@/lib/api', () => ({
       markAllRead: '/auth/notifications/mark-all-read/',
     },
   },
+  ensureFreshSessionForBackgroundWork: (...args: unknown[]) =>
+    mockEnsureFreshSessionForBackgroundWork(...args),
   ensureSessionRefreshed: (...args: unknown[]) => mockEnsureSessionRefreshed(...args),
 }));
 
@@ -141,7 +144,7 @@ describe('RequestsNotificationsProvider', () => {
     jest.clearAllMocks();
     process.env.NEXT_PUBLIC_API_URL = '/api';
     process.env.NEXT_PUBLIC_BACKEND_WS_ORIGIN = '';
-    mockAuthState = { isLoading: false, user: null };
+    mockAuthState = { isLoading: false, user: { id: 1 } };
     MockWebSocket.instances = [];
     MockAudio.instances = [];
     setVisibilityState('visible');
@@ -173,6 +176,7 @@ describe('RequestsNotificationsProvider', () => {
       return Promise.resolve({ data: { count: 0 } });
     });
     mockApiPost.mockResolvedValue({ data: { ok: true } });
+    mockEnsureFreshSessionForBackgroundWork.mockResolvedValue('ready');
     mockEnsureSessionRefreshed.mockResolvedValue('refreshed');
   });
 
@@ -214,6 +218,28 @@ describe('RequestsNotificationsProvider', () => {
     });
     expect(screen.getByTestId('count')).toHaveTextContent('4');
     expect(screen.getByTestId('message-count')).toHaveTextContent('3');
+  });
+
+  it('skips polling requests while background auth refresh is transiently unavailable', async () => {
+    mockEnsureFreshSessionForBackgroundWork.mockResolvedValue('transient_failure');
+
+    render(
+      <RequestsNotificationsProvider>
+        <Consumer />
+        <MessageConsumer />
+      </RequestsNotificationsProvider>,
+    );
+    await flushAsyncEffects();
+
+    expect(mockApiGet).not.toHaveBeenCalled();
+
+    act(() => {
+      jest.advanceTimersByTime(30_000);
+      window.dispatchEvent(new Event('focus'));
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+
+    expect(mockApiGet).not.toHaveBeenCalled();
   });
 
   it('uses unread count from auth bootstrap without firing an immediate unread-count request', async () => {

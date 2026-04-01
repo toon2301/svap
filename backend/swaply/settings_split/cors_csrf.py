@@ -51,6 +51,8 @@ CORS_EXPOSE_HEADERS = [
     "authorization",
     "content-type",
     "x-csrf-token",
+    "x-swaply-access-expires-at",
+    "x-swaply-access-expires-in",
 ]
 
 # CSRF trusted origins

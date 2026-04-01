@@ -740,8 +740,8 @@ export function ConversationDetail({
         className={
           isMobile
             ? isMobileComposerOverlayActive
-              ? 'fixed inset-x-0 z-40 flex w-full min-w-0 shrink-0 items-center overflow-x-hidden touch-none pl-[max(0px,env(safe-area-inset-left,0px))] pr-[max(0px,env(safe-area-inset-right,0px))] py-2 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))]'
-              : 'relative z-10 mt-1.5 flex w-full min-w-0 shrink-0 items-center overflow-x-hidden pl-[max(0px,env(safe-area-inset-left,0px))] pr-[max(0px,env(safe-area-inset-right,0px))] py-2 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))]'
+              ? 'fixed inset-x-0 z-40 flex w-full min-w-0 shrink-0 items-center overflow-x-hidden touch-none pl-[max(0.75rem,env(safe-area-inset-left,0px))] pr-[max(0.75rem,env(safe-area-inset-right,0px))] pt-2 pb-[max(1.75rem,env(safe-area-inset-bottom,0px))]'
+              : 'relative z-10 mt-1.5 flex w-full min-w-0 shrink-0 items-center overflow-x-hidden pl-[max(0.75rem,env(safe-area-inset-left,0px))] pr-[max(0.75rem,env(safe-area-inset-right,0px))] pt-2 pb-[max(1.75rem,env(safe-area-inset-bottom,0px))]'
             : 'mt-2 flex w-full min-w-0 shrink-0 gap-2 px-4 sm:px-6 lg:px-8 mx-auto pb-[max(1rem,env(safe-area-inset-bottom,0px))] lg:pb-[max(1.25rem,env(safe-area-inset-bottom,0px))] sm:max-w-[min(100%,36rem)] md:max-w-[min(100%,44rem)] lg:max-w-[min(100%,52rem)] xl:max-w-[min(100%,64rem)]'
         }
         style={isMobileComposerOverlayActive ? { bottom: mobileComposerBottomOffset } : undefined}
@@ -749,7 +749,7 @@ export function ConversationDetail({
         <div
           className={`relative min-w-0 flex-1 ${
             isMobile
-              ? 'flex min-h-0 items-center overflow-hidden rounded-2xl border border-gray-200 bg-white px-1 dark:border-gray-800 dark:bg-black'
+              ? 'flex min-h-0 items-center overflow-hidden rounded-2xl border border-gray-200 bg-white px-2 dark:border-gray-800 dark:bg-black'
               : ''
           }`}
         >
@@ -767,7 +767,7 @@ export function ConversationDetail({
             className={`min-w-0 w-full text-sm text-gray-900 dark:text-gray-100 ${
               isMobile
                 ? `border-0 bg-transparent py-2 focus:outline-none overflow-x-hidden text-ellipsis whitespace-nowrap ${
-                    hasTextToSend ? 'pl-1 pr-12' : 'px-1'
+                    hasTextToSend ? 'pl-2 pr-12' : 'px-2'
                   }`
                 : 'rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-black px-4 py-2 focus:outline-none focus:ring-2 focus:ring-brand/40 pr-12'
             }`}
@@ -778,7 +778,7 @@ export function ConversationDetail({
               type="button"
               disabled={sending}
               onClick={() => void handleSend()}
-              className="absolute right-1 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-brand text-white transition-colors hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-60"
+              className="absolute right-1.5 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-brand text-white transition-colors hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-60"
               aria-label={t('messages.send', 'Odoslať')}
             >
               <PaperAirplaneIcon className="h-4 w-4 -rotate-45" />

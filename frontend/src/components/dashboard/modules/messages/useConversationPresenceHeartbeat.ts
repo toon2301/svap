@@ -2,10 +2,12 @@
 
 import { useEffect, useRef } from 'react';
 
+import { ensureFreshSessionForBackgroundWork, isSessionFreshEnough } from '@/lib/api';
 import { updateMessagingPresence } from './messagingApi';
 
 const HEARTBEAT_INTERVAL_MS = 25_000;
 const DUPLICATE_SEND_SUPPRESSION_MS = 5_000;
+const RESUME_FORCE_SUPPRESSION_MS = 1_250;
 
 type PresenceState = {
   visible: boolean;
@@ -21,6 +23,7 @@ function shouldDisablePresenceHeartbeat(error: unknown): boolean {
 export function useConversationPresenceHeartbeat(conversationId: number): void {
   const lastSentRef = useRef<PresenceState | null>(null);
   const presenceUnavailableRef = useRef(false);
+  const lastForcedVisibleSyncAtRef = useRef(0);
 
   useEffect(() => {
     if (typeof document === 'undefined' || typeof window === 'undefined') {
@@ -50,11 +53,40 @@ export function useConversationPresenceHeartbeat(conversationId: number): void {
         return;
       }
 
-      lastSentRef.current = { visible, activeConversationId, sentAt: now };
-      void updateMessagingPresence({
-        visible,
-        activeConversationId,
-      }).catch((error) => {
+      if (
+        visible &&
+        force &&
+        lastSent &&
+        lastSent.visible === true &&
+        lastSent.activeConversationId === activeConversationId &&
+        now - lastForcedVisibleSyncAtRef.current < RESUME_FORCE_SUPPRESSION_MS
+      ) {
+        return;
+      }
+
+      const nextState = { visible, activeConversationId, sentAt: now };
+      lastSentRef.current = nextState;
+      if (visible && force) {
+        lastForcedVisibleSyncAtRef.current = now;
+      }
+
+      void (async () => {
+        if (visible) {
+          const sessionState = await ensureFreshSessionForBackgroundWork({
+            minValidityMs: HEARTBEAT_INTERVAL_MS + 5_000,
+          });
+          if (sessionState === 'invalid_session' || sessionState === 'transient_failure') {
+            return;
+          }
+        } else if (!isSessionFreshEnough()) {
+          return;
+        }
+
+        await updateMessagingPresence({
+          visible,
+          activeConversationId,
+        });
+      })().catch((error) => {
         if (shouldDisablePresenceHeartbeat(error)) {
           presenceUnavailableRef.current = true;
           stopHeartbeat();
@@ -97,6 +129,9 @@ export function useConversationPresenceHeartbeat(conversationId: number): void {
 
     const handleWindowFocus = () => {
       if (document.visibilityState === 'visible') {
+        if (Date.now() - lastForcedVisibleSyncAtRef.current < RESUME_FORCE_SUPPRESSION_MS) {
+          return;
+        }
         sendPresence(true, conversationId, { force: true });
       }
     };

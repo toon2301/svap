@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { api, endpoints, ensureSessionRefreshed } from '@/lib/api';
+import { api, endpoints, ensureFreshSessionForBackgroundWork, ensureSessionRefreshed } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { getUnreadMessagesSummary } from '@/components/dashboard/modules/messages/messagingApi';
 import {
@@ -415,6 +415,7 @@ export function RequestsNotificationsProvider({ children }: { children: React.Re
   }, []);
 
   const refreshUnreadCount = useCallback(async () => {
+    if (!user?.id) return;
     const store = getRequestUnreadCountStore();
     if (store.refreshPromise) {
       return store.refreshPromise;
@@ -423,6 +424,12 @@ export function RequestsNotificationsProvider({ children }: { children: React.Re
     let requestPromise: Promise<void> | null = null;
     requestPromise = (async () => {
       try {
+        const sessionState = await ensureFreshSessionForBackgroundWork({
+          minValidityMs: POLL_INTERVAL_MS + 5_000,
+        });
+        if (sessionState === 'invalid_session' || sessionState === 'transient_failure') {
+          return;
+        }
         const response = await api.get(endpoints.notifications.unreadCount, {
           params: { type: 'skill_request' },
         });
@@ -440,9 +447,10 @@ export function RequestsNotificationsProvider({ children }: { children: React.Re
 
     store.refreshPromise = requestPromise;
     return requestPromise;
-  }, []);
+  }, [user?.id]);
 
   const refreshMessageUnreadCount = useCallback(async () => {
+    if (!user?.id) return;
     const store = getMessageUnreadCountStore();
     if (store.refreshPromise) {
       return store.refreshPromise;
@@ -451,6 +459,12 @@ export function RequestsNotificationsProvider({ children }: { children: React.Re
     let requestPromise: Promise<void> | null = null;
     requestPromise = (async () => {
       try {
+        const sessionState = await ensureFreshSessionForBackgroundWork({
+          minValidityMs: POLL_INTERVAL_MS + 5_000,
+        });
+        if (sessionState === 'invalid_session' || sessionState === 'transient_failure') {
+          return;
+        }
         const summary = await getUnreadMessagesSummary();
         publishMessageUnreadCount(summary.count);
       } catch {
@@ -464,7 +478,7 @@ export function RequestsNotificationsProvider({ children }: { children: React.Re
 
     store.refreshPromise = requestPromise;
     return requestPromise;
-  }, []);
+  }, [user?.id]);
 
   const markAllRead = useCallback(async () => {
     try {

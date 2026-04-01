@@ -238,7 +238,11 @@ def token_refresh_cookie_view(request):
 
         # Nastav cookies: access vždy, refresh len ak sme vydali nový
         try:
-            from accounts.views.auth import _set_auth_cookies, _auth_cookie_kwargs
+            from accounts.views.auth import (
+                _set_auth_cookies,
+                _auth_cookie_kwargs,
+                _set_auth_session_headers,
+            )
 
             if access:
                 if new_refresh_str:
@@ -257,6 +261,7 @@ def token_refresh_cookie_view(request):
             else:
                 logger.error("Failed to set refresh cookies")
 
+        _set_auth_session_headers(resp)
         return resp
     except Exception as e:
         token_fp = None
