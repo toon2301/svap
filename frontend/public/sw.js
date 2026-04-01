@@ -1,9 +1,9 @@
-const CACHE_VERSION = 'v6';
+const CACHE_VERSION = 'v7';
 const CACHE_NAME = `svaply-cache-${CACHE_VERSION}`;
 const STATIC_CACHE = `svaply-static-${CACHE_VERSION}`;
 const DYNAMIC_CACHE = `svaply-dynamic-${CACHE_VERSION}`;
 
-const DEFAULT_NOTIFICATION_ICON = '/icon.svg';
+const DEFAULT_NOTIFICATION_ICON = '/favicon.png';
 const DEFAULT_MESSAGES_URL = '/dashboard/messages';
 const DEFAULT_NOTIFICATION_TITLE = 'Spravy';
 const DEFAULT_NOTIFICATION_BODY = 'Mas novu spravu.';
@@ -11,7 +11,7 @@ const MAX_TITLE_LENGTH = 120;
 const MAX_BODY_LENGTH = 240;
 const MAX_TAG_LENGTH = 120;
 
-const urlsToCache = ['/', '/manifest.json', '/icon.svg'];
+const urlsToCache = ['/', '/manifest.json', '/favicon.png', '/icon.svg'];
 
 function normalizeText(value, fallback, maxLength) {
   if (typeof value !== 'string') {

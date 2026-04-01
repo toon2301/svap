@@ -2,15 +2,18 @@
 
 import { useEffect, useState } from 'react';
 
+const MIN_KEYBOARD_INSET_PX = 120;
+
 /**
  * Vzdialenosť medzi spodkom layout viewportu a spodkom vizuálneho viewportu
- * (typicky klávesnica na mobile). Použije sa na posun `position: fixed` composeru nad klávesnicu.
+ * pri otvorenej klávesnici na mobile. Keď composer nie je aktívny, vracia 0,
+ * aby sa fixed input neposúval pri obyčajnom scrollovaní alebo pri zmene browser chrome.
  */
-export function useVisualViewportBottomInset(enabled: boolean): number {
+export function useVisualViewportBottomInset(enabled: boolean, active: boolean): number {
   const [bottomPx, setBottomPx] = useState(0);
 
   useEffect(() => {
-    if (!enabled || typeof window === 'undefined') {
+    if (!enabled || !active || typeof window === 'undefined') {
       setBottomPx(0);
       return;
     }
@@ -23,7 +26,8 @@ export function useVisualViewportBottomInset(enabled: boolean): number {
 
     const update = () => {
       const hiddenBelow = window.innerHeight - vv.height - vv.offsetTop;
-      setBottomPx(Number.isFinite(hiddenBelow) ? Math.max(0, hiddenBelow) : 0);
+      const normalizedInset = Number.isFinite(hiddenBelow) ? Math.max(0, hiddenBelow) : 0;
+      setBottomPx(normalizedInset >= MIN_KEYBOARD_INSET_PX ? normalizedInset : 0);
     };
 
     update();
@@ -34,7 +38,7 @@ export function useVisualViewportBottomInset(enabled: boolean): number {
       vv.removeEventListener('resize', update);
       vv.removeEventListener('scroll', update);
     };
-  }, [enabled]);
+  }, [active, enabled]);
 
   return bottomPx;
 }

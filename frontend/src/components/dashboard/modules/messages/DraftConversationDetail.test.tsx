@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { DraftConversationDetail } from './DraftConversationDetail';
 import { openConversation } from './messagingApi';
@@ -54,6 +54,52 @@ const draftResponse = {
   updated_at: null,
 };
 
+function mockVisualViewport({ innerHeight = 900, height = 900, offsetTop = 0 } = {}) {
+  let currentHeight = height;
+  let currentOffsetTop = offsetTop;
+  const listeners = {
+    resize: new Set<() => void>(),
+    scroll: new Set<() => void>(),
+  };
+
+  Object.defineProperty(window, 'innerHeight', {
+    configurable: true,
+    value: innerHeight,
+  });
+
+  Object.defineProperty(window, 'visualViewport', {
+    configurable: true,
+    value: {
+      get height() {
+        return currentHeight;
+      },
+      get offsetTop() {
+        return currentOffsetTop;
+      },
+      addEventListener: jest.fn((event: 'resize' | 'scroll', listener: () => void) => {
+        listeners[event]?.add(listener);
+      }),
+      removeEventListener: jest.fn((event: 'resize' | 'scroll', listener: () => void) => {
+        listeners[event]?.delete(listener);
+      }),
+    },
+  });
+
+  return {
+    setMetrics(next: { height?: number; offsetTop?: number }) {
+      if (typeof next.height === 'number') {
+        currentHeight = next.height;
+      }
+      if (typeof next.offsetTop === 'number') {
+        currentOffsetTop = next.offsetTop;
+      }
+    },
+    dispatch(event: 'resize' | 'scroll') {
+      listeners[event].forEach((listener) => listener());
+    },
+  };
+}
+
 describe('DraftConversationDetail', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -97,5 +143,42 @@ describe('DraftConversationDetail', () => {
     const draftScroll = screen.getByTestId('draft-conversation-scroll');
     expect(header.className).not.toContain('sticky');
     expect(draftScroll.className).toContain('overflow-y-auto');
+  });
+
+  it('keeps the mobile draft composer anchored until the user focuses the input', async () => {
+    useIsMobile.mockReturnValue(true);
+    const viewport = mockVisualViewport();
+    (openConversation as jest.Mock).mockResolvedValue(draftResponse);
+
+    render(<DraftConversationDetail targetUserId={42} />);
+
+    expect(await screen.findByText(/začnite konverzáciu/i)).toBeInTheDocument();
+
+    const composer = screen.getByTestId('draft-conversation-composer');
+    const input = screen.getByRole('textbox');
+
+    Object.defineProperty(composer, 'offsetHeight', {
+      configurable: true,
+      get: () => 48,
+    });
+
+    act(() => {
+      viewport.dispatch('resize');
+    });
+
+    await waitFor(() => {
+      expect(composer).toHaveStyle({ bottom: '14px' });
+    });
+
+    expect(input).not.toHaveFocus();
+
+    viewport.setMetrics({ height: 660 });
+    act(() => {
+      viewport.dispatch('resize');
+    });
+
+    await waitFor(() => {
+      expect(composer).toHaveStyle({ bottom: '14px' });
+    });
   });
 });

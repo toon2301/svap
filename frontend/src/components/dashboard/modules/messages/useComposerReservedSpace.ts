@@ -10,6 +10,7 @@ export function useComposerReservedSpace(
   composerElement: HTMLDivElement | null,
   enabled: boolean,
   extraGapPx = 8,
+  additionalInsetPx = 0,
 ): number {
   const [reservedPx, setReservedPx] = useState(0);
 
@@ -20,7 +21,7 @@ export function useComposerReservedSpace(
     }
 
     const update = () => {
-      const next = Math.max(0, Math.ceil(composerElement.offsetHeight) + extraGapPx);
+      const next = Math.max(0, Math.ceil(composerElement.offsetHeight) + extraGapPx + additionalInsetPx);
       setReservedPx(next);
     };
 
@@ -36,7 +37,7 @@ export function useComposerReservedSpace(
       window.removeEventListener('resize', update);
       window.visualViewport?.removeEventListener('resize', update);
     };
-  }, [composerElement, enabled, extraGapPx]);
+  }, [additionalInsetPx, composerElement, enabled, extraGapPx]);
 
   return reservedPx;
 }

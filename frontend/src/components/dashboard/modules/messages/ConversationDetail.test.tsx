@@ -92,6 +92,52 @@ function setVisibilityState(state: 'visible' | 'hidden') {
   });
 }
 
+function mockVisualViewport({ innerHeight = 900, height = 900, offsetTop = 0 } = {}) {
+  let currentHeight = height;
+  let currentOffsetTop = offsetTop;
+  const listeners = {
+    resize: new Set<() => void>(),
+    scroll: new Set<() => void>(),
+  };
+
+  Object.defineProperty(window, 'innerHeight', {
+    configurable: true,
+    value: innerHeight,
+  });
+
+  Object.defineProperty(window, 'visualViewport', {
+    configurable: true,
+    value: {
+      get height() {
+        return currentHeight;
+      },
+      get offsetTop() {
+        return currentOffsetTop;
+      },
+      addEventListener: jest.fn((event: 'resize' | 'scroll', listener: () => void) => {
+        listeners[event]?.add(listener);
+      }),
+      removeEventListener: jest.fn((event: 'resize' | 'scroll', listener: () => void) => {
+        listeners[event]?.delete(listener);
+      }),
+    },
+  });
+
+  return {
+    setMetrics(next: { height?: number; offsetTop?: number }) {
+      if (typeof next.height === 'number') {
+        currentHeight = next.height;
+      }
+      if (typeof next.offsetTop === 'number') {
+        currentOffsetTop = next.offsetTop;
+      }
+    },
+    dispatch(event: 'resize' | 'scroll') {
+      listeners[event].forEach((listener) => listener());
+    },
+  };
+}
+
 const { useIsMobile } = jest.requireMock('@/hooks') as {
   useIsMobile: jest.Mock;
 };
@@ -213,6 +259,59 @@ describe('ConversationDetail', () => {
     const messagesScroll = screen.getByTestId('conversation-messages-scroll');
     expect(header.className).not.toContain('sticky');
     expect(messagesScroll.className).toContain('overflow-y-auto');
+  });
+
+  it('keeps the mobile composer anchored until the user actually focuses the input', async () => {
+    useIsMobile.mockReturnValue(true);
+    const viewport = mockVisualViewport();
+
+    render(<ConversationDetail conversationId={9} currentUserId={1} />);
+
+    await waitFor(() => {
+      expect(listMessages).toHaveBeenCalledWith(9, 100);
+    });
+
+    const composer = await screen.findByTestId('conversation-composer');
+    const messagesScroll = screen.getByTestId('conversation-messages-scroll');
+    const input = screen.getByRole('textbox');
+
+    Object.defineProperty(composer, 'offsetHeight', {
+      configurable: true,
+      get: () => 50,
+    });
+
+    act(() => {
+      viewport.dispatch('resize');
+    });
+
+    await waitFor(() => {
+      expect(composer).toHaveStyle({ bottom: '14px' });
+      expect(messagesScroll).toHaveStyle({ paddingBottom: '72px' });
+    });
+
+    viewport.setMetrics({ height: 650 });
+    act(() => {
+      viewport.dispatch('resize');
+    });
+
+    await waitFor(() => {
+      expect(composer).toHaveStyle({ bottom: '14px' });
+      expect(messagesScroll).toHaveStyle({ paddingBottom: '72px' });
+    });
+
+    fireEvent.focus(input);
+
+    await waitFor(() => {
+      expect(composer).toHaveStyle({ bottom: '264px' });
+      expect(messagesScroll).toHaveStyle({ paddingBottom: '322px' });
+    });
+
+    fireEvent.blur(input);
+
+    await waitFor(() => {
+      expect(composer).toHaveStyle({ bottom: '14px' });
+      expect(messagesScroll).toHaveStyle({ paddingBottom: '72px' });
+    });
   });
 
   it('shows full date and time in message timestamps', async () => {

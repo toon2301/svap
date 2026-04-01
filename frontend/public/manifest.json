@@ -8,5 +8,19 @@
   "theme_color": "#9333EA",
   "orientation": "portrait-primary",
   "categories": ["education", "social", "productivity"],
-  "lang": "sk"
+  "lang": "sk",
+  "icons": [
+    {
+      "src": "/favicon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
 }

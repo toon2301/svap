@@ -217,11 +217,11 @@ export function ConversationsList({
                       ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/25 dark:text-white'
                       : 'bg-transparent text-gray-700 dark:text-gray-300'
                   }`
-            } ${isCompact ? 'px-3 py-2.5' : 'px-4 py-3'}`}
+            } ${isCompact ? 'px-3 py-2.5' : 'px-4 py-3.5'}`}
           >
             <div
               className={`rounded-full overflow-hidden flex items-center justify-center flex-shrink-0 ${
-                isCompact ? 'w-9 h-9' : 'w-10 h-10'
+                isCompact ? 'w-9 h-9' : 'w-11 h-11'
               } ${
                 isSelected
                   ? 'bg-purple-200 dark:bg-purple-800/70'
@@ -234,7 +234,7 @@ export function ConversationsList({
               ) : (
                 <span
                   className={`font-bold ${
-                    isCompact ? 'text-[11px]' : 'text-xs'
+                    isCompact ? 'text-[11px]' : 'text-sm'
                   } ${
                     isSelected
                       ? 'text-purple-800 dark:text-purple-100'
@@ -255,14 +255,18 @@ export function ConversationsList({
                 <span
                   data-testid={showHoverAction ? `conversation-title-${conversation.id}` : undefined}
                   className={`truncate ${
-                    isCompact ? 'text-xs' : 'text-sm'
+                    isCompact ? 'text-xs' : 'text-base'
                   } font-semibold ${isSelected ? 'text-purple-900 dark:text-white' : 'text-gray-900 dark:text-white'}`}
                 >
                   {title}
                 </span>
                 {isUnread ? (
                   <span
-                    className="inline-flex min-w-5 h-5 items-center justify-center rounded-full bg-purple-600 px-1.5 text-[10px] font-bold text-white flex-shrink-0"
+                    className={`inline-flex items-center justify-center rounded-full bg-purple-600 font-bold text-white flex-shrink-0 ${
+                      isCompact
+                        ? 'min-w-5 h-5 px-1.5 text-[10px]'
+                        : 'min-w-[22px] h-[22px] px-1.5 text-[11px]'
+                    }`}
                     aria-label={`${unreadCount} unread messages`}
                   >
                     {unreadCount > 99 ? '99+' : unreadCount}
@@ -271,7 +275,7 @@ export function ConversationsList({
               </div>
               <div
                 className={`truncate ${
-                  isCompact ? 'text-[11px]' : 'text-xs'
+                  isCompact ? 'text-[11px]' : 'text-sm'
                 } ${
                   isSelected
                     ? 'text-purple-700/90 dark:text-purple-200/90'

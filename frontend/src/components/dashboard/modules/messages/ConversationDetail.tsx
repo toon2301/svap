@@ -21,6 +21,7 @@ import { useVisualViewportBottomInset } from './useVisualViewportBottomInset';
 import { useComposerReservedSpace } from './useComposerReservedSpace';
 
 const MESSAGE_POLL_INTERVAL_MS = 10_000;
+const MOBILE_COMPOSER_BOTTOM_GAP_PX = 14;
 
 function formatTime(value: string): string {
   const d = new Date(value);
@@ -52,12 +53,12 @@ export function ConversationDetail({
 }) {
   const { t } = useLanguage();
   const isMobile = useIsMobile();
-  const visualViewportBottomInset = useVisualViewportBottomInset(isMobile);
   const { setActiveConversationId, syncConversationReadState } = useMessagesNotifications();
   const [messages, setMessages] = useState<MessageItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [text, setText] = useState('');
+  const [isComposerFocused, setIsComposerFocused] = useState(false);
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const refreshInFlightRef = useRef<Promise<MessageItem[]> | null>(null);
@@ -69,10 +70,18 @@ export function ConversationDetail({
   const [isHeaderMenuOpen, setIsHeaderMenuOpen] = useState(false);
   const headerMenuRef = useRef<HTMLDivElement | null>(null);
   const messagesScrollRef = useRef<HTMLDivElement | null>(null);
+  const [composerElement, setComposerElement] = useState<HTMLDivElement | null>(null);
   const composerRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const shouldRestoreFocusRef = useRef(false);
-  const mobileComposerReservedSpace = useComposerReservedSpace(composerRef.current, isMobile, 8);
+  const visualViewportBottomInset = useVisualViewportBottomInset(isMobile, isComposerFocused);
+  const mobileComposerBottomOffset = visualViewportBottomInset + MOBILE_COMPOSER_BOTTOM_GAP_PX;
+  const mobileComposerReservedSpace = useComposerReservedSpace(
+    composerElement,
+    isMobile,
+    8,
+    mobileComposerBottomOffset,
+  );
 
   const focusComposer = useCallback(() => {
     if (isMobile) return;
@@ -91,6 +100,28 @@ export function ConversationDetail({
       input.setSelectionRange(end, end);
     });
   }, [isMobile]);
+
+  const handleComposerFocus = useCallback(() => {
+    if (!isMobile) return;
+    setIsComposerFocused(true);
+  }, [isMobile]);
+
+  const handleComposerBlur = useCallback(
+    (event: React.FocusEvent<HTMLDivElement>) => {
+      if (!isMobile) return;
+      const nextFocused = event.relatedTarget as Node | null;
+      if (nextFocused && composerRef.current?.contains(nextFocused)) {
+        return;
+      }
+      setIsComposerFocused(false);
+    },
+    [isMobile],
+  );
+
+  const handleComposerRef = useCallback((node: HTMLDivElement | null) => {
+    composerRef.current = node;
+    setComposerElement(node);
+  }, []);
 
   const ordered = useMemo(() => {
     // API vracia najnovšie prvé – v UI chceme chronologicky
@@ -503,13 +534,16 @@ export function ConversationDetail({
       </div>
 
       <div
-        ref={composerRef}
+        ref={handleComposerRef}
+        data-testid="conversation-composer"
+        onFocusCapture={handleComposerFocus}
+        onBlurCapture={handleComposerBlur}
         className={
           isMobile
             ? 'fixed inset-x-0 z-40 flex w-full min-w-0 shrink-0 items-center overflow-x-hidden touch-none border-t border-gray-200 bg-white px-4 py-2 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] dark:border-gray-800 dark:bg-black'
             : 'mt-2 flex w-full min-w-0 shrink-0 gap-2 px-4 sm:px-6 lg:px-8 mx-auto pb-[max(1rem,env(safe-area-inset-bottom,0px))] lg:pb-[max(1.25rem,env(safe-area-inset-bottom,0px))] sm:max-w-[min(100%,36rem)] md:max-w-[min(100%,44rem)] lg:max-w-[min(100%,52rem)] xl:max-w-[min(100%,64rem)]'
         }
-        style={isMobile ? { bottom: visualViewportBottomInset + 14 } : undefined}
+        style={isMobile ? { bottom: mobileComposerBottomOffset } : undefined}
       >
         <div
           className={`relative min-w-0 flex-1 ${

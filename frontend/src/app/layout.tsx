@@ -21,6 +21,11 @@ export const metadata: Metadata = {
   keywords: ["zručnosti", "výmena", "vzdelávanie", "mentoring", "učenie"],
   authors: [{ name: "Swaply Team" }],
   robots: "index, follow",
+  icons: {
+    icon: [{ url: "/favicon.png?v=20260401", type: "image/png", sizes: "any" }],
+    shortcut: "/favicon.png?v=20260401",
+    apple: "/favicon.png?v=20260401",
+  },
   openGraph: {
     title: "Swaply - Výmenná platforma zručností",
     description: "Vymeň si zručnosti s ostatnými. Nauč sa niečo nové a nauč ostatných svoje zručnosti.",
@@ -50,13 +55,16 @@ export default function RootLayout({
   return (
     <html lang="sk" className={inter.variable}>
       <head>
+        {/* Favicon: explicitné linky + cache-bust (prehliadače agresívne cachujú starú ikonu) */}
+        <link rel="icon" href="/favicon.png?v=20260401" type="image/png" sizes="any" />
+        <link rel="shortcut icon" href="/favicon.png?v=20260401" type="image/png" />
+        <link rel="apple-touch-icon" href="/favicon.png?v=20260401" />
         {/* PWA a mobile meta tagy */}
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#9333EA" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="Swaply" />
-        <link rel="apple-touch-icon" href="/icon.svg" />
         
         {/* Accessibility meta tagy */}
         <meta name="color-scheme" content="light dark" />
