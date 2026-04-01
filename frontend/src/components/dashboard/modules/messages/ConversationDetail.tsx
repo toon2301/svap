@@ -17,6 +17,7 @@ import {
   requestConversationsRefresh,
   type MessagingRealtimeMessagePayload,
 } from './messagesEvents';
+import { useVisualViewportBottomInset } from './useVisualViewportBottomInset';
 
 const MESSAGE_POLL_INTERVAL_MS = 10_000;
 
@@ -50,6 +51,7 @@ export function ConversationDetail({
 }) {
   const { t } = useLanguage();
   const isMobile = useIsMobile();
+  const visualViewportBottomInset = useVisualViewportBottomInset(isMobile);
   const { setActiveConversationId, syncConversationReadState } = useMessagesNotifications();
   const [messages, setMessages] = useState<MessageItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -366,7 +368,9 @@ export function ConversationDetail({
   const hasTextToSend = text.trim().length > 0;
 
   return (
-    <div className={`${className} flex flex-col min-h-0 h-[calc(100vh-4rem)] lg:h-full overflow-hidden`}>
+    <div
+      className={`${className} flex flex-col min-h-0 h-[calc(100dvh-4rem)] lg:h-full overflow-hidden`}
+    >
       {isMobile ? (
         <div className="mb-2 flex items-center justify-end gap-2">
           {requestCreatedInfo ? (
@@ -499,14 +503,15 @@ export function ConversationDetail({
       <div
         className={
           isMobile
-            ? 'fixed inset-x-0 bottom-0 z-40 flex w-full min-w-0 shrink-0 items-center border-t border-gray-200 bg-white px-4 py-2 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] dark:border-gray-800 dark:bg-black'
+            ? 'fixed inset-x-0 z-40 flex w-full min-w-0 shrink-0 items-center overflow-x-hidden border-t border-gray-200 bg-white px-4 py-2 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] dark:border-gray-800 dark:bg-black'
             : 'mt-2 flex w-full min-w-0 shrink-0 gap-2 px-4 sm:px-6 lg:px-8 mx-auto pb-[max(1rem,env(safe-area-inset-bottom,0px))] lg:pb-[max(1.25rem,env(safe-area-inset-bottom,0px))] sm:max-w-[min(100%,36rem)] md:max-w-[min(100%,44rem)] lg:max-w-[min(100%,52rem)] xl:max-w-[min(100%,64rem)]'
         }
+        style={isMobile ? { bottom: visualViewportBottomInset } : undefined}
       >
         <div
           className={`relative min-w-0 flex-1 ${
             isMobile
-              ? 'flex items-center rounded-2xl border border-gray-200 bg-white px-2 dark:border-gray-800 dark:bg-black'
+              ? 'flex min-h-0 items-center overflow-hidden rounded-2xl border border-gray-200 bg-white px-2 dark:border-gray-800 dark:bg-black'
               : ''
           }`}
         >
@@ -523,7 +528,7 @@ export function ConversationDetail({
             }}
             className={`min-w-0 w-full text-sm text-gray-900 dark:text-gray-100 ${
               isMobile
-                ? `border-0 bg-transparent px-2 py-2 focus:outline-none ${
+                ? `border-0 bg-transparent px-2 py-2 focus:outline-none overflow-x-hidden text-ellipsis whitespace-nowrap ${
                     hasTextToSend ? 'pr-12' : ''
                   }`
                 : 'rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-black px-4 py-2 focus:outline-none focus:ring-2 focus:ring-brand/40 pr-12'

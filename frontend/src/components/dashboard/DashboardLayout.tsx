@@ -224,9 +224,15 @@ export default function DashboardLayout({
         </div>
 
         {/* Main Content - data attr pre scroll preservation */}
-        <main data-dashboard-main className={`relative h-screen pb-24 lg:pt-0 lg:pb-0 elegant-scrollbar ${
-          activeModule === 'messages' ? 'overflow-y-auto lg:overflow-hidden' : 'overflow-y-auto'
-        } ${
+        <main
+          data-dashboard-main
+          className={`relative h-screen pb-24 lg:pt-0 lg:pb-0 elegant-scrollbar ${
+            activeModule === 'messages'
+              ? isMobileMessageConversationOpen
+                ? 'overflow-hidden lg:overflow-hidden'
+                : 'overflow-y-auto lg:overflow-hidden'
+              : 'overflow-y-auto'
+          } ${
           activeModule === 'search'
             ? 'pt-0'
             : activeModule === 'messages'
