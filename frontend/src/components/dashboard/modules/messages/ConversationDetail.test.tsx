@@ -288,6 +288,20 @@ describe('ConversationDetail', () => {
     expect(messagesScroll.className).toContain('overflow-y-auto');
   });
 
+  it('keeps the conversation detail root stretched to the available width on mobile', async () => {
+    useIsMobile.mockReturnValue(true);
+
+    const { container } = render(<ConversationDetail conversationId={9} currentUserId={1} />);
+
+    await waitFor(() => {
+      expect(listMessages).toHaveBeenCalledWith(9, 100);
+    });
+
+    expect(container.firstElementChild).toHaveClass('w-full');
+    expect(container.firstElementChild).toHaveClass('max-w-4xl');
+    expect(container.firstElementChild).toHaveClass('mx-auto');
+  });
+
   it('keeps the mobile composer in flow until the user actually focuses the input', async () => {
     useIsMobile.mockReturnValue(true);
     const viewport = mockVisualViewport();
@@ -315,8 +329,8 @@ describe('ConversationDetail', () => {
       expect(composer.style.bottom).toBe('');
       expect(messagesScroll).toHaveStyle({ paddingBottom: '0px' });
     });
-    expect(composer.className).toContain('px-2.5');
-    expect(composer.className).not.toContain('px-4');
+      expect(composer.className).toMatch(/safe-area-inset-left/);
+      expect(composer.className).not.toContain('px-4');
 
     viewport.setMetrics({ height: 650 });
     act(() => {
@@ -644,7 +658,28 @@ describe('ConversationDetail', () => {
     });
   });
 
-  it('shows full date and time in message timestamps', async () => {
+  it('shows only time for timestamps from today', async () => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-04-01T12:00:00Z'));
+
+    (listMessages as jest.Mock).mockResolvedValueOnce(
+      messagePage([
+        message({
+          id: 1,
+          text: 'Dnesna sprava',
+          created_at: '2026-04-01T10:00:00Z',
+        }),
+      ]),
+    );
+
+    render(<ConversationDetail conversationId={9} currentUserId={1} />);
+
+    expect(await screen.findByText('Dnesna sprava')).toBeInTheDocument();
+    expect(screen.getByTestId('message-timestamp-1').textContent).toMatch(/\d{2}:\d{2}/);
+    expect(screen.getByTestId('message-timestamp-1').textContent).not.toContain('2026');
+    expect(screen.getByTestId('message-timestamp-1').textContent).not.toContain('01.');
+  });
+
+  it('shows full date and time for older message timestamps', async () => {
     (listMessages as jest.Mock).mockResolvedValueOnce(
       messagePage([
         message({

@@ -145,6 +145,21 @@ describe('DraftConversationDetail', () => {
     expect(draftScroll.className).toContain('overflow-y-auto');
   });
 
+  it('keeps the draft conversation root stretched to the available width on mobile', async () => {
+    useIsMobile.mockReturnValue(true);
+    (openConversation as jest.Mock).mockResolvedValue(draftResponse);
+
+    const { container } = render(<DraftConversationDetail targetUserId={42} />);
+
+    await waitFor(() => {
+      expect(openConversation).toHaveBeenCalledWith(42);
+    });
+
+    expect(container.firstElementChild).toHaveClass('w-full');
+    expect(container.firstElementChild).toHaveClass('max-w-4xl');
+    expect(container.firstElementChild).toHaveClass('mx-auto');
+  });
+
   it('keeps the mobile draft composer in flow until the user focuses the input', async () => {
     useIsMobile.mockReturnValue(true);
     const viewport = mockVisualViewport();
@@ -172,8 +187,8 @@ describe('DraftConversationDetail', () => {
     await waitFor(() => {
       expect(composer.style.bottom).toBe('');
     });
-    expect(composer.className).toContain('px-2.5');
-    expect(composer.className).not.toContain('px-4');
+      expect(composer.className).toMatch(/safe-area-inset-left/);
+      expect(composer.className).not.toContain('px-4');
 
     expect(input).not.toHaveFocus();
 

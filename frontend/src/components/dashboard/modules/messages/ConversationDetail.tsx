@@ -29,12 +29,26 @@ import { useConversationPresenceHeartbeat } from './useConversationPresenceHeart
 const MESSAGE_POLL_INTERVAL_MS = 10_000;
 const MOBILE_COMPOSER_BOTTOM_GAP_PX = 14;
 const MOBILE_LATEST_SCROLL_THRESHOLD_PX = 80;
-const MOBILE_MESSAGE_SIDE_PADDING_CLASS = 'px-2.5 py-4';
+const MOBILE_MESSAGE_SIDE_PADDING_CLASS = 'px-1.5 py-4';
 const DESKTOP_MESSAGE_SIDE_PADDING_CLASS = 'px-4 py-4 sm:px-5 lg:px-6';
 
 function formatTime(value: string): string {
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return '';
+
+  const now = new Date();
+  const isToday =
+    d.getFullYear() === now.getFullYear() &&
+    d.getMonth() === now.getMonth() &&
+    d.getDate() === now.getDate();
+
+  if (isToday) {
+    return d.toLocaleTimeString('sk-SK', {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  }
+
   return d.toLocaleString('sk-SK', {
     day: '2-digit',
     month: '2-digit',
@@ -497,9 +511,11 @@ export function ConversationDetail({
     });
   }, []);
 
+  const containerClassName = `w-full ${className}`;
+
   if (loading) {
     return (
-      <div className={className}>
+      <div className={containerClassName}>
         <div className="bg-white dark:bg-black rounded-2xl border border-gray-200 dark:border-gray-800 p-4">
           <div className="text-sm text-gray-600 dark:text-gray-400">{t('messages.loading', 'Načítavam…')}</div>
         </div>
@@ -515,7 +531,7 @@ export function ConversationDetail({
 
   return (
     <div
-      className={`${className} flex h-full min-h-0 flex-col overflow-hidden overscroll-none`}
+      className={`${containerClassName} flex h-full min-h-0 flex-col overflow-hidden overscroll-none`}
     >
       {isMobile ? (
         <div className="mb-2 flex items-center justify-end gap-2">
@@ -619,21 +635,67 @@ export function ConversationDetail({
             const showSenderAvatar = !mine && (!next || nextSenderId !== curSenderId);
             const senderAvatarUrl = m.sender?.avatar_url || targetUserAvatarUrl;
             const senderDisplayName = (m.sender?.display_name || '').trim() || targetUserName;
-            return (
+            const bubbleClassName = [
+              'w-fit max-w-full rounded-2xl px-3 py-2 text-sm',
+              mine
+                ? 'bg-brand text-white'
+                : 'bg-gray-100 dark:bg-[#141416] text-gray-900 dark:text-gray-100 border border-gray-200/60 dark:border-gray-800',
+            ].join(' ');
+
+            return mine ? (
               <div
                 key={m.id}
-                className={`flex ${mine ? 'justify-end' : 'justify-start'} ${
-                  mine ? (isMobile ? 'pr-0.5' : 'pr-1') : isMobile ? 'pl-0.5' : 'pl-1'
-                }`}
+                className={`flex justify-end ${isMobile ? 'pr-0' : 'pr-1'}`}
               >
-                <div className={`flex items-end ${mine ? '' : isMobile ? 'gap-1.5' : 'gap-2'}`}>
-                  {!mine ? (
-                    <div className={`flex shrink-0 justify-start ${isMobile ? 'w-7' : 'w-8'}`}>
+                <div
+                  className={`flex min-w-0 flex-col items-end ${
+                    isMobile ? 'max-w-full' : 'max-w-[80%]'
+                  }`}
+                >
+                  {showTimestamp ? (
+                    <div
+                      data-testid={`message-timestamp-${m.id}`}
+                      className="mb-1 text-[10px] tabular-nums text-right text-gray-500 dark:text-gray-400"
+                    >
+                      {formatTime(m.created_at)}
+                    </div>
+                  ) : null}
+                  <div data-testid={`message-bubble-${m.id}`} className={bubbleClassName}>
+                    <div className="whitespace-pre-wrap break-words">
+                      {m.text ?? t('messages.deleted', 'Správa bola odstránená')}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div
+                key={m.id}
+                className={`flex justify-start ${isMobile ? 'pl-0' : 'pl-1'}`}
+              >
+                <div
+                  className={`flex min-w-0 flex-col ${
+                    isMobile ? 'max-w-full' : 'max-w-[80%]'
+                  }`}
+                >
+                  {showTimestamp ? (
+                    <div
+                      data-testid={`message-timestamp-${m.id}`}
+                      className={`mb-1 text-[10px] tabular-nums text-left text-gray-500 dark:text-gray-400 ${
+                        isMobile ? 'pl-7' : 'pl-10'
+                      }`}
+                    >
+                      {formatTime(m.created_at)}
+                    </div>
+                  ) : null}
+                  <div
+                    className={`flex min-w-0 items-center ${isMobile ? 'gap-1' : 'gap-2'}`}
+                  >
+                    <div className={`flex shrink-0 justify-start ${isMobile ? 'w-6' : 'w-8'}`}>
                       {showSenderAvatar ? (
                         <div
                           data-testid={`message-avatar-${m.id}`}
                           className={`overflow-hidden rounded-full bg-purple-100 dark:bg-purple-900/40 ${
-                            isMobile ? 'h-7 w-7' : 'h-8 w-8'
+                            isMobile ? 'h-6 w-6' : 'h-8 w-8'
                           }`}
                         >
                           {senderAvatarUrl ? (
@@ -643,45 +705,27 @@ export function ConversationDetail({
                               className="h-full w-full object-cover"
                             />
                           ) : (
-                            <span className="flex h-full w-full items-center justify-center text-[10px] font-bold text-purple-700 dark:text-purple-300">
+                            <span className="flex h-full w-full items-center justify-center text-[9px] font-bold text-purple-700 dark:text-purple-300">
                               {senderDisplayName.slice(0, 1).toUpperCase()}
                             </span>
                           )}
                         </div>
                       ) : null}
                     </div>
-                  ) : null}
-                  <div
-                    className={`${isMobile ? 'max-w-[84%]' : 'max-w-[80%]'} ${
-                      mine ? 'flex flex-col items-end' : ''
-                    }`}
-                  >
-                  {showTimestamp ? (
                     <div
-                      data-testid={`message-timestamp-${m.id}`}
-                      className={`mb-1 text-[10px] tabular-nums ${
-                        mine ? 'text-right text-gray-500 dark:text-gray-400' : 'text-left text-gray-500 dark:text-gray-400'
+                      className={`min-w-0 flex-1 ${
+                        isMobile ? 'max-w-[calc(100%-1.75rem)]' : ''
                       }`}
                     >
-                      {formatTime(m.created_at)}
-                    </div>
-                  ) : null}
-                  <div
-                    data-testid={`message-bubble-${m.id}`}
-                    className={[
-                      'w-fit max-w-full rounded-2xl px-3 py-2 text-sm',
-                      mine
-                        ? 'bg-brand text-white'
-                        : 'bg-gray-100 dark:bg-[#141416] text-gray-900 dark:text-gray-100 border border-gray-200/60 dark:border-gray-800',
-                    ].join(' ')}
-                  >
-                    <div className="whitespace-pre-wrap break-words">
-                      {m.text ?? t('messages.deleted', 'Správa bola odstránená')}
+                      <div data-testid={`message-bubble-${m.id}`} className={bubbleClassName}>
+                        <div className="whitespace-pre-wrap break-words">
+                          {m.text ?? t('messages.deleted', 'Správa bola odstránená')}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
             );
           })
         )}
@@ -696,8 +740,8 @@ export function ConversationDetail({
         className={
           isMobile
             ? isMobileComposerOverlayActive
-              ? 'fixed inset-x-0 z-40 flex w-full min-w-0 shrink-0 items-center overflow-x-hidden touch-none px-2.5 py-2 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))]'
-              : 'relative z-10 mt-1.5 flex w-full min-w-0 shrink-0 items-center overflow-x-hidden px-2.5 py-2 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))]'
+              ? 'fixed inset-x-0 z-40 flex w-full min-w-0 shrink-0 items-center overflow-x-hidden touch-none pl-[max(0px,env(safe-area-inset-left,0px))] pr-[max(0px,env(safe-area-inset-right,0px))] py-2 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))]'
+              : 'relative z-10 mt-1.5 flex w-full min-w-0 shrink-0 items-center overflow-x-hidden pl-[max(0px,env(safe-area-inset-left,0px))] pr-[max(0px,env(safe-area-inset-right,0px))] py-2 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))]'
             : 'mt-2 flex w-full min-w-0 shrink-0 gap-2 px-4 sm:px-6 lg:px-8 mx-auto pb-[max(1rem,env(safe-area-inset-bottom,0px))] lg:pb-[max(1.25rem,env(safe-area-inset-bottom,0px))] sm:max-w-[min(100%,36rem)] md:max-w-[min(100%,44rem)] lg:max-w-[min(100%,52rem)] xl:max-w-[min(100%,64rem)]'
         }
         style={isMobileComposerOverlayActive ? { bottom: mobileComposerBottomOffset } : undefined}
@@ -705,7 +749,7 @@ export function ConversationDetail({
         <div
           className={`relative min-w-0 flex-1 ${
             isMobile
-              ? 'flex min-h-0 items-center overflow-hidden rounded-2xl border border-gray-200 bg-white px-2 dark:border-gray-800 dark:bg-black'
+              ? 'flex min-h-0 items-center overflow-hidden rounded-2xl border border-gray-200 bg-white px-1 dark:border-gray-800 dark:bg-black'
               : ''
           }`}
         >
@@ -722,8 +766,8 @@ export function ConversationDetail({
             }}
             className={`min-w-0 w-full text-sm text-gray-900 dark:text-gray-100 ${
               isMobile
-                ? `border-0 bg-transparent px-2 py-2 focus:outline-none overflow-x-hidden text-ellipsis whitespace-nowrap ${
-                    hasTextToSend ? 'pr-12' : ''
+                ? `border-0 bg-transparent py-2 focus:outline-none overflow-x-hidden text-ellipsis whitespace-nowrap ${
+                    hasTextToSend ? 'pl-1 pr-12' : 'px-1'
                   }`
                 : 'rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-black px-4 py-2 focus:outline-none focus:ring-2 focus:ring-brand/40 pr-12'
             }`}
@@ -734,7 +778,7 @@ export function ConversationDetail({
               type="button"
               disabled={sending}
               onClick={() => void handleSend()}
-              className="absolute right-1.5 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-brand text-white transition-colors hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-60"
+              className="absolute right-1 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-brand text-white transition-colors hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-60"
               aria-label={t('messages.send', 'Odoslať')}
             >
               <PaperAirplaneIcon className="h-4 w-4 -rotate-45" />
