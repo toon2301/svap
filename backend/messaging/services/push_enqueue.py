@@ -1,12 +1,21 @@
 from __future__ import annotations
 
+from importlib import import_module
 import logging
 
 from django.db import transaction
 
-from swaply.tasks.webpush import deliver_message_push_task
-
 logger = logging.getLogger(__name__)
+
+
+class _LazyDeliverMessagePushTask:
+    @staticmethod
+    def delay(*args, **kwargs):
+        task_module = import_module("swaply.tasks.webpush")
+        return task_module.deliver_message_push_task.delay(*args, **kwargs)
+
+
+deliver_message_push_task = _LazyDeliverMessagePushTask()
 
 
 def _normalize_positive_ids(values) -> tuple[int, ...]:

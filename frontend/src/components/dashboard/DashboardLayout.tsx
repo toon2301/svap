@@ -248,7 +248,7 @@ export default function DashboardLayout({
               activeModule === 'offer-reviews'
                 ? 'pt-0 pb-4 lg:py-8' // recenzie: žiadna medzera medzi hornou lištou a tabmi
                 : activeModule === 'messages'
-                  ? `pt-0 ${isOpenMobileMessagesConversation ? 'pb-0' : 'pb-2'} lg:py-0` // správy: na mobile bez medzery pod vrchnou lištou
+                  ? `h-full min-h-0 pt-0 ${isOpenMobileMessagesConversation ? 'pb-0' : 'pb-2'} lg:py-0` // správy: na mobile bez medzery pod vrchnou lištou
                   : 'py-4 lg:py-8'
             } ${
               activeModule === 'search'

@@ -13,7 +13,13 @@ from accounts.services.webpush_subscriptions import (
     mark_web_push_delivery_failure,
     mark_web_push_delivery_success,
 )
+from accounts.services.webpush_rollout import (
+    filter_message_push_rollout_user_ids,
+    get_message_push_rollout_percent,
+    is_message_push_enabled,
+)
 from messaging.models import Message
+from messaging.services.presence import get_suppressed_message_push_recipient_ids
 
 logger = logging.getLogger(__name__)
 
@@ -54,6 +60,42 @@ def _normalize_positive_ids(values) -> tuple[int, ...]:
         if parsed > 0:
             normalized.append(parsed)
     return tuple(sorted(set(normalized)))
+
+
+def _log_message_push_summary(
+    *,
+    message_id: int,
+    conversation_id: int | None,
+    recipient_count: int,
+    rollout_skipped_count: int,
+    suppressed_count: int,
+    subscription_count: int,
+    delivered_count: int,
+    retry_count: int,
+    gone_count: int,
+    permanent_failure_count: int,
+    skipped_reason: str | None = None,
+) -> None:
+    if not getattr(settings, "AUDIT_LOGGING_ENABLED", True):
+        return
+
+    message = (
+        "message_push_delivery_summary "
+        f"message_id={int(message_id)} "
+        f"conversation_id={conversation_id if conversation_id is not None else 'unknown'} "
+        f"recipient_count={recipient_count} "
+        f"rollout_skipped_count={rollout_skipped_count} "
+        f"suppressed_count={suppressed_count} "
+        f"subscription_count={subscription_count} "
+        f"delivered_count={delivered_count} "
+        f"retry_count={retry_count} "
+        f"gone_count={gone_count} "
+        f"permanent_failure_count={permanent_failure_count}"
+    )
+    if skipped_reason:
+        message = f"{message} skipped_reason={skipped_reason}"
+
+    logger.info(message)
 
 
 def _get_web_push_vapid_private_key() -> str:
@@ -146,10 +188,26 @@ def deliver_message_push(
     if not normalized_recipient_ids:
         return MessagePushDeliveryResult()
 
+    if not is_message_push_enabled():
+        _log_message_push_summary(
+            message_id=int(message_id),
+            conversation_id=None,
+            recipient_count=len(normalized_recipient_ids),
+            rollout_skipped_count=0,
+            suppressed_count=0,
+            subscription_count=0,
+            delivered_count=0,
+            retry_count=0,
+            gone_count=0,
+            permanent_failure_count=0,
+            skipped_reason="disabled",
+        )
+        return MessagePushDeliveryResult()
+
     try:
         ensure_web_push_delivery_ready()
     except ImproperlyConfigured:
-        logger.exception(
+        logger.warning(
             "Web push delivery skipped because configuration is invalid.",
             extra={"message_id": int(message_id)},
         )
@@ -163,18 +221,78 @@ def deliver_message_push(
     if message is None:
         return MessagePushDeliveryResult()
 
+    rollout_user_ids = filter_message_push_rollout_user_ids(normalized_recipient_ids)
+    rollout_skipped_count = len(normalized_recipient_ids) - len(rollout_user_ids)
+    if not rollout_user_ids:
+        _log_message_push_summary(
+            message_id=int(message_id),
+            conversation_id=int(message.conversation_id),
+            recipient_count=len(normalized_recipient_ids),
+            rollout_skipped_count=rollout_skipped_count,
+            suppressed_count=0,
+            subscription_count=0,
+            delivered_count=0,
+            retry_count=0,
+            gone_count=0,
+            permanent_failure_count=0,
+            skipped_reason=f"rollout_{get_message_push_rollout_percent()}",
+        )
+        return MessagePushDeliveryResult()
+
     payload = build_message_push_payload(message=message)
+    suppressed_user_ids = set(
+        get_suppressed_message_push_recipient_ids(
+            user_ids=rollout_user_ids,
+            conversation_id=message.conversation_id,
+        )
+    )
+    deliverable_user_ids = tuple(
+        user_id
+        for user_id in rollout_user_ids
+        if user_id not in suppressed_user_ids
+    )
+    if not deliverable_user_ids:
+        _log_message_push_summary(
+            message_id=int(message_id),
+            conversation_id=int(message.conversation_id),
+            recipient_count=len(normalized_recipient_ids),
+            rollout_skipped_count=rollout_skipped_count,
+            suppressed_count=len(suppressed_user_ids),
+            subscription_count=0,
+            delivered_count=0,
+            retry_count=0,
+            gone_count=0,
+            permanent_failure_count=0,
+            skipped_reason="suppressed",
+        )
+        return MessagePushDeliveryResult()
+
     subscriptions = list(
         get_active_web_push_subscriptions_for_users(
-            user_ids=normalized_recipient_ids,
+            user_ids=deliverable_user_ids,
             subscription_ids=subscription_ids,
         )
     )
     if not subscriptions:
+        _log_message_push_summary(
+            message_id=int(message_id),
+            conversation_id=int(message.conversation_id),
+            recipient_count=len(normalized_recipient_ids),
+            rollout_skipped_count=rollout_skipped_count,
+            suppressed_count=len(suppressed_user_ids),
+            subscription_count=0,
+            delivered_count=0,
+            retry_count=0,
+            gone_count=0,
+            permanent_failure_count=0,
+            skipped_reason="no_active_subscriptions",
+        )
         return MessagePushDeliveryResult()
 
     retry_subscription_ids: list[int] = []
     delivered_count = 0
+    gone_count = 0
+    permanent_failure_count = 0
 
     for subscription in subscriptions:
         try:
@@ -182,14 +300,14 @@ def deliver_message_push(
             p256dh = subscription.p256dh
             auth = subscription.auth
         except ImproperlyConfigured:
-            logger.exception(
+            logger.warning(
                 "Web push subscription could not be decrypted.",
                 extra={
                     "subscription_id": subscription.id,
-                    "user_id": subscription.user_id,
                 },
             )
             mark_web_push_delivery_failure(subscription=subscription)
+            permanent_failure_count += 1
             continue
 
         try:
@@ -200,9 +318,22 @@ def deliver_message_push(
                 payload=payload,
             )
         except ImproperlyConfigured:
-            logger.exception(
+            logger.warning(
                 "Web push delivery skipped because sender configuration is invalid.",
                 extra={"message_id": int(message_id)},
+            )
+            _log_message_push_summary(
+                message_id=int(message_id),
+                conversation_id=int(message.conversation_id),
+                recipient_count=len(normalized_recipient_ids),
+                rollout_skipped_count=rollout_skipped_count,
+                suppressed_count=len(suppressed_user_ids),
+                subscription_count=len(subscriptions),
+                delivered_count=delivered_count,
+                retry_count=len(set(retry_subscription_ids)),
+                gone_count=gone_count,
+                permanent_failure_count=permanent_failure_count,
+                skipped_reason="invalid_sender_config",
             )
             return MessagePushDeliveryResult(
                 delivered_count=delivered_count,
@@ -210,13 +341,7 @@ def deliver_message_push(
             )
         except WebPushSubscriptionGone:
             mark_web_push_delivery_failure(subscription=subscription, deactivate=True)
-            logger.info(
-                "Web push subscription deactivated after permanent gone response.",
-                extra={
-                    "subscription_id": subscription.id,
-                    "user_id": subscription.user_id,
-                },
-            )
+            gone_count += 1
         except TemporaryWebPushDeliveryError:
             mark_web_push_delivery_failure(subscription=subscription)
             retry_subscription_ids.append(subscription.id)
@@ -224,23 +349,35 @@ def deliver_message_push(
                 "Temporary web push delivery failure will be retried.",
                 extra={
                     "subscription_id": subscription.id,
-                    "user_id": subscription.user_id,
                     "message_id": int(message_id),
                 },
             )
         except PermanentWebPushDeliveryError:
             mark_web_push_delivery_failure(subscription=subscription)
+            permanent_failure_count += 1
             logger.warning(
                 "Permanent web push delivery failure without subscription deactivation.",
                 extra={
                     "subscription_id": subscription.id,
-                    "user_id": subscription.user_id,
                     "message_id": int(message_id),
                 },
             )
         else:
             mark_web_push_delivery_success(subscription=subscription)
             delivered_count += 1
+
+    _log_message_push_summary(
+        message_id=int(message_id),
+        conversation_id=int(message.conversation_id),
+        recipient_count=len(normalized_recipient_ids),
+        rollout_skipped_count=rollout_skipped_count,
+        suppressed_count=len(suppressed_user_ids),
+        subscription_count=len(subscriptions),
+        delivered_count=delivered_count,
+        retry_count=len(set(retry_subscription_ids)),
+        gone_count=gone_count,
+        permanent_failure_count=permanent_failure_count,
+    )
 
     return MessagePushDeliveryResult(
         delivered_count=delivered_count,

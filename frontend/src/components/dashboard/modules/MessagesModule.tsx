@@ -20,10 +20,17 @@ export default function MessagesModule({
 }) {
   const { t } = useLanguage();
   const isMobile = useIsMobile();
+  const shouldFillMobileHeight = Boolean(conversationId || targetUserId);
 
   if (isMobile) {
     return (
-      <div className="w-full">
+      <div
+        className={
+          shouldFillMobileHeight
+            ? 'flex h-full min-h-0 w-full flex-col'
+            : 'w-full'
+        }
+      >
         {conversationId ? (
           <ConversationDetail conversationId={conversationId} currentUserId={currentUserId} />
         ) : targetUserId ? (

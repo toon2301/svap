@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+import unittest
 from cryptography.fernet import Fernet
-from celery.exceptions import Retry
 from django.contrib.auth import get_user_model
+from django.core.cache import cache
 from django.test import TestCase, override_settings
 from unittest.mock import patch
 
@@ -15,9 +16,19 @@ from accounts.services.webpush_delivery import (
     WebPushSubscriptionGone,
     deliver_message_push,
 )
+from messaging.services.presence import store_message_presence
 from accounts.services.webpush_subscriptions import upsert_web_push_subscription
 from messaging.models import Conversation, ConversationParticipant, Message
-from swaply.tasks.webpush import deliver_message_push_task
+
+try:
+    from celery.exceptions import Retry
+    from swaply.tasks.webpush import deliver_message_push_task
+
+    CELERY_TASKS_AVAILABLE = True
+except ModuleNotFoundError:
+    Retry = RuntimeError
+    deliver_message_push_task = None
+    CELERY_TASKS_AVAILABLE = False
 
 User = get_user_model()
 
@@ -29,6 +40,7 @@ User = get_user_model()
 )
 class WebPushDeliveryTests(TestCase):
     def setUp(self):
+        cache.clear()
         self.sender = User.objects.create_user(
             username="push-sender",
             email="push-sender@example.com",
@@ -62,6 +74,9 @@ class WebPushDeliveryTests(TestCase):
             user_agent="pytest-agent",
             device_label="Chrome desktop",
         )
+
+    def tearDown(self):
+        cache.clear()
 
     def test_deliver_message_push_sends_generic_payload_and_marks_success(self):
         with patch(
@@ -150,6 +165,57 @@ class WebPushDeliveryTests(TestCase):
         self.assertEqual(result.retry_subscription_ids, ())
         send_web_push_request_mock.assert_not_called()
 
+    @override_settings(WEB_PUSH_MESSAGES_ENABLED=False)
+    def test_deliver_message_push_skips_delivery_when_feature_flag_is_disabled(self):
+        with patch(
+            "accounts.services.webpush_delivery.send_web_push_request",
+        ) as send_web_push_request_mock:
+            result = deliver_message_push(
+                message_id=self.message.id,
+                recipient_user_ids=[self.recipient.id],
+            )
+
+        self.assertEqual(result.delivered_count, 0)
+        self.assertEqual(result.retry_subscription_ids, ())
+        send_web_push_request_mock.assert_not_called()
+
+    @override_settings(WEB_PUSH_MESSAGES_ROLLOUT_PERCENT=0)
+    def test_deliver_message_push_skips_delivery_when_recipient_is_outside_rollout(self):
+        with patch(
+            "accounts.services.webpush_delivery.send_web_push_request",
+        ) as send_web_push_request_mock:
+            result = deliver_message_push(
+                message_id=self.message.id,
+                recipient_user_ids=[self.recipient.id],
+            )
+
+        self.assertEqual(result.delivered_count, 0)
+        self.assertEqual(result.retry_subscription_ids, ())
+        send_web_push_request_mock.assert_not_called()
+
+    def test_deliver_message_push_is_suppressed_for_visible_active_conversation(self):
+        store_message_presence(
+            user_id=self.recipient.id,
+            visible=True,
+            active_conversation_id=self.conversation.id,
+        )
+
+        with patch(
+            "accounts.services.webpush_delivery.send_web_push_request",
+        ) as send_web_push_request_mock:
+            result = deliver_message_push(
+                message_id=self.message.id,
+                recipient_user_ids=[self.recipient.id],
+            )
+
+        self.assertEqual(result.delivered_count, 0)
+        self.assertEqual(result.retry_subscription_ids, ())
+        send_web_push_request_mock.assert_not_called()
+
+    @unittest.skipUnless(
+        CELERY_TASKS_AVAILABLE,
+        "celery is not installed in the local backend environment",
+    )
     def test_deliver_message_push_task_retries_only_failed_subscription_ids(self):
         retry_result = MessagePushDeliveryResult(
             delivered_count=1,

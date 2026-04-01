@@ -153,3 +153,16 @@ export async function markConversationRead(conversationId: number): Promise<{
   return data;
 }
 
+export async function updateMessagingPresence({
+  visible,
+  activeConversationId,
+}: {
+  visible: boolean;
+  activeConversationId: number | null;
+}): Promise<void> {
+  await api.post('/auth/messaging/presence/', {
+    visible,
+    active_conversation_id: visible ? activeConversationId : null,
+  });
+}
+

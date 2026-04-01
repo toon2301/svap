@@ -81,4 +81,30 @@ describe('MessagesModule', () => {
     expect(screen.getByText('DraftConversationDetail:55')).toBeInTheDocument();
     expect(screen.queryByText('ConversationsList:none')).not.toBeInTheDocument();
   });
+
+  it('stretches the mobile conversation detail flow to the full available height', () => {
+    useIsMobile.mockReturnValue(true);
+
+    render(<MessagesModule currentUserId={1} conversationId={7} />);
+
+    const wrapper = screen.getByText('ConversationDetail:7').parentElement;
+    expect(wrapper).toHaveClass('flex');
+    expect(wrapper).toHaveClass('h-full');
+    expect(wrapper).toHaveClass('min-h-0');
+    expect(wrapper).toHaveClass('w-full');
+    expect(wrapper).toHaveClass('flex-col');
+  });
+
+  it('stretches the mobile draft compose flow to the full available height', () => {
+    useIsMobile.mockReturnValue(true);
+
+    render(<MessagesModule currentUserId={1} targetUserId={55} />);
+
+    const wrapper = screen.getByText('DraftConversationDetail:55').parentElement;
+    expect(wrapper).toHaveClass('flex');
+    expect(wrapper).toHaveClass('h-full');
+    expect(wrapper).toHaveClass('min-h-0');
+    expect(wrapper).toHaveClass('w-full');
+    expect(wrapper).toHaveClass('flex-col');
+  });
 });

@@ -24,9 +24,13 @@ import {
   mergeMessagesNewestFirst,
   OLDER_MESSAGES_SCROLL_THRESHOLD_PX,
 } from './messageListUtils';
+import { useConversationPresenceHeartbeat } from './useConversationPresenceHeartbeat';
 
 const MESSAGE_POLL_INTERVAL_MS = 10_000;
 const MOBILE_COMPOSER_BOTTOM_GAP_PX = 14;
+const MOBILE_LATEST_SCROLL_THRESHOLD_PX = 80;
+const MOBILE_MESSAGE_SIDE_PADDING_CLASS = 'px-2.5 py-4';
+const DESKTOP_MESSAGE_SIDE_PADDING_CLASS = 'px-4 py-4 sm:px-5 lg:px-6';
 
 function formatTime(value: string): string {
   const d = new Date(value);
@@ -82,14 +86,21 @@ export function ConversationDetail({
   const composerRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const shouldRestoreFocusRef = useRef(false);
+  const pendingLatestScrollAfterRefreshRef = useRef(false);
+  const shouldScrollToLatestOnRenderRef = useRef(false);
   const visualViewportBottomInset = useVisualViewportBottomInset(isMobile, isComposerFocused);
-  const mobileComposerBottomOffset = visualViewportBottomInset + MOBILE_COMPOSER_BOTTOM_GAP_PX;
+  const isMobileComposerOverlayActive =
+    isMobile && (isComposerFocused || visualViewportBottomInset > 0);
+  const mobileComposerBottomOffset = isMobileComposerOverlayActive
+    ? visualViewportBottomInset + MOBILE_COMPOSER_BOTTOM_GAP_PX
+    : 0;
   const mobileComposerReservedSpace = useComposerReservedSpace(
     composerElement,
-    isMobile,
+    isMobileComposerOverlayActive,
     8,
     mobileComposerBottomOffset,
   );
+  useConversationPresenceHeartbeat(conversationId);
 
   const focusComposer = useCallback(() => {
     if (isMobile) return;
@@ -141,6 +152,16 @@ export function ConversationDetail({
     bottomRef.current?.scrollIntoView({ behavior: 'auto' });
   }, []);
 
+  const isNearMessagesBottom = useCallback(() => {
+    const scrollContainer = messagesScrollRef.current;
+    if (!scrollContainer) return false;
+
+    const distanceToBottom =
+      scrollContainer.scrollHeight - scrollContainer.clientHeight - scrollContainer.scrollTop;
+
+    return distanceToBottom <= MOBILE_LATEST_SCROLL_THRESHOLD_PX;
+  }, []);
+
   const ordered = useMemo(() => {
     // API vracia najnovšie prvé – v UI chceme chronologicky
     return [...messages].reverse();
@@ -185,12 +206,21 @@ export function ConversationDetail({
         showError = true,
         markAsRead = false,
         syncConversations = false,
+        scrollBehavior = 'none',
       }: {
         showError?: boolean;
         markAsRead?: boolean;
         syncConversations?: boolean;
+        scrollBehavior?: 'none' | 'force_latest' | 'if_near_bottom';
       } = {},
     ) => {
+      if (scrollBehavior === 'force_latest') {
+        pendingLatestScrollAfterRefreshRef.current = true;
+      } else if (scrollBehavior === 'if_near_bottom') {
+        pendingLatestScrollAfterRefreshRef.current =
+          pendingLatestScrollAfterRefreshRef.current || !isMobile || isNearMessagesBottom();
+      }
+
       if (refreshInFlightRef.current) {
         try {
           const sharedPage = await refreshInFlightRef.current;
@@ -199,6 +229,7 @@ export function ConversationDetail({
           }
           return sharedPage.results;
         } catch (error) {
+          pendingLatestScrollAfterRefreshRef.current = false;
           if (showError) {
             showLoadErrorToast(error);
           }
@@ -210,7 +241,11 @@ export function ConversationDetail({
         const page = await listMessages(conversationId, INITIAL_MESSAGES_PAGE_SIZE);
         const newestMessageId = page.results[0]?.id ?? null;
         const previousNewestMessageId = latestKnownMessageIdRef.current;
+        const shouldScrollAfterRefresh = pendingLatestScrollAfterRefreshRef.current;
+        pendingLatestScrollAfterRefreshRef.current = false;
         latestKnownMessageIdRef.current = newestMessageId;
+        shouldScrollToLatestOnRenderRef.current =
+          shouldScrollAfterRefresh && newestMessageId !== previousNewestMessageId;
         setMessages((current) => mergeMessagesNewestFirst(current, page.results));
         setNextOlderPage(page.nextPage);
         if (
@@ -231,6 +266,7 @@ export function ConversationDetail({
         }
         return page.results;
       } catch (error) {
+        pendingLatestScrollAfterRefreshRef.current = false;
         if (showError) {
           showLoadErrorToast(error);
         }
@@ -241,7 +277,7 @@ export function ConversationDetail({
         }
       }
     },
-    [conversationId, maybeMarkConversationRead, showLoadErrorToast],
+    [conversationId, isMobile, isNearMessagesBottom, maybeMarkConversationRead, showLoadErrorToast],
   );
 
   useEffect(() => {
@@ -285,7 +321,12 @@ export function ConversationDetail({
 
     const refreshIfVisible = () => {
       if (document.visibilityState !== 'visible') return;
-      void refresh({ showError: false, markAsRead: true, syncConversations: true });
+      void refresh({
+        showError: false,
+        markAsRead: true,
+        syncConversations: true,
+        scrollBehavior: 'if_near_bottom',
+      });
     };
 
     pollIntervalRef.current = setInterval(() => {
@@ -306,7 +347,12 @@ export function ConversationDetail({
     const handleRealtimeMessage = (event: Event) => {
       const detail = (event as CustomEvent<MessagingRealtimeMessagePayload>).detail;
       if (!detail || detail.conversationId !== conversationId) return;
-      void refresh({ showError: false, markAsRead: true, syncConversations: true });
+      void refresh({
+        showError: false,
+        markAsRead: true,
+        syncConversations: true,
+        scrollBehavior: 'if_near_bottom',
+      });
     };
 
     window.addEventListener(MESSAGING_REALTIME_MESSAGE_EVENT, handleRealtimeMessage);
@@ -328,6 +374,11 @@ export function ConversationDetail({
       return;
     }
 
+    if (!shouldScrollToLatestOnRenderRef.current) {
+      return;
+    }
+
+    shouldScrollToLatestOnRenderRef.current = false;
     scrollMessagesToLatest();
   }, [ordered.length, scrollMessagesToLatest]);
 
@@ -413,7 +464,7 @@ export function ConversationDetail({
     try {
       await sendMessage(conversationId, clean);
       setText('');
-      await refresh({ showError: false, markAsRead: true });
+      await refresh({ showError: false, markAsRead: true, scrollBehavior: 'force_latest' });
       requestConversationsRefresh();
     } catch (error) {
       toast.error(
@@ -459,6 +510,7 @@ export function ConversationDetail({
   const targetUserId = otherConversation?.other_user?.id ?? null;
   const targetUserName =
     (otherConversation?.other_user?.display_name || '').trim() || t('messages.unknownUser', 'Používateľ');
+  const targetUserAvatarUrl = otherConversation?.other_user?.avatar_url ?? null;
   const hasTextToSend = text.trim().length > 0;
 
   return (
@@ -543,7 +595,9 @@ export function ConversationDetail({
         ref={messagesScrollRef}
         data-testid="conversation-messages-scroll"
         onScroll={handleMessagesScroll}
-        className="flex-1 min-h-0 overflow-y-auto overscroll-y-contain touch-pan-y elegant-scrollbar p-4 space-y-2"
+        className={`flex-1 min-h-0 overflow-y-auto overscroll-y-contain touch-pan-y elegant-scrollbar space-y-2 ${
+          isMobile ? MOBILE_MESSAGE_SIDE_PADDING_CLASS : DESKTOP_MESSAGE_SIDE_PADDING_CLASS
+        }`}
         style={isMobile ? { paddingBottom: mobileComposerReservedSpace } : undefined}
       >
         {ordered.length === 0 ? (
@@ -554,15 +608,54 @@ export function ConversationDetail({
           ordered.map((m, index) => {
             const mine = m.sender?.id === currentUserId;
             const prev = index > 0 ? ordered[index - 1] : null;
+            const next = index < ordered.length - 1 ? ordered[index + 1] : null;
             const prevSenderId = prev?.sender?.id ?? null;
             const curSenderId = m.sender?.id ?? null;
+            const nextSenderId = next?.sender?.id ?? null;
             const showTimestamp =
               !prev ||
               prevSenderId !== curSenderId ||
               minuteBucketKey(prev.created_at) !== minuteBucketKey(m.created_at);
+            const showSenderAvatar = !mine && (!next || nextSenderId !== curSenderId);
+            const senderAvatarUrl = m.sender?.avatar_url || targetUserAvatarUrl;
+            const senderDisplayName = (m.sender?.display_name || '').trim() || targetUserName;
             return (
-              <div key={m.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[80%] ${mine ? 'flex flex-col items-end' : ''}`}>
+              <div
+                key={m.id}
+                className={`flex ${mine ? 'justify-end' : 'justify-start'} ${
+                  mine ? (isMobile ? 'pr-0.5' : 'pr-1') : isMobile ? 'pl-0.5' : 'pl-1'
+                }`}
+              >
+                <div className={`flex items-end ${mine ? '' : isMobile ? 'gap-1.5' : 'gap-2'}`}>
+                  {!mine ? (
+                    <div className={`flex shrink-0 justify-start ${isMobile ? 'w-7' : 'w-8'}`}>
+                      {showSenderAvatar ? (
+                        <div
+                          data-testid={`message-avatar-${m.id}`}
+                          className={`overflow-hidden rounded-full bg-purple-100 dark:bg-purple-900/40 ${
+                            isMobile ? 'h-7 w-7' : 'h-8 w-8'
+                          }`}
+                        >
+                          {senderAvatarUrl ? (
+                            <img
+                              src={senderAvatarUrl}
+                              alt={senderDisplayName}
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <span className="flex h-full w-full items-center justify-center text-[10px] font-bold text-purple-700 dark:text-purple-300">
+                              {senderDisplayName.slice(0, 1).toUpperCase()}
+                            </span>
+                          )}
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : null}
+                  <div
+                    className={`${isMobile ? 'max-w-[84%]' : 'max-w-[80%]'} ${
+                      mine ? 'flex flex-col items-end' : ''
+                    }`}
+                  >
                   {showTimestamp ? (
                     <div
                       data-testid={`message-timestamp-${m.id}`}
@@ -588,6 +681,7 @@ export function ConversationDetail({
                   </div>
                 </div>
               </div>
+            </div>
             );
           })
         )}
@@ -601,10 +695,12 @@ export function ConversationDetail({
         onBlurCapture={handleComposerBlur}
         className={
           isMobile
-            ? 'fixed inset-x-0 z-40 flex w-full min-w-0 shrink-0 items-center overflow-x-hidden touch-none border-t border-gray-200 bg-white px-4 py-2 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] dark:border-gray-800 dark:bg-black'
+            ? isMobileComposerOverlayActive
+              ? 'fixed inset-x-0 z-40 flex w-full min-w-0 shrink-0 items-center overflow-x-hidden touch-none px-2.5 py-2 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))]'
+              : 'relative z-10 mt-1.5 flex w-full min-w-0 shrink-0 items-center overflow-x-hidden px-2.5 py-2 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))]'
             : 'mt-2 flex w-full min-w-0 shrink-0 gap-2 px-4 sm:px-6 lg:px-8 mx-auto pb-[max(1rem,env(safe-area-inset-bottom,0px))] lg:pb-[max(1.25rem,env(safe-area-inset-bottom,0px))] sm:max-w-[min(100%,36rem)] md:max-w-[min(100%,44rem)] lg:max-w-[min(100%,52rem)] xl:max-w-[min(100%,64rem)]'
         }
-        style={isMobile ? { bottom: mobileComposerBottomOffset } : undefined}
+        style={isMobileComposerOverlayActive ? { bottom: mobileComposerBottomOffset } : undefined}
       >
         <div
           className={`relative min-w-0 flex-1 ${

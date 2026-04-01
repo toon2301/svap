@@ -73,6 +73,7 @@ jest.mock('./messagingApi', () => ({
   listMessages: jest.fn(),
   markConversationRead: jest.fn(),
   sendMessage: jest.fn(),
+  updateMessagingPresence: jest.fn().mockResolvedValue(undefined),
   getMessagingErrorMessage: jest.fn(),
 }));
 
@@ -287,7 +288,7 @@ describe('ConversationDetail', () => {
     expect(messagesScroll.className).toContain('overflow-y-auto');
   });
 
-  it('keeps the mobile composer anchored until the user actually focuses the input', async () => {
+  it('keeps the mobile composer in flow until the user actually focuses the input', async () => {
     useIsMobile.mockReturnValue(true);
     const viewport = mockVisualViewport();
 
@@ -311,9 +312,11 @@ describe('ConversationDetail', () => {
     });
 
     await waitFor(() => {
-      expect(composer).toHaveStyle({ bottom: '14px' });
-      expect(messagesScroll).toHaveStyle({ paddingBottom: '72px' });
+      expect(composer.style.bottom).toBe('');
+      expect(messagesScroll).toHaveStyle({ paddingBottom: '0px' });
     });
+    expect(composer.className).toContain('px-2.5');
+    expect(composer.className).not.toContain('px-4');
 
     viewport.setMetrics({ height: 650 });
     act(() => {
@@ -321,8 +324,8 @@ describe('ConversationDetail', () => {
     });
 
     await waitFor(() => {
-      expect(composer).toHaveStyle({ bottom: '14px' });
-      expect(messagesScroll).toHaveStyle({ paddingBottom: '72px' });
+      expect(composer.style.bottom).toBe('');
+      expect(messagesScroll).toHaveStyle({ paddingBottom: '0px' });
     });
 
     fireEvent.focus(input);
@@ -335,8 +338,8 @@ describe('ConversationDetail', () => {
     fireEvent.blur(input);
 
     await waitFor(() => {
-      expect(composer).toHaveStyle({ bottom: '14px' });
-      expect(messagesScroll).toHaveStyle({ paddingBottom: '72px' });
+      expect(composer.style.bottom).toBe('');
+      expect(messagesScroll).toHaveStyle({ paddingBottom: '0px' });
     });
   });
 
@@ -393,7 +396,251 @@ describe('ConversationDetail', () => {
 
     await waitFor(() => {
       expect(currentScrollTop).toBe(712);
-      expect(messagesScroll).toHaveStyle({ paddingBottom: '72px' });
+      expect(messagesScroll).toHaveStyle({ paddingBottom: '0px' });
+    });
+  });
+
+  it('uses the real mobile composer overlap while the keyboard overlay is active', async () => {
+    useIsMobile.mockReturnValue(true);
+    const viewport = mockVisualViewport();
+
+    (listMessages as jest.Mock).mockResolvedValueOnce(
+      messagePage([
+        message({
+          id: 2,
+          text: 'Najnovsia sprava',
+          created_at: '2026-03-27T10:01:00Z',
+        }),
+        message({
+          id: 1,
+          sender: { id: 1, display_name: 'Me' },
+          text: 'Starsia sprava',
+          created_at: '2026-03-27T10:00:00Z',
+        }),
+      ]),
+    );
+
+    render(<ConversationDetail conversationId={9} currentUserId={1} />);
+
+    expect(await screen.findByText('Najnovsia sprava')).toBeInTheDocument();
+
+    const composer = screen.getByTestId('conversation-composer');
+    const messagesScroll = screen.getByTestId('conversation-messages-scroll');
+    const input = screen.getByRole('textbox');
+
+    let currentScrollTop = 0;
+    let currentScrollHeight = 640;
+
+    Object.defineProperty(messagesScroll, 'scrollTop', {
+      configurable: true,
+      get: () => currentScrollTop,
+      set: (value: number) => {
+        currentScrollTop = value;
+      },
+    });
+    Object.defineProperty(messagesScroll, 'scrollHeight', {
+      configurable: true,
+      get: () => currentScrollHeight,
+    });
+    Object.defineProperty(composer, 'offsetHeight', {
+      configurable: true,
+      get: () => 50,
+    });
+    Object.defineProperty(composer, 'getBoundingClientRect', {
+      configurable: true,
+      value: () => ({
+        x: 0,
+        y: 0,
+        width: 360,
+        height: 70,
+        top: 760,
+        right: 360,
+        bottom: 830,
+        left: 0,
+        toJSON: () => ({}),
+      }),
+    });
+
+    currentScrollHeight = 778;
+    fireEvent.focus(input);
+    act(() => {
+      viewport.dispatch('resize');
+    });
+
+    await waitFor(() => {
+      expect(currentScrollTop).toBe(778);
+      expect(messagesScroll).toHaveStyle({ paddingBottom: '148px' });
+    });
+  });
+
+  it('auto-scrolls incoming mobile messages only when the user is already near the bottom', async () => {
+    useIsMobile.mockReturnValue(true);
+
+    (listMessages as jest.Mock)
+      .mockResolvedValueOnce(
+        messagePage([
+          message({
+            id: 2,
+            text: 'Druha sprava',
+            created_at: '2026-03-27T10:01:00Z',
+          }),
+          message({
+            id: 1,
+            sender: { id: 1, display_name: 'Me' },
+            text: 'Prva sprava',
+            created_at: '2026-03-27T10:00:00Z',
+          }),
+        ]),
+      )
+      .mockResolvedValueOnce(
+        messagePage([
+          message({
+            id: 3,
+            text: 'Nova realtime sprava',
+            created_at: '2026-03-27T10:02:00Z',
+          }),
+          message({
+            id: 2,
+            text: 'Druha sprava',
+            created_at: '2026-03-27T10:01:00Z',
+          }),
+          message({
+            id: 1,
+            sender: { id: 1, display_name: 'Me' },
+            text: 'Prva sprava',
+            created_at: '2026-03-27T10:00:00Z',
+          }),
+        ]),
+      );
+
+    render(<ConversationDetail conversationId={9} currentUserId={1} />);
+
+    expect(await screen.findByText('Druha sprava')).toBeInTheDocument();
+
+    const messagesScroll = screen.getByTestId('conversation-messages-scroll');
+    let currentScrollTop = 0;
+    let currentScrollHeight = 900;
+    const currentClientHeight = 400;
+
+    Object.defineProperty(messagesScroll, 'scrollTop', {
+      configurable: true,
+      get: () => currentScrollTop,
+      set: (value: number) => {
+        currentScrollTop = value;
+      },
+    });
+    Object.defineProperty(messagesScroll, 'scrollHeight', {
+      configurable: true,
+      get: () => currentScrollHeight,
+    });
+    Object.defineProperty(messagesScroll, 'clientHeight', {
+      configurable: true,
+      get: () => currentClientHeight,
+    });
+
+    currentScrollTop = 500;
+    currentScrollHeight = 980;
+
+    act(() => {
+      window.dispatchEvent(
+        new CustomEvent(MESSAGING_REALTIME_MESSAGE_EVENT, {
+          detail: {
+            conversationId: 9,
+            messageId: 3,
+            senderId: 77,
+            createdAt: '2026-03-27T10:02:00Z',
+          },
+        }),
+      );
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('Nova realtime sprava')).toBeInTheDocument();
+      expect(currentScrollTop).toBe(980);
+    });
+  });
+
+  it('keeps mobile scroll position when a realtime message arrives while reading older history', async () => {
+    useIsMobile.mockReturnValue(true);
+
+    (listMessages as jest.Mock)
+      .mockResolvedValueOnce(
+        messagePage([
+          message({
+            id: 2,
+            text: 'Druha sprava',
+            created_at: '2026-03-27T10:01:00Z',
+          }),
+          message({
+            id: 1,
+            sender: { id: 1, display_name: 'Me' },
+            text: 'Prva sprava',
+            created_at: '2026-03-27T10:00:00Z',
+          }),
+        ]),
+      )
+      .mockResolvedValueOnce(
+        messagePage([
+          message({
+            id: 3,
+            text: 'Nova realtime sprava',
+            created_at: '2026-03-27T10:02:00Z',
+          }),
+          message({
+            id: 2,
+            text: 'Druha sprava',
+            created_at: '2026-03-27T10:01:00Z',
+          }),
+          message({
+            id: 1,
+            sender: { id: 1, display_name: 'Me' },
+            text: 'Prva sprava',
+            created_at: '2026-03-27T10:00:00Z',
+          }),
+        ]),
+      );
+
+    render(<ConversationDetail conversationId={9} currentUserId={1} />);
+
+    expect(await screen.findByText('Druha sprava')).toBeInTheDocument();
+
+    const messagesScroll = screen.getByTestId('conversation-messages-scroll');
+    let currentScrollTop = 120;
+    const currentScrollHeight = 980;
+    const currentClientHeight = 400;
+
+    Object.defineProperty(messagesScroll, 'scrollTop', {
+      configurable: true,
+      get: () => currentScrollTop,
+      set: (value: number) => {
+        currentScrollTop = value;
+      },
+    });
+    Object.defineProperty(messagesScroll, 'scrollHeight', {
+      configurable: true,
+      get: () => currentScrollHeight,
+    });
+    Object.defineProperty(messagesScroll, 'clientHeight', {
+      configurable: true,
+      get: () => currentClientHeight,
+    });
+
+    act(() => {
+      window.dispatchEvent(
+        new CustomEvent(MESSAGING_REALTIME_MESSAGE_EVENT, {
+          detail: {
+            conversationId: 9,
+            messageId: 3,
+            senderId: 77,
+            createdAt: '2026-03-27T10:02:00Z',
+          },
+        }),
+      );
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('Nova realtime sprava')).toBeInTheDocument();
+      expect(currentScrollTop).toBe(120);
     });
   });
 
@@ -431,6 +678,59 @@ describe('ConversationDetail', () => {
 
     expect(await screen.findByText('1')).toBeInTheDocument();
     expect(screen.getByTestId('message-bubble-1').className).toContain('w-fit');
+  });
+
+  it('shows the other user avatar only on the last message in each consecutive block', async () => {
+    useIsMobile.mockReturnValue(true);
+    (listConversations as jest.Mock).mockResolvedValue([
+      {
+        id: 9,
+        other_user: {
+          id: 77,
+          display_name: 'Tester',
+          avatar_url: 'https://example.com/tester.png',
+        },
+      },
+    ]);
+    (listMessages as jest.Mock).mockResolvedValueOnce(
+      messagePage([
+        message({
+          id: 5,
+          text: 'Nova samostatna',
+          created_at: '2026-03-27T10:04:00Z',
+        }),
+        message({
+          id: 4,
+          sender: { id: 1, display_name: 'Me' },
+          text: 'Moja odpoved',
+          created_at: '2026-03-27T10:03:00Z',
+        }),
+        message({
+          id: 3,
+          text: 'Treta v bloku',
+          created_at: '2026-03-27T10:02:00Z',
+        }),
+        message({
+          id: 2,
+          text: 'Druha v bloku',
+          created_at: '2026-03-27T10:01:00Z',
+        }),
+        message({
+          id: 1,
+          sender: { id: 1, display_name: 'Me' },
+          text: 'Moja prva',
+          created_at: '2026-03-27T10:00:00Z',
+        }),
+      ]),
+    );
+
+    render(<ConversationDetail conversationId={9} currentUserId={1} />);
+
+    expect(await screen.findByText('Treta v bloku')).toBeInTheDocument();
+    expect(screen.queryByTestId('message-avatar-2')).not.toBeInTheDocument();
+    expect(screen.getByTestId('message-avatar-3')).toBeInTheDocument();
+    expect(screen.getByTestId('message-avatar-5')).toBeInTheDocument();
+    expect(screen.queryByTestId('message-avatar-4')).not.toBeInTheDocument();
   });
 
   it('refreshes the conversation and notifies the conversations rail when the tab becomes visible again', async () => {

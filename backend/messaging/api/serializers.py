@@ -155,3 +155,26 @@ class MarkReadSerializer(serializers.Serializer):
     # body can be empty; keep explicit serializer for future extensibility
     pass
 
+
+class MessagePresenceSerializer(serializers.Serializer):
+    visible = serializers.BooleanField(required=True)
+    active_conversation_id = serializers.IntegerField(
+        min_value=1,
+        required=False,
+        allow_null=True,
+    )
+
+    def validate(self, attrs):
+        visible = bool(attrs.get("visible"))
+        conversation_id = attrs.get("active_conversation_id")
+
+        if visible and conversation_id is None:
+            raise serializers.ValidationError(
+                "active_conversation_id is required when visible is true."
+            )
+
+        if not visible:
+            attrs["active_conversation_id"] = None
+
+        return attrs
+

@@ -1,5 +1,6 @@
 from django.urls import path
 
+from .api.presence_views import MessagePresenceView
 from .api.views import (
     ConversationListView,
     MarkConversationReadView,
@@ -23,6 +24,7 @@ urlpatterns = [
         name="messaging_send_direct_message",
     ),
     path("conversations/", ConversationListView.as_view(), name="messaging_list_conversations"),
+    path("presence/", MessagePresenceView.as_view(), name="messaging_presence"),
     path(
         "conversations/<int:conversation_id>/messages/",
         MessageListView.as_view(),

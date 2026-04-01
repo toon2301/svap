@@ -46,10 +46,14 @@ export function DraftConversationDetail({
   const inputRef = useRef<HTMLInputElement | null>(null);
   const shouldRestoreFocusRef = useRef(false);
   const visualViewportBottomInset = useVisualViewportBottomInset(isMobile, isComposerFocused);
-  const mobileComposerBottomOffset = visualViewportBottomInset + MOBILE_COMPOSER_BOTTOM_GAP_PX;
+  const isMobileComposerOverlayActive =
+    isMobile && (isComposerFocused || visualViewportBottomInset > 0);
+  const mobileComposerBottomOffset = isMobileComposerOverlayActive
+    ? visualViewportBottomInset + MOBILE_COMPOSER_BOTTOM_GAP_PX
+    : 0;
   const mobileComposerReservedSpace = useComposerReservedSpace(
     composerElement,
-    isMobile,
+    isMobileComposerOverlayActive,
     8,
     mobileComposerBottomOffset,
   );
@@ -311,10 +315,12 @@ export function DraftConversationDetail({
         onBlurCapture={handleComposerBlur}
         className={
           isMobile
-            ? 'fixed inset-x-0 z-40 flex w-full min-w-0 shrink-0 items-center overflow-x-hidden touch-none border-t border-gray-200 bg-white px-4 py-2 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] dark:border-gray-800 dark:bg-black'
+            ? isMobileComposerOverlayActive
+              ? 'fixed inset-x-0 z-40 flex w-full min-w-0 shrink-0 items-center overflow-x-hidden touch-none px-2.5 py-2 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))]'
+              : 'relative z-10 mt-1.5 flex w-full min-w-0 shrink-0 items-center overflow-x-hidden px-2.5 py-2 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))]'
             : 'mt-2 flex w-full min-w-0 shrink-0 gap-2 px-4 sm:px-6 lg:px-8 mx-auto pb-[max(1rem,env(safe-area-inset-bottom,0px))] lg:pb-[max(1.25rem,env(safe-area-inset-bottom,0px))] sm:max-w-[min(100%,36rem)] md:max-w-[min(100%,44rem)] lg:max-w-[min(100%,52rem)] xl:max-w-[min(100%,64rem)]'
         }
-        style={isMobile ? { bottom: mobileComposerBottomOffset } : undefined}
+        style={isMobileComposerOverlayActive ? { bottom: mobileComposerBottomOffset } : undefined}
       >
         <div
           className={`relative min-w-0 flex-1 ${

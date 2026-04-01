@@ -145,13 +145,16 @@ describe('DraftConversationDetail', () => {
     expect(draftScroll.className).toContain('overflow-y-auto');
   });
 
-  it('keeps the mobile draft composer anchored until the user focuses the input', async () => {
+  it('keeps the mobile draft composer in flow until the user focuses the input', async () => {
     useIsMobile.mockReturnValue(true);
     const viewport = mockVisualViewport();
     (openConversation as jest.Mock).mockResolvedValue(draftResponse);
 
     render(<DraftConversationDetail targetUserId={42} />);
 
+    await waitFor(() => {
+      expect(openConversation).toHaveBeenCalledWith(42);
+    });
     expect(await screen.findByText(/začnite konverzáciu/i)).toBeInTheDocument();
 
     const composer = screen.getByTestId('draft-conversation-composer');
@@ -167,8 +170,10 @@ describe('DraftConversationDetail', () => {
     });
 
     await waitFor(() => {
-      expect(composer).toHaveStyle({ bottom: '14px' });
+      expect(composer.style.bottom).toBe('');
     });
+    expect(composer.className).toContain('px-2.5');
+    expect(composer.className).not.toContain('px-4');
 
     expect(input).not.toHaveFocus();
 
@@ -178,7 +183,7 @@ describe('DraftConversationDetail', () => {
     });
 
     await waitFor(() => {
-      expect(composer).toHaveStyle({ bottom: '14px' });
+      expect(composer.style.bottom).toBe('');
     });
   });
 });
