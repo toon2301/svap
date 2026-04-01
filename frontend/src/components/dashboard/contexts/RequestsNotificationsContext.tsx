@@ -16,6 +16,10 @@ import {
   publishMessageUnreadCount,
   subscribeToMessageUnreadCount,
 } from './messageUnreadStore';
+import {
+  installMessageNotificationAudioPrimer,
+  playMessageNotificationSound,
+} from './messageNotificationAudio';
 
 type DashboardNotificationsContextValue = {
   unreadCount: number;
@@ -37,7 +41,6 @@ const UNREAD_COUNT_FRESH_MS = 15000;
 const WS_CLOSE_GRACE_MS = 750;
 const WS_REAUTH_RECONNECT_DELAY_MS = 250;
 const MESSAGE_SOUND_COOLDOWN_MS = 750;
-const MESSAGE_NOTIFICATION_SOUND_SRC = '/sounds/universfield-new-notification-040-493469.mp3';
 
 type WsNotificationPayload = {
   type?: string;
@@ -78,8 +81,6 @@ type CountStore = {
 type GlobalScopeWithStores = typeof globalThis & {
   __SWAPLY_REQ_WS_STORE__?: WsStore;
   __SWAPLY_REQ_UNREAD_STORE__?: CountStore;
-  __SWAPLY_MSG_AUDIO_CTX__?: AudioContext;
-  __SWAPLY_MSG_AUDIO__?: HTMLAudioElement;
 };
 
 function getWsStore(): WsStore {
@@ -185,80 +186,6 @@ function toWebSocketUrl(origin: string): string {
 function isDocumentVisible(): boolean {
   if (typeof document === 'undefined') return true;
   return document.visibilityState !== 'hidden';
-}
-
-function playFallbackMessageNotificationTone(): void {
-  if (typeof window === 'undefined') return;
-
-  try {
-    const AudioCtor =
-      window.AudioContext ||
-      (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-    if (!AudioCtor) return;
-
-    const globalScope = globalThis as GlobalScopeWithStores;
-    if (!globalScope.__SWAPLY_MSG_AUDIO_CTX__) {
-      globalScope.__SWAPLY_MSG_AUDIO_CTX__ = new AudioCtor();
-    }
-
-    const audioContext = globalScope.__SWAPLY_MSG_AUDIO_CTX__;
-    if (!audioContext) return;
-
-    if (audioContext.state === 'suspended') {
-      void audioContext.resume().catch(() => {
-        // best-effort only
-      });
-    }
-
-    const oscillator = audioContext.createOscillator();
-    const gainNode = audioContext.createGain();
-    const now = audioContext.currentTime;
-
-    oscillator.type = 'sine';
-    oscillator.frequency.setValueAtTime(880, now);
-
-    gainNode.gain.setValueAtTime(0.0001, now);
-    gainNode.gain.exponentialRampToValueAtTime(0.03, now + 0.01);
-    gainNode.gain.exponentialRampToValueAtTime(0.0001, now + 0.14);
-
-    oscillator.connect(gainNode);
-    gainNode.connect(audioContext.destination);
-
-    oscillator.start(now);
-    oscillator.stop(now + 0.15);
-  } catch {
-    // fail-open
-  }
-}
-
-function playMessageNotificationTone(): void {
-  if (typeof window === 'undefined') return;
-
-  try {
-    const globalScope = globalThis as GlobalScopeWithStores;
-    if (!globalScope.__SWAPLY_MSG_AUDIO__) {
-      const audio = new Audio(MESSAGE_NOTIFICATION_SOUND_SRC);
-      audio.preload = 'auto';
-      audio.volume = 0.45;
-      globalScope.__SWAPLY_MSG_AUDIO__ = audio;
-    }
-
-    const notificationAudio = globalScope.__SWAPLY_MSG_AUDIO__;
-    if (!notificationAudio) {
-      playFallbackMessageNotificationTone();
-      return;
-    }
-
-    notificationAudio.currentTime = 0;
-    const playPromise = notificationAudio.play();
-    if (playPromise && typeof playPromise.catch === 'function') {
-      void playPromise.catch(() => {
-        playFallbackMessageNotificationTone();
-      });
-    }
-  } catch {
-    playFallbackMessageNotificationTone();
-  }
 }
 
 async function refreshAccessTokenForWs(store: WsStore): Promise<boolean> {
@@ -444,6 +371,8 @@ export function RequestsNotificationsProvider({ children }: { children: React.Re
       isMountedRef.current = false;
     };
   }, []);
+
+  useEffect(() => installMessageNotificationAudioPrimer(), []);
 
   useEffect(() => {
     const store = getRequestUnreadCountStore();
@@ -693,7 +622,7 @@ export function RequestsNotificationsProvider({ children }: { children: React.Re
           const now = Date.now();
           if (now - lastMessageSoundAtRef.current >= MESSAGE_SOUND_COOLDOWN_MS) {
             lastMessageSoundAtRef.current = now;
-            playMessageNotificationTone();
+            playMessageNotificationSound();
           }
         }
       }

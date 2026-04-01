@@ -477,12 +477,6 @@ class SendMessageView(APIView):
             # Do not leak existence; treat as not found
             return Response(status=status.HTTP_404_NOT_FOUND)
 
-        participant_ids = list(
-            ConversationParticipant.objects.filter(conversation_id=convo.id)
-            .exclude(user_id=request.user.id)
-            .values_list("user_id", flat=True)
-        )
-
         event = {
             "type": "messaging_message",
             "conversation_id": convo.id,
@@ -490,7 +484,7 @@ class SendMessageView(APIView):
             "sender_id": request.user.id,
             "created_at": result.message.created_at.isoformat(),
         }
-        for participant_id in participant_ids:
+        for participant_id in result.recipient_user_ids:
             notify_user(
                 participant_id,
                 {
@@ -534,12 +528,6 @@ class StartDirectMessageView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        participant_ids = list(
-            ConversationParticipant.objects.filter(conversation_id=result.conversation.id)
-            .exclude(user_id=request.user.id)
-            .values_list("user_id", flat=True)
-        )
-
         event = {
             "type": "messaging_message",
             "conversation_id": result.conversation.id,
@@ -547,7 +535,7 @@ class StartDirectMessageView(APIView):
             "sender_id": request.user.id,
             "created_at": result.message.created_at.isoformat(),
         }
-        for participant_id in participant_ids:
+        for participant_id in result.recipient_user_ids:
             notify_user(
                 participant_id,
                 {

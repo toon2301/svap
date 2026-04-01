@@ -79,6 +79,8 @@ export default function DashboardLayout({
   const searchPanelRef = useRef<HTMLDivElement>(null);
   const hasAuxiliaryRightRail = !isRightSidebarOpen && Boolean(desktopRightRail);
   const hasDesktopRightColumn = isRightSidebarOpen || hasAuxiliaryRightRail;
+  const isOpenMobileMessagesConversation =
+    activeModule === 'messages' && Boolean(isMobileMessageConversationOpen);
 
   // Zatvor vyhľadávací panel pri kliknutí mimo neho alebo pri stlačení Esc
   useEffect(() => {
@@ -226,7 +228,7 @@ export default function DashboardLayout({
         {/* Main Content - data attr pre scroll preservation */}
         <main
           data-dashboard-main
-          className={`relative h-screen pb-28 lg:pt-0 lg:pb-0 elegant-scrollbar ${
+          className={`relative h-screen ${isOpenMobileMessagesConversation ? 'pb-0' : 'pb-28'} lg:pt-0 lg:pb-0 elegant-scrollbar ${
             activeModule === 'messages'
               ? isMobileMessageConversationOpen
                 ? 'overflow-hidden lg:overflow-hidden'
@@ -246,7 +248,7 @@ export default function DashboardLayout({
               activeModule === 'offer-reviews'
                 ? 'pt-0 pb-4 lg:py-8' // recenzie: žiadna medzera medzi hornou lištou a tabmi
                 : activeModule === 'messages'
-                  ? 'pt-0 pb-2 lg:py-0' // správy: na mobile bez medzery pod vrchnou lištou
+                  ? `pt-0 ${isOpenMobileMessagesConversation ? 'pb-0' : 'pb-2'} lg:py-0` // správy: na mobile bez medzery pod vrchnou lištou
                   : 'py-4 lg:py-8'
             } ${
               activeModule === 'search'

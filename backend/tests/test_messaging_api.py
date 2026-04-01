@@ -18,6 +18,12 @@ User = get_user_model()
 class TestMessagingApi(APITestCase):
     def setUp(self):
         cache.clear()
+        self.push_delay_patcher = patch(
+            "messaging.services.push_enqueue.deliver_message_push_task.delay",
+            return_value=None,
+        )
+        self.push_delay_mock = self.push_delay_patcher.start()
+        self.addCleanup(self.push_delay_patcher.stop)
         self.u1 = User.objects.create_user(
             username="u1",
             email="u1@example.com",
@@ -96,11 +102,12 @@ class TestMessagingApi(APITestCase):
         url = reverse("accounts:messaging_send_direct_message")
 
         with patch("messaging.api.views.notify_user") as notify_user_mock:
-            response = self.client.post(
-                url,
-                {"target_user_id": self.u2.id, "text": "Ahoj"},
-                format="json",
-            )
+            with self.captureOnCommitCallbacks(execute=True):
+                response = self.client.post(
+                    url,
+                    {"target_user_id": self.u2.id, "text": "Ahoj"},
+                    format="json",
+                )
 
         assert response.status_code == status.HTTP_201_CREATED
         assert Conversation.objects.count() == 1
@@ -120,6 +127,42 @@ class TestMessagingApi(APITestCase):
         assert isinstance(event["created_at"], str)
         assert event["conversation_unread_count"] == 1
         assert event["total_unread_count"] == 1
+        self.push_delay_mock.assert_called_once_with(
+            message_id=response.data["message"]["id"],
+            recipient_user_ids=[self.u2.id],
+        )
+
+    def test_send_message_enqueues_web_push_delivery_after_commit(self):
+        convo = self._create_direct_conversation(actor=self.u1, target=self.u2)
+
+        self.client.force_authenticate(user=self.u1)
+        send_url = reverse(
+            "accounts:messaging_send_message",
+            kwargs={"conversation_id": convo.id},
+        )
+        with self.captureOnCommitCallbacks(execute=True):
+            response = self.client.post(send_url, {"text": "Ahoj"}, format="json")
+
+        assert response.status_code == status.HTTP_201_CREATED
+        self.push_delay_mock.assert_called_once_with(
+            message_id=response.data["id"],
+            recipient_user_ids=[self.u2.id],
+        )
+
+    def test_send_message_succeeds_when_push_enqueue_fails(self):
+        convo = self._create_direct_conversation(actor=self.u1, target=self.u2)
+        self.push_delay_mock.side_effect = RuntimeError("broker unavailable")
+
+        self.client.force_authenticate(user=self.u1)
+        send_url = reverse(
+            "accounts:messaging_send_message",
+            kwargs={"conversation_id": convo.id},
+        )
+        with self.captureOnCommitCallbacks(execute=True):
+            response = self.client.post(send_url, {"text": "Ahoj"}, format="json")
+
+        assert response.status_code == status.HTTP_201_CREATED
+        assert Message.objects.count() == 1
 
     def test_non_participant_cannot_read_messages(self):
         convo = self._create_direct_conversation(actor=self.u1, target=self.u2)

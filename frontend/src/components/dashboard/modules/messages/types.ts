@@ -48,6 +48,12 @@ export type MessageItem = {
   is_deleted: boolean;
 };
 
+export type MessageListPage = {
+  results: MessageItem[];
+  nextPage: number | null;
+  previousPage: number | null;
+};
+
 export type DirectMessageStartResult = {
   conversation_id: number;
   conversation_created: boolean;

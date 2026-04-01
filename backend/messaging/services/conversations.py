@@ -8,6 +8,7 @@ from django.db.models import Count
 from django.utils import timezone
 
 from ..models import Conversation, ConversationParticipant, Message
+from .push_enqueue import schedule_message_push_delivery
 
 User = get_user_model()
 
@@ -31,6 +32,7 @@ class StartDirectMessageResult:
     conversation: Conversation
     created_conversation: bool
     message: Message
+    recipient_user_ids: tuple[int, ...]
 
 
 def _lock_users_for_direct_conversation(*, user_a_id: int, user_b_id: int) -> None:
@@ -132,10 +134,16 @@ def send_direct_message(*, actor: User, target: User, text: str) -> StartDirectM
         )
         convo.last_message_at = now
         convo.save(update_fields=["last_message_at", "updated_at"])
+        recipient_user_ids = (int(target.id),)
+        schedule_message_push_delivery(
+            message_id=msg.id,
+            recipient_user_ids=recipient_user_ids,
+        )
 
         return StartDirectMessageResult(
             conversation=convo,
             created_conversation=created_conversation,
             message=msg,
+            recipient_user_ids=recipient_user_ids,
         )
 

@@ -12,5 +12,13 @@ app.config_from_object("django.conf:settings", namespace="CELERY")
 # Note: `swaply` (project package) isn't a Django app in INSTALLED_APPS, so
 # Celery wouldn't discover `swaply/tasks/*.py` automatically.
 app.autodiscover_tasks()
-app.conf.imports = tuple(set(getattr(app.conf, "imports", ()) + ("swaply.tasks.offer_images",)))
+app.conf.imports = tuple(
+    set(
+        getattr(app.conf, "imports", ())
+        + (
+            "swaply.tasks.offer_images",
+            "swaply.tasks.webpush",
+        )
+    )
+)
 

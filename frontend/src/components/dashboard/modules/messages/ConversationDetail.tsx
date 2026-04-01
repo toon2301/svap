@@ -19,6 +19,11 @@ import {
 } from './messagesEvents';
 import { useVisualViewportBottomInset } from './useVisualViewportBottomInset';
 import { useComposerReservedSpace } from './useComposerReservedSpace';
+import {
+  INITIAL_MESSAGES_PAGE_SIZE,
+  mergeMessagesNewestFirst,
+  OLDER_MESSAGES_SCROLL_THRESHOLD_PX,
+} from './messageListUtils';
 
 const MESSAGE_POLL_INTERVAL_MS = 10_000;
 const MOBILE_COMPOSER_BOTTOM_GAP_PX = 14;
@@ -55,13 +60,16 @@ export function ConversationDetail({
   const isMobile = useIsMobile();
   const { setActiveConversationId, syncConversationReadState } = useMessagesNotifications();
   const [messages, setMessages] = useState<MessageItem[]>([]);
+  const [nextOlderPage, setNextOlderPage] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadingOlder, setLoadingOlder] = useState(false);
   const [sending, setSending] = useState(false);
   const [text, setText] = useState('');
   const [isComposerFocused, setIsComposerFocused] = useState(false);
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const refreshInFlightRef = useRef<Promise<MessageItem[]> | null>(null);
+  const refreshInFlightRef = useRef<Promise<{ results: MessageItem[]; nextPage: number | null }> | null>(null);
+  const pendingScrollRestoreRef = useRef<{ scrollHeight: number; scrollTop: number } | null>(null);
   const lastMarkedIncomingMessageIdRef = useRef<number | null>(null);
   const latestKnownMessageIdRef = useRef<number | null>(null);
   const [otherConversation, setOtherConversation] = useState<ConversationListItem | null>(null);
@@ -80,7 +88,7 @@ export function ConversationDetail({
     composerElement,
     isMobile,
     8,
-    mobileComposerBottomOffset,
+    visualViewportBottomInset,
   );
 
   const focusComposer = useCallback(() => {
@@ -175,11 +183,11 @@ export function ConversationDetail({
     ) => {
       if (refreshInFlightRef.current) {
         try {
-          const sharedList = await refreshInFlightRef.current;
+          const sharedPage = await refreshInFlightRef.current;
           if (markAsRead) {
-            await maybeMarkConversationRead(sharedList);
+            await maybeMarkConversationRead(sharedPage.results);
           }
-          return sharedList;
+          return sharedPage.results;
         } catch (error) {
           if (showError) {
             showLoadErrorToast(error);
@@ -189,28 +197,29 @@ export function ConversationDetail({
       }
 
       const request = (async () => {
-        const list = await listMessages(conversationId, 100);
-        const newestMessageId = list[0]?.id ?? null;
+        const page = await listMessages(conversationId, INITIAL_MESSAGES_PAGE_SIZE);
+        const newestMessageId = page.results[0]?.id ?? null;
         const previousNewestMessageId = latestKnownMessageIdRef.current;
         latestKnownMessageIdRef.current = newestMessageId;
-        setMessages(list);
+        setMessages((current) => mergeMessagesNewestFirst(current, page.results));
+        setNextOlderPage(page.nextPage);
         if (
           syncConversations &&
           newestMessageId !== previousNewestMessageId
         ) {
           requestConversationsRefresh();
         }
-        return list;
+        return page;
       })();
 
       refreshInFlightRef.current = request;
 
       try {
-        const list = await request;
+        const page = await request;
         if (markAsRead) {
-          await maybeMarkConversationRead(list);
+          await maybeMarkConversationRead(page.results);
         }
-        return list;
+        return page.results;
       } catch (error) {
         if (showError) {
           showLoadErrorToast(error);
@@ -229,6 +238,10 @@ export function ConversationDetail({
     let cancelled = false;
     lastMarkedIncomingMessageIdRef.current = null;
     latestKnownMessageIdRef.current = null;
+    setMessages([]);
+    setNextOlderPage(null);
+    setLoadingOlder(false);
+    pendingScrollRestoreRef.current = null;
     void (async () => {
       try {
         setLoading(true);
@@ -295,12 +308,24 @@ export function ConversationDetail({
 
   useEffect(() => {
     // Pri nových správach jemne doroluj na spodok (ak už je konverzácia otvorená).
+    const scrollContainer = messagesScrollRef.current;
+    const pendingRestore = pendingScrollRestoreRef.current;
+
+    if (pendingRestore && scrollContainer) {
+      pendingScrollRestoreRef.current = null;
+      scrollContainer.scrollTop =
+        scrollContainer.scrollHeight - pendingRestore.scrollHeight + pendingRestore.scrollTop;
+      return;
+    }
+
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [ordered.length]);
 
   useEffect(() => {
     // Pri každom otvorení/refreshi konverzácie sa vráť na najnovšie správy.
     // Toto prepíše browser scroll-restoration aj po reload-e.
+    if (loading) return;
+
     const scrollToLatest = () => {
       if (messagesScrollRef.current) {
         messagesScrollRef.current.scrollTop = messagesScrollRef.current.scrollHeight;
@@ -311,7 +336,7 @@ export function ConversationDetail({
     requestAnimationFrame(() => {
       requestAnimationFrame(scrollToLatest);
     });
-  }, [conversationId, loading, ordered.length]);
+  }, [conversationId, loading]);
 
   useEffect(() => {
     if (loading) return;
@@ -344,6 +369,37 @@ export function ConversationDetail({
       document.removeEventListener('mousedown', onPointerDown);
     };
   }, [isHeaderMenuOpen]);
+
+  const loadOlderMessages = useCallback(async () => {
+    if (loading || loadingOlder || nextOlderPage === null) return;
+
+    const scrollContainer = messagesScrollRef.current;
+    if (scrollContainer) {
+      pendingScrollRestoreRef.current = {
+        scrollHeight: scrollContainer.scrollHeight,
+        scrollTop: scrollContainer.scrollTop,
+      };
+    }
+
+    setLoadingOlder(true);
+    try {
+      const page = await listMessages(conversationId, INITIAL_MESSAGES_PAGE_SIZE, nextOlderPage);
+      setMessages((current) => mergeMessagesNewestFirst(current, page.results));
+      setNextOlderPage(page.nextPage);
+    } catch (error) {
+      pendingScrollRestoreRef.current = null;
+      showLoadErrorToast(error);
+    } finally {
+      setLoadingOlder(false);
+    }
+  }, [conversationId, loading, loadingOlder, nextOlderPage, showLoadErrorToast]);
+
+  const handleMessagesScroll = useCallback(() => {
+    const scrollContainer = messagesScrollRef.current;
+    if (!scrollContainer || loading || loadingOlder || nextOlderPage === null) return;
+    if (scrollContainer.scrollTop > OLDER_MESSAGES_SCROLL_THRESHOLD_PX) return;
+    void loadOlderMessages();
+  }, [loadOlderMessages, loading, loadingOlder, nextOlderPage]);
 
   const handleSend = async () => {
     const clean = text.trim();
@@ -403,7 +459,7 @@ export function ConversationDetail({
 
   return (
     <div
-      className={`${className} flex flex-col min-h-0 h-[calc(100dvh-4rem)] lg:h-full overflow-hidden overscroll-none`}
+      className={`${className} flex h-full min-h-0 flex-col overflow-hidden overscroll-none`}
     >
       {isMobile ? (
         <div className="mb-2 flex items-center justify-end gap-2">
@@ -482,6 +538,7 @@ export function ConversationDetail({
       <div
         ref={messagesScrollRef}
         data-testid="conversation-messages-scroll"
+        onScroll={handleMessagesScroll}
         className="flex-1 min-h-0 overflow-y-auto overscroll-y-contain touch-pan-y elegant-scrollbar p-4 space-y-2"
         style={isMobile ? { paddingBottom: mobileComposerReservedSpace } : undefined}
       >

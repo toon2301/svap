@@ -17,6 +17,7 @@ let mockAuthState: { isLoading: boolean; user: { id: number; unread_skill_reques
 };
 const mockAudioPlay = jest.fn();
 const mockAudioPause = jest.fn();
+const mockAudioLoad = jest.fn();
 
 jest.mock('@/lib/api', () => ({
   __esModule: true,
@@ -103,6 +104,10 @@ class MockAudio {
     return Promise.resolve();
   }
 
+  load() {
+    mockAudioLoad(this.src);
+  }
+
   pause() {
     mockAudioPause();
   }
@@ -155,6 +160,9 @@ describe('RequestsNotificationsProvider', () => {
     delete (globalThis as typeof globalThis & { __SWAPLY_MSG_UNREAD_STORE__?: unknown }).__SWAPLY_MSG_UNREAD_STORE__;
     delete (globalThis as typeof globalThis & { __SWAPLY_MSG_AUDIO__?: unknown }).__SWAPLY_MSG_AUDIO__;
     delete (globalThis as typeof globalThis & { __SWAPLY_MSG_AUDIO_CTX__?: unknown }).__SWAPLY_MSG_AUDIO_CTX__;
+    delete (globalThis as typeof globalThis & { __SWAPLY_MSG_AUDIO_BUFFER__?: unknown }).__SWAPLY_MSG_AUDIO_BUFFER__;
+    delete (globalThis as typeof globalThis & { __SWAPLY_MSG_AUDIO_BUFFER_PROMISE__?: unknown }).__SWAPLY_MSG_AUDIO_BUFFER_PROMISE__;
+    delete (globalThis as typeof globalThis & { __SWAPLY_MSG_AUDIO_PRIMER_INSTALLED__?: unknown }).__SWAPLY_MSG_AUDIO_PRIMER_INSTALLED__;
     mockApiGet.mockImplementation((url: string) => {
       if (String(url).includes('/auth/notifications/unread-count/')) {
         return Promise.resolve({ data: { count: 4 } });
@@ -485,10 +493,29 @@ describe('RequestsNotificationsProvider', () => {
       });
     });
 
-    expect(mockAudioPlay).toHaveBeenCalledWith(
+    await waitFor(() => {
+      expect(mockAudioPlay).toHaveBeenCalledWith(
+        '/sounds/universfield-new-notification-040-493469.mp3',
+      );
+    });
+    expect(MockAudio.instances[0]?.volume).toBeCloseTo(0.45);
+  });
+
+  it('primes the configured mp3 notification sound after the first user interaction', async () => {
+    render(
+      <RequestsNotificationsProvider>
+        <MessageConsumer />
+      </RequestsNotificationsProvider>,
+    );
+    await flushAsyncEffects();
+
+    act(() => {
+      document.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+    });
+
+    expect(mockAudioLoad).toHaveBeenCalledWith(
       '/sounds/universfield-new-notification-040-493469.mp3',
     );
-    expect(MockAudio.instances[0]?.volume).toBeCloseTo(0.45);
   });
 
   it('updates message unread count from the unread summary endpoint', async () => {

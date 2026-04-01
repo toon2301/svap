@@ -22,9 +22,9 @@ export const metadata: Metadata = {
   authors: [{ name: "Swaply Team" }],
   robots: "index, follow",
   icons: {
-    icon: [{ url: "/favicon.png?v=20260401", type: "image/png", sizes: "any" }],
-    shortcut: "/favicon.png?v=20260401",
-    apple: "/favicon.png?v=20260401",
+    icon: [{ url: "/favicon.png?v=20260402", type: "image/png", sizes: "any" }],
+    shortcut: "/favicon.png?v=20260402",
+    apple: "/favicon.png?v=20260402",
   },
   openGraph: {
     title: "Swaply - Výmenná platforma zručností",
@@ -56,9 +56,9 @@ export default function RootLayout({
     <html lang="sk" className={inter.variable}>
       <head>
         {/* Favicon: explicitné linky + cache-bust (prehliadače agresívne cachujú starú ikonu) */}
-        <link rel="icon" href="/favicon.png?v=20260401" type="image/png" sizes="any" />
-        <link rel="shortcut icon" href="/favicon.png?v=20260401" type="image/png" />
-        <link rel="apple-touch-icon" href="/favicon.png?v=20260401" />
+        <link rel="icon" href="/favicon.png?v=20260402" type="image/png" sizes="any" />
+        <link rel="shortcut icon" href="/favicon.png?v=20260402" type="image/png" />
+        <link rel="apple-touch-icon" href="/favicon.png?v=20260402" />
         {/* PWA a mobile meta tagy */}
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#9333EA" />

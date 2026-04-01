@@ -6,6 +6,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from ..models import Conversation, ConversationParticipant, Message
+from .push_enqueue import schedule_message_push_delivery
 
 
 class MessageServiceError(Exception):
@@ -19,6 +20,7 @@ class NotParticipant(MessageServiceError):
 @dataclass(frozen=True)
 class SendMessageResult:
     message: Message
+    recipient_user_ids: tuple[int, ...]
 
 
 def _ensure_participant(*, conversation: Conversation, user_id: int) -> ConversationParticipant:
@@ -61,9 +63,21 @@ def send_message(*, conversation: Conversation, sender, text: str) -> SendMessag
             text=clean,
             created_at=now,
         )
+        recipient_user_ids = tuple(
+            ConversationParticipant.objects.filter(conversation=convo)
+            .exclude(user_id=sender.id)
+            .values_list("user_id", flat=True)
+        )
         convo.last_message_at = now
         convo.save(update_fields=["last_message_at", "updated_at"])
-        return SendMessageResult(message=msg)
+        schedule_message_push_delivery(
+            message_id=msg.id,
+            recipient_user_ids=recipient_user_ids,
+        )
+        return SendMessageResult(
+            message=msg,
+            recipient_user_ids=recipient_user_ids,
+        )
 
 
 def mark_conversation_read(*, conversation: Conversation, user) -> ConversationParticipant:

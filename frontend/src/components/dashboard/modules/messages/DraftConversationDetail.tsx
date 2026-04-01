@@ -51,7 +51,7 @@ export function DraftConversationDetail({
     composerElement,
     isMobile,
     8,
-    mobileComposerBottomOffset,
+    visualViewportBottomInset,
   );
 
   const focusComposer = useCallback(() => {
@@ -232,7 +232,7 @@ export function DraftConversationDetail({
   }
 
   return (
-    <div className={`${className} flex flex-col min-h-0 h-[calc(100dvh-4rem)] lg:h-full overflow-hidden overscroll-none`}>
+    <div className={`${className} flex h-full min-h-0 flex-col overflow-hidden overscroll-none`}>
       <div
         data-testid={!isMobile ? 'draft-conversation-header' : undefined}
         className={

@@ -3,6 +3,7 @@ import type {
   ConversationListItem,
   DirectMessageStartResult,
   MessageItem,
+  MessageListPage,
   MessagingUnreadSummary,
   OpenConversationResult,
 } from './types';
@@ -26,7 +27,17 @@ export function getMessagingErrorMessage(
     unavailableFallback?: string;
   },
 ): string {
-  const error = err as any;
+  const error = err as {
+    response?: {
+      status?: number;
+      data?: {
+        message?: string;
+        error?: string;
+        detail?: string;
+      };
+    };
+    message?: string;
+  };
   const status = error?.response?.status;
   const responseMessage =
     (typeof error?.response?.data?.message === 'string' && error.response.data.message) ||
@@ -85,12 +96,35 @@ export async function getUnreadMessagesSummary(): Promise<MessagingUnreadSummary
   };
 }
 
-export async function listMessages(conversationId: number, pageSize = 100): Promise<MessageItem[]> {
+function parsePageNumber(url: string | null | undefined): number | null {
+  if (!url) return null;
+
+  try {
+    const parsed = new URL(url, typeof window !== 'undefined' ? window.location.origin : 'https://local.invalid');
+    const rawPage = parsed.searchParams.get('page');
+    if (!rawPage) return null;
+    const page = Number.parseInt(rawPage, 10);
+    return Number.isFinite(page) && page > 0 ? page : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function listMessages(
+  conversationId: number,
+  pageSize = 100,
+  page?: number,
+): Promise<MessageListPage> {
   const { data } = await api.get<Paginated<MessageItem>>(
     `/auth/messaging/conversations/${conversationId}/messages/`,
-    { params: { page_size: pageSize } },
+    { params: { page_size: pageSize, ...(typeof page === 'number' ? { page } : {}) } },
   );
-  return Array.isArray(data?.results) ? data.results : [];
+
+  return {
+    results: Array.isArray(data?.results) ? data.results : [],
+    nextPage: parsePageNumber(data?.next),
+    previousPage: parsePageNumber(data?.previous),
+  };
 }
 
 export async function sendMessage(conversationId: number, text: string): Promise<MessageItem> {

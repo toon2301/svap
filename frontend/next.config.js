@@ -76,6 +76,9 @@ const nextConfig = {
   },
 
   async rewrites() {
+    // Prehliadače žiadajú /favicon.ico — bez súboru Next/Dev často ukáže predvolenú Vercel ikonu.
+    const faviconRewrite = { source: '/favicon.ico', destination: '/favicon.png' };
+
     // Proxy /api/* na backend (užitočné na Railway pri oddelenom FE/BE, aby cookies boli 1st-party)
     const backendHttpOrigin =
       process.env.BACKEND_ORIGIN || process.env.NEXT_PUBLIC_BACKEND_ORIGIN;
@@ -86,19 +89,20 @@ const nextConfig = {
     const frontendOrigin =
       process.env.FRONTEND_ORIGIN || process.env.NEXT_PUBLIC_FRONTEND_ORIGIN;
 
-    if (!backendHttpOrigin) return [];
+    if (!backendHttpOrigin) return [faviconRewrite];
 
     const beHttp = normalizeOrigin(backendHttpOrigin);
     const beWs = normalizeOrigin(backendWsOrigin);
     const fe = normalizeOrigin(frontendOrigin);
     // Zabráň self-proxy loopu, ak by niekto omylom nastavil backendOrigin == frontendOrigin
-    if (fe && beHttp && beHttp === fe && (!beWs || beWs === fe)) return [];
+    if (fe && beHttp && beHttp === fe && (!beWs || beWs === fe)) return [faviconRewrite];
 
     // Dôležité: zachovať trailing slash (Django/DRF ho používa).
     // Next.js pri :path* často "zje" koncové `/`, takže pridáme osobitné pravidlo pre URL s `/`.
     // /ws/* proxy pre WebSocket (notifikácie v reálnom čase) – same-origin = cookies fungujú.
     // /media/* proxy pre avatary/media (keď backend servuje /media/, napr. lokálne alebo s volume)
     return [
+      faviconRewrite,
       { source: '/api/:path*/', destination: `${beHttp}/api/:path*/` },
       { source: '/api/:path*', destination: `${beHttp}/api/:path*` },
       { source: '/ws/:path*/', destination: `${beWs}/ws/:path*/` },

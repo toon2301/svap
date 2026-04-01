@@ -15,6 +15,7 @@ import {
   MESSAGING_CONVERSATIONS_REFRESH_EVENT,
   MESSAGING_REALTIME_MESSAGE_EVENT,
 } from './messagesEvents';
+import type { MessageItem, MessageListPage } from './types';
 
 jest.mock('@/hooks', () => ({
   __esModule: true,
@@ -138,6 +139,31 @@ function mockVisualViewport({ innerHeight = 900, height = 900, offsetTop = 0 } =
   };
 }
 
+function message(overrides: Partial<MessageItem> = {}): MessageItem {
+  return {
+    id: 1,
+    conversation: 9,
+    sender: { id: 77, display_name: 'Tester' },
+    text: 'Sprava',
+    created_at: '2026-03-27T10:00:00Z',
+    edited_at: null,
+    is_deleted: false,
+    ...overrides,
+  };
+}
+
+function messagePage(
+  results: MessageItem[],
+  overrides: Partial<MessageListPage> = {},
+): MessageListPage {
+  return {
+    results,
+    nextPage: null,
+    previousPage: null,
+    ...overrides,
+  };
+}
+
 const { useIsMobile } = jest.requireMock('@/hooks') as {
   useIsMobile: jest.Mock;
 };
@@ -160,7 +186,7 @@ describe('ConversationDetail', () => {
         },
       },
     ]);
-    (listMessages as jest.Mock).mockResolvedValue([]);
+    (listMessages as jest.Mock).mockResolvedValue(messagePage([]));
     (markConversationRead as jest.Mock).mockResolvedValue({
       conversation_id: 9,
       last_read_at: null,
@@ -286,7 +312,7 @@ describe('ConversationDetail', () => {
 
     await waitFor(() => {
       expect(composer).toHaveStyle({ bottom: '14px' });
-      expect(messagesScroll).toHaveStyle({ paddingBottom: '72px' });
+      expect(messagesScroll).toHaveStyle({ paddingBottom: '58px' });
     });
 
     viewport.setMetrics({ height: 650 });
@@ -296,36 +322,34 @@ describe('ConversationDetail', () => {
 
     await waitFor(() => {
       expect(composer).toHaveStyle({ bottom: '14px' });
-      expect(messagesScroll).toHaveStyle({ paddingBottom: '72px' });
+      expect(messagesScroll).toHaveStyle({ paddingBottom: '58px' });
     });
 
     fireEvent.focus(input);
 
     await waitFor(() => {
       expect(composer).toHaveStyle({ bottom: '264px' });
-      expect(messagesScroll).toHaveStyle({ paddingBottom: '322px' });
+      expect(messagesScroll).toHaveStyle({ paddingBottom: '308px' });
     });
 
     fireEvent.blur(input);
 
     await waitFor(() => {
       expect(composer).toHaveStyle({ bottom: '14px' });
-      expect(messagesScroll).toHaveStyle({ paddingBottom: '72px' });
+      expect(messagesScroll).toHaveStyle({ paddingBottom: '58px' });
     });
   });
 
   it('shows full date and time in message timestamps', async () => {
-    (listMessages as jest.Mock).mockResolvedValueOnce([
-      {
-        id: 1,
-        conversation: 9,
-        sender: { id: 77, display_name: 'Tester' },
-        text: 'Sprava s datumom',
-        created_at: '2026-03-27T10:00:00Z',
-        edited_at: null,
-        is_deleted: false,
-      },
-    ]);
+    (listMessages as jest.Mock).mockResolvedValueOnce(
+      messagePage([
+        message({
+          id: 1,
+          text: 'Sprava s datumom',
+          created_at: '2026-03-27T10:00:00Z',
+        }),
+      ]),
+    );
 
     render(<ConversationDetail conversationId={9} currentUserId={1} />);
 
@@ -335,17 +359,16 @@ describe('ConversationDetail', () => {
   });
 
   it('keeps the message bubble width independent from the timestamp width', async () => {
-    (listMessages as jest.Mock).mockResolvedValueOnce([
-      {
-        id: 1,
-        conversation: 9,
-        sender: { id: 1, display_name: 'Me' },
-        text: '1',
-        created_at: '2026-03-30T18:52:00Z',
-        edited_at: null,
-        is_deleted: false,
-      },
-    ]);
+    (listMessages as jest.Mock).mockResolvedValueOnce(
+      messagePage([
+        message({
+          id: 1,
+          sender: { id: 1, display_name: 'Me' },
+          text: '1',
+          created_at: '2026-03-30T18:52:00Z',
+        }),
+      ]),
+    );
 
     render(<ConversationDetail conversationId={9} currentUserId={1} />);
 
@@ -359,37 +382,31 @@ describe('ConversationDetail', () => {
     setVisibilityState('hidden');
 
     (listMessages as jest.Mock)
-      .mockResolvedValueOnce([
-        {
-          id: 1,
-          conversation: 9,
-          sender: { id: 1, display_name: 'Me' },
-          text: 'Moja sprava',
-          created_at: '2026-03-27T10:00:00Z',
-          edited_at: null,
-          is_deleted: false,
-        },
-      ])
-      .mockResolvedValueOnce([
-        {
-          id: 2,
-          conversation: 9,
-          sender: { id: 77, display_name: 'Tester' },
-          text: 'Nova odpoved',
-          created_at: '2026-03-27T10:01:00Z',
-          edited_at: null,
-          is_deleted: false,
-        },
-        {
-          id: 1,
-          conversation: 9,
-          sender: { id: 1, display_name: 'Me' },
-          text: 'Moja sprava',
-          created_at: '2026-03-27T10:00:00Z',
-          edited_at: null,
-          is_deleted: false,
-        },
-      ]);
+      .mockResolvedValueOnce(
+        messagePage([
+          message({
+            id: 1,
+            sender: { id: 1, display_name: 'Me' },
+            text: 'Moja sprava',
+            created_at: '2026-03-27T10:00:00Z',
+          }),
+        ]),
+      )
+      .mockResolvedValueOnce(
+        messagePage([
+          message({
+            id: 2,
+            text: 'Nova odpoved',
+            created_at: '2026-03-27T10:01:00Z',
+          }),
+          message({
+            id: 1,
+            sender: { id: 1, display_name: 'Me' },
+            text: 'Moja sprava',
+            created_at: '2026-03-27T10:00:00Z',
+          }),
+        ]),
+      );
 
     render(<ConversationDetail conversationId={9} currentUserId={1} />);
 
@@ -420,37 +437,31 @@ describe('ConversationDetail', () => {
     window.addEventListener(MESSAGING_CONVERSATIONS_REFRESH_EVENT, conversationsRefreshSpy);
 
     (listMessages as jest.Mock)
-      .mockResolvedValueOnce([
-        {
-          id: 1,
-          conversation: 9,
-          sender: { id: 1, display_name: 'Me' },
-          text: 'Moja sprava',
-          created_at: '2026-03-27T10:00:00Z',
-          edited_at: null,
-          is_deleted: false,
-        },
-      ])
-      .mockResolvedValueOnce([
-        {
-          id: 2,
-          conversation: 9,
-          sender: { id: 77, display_name: 'Tester' },
-          text: 'Realtime odpoved',
-          created_at: '2026-03-27T10:01:00Z',
-          edited_at: null,
-          is_deleted: false,
-        },
-        {
-          id: 1,
-          conversation: 9,
-          sender: { id: 1, display_name: 'Me' },
-          text: 'Moja sprava',
-          created_at: '2026-03-27T10:00:00Z',
-          edited_at: null,
-          is_deleted: false,
-        },
-      ]);
+      .mockResolvedValueOnce(
+        messagePage([
+          message({
+            id: 1,
+            sender: { id: 1, display_name: 'Me' },
+            text: 'Moja sprava',
+            created_at: '2026-03-27T10:00:00Z',
+          }),
+        ]),
+      )
+      .mockResolvedValueOnce(
+        messagePage([
+          message({
+            id: 2,
+            text: 'Realtime odpoved',
+            created_at: '2026-03-27T10:01:00Z',
+          }),
+          message({
+            id: 1,
+            sender: { id: 1, display_name: 'Me' },
+            text: 'Moja sprava',
+            created_at: '2026-03-27T10:00:00Z',
+          }),
+        ]),
+      );
 
     render(<ConversationDetail conversationId={9} currentUserId={1} />);
 
@@ -480,5 +491,68 @@ describe('ConversationDetail', () => {
     });
 
     window.removeEventListener(MESSAGING_CONVERSATIONS_REFRESH_EVENT, conversationsRefreshSpy);
+  });
+
+  it('loads older messages when the user scrolls near the top of the thread', async () => {
+    (listMessages as jest.Mock)
+      .mockResolvedValueOnce(
+        messagePage(
+          [
+            message({
+              id: 3,
+              sender: { id: 1, display_name: 'Me' },
+              text: 'Treta sprava',
+              created_at: '2026-03-27T10:02:00Z',
+            }),
+            message({
+              id: 2,
+              text: 'Druha sprava',
+              created_at: '2026-03-27T10:01:00Z',
+            }),
+          ],
+          { nextPage: 2 },
+        ),
+      )
+      .mockResolvedValueOnce(
+        messagePage([
+          message({
+            id: 1,
+            text: 'Prva sprava',
+            created_at: '2026-03-27T10:00:00Z',
+          }),
+        ]),
+      );
+
+    render(<ConversationDetail conversationId={9} currentUserId={1} />);
+
+    expect(await screen.findByText('Treta sprava')).toBeInTheDocument();
+
+    const messagesScroll = screen.getByTestId('conversation-messages-scroll');
+    let currentScrollTop = 0;
+    let currentScrollHeight = 640;
+
+    Object.defineProperty(messagesScroll, 'scrollTop', {
+      configurable: true,
+      get: () => currentScrollTop,
+      set: (value: number) => {
+        currentScrollTop = value;
+      },
+    });
+    Object.defineProperty(messagesScroll, 'scrollHeight', {
+      configurable: true,
+      get: () => currentScrollHeight,
+    });
+
+    currentScrollTop = 48;
+    currentScrollHeight = 900;
+    fireEvent.scroll(messagesScroll);
+
+    await waitFor(() => {
+      expect(listMessages).toHaveBeenNthCalledWith(2, 9, 100, 2);
+    });
+
+    currentScrollHeight = 1180;
+
+    expect(await screen.findByText('Prva sprava')).toBeInTheDocument();
   });
 });

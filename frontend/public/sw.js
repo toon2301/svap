@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v7';
+const CACHE_VERSION = 'v8';
 const CACHE_NAME = `svaply-cache-${CACHE_VERSION}`;
 const STATIC_CACHE = `svaply-static-${CACHE_VERSION}`;
 const DYNAMIC_CACHE = `svaply-dynamic-${CACHE_VERSION}`;
