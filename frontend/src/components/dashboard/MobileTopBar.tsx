@@ -58,15 +58,11 @@ export default function MobileTopBar({
     <div className="lg:hidden fixed top-0 left-0 right-0 z-30 bg-white dark:bg-black border-b border-gray-200 dark:border-gray-800 shadow-sm">
       <div
         className={`grid items-center px-3 py-0 h-12 ${
-          isOpenMessagesConversation ? 'grid-cols-[2.5rem_1fr_2.5rem]' : 'grid-cols-3'
+          activeModule === 'messages' ? 'grid-cols-[2.5rem_1fr_2.5rem]' : 'grid-cols-3'
         }`}
       >
         {/* Ľavá strana - Žiadosti (nadpis) alebo Šipka späť alebo prázdne */}
-        <div
-          className={`flex items-center h-full justify-start ${
-            activeModule === 'messages' && !isMessageConversationOpen ? 'col-span-2 pr-2' : ''
-          }`}
-        >
+        <div className="flex items-center h-full justify-start">
           {activeModule === 'messages' && isMessageConversationOpen ? (
             <button
               type="button"
@@ -78,11 +74,7 @@ export default function MobileTopBar({
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
               </svg>
             </button>
-          ) : activeModule === 'messages' && !isMessageConversationOpen ? (
-            <h1 className="text-sm font-semibold leading-tight text-gray-900 dark:text-white whitespace-normal break-words">
-              {accountName || t('navigation.profile', 'Profil')}
-            </h1>
-          ) : activeModule === 'requests' ? (
+          ) : activeModule === 'messages' && !isMessageConversationOpen ? null : activeModule === 'requests' ? (
             <h1 className="text-base font-semibold text-gray-900 dark:text-white truncate">
               {t('requests.title', 'Spolupráce')}
             </h1>
@@ -110,30 +102,33 @@ export default function MobileTopBar({
         </div>
         
         {/* Stred - Nadpis (pre requests je nadpis vľavo) */}
-        <div
-          className={`text-center flex items-center justify-center h-full ${
-            activeModule === 'messages' && isMessageConversationOpen
-              ? ''
-              : activeModule === 'messages' && !isMessageConversationOpen
-                ? 'hidden'
-                : ''
-          }`}
-        >
+        <div className="flex h-full min-w-0 items-center justify-center text-center">
+          {activeModule === 'messages' && !isMessageConversationOpen ? (
+            <h1 className="w-full min-w-0 truncate px-1 text-center text-xl font-semibold leading-tight text-gray-900 dark:text-white">
+              {accountName || t('navigation.profile', 'Profil')}
+            </h1>
+          ) : null}
           {activeModule === 'messages' && isMessageConversationOpen ? (
-            <div className="mx-auto flex w-full min-w-0 max-w-[calc(100vw-6rem)] items-center justify-center gap-2 px-1">
-              <div className="h-8 w-8 flex-shrink-0 overflow-hidden rounded-full bg-purple-100 dark:bg-purple-900/40">
-                {messagePeerAvatarUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={messagePeerAvatarUrl} alt={messagePeerName || t('messages.unknownUser', 'Používateľ')} className="h-full w-full object-cover" />
-                ) : (
-                  <span className="flex h-full w-full items-center justify-center text-[10px] font-bold text-purple-700 dark:text-purple-300">
-                    {(messagePeerName || 'U').slice(0, 1).toUpperCase()}
-                  </span>
-                )}
+            <div className="flex w-full min-w-0 items-center justify-center px-1">
+              <div className="flex min-w-0 max-w-[min(100%,calc(100vw-5.5rem))] items-center justify-center gap-2">
+                <div className="h-9 w-9 flex-shrink-0 overflow-hidden rounded-full bg-purple-100 dark:bg-purple-900/40">
+                  {messagePeerAvatarUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={messagePeerAvatarUrl}
+                      alt={messagePeerName || t('messages.unknownUser', 'Používateľ')}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <span className="flex h-full w-full items-center justify-center text-xs font-bold text-purple-700 dark:text-purple-300">
+                      {(messagePeerName || 'U').slice(0, 1).toUpperCase()}
+                    </span>
+                  )}
+                </div>
+                <h1 className="min-w-0 truncate text-center text-lg font-semibold leading-tight text-gray-900 dark:text-white">
+                  {messagePeerName || t('messages.unknownUser', 'Používateľ')}
+                </h1>
               </div>
-              <h1 className="truncate text-[15px] font-semibold text-gray-900 dark:text-white">
-                {messagePeerName || t('messages.unknownUser', 'Používateľ')}
-              </h1>
             </div>
           ) : null}
           {isEditMode && (

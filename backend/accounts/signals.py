@@ -43,6 +43,7 @@ def invalidate_auth_cache_after_user_save(sender, instance, **kwargs):
     invalidate_user_auth_cache(getattr(instance, "pk", None))
     _invalidate_dashboard_user_skills_cache_for_user(getattr(instance, "pk", None))
     _invalidate_viewer_location_snapshot_cache_for_user(getattr(instance, "pk", None))
+    _invalidate_dashboard_recommendations_cache_for_user(getattr(instance, "pk", None))
     _sync_dashboard_search_projection_for_user_safely(getattr(instance, "pk", None))
 
 
@@ -51,6 +52,7 @@ def invalidate_auth_cache_after_user_delete(sender, instance, **kwargs):
     invalidate_user_auth_cache(getattr(instance, "pk", None))
     _invalidate_dashboard_user_skills_cache_for_user(getattr(instance, "pk", None))
     _invalidate_viewer_location_snapshot_cache_for_user(getattr(instance, "pk", None))
+    _invalidate_dashboard_recommendations_cache_for_user(getattr(instance, "pk", None))
 
 
 def _invalidate_skills_list_cache_for_user(user_id):
@@ -84,6 +86,19 @@ def _invalidate_viewer_location_snapshot_cache_for_user(user_id):
         from .viewer_location_cache import invalidate_viewer_location_snapshot_cache
 
         invalidate_viewer_location_snapshot_cache(user_id)
+    except Exception:
+        pass
+
+
+def _invalidate_dashboard_recommendations_cache_for_user(user_id):
+    if not user_id:
+        return
+    try:
+        from .views.dashboard_views.recommendations import (
+            invalidate_dashboard_recommendations_cache,
+        )
+
+        invalidate_dashboard_recommendations_cache(user_id)
     except Exception:
         pass
 
@@ -140,6 +155,7 @@ def invalidate_skills_cache_after_skill_change(sender, instance, **kwargs):
     _sync_dashboard_search_projection_for_skill_safely(getattr(instance, "pk", None))
     _invalidate_skills_list_cache_for_user(user_id)
     _invalidate_dashboard_user_skills_cache_for_user(user_id)
+    _invalidate_dashboard_recommendations_cache_for_user(user_id)
 
 
 @receiver(post_save, sender=OfferedSkillImage)

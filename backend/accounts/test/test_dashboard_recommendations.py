@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from django.core.cache import cache
 from django.test import TestCase
 from django.urls import reverse
 from rest_framework import status
@@ -149,3 +150,135 @@ class DashboardRecommendationsTestCase(TestCase):
         self.assertIn(self.viewer.id, returned_ids)
         self.assertIn(public_other.id, returned_ids)
         self.assertNotIn(private_other.id, returned_ids)
+
+    def test_dashboard_recommendations_limit_is_clamped_and_diversified(self):
+        owner_many = User.objects.create_user(
+            username="owner-many",
+            email="owner-many@example.com",
+            password="testpass123",
+            first_name="Owner",
+            last_name="Many",
+            user_type="individual",
+            is_public=True,
+            location="Bratislava",
+            district="Bratislava I",
+        )
+        for index in range(3):
+            OfferedSkill.objects.create(
+                user=owner_many,
+                category="Grafika",
+                subcategory=f"Logo {index}",
+                description="Skill",
+                detailed_description="Detaily",
+                location="Bratislava",
+                district="Bratislava I",
+                is_hidden=False,
+                is_seeking=True,
+            )
+
+        owner_other = User.objects.create_user(
+            username="owner-other",
+            email="owner-other@example.com",
+            password="testpass123",
+            first_name="Owner",
+            last_name="Other",
+            user_type="individual",
+            is_public=True,
+            location="Bratislava",
+            district="Bratislava I",
+        )
+        OfferedSkill.objects.create(
+            user=owner_other,
+            category="Grafika",
+            subcategory="Logo other",
+            description="Skill",
+            detailed_description="Detaily",
+            location="Bratislava",
+            district="Bratislava I",
+            is_hidden=False,
+            is_seeking=True,
+        )
+
+        url = reverse("accounts:dashboard_search_recommendations")
+        response = self.client.get(url, {"limit": "999"})
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertLessEqual(len(response.data["skills"]), 20)
+        owner_many_count = sum(
+            1 for skill in response.data["skills"] if skill["user_id"] == owner_many.id
+        )
+        self.assertLessEqual(owner_many_count, 2)
+
+    def test_dashboard_recommendations_cache_is_invalidated_after_viewer_skill_change(self):
+        local_owner = User.objects.create_user(
+            username="local-cold",
+            email="local-cold@example.com",
+            password="testpass123",
+            first_name="Local",
+            last_name="Cold",
+            user_type="individual",
+            is_public=True,
+            is_verified=True,
+            location="Bratislava",
+            district="Bratislava I",
+        )
+        cold_skill = OfferedSkill.objects.create(
+            user=local_owner,
+            category="Upratovanie",
+            subcategory="Byt",
+            description="Pomoc s bytom",
+            detailed_description="Detaily",
+            location="Bratislava",
+            district="Bratislava I",
+            is_hidden=False,
+            is_seeking=True,
+        )
+
+        logo_owner = User.objects.create_user(
+            username="logo-hot",
+            email="logo-hot@example.com",
+            password="testpass123",
+            first_name="Logo",
+            last_name="Hot",
+            user_type="individual",
+            is_public=True,
+            location="Bratislava",
+            district="Bratislava I",
+        )
+        hot_skill = OfferedSkill.objects.create(
+            user=logo_owner,
+            category="Grafika",
+            subcategory="Logo",
+            description="Hladam logo",
+            detailed_description="Detaily",
+            tags=["branding"],
+            location="Bratislava",
+            district="Bratislava I",
+            is_hidden=False,
+            is_seeking=True,
+        )
+
+        url = reverse("accounts:dashboard_search_recommendations")
+        first_response = self.client.get(url, {"limit": "5"})
+
+        self.assertEqual(first_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(first_response.data["skills"][0]["id"], cold_skill.id)
+
+        OfferedSkill.objects.create(
+            user=self.viewer,
+            category="Grafika",
+            subcategory="Logo",
+            description="Ponukam logo",
+            detailed_description="Detaily",
+            tags=["branding"],
+            is_hidden=False,
+            is_seeking=False,
+        )
+
+        second_response = self.client.get(url, {"limit": "5"})
+
+        self.assertEqual(second_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(second_response.data["skills"][0]["id"], hot_skill.id)
+
+    def tearDown(self):
+        cache.clear()
