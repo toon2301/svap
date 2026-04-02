@@ -5,6 +5,7 @@ import { api, endpoints, ensureFreshSessionForBackgroundWork, ensureSessionRefre
 import { useAuth } from '@/contexts/AuthContext';
 import { getUnreadMessagesSummary } from '@/components/dashboard/modules/messages/messagingApi';
 import {
+  dispatchMessagingRealtimeRead,
   dispatchMessagingRealtimeMessage,
   requestConversationsRefresh,
 } from '@/components/dashboard/modules/messages/messagesEvents';
@@ -51,6 +52,8 @@ type WsNotificationPayload = {
   message_id?: number;
   sender_id?: number;
   created_at?: string;
+  peer_last_read_at?: string;
+  reader_id?: number;
 };
 
 type WsListener = (payload: WsNotificationPayload) => void;
@@ -601,6 +604,19 @@ export function RequestsNotificationsProvider({ children }: { children: React.Re
       if (payload.type === 'messaging_read' && typeof payload.total_unread_count === 'number') {
         publishMessageUnreadCount(payload.total_unread_count);
         requestConversationsRefresh();
+        return;
+      }
+
+      if (
+        payload.type === 'messaging_peer_read' &&
+        typeof payload.conversation_id === 'number' &&
+        typeof payload.peer_last_read_at === 'string'
+      ) {
+        dispatchMessagingRealtimeRead({
+          conversationId: payload.conversation_id,
+          peerLastReadAt: payload.peer_last_read_at,
+          readerId: payload.reader_id,
+        });
         return;
       }
 

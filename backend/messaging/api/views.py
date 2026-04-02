@@ -201,6 +201,15 @@ def _total_unread_messages_count_for_user_id(user_id: int) -> int:
     return int(total)
 
 
+def _peer_last_read_at_for_conversation(*, conversation_id: int, user_id: int):
+    return (
+        ConversationParticipant.objects.filter(conversation_id=conversation_id)
+        .exclude(user_id=user_id)
+        .values_list("last_read_at", flat=True)
+        .first()
+    )
+
+
 def _conversation_list_queryset_for_user(user):
     """
     Conversations where the user is a participant, annotated for MVP UI:
@@ -449,13 +458,47 @@ class MessageListView(ListAPIView):
     serializer_class = MessageSerializer
     pagination_class = MessagePagination
 
+    def get_conversation(self) -> Conversation:
+        conversation = getattr(self, "_conversation", None)
+        if conversation is None:
+            conversation_id = int(self.kwargs["conversation_id"])
+            conversation = _conversation_for_user_or_404(
+                conversation_id=conversation_id,
+                user=self.request.user,
+            )
+            self._conversation = conversation
+        return conversation
+
     def get_queryset(self):
-        conversation_id = int(self.kwargs["conversation_id"])
-        convo = _conversation_for_user_or_404(conversation_id=conversation_id, user=self.request.user)
+        convo = self.get_conversation()
         return (
             Message.objects.filter(conversation=convo)
             .select_related("sender")
             .order_by("-created_at", "-id")
+        )
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        page = self.paginate_queryset(queryset)
+        serializer = self.get_serializer(page if page is not None else queryset, many=True)
+        peer_last_read_at = _peer_last_read_at_for_conversation(
+            conversation_id=self.get_conversation().id,
+            user_id=request.user.id,
+        )
+        peer_last_read_at_value = (
+            peer_last_read_at.isoformat() if peer_last_read_at is not None else None
+        )
+
+        if page is not None:
+            response = self.get_paginated_response(serializer.data)
+            response.data["peer_last_read_at"] = peer_last_read_at_value
+            return response
+
+        return Response(
+            {
+                "results": serializer.data,
+                "peer_last_read_at": peer_last_read_at_value,
+            }
         )
 
 
@@ -585,6 +628,21 @@ class MarkConversationReadView(APIView):
                 "total_unread_count": total_unread_count,
             },
         )
+        peer_read_event = {
+            "type": "messaging_peer_read",
+            "conversation_id": convo.id,
+            "reader_id": request.user.id,
+            "peer_last_read_at": (
+                participant.last_read_at.isoformat()
+                if participant.last_read_at is not None
+                else None
+            ),
+        }
+        recipient_ids = ConversationParticipant.objects.filter(conversation=convo).exclude(
+            user_id=request.user.id
+        ).values_list("user_id", flat=True)
+        for participant_id in recipient_ids:
+            notify_user(int(participant_id), peer_read_event)
 
         return Response(
             {

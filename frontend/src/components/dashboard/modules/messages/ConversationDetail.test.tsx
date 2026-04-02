@@ -14,6 +14,7 @@ import {
 import {
   MESSAGING_CONVERSATIONS_REFRESH_EVENT,
   MESSAGING_REALTIME_MESSAGE_EVENT,
+  MESSAGING_REALTIME_READ_EVENT,
 } from './messagesEvents';
 import type { MessageItem, MessageListPage } from './types';
 
@@ -161,6 +162,7 @@ function messagePage(
     results,
     nextPage: null,
     previousPage: null,
+    peerLastReadAt: null,
     ...overrides,
   };
 }
@@ -1171,6 +1173,90 @@ describe('ConversationDetail', () => {
     expect(screen.getByTestId('message-avatar-3')).toBeInTheDocument();
     expect(screen.getByTestId('message-avatar-5')).toBeInTheDocument();
     expect(screen.queryByTestId('message-avatar-4')).not.toBeInTheDocument();
+  });
+
+  it('shows seen only under the latest outgoing message read by the other user', async () => {
+    (listConversations as jest.Mock).mockResolvedValue([
+      {
+        id: 9,
+        other_user: {
+          id: 77,
+          display_name: 'Tester',
+          avatar_url: 'https://example.com/tester.png',
+        },
+      },
+    ]);
+    (listMessages as jest.Mock).mockResolvedValueOnce(
+      messagePage(
+        [
+          message({
+            id: 4,
+            text: 'Peer sprava',
+            created_at: '2026-03-27T10:03:00Z',
+          }),
+          message({
+            id: 3,
+            sender: { id: 1, display_name: 'Me' },
+            text: 'Tretia moja',
+            created_at: '2026-03-27T10:02:00Z',
+          }),
+          message({
+            id: 2,
+            sender: { id: 1, display_name: 'Me' },
+            text: 'Druha moja',
+            created_at: '2026-03-27T10:01:00Z',
+          }),
+          message({
+            id: 1,
+            sender: { id: 1, display_name: 'Me' },
+            text: 'Prva moja',
+            created_at: '2026-03-27T10:00:00Z',
+          }),
+        ],
+        { peerLastReadAt: '2026-03-27T10:01:30Z' },
+      ),
+    );
+
+    render(<ConversationDetail conversationId={9} currentUserId={1} />);
+
+    expect(await screen.findByText('Druha moja')).toBeInTheDocument();
+    expect(screen.getByTestId('message-seen-indicator-2')).toBeInTheDocument();
+    expect(screen.queryByTestId('message-seen-indicator-1')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('message-seen-indicator-3')).not.toBeInTheDocument();
+  });
+
+  it('updates the seen indicator when a peer read event arrives for the open conversation', async () => {
+    (listMessages as jest.Mock).mockResolvedValueOnce(
+      messagePage([
+        message({
+          id: 1,
+          sender: { id: 1, display_name: 'Me' },
+          text: 'Moja sprava',
+          created_at: '2026-03-27T10:00:00Z',
+        }),
+      ]),
+    );
+
+    render(<ConversationDetail conversationId={9} currentUserId={1} />);
+
+    expect(await screen.findByText('Moja sprava')).toBeInTheDocument();
+    expect(screen.queryByTestId('message-seen-indicator-1')).not.toBeInTheDocument();
+
+    act(() => {
+      window.dispatchEvent(
+        new CustomEvent(MESSAGING_REALTIME_READ_EVENT, {
+          detail: {
+            conversationId: 9,
+            peerLastReadAt: '2026-03-27T10:00:30Z',
+            readerId: 77,
+          },
+        }),
+      );
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('message-seen-indicator-1')).toBeInTheDocument();
+    });
   });
 
   it('refreshes the conversation and notifies the conversations rail when the tab becomes visible again', async () => {

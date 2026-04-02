@@ -6,7 +6,11 @@ import {
   useMessagesNotifications,
   useRequestsNotifications,
 } from '../RequestsNotificationsContext';
-import { MESSAGING_CONVERSATIONS_REFRESH_EVENT, MESSAGING_REALTIME_MESSAGE_EVENT } from '@/components/dashboard/modules/messages/messagesEvents';
+import {
+  MESSAGING_CONVERSATIONS_REFRESH_EVENT,
+  MESSAGING_REALTIME_MESSAGE_EVENT,
+  MESSAGING_REALTIME_READ_EVENT,
+} from '@/components/dashboard/modules/messages/messagesEvents';
 
 const mockApiGet = jest.fn();
 const mockApiPost = jest.fn();
@@ -464,6 +468,40 @@ describe('RequestsNotificationsProvider', () => {
 
     window.removeEventListener(MESSAGING_CONVERSATIONS_REFRESH_EVENT, conversationsRefreshSpy);
     window.removeEventListener(MESSAGING_REALTIME_MESSAGE_EVENT, realtimeSpy);
+  });
+
+  it('bridges peer read websocket payloads into browser events for message modules', async () => {
+    const realtimeReadSpy = jest.fn();
+    window.addEventListener(MESSAGING_REALTIME_READ_EVENT, realtimeReadSpy);
+
+    render(
+      <RequestsNotificationsProvider>
+        <Consumer />
+        <MessageConsumer />
+      </RequestsNotificationsProvider>,
+    );
+    await flushAsyncEffects();
+
+    expect(MockWebSocket.instances).toHaveLength(1);
+
+    act(() => {
+      MockWebSocket.instances[0].emitMessage({
+        type: 'messaging_peer_read',
+        conversation_id: 9,
+        reader_id: 77,
+        peer_last_read_at: '2026-03-29T10:00:00Z',
+      });
+    });
+
+    expect(realtimeReadSpy).toHaveBeenCalledTimes(1);
+    const [event] = realtimeReadSpy.mock.calls[0] as [CustomEvent];
+    expect(event.detail).toMatchObject({
+      conversationId: 9,
+      readerId: 77,
+      peerLastReadAt: '2026-03-29T10:00:00Z',
+    });
+
+    window.removeEventListener(MESSAGING_REALTIME_READ_EVENT, realtimeReadSpy);
   });
 
   it('keeps message unread state reactive in React strict mode after websocket updates', async () => {

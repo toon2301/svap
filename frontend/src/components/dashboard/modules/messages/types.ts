@@ -52,6 +52,7 @@ export type MessageListPage = {
   results: MessageItem[];
   nextPage: number | null;
   previousPage: number | null;
+  peerLastReadAt: string | null;
 };
 
 export type DirectMessageStartResult = {

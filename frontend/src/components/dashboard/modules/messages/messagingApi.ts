@@ -13,6 +13,7 @@ type Paginated<T> = {
   next?: string | null;
   previous?: string | null;
   results: T[];
+  peer_last_read_at?: string | null;
 };
 
 export function getMessagingErrorMessage(
@@ -124,6 +125,7 @@ export async function listMessages(
     results: Array.isArray(data?.results) ? data.results : [],
     nextPage: parsePageNumber(data?.next),
     previousPage: parsePageNumber(data?.previous),
+    peerLastReadAt: typeof data?.peer_last_read_at === 'string' ? data.peer_last_read_at : null,
   };
 }
 

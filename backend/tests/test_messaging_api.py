@@ -201,13 +201,25 @@ class TestMessagingApi(APITestCase):
         assert read_response.data["total_unread_count"] == 0
         participant = ConversationParticipant.objects.get(conversation_id=convo.id, user=self.u1)
         assert participant.last_read_at is not None
-        notify_user_mock.assert_called_once()
-        called_user_id, event = notify_user_mock.call_args.args
+        assert notify_user_mock.call_count == 2
+
+        calls = [call.args for call in notify_user_mock.call_args_list]
+        self_read_call = next(args for args in calls if args[1]["type"] == "messaging_read")
+        peer_read_call = next(
+            args for args in calls if args[1]["type"] == "messaging_peer_read"
+        )
+
+        called_user_id, event = self_read_call
         assert called_user_id == self.u1.id
-        assert event["type"] == "messaging_read"
         assert event["conversation_id"] == convo.id
         assert event["conversation_unread_count"] == 0
         assert event["total_unread_count"] == 0
+
+        peer_user_id, peer_event = peer_read_call
+        assert peer_user_id == self.u2.id
+        assert peer_event["conversation_id"] == convo.id
+        assert peer_event["reader_id"] == self.u1.id
+        assert isinstance(peer_event["peer_last_read_at"], str)
 
     def test_mark_read_can_be_called_repeatedly_without_failing(self):
         convo = self._create_direct_conversation(actor=self.u1, target=self.u2)
@@ -227,7 +239,31 @@ class TestMessagingApi(APITestCase):
         assert second.status_code == status.HTTP_200_OK
         participant = ConversationParticipant.objects.get(conversation_id=convo.id, user=self.u1)
         assert participant.last_read_at is not None
-        assert notify_user_mock.call_count == 2
+        assert notify_user_mock.call_count == 4
+
+    def test_message_list_includes_peer_last_read_at(self):
+        convo = self._create_direct_conversation(actor=self.u1, target=self.u2)
+
+        self.client.force_authenticate(user=self.u1)
+        send_url = reverse("accounts:messaging_send_message", kwargs={"conversation_id": convo.id})
+        send_response = self.client.post(send_url, {"text": "Ahoj"}, format="json")
+        assert send_response.status_code == status.HTTP_201_CREATED
+
+        self.client.force_authenticate(user=self.u2)
+        read_url = reverse("accounts:messaging_mark_read", kwargs={"conversation_id": convo.id})
+        read_response = self.client.post(read_url, {}, format="json")
+        assert read_response.status_code == status.HTTP_200_OK
+
+        peer_participant = ConversationParticipant.objects.get(conversation_id=convo.id, user=self.u2)
+        assert peer_participant.last_read_at is not None
+
+        self.client.force_authenticate(user=self.u1)
+        list_url = reverse("accounts:messaging_list_messages", kwargs={"conversation_id": convo.id})
+        list_response = self.client.get(list_url)
+
+        assert list_response.status_code == status.HTTP_200_OK
+        assert list_response.data["peer_last_read_at"] == peer_participant.last_read_at.isoformat()
+        assert len(list_response.data["results"]) == 1
 
     def test_conversation_list_returns_only_started_conversations_with_other_user(self):
         empty_convo = self._create_direct_conversation(actor=self.u1, target=self.u2)

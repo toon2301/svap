@@ -6,15 +6,16 @@ import { useMessagesNotifications } from '@/components/dashboard/contexts/Reques
 import { useIsMobile } from '@/hooks';
 import { Bars3Icon, ChevronDownIcon, PaperAirplaneIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
-import type { MessageItem } from './types';
+import type { ConversationListItem, MessageItem, MessageListPage } from './types';
 import { getMessagingErrorMessage, listConversations, listMessages, markConversationRead, sendMessage } from './messagingApi';
 import { CreateRequestCta } from './CreateRequestCta';
 import { CreateRequestModal } from './CreateRequestModal';
 import { DesktopEmojiPickerButton } from './DesktopEmojiPickerButton';
-import type { ConversationListItem } from './types';
 import {
+  MESSAGING_REALTIME_READ_EVENT,
   MESSAGING_REALTIME_MESSAGE_EVENT,
   requestConversationsRefresh,
+  type MessagingRealtimeReadPayload,
   type MessagingRealtimeMessagePayload,
 } from './messagesEvents';
 import { useMobileViewportHeight } from '../../hooks/useMobileViewportHeight';
@@ -64,6 +65,19 @@ function minuteBucketKey(iso: string): string {
   return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}-${d.getHours()}-${d.getMinutes()}`;
 }
 
+function timestampValue(value: string | null | undefined): number {
+  if (!value) return Number.NEGATIVE_INFINITY;
+
+  const parsed = Date.parse(value);
+  return Number.isFinite(parsed) ? parsed : Number.NEGATIVE_INFINITY;
+}
+
+function pickLatestTimestamp(current: string | null, incoming: string | null): string | null {
+  if (!incoming) return current;
+  if (!current) return incoming;
+  return timestampValue(incoming) >= timestampValue(current) ? incoming : current;
+}
+
 export function ConversationDetail({
   conversationId,
   currentUserId,
@@ -84,9 +98,10 @@ export function ConversationDetail({
   const [text, setText] = useState('');
   const [isComposerFocused, setIsComposerFocused] = useState(false);
   const [showScrollToBottomButton, setShowScrollToBottomButton] = useState(false);
+  const [peerLastReadAt, setPeerLastReadAt] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const refreshInFlightRef = useRef<Promise<{ results: MessageItem[]; nextPage: number | null }> | null>(null);
+  const refreshInFlightRef = useRef<Promise<MessageListPage> | null>(null);
   const pendingScrollRestoreRef = useRef<{ scrollHeight: number; scrollTop: number } | null>(null);
   const lastMarkedIncomingMessageIdRef = useRef<number | null>(null);
   const pendingMarkReadIncomingMessageIdRef = useRef<number | null>(null);
@@ -205,6 +220,21 @@ export function ConversationDetail({
     return [...messages].reverse();
   }, [messages]);
 
+  const lastSeenMessageId = useMemo(() => {
+    const peerReadTimestamp = timestampValue(peerLastReadAt);
+    if (!Number.isFinite(peerReadTimestamp)) return null;
+
+    for (let index = ordered.length - 1; index >= 0; index -= 1) {
+      const item = ordered[index];
+      if (item.sender?.id !== currentUserId) continue;
+      if (timestampValue(item.created_at) <= peerReadTimestamp) {
+        return item.id;
+      }
+    }
+
+    return null;
+  }, [currentUserId, ordered, peerLastReadAt]);
+
   const showLoadErrorToast = useCallback(
     (error: unknown) => {
       toast.error(
@@ -320,6 +350,9 @@ export function ConversationDetail({
       if (refreshInFlightRef.current) {
         try {
           const sharedPage = await refreshInFlightRef.current;
+          setPeerLastReadAt((current) =>
+            pickLatestTimestamp(current, sharedPage.peerLastReadAt ?? null),
+          );
           if (markAsRead) {
             await maybeMarkConversationRead(sharedPage.results);
           }
@@ -344,6 +377,7 @@ export function ConversationDetail({
           shouldScrollAfterRefresh && newestMessageId !== previousNewestMessageId;
         setMessages((current) => mergeMessagesNewestFirst(current, page.results));
         setNextOlderPage(page.nextPage);
+        setPeerLastReadAt((current) => pickLatestTimestamp(current, page.peerLastReadAt ?? null));
         if (
           syncConversations &&
           newestMessageId !== previousNewestMessageId
@@ -385,6 +419,7 @@ export function ConversationDetail({
     latestKnownMessageIdRef.current = null;
     setMessages([]);
     setNextOlderPage(null);
+    setPeerLastReadAt(null);
     setLoadingOlder(false);
     pendingScrollRestoreRef.current = null;
     void (async () => {
@@ -460,6 +495,21 @@ export function ConversationDetail({
       window.removeEventListener(MESSAGING_REALTIME_MESSAGE_EVENT, handleRealtimeMessage);
     };
   }, [conversationId, refresh]);
+
+  useEffect(() => {
+    const handleRealtimeRead = (event: Event) => {
+      const detail = (event as CustomEvent<MessagingRealtimeReadPayload>).detail;
+      if (!detail || detail.conversationId !== conversationId) return;
+
+      setPeerLastReadAt((current) => pickLatestTimestamp(current, detail.peerLastReadAt || null));
+    };
+
+    window.addEventListener(MESSAGING_REALTIME_READ_EVENT, handleRealtimeRead);
+
+    return () => {
+      window.removeEventListener(MESSAGING_REALTIME_READ_EVENT, handleRealtimeRead);
+    };
+  }, [conversationId]);
 
   useEffect(() => {
     // Pri nových správach jemne doroluj na spodok (ak už je konverzácia otvorená).
@@ -549,6 +599,7 @@ export function ConversationDetail({
       const page = await listMessages(conversationId, INITIAL_MESSAGES_PAGE_SIZE, nextOlderPage);
       setMessages((current) => mergeMessagesNewestFirst(current, page.results));
       setNextOlderPage(page.nextPage);
+      setPeerLastReadAt((current) => pickLatestTimestamp(current, page.peerLastReadAt ?? null));
     } catch (error) {
       pendingScrollRestoreRef.current = null;
       showLoadErrorToast(error);
@@ -772,6 +823,7 @@ export function ConversationDetail({
                   prevSenderId !== curSenderId ||
                   minuteBucketKey(prev.created_at) !== minuteBucketKey(m.created_at);
                 const showSenderAvatar = !mine && (!next || nextSenderId !== curSenderId);
+                const showSeenIndicator = mine && lastSeenMessageId === m.id;
                 const senderAvatarUrl = m.sender?.avatar_url || targetUserAvatarUrl;
                 const senderDisplayName = (m.sender?.display_name || '').trim() || targetUserName;
                 const bubbleClassName = [
@@ -804,6 +856,27 @@ export function ConversationDetail({
                           {m.text ?? t('messages.deleted', 'Správa bola odstránená')}
                         </div>
                       </div>
+                      {showSeenIndicator ? (
+                        <div
+                          data-testid={`message-seen-indicator-${m.id}`}
+                          className="mt-1 inline-flex items-center gap-1 self-end text-[11px] text-gray-500 dark:text-gray-400"
+                        >
+                          <span>{t('messages.seen', 'Prečítané')}</span>
+                          <span className="inline-flex h-4 w-4 items-center justify-center overflow-hidden rounded-full bg-purple-100 dark:bg-purple-900/40">
+                            {targetUserAvatarUrl ? (
+                              <img
+                                src={targetUserAvatarUrl}
+                                alt={targetUserName}
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <span className="text-[8px] font-bold text-purple-700 dark:text-purple-300">
+                                {(targetUserName || 'U').slice(0, 1).toUpperCase()}
+                              </span>
+                            )}
+                          </span>
+                        </div>
+                      ) : null}
                     </div>
                   </div>
                 ) : (
