@@ -87,6 +87,9 @@ export function ConversationDetail({
   const refreshInFlightRef = useRef<Promise<{ results: MessageItem[]; nextPage: number | null }> | null>(null);
   const pendingScrollRestoreRef = useRef<{ scrollHeight: number; scrollTop: number } | null>(null);
   const lastMarkedIncomingMessageIdRef = useRef<number | null>(null);
+  const pendingMarkReadIncomingMessageIdRef = useRef<number | null>(null);
+  const markReadInFlightRef = useRef<Promise<void> | null>(null);
+  const markReadSessionRef = useRef(0);
   const latestKnownMessageIdRef = useRef<number | null>(null);
   const [otherConversation, setOtherConversation] = useState<ConversationListItem | null>(null);
   const [isCreateRequestOpen, setIsCreateRequestOpen] = useState(false);
@@ -184,25 +187,83 @@ export function ConversationDetail({
     [t],
   );
 
-  const maybeMarkConversationRead = useCallback(
-    async (list: MessageItem[]) => {
+  const queueMarkConversationRead = useCallback(
+    (list: MessageItem[]) => {
       const newestMessage = list[0] ?? null;
-      if (!newestMessage) return;
-      if (newestMessage.sender?.id === currentUserId) return;
-      if (lastMarkedIncomingMessageIdRef.current === newestMessage.id) return;
+      if (!newestMessage) return false;
+      if (newestMessage.sender?.id === currentUserId) return false;
+      if (lastMarkedIncomingMessageIdRef.current === newestMessage.id) return false;
 
-      try {
-        const result = await markConversationRead(conversationId);
-        lastMarkedIncomingMessageIdRef.current = newestMessage.id;
-        syncConversationReadState({
-          conversationId,
-          totalUnreadCount: result?.total_unread_count,
-        });
-      } catch {
-        // best-effort
+      const pendingMessageId = pendingMarkReadIncomingMessageIdRef.current;
+      if (pendingMessageId === null || newestMessage.id > pendingMessageId) {
+        pendingMarkReadIncomingMessageIdRef.current = newestMessage.id;
+      }
+
+      return true;
+    },
+    [currentUserId],
+  );
+
+  const flushPendingMarkConversationRead = useCallback(
+    async (session: number) => {
+      while (markReadSessionRef.current === session) {
+        const messageId = pendingMarkReadIncomingMessageIdRef.current;
+        if (messageId === null) return;
+
+        pendingMarkReadIncomingMessageIdRef.current = null;
+        if (lastMarkedIncomingMessageIdRef.current === messageId) {
+          continue;
+        }
+
+        try {
+          const result = await markConversationRead(conversationId);
+          if (markReadSessionRef.current !== session) return;
+
+          lastMarkedIncomingMessageIdRef.current = messageId;
+          syncConversationReadState({
+            conversationId,
+            totalUnreadCount: result?.total_unread_count,
+          });
+        } catch {
+          if (
+            markReadSessionRef.current === session &&
+            lastMarkedIncomingMessageIdRef.current !== messageId &&
+            pendingMarkReadIncomingMessageIdRef.current === null
+          ) {
+            pendingMarkReadIncomingMessageIdRef.current = messageId;
+          }
+          return;
+        }
       }
     },
-    [conversationId, currentUserId, syncConversationReadState],
+    [conversationId, syncConversationReadState],
+  );
+
+  const maybeMarkConversationRead = useCallback(
+    async (list: MessageItem[]) => {
+      if (!queueMarkConversationRead(list)) return;
+
+      if (!markReadInFlightRef.current) {
+        const session = markReadSessionRef.current;
+        let request: Promise<void> | null = null;
+        request = (async () => {
+          try {
+            await flushPendingMarkConversationRead(session);
+          } finally {
+            if (markReadInFlightRef.current === request) {
+              markReadInFlightRef.current = null;
+            }
+          }
+        })();
+        markReadInFlightRef.current = request;
+      }
+
+      const inFlightRequest = markReadInFlightRef.current;
+      if (inFlightRequest) {
+        await inFlightRequest;
+      }
+    },
+    [flushPendingMarkConversationRead, queueMarkConversationRead],
   );
 
   const refresh = useCallback(
@@ -287,7 +348,10 @@ export function ConversationDetail({
 
   useEffect(() => {
     let cancelled = false;
+    markReadSessionRef.current += 1;
+    markReadInFlightRef.current = null;
     lastMarkedIncomingMessageIdRef.current = null;
+    pendingMarkReadIncomingMessageIdRef.current = null;
     latestKnownMessageIdRef.current = null;
     setMessages([]);
     setNextOlderPage(null);
@@ -482,16 +546,30 @@ export function ConversationDetail({
   ]);
 
   const handleSend = async () => {
-    const clean = text.trim();
+    const draft = text;
+    const clean = draft.trim();
     if (!clean || sending) return;
+
+    const keepMobileComposerInteractive = isMobile;
+    let didSend = false;
+
     shouldRestoreFocusRef.current = true;
     setSending(true);
+    if (keepMobileComposerInteractive) {
+      setText('');
+    }
     try {
       await sendMessage(conversationId, clean);
-      setText('');
+      didSend = true;
+      if (!keepMobileComposerInteractive) {
+        setText('');
+      }
       await refresh({ showError: false, markAsRead: true, scrollBehavior: 'force_latest' });
       requestConversationsRefresh();
     } catch (error) {
+      if (keepMobileComposerInteractive && !didSend) {
+        setText((current) => (current === '' ? draft : current));
+      }
       toast.error(
         getMessagingErrorMessage(error, {
           fallback: t('messages.sendFailed', 'Správu sa nepodarilo odoslať. Skúste to znova.'),
@@ -539,6 +617,7 @@ export function ConversationDetail({
     (otherConversation?.other_user?.display_name || '').trim() || t('messages.unknownUser', 'Používateľ');
   const targetUserAvatarUrl = otherConversation?.other_user?.avatar_url ?? null;
   const hasTextToSend = text.trim().length > 0;
+  const isComposerInputDisabled = !isMobile && sending;
 
   return (
     <div
@@ -769,7 +848,7 @@ export function ConversationDetail({
             ref={inputRef}
             value={text}
             onChange={(e) => setText(e.target.value)}
-            disabled={sending}
+            disabled={isComposerInputDisabled}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();

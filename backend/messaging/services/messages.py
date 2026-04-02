@@ -85,9 +85,20 @@ def mark_conversation_read(*, conversation: Conversation, user) -> ConversationP
     Mark a conversation as read for the given user by updating last_read_at.
     """
     now = timezone.now()
-    with transaction.atomic():
-        participant = _ensure_participant(conversation=conversation, user_id=user.id)
-        participant.last_read_at = now
-        participant.save(update_fields=["last_read_at"])
-        return participant
+    participant = (
+        ConversationParticipant.objects.only("id", "conversation_id", "user_id", "last_read_at")
+        .filter(conversation_id=conversation.id, user_id=user.id)
+        .first()
+    )
+    if not participant:
+        raise NotParticipant("User is not a participant of this conversation.")
+
+    updated = ConversationParticipant.objects.filter(id=participant.id).update(
+        last_read_at=now
+    )
+    if not updated:
+        raise NotParticipant("User is not a participant of this conversation.")
+
+    participant.last_read_at = now
+    return participant
 

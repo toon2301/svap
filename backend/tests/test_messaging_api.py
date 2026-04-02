@@ -209,6 +209,26 @@ class TestMessagingApi(APITestCase):
         assert event["conversation_unread_count"] == 0
         assert event["total_unread_count"] == 0
 
+    def test_mark_read_can_be_called_repeatedly_without_failing(self):
+        convo = self._create_direct_conversation(actor=self.u1, target=self.u2)
+
+        self.client.force_authenticate(user=self.u2)
+        send_url = reverse("accounts:messaging_send_message", kwargs={"conversation_id": convo.id})
+        send_response = self.client.post(send_url, {"text": "Ahoj"}, format="json")
+        assert send_response.status_code == status.HTTP_201_CREATED
+
+        self.client.force_authenticate(user=self.u1)
+        read_url = reverse("accounts:messaging_mark_read", kwargs={"conversation_id": convo.id})
+        with patch("messaging.api.views.notify_user") as notify_user_mock:
+            first = self.client.post(read_url, {}, format="json")
+            second = self.client.post(read_url, {}, format="json")
+
+        assert first.status_code == status.HTTP_200_OK
+        assert second.status_code == status.HTTP_200_OK
+        participant = ConversationParticipant.objects.get(conversation_id=convo.id, user=self.u1)
+        assert participant.last_read_at is not None
+        assert notify_user_mock.call_count == 2
+
     def test_conversation_list_returns_only_started_conversations_with_other_user(self):
         empty_convo = self._create_direct_conversation(actor=self.u1, target=self.u2)
         started_convo = self._create_direct_conversation(actor=self.u1, target=self.u3)

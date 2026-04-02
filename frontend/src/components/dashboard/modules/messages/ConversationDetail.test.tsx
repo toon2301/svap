@@ -171,7 +171,7 @@ const { useIsMobile } = jest.requireMock('@/hooks') as {
 
 describe('ConversationDetail', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    jest.resetAllMocks();
     useIsMobile.mockReturnValue(false);
     setVisibilityState('visible');
     Object.defineProperty(Element.prototype, 'scrollIntoView', {
@@ -391,6 +391,186 @@ describe('ConversationDetail', () => {
       expect(sendMessage).toHaveBeenCalledWith(9, 'Ahoj');
       expect(input.value).toBe('');
     });
+  });
+
+  it('keeps the mobile composer input enabled and preserves follow-up text while sending', async () => {
+    useIsMobile.mockReturnValue(true);
+    const pendingSend = deferred<void>();
+    (sendMessage as jest.Mock).mockReturnValue(pendingSend.promise);
+
+    render(<ConversationDetail conversationId={9} currentUserId={1} />);
+
+    await waitFor(() => {
+      expect(listMessages).toHaveBeenCalledWith(9, 100);
+    });
+
+    const input = screen.getByRole('textbox') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: 'Ahoj' } });
+    fireEvent.focus(input);
+
+    const sendButton = await screen.findByRole('button', { name: /odosla/i });
+    const pointerDownEvent = createEvent.pointerDown(sendButton, { bubbles: true, cancelable: true });
+    fireEvent(sendButton, pointerDownEvent);
+    fireEvent.click(sendButton);
+
+    await waitFor(() => {
+      expect(sendMessage).toHaveBeenCalledWith(9, 'Ahoj');
+      expect(input).not.toBeDisabled();
+      expect(input.value).toBe('');
+    });
+
+    fireEvent.change(input, { target: { value: 'Ďalšia správa' } });
+    expect(input.value).toBe('Ďalšia správa');
+
+    await act(async () => {
+      pendingSend.resolve(undefined);
+      await pendingSend.promise;
+    });
+
+    await waitFor(() => {
+      expect(input.value).toBe('Ďalšia správa');
+    });
+  });
+
+  it('restores the original mobile text when sending fails before the user types again', async () => {
+    useIsMobile.mockReturnValue(true);
+    const pendingSend = deferred<void>();
+    (sendMessage as jest.Mock).mockReturnValue(pendingSend.promise);
+
+    render(<ConversationDetail conversationId={9} currentUserId={1} />);
+
+    await waitFor(() => {
+      expect(listMessages).toHaveBeenCalledWith(9, 100);
+    });
+
+    const input = screen.getByRole('textbox') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: 'Ahoj' } });
+    fireEvent.focus(input);
+
+    const sendButton = await screen.findByRole('button', { name: /odosla/i });
+    const pointerDownEvent = createEvent.pointerDown(sendButton, { bubbles: true, cancelable: true });
+    fireEvent(sendButton, pointerDownEvent);
+    fireEvent.click(sendButton);
+
+    await waitFor(() => {
+      expect(sendMessage).toHaveBeenCalledWith(9, 'Ahoj');
+      expect(input).not.toBeDisabled();
+      expect(input.value).toBe('');
+    });
+
+    await act(async () => {
+      pendingSend.reject(new Error('send failed'));
+      try {
+        await pendingSend.promise;
+      } catch {
+        // expected rejection
+      }
+    });
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith('Friendly messaging error');
+      expect(input.value).toBe('Ahoj');
+    });
+  });
+
+  it('does not overwrite follow-up mobile text when sending fails after more typing', async () => {
+    useIsMobile.mockReturnValue(true);
+    const pendingSend = deferred<void>();
+    (sendMessage as jest.Mock).mockReturnValue(pendingSend.promise);
+
+    render(<ConversationDetail conversationId={9} currentUserId={1} />);
+
+    await waitFor(() => {
+      expect(listMessages).toHaveBeenCalledWith(9, 100);
+    });
+
+    const input = screen.getByRole('textbox') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: 'Ahoj' } });
+    fireEvent.focus(input);
+
+    const sendButton = await screen.findByRole('button', { name: /odosla/i });
+    const pointerDownEvent = createEvent.pointerDown(sendButton, { bubbles: true, cancelable: true });
+    fireEvent(sendButton, pointerDownEvent);
+    fireEvent.click(sendButton);
+
+    await waitFor(() => {
+      expect(sendMessage).toHaveBeenCalledWith(9, 'Ahoj');
+      expect(input.value).toBe('');
+    });
+
+    fireEvent.change(input, { target: { value: 'Nový text' } });
+    expect(input.value).toBe('Nový text');
+
+    await act(async () => {
+      pendingSend.reject(new Error('send failed'));
+      try {
+        await pendingSend.promise;
+      } catch {
+        // expected rejection
+      }
+    });
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith('Friendly messaging error');
+      expect(input.value).toBe('Nový text');
+    });
+  });
+
+  it('coalesces duplicate mark-read requests while a shared refresh is still in flight', async () => {
+    const messagesRequest = deferred<MessageListPage>();
+    const markReadRequest = deferred<{
+      conversation_id: number;
+      last_read_at: string | null;
+      total_unread_count?: number;
+    }>();
+
+    (listMessages as jest.Mock).mockReturnValue(messagesRequest.promise);
+    (markConversationRead as jest.Mock).mockReturnValue(markReadRequest.promise);
+
+    render(<ConversationDetail conversationId={9} currentUserId={1} />);
+
+    await waitFor(() => {
+      expect(listMessages).toHaveBeenCalledTimes(1);
+    });
+
+    act(() => {
+      window.dispatchEvent(new Event('focus'));
+    });
+
+    await act(async () => {
+      messagesRequest.resolve(
+        messagePage([
+          message({
+            id: 11,
+            text: 'Nova prichadzajuca sprava',
+          }),
+        ]),
+      );
+      await messagesRequest.promise;
+    });
+
+    await waitFor(() => {
+      expect(markConversationRead).toHaveBeenCalledTimes(1);
+    });
+
+    await act(async () => {
+      markReadRequest.resolve({
+        conversation_id: 9,
+        last_read_at: '2026-03-27T10:05:00Z',
+        total_unread_count: 0,
+      });
+      await markReadRequest.promise;
+    });
+
+    await waitFor(() => {
+      expect(mockSyncConversationReadState).toHaveBeenCalledWith({
+        conversationId: 9,
+        totalUnreadCount: 0,
+      });
+    });
+
+    expect(listMessages).toHaveBeenCalledTimes(1);
+    expect(markConversationRead).toHaveBeenCalledTimes(1);
   });
 
   it('keeps the scroll container aligned to the latest messages when the focused mobile viewport height changes', async () => {
