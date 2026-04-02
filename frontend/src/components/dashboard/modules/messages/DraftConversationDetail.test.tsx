@@ -94,4 +94,18 @@ describe('DraftConversationDetail', () => {
     expect(container.firstElementChild).toHaveClass('max-w-4xl');
     expect(container.firstElementChild).toHaveClass('mx-auto');
   });
+
+  it('uses the compact mobile composer spacing in the draft conversation', async () => {
+    useIsMobile.mockReturnValue(true);
+    (openConversation as jest.Mock).mockResolvedValue(draftResponse);
+
+    render(<DraftConversationDetail targetUserId={42} />);
+
+    const composer = await screen.findByTestId('draft-conversation-composer');
+
+    expect(composer.className).not.toContain('mt-1.5');
+    expect(composer.className).not.toContain('pt-2');
+    expect(composer.className).toContain('mt-1');
+    expect(composer.className).toContain('pt-1');
+  });
 });

@@ -35,6 +35,7 @@ export function DraftConversationDetail({
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [text, setText] = useState('');
+  const [isComposerFocused, setIsComposerFocused] = useState(false);
   const resolvedTargetIdRef = useRef<number>(targetUserId);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const shouldRestoreFocusRef = useRef(false);
@@ -122,6 +123,23 @@ export function DraftConversationDetail({
     shouldRestoreFocusRef.current = false;
     focusComposer();
   }, [draft, focusComposer, loading, sending]);
+
+  const handleComposerFocus = useCallback(() => {
+    if (!isMobile) return;
+    setIsComposerFocused(true);
+  }, [isMobile]);
+
+  const handleComposerBlur = useCallback(
+    (event: React.FocusEvent<HTMLDivElement>) => {
+      if (!isMobile) return;
+      const nextFocused = event.relatedTarget as Node | null;
+      if (nextFocused && event.currentTarget.contains(nextFocused)) {
+        return;
+      }
+      setIsComposerFocused(false);
+    },
+    [isMobile],
+  );
 
   const handleSend = async () => {
     const clean = text.trim();
@@ -269,9 +287,15 @@ export function DraftConversationDetail({
 
       <div
         data-testid="draft-conversation-composer"
+        onFocusCapture={handleComposerFocus}
+        onBlurCapture={handleComposerBlur}
         className={
           isMobile
-            ? 'relative z-10 mt-1.5 flex w-full min-w-0 shrink-0 items-center overflow-x-hidden pl-[max(0.75rem,env(safe-area-inset-left,0px))] pr-[max(0.75rem,env(safe-area-inset-right,0px))] pt-2 pb-[max(1.75rem,env(safe-area-inset-bottom,0px))]'
+            ? `relative z-10 mt-1 flex w-full min-w-0 shrink-0 items-center overflow-x-hidden pl-[max(0.75rem,env(safe-area-inset-left,0px))] pr-[max(0.75rem,env(safe-area-inset-right,0px))] pt-1 ${
+                isComposerFocused
+                  ? 'pb-[max(0.5rem,env(safe-area-inset-bottom,0px))]'
+                  : 'pb-[max(1.75rem,env(safe-area-inset-bottom,0px))]'
+              }`
             : 'mt-2 flex w-full min-w-0 shrink-0 gap-2 px-4 sm:px-6 lg:px-8 mx-auto pb-[max(1rem,env(safe-area-inset-bottom,0px))] lg:pb-[max(1.25rem,env(safe-area-inset-bottom,0px))] sm:max-w-[min(100%,36rem)] md:max-w-[min(100%,44rem)] lg:max-w-[min(100%,52rem)] xl:max-w-[min(100%,64rem)]'
         }
       >

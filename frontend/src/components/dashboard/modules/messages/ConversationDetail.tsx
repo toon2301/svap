@@ -27,7 +27,7 @@ import { useConversationPresenceHeartbeat } from './useConversationPresenceHeart
 
 const MESSAGE_POLL_INTERVAL_MS = 10_000;
 const MOBILE_LATEST_SCROLL_THRESHOLD_PX = 80;
-const MOBILE_MESSAGE_SIDE_PADDING_CLASS = 'px-1.5 py-4';
+const MOBILE_MESSAGE_SIDE_PADDING_CLASS = 'px-1.5 pt-4 pb-2';
 const DESKTOP_MESSAGE_SIDE_PADDING_CLASS = 'px-4 py-4 sm:px-5 lg:px-6';
 
 function formatTime(value: string): string {
@@ -98,6 +98,7 @@ export function ConversationDetail({
   const shouldRestoreFocusRef = useRef(false);
   const pendingLatestScrollAfterRefreshRef = useRef(false);
   const shouldScrollToLatestOnRenderRef = useRef(false);
+  const shouldPinFocusedViewportToBottomRef = useRef(false);
   const mobileViewportHeight = useMobileViewportHeight(isMobile && isComposerFocused);
   useConversationPresenceHeartbeat(conversationId);
 
@@ -121,6 +122,7 @@ export function ConversationDetail({
 
   const handleComposerFocus = useCallback(() => {
     if (!isMobile) return;
+    shouldPinFocusedViewportToBottomRef.current = true;
     setIsComposerFocused(true);
   }, [isMobile]);
 
@@ -131,6 +133,7 @@ export function ConversationDetail({
       if (nextFocused && event.currentTarget.contains(nextFocused)) {
         return;
       }
+      shouldPinFocusedViewportToBottomRef.current = false;
       setIsComposerFocused(false);
     },
     [isMobile],
@@ -388,6 +391,7 @@ export function ConversationDetail({
 
   useEffect(() => {
     if (!isMobile || !isComposerFocused || loading) return;
+    if (!shouldPinFocusedViewportToBottomRef.current) return;
 
     requestAnimationFrame(() => {
       requestAnimationFrame(scrollMessagesToLatest);
@@ -452,10 +456,22 @@ export function ConversationDetail({
 
   const handleMessagesScroll = useCallback(() => {
     const scrollContainer = messagesScrollRef.current;
-    if (!scrollContainer || loading || loadingOlder || nextOlderPage === null) return;
+    if (!scrollContainer) return;
+    if (isMobile && isComposerFocused) {
+      shouldPinFocusedViewportToBottomRef.current = isNearMessagesBottom();
+    }
+    if (loading || loadingOlder || nextOlderPage === null) return;
     if (scrollContainer.scrollTop > OLDER_MESSAGES_SCROLL_THRESHOLD_PX) return;
     void loadOlderMessages();
-  }, [loadOlderMessages, loading, loadingOlder, nextOlderPage]);
+  }, [
+    isComposerFocused,
+    isMobile,
+    isNearMessagesBottom,
+    loadOlderMessages,
+    loading,
+    loadingOlder,
+    nextOlderPage,
+  ]);
 
   const handleSend = async () => {
     const clean = text.trim();
@@ -598,7 +614,7 @@ export function ConversationDetail({
         ref={messagesScrollRef}
         data-testid="conversation-messages-scroll"
         onScroll={handleMessagesScroll}
-        className={`flex-1 min-h-0 overflow-y-auto overscroll-y-contain touch-pan-y elegant-scrollbar space-y-2 ${
+        className={`flex-1 min-h-0 overflow-y-auto overscroll-y-contain touch-pan-y elegant-scrollbar ${
           isMobile ? MOBILE_MESSAGE_SIDE_PADDING_CLASS : DESKTOP_MESSAGE_SIDE_PADDING_CLASS
         }`}
       >
@@ -607,7 +623,8 @@ export function ConversationDetail({
             {t('messages.noMessagesYet', 'Zatiaľ bez správ')}
           </div>
         ) : (
-          ordered.map((m, index) => {
+          <div className="space-y-2">
+            {ordered.map((m, index) => {
             const mine = m.sender?.id === currentUserId;
             const prev = index > 0 ? ordered[index - 1] : null;
             const next = index < ordered.length - 1 ? ordered[index + 1] : null;
@@ -713,7 +730,8 @@ export function ConversationDetail({
                 </div>
               </div>
             );
-          })
+            })}
+          </div>
         )}
         <div ref={bottomRef} />
       </div>
@@ -724,7 +742,11 @@ export function ConversationDetail({
         onBlurCapture={handleComposerBlur}
         className={
           isMobile
-            ? 'relative z-10 mt-1.5 flex w-full min-w-0 shrink-0 items-center overflow-x-hidden pl-[max(0.75rem,env(safe-area-inset-left,0px))] pr-[max(0.75rem,env(safe-area-inset-right,0px))] pt-2 pb-[max(1.75rem,env(safe-area-inset-bottom,0px))]'
+            ? `relative z-10 mt-1 flex w-full min-w-0 shrink-0 items-center overflow-x-hidden pl-[max(0.75rem,env(safe-area-inset-left,0px))] pr-[max(0.75rem,env(safe-area-inset-right,0px))] pt-1 ${
+                isComposerFocused
+                  ? 'pb-[max(0.5rem,env(safe-area-inset-bottom,0px))]'
+                  : 'pb-[max(1.75rem,env(safe-area-inset-bottom,0px))]'
+              }`
             : 'mt-2 flex w-full min-w-0 shrink-0 gap-2 px-4 sm:px-6 lg:px-8 mx-auto pb-[max(1rem,env(safe-area-inset-bottom,0px))] lg:pb-[max(1.25rem,env(safe-area-inset-bottom,0px))] sm:max-w-[min(100%,36rem)] md:max-w-[min(100%,44rem)] lg:max-w-[min(100%,52rem)] xl:max-w-[min(100%,64rem)]'
         }
       >

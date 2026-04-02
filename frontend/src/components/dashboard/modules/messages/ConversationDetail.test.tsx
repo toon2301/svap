@@ -332,6 +332,10 @@ describe('ConversationDetail', () => {
     expect(composer.className).toMatch(/safe-area-inset-left/);
     expect(composer.className).not.toContain('px-4');
     expect(composer.className).not.toContain('fixed');
+    expect(composer.className).not.toContain('mt-1.5');
+    expect(composer.className).not.toContain('pt-2');
+    expect(composer.className).toContain('pb-[max(1.75rem,env(safe-area-inset-bottom,0px))]');
+    expect(messagesScroll.className).not.toContain('space-y-2');
 
     viewport.setMetrics({ height: 650 });
     act(() => {
@@ -349,6 +353,7 @@ describe('ConversationDetail', () => {
       expect(composer.style.bottom).toBe('');
       expect(messagesScroll.style.paddingBottom).toBe('');
       expect(composer.className).not.toContain('fixed');
+      expect(composer.className).toContain('pb-[max(0.5rem,env(safe-area-inset-bottom,0px))]');
     });
 
     fireEvent.blur(input);
@@ -356,6 +361,7 @@ describe('ConversationDetail', () => {
     await waitFor(() => {
       expect(composer.style.bottom).toBe('');
       expect(messagesScroll.style.paddingBottom).toBe('');
+      expect(composer.className).toContain('pb-[max(1.75rem,env(safe-area-inset-bottom,0px))]');
     });
   });
 
@@ -466,6 +472,77 @@ describe('ConversationDetail', () => {
       expect(messagesScroll.style.paddingBottom).toBe('');
       expect(composer.style.bottom).toBe('');
       expect(composer.className).not.toContain('fixed');
+    });
+  });
+
+  it('lets the user scroll older messages while the mobile keyboard is open', async () => {
+    useIsMobile.mockReturnValue(true);
+    const viewport = mockVisualViewport();
+
+    (listMessages as jest.Mock).mockResolvedValueOnce(
+      messagePage([
+        message({
+          id: 3,
+          text: 'Najnovsia sprava',
+          created_at: '2026-03-27T10:02:00Z',
+        }),
+        message({
+          id: 2,
+          text: 'Stredna sprava',
+          created_at: '2026-03-27T10:01:00Z',
+        }),
+        message({
+          id: 1,
+          sender: { id: 1, display_name: 'Me' },
+          text: 'Starsia sprava',
+          created_at: '2026-03-27T10:00:00Z',
+        }),
+      ]),
+    );
+
+    render(<ConversationDetail conversationId={9} currentUserId={1} />);
+
+    expect(await screen.findByText('Najnovsia sprava')).toBeInTheDocument();
+
+    const messagesScroll = screen.getByTestId('conversation-messages-scroll');
+    const input = screen.getByRole('textbox');
+
+    let currentScrollTop = 980;
+    const currentScrollHeight = 980;
+    const currentClientHeight = 400;
+
+    Object.defineProperty(messagesScroll, 'scrollTop', {
+      configurable: true,
+      get: () => currentScrollTop,
+      set: (value: number) => {
+        currentScrollTop = value;
+      },
+    });
+    Object.defineProperty(messagesScroll, 'scrollHeight', {
+      configurable: true,
+      get: () => currentScrollHeight,
+    });
+    Object.defineProperty(messagesScroll, 'clientHeight', {
+      configurable: true,
+      get: () => currentClientHeight,
+    });
+
+    fireEvent.focus(input);
+
+    await waitFor(() => {
+      expect(currentScrollTop).toBe(980);
+    });
+
+    currentScrollTop = 120;
+    fireEvent.scroll(messagesScroll);
+
+    viewport.setMetrics({ height: 650, offsetTop: 24 });
+    act(() => {
+      viewport.dispatch('scroll');
+    });
+
+    await waitFor(() => {
+      expect(currentScrollTop).toBe(120);
     });
   });
 
