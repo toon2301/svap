@@ -15,10 +15,6 @@ import { DesktopEmojiPickerButton } from './DesktopEmojiPickerButton';
 import type { ConversationDraft, MessagingUserBrief } from './types';
 import { requestConversationsRefresh } from './messagesEvents';
 import { buildMessagesUrl } from './messagesRouting';
-import { useVisualViewportBottomInset } from './useVisualViewportBottomInset';
-import { useComposerReservedSpace } from './useComposerReservedSpace';
-
-const MOBILE_COMPOSER_BOTTOM_GAP_PX = 14;
 
 function resolveTargetName(targetUser: MessagingUserBrief | null, fallback: string): string {
   const name = (targetUser?.display_name || '').trim();
@@ -39,24 +35,9 @@ export function DraftConversationDetail({
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [text, setText] = useState('');
-  const [isComposerFocused, setIsComposerFocused] = useState(false);
   const resolvedTargetIdRef = useRef<number>(targetUserId);
-  const [composerElement, setComposerElement] = useState<HTMLDivElement | null>(null);
-  const composerRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const shouldRestoreFocusRef = useRef(false);
-  const visualViewportBottomInset = useVisualViewportBottomInset(isMobile, isComposerFocused);
-  const isMobileComposerOverlayActive =
-    isMobile && (isComposerFocused || visualViewportBottomInset > 0);
-  const mobileComposerBottomOffset = isMobileComposerOverlayActive
-    ? visualViewportBottomInset + MOBILE_COMPOSER_BOTTOM_GAP_PX
-    : 0;
-  const mobileComposerReservedSpace = useComposerReservedSpace(
-    composerElement,
-    isMobileComposerOverlayActive,
-    8,
-    mobileComposerBottomOffset,
-  );
 
   const focusComposer = useCallback(() => {
     if (isMobile) return;
@@ -75,28 +56,6 @@ export function DraftConversationDetail({
       input.setSelectionRange(end, end);
     });
   }, [isMobile]);
-
-  const handleComposerFocus = useCallback(() => {
-    if (!isMobile) return;
-    setIsComposerFocused(true);
-  }, [isMobile]);
-
-  const handleComposerBlur = useCallback(
-    (event: React.FocusEvent<HTMLDivElement>) => {
-      if (!isMobile) return;
-      const nextFocused = event.relatedTarget as Node | null;
-      if (nextFocused && composerRef.current?.contains(nextFocused)) {
-        return;
-      }
-      setIsComposerFocused(false);
-    },
-    [isMobile],
-  );
-
-  const handleComposerRef = useCallback((node: HTMLDivElement | null) => {
-    composerRef.current = node;
-    setComposerElement(node);
-  }, []);
 
   useEffect(() => {
     resolvedTargetIdRef.current = targetUserId;
@@ -291,7 +250,6 @@ export function DraftConversationDetail({
       <div
         data-testid={!isMobile ? 'draft-conversation-scroll' : undefined}
         className="flex-1 min-h-0 overflow-y-auto overscroll-y-contain touch-pan-y elegant-scrollbar p-4"
-        style={isMobile ? { paddingBottom: mobileComposerReservedSpace } : undefined}
       >
         <div className="h-full flex items-center justify-center">
           <div className="flex flex-col items-center text-center max-w-md">
@@ -310,18 +268,12 @@ export function DraftConversationDetail({
       </div>
 
       <div
-        ref={handleComposerRef}
         data-testid="draft-conversation-composer"
-        onFocusCapture={handleComposerFocus}
-        onBlurCapture={handleComposerBlur}
         className={
           isMobile
-            ? isMobileComposerOverlayActive
-              ? 'fixed inset-x-0 z-40 flex w-full min-w-0 shrink-0 items-center overflow-x-hidden touch-none pl-[max(0.75rem,env(safe-area-inset-left,0px))] pr-[max(0.75rem,env(safe-area-inset-right,0px))] pt-2 pb-[max(1.75rem,env(safe-area-inset-bottom,0px))]'
-              : 'relative z-10 mt-1.5 flex w-full min-w-0 shrink-0 items-center overflow-x-hidden pl-[max(0.75rem,env(safe-area-inset-left,0px))] pr-[max(0.75rem,env(safe-area-inset-right,0px))] pt-2 pb-[max(1.75rem,env(safe-area-inset-bottom,0px))]'
+            ? 'relative z-10 mt-1.5 flex w-full min-w-0 shrink-0 items-center overflow-x-hidden pl-[max(0.75rem,env(safe-area-inset-left,0px))] pr-[max(0.75rem,env(safe-area-inset-right,0px))] pt-2 pb-[max(1.75rem,env(safe-area-inset-bottom,0px))]'
             : 'mt-2 flex w-full min-w-0 shrink-0 gap-2 px-4 sm:px-6 lg:px-8 mx-auto pb-[max(1rem,env(safe-area-inset-bottom,0px))] lg:pb-[max(1.25rem,env(safe-area-inset-bottom,0px))] sm:max-w-[min(100%,36rem)] md:max-w-[min(100%,44rem)] lg:max-w-[min(100%,52rem)] xl:max-w-[min(100%,64rem)]'
         }
-        style={isMobileComposerOverlayActive ? { bottom: mobileComposerBottomOffset } : undefined}
       >
         <div
           className={`relative min-w-0 flex-1 ${

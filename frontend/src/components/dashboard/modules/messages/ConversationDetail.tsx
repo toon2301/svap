@@ -17,8 +17,7 @@ import {
   requestConversationsRefresh,
   type MessagingRealtimeMessagePayload,
 } from './messagesEvents';
-import { useVisualViewportBottomInset } from './useVisualViewportBottomInset';
-import { useComposerReservedSpace } from './useComposerReservedSpace';
+import { useMobileViewportHeight } from '../../hooks/useMobileViewportHeight';
 import {
   INITIAL_MESSAGES_PAGE_SIZE,
   mergeMessagesNewestFirst,
@@ -27,7 +26,6 @@ import {
 import { useConversationPresenceHeartbeat } from './useConversationPresenceHeartbeat';
 
 const MESSAGE_POLL_INTERVAL_MS = 10_000;
-const MOBILE_COMPOSER_BOTTOM_GAP_PX = 14;
 const MOBILE_LATEST_SCROLL_THRESHOLD_PX = 80;
 const MOBILE_MESSAGE_SIDE_PADDING_CLASS = 'px-1.5 py-4';
 const DESKTOP_MESSAGE_SIDE_PADDING_CLASS = 'px-4 py-4 sm:px-5 lg:px-6';
@@ -96,24 +94,11 @@ export function ConversationDetail({
   const [isHeaderMenuOpen, setIsHeaderMenuOpen] = useState(false);
   const headerMenuRef = useRef<HTMLDivElement | null>(null);
   const messagesScrollRef = useRef<HTMLDivElement | null>(null);
-  const [composerElement, setComposerElement] = useState<HTMLDivElement | null>(null);
-  const composerRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const shouldRestoreFocusRef = useRef(false);
   const pendingLatestScrollAfterRefreshRef = useRef(false);
   const shouldScrollToLatestOnRenderRef = useRef(false);
-  const visualViewportBottomInset = useVisualViewportBottomInset(isMobile, isComposerFocused);
-  const isMobileComposerOverlayActive =
-    isMobile && (isComposerFocused || visualViewportBottomInset > 0);
-  const mobileComposerBottomOffset = isMobileComposerOverlayActive
-    ? visualViewportBottomInset + MOBILE_COMPOSER_BOTTOM_GAP_PX
-    : 0;
-  const mobileComposerReservedSpace = useComposerReservedSpace(
-    composerElement,
-    isMobileComposerOverlayActive,
-    8,
-    mobileComposerBottomOffset,
-  );
+  const mobileViewportHeight = useMobileViewportHeight(isMobile && isComposerFocused);
   useConversationPresenceHeartbeat(conversationId);
 
   const focusComposer = useCallback(() => {
@@ -143,18 +128,13 @@ export function ConversationDetail({
     (event: React.FocusEvent<HTMLDivElement>) => {
       if (!isMobile) return;
       const nextFocused = event.relatedTarget as Node | null;
-      if (nextFocused && composerRef.current?.contains(nextFocused)) {
+      if (nextFocused && event.currentTarget.contains(nextFocused)) {
         return;
       }
       setIsComposerFocused(false);
     },
     [isMobile],
   );
-
-  const handleComposerRef = useCallback((node: HTMLDivElement | null) => {
-    composerRef.current = node;
-    setComposerElement(node);
-  }, []);
 
   const scrollMessagesToLatest = useCallback(() => {
     const scrollContainer = messagesScrollRef.current;
@@ -400,12 +380,19 @@ export function ConversationDetail({
     // Pri každom otvorení/refreshi konverzácie sa vráť na najnovšie správy.
     // Toto prepíše browser scroll-restoration aj po reload-e.
     if (loading) return;
-    if (isMobile && !composerElement) return;
 
     requestAnimationFrame(() => {
       requestAnimationFrame(scrollMessagesToLatest);
     });
-  }, [composerElement, conversationId, isMobile, loading, mobileComposerReservedSpace, scrollMessagesToLatest]);
+  }, [conversationId, isMobile, loading, scrollMessagesToLatest]);
+
+  useEffect(() => {
+    if (!isMobile || !isComposerFocused || loading) return;
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(scrollMessagesToLatest);
+    });
+  }, [isComposerFocused, isMobile, loading, mobileViewportHeight, scrollMessagesToLatest]);
 
   useEffect(() => {
     if (loading) return;
@@ -614,7 +601,6 @@ export function ConversationDetail({
         className={`flex-1 min-h-0 overflow-y-auto overscroll-y-contain touch-pan-y elegant-scrollbar space-y-2 ${
           isMobile ? MOBILE_MESSAGE_SIDE_PADDING_CLASS : DESKTOP_MESSAGE_SIDE_PADDING_CLASS
         }`}
-        style={isMobile ? { paddingBottom: mobileComposerReservedSpace } : undefined}
       >
         {ordered.length === 0 ? (
           <div className="text-sm text-gray-600 dark:text-gray-400 text-center py-8">
@@ -733,18 +719,14 @@ export function ConversationDetail({
       </div>
 
       <div
-        ref={handleComposerRef}
         data-testid="conversation-composer"
         onFocusCapture={handleComposerFocus}
         onBlurCapture={handleComposerBlur}
         className={
           isMobile
-            ? isMobileComposerOverlayActive
-              ? 'fixed inset-x-0 z-40 flex w-full min-w-0 shrink-0 items-center overflow-x-hidden touch-none pl-[max(0.75rem,env(safe-area-inset-left,0px))] pr-[max(0.75rem,env(safe-area-inset-right,0px))] pt-2 pb-[max(1.75rem,env(safe-area-inset-bottom,0px))]'
-              : 'relative z-10 mt-1.5 flex w-full min-w-0 shrink-0 items-center overflow-x-hidden pl-[max(0.75rem,env(safe-area-inset-left,0px))] pr-[max(0.75rem,env(safe-area-inset-right,0px))] pt-2 pb-[max(1.75rem,env(safe-area-inset-bottom,0px))]'
+            ? 'relative z-10 mt-1.5 flex w-full min-w-0 shrink-0 items-center overflow-x-hidden pl-[max(0.75rem,env(safe-area-inset-left,0px))] pr-[max(0.75rem,env(safe-area-inset-right,0px))] pt-2 pb-[max(1.75rem,env(safe-area-inset-bottom,0px))]'
             : 'mt-2 flex w-full min-w-0 shrink-0 gap-2 px-4 sm:px-6 lg:px-8 mx-auto pb-[max(1rem,env(safe-area-inset-bottom,0px))] lg:pb-[max(1.25rem,env(safe-area-inset-bottom,0px))] sm:max-w-[min(100%,36rem)] md:max-w-[min(100%,44rem)] lg:max-w-[min(100%,52rem)] xl:max-w-[min(100%,64rem)]'
         }
-        style={isMobileComposerOverlayActive ? { bottom: mobileComposerBottomOffset } : undefined}
       >
         <div
           className={`relative min-w-0 flex-1 ${

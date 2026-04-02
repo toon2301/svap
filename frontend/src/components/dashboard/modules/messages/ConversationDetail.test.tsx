@@ -302,7 +302,7 @@ describe('ConversationDetail', () => {
     expect(container.firstElementChild).toHaveClass('mx-auto');
   });
 
-  it('keeps the mobile composer in flow until the user actually focuses the input', async () => {
+  it('keeps the mobile composer in the normal layout flow even after focus', async () => {
     useIsMobile.mockReturnValue(true);
     const viewport = mockVisualViewport();
 
@@ -327,10 +327,11 @@ describe('ConversationDetail', () => {
 
     await waitFor(() => {
       expect(composer.style.bottom).toBe('');
-      expect(messagesScroll).toHaveStyle({ paddingBottom: '0px' });
+      expect(messagesScroll.style.paddingBottom).toBe('');
     });
-      expect(composer.className).toMatch(/safe-area-inset-left/);
-      expect(composer.className).not.toContain('px-4');
+    expect(composer.className).toMatch(/safe-area-inset-left/);
+    expect(composer.className).not.toContain('px-4');
+    expect(composer.className).not.toContain('fixed');
 
     viewport.setMetrics({ height: 650 });
     act(() => {
@@ -339,25 +340,26 @@ describe('ConversationDetail', () => {
 
     await waitFor(() => {
       expect(composer.style.bottom).toBe('');
-      expect(messagesScroll).toHaveStyle({ paddingBottom: '0px' });
+      expect(messagesScroll.style.paddingBottom).toBe('');
     });
 
     fireEvent.focus(input);
 
     await waitFor(() => {
-      expect(composer).toHaveStyle({ bottom: '264px' });
-      expect(messagesScroll).toHaveStyle({ paddingBottom: '322px' });
+      expect(composer.style.bottom).toBe('');
+      expect(messagesScroll.style.paddingBottom).toBe('');
+      expect(composer.className).not.toContain('fixed');
     });
 
     fireEvent.blur(input);
 
     await waitFor(() => {
       expect(composer.style.bottom).toBe('');
-      expect(messagesScroll).toHaveStyle({ paddingBottom: '0px' });
+      expect(messagesScroll.style.paddingBottom).toBe('');
     });
   });
 
-  it('re-aligns the scroll container to the true bottom after mobile composer spacing is measured', async () => {
+  it('keeps the scroll container aligned to the latest messages when the focused mobile viewport height changes', async () => {
     useIsMobile.mockReturnValue(true);
     const viewport = mockVisualViewport();
 
@@ -381,8 +383,8 @@ describe('ConversationDetail', () => {
 
     expect(await screen.findByText('Nova sprava')).toBeInTheDocument();
 
-    const composer = screen.getByTestId('conversation-composer');
     const messagesScroll = screen.getByTestId('conversation-messages-scroll');
+    const input = screen.getByRole('textbox');
 
     let currentScrollTop = 0;
     let currentScrollHeight = 640;
@@ -398,23 +400,19 @@ describe('ConversationDetail', () => {
       configurable: true,
       get: () => currentScrollHeight,
     });
-    Object.defineProperty(composer, 'offsetHeight', {
-      configurable: true,
-      get: () => 50,
-    });
-
     currentScrollHeight = 712;
+    fireEvent.focus(input);
     act(() => {
       viewport.dispatch('resize');
     });
 
     await waitFor(() => {
       expect(currentScrollTop).toBe(712);
-      expect(messagesScroll).toHaveStyle({ paddingBottom: '0px' });
+      expect(messagesScroll.style.paddingBottom).toBe('');
     });
   });
 
-  it('uses the real mobile composer overlap while the keyboard overlay is active', async () => {
+  it('keeps the focused mobile thread pinned to the bottom without a fixed composer overlay', async () => {
     useIsMobile.mockReturnValue(true);
     const viewport = mockVisualViewport();
 
@@ -456,34 +454,18 @@ describe('ConversationDetail', () => {
       configurable: true,
       get: () => currentScrollHeight,
     });
-    Object.defineProperty(composer, 'offsetHeight', {
-      configurable: true,
-      get: () => 50,
-    });
-    Object.defineProperty(composer, 'getBoundingClientRect', {
-      configurable: true,
-      value: () => ({
-        x: 0,
-        y: 0,
-        width: 360,
-        height: 70,
-        top: 760,
-        right: 360,
-        bottom: 830,
-        left: 0,
-        toJSON: () => ({}),
-      }),
-    });
-
     currentScrollHeight = 778;
     fireEvent.focus(input);
+    viewport.setMetrics({ height: 650 });
     act(() => {
       viewport.dispatch('resize');
     });
 
     await waitFor(() => {
       expect(currentScrollTop).toBe(778);
-      expect(messagesScroll).toHaveStyle({ paddingBottom: '148px' });
+      expect(messagesScroll.style.paddingBottom).toBe('');
+      expect(composer.style.bottom).toBe('');
+      expect(composer.className).not.toContain('fixed');
     });
   });
 

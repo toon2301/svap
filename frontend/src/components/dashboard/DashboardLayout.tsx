@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useEffect, useRef } from 'react';
+import { useIsMobile } from '@/hooks';
+import { useMobileViewportHeight } from './hooks/useMobileViewportHeight';
 import Sidebar from './Sidebar';
 import RightSidebar from './RightSidebar';
 import MobileTopNav from './MobileTopNav';
@@ -81,6 +83,13 @@ export default function DashboardLayout({
   const hasDesktopRightColumn = isRightSidebarOpen || hasAuxiliaryRightRail;
   const isOpenMobileMessagesConversation =
     activeModule === 'messages' && Boolean(isMobileMessageConversationOpen);
+  const isMobile = useIsMobile();
+  const shouldUseDynamicMobileMessagesHeight = isMobile && isOpenMobileMessagesConversation;
+  const mobileViewportHeight = useMobileViewportHeight(shouldUseDynamicMobileMessagesHeight);
+  const mobileMessagesViewportStyle =
+    shouldUseDynamicMobileMessagesHeight && mobileViewportHeight
+      ? { height: `${mobileViewportHeight}px` }
+      : undefined;
 
   // Zatvor vyhľadávací panel pri kliknutí mimo neho alebo pri stlačení Esc
   useEffect(() => {
@@ -149,7 +158,10 @@ export default function DashboardLayout({
       : 'lg:grid-cols-[280px_0px_1fr] xl:grid-cols-[384px_0px_1fr]';
 
   return (
-    <div className="h-screen bg-[var(--background)] text-[var(--foreground)] overflow-hidden">
+    <div
+      className="h-screen bg-[var(--background)] text-[var(--foreground)] overflow-hidden"
+      style={mobileMessagesViewportStyle}
+    >
       {/* Mobile Top Bar - skryť pre search modul */}
       {activeModule !== 'search' && (
         <MobileTopBar
@@ -241,8 +253,10 @@ export default function DashboardLayout({
               ? 'pt-12 lg:pt-0' // mobil: h-12 = výška vrchnej lišty, bez extra medzery
             : activeModule === 'offer-reviews'
               ? 'pt-12 lg:pt-0' // mobil: h-12 = výška lišty, žiadna medzera; desktop bez pt
-              : 'pt-16'
-        }`}>
+            : 'pt-16'
+        }`}
+          style={mobileMessagesViewportStyle}
+        >
           <div
             className={`${
               activeModule === 'offer-reviews'

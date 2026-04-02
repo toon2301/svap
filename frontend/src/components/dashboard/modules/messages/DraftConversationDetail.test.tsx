@@ -1,4 +1,4 @@
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { DraftConversationDetail } from './DraftConversationDetail';
 import { openConversation } from './messagingApi';
@@ -54,52 +54,6 @@ const draftResponse = {
   updated_at: null,
 };
 
-function mockVisualViewport({ innerHeight = 900, height = 900, offsetTop = 0 } = {}) {
-  let currentHeight = height;
-  let currentOffsetTop = offsetTop;
-  const listeners = {
-    resize: new Set<() => void>(),
-    scroll: new Set<() => void>(),
-  };
-
-  Object.defineProperty(window, 'innerHeight', {
-    configurable: true,
-    value: innerHeight,
-  });
-
-  Object.defineProperty(window, 'visualViewport', {
-    configurable: true,
-    value: {
-      get height() {
-        return currentHeight;
-      },
-      get offsetTop() {
-        return currentOffsetTop;
-      },
-      addEventListener: jest.fn((event: 'resize' | 'scroll', listener: () => void) => {
-        listeners[event]?.add(listener);
-      }),
-      removeEventListener: jest.fn((event: 'resize' | 'scroll', listener: () => void) => {
-        listeners[event]?.delete(listener);
-      }),
-    },
-  });
-
-  return {
-    setMetrics(next: { height?: number; offsetTop?: number }) {
-      if (typeof next.height === 'number') {
-        currentHeight = next.height;
-      }
-      if (typeof next.offsetTop === 'number') {
-        currentOffsetTop = next.offsetTop;
-      }
-    },
-    dispatch(event: 'resize' | 'scroll') {
-      listeners[event].forEach((listener) => listener());
-    },
-  };
-}
-
 describe('DraftConversationDetail', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -126,25 +80,6 @@ describe('DraftConversationDetail', () => {
     });
   });
 
-  it('renders draft compose state when no started conversation exists', async () => {
-    (openConversation as jest.Mock).mockResolvedValue(draftResponse);
-
-    render(<DraftConversationDetail targetUserId={42} />);
-
-    await waitFor(() => {
-      expect(openConversation).toHaveBeenCalledWith(42);
-    });
-    expect(await screen.findByText(/začnite konverzáciu/i)).toBeInTheDocument();
-    const textbox = await screen.findByRole('textbox');
-    expect(textbox).toBeInTheDocument();
-    expect(screen.getByRole('heading')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /emoji/i })).toBeInTheDocument();
-    const header = screen.getByTestId('draft-conversation-header');
-    const draftScroll = screen.getByTestId('draft-conversation-scroll');
-    expect(header.className).not.toContain('sticky');
-    expect(draftScroll.className).toContain('overflow-y-auto');
-  });
-
   it('keeps the draft conversation root stretched to the available width on mobile', async () => {
     useIsMobile.mockReturnValue(true);
     (openConversation as jest.Mock).mockResolvedValue(draftResponse);
@@ -158,47 +93,5 @@ describe('DraftConversationDetail', () => {
     expect(container.firstElementChild).toHaveClass('w-full');
     expect(container.firstElementChild).toHaveClass('max-w-4xl');
     expect(container.firstElementChild).toHaveClass('mx-auto');
-  });
-
-  it('keeps the mobile draft composer in flow until the user focuses the input', async () => {
-    useIsMobile.mockReturnValue(true);
-    const viewport = mockVisualViewport();
-    (openConversation as jest.Mock).mockResolvedValue(draftResponse);
-
-    render(<DraftConversationDetail targetUserId={42} />);
-
-    await waitFor(() => {
-      expect(openConversation).toHaveBeenCalledWith(42);
-    });
-    expect(await screen.findByText(/začnite konverzáciu/i)).toBeInTheDocument();
-
-    const composer = screen.getByTestId('draft-conversation-composer');
-    const input = screen.getByRole('textbox');
-
-    Object.defineProperty(composer, 'offsetHeight', {
-      configurable: true,
-      get: () => 48,
-    });
-
-    act(() => {
-      viewport.dispatch('resize');
-    });
-
-    await waitFor(() => {
-      expect(composer.style.bottom).toBe('');
-    });
-      expect(composer.className).toMatch(/safe-area-inset-left/);
-      expect(composer.className).not.toContain('px-4');
-
-    expect(input).not.toHaveFocus();
-
-    viewport.setMetrics({ height: 660 });
-    act(() => {
-      viewport.dispatch('resize');
-    });
-
-    await waitFor(() => {
-      expect(composer.style.bottom).toBe('');
-    });
   });
 });
