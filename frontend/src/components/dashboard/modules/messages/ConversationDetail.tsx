@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useMessagesNotifications } from '@/components/dashboard/contexts/RequestsNotificationsContext';
 import { useIsMobile } from '@/hooks';
-import { Bars3Icon, PaperAirplaneIcon } from '@heroicons/react/24/outline';
+import { Bars3Icon, ChevronDownIcon, PaperAirplaneIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 import type { MessageItem } from './types';
 import { getMessagingErrorMessage, listConversations, listMessages, markConversationRead, sendMessage } from './messagingApi';
@@ -27,6 +27,7 @@ import { useConversationPresenceHeartbeat } from './useConversationPresenceHeart
 
 const MESSAGE_POLL_INTERVAL_MS = 10_000;
 const MOBILE_LATEST_SCROLL_THRESHOLD_PX = 80;
+const MOBILE_SCROLL_TO_BOTTOM_BUTTON_THRESHOLD_PX = 300;
 const MOBILE_MESSAGE_SIDE_PADDING_CLASS = 'px-1.5 pt-4 pb-2';
 const DESKTOP_MESSAGE_SIDE_PADDING_CLASS = 'px-4 py-4 sm:px-5 lg:px-6';
 
@@ -82,6 +83,7 @@ export function ConversationDetail({
   const [sending, setSending] = useState(false);
   const [text, setText] = useState('');
   const [isComposerFocused, setIsComposerFocused] = useState(false);
+  const [showScrollToBottomButton, setShowScrollToBottomButton] = useState(false);
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const refreshInFlightRef = useRef<Promise<{ results: MessageItem[]; nextPage: number | null }> | null>(null);
@@ -154,21 +156,49 @@ export function ConversationDetail({
     const scrollContainer = messagesScrollRef.current;
     if (scrollContainer) {
       scrollContainer.scrollTop = scrollContainer.scrollHeight;
+      if (isMobile) {
+        setShowScrollToBottomButton(false);
+      }
       return;
     }
 
     bottomRef.current?.scrollIntoView({ behavior: 'auto' });
+    if (isMobile) {
+      setShowScrollToBottomButton(false);
+    }
+  }, [isMobile]);
+
+  const getMessagesDistanceToBottom = useCallback((scrollContainer: HTMLDivElement | null) => {
+    if (!scrollContainer) return null;
+
+    return scrollContainer.scrollHeight - scrollContainer.clientHeight - scrollContainer.scrollTop;
   }, []);
+
+  const updateScrollToBottomButtonVisibility = useCallback(
+    (scrollContainer: HTMLDivElement | null) => {
+      if (!isMobile || messages.length === 0) {
+        setShowScrollToBottomButton(false);
+        return false;
+      }
+
+      const distanceToBottom = getMessagesDistanceToBottom(scrollContainer);
+      const shouldShow =
+        distanceToBottom !== null &&
+        distanceToBottom > MOBILE_SCROLL_TO_BOTTOM_BUTTON_THRESHOLD_PX;
+
+      setShowScrollToBottomButton((current) => (current === shouldShow ? current : shouldShow));
+      return shouldShow;
+    },
+    [getMessagesDistanceToBottom, isMobile, messages.length],
+  );
 
   const isNearMessagesBottom = useCallback(() => {
     const scrollContainer = messagesScrollRef.current;
-    if (!scrollContainer) return false;
-
-    const distanceToBottom =
-      scrollContainer.scrollHeight - scrollContainer.clientHeight - scrollContainer.scrollTop;
+    const distanceToBottom = getMessagesDistanceToBottom(scrollContainer);
+    if (distanceToBottom === null) return false;
 
     return distanceToBottom <= MOBILE_LATEST_SCROLL_THRESHOLD_PX;
-  }, []);
+  }, [getMessagesDistanceToBottom]);
 
   const ordered = useMemo(() => {
     // API vracia najnovšie prvé – v UI chceme chronologicky
@@ -440,6 +470,7 @@ export function ConversationDetail({
       pendingScrollRestoreRef.current = null;
       scrollContainer.scrollTop =
         scrollContainer.scrollHeight - pendingRestore.scrollHeight + pendingRestore.scrollTop;
+      updateScrollToBottomButtonVisibility(scrollContainer);
       return;
     }
 
@@ -449,7 +480,7 @@ export function ConversationDetail({
 
     shouldScrollToLatestOnRenderRef.current = false;
     scrollMessagesToLatest();
-  }, [ordered.length, scrollMessagesToLatest]);
+  }, [ordered.length, scrollMessagesToLatest, updateScrollToBottomButtonVisibility]);
 
   useEffect(() => {
     // Pri každom otvorení/refreshi konverzácie sa vráť na najnovšie správy.
@@ -529,6 +560,7 @@ export function ConversationDetail({
   const handleMessagesScroll = useCallback(() => {
     const scrollContainer = messagesScrollRef.current;
     if (!scrollContainer) return;
+    updateScrollToBottomButtonVisibility(scrollContainer);
     if (isMobile && isComposerFocused) {
       shouldPinFocusedViewportToBottomRef.current = isNearMessagesBottom();
     }
@@ -543,7 +575,23 @@ export function ConversationDetail({
     loading,
     loadingOlder,
     nextOlderPage,
+    updateScrollToBottomButtonVisibility,
   ]);
+
+  const handleScrollToBottomClick = useCallback(() => {
+    const scrollContainer = messagesScrollRef.current;
+    if (scrollContainer && typeof scrollContainer.scrollTo === 'function') {
+      scrollContainer.scrollTo({
+        top: scrollContainer.scrollHeight,
+        behavior: 'smooth',
+      });
+    } else {
+      scrollMessagesToLatest();
+    }
+
+    shouldPinFocusedViewportToBottomRef.current = true;
+    setShowScrollToBottomButton(false);
+  }, [scrollMessagesToLatest]);
 
   const handleSend = async () => {
     const draft = text;
@@ -697,116 +745,60 @@ export function ConversationDetail({
         </div>
       )}
 
-      <div
-        ref={messagesScrollRef}
-        data-testid="conversation-messages-scroll"
-        onScroll={handleMessagesScroll}
-        className={`flex-1 min-h-0 overflow-y-auto overscroll-y-contain touch-pan-y elegant-scrollbar ${
-          isMobile ? MOBILE_MESSAGE_SIDE_PADDING_CLASS : DESKTOP_MESSAGE_SIDE_PADDING_CLASS
-        }`}
-      >
-        {ordered.length === 0 ? (
-          <div className="text-sm text-gray-600 dark:text-gray-400 text-center py-8">
-            {t('messages.noMessagesYet', 'Zatiaľ bez správ')}
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {ordered.map((m, index) => {
-            const mine = m.sender?.id === currentUserId;
-            const prev = index > 0 ? ordered[index - 1] : null;
-            const next = index < ordered.length - 1 ? ordered[index + 1] : null;
-            const prevSenderId = prev?.sender?.id ?? null;
-            const curSenderId = m.sender?.id ?? null;
-            const nextSenderId = next?.sender?.id ?? null;
-            const showTimestamp =
-              !prev ||
-              prevSenderId !== curSenderId ||
-              minuteBucketKey(prev.created_at) !== minuteBucketKey(m.created_at);
-            const showSenderAvatar = !mine && (!next || nextSenderId !== curSenderId);
-            const senderAvatarUrl = m.sender?.avatar_url || targetUserAvatarUrl;
-            const senderDisplayName = (m.sender?.display_name || '').trim() || targetUserName;
-            const bubbleClassName = [
-              'w-fit max-w-full rounded-2xl px-3 py-2 text-sm',
-              mine
-                ? 'bg-brand text-white'
-                : 'bg-gray-100 dark:bg-[#141416] text-gray-900 dark:text-gray-100 border border-gray-200/60 dark:border-gray-800',
-            ].join(' ');
+      <div className="relative flex-1 min-h-0">
+        <div
+          ref={messagesScrollRef}
+          data-testid="conversation-messages-scroll"
+          onScroll={handleMessagesScroll}
+          className={`h-full min-h-0 overflow-y-auto overscroll-y-contain touch-pan-y elegant-scrollbar ${
+            isMobile ? MOBILE_MESSAGE_SIDE_PADDING_CLASS : DESKTOP_MESSAGE_SIDE_PADDING_CLASS
+          }`}
+        >
+          {ordered.length === 0 ? (
+            <div className="text-sm text-gray-600 dark:text-gray-400 text-center py-8">
+              {t('messages.noMessagesYet', 'Zatiaľ bez správ')}
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {ordered.map((m, index) => {
+                const mine = m.sender?.id === currentUserId;
+                const prev = index > 0 ? ordered[index - 1] : null;
+                const next = index < ordered.length - 1 ? ordered[index + 1] : null;
+                const prevSenderId = prev?.sender?.id ?? null;
+                const curSenderId = m.sender?.id ?? null;
+                const nextSenderId = next?.sender?.id ?? null;
+                const showTimestamp =
+                  !prev ||
+                  prevSenderId !== curSenderId ||
+                  minuteBucketKey(prev.created_at) !== minuteBucketKey(m.created_at);
+                const showSenderAvatar = !mine && (!next || nextSenderId !== curSenderId);
+                const senderAvatarUrl = m.sender?.avatar_url || targetUserAvatarUrl;
+                const senderDisplayName = (m.sender?.display_name || '').trim() || targetUserName;
+                const bubbleClassName = [
+                  'w-fit max-w-full rounded-2xl px-3 py-2 text-sm',
+                  mine
+                    ? 'bg-brand text-white'
+                    : 'bg-gray-100 dark:bg-[#141416] text-gray-900 dark:text-gray-100 border border-gray-200/60 dark:border-gray-800',
+                ].join(' ');
 
-            return mine ? (
-              <div
-                key={m.id}
-                className={`flex justify-end ${isMobile ? 'pr-0' : 'pr-1'}`}
-              >
-                <div
-                  className={`flex min-w-0 flex-col items-end ${
-                    isMobile ? 'max-w-full' : 'max-w-[80%]'
-                  }`}
-                >
-                  {showTimestamp ? (
+                return mine ? (
+                  <div
+                    key={m.id}
+                    className={`flex justify-end ${isMobile ? 'pr-0' : 'pr-1'}`}
+                  >
                     <div
-                      data-testid={`message-timestamp-${m.id}`}
-                      className="mb-1 text-[10px] tabular-nums text-right text-gray-500 dark:text-gray-400"
-                    >
-                      {formatTime(m.created_at)}
-                    </div>
-                  ) : null}
-                  <div data-testid={`message-bubble-${m.id}`} className={bubbleClassName}>
-                    <div className="whitespace-pre-wrap break-words">
-                      {m.text ?? t('messages.deleted', 'Správa bola odstránená')}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div
-                key={m.id}
-                className={`flex justify-start ${isMobile ? 'pl-0' : 'pl-1'}`}
-              >
-                <div
-                  className={`flex min-w-0 flex-col ${
-                    isMobile ? 'max-w-full' : 'max-w-[80%]'
-                  }`}
-                >
-                  {showTimestamp ? (
-                    <div
-                      data-testid={`message-timestamp-${m.id}`}
-                      className={`mb-1 text-[10px] tabular-nums text-left text-gray-500 dark:text-gray-400 ${
-                        isMobile ? 'pl-7' : 'pl-10'
+                      className={`flex min-w-0 flex-col items-end ${
+                        isMobile ? 'max-w-full' : 'max-w-[80%]'
                       }`}
                     >
-                      {formatTime(m.created_at)}
-                    </div>
-                  ) : null}
-                  <div
-                    className={`flex min-w-0 items-center ${isMobile ? 'gap-1' : 'gap-2'}`}
-                  >
-                    <div className={`flex shrink-0 justify-start ${isMobile ? 'w-6' : 'w-8'}`}>
-                      {showSenderAvatar ? (
+                      {showTimestamp ? (
                         <div
-                          data-testid={`message-avatar-${m.id}`}
-                          className={`overflow-hidden rounded-full bg-purple-100 dark:bg-purple-900/40 ${
-                            isMobile ? 'h-6 w-6' : 'h-8 w-8'
-                          }`}
+                          data-testid={`message-timestamp-${m.id}`}
+                          className="mb-1 text-[10px] tabular-nums text-right text-gray-500 dark:text-gray-400"
                         >
-                          {senderAvatarUrl ? (
-                            <img
-                              src={senderAvatarUrl}
-                              alt={senderDisplayName}
-                              className="h-full w-full object-cover"
-                            />
-                          ) : (
-                            <span className="flex h-full w-full items-center justify-center text-[9px] font-bold text-purple-700 dark:text-purple-300">
-                              {senderDisplayName.slice(0, 1).toUpperCase()}
-                            </span>
-                          )}
+                          {formatTime(m.created_at)}
                         </div>
                       ) : null}
-                    </div>
-                    <div
-                      className={`min-w-0 flex-1 ${
-                        isMobile ? 'max-w-[calc(100%-1.75rem)]' : ''
-                      }`}
-                    >
                       <div data-testid={`message-bubble-${m.id}`} className={bubbleClassName}>
                         <div className="whitespace-pre-wrap break-words">
                           {m.text ?? t('messages.deleted', 'Správa bola odstránená')}
@@ -814,13 +806,83 @@ export function ConversationDetail({
                       </div>
                     </div>
                   </div>
-                </div>
-              </div>
-            );
-            })}
-          </div>
-        )}
-        <div ref={bottomRef} />
+                ) : (
+                  <div
+                    key={m.id}
+                    className={`flex justify-start ${isMobile ? 'pl-0' : 'pl-1'}`}
+                  >
+                    <div
+                      className={`flex min-w-0 flex-col ${
+                        isMobile ? 'max-w-full' : 'max-w-[80%]'
+                      }`}
+                    >
+                      {showTimestamp ? (
+                        <div
+                          data-testid={`message-timestamp-${m.id}`}
+                          className={`mb-1 text-[10px] tabular-nums text-left text-gray-500 dark:text-gray-400 ${
+                            isMobile ? 'pl-7' : 'pl-10'
+                          }`}
+                        >
+                          {formatTime(m.created_at)}
+                        </div>
+                      ) : null}
+                      <div
+                        className={`flex min-w-0 items-center ${isMobile ? 'gap-1' : 'gap-2'}`}
+                      >
+                        <div className={`flex shrink-0 justify-start ${isMobile ? 'w-6' : 'w-8'}`}>
+                          {showSenderAvatar ? (
+                            <div
+                              data-testid={`message-avatar-${m.id}`}
+                              className={`overflow-hidden rounded-full bg-purple-100 dark:bg-purple-900/40 ${
+                                isMobile ? 'h-6 w-6' : 'h-8 w-8'
+                              }`}
+                            >
+                              {senderAvatarUrl ? (
+                                <img
+                                  src={senderAvatarUrl}
+                                  alt={senderDisplayName}
+                                  className="h-full w-full object-cover"
+                                />
+                              ) : (
+                                <span className="flex h-full w-full items-center justify-center text-[9px] font-bold text-purple-700 dark:text-purple-300">
+                                  {senderDisplayName.slice(0, 1).toUpperCase()}
+                                </span>
+                              )}
+                            </div>
+                          ) : null}
+                        </div>
+                        <div
+                          className={`min-w-0 flex-1 ${
+                            isMobile ? 'max-w-[calc(100%-1.75rem)]' : ''
+                          }`}
+                        >
+                          <div data-testid={`message-bubble-${m.id}`} className={bubbleClassName}>
+                            <div className="whitespace-pre-wrap break-words">
+                              {m.text ?? t('messages.deleted', 'Správa bola odstránená')}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          <div ref={bottomRef} />
+        </div>
+
+        {isMobile && showScrollToBottomButton ? (
+          <button
+            type="button"
+            data-testid="conversation-scroll-to-bottom"
+            aria-label={t('messages.scrollToBottom', 'Prejsť na najnovšie správy')}
+            onClick={handleScrollToBottomClick}
+            className="absolute bottom-3 right-3 z-10 inline-flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-white/95 text-gray-700 shadow-lg backdrop-blur transition-colors hover:bg-white focus:outline-none focus:ring-2 focus:ring-brand/40 dark:border-gray-800 dark:bg-[#0f0f10]/95 dark:text-gray-100 dark:hover:bg-[#0f0f10]"
+          >
+            <ChevronDownIcon className="h-5 w-5" />
+          </button>
+        ) : null}
       </div>
 
       <div
