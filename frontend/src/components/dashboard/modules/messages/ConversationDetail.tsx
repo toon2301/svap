@@ -139,6 +139,14 @@ export function ConversationDetail({
     [isMobile],
   );
 
+  const handleMobileSendPointerDown = useCallback(
+    (event: React.PointerEvent<HTMLButtonElement>) => {
+      // Keep the input focused so iOS does not consume the first tap by closing the keyboard.
+      event.preventDefault();
+    },
+    [],
+  );
+
   const scrollMessagesToLatest = useCallback(() => {
     const scrollContainer = messagesScrollRef.current;
     if (scrollContainer) {
@@ -781,6 +789,7 @@ export function ConversationDetail({
             <button
               type="button"
               disabled={sending}
+              onPointerDown={handleMobileSendPointerDown}
               onClick={() => void handleSend()}
               className="absolute right-1.5 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-brand text-white transition-colors hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-60"
               aria-label={t('messages.send', 'Odoslať')}

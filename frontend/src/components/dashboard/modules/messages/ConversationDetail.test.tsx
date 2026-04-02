@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, createEvent, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import toast from 'react-hot-toast';
 import { ConversationDetail } from './ConversationDetail';
 import {
@@ -362,6 +362,34 @@ describe('ConversationDetail', () => {
       expect(composer.style.bottom).toBe('');
       expect(messagesScroll.style.paddingBottom).toBe('');
       expect(composer.className).toContain('pb-[max(1.75rem,env(safe-area-inset-bottom,0px))]');
+    });
+  });
+
+  it('sends a mobile message on the first tap while the keyboard is open', async () => {
+    useIsMobile.mockReturnValue(true);
+    (sendMessage as jest.Mock).mockResolvedValue(undefined);
+
+    render(<ConversationDetail conversationId={9} currentUserId={1} />);
+
+    await waitFor(() => {
+      expect(listMessages).toHaveBeenCalledWith(9, 100);
+    });
+
+    const input = screen.getByRole('textbox') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: 'Ahoj' } });
+    fireEvent.focus(input);
+
+    const sendButton = await screen.findByRole('button', { name: /odosla/i });
+    const pointerDownEvent = createEvent.pointerDown(sendButton, { bubbles: true, cancelable: true });
+    fireEvent(sendButton, pointerDownEvent);
+
+    expect(pointerDownEvent.defaultPrevented).toBe(true);
+
+    fireEvent.click(sendButton);
+
+    await waitFor(() => {
+      expect(sendMessage).toHaveBeenCalledWith(9, 'Ahoj');
+      expect(input.value).toBe('');
     });
   });
 

@@ -1,7 +1,7 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { createEvent, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { DraftConversationDetail } from './DraftConversationDetail';
-import { openConversation } from './messagingApi';
+import { openConversation, sendDirectMessage } from './messagingApi';
 
 jest.mock('@emoji-mart/data', () => ({}));
 
@@ -107,5 +107,30 @@ describe('DraftConversationDetail', () => {
     expect(composer.className).not.toContain('pt-2');
     expect(composer.className).toContain('mt-1');
     expect(composer.className).toContain('pt-1');
+  });
+
+  it('sends the first draft message on the first mobile tap', async () => {
+    useIsMobile.mockReturnValue(true);
+    (openConversation as jest.Mock).mockResolvedValue(draftResponse);
+    (sendDirectMessage as jest.Mock).mockResolvedValue({ conversation_id: 91 });
+
+    render(<DraftConversationDetail targetUserId={42} />);
+
+    const input = (await screen.findByRole('textbox')) as HTMLInputElement;
+    fireEvent.change(input, { target: { value: 'Ahoj' } });
+    fireEvent.focus(input);
+
+    const sendButton = await screen.findByRole('button', { name: /odosla/i });
+    const pointerDownEvent = createEvent.pointerDown(sendButton, { bubbles: true, cancelable: true });
+    fireEvent(sendButton, pointerDownEvent);
+
+    expect(pointerDownEvent.defaultPrevented).toBe(true);
+
+    fireEvent.click(sendButton);
+
+    await waitFor(() => {
+      expect(sendDirectMessage).toHaveBeenCalledWith(42, 'Ahoj');
+      expect(replaceMock).toHaveBeenCalledWith('/dashboard/messages?conversationId=91');
+    });
   });
 });
