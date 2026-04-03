@@ -89,6 +89,7 @@
     "offered": "Angeboten",
     "openDetail": "Anfrage-Details öffnen",
     "openProfile": "Profil öffnen",
+    "createFromChat": "Anfrage aus Angebot erstellen",
     "toastCancelFailed": "Anfrage konnte nicht zurückgezogen werden."
   },
   "navigation": {

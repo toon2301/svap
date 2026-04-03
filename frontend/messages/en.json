@@ -89,6 +89,7 @@
     "offered": "Offered",
     "openDetail": "Open request details",
     "openProfile": "Open profile",
+    "createFromChat": "Create request from offer",
     "toastCancelFailed": "Failed to cancel request.",
     "toastRequestCancelled": "The request was cancelled by the user.",
     "toastRequestAlreadyProcessed": "The request has already been processed."

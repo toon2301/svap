@@ -89,6 +89,7 @@
     "offered": "Ajánlott",
     "openDetail": "Kérés részleteinek megnyitása",
     "openProfile": "Profil megnyitása",
+    "createFromChat": "Kérés létrehozása ajánlatból",
     "toastCancelFailed": "A kérés visszavonása sikertelen."
   },
   "navigation": {

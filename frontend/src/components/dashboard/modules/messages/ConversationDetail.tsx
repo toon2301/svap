@@ -4,12 +4,11 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useMessagesNotifications } from '@/components/dashboard/contexts/RequestsNotificationsContext';
 import { useIsMobile } from '@/hooks';
-import { Bars3Icon, ChevronDownIcon, PaperAirplaneIcon } from '@heroicons/react/24/outline';
+import { ChevronDownIcon, PaperAirplaneIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 import type { ConversationListItem, MessageItem, MessageListPage } from './types';
 import { getMessagingErrorMessage, listConversations, listMessages, markConversationRead, sendMessage } from './messagingApi';
-import { CreateRequestCta } from './CreateRequestCta';
-import { CreateRequestModal } from './CreateRequestModal';
+import { ChatRequestOfferPicker } from './ChatRequestOfferPicker';
 import { DesktopEmojiPickerButton } from './DesktopEmojiPickerButton';
 import {
   MESSAGING_REALTIME_READ_EVENT,
@@ -109,10 +108,7 @@ export function ConversationDetail({
   const markReadSessionRef = useRef(0);
   const latestKnownMessageIdRef = useRef<number | null>(null);
   const [otherConversation, setOtherConversation] = useState<ConversationListItem | null>(null);
-  const [isCreateRequestOpen, setIsCreateRequestOpen] = useState(false);
-  const [requestCreatedInfo, setRequestCreatedInfo] = useState<string | null>(null);
-  const [isHeaderMenuOpen, setIsHeaderMenuOpen] = useState(false);
-  const headerMenuRef = useRef<HTMLDivElement | null>(null);
+  const [isRequestPickerOpen, setIsRequestPickerOpen] = useState(false);
   const messagesScrollRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const shouldRestoreFocusRef = useRef(false);
@@ -141,6 +137,7 @@ export function ConversationDetail({
   }, [isMobile]);
 
   const handleComposerFocus = useCallback(() => {
+    setIsRequestPickerOpen(false);
     if (!isMobile) return;
     shouldPinFocusedViewportToBottomRef.current = true;
     setIsComposerFocused(true);
@@ -420,6 +417,7 @@ export function ConversationDetail({
     setMessages([]);
     setNextOlderPage(null);
     setPeerLastReadAt(null);
+    setIsRequestPickerOpen(false);
     setLoadingOlder(false);
     pendingScrollRestoreRef.current = null;
     void (async () => {
@@ -569,20 +567,6 @@ export function ConversationDetail({
     };
   }, [conversationId, setActiveConversationId]);
 
-  useEffect(() => {
-    if (!isHeaderMenuOpen) return;
-    const onPointerDown = (event: MouseEvent) => {
-      const target = event.target as Node;
-      if (headerMenuRef.current && !headerMenuRef.current.contains(target)) {
-        setIsHeaderMenuOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', onPointerDown);
-    return () => {
-      document.removeEventListener('mousedown', onPointerDown);
-    };
-  }, [isHeaderMenuOpen]);
-
   const loadOlderMessages = useCallback(async () => {
     if (loading || loadingOlder || nextOlderPage === null) return;
 
@@ -712,9 +696,11 @@ export function ConversationDetail({
   }
 
   const targetUserId = otherConversation?.other_user?.id ?? null;
+  const targetUserSlug = otherConversation?.other_user?.slug ?? null;
   const targetUserName =
     (otherConversation?.other_user?.display_name || '').trim() || t('messages.unknownUser', 'Používateľ');
   const targetUserAvatarUrl = otherConversation?.other_user?.avatar_url ?? null;
+  const targetUserType = otherConversation?.other_user?.user_type ?? null;
   const hasTextToSend = text.trim().length > 0;
   const isComposerInputDisabled = !isMobile && sending;
 
@@ -722,22 +708,7 @@ export function ConversationDetail({
     <div
       className={`${containerClassName} flex h-full min-h-0 flex-col overflow-hidden overscroll-none`}
     >
-      {isMobile ? (
-        <div className="mb-2 flex items-center justify-end gap-2">
-          {requestCreatedInfo ? (
-            <div className="mr-auto text-xs text-purple-700 dark:text-purple-300">
-              {requestCreatedInfo}
-            </div>
-          ) : null}
-          <CreateRequestCta
-            disabled={!targetUserId}
-            onClick={() => {
-              if (!targetUserId) return;
-              setIsCreateRequestOpen(true);
-            }}
-          />
-        </div>
-      ) : (
+      {!isMobile ? (
         <div
           data-testid="conversation-header"
           className="mb-3"
@@ -758,43 +729,11 @@ export function ConversationDetail({
                 <div className="text-sm font-semibold text-gray-900 dark:text-white truncate max-w-[24rem]">
                   {targetUserName}
                 </div>
-                <div className="relative" ref={headerMenuRef}>
-                  <button
-                    type="button"
-                    className="p-1.5 rounded-xl text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-[#161618] transition-colors"
-                    aria-label={t('common.menu', 'Menu')}
-                    onClick={() => setIsHeaderMenuOpen((prev) => !prev)}
-                  >
-                    <Bars3Icon className="w-5 h-5" />
-                  </button>
-
-                  {isHeaderMenuOpen ? (
-                    <div className="absolute left-0 top-full mt-2 min-w-[170px] rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#0f0f10] shadow-xl p-1 z-20">
-                      <button
-                        type="button"
-                        disabled={!targetUserId}
-                        onClick={() => {
-                          setIsHeaderMenuOpen(false);
-                          if (!targetUserId) return;
-                          setIsCreateRequestOpen(true);
-                        }}
-                        className="w-full text-left px-3 py-2 rounded-xl text-sm font-medium text-gray-800 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-[#161618] disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {t('requests.createFromChat', 'Vytvoriť žiadosť')}
-                      </button>
-                    </div>
-                  ) : null}
-                </div>
               </div>
             </div>
           </div>
-          {requestCreatedInfo ? (
-            <div className="mt-1 px-4 sm:px-6 lg:px-8 text-center text-xs text-purple-700 dark:text-purple-300">
-              {requestCreatedInfo}
-            </div>
-          ) : null}
         </div>
-      )}
+      ) : null}
 
       <div className="relative flex-1 min-h-0">
         <div
@@ -958,93 +897,123 @@ export function ConversationDetail({
         ) : null}
       </div>
 
-      <div
-        data-testid="conversation-composer"
-        onFocusCapture={handleComposerFocus}
-        onBlurCapture={handleComposerBlur}
-        className={
-          isMobile
-            ? `relative z-10 mt-1 flex w-full min-w-0 shrink-0 items-center overflow-x-hidden pl-[max(0.75rem,env(safe-area-inset-left,0px))] pr-[max(0.75rem,env(safe-area-inset-right,0px))] pt-1 ${
-                isComposerFocused
-                  ? 'pb-[max(0.5rem,env(safe-area-inset-bottom,0px))]'
-                  : 'pb-[max(1.75rem,env(safe-area-inset-bottom,0px))]'
-              }`
-            : 'mt-2 flex w-full min-w-0 shrink-0 gap-2 px-4 sm:px-6 lg:px-8 mx-auto pb-[max(1rem,env(safe-area-inset-bottom,0px))] lg:pb-[max(1.25rem,env(safe-area-inset-bottom,0px))] sm:max-w-[min(100%,36rem)] md:max-w-[min(100%,44rem)] lg:max-w-[min(100%,52rem)] xl:max-w-[min(100%,64rem)]'
-        }
-      >
+      {isMobile ? (
         <div
-          className={`relative min-w-0 flex-1 ${
-            isMobile
-              ? 'flex min-h-0 items-center overflow-hidden rounded-2xl border border-gray-200 bg-white px-2 dark:border-gray-800 dark:bg-black'
-              : ''
+          data-testid="conversation-mobile-composer-stack"
+          className={`mt-1 w-full shrink-0 pl-[max(0.75rem,env(safe-area-inset-left,0px))] pr-[max(0.75rem,env(safe-area-inset-right,0px))] ${
+            isComposerFocused
+              ? 'pb-[max(0.5rem,env(safe-area-inset-bottom,0px))]'
+              : 'pb-[max(1.75rem,env(safe-area-inset-bottom,0px))]'
           }`}
         >
-          <input
-            ref={inputRef}
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            disabled={isComposerInputDisabled}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                void handleSend();
-              }
-            }}
-            className={`min-w-0 w-full text-sm text-gray-900 dark:text-gray-100 ${
-              isMobile
-                ? `border-0 bg-transparent py-2 focus:outline-none overflow-x-hidden text-ellipsis whitespace-nowrap ${
-                    hasTextToSend ? 'pl-2 pr-12' : 'px-2'
-                  }`
-                : 'rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-black px-4 py-2 focus:outline-none focus:ring-2 focus:ring-brand/40 pr-12'
-            }`}
-            placeholder={t('messages.type', 'Napíš správu…')}
-          />
-          {isMobile && hasTextToSend ? (
-            <button
-              type="button"
-              disabled={sending}
-              onPointerDown={handleMobileSendPointerDown}
-              onClick={() => void handleSend()}
-              className="absolute right-1.5 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-brand text-white transition-colors hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-60"
-              aria-label={t('messages.send', 'Odoslať')}
-            >
-              <PaperAirplaneIcon className="h-4 w-4 -rotate-45" />
-            </button>
-          ) : null}
-          {!isMobile ? (
-            <DesktopEmojiPickerButton
-              ariaLabel={t('messages.addEmoji', 'Pridať emoji')}
-              disabled={sending}
-              onSelect={handleEmojiSelect}
-              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-[#141416] dark:hover:text-gray-200"
+          <div className="overflow-hidden rounded-[1.75rem] border border-gray-200 bg-white/90 shadow-sm backdrop-blur dark:border-gray-800 dark:bg-[#0f0f10]/90">
+            <ChatRequestOfferPicker
+              open={isRequestPickerOpen}
+              disabled={!targetUserId}
+              isMobile={isMobile}
+              pairWithComposerBelow
+              targetUserId={targetUserId}
+              targetUserSlug={targetUserSlug}
+              targetUserType={targetUserType}
+              onToggle={() => setIsRequestPickerOpen((prev) => !prev)}
+              className=""
             />
-          ) : null}
+            <div
+              data-testid="conversation-composer"
+              onFocusCapture={handleComposerFocus}
+              onBlurCapture={handleComposerBlur}
+              className="relative z-10 flex w-full min-w-0 shrink-0 items-center gap-2 overflow-x-hidden border-t border-gray-200 bg-white/90 px-2.5 py-2.5 dark:border-gray-800 dark:bg-[#0f0f10]/90"
+            >
+              <div className="relative flex min-h-0 min-w-0 flex-1 items-center overflow-hidden rounded-2xl border border-gray-200 bg-white px-2 dark:border-gray-800 dark:bg-black">
+                <input
+                  ref={inputRef}
+                  value={text}
+                  onChange={(e) => setText(e.target.value)}
+                  disabled={isComposerInputDisabled}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      void handleSend();
+                    }
+                  }}
+                  className={`min-w-0 w-full border-0 bg-transparent py-2 text-sm text-gray-900 focus:outline-none dark:text-gray-100 ${
+                    hasTextToSend
+                      ? 'overflow-x-hidden text-ellipsis whitespace-nowrap pl-2 pr-12'
+                      : 'overflow-x-hidden text-ellipsis whitespace-nowrap px-2'
+                  }`}
+                  placeholder={t('messages.type', 'Napíš správu…')}
+                />
+                {hasTextToSend ? (
+                  <button
+                    type="button"
+                    disabled={sending}
+                    onPointerDown={handleMobileSendPointerDown}
+                    onClick={() => void handleSend()}
+                    className="absolute right-1.5 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-brand text-white transition-colors hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-60"
+                    aria-label={t('messages.send', 'Odoslať')}
+                  >
+                    <PaperAirplaneIcon className="h-4 w-4 -rotate-45" />
+                  </button>
+                ) : null}
+              </div>
+            </div>
+          </div>
         </div>
-        {isMobile ? null : (
-          <button
-            type="button"
-            disabled={sending || !hasTextToSend}
-            onClick={() => void handleSend()}
-            className="px-4 py-2 rounded-2xl bg-brand text-white text-sm font-semibold disabled:opacity-60 disabled:cursor-not-allowed hover:bg-brand-dark transition-colors"
-          >
-            {sending ? t('common.sending', 'Odosielam…') : t('messages.send', 'Odoslať')}
-          </button>
-        )}
-      </div>
+      ) : (
+        <div className="mt-2 w-full max-w-[min(100%,56rem)] mx-auto px-4 sm:px-6 lg:px-8 pb-[max(1rem,env(safe-area-inset-bottom,0px))] lg:pb-[max(1.25rem,env(safe-area-inset-bottom,0px))]">
+          <div className="overflow-hidden rounded-[1.75rem] border border-gray-200 bg-white/90 shadow-sm backdrop-blur dark:border-gray-800 dark:bg-[#0f0f10]/90">
+            <ChatRequestOfferPicker
+              open={isRequestPickerOpen}
+              disabled={!targetUserId}
+              isMobile={isMobile}
+              pairWithComposerBelow
+              targetUserId={targetUserId}
+              targetUserSlug={targetUserSlug}
+              targetUserType={targetUserType}
+              onToggle={() => setIsRequestPickerOpen((prev) => !prev)}
+              className=""
+            />
+            <div
+              data-testid="conversation-composer"
+              onFocusCapture={handleComposerFocus}
+              onBlurCapture={handleComposerBlur}
+              className="flex w-full min-w-0 shrink-0 gap-2 border-t border-gray-200 bg-white/90 px-3 py-3 dark:border-gray-800 dark:bg-[#0f0f10]/90"
+            >
+              <div className="relative min-w-0 flex-1">
+                <input
+                  ref={inputRef}
+                  value={text}
+                  onChange={(e) => setText(e.target.value)}
+                  disabled={isComposerInputDisabled}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      void handleSend();
+                    }
+                  }}
+                  className="min-w-0 w-full rounded-2xl border border-gray-200 bg-white px-4 py-2 pr-12 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand/40 dark:border-gray-800 dark:bg-black dark:text-gray-100"
+                  placeholder={t('messages.type', 'Napíš správu…')}
+                />
+                <DesktopEmojiPickerButton
+                  ariaLabel={t('messages.addEmoji', 'Pridať emoji')}
+                  disabled={sending}
+                  onSelect={handleEmojiSelect}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-[#141416] dark:hover:text-gray-200"
+                />
+              </div>
+              <button
+                type="button"
+                disabled={sending || !hasTextToSend}
+                onClick={() => void handleSend()}
+                className="shrink-0 rounded-2xl bg-brand px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {sending ? t('common.sending', 'Odosielam…') : t('messages.send', 'Odoslať')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
-      {targetUserId ? (
-        <CreateRequestModal
-          open={isCreateRequestOpen}
-          conversationId={conversationId}
-          targetUserId={targetUserId}
-          targetUserName={targetUserName}
-          onClose={() => setIsCreateRequestOpen(false)}
-          onCreated={() => {
-            setRequestCreatedInfo(t('requests.createdInfo', 'Žiadosť bola vytvorená'));
-            void refresh({ showError: false, markAsRead: true });
-          }}
-        />
-      ) : null}
     </div>
   );
 }

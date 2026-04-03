@@ -58,14 +58,9 @@ jest.mock('react-hot-toast', () => ({
   },
 }));
 
-jest.mock('./CreateRequestCta', () => ({
+jest.mock('./ChatRequestOfferPicker', () => ({
   __esModule: true,
-  CreateRequestCta: () => null,
-}));
-
-jest.mock('./CreateRequestModal', () => ({
-  __esModule: true,
-  CreateRequestModal: () => null,
+  ChatRequestOfferPicker: () => <div data-testid="chat-request-offer-picker" />,
 }));
 
 jest.mock('./messagingApi', () => ({
@@ -315,10 +310,11 @@ describe('ConversationDetail', () => {
     });
 
     const composer = await screen.findByTestId('conversation-composer');
+    const composerStack = screen.getByTestId('conversation-mobile-composer-stack');
     const messagesScroll = screen.getByTestId('conversation-messages-scroll');
     const input = screen.getByRole('textbox');
 
-    Object.defineProperty(composer, 'offsetHeight', {
+    Object.defineProperty(composerStack, 'offsetHeight', {
       configurable: true,
       get: () => 50,
     });
@@ -331,12 +327,12 @@ describe('ConversationDetail', () => {
       expect(composer.style.bottom).toBe('');
       expect(messagesScroll.style.paddingBottom).toBe('');
     });
-    expect(composer.className).toMatch(/safe-area-inset-left/);
+    expect(composerStack.className).toMatch(/safe-area-inset-left/);
     expect(composer.className).not.toContain('px-4');
     expect(composer.className).not.toContain('fixed');
     expect(composer.className).not.toContain('mt-1.5');
     expect(composer.className).not.toContain('pt-2');
-    expect(composer.className).toContain('pb-[max(1.75rem,env(safe-area-inset-bottom,0px))]');
+    expect(composerStack.className).toContain('pb-[max(1.75rem,env(safe-area-inset-bottom,0px))]');
     expect(messagesScroll.className).not.toContain('space-y-2');
 
     viewport.setMetrics({ height: 650 });
@@ -355,7 +351,7 @@ describe('ConversationDetail', () => {
       expect(composer.style.bottom).toBe('');
       expect(messagesScroll.style.paddingBottom).toBe('');
       expect(composer.className).not.toContain('fixed');
-      expect(composer.className).toContain('pb-[max(0.5rem,env(safe-area-inset-bottom,0px))]');
+      expect(composerStack.className).toContain('pb-[max(0.5rem,env(safe-area-inset-bottom,0px))]');
     });
 
     fireEvent.blur(input);
@@ -363,7 +359,7 @@ describe('ConversationDetail', () => {
     await waitFor(() => {
       expect(composer.style.bottom).toBe('');
       expect(messagesScroll.style.paddingBottom).toBe('');
-      expect(composer.className).toContain('pb-[max(1.75rem,env(safe-area-inset-bottom,0px))]');
+      expect(composerStack.className).toContain('pb-[max(1.75rem,env(safe-area-inset-bottom,0px))]');
     });
   });
 

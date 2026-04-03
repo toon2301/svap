@@ -89,6 +89,7 @@
     "offered": "Ponúknuté",
     "openDetail": "Otvoriť detail žiadosti",
     "openProfile": "Otvoriť profil",
+    "createFromChat": "Vytvoriť žiadosť z ponuky",
     "toastCancelFailed": "Zrušenie žiadosti zlyhalo.",
     "toastRequestCancelled": "Žiadosť bola zrušená používateľom.",
     "toastRequestAlreadyProcessed": "Žiadosť už bola spracovaná."

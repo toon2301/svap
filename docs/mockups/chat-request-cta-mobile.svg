@@ -1,0 +1,119 @@
+<svg width="1080" height="1920" viewBox="0 0 1080 1920" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgMobile" x1="140" y1="90" x2="940" y2="1830" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F6F1FF"/>
+      <stop offset="1" stop-color="#EEF2FF"/>
+    </linearGradient>
+    <linearGradient id="panelGlow" x1="0" y1="0" x2="0" y2="1">
+      <stop stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#F7F4FF"/>
+    </linearGradient>
+    <linearGradient id="ctaBar" x1="200" y1="0" x2="870" y2="0" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#7C3AED"/>
+      <stop offset="1" stop-color="#5B21B6"/>
+    </linearGradient>
+    <linearGradient id="card1" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#FDF2F8"/>
+      <stop offset="1" stop-color="#F5D0FE"/>
+    </linearGradient>
+    <linearGradient id="card2" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#ECFEFF"/>
+      <stop offset="1" stop-color="#CFFAFE"/>
+    </linearGradient>
+    <linearGradient id="card3" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#FEF9C3"/>
+      <stop offset="1" stop-color="#FDE68A"/>
+    </linearGradient>
+    <filter id="shadowLg" x="88" y="48" width="904" height="1824" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feFlood flood-opacity="0" result="BackgroundImageFix"/>
+      <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+      <feOffset dy="28"/>
+      <feGaussianBlur stdDeviation="26"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0.243137 0 0 0 0 0.164706 0 0 0 0 0.443137 0 0 0 0.18 0"/>
+      <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_0_1"/>
+      <feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_0_1" result="shape"/>
+    </filter>
+    <filter id="cardShadow" x="0" y="0" width="420" height="330" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feFlood flood-opacity="0" result="BackgroundImageFix"/>
+      <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+      <feOffset dy="14"/>
+      <feGaussianBlur stdDeviation="16"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0.0901961 0 0 0 0 0.101961 0 0 0 0 0.188235 0 0 0 0.18 0"/>
+      <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_0_1"/>
+      <feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_0_1" result="shape"/>
+    </filter>
+  </defs>
+
+  <rect width="1080" height="1920" fill="url(#bgMobile)"/>
+  <text x="140" y="120" fill="#241B3D" font-family="Arial, sans-serif" font-size="42" font-weight="700">Mobile koncept</text>
+  <text x="140" y="166" fill="#6B5E87" font-family="Arial, sans-serif" font-size="24">Unified CTA nad composerom + rozbalene mini karty</text>
+
+  <g filter="url(#shadowLg)">
+    <rect x="140" y="210" width="800" height="1540" rx="72" fill="#FAFAFF"/>
+    <rect x="450" y="242" width="180" height="24" rx="12" fill="#D5D3E8"/>
+    <rect x="140" y="298" width="800" height="92" rx="0" fill="#FFFFFF"/>
+    <circle cx="230" cy="344" r="26" fill="#E9D5FF"/>
+    <text x="280" y="352" fill="#1F1637" font-family="Arial, sans-serif" font-size="30" font-weight="700">Petra Novakova</text>
+    <text x="760" y="352" fill="#7C3AED" font-family="Arial, sans-serif" font-size="26" font-weight="700">Online</text>
+
+    <rect x="180" y="442" width="250" height="66" rx="28" fill="#FFFFFF" stroke="#E6E0F4"/>
+    <text x="212" y="485" fill="#4C416B" font-family="Arial, sans-serif" font-size="26">Ahoj, mas volno?</text>
+
+    <rect x="584" y="536" width="206" height="66" rx="28" fill="#7C3AED"/>
+    <text x="627" y="579" fill="#FFFFFF" font-family="Arial, sans-serif" font-size="26">Mam, jasne</text>
+
+    <rect x="180" y="632" width="364" height="66" rx="28" fill="#FFFFFF" stroke="#E6E0F4"/>
+    <text x="212" y="675" fill="#4C416B" font-family="Arial, sans-serif" font-size="26">Pozerala som tvoje ponuky</text>
+
+    <rect x="492" y="726" width="298" height="66" rx="28" fill="#7C3AED"/>
+    <text x="538" y="769" fill="#FFFFFF" font-family="Arial, sans-serif" font-size="26">Mozeme to posunut dalej</text>
+
+    <text x="200" y="930" fill="#8C80AA" font-family="Arial, sans-serif" font-size="22" font-weight="700">Vyber kartu a otvorime profil s oznacenou ponukou</text>
+
+    <g transform="translate(206 968) rotate(-4 168 118)" filter="url(#cardShadow)">
+      <rect width="336" height="236" rx="34" fill="#FFFFFF"/>
+      <rect x="16" y="16" width="304" height="104" rx="24" fill="url(#card1)"/>
+      <rect x="28" y="32" width="112" height="60" rx="20" fill="#F9A8D4" fill-opacity="0.5"/>
+      <rect x="164" y="34" width="128" height="16" rx="8" fill="#7C3AED" fill-opacity="0.18"/>
+      <rect x="164" y="60" width="100" height="14" rx="7" fill="#7C3AED" fill-opacity="0.12"/>
+      <text x="24" y="150" fill="#241B3D" font-family="Arial, sans-serif" font-size="24" font-weight="700">Fotenie portrtov</text>
+      <text x="24" y="182" fill="#6B5E87" font-family="Arial, sans-serif" font-size="18">60 min session  •  Bratislava</text>
+      <rect x="24" y="196" width="116" height="24" rx="12" fill="#F3E8FF"/>
+      <text x="46" y="213" fill="#7C3AED" font-family="Arial, sans-serif" font-size="14" font-weight="700">otvori profil</text>
+    </g>
+
+    <g transform="translate(372 942)" filter="url(#cardShadow)">
+      <rect width="336" height="252" rx="34" fill="#FFFFFF" stroke="#8B5CF6" stroke-width="6"/>
+      <rect x="16" y="16" width="304" height="110" rx="24" fill="url(#card2)"/>
+      <rect x="28" y="30" width="112" height="64" rx="22" fill="#67E8F9" fill-opacity="0.55"/>
+      <rect x="168" y="34" width="126" height="16" rx="8" fill="#0891B2" fill-opacity="0.16"/>
+      <rect x="168" y="60" width="98" height="14" rx="7" fill="#0891B2" fill-opacity="0.12"/>
+      <rect x="24" y="146" width="110" height="26" rx="13" fill="#EDE9FE"/>
+      <text x="46" y="164" fill="#6D28D9" font-family="Arial, sans-serif" font-size="14" font-weight="700">vybrane</text>
+      <text x="24" y="198" fill="#241B3D" font-family="Arial, sans-serif" font-size="24" font-weight="700">Doucovanie anglictiny</text>
+      <text x="24" y="230" fill="#6B5E87" font-family="Arial, sans-serif" font-size="18">online / osobne  •  45 min</text>
+    </g>
+
+    <g transform="translate(560 980) rotate(5 168 118)" filter="url(#cardShadow)">
+      <rect width="300" height="224" rx="32" fill="#FFFFFF"/>
+      <rect x="16" y="16" width="268" height="96" rx="22" fill="url(#card3)"/>
+      <rect x="30" y="32" width="100" height="56" rx="20" fill="#FCD34D" fill-opacity="0.45"/>
+      <text x="24" y="144" fill="#241B3D" font-family="Arial, sans-serif" font-size="22" font-weight="700">Pomoc s prezentaciou</text>
+      <text x="24" y="174" fill="#6B5E87" font-family="Arial, sans-serif" font-size="17">rychla konzultacia</text>
+    </g>
+
+    <rect x="184" y="1242" width="712" height="264" rx="40" fill="url(#panelGlow)" stroke="#E7DEFA" stroke-width="2"/>
+    <rect x="208" y="1266" width="664" height="70" rx="26" fill="url(#ctaBar)"/>
+    <text x="252" y="1312" fill="#FFFFFF" font-family="Arial, sans-serif" font-size="28" font-weight="700">Vytvorit ziadost z ponuky</text>
+    <circle cx="820" cy="1301" r="18" fill="#A78BFA" fill-opacity="0.35"/>
+    <path d="M813 1297L820 1304L828 1296" stroke="#FFFFFF" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+
+    <rect x="208" y="1362" width="664" height="118" rx="28" fill="#FFFFFF" stroke="#E6E0F4" stroke-width="2"/>
+    <text x="244" y="1435" fill="#AEA3C6" font-family="Arial, sans-serif" font-size="30">Napis spravu...</text>
+    <circle cx="810" cy="1421" r="34" fill="#7C3AED"/>
+    <path d="M795 1421H822" stroke="#FFFFFF" stroke-width="5" stroke-linecap="round"/>
+    <path d="M812 1411L822 1421L812 1431" stroke="#FFFFFF" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+
+    <rect x="396" y="1640" width="288" height="12" rx="6" fill="#D1CEDD"/>
+  </g>
+</svg>

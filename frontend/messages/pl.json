@@ -89,6 +89,7 @@
     "offered": "Ponúknuté",
     "openDetail": "Otvoriť detail žiadosti",
     "openProfile": "Otvoriť profil",
+    "createFromChat": "Utwórz prośbę z oferty",
     "toastCancelFailed": "Zrušenie žiadosti zlyhalo."
   },
   "navigation": {
