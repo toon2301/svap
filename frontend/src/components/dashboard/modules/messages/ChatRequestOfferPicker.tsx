@@ -34,7 +34,8 @@ function mapOffer(value: any): Offer | null {
             image: typeof image?.image === 'string' ? image.image : null,
             order: typeof image?.order === 'number' ? image.order : index,
           }))
-          .filter((image) => image.image_url || image.image)
+          .filter((image: { image_url: string | null; image: string | null }) =>
+            Boolean(image.image_url || image.image))
       : [],
     price_from:
       typeof value?.price_from === 'number'
