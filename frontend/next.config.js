@@ -1,4 +1,5 @@
 const path = require('path');
+// chore: no-op bump pre Railway redeploy
 
 function normalizeOrigin(value) {
   return String(value || '').trim().replace(/\/+$/, '');
