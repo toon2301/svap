@@ -701,6 +701,8 @@ export function ConversationDetail({
     (otherConversation?.other_user?.display_name || '').trim() || t('messages.unknownUser', 'Používateľ');
   const targetUserAvatarUrl = otherConversation?.other_user?.avatar_url ?? null;
   const targetUserType = otherConversation?.other_user?.user_type ?? null;
+  const canCreateRequestFromOffer =
+    targetUserId !== null && otherConversation?.has_requestable_offers === true;
   const hasTextToSend = text.trim().length > 0;
   const isComposerInputDisabled = !isMobile && sending;
 
@@ -907,17 +909,19 @@ export function ConversationDetail({
           }`}
         >
           <div className="overflow-hidden rounded-[1.75rem] border border-gray-200 bg-white/90 shadow-sm backdrop-blur dark:border-gray-800 dark:bg-[#0f0f10]/90">
-            <ChatRequestOfferPicker
-              open={isRequestPickerOpen}
-              disabled={!targetUserId}
-              isMobile={isMobile}
-              pairWithComposerBelow
-              targetUserId={targetUserId}
-              targetUserSlug={targetUserSlug}
-              targetUserType={targetUserType}
-              onToggle={() => setIsRequestPickerOpen((prev) => !prev)}
-              className=""
-            />
+            {canCreateRequestFromOffer ? (
+              <ChatRequestOfferPicker
+                open={isRequestPickerOpen}
+                disabled={!targetUserId}
+                isMobile={isMobile}
+                pairWithComposerBelow
+                targetUserId={targetUserId}
+                targetUserSlug={targetUserSlug}
+                targetUserType={targetUserType}
+                onToggle={() => setIsRequestPickerOpen((prev) => !prev)}
+                className=""
+              />
+            ) : null}
             <div
               data-testid="conversation-composer"
               onFocusCapture={handleComposerFocus}
@@ -962,17 +966,19 @@ export function ConversationDetail({
       ) : (
         <div className="mt-2 w-full max-w-[min(100%,56rem)] mx-auto px-4 sm:px-6 lg:px-8 pb-[max(1rem,env(safe-area-inset-bottom,0px))] lg:pb-[max(1.25rem,env(safe-area-inset-bottom,0px))]">
           <div className="overflow-hidden rounded-[1.75rem] border border-gray-200 bg-white/90 shadow-sm backdrop-blur dark:border-gray-800 dark:bg-[#0f0f10]/90">
-            <ChatRequestOfferPicker
-              open={isRequestPickerOpen}
-              disabled={!targetUserId}
-              isMobile={isMobile}
-              pairWithComposerBelow
-              targetUserId={targetUserId}
-              targetUserSlug={targetUserSlug}
-              targetUserType={targetUserType}
-              onToggle={() => setIsRequestPickerOpen((prev) => !prev)}
-              className=""
-            />
+            {canCreateRequestFromOffer ? (
+              <ChatRequestOfferPicker
+                open={isRequestPickerOpen}
+                disabled={!targetUserId}
+                isMobile={isMobile}
+                pairWithComposerBelow
+                targetUserId={targetUserId}
+                targetUserSlug={targetUserSlug}
+                targetUserType={targetUserType}
+                onToggle={() => setIsRequestPickerOpen((prev) => !prev)}
+                className=""
+              />
+            ) : null}
             <div
               data-testid="conversation-composer"
               onFocusCapture={handleComposerFocus}

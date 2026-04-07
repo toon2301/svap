@@ -6,6 +6,7 @@ from django.db.models import (
     BooleanField,
     Case,
     Count,
+    Exists,
     F,
     IntegerField,
     OuterRef,
@@ -27,6 +28,7 @@ from rest_framework.views import APIView
 from rest_framework.generics import ListAPIView
 from rest_framework.utils.urls import remove_query_param, replace_query_param
 
+from accounts.models import OfferedSkill
 from accounts.realtime import notify_user
 from swaply.rate_limiting import (
     messaging_mark_read_rate_limit,
@@ -210,6 +212,19 @@ def _peer_last_read_at_for_conversation(*, conversation_id: int, user_id: int):
     )
 
 
+def _has_requestable_offers_for_user_id(user_id: int | None) -> bool:
+    if not user_id:
+        return False
+
+    return OfferedSkill.objects.filter(
+        user_id=user_id,
+        is_hidden=False,
+        is_seeking=False,
+        user__is_active=True,
+        user__is_public=True,
+    ).exists()
+
+
 def _conversation_list_queryset_for_user(user):
     """
     Conversations where the user is a participant, annotated for MVP UI:
@@ -251,6 +266,17 @@ def _conversation_list_queryset_for_user(user):
             other_user_slug=Subquery(other_participant_qs.values("user__slug")[:1]),
             other_user_type=Subquery(other_participant_qs.values("user__user_type")[:1]),
             other_user_avatar_name=Subquery(other_participant_qs.values("user__avatar")[:1]),
+        )
+        .annotate(
+            has_requestable_offers=Exists(
+                OfferedSkill.objects.filter(
+                    user_id=OuterRef("other_user_id"),
+                    is_hidden=False,
+                    is_seeking=False,
+                    user__is_active=True,
+                    user__is_public=True,
+                )
+            ),
             unread_count=_conversation_unread_count_expression_for_user(user),
         )
         .annotate(
@@ -365,6 +391,7 @@ class OpenConversationView(APIView):
         data = {
             "id": None,
             "other_user": serialize_user_brief(target, request),
+            "has_requestable_offers": _has_requestable_offers_for_user_id(target.id),
             "last_message_at": None,
             "last_message_preview": None,
             "last_message_sender_id": None,

@@ -9,6 +9,7 @@ export type MessagingUserBrief = {
 export type ConversationListItem = {
   id: number;
   other_user: MessagingUserBrief | null;
+  has_requestable_offers?: boolean;
   last_message_preview: string | null;
   last_message_at: string | null;
   last_message_sender_id?: number | null;
@@ -24,6 +25,7 @@ export type ConversationListItem = {
 export type ConversationDraft = {
   id: null;
   other_user: MessagingUserBrief | null;
+  has_requestable_offers?: boolean;
   last_message_preview: null;
   last_message_at: null;
   last_message_sender_id?: null;

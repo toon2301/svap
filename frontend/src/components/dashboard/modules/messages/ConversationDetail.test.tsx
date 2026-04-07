@@ -178,6 +178,7 @@ describe('ConversationDetail', () => {
     (listConversations as jest.Mock).mockResolvedValue([
       {
         id: 9,
+        has_requestable_offers: true,
         other_user: {
           id: 77,
           display_name: 'Tester',
@@ -232,6 +233,37 @@ describe('ConversationDetail', () => {
     });
 
     expect((input as HTMLInputElement).value).toBe('Ahoj');
+  });
+
+  it('renders the request picker only when the conversation exposes requestable offers', async () => {
+    render(<ConversationDetail conversationId={9} currentUserId={1} />);
+
+    await waitFor(() => {
+      expect(listMessages).toHaveBeenCalledWith(9, 100);
+    });
+
+    expect(screen.getByTestId('chat-request-offer-picker')).toBeInTheDocument();
+  });
+
+  it('hides the request picker when the other user has no requestable offers', async () => {
+    (listConversations as jest.Mock).mockResolvedValue([
+      {
+        id: 9,
+        has_requestable_offers: false,
+        other_user: {
+          id: 77,
+          display_name: 'Tester',
+        },
+      },
+    ]);
+
+    render(<ConversationDetail conversationId={9} currentUserId={1} />);
+
+    await waitFor(() => {
+      expect(listMessages).toHaveBeenCalledWith(9, 100);
+    });
+
+    expect(screen.queryByTestId('chat-request-offer-picker')).not.toBeInTheDocument();
   });
 
   it('inserts emoji into the desktop composer input', async () => {
@@ -1123,6 +1155,7 @@ describe('ConversationDetail', () => {
     (listConversations as jest.Mock).mockResolvedValue([
       {
         id: 9,
+        has_requestable_offers: true,
         other_user: {
           id: 77,
           display_name: 'Tester',
@@ -1175,6 +1208,7 @@ describe('ConversationDetail', () => {
     (listConversations as jest.Mock).mockResolvedValue([
       {
         id: 9,
+        has_requestable_offers: true,
         other_user: {
           id: 77,
           display_name: 'Tester',

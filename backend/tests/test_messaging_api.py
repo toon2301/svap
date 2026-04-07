@@ -7,6 +7,7 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 from unittest.mock import patch
 
+from accounts.models import OfferedSkill
 from messaging.models import Conversation, ConversationParticipant, Message
 from messaging.services.conversations import open_or_create_direct_conversation
 
@@ -64,6 +65,7 @@ class TestMessagingApi(APITestCase):
         assert response.data["is_draft"] is True
         assert response.data["target_user_id"] == self.u2.id
         assert response.data["other_user"]["id"] == self.u2.id
+        assert response.data["has_requestable_offers"] is False
         assert Conversation.objects.count() == 0
         assert ConversationParticipant.objects.count() == 0
 
@@ -80,6 +82,28 @@ class TestMessagingApi(APITestCase):
         assert Conversation.objects.count() == 1
         assert ConversationParticipant.objects.count() == 2
         assert Message.objects.count() == 0
+
+    def test_open_conversation_draft_exposes_requestable_offers_flag(self):
+        OfferedSkill.objects.create(
+            user=self.u2,
+            category="IT",
+            subcategory="Frontend",
+            description="Mentoring",
+            location="Bratislava",
+            district="Bratislava I",
+            is_hidden=False,
+            is_seeking=False,
+        )
+
+        self.client.force_authenticate(user=self.u1)
+        url = reverse("accounts:messaging_open")
+
+        response = self.client.post(url, {"target_user_id": self.u2.id}, format="json")
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["id"] is None
+        assert response.data["is_draft"] is True
+        assert response.data["has_requestable_offers"] is True
 
     def test_open_conversation_returns_existing_started_conversation(self):
         convo = self._create_direct_conversation(actor=self.u1, target=self.u2)
@@ -268,6 +292,16 @@ class TestMessagingApi(APITestCase):
     def test_conversation_list_returns_only_started_conversations_with_other_user(self):
         empty_convo = self._create_direct_conversation(actor=self.u1, target=self.u2)
         started_convo = self._create_direct_conversation(actor=self.u1, target=self.u3)
+        OfferedSkill.objects.create(
+            user=self.u3,
+            category="IT",
+            subcategory="Backend",
+            description="API development",
+            location="Kosice",
+            district="Kosice I",
+            is_hidden=False,
+            is_seeking=False,
+        )
 
         self.client.force_authenticate(user=self.u1)
         send_url = reverse("accounts:messaging_send_message", kwargs={"conversation_id": started_convo.id})
@@ -283,8 +317,46 @@ class TestMessagingApi(APITestCase):
         assert results[0]["id"] == started_convo.id
         assert results[0]["other_user"]["id"] == self.u3.id
         assert results[0]["other_user"]["display_name"]
+        assert results[0]["has_requestable_offers"] is True
         assert results[0]["unread_count"] == 0
         assert all(item["id"] != empty_convo.id for item in results)
+
+    def test_conversation_list_hides_request_picker_flag_when_peer_has_only_hidden_or_seeking_offers(self):
+        convo = self._create_direct_conversation(actor=self.u1, target=self.u2)
+        OfferedSkill.objects.create(
+            user=self.u2,
+            category="IT",
+            subcategory="Frontend",
+            description="Skryta ponuka",
+            location="Bratislava",
+            district="Bratislava I",
+            is_hidden=True,
+            is_seeking=False,
+        )
+        OfferedSkill.objects.create(
+            user=self.u2,
+            category="IT",
+            subcategory="UX",
+            description="Hladam pomoc",
+            location="Bratislava",
+            district="Bratislava II",
+            is_hidden=False,
+            is_seeking=True,
+        )
+
+        self.client.force_authenticate(user=self.u2)
+        send_url = reverse("accounts:messaging_send_message", kwargs={"conversation_id": convo.id})
+        assert self.client.post(send_url, {"text": "Ahoj"}, format="json").status_code == status.HTTP_201_CREATED
+
+        self.client.force_authenticate(user=self.u1)
+        list_url = reverse("accounts:messaging_list_conversations")
+        response = self.client.get(list_url)
+
+        assert response.status_code == status.HTTP_200_OK
+        results = response.data.get("results", [])
+        assert len(results) == 1
+        assert results[0]["id"] == convo.id
+        assert results[0]["has_requestable_offers"] is False
 
     def test_conversation_list_includes_unread_count_and_summary_endpoint_returns_total(self):
         convo = self._create_direct_conversation(actor=self.u2, target=self.u1)

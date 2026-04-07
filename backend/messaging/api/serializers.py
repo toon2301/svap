@@ -56,6 +56,7 @@ def _avatar_name_url(request, avatar_name: str | None) -> str | None:
 
 class ConversationListItemSerializer(serializers.ModelSerializer):
     other_user = serializers.SerializerMethodField()
+    has_requestable_offers = serializers.SerializerMethodField()
     last_message_preview = serializers.SerializerMethodField()
     last_message_sender_id = serializers.IntegerField(read_only=True, allow_null=True)
     last_message_is_deleted = serializers.BooleanField(read_only=True)
@@ -72,6 +73,7 @@ class ConversationListItemSerializer(serializers.ModelSerializer):
             "last_message_sender_id",
             "last_message_is_deleted",
             "other_user",
+            "has_requestable_offers",
             "last_read_at",
             "has_unread",
             "unread_count",
@@ -115,6 +117,9 @@ class ConversationListItemSerializer(serializers.ModelSerializer):
         if getattr(obj, "last_message_is_deleted", False):
             return None
         return getattr(obj, "last_message_preview", None)
+
+    def get_has_requestable_offers(self, obj: Conversation) -> bool:
+        return bool(getattr(obj, "has_requestable_offers", False))
 
 
 class MessageSerializer(serializers.ModelSerializer):
