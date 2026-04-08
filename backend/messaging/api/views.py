@@ -42,7 +42,14 @@ from ..services.conversations import (
     find_direct_conversation,
     send_direct_message,
 )
-from ..services.messages import NotParticipant, mark_conversation_read, send_message
+from ..services.messages import (
+    MessageNotFound,
+    NotMessageAuthor,
+    NotParticipant,
+    delete_message_for_all,
+    mark_conversation_read,
+    send_message,
+)
 from .serializers import (
     ConversationListItemSerializer,
     MarkReadSerializer,
@@ -131,6 +138,7 @@ def _conversation_unread_count_expression_for_user(user):
     return Count(
         "messages",
         filter=Q(participants__user=user)
+        & Q(messages__is_deleted=False)
         & ~Q(messages__sender_id=user.id)
         & (
             Q(participants__last_read_at__isnull=True)
@@ -153,7 +161,9 @@ def _conversation_unread_messages_count_for_user(*, conversation_id: int, user_i
         return 0
 
     last_read_at = participant.get("last_read_at")
-    qs = Message.objects.filter(conversation_id=conversation_id).exclude(sender_id=user_id)
+    qs = Message.objects.filter(conversation_id=conversation_id, is_deleted=False).exclude(
+        sender_id=user_id
+    )
     if last_read_at is not None:
         qs = qs.filter(created_at__gt=last_read_at)
     return int(qs.count())
@@ -167,7 +177,8 @@ def _total_unread_messages_count_for_user(user) -> int:
         ).aggregate(
             total=Count(
                 "conversation__messages",
-                filter=~Q(conversation__messages__sender_id=user.id)
+                filter=Q(conversation__messages__is_deleted=False)
+                & ~Q(conversation__messages__sender_id=user.id)
                 & (
                     Q(last_read_at__isnull=True)
                     | Q(conversation__messages__created_at__gt=F("last_read_at"))
@@ -189,7 +200,8 @@ def _total_unread_messages_count_for_user_id(user_id: int) -> int:
         ).aggregate(
             total=Count(
                 "conversation__messages",
-                filter=~Q(conversation__messages__sender_id=user_id)
+                filter=Q(conversation__messages__is_deleted=False)
+                & ~Q(conversation__messages__sender_id=user_id)
                 & (
                     Q(last_read_at__isnull=True)
                     | Q(conversation__messages__created_at__gt=F("last_read_at"))
@@ -234,7 +246,7 @@ def _conversation_list_queryset_for_user(user):
     - has_unread boolean
     """
     last_msg_qs = (
-        Message.objects.filter(conversation_id=OuterRef("pk"))
+        Message.objects.filter(conversation_id=OuterRef("pk"), is_deleted=False)
         .order_by("-created_at", "-id")
     )
     last_read_qs = ConversationParticipant.objects.filter(
@@ -499,7 +511,7 @@ class MessageListView(ListAPIView):
     def get_queryset(self):
         convo = self.get_conversation()
         return (
-            Message.objects.filter(conversation=convo)
+            Message.objects.filter(conversation=convo, is_deleted=False)
             .select_related("sender")
             .order_by("-created_at", "-id")
         )
@@ -572,6 +584,66 @@ class SendMessageView(APIView):
         return Response(
             MessageSerializer(result.message, context={"request": request}).data,
             status=status.HTTP_201_CREATED,
+        )
+
+
+class DeleteMessageView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, conversation_id: int, message_id: int):
+        convo = _conversation_for_user_or_404(conversation_id=conversation_id, user=request.user)
+
+        try:
+            result = delete_message_for_all(
+                conversation=convo,
+                message_id=message_id,
+                actor=request.user,
+            )
+        except NotParticipant:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        except MessageNotFound:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        except NotMessageAuthor:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+
+        total_unread_count = _total_unread_messages_count_for_user(request.user)
+
+        if result.changed:
+            event = {
+                "type": "messaging_message_deleted",
+                "conversation_id": convo.id,
+                "message_id": result.message.id,
+                "deleted_by_id": request.user.id,
+            }
+            for participant_id in result.participant_user_ids:
+                notify_user(
+                    participant_id,
+                    {
+                        **event,
+                        "total_unread_count": _total_unread_messages_count_for_user_id(
+                            participant_id
+                        ),
+                        "conversation_unread_count": _conversation_unread_messages_count_for_user(
+                            conversation_id=convo.id,
+                            user_id=participant_id,
+                        ),
+                    },
+                )
+
+        return Response(
+            {
+                "conversation_id": convo.id,
+                "message": MessageSerializer(
+                    result.message,
+                    context={"request": request},
+                ).data,
+                "conversation_unread_count": _conversation_unread_messages_count_for_user(
+                    conversation_id=convo.id,
+                    user_id=request.user.id,
+                ),
+                "total_unread_count": total_unread_count,
+            },
+            status=status.HTTP_200_OK,
         )
 
 

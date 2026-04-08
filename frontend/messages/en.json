@@ -165,7 +165,13 @@
     "firstMessageHint": "The conversation will be created after you send the first message.",
     "sidebarSubtitle": "Conversation list",
     "pickConversationTitle": "Choose a conversation",
-    "pickConversationHint": "Select the conversation you want to open on the right."
+    "pickConversationHint": "Select the conversation you want to open on the right.",
+    "deleteAction": "Delete",
+    "deleteConfirmTitle": "Delete message?",
+    "deleteConfirmDescription": "This message will be deleted for all conversation participants. However, some participants may already have read it. Recalled messages may still be shown if the conversation is reported.",
+    "openMessageActions": "Open message actions",
+    "deleteFailed": "Failed to delete the message. Please try again.",
+    "deleteUnavailable": "This message can no longer be deleted."
   },
   "search": {
     "title": "Search",

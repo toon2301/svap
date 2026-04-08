@@ -8,6 +8,7 @@ import {
 } from '../RequestsNotificationsContext';
 import {
   MESSAGING_CONVERSATIONS_REFRESH_EVENT,
+  MESSAGING_REALTIME_DELETED_EVENT,
   MESSAGING_REALTIME_MESSAGE_EVENT,
   MESSAGING_REALTIME_READ_EVENT,
 } from '@/components/dashboard/modules/messages/messagesEvents';
@@ -502,6 +503,40 @@ describe('RequestsNotificationsProvider', () => {
     });
 
     window.removeEventListener(MESSAGING_REALTIME_READ_EVENT, realtimeReadSpy);
+  });
+
+  it('bridges message delete websocket payloads into browser events for message modules', async () => {
+    const conversationsRefreshSpy = jest.fn();
+    const realtimeDeletedSpy = jest.fn();
+    window.addEventListener(MESSAGING_CONVERSATIONS_REFRESH_EVENT, conversationsRefreshSpy);
+    window.addEventListener(MESSAGING_REALTIME_DELETED_EVENT, realtimeDeletedSpy);
+
+    render(
+      <RequestsNotificationsProvider>
+        <Consumer />
+        <MessageConsumer />
+      </RequestsNotificationsProvider>,
+    );
+    await flushAsyncEffects();
+
+    expect(MockWebSocket.instances).toHaveLength(1);
+
+    act(() => {
+      MockWebSocket.instances[0].emitMessage({
+        type: 'messaging_message_deleted',
+        conversation_id: 9,
+        message_id: 12,
+        deleted_by_id: 77,
+        total_unread_count: 1,
+      });
+    });
+
+    expect(conversationsRefreshSpy).toHaveBeenCalledTimes(1);
+    expect(realtimeDeletedSpy).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId('message-count')).toHaveTextContent('1');
+
+    window.removeEventListener(MESSAGING_CONVERSATIONS_REFRESH_EVENT, conversationsRefreshSpy);
+    window.removeEventListener(MESSAGING_REALTIME_DELETED_EVENT, realtimeDeletedSpy);
   });
 
   it('keeps message unread state reactive in React strict mode after websocket updates', async () => {

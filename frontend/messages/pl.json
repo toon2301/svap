@@ -165,7 +165,13 @@
     "firstMessageHint": "Konwersacja zostanie utworzona dopiero po wyslaniu pierwszej wiadomosci.",
     "sidebarSubtitle": "Lista konwersacji",
     "pickConversationTitle": "Wybierz konwersacje",
-    "pickConversationHint": "Po prawej stronie wybierz konwersacje, ktora chcesz otworzyc."
+    "pickConversationHint": "Po prawej stronie wybierz konwersacje, ktora chcesz otworzyc.",
+    "deleteAction": "Usun",
+    "deleteConfirmTitle": "Usunac wiadomosc?",
+    "deleteConfirmDescription": "Ta wiadomosc zostanie usunieta dla wszystkich uczestnikow konwersacji. Mozliwe jednak, ze niektorzy zdazyli juz ja przeczytac. Odwolane wiadomosci moga nadal byc widoczne w przypadku zgloszenia konwersacji.",
+    "openMessageActions": "Otworz opcje wiadomosci",
+    "deleteFailed": "Nie udalo sie usunac wiadomosci. Sprobuj ponownie.",
+    "deleteUnavailable": "Nie mozna juz usunac tej wiadomosci."
   },
   "search": {
     "title": "Szukaj",

@@ -5,6 +5,7 @@ import { api, endpoints, ensureFreshSessionForBackgroundWork, ensureSessionRefre
 import { useAuth } from '@/contexts/AuthContext';
 import { getUnreadMessagesSummary } from '@/components/dashboard/modules/messages/messagingApi';
 import {
+  dispatchMessagingRealtimeDeleted,
   dispatchMessagingRealtimeRead,
   dispatchMessagingRealtimeMessage,
   requestConversationsRefresh,
@@ -54,6 +55,7 @@ type WsNotificationPayload = {
   created_at?: string;
   peer_last_read_at?: string;
   reader_id?: number;
+  deleted_by_id?: number;
 };
 
 type WsListener = (payload: WsNotificationPayload) => void;
@@ -616,6 +618,24 @@ export function RequestsNotificationsProvider({ children }: { children: React.Re
           conversationId: payload.conversation_id,
           peerLastReadAt: payload.peer_last_read_at,
           readerId: payload.reader_id,
+        });
+        return;
+      }
+
+      if (
+        payload.type === 'messaging_message_deleted' &&
+        typeof payload.conversation_id === 'number' &&
+        typeof payload.message_id === 'number'
+      ) {
+        if (typeof payload.total_unread_count === 'number') {
+          publishMessageUnreadCount(payload.total_unread_count);
+        }
+
+        requestConversationsRefresh();
+        dispatchMessagingRealtimeDeleted({
+          conversationId: payload.conversation_id,
+          messageId: payload.message_id,
+          deletedById: payload.deleted_by_id,
         });
         return;
       }

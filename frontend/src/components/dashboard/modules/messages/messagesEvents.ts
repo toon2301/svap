@@ -3,6 +3,7 @@
 export const MESSAGING_CONVERSATIONS_REFRESH_EVENT = 'messaging:conversations:refresh';
 export const MESSAGING_REALTIME_MESSAGE_EVENT = 'messaging:realtime:message';
 export const MESSAGING_REALTIME_READ_EVENT = 'messaging:realtime:read';
+export const MESSAGING_REALTIME_DELETED_EVENT = 'messaging:realtime:deleted';
 
 export type MessagingRealtimeMessagePayload = {
   conversationId: number;
@@ -15,6 +16,12 @@ export type MessagingRealtimeReadPayload = {
   conversationId: number;
   peerLastReadAt: string;
   readerId?: number;
+};
+
+export type MessagingRealtimeDeletedPayload = {
+  conversationId: number;
+  messageId: number;
+  deletedById?: number;
 };
 
 export function requestConversationsRefresh(): void {
@@ -39,6 +46,17 @@ export function dispatchMessagingRealtimeRead(
   if (typeof window === 'undefined') return;
   window.dispatchEvent(
     new CustomEvent<MessagingRealtimeReadPayload>(MESSAGING_REALTIME_READ_EVENT, {
+      detail: payload,
+    }),
+  );
+}
+
+export function dispatchMessagingRealtimeDeleted(
+  payload: MessagingRealtimeDeletedPayload,
+): void {
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(
+    new CustomEvent<MessagingRealtimeDeletedPayload>(MESSAGING_REALTIME_DELETED_EVENT, {
       detail: payload,
     }),
   );

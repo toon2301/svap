@@ -265,6 +265,130 @@ class TestMessagingApi(APITestCase):
         assert participant.last_read_at is not None
         assert notify_user_mock.call_count == 4
 
+    def test_message_author_can_delete_message_for_everyone_without_returning_placeholder(self):
+        convo = self._create_direct_conversation(actor=self.u1, target=self.u2)
+
+        self.client.force_authenticate(user=self.u1)
+        send_url = reverse("accounts:messaging_send_message", kwargs={"conversation_id": convo.id})
+        send_response = self.client.post(send_url, {"text": "Ahoj"}, format="json")
+        assert send_response.status_code == status.HTTP_201_CREATED
+        message_id = send_response.data["id"]
+
+        delete_url = reverse(
+            "accounts:messaging_delete_message",
+            kwargs={"conversation_id": convo.id, "message_id": message_id},
+        )
+        with patch("messaging.api.views.notify_user") as notify_user_mock:
+            delete_response = self.client.post(delete_url, {}, format="json")
+
+        assert delete_response.status_code == status.HTTP_200_OK
+        assert delete_response.data["conversation_id"] == convo.id
+        assert delete_response.data["message"]["id"] == message_id
+        assert delete_response.data["message"]["is_deleted"] is True
+        assert delete_response.data["message"]["text"] is None
+
+        message = Message.objects.get(id=message_id)
+        assert message.is_deleted is True
+
+        self.client.force_authenticate(user=self.u2)
+        summary_url = reverse("accounts:messaging_unread_summary")
+        summary_response = self.client.get(summary_url)
+        assert summary_response.status_code == status.HTTP_200_OK
+        assert summary_response.data["count"] == 0
+
+        list_url = reverse("accounts:messaging_list_messages", kwargs={"conversation_id": convo.id})
+        list_response = self.client.get(list_url)
+        assert list_response.status_code == status.HTTP_200_OK
+        assert list_response.data["results"] == []
+
+        convo.refresh_from_db()
+        assert convo.last_message_at is None
+
+        assert notify_user_mock.call_count == 2
+        events = [call.args for call in notify_user_mock.call_args_list]
+        for called_user_id, event in events:
+            assert called_user_id in {self.u1.id, self.u2.id}
+            assert event["type"] == "messaging_message_deleted"
+            assert event["conversation_id"] == convo.id
+            assert event["message_id"] == message_id
+            assert event["deleted_by_id"] == self.u1.id
+        recipient_event = next(args[1] for args in events if args[0] == self.u2.id)
+        assert recipient_event["conversation_unread_count"] == 0
+        assert recipient_event["total_unread_count"] == 0
+
+    def test_deleting_latest_message_falls_back_to_previous_conversation_preview(self):
+        convo = self._create_direct_conversation(actor=self.u1, target=self.u2)
+
+        self.client.force_authenticate(user=self.u1)
+        send_url = reverse("accounts:messaging_send_message", kwargs={"conversation_id": convo.id})
+        first_response = self.client.post(send_url, {"text": "Prva sprava"}, format="json")
+        assert first_response.status_code == status.HTTP_201_CREATED
+        second_response = self.client.post(send_url, {"text": "Druha sprava"}, format="json")
+        assert second_response.status_code == status.HTTP_201_CREATED
+
+        delete_url = reverse(
+            "accounts:messaging_delete_message",
+            kwargs={"conversation_id": convo.id, "message_id": second_response.data["id"]},
+        )
+        delete_response = self.client.post(delete_url, {}, format="json")
+
+        assert delete_response.status_code == status.HTTP_200_OK
+
+        convo.refresh_from_db()
+        first_message = Message.objects.get(id=first_response.data["id"])
+        assert convo.last_message_at == first_message.created_at
+
+        list_url = reverse("accounts:messaging_list_conversations")
+        list_response = self.client.get(list_url)
+
+        assert list_response.status_code == status.HTTP_200_OK
+        results = list_response.data.get("results", [])
+        assert len(results) == 1
+        assert results[0]["last_message_preview"] == "Prva sprava"
+        assert results[0]["last_message_sender_id"] == self.u1.id
+        assert results[0]["last_message_is_deleted"] is False
+
+    def test_message_delete_is_idempotent(self):
+        convo = self._create_direct_conversation(actor=self.u1, target=self.u2)
+
+        self.client.force_authenticate(user=self.u1)
+        send_url = reverse("accounts:messaging_send_message", kwargs={"conversation_id": convo.id})
+        send_response = self.client.post(send_url, {"text": "Ahoj"}, format="json")
+        assert send_response.status_code == status.HTTP_201_CREATED
+        message_id = send_response.data["id"]
+
+        delete_url = reverse(
+            "accounts:messaging_delete_message",
+            kwargs={"conversation_id": convo.id, "message_id": message_id},
+        )
+        with patch("messaging.api.views.notify_user") as notify_user_mock:
+            first = self.client.post(delete_url, {}, format="json")
+            second = self.client.post(delete_url, {}, format="json")
+
+        assert first.status_code == status.HTTP_200_OK
+        assert second.status_code == status.HTTP_200_OK
+        assert Message.objects.get(id=message_id).is_deleted is True
+        assert notify_user_mock.call_count == 2
+
+    def test_user_cannot_delete_someone_elses_message(self):
+        convo = self._create_direct_conversation(actor=self.u1, target=self.u2)
+
+        self.client.force_authenticate(user=self.u1)
+        send_url = reverse("accounts:messaging_send_message", kwargs={"conversation_id": convo.id})
+        send_response = self.client.post(send_url, {"text": "Ahoj"}, format="json")
+        assert send_response.status_code == status.HTTP_201_CREATED
+        message_id = send_response.data["id"]
+
+        self.client.force_authenticate(user=self.u2)
+        delete_url = reverse(
+            "accounts:messaging_delete_message",
+            kwargs={"conversation_id": convo.id, "message_id": message_id},
+        )
+        delete_response = self.client.post(delete_url, {}, format="json")
+
+        assert delete_response.status_code == status.HTTP_403_FORBIDDEN
+        assert Message.objects.get(id=message_id).is_deleted is False
+
     def test_message_list_includes_peer_last_read_at(self):
         convo = self._create_direct_conversation(actor=self.u1, target=self.u2)
 

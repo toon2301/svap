@@ -165,7 +165,13 @@
     "firstMessageHint": "Konverzácia sa vytvorí až po odoslaní prvej správy.",
     "sidebarSubtitle": "Zoznam konverzácií",
     "pickConversationTitle": "Vyber konverzáciu",
-    "pickConversationHint": "Na pravej strane si zvoľ konverzáciu, ktorú chceš otvoriť."
+    "pickConversationHint": "Na pravej strane si zvoľ konverzáciu, ktorú chceš otvoriť.",
+    "deleteAction": "Vymazať",
+    "deleteConfirmTitle": "Vymazať správu?",
+    "deleteConfirmDescription": "Týmto sa správa vymaže pre všetkých účastníkov. Je však možné, že si ju už niektorí stihli prečítať. Správy, ktoré boli odvolané, sa môžu stále zobrazovať v prípade nahlásenia konverzácie.",
+    "openMessageActions": "Otvoriť možnosti správy",
+    "deleteFailed": "Správu sa nepodarilo vymazať. Skúste to znova.",
+    "deleteUnavailable": "Správu už nie je možné vymazať."
   },
   "search": {
     "title": "Vyhľadávanie",

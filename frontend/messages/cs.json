@@ -165,7 +165,13 @@
     "firstMessageHint": "Konverzace se vytvoří až po odeslání první zprávy.",
     "sidebarSubtitle": "Seznam konverzací",
     "pickConversationTitle": "Vyber konverzaci",
-    "pickConversationHint": "Vpravo si vyberte konverzaci, kterou chcete otevřít."
+    "pickConversationHint": "Vpravo si vyberte konverzaci, kterou chcete otevřít.",
+    "deleteAction": "Smazat",
+    "deleteConfirmTitle": "Smazat zpravu?",
+    "deleteConfirmDescription": "Timto se zprava smaze pro vsechny ucastniky konverzace. Je ale mozne, ze si ji nekteri uz stihli precist. Odvolane zpravy se mohou stale zobrazit v pripade nahlaseni konverzace.",
+    "openMessageActions": "Otevrit moznosti zpravy",
+    "deleteFailed": "Zpravu se nepodarilo smazat. Zkuste to znovu.",
+    "deleteUnavailable": "Zpravu uz neni mozne smazat."
   },
   "search": {
     "title": "Hledat",

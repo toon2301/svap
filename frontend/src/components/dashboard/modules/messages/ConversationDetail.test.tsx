@@ -1,10 +1,11 @@
 'use client';
 
 import React from 'react';
-import { act, createEvent, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, createEvent, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import toast from 'react-hot-toast';
 import { ConversationDetail } from './ConversationDetail';
 import {
+  deleteMessage,
   getMessagingErrorMessage,
   listConversations,
   listMessages,
@@ -13,6 +14,7 @@ import {
 } from './messagingApi';
 import {
   MESSAGING_CONVERSATIONS_REFRESH_EVENT,
+  MESSAGING_REALTIME_DELETED_EVENT,
   MESSAGING_REALTIME_MESSAGE_EVENT,
   MESSAGING_REALTIME_READ_EVENT,
 } from './messagesEvents';
@@ -65,6 +67,7 @@ jest.mock('./ChatRequestOfferPicker', () => ({
 
 jest.mock('./messagingApi', () => ({
   __esModule: true,
+  deleteMessage: jest.fn(),
   listConversations: jest.fn(),
   listMessages: jest.fn(),
   markConversationRead: jest.fn(),
@@ -191,6 +194,16 @@ describe('ConversationDetail', () => {
       last_read_at: null,
     });
     (getMessagingErrorMessage as jest.Mock).mockReturnValue('Friendly messaging error');
+    (deleteMessage as jest.Mock).mockResolvedValue({
+      conversation_id: 9,
+      message: message({
+        id: 1,
+        sender: { id: 1, display_name: 'Me' },
+        text: null,
+        is_deleted: true,
+      }),
+      total_unread_count: 0,
+    });
   });
 
   afterEach(() => {
@@ -1314,6 +1327,113 @@ describe('ConversationDetail', () => {
 
     await waitFor(() => {
       expect(screen.getByTestId('message-seen-indicator-1')).toBeInTheDocument();
+    });
+  });
+
+  it('opens the desktop message actions from the hover trigger and removes the deleted message from the thread', async () => {
+    (listMessages as jest.Mock).mockResolvedValueOnce(
+      messagePage(
+        [
+          message({
+            id: 1,
+            sender: { id: 1, display_name: 'Me' },
+            text: 'Moja sprava',
+            created_at: '2026-03-27T10:00:00Z',
+          }),
+        ],
+        { peerLastReadAt: '2026-03-27T10:00:30Z' },
+      ),
+    );
+
+    render(<ConversationDetail conversationId={9} currentUserId={1} />);
+
+    await screen.findByText('Moja sprava');
+    expect(screen.getByTestId('message-seen-indicator-1')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('message-actions-trigger-1'));
+
+    expect(await screen.findByTestId('message-actions-menu')).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('message-delete-action'));
+
+    const confirmModal = await screen.findByTestId('delete-message-confirm-modal');
+    fireEvent.click(within(confirmModal).getByRole('button', { name: /vymaza/i }));
+
+    await waitFor(() => {
+      expect(deleteMessage).toHaveBeenCalledWith(9, 1);
+      expect(screen.queryByText('Moja sprava')).not.toBeInTheDocument();
+      expect(screen.getByText('Zatiaľ bez správ')).toBeInTheDocument();
+    });
+
+    expect(screen.queryByTestId('message-seen-indicator-1')).not.toBeInTheDocument();
+    expect(mockSyncConversationReadState).toHaveBeenCalledWith({
+      conversationId: 9,
+      totalUnreadCount: 0,
+    });
+  });
+
+  it('opens the message action sheet on mobile long press for an own message', async () => {
+    jest.useFakeTimers();
+    useIsMobile.mockReturnValue(true);
+    (listMessages as jest.Mock).mockResolvedValueOnce(
+      messagePage([
+        message({
+          id: 1,
+          sender: { id: 1, display_name: 'Me' },
+          text: 'Moja mobilna sprava',
+          created_at: '2026-03-27T10:00:00Z',
+        }),
+      ]),
+    );
+
+    render(<ConversationDetail conversationId={9} currentUserId={1} />);
+
+    const bubble = await screen.findByTestId('message-bubble-1');
+    fireEvent.touchStart(bubble);
+
+    act(() => {
+      jest.advanceTimersByTime(450);
+    });
+
+    expect(await screen.findByTestId('message-actions-menu')).toBeInTheDocument();
+    expect(screen.getByTestId('message-delete-action')).toBeInTheDocument();
+  });
+
+  it('updates the open conversation when a realtime delete event arrives', async () => {
+    (listMessages as jest.Mock).mockResolvedValueOnce(
+      messagePage([
+        message({
+          id: 4,
+          text: 'Nova sprava',
+          created_at: '2026-03-27T10:03:00Z',
+        }),
+        message({
+          id: 3,
+          sender: { id: 1, display_name: 'Me' },
+          text: 'Moja sprava',
+          created_at: '2026-03-27T10:02:00Z',
+        }),
+      ]),
+    );
+
+    render(<ConversationDetail conversationId={9} currentUserId={1} />);
+
+    expect(await screen.findByText('Moja sprava')).toBeInTheDocument();
+
+    act(() => {
+      window.dispatchEvent(
+        new CustomEvent(MESSAGING_REALTIME_DELETED_EVENT, {
+          detail: {
+            conversationId: 9,
+            messageId: 3,
+            deletedById: 1,
+          },
+        }),
+      );
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByText('Moja sprava')).not.toBeInTheDocument();
+      expect(screen.getByText('Nova sprava')).toBeInTheDocument();
     });
   });
 

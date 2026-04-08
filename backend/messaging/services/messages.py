@@ -17,10 +17,25 @@ class NotParticipant(MessageServiceError):
     pass
 
 
+class MessageNotFound(MessageServiceError):
+    pass
+
+
+class NotMessageAuthor(MessageServiceError):
+    pass
+
+
 @dataclass(frozen=True)
 class SendMessageResult:
     message: Message
     recipient_user_ids: tuple[int, ...]
+
+
+@dataclass(frozen=True)
+class DeleteMessageResult:
+    message: Message
+    participant_user_ids: tuple[int, ...]
+    changed: bool
 
 
 def _ensure_participant(*, conversation: Conversation, user_id: int) -> ConversationParticipant:
@@ -101,4 +116,70 @@ def mark_conversation_read(*, conversation: Conversation, user) -> ConversationP
 
     participant.last_read_at = now
     return participant
+
+
+def delete_message_for_all(
+    *,
+    conversation: Conversation,
+    message_id: int,
+    actor,
+) -> DeleteMessageResult:
+    """
+    Soft-delete a message for every conversation participant.
+
+    The message row stays in the database and is exposed to clients as
+    `is_deleted=true` with `text=null`.
+    """
+    with transaction.atomic():
+        convo = (
+            Conversation.objects.select_for_update()
+            .filter(id=conversation.id)
+            .first()
+        )
+        if not convo:
+            raise ValueError("Conversation not found.")
+
+        _ensure_participant(conversation=convo, user_id=actor.id)
+
+        message = (
+            Message.objects.select_for_update()
+            .select_related("sender")
+            .filter(conversation_id=convo.id, id=message_id)
+            .first()
+        )
+        if not message:
+            raise MessageNotFound("Message not found.")
+
+        if message.sender_id != actor.id:
+            raise NotMessageAuthor("Only the author can delete this message.")
+
+        participant_user_ids = tuple(
+            ConversationParticipant.objects.filter(conversation_id=convo.id).values_list(
+                "user_id",
+                flat=True,
+            )
+        )
+
+        if message.is_deleted:
+            return DeleteMessageResult(
+                message=message,
+                participant_user_ids=participant_user_ids,
+                changed=False,
+            )
+
+        Message.objects.filter(id=message.id, is_deleted=False).update(is_deleted=True)
+        message.is_deleted = True
+        convo.last_message_at = (
+            Message.objects.filter(conversation_id=convo.id, is_deleted=False)
+            .order_by("-created_at", "-id")
+            .values_list("created_at", flat=True)
+            .first()
+        )
+        convo.save(update_fields=["last_message_at", "updated_at"])
+
+        return DeleteMessageResult(
+            message=message,
+            participant_user_ids=participant_user_ids,
+            changed=True,
+        )
 

@@ -3,6 +3,7 @@ from django.urls import path
 from .api.presence_views import MessagePresenceView
 from .api.views import (
     ConversationListView,
+    DeleteMessageView,
     MarkConversationReadView,
     MessageListView,
     OpenConversationView,
@@ -34,6 +35,11 @@ urlpatterns = [
         "conversations/<int:conversation_id>/messages/send/",
         SendMessageView.as_view(),
         name="messaging_send_message",
+    ),
+    path(
+        "conversations/<int:conversation_id>/messages/<int:message_id>/delete/",
+        DeleteMessageView.as_view(),
+        name="messaging_delete_message",
     ),
     path(
         "conversations/<int:conversation_id>/read/",

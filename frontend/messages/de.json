@@ -165,7 +165,13 @@
     "firstMessageHint": "Die Konversation wird erstellt, sobald Sie die erste Nachricht senden.",
     "sidebarSubtitle": "Konversationsliste",
     "pickConversationTitle": "Konversation auswählen",
-    "pickConversationHint": "Wählen Sie rechts die Konversation aus, die Sie öffnen möchten."
+    "pickConversationHint": "Wählen Sie rechts die Konversation aus, die Sie öffnen möchten.",
+    "deleteAction": "Löschen",
+    "deleteConfirmTitle": "Nachricht löschen?",
+    "deleteConfirmDescription": "Dadurch wird die Nachricht für alle Teilnehmer der Konversation gelöscht. Es ist jedoch möglich, dass einige sie bereits gelesen haben. Zurückgerufene Nachrichten können im Falle einer Meldung der Konversation weiterhin angezeigt werden.",
+    "openMessageActions": "Nachrichtenaktionen öffnen",
+    "deleteFailed": "Die Nachricht konnte nicht gelöscht werden. Bitte versuchen Sie es erneut.",
+    "deleteUnavailable": "Diese Nachricht kann nicht mehr gelöscht werden."
   },
   "search": {
     "title": "Suche",

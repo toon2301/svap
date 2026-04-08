@@ -4,16 +4,31 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useMessagesNotifications } from '@/components/dashboard/contexts/RequestsNotificationsContext';
 import { useIsMobile } from '@/hooks';
-import { ChevronDownIcon, PaperAirplaneIcon } from '@heroicons/react/24/outline';
+import {
+  ChevronDownIcon,
+  EllipsisHorizontalIcon,
+  PaperAirplaneIcon,
+} from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 import type { ConversationListItem, MessageItem, MessageListPage } from './types';
-import { getMessagingErrorMessage, listConversations, listMessages, markConversationRead, sendMessage } from './messagingApi';
-import { ChatRequestOfferPicker } from './ChatRequestOfferPicker';
-import { DesktopEmojiPickerButton } from './DesktopEmojiPickerButton';
 import {
+  deleteMessage,
+  getMessagingErrorMessage,
+  listConversations,
+  listMessages,
+  markConversationRead,
+  sendMessage,
+} from './messagingApi';
+import { ChatRequestOfferPicker } from './ChatRequestOfferPicker';
+import { DeleteMessageConfirmModal } from './DeleteMessageConfirmModal';
+import { DesktopEmojiPickerButton } from './DesktopEmojiPickerButton';
+import { MessageActionsMenu } from './MessageActionsMenu';
+import {
+  MESSAGING_REALTIME_DELETED_EVENT,
   MESSAGING_REALTIME_READ_EVENT,
   MESSAGING_REALTIME_MESSAGE_EVENT,
   requestConversationsRefresh,
+  type MessagingRealtimeDeletedPayload,
   type MessagingRealtimeReadPayload,
   type MessagingRealtimeMessagePayload,
 } from './messagesEvents';
@@ -98,6 +113,12 @@ export function ConversationDetail({
   const [isComposerFocused, setIsComposerFocused] = useState(false);
   const [showScrollToBottomButton, setShowScrollToBottomButton] = useState(false);
   const [peerLastReadAt, setPeerLastReadAt] = useState<string | null>(null);
+  const [messageActionsTarget, setMessageActionsTarget] = useState<{
+    messageId: number;
+    anchorRect: DOMRect | null;
+  } | null>(null);
+  const [messagePendingDeleteId, setMessagePendingDeleteId] = useState<number | null>(null);
+  const [deletingMessageId, setDeletingMessageId] = useState<number | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const refreshInFlightRef = useRef<Promise<MessageListPage> | null>(null);
@@ -115,6 +136,7 @@ export function ConversationDetail({
   const pendingLatestScrollAfterRefreshRef = useRef(false);
   const shouldScrollToLatestOnRenderRef = useRef(false);
   const shouldPinFocusedViewportToBottomRef = useRef(false);
+  const messageLongPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const mobileViewportHeight = useMobileViewportHeight(isMobile && isComposerFocused);
   useConversationPresenceHeartbeat(conversationId);
   const targetUserId = otherConversation?.other_user?.id ?? null;
@@ -125,6 +147,24 @@ export function ConversationDetail({
   const targetUserType = otherConversation?.other_user?.user_type ?? null;
   const canCreateRequestFromOffer =
     targetUserId !== null && otherConversation?.has_requestable_offers === true;
+
+  const closeMessageActions = useCallback(() => {
+    setMessageActionsTarget(null);
+  }, []);
+
+  const clearMessageLongPressTimer = useCallback(() => {
+    if (!messageLongPressTimerRef.current) return;
+    clearTimeout(messageLongPressTimerRef.current);
+    messageLongPressTimerRef.current = null;
+  }, []);
+
+  const removeMessageLocally = useCallback((messageId: number) => {
+    setMessages((current) => {
+      const next = current.filter((item) => item.id !== messageId);
+      latestKnownMessageIdRef.current = next[0]?.id ?? null;
+      return next;
+    });
+  }, []);
 
   const focusComposer = useCallback(() => {
     if (isMobile) return;
@@ -184,6 +224,46 @@ export function ConversationDetail({
       }),
     );
   }, [targetUserId, targetUserSlug]);
+
+  const openMessageActions = useCallback((messageId: number, anchorRect: DOMRect | null) => {
+    setMessageActionsTarget({ messageId, anchorRect });
+  }, []);
+
+  const handleDeleteMessage = useCallback(async () => {
+    const messageId = messagePendingDeleteId;
+    if (messageId === null || deletingMessageId !== null) return;
+
+    setDeletingMessageId(messageId);
+    try {
+      const result = await deleteMessage(conversationId, messageId);
+      removeMessageLocally(messageId);
+      setMessagePendingDeleteId(null);
+      setMessageActionsTarget(null);
+      syncConversationReadState({
+        conversationId,
+        totalUnreadCount: result.total_unread_count,
+      });
+    } catch (error) {
+      toast.error(
+        getMessagingErrorMessage(error, {
+          fallback: t('messages.deleteFailed', 'Správu sa nepodarilo vymazať. Skúste to znova.'),
+          unavailableFallback: t(
+            'messages.deleteUnavailable',
+            'Správu už nie je možné vymazať.',
+          ),
+        }),
+      );
+    } finally {
+      setDeletingMessageId(null);
+    }
+  }, [
+    conversationId,
+    deletingMessageId,
+    messagePendingDeleteId,
+    removeMessageLocally,
+    syncConversationReadState,
+    t,
+  ]);
 
   const scrollMessagesToLatest = useCallback(() => {
     const scrollContainer = messagesScrollRef.current;
@@ -267,9 +347,9 @@ export function ConversationDetail({
 
   const queueMarkConversationRead = useCallback(
     (list: MessageItem[]) => {
-      const newestMessage = list[0] ?? null;
+      const newestMessage =
+        list.find((item) => item.sender?.id !== currentUserId && !item.is_deleted) ?? null;
       if (!newestMessage) return false;
-      if (newestMessage.sender?.id === currentUserId) return false;
       if (lastMarkedIncomingMessageIdRef.current === newestMessage.id) return false;
 
       const pendingMessageId = pendingMarkReadIncomingMessageIdRef.current;
@@ -439,8 +519,12 @@ export function ConversationDetail({
     setNextOlderPage(null);
     setPeerLastReadAt(null);
     setIsRequestPickerOpen(false);
+    setMessageActionsTarget(null);
+    setMessagePendingDeleteId(null);
+    setDeletingMessageId(null);
     setLoadingOlder(false);
     pendingScrollRestoreRef.current = null;
+    clearMessageLongPressTimer();
     void (async () => {
       try {
         setLoading(true);
@@ -461,8 +545,9 @@ export function ConversationDetail({
     })();
     return () => {
       cancelled = true;
+      clearMessageLongPressTimer();
     };
-  }, [conversationId, refresh]);
+  }, [clearMessageLongPressTimer, conversationId, refresh]);
 
   useEffect(() => {
     const stopPolling = () => {
@@ -529,6 +614,25 @@ export function ConversationDetail({
       window.removeEventListener(MESSAGING_REALTIME_READ_EVENT, handleRealtimeRead);
     };
   }, [conversationId]);
+
+  useEffect(() => {
+    const handleRealtimeDeleted = (event: Event) => {
+      const detail = (event as CustomEvent<MessagingRealtimeDeletedPayload>).detail;
+      if (!detail || detail.conversationId !== conversationId) return;
+
+      removeMessageLocally(detail.messageId);
+      setMessageActionsTarget((current) =>
+        current?.messageId === detail.messageId ? null : current,
+      );
+      setMessagePendingDeleteId((current) => (current === detail.messageId ? null : current));
+    };
+
+    window.addEventListener(MESSAGING_REALTIME_DELETED_EVENT, handleRealtimeDeleted);
+
+    return () => {
+      window.removeEventListener(MESSAGING_REALTIME_DELETED_EVENT, handleRealtimeDeleted);
+    };
+  }, [conversationId, removeMessageLocally]);
 
   useEffect(() => {
     // Pri nových správach jemne doroluj na spodok (ak už je konverzácia otvorená).
@@ -704,6 +808,44 @@ export function ConversationDetail({
     });
   }, []);
 
+  const handleMessageActionTrigger = useCallback(
+    (messageId: number, element: HTMLElement | null) => {
+      openMessageActions(messageId, element?.getBoundingClientRect() ?? null);
+    },
+    [openMessageActions],
+  );
+
+  const getOwnMessageInteractionProps = useCallback(
+    (messageId: number, isDeleted: boolean) => {
+      if (isDeleted) {
+        return {};
+      }
+
+      if (isMobile) {
+        return {
+          onTouchStart: (event: React.TouchEvent<HTMLDivElement>) => {
+            clearMessageLongPressTimer();
+            const target = event.currentTarget;
+            messageLongPressTimerRef.current = setTimeout(() => {
+              openMessageActions(messageId, target.getBoundingClientRect());
+              messageLongPressTimerRef.current = null;
+            }, 450);
+          },
+          onTouchEnd: clearMessageLongPressTimer,
+          onTouchCancel: clearMessageLongPressTimer,
+          onTouchMove: clearMessageLongPressTimer,
+        };
+      }
+
+      return {};
+    },
+    [
+      clearMessageLongPressTimer,
+      isMobile,
+      openMessageActions,
+    ],
+  );
+
   const containerClassName = `w-full ${className}`;
 
   if (loading) {
@@ -784,9 +926,13 @@ export function ConversationDetail({
                   prevSenderId !== curSenderId ||
                   minuteBucketKey(prev.created_at) !== minuteBucketKey(m.created_at);
                 const showSenderAvatar = !mine && (!next || nextSenderId !== curSenderId);
-                const showSeenIndicator = mine && lastSeenMessageId === m.id;
+                const showSeenIndicator = mine && !m.is_deleted && lastSeenMessageId === m.id;
                 const senderAvatarUrl = m.sender?.avatar_url || targetUserAvatarUrl;
                 const senderDisplayName = (m.sender?.display_name || '').trim() || targetUserName;
+                const ownMessageInteractionProps = mine
+                  ? getOwnMessageInteractionProps(m.id, m.is_deleted)
+                  : {};
+                const showDesktopMessageActionsTrigger = mine && !m.is_deleted && !isMobile;
                 const bubbleClassName = [
                   'w-fit max-w-full rounded-2xl px-3 py-2 text-sm',
                   mine
@@ -800,7 +946,7 @@ export function ConversationDetail({
                     className={`flex justify-end ${isMobile ? 'pr-0' : 'pr-1'}`}
                   >
                     <div
-                      className={`flex min-w-0 flex-col items-end ${
+                      className={`group flex min-w-0 flex-col items-end ${
                         isMobile ? 'max-w-full' : 'max-w-[80%]'
                       }`}
                     >
@@ -812,9 +958,30 @@ export function ConversationDetail({
                           {formatTime(m.created_at)}
                         </div>
                       ) : null}
-                      <div data-testid={`message-bubble-${m.id}`} className={bubbleClassName}>
-                        <div className="whitespace-pre-wrap break-words">
-                          {m.text ?? t('messages.deleted', 'Správa bola odstránená')}
+                      <div className="relative">
+                        {showDesktopMessageActionsTrigger ? (
+                          <button
+                            type="button"
+                            data-testid={`message-actions-trigger-${m.id}`}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              handleMessageActionTrigger(m.id, event.currentTarget);
+                            }}
+                            className="pointer-events-none absolute right-full top-1/2 mr-2 -translate-y-1/2 rounded-full p-1.5 text-gray-400 opacity-0 transition-all duration-150 hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-brand/30 focus-visible:pointer-events-auto focus-visible:opacity-100 group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100 dark:text-gray-500 dark:hover:bg-[#141416] dark:hover:text-gray-200"
+                            aria-label={t(
+                              'messages.openMessageActions',
+                              'Otvoriť možnosti správy',
+                            )}
+                          >
+                            <EllipsisHorizontalIcon className="h-5 w-5" />
+                          </button>
+                        ) : null}
+                        <div
+                          data-testid={`message-bubble-${m.id}`}
+                          className={bubbleClassName}
+                          {...ownMessageInteractionProps}
+                        >
+                          <div className="whitespace-pre-wrap break-words">{m.text}</div>
                         </div>
                       </div>
                       {showSeenIndicator ? (
@@ -891,9 +1058,7 @@ export function ConversationDetail({
                           }`}
                         >
                           <div data-testid={`message-bubble-${m.id}`} className={bubbleClassName}>
-                            <div className="whitespace-pre-wrap break-words">
-                              {m.text ?? t('messages.deleted', 'Správa bola odstránená')}
-                            </div>
+                            <div className="whitespace-pre-wrap break-words">{m.text}</div>
                           </div>
                         </div>
                       </div>
@@ -1040,6 +1205,26 @@ export function ConversationDetail({
         </div>
       )}
 
+      <MessageActionsMenu
+        open={messageActionsTarget !== null}
+        isMobile={isMobile}
+        anchorRect={messageActionsTarget?.anchorRect ?? null}
+        onClose={closeMessageActions}
+        onDelete={() => {
+          if (messageActionsTarget === null) return;
+          setMessagePendingDeleteId(messageActionsTarget.messageId);
+          setMessageActionsTarget(null);
+        }}
+      />
+      <DeleteMessageConfirmModal
+        open={messagePendingDeleteId !== null}
+        isDeleting={deletingMessageId !== null}
+        onClose={() => {
+          if (deletingMessageId !== null) return;
+          setMessagePendingDeleteId(null);
+        }}
+        onConfirm={() => void handleDeleteMessage()}
+      />
     </div>
   );
 }

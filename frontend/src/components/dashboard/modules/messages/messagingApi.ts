@@ -1,6 +1,7 @@
 import { api } from '@/lib/api';
 import type {
   ConversationListItem,
+  DeleteMessageResult,
   DirectMessageStartResult,
   MessageItem,
   MessageListPage,
@@ -133,6 +134,17 @@ export async function sendMessage(conversationId: number, text: string): Promise
   const { data } = await api.post<MessageItem>(
     `/auth/messaging/conversations/${conversationId}/messages/send/`,
     { text },
+  );
+  return data;
+}
+
+export async function deleteMessage(
+  conversationId: number,
+  messageId: number,
+): Promise<DeleteMessageResult> {
+  const { data } = await api.post<DeleteMessageResult>(
+    `/auth/messaging/conversations/${conversationId}/messages/${messageId}/delete/`,
+    {},
   );
   return data;
 }
