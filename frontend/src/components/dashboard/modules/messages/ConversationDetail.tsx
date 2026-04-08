@@ -117,6 +117,14 @@ export function ConversationDetail({
   const shouldPinFocusedViewportToBottomRef = useRef(false);
   const mobileViewportHeight = useMobileViewportHeight(isMobile && isComposerFocused);
   useConversationPresenceHeartbeat(conversationId);
+  const targetUserId = otherConversation?.other_user?.id ?? null;
+  const targetUserSlug = otherConversation?.other_user?.slug ?? null;
+  const targetUserName =
+    (otherConversation?.other_user?.display_name || '').trim() || t('messages.unknownUser', 'Používateľ');
+  const targetUserAvatarUrl = otherConversation?.other_user?.avatar_url ?? null;
+  const targetUserType = otherConversation?.other_user?.user_type ?? null;
+  const canCreateRequestFromOffer =
+    targetUserId !== null && otherConversation?.has_requestable_offers === true;
 
   const focusComposer = useCallback(() => {
     if (isMobile) return;
@@ -163,6 +171,19 @@ export function ConversationDetail({
     },
     [],
   );
+
+  const handleOpenTargetUserProfile = useCallback(() => {
+    const identifier =
+      (targetUserSlug || '').trim() ||
+      (typeof targetUserId === 'number' ? String(targetUserId) : '');
+    if (!identifier || typeof window === 'undefined') return;
+
+    window.dispatchEvent(
+      new CustomEvent('goToUserProfile', {
+        detail: { identifier },
+      }),
+    );
+  }, [targetUserId, targetUserSlug]);
 
   const scrollMessagesToLatest = useCallback(() => {
     const scrollContainer = messagesScrollRef.current;
@@ -695,14 +716,6 @@ export function ConversationDetail({
     );
   }
 
-  const targetUserId = otherConversation?.other_user?.id ?? null;
-  const targetUserSlug = otherConversation?.other_user?.slug ?? null;
-  const targetUserName =
-    (otherConversation?.other_user?.display_name || '').trim() || t('messages.unknownUser', 'Používateľ');
-  const targetUserAvatarUrl = otherConversation?.other_user?.avatar_url ?? null;
-  const targetUserType = otherConversation?.other_user?.user_type ?? null;
-  const canCreateRequestFromOffer =
-    targetUserId !== null && otherConversation?.has_requestable_offers === true;
   const hasTextToSend = text.trim().length > 0;
   const isComposerInputDisabled = !isMobile && sending;
 
@@ -717,7 +730,14 @@ export function ConversationDetail({
         >
           <div className="w-full border-b border-gray-200 dark:border-gray-800 px-4 sm:px-6 lg:px-8 py-2.5">
             <div className="flex items-center justify-center">
-              <div className="flex items-center gap-3">
+              <button
+                type="button"
+                data-testid="conversation-header-trigger"
+                onClick={handleOpenTargetUserProfile}
+                disabled={targetUserId === null && !targetUserSlug}
+                className="flex items-center gap-3 rounded-xl px-2 py-1 transition-colors hover:bg-black/[0.04] focus:outline-none focus:ring-2 focus:ring-brand/30 disabled:cursor-default disabled:hover:bg-transparent dark:hover:bg-white/[0.06]"
+                aria-label={t('messages.openPeerProfile', 'Otvoriť profil používateľa')}
+              >
                 <div className="w-10 h-10 rounded-full overflow-hidden bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center flex-shrink-0">
                   {otherConversation?.other_user?.avatar_url ? (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -731,7 +751,7 @@ export function ConversationDetail({
                 <div className="text-sm font-semibold text-gray-900 dark:text-white truncate max-w-[24rem]">
                   {targetUserName}
                 </div>
-              </div>
+              </button>
             </div>
           </div>
         </div>

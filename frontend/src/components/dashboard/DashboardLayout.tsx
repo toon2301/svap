@@ -34,6 +34,7 @@ interface DashboardLayoutProps {
   mobileAccountName?: string;
   mobileMessagePeerName?: string;
   mobileMessagePeerAvatarUrl?: string | null;
+  mobileMessagePeerIdentifier?: string | null;
   isMobileMessageConversationOpen?: boolean;
   onMobileMessagesBack?: () => void;
   children: React.ReactNode;
@@ -65,6 +66,7 @@ export default function DashboardLayout({
   mobileAccountName,
   mobileMessagePeerName,
   mobileMessagePeerAvatarUrl,
+  mobileMessagePeerIdentifier,
   isMobileMessageConversationOpen,
   onMobileMessagesBack,
   children,
@@ -176,6 +178,7 @@ export default function DashboardLayout({
           accountName={mobileAccountName}
           messagePeerName={mobileMessagePeerName}
           messagePeerAvatarUrl={mobileMessagePeerAvatarUrl}
+          messagePeerIdentifier={mobileMessagePeerIdentifier}
           isMessageConversationOpen={isMobileMessageConversationOpen}
           onMessagesBackClick={onMobileMessagesBack}
         />

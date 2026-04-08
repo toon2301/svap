@@ -317,6 +317,34 @@ describe('ConversationDetail', () => {
     expect(messagesScroll.className).toContain('overflow-y-auto');
   });
 
+  it('opens the other user profile when the desktop conversation header is clicked', async () => {
+    const profileEventSpy = jest.fn();
+    window.addEventListener('goToUserProfile', profileEventSpy as EventListener);
+    (listConversations as jest.Mock).mockResolvedValue([
+      {
+        id: 9,
+        has_requestable_offers: true,
+        other_user: {
+          id: 77,
+          slug: 'tester-slug',
+          display_name: 'Tester',
+        },
+      },
+    ]);
+
+    render(<ConversationDetail conversationId={9} currentUserId={1} />);
+
+    const headerTrigger = await screen.findByTestId('conversation-header-trigger');
+    fireEvent.click(headerTrigger);
+
+    expect(profileEventSpy).toHaveBeenCalledTimes(1);
+    expect((profileEventSpy.mock.calls[0]?.[0] as CustomEvent).detail).toEqual({
+      identifier: 'tester-slug',
+    });
+
+    window.removeEventListener('goToUserProfile', profileEventSpy as EventListener);
+  });
+
   it('keeps the conversation detail root stretched to the available width on mobile', async () => {
     useIsMobile.mockReturnValue(true);
 

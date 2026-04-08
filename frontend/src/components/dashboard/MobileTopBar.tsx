@@ -16,6 +16,7 @@ interface MobileTopBarProps {
   accountName?: string;
   messagePeerName?: string;
   messagePeerAvatarUrl?: string | null;
+  messagePeerIdentifier?: string | null;
   isMessageConversationOpen?: boolean;
   onMessagesBackClick?: () => void;
 }
@@ -32,12 +33,14 @@ export default function MobileTopBar({
   accountName,
   messagePeerName,
   messagePeerAvatarUrl,
+  messagePeerIdentifier,
   isMessageConversationOpen = false,
   onMessagesBackClick,
 }: MobileTopBarProps) {
   const { t } = useLanguage();
   const [describeMode, setDescribeMode] = React.useState<'offer' | 'search' | null>(null);
   const isOpenMessagesConversation = activeModule === 'messages' && isMessageConversationOpen;
+  const canOpenMessagePeerProfile = Boolean((messagePeerIdentifier || '').trim());
 
   React.useEffect(() => {
     if (activeModule === 'skills-describe') {
@@ -53,6 +56,17 @@ export default function MobileTopBar({
       }
     }
   }, [activeModule]);
+
+  const handleMessagePeerClick = React.useCallback(() => {
+    const identifier = (messagePeerIdentifier || '').trim();
+    if (!identifier || typeof window === 'undefined') return;
+
+    window.dispatchEvent(
+      new CustomEvent('goToUserProfile', {
+        detail: { identifier },
+      }),
+    );
+  }, [messagePeerIdentifier]);
 
   return (
     <div className="lg:hidden fixed top-0 left-0 right-0 z-30 bg-white dark:bg-black border-b border-gray-200 dark:border-gray-800 shadow-sm">
@@ -110,7 +124,13 @@ export default function MobileTopBar({
           ) : null}
           {activeModule === 'messages' && isMessageConversationOpen ? (
             <div className="flex w-full min-w-0 items-center justify-center px-1">
-              <div className="flex min-w-0 max-w-[min(100%,calc(100vw-5.5rem))] items-center justify-center gap-2">
+              <button
+                type="button"
+                onClick={handleMessagePeerClick}
+                disabled={!canOpenMessagePeerProfile}
+                className="flex min-w-0 max-w-[min(100%,calc(100vw-5.5rem))] items-center justify-center gap-2 rounded-xl px-2 py-1 transition-colors hover:bg-black/[0.04] focus:outline-none focus:ring-2 focus:ring-brand/30 disabled:cursor-default disabled:hover:bg-transparent dark:hover:bg-white/[0.06]"
+                aria-label={t('messages.openPeerProfile', 'Otvoriť profil používateľa')}
+              >
                 <div className="h-9 w-9 flex-shrink-0 overflow-hidden rounded-full bg-purple-100 dark:bg-purple-900/40">
                   {messagePeerAvatarUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -128,7 +148,7 @@ export default function MobileTopBar({
                 <h1 className="min-w-0 truncate text-center text-lg font-semibold leading-tight text-gray-900 dark:text-white">
                   {messagePeerName || t('messages.unknownUser', 'Používateľ')}
                 </h1>
-              </div>
+              </button>
             </div>
           ) : null}
           {isEditMode && (

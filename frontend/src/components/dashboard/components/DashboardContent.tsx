@@ -565,6 +565,9 @@ export default function DashboardContent({
     (user?.company_name || '').trim() ||
     (user?.username || '').trim() ||
     t('navigation.profile', 'Profil');
+  const mobileMessagePeerIdentifier =
+    (mobileMessagePeer?.slug || '').trim() ||
+    (typeof mobileMessagePeer?.id === 'number' ? String(mobileMessagePeer.id) : null);
 
   return (
     <RequestsNotificationsProvider>
@@ -615,6 +618,7 @@ export default function DashboardContent({
         mobileAccountName={mobileAccountName}
         mobileMessagePeerName={(mobileMessagePeer?.display_name || '').trim() || undefined}
         mobileMessagePeerAvatarUrl={mobileMessagePeer?.avatar_url ?? null}
+        mobileMessagePeerIdentifier={mobileMessagePeerIdentifier}
         isMobileMessageConversationOpen={Boolean(
           activeModule === 'messages' &&
             (selectedConversationId != null || targetUserIdFromMessagesQuery != null),
