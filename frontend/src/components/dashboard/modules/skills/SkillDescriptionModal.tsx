@@ -38,6 +38,8 @@ export default function SkillDescriptionModal({
   initialPriceCurrency = '€',
   initialLocation = '',
   initialDistrict = '',
+  initialCountryCode = '',
+  initialDistrictCode = '',
   onLocationSave,
   initialDetailedDescription = '',
   initialOpeningHours,
@@ -49,7 +51,7 @@ export default function SkillDescriptionModal({
   onDurationTypeChange,
   initialIsHidden = false,
 }: SkillDescriptionModalProps) {
-  const { locale, t } = useLanguage();
+  const { locale, country, t } = useLanguage();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitLabel, setSubmitLabel] = useState('');
   const categorySlug = useMemo(() => (category ? slugifyLabel(category) : ''), [category]);
@@ -78,6 +80,9 @@ export default function SkillDescriptionModal({
     initialPriceCurrency,
     initialLocation,
     initialDistrict,
+    initialCountryCode,
+    initialDistrictCode,
+    fallbackCountryCode: country || 'SK',
     initialDetailedDescription,
     initialOpeningHours,
     initialUrgency,
@@ -103,6 +108,8 @@ export default function SkillDescriptionModal({
       priceCurrency: state.priceCurrency,
       location: state.location,
       district: state.district,
+      countryCode: state.countryCode,
+      districtCode: state.districtCode,
       detailedDescription: state.detailedDescription,
       openingHours: state.openingHours,
       existingImages: state.existingImages,
@@ -112,6 +119,8 @@ export default function SkillDescriptionModal({
       initialDetailedDescription,
       initialLocation,
       initialDistrict,
+      initialCountryCode,
+      initialDistrictCode,
       initialOpeningHours,
       initialPriceFrom,
       urgency: state.urgency,
@@ -284,6 +293,11 @@ export default function SkillDescriptionModal({
               isSaving={state.isLocationSaving}
               district={state.district}
               onDistrictChange={state.setDistrict}
+              countryCode={state.countryCode}
+              onCountryCodeChange={state.setCountryCode}
+              districtCode={state.districtCode}
+              onDistrictCodeChange={state.setDistrictCode}
+              showCountrySelector
               isSeeking={isSeeking}
             />
 

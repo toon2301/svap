@@ -489,6 +489,8 @@ class OfferedSkill(models.Model):
         _("Cena od"), max_digits=10, decimal_places=2, null=True, blank=True
     )
     price_currency = models.CharField(_("Mena"), max_length=8, blank=True, default="€")
+    country_code = models.CharField(_("Krajina"), max_length=2, blank=True, default="")
+    district_code = models.CharField(_("Kód okresu"), max_length=80, blank=True, default="")
     district = models.CharField(_("Okres"), max_length=100, blank=True)
     location = models.CharField(_("Miesto"), max_length=35, blank=True)
     opening_hours = models.JSONField(
@@ -549,6 +551,7 @@ class OfferedSkill(models.Model):
         indexes = [
             # Search endpoint filters/sorts (ORM only). Avoid indexes on icontains fields.
             models.Index(fields=["created_at"], name="acc_off_skill_created_idx"),
+            models.Index(fields=["country_code"], name="acc_off_skill_country_idx"),
             models.Index(fields=["district"], name="acc_off_skill_district_idx"),
             models.Index(fields=["price_from"], name="acc_off_skill_price_idx"),
             # Composite indexes for frequent patterns:

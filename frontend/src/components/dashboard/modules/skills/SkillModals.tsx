@@ -30,6 +30,9 @@ export interface SkillItem {
   images?: Array<ImageItem>;
   price_from?: number | null;
   price_currency?: string;
+  country_code?: string;
+  district_code?: string;
+  district_label?: string | null;
   district?: string;
   location?: string;
   opening_hours?: OpeningHours;
@@ -111,6 +114,18 @@ export default function SkillModals(props: Props) {
         typeof s.price_currency === 'string' && s.price_currency.trim() !== ''
           ? s.price_currency
           : '€',
+      country_code:
+        typeof s.country_code === 'string' && s.country_code.trim() !== ''
+          ? s.country_code.trim().toUpperCase()
+          : '',
+      district_code:
+        typeof s.district_code === 'string' && s.district_code.trim() !== ''
+          ? s.district_code.trim().toLowerCase()
+          : '',
+      district_label:
+        typeof s.district_label === 'string' && s.district_label.trim() !== ''
+          ? s.district_label
+          : null,
       district: typeof s.district === 'string' ? s.district : '',
       location: typeof s.location === 'string' ? s.location : '',
       opening_hours: (s.opening_hours && typeof s.opening_hours === 'object') ? s.opening_hours as OpeningHours : undefined,
@@ -138,7 +153,17 @@ export default function SkillModals(props: Props) {
         selected={selectedSkillsCategory?.subcategory || null}
         onSelect={(category, subcategory) => {
           setIsSkillsCategoryModalOpen(false);
-          setSelectedSkillsCategory({ category, subcategory, price_from: null, price_currency: '€', location: '', detailed_description: '', urgency: 'low' });
+          setSelectedSkillsCategory({
+            category,
+            subcategory,
+            price_from: null,
+            price_currency: '€',
+            country_code: 'SK',
+            district_code: '',
+            location: '',
+            detailed_description: '',
+            urgency: 'low',
+          });
           setIsSkillDescriptionModalOpen(true);
         }}
       />
@@ -162,6 +187,8 @@ export default function SkillModals(props: Props) {
           initialTags={selectedSkillsCategory.tags}
           initialImages={selectedSkillsCategory.images}
           initialPriceFrom={selectedSkillsCategory.price_from ?? null}
+          initialCountryCode={selectedSkillsCategory.country_code ?? ''}
+          initialDistrictCode={selectedSkillsCategory.district_code ?? ''}
           initialPriceCurrency={selectedSkillsCategory.price_currency ?? '€'}
           initialDistrict={selectedSkillsCategory.district ?? ''}
           initialLocation={selectedSkillsCategory.location ?? ''}
@@ -179,9 +206,11 @@ export default function SkillModals(props: Props) {
               ? (imageId) => handleRemoveSkillImage(selectedSkillsCategory.id!, imageId)
               : undefined
           }
-          onSave={async (description, experience, tags, images, priceFrom, priceCurrency, locationValue, detailedDescription, openingHours, districtValue, urgency, durationType) => {
+          onSave={async (description, experience, tags, images, priceFrom, priceCurrency, locationValue, detailedDescription, openingHours, districtValue, countryCode, districtCode, urgency, durationType) => {
             const trimmedLocation = typeof locationValue === 'string' ? locationValue.trim() : '';
             const trimmedDistrict = typeof districtValue === 'string' ? districtValue.trim() : '';
+            const trimmedCountryCode = typeof countryCode === 'string' ? countryCode.trim().toUpperCase() : '';
+            const trimmedDistrictCode = typeof districtCode === 'string' ? districtCode.trim().toLowerCase() : '';
             const detailedText = typeof detailedDescription === 'string' ? detailedDescription.trim() : '';
             const buildPayload = () => {
               const isSeeking = activeModule === 'skills-search';
@@ -191,6 +220,8 @@ export default function SkillModals(props: Props) {
                 description: description || '',
                 detailed_description: detailedText,
                 tags: Array.isArray(tags) ? tags : [],
+                country_code: trimmedCountryCode,
+                district_code: trimmedDistrictCode,
                 is_seeking: isSeeking,
                 urgency: urgency || 'low',
                 duration_type: durationType || null,
@@ -228,6 +259,8 @@ export default function SkillModals(props: Props) {
                     ...(typeof priceFrom === 'number' && !isNaN(priceFrom)
                       ? { price_from: priceFrom, price_currency: priceCurrency || '€' }
                       : { price_from: null, price_currency: '' }),
+                    country_code: trimmedCountryCode,
+                    district_code: trimmedDistrictCode,
                     district: trimmedDistrict,
                     location: trimmedLocation,
                     urgency: urgency || 'low',
@@ -266,6 +299,8 @@ export default function SkillModals(props: Props) {
                     ...(typeof priceFrom === 'number' && !isNaN(priceFrom)
                       ? { price_from: priceFrom, price_currency: priceCurrency || '€' }
                       : { price_from: null, price_currency: '' }),
+                    country_code: trimmedCountryCode,
+                    district_code: trimmedDistrictCode,
                     district: trimmedDistrict,
                     location: trimmedLocation,
                     urgency: urgency || 'low',
@@ -346,6 +381,8 @@ export default function SkillModals(props: Props) {
                       ...(typeof priceFrom === 'number' && !isNaN(priceFrom)
                         ? { price_from: priceFrom, price_currency: priceCurrency || '€' }
                         : { price_from: null, price_currency: '' }),
+                      country_code: trimmedCountryCode,
+                      district_code: trimmedDistrictCode,
                       district: trimmedDistrict,
                       location: trimmedLocation,
                       urgency: urgency || 'low',

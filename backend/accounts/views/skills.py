@@ -146,7 +146,10 @@ def skills_list_view(request):
             from django.conf import settings
 
             if getattr(settings, "DEBUG", False):
-                logger.info(f"POST /api/auth/skills/ - Data: {request.data}")
+                logger.info(
+                    "POST /api/auth/skills/ - payload keys: %s",
+                    sorted(getattr(request.data, "keys", lambda: [])()),
+                )
         except Exception:
             pass
 

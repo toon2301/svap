@@ -31,6 +31,9 @@ export type DashboardSkill = {
   }>;
   price_from?: number | null;
   price_currency?: string;
+  country_code?: string;
+  district_code?: string;
+  district_label?: string | null;
   district?: string;
   location?: string;
   opening_hours?: OpeningHours;
@@ -110,6 +113,18 @@ export function useSkillsModals(): UseSkillsModalsResult {
         typeof s.price_currency === 'string' && s.price_currency.trim() !== ''
           ? s.price_currency
           : '€',
+      country_code:
+        typeof s.country_code === 'string' && s.country_code.trim() !== ''
+          ? s.country_code.trim().toUpperCase()
+          : '',
+      district_code:
+        typeof s.district_code === 'string' && s.district_code.trim() !== ''
+          ? s.district_code.trim().toLowerCase()
+          : '',
+      district_label:
+        typeof s.district_label === 'string' && s.district_label.trim() !== ''
+          ? s.district_label
+          : null,
       district: typeof s.district === 'string' ? s.district : '',
       location: typeof s.location === 'string' ? s.location : '',
       opening_hours:

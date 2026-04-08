@@ -29,6 +29,8 @@ export default function SkillsDescriptionMobileModals({ state }: SkillsDescripti
     description,
     detailedDescription,
     tags,
+    countryCode,
+    districtCode,
     district,
     location,
     experienceValue,
@@ -67,6 +69,8 @@ export default function SkillsDescriptionMobileModals({ state }: SkillsDescripti
     handleTagsChange,
     handleTagsSave,
     handleTagsBack,
+    handleCountryCodeChange,
+    handleDistrictCodeChange,
     handleDistrictChange,
     handleLocationChange,
     handleLocationBlur,
@@ -190,6 +194,11 @@ export default function SkillsDescriptionMobileModals({ state }: SkillsDescripti
           isSaving={isLocationSaving}
           district={district}
           onDistrictChange={handleDistrictChange}
+          countryCode={countryCode}
+          onCountryCodeChange={handleCountryCodeChange}
+          districtCode={districtCode}
+          onDistrictCodeChange={handleDistrictCodeChange}
+          showCountrySelector
           isSeeking={isSeeking}
         />
       </MobileFullScreenModal>

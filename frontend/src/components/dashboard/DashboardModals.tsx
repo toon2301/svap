@@ -108,12 +108,18 @@ export default function DashboardModals({
     detailedDescription?: string,
     openingHours?: { [key: string]: { enabled: boolean; from: string; to: string } },
     district?: string,
+    countryCode?: string,
+    districtCode?: string,
     urgency?: 'low' | 'medium' | 'high' | '',
     durationType?: 'one_time' | 'long_term' | 'project' | '' | null,
     isHidden?: boolean,
   ) => {
     const trimmedLocation = typeof locationValue === 'string' ? locationValue.trim() : '';
     const trimmedDistrict = typeof district === 'string' ? district.trim() : '';
+    const trimmedCountryCode =
+      typeof countryCode === 'string' ? countryCode.trim().toUpperCase() : '';
+    const trimmedDistrictCode =
+      typeof districtCode === 'string' ? districtCode.trim().toLowerCase() : '';
     const detailedText = typeof detailedDescription === 'string' ? detailedDescription.trim() : '';
     const buildPayload = () => {
       const isSeeking = activeModule === 'skills-search';
@@ -146,6 +152,8 @@ export default function DashboardModals({
         payload.price_from = null;
         payload.price_currency = '';
       }
+      payload.country_code = trimmedCountryCode;
+      payload.district_code = trimmedDistrictCode;
       payload.district = trimmedDistrict;
       payload.location = trimmedLocation;
       if (openingHours && Object.keys(openingHours).length > 0) {
@@ -172,6 +180,8 @@ export default function DashboardModals({
             ...(typeof priceFrom === 'number' && !Number.isNaN(priceFrom)
               ? { price_from: priceFrom, price_currency: priceCurrency || '€' }
               : { price_from: null, price_currency: '' }),
+            country_code: trimmedCountryCode,
+            district_code: trimmedDistrictCode,
             district: trimmedDistrict,
             location: trimmedLocation,
             opening_hours: openingHours && Object.keys(openingHours).length > 0 ? openingHours : null,
@@ -240,6 +250,8 @@ export default function DashboardModals({
               ...(typeof priceFrom === 'number' && !Number.isNaN(priceFrom)
                 ? { price_from: priceFrom, price_currency: priceCurrency || '€' }
                 : { price_from: null, price_currency: '' }),
+              country_code: trimmedCountryCode,
+              district_code: trimmedDistrictCode,
               district: trimmedDistrict,
               location: trimmedLocation,
               opening_hours: openingHours && Object.keys(openingHours).length > 0 ? openingHours : null,
@@ -331,6 +343,8 @@ export default function DashboardModals({
             category,
             subcategory,
             price_from: null,
+            country_code: 'SK',
+            district_code: '',
             price_currency: '€',
             district: '',
             location: '',
@@ -357,6 +371,8 @@ export default function DashboardModals({
           initialTags={selectedSkillsCategory.tags}
           initialImages={selectedSkillsCategory.images}
           initialPriceFrom={selectedSkillsCategory.price_from ?? null}
+          initialCountryCode={selectedSkillsCategory.country_code ?? ''}
+          initialDistrictCode={selectedSkillsCategory.district_code ?? ''}
           initialPriceCurrency={selectedSkillsCategory.price_currency ?? '€'}
           initialDistrict={selectedSkillsCategory.district ?? ''}
           initialLocation={selectedSkillsCategory.location ?? ''}
@@ -390,6 +406,8 @@ export default function DashboardModals({
           setSelectedSkillsCategory({
             category: categoryName,
             subcategory: categoryName,
+            country_code: 'SK',
+            district_code: '',
             district: '',
             location: '',
           } as DashboardSkill);

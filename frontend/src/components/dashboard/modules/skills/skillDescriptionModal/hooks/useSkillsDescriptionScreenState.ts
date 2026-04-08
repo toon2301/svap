@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useMemo, ChangeEvent } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { resolveInitialOfferDistrictSelection } from '@/shared/districtRegistry';
 import {
   CurrencyOption,
   DurationOption,
@@ -22,6 +23,10 @@ export function useSkillsDescriptionScreenState({
   onTagsChange,
   initialDistrict = '',
   onDistrictChange,
+  initialCountryCode = '',
+  onCountryCodeChange,
+  initialDistrictCode = '',
+  onDistrictCodeChange,
   initialLocation = '',
   onLocationChange,
   initialExperience,
@@ -41,7 +46,17 @@ export function useSkillsDescriptionScreenState({
   onOpeningHoursChange,
   accountType = 'personal',
 }: SkillsDescriptionScreenProps) {
-  const { t } = useLanguage();
+  const { t, country: appCountry } = useLanguage();
+  const resolvedInitialDistrictSelection = useMemo(
+    () =>
+      resolveInitialOfferDistrictSelection({
+        countryCode: initialCountryCode,
+        districtCode: initialDistrictCode,
+        districtLabel: initialDistrict,
+        fallbackCountryCode: appCountry || 'SK',
+      }),
+    [appCountry, initialCountryCode, initialDistrict, initialDistrictCode],
+  );
 
   const [description, setDescription] = useState(initialDescription);
   const [originalDescription] = useState(initialDescription);
@@ -49,8 +64,12 @@ export function useSkillsDescriptionScreenState({
   const [originalDetailedDescription] = useState(initialDetailedDescription);
   const [tags, setTags] = useState<string[]>(initialTags);
   const [originalTags, setOriginalTags] = useState<string[]>(initialTags);
-  const [district, setDistrict] = useState(initialDistrict);
-  const [originalDistrict] = useState(initialDistrict);
+  const [countryCode, setCountryCode] = useState(resolvedInitialDistrictSelection.countryCode);
+  const [originalCountryCode] = useState(resolvedInitialDistrictSelection.countryCode);
+  const [districtCode, setDistrictCode] = useState(resolvedInitialDistrictSelection.districtCode);
+  const [originalDistrictCode] = useState(resolvedInitialDistrictSelection.districtCode);
+  const [district, setDistrict] = useState(resolvedInitialDistrictSelection.districtLabel);
+  const [originalDistrict] = useState(resolvedInitialDistrictSelection.districtLabel);
   const [location, setLocation] = useState(initialLocation);
   const [originalLocation] = useState(initialLocation);
   const [experience, setExperience] = useState<{ value: number; unit: UnitOption } | undefined>(initialExperience);
@@ -101,8 +120,24 @@ export function useSkillsDescriptionScreenState({
   }, [initialTags]);
 
   useEffect(() => {
-    setDistrict(initialDistrict);
-  }, [initialDistrict]);
+    setCountryCode(resolvedInitialDistrictSelection.countryCode);
+  }, [resolvedInitialDistrictSelection.countryCode]);
+
+  useEffect(() => {
+    setDistrictCode(resolvedInitialDistrictSelection.districtCode);
+  }, [resolvedInitialDistrictSelection.districtCode]);
+
+  useEffect(() => {
+    onCountryCodeChange?.(countryCode);
+  }, [countryCode, onCountryCodeChange]);
+
+  useEffect(() => {
+    onDistrictCodeChange?.(districtCode);
+  }, [districtCode, onDistrictCodeChange]);
+
+  useEffect(() => {
+    setDistrict(resolvedInitialDistrictSelection.districtLabel);
+  }, [resolvedInitialDistrictSelection.districtLabel]);
 
   useEffect(() => {
     setLocation(initialLocation);
@@ -217,6 +252,18 @@ export function useSkillsDescriptionScreenState({
     }
   };
 
+  const handleCountryCodeChange = (newCountryCode: string) => {
+    setCountryCode(newCountryCode);
+    setDistrictCode('');
+    setDistrict('');
+    onDistrictCodeChange?.('');
+    onDistrictChange?.('');
+  };
+
+  const handleDistrictCodeChange = (newDistrictCode: string) => {
+    setDistrictCode(newDistrictCode);
+  };
+
   const handleLocationChange = (newLocation: string) => {
     setLocation(newLocation);
     if (onLocationChange) {
@@ -238,6 +285,8 @@ export function useSkillsDescriptionScreenState({
   };
 
   const handleLocationBack = () => {
+    setCountryCode(originalCountryCode);
+    setDistrictCode(originalDistrictCode);
     setDistrict(originalDistrict);
     setLocation(originalLocation);
     setIsLocationModalOpen(false);
@@ -427,6 +476,8 @@ export function useSkillsDescriptionScreenState({
     description,
     detailedDescription,
     tags,
+    countryCode,
+    districtCode,
     district,
     location,
     experience,
@@ -490,6 +541,8 @@ export function useSkillsDescriptionScreenState({
     handleTagsSave,
     handleTagsBack,
     handleDistrictChange,
+    handleCountryCodeChange,
+    handleDistrictCodeChange,
     handleLocationChange,
     handleLocationBlur,
     handleLocationSave,

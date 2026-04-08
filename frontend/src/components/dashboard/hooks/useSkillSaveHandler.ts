@@ -3,6 +3,7 @@
 import { useCallback } from 'react';
 import { api, endpoints } from '@/lib/api';
 import { uploadOfferImage } from '@/lib/offerImageUpload';
+import { isValidOfferDistrictSelection } from '@/shared/districtRegistry';
 import type { DashboardSkill } from './useSkillsModals';
 
 type Translator = (key: string, fallback: string) => string;
@@ -52,6 +53,22 @@ export function useSkillSaveHandler({
     }
 
     const targetModule = isSeeking ? 'skills-search' : 'skills-offer';
+    const draftSkill = selectedSkillsCategory;
+    const trimmedDistrict = (draftSkill.district || '').trim();
+    const trimmedLocation = (draftSkill.location || '').trim();
+    const trimmedCountryCode = String(draftSkill.country_code || '').trim().toUpperCase();
+    const trimmedDistrictCode = String(draftSkill.district_code || '').trim().toLowerCase();
+
+    if (
+      !isValidOfferDistrictSelection({
+        countryCode: trimmedCountryCode,
+        districtCode: trimmedDistrictCode,
+        districtLabel: trimmedDistrict,
+      })
+    ) {
+      alert(t('skills.invalidDistrict', 'Neplatný okres. Vyber z navrhovaných možností.'));
+      return;
+    }
 
     // Globálne UX (najmä mobile): zobraz stav aj po presmerovaní.
     try {
@@ -81,8 +98,6 @@ export function useSkillSaveHandler({
       const skill = selectedSkillsCategory;
 
       // Pripraviť payload
-      const trimmedDistrict = (skill.district || '').trim();
-      const trimmedLocation = (skill.location || '').trim();
       const detailedText = (skill.detailed_description || '').trim();
 
       const payload: any = {
@@ -91,6 +106,8 @@ export function useSkillSaveHandler({
         description: skill.description || '',
         detailed_description: detailedText,
         tags: Array.isArray(skill.tags) ? skill.tags : [],
+        country_code: trimmedCountryCode,
+        district_code: trimmedDistrictCode,
         district: trimmedDistrict,
         location: trimmedLocation,
         is_seeking: isSeeking,

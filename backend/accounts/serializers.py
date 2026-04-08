@@ -31,6 +31,12 @@ from swaply.validators import (
     CAPTCHAValidator,
 )
 from swaply.validators import HtmlSanitizer
+from .district_registry import (
+    get_offer_district_label,
+    is_valid_offer_district_code,
+    normalize_offer_country_code,
+    resolve_offer_district_code,
+)
 from .name_normalization import (
     build_individual_display_name,
     clean_name_value,
@@ -713,7 +719,10 @@ class OfferedSkillSerializer(serializers.ModelSerializer):
         max_digits=10, decimal_places=2, required=False, allow_null=True
     )
     price_currency = serializers.CharField(required=False, allow_blank=True)
+    country_code = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    district_code = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     district = serializers.CharField(required=False, allow_blank=True)
+    district_label = serializers.SerializerMethodField()
     urgency = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     duration_type = serializers.CharField(
         required=False, allow_blank=True, allow_null=True
@@ -750,7 +759,10 @@ class OfferedSkillSerializer(serializers.ModelSerializer):
             "images",
             "price_from",
             "price_currency",
+            "country_code",
+            "district_code",
             "district",
+            "district_label",
             "location",
             "opening_hours",
             "is_seeking",
@@ -769,6 +781,7 @@ class OfferedSkillSerializer(serializers.ModelSerializer):
             "average_rating",
             "reviews_count",
             "my_request_status",
+            "district_label",
         ]
         read_only_fields = [
             "id",
@@ -858,6 +871,14 @@ class OfferedSkillSerializer(serializers.ModelSerializer):
             pass
         return results
 
+    def get_district_label(self, obj):
+        country_code = normalize_offer_country_code(getattr(obj, "country_code", ""))
+        district_code = getattr(obj, "district_code", "") or ""
+        label = get_offer_district_label(country_code, district_code)
+        if label:
+            return label
+        return (getattr(obj, "district", "") or "").strip() or None
+
     def _get_review_stats(self, obj):
         # Preferuj annotované hodnoty (_avg_rating, _reviews_count) z optimalizovaného querysetu
         if hasattr(obj, "_avg_rating") and hasattr(obj, "_reviews_count"):
@@ -918,6 +939,19 @@ class OfferedSkillSerializer(serializers.ModelSerializer):
             return ""
         return value.strip() if isinstance(value, str) else ""
 
+    def validate_country_code(self, value):
+        if value in (None, ""):
+            return ""
+        normalized = normalize_offer_country_code(value)
+        if not normalized:
+            raise serializers.ValidationError("Neplatná krajina ponuky")
+        return normalized
+
+    def validate_district_code(self, value):
+        if value in (None, ""):
+            return ""
+        return str(value).strip().lower()
+
     def validate_description(self, value):
         """Validácia popisu"""
         if value:
@@ -968,6 +1002,8 @@ class OfferedSkillSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         """Globálna validácia"""
+        instance = getattr(self, "instance", None)
+
         # Ak je zadaná experience_value, musí byť aj experience_unit
         experience_value = attrs.get("experience_value")
         experience_unit = attrs.get("experience_unit")
@@ -989,6 +1025,52 @@ class OfferedSkillSerializer(serializers.ModelSerializer):
             attrs["price_currency"] = ""
         elif not attrs.get("price_currency"):
             attrs["price_currency"] = "€"
+
+        district_fields_present = instance is None or any(
+            key in attrs for key in ("country_code", "district_code", "district")
+        )
+
+        country_code = attrs.get(
+            "country_code",
+            normalize_offer_country_code(getattr(instance, "country_code", "")),
+        )
+        district_code = attrs.get(
+            "district_code",
+            (getattr(instance, "district_code", "") or "").strip().lower(),
+        )
+        district = attrs.get("district")
+        if district is None:
+            district = (getattr(instance, "district", "") or "").strip()
+
+        if not district_fields_present:
+            return attrs
+
+        if district_code:
+            if not country_code:
+                raise serializers.ValidationError(
+                    {"country_code": "Krajina je povinná, ak je zadaný okres"}
+                )
+            if not is_valid_offer_district_code(country_code, district_code):
+                raise serializers.ValidationError({"district_code": "Neplatný okres pre zvolenú krajinu"})
+            attrs["country_code"] = country_code
+            attrs["district_code"] = district_code
+            attrs["district"] = get_offer_district_label(country_code, district_code)
+        elif district:
+            if not country_code:
+                raise serializers.ValidationError(
+                    {"country_code": "Krajina je povinná, ak je zadaný okres"}
+                )
+            resolved_code, resolved_label = resolve_offer_district_code(country_code, district)
+            if not resolved_code:
+                raise serializers.ValidationError({"district": "Neplatný okres pre zvolenú krajinu"})
+            attrs["country_code"] = country_code
+            attrs["district_code"] = resolved_code
+            attrs["district"] = resolved_label
+        elif "district" in attrs or "district_code" in attrs:
+            attrs["district_code"] = ""
+            attrs["district"] = ""
+            if country_code:
+                attrs["country_code"] = country_code
 
         return attrs
 

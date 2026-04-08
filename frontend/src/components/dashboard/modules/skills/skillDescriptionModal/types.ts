@@ -57,6 +57,8 @@ export interface SkillDescriptionModalProps {
     detailedDescription?: string,
     openingHours?: OpeningHours,
     district?: string,
+    countryCode?: string,
+    districtCode?: string,
     urgency?: 'low' | 'medium' | 'high' | '',
     durationType?: DurationOption | '' | null,
     isHidden?: boolean
@@ -70,6 +72,8 @@ export interface SkillDescriptionModalProps {
   initialPriceCurrency?: string;
   initialLocation?: string;
   initialDistrict?: string;
+  initialCountryCode?: string;
+  initialDistrictCode?: string;
   onLocationSave?: (location: string) => Promise<void>;
   initialDetailedDescription?: string;
   initialOpeningHours?: OpeningHours;
@@ -95,6 +99,10 @@ export interface SkillsDescriptionScreenProps {
   onTagsChange?: (tags: string[]) => void;
   initialDistrict?: string;
   onDistrictChange?: (district: string) => void;
+  initialCountryCode?: string;
+  onCountryCodeChange?: (countryCode: string) => void;
+  initialDistrictCode?: string;
+  onDistrictCodeChange?: (districtCode: string) => void;
   initialLocation?: string;
   onLocationChange?: (location: string) => void;
   initialExperience?: { value: number; unit: UnitOption };

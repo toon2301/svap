@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { resolveInitialOfferDistrictSelection } from '@/shared/districtRegistry';
 import { CurrencyOption, SkillImage, OpeningHours, UnitOption, ExperienceValue, DurationOption } from '../types';
 import { currencyFromLocale, ensureCurrencyOption } from '../utils';
 
@@ -15,6 +16,9 @@ interface UseSkillDescriptionStateProps {
   initialPriceCurrency?: string;
   initialLocation?: string;
   initialDistrict?: string;
+  initialCountryCode?: string;
+  initialDistrictCode?: string;
+  fallbackCountryCode?: string;
   initialDetailedDescription?: string;
   initialOpeningHours?: OpeningHours;
   initialUrgency?: 'low' | 'medium' | 'high' | '';
@@ -33,12 +37,25 @@ export const useSkillDescriptionState = ({
   initialPriceCurrency = '€',
   initialLocation = '',
   initialDistrict = '',
+  initialCountryCode = 'SK',
+  initialDistrictCode = '',
+  fallbackCountryCode = 'SK',
   initialDetailedDescription = '',
   initialOpeningHours,
   initialUrgency = 'low',
   initialDurationType = null,
   initialIsHidden = false,
 }: UseSkillDescriptionStateProps) => {
+  const resolvedInitialDistrictSelection = useMemo(
+    () =>
+      resolveInitialOfferDistrictSelection({
+        countryCode: initialCountryCode,
+        districtCode: initialDistrictCode,
+        districtLabel: initialDistrict,
+        fallbackCountryCode,
+      }),
+    [fallbackCountryCode, initialCountryCode, initialDistrict, initialDistrictCode],
+  );
   const [description, setDescription] = useState('');
   const [error, setError] = useState('');
   const [experienceValue, setExperienceValue] = useState('');
@@ -58,6 +75,8 @@ export const useSkillDescriptionState = ({
   const [isLocationSaving, setIsLocationSaving] = useState(false);
   const lastSavedLocationRef = useRef('');
   const [district, setDistrict] = useState('');
+  const [countryCode, setCountryCode] = useState(resolvedInitialDistrictSelection.countryCode);
+  const [districtCode, setDistrictCode] = useState(resolvedInitialDistrictSelection.districtCode);
   const [detailedDescription, setDetailedDescription] = useState('');
   const [isDetailedModalOpen, setIsDetailedModalOpen] = useState(false);
   const [openingHours, setOpeningHours] = useState<OpeningHours>({});
@@ -92,7 +111,9 @@ export const useSkillDescriptionState = ({
       }
       setUserTouchedCurrency(false);
       setPriceError('');
-      setDistrict(initialDistrict || '');
+      setCountryCode(resolvedInitialDistrictSelection.countryCode);
+      setDistrictCode(resolvedInitialDistrictSelection.districtCode);
+      setDistrict(resolvedInitialDistrictSelection.districtLabel);
       setDetailedDescription(initialDetailedDescription || '');
       setOpeningHours(initialOpeningHours || {});
       setIsHideCardEnabled(initialIsHidden || false);
@@ -113,6 +134,8 @@ export const useSkillDescriptionState = ({
       setPriceCurrency(currencyFromLocale(locale));
       setUserTouchedCurrency(false);
       setPriceError('');
+      setCountryCode(resolvedInitialDistrictSelection.countryCode);
+      setDistrictCode('');
       setDistrict('');
       setDetailedDescription('');
       setOpeningHours({});
@@ -125,11 +148,20 @@ export const useSkillDescriptionState = ({
   // Synchronizácia okresu
   useEffect(() => {
     if (!isOpen) {
+      setCountryCode(resolvedInitialDistrictSelection.countryCode);
+      setDistrictCode('');
       setDistrict('');
       return;
     }
-    setDistrict(initialDistrict || '');
-  }, [initialDistrict, isOpen]);
+    setCountryCode(resolvedInitialDistrictSelection.countryCode);
+    setDistrictCode(resolvedInitialDistrictSelection.districtCode);
+    setDistrict(resolvedInitialDistrictSelection.districtLabel);
+  }, [
+    isOpen,
+    resolvedInitialDistrictSelection.countryCode,
+    resolvedInitialDistrictSelection.districtCode,
+    resolvedInitialDistrictSelection.districtLabel,
+  ]);
 
   // Synchronizácia existujúcich obrázkov
   const prevInitialImagesRef = useRef<SkillImage[]>([]);
@@ -240,6 +272,10 @@ export const useSkillDescriptionState = ({
     isLocationSaving,
     setIsLocationSaving,
     lastSavedLocationRef,
+    countryCode,
+    setCountryCode,
+    districtCode,
+    setDistrictCode,
     district,
     setDistrict,
     detailedDescription,

@@ -1,0 +1,3446 @@
+{
+  "SK": [
+    {
+      "code": "banovce-nad-bebravou",
+      "label": "Bánovce nad Bebravou"
+    },
+    {
+      "code": "banska-bystrica",
+      "label": "Banská Bystrica"
+    },
+    {
+      "code": "banska-stiavnica",
+      "label": "Banská Štiavnica"
+    },
+    {
+      "code": "bardejov",
+      "label": "Bardejov"
+    },
+    {
+      "code": "bratislava-i",
+      "label": "Bratislava I"
+    },
+    {
+      "code": "bratislava-ii",
+      "label": "Bratislava II"
+    },
+    {
+      "code": "bratislava-iii",
+      "label": "Bratislava III"
+    },
+    {
+      "code": "bratislava-iv",
+      "label": "Bratislava IV"
+    },
+    {
+      "code": "bratislava-v",
+      "label": "Bratislava V"
+    },
+    {
+      "code": "brezno",
+      "label": "Brezno"
+    },
+    {
+      "code": "bytca",
+      "label": "Bytča"
+    },
+    {
+      "code": "cadca",
+      "label": "Čadca"
+    },
+    {
+      "code": "detva",
+      "label": "Detva"
+    },
+    {
+      "code": "dolny-kubin",
+      "label": "Dolný Kubín"
+    },
+    {
+      "code": "dunajska-streda",
+      "label": "Dunajská Streda"
+    },
+    {
+      "code": "galanta",
+      "label": "Galanta"
+    },
+    {
+      "code": "gelnica",
+      "label": "Gelnica"
+    },
+    {
+      "code": "hlohovec",
+      "label": "Hlohovec"
+    },
+    {
+      "code": "humenne",
+      "label": "Humenné"
+    },
+    {
+      "code": "ilava",
+      "label": "Ilava"
+    },
+    {
+      "code": "kezmarok",
+      "label": "Kežmarok"
+    },
+    {
+      "code": "komarno",
+      "label": "Komárno"
+    },
+    {
+      "code": "kosice-i",
+      "label": "Košice I"
+    },
+    {
+      "code": "kosice-ii",
+      "label": "Košice II"
+    },
+    {
+      "code": "kosice-iii",
+      "label": "Košice III"
+    },
+    {
+      "code": "kosice-iv",
+      "label": "Košice IV"
+    },
+    {
+      "code": "kosice-okolie",
+      "label": "Košice-okolie"
+    },
+    {
+      "code": "krupina",
+      "label": "Krupina"
+    },
+    {
+      "code": "kysucke-nove-mesto",
+      "label": "Kysucké Nové Mesto"
+    },
+    {
+      "code": "levice",
+      "label": "Levice"
+    },
+    {
+      "code": "levoca",
+      "label": "Levoča"
+    },
+    {
+      "code": "liptovsky-mikulas",
+      "label": "Liptovský Mikuláš"
+    },
+    {
+      "code": "lucenec",
+      "label": "Lučenec"
+    },
+    {
+      "code": "malacky",
+      "label": "Malacky"
+    },
+    {
+      "code": "martin",
+      "label": "Martin"
+    },
+    {
+      "code": "medzilaborce",
+      "label": "Medzilaborce"
+    },
+    {
+      "code": "michalovce",
+      "label": "Michalovce"
+    },
+    {
+      "code": "myjava",
+      "label": "Myjava"
+    },
+    {
+      "code": "namestovo",
+      "label": "Námestovo"
+    },
+    {
+      "code": "nitra",
+      "label": "Nitra"
+    },
+    {
+      "code": "nove-mesto-nad-vahom",
+      "label": "Nové Mesto nad Váhom"
+    },
+    {
+      "code": "nove-zamky",
+      "label": "Nové Zámky"
+    },
+    {
+      "code": "partizanske",
+      "label": "Partizánske"
+    },
+    {
+      "code": "pezinok",
+      "label": "Pezinok"
+    },
+    {
+      "code": "piestany",
+      "label": "Piešťany"
+    },
+    {
+      "code": "poltar",
+      "label": "Poltár"
+    },
+    {
+      "code": "poprad",
+      "label": "Poprad"
+    },
+    {
+      "code": "povazska-bystrica",
+      "label": "Považská Bystrica"
+    },
+    {
+      "code": "presov",
+      "label": "Prešov"
+    },
+    {
+      "code": "prievidza",
+      "label": "Prievidza"
+    },
+    {
+      "code": "puchov",
+      "label": "Púchov"
+    },
+    {
+      "code": "revuca",
+      "label": "Revúca"
+    },
+    {
+      "code": "rimavska-sobota",
+      "label": "Rimavská Sobota"
+    },
+    {
+      "code": "roznava",
+      "label": "Rožňava"
+    },
+    {
+      "code": "ruzomberok",
+      "label": "Ružomberok"
+    },
+    {
+      "code": "sabinov",
+      "label": "Sabinov"
+    },
+    {
+      "code": "senec",
+      "label": "Senec"
+    },
+    {
+      "code": "senica",
+      "label": "Senica"
+    },
+    {
+      "code": "skalica",
+      "label": "Skalica"
+    },
+    {
+      "code": "snina",
+      "label": "Snina"
+    },
+    {
+      "code": "sobrance",
+      "label": "Sobrance"
+    },
+    {
+      "code": "spisska-nova-ves",
+      "label": "Spišská Nová Ves"
+    },
+    {
+      "code": "stara-lubovna",
+      "label": "Stará Ľubovňa"
+    },
+    {
+      "code": "stropkov",
+      "label": "Stropkov"
+    },
+    {
+      "code": "svidnik",
+      "label": "Svidník"
+    },
+    {
+      "code": "sala",
+      "label": "Šaľa"
+    },
+    {
+      "code": "topolcany",
+      "label": "Topoľčany"
+    },
+    {
+      "code": "trebisov",
+      "label": "Trebišov"
+    },
+    {
+      "code": "trencin",
+      "label": "Trenčín"
+    },
+    {
+      "code": "trnava",
+      "label": "Trnava"
+    },
+    {
+      "code": "turcianske-teplice",
+      "label": "Turčianske Teplice"
+    },
+    {
+      "code": "tvrdosin",
+      "label": "Tvrdošín"
+    },
+    {
+      "code": "velky-krtis",
+      "label": "Veľký Krtíš"
+    },
+    {
+      "code": "vranov-nad-toplou",
+      "label": "Vranov nad Topľou"
+    },
+    {
+      "code": "zlate-moravce",
+      "label": "Zlaté Moravce"
+    },
+    {
+      "code": "zvolen",
+      "label": "Zvolen"
+    },
+    {
+      "code": "zarnovica",
+      "label": "Žarnovica"
+    },
+    {
+      "code": "ziar-nad-hronom",
+      "label": "Žiar nad Hronom"
+    },
+    {
+      "code": "zilina",
+      "label": "Žilina"
+    }
+  ],
+  "CZ": [
+    {
+      "code": "benesov",
+      "label": "Benešov"
+    },
+    {
+      "code": "beroun",
+      "label": "Beroun"
+    },
+    {
+      "code": "blansko",
+      "label": "Blansko"
+    },
+    {
+      "code": "brno-mesto",
+      "label": "Brno-město"
+    },
+    {
+      "code": "brno-venkov",
+      "label": "Brno-venkov"
+    },
+    {
+      "code": "bruntal",
+      "label": "Bruntál"
+    },
+    {
+      "code": "breclav",
+      "label": "Břeclav"
+    },
+    {
+      "code": "ceska-lipa",
+      "label": "Česká Lípa"
+    },
+    {
+      "code": "ceske-budejovice",
+      "label": "České Budějovice"
+    },
+    {
+      "code": "cesky-krumlov",
+      "label": "Český Krumlov"
+    },
+    {
+      "code": "decin",
+      "label": "Děčín"
+    },
+    {
+      "code": "domazlice",
+      "label": "Domažlice"
+    },
+    {
+      "code": "frydek-mistek",
+      "label": "Frýdek-Místek"
+    },
+    {
+      "code": "havlickuv-brod",
+      "label": "Havlíčkův Brod"
+    },
+    {
+      "code": "hodonin",
+      "label": "Hodonín"
+    },
+    {
+      "code": "hradec-kralove",
+      "label": "Hradec Králové"
+    },
+    {
+      "code": "cheb",
+      "label": "Cheb"
+    },
+    {
+      "code": "chomutov",
+      "label": "Chomutov"
+    },
+    {
+      "code": "chrudim",
+      "label": "Chrudim"
+    },
+    {
+      "code": "jablonec-nad-nisou",
+      "label": "Jablonec nad Nisou"
+    },
+    {
+      "code": "jesenik",
+      "label": "Jeseník"
+    },
+    {
+      "code": "jicin",
+      "label": "Jičín"
+    },
+    {
+      "code": "jihlava",
+      "label": "Jihlava"
+    },
+    {
+      "code": "jindrichuv-hradec",
+      "label": "Jindřichův Hradec"
+    },
+    {
+      "code": "karlovy-vary",
+      "label": "Karlovy Vary"
+    },
+    {
+      "code": "karvina",
+      "label": "Karviná"
+    },
+    {
+      "code": "kladno",
+      "label": "Kladno"
+    },
+    {
+      "code": "klatovy",
+      "label": "Klatovy"
+    },
+    {
+      "code": "kolin",
+      "label": "Kolín"
+    },
+    {
+      "code": "kromeriz",
+      "label": "Kroměříž"
+    },
+    {
+      "code": "kutna-hora",
+      "label": "Kutná Hora"
+    },
+    {
+      "code": "liberec",
+      "label": "Liberec"
+    },
+    {
+      "code": "litomerice",
+      "label": "Litoměřice"
+    },
+    {
+      "code": "louny",
+      "label": "Louny"
+    },
+    {
+      "code": "melnik",
+      "label": "Mělník"
+    },
+    {
+      "code": "mlada-boleslav",
+      "label": "Mladá Boleslav"
+    },
+    {
+      "code": "nachod",
+      "label": "Náchod"
+    },
+    {
+      "code": "novy-jicin",
+      "label": "Nový Jičín"
+    },
+    {
+      "code": "nymburk",
+      "label": "Nymburk"
+    },
+    {
+      "code": "olomouc",
+      "label": "Olomouc"
+    },
+    {
+      "code": "opava",
+      "label": "Opava"
+    },
+    {
+      "code": "ostrava-mesto",
+      "label": "Ostrava-město"
+    },
+    {
+      "code": "pardubice",
+      "label": "Pardubice"
+    },
+    {
+      "code": "pelhrimov",
+      "label": "Pelhřimov"
+    },
+    {
+      "code": "pisek",
+      "label": "Písek"
+    },
+    {
+      "code": "plzen-jih",
+      "label": "Plzeň-jih"
+    },
+    {
+      "code": "plzen-mesto",
+      "label": "Plzeň-město"
+    },
+    {
+      "code": "plzen-sever",
+      "label": "Plzeň-sever"
+    },
+    {
+      "code": "praha-zapad",
+      "label": "Praha-západ"
+    },
+    {
+      "code": "praha-vychod",
+      "label": "Praha-východ"
+    },
+    {
+      "code": "pribram",
+      "label": "Příbram"
+    },
+    {
+      "code": "prostejov",
+      "label": "Prostějov"
+    },
+    {
+      "code": "prerov",
+      "label": "Přerov"
+    },
+    {
+      "code": "rakovnik",
+      "label": "Rakovník"
+    },
+    {
+      "code": "rokycany",
+      "label": "Rokycany"
+    },
+    {
+      "code": "sokolov",
+      "label": "Sokolov"
+    },
+    {
+      "code": "strakonice",
+      "label": "Strakonice"
+    },
+    {
+      "code": "svitavy",
+      "label": "Svitavy"
+    },
+    {
+      "code": "sumperk",
+      "label": "Šumperk"
+    },
+    {
+      "code": "tachov",
+      "label": "Tachov"
+    },
+    {
+      "code": "tabor",
+      "label": "Tábor"
+    },
+    {
+      "code": "trutnov",
+      "label": "Trutnov"
+    },
+    {
+      "code": "trebic",
+      "label": "Třebíč"
+    },
+    {
+      "code": "usti-nad-labem",
+      "label": "Ústí nad Labem"
+    },
+    {
+      "code": "usti-nad-orlici",
+      "label": "Ústí nad Orlicí"
+    },
+    {
+      "code": "valasske-mezirici",
+      "label": "Valašské Meziříčí"
+    },
+    {
+      "code": "vsetin",
+      "label": "Vsetín"
+    },
+    {
+      "code": "vyskov",
+      "label": "Vyškov"
+    },
+    {
+      "code": "znojmo",
+      "label": "Znojmo"
+    },
+    {
+      "code": "zdar-nad-sazavou",
+      "label": "Žďár nad Sázavou"
+    },
+    {
+      "code": "zlin",
+      "label": "Zlín"
+    }
+  ],
+  "PL": [
+    {
+      "code": "bia-a-podlaska",
+      "label": "Biała Podlaska"
+    },
+    {
+      "code": "bia-ystok",
+      "label": "Białystok"
+    },
+    {
+      "code": "bielsko-bia-a",
+      "label": "Bielsko-Biała"
+    },
+    {
+      "code": "bydgoszcz",
+      "label": "Bydgoszcz"
+    },
+    {
+      "code": "bytom",
+      "label": "Bytom"
+    },
+    {
+      "code": "che-m",
+      "label": "Chełm"
+    },
+    {
+      "code": "chorzow",
+      "label": "Chorzów"
+    },
+    {
+      "code": "czestochowa",
+      "label": "Częstochowa"
+    },
+    {
+      "code": "dabrowa-gornicza",
+      "label": "Dąbrowa Górnicza"
+    },
+    {
+      "code": "elblag",
+      "label": "Elbląg"
+    },
+    {
+      "code": "gdansk",
+      "label": "Gdańsk"
+    },
+    {
+      "code": "gdynia",
+      "label": "Gdynia"
+    },
+    {
+      "code": "gliwice",
+      "label": "Gliwice"
+    },
+    {
+      "code": "gorzow-wielkopolski",
+      "label": "Gorzów Wielkopolski"
+    },
+    {
+      "code": "grudziadz",
+      "label": "Grudziądz"
+    },
+    {
+      "code": "jastrzebie-zdroj",
+      "label": "Jastrzębie Zdrój"
+    },
+    {
+      "code": "jaworzno",
+      "label": "Jaworzno"
+    },
+    {
+      "code": "jelenia-gora",
+      "label": "Jelenia Góra"
+    },
+    {
+      "code": "kalisz",
+      "label": "Kalisz"
+    },
+    {
+      "code": "katovice",
+      "label": "Katovice"
+    },
+    {
+      "code": "kielce",
+      "label": "Kielce"
+    },
+    {
+      "code": "konin",
+      "label": "Konin"
+    },
+    {
+      "code": "koszalin",
+      "label": "Koszalin"
+    },
+    {
+      "code": "krakow",
+      "label": "Kraków"
+    },
+    {
+      "code": "krosno",
+      "label": "Krosno"
+    },
+    {
+      "code": "legnica",
+      "label": "Legnica"
+    },
+    {
+      "code": "leszno",
+      "label": "Leszno"
+    },
+    {
+      "code": "lublin",
+      "label": "Lublin"
+    },
+    {
+      "code": "omza",
+      "label": "Łomża"
+    },
+    {
+      "code": "lodz",
+      "label": "Lodž"
+    },
+    {
+      "code": "mys-owice",
+      "label": "Mysłowice"
+    },
+    {
+      "code": "nowy-sacz",
+      "label": "Nowy Sącz"
+    },
+    {
+      "code": "olsztyn",
+      "label": "Olsztyn"
+    },
+    {
+      "code": "opole",
+      "label": "Opole"
+    },
+    {
+      "code": "ostro-eka",
+      "label": "Ostrołęka"
+    },
+    {
+      "code": "piekary-slaskie",
+      "label": "Piekary Śląskie"
+    },
+    {
+      "code": "piotrkow-trybunalski",
+      "label": "Piotrków Trybunalski"
+    },
+    {
+      "code": "p-ock",
+      "label": "Płock"
+    },
+    {
+      "code": "poznan",
+      "label": "Poznań"
+    },
+    {
+      "code": "przemysl",
+      "label": "Przemyśl"
+    },
+    {
+      "code": "radom",
+      "label": "Radom"
+    },
+    {
+      "code": "ruda-slaska",
+      "label": "Ruda Śląska"
+    },
+    {
+      "code": "rybnik",
+      "label": "Rybnik"
+    },
+    {
+      "code": "rzeszow",
+      "label": "Rzeszów"
+    },
+    {
+      "code": "siedlce",
+      "label": "Siedlce"
+    },
+    {
+      "code": "siemianowice-slaskie",
+      "label": "Siemianowice Śląskie"
+    },
+    {
+      "code": "skierniewice",
+      "label": "Skierniewice"
+    },
+    {
+      "code": "s-upsk",
+      "label": "Słupsk"
+    },
+    {
+      "code": "sopot",
+      "label": "Sopot"
+    },
+    {
+      "code": "sosnowiec",
+      "label": "Sosnowiec"
+    },
+    {
+      "code": "suwa-ki",
+      "label": "Suwałki"
+    },
+    {
+      "code": "szczecin",
+      "label": "Szczecin"
+    },
+    {
+      "code": "swietoch-owice",
+      "label": "Świętochłowice"
+    },
+    {
+      "code": "swinoujscie",
+      "label": "Świnoujście"
+    },
+    {
+      "code": "tarnobrzeg",
+      "label": "Tarnobrzeg"
+    },
+    {
+      "code": "tarnow",
+      "label": "Tarnów"
+    },
+    {
+      "code": "torun",
+      "label": "Toruń"
+    },
+    {
+      "code": "tychy",
+      "label": "Tychy"
+    },
+    {
+      "code": "warszawa",
+      "label": "Warszawa"
+    },
+    {
+      "code": "w-oc-awek",
+      "label": "Włocławek"
+    },
+    {
+      "code": "wroc-aw",
+      "label": "Wrocław"
+    },
+    {
+      "code": "zabrze",
+      "label": "Zabrze"
+    },
+    {
+      "code": "zamosc",
+      "label": "Zamość"
+    },
+    {
+      "code": "zielona-gora",
+      "label": "Zielona Góra"
+    },
+    {
+      "code": "zory",
+      "label": "Żory"
+    }
+  ],
+  "HU": [
+    {
+      "code": "abadszalok",
+      "label": "Abádszalók"
+    },
+    {
+      "code": "ajka",
+      "label": "Ajka"
+    },
+    {
+      "code": "aszod",
+      "label": "Aszód"
+    },
+    {
+      "code": "baja",
+      "label": "Baja"
+    },
+    {
+      "code": "baktaloranthaza",
+      "label": "Baktalórántháza"
+    },
+    {
+      "code": "balassagyarmat",
+      "label": "Balassagyarmat"
+    },
+    {
+      "code": "balatonalmadi",
+      "label": "Balatonalmádi"
+    },
+    {
+      "code": "balatonfured",
+      "label": "Balatonfüred"
+    },
+    {
+      "code": "balmazujvaros",
+      "label": "Balmazújváros"
+    },
+    {
+      "code": "barcs",
+      "label": "Barcs"
+    },
+    {
+      "code": "berettyoujfalu",
+      "label": "Berettyóújfalu"
+    },
+    {
+      "code": "bicske",
+      "label": "Bicske"
+    },
+    {
+      "code": "bonyhad",
+      "label": "Bonyhád"
+    },
+    {
+      "code": "budapest",
+      "label": "Budapest"
+    },
+    {
+      "code": "budaors",
+      "label": "Budaörs"
+    },
+    {
+      "code": "bacsalmas",
+      "label": "Bácsalmás"
+    },
+    {
+      "code": "batonyterenye",
+      "label": "Bátonyterenye"
+    },
+    {
+      "code": "bekes",
+      "label": "Békés"
+    },
+    {
+      "code": "bekescsaba",
+      "label": "Békéscsaba"
+    },
+    {
+      "code": "belapatfalva",
+      "label": "Bélapátfalva"
+    },
+    {
+      "code": "cegled",
+      "label": "Cegléd"
+    },
+    {
+      "code": "celldomolk",
+      "label": "Celldömölk"
+    },
+    {
+      "code": "cigand",
+      "label": "Cigánd"
+    },
+    {
+      "code": "csenger",
+      "label": "Csenger"
+    },
+    {
+      "code": "csepreg",
+      "label": "Csepreg"
+    },
+    {
+      "code": "csongrad",
+      "label": "Csongrád"
+    },
+    {
+      "code": "csorna",
+      "label": "Csorna"
+    },
+    {
+      "code": "csurgo",
+      "label": "Csurgó"
+    },
+    {
+      "code": "dabas",
+      "label": "Dabas"
+    },
+    {
+      "code": "debrecen",
+      "label": "Debrecen"
+    },
+    {
+      "code": "derecske",
+      "label": "Derecske"
+    },
+    {
+      "code": "devecser",
+      "label": "Devecser"
+    },
+    {
+      "code": "dombovar",
+      "label": "Dombóvár"
+    },
+    {
+      "code": "dorog",
+      "label": "Dorog"
+    },
+    {
+      "code": "dunakeszi",
+      "label": "Dunakeszi"
+    },
+    {
+      "code": "dunaujvaros",
+      "label": "Dunaújváros"
+    },
+    {
+      "code": "edeleny",
+      "label": "Edelény"
+    },
+    {
+      "code": "eger",
+      "label": "Eger"
+    },
+    {
+      "code": "encs",
+      "label": "Encs"
+    },
+    {
+      "code": "enying",
+      "label": "Enying"
+    },
+    {
+      "code": "esztergom",
+      "label": "Esztergom"
+    },
+    {
+      "code": "fehergyarmat",
+      "label": "Fehérgyarmat"
+    },
+    {
+      "code": "fonyod",
+      "label": "Fonyód"
+    },
+    {
+      "code": "fuzesabony",
+      "label": "Füzesabony"
+    },
+    {
+      "code": "gyula",
+      "label": "Gyula"
+    },
+    {
+      "code": "gyal",
+      "label": "Gyál"
+    },
+    {
+      "code": "gyongyos",
+      "label": "Gyöngyös"
+    },
+    {
+      "code": "gyor",
+      "label": "Győr"
+    },
+    {
+      "code": "gardony",
+      "label": "Gárdony"
+    },
+    {
+      "code": "godollo",
+      "label": "Gödöllő"
+    },
+    {
+      "code": "gonc",
+      "label": "Gönc"
+    },
+    {
+      "code": "hajduboszormeny",
+      "label": "Hajdúböszörmény"
+    },
+    {
+      "code": "hajduhadhaz",
+      "label": "Hajdúhadház"
+    },
+    {
+      "code": "hajdunanas",
+      "label": "Hajdúnánás"
+    },
+    {
+      "code": "hajduszoboszlo",
+      "label": "Hajdúszoboszló"
+    },
+    {
+      "code": "hatvan",
+      "label": "Hatvan"
+    },
+    {
+      "code": "heves",
+      "label": "Heves"
+    },
+    {
+      "code": "hodmezovasarhely",
+      "label": "Hódmezővásárhely"
+    },
+    {
+      "code": "ibrany",
+      "label": "Ibrány"
+    },
+    {
+      "code": "janoshalma",
+      "label": "Jánoshalma"
+    },
+    {
+      "code": "jaszapati",
+      "label": "Jászapáti"
+    },
+    {
+      "code": "jaszbereny",
+      "label": "Jászberény"
+    },
+    {
+      "code": "kalocsa",
+      "label": "Kalocsa"
+    },
+    {
+      "code": "kaposvar",
+      "label": "Kaposvár"
+    },
+    {
+      "code": "kapuvar",
+      "label": "Kapuvár"
+    },
+    {
+      "code": "karcag",
+      "label": "Karcag"
+    },
+    {
+      "code": "kazincbarcika",
+      "label": "Kazincbarcika"
+    },
+    {
+      "code": "kecskemet",
+      "label": "Kecskemét"
+    },
+    {
+      "code": "kemecse",
+      "label": "Kemecse"
+    },
+    {
+      "code": "keszthely",
+      "label": "Keszthely"
+    },
+    {
+      "code": "kisber",
+      "label": "Kisbér"
+    },
+    {
+      "code": "kiskunfelegyhaza",
+      "label": "Kiskunfélegyháza"
+    },
+    {
+      "code": "kiskunhalas",
+      "label": "Kiskunhalas"
+    },
+    {
+      "code": "kiskoros",
+      "label": "Kiskőrös"
+    },
+    {
+      "code": "kistelek",
+      "label": "Kistelek"
+    },
+    {
+      "code": "kisvarda",
+      "label": "Kisvárda"
+    },
+    {
+      "code": "kisujszallas",
+      "label": "Kisújszállás"
+    },
+    {
+      "code": "komlo",
+      "label": "Komló"
+    },
+    {
+      "code": "komarom",
+      "label": "Komárom"
+    },
+    {
+      "code": "kunhegyes",
+      "label": "Kunhegyes"
+    },
+    {
+      "code": "kunszentmiklos",
+      "label": "Kunszentmiklós"
+    },
+    {
+      "code": "kunszentmarton",
+      "label": "Kunszentmárton"
+    },
+    {
+      "code": "kormend",
+      "label": "Körmend"
+    },
+    {
+      "code": "koszeg",
+      "label": "Kőszeg"
+    },
+    {
+      "code": "lenti",
+      "label": "Lenti"
+    },
+    {
+      "code": "letenye",
+      "label": "Letenye"
+    },
+    {
+      "code": "mako",
+      "label": "Makó"
+    },
+    {
+      "code": "marcali",
+      "label": "Marcali"
+    },
+    {
+      "code": "martonvasar",
+      "label": "Martonvásár"
+    },
+    {
+      "code": "mezocsat",
+      "label": "Mezőcsát"
+    },
+    {
+      "code": "mezokovacshaza",
+      "label": "Mezőkovácsháza"
+    },
+    {
+      "code": "mezokovesd",
+      "label": "Mezőkövesd"
+    },
+    {
+      "code": "mezotur",
+      "label": "Mezőtúr"
+    },
+    {
+      "code": "miskolc",
+      "label": "Miskolc"
+    },
+    {
+      "code": "monor",
+      "label": "Monor"
+    },
+    {
+      "code": "mosonmagyarovar",
+      "label": "Mosonmagyaróvár"
+    },
+    {
+      "code": "mateszalka",
+      "label": "Mátészalka"
+    },
+    {
+      "code": "mor",
+      "label": "Mór"
+    },
+    {
+      "code": "morahalom",
+      "label": "Mórahalom"
+    },
+    {
+      "code": "nagyatad",
+      "label": "Nagyatád"
+    },
+    {
+      "code": "nagyecsed",
+      "label": "Nagyecsed"
+    },
+    {
+      "code": "nagykanizsa",
+      "label": "Nagykanizsa"
+    },
+    {
+      "code": "nagykallo",
+      "label": "Nagykálló"
+    },
+    {
+      "code": "nagykata",
+      "label": "Nagykáta"
+    },
+    {
+      "code": "nyiradony",
+      "label": "Nyíradony"
+    },
+    {
+      "code": "nyirbator",
+      "label": "Nyírbátor"
+    },
+    {
+      "code": "nyiregyhaza",
+      "label": "Nyíregyháza"
+    },
+    {
+      "code": "oroshaza",
+      "label": "Orosháza"
+    },
+    {
+      "code": "oroszlany",
+      "label": "Oroszlány"
+    },
+    {
+      "code": "pacsa",
+      "label": "Pacsa"
+    },
+    {
+      "code": "paks",
+      "label": "Paks"
+    },
+    {
+      "code": "pannonhalma",
+      "label": "Pannonhalma"
+    },
+    {
+      "code": "pilisvorosvar",
+      "label": "Pilisvörösvár"
+    },
+    {
+      "code": "polgardi",
+      "label": "Polgárdi"
+    },
+    {
+      "code": "papa",
+      "label": "Pápa"
+    },
+    {
+      "code": "paszto",
+      "label": "Pásztó"
+    },
+    {
+      "code": "pecs",
+      "label": "Pécs"
+    },
+    {
+      "code": "pecsvarad",
+      "label": "Pécsvárad"
+    },
+    {
+      "code": "petervasara",
+      "label": "Pétervására"
+    },
+    {
+      "code": "puspokladany",
+      "label": "Püspökladány"
+    },
+    {
+      "code": "rackeve",
+      "label": "Ráckeve"
+    },
+    {
+      "code": "retsag",
+      "label": "Rétság"
+    },
+    {
+      "code": "salgotarjan",
+      "label": "Salgótarján"
+    },
+    {
+      "code": "sarkad",
+      "label": "Sarkad"
+    },
+    {
+      "code": "sellye",
+      "label": "Sellye"
+    },
+    {
+      "code": "siofok",
+      "label": "Siófok"
+    },
+    {
+      "code": "sopron",
+      "label": "Sopron"
+    },
+    {
+      "code": "szarvas",
+      "label": "Szarvas"
+    },
+    {
+      "code": "szeged",
+      "label": "Szeged"
+    },
+    {
+      "code": "szekszard",
+      "label": "Szekszárd"
+    },
+    {
+      "code": "szentendre",
+      "label": "Szentendre"
+    },
+    {
+      "code": "szentes",
+      "label": "Szentes"
+    },
+    {
+      "code": "szentgotthard",
+      "label": "Szentgotthárd"
+    },
+    {
+      "code": "szentlorinc",
+      "label": "Szentlőrinc"
+    },
+    {
+      "code": "szerencs",
+      "label": "Szerencs"
+    },
+    {
+      "code": "szigetszentmiklos",
+      "label": "Szigetszentmiklós"
+    },
+    {
+      "code": "szigetvar",
+      "label": "Szigetvár"
+    },
+    {
+      "code": "szikszo",
+      "label": "Szikszó"
+    },
+    {
+      "code": "szolnok",
+      "label": "Szolnok"
+    },
+    {
+      "code": "szombathely",
+      "label": "Szombathely"
+    },
+    {
+      "code": "szecseny",
+      "label": "Szécsény"
+    },
+    {
+      "code": "szekesfehervar",
+      "label": "Székesfehérvár"
+    },
+    {
+      "code": "sarbogard",
+      "label": "Sárbogárd"
+    },
+    {
+      "code": "sarospatak",
+      "label": "Sárospatak"
+    },
+    {
+      "code": "sarvar",
+      "label": "Sárvár"
+    },
+    {
+      "code": "sasd",
+      "label": "Sásd"
+    },
+    {
+      "code": "satoraljaujhely",
+      "label": "Sátoraljaújhely"
+    },
+    {
+      "code": "sumeg",
+      "label": "Sümeg"
+    },
+    {
+      "code": "tab",
+      "label": "Tab"
+    },
+    {
+      "code": "tamasi",
+      "label": "Tamási"
+    },
+    {
+      "code": "tapolca",
+      "label": "Tapolca"
+    },
+    {
+      "code": "tata",
+      "label": "Tata"
+    },
+    {
+      "code": "tatabanya",
+      "label": "Tatabánya"
+    },
+    {
+      "code": "tiszafured",
+      "label": "Tiszafüred"
+    },
+    {
+      "code": "tiszavasvari",
+      "label": "Tiszavasvári"
+    },
+    {
+      "code": "tiszaujvaros",
+      "label": "Tiszaújváros"
+    },
+    {
+      "code": "tokaj",
+      "label": "Tokaj"
+    },
+    {
+      "code": "tet",
+      "label": "Tét"
+    },
+    {
+      "code": "torokszentmiklos",
+      "label": "Törökszentmiklós"
+    },
+    {
+      "code": "vasvar",
+      "label": "Vasvár"
+    },
+    {
+      "code": "vecses",
+      "label": "Vecsés"
+    },
+    {
+      "code": "veszprem",
+      "label": "Veszprém"
+    },
+    {
+      "code": "vac",
+      "label": "Vác"
+    },
+    {
+      "code": "varpalota",
+      "label": "Várpalota"
+    },
+    {
+      "code": "vasarosnameny",
+      "label": "Vásárosnamény"
+    },
+    {
+      "code": "zalaegerszeg",
+      "label": "Zalaegerszeg"
+    },
+    {
+      "code": "zalaszentgrot",
+      "label": "Zalaszentgrót"
+    },
+    {
+      "code": "zirc",
+      "label": "Zirc"
+    },
+    {
+      "code": "zahony",
+      "label": "Záhony"
+    },
+    {
+      "code": "erd",
+      "label": "Érd"
+    },
+    {
+      "code": "ozd",
+      "label": "Ózd"
+    }
+  ],
+  "AT": [
+    {
+      "code": "amstetten",
+      "label": "Amstetten"
+    },
+    {
+      "code": "baden",
+      "label": "Baden"
+    },
+    {
+      "code": "bludenz",
+      "label": "Bludenz"
+    },
+    {
+      "code": "braunau-am-inn",
+      "label": "Braunau am Inn"
+    },
+    {
+      "code": "bregenz",
+      "label": "Bregenz"
+    },
+    {
+      "code": "bruck-an-der-leitha",
+      "label": "Bruck an der Leitha"
+    },
+    {
+      "code": "bruck-murzzuschlag",
+      "label": "Bruck-Mürzzuschlag"
+    },
+    {
+      "code": "deutschlandsberg",
+      "label": "Deutschlandsberg"
+    },
+    {
+      "code": "dornbirn",
+      "label": "Dornbirn"
+    },
+    {
+      "code": "eferding",
+      "label": "Eferding"
+    },
+    {
+      "code": "eisenstadt",
+      "label": "Eisenstadt"
+    },
+    {
+      "code": "eisenstadt-umgebung",
+      "label": "Eisenstadt-Umgebung"
+    },
+    {
+      "code": "feldkirch",
+      "label": "Feldkirch"
+    },
+    {
+      "code": "feldkirchen",
+      "label": "Feldkirchen"
+    },
+    {
+      "code": "freistadt",
+      "label": "Freistadt"
+    },
+    {
+      "code": "gmunden",
+      "label": "Gmunden"
+    },
+    {
+      "code": "gmund",
+      "label": "Gmünd"
+    },
+    {
+      "code": "graz",
+      "label": "Graz"
+    },
+    {
+      "code": "graz-umgebung",
+      "label": "Graz-Umgebung"
+    },
+    {
+      "code": "grieskirchen",
+      "label": "Grieskirchen"
+    },
+    {
+      "code": "ganserndorf",
+      "label": "Gänserndorf"
+    },
+    {
+      "code": "gussing",
+      "label": "Güssing"
+    },
+    {
+      "code": "hallein",
+      "label": "Hallein"
+    },
+    {
+      "code": "hartberg-furstenfeld",
+      "label": "Hartberg-Fürstenfeld"
+    },
+    {
+      "code": "hermagor",
+      "label": "Hermagor"
+    },
+    {
+      "code": "hollabrunn",
+      "label": "Hollabrunn"
+    },
+    {
+      "code": "horn",
+      "label": "Horn"
+    },
+    {
+      "code": "imst",
+      "label": "Imst"
+    },
+    {
+      "code": "innsbruck",
+      "label": "Innsbruck"
+    },
+    {
+      "code": "innsbruck-land",
+      "label": "Innsbruck-Land"
+    },
+    {
+      "code": "jennersdorf",
+      "label": "Jennersdorf"
+    },
+    {
+      "code": "kirchdorf-an-der-krems",
+      "label": "Kirchdorf an der Krems"
+    },
+    {
+      "code": "kitzbuhel",
+      "label": "Kitzbühel"
+    },
+    {
+      "code": "klagenfurt-am-worthersee",
+      "label": "Klagenfurt am Wörthersee"
+    },
+    {
+      "code": "klagenfurt-land",
+      "label": "Klagenfurt-Land"
+    },
+    {
+      "code": "korneuburg",
+      "label": "Korneuburg"
+    },
+    {
+      "code": "krems",
+      "label": "Krems"
+    },
+    {
+      "code": "krems-an-der-donau",
+      "label": "Krems an der Donau"
+    },
+    {
+      "code": "kufstein",
+      "label": "Kufstein"
+    },
+    {
+      "code": "landeck",
+      "label": "Landeck"
+    },
+    {
+      "code": "leibnitz",
+      "label": "Leibnitz"
+    },
+    {
+      "code": "leoben",
+      "label": "Leoben"
+    },
+    {
+      "code": "lienz",
+      "label": "Lienz"
+    },
+    {
+      "code": "liezen",
+      "label": "Liezen"
+    },
+    {
+      "code": "lilienfeld",
+      "label": "Lilienfeld"
+    },
+    {
+      "code": "linz",
+      "label": "Linz"
+    },
+    {
+      "code": "linz-land",
+      "label": "Linz-Land"
+    },
+    {
+      "code": "mattersburg",
+      "label": "Mattersburg"
+    },
+    {
+      "code": "melk",
+      "label": "Melk"
+    },
+    {
+      "code": "mistelbach",
+      "label": "Mistelbach"
+    },
+    {
+      "code": "murau",
+      "label": "Murau"
+    },
+    {
+      "code": "murtal",
+      "label": "Murtal"
+    },
+    {
+      "code": "modling",
+      "label": "Mödling"
+    },
+    {
+      "code": "neunkirchen",
+      "label": "Neunkirchen"
+    },
+    {
+      "code": "neusiedl-am-see",
+      "label": "Neusiedl am See"
+    },
+    {
+      "code": "oberpullendorf",
+      "label": "Oberpullendorf"
+    },
+    {
+      "code": "oberwart",
+      "label": "Oberwart"
+    },
+    {
+      "code": "perg",
+      "label": "Perg"
+    },
+    {
+      "code": "reutte",
+      "label": "Reutte"
+    },
+    {
+      "code": "ried-im-innkreis",
+      "label": "Ried im Innkreis"
+    },
+    {
+      "code": "rohrbach",
+      "label": "Rohrbach"
+    },
+    {
+      "code": "rust",
+      "label": "Rust"
+    },
+    {
+      "code": "salzburg",
+      "label": "Salzburg"
+    },
+    {
+      "code": "salzburg-umgebung",
+      "label": "Salzburg-Umgebung"
+    },
+    {
+      "code": "sankt-johann-im-pongau",
+      "label": "Sankt Johann im Pongau"
+    },
+    {
+      "code": "sankt-polten",
+      "label": "Sankt Pölten"
+    },
+    {
+      "code": "sankt-polten-land",
+      "label": "Sankt Pölten-Land"
+    },
+    {
+      "code": "sankt-veit-an-der-glan",
+      "label": "Sankt Veit an der Glan"
+    },
+    {
+      "code": "scheibbs",
+      "label": "Scheibbs"
+    },
+    {
+      "code": "schwaz",
+      "label": "Schwaz"
+    },
+    {
+      "code": "schwechat",
+      "label": "Schwechat"
+    },
+    {
+      "code": "scharding",
+      "label": "Schärding"
+    },
+    {
+      "code": "spittal-an-der-drau",
+      "label": "Spittal an der Drau"
+    },
+    {
+      "code": "steyr",
+      "label": "Steyr"
+    },
+    {
+      "code": "steyr-land",
+      "label": "Steyr-Land"
+    },
+    {
+      "code": "sudoststeiermark",
+      "label": "Südoststeiermark"
+    },
+    {
+      "code": "tamsweg",
+      "label": "Tamsweg"
+    },
+    {
+      "code": "tulln",
+      "label": "Tulln"
+    },
+    {
+      "code": "urfahr-umgebung",
+      "label": "Urfahr-Umgebung"
+    },
+    {
+      "code": "villach",
+      "label": "Villach"
+    },
+    {
+      "code": "villach-land",
+      "label": "Villach-Land"
+    },
+    {
+      "code": "voitsberg",
+      "label": "Voitsberg"
+    },
+    {
+      "code": "vocklabruck",
+      "label": "Vöcklabruck"
+    },
+    {
+      "code": "volkermarkt",
+      "label": "Völkermarkt"
+    },
+    {
+      "code": "waidhofen-an-der-thaya",
+      "label": "Waidhofen an der Thaya"
+    },
+    {
+      "code": "waidhofen-an-der-ybbs",
+      "label": "Waidhofen an der Ybbs"
+    },
+    {
+      "code": "weiz",
+      "label": "Weiz"
+    },
+    {
+      "code": "wels",
+      "label": "Wels"
+    },
+    {
+      "code": "wels-land",
+      "label": "Wels-Land"
+    },
+    {
+      "code": "wien",
+      "label": "Wien"
+    },
+    {
+      "code": "wien-umgebung",
+      "label": "Wien-Umgebung"
+    },
+    {
+      "code": "wiener-neustadt",
+      "label": "Wiener Neustadt"
+    },
+    {
+      "code": "wiener-neustadt-land",
+      "label": "Wiener Neustadt-Land"
+    },
+    {
+      "code": "wolfsberg",
+      "label": "Wolfsberg"
+    },
+    {
+      "code": "zell-am-see",
+      "label": "Zell am See"
+    },
+    {
+      "code": "zwettl",
+      "label": "Zwettl"
+    }
+  ],
+  "DE": [
+    {
+      "code": "aachen",
+      "label": "Aachen"
+    },
+    {
+      "code": "ahrweiler",
+      "label": "Ahrweiler"
+    },
+    {
+      "code": "aichach-friedberg",
+      "label": "Aichach-Friedberg"
+    },
+    {
+      "code": "alb-donau-kreis",
+      "label": "Alb-Donau-Kreis"
+    },
+    {
+      "code": "altenburger-land",
+      "label": "Altenburger Land"
+    },
+    {
+      "code": "altenkirchen",
+      "label": "Altenkirchen"
+    },
+    {
+      "code": "altmarkkreis-salzwedel",
+      "label": "Altmarkkreis Salzwedel"
+    },
+    {
+      "code": "altotting",
+      "label": "Altötting"
+    },
+    {
+      "code": "alzey-worms",
+      "label": "Alzey-Worms"
+    },
+    {
+      "code": "amberg",
+      "label": "Amberg"
+    },
+    {
+      "code": "amberg-sulzbach",
+      "label": "Amberg-Sulzbach"
+    },
+    {
+      "code": "ammerland",
+      "label": "Ammerland"
+    },
+    {
+      "code": "annaberg",
+      "label": "Annaberg"
+    },
+    {
+      "code": "anhalt-bitterfeld",
+      "label": "Anhalt-Bitterfeld"
+    },
+    {
+      "code": "ansbach",
+      "label": "Ansbach"
+    },
+    {
+      "code": "aschaffenburg",
+      "label": "Aschaffenburg"
+    },
+    {
+      "code": "augsburg",
+      "label": "Augsburg"
+    },
+    {
+      "code": "aue-schwarzenberg",
+      "label": "Aue-Schwarzenberg"
+    },
+    {
+      "code": "aurich",
+      "label": "Aurich"
+    },
+    {
+      "code": "bad-doberan",
+      "label": "Bad Doberan"
+    },
+    {
+      "code": "bad-durkheim",
+      "label": "Bad Dürkheim"
+    },
+    {
+      "code": "bad-kissingen",
+      "label": "Bad Kissingen"
+    },
+    {
+      "code": "bad-kreuznach",
+      "label": "Bad Kreuznach"
+    },
+    {
+      "code": "bad-tolz-wolfratshausen",
+      "label": "Bad Tölz-Wolfratshausen"
+    },
+    {
+      "code": "baden-baden",
+      "label": "Baden-Baden"
+    },
+    {
+      "code": "bamberg",
+      "label": "Bamberg"
+    },
+    {
+      "code": "barnim",
+      "label": "Barnim"
+    },
+    {
+      "code": "bautzen",
+      "label": "Bautzen"
+    },
+    {
+      "code": "bayreuth",
+      "label": "Bayreuth"
+    },
+    {
+      "code": "berchtesgadener-land",
+      "label": "Berchtesgadener Land"
+    },
+    {
+      "code": "bergstra-e",
+      "label": "Bergstraße"
+    },
+    {
+      "code": "bernkastel-wittlich",
+      "label": "Bernkastel-Wittlich"
+    },
+    {
+      "code": "biberach",
+      "label": "Biberach"
+    },
+    {
+      "code": "bielefeld",
+      "label": "Bielefeld"
+    },
+    {
+      "code": "birkenfeld",
+      "label": "Birkenfeld"
+    },
+    {
+      "code": "bitburg-prum",
+      "label": "Bitburg-Prüm"
+    },
+    {
+      "code": "bochum",
+      "label": "Bochum"
+    },
+    {
+      "code": "boblingen",
+      "label": "Böblingen"
+    },
+    {
+      "code": "bodenseekreis",
+      "label": "Bodenseekreis"
+    },
+    {
+      "code": "bonn",
+      "label": "Bonn"
+    },
+    {
+      "code": "borde",
+      "label": "Börde"
+    },
+    {
+      "code": "borken",
+      "label": "Borken"
+    },
+    {
+      "code": "bottrop",
+      "label": "Bottrop"
+    },
+    {
+      "code": "brandenburg-an-der-havel",
+      "label": "Brandenburg an der Havel"
+    },
+    {
+      "code": "braunschweig",
+      "label": "Braunschweig"
+    },
+    {
+      "code": "breisgau-hochschwarzwald",
+      "label": "Breisgau-Hochschwarzwald"
+    },
+    {
+      "code": "bremen",
+      "label": "Bremen"
+    },
+    {
+      "code": "bremerhaven",
+      "label": "Bremerhaven"
+    },
+    {
+      "code": "burgenlandkreis",
+      "label": "Burgenlandkreis"
+    },
+    {
+      "code": "calw",
+      "label": "Calw"
+    },
+    {
+      "code": "celle",
+      "label": "Celle"
+    },
+    {
+      "code": "cham",
+      "label": "Cham"
+    },
+    {
+      "code": "chemnitz",
+      "label": "Chemnitz"
+    },
+    {
+      "code": "cloppenburg",
+      "label": "Cloppenburg"
+    },
+    {
+      "code": "coburg",
+      "label": "Coburg"
+    },
+    {
+      "code": "coesfeld",
+      "label": "Coesfeld"
+    },
+    {
+      "code": "cochem-zell",
+      "label": "Cochem-Zell"
+    },
+    {
+      "code": "cottbus",
+      "label": "Cottbus"
+    },
+    {
+      "code": "cuxhaven",
+      "label": "Cuxhaven"
+    },
+    {
+      "code": "dachau",
+      "label": "Dachau"
+    },
+    {
+      "code": "dahme-spreewald",
+      "label": "Dahme-Spreewald"
+    },
+    {
+      "code": "darmstadt",
+      "label": "Darmstadt"
+    },
+    {
+      "code": "darmstadt-dieburg",
+      "label": "Darmstadt-Dieburg"
+    },
+    {
+      "code": "deggendorf",
+      "label": "Deggendorf"
+    },
+    {
+      "code": "delitzsch",
+      "label": "Delitzsch"
+    },
+    {
+      "code": "delmenhorst",
+      "label": "Delmenhorst"
+    },
+    {
+      "code": "demmin",
+      "label": "Demmin"
+    },
+    {
+      "code": "dessau-ro-lau",
+      "label": "Dessau-Roßlau"
+    },
+    {
+      "code": "diepholz",
+      "label": "Diepholz"
+    },
+    {
+      "code": "dillingen-an-der-donau",
+      "label": "Dillingen an der Donau"
+    },
+    {
+      "code": "dingolfing-landau",
+      "label": "Dingolfing-Landau"
+    },
+    {
+      "code": "dithmarschen",
+      "label": "Dithmarschen"
+    },
+    {
+      "code": "dobeln",
+      "label": "Döbeln"
+    },
+    {
+      "code": "donau-ries",
+      "label": "Donau-Ries"
+    },
+    {
+      "code": "donnersbergkreis",
+      "label": "Donnersbergkreis"
+    },
+    {
+      "code": "dortmund",
+      "label": "Dortmund"
+    },
+    {
+      "code": "dresden",
+      "label": "Dresden"
+    },
+    {
+      "code": "duisburg",
+      "label": "Duisburg"
+    },
+    {
+      "code": "duren",
+      "label": "Düren"
+    },
+    {
+      "code": "dusseldorf",
+      "label": "Düsseldorf"
+    },
+    {
+      "code": "ebersberg",
+      "label": "Ebersberg"
+    },
+    {
+      "code": "eichsfeld",
+      "label": "Eichsfeld"
+    },
+    {
+      "code": "eichstatt",
+      "label": "Eichstätt"
+    },
+    {
+      "code": "eisenach",
+      "label": "Eisenach"
+    },
+    {
+      "code": "elbe-elster",
+      "label": "Elbe-Elster"
+    },
+    {
+      "code": "emmendingen",
+      "label": "Emmendingen"
+    },
+    {
+      "code": "emden",
+      "label": "Emden"
+    },
+    {
+      "code": "emsland",
+      "label": "Emsland"
+    },
+    {
+      "code": "ennepe-ruhr-kreis",
+      "label": "Ennepe-Ruhr-Kreis"
+    },
+    {
+      "code": "enzkreis",
+      "label": "Enzkreis"
+    },
+    {
+      "code": "erding",
+      "label": "Erding"
+    },
+    {
+      "code": "erfurt",
+      "label": "Erfurt"
+    },
+    {
+      "code": "erlangen",
+      "label": "Erlangen"
+    },
+    {
+      "code": "erlangen-hochstadt",
+      "label": "Erlangen-Höchstadt"
+    },
+    {
+      "code": "essen",
+      "label": "Essen"
+    },
+    {
+      "code": "esslingen",
+      "label": "Esslingen"
+    },
+    {
+      "code": "euskirchen",
+      "label": "Euskirchen"
+    },
+    {
+      "code": "flensburg",
+      "label": "Flensburg"
+    },
+    {
+      "code": "forchheim",
+      "label": "Forchheim"
+    },
+    {
+      "code": "frankenthal",
+      "label": "Frankenthal"
+    },
+    {
+      "code": "frankfurt-oder",
+      "label": "Frankfurt (Oder)"
+    },
+    {
+      "code": "frankfurt-am-main",
+      "label": "Frankfurt am Main"
+    },
+    {
+      "code": "freiburg-im-breisgau",
+      "label": "Freiburg im Breisgau"
+    },
+    {
+      "code": "freiberg",
+      "label": "Freiberg"
+    },
+    {
+      "code": "freising",
+      "label": "Freising"
+    },
+    {
+      "code": "freudenstadt",
+      "label": "Freudenstadt"
+    },
+    {
+      "code": "freyung-grafenau",
+      "label": "Freyung-Grafenau"
+    },
+    {
+      "code": "friesland",
+      "label": "Friesland"
+    },
+    {
+      "code": "fulda",
+      "label": "Fulda"
+    },
+    {
+      "code": "furstenfeldbruck",
+      "label": "Fürstenfeldbruck"
+    },
+    {
+      "code": "furth",
+      "label": "Fürth"
+    },
+    {
+      "code": "garmisch-partenkirchen",
+      "label": "Garmisch-Partenkirchen"
+    },
+    {
+      "code": "gelsenkirchen",
+      "label": "Gelsenkirchen"
+    },
+    {
+      "code": "gera",
+      "label": "Gera"
+    },
+    {
+      "code": "germersheim",
+      "label": "Germersheim"
+    },
+    {
+      "code": "gie-en",
+      "label": "Gießen"
+    },
+    {
+      "code": "gifhorn",
+      "label": "Gifhorn"
+    },
+    {
+      "code": "goppingen",
+      "label": "Göppingen"
+    },
+    {
+      "code": "gorlitz",
+      "label": "Görlitz"
+    },
+    {
+      "code": "goslar",
+      "label": "Goslar"
+    },
+    {
+      "code": "gotha",
+      "label": "Gotha"
+    },
+    {
+      "code": "gottingen",
+      "label": "Göttingen"
+    },
+    {
+      "code": "grafschaft-bentheim",
+      "label": "Grafschaft Bentheim"
+    },
+    {
+      "code": "greiz",
+      "label": "Greiz"
+    },
+    {
+      "code": "gro-gerau",
+      "label": "Groß-Gerau"
+    },
+    {
+      "code": "gustrow",
+      "label": "Güstrow"
+    },
+    {
+      "code": "gutersloh",
+      "label": "Gütersloh"
+    },
+    {
+      "code": "gunzburg",
+      "label": "Günzburg"
+    },
+    {
+      "code": "hagen",
+      "label": "Hagen"
+    },
+    {
+      "code": "halle-saale",
+      "label": "Halle (Saale)"
+    },
+    {
+      "code": "hamburg",
+      "label": "Hamburg"
+    },
+    {
+      "code": "hameln-pyrmont",
+      "label": "Hameln-Pyrmont"
+    },
+    {
+      "code": "hannover",
+      "label": "Hannover"
+    },
+    {
+      "code": "harburg",
+      "label": "Harburg"
+    },
+    {
+      "code": "harz",
+      "label": "Harz"
+    },
+    {
+      "code": "hassberge",
+      "label": "Hassberge"
+    },
+    {
+      "code": "heidekreis",
+      "label": "Heidekreis"
+    },
+    {
+      "code": "heidelberg",
+      "label": "Heidelberg"
+    },
+    {
+      "code": "heidenheim",
+      "label": "Heidenheim"
+    },
+    {
+      "code": "heilbronn",
+      "label": "Heilbronn"
+    },
+    {
+      "code": "heinsberg",
+      "label": "Heinsberg"
+    },
+    {
+      "code": "helmstedt",
+      "label": "Helmstedt"
+    },
+    {
+      "code": "herford",
+      "label": "Herford"
+    },
+    {
+      "code": "herne",
+      "label": "Herne"
+    },
+    {
+      "code": "hersfeld-rotenburg",
+      "label": "Hersfeld-Rotenburg"
+    },
+    {
+      "code": "herzogtum-lauenburg",
+      "label": "Herzogtum Lauenburg"
+    },
+    {
+      "code": "hildburghausen",
+      "label": "Hildburghausen"
+    },
+    {
+      "code": "hildesheim",
+      "label": "Hildesheim"
+    },
+    {
+      "code": "hochsauerlandkreis",
+      "label": "Hochsauerlandkreis"
+    },
+    {
+      "code": "hochtaunuskreis",
+      "label": "Hochtaunuskreis"
+    },
+    {
+      "code": "hof",
+      "label": "Hof"
+    },
+    {
+      "code": "hohenlohekreis",
+      "label": "Hohenlohekreis"
+    },
+    {
+      "code": "holzminden",
+      "label": "Holzminden"
+    },
+    {
+      "code": "ilm-kreis",
+      "label": "Ilm-Kreis"
+    },
+    {
+      "code": "jena",
+      "label": "Jena"
+    },
+    {
+      "code": "jerichower-land",
+      "label": "Jerichower Land"
+    },
+    {
+      "code": "kamenz",
+      "label": "Kamenz"
+    },
+    {
+      "code": "karlsruhe",
+      "label": "Karlsruhe"
+    },
+    {
+      "code": "kassel",
+      "label": "Kassel"
+    },
+    {
+      "code": "kelheim",
+      "label": "Kelheim"
+    },
+    {
+      "code": "kiel",
+      "label": "Kiel"
+    },
+    {
+      "code": "kitzingen",
+      "label": "Kitzingen"
+    },
+    {
+      "code": "kleve",
+      "label": "Kleve"
+    },
+    {
+      "code": "koln",
+      "label": "Köln"
+    },
+    {
+      "code": "konstanz",
+      "label": "Konstanz"
+    },
+    {
+      "code": "krefeld",
+      "label": "Krefeld"
+    },
+    {
+      "code": "kronach",
+      "label": "Kronach"
+    },
+    {
+      "code": "kulmbach",
+      "label": "Kulmbach"
+    },
+    {
+      "code": "kusel",
+      "label": "Kusel"
+    },
+    {
+      "code": "kyffhauserkreis",
+      "label": "Kyffhäuserkreis"
+    },
+    {
+      "code": "lahn-dill-kreis",
+      "label": "Lahn-Dill-Kreis"
+    },
+    {
+      "code": "landau-in-der-pfalz",
+      "label": "Landau in der Pfalz"
+    },
+    {
+      "code": "landsberg-am-lech",
+      "label": "Landsberg am Lech"
+    },
+    {
+      "code": "landshut",
+      "label": "Landshut"
+    },
+    {
+      "code": "leverkusen",
+      "label": "Leverkusen"
+    },
+    {
+      "code": "lichtenfels",
+      "label": "Lichtenfels"
+    },
+    {
+      "code": "limburg-weilburg",
+      "label": "Limburg-Weilburg"
+    },
+    {
+      "code": "lindau",
+      "label": "Lindau"
+    },
+    {
+      "code": "lippe",
+      "label": "Lippe"
+    },
+    {
+      "code": "lobau-zittau",
+      "label": "Löbau-Zittau"
+    },
+    {
+      "code": "lorrach",
+      "label": "Lörrach"
+    },
+    {
+      "code": "lubeck",
+      "label": "Lübeck"
+    },
+    {
+      "code": "luchow-dannenberg",
+      "label": "Lüchow-Dannenberg"
+    },
+    {
+      "code": "ludwigshafen-am-rhein",
+      "label": "Ludwigshafen am Rhein"
+    },
+    {
+      "code": "ludwigslust",
+      "label": "Ludwigslust"
+    },
+    {
+      "code": "ludwigsburg",
+      "label": "Ludwigsburg"
+    },
+    {
+      "code": "luneburg",
+      "label": "Lüneburg"
+    },
+    {
+      "code": "magdeburg",
+      "label": "Magdeburg"
+    },
+    {
+      "code": "main-kinzig-kreis",
+      "label": "Main-Kinzig-Kreis"
+    },
+    {
+      "code": "main-spessart",
+      "label": "Main-Spessart"
+    },
+    {
+      "code": "main-taunus-kreis",
+      "label": "Main-Taunus-Kreis"
+    },
+    {
+      "code": "main-tauber-kreis",
+      "label": "Main-Tauber-Kreis"
+    },
+    {
+      "code": "mainz",
+      "label": "Mainz"
+    },
+    {
+      "code": "mainz-bingen",
+      "label": "Mainz-Bingen"
+    },
+    {
+      "code": "mannheim",
+      "label": "Mannheim"
+    },
+    {
+      "code": "mansfeld-sudharz",
+      "label": "Mansfeld-Südharz"
+    },
+    {
+      "code": "marburg-biedenkopf",
+      "label": "Marburg-Biedenkopf"
+    },
+    {
+      "code": "markisch-oderland",
+      "label": "Märkisch-Oderland"
+    },
+    {
+      "code": "markischer-kreis",
+      "label": "Märkischer Kreis"
+    },
+    {
+      "code": "mayen-koblenz",
+      "label": "Mayen-Koblenz"
+    },
+    {
+      "code": "mecklenburgische-seenplatte",
+      "label": "Mecklenburgische Seenplatte"
+    },
+    {
+      "code": "mei-en",
+      "label": "Meißen"
+    },
+    {
+      "code": "memmingen",
+      "label": "Memmingen"
+    },
+    {
+      "code": "merzig-wadern",
+      "label": "Merzig-Wadern"
+    },
+    {
+      "code": "mettmann",
+      "label": "Mettmann"
+    },
+    {
+      "code": "miesbach",
+      "label": "Miesbach"
+    },
+    {
+      "code": "miltenberg",
+      "label": "Miltenberg"
+    },
+    {
+      "code": "minden-lubbecke",
+      "label": "Minden-Lübbecke"
+    },
+    {
+      "code": "mittweida",
+      "label": "Mittweida"
+    },
+    {
+      "code": "monchengladbach",
+      "label": "Mönchengladbach"
+    },
+    {
+      "code": "muhldorf-am-inn",
+      "label": "Mühldorf am Inn"
+    },
+    {
+      "code": "muldentalkreis",
+      "label": "Muldentalkreis"
+    },
+    {
+      "code": "mulheim-an-der-ruhr",
+      "label": "Mülheim an der Ruhr"
+    },
+    {
+      "code": "munchen",
+      "label": "München"
+    },
+    {
+      "code": "munster",
+      "label": "Münster"
+    },
+    {
+      "code": "neckar-odenwald-kreis",
+      "label": "Neckar-Odenwald-Kreis"
+    },
+    {
+      "code": "neuburg-schrobenhausen",
+      "label": "Neuburg-Schrobenhausen"
+    },
+    {
+      "code": "neumarkt-in-der-oberpfalz",
+      "label": "Neumarkt in der Oberpfalz"
+    },
+    {
+      "code": "neumunster",
+      "label": "Neumünster"
+    },
+    {
+      "code": "neunkirchen",
+      "label": "Neunkirchen"
+    },
+    {
+      "code": "neustadt-an-der-aisch-bad-windsheim",
+      "label": "Neustadt an der Aisch-Bad Windsheim"
+    },
+    {
+      "code": "neustadt-an-der-waldnaab",
+      "label": "Neustadt an der Waldnaab"
+    },
+    {
+      "code": "neustadt-an-der-weinstra-e",
+      "label": "Neustadt an der Weinstraße"
+    },
+    {
+      "code": "neuwied",
+      "label": "Neuwied"
+    },
+    {
+      "code": "nienburg",
+      "label": "Nienburg"
+    },
+    {
+      "code": "nordfriesland",
+      "label": "Nordfriesland"
+    },
+    {
+      "code": "nordhausen",
+      "label": "Nordhausen"
+    },
+    {
+      "code": "nordvorpommern",
+      "label": "Nordvorpommern"
+    },
+    {
+      "code": "nordwestmecklenburg",
+      "label": "Nordwestmecklenburg"
+    },
+    {
+      "code": "nordsachsen",
+      "label": "Nordsachsen"
+    },
+    {
+      "code": "northeim",
+      "label": "Northeim"
+    },
+    {
+      "code": "nurnberg",
+      "label": "Nürnberg"
+    },
+    {
+      "code": "nurnberger-land",
+      "label": "Nürnberger Land"
+    },
+    {
+      "code": "oberallgau",
+      "label": "Oberallgäu"
+    },
+    {
+      "code": "oberbergischer-kreis",
+      "label": "Oberbergischer Kreis"
+    },
+    {
+      "code": "oberhausen",
+      "label": "Oberhausen"
+    },
+    {
+      "code": "oberhavel",
+      "label": "Oberhavel"
+    },
+    {
+      "code": "oberspreewald-lausitz",
+      "label": "Oberspreewald-Lausitz"
+    },
+    {
+      "code": "odenwaldkreis",
+      "label": "Odenwaldkreis"
+    },
+    {
+      "code": "oder-spree",
+      "label": "Oder-Spree"
+    },
+    {
+      "code": "offenbach",
+      "label": "Offenbach"
+    },
+    {
+      "code": "oldenburg",
+      "label": "Oldenburg"
+    },
+    {
+      "code": "olpe",
+      "label": "Olpe"
+    },
+    {
+      "code": "ortenaukreis",
+      "label": "Ortenaukreis"
+    },
+    {
+      "code": "ostalbkreis",
+      "label": "Ostalbkreis"
+    },
+    {
+      "code": "ostallgau",
+      "label": "Ostallgäu"
+    },
+    {
+      "code": "ostholstein",
+      "label": "Ostholstein"
+    },
+    {
+      "code": "ostprignitz-ruppin",
+      "label": "Ostprignitz-Ruppin"
+    },
+    {
+      "code": "ostvorpommern",
+      "label": "Ostvorpommern"
+    },
+    {
+      "code": "paderborn",
+      "label": "Paderborn"
+    },
+    {
+      "code": "parchim",
+      "label": "Parchim"
+    },
+    {
+      "code": "passau",
+      "label": "Passau"
+    },
+    {
+      "code": "peine",
+      "label": "Peine"
+    },
+    {
+      "code": "pfaffenhofen-an-der-ilm",
+      "label": "Pfaffenhofen an der Ilm"
+    },
+    {
+      "code": "pinneberg",
+      "label": "Pinneberg"
+    },
+    {
+      "code": "pirmasens",
+      "label": "Pirmasens"
+    },
+    {
+      "code": "plauen",
+      "label": "Plauen"
+    },
+    {
+      "code": "plon",
+      "label": "Plön"
+    },
+    {
+      "code": "potsdam",
+      "label": "Potsdam"
+    },
+    {
+      "code": "prignitz",
+      "label": "Prignitz"
+    },
+    {
+      "code": "rastatt",
+      "label": "Rastatt"
+    },
+    {
+      "code": "ravensburg",
+      "label": "Ravensburg"
+    },
+    {
+      "code": "recklinghausen",
+      "label": "Recklinghausen"
+    },
+    {
+      "code": "regen",
+      "label": "Regen"
+    },
+    {
+      "code": "regensburg",
+      "label": "Regensburg"
+    },
+    {
+      "code": "rems-murr-kreis",
+      "label": "Rems-Murr-Kreis"
+    },
+    {
+      "code": "remscheid",
+      "label": "Remscheid"
+    },
+    {
+      "code": "rendsburg-eckernforde",
+      "label": "Rendsburg-Eckernförde"
+    },
+    {
+      "code": "reutlingen",
+      "label": "Reutlingen"
+    },
+    {
+      "code": "rheingau-taunus-kreis",
+      "label": "Rheingau-Taunus-Kreis"
+    },
+    {
+      "code": "rhein-hunsruck-kreis",
+      "label": "Rhein-Hunsrück-Kreis"
+    },
+    {
+      "code": "rhein-kreis-neuss",
+      "label": "Rhein-Kreis Neuss"
+    },
+    {
+      "code": "rhein-lahn-kreis",
+      "label": "Rhein-Lahn-Kreis"
+    },
+    {
+      "code": "rhein-neckar-kreis",
+      "label": "Rhein-Neckar-Kreis"
+    },
+    {
+      "code": "rhein-pfalz-kreis",
+      "label": "Rhein-Pfalz-Kreis"
+    },
+    {
+      "code": "rhein-sieg-kreis",
+      "label": "Rhein-Sieg-Kreis"
+    },
+    {
+      "code": "rhein-erft-kreis",
+      "label": "Rhein-Erft-Kreis"
+    },
+    {
+      "code": "rhon-grabfeld",
+      "label": "Rhön-Grabfeld"
+    },
+    {
+      "code": "riesa-gro-enhain",
+      "label": "Riesa-Großenhain"
+    },
+    {
+      "code": "rosenheim",
+      "label": "Rosenheim"
+    },
+    {
+      "code": "rostock",
+      "label": "Rostock"
+    },
+    {
+      "code": "roth",
+      "label": "Roth"
+    },
+    {
+      "code": "rotenburg-wumme",
+      "label": "Rotenburg (Wümme)"
+    },
+    {
+      "code": "rottal-inn",
+      "label": "Rottal-Inn"
+    },
+    {
+      "code": "rottweil",
+      "label": "Rottweil"
+    },
+    {
+      "code": "rugen",
+      "label": "Rügen"
+    },
+    {
+      "code": "saalekreis",
+      "label": "Saalekreis"
+    },
+    {
+      "code": "saarbrucken",
+      "label": "Saarbrücken"
+    },
+    {
+      "code": "saarlouis",
+      "label": "Saarlouis"
+    },
+    {
+      "code": "saarpfalz-kreis",
+      "label": "Saarpfalz-Kreis"
+    },
+    {
+      "code": "saalfeld-rudolstadt",
+      "label": "Saalfeld-Rudolstadt"
+    },
+    {
+      "code": "saale-holzland-kreis",
+      "label": "Saale-Holzland-Kreis"
+    },
+    {
+      "code": "saale-orla-kreis",
+      "label": "Saale-Orla-Kreis"
+    },
+    {
+      "code": "sachsische-schweiz-osterzgebirge",
+      "label": "Sächsische Schweiz-Osterzgebirge"
+    },
+    {
+      "code": "salzlandkreis",
+      "label": "Salzlandkreis"
+    },
+    {
+      "code": "salzgitter",
+      "label": "Salzgitter"
+    },
+    {
+      "code": "schaumburg",
+      "label": "Schaumburg"
+    },
+    {
+      "code": "schleswig-flensburg",
+      "label": "Schleswig-Flensburg"
+    },
+    {
+      "code": "schmalkalden-meiningen",
+      "label": "Schmalkalden-Meiningen"
+    },
+    {
+      "code": "schwabisch-hall",
+      "label": "Schwäbisch Hall"
+    },
+    {
+      "code": "schwalm-eder-kreis",
+      "label": "Schwalm-Eder-Kreis"
+    },
+    {
+      "code": "schwandorf",
+      "label": "Schwandorf"
+    },
+    {
+      "code": "schwarzwald-baar-kreis",
+      "label": "Schwarzwald-Baar-Kreis"
+    },
+    {
+      "code": "schweinfurt",
+      "label": "Schweinfurt"
+    },
+    {
+      "code": "schwerin",
+      "label": "Schwerin"
+    },
+    {
+      "code": "segeberg",
+      "label": "Segeberg"
+    },
+    {
+      "code": "siegen-wittgenstein",
+      "label": "Siegen-Wittgenstein"
+    },
+    {
+      "code": "sigmaringen",
+      "label": "Sigmaringen"
+    },
+    {
+      "code": "soest",
+      "label": "Soest"
+    },
+    {
+      "code": "solingen",
+      "label": "Solingen"
+    },
+    {
+      "code": "soltau-fallingbostel",
+      "label": "Soltau-Fallingbostel"
+    },
+    {
+      "code": "sommerda",
+      "label": "Sömmerda"
+    },
+    {
+      "code": "sonneberg",
+      "label": "Sonneberg"
+    },
+    {
+      "code": "spree-nei-e",
+      "label": "Spree-Neiße"
+    },
+    {
+      "code": "speyer",
+      "label": "Speyer"
+    },
+    {
+      "code": "stade",
+      "label": "Stade"
+    },
+    {
+      "code": "starnberg",
+      "label": "Starnberg"
+    },
+    {
+      "code": "steinfurt",
+      "label": "Steinfurt"
+    },
+    {
+      "code": "steinburg",
+      "label": "Steinburg"
+    },
+    {
+      "code": "stendal",
+      "label": "Stendal"
+    },
+    {
+      "code": "stollberg",
+      "label": "Stollberg"
+    },
+    {
+      "code": "stormarn",
+      "label": "Stormarn"
+    },
+    {
+      "code": "straubing-bogen",
+      "label": "Straubing-Bogen"
+    },
+    {
+      "code": "stuttgart",
+      "label": "Stuttgart"
+    },
+    {
+      "code": "sudliche-weinstra-e",
+      "label": "Südliche Weinstraße"
+    },
+    {
+      "code": "sudwestpfalz",
+      "label": "Südwestpfalz"
+    },
+    {
+      "code": "suhl",
+      "label": "Suhl"
+    },
+    {
+      "code": "teltow-flaming",
+      "label": "Teltow-Fläming"
+    },
+    {
+      "code": "tirschenreuth",
+      "label": "Tirschenreuth"
+    },
+    {
+      "code": "torgau-oschatz",
+      "label": "Torgau-Oschatz"
+    },
+    {
+      "code": "traunstein",
+      "label": "Traunstein"
+    },
+    {
+      "code": "trier",
+      "label": "Trier"
+    },
+    {
+      "code": "trier-saarburg",
+      "label": "Trier-Saarburg"
+    },
+    {
+      "code": "tubingen",
+      "label": "Tübingen"
+    },
+    {
+      "code": "tuttlingen",
+      "label": "Tuttlingen"
+    },
+    {
+      "code": "uckermark",
+      "label": "Uckermark"
+    },
+    {
+      "code": "uecker-randow",
+      "label": "Uecker-Randow"
+    },
+    {
+      "code": "uelzen",
+      "label": "Uelzen"
+    },
+    {
+      "code": "ulm",
+      "label": "Ulm"
+    },
+    {
+      "code": "unna",
+      "label": "Unna"
+    },
+    {
+      "code": "unstrut-hainich-kreis",
+      "label": "Unstrut-Hainich-Kreis"
+    },
+    {
+      "code": "unterallgau",
+      "label": "Unterallgäu"
+    },
+    {
+      "code": "vechta",
+      "label": "Vechta"
+    },
+    {
+      "code": "verden",
+      "label": "Verden"
+    },
+    {
+      "code": "viersen",
+      "label": "Viersen"
+    },
+    {
+      "code": "vogtlandkreis",
+      "label": "Vogtlandkreis"
+    },
+    {
+      "code": "vogelsbergkreis",
+      "label": "Vogelsbergkreis"
+    },
+    {
+      "code": "vorpommern-greifswald",
+      "label": "Vorpommern-Greifswald"
+    },
+    {
+      "code": "vorpommern-rugen",
+      "label": "Vorpommern-Rügen"
+    },
+    {
+      "code": "vulkaneifel",
+      "label": "Vulkaneifel"
+    },
+    {
+      "code": "waldshut",
+      "label": "Waldshut"
+    },
+    {
+      "code": "warendorf",
+      "label": "Warendorf"
+    },
+    {
+      "code": "wartburgkreis",
+      "label": "Wartburgkreis"
+    },
+    {
+      "code": "wesel",
+      "label": "Wesel"
+    },
+    {
+      "code": "wesermarsch",
+      "label": "Wesermarsch"
+    },
+    {
+      "code": "westerwaldkreis",
+      "label": "Westerwaldkreis"
+    },
+    {
+      "code": "wetteraukreis",
+      "label": "Wetteraukreis"
+    },
+    {
+      "code": "weilheim-schongau",
+      "label": "Weilheim-Schongau"
+    },
+    {
+      "code": "weimar",
+      "label": "Weimar"
+    },
+    {
+      "code": "weimarer-land",
+      "label": "Weimarer Land"
+    },
+    {
+      "code": "wei-enburg-gunzenhausen",
+      "label": "Weißenburg-Gunzenhausen"
+    },
+    {
+      "code": "werra-mei-ner-kreis",
+      "label": "Werra-Meißner-Kreis"
+    },
+    {
+      "code": "wesel-2",
+      "label": "Wesel"
+    },
+    {
+      "code": "wiesbaden",
+      "label": "Wiesbaden"
+    },
+    {
+      "code": "wilhelmshaven",
+      "label": "Wilhelmshaven"
+    },
+    {
+      "code": "wittenberg",
+      "label": "Wittenberg"
+    },
+    {
+      "code": "wittmund",
+      "label": "Wittmund"
+    },
+    {
+      "code": "wolfenbuttel",
+      "label": "Wolfenbüttel"
+    },
+    {
+      "code": "wolfsburg",
+      "label": "Wolfsburg"
+    },
+    {
+      "code": "worms",
+      "label": "Worms"
+    },
+    {
+      "code": "wunsiedel-im-fichtelgebirge",
+      "label": "Wunsiedel im Fichtelgebirge"
+    },
+    {
+      "code": "wuppertal",
+      "label": "Wuppertal"
+    },
+    {
+      "code": "wurzburg",
+      "label": "Würzburg"
+    },
+    {
+      "code": "zollernalbkreis",
+      "label": "Zollernalbkreis"
+    },
+    {
+      "code": "zweibrucken",
+      "label": "Zweibrücken"
+    },
+    {
+      "code": "zwickau",
+      "label": "Zwickau"
+    }
+  ]
+}

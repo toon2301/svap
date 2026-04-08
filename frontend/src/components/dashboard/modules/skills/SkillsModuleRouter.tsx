@@ -369,6 +369,20 @@ export default function SkillsModuleRouter({
               district,
             });
           }}
+          initialCountryCode={selectedSkillsCategory.country_code || ''}
+          onCountryCodeChange={(countryCode) => {
+            setSelectedSkillsCategory({
+              ...selectedSkillsCategory,
+              country_code: countryCode,
+            });
+          }}
+          initialDistrictCode={selectedSkillsCategory.district_code || ''}
+          onDistrictCodeChange={(districtCode) => {
+            setSelectedSkillsCategory({
+              ...selectedSkillsCategory,
+              district_code: districtCode,
+            });
+          }}
           initialLocation={selectedSkillsCategory.location || ''}
           onLocationChange={(location) => {
             setSelectedSkillsCategory({
@@ -473,6 +487,8 @@ export default function SkillsModuleRouter({
               category,
               subcategory,
               price_from: null,
+              country_code: 'SK',
+              district_code: '',
               price_currency: '€',
               location: '',
               detailed_description: '',
@@ -536,6 +552,8 @@ export default function SkillsModuleRouter({
               category: categoryName,
               subcategory: categoryName,
               price_from: null,
+              country_code: 'SK',
+              district_code: '',
               price_currency: '€',
               location: '',
               detailed_description: '',

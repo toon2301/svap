@@ -1,7 +1,17 @@
 'use client';
 
-import { CurrencyOption, SkillImage, OpeningHours, UnitOption, ExperienceValue, DurationOption } from '../types';
-import { isValidDistrict, scrollToDistrictInput } from '../validation/districtValidation';
+import {
+  CurrencyOption,
+  SkillImage,
+  OpeningHours,
+  UnitOption,
+  ExperienceValue,
+  DurationOption,
+} from '../types';
+import {
+  isValidDistrictSelection,
+  scrollToDistrictInput,
+} from '../validation/districtValidation';
 
 interface HandleSaveParams {
   description: string;
@@ -13,6 +23,8 @@ interface HandleSaveParams {
   priceCurrency: CurrencyOption;
   location: string;
   district: string;
+  countryCode: string;
+  districtCode: string;
   detailedDescription: string;
   openingHours: OpeningHours;
   existingImages: SkillImage[];
@@ -22,6 +34,8 @@ interface HandleSaveParams {
   initialDetailedDescription?: string;
   initialLocation?: string;
   initialDistrict?: string;
+  initialCountryCode?: string;
+  initialDistrictCode?: string;
   initialOpeningHours?: OpeningHours;
   initialPriceFrom?: number | null;
   urgency?: 'low' | 'medium' | 'high' | '';
@@ -38,9 +52,11 @@ interface HandleSaveParams {
     detailedDescription?: string,
     openingHours?: OpeningHours,
     district?: string,
+    countryCode?: string,
+    districtCode?: string,
     urgency?: 'low' | 'medium' | 'high' | '',
     durationType?: DurationOption | '' | null,
-    isHidden?: boolean
+    isHidden?: boolean,
   ) => Promise<void> | void;
   setError: (error: string) => void;
   setExperienceError: (error: string) => void;
@@ -58,6 +74,8 @@ export const handleSave = async ({
   priceCurrency,
   location,
   district,
+  countryCode,
+  districtCode,
   detailedDescription,
   openingHours,
   existingImages,
@@ -67,6 +85,8 @@ export const handleSave = async ({
   initialDetailedDescription,
   initialLocation,
   initialDistrict,
+  initialCountryCode,
+  initialDistrictCode,
   initialOpeningHours,
   initialPriceFrom,
   urgency,
@@ -80,7 +100,6 @@ export const handleSave = async ({
 }: HandleSaveParams): Promise<boolean> => {
   const trimmed = description.trim();
 
-  // Detekcia, či ide o editáciu existujúcej karty
   const isEditing =
     existingImages.length > 0 ||
     initialDescription ||
@@ -89,10 +108,11 @@ export const handleSave = async ({
     initialDetailedDescription ||
     initialLocation ||
     initialDistrict ||
+    initialCountryCode ||
+    initialDistrictCode ||
     (initialOpeningHours && Object.keys(initialOpeningHours).length > 0) ||
     (initialPriceFrom !== null && initialPriceFrom !== undefined && initialPriceFrom > 0);
 
-  // Pri vytváraní novej karty je popis povinný, pri editácii existujúcej karty nie
   if (!isEditing && !trimmed) {
     setError(t('skills.descriptionRequired', 'Popis zručnosti je povinný'));
     return false;
@@ -103,11 +123,10 @@ export const handleSave = async ({
     return false;
   }
 
-  // Validácia experience
   let experience: { value: number; unit: UnitOption } | undefined;
   if (experienceValue.trim()) {
     const numValue = parseFloat(experienceValue.trim());
-    if (isNaN(numValue) || numValue <= 0) {
+    if (Number.isNaN(numValue) || numValue <= 0) {
       setExperienceError(t('skills.experiencePositive', 'Dĺžka praxe musí byť kladné číslo'));
       return false;
     }
@@ -123,11 +142,10 @@ export const handleSave = async ({
 
   setExperienceError('');
 
-  // Validácia price
   let priceValue: number | null = null;
   if (priceFrom.trim()) {
     const parsed = parseFloat(priceFrom.trim().replace(',', '.'));
-    if (isNaN(parsed) || parsed < 0) {
+    if (Number.isNaN(parsed) || parsed < 0) {
       setPriceError(t('skills.priceNonNegative', 'Cena musí byť nezáporné číslo'));
       return false;
     }
@@ -137,18 +155,23 @@ export const handleSave = async ({
 
   const locationValue = location.trim();
   const districtValue = district.trim();
+  const countryCodeValue = String(countryCode || '').trim().toUpperCase();
+  const districtCodeValue = String(districtCode || '').trim().toLowerCase();
 
-  // Validácia okresu
-  if (districtValue) {
-    if (!isValidDistrict(districtValue)) {
-      scrollToDistrictInput();
-      return false;
-    }
+  if (
+    !isValidDistrictSelection({
+      countryCode: countryCodeValue,
+      districtCode: districtCodeValue,
+      districtLabel: districtValue,
+    })
+  ) {
+    scrollToDistrictInput();
+    return false;
   }
 
   const detailedValue = detailedDescription.trim();
   const openingHoursValue = Object.keys(openingHours).length > 0 ? openingHours : undefined;
-  
+
   try {
     await Promise.resolve(
       onSave(
@@ -162,16 +185,18 @@ export const handleSave = async ({
         detailedValue,
         openingHoursValue,
         districtValue,
+        countryCodeValue,
+        districtCodeValue,
         urgency || 'low',
         durationType || null,
-        isHidden
-      )
+        isHidden,
+      ),
     );
     return true;
   } catch (e: any) {
     setError(
       e?.message ||
-        t('skills.saveFailed', 'Nepodarilo sa uložiť kartu. Skús to znova.')
+        t('skills.saveFailed', 'Nepodarilo sa uložiť kartu. Skús to znova.'),
     );
     return false;
   }
@@ -180,9 +205,9 @@ export const handleSave = async ({
 export const handleExperienceValueChange = (
   val: string,
   setExperienceValue: (val: string) => void,
-  setExperienceError: (error: string) => void
+  setExperienceError: (error: string) => void,
 ): void => {
-  if (val === '' || (!isNaN(parseFloat(val)) && parseFloat(val) >= 0 && parseFloat(val) <= 100)) {
+  if (val === '' || (!Number.isNaN(parseFloat(val)) && parseFloat(val) >= 0 && parseFloat(val) <= 100)) {
     setExperienceValue(val);
     setExperienceError('');
   }
@@ -191,9 +216,9 @@ export const handleExperienceValueChange = (
 export const handlePriceChange = (
   val: string,
   setPriceFrom: (val: string) => void,
-  setPriceError: (error: string) => void
+  setPriceError: (error: string) => void,
 ): void => {
-  if (val === '' || (!isNaN(parseFloat(val)) && parseFloat(val) >= 0)) {
+  if (val === '' || (!Number.isNaN(parseFloat(val)) && parseFloat(val) >= 0)) {
     setPriceFrom(val);
     setPriceError('');
   }
@@ -240,4 +265,3 @@ export const handleLocationBlur = async ({
     setIsLocationSaving(false);
   }
 };
-
