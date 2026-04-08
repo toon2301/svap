@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useMemo, ChangeEvent } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { resolveInitialOfferDistrictSelection } from '@/shared/districtRegistry';
+import { resolveInitialOfferDistrictSelection, type OfferCountryCode } from '@/shared/districtRegistry';
 import {
   CurrencyOption,
   DurationOption,
@@ -252,7 +252,7 @@ export function useSkillsDescriptionScreenState({
     }
   };
 
-  const handleCountryCodeChange = (newCountryCode: string) => {
+  const handleCountryCodeChange = (newCountryCode: OfferCountryCode) => {
     setCountryCode(newCountryCode);
     setDistrictCode('');
     setDistrict('');

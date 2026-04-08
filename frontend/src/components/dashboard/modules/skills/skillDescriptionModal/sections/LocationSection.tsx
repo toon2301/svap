@@ -22,8 +22,8 @@ interface LocationSectionProps {
   district?: string;
   onDistrictChange?: (value: string) => void;
   onDistrictBlur?: (value: string) => void;
-  countryCode?: string;
-  onCountryCodeChange?: (value: string) => void;
+  countryCode?: OfferCountryCode | '';
+  onCountryCodeChange?: (value: OfferCountryCode) => void;
   districtCode?: string;
   onDistrictCodeChange?: (value: string) => void;
   showCountrySelector?: boolean;

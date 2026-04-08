@@ -1,5 +1,7 @@
 'use client';
 
+import type { OfferCountryCode } from '@/shared/districtRegistry';
+
 export type SkillImage = {
   id?: number;
   image_url?: string | null;
@@ -100,7 +102,7 @@ export interface SkillsDescriptionScreenProps {
   initialDistrict?: string;
   onDistrictChange?: (district: string) => void;
   initialCountryCode?: string;
-  onCountryCodeChange?: (countryCode: string) => void;
+  onCountryCodeChange?: (countryCode: OfferCountryCode) => void;
   initialDistrictCode?: string;
   onDistrictCodeChange?: (districtCode: string) => void;
   initialLocation?: string;
