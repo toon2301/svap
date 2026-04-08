@@ -90,7 +90,14 @@
     "openDetail": "Otvoriť detail žiadosti",
     "openProfile": "Otvoriť profil",
     "createFromChat": "Utwórz prośbę z oferty",
-    "toastCancelFailed": "Zrušenie žiadosti zlyhalo."
+    "toastCancelFailed": "Zrušenie žiadosti zlyhalo.",
+    "toastRequestCancelled": "Prosba zostala anulowana.",
+    "toastRequestAlreadyProcessed": "Ta prosba zostala juz przetworzona.",
+    "statusSent": "Wyslano",
+    "pickOffer": "Wybierz oferte",
+    "chatProfileRedirectHint": "Po wyborze przeniesiemy Cie do profilu, gdzie dokonczysz prosbe.",
+    "chatNoRequestableOffers": "Ten uzytkownik nie ma obecnie zadnych dostepnych ofert, z ktorych mozna utworzyc prosbe.",
+    "loadOffersFailed": "Nie udalo sie zaladowac ofert. Sprobuj ponownie."
   },
   "navigation": {
     "home": "Strona główna",
@@ -133,7 +140,32 @@
     "subtitle": "Twoje konwersacje",
     "none": "Brak wiadomości",
     "hint": "Gdy ktoś do Ciebie napisze, pojawi się tutaj",
-    "soon": "Funkcja wiadomości będzie wkrótce dostępna"
+    "soon": "Funkcja wiadomości będzie wkrótce dostępna",
+    "loading": "Ladowanie...",
+    "unknownUser": "Uzytkownik",
+    "noPreview": "Wiadomosc",
+    "noMessagesYet": "Jeszcze nie ma zadnych wiadomosci",
+    "opening": "Otwieranie...",
+    "openFailed": "Nie udalo sie otworzyc konwersacji. Sprobuj ponownie.",
+    "openRateLimited": "Otwierasz konwersacje zbyt szybko. Poczekaj chwile.",
+    "openUnavailable": "Nie mozna teraz napisac do tego uzytkownika.",
+    "openPeerProfile": "Otworz profil uzytkownika",
+    "loadFailed": "Nie udalo sie zaladowac wiadomosci. Sprobuj ponownie.",
+    "loadRateLimited": "Ladujesz wiadomosci zbyt szybko. Poczekaj chwile.",
+    "deleted": "Wiadomosc zostala usunieta",
+    "seen": "Przeczytano",
+    "scrollToBottom": "Przejdz do najnowszych wiadomosci",
+    "send": "Wyslij",
+    "sendFailed": "Nie udalo sie wyslac wiadomosci. Sprobuj ponownie.",
+    "sendRateLimited": "Wysylasz wiadomosci zbyt szybko. Poczekaj chwile.",
+    "sendUnavailable": "Ta konwersacja nie jest juz dostepna.",
+    "type": "Napisz wiadomosc...",
+    "addEmoji": "Dodaj emoji",
+    "startConversation": "Rozpocznij konwersacje",
+    "firstMessageHint": "Konwersacja zostanie utworzona dopiero po wyslaniu pierwszej wiadomosci.",
+    "sidebarSubtitle": "Lista konwersacji",
+    "pickConversationTitle": "Wybierz konwersacje",
+    "pickConversationHint": "Po prawej stronie wybierz konwersacje, ktora chcesz otworzyc."
   },
   "search": {
     "title": "Szukaj",
@@ -166,10 +198,10 @@
     "sortPriceDesc": "Cena ↓",
     "ratingLabel": "Ocena",
     "emptyNoResults": "Brak wyników dla \"{{q}}\"",
-    "emptyEnterQuery": "Wprowadź wyrażenie w polu wyszukiwania.",
+    "emptyEnterQuery": "Wprowadź frazę wyszukiwania.",
     "emptyTry": "Spróbuj:",
     "emptyTryRemoveFilters": "usunąć filtry",
-    "emptyTryShorterQuery": "użyć krótszego wyrażenia",
+    "emptyTryShorterQuery": "użyć krótszej frazy",
     "emptyTryChangePrice": "zmienić cenę",
     "clearFilters": "Wyczyść filtry",
     "paginationPrevious": "Poprzednia",
@@ -200,22 +232,7 @@
     "userProfileNotFound": "Profil používateľa sa nepodarilo načítať.",
     "userProfileRateLimited": "Príliš veľa požiadaviek pri načítavaní profilu, skúste to o chvíľu.",
     "pageTitle": "Wyszukiwanie",
-    "resultsCount": "{{count}} wyników",
-    "loading": "Ładowanie…",
-    "sortNewest": "Najnowsze",
-    "sortRatingDesc": "Najlepiej oceniane",
-    "sortPriceAsc": "Cena ↑",
-    "sortPriceDesc": "Cena ↓",
-    "ratingLabel": "Ocena",
-    "emptyNoResults": "Brak wyników dla \"{{q}}\"",
-    "emptyEnterQuery": "Wprowadź frazę wyszukiwania.",
-    "emptyTry": "Spróbuj:",
-    "emptyTryRemoveFilters": "usunąć filtry",
-    "emptyTryShorterQuery": "użyć krótszej frazy",
-    "emptyTryChangePrice": "zmienić cenę",
-    "clearFilters": "Wyczyść filtry",
-    "paginationPrevious": "Poprzednia",
-    "paginationNext": "Następna"
+    "closePanel": "Zamknij panel wyszukiwania"
   },
   "skills": {
     "offer": "Oferuję",
@@ -375,7 +392,14 @@
     "edit": "Upraviť",
     "likes": "Páči sa mi to",
     "message": "Správa",
-    "ratings": "Hodnotenia"
+    "ratings": "Hodnotenia",
+    "countryTitle": "Kraj",
+    "savingOffer": "Zapisywanie oferty...",
+    "savingOfferLong": "Zapisywanie oferty moze chwile potrwac. Prosze czekac.",
+    "saveFailed": "Nie udalo sie zapisac oferty. Sprobuj ponownie.",
+    "uploadingPhotosLong": "Przesylanie zdjec moze chwile potrwac. Prosze czekac.",
+    "uploadingPhotosMayTake": "Przesylanie zdjec moze potrwac dluzej.",
+    "deletingPhotosLong": "Usuwanie zdjec moze chwile potrwac. Prosze czekac."
   },
   "meta": {
     "title": "Svaply - Platforma wymiany umiejętności",
@@ -640,7 +664,11 @@
     "whatsapp": "WhatsApp",
     "whatsappDescription": "Zadajte WhatsApp číslo alebo link.",
     "youtube": "YouTube",
-    "youtubeDescription": "Zadajte URL vašej YouTube stránky alebo kanálu."
+    "youtubeDescription": "Zadajte URL vašej YouTube stránky alebo kanálu.",
+    "nameSaveFailed": "Nie udalo sie zapisac imienia i nazwiska.",
+    "bioSaveFailed": "Nie udalo sie zapisac bio.",
+    "locationSaveFailed": "Nie udalo sie zapisac lokalizacji.",
+    "phoneSaveFailed": "Nie udalo sie zapisac numeru telefonu."
   },
   "notifications": {
     "title": "Powiadomienia",
@@ -657,7 +685,10 @@
     "skillRequestDesc": "Włącz lub wyłącz powiadomienia o prośbach o umiejętności.",
     "on": "Włączone",
     "off": "Wyłączone",
-    "turnOffAllDesc": "Dočasne vypnúť všetky upozornenia"
+    "turnOffAllDesc": "Dočasne vypnúť všetky upozornenia",
+    "loadingPreferences": "Ladowanie ustawien powiadomien...",
+    "messagesPush": "Wiadomosci",
+    "messagesPushDesc": "Wlacz lub wylacz powiadomienia o wiadomosciach, gdy nie jestes w aktywnym czacie."
   },
   "skillsCatalog": {
     "categories": {

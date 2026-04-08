@@ -57,7 +57,7 @@ export default function MessagesModule({
           <div className="flex flex-col items-center text-center">
             <ChatBubbleLeftRightIcon className="w-28 h-28 text-black dark:text-white mb-4" />
             <h2 className="text-4xl font-semibold text-gray-900 dark:text-white">
-              Vaše správy
+              {t('messages.title', 'Messages')}
             </h2>
           </div>
         </div>

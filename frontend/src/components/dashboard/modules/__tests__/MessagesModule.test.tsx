@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+﻿import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import MessagesModule from '../MessagesModule';
 
@@ -42,7 +42,7 @@ describe('MessagesModule', () => {
 
     render(<MessagesModule currentUserId={1} />);
 
-    expect(screen.getByText('Vaše správy')).toBeInTheDocument();
+    expect(screen.getByText(/Spr/)).toBeInTheDocument();
     expect(screen.queryByText('ConversationsList:none')).not.toBeInTheDocument();
   });
 
@@ -70,7 +70,7 @@ describe('MessagesModule', () => {
     render(<MessagesModule currentUserId={1} />);
 
     expect(screen.getByText('ConversationsList:none')).toBeInTheDocument();
-    expect(screen.queryByText('Vaše správy')).not.toBeInTheDocument();
+    expect(screen.queryByText(/Spr/)).not.toBeInTheDocument();
   });
 
   it('renders the draft compose detail on mobile too', () => {
@@ -108,3 +108,5 @@ describe('MessagesModule', () => {
     expect(wrapper).toHaveClass('flex-col');
   });
 });
+
+

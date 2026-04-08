@@ -8,6 +8,7 @@ import Section from './Section';
 interface NotificationsLabels {
   title: string;
   turnOffAll: string;
+  loadingPreferences: string;
   messagesPush: string;
   messagesPushDesc: string;
   likes: string;
@@ -252,7 +253,7 @@ export default function Desktop({
           />
           {pushMessages.loading && (
             <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-              Nacitam nastavenia upozorneni...
+              {labels.loadingPreferences}
             </p>
           )}
           {pushMessages.error && (

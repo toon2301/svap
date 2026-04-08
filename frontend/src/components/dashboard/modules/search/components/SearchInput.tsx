@@ -31,7 +31,7 @@ export function SearchInput({ searchState, onSearch, onKeyDown, onClose, t }: Se
         <div className="space-y-2">
           <div className="hidden lg:flex lg:items-center lg:justify-between lg:mb-2">
             <h3 className="text-2xl font-semibold text-gray-900 dark:text-white">
-              Hľadať
+              {t('search.title', 'Search')}
             </h3>
             {onClose && (
               <button
@@ -61,7 +61,7 @@ export function SearchInput({ searchState, onSearch, onKeyDown, onClose, t }: Se
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={onKeyDown}
-                placeholder="Vyhľadávanie"
+                placeholder={t('search.placeholder', 'Search')}
                 className="block w-full px-3 py-2.5 pr-9 border border-gray-300 dark:border-gray-700 rounded-xl bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-1 focus:ring-purple-300 focus:border-transparent text-sm"
               />
               

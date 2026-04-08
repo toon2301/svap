@@ -90,7 +90,14 @@
     "openDetail": "Kérés részleteinek megnyitása",
     "openProfile": "Profil megnyitása",
     "createFromChat": "Kérés létrehozása ajánlatból",
-    "toastCancelFailed": "A kérés visszavonása sikertelen."
+    "toastCancelFailed": "A kérés visszavonása sikertelen.",
+    "toastRequestCancelled": "A keres visszavonva.",
+    "toastRequestAlreadyProcessed": "Ezt a kerest mar feldolgoztak.",
+    "statusSent": "Elkuldve",
+    "pickOffer": "Valasszon ajanlatot",
+    "chatProfileRedirectHint": "A kivalasztas utan atiranyitjuk a profilra, ahol befejezheti a kerest.",
+    "chatNoRequestableOffers": "Ennek a felhasznalonak jelenleg nincs olyan elerheto ajanlata, amelybol kerelmet lehetne letrehozni.",
+    "loadOffersFailed": "Az ajanlatok betoltese nem sikerult. Probald ujra."
   },
   "navigation": {
     "home": "Főoldal",
@@ -133,7 +140,32 @@
     "subtitle": "Beszélgetései",
     "none": "Nincsenek üzenetek",
     "hint": "Ha valaki üzenetet küld, itt jelenik meg",
-    "soon": "Az üzenetek funkció hamarosan elérhető lesz"
+    "soon": "Az üzenetek funkció hamarosan elérhető lesz",
+    "loading": "Betoltes...",
+    "unknownUser": "Felhasznalo",
+    "noPreview": "Uzenet",
+    "noMessagesYet": "Meg nincsenek uzenetek",
+    "opening": "Megnyitas...",
+    "openFailed": "A beszelgetest nem sikerult megnyitni. Probald ujra.",
+    "openRateLimited": "Tul gyorsan nyitod meg a beszelgeteseket. Varj egy kicsit.",
+    "openUnavailable": "Ennek a felhasznalonak most nem lehet uzenetet irni.",
+    "openPeerProfile": "Felhasznaloi profil megnyitasa",
+    "loadFailed": "Az uzenetek betoltese nem sikerult. Probald ujra.",
+    "loadRateLimited": "Tul gyorsan toltod be az uzeneteket. Varj egy kicsit.",
+    "deleted": "Az uzenetet toroltek",
+    "seen": "Latta",
+    "scrollToBottom": "Ugras a legujabb uzenetekhez",
+    "send": "Kuldes",
+    "sendFailed": "Az uzenet kuldese nem sikerult. Probald ujra.",
+    "sendRateLimited": "Tul gyorsan kuldesz uzeneteket. Varj egy kicsit.",
+    "sendUnavailable": "Ez a beszelgetes mar nem erheto el.",
+    "type": "Irjon uzenetet...",
+    "addEmoji": "Emoji hozzaadasa",
+    "startConversation": "Beszelgetes inditasa",
+    "firstMessageHint": "A beszelgetes csak az elso uzenet elkuldese utan jon letre.",
+    "sidebarSubtitle": "Beszelgetesek listaja",
+    "pickConversationTitle": "Valassz beszelgetest",
+    "pickConversationHint": "A jobb oldalon valassza ki a megnyitni kivant beszelgetest."
   },
   "search": {
     "title": "Keresés",
@@ -165,12 +197,12 @@
     "sortPriceAsc": "Ár ↑",
     "sortPriceDesc": "Ár ↓",
     "ratingLabel": "Értékelés",
-    "emptyNoResults": "Nincs találat a \"{{q}}\" kifejezésre.",
-    "emptyEnterQuery": "Adjon meg egy keresési kifejezést a keresőmezőben.",
+    "emptyNoResults": "Nincs találat a \"{{q}}\" keresésre.",
+    "emptyEnterQuery": "Adja meg a keresési kifejezést.",
     "emptyTry": "Próbálja:",
-    "emptyTryRemoveFilters": "a szűrők eltávolítását",
-    "emptyTryShorterQuery": "rövidebb kifejezés használatát",
-    "emptyTryChangePrice": "az ár megváltoztatását",
+    "emptyTryRemoveFilters": "szűrők eltávolítása",
+    "emptyTryShorterQuery": "rövidebb kifejezés használata",
+    "emptyTryChangePrice": "ár megváltoztatása",
     "clearFilters": "Szűrők törlése",
     "paginationPrevious": "Előző",
     "paginationNext": "Következő",
@@ -200,22 +232,7 @@
     "userProfileNotFound": "A felhasználói profil nem tölthető be.",
     "userProfileRateLimited": "Túl sok kérés a profil betöltésekor, próbálja később.",
     "pageTitle": "Keresés",
-    "resultsCount": "{{count}} találat",
-    "loading": "Betöltés…",
-    "sortNewest": "Legújabb",
-    "sortRatingDesc": "Legjobban értékelt",
-    "sortPriceAsc": "Ár ↑",
-    "sortPriceDesc": "Ár ↓",
-    "ratingLabel": "Értékelés",
-    "emptyNoResults": "Nincs találat a \"{{q}}\" keresésre.",
-    "emptyEnterQuery": "Adja meg a keresési kifejezést.",
-    "emptyTry": "Próbálja:",
-    "emptyTryRemoveFilters": "szűrők eltávolítása",
-    "emptyTryShorterQuery": "rövidebb kifejezés használata",
-    "emptyTryChangePrice": "ár megváltoztatása",
-    "clearFilters": "Szűrők törlése",
-    "paginationPrevious": "Előző",
-    "paginationNext": "Következő"
+    "closePanel": "Keresopanel bezarasa"
   },
   "skills": {
     "offer": "Kínálok",
@@ -375,7 +392,14 @@
     "edit": "Szerkesztés",
     "likes": "Tetszik",
     "message": "Üzenet",
-    "ratings": "Értékelések"
+    "ratings": "Értékelések",
+    "countryTitle": "Orszag",
+    "savingOffer": "Ajanlat mentese...",
+    "savingOfferLong": "Az ajanlat mentese eltarthat egy ideig. Kerjuk, varjon.",
+    "saveFailed": "Az ajanlat mentese nem sikerult. Probald ujra.",
+    "uploadingPhotosLong": "A fenykepek feltoltese eltarthat egy ideig. Kerjuk, varjon.",
+    "uploadingPhotosMayTake": "A fenykepek feltoltese tovabb tarthat.",
+    "deletingPhotosLong": "A fenykepek torlese eltarthat egy ideig. Kerjuk, varjon."
   },
   "meta": {
     "title": "Svaply - Készségek csere platform",
@@ -640,7 +664,11 @@
     "whatsapp": "WhatsApp",
     "whatsappDescription": "Adja meg a WhatsApp számot vagy linket.",
     "youtube": "YouTube",
-    "youtubeDescription": "Adja meg a YouTube oldal vagy csatorna URL-jét."
+    "youtubeDescription": "Adja meg a YouTube oldal vagy csatorna URL-jét.",
+    "nameSaveFailed": "A nev mentese sikertelen.",
+    "bioSaveFailed": "A bio mentese sikertelen.",
+    "locationSaveFailed": "A helyszin mentese sikertelen.",
+    "phoneSaveFailed": "A telefonszam mentese sikertelen."
   },
   "notifications": {
     "title": "Értesítések",
@@ -657,7 +685,10 @@
     "skillRequestDesc": "Kapcsolja ki vagy kapcsolja be a készség kérések értesítéseit.",
     "on": "Be",
     "off": "Ki",
-    "turnOffAllDesc": "Összes értesítés ideiglenes kikapcsolása"
+    "turnOffAllDesc": "Összes értesítés ideiglenes kikapcsolása",
+    "loadingPreferences": "Ertesitesi beallitasok betoltese...",
+    "messagesPush": "Uzenetek",
+    "messagesPushDesc": "Kapcsolja be vagy ki az uzenetertesiteseket, amikor nincs aktiv chatben."
   },
   "skillsCatalog": {
     "categories": {

@@ -58,6 +58,10 @@ export default function NotificationsModule() {
       'notifications.turnOffAllDesc',
       'Docasne vypnut vsetky upozornenia',
     ),
+    loadingPreferences: t(
+      'notifications.loadingPreferences',
+      'Nacitam nastavenia upozorneni...',
+    ),
     messagesPush: t(
       'notifications.messagesPush',
       'Správy',

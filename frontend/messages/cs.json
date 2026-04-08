@@ -90,7 +90,14 @@
     "openDetail": "Otvoriť detail žiadosti",
     "openProfile": "Otvoriť profil",
     "createFromChat": "Vytvořit žádost z nabídky",
-    "toastCancelFailed": "Zrušenie žiadosti zlyhalo."
+    "toastCancelFailed": "Zrušenie žiadosti zlyhalo.",
+    "toastRequestCancelled": "Zadost byla zrusena.",
+    "toastRequestAlreadyProcessed": "Tato zadost uz byla zpracovana.",
+    "statusSent": "Odeslano",
+    "pickOffer": "Vyberte nabidku",
+    "chatProfileRedirectHint": "Po vyberu vas presmerujeme na profil, kde zadost dokoncite.",
+    "chatNoRequestableOffers": "Tento uzivatel momentalne nema zadne dostupne nabidky, ze kterych lze vytvorit zadost.",
+    "loadOffersFailed": "Nepodarilo se nacist nabidky. Zkuste to znovu."
   },
   "navigation": {
     "home": "Domů",
@@ -131,9 +138,34 @@
   "messages": {
     "title": "Zprávy",
     "subtitle": "Vaše konverzace",
+    "loading": "Načítám…",
     "none": "Žádné zprávy",
     "hint": "Když vám někdo napíše, zobrazí se to zde",
-    "soon": "Funkce zpráv bude brzy dostupná"
+    "soon": "Funkce zpráv bude brzy dostupná",
+    "unknownUser": "Uživatel",
+    "noPreview": "Zpráva",
+    "noMessagesYet": "Zatím žádné zprávy",
+    "opening": "Otevírám…",
+    "openFailed": "Nepodařilo se otevřít konverzaci. Zkuste to znovu.",
+    "openRateLimited": "Konverzace otevíráte příliš rychle. Chvíli počkejte.",
+    "openUnavailable": "Tomuto uživateli teď nelze napsat.",
+    "openPeerProfile": "Otevřít profil uživatele",
+    "loadFailed": "Nepodařilo se načíst zprávy. Zkuste to znovu.",
+    "loadRateLimited": "Zprávy načítáte příliš rychle. Chvíli počkejte.",
+    "deleted": "Zpráva byla odstraněna",
+    "seen": "Přečteno",
+    "scrollToBottom": "Přejít na nejnovější zprávy",
+    "send": "Odeslat",
+    "sendFailed": "Nepodařilo se odeslat zprávu. Zkuste to znovu.",
+    "sendRateLimited": "Odesíláte příliš rychle. Chvíli počkejte.",
+    "sendUnavailable": "Tato konverzace už není dostupná.",
+    "type": "Napište zprávu…",
+    "addEmoji": "Přidat emoji",
+    "startConversation": "Začněte konverzaci",
+    "firstMessageHint": "Konverzace se vytvoří až po odeslání první zprávy.",
+    "sidebarSubtitle": "Seznam konverzací",
+    "pickConversationTitle": "Vyber konverzaci",
+    "pickConversationHint": "Vpravo si vyberte konverzaci, kterou chcete otevřít."
   },
   "search": {
     "title": "Hledat",
@@ -166,7 +198,7 @@
     "sortPriceDesc": "Cena ↓",
     "ratingLabel": "Hodnocení",
     "emptyNoResults": "Žádné výsledky pro \"{{q}}\"",
-    "emptyEnterQuery": "Zadejte výraz do vyhledávacího pole.",
+    "emptyEnterQuery": "Zadejte vyhledávací výraz.",
     "emptyTry": "Zkuste:",
     "emptyTryRemoveFilters": "odstranit filtry",
     "emptyTryShorterQuery": "použít kratší výraz",
@@ -200,22 +232,7 @@
     "userProfileNotFound": "Profil používateľa sa nepodarilo načítať.",
     "userProfileRateLimited": "Príliš veľa požiadaviek pri načítavaní profilu, skúste to o chvíľu.",
     "pageTitle": "Vyhledávání",
-    "resultsCount": "{{count}} výsledků",
-    "loading": "Načítávám…",
-    "sortNewest": "Nejnovější",
-    "sortRatingDesc": "Nejlépe hodnocené",
-    "sortPriceAsc": "Cena ↑",
-    "sortPriceDesc": "Cena ↓",
-    "ratingLabel": "Hodnocení",
-    "emptyNoResults": "Žádné výsledky pro \"{{q}}\"",
-    "emptyEnterQuery": "Zadejte vyhledávací výraz.",
-    "emptyTry": "Zkuste:",
-    "emptyTryRemoveFilters": "odstranit filtry",
-    "emptyTryShorterQuery": "použít kratší výraz",
-    "emptyTryChangePrice": "změnit cenu",
-    "clearFilters": "Vymazat filtry",
-    "paginationPrevious": "Předchozí",
-    "paginationNext": "Další"
+    "closePanel": "Zavrit vyhledavaci panel"
   },
   "skills": {
     "offer": "Nabízím",
@@ -375,7 +392,14 @@
     "edit": "Upraviť",
     "likes": "Páči sa mi to",
     "message": "Správa",
-    "ratings": "Hodnotenia"
+    "ratings": "Hodnotenia",
+    "countryTitle": "Zeme",
+    "savingOffer": "Ukladam nabidku...",
+    "savingOfferLong": "Ulozeni nabidky muze chvili trvat. Prosim cekejte.",
+    "saveFailed": "Nabidku se nepodarilo ulozit. Zkuste to znovu.",
+    "uploadingPhotosLong": "Nahravani fotografii muze chvili trvat. Prosim cekejte.",
+    "uploadingPhotosMayTake": "Nahravani fotografii muze trvat dele.",
+    "deletingPhotosLong": "Mazani fotografii muze chvili trvat. Prosim cekejte."
   },
   "meta": {
     "title": "Svaply - Platforma pro výměnu dovedností",
@@ -640,7 +664,11 @@
     "whatsapp": "WhatsApp",
     "whatsappDescription": "Zadajte WhatsApp číslo alebo link.",
     "youtube": "YouTube",
-    "youtubeDescription": "Zadajte URL vašej YouTube stránky alebo kanálu."
+    "youtubeDescription": "Zadajte URL vašej YouTube stránky alebo kanálu.",
+    "nameSaveFailed": "Jmeno se nepodarilo ulozit.",
+    "bioSaveFailed": "Bio se nepodarilo ulozit.",
+    "locationSaveFailed": "Lokalitu se nepodarilo ulozit.",
+    "phoneSaveFailed": "Telefonni cislo se nepodarilo ulozit."
   },
   "notifications": {
     "title": "Upozornění",
@@ -657,7 +685,10 @@
     "skillRequestDesc": "Zapněte nebo vypněte upozornění na žádosti o dovednosti.",
     "on": "Zapnuto",
     "off": "Vypnuto",
-    "turnOffAllDesc": "Dočasne vypnúť všetky upozornenia"
+    "turnOffAllDesc": "Dočasne vypnúť všetky upozornenia",
+    "loadingPreferences": "Nacitam nastaveni upozorneni...",
+    "messagesPush": "Zpravy",
+    "messagesPushDesc": "Zapnete nebo vypnete upozorneni na zpravy, kdyz nejste v aktivnim chatu."
   },
   "skillsCatalog": {
     "categories": {
