@@ -171,7 +171,13 @@
     "deleteConfirmDescription": "Timto se zprava smaze pro vsechny ucastniky konverzace. Je ale mozne, ze si ji nekteri uz stihli precist. Odvolane zpravy se mohou stale zobrazit v pripade nahlaseni konverzace.",
     "openMessageActions": "Otevrit moznosti zpravy",
     "deleteFailed": "Zpravu se nepodarilo smazat. Zkuste to znovu.",
-    "deleteUnavailable": "Zpravu uz neni mozne smazat."
+    "deleteUnavailable": "Zpravu uz neni mozne smazat.",
+    "openConversationActions": "Otevrit moznosti konverzace",
+    "deleteConversationAction": "Smazat konverzaci",
+    "deleteConversationConfirmTitle": "Smazat konverzaci?",
+    "deleteConversationConfirmDescription": "Konverzace zmizi jen vam. Pokud vam druhy uzivatel posle novou zpravu, znovu se zobrazi v seznamu zprav.",
+    "deleteConversationFailed": "Konverzaci se nepodarilo smazat. Zkuste to znovu.",
+    "deleteConversationUnavailable": "Konverzaci uz neni mozne smazat."
   },
   "search": {
     "title": "Hledat",

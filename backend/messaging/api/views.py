@@ -47,6 +47,7 @@ from ..services.messages import (
     NotMessageAuthor,
     NotParticipant,
     delete_message_for_all,
+    hide_conversation_for_user,
     mark_conversation_read,
     send_message,
 )
@@ -128,8 +129,21 @@ class _ConversationsQueryTimingCollector:
 
 
 def _conversation_for_user_or_404(*, conversation_id: int, user) -> Conversation:
+    participant_qs = ConversationParticipant.objects.filter(
+        conversation_id=OuterRef("pk"),
+        user_id=user.id,
+    )
+
     return get_object_or_404(
-        Conversation.objects.filter(participants__user=user).distinct(),
+        Conversation.objects.filter(participants__user=user)
+        .annotate(
+            participant_hidden_at=Subquery(participant_qs.values("hidden_at")[:1]),
+        )
+        .filter(
+            Q(participant_hidden_at__isnull=True)
+            | Q(last_message_at__gt=F("participant_hidden_at"))
+        )
+        .distinct(),
         id=conversation_id,
     )
 
@@ -224,6 +238,17 @@ def _peer_last_read_at_for_conversation(*, conversation_id: int, user_id: int):
     )
 
 
+def _participant_hidden_at_for_conversation(*, conversation_id: int, user_id: int):
+    return (
+        ConversationParticipant.objects.filter(
+            conversation_id=conversation_id,
+            user_id=user_id,
+        )
+        .values_list("hidden_at", flat=True)
+        .first()
+    )
+
+
 def _has_requestable_offers_for_user_id(user_id: int | None) -> bool:
     if not user_id:
         return False
@@ -245,21 +270,23 @@ def _conversation_list_queryset_for_user(user):
     - last_read_at for current user via subquery
     - has_unread boolean
     """
+    participant_qs = ConversationParticipant.objects.filter(
+        conversation_id=OuterRef("pk"),
+        user_id=user.id,
+    )
     last_msg_qs = (
         Message.objects.filter(conversation_id=OuterRef("pk"), is_deleted=False)
         .order_by("-created_at", "-id")
     )
-    last_read_qs = ConversationParticipant.objects.filter(
-        conversation_id=OuterRef("pk"), user_id=user.id
-    ).values("last_read_at")[:1]
     other_participant_qs = ConversationParticipant.objects.filter(
         conversation_id=OuterRef("pk")
     ).exclude(user_id=user.id)
 
     qs = (
-        Conversation.objects.filter(participants__user=user, last_message_at__isnull=False)
+        Conversation.objects.filter(participants__user=user)
         .distinct()
         .annotate(
+            participant_hidden_at=Subquery(participant_qs.values("hidden_at")[:1]),
             last_message_preview=Subquery(last_msg_qs.values("text")[:1]),
             last_message_sender_id=Subquery(last_msg_qs.values("sender_id")[:1]),
             last_message_is_deleted=Coalesce(
@@ -267,7 +294,7 @@ def _conversation_list_queryset_for_user(user):
                 Value(False),
                 output_field=BooleanField(),
             ),
-            last_read_at=Subquery(last_read_qs),
+            last_read_at=Subquery(participant_qs.values("last_read_at")[:1]),
             other_user_id=Subquery(other_participant_qs.values("user_id")[:1]),
             other_user_first_name=Subquery(other_participant_qs.values("user__first_name")[:1]),
             other_user_last_name=Subquery(other_participant_qs.values("user__last_name")[:1]),
@@ -299,7 +326,10 @@ def _conversation_list_queryset_for_user(user):
             )
         )
     )
-    return qs
+    return qs.filter(last_message_at__isnull=False).filter(
+        Q(participant_hidden_at__isnull=True)
+        | Q(last_message_at__gt=F("participant_hidden_at"))
+    )
 
 
 class ConversationListPagination(PageNumberPagination):
@@ -389,16 +419,13 @@ class OpenConversationView(APIView):
             )
 
         if existing is not None:
-            convo = (
-                _conversation_list_queryset_for_user(request.user)
-                .filter(id=existing.id)
-                .first()
-            ) or existing
-            data = ConversationListItemSerializer(convo, context={"request": request}).data
-            data["created"] = False
-            data["is_draft"] = False
-            data["target_user_id"] = target.id
-            return Response(data, status=status.HTTP_200_OK)
+            convo = _conversation_list_queryset_for_user(request.user).filter(id=existing.id).first()
+            if convo is not None:
+                data = ConversationListItemSerializer(convo, context={"request": request}).data
+                data["created"] = False
+                data["is_draft"] = False
+                data["target_user_id"] = target.id
+                return Response(data, status=status.HTTP_200_OK)
 
         data = {
             "id": None,
@@ -510,11 +537,14 @@ class MessageListView(ListAPIView):
 
     def get_queryset(self):
         convo = self.get_conversation()
-        return (
-            Message.objects.filter(conversation=convo, is_deleted=False)
-            .select_related("sender")
-            .order_by("-created_at", "-id")
+        hidden_at = _participant_hidden_at_for_conversation(
+            conversation_id=convo.id,
+            user_id=self.request.user.id,
         )
+        qs = Message.objects.filter(conversation=convo, is_deleted=False)
+        if hidden_at is not None:
+            qs = qs.filter(created_at__gt=hidden_at)
+        return qs.select_related("sender").order_by("-created_at", "-id")
 
     def list(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset())
@@ -641,6 +671,33 @@ class DeleteMessageView(APIView):
                     conversation_id=convo.id,
                     user_id=request.user.id,
                 ),
+                "total_unread_count": total_unread_count,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+class HideConversationView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, conversation_id: int):
+        convo = _conversation_for_user_or_404(conversation_id=conversation_id, user=request.user)
+
+        try:
+            result = hide_conversation_for_user(
+                conversation=convo,
+                user=request.user,
+            )
+        except NotParticipant:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        total_unread_count = _total_unread_messages_count_for_user(request.user)
+
+        return Response(
+            {
+                "conversation_id": convo.id,
+                "hidden_at": result.participant.hidden_at,
+                "conversation_unread_count": 0,
                 "total_unread_count": total_unread_count,
             },
             status=status.HTTP_200_OK,

@@ -171,7 +171,13 @@
     "deleteConfirmDescription": "Týmto sa správa vymaže pre všetkých účastníkov. Je však možné, že si ju už niektorí stihli prečítať. Správy, ktoré boli odvolané, sa môžu stále zobrazovať v prípade nahlásenia konverzácie.",
     "openMessageActions": "Otvoriť možnosti správy",
     "deleteFailed": "Správu sa nepodarilo vymazať. Skúste to znova.",
-    "deleteUnavailable": "Správu už nie je možné vymazať."
+    "deleteUnavailable": "Správu už nie je možné vymazať.",
+    "openConversationActions": "Otvoriť možnosti konverzácie",
+    "deleteConversationAction": "Vymazať konverzáciu",
+    "deleteConversationConfirmTitle": "Vymazať konverzáciu?",
+    "deleteConversationConfirmDescription": "Konverzácia zmizne iba vám. Ak vám druhý používateľ pošle novú správu, znovu sa zobrazí v zozname správ.",
+    "deleteConversationFailed": "Konverzáciu sa nepodarilo vymazať. Skúste to znova.",
+    "deleteConversationUnavailable": "Konverzáciu už nie je možné vymazať."
   },
   "search": {
     "title": "Vyhľadávanie",

@@ -38,6 +38,12 @@ class DeleteMessageResult:
     changed: bool
 
 
+@dataclass(frozen=True)
+class HideConversationResult:
+    participant: ConversationParticipant
+    changed: bool
+
+
 def _ensure_participant(*, conversation: Conversation, user_id: int) -> ConversationParticipant:
     participant = (
         ConversationParticipant.objects.select_for_update()
@@ -182,4 +188,46 @@ def delete_message_for_all(
             participant_user_ids=participant_user_ids,
             changed=True,
         )
+
+
+def hide_conversation_for_user(
+    *,
+    conversation: Conversation,
+    user,
+) -> HideConversationResult:
+    """
+    Hide a conversation only for the current participant.
+
+    Hidden conversations disappear from the caller's list until a newer message
+    arrives. Existing history remains in the database.
+    """
+    now = timezone.now()
+
+    with transaction.atomic():
+        convo = (
+            Conversation.objects.select_for_update()
+            .filter(id=conversation.id)
+            .first()
+        )
+        if not convo:
+            raise ValueError("Conversation not found.")
+
+        participant = _ensure_participant(conversation=convo, user_id=user.id)
+
+        already_hidden = (
+            participant.hidden_at is not None
+            and convo.last_message_at is not None
+            and participant.hidden_at >= convo.last_message_at
+        )
+        if already_hidden:
+            return HideConversationResult(participant=participant, changed=False)
+
+        ConversationParticipant.objects.filter(id=participant.id).update(
+            hidden_at=now,
+            last_read_at=now,
+        )
+        participant.hidden_at = now
+        participant.last_read_at = now
+
+        return HideConversationResult(participant=participant, changed=True)
 

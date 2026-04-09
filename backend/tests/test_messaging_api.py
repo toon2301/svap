@@ -121,6 +121,29 @@ class TestMessagingApi(APITestCase):
         assert open_response.data["is_draft"] is False
         assert open_response.data["created"] is False
 
+    def test_open_conversation_returns_draft_when_started_conversation_is_hidden_for_user(self):
+        convo = self._create_direct_conversation(actor=self.u1, target=self.u2)
+
+        self.client.force_authenticate(user=self.u2)
+        send_url = reverse("accounts:messaging_send_message", kwargs={"conversation_id": convo.id})
+        assert self.client.post(send_url, {"text": "Ahoj"}, format="json").status_code == status.HTTP_201_CREATED
+
+        self.client.force_authenticate(user=self.u1)
+        hide_url = reverse(
+            "accounts:messaging_hide_conversation",
+            kwargs={"conversation_id": convo.id},
+        )
+        hide_response = self.client.post(hide_url, {}, format="json")
+        assert hide_response.status_code == status.HTTP_200_OK
+
+        open_url = reverse("accounts:messaging_open")
+        open_response = self.client.post(open_url, {"target_user_id": self.u2.id}, format="json")
+
+        assert open_response.status_code == status.HTTP_200_OK
+        assert open_response.data["id"] is None
+        assert open_response.data["is_draft"] is True
+        assert open_response.data["target_user_id"] == self.u2.id
+
     def test_start_direct_message_creates_conversation_and_emits_realtime_event(self):
         self.client.force_authenticate(user=self.u1)
         url = reverse("accounts:messaging_send_direct_message")
@@ -412,6 +435,79 @@ class TestMessagingApi(APITestCase):
         assert list_response.status_code == status.HTTP_200_OK
         assert list_response.data["peer_last_read_at"] == peer_participant.last_read_at.isoformat()
         assert len(list_response.data["results"]) == 1
+
+    def test_hide_conversation_hides_it_only_for_the_actor(self):
+        convo = self._create_direct_conversation(actor=self.u1, target=self.u2)
+
+        self.client.force_authenticate(user=self.u2)
+        send_url = reverse("accounts:messaging_send_message", kwargs={"conversation_id": convo.id})
+        assert self.client.post(send_url, {"text": "Prva sprava"}, format="json").status_code == status.HTTP_201_CREATED
+
+        self.client.force_authenticate(user=self.u1)
+        hide_url = reverse(
+            "accounts:messaging_hide_conversation",
+            kwargs={"conversation_id": convo.id},
+        )
+        hide_response = self.client.post(hide_url, {}, format="json")
+
+        assert hide_response.status_code == status.HTTP_200_OK
+        assert hide_response.data["conversation_id"] == convo.id
+        assert hide_response.data["conversation_unread_count"] == 0
+        assert hide_response.data["total_unread_count"] == 0
+
+        participant = ConversationParticipant.objects.get(conversation_id=convo.id, user=self.u1)
+        assert participant.hidden_at is not None
+        assert participant.last_read_at is not None
+
+        list_url = reverse("accounts:messaging_list_conversations")
+        list_response = self.client.get(list_url)
+        assert list_response.status_code == status.HTTP_200_OK
+        assert list_response.data.get("results", []) == []
+
+        messages_url = reverse("accounts:messaging_list_messages", kwargs={"conversation_id": convo.id})
+        messages_response = self.client.get(messages_url)
+        assert messages_response.status_code == status.HTTP_404_NOT_FOUND
+
+        self.client.force_authenticate(user=self.u2)
+        other_list_response = self.client.get(list_url)
+        assert other_list_response.status_code == status.HTTP_200_OK
+        assert [item["id"] for item in other_list_response.data.get("results", [])] == [convo.id]
+
+    def test_hidden_conversation_reappears_after_new_message_and_shows_only_new_history(self):
+        convo = self._create_direct_conversation(actor=self.u1, target=self.u2)
+
+        self.client.force_authenticate(user=self.u2)
+        send_url = reverse("accounts:messaging_send_message", kwargs={"conversation_id": convo.id})
+        first_response = self.client.post(send_url, {"text": "Stara sprava"}, format="json")
+        assert first_response.status_code == status.HTTP_201_CREATED
+
+        self.client.force_authenticate(user=self.u1)
+        hide_url = reverse(
+            "accounts:messaging_hide_conversation",
+            kwargs={"conversation_id": convo.id},
+        )
+        hide_response = self.client.post(hide_url, {}, format="json")
+        assert hide_response.status_code == status.HTTP_200_OK
+
+        self.client.force_authenticate(user=self.u2)
+        second_response = self.client.post(send_url, {"text": "Nova sprava"}, format="json")
+        assert second_response.status_code == status.HTTP_201_CREATED
+
+        self.client.force_authenticate(user=self.u1)
+        list_url = reverse("accounts:messaging_list_conversations")
+        list_response = self.client.get(list_url)
+
+        assert list_response.status_code == status.HTTP_200_OK
+        results = list_response.data.get("results", [])
+        assert len(results) == 1
+        assert results[0]["id"] == convo.id
+        assert results[0]["last_message_preview"] == "Nova sprava"
+
+        messages_url = reverse("accounts:messaging_list_messages", kwargs={"conversation_id": convo.id})
+        messages_response = self.client.get(messages_url)
+        assert messages_response.status_code == status.HTTP_200_OK
+        returned_ids = [item["id"] for item in messages_response.data["results"]]
+        assert returned_ids == [second_response.data["id"]]
 
     def test_conversation_list_returns_only_started_conversations_with_other_user(self):
         empty_convo = self._create_direct_conversation(actor=self.u1, target=self.u2)

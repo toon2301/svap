@@ -171,7 +171,13 @@
     "deleteConfirmDescription": "This message will be deleted for all conversation participants. However, some participants may already have read it. Recalled messages may still be shown if the conversation is reported.",
     "openMessageActions": "Open message actions",
     "deleteFailed": "Failed to delete the message. Please try again.",
-    "deleteUnavailable": "This message can no longer be deleted."
+    "deleteUnavailable": "This message can no longer be deleted.",
+    "openConversationActions": "Open conversation actions",
+    "deleteConversationAction": "Delete conversation",
+    "deleteConversationConfirmTitle": "Delete conversation?",
+    "deleteConversationConfirmDescription": "The conversation will disappear only for you. If the other user sends a new message, it will appear in the message list again.",
+    "deleteConversationFailed": "Failed to delete the conversation. Please try again.",
+    "deleteConversationUnavailable": "This conversation can no longer be deleted."
   },
   "search": {
     "title": "Search",

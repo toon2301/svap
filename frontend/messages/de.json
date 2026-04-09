@@ -171,7 +171,13 @@
     "deleteConfirmDescription": "Dadurch wird die Nachricht für alle Teilnehmer der Konversation gelöscht. Es ist jedoch möglich, dass einige sie bereits gelesen haben. Zurückgerufene Nachrichten können im Falle einer Meldung der Konversation weiterhin angezeigt werden.",
     "openMessageActions": "Nachrichtenaktionen öffnen",
     "deleteFailed": "Die Nachricht konnte nicht gelöscht werden. Bitte versuchen Sie es erneut.",
-    "deleteUnavailable": "Diese Nachricht kann nicht mehr gelöscht werden."
+    "deleteUnavailable": "Diese Nachricht kann nicht mehr gelöscht werden.",
+    "openConversationActions": "Konversationsoptionen öffnen",
+    "deleteConversationAction": "Konversation löschen",
+    "deleteConversationConfirmTitle": "Konversation löschen?",
+    "deleteConversationConfirmDescription": "Die Konversation verschwindet nur für Sie. Wenn der andere Nutzer eine neue Nachricht sendet, erscheint sie wieder in der Nachrichtenliste.",
+    "deleteConversationFailed": "Die Konversation konnte nicht gelöscht werden. Bitte versuchen Sie es erneut.",
+    "deleteConversationUnavailable": "Diese Konversation kann nicht mehr gelöscht werden."
   },
   "search": {
     "title": "Suche",

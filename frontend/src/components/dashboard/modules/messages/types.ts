@@ -76,3 +76,10 @@ export type DeleteMessageResult = {
   total_unread_count?: number;
 };
 
+export type HideConversationResult = {
+  conversation_id: number;
+  hidden_at: string | null;
+  conversation_unread_count?: number;
+  total_unread_count?: number;
+};
+

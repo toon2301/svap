@@ -4,6 +4,7 @@ export const MESSAGING_CONVERSATIONS_REFRESH_EVENT = 'messaging:conversations:re
 export const MESSAGING_REALTIME_MESSAGE_EVENT = 'messaging:realtime:message';
 export const MESSAGING_REALTIME_READ_EVENT = 'messaging:realtime:read';
 export const MESSAGING_REALTIME_DELETED_EVENT = 'messaging:realtime:deleted';
+export const MESSAGING_OPEN_CONVERSATION_ACTIONS_EVENT = 'messaging:conversation:actions:open';
 
 export type MessagingRealtimeMessagePayload = {
   conversationId: number;
@@ -60,4 +61,9 @@ export function dispatchMessagingRealtimeDeleted(
       detail: payload,
     }),
   );
+}
+
+export function requestOpenConversationActions(): void {
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(new Event(MESSAGING_OPEN_CONVERSATION_ACTIONS_EVENT));
 }

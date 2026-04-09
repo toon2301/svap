@@ -2,6 +2,7 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 
 import MobileTopBar from '../MobileTopBar';
+import { MESSAGING_OPEN_CONVERSATION_ACTIONS_EVENT } from '../modules/messages/messagesEvents';
 
 jest.mock('@/contexts/LanguageContext', () => ({
   __esModule: true,
@@ -52,5 +53,26 @@ describe('MobileTopBar', () => {
     expect(
       screen.getByRole('button', { name: 'Otvoriť profil používateľa' }),
     ).toBeDisabled();
+  });
+
+  it('dispatches the open conversation actions event from the mobile message header', () => {
+    const actionsSpy = jest.fn();
+    window.addEventListener(MESSAGING_OPEN_CONVERSATION_ACTIONS_EVENT, actionsSpy);
+
+    render(
+      <MobileTopBar
+        {...baseProps}
+        messagePeerName="Tester"
+        messagePeerIdentifier="tester-slug"
+      />,
+    );
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Otvoriť možnosti konverzácie' }),
+    );
+
+    expect(actionsSpy).toHaveBeenCalledTimes(1);
+
+    window.removeEventListener(MESSAGING_OPEN_CONVERSATION_ACTIONS_EVENT, actionsSpy);
   });
 });

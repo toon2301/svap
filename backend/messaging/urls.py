@@ -4,6 +4,7 @@ from .api.presence_views import MessagePresenceView
 from .api.views import (
     ConversationListView,
     DeleteMessageView,
+    HideConversationView,
     MarkConversationReadView,
     MessageListView,
     OpenConversationView,
@@ -45,6 +46,11 @@ urlpatterns = [
         "conversations/<int:conversation_id>/read/",
         MarkConversationReadView.as_view(),
         name="messaging_mark_read",
+    ),
+    path(
+        "conversations/<int:conversation_id>/hide/",
+        HideConversationView.as_view(),
+        name="messaging_hide_conversation",
     ),
 ]
 

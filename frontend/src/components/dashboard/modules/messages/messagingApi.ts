@@ -3,6 +3,7 @@ import type {
   ConversationListItem,
   DeleteMessageResult,
   DirectMessageStartResult,
+  HideConversationResult,
   MessageItem,
   MessageListPage,
   MessagingUnreadSummary,
@@ -144,6 +145,16 @@ export async function deleteMessage(
 ): Promise<DeleteMessageResult> {
   const { data } = await api.post<DeleteMessageResult>(
     `/auth/messaging/conversations/${conversationId}/messages/${messageId}/delete/`,
+    {},
+  );
+  return data;
+}
+
+export async function hideConversation(
+  conversationId: number,
+): Promise<HideConversationResult> {
+  const { data } = await api.post<HideConversationResult>(
+    `/auth/messaging/conversations/${conversationId}/hide/`,
     {},
   );
   return data;

@@ -36,6 +36,7 @@ class ConversationParticipant(models.Model):
     )
     joined_at = models.DateTimeField(auto_now_add=True)
     last_read_at = models.DateTimeField(null=True, blank=True)
+    hidden_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         constraints = [
@@ -43,6 +44,9 @@ class ConversationParticipant(models.Model):
                 fields=["conversation", "user"],
                 name="uniq_conversation_participant_user",
             ),
+        ]
+        indexes = [
+            models.Index(fields=["user", "hidden_at"], name="conv_part_user_hidden_idx"),
         ]
 
     def __str__(self) -> str:

@@ -171,7 +171,13 @@
     "deleteConfirmDescription": "Ezzel az uzenet a beszelgetes minden resztvevoje szamara torlodik. Elofordulhat azonban, hogy nehanyan mar elolvastak. A visszavont uzenetek tovabbra is megjelenhetnek, ha a beszelgetest jelentik.",
     "openMessageActions": "Uzenetmuveletek megnyitasa",
     "deleteFailed": "Az uzenetet nem sikerult torolni. Probald ujra.",
-    "deleteUnavailable": "Ez az uzenet mar nem torolheto."
+    "deleteUnavailable": "Ez az uzenet mar nem torolheto.",
+    "openConversationActions": "Beszelgetesi muveletek megnyitasa",
+    "deleteConversationAction": "Beszelgetes torlese",
+    "deleteConversationConfirmTitle": "Torli a beszelgetest?",
+    "deleteConversationConfirmDescription": "A beszelgetes csak onnel tunik el. Ha a masik fel uj uzenetet kuld, a beszelgetes ujra megjelenik az uzenetlistaban.",
+    "deleteConversationFailed": "A beszelgetest nem sikerult torolni. Probald ujra.",
+    "deleteConversationUnavailable": "Ez a beszelgetes mar nem torolheto."
   },
   "search": {
     "title": "Keresés",

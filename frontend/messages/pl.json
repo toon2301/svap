@@ -171,7 +171,13 @@
     "deleteConfirmDescription": "Ta wiadomosc zostanie usunieta dla wszystkich uczestnikow konwersacji. Mozliwe jednak, ze niektorzy zdazyli juz ja przeczytac. Odwolane wiadomosci moga nadal byc widoczne w przypadku zgloszenia konwersacji.",
     "openMessageActions": "Otworz opcje wiadomosci",
     "deleteFailed": "Nie udalo sie usunac wiadomosci. Sprobuj ponownie.",
-    "deleteUnavailable": "Nie mozna juz usunac tej wiadomosci."
+    "deleteUnavailable": "Nie mozna juz usunac tej wiadomosci.",
+    "openConversationActions": "Otworz opcje konwersacji",
+    "deleteConversationAction": "Usun konwersacje",
+    "deleteConversationConfirmTitle": "Usunac konwersacje?",
+    "deleteConversationConfirmDescription": "Konwersacja zniknie tylko dla ciebie. Jesli druga osoba wysle nowa wiadomosc, ponownie pojawi sie na liscie wiadomosci.",
+    "deleteConversationFailed": "Nie udalo sie usunac konwersacji. Sprobuj ponownie.",
+    "deleteConversationUnavailable": "Nie mozna juz usunac tej konwersacji."
   },
   "search": {
     "title": "Szukaj",

@@ -7,6 +7,7 @@ import { ConversationDetail } from './ConversationDetail';
 import {
   deleteMessage,
   getMessagingErrorMessage,
+  hideConversation,
   listConversations,
   listMessages,
   markConversationRead,
@@ -14,6 +15,7 @@ import {
 } from './messagingApi';
 import {
   MESSAGING_CONVERSATIONS_REFRESH_EVENT,
+  MESSAGING_OPEN_CONVERSATION_ACTIONS_EVENT,
   MESSAGING_REALTIME_DELETED_EVENT,
   MESSAGING_REALTIME_MESSAGE_EVENT,
   MESSAGING_REALTIME_READ_EVENT,
@@ -68,12 +70,21 @@ jest.mock('./ChatRequestOfferPicker', () => ({
 jest.mock('./messagingApi', () => ({
   __esModule: true,
   deleteMessage: jest.fn(),
+  hideConversation: jest.fn(),
   listConversations: jest.fn(),
   listMessages: jest.fn(),
   markConversationRead: jest.fn(),
   sendMessage: jest.fn(),
   updateMessagingPresence: jest.fn().mockResolvedValue(undefined),
   getMessagingErrorMessage: jest.fn(),
+}));
+
+const pushMock = jest.fn();
+
+jest.mock('next/navigation', () => ({
+  useRouter: () => ({
+    push: pushMock,
+  }),
 }));
 
 function deferred<T>() {
@@ -202,6 +213,11 @@ describe('ConversationDetail', () => {
         text: null,
         is_deleted: true,
       }),
+      total_unread_count: 0,
+    });
+    (hideConversation as jest.Mock).mockResolvedValue({
+      conversation_id: 9,
+      hidden_at: '2026-03-27T10:10:00Z',
       total_unread_count: 0,
     });
   });
@@ -358,6 +374,35 @@ describe('ConversationDetail', () => {
     window.removeEventListener('goToUserProfile', profileEventSpy as EventListener);
   });
 
+  it('opens conversation actions from the desktop header and hides the conversation after confirmation', async () => {
+    const conversationsRefreshSpy = jest.fn();
+    window.addEventListener(MESSAGING_CONVERSATIONS_REFRESH_EVENT, conversationsRefreshSpy);
+
+    render(<ConversationDetail conversationId={9} currentUserId={1} />);
+
+    const trigger = await screen.findByTestId('conversation-actions-trigger');
+    fireEvent.click(trigger);
+
+    expect(await screen.findByTestId('conversation-actions-menu')).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('conversation-delete-action'));
+
+    const confirmModal = await screen.findByTestId('delete-conversation-confirm-modal');
+    fireEvent.click(within(confirmModal).getByRole('button', { name: /vymaza/i }));
+
+    await waitFor(() => {
+      expect(hideConversation).toHaveBeenCalledWith(9);
+      expect(pushMock).toHaveBeenCalledWith('/dashboard/messages');
+      expect(conversationsRefreshSpy).toHaveBeenCalledTimes(1);
+    });
+
+    expect(mockSyncConversationReadState).toHaveBeenCalledWith({
+      conversationId: 9,
+      totalUnreadCount: 0,
+    });
+
+    window.removeEventListener(MESSAGING_CONVERSATIONS_REFRESH_EVENT, conversationsRefreshSpy);
+  });
+
   it('keeps the conversation detail root stretched to the available width on mobile', async () => {
     useIsMobile.mockReturnValue(true);
 
@@ -370,6 +415,23 @@ describe('ConversationDetail', () => {
     expect(container.firstElementChild).toHaveClass('w-full');
     expect(container.firstElementChild).toHaveClass('max-w-4xl');
     expect(container.firstElementChild).toHaveClass('mx-auto');
+  });
+
+  it('opens conversation actions on mobile when the top bar requests them', async () => {
+    useIsMobile.mockReturnValue(true);
+
+    render(<ConversationDetail conversationId={9} currentUserId={1} />);
+
+    await waitFor(() => {
+      expect(listMessages).toHaveBeenCalledWith(9, 100);
+    });
+
+    act(() => {
+      window.dispatchEvent(new Event(MESSAGING_OPEN_CONVERSATION_ACTIONS_EVENT));
+    });
+
+    expect(await screen.findByTestId('conversation-actions-menu')).toBeInTheDocument();
+    expect(screen.getByTestId('conversation-delete-action')).toBeInTheDocument();
   });
 
   it('keeps the mobile composer in the normal layout flow even after focus', async () => {

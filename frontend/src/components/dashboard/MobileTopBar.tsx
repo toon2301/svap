@@ -3,6 +3,7 @@
 import React from 'react';
 import { Bars3Icon, UserCircleIcon } from '@heroicons/react/24/outline';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { requestOpenConversationActions } from './modules/messages/messagesEvents';
 
 interface MobileTopBarProps {
   onMenuClick: () => void;
@@ -67,6 +68,10 @@ export default function MobileTopBar({
       }),
     );
   }, [messagePeerIdentifier]);
+
+  const handleOpenConversationActions = React.useCallback(() => {
+    requestOpenConversationActions();
+  }, []);
 
   return (
     <div className="lg:hidden fixed top-0 left-0 right-0 z-30 bg-white dark:bg-black border-b border-gray-200 dark:border-gray-800 shadow-sm">
@@ -194,12 +199,17 @@ export default function MobileTopBar({
         </div>
         
         {/* Pravá strana - Obnoviť (žiadosti), Profil, Hamburger alebo Krížik */}
-        <div
-          className={`flex items-center justify-end h-full space-x-2 ${
-            activeModule === 'messages' && isMessageConversationOpen ? 'opacity-0 pointer-events-none' : ''
-          }`}
-          aria-hidden={activeModule === 'messages' && isMessageConversationOpen ? true : undefined}
-        >
+        <div className="flex items-center justify-end h-full space-x-2">
+          {activeModule === 'messages' && isMessageConversationOpen ? (
+            <button
+              type="button"
+              onClick={handleOpenConversationActions}
+              className="p-1.5 -mr-1 rounded-lg text-gray-600 dark:text-gray-300 hover:text-purple-600 hover:bg-gray-50 dark:hover:bg-gray-900 transition-all"
+              aria-label={t('messages.openConversationActions', 'Otvoriť možnosti konverzácie')}
+            >
+              <Bars3Icon className="w-5 h-5" strokeWidth={2} />
+            </button>
+          ) : null}
           {/* Obnoviť pre modul Žiadosti */}
           {activeModule === 'requests' && (
             <button

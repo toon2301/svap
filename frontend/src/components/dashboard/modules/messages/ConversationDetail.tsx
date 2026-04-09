@@ -1,10 +1,12 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useMessagesNotifications } from '@/components/dashboard/contexts/RequestsNotificationsContext';
 import { useIsMobile } from '@/hooks';
 import {
+  Bars3Icon,
   ChevronDownIcon,
   EllipsisHorizontalIcon,
   PaperAirplaneIcon,
@@ -14,17 +16,21 @@ import type { ConversationListItem, MessageItem, MessageListPage } from './types
 import {
   deleteMessage,
   getMessagingErrorMessage,
+  hideConversation,
   listConversations,
   listMessages,
   markConversationRead,
   sendMessage,
 } from './messagingApi';
 import { ChatRequestOfferPicker } from './ChatRequestOfferPicker';
+import { ConversationActionsMenu } from './ConversationActionsMenu';
+import { DeleteConversationConfirmModal } from './DeleteConversationConfirmModal';
 import { DeleteMessageConfirmModal } from './DeleteMessageConfirmModal';
 import { DesktopEmojiPickerButton } from './DesktopEmojiPickerButton';
 import { MessageActionsMenu } from './MessageActionsMenu';
 import {
   MESSAGING_REALTIME_DELETED_EVENT,
+  MESSAGING_OPEN_CONVERSATION_ACTIONS_EVENT,
   MESSAGING_REALTIME_READ_EVENT,
   MESSAGING_REALTIME_MESSAGE_EVENT,
   requestConversationsRefresh,
@@ -32,6 +38,7 @@ import {
   type MessagingRealtimeReadPayload,
   type MessagingRealtimeMessagePayload,
 } from './messagesEvents';
+import { buildMessagesUrl } from './messagesRouting';
 import { useMobileViewportHeight } from '../../hooks/useMobileViewportHeight';
 import {
   INITIAL_MESSAGES_PAGE_SIZE,
@@ -102,6 +109,7 @@ export function ConversationDetail({
   className?: string;
 }) {
   const { t } = useLanguage();
+  const router = useRouter();
   const isMobile = useIsMobile();
   const { setActiveConversationId, syncConversationReadState } = useMessagesNotifications();
   const [messages, setMessages] = useState<MessageItem[]>([]);
@@ -117,6 +125,10 @@ export function ConversationDetail({
     messageId: number;
     anchorRect: DOMRect | null;
   } | null>(null);
+  const [conversationActionsAnchorRect, setConversationActionsAnchorRect] = useState<DOMRect | null>(null);
+  const [isConversationActionsOpen, setIsConversationActionsOpen] = useState(false);
+  const [isConversationPendingDelete, setIsConversationPendingDelete] = useState(false);
+  const [isDeletingConversation, setIsDeletingConversation] = useState(false);
   const [messagePendingDeleteId, setMessagePendingDeleteId] = useState<number | null>(null);
   const [deletingMessageId, setDeletingMessageId] = useState<number | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
@@ -150,6 +162,11 @@ export function ConversationDetail({
 
   const closeMessageActions = useCallback(() => {
     setMessageActionsTarget(null);
+  }, []);
+
+  const closeConversationActions = useCallback(() => {
+    setIsConversationActionsOpen(false);
+    setConversationActionsAnchorRect(null);
   }, []);
 
   const clearMessageLongPressTimer = useCallback(() => {
@@ -229,6 +246,11 @@ export function ConversationDetail({
     setMessageActionsTarget({ messageId, anchorRect });
   }, []);
 
+  const openConversationActions = useCallback((anchorRect: DOMRect | null) => {
+    setConversationActionsAnchorRect(anchorRect);
+    setIsConversationActionsOpen(true);
+  }, []);
+
   const handleDeleteMessage = useCallback(async () => {
     const messageId = messagePendingDeleteId;
     if (messageId === null || deletingMessageId !== null) return;
@@ -261,6 +283,45 @@ export function ConversationDetail({
     deletingMessageId,
     messagePendingDeleteId,
     removeMessageLocally,
+    syncConversationReadState,
+    t,
+  ]);
+
+  const handleDeleteConversation = useCallback(async () => {
+    if (isDeletingConversation) return;
+
+    setIsDeletingConversation(true);
+    try {
+      const result = await hideConversation(conversationId);
+      closeConversationActions();
+      setIsConversationPendingDelete(false);
+      syncConversationReadState({
+        conversationId,
+        totalUnreadCount: result.total_unread_count,
+      });
+      requestConversationsRefresh();
+      router.push(buildMessagesUrl());
+    } catch (error) {
+      toast.error(
+        getMessagingErrorMessage(error, {
+          fallback: t(
+            'messages.deleteConversationFailed',
+            'Konverzáciu sa nepodarilo vymazať. Skúste to znova.',
+          ),
+          unavailableFallback: t(
+            'messages.deleteConversationUnavailable',
+            'Konverzáciu už nie je možné vymazať.',
+          ),
+        }),
+      );
+    } finally {
+      setIsDeletingConversation(false);
+    }
+  }, [
+    closeConversationActions,
+    conversationId,
+    isDeletingConversation,
+    router,
     syncConversationReadState,
     t,
   ]);
@@ -519,6 +580,10 @@ export function ConversationDetail({
     setNextOlderPage(null);
     setPeerLastReadAt(null);
     setIsRequestPickerOpen(false);
+    setIsConversationActionsOpen(false);
+    setConversationActionsAnchorRect(null);
+    setIsConversationPendingDelete(false);
+    setIsDeletingConversation(false);
     setMessageActionsTarget(null);
     setMessagePendingDeleteId(null);
     setDeletingMessageId(null);
@@ -633,6 +698,25 @@ export function ConversationDetail({
       window.removeEventListener(MESSAGING_REALTIME_DELETED_EVENT, handleRealtimeDeleted);
     };
   }, [conversationId, removeMessageLocally]);
+
+  useEffect(() => {
+    const handleOpenConversationActionsEvent = () => {
+      if (!isMobile) return;
+      openConversationActions(null);
+    };
+
+    window.addEventListener(
+      MESSAGING_OPEN_CONVERSATION_ACTIONS_EVENT,
+      handleOpenConversationActionsEvent,
+    );
+
+    return () => {
+      window.removeEventListener(
+        MESSAGING_OPEN_CONVERSATION_ACTIONS_EVENT,
+        handleOpenConversationActionsEvent,
+      );
+    };
+  }, [isMobile, openConversationActions]);
 
   useEffect(() => {
     // Pri nových správach jemne doroluj na spodok (ak už je konverzácia otvorená).
@@ -871,7 +955,7 @@ export function ConversationDetail({
           className="mb-3"
         >
           <div className="w-full border-b border-gray-200 dark:border-gray-800 px-4 sm:px-6 lg:px-8 py-2.5">
-            <div className="flex items-center justify-center">
+            <div className="relative flex items-center justify-center">
               <button
                 type="button"
                 data-testid="conversation-header-trigger"
@@ -893,6 +977,20 @@ export function ConversationDetail({
                 <div className="text-sm font-semibold text-gray-900 dark:text-white truncate max-w-[24rem]">
                   {targetUserName}
                 </div>
+              </button>
+              <button
+                type="button"
+                data-testid="conversation-actions-trigger"
+                onClick={(event) => {
+                  openConversationActions(event.currentTarget.getBoundingClientRect());
+                }}
+                className="absolute right-0 inline-flex h-9 w-9 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-brand/30 dark:text-gray-400 dark:hover:bg-[#141416] dark:hover:text-gray-200"
+                aria-label={t(
+                  'messages.openConversationActions',
+                  'Otvoriť možnosti konverzácie',
+                )}
+              >
+                <Bars3Icon className="h-5 w-5" />
               </button>
             </div>
           </div>
@@ -1215,6 +1313,25 @@ export function ConversationDetail({
           setMessagePendingDeleteId(messageActionsTarget.messageId);
           setMessageActionsTarget(null);
         }}
+      />
+      <ConversationActionsMenu
+        open={isConversationActionsOpen}
+        isMobile={isMobile}
+        anchorRect={conversationActionsAnchorRect}
+        onClose={closeConversationActions}
+        onDeleteConversation={() => {
+          closeConversationActions();
+          setIsConversationPendingDelete(true);
+        }}
+      />
+      <DeleteConversationConfirmModal
+        open={isConversationPendingDelete}
+        isDeleting={isDeletingConversation}
+        onClose={() => {
+          if (isDeletingConversation) return;
+          setIsConversationPendingDelete(false);
+        }}
+        onConfirm={() => void handleDeleteConversation()}
       />
       <DeleteMessageConfirmModal
         open={messagePendingDeleteId !== null}
