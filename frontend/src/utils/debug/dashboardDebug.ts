@@ -10,23 +10,79 @@ export interface DashboardDebugEntry {
 }
 
 const STORAGE_KEY = '__dashboard_debug_log__';
+const ENABLED_KEY = '__dashboard_debug_enabled__';
 const MAX_ENTRIES = 200;
+const QUERY_PARAM = 'dashboardDebug';
+
+type DashboardDebugApi = {
+  getLog: () => DashboardDebugEntry[];
+  clear: () => void;
+  enable: () => void;
+  disable: () => void;
+  isEnabled: () => boolean;
+};
 
 declare global {
   interface Window {
-    __dashboardDebug?: {
-      getLog: () => DashboardDebugEntry[];
-      clear: () => void;
-    };
+    __dashboardDebug?: DashboardDebugApi;
   }
 }
 
-function shouldDebug(): boolean {
-  return typeof window !== 'undefined' && process.env.NODE_ENV !== 'production';
+function hasWindow(): boolean {
+  return typeof window !== 'undefined';
+}
+
+function readEnabledFlag(): boolean {
+  if (!hasWindow()) return false;
+
+  try {
+    return window.sessionStorage.getItem(ENABLED_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function writeEnabledFlag(enabled: boolean): void {
+  if (!hasWindow()) return;
+
+  try {
+    if (enabled) {
+      window.sessionStorage.setItem(ENABLED_KEY, '1');
+    } else {
+      window.sessionStorage.removeItem(ENABLED_KEY);
+    }
+  } catch {
+    // ignore debug storage failures
+  }
+}
+
+function syncEnabledFlagFromQueryParam(): void {
+  if (!hasWindow()) return;
+
+  try {
+    const raw = new URLSearchParams(window.location.search).get(QUERY_PARAM);
+    if (!raw) return;
+
+    const normalized = raw.trim().toLowerCase();
+    if (['1', 'true', 'on', 'enable', 'enabled'].includes(normalized)) {
+      writeEnabledFlag(true);
+      return;
+    }
+
+    if (['0', 'false', 'off', 'disable', 'disabled'].includes(normalized)) {
+      writeEnabledFlag(false);
+    }
+  } catch {
+    // ignore malformed search params
+  }
+}
+
+export function isDashboardDebugEnabled(): boolean {
+  return hasWindow() && (process.env.NODE_ENV !== 'production' || readEnabledFlag());
 }
 
 function readLog(): DashboardDebugEntry[] {
-  if (typeof window === 'undefined') return [];
+  if (!hasWindow()) return [];
 
   try {
     const raw = window.sessionStorage.getItem(STORAGE_KEY);
@@ -39,7 +95,7 @@ function readLog(): DashboardDebugEntry[] {
 }
 
 function writeLog(entries: DashboardDebugEntry[]): void {
-  if (typeof window === 'undefined') return;
+  if (!hasWindow()) return;
 
   try {
     window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify(entries.slice(-MAX_ENTRIES)));
@@ -49,18 +105,27 @@ function writeLog(entries: DashboardDebugEntry[]): void {
 }
 
 function ensureWindowApi(): void {
-  if (typeof window === 'undefined' || window.__dashboardDebug) return;
+  if (!hasWindow() || window.__dashboardDebug) return;
 
   window.__dashboardDebug = {
     getLog: () => readLog(),
     clear: () => writeLog([]),
+    enable: () => writeEnabledFlag(true),
+    disable: () => writeEnabledFlag(false),
+    isEnabled: () => isDashboardDebugEnabled(),
   };
 }
 
-export function dashboardDebug(event: string, payload: DashboardDebugPayload = {}): void {
-  if (!shouldDebug()) return;
+function initializeDashboardDebug(): void {
+  if (!hasWindow()) return;
 
+  syncEnabledFlagFromQueryParam();
   ensureWindowApi();
+}
+
+export function dashboardDebug(event: string, payload: DashboardDebugPayload = {}): void {
+  initializeDashboardDebug();
+  if (!isDashboardDebugEnabled()) return;
 
   const entry: DashboardDebugEntry = {
     timestamp: new Date().toISOString(),
@@ -77,7 +142,6 @@ export function dashboardDebug(event: string, payload: DashboardDebugPayload = {
 }
 
 export function clearDashboardDebugLog(): void {
-  if (!shouldDebug()) return;
-  ensureWindowApi();
+  initializeDashboardDebug();
   writeLog([]);
 }
