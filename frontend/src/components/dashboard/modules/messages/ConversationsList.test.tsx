@@ -268,12 +268,32 @@ describe('ConversationsList', () => {
     expect(action.className).toContain('group-hover:opacity-100');
   });
 
-  it('shows the previous visible preview instead of a deleted placeholder', async () => {
+  it('shows a deleted-preview label for the current user when the latest message was deleted by them', async () => {
     (listConversations as jest.Mock).mockResolvedValue([
       {
         id: 9,
         other_user: { id: 2, display_name: 'Tester' },
-        last_message_preview: 'Predchadzajuca sprava',
+        last_message_preview: null,
+        last_message_is_deleted: true,
+        last_message_at: '2026-03-27T10:00:00Z',
+        last_message_sender_id: 1,
+        has_unread: false,
+      },
+    ]);
+
+    render(<ConversationsList currentUserId={1} variant="rail" />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Vymazali ste správu')).toBeInTheDocument();
+    });
+  });
+
+  it('shows a deleted-preview label with the other user name when they deleted the latest message', async () => {
+    (listConversations as jest.Mock).mockResolvedValue([
+      {
+        id: 9,
+        other_user: { id: 2, display_name: 'Tester' },
+        last_message_preview: null,
         last_message_is_deleted: true,
         last_message_at: '2026-03-27T10:00:00Z',
         last_message_sender_id: 2,
@@ -284,8 +304,7 @@ describe('ConversationsList', () => {
     render(<ConversationsList currentUserId={1} variant="rail" />);
 
     await waitFor(() => {
-      expect(screen.getByText('Predchadzajuca sprava')).toBeInTheDocument();
-      expect(screen.queryByText('Správa bola odstránená')).not.toBeInTheDocument();
+      expect(screen.getByText('Tester vymazal/a správu')).toBeInTheDocument();
     });
   });
 });

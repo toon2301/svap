@@ -153,6 +153,8 @@
     "loadFailed": "Az uzenetek betoltese nem sikerult. Probald ujra.",
     "loadRateLimited": "Tul gyorsan toltod be az uzeneteket. Varj egy kicsit.",
     "deleted": "Az uzenetet toroltek",
+    "deletedPreviewSelf": "Torolte az uzenetet",
+    "deletedPreviewOther": "{name} torolte az uzenetet",
     "seen": "Latta",
     "scrollToBottom": "Ugras a legujabb uzenetekhez",
     "send": "Kuldes",

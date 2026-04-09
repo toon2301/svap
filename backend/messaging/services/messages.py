@@ -175,13 +175,6 @@ def delete_message_for_all(
 
         Message.objects.filter(id=message.id, is_deleted=False).update(is_deleted=True)
         message.is_deleted = True
-        convo.last_message_at = (
-            Message.objects.filter(conversation_id=convo.id, is_deleted=False)
-            .order_by("-created_at", "-id")
-            .values_list("created_at", flat=True)
-            .first()
-        )
-        convo.save(update_fields=["last_message_at", "updated_at"])
 
         return DeleteMessageResult(
             message=message,

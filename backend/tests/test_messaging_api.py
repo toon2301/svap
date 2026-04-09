@@ -288,7 +288,7 @@ class TestMessagingApi(APITestCase):
         assert participant.last_read_at is not None
         assert notify_user_mock.call_count == 4
 
-    def test_message_author_can_delete_message_for_everyone_without_returning_placeholder(self):
+    def test_message_author_can_delete_message_for_everyone_and_keep_placeholder_in_thread(self):
         convo = self._create_direct_conversation(actor=self.u1, target=self.u2)
 
         self.client.force_authenticate(user=self.u1)
@@ -301,6 +301,8 @@ class TestMessagingApi(APITestCase):
             "accounts:messaging_delete_message",
             kwargs={"conversation_id": convo.id, "message_id": message_id},
         )
+        convo.refresh_from_db()
+        last_message_at_before_delete = convo.last_message_at
         with patch("messaging.api.views.notify_user") as notify_user_mock:
             delete_response = self.client.post(delete_url, {}, format="json")
 
@@ -322,10 +324,13 @@ class TestMessagingApi(APITestCase):
         list_url = reverse("accounts:messaging_list_messages", kwargs={"conversation_id": convo.id})
         list_response = self.client.get(list_url)
         assert list_response.status_code == status.HTTP_200_OK
-        assert list_response.data["results"] == []
+        assert len(list_response.data["results"]) == 1
+        assert list_response.data["results"][0]["id"] == message_id
+        assert list_response.data["results"][0]["is_deleted"] is True
+        assert list_response.data["results"][0]["text"] is None
 
         convo.refresh_from_db()
-        assert convo.last_message_at is None
+        assert convo.last_message_at == last_message_at_before_delete
 
         assert notify_user_mock.call_count == 2
         events = [call.args for call in notify_user_mock.call_args_list]
@@ -339,7 +344,7 @@ class TestMessagingApi(APITestCase):
         assert recipient_event["conversation_unread_count"] == 0
         assert recipient_event["total_unread_count"] == 0
 
-    def test_deleting_latest_message_falls_back_to_previous_conversation_preview(self):
+    def test_deleting_latest_message_keeps_deleted_last_message_in_conversation_preview(self):
         convo = self._create_direct_conversation(actor=self.u1, target=self.u2)
 
         self.client.force_authenticate(user=self.u1)
@@ -353,13 +358,14 @@ class TestMessagingApi(APITestCase):
             "accounts:messaging_delete_message",
             kwargs={"conversation_id": convo.id, "message_id": second_response.data["id"]},
         )
+        convo.refresh_from_db()
+        last_message_at_before_delete = convo.last_message_at
         delete_response = self.client.post(delete_url, {}, format="json")
 
         assert delete_response.status_code == status.HTTP_200_OK
 
         convo.refresh_from_db()
-        first_message = Message.objects.get(id=first_response.data["id"])
-        assert convo.last_message_at == first_message.created_at
+        assert convo.last_message_at == last_message_at_before_delete
 
         list_url = reverse("accounts:messaging_list_conversations")
         list_response = self.client.get(list_url)
@@ -367,9 +373,9 @@ class TestMessagingApi(APITestCase):
         assert list_response.status_code == status.HTTP_200_OK
         results = list_response.data.get("results", [])
         assert len(results) == 1
-        assert results[0]["last_message_preview"] == "Prva sprava"
+        assert results[0]["last_message_preview"] is None
         assert results[0]["last_message_sender_id"] == self.u1.id
-        assert results[0]["last_message_is_deleted"] is False
+        assert results[0]["last_message_is_deleted"] is True
 
     def test_message_delete_is_idempotent(self):
         convo = self._create_direct_conversation(actor=self.u1, target=self.u2)

@@ -153,6 +153,8 @@
     "loadFailed": "Failed to load messages. Please try again.",
     "loadRateLimited": "You are loading messages too quickly. Please wait a moment.",
     "deleted": "Message was deleted",
+    "deletedPreviewSelf": "You deleted a message",
+    "deletedPreviewOther": "{name} deleted a message",
     "seen": "Seen",
     "scrollToBottom": "Scroll to latest messages",
     "send": "Send",

@@ -274,9 +274,8 @@ def _conversation_list_queryset_for_user(user):
         conversation_id=OuterRef("pk"),
         user_id=user.id,
     )
-    last_msg_qs = (
-        Message.objects.filter(conversation_id=OuterRef("pk"), is_deleted=False)
-        .order_by("-created_at", "-id")
+    last_msg_qs = Message.objects.filter(conversation_id=OuterRef("pk")).order_by(
+        "-created_at", "-id"
     )
     other_participant_qs = ConversationParticipant.objects.filter(
         conversation_id=OuterRef("pk")
@@ -541,7 +540,7 @@ class MessageListView(ListAPIView):
             conversation_id=convo.id,
             user_id=self.request.user.id,
         )
-        qs = Message.objects.filter(conversation=convo, is_deleted=False)
+        qs = Message.objects.filter(conversation=convo)
         if hidden_at is not None:
             qs = qs.filter(created_at__gt=hidden_at)
         return qs.select_related("sender").order_by("-created_at", "-id")

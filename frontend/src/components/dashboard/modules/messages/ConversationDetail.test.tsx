@@ -1392,7 +1392,7 @@ describe('ConversationDetail', () => {
     });
   });
 
-  it('opens the desktop message actions from the hover trigger and removes the deleted message from the thread', async () => {
+  it('opens the desktop message actions from the hover trigger and keeps the deleted placeholder in the thread', async () => {
     (listMessages as jest.Mock).mockResolvedValueOnce(
       messagePage(
         [
@@ -1423,7 +1423,7 @@ describe('ConversationDetail', () => {
     await waitFor(() => {
       expect(deleteMessage).toHaveBeenCalledWith(9, 1);
       expect(screen.queryByText('Moja sprava')).not.toBeInTheDocument();
-      expect(screen.getByText('Zatiaľ bez správ')).toBeInTheDocument();
+      expect(screen.getByText('Správa bola vymazaná')).toBeInTheDocument();
     });
 
     expect(screen.queryByTestId('message-seen-indicator-1')).not.toBeInTheDocument();
@@ -1495,6 +1495,7 @@ describe('ConversationDetail', () => {
 
     await waitFor(() => {
       expect(screen.queryByText('Moja sprava')).not.toBeInTheDocument();
+      expect(screen.getByText('Správa bola vymazaná')).toBeInTheDocument();
       expect(screen.getByText('Nova sprava')).toBeInTheDocument();
     });
   });

@@ -153,6 +153,8 @@
     "loadFailed": "Nie udalo sie zaladowac wiadomosci. Sprobuj ponownie.",
     "loadRateLimited": "Ladujesz wiadomosci zbyt szybko. Poczekaj chwile.",
     "deleted": "Wiadomosc zostala usunieta",
+    "deletedPreviewSelf": "Usunieto Twoja wiadomosc",
+    "deletedPreviewOther": "{name} usunal/a wiadomosc",
     "seen": "Przeczytano",
     "scrollToBottom": "Przejdz do najnowszych wiadomosci",
     "send": "Wyslij",

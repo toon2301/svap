@@ -181,15 +181,25 @@ export function ConversationsList({
       {items.map((conversation) => {
         const other = conversation.other_user;
         const title = other?.display_name || t('messages.unknownUser', 'User');
+        const isMine =
+          typeof conversation.last_message_sender_id === 'number' &&
+          conversation.last_message_sender_id === currentUserId;
+        const deletedPreview = isMine
+          ? t('messages.deletedPreviewSelf', 'Vymazali ste správu')
+          : t('messages.deletedPreviewOther', '{name} vymazal/a správu').replace(
+              '{name}',
+              title,
+            );
         const rawPreview =
           conversation.last_message_preview ||
           (conversation.last_message_at
             ? t('messages.noPreview', 'Message')
             : t('messages.noMessagesYet', 'No messages yet'));
-        const isMine =
-          typeof conversation.last_message_sender_id === 'number' &&
-          conversation.last_message_sender_id === currentUserId;
-        const preview = isMine ? `Ty: ${rawPreview}` : rawPreview;
+        const preview = conversation.last_message_is_deleted
+          ? deletedPreview
+          : isMine
+            ? `Ty: ${rawPreview}`
+            : rawPreview;
         const isSelected = selectedConversationId === conversation.id;
         const unreadCount =
           typeof conversation.unread_count === 'number'

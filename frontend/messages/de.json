@@ -153,6 +153,8 @@
     "loadFailed": "Nachrichten konnten nicht geladen werden. Bitte versuchen Sie es erneut.",
     "loadRateLimited": "Sie laden Nachrichten zu schnell. Bitte warten Sie einen Moment.",
     "deleted": "Nachricht wurde gelöscht",
+    "deletedPreviewSelf": "Sie haben eine Nachricht gelöscht",
+    "deletedPreviewOther": "{name} hat eine Nachricht gelöscht",
     "seen": "Gesehen",
     "scrollToBottom": "Zu den neuesten Nachrichten scrollen",
     "send": "Senden",

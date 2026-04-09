@@ -175,12 +175,18 @@ export function ConversationDetail({
     messageLongPressTimerRef.current = null;
   }, []);
 
-  const removeMessageLocally = useCallback((messageId: number) => {
-    setMessages((current) => {
-      const next = current.filter((item) => item.id !== messageId);
-      latestKnownMessageIdRef.current = next[0]?.id ?? null;
-      return next;
-    });
+  const markMessageDeletedLocally = useCallback((messageId: number) => {
+    setMessages((current) =>
+      current.map((item) =>
+        item.id === messageId
+          ? {
+              ...item,
+              is_deleted: true,
+              text: null,
+            }
+          : item,
+      ),
+    );
   }, []);
 
   const focusComposer = useCallback(() => {
@@ -258,7 +264,7 @@ export function ConversationDetail({
     setDeletingMessageId(messageId);
     try {
       const result = await deleteMessage(conversationId, messageId);
-      removeMessageLocally(messageId);
+      markMessageDeletedLocally(result.message.id);
       setMessagePendingDeleteId(null);
       setMessageActionsTarget(null);
       syncConversationReadState({
@@ -281,8 +287,8 @@ export function ConversationDetail({
   }, [
     conversationId,
     deletingMessageId,
+    markMessageDeletedLocally,
     messagePendingDeleteId,
-    removeMessageLocally,
     syncConversationReadState,
     t,
   ]);
@@ -685,7 +691,7 @@ export function ConversationDetail({
       const detail = (event as CustomEvent<MessagingRealtimeDeletedPayload>).detail;
       if (!detail || detail.conversationId !== conversationId) return;
 
-      removeMessageLocally(detail.messageId);
+      markMessageDeletedLocally(detail.messageId);
       setMessageActionsTarget((current) =>
         current?.messageId === detail.messageId ? null : current,
       );
@@ -697,7 +703,7 @@ export function ConversationDetail({
     return () => {
       window.removeEventListener(MESSAGING_REALTIME_DELETED_EVENT, handleRealtimeDeleted);
     };
-  }, [conversationId, removeMessageLocally]);
+  }, [conversationId, markMessageDeletedLocally]);
 
   useEffect(() => {
     const handleOpenConversationActionsEvent = () => {
@@ -1031,6 +1037,9 @@ export function ConversationDetail({
                   ? getOwnMessageInteractionProps(m.id, m.is_deleted)
                   : {};
                 const showDesktopMessageActionsTrigger = mine && !m.is_deleted && !isMobile;
+                const displayText = m.is_deleted
+                  ? t('messages.deleted', 'Správa bola vymazaná')
+                  : m.text;
                 const bubbleClassName = [
                   'w-fit max-w-full rounded-2xl px-3 py-2 text-sm',
                   mine
@@ -1079,7 +1088,7 @@ export function ConversationDetail({
                           className={bubbleClassName}
                           {...ownMessageInteractionProps}
                         >
-                          <div className="whitespace-pre-wrap break-words">{m.text}</div>
+                          <div className="whitespace-pre-wrap break-words">{displayText}</div>
                         </div>
                       </div>
                       {showSeenIndicator ? (
@@ -1156,7 +1165,7 @@ export function ConversationDetail({
                           }`}
                         >
                           <div data-testid={`message-bubble-${m.id}`} className={bubbleClassName}>
-                            <div className="whitespace-pre-wrap break-words">{m.text}</div>
+                            <div className="whitespace-pre-wrap break-words">{displayText}</div>
                           </div>
                         </div>
                       </div>
