@@ -1,17 +1,20 @@
 'use client';
 
 import React from 'react';
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { ConversationsList } from './ConversationsList';
-import { listConversations } from './messagingApi';
+import { hideConversation, listConversations } from './messagingApi';
 import { ensureFreshSessionForBackgroundWork } from '@/lib/api';
 import { syncMessageUnreadCountFromConversations } from '@/components/dashboard/contexts/messageUnreadStore';
 import { requestConversationsRefresh } from './messagesEvents';
 
+const pushMock = jest.fn();
+
 jest.mock('./messagingApi', () => ({
   __esModule: true,
   listConversations: jest.fn(),
+  hideConversation: jest.fn(),
 }));
 
 jest.mock('@/components/dashboard/contexts/messageUnreadStore', () => ({
@@ -22,6 +25,13 @@ jest.mock('@/components/dashboard/contexts/messageUnreadStore', () => ({
 jest.mock('@/lib/api', () => ({
   __esModule: true,
   ensureFreshSessionForBackgroundWork: jest.fn(() => Promise.resolve('ready')),
+}));
+
+jest.mock('next/navigation', () => ({
+  __esModule: true,
+  useRouter: () => ({
+    push: pushMock,
+  }),
 }));
 
 function setVisibilityState(state: 'visible' | 'hidden') {
@@ -36,6 +46,12 @@ describe('ConversationsList', () => {
     jest.clearAllMocks();
     setVisibilityState('visible');
     (ensureFreshSessionForBackgroundWork as jest.Mock).mockResolvedValue('ready');
+    (hideConversation as jest.Mock).mockResolvedValue({
+      conversation_id: 9,
+      hidden_at: '2026-03-27T10:05:00Z',
+      conversation_unread_count: 0,
+      total_unread_count: 0,
+    });
   });
 
   afterEach(() => {
@@ -266,6 +282,74 @@ describe('ConversationsList', () => {
     expect(title.className).toContain('truncate');
     expect(action.className).toContain('opacity-0');
     expect(action.className).toContain('group-hover:opacity-100');
+  });
+
+  it('opens the conversation actions menu from the rail hamburger and hides the conversation after confirmation', async () => {
+    const refreshSpy = jest.fn();
+    window.addEventListener('messaging:conversations:refresh', refreshSpy);
+    (listConversations as jest.Mock)
+      .mockResolvedValueOnce([
+        {
+          id: 9,
+          other_user: { id: 2, display_name: 'Tester' },
+          last_message_preview: 'Nova sprava',
+          last_message_at: '2026-03-27T10:00:00Z',
+          last_message_sender_id: 2,
+          has_unread: false,
+        },
+      ])
+      .mockResolvedValueOnce([]);
+
+    render(<ConversationsList currentUserId={1} variant="rail" />);
+
+    expect(await screen.findByText('Nova sprava')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('conversation-hover-action-9'));
+    expect(await screen.findByTestId('conversation-actions-menu')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('conversation-delete-action'));
+
+    const modal = await screen.findByTestId('delete-conversation-confirm-modal');
+    fireEvent.click(within(modal).getByRole('button', { name: /vymaza/i }));
+
+    await waitFor(() => {
+      expect(hideConversation).toHaveBeenCalledWith(9);
+      expect(screen.queryByText('Nova sprava')).not.toBeInTheDocument();
+    });
+
+    expect(refreshSpy).toHaveBeenCalledTimes(1);
+    expect(pushMock).not.toHaveBeenCalledWith('/dashboard/messages');
+    window.removeEventListener('messaging:conversations:refresh', refreshSpy);
+  });
+
+  it('navigates back to the messages root when the selected conversation is hidden from the list menu', async () => {
+    (listConversations as jest.Mock)
+      .mockResolvedValueOnce([
+        {
+          id: 9,
+          other_user: { id: 2, display_name: 'Tester' },
+          last_message_preview: 'Nova sprava',
+          last_message_at: '2026-03-27T10:00:00Z',
+          last_message_sender_id: 2,
+          has_unread: false,
+        },
+      ])
+      .mockResolvedValueOnce([]);
+
+    render(<ConversationsList currentUserId={1} variant="rail" selectedConversationId={9} />);
+
+    expect(await screen.findByText('Nova sprava')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('conversation-hover-action-9'));
+    fireEvent.click(await screen.findByTestId('conversation-delete-action'));
+
+    const modal = await screen.findByTestId('delete-conversation-confirm-modal');
+    fireEvent.click(within(modal).getByRole('button', { name: /vymaza/i }));
+
+    await waitFor(() => {
+      expect(hideConversation).toHaveBeenCalledWith(9);
+      expect(pushMock).toHaveBeenCalledWith('/dashboard/messages');
+    });
   });
 
   it('shows a deleted-preview label for the current user when the latest message was deleted by them', async () => {

@@ -6,9 +6,15 @@ import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { ensureFreshSessionForBackgroundWork } from '@/lib/api';
 import { syncMessageUnreadCountFromConversations } from '@/components/dashboard/contexts/messageUnreadStore';
+import toast from 'react-hot-toast';
 import type { ConversationListItem } from './types';
-import { listConversations } from './messagingApi';
-import { MESSAGING_CONVERSATIONS_REFRESH_EVENT } from './messagesEvents';
+import { getMessagingErrorMessage, hideConversation, listConversations } from './messagingApi';
+import { ConversationActionsMenu } from './ConversationActionsMenu';
+import { DeleteConversationConfirmModal } from './DeleteConversationConfirmModal';
+import {
+  MESSAGING_CONVERSATIONS_REFRESH_EVENT,
+  requestConversationsRefresh,
+} from './messagesEvents';
 import { buildMessagesUrl } from './messagesRouting';
 
 const IDLE_CONVERSATIONS_POLL_INTERVAL_MS = 30_000;
@@ -28,6 +34,14 @@ export function ConversationsList({
   const router = useRouter();
   const [items, setItems] = useState<ConversationListItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [conversationActionsTarget, setConversationActionsTarget] = useState<{
+    conversationId: number;
+    anchorRect: DOMRect | null;
+  } | null>(null);
+  const [conversationPendingDeleteId, setConversationPendingDeleteId] = useState<number | null>(
+    null,
+  );
+  const [isDeletingConversation, setIsDeletingConversation] = useState(false);
   const refreshInFlightRef = useRef<Promise<ConversationListItem[]> | null>(null);
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const isSidebar = variant === 'sidebar';
@@ -80,6 +94,72 @@ export function ConversationsList({
     },
     [],
   );
+
+  const closeConversationActions = useCallback(() => {
+    setConversationActionsTarget(null);
+  }, []);
+
+  const removeConversationLocally = useCallback((conversationId: number) => {
+    setItems((current) => {
+      const next = current.filter((item) => item.id !== conversationId);
+      syncMessageUnreadCountFromConversations(next);
+      return next;
+    });
+  }, []);
+
+  const openConversation = useCallback(
+    (conversationId: number) => {
+      setItems((prev) =>
+        prev.map((item) =>
+          item.id === conversationId
+            ? { ...item, has_unread: false, unread_count: 0 }
+            : item,
+        ),
+      );
+      router.push(buildMessagesUrl(conversationId));
+    },
+    [router],
+  );
+
+  const handleDeleteConversation = useCallback(async () => {
+    const conversationId = conversationPendingDeleteId;
+    if (conversationId === null || isDeletingConversation) return;
+
+    setIsDeletingConversation(true);
+    try {
+      await hideConversation(conversationId);
+      removeConversationLocally(conversationId);
+      setConversationPendingDeleteId(null);
+      closeConversationActions();
+      requestConversationsRefresh();
+      if (selectedConversationId === conversationId) {
+        router.push(buildMessagesUrl());
+      }
+    } catch (error) {
+      toast.error(
+        getMessagingErrorMessage(error, {
+          fallback: t(
+            'messages.deleteConversationFailed',
+            'Konverzáciu sa nepodarilo vymazať. Skúste to znova.',
+          ),
+          unavailableFallback: t(
+            'messages.deleteConversationUnavailable',
+            'Konverzáciu už nie je možné vymazať.',
+          ),
+        }),
+      );
+    } finally {
+      setIsDeletingConversation(false);
+    }
+  }, [
+    closeConversationActions,
+    conversationPendingDeleteId,
+    isDeletingConversation,
+    removeConversationLocally,
+    router,
+    selectedConversationId,
+    t,
+  ]);
 
   useEffect(() => {
     void refresh({ showLoader: true, clearOnError: true }).catch(() => undefined);
@@ -210,20 +290,8 @@ export function ConversationsList({
         const isUnread = unreadCount > 0 && !isSelected && !isMine;
 
         return (
-          <button
+          <div
             key={conversation.id}
-            type="button"
-            onClick={() => {
-              // Optimistic UI: after opening the conversation, stop highlighting it as unread.
-              setItems((prev) =>
-                prev.map((item) =>
-                  item.id === conversation.id
-                    ? { ...item, has_unread: false, unread_count: 0 }
-                    : item,
-                ),
-              );
-              router.push(buildMessagesUrl(conversation.id));
-            }}
             className={`group relative w-full text-left flex items-center gap-3 transition-colors ${
               isRail
                 ? `rounded-2xl border ${
@@ -238,6 +306,11 @@ export function ConversationsList({
                   }`
             } ${isCompact ? 'px-3 py-2.5' : 'px-4 py-3.5'}`}
           >
+            <button
+              type="button"
+              onClick={() => openConversation(conversation.id)}
+              className="flex min-w-0 flex-1 items-center gap-3 text-left"
+            >
             <div
               className={`rounded-full overflow-hidden flex items-center justify-center flex-shrink-0 ${
                 isCompact ? 'w-9 h-9' : 'w-11 h-11'
@@ -304,23 +377,55 @@ export function ConversationsList({
                 {preview}
               </div>
             </div>
+            </button>
 
             {showHoverAction ? (
-              <span
-                aria-hidden="true"
+              <button
+                type="button"
                 data-testid={`conversation-hover-action-${conversation.id}`}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setConversationActionsTarget({
+                    conversationId: conversation.id,
+                    anchorRect: event.currentTarget.getBoundingClientRect(),
+                  });
+                }}
+                aria-label={t(
+                  'messages.openConversationActions',
+                  'Otvoriť možnosti konverzácie',
+                )}
                 className={`pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 opacity-0 transition-opacity duration-150 group-hover:opacity-100 ${
                   isSelected
                     ? 'text-purple-700 dark:text-purple-200'
                     : 'text-gray-400 dark:text-gray-500'
-                }`}
+                } group-hover:pointer-events-auto group-focus-within:pointer-events-auto focus:pointer-events-auto focus:opacity-100`}
               >
                 <Bars3Icon className="h-4 w-4" />
-              </span>
+              </button>
             ) : null}
-          </button>
+          </div>
         );
       })}
+      <ConversationActionsMenu
+        open={conversationActionsTarget !== null}
+        isMobile={false}
+        anchorRect={conversationActionsTarget?.anchorRect ?? null}
+        onClose={closeConversationActions}
+        onDeleteConversation={() => {
+          if (!conversationActionsTarget) return;
+          setConversationPendingDeleteId(conversationActionsTarget.conversationId);
+          closeConversationActions();
+        }}
+      />
+      <DeleteConversationConfirmModal
+        open={conversationPendingDeleteId !== null}
+        isDeleting={isDeletingConversation}
+        onClose={() => {
+          if (isDeletingConversation) return;
+          setConversationPendingDeleteId(null);
+        }}
+        onConfirm={() => void handleDeleteConversation()}
+      />
     </div>
   );
 }
