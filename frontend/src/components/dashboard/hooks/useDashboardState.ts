@@ -7,6 +7,7 @@ import { clearAuthState } from '../../../utils/auth';
 import { setUserProfileToCache } from '../modules/profile/profileUserCache';
 import { invalidateSearchCacheForUser } from '../modules/SearchModule';
 import { useAuth } from '@/contexts/AuthContext';
+import { dashboardDebug } from '@/utils/debug/dashboardDebug';
 
 type AccountType = 'personal' | 'business';
 
@@ -56,6 +57,7 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
   const userRef = useRef<User | null>(initialUser || authUser || null); // Ref pre sledovanie zmien slugu
   const [isLoading, setIsLoading] = useState(() => !initialUser && !authUser && authLoading);
   const hasCheckedAuth = useRef(false);
+  const debugInstanceRef = useRef(`dashboard-state-${Math.random().toString(36).slice(2, 8)}`);
   
   // Inicializácia modulu - používame initialModule ak je poskytnutý (rovnaký pre SSR aj CSR)
   // Ak nie, použijeme 'home' (hydration fix)
@@ -76,6 +78,21 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
       // ignore
     }
   }, [initialModule]);
+
+  useEffect(() => {
+    dashboardDebug('useDashboardState snapshot', {
+      instanceId: debugInstanceRef.current,
+      isLoading,
+      activeModule,
+      hasUser: Boolean(user),
+      userId: user?.id ?? null,
+      hasAuthUser: Boolean(authUser),
+      authUserId: authUser?.id ?? null,
+      authLoading,
+      initialModule: initialModule ?? null,
+      hasInitialUser: Boolean(initialUser),
+    });
+  }, [activeModule, authLoading, authUser, initialModule, initialUser, isLoading, user]);
   
   // Inicializácia sidebaru - ak initialModule je sidebar sekcia, otvor sidebar hneď
   const rightSidebarItems = ['notifications', 'language', 'account-type', 'privacy'];
@@ -180,6 +197,13 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
     hasCheckedAuth.current = true;
 
     const checkAuth = async () => {
+      dashboardDebug('useDashboardState checkAuth start', {
+        instanceId: debugInstanceRef.current,
+        hasInitialUser: Boolean(initialUser),
+        hasAuthUser: Boolean(authUser),
+        authLoading,
+      });
+
       if (typeof window !== 'undefined' && sessionStorage.getItem('forceHome') === '1') {
         setActiveModule('home');
         setIsRightSidebarOpen(false);
@@ -192,6 +216,10 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
       }
 
       if (initialUser) {
+        dashboardDebug('useDashboardState checkAuth resolved from initialUser', {
+          instanceId: debugInstanceRef.current,
+          userId: initialUser.id,
+        });
         setIsLoading(false);
         return;
       }
@@ -201,6 +229,10 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
       // po login/Google OAuth už AuthContext drží čerstvého používateľa a
       // tento extra background call len duplikuje sieťový bootstrap dashboardu.
       if (authUser && !authLoading) {
+        dashboardDebug('useDashboardState checkAuth resolved from authUser', {
+          instanceId: debugInstanceRef.current,
+          userId: authUser.id,
+        });
         userRef.current = authUser;
         setUser(authUser);
         setIsLoading(false);
@@ -210,10 +242,22 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
       // Single source of truth pre identity: AuthContext (/auth/me s requestId guardom).
       try {
         setIsLoading(true);
+        dashboardDebug('useDashboardState refreshAuthUser start', {
+          instanceId: debugInstanceRef.current,
+        });
         await refreshAuthUser();
+        dashboardDebug('useDashboardState refreshAuthUser success', {
+          instanceId: debugInstanceRef.current,
+        });
       } catch {
+        dashboardDebug('useDashboardState refreshAuthUser failed', {
+          instanceId: debugInstanceRef.current,
+        });
         // ignore - redirect riešime nižšie podľa authUser/authLoading
       } finally {
+        dashboardDebug('useDashboardState refreshAuthUser finally', {
+          instanceId: debugInstanceRef.current,
+        });
         setIsLoading(false);
       }
     };
@@ -225,6 +269,10 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
   // Mirror AuthContext user do dashboard state (bez vlastných /me requestov).
   useEffect(() => {
     if (initialUser) {
+      dashboardDebug('useDashboardState mirror initialUser', {
+        instanceId: debugInstanceRef.current,
+        userId: initialUser.id,
+      });
       userRef.current = initialUser;
       setUser(initialUser);
       setIsLoading(false);
@@ -232,15 +280,33 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
     }
 
     // Kľúčové: nepresmerovať, kým beží auth refresh iniciovaný checkAuth().
-    if (authLoading || isLoading) return;
+    if (authLoading || isLoading) {
+      dashboardDebug('useDashboardState mirror waiting', {
+        instanceId: debugInstanceRef.current,
+        authLoading,
+        isLoading,
+        hasAuthUser: Boolean(authUser),
+      });
+      return;
+    }
 
     if (authUser) {
+      dashboardDebug('useDashboardState mirror authUser', {
+        instanceId: debugInstanceRef.current,
+        userId: authUser.id,
+      });
       userRef.current = authUser;
       setUser(authUser);
       setIsLoading(false);
       return;
     }
 
+    dashboardDebug('useDashboardState mirror redirect home', {
+      instanceId: debugInstanceRef.current,
+      authLoading,
+      isLoading,
+      hasAuthUser: false,
+    });
     clearAuthState();
     router.push('/');
     setIsLoading(false);

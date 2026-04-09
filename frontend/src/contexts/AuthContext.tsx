@@ -6,6 +6,7 @@ import { api, endpoints, invalidateSession, isTransientAuthFailureError, setMayH
 import { clearAuthState } from '@/utils/auth';
 import { fetchCsrfToken, hasCsrfToken } from '@/utils/csrf';
 import type { User } from '@/types';
+import { dashboardDebug } from '@/utils/debug/dashboardDebug';
 
 interface AuthContextType {
   user: User | null;
@@ -29,6 +30,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
   const userRef = useRef<User | null>(null);
+  const debugInstanceRef = useRef(`auth-provider-${Math.random().toString(36).slice(2, 8)}`);
 
   // Deterministic /me refresh:
   // - Each refreshUser call gets a requestId and sets latestRequestId.
@@ -43,6 +45,27 @@ export function AuthProvider({ children }: AuthProviderProps) {
   useEffect(() => {
     userRef.current = user;
   }, [user]);
+
+  useEffect(() => {
+    dashboardDebug('AuthProvider mount', {
+      instanceId: debugInstanceRef.current,
+    });
+
+    return () => {
+      dashboardDebug('AuthProvider unmount', {
+        instanceId: debugInstanceRef.current,
+      });
+    };
+  }, []);
+
+  useEffect(() => {
+    dashboardDebug('AuthProvider snapshot', {
+      instanceId: debugInstanceRef.current,
+      isLoading,
+      hasUser: Boolean(user),
+      userId: user?.id ?? null,
+    });
+  }, [isLoading, user]);
 
   const refreshUser = useCallback(async (options?: { force?: boolean }) => {
     // Explicit logout in progress => do not run /me requests.
@@ -71,6 +94,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     const controller = new AbortController();
     meAbortControllerRef.current = controller;
+    dashboardDebug('AuthProvider refreshUser start', {
+      instanceId: debugInstanceRef.current,
+      force,
+      requestId,
+    });
 
     const p: Promise<void> = (async () => {
       try {
@@ -81,6 +109,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
         if (logoutInProgressRef.current) return;
 
         if (resp?.status === 200 && resp.data) {
+          dashboardDebug('AuthProvider refreshUser success', {
+            instanceId: debugInstanceRef.current,
+            requestId,
+            userId: resp.data.id ?? null,
+          });
           userRef.current = resp.data;
           setUser(resp.data);
           setMayHaveRefreshCookie(true);
@@ -112,12 +145,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
         // Pri 401 interceptor už skúsil refresh; ak zlyhal, markSessionInvalid() je zavolaný.
         // Iba nastav user=null – setMayHaveRefreshCookie nevoláme (interceptor to rieši).
         if (status === 401) {
+          dashboardDebug('AuthProvider refreshUser unauthorized', {
+            instanceId: debugInstanceRef.current,
+            requestId,
+          });
           userRef.current = null;
           setUser(null);
           return;
         }
 
         console.error('Error refreshing user:', error);
+        dashboardDebug('AuthProvider refreshUser error', {
+          instanceId: debugInstanceRef.current,
+          requestId,
+          status: status ?? null,
+        });
         if (userRef.current) return;
         userRef.current = null;
         setUser(null);
@@ -184,6 +226,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     const bootstrap = async () => {
       let attempt = 0;
+      dashboardDebug('AuthProvider bootstrap start', {
+        instanceId: debugInstanceRef.current,
+      });
       try {
         while (!cancelled) {
           try {
@@ -206,6 +251,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
         }
       } finally {
         if (!cancelled) {
+          dashboardDebug('AuthProvider bootstrap finished', {
+            instanceId: debugInstanceRef.current,
+          });
           setIsLoading(false);
         }
       }
