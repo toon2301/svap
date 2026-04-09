@@ -1477,6 +1477,7 @@ describe('ConversationDetail', () => {
 
     const bubble = await screen.findByTestId('message-bubble-1');
     const messageText = screen.getByText('Moja mobilna sprava');
+    expect(bubble.tagName).toBe('BUTTON');
     expect(bubble).toHaveClass('select-none');
     expect(messageText).toHaveClass('select-none');
 
@@ -1487,6 +1488,10 @@ describe('ConversationDetail', () => {
     const textContextMenuEvent = createEvent.contextMenu(messageText);
     fireEvent(messageText, textContextMenuEvent);
     expect(textContextMenuEvent.defaultPrevented).toBe(true);
+
+    const dragStartEvent = createEvent.dragStart(bubble);
+    fireEvent(bubble, dragStartEvent);
+    expect(dragStartEvent.defaultPrevented).toBe(true);
 
     fireEvent.touchStart(bubble);
 
