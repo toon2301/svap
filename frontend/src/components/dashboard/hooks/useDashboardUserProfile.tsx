@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { type User } from '@/types';
 import { type SearchUserResult } from '../modules/search/types';
 import { api, endpoints } from '@/lib/api';
@@ -18,7 +18,6 @@ export interface DashboardUserProfileProps {
   setViewedUserSlug: (slug: string | null) => void;
   viewedUserSummary: SearchUserResult | null;
   setViewedUserSummary: (summary: SearchUserResult | null) => void;
-  initialRightItemAppliedRef: React.MutableRefObject<boolean>;
 }
 
 interface UseDashboardUserProfileParams {
@@ -48,7 +47,6 @@ export function useDashboardUserProfile({
   const [viewedUserId, setViewedUserId] = useState<number | null>(null);
   const [viewedUserSlug, setViewedUserSlug] = useState<string | null>(null);
   const [viewedUserSummary, setViewedUserSummary] = useState<SearchUserResult | null>(null);
-  const initialRightItemAppliedRef = useRef(false);
 
   const {
     setActiveModule,
@@ -133,13 +131,11 @@ export function useDashboardUserProfile({
 
   // Aplikuj počiatočný stav pravého sidebaru pre vlastný profil na základe URL (edit, account, privacy, language)
   useEffect(() => {
-    if (!user || !initialProfileSlug || !initialRightItem || initialRightItemAppliedRef.current) {
+    if (!user || !initialProfileSlug || !initialRightItem) {
       return;
     }
 
     if (user.slug && user.slug === initialProfileSlug) {
-      initialRightItemAppliedRef.current = true;
-
       if (initialRightItem === 'edit-profile') {
         // Zodpovedá handleRightSidebarToggle() pri zapnutí edit módu
         setActiveModule('profile');
@@ -356,6 +352,5 @@ export function useDashboardUserProfile({
     setViewedUserSlug,
     viewedUserSummary,
     setViewedUserSummary,
-    initialRightItemAppliedRef,
   };
 }

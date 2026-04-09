@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { useRouter, useSearchParams, usePathname } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { User } from '@/types';
 import { api, endpoints } from '@/lib/api';
@@ -11,7 +11,7 @@ import ModuleRouter from '../ModuleRouter';
 import DashboardModals from '../DashboardModals';
 import SearchModule from '../modules/SearchModule';
 import { MessagesDesktopRail } from '../modules/messages/MessagesDesktopRail';
-import { buildMessagesUrl, parseConversationId, parseTargetUserId } from '../modules/messages/messagesRouting';
+import { buildMessagesUrl } from '../modules/messages/messagesRouting';
 import { listConversations, openConversation } from '../modules/messages/messagingApi';
 import type { MessagingUserBrief } from '../modules/messages/types';
 import { useDashboardState } from '../hooks/useDashboardState';
@@ -21,6 +21,7 @@ import { useDashboardHighlighting } from '../hooks/useDashboardHighlighting';
 import { useDashboardUserProfile } from '../hooks/useDashboardUserProfile';
 import { useDashboardKeyboard } from '../hooks/useDashboardKeyboard';
 import { useSkillSaveHandler } from '../hooks/useSkillSaveHandler';
+import { parseDashboardRouteState, useDashboardRouteState } from '../hooks/useDashboardRouteState';
 import { RequestsNotificationsProvider } from '../contexts/RequestsNotificationsContext';
 import { getUserIdBySlug, setUserProfileToCache } from '../modules/profile/profileUserCache';
 
@@ -51,33 +52,32 @@ export default function DashboardContent({
 }: DashboardContentProps) {
   const { t } = useLanguage();
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const pathname = usePathname();
+  const routeState = useDashboardRouteState();
+  const resolvedInitialRoute = initialRoute ?? routeState.initialRoute;
+  const resolvedInitialViewedUserId = initialViewedUserId ?? routeState.initialViewedUserId;
+  const resolvedInitialHighlightedSkillId =
+    initialHighlightedSkillId ?? routeState.initialHighlightedSkillId;
+  const resolvedInitialProfileTab = initialProfileTab ?? routeState.initialProfileTab;
+  const resolvedInitialProfileSlug = initialProfileSlug ?? routeState.initialProfileSlug;
+  const resolvedInitialRightItem = initialRightItem ?? routeState.initialRightItem;
+  const resolvedInitialOfferId = initialOfferId ?? routeState.initialOfferId;
+  const selectedConversationId = routeState.selectedConversationId;
+  const targetUserIdFromMessagesQuery = routeState.targetUserIdForMessages;
+  const routeStateKey = [
+    resolvedInitialRoute,
+    resolvedInitialViewedUserId ?? '',
+    resolvedInitialProfileSlug ?? '',
+    resolvedInitialRightItem ?? '',
+    resolvedInitialProfileTab ?? '',
+    resolvedInitialOfferId ?? '',
+    selectedConversationId ?? '',
+    targetUserIdFromMessagesQuery ?? '',
+    resolvedInitialHighlightedSkillId ?? '',
+  ].join('|');
 
   // Odvodiť offerId pre recenzie z URL (fix: client-side navigácia bez full reloadu)
-  const offerIdFromReviewsPath = React.useMemo(() => {
-    const m = pathname?.match(/^\/dashboard\/offers\/(\d+)\/reviews\/?$/);
-    return m ? Number(m[1]) : null;
-  }, [pathname]);
-
-  const conversationIdFromMessagesPath = React.useMemo(() => {
-    const m = pathname?.match(/^\/dashboard\/messages\/(\d+)\/?$/);
-    return m ? Number(m[1]) : null;
-  }, [pathname]);
-
-  const conversationIdFromMessagesQuery = React.useMemo(
-    () => parseConversationId(searchParams?.get('conversationId')),
-    [searchParams],
-  );
-  const targetUserIdFromMessagesQuery = React.useMemo(
-    () => parseTargetUserId(searchParams?.get('targetUserId')),
-    [searchParams],
-  );
-
-  const selectedConversationId = conversationIdFromMessagesQuery ?? conversationIdFromMessagesPath ?? null;
-
   // Core Dashboard State
-  const dashboardState = useDashboardState(initialUser, initialRoute);
+  const dashboardState = useDashboardState(initialUser, resolvedInitialRoute);
   const skillsState = useSkillsModals();
   
   // Local component state
@@ -89,17 +89,17 @@ export default function DashboardContent({
   // Custom hooks pre rozdelenie logiky
   const highlighting = useDashboardHighlighting({
     activeModule: dashboardState.activeModule,
-    initialHighlightedSkillId,
+    initialHighlightedSkillId: resolvedInitialHighlightedSkillId,
   });
 
   const userProfile = useDashboardUserProfile({
     user: dashboardState.user,
     activeModule: dashboardState.activeModule,
     dashboardState,
-    initialViewedUserId,
-    initialHighlightedSkillId,
-    initialProfileSlug,
-    initialRightItem,
+    initialViewedUserId: resolvedInitialViewedUserId,
+    initialHighlightedSkillId: resolvedInitialHighlightedSkillId,
+    initialProfileSlug: resolvedInitialProfileSlug,
+    initialRightItem: resolvedInitialRightItem,
     setHighlightedSkillId: highlighting.setHighlightedSkillId,
   });
 
@@ -183,7 +183,7 @@ export default function DashboardContent({
     applySkillUpdate,
     loadSkills,
     t,
-    ownerUserIdForOffersCache: initialUser?.id,
+    ownerUserIdForOffersCache: initialUser?.id ?? dashboardState.user?.id,
   });
 
   // Skills category back handler
@@ -203,18 +203,59 @@ export default function DashboardContent({
   }, [activeModule, loadSkills]);
 
   // Sync modulu a offerId pri URL /dashboard/offers/[id]/reviews (client-side navigácia bez reloadu)
-  const effectiveOfferIdForReviews = initialOfferId ?? offerIdFromReviewsPath ?? null;
-  useEffect(() => {
-    if (offerIdFromReviewsPath != null) {
-      setActiveModule('offer-reviews');
-    }
-  }, [offerIdFromReviewsPath, setActiveModule]);
-
+  const effectiveOfferIdForReviews = resolvedInitialOfferId;
   // Po stlačení späť z cudzieho profilu (user-profile) URL skočí správne, ale activeModule ostáva
   // user-profile – synchronizujeme modul podľa aktuálnej URL pri popstate
   const setViewedUserId = userProfile.setViewedUserId;
   const setViewedUserSlug = userProfile.setViewedUserSlug;
   const setViewedUserSummary = userProfile.setViewedUserSummary;
+  const isOwnProfileRoute =
+    Boolean(user?.slug && resolvedInitialProfileSlug && user.slug === resolvedInitialProfileSlug) ||
+    Boolean(
+      user?.id != null &&
+        resolvedInitialViewedUserId != null &&
+        user.id === resolvedInitialViewedUserId,
+    );
+
+  useEffect(() => {
+    if (resolvedInitialRoute !== 'user-profile') {
+      setViewedUserId(null);
+      setViewedUserSlug(null);
+      setViewedUserSummary(null);
+    }
+
+    if (!resolvedInitialRightItem || !isOwnProfileRoute) {
+      setIsRightSidebarOpen(false);
+      setActiveRightItem('');
+    }
+
+    setIsMobileMenuOpen(false);
+    setIsSearchOpen(false);
+    setIsSkillsCategoryModalOpen(false);
+    setIsSkillDescriptionModalOpen(false);
+    setIsAddCustomCategoryModalOpen(false);
+    setEditingCustomCategoryIndex(null);
+    setEditingStandardCategoryIndex(null);
+    setIsInSubcategories(false);
+  }, [
+    routeStateKey,
+    isOwnProfileRoute,
+    resolvedInitialRoute,
+    resolvedInitialRightItem,
+    setViewedUserId,
+    setViewedUserSlug,
+    setViewedUserSummary,
+    setIsRightSidebarOpen,
+    setActiveRightItem,
+    setIsMobileMenuOpen,
+    setIsSearchOpen,
+    setIsSkillsCategoryModalOpen,
+    setIsSkillDescriptionModalOpen,
+    setIsAddCustomCategoryModalOpen,
+    setEditingCustomCategoryIndex,
+    setEditingStandardCategoryIndex,
+    setIsInSubcategories,
+  ]);
 
   useEffect(() => {
     let cancelled = false;
@@ -279,44 +320,68 @@ export default function DashboardContent({
     };
   }, [activeModule, selectedConversationId, targetUserIdFromMessagesQuery]);
   useEffect(() => {
-    const syncModuleFromPath = () => {
+    const syncStateFromPopstate = () => {
       if (typeof window === 'undefined') return;
-      const p = window.location.pathname || '';
-      let moduleId: string | null = null;
-      if (p.match(/^\/dashboard\/requests\/?$/)) {
-        moduleId = 'requests';
-      } else if (p.match(/^\/dashboard\/search\/?$/)) {
-        moduleId = 'search';
-      } else if (p.match(/^\/dashboard\/messages\/?$/) || p.match(/^\/dashboard\/messages\/\d+\/?$/)) {
-        moduleId = 'messages';
-      } else if (p === '/dashboard' || p === '/dashboard/') {
-        moduleId = 'home';
-      } else if (p.match(/^\/dashboard\/profile\/?$/)) {
-        moduleId = 'profile';
-      } else if (p.match(/^\/dashboard\/users\/[^/]+\/?$/)) {
-        moduleId = 'user-profile';
+
+      const parsedRouteState = parseDashboardRouteState(
+        window.location.pathname,
+        new URLSearchParams(window.location.search),
+      );
+
+      setActiveModule(parsedRouteState.initialRoute);
+
+      try {
+        localStorage.setItem('activeModule', parsedRouteState.initialRoute);
+      } catch {
+        // ignore
       }
-      if (moduleId !== null) {
-        setActiveModule(moduleId);
-        try {
-          localStorage.setItem('activeModule', moduleId);
-        } catch {
-          // ignore
-        }
-        if (moduleId !== 'user-profile') {
-          setViewedUserId(null);
-          setViewedUserSlug(null);
-          setViewedUserSummary(null);
-        }
+
+      if (parsedRouteState.initialRoute === 'user-profile') {
+        setViewedUserId(parsedRouteState.initialViewedUserId);
+        setViewedUserSlug(parsedRouteState.initialProfileSlug);
+        setViewedUserSummary(null);
+      } else {
+        setViewedUserId(null);
+        setViewedUserSlug(null);
+        setViewedUserSummary(null);
+      }
+
+      highlighting.setHighlightedSkillId(parsedRouteState.initialHighlightedSkillId);
+      setIsMobileMenuOpen(false);
+      setIsSearchOpen(false);
+
+      const isOwnProfilePopstateRoute =
+        Boolean(user?.slug && parsedRouteState.initialProfileSlug && user.slug === parsedRouteState.initialProfileSlug) ||
+        Boolean(
+          user?.id != null &&
+            parsedRouteState.initialViewedUserId != null &&
+            user.id === parsedRouteState.initialViewedUserId,
+        );
+
+      if (parsedRouteState.initialRightItem && isOwnProfilePopstateRoute) {
+        setIsRightSidebarOpen(true);
+        setActiveRightItem(parsedRouteState.initialRightItem);
+      } else {
         setIsRightSidebarOpen(false);
         setActiveRightItem('');
-        setIsMobileMenuOpen(false);
       }
     };
 
-    window.addEventListener('popstate', syncModuleFromPath);
-    return () => window.removeEventListener('popstate', syncModuleFromPath);
-  }, [setActiveModule, setIsRightSidebarOpen, setActiveRightItem, setIsMobileMenuOpen, setViewedUserId, setViewedUserSlug, setViewedUserSummary]);
+    window.addEventListener('popstate', syncStateFromPopstate);
+    return () => window.removeEventListener('popstate', syncStateFromPopstate);
+  }, [
+    highlighting.setHighlightedSkillId,
+    setActiveModule,
+    setIsRightSidebarOpen,
+    setActiveRightItem,
+    setIsMobileMenuOpen,
+    setIsSearchOpen,
+    setViewedUserId,
+    setViewedUserSlug,
+    setViewedUserSummary,
+    user?.id,
+    user?.slug,
+  ]);
 
   // Globálna navigácia na cudzí profil (napr. zo Žiadostí).
   // Používame event, aby UI reagovalo okamžite aj v prípadoch, keď sa URL zmení bez
@@ -537,7 +602,7 @@ export default function DashboardContent({
       onViewUserProfile={navigation.handleViewUserProfileFromSearch}
       highlightedSkillId={highlighting.highlightedSkillId}
       onViewUserSkillFromSearch={navigation.handleViewUserSkillFromSearch}
-      initialProfileTab={initialProfileTab}
+      initialProfileTab={resolvedInitialProfileTab}
       onSkillsOfferClick={navigation.handleSkillsOfferClick}
       onSkillsSearchClick={navigation.handleSkillsSearchClick}
       offerIdForReviews={effectiveOfferIdForReviews}

@@ -44,6 +44,16 @@ jest.mock('../../../utils/auth', () => ({
   clearAuthState: jest.fn(),
 }));
 
+jest.mock('@/contexts/AuthContext', () => ({
+  useAuth: () => ({
+    user: null,
+    isLoading: false,
+    refreshUser: jest.fn(),
+    logout: jest.fn(),
+    updateUser: jest.fn(),
+  }),
+}));
+
 const user: User = {
   id: 1,
   username: 'user',
