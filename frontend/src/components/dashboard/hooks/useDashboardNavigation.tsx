@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { type User } from '@/types';
 import { type SearchUserResult } from '../modules/search/types';
 import { type UseDashboardStateResult } from './useDashboardState';
-import { dashboardDebug } from '@/utils/debug/dashboardDebug';
 
 export interface DashboardNavigationProps {
   handleMainModuleChange: (moduleId: string) => void;
@@ -65,12 +64,6 @@ export function useDashboardNavigation({
 
   // Hlavná navigačná logika pre zmenu modulov
   const handleMainModuleChange = useCallback((moduleId: string) => {
-    dashboardDebug('useDashboardNavigation handleMainModuleChange', {
-      moduleId,
-      activeModule,
-      isSearchOpen,
-    });
-
     // Pri zmene modulu zrušiť zvýraznenie karty
     setHighlightedSkillId(null);
     
@@ -215,11 +208,6 @@ export function useDashboardNavigation({
     // Použiť slug ak existuje, inak userId
     const identifier = slug || String(userId);
     const url = `/dashboard/users/${identifier}`;
-    dashboardDebug('useDashboardNavigation router.push user-profile', {
-      userId,
-      slug: slug ?? null,
-      url,
-    });
     
     router.push(url);
   }, [

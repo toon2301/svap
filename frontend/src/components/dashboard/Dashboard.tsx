@@ -1,11 +1,9 @@
 'use client';
 
-import React, { Suspense, useEffect, useRef } from 'react';
+import React, { Suspense } from 'react';
 import type { User } from '../../types';
 import type { ProfileTab } from './modules/profile/profileTypes';
 import DashboardContent from './components/DashboardContent';
-import DashboardDebugPanel from './DashboardDebugPanel';
-import { dashboardDebug } from '@/utils/debug/dashboardDebug';
 
 export interface DashboardProps {
   initialUser?: User;
@@ -23,28 +21,9 @@ export interface DashboardProps {
 
 // Hlavný komponent - wrapped v Suspense pre useSearchParams()
 export default function Dashboard(props: DashboardProps) {
-  const instanceIdRef = useRef(`dashboard-${Math.random().toString(36).slice(2, 8)}`);
-
-  useEffect(() => {
-    dashboardDebug('Dashboard mount', {
-      instanceId: instanceIdRef.current,
-      hasInitialUser: Boolean(props.initialUser),
-      initialRoute: props.initialRoute ?? null,
-    });
-
-    return () => {
-      dashboardDebug('Dashboard unmount', {
-        instanceId: instanceIdRef.current,
-      });
-    };
-  }, [props.initialRoute, props.initialUser]);
-
   return (
-    <>
-      <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><div className="text-gray-500">Loading...</div></div>}>
-        <DashboardContent {...props} />
-      </Suspense>
-      <DashboardDebugPanel />
-    </>
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><div className="text-gray-500">Loading...</div></div>}>
+      <DashboardContent {...props} />
+    </Suspense>
   );
 }

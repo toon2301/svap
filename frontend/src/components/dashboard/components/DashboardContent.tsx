@@ -24,7 +24,6 @@ import { useSkillSaveHandler } from '../hooks/useSkillSaveHandler';
 import { parseDashboardRouteState, useDashboardRouteState } from '../hooks/useDashboardRouteState';
 import { RequestsNotificationsProvider } from '../contexts/RequestsNotificationsContext';
 import { getUserIdBySlug, setUserProfileToCache } from '../modules/profile/profileUserCache';
-import { dashboardDebug } from '@/utils/debug/dashboardDebug';
 
 interface DashboardContentProps {
   initialUser?: User;
@@ -54,7 +53,6 @@ export default function DashboardContent({
   const { t } = useLanguage();
   const router = useRouter();
   const routeState = useDashboardRouteState();
-  const debugInstanceRef = useRef(`dashboard-content-${Math.random().toString(36).slice(2, 8)}`);
   const resolvedInitialRoute = initialRoute ?? routeState.initialRoute;
   const resolvedInitialViewedUserId = initialViewedUserId ?? routeState.initialViewedUserId;
   const resolvedInitialHighlightedSkillId =
@@ -559,24 +557,10 @@ export default function DashboardContent({
 
   // Early returns pre loading a error states
   if (isLoading) {
-    dashboardDebug('DashboardContent returned loading screen', {
-      instanceId: debugInstanceRef.current,
-      reason: 'isLoading',
-      hasUser: Boolean(user),
-      userId: user?.id ?? null,
-      activeModule,
-      routeStateKey,
-    });
     return dashboardLoadingScreen;
   }
 
   if (!user) {
-    dashboardDebug('DashboardContent returned loading screen', {
-      instanceId: debugInstanceRef.current,
-      reason: 'missing-user',
-      activeModule,
-      routeStateKey,
-    });
     return dashboardLoadingScreen;
   }
 
@@ -641,45 +625,6 @@ export default function DashboardContent({
   const mobileMessagePeerIdentifier =
     (mobileMessagePeer?.slug || '').trim() ||
     (typeof mobileMessagePeer?.id === 'number' ? String(mobileMessagePeer.id) : null);
-
-  useEffect(() => {
-    dashboardDebug('DashboardContent mount', {
-      instanceId: debugInstanceRef.current,
-      resolvedInitialRoute,
-      resolvedInitialProfileSlug,
-      resolvedInitialRightItem,
-    });
-
-    return () => {
-      dashboardDebug('DashboardContent unmount', {
-        instanceId: debugInstanceRef.current,
-      });
-    };
-  }, [resolvedInitialProfileSlug, resolvedInitialRightItem, resolvedInitialRoute]);
-
-  useEffect(() => {
-    dashboardDebug('DashboardContent snapshot', {
-      instanceId: debugInstanceRef.current,
-      isLoading,
-      hasUser: Boolean(user),
-      userId: user?.id ?? null,
-      activeModule,
-      activeRightItem,
-      isRightSidebarOpen,
-      selectedConversationId,
-      targetUserIdFromMessagesQuery,
-      routeStateKey,
-    });
-  }, [
-    activeModule,
-    activeRightItem,
-    isLoading,
-    isRightSidebarOpen,
-    routeStateKey,
-    selectedConversationId,
-    targetUserIdFromMessagesQuery,
-    user,
-  ]);
 
   return (
     <RequestsNotificationsProvider>
