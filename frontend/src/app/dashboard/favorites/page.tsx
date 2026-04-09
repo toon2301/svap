@@ -1,3 +1,7 @@
+import Dashboard from '@/components/dashboard/Dashboard';
+
 export default function DashboardFavoritesPage() {
-  return null;
+  return <Dashboard initialRoute="favorites" />;
 }
+
+

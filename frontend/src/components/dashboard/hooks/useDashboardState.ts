@@ -76,7 +76,7 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
       // ignore
     }
   }, [initialModule]);
-
+  
   // Inicializácia sidebaru - ak initialModule je sidebar sekcia, otvor sidebar hneď
   const rightSidebarItems = ['notifications', 'language', 'account-type', 'privacy'];
   const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(() => {
@@ -232,9 +232,7 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
     }
 
     // Kľúčové: nepresmerovať, kým beží auth refresh iniciovaný checkAuth().
-    if (authLoading || isLoading) {
-      return;
-    }
+    if (authLoading || isLoading) return;
 
     if (authUser) {
       userRef.current = authUser;

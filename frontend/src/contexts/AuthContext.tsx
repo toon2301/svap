@@ -6,7 +6,6 @@ import { api, endpoints, invalidateSession, isTransientAuthFailureError, setMayH
 import { clearAuthState } from '@/utils/auth';
 import { fetchCsrfToken, hasCsrfToken } from '@/utils/csrf';
 import type { User } from '@/types';
-import { pushErrorDebugBreadcrumb } from '@/utils/debug/errorDebug';
 
 interface AuthContextType {
   user: User | null;
@@ -44,13 +43,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
   useEffect(() => {
     userRef.current = user;
   }, [user]);
-
-  useEffect(() => {
-    pushErrorDebugBreadcrumb('auth-state', {
-      hasUser: Boolean(user),
-      isLoading,
-    });
-  }, [isLoading, user]);
 
   const refreshUser = useCallback(async (options?: { force?: boolean }) => {
     // Explicit logout in progress => do not run /me requests.

@@ -1,3 +1,9 @@
+'use client';
+
+import Dashboard from '@/components/dashboard/Dashboard';
+
 export default function DashboardSkillsPage() {
-  return null;
+  return <Dashboard initialRoute="skills" />;
 }
+
+

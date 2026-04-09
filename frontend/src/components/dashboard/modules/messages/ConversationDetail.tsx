@@ -47,7 +47,6 @@ import {
   OLDER_MESSAGES_SCROLL_THRESHOLD_PX,
 } from './messageListUtils';
 import { useConversationPresenceHeartbeat } from './useConversationPresenceHeartbeat';
-import { pushErrorDebugBreadcrumb } from '@/utils/debug/errorDebug';
 
 const MESSAGE_POLL_INTERVAL_MS = 10_000;
 const MOBILE_LATEST_SCROLL_THRESHOLD_PX = 80;
@@ -59,8 +58,6 @@ const MOBILE_OWN_MESSAGE_BUBBLE_SUPPRESSION_STYLE: React.CSSProperties = {
   WebkitUserSelect: 'none',
   userSelect: 'none',
 };
-
-type OwnMessageInteractionElement = HTMLDivElement | HTMLButtonElement;
 
 function formatTime(value: string): string {
   const d = new Date(value);
@@ -169,22 +166,6 @@ export function ConversationDetail({
   const canCreateRequestFromOffer =
     targetUserId !== null && otherConversation?.has_requestable_offers === true;
 
-  useEffect(() => {
-    pushErrorDebugBreadcrumb('messages-conversation-screen', {
-      stage: 'mount',
-      hasConversation: true,
-      isMobile,
-    });
-
-    return () => {
-      pushErrorDebugBreadcrumb('messages-conversation-screen', {
-        stage: 'unmount',
-        hasConversation: true,
-        isMobile,
-      });
-    };
-  }, [conversationId, isMobile]);
-
   const closeMessageActions = useCallback(() => {
     setMessageActionsTarget(null);
   }, []);
@@ -201,23 +182,7 @@ export function ConversationDetail({
   }, []);
 
   const suppressNativeMessageContextMenu = useCallback(
-    (event: React.MouseEvent<OwnMessageInteractionElement>) => {
-      if (!isMobile) return;
-      event.preventDefault();
-    },
-    [isMobile],
-  );
-
-  const suppressNativeMessageSelection = useCallback(
-    (event: React.SyntheticEvent<OwnMessageInteractionElement>) => {
-      if (!isMobile) return;
-      event.preventDefault();
-    },
-    [isMobile],
-  );
-
-  const suppressNativeMessageDrag = useCallback(
-    (event: React.DragEvent<OwnMessageInteractionElement>) => {
+    (event: React.MouseEvent<HTMLDivElement>) => {
       if (!isMobile) return;
       event.preventDefault();
     },
@@ -962,7 +927,7 @@ export function ConversationDetail({
 
       if (isMobile) {
         return {
-          onTouchStart: (event: React.TouchEvent<OwnMessageInteractionElement>) => {
+          onTouchStart: (event: React.TouchEvent<HTMLDivElement>) => {
             clearMessageLongPressTimer();
             const target = event.currentTarget;
             messageLongPressTimerRef.current = setTimeout(() => {
@@ -1088,7 +1053,6 @@ export function ConversationDetail({
                     : 'bg-gray-100 dark:bg-[#141416] text-gray-900 dark:text-gray-100 border border-gray-200/60 dark:border-gray-800',
                 ].join(' ');
                 const suppressMobileOwnMessageSelection = mine && isMobile;
-                const mobileOwnMessageBubbleClassName = `${bubbleClassName} appearance-none border-0 text-left outline-none focus:outline-none focus:ring-0`;
                 const messageTextClassName = `whitespace-pre-wrap break-words${
                   suppressMobileOwnMessageSelection ? ' select-none' : ''
                 }`;
@@ -1129,36 +1093,37 @@ export function ConversationDetail({
                             <EllipsisHorizontalIcon className="h-5 w-5" />
                           </button>
                         ) : null}
-                        {suppressMobileOwnMessageSelection ? (
-                          <button
-                            type="button"
-                            data-testid={`message-bubble-${m.id}`}
-                            className={`${mobileOwnMessageBubbleClassName} select-none`}
-                            style={MOBILE_OWN_MESSAGE_BUBBLE_SUPPRESSION_STYLE}
-                            onContextMenu={suppressNativeMessageContextMenu}
-                            onSelect={suppressNativeMessageSelection}
-                            onDragStart={suppressNativeMessageDrag}
-                            {...ownMessageInteractionProps}
-                          >
-                            <div
-                              className={messageTextClassName}
-                              style={MOBILE_OWN_MESSAGE_BUBBLE_SUPPRESSION_STYLE}
-                              onContextMenu={suppressNativeMessageContextMenu}
-                              onSelect={suppressNativeMessageSelection}
-                              onDragStart={suppressNativeMessageDrag}
-                            >
-                              {displayText}
-                            </div>
-                          </button>
-                        ) : (
+                        <div
+                          data-testid={`message-bubble-${m.id}`}
+                          className={`${bubbleClassName}${suppressMobileOwnMessageSelection ? ' select-none' : ''}`}
+                          style={
+                            suppressMobileOwnMessageSelection
+                              ? MOBILE_OWN_MESSAGE_BUBBLE_SUPPRESSION_STYLE
+                              : undefined
+                          }
+                          onContextMenu={
+                            suppressMobileOwnMessageSelection
+                              ? suppressNativeMessageContextMenu
+                              : undefined
+                          }
+                          {...ownMessageInteractionProps}
+                        >
                           <div
-                            data-testid={`message-bubble-${m.id}`}
-                            className={bubbleClassName}
-                            {...ownMessageInteractionProps}
+                            className={messageTextClassName}
+                            style={
+                              suppressMobileOwnMessageSelection
+                                ? MOBILE_OWN_MESSAGE_BUBBLE_SUPPRESSION_STYLE
+                                : undefined
+                            }
+                            onContextMenu={
+                              suppressMobileOwnMessageSelection
+                                ? suppressNativeMessageContextMenu
+                                : undefined
+                            }
                           >
-                            <div className={messageTextClassName}>{displayText}</div>
+                            {displayText}
                           </div>
-                        )}
+                        </div>
                       </div>
                       {showSeenIndicator ? (
                         <div

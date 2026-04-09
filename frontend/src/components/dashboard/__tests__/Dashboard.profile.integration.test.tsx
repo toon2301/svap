@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import Dashboard from '../Dashboard';
 import { ThemeProvider } from '@/contexts/ThemeContext';
@@ -70,17 +70,19 @@ const user: User = {
 
 describe('Dashboard profile integration', () => {
   it('opens right sidebar via Edit Profile and renders edit heading', () => {
-    render(<ThemeProvider><Dashboard initialUser={user} /></ThemeProvider>);
-    // go to profile
+    render(
+      <ThemeProvider>
+        <Dashboard initialUser={user} />
+      </ThemeProvider>,
+    );
+
     const sidebarProfile = screen.getByText('Profil');
     fireEvent.click(sidebarProfile);
-    // click edit profile button in profile module
+
     const editButtons = screen.getAllByText('Upraviť profil');
     fireEvent.click(editButtons[0]);
-    // heading in edit form appears
+
     const headings = screen.getAllByRole('heading', { name: 'Upraviť profil' });
     expect(headings.length).toBeGreaterThan(0);
   });
 });
-
-

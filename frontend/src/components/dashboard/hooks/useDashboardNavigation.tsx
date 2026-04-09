@@ -219,9 +219,7 @@ export function useDashboardNavigation({
     setIsRightSidebarOpen,
     setActiveRightItem,
     setIsSearchOpen,
-    router,
-    activeModule,
-    isSearchOpen,
+    router
   ]);
 
   // Skills navigation handlers

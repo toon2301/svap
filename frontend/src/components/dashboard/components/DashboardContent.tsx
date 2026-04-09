@@ -1,7 +1,7 @@
-"use client";
+﻿"use client";
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { User } from '@/types';
 import { api, endpoints } from '@/lib/api';
@@ -11,7 +11,7 @@ import ModuleRouter from '../ModuleRouter';
 import DashboardModals from '../DashboardModals';
 import SearchModule from '../modules/SearchModule';
 import { MessagesDesktopRail } from '../modules/messages/MessagesDesktopRail';
-import { buildMessagesUrl } from '../modules/messages/messagesRouting';
+import { buildMessagesUrl, parseConversationId, parseTargetUserId } from '../modules/messages/messagesRouting';
 import { listConversations, openConversation } from '../modules/messages/messagingApi';
 import type { MessagingUserBrief } from '../modules/messages/types';
 import { useDashboardState } from '../hooks/useDashboardState';
@@ -21,10 +21,8 @@ import { useDashboardHighlighting } from '../hooks/useDashboardHighlighting';
 import { useDashboardUserProfile } from '../hooks/useDashboardUserProfile';
 import { useDashboardKeyboard } from '../hooks/useDashboardKeyboard';
 import { useSkillSaveHandler } from '../hooks/useSkillSaveHandler';
-import { parseDashboardRouteState, useDashboardRouteState } from '../hooks/useDashboardRouteState';
 import { RequestsNotificationsProvider } from '../contexts/RequestsNotificationsContext';
 import { getUserIdBySlug, setUserProfileToCache } from '../modules/profile/profileUserCache';
-import { pushErrorDebugBreadcrumb } from '@/utils/debug/errorDebug';
 
 interface DashboardContentProps {
   initialUser?: User;
@@ -34,12 +32,12 @@ interface DashboardContentProps {
   initialProfileTab?: ProfileTab;
   initialProfileSlug?: string | null;
   initialRightItem?: string | null;
-  /** ID karty (ponuky) pre view recenzií (/dashboard/offers/[offerId]/reviews). */
+  /** ID karty (ponuky) pre view recenziÃ­ (/dashboard/offers/[offerId]/reviews). */
   initialOfferId?: number | null;
 }
 
 /**
- * Hlavný obsah Dashboard komponenta s všetkou logikou
+ * HlavnÃ½ obsah Dashboard komponenta s vÅ¡etkou logikou
  */
 export default function DashboardContent({
   initialUser,
@@ -53,32 +51,33 @@ export default function DashboardContent({
 }: DashboardContentProps) {
   const { t } = useLanguage();
   const router = useRouter();
-  const routeState = useDashboardRouteState();
-  const resolvedInitialRoute = initialRoute ?? routeState.initialRoute;
-  const resolvedInitialViewedUserId = initialViewedUserId ?? routeState.initialViewedUserId;
-  const resolvedInitialHighlightedSkillId =
-    initialHighlightedSkillId ?? routeState.initialHighlightedSkillId;
-  const resolvedInitialProfileTab = initialProfileTab ?? routeState.initialProfileTab;
-  const resolvedInitialProfileSlug = initialProfileSlug ?? routeState.initialProfileSlug;
-  const resolvedInitialRightItem = initialRightItem ?? routeState.initialRightItem;
-  const resolvedInitialOfferId = initialOfferId ?? routeState.initialOfferId;
-  const selectedConversationId = routeState.selectedConversationId;
-  const targetUserIdFromMessagesQuery = routeState.targetUserIdForMessages;
-  const routeStateKey = [
-    resolvedInitialRoute,
-    resolvedInitialViewedUserId ?? '',
-    resolvedInitialProfileSlug ?? '',
-    resolvedInitialRightItem ?? '',
-    resolvedInitialProfileTab ?? '',
-    resolvedInitialOfferId ?? '',
-    selectedConversationId ?? '',
-    targetUserIdFromMessagesQuery ?? '',
-    resolvedInitialHighlightedSkillId ?? '',
-  ].join('|');
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
 
-  // Odvodiť offerId pre recenzie z URL (fix: client-side navigácia bez full reloadu)
+  // OdvodiÅ¥ offerId pre recenzie z URL (fix: client-side navigÃ¡cia bez full reloadu)
+  const offerIdFromReviewsPath = React.useMemo(() => {
+    const m = pathname?.match(/^\/dashboard\/offers\/(\d+)\/reviews\/?$/);
+    return m ? Number(m[1]) : null;
+  }, [pathname]);
+
+  const conversationIdFromMessagesPath = React.useMemo(() => {
+    const m = pathname?.match(/^\/dashboard\/messages\/(\d+)\/?$/);
+    return m ? Number(m[1]) : null;
+  }, [pathname]);
+
+  const conversationIdFromMessagesQuery = React.useMemo(
+    () => parseConversationId(searchParams?.get('conversationId')),
+    [searchParams],
+  );
+  const targetUserIdFromMessagesQuery = React.useMemo(
+    () => parseTargetUserId(searchParams?.get('targetUserId')),
+    [searchParams],
+  );
+
+  const selectedConversationId = conversationIdFromMessagesQuery ?? conversationIdFromMessagesPath ?? null;
+
   // Core Dashboard State
-  const dashboardState = useDashboardState(initialUser, resolvedInitialRoute);
+  const dashboardState = useDashboardState(initialUser, initialRoute);
   const skillsState = useSkillsModals();
   
   // Local component state
@@ -90,17 +89,17 @@ export default function DashboardContent({
   // Custom hooks pre rozdelenie logiky
   const highlighting = useDashboardHighlighting({
     activeModule: dashboardState.activeModule,
-    initialHighlightedSkillId: resolvedInitialHighlightedSkillId,
+    initialHighlightedSkillId,
   });
 
   const userProfile = useDashboardUserProfile({
     user: dashboardState.user,
     activeModule: dashboardState.activeModule,
     dashboardState,
-    initialViewedUserId: resolvedInitialViewedUserId,
-    initialHighlightedSkillId: resolvedInitialHighlightedSkillId,
-    initialProfileSlug: resolvedInitialProfileSlug,
-    initialRightItem: resolvedInitialRightItem,
+    initialViewedUserId,
+    initialHighlightedSkillId,
+    initialProfileSlug,
+    initialRightItem,
     setHighlightedSkillId: highlighting.setHighlightedSkillId,
   });
 
@@ -122,7 +121,7 @@ export default function DashboardContent({
     setIsSearchOpen,
   });
 
-  // Destructure states pre jednoduchšie použitie
+  // Destructure states pre jednoduchÅ¡ie pouÅ¾itie
   const {
     user,
     isLoading,
@@ -175,7 +174,7 @@ export default function DashboardContent({
     removeCustomCategory,
   } = skillsState;
 
-  // Funkcia na uloženie karty (presunutá do samostatného hooku pre prehľadnosť)
+  // Funkcia na uloÅ¾enie karty (presunutÃ¡ do samostatnÃ©ho hooku pre prehÄ¾adnosÅ¥)
   const handleSkillSave = useSkillSaveHandler({
     selectedSkillsCategory,
     activeModule,
@@ -184,7 +183,7 @@ export default function DashboardContent({
     applySkillUpdate,
     loadSkills,
     t,
-    ownerUserIdForOffersCache: initialUser?.id ?? dashboardState.user?.id,
+    ownerUserIdForOffersCache: initialUser?.id,
   });
 
   // Skills category back handler
@@ -196,67 +195,26 @@ export default function DashboardContent({
     }
   }, [handleMobileBack]);
 
-  // Načítať karty pri navigácii na skills-offer alebo skills-search
+  // NaÄÃ­taÅ¥ karty pri navigÃ¡cii na skills-offer alebo skills-search
   useEffect(() => {
     if (activeModule === 'skills-offer' || activeModule === 'skills-search') {
       void loadSkills();
     }
   }, [activeModule, loadSkills]);
 
-  // Sync modulu a offerId pri URL /dashboard/offers/[id]/reviews (client-side navigácia bez reloadu)
-  const effectiveOfferIdForReviews = resolvedInitialOfferId;
-  // Po stlačení späť z cudzieho profilu (user-profile) URL skočí správne, ale activeModule ostáva
-  // user-profile – synchronizujeme modul podľa aktuálnej URL pri popstate
+  // Sync modulu a offerId pri URL /dashboard/offers/[id]/reviews (client-side navigÃ¡cia bez reloadu)
+  const effectiveOfferIdForReviews = initialOfferId ?? offerIdFromReviewsPath ?? null;
+  useEffect(() => {
+    if (offerIdFromReviewsPath != null) {
+      setActiveModule('offer-reviews');
+    }
+  }, [offerIdFromReviewsPath, setActiveModule]);
+
+  // Po stlaÄenÃ­ spÃ¤Å¥ z cudzieho profilu (user-profile) URL skoÄÃ­ sprÃ¡vne, ale activeModule ostÃ¡va
+  // user-profile â€“ synchronizujeme modul podÄ¾a aktuÃ¡lnej URL pri popstate
   const setViewedUserId = userProfile.setViewedUserId;
   const setViewedUserSlug = userProfile.setViewedUserSlug;
   const setViewedUserSummary = userProfile.setViewedUserSummary;
-  const isOwnProfileRoute =
-    Boolean(user?.slug && resolvedInitialProfileSlug && user.slug === resolvedInitialProfileSlug) ||
-    Boolean(
-      user?.id != null &&
-        resolvedInitialViewedUserId != null &&
-        user.id === resolvedInitialViewedUserId,
-    );
-
-  useEffect(() => {
-    if (resolvedInitialRoute !== 'user-profile') {
-      setViewedUserId(null);
-      setViewedUserSlug(null);
-      setViewedUserSummary(null);
-    }
-
-    if (!resolvedInitialRightItem || !isOwnProfileRoute) {
-      setIsRightSidebarOpen(false);
-      setActiveRightItem('');
-    }
-
-    setIsMobileMenuOpen(false);
-    setIsSearchOpen(false);
-    setIsSkillsCategoryModalOpen(false);
-    setIsSkillDescriptionModalOpen(false);
-    setIsAddCustomCategoryModalOpen(false);
-    setEditingCustomCategoryIndex(null);
-    setEditingStandardCategoryIndex(null);
-    setIsInSubcategories(false);
-  }, [
-    routeStateKey,
-    isOwnProfileRoute,
-    resolvedInitialRoute,
-    resolvedInitialRightItem,
-    setViewedUserId,
-    setViewedUserSlug,
-    setViewedUserSummary,
-    setIsRightSidebarOpen,
-    setActiveRightItem,
-    setIsMobileMenuOpen,
-    setIsSearchOpen,
-    setIsSkillsCategoryModalOpen,
-    setIsSkillDescriptionModalOpen,
-    setIsAddCustomCategoryModalOpen,
-    setEditingCustomCategoryIndex,
-    setEditingStandardCategoryIndex,
-    setIsInSubcategories,
-  ]);
 
   useEffect(() => {
     let cancelled = false;
@@ -321,72 +279,48 @@ export default function DashboardContent({
     };
   }, [activeModule, selectedConversationId, targetUserIdFromMessagesQuery]);
   useEffect(() => {
-    const syncStateFromPopstate = () => {
+    const syncModuleFromPath = () => {
       if (typeof window === 'undefined') return;
-
-      const parsedRouteState = parseDashboardRouteState(
-        window.location.pathname,
-        new URLSearchParams(window.location.search),
-      );
-
-      setActiveModule(parsedRouteState.initialRoute);
-
-      try {
-        localStorage.setItem('activeModule', parsedRouteState.initialRoute);
-      } catch {
-        // ignore
+      const p = window.location.pathname || '';
+      let moduleId: string | null = null;
+      if (p.match(/^\/dashboard\/requests\/?$/)) {
+        moduleId = 'requests';
+      } else if (p.match(/^\/dashboard\/search\/?$/)) {
+        moduleId = 'search';
+      } else if (p.match(/^\/dashboard\/messages\/?$/) || p.match(/^\/dashboard\/messages\/\d+\/?$/)) {
+        moduleId = 'messages';
+      } else if (p === '/dashboard' || p === '/dashboard/') {
+        moduleId = 'home';
+      } else if (p.match(/^\/dashboard\/profile\/?$/)) {
+        moduleId = 'profile';
+      } else if (p.match(/^\/dashboard\/users\/[^/]+\/?$/)) {
+        moduleId = 'user-profile';
       }
-
-      if (parsedRouteState.initialRoute === 'user-profile') {
-        setViewedUserId(parsedRouteState.initialViewedUserId);
-        setViewedUserSlug(parsedRouteState.initialProfileSlug);
-        setViewedUserSummary(null);
-      } else {
-        setViewedUserId(null);
-        setViewedUserSlug(null);
-        setViewedUserSummary(null);
-      }
-
-      highlighting.setHighlightedSkillId(parsedRouteState.initialHighlightedSkillId);
-      setIsMobileMenuOpen(false);
-      setIsSearchOpen(false);
-
-      const isOwnProfilePopstateRoute =
-        Boolean(user?.slug && parsedRouteState.initialProfileSlug && user.slug === parsedRouteState.initialProfileSlug) ||
-        Boolean(
-          user?.id != null &&
-            parsedRouteState.initialViewedUserId != null &&
-            user.id === parsedRouteState.initialViewedUserId,
-        );
-
-      if (parsedRouteState.initialRightItem && isOwnProfilePopstateRoute) {
-        setIsRightSidebarOpen(true);
-        setActiveRightItem(parsedRouteState.initialRightItem);
-      } else {
+      if (moduleId !== null) {
+        setActiveModule(moduleId);
+        try {
+          localStorage.setItem('activeModule', moduleId);
+        } catch {
+          // ignore
+        }
+        if (moduleId !== 'user-profile') {
+          setViewedUserId(null);
+          setViewedUserSlug(null);
+          setViewedUserSummary(null);
+        }
         setIsRightSidebarOpen(false);
         setActiveRightItem('');
+        setIsMobileMenuOpen(false);
       }
     };
 
-    window.addEventListener('popstate', syncStateFromPopstate);
-    return () => window.removeEventListener('popstate', syncStateFromPopstate);
-  }, [
-    highlighting.setHighlightedSkillId,
-    setActiveModule,
-    setIsRightSidebarOpen,
-    setActiveRightItem,
-    setIsMobileMenuOpen,
-    setIsSearchOpen,
-    setViewedUserId,
-    setViewedUserSlug,
-    setViewedUserSummary,
-    user?.id,
-    user?.slug,
-  ]);
+    window.addEventListener('popstate', syncModuleFromPath);
+    return () => window.removeEventListener('popstate', syncModuleFromPath);
+  }, [setActiveModule, setIsRightSidebarOpen, setActiveRightItem, setIsMobileMenuOpen, setViewedUserId, setViewedUserSlug, setViewedUserSummary]);
 
-  // Globálna navigácia na cudzí profil (napr. zo Žiadostí).
-  // Používame event, aby UI reagovalo okamžite aj v prípadoch, keď sa URL zmení bez
-  // toho, aby Next router prerenderoval stránku (napr. window.history.pushState).
+  // GlobÃ¡lna navigÃ¡cia na cudzÃ­ profil (napr. zo Å½iadostÃ­).
+  // PouÅ¾Ã­vame event, aby UI reagovalo okamÅ¾ite aj v prÃ­padoch, keÄ sa URL zmenÃ­ bez
+  // toho, aby Next router prerenderoval strÃ¡nku (napr. window.history.pushState).
   useEffect(() => {
     const handler = (evt: Event) => {
       const detail = (evt as CustomEvent<{ identifier?: string; highlightId?: number | string | null }>).detail;
@@ -402,14 +336,14 @@ export default function DashboardContent({
             : null;
       const highlightId = parsedHighlight != null && Number.isFinite(parsedHighlight) ? parsedHighlight : null;
 
-      // Prepni modul a zavri vedľajšie UI
+      // Prepni modul a zavri vedÄ¾ajÅ¡ie UI
       setActiveModule('user-profile');
       setIsRightSidebarOpen(false);
       setActiveRightItem('');
       setIsMobileMenuOpen(false);
       setIsSearchOpen(false);
 
-      // Nastav, aký profil sa má zobraziť
+      // Nastav, akÃ½ profil sa mÃ¡ zobraziÅ¥
       if (/^\d+$/.test(identifier)) {
         userProfile.setViewedUserId(Number(identifier));
         userProfile.setViewedUserSlug(null);
@@ -417,7 +351,7 @@ export default function DashboardContent({
         userProfile.setViewedUserSlug(identifier);
         userProfile.setViewedUserId(null);
 
-        // Pokús sa slug -> userId (cache -> API), aby ModuleRouter vedel vyrenderovať profil.
+        // PokÃºs sa slug -> userId (cache -> API), aby ModuleRouter vedel vyrenderovaÅ¥ profil.
         const cachedId = getUserIdBySlug(identifier);
         if (cachedId) {
           userProfile.setViewedUserId(cachedId);
@@ -428,7 +362,7 @@ export default function DashboardContent({
               userProfile.setViewedUserId(data.id);
               setUserProfileToCache(data.id, data);
             } catch {
-              // necháme UI rozhodnúť (zobrazí not-found hlášku)
+              // nechÃ¡me UI rozhodnÃºÅ¥ (zobrazÃ­ not-found hlÃ¡Å¡ku)
             }
           })();
         }
@@ -473,7 +407,7 @@ export default function DashboardContent({
     highlighting,
   ]);
 
-  // Globálna navigácia na vlastný profil (napr. zo Žiadostí pri prijatej žiadosti).
+  // GlobÃ¡lna navigÃ¡cia na vlastnÃ½ profil (napr. zo Å½iadostÃ­ pri prijatej Å¾iadosti).
   useEffect(() => {
     const handler = (evt: Event) => {
       const detail = (evt as CustomEvent<{ highlightId?: number | string | null }>).detail;
@@ -492,7 +426,7 @@ export default function DashboardContent({
       setIsMobileMenuOpen(false);
       setIsSearchOpen(false);
 
-      // vyčisti stav cudzích profilov, aby sa UI nemiešalo
+      // vyÄisti stav cudzÃ­ch profilov, aby sa UI nemieÅ¡alo
       try {
         userProfile.setViewedUserId(null);
         userProfile.setViewedUserSlug(null);
@@ -603,7 +537,7 @@ export default function DashboardContent({
       onViewUserProfile={navigation.handleViewUserProfileFromSearch}
       highlightedSkillId={highlighting.highlightedSkillId}
       onViewUserSkillFromSearch={navigation.handleViewUserSkillFromSearch}
-      initialProfileTab={resolvedInitialProfileTab}
+      initialProfileTab={initialProfileTab}
       onSkillsOfferClick={navigation.handleSkillsOfferClick}
       onSkillsSearchClick={navigation.handleSkillsSearchClick}
       offerIdForReviews={effectiveOfferIdForReviews}
@@ -626,29 +560,6 @@ export default function DashboardContent({
   const mobileMessagePeerIdentifier =
     (mobileMessagePeer?.slug || '').trim() ||
     (typeof mobileMessagePeer?.id === 'number' ? String(mobileMessagePeer.id) : null);
-
-  useEffect(() => {
-    pushErrorDebugBreadcrumb('dashboard-route-state', {
-      module: activeModule,
-      rightItem: activeRightItem || null,
-      rightSidebarOpen: isRightSidebarOpen,
-      routeKind: resolvedInitialRoute,
-      hasConversation: selectedConversationId != null,
-      hasMessagesTargetUser: targetUserIdFromMessagesQuery != null,
-      hasOfferReviews: effectiveOfferIdForReviews != null,
-      hasOwnProfileSidebar: Boolean(resolvedInitialRightItem && isOwnProfileRoute),
-    });
-  }, [
-    activeModule,
-    activeRightItem,
-    effectiveOfferIdForReviews,
-    isOwnProfileRoute,
-    isRightSidebarOpen,
-    resolvedInitialRightItem,
-    resolvedInitialRoute,
-    selectedConversationId,
-    targetUserIdFromMessagesQuery,
-  ]);
 
   return (
     <RequestsNotificationsProvider>
@@ -749,3 +660,4 @@ export default function DashboardContent({
     </RequestsNotificationsProvider>
   );
 }
+
