@@ -272,6 +272,8 @@ describe('ConversationDetail', () => {
 
     expect(await screen.findByTestId('conversation-messages-skeleton')).toBeInTheDocument();
     expect(screen.getAllByTestId('conversation-message-skeleton-row')).toHaveLength(8);
+    expect(screen.getAllByTestId('conversation-message-skeleton-bubble')).toHaveLength(8);
+    expect(screen.getAllByTestId('conversation-message-skeleton-avatar')).toHaveLength(2);
     expect(screen.queryByText(/bez/i)).not.toBeInTheDocument();
 
     await act(async () => {
@@ -1474,6 +1476,12 @@ describe('ConversationDetail', () => {
     render(<ConversationDetail conversationId={9} currentUserId={1} />);
 
     const bubble = await screen.findByTestId('message-bubble-1');
+    expect(bubble).toHaveClass('select-none');
+
+    const contextMenuEvent = createEvent.contextMenu(bubble);
+    fireEvent(bubble, contextMenuEvent);
+    expect(contextMenuEvent.defaultPrevented).toBe(true);
+
     fireEvent.touchStart(bubble);
 
     act(() => {

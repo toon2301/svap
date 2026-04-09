@@ -722,7 +722,7 @@ class StartDirectMessageView(APIView):
             )
         except SelfConversationNotAllowed:
             return Response(
-                {"error": "NemÃ´Å¾ete zaÄaÅ¥ konverzÃ¡ciu sami so sebou."},
+                {"error": "Nemôžete začať konverzáciu sami so sebou."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 

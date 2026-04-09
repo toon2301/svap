@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Bars3Icon } from '@heroicons/react/24/outline';
+import { ChatBubbleLeftRightIcon } from '@heroicons/react/24/outline';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { ensureFreshSessionForBackgroundWork } from '@/lib/api';
@@ -224,16 +225,12 @@ export function ConversationsList({
             </div>
           </div>
         ) : (
-          <div
-            className={`bg-white dark:bg-black rounded-2xl border border-gray-200 dark:border-gray-800 text-center ${
-              isSidebar ? 'p-4' : 'p-8'
-            }`}
-          >
-            <div className="text-base font-semibold text-gray-900 dark:text-white mb-1">
-              {t('messages.none', 'No messages')}
-            </div>
-            <div className="text-sm text-gray-600 dark:text-gray-400">
-              {t('messages.hint', 'When someone sends you a message, it will appear here.')}
+          <div className="flex h-full min-h-[calc(100dvh-12rem)] items-center justify-center">
+            <div className="flex flex-col items-center text-center">
+              <ChatBubbleLeftRightIcon className="mb-4 h-20 w-20 text-black dark:text-white" />
+              <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">
+                {t('messages.title', 'Vaše správy')}
+              </h2>
             </div>
           </div>
         )}

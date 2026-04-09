@@ -263,7 +263,7 @@ def google_login_view(request):
             _oauth_trace("google_login_state_cookie_failed", error=str(e)[:120])
             logger.error(f"Google login state cookie error: {str(e)}")
             return Response(
-                {"error": "Chyba pri prihlÃ¡senÃ­ cez Google"},
+                {"error": "Chyba pri prihlásení cez Google"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 

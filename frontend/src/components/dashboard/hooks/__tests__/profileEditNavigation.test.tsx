@@ -1,4 +1,4 @@
-import { act, renderHook } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import type { User } from '@/types';
 import { useDashboardState } from '../useDashboardState';
 import { useDashboardNavigation } from '../useDashboardNavigation';
@@ -75,6 +75,22 @@ describe('profile edit navigation flow', () => {
     expect(result.current.isLoading).toBe(false);
     expect(result.current.user?.id).toBe(baseUser.id);
     expect(mockRefreshUser).not.toHaveBeenCalled();
+  });
+
+  it('redirects home after auth bootstrap finishes without an authenticated user', async () => {
+    mockRefreshUser.mockResolvedValue(undefined);
+
+    const { result } = renderHook(() => useDashboardState(undefined, 'home'));
+
+    expect(result.current.isLoading).toBe(true);
+
+    await waitFor(() => {
+      expect(mockRefreshUser).toHaveBeenCalledTimes(1);
+      expect(mockPush).toHaveBeenCalledWith('/');
+    });
+
+    expect(result.current.user).toBeNull();
+    expect(result.current.isLoading).toBe(false);
   });
 
   it('opens and cleanly closes own profile edit with synchronized URL', () => {

@@ -53,6 +53,11 @@ const MOBILE_LATEST_SCROLL_THRESHOLD_PX = 80;
 const MOBILE_SCROLL_TO_BOTTOM_BUTTON_THRESHOLD_PX = 300;
 const MOBILE_MESSAGE_SIDE_PADDING_CLASS = 'px-1.5 pt-4 pb-2';
 const DESKTOP_MESSAGE_SIDE_PADDING_CLASS = 'px-4 py-4 sm:px-5 lg:px-6';
+const MOBILE_OWN_MESSAGE_BUBBLE_SUPPRESSION_STYLE: React.CSSProperties = {
+  WebkitTouchCallout: 'none',
+  WebkitUserSelect: 'none',
+  userSelect: 'none',
+};
 
 function formatTime(value: string): string {
   const d = new Date(value);
@@ -175,6 +180,14 @@ export function ConversationDetail({
     clearTimeout(messageLongPressTimerRef.current);
     messageLongPressTimerRef.current = null;
   }, []);
+
+  const suppressNativeMessageContextMenu = useCallback(
+    (event: React.MouseEvent<HTMLDivElement>) => {
+      if (!isMobile) return;
+      event.preventDefault();
+    },
+    [isMobile],
+  );
 
   const markMessageDeletedLocally = useCallback((messageId: number) => {
     setMessages((current) =>
@@ -1039,6 +1052,7 @@ export function ConversationDetail({
                     ? 'bg-brand text-white'
                     : 'bg-gray-100 dark:bg-[#141416] text-gray-900 dark:text-gray-100 border border-gray-200/60 dark:border-gray-800',
                 ].join(' ');
+                const suppressMobileOwnMessageSelection = mine && isMobile;
 
                 return mine ? (
                   <div
@@ -1078,7 +1092,17 @@ export function ConversationDetail({
                         ) : null}
                         <div
                           data-testid={`message-bubble-${m.id}`}
-                          className={bubbleClassName}
+                          className={`${bubbleClassName}${suppressMobileOwnMessageSelection ? ' select-none' : ''}`}
+                          style={
+                            suppressMobileOwnMessageSelection
+                              ? MOBILE_OWN_MESSAGE_BUBBLE_SUPPRESSION_STYLE
+                              : undefined
+                          }
+                          onContextMenu={
+                            suppressMobileOwnMessageSelection
+                              ? suppressNativeMessageContextMenu
+                              : undefined
+                          }
                           {...ownMessageInteractionProps}
                         >
                           <div className="whitespace-pre-wrap break-words">{displayText}</div>

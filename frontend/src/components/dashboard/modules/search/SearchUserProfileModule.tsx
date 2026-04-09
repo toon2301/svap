@@ -67,13 +67,15 @@ export function SearchUserProfileModule({
       setIsLoading(true);
       setError(null);
 
-      // InvalidovaÅ¥ cache ponÃºk pre cudzÃ­ profil, aby sa naÄÃ­tali ÄerstvÃ© dÃ¡ta (vrÃ¡tane filtrovania skrytÃ½ch kariet)
-      // Toto zabezpeÄÃ­, Å¾e skrytÃ© karty sa nezobrazia v profile inÃ©ho pouÅ¾Ã­vateÄ¾a
+      // Invalidovať cache ponúk pre cudzí profil, aby sa načítali čerstvé dáta
+      // vrátane filtrovania skrytých kariet.
+      // Toto zabezpečí, že skryté karty sa nezobrazia v profile iného používateľa.
       const { invalidateOffersCache } = await import('../profile/profileOffersCache');
       invalidateOffersCache(userId);
 
-      // Najprv skÃºs cache profilu (pre rÃ½chle zobrazenie), ale vÅ¾dy dotiahni ÄerstvÃ© dÃ¡ta z API.
-      // Inak sa po zmene sÃºkromia (napr. contact_email_visible) mÃ´Å¾e profil javiÅ¥ "zaseknutÃ½" aÅ¾ do vyprÅ¡ania TTL.
+      // Najprv skús cache profilu pre rýchle zobrazenie, ale vždy dotiahni
+      // čerstvé dáta z API. Inak sa po zmene súkromia (napr.
+      // contact_email_visible) môže profil javiť "zaseknutý" až do vypršania TTL.
       const cached = getUserProfileFromCache(userId);
       if (cached && !cancelled) {
         setProfileUser(cached);
@@ -88,21 +90,21 @@ export function SearchUserProfileModule({
         setProfileUser(data);
         setUserProfileToCache(userId, data);
         
-        // Ak mÃ¡ pouÅ¾Ã­vateÄ¾ slug a URL mÃ¡ ID namiesto slugu, aktualizovaÅ¥ URL
+        // Ak má používateľ slug a URL má ID namiesto slugu, aktualizovať URL.
         if (data.slug) {
           const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
           if (currentPath.startsWith('/dashboard/users/')) {
             const currentIdentifier = currentPath.replace('/dashboard/users/', '').split('/')[0];
-            // Ak je aktuÃ¡lny identifikÃ¡tor ÄÃ­slo (ID) a mÃ¡me slug, aktualizovaÅ¥ URL
+            // Ak je aktuálny identifikátor číslo (ID) a máme slug, aktualizovať URL.
             if (/^\d+$/.test(currentIdentifier) && currentIdentifier !== data.slug) {
               const newUrl = `/dashboard/users/${data.slug}`;
               
-              // OkamÅ¾itÃ¡ aktualizÃ¡cia URL (bez reloadu)
+              // Okamžitá aktualizácia URL bez reloadu.
               if (typeof window !== 'undefined') {
                 window.history.pushState(null, '', newUrl);
               }
               
-              // AktualizovaÅ¥ cez Next.js router
+              // Aktualizovať aj cez Next.js router.
               router.push(newUrl);
             }
           }
@@ -114,12 +116,12 @@ export function SearchUserProfileModule({
           status === 429
             ? t(
                 "search.userProfileRateLimited",
-                "PrÃ­liÅ¡ veÄ¾a poÅ¾iadaviek pri naÄÃ­tavanÃ­ profilu, skÃºste to o chvÃ­Ä¾u.",
+                "Príliš veľa požiadaviek pri načítavaní profilu, skúste to o chvíľu.",
               )
             : e?.response?.data?.error ||
               e?.response?.data?.detail ||
               e?.message ||
-              t("search.userProfileLoadError", "Nepodarilo sa naÄÃ­taÅ¥ profil pouÅ¾Ã­vateÄ¾a.");
+              t("search.userProfileLoadError", "Nepodarilo sa načítať profil používateľa.");
         setError(msg);
       } finally {
         if (!cancelled) {
@@ -133,7 +135,8 @@ export function SearchUserProfileModule({
     return () => {
       cancelled = true;
     };
-    // zÃ¡merne neuvÃ¡dzame t v zÃ¡vislostiach, aby sa pri zmene jazyka nespÃºÅ¡Å¥al novÃ½ network request
+    // Zámerne neuvádzame t v závislostiach, aby sa pri zmene jazyka nespúšťal
+    // nový network request.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
 
@@ -174,14 +177,14 @@ export function SearchUserProfileModule({
       });
       // Show success message (could use toast notification)
       // eslint-disable-next-line no-console
-      console.log('PouÅ¾Ã­vateÄ¾ bol pridanÃ½ k obÄ¾ÃºbenÃ½m');
+      console.log('Používateľ bol pridaný k obľúbeným');
     } catch (error: any) {
       // Show error message (could use toast notification)
       const message =
         error?.response?.data?.error ||
         error?.response?.data?.detail ||
         error?.message ||
-        t('search.addToFavoritesError', 'Nepodarilo sa pridaÅ¥ k obÄ¾ÃºbenÃ½m.');
+        t('search.addToFavoritesError', 'Nepodarilo sa pridať k obľúbeným.');
       // eslint-disable-next-line no-console
       console.error(message);
     }
@@ -190,7 +193,7 @@ export function SearchUserProfileModule({
   if (isLoading && !profileUser) {
     return (
       <div className="w-full flex items-center justify-center py-16 text-gray-600 dark:text-gray-300">
-        {t("search.userProfileLoading", "NaÄÃ­tavam profil pouÅ¾Ã­vateÄ¾a...")}
+        {t("search.userProfileLoading", "Načítavam profil používateľa...")}
       </div>
     );
   }
@@ -205,7 +208,7 @@ export function SearchUserProfileModule({
             onClick={onBack}
             className="mt-2 inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
           >
-            <span>{t("search.backToResults", "SpÃ¤Å¥ na vyhÄ¾adÃ¡vanie")}</span>
+            <span>{t("search.backToResults", "Späť na vyhľadávanie")}</span>
           </button>
         )}
       </div>
@@ -216,7 +219,7 @@ export function SearchUserProfileModule({
     return null;
   }
 
-  // UrÄiÅ¥ accountType na zÃ¡klade user_type pouÅ¾Ã­vateÄ¾a
+  // Určiť accountType na základe user_type používateľa.
   const accountType = profileUser.user_type === 'company' ? 'business' : 'personal';
 
   return (

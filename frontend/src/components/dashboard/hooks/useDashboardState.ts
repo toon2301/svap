@@ -244,7 +244,7 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
     clearAuthState();
     router.push('/');
     setIsLoading(false);
-  }, [authUser, authLoading, initialUser, router]);
+  }, [authUser, authLoading, initialUser, isLoading, router]);
 
   const handleModuleChange = useCallback(
     (moduleId: string) => {

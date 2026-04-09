@@ -479,32 +479,24 @@ export default function DashboardContent({
     router.push(buildMessagesUrl());
   }, [router, setActiveModule, setActiveRightItem, setIsMobileMenuOpen, setIsRightSidebarOpen]);
 
+  const dashboardLoadingScreen = (
+    <div className="min-h-screen flex items-center justify-center bg-[var(--background)]">
+      <div className="text-center" role="status" aria-live="polite">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4" />
+        <p className="text-gray-600 dark:text-gray-300">
+          {t('dashboard.loadingDashboard', 'Načítavam dashboard...')}
+        </p>
+      </div>
+    </div>
+  );
+
   // Early returns pre loading a error states
   if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[var(--background)]">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4" />
-          <p className="text-gray-600 dark:text-gray-300">{t('dashboard.loadingDashboard', 'Načítavam dashboard...')}</p>
-        </div>
-      </div>
-    );
+    return dashboardLoadingScreen;
   }
 
   if (!user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[var(--background)]">
-        <div className="text-center">
-          <p className="text-red-600 dark:text-red-400 mb-4">{t('dashboard.userNotFound', 'Používateľ nebol nájdený.')}</p>
-          <button
-            onClick={() => router.push('/')}
-            className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-          >
-            {t('dashboard.goHome', 'Prejsť na domovskú stránku')}
-          </button>
-        </div>
-      </div>
-    );
+    return dashboardLoadingScreen;
   }
 
   // Module content pre ModuleRouter
