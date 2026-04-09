@@ -24,6 +24,7 @@ import { useSkillSaveHandler } from '../hooks/useSkillSaveHandler';
 import { parseDashboardRouteState, useDashboardRouteState } from '../hooks/useDashboardRouteState';
 import { RequestsNotificationsProvider } from '../contexts/RequestsNotificationsContext';
 import { getUserIdBySlug, setUserProfileToCache } from '../modules/profile/profileUserCache';
+import { pushErrorDebugBreadcrumb } from '@/utils/debug/errorDebug';
 
 interface DashboardContentProps {
   initialUser?: User;
@@ -625,6 +626,29 @@ export default function DashboardContent({
   const mobileMessagePeerIdentifier =
     (mobileMessagePeer?.slug || '').trim() ||
     (typeof mobileMessagePeer?.id === 'number' ? String(mobileMessagePeer.id) : null);
+
+  useEffect(() => {
+    pushErrorDebugBreadcrumb('dashboard-route-state', {
+      module: activeModule,
+      rightItem: activeRightItem || null,
+      rightSidebarOpen: isRightSidebarOpen,
+      routeKind: resolvedInitialRoute,
+      hasConversation: selectedConversationId != null,
+      hasMessagesTargetUser: targetUserIdFromMessagesQuery != null,
+      hasOfferReviews: effectiveOfferIdForReviews != null,
+      hasOwnProfileSidebar: Boolean(resolvedInitialRightItem && isOwnProfileRoute),
+    });
+  }, [
+    activeModule,
+    activeRightItem,
+    effectiveOfferIdForReviews,
+    isOwnProfileRoute,
+    isRightSidebarOpen,
+    resolvedInitialRightItem,
+    resolvedInitialRoute,
+    selectedConversationId,
+    targetUserIdFromMessagesQuery,
+  ]);
 
   return (
     <RequestsNotificationsProvider>

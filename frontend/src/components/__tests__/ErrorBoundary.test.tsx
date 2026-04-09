@@ -1,9 +1,8 @@
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import ErrorBoundary from '../ErrorBoundary';
 
-// Komponenta, ktorá vyvolá chybu
 const ThrowError = ({ shouldThrow }: { shouldThrow: boolean }) => {
   if (shouldThrow) {
     throw new Error('Test error');
@@ -13,109 +12,133 @@ const ThrowError = ({ shouldThrow }: { shouldThrow: boolean }) => {
 
 describe('ErrorBoundary', () => {
   beforeEach(() => {
-    // Potlačenie console.error pre testy
     jest.spyOn(console, 'error').mockImplementation(() => {});
   });
 
   afterEach(() => {
+    sessionStorage.clear();
+    window.history.replaceState({}, '', '/');
     jest.restoreAllMocks();
   });
 
-  it('zobrazuje deti keď nie je chyba', () => {
+  it('zobrazuje deti ked nie je chyba', () => {
     render(
       <ErrorBoundary>
         <ThrowError shouldThrow={false} />
-      </ErrorBoundary>
+      </ErrorBoundary>,
     );
 
     expect(screen.getByText('No error')).toBeInTheDocument();
   });
 
-  it('zobrazuje error UI keď je chyba', () => {
+  it('zobrazuje error UI ked je chyba', () => {
     render(
       <ErrorBoundary>
         <ThrowError shouldThrow={true} />
-      </ErrorBoundary>
+      </ErrorBoundary>,
     );
 
-    expect(screen.getByText('Oops! Niečo sa pokazilo')).toBeInTheDocument();
-    expect(screen.getByText('Došlo k neočakávanej chybe. Skúste obnoviť stránku alebo sa vráťte na hlavnú stránku.')).toBeInTheDocument();
+    expect(screen.getByText('Oops! NieÄo sa pokazilo')).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'DoÅ¡lo k neoÄakÃ¡vanej chybe. SkÃºste obnoviÅ¥ strÃ¡nku alebo sa vrÃ¡Å¥te na hlavnÃº strÃ¡nku.',
+      ),
+    ).toBeInTheDocument();
   });
 
-  it('zobrazuje tlačidlá pre akcie', () => {
+  it('zobrazuje tlacidla pre akcie', () => {
     render(
       <ErrorBoundary>
         <ThrowError shouldThrow={true} />
-      </ErrorBoundary>
+      </ErrorBoundary>,
     );
 
-    expect(screen.getByText('Skúsiť znovu')).toBeInTheDocument();
+    expect(screen.getByText('SkÃºsiÅ¥ znovu')).toBeInTheDocument();
     expect(screen.getByText('Domov')).toBeInTheDocument();
   });
 
-  it('umožňuje retry po chybe', () => {
+  it('umoznuje retry po chybe', () => {
     const { rerender } = render(
       <ErrorBoundary>
         <ThrowError shouldThrow={true} />
-      </ErrorBoundary>
+      </ErrorBoundary>,
     );
 
-    expect(screen.getByText('Oops! Niečo sa pokazilo')).toBeInTheDocument();
+    expect(screen.getByText('Oops! NieÄo sa pokazilo')).toBeInTheDocument();
 
-    // Klik na retry tlačidlo
-    fireEvent.click(screen.getByText('Skúsiť znovu'));
+    fireEvent.click(screen.getByText('SkÃºsiÅ¥ znovu'));
 
-    // Rerender s ThrowError shouldThrow={false}
     rerender(
       <ErrorBoundary>
         <ThrowError shouldThrow={false} />
-      </ErrorBoundary>
+      </ErrorBoundary>,
     );
 
     expect(screen.getByText('No error')).toBeInTheDocument();
   });
 
-  it('zobrazuje technické detaily v development mode', () => {
+  it('zobrazuje technicke detaily v development mode', () => {
     const originalEnv = process.env.NODE_ENV;
     process.env.NODE_ENV = 'development';
 
     render(
       <ErrorBoundary>
         <ThrowError shouldThrow={true} />
-      </ErrorBoundary>
+      </ErrorBoundary>,
     );
 
-    expect(screen.getByText('Technické detaily (len pre vývojárov)')).toBeInTheDocument();
+    expect(screen.getByText('TechnickÃ© detaily (len pre vÃ½vojÃ¡rov)')).toBeInTheDocument();
     expect(screen.getByText('Test error')).toBeInTheDocument();
 
     process.env.NODE_ENV = originalEnv;
   });
 
-  it('nezobrazuje technické detaily v production mode', () => {
+  it('nezobrazuje technicke detaily v production mode', () => {
     const originalEnv = process.env.NODE_ENV;
     process.env.NODE_ENV = 'production';
 
     render(
       <ErrorBoundary>
         <ThrowError shouldThrow={true} />
-      </ErrorBoundary>
+      </ErrorBoundary>,
     );
 
-    expect(screen.queryByText('Technické detaily (len pre vývojárov)')).not.toBeInTheDocument();
+    expect(screen.queryByText('TechnickÃ© detaily (len pre vÃ½vojÃ¡rov)')).not.toBeInTheDocument();
 
     process.env.NODE_ENV = originalEnv;
   });
 
-  it('používa vlastný fallback keď je poskytnutý', () => {
+  it('pouziva vlastny fallback ked je poskytnuty', () => {
     const customFallback = <div>Custom error message</div>;
 
     render(
       <ErrorBoundary fallback={customFallback}>
         <ThrowError shouldThrow={true} />
-      </ErrorBoundary>
+      </ErrorBoundary>,
     );
 
     expect(screen.getByText('Custom error message')).toBeInTheDocument();
-    expect(screen.queryByText('Oops! Niečo sa pokazilo')).not.toBeInTheDocument();
+    expect(screen.queryByText('Oops! NieÄo sa pokazilo')).not.toBeInTheDocument();
+  });
+
+  it('zobrazi debug copy akciu pri opt-in error debug rezime', async () => {
+    window.history.replaceState({}, '', '/dashboard/messages?errorDebug=1');
+    const writeText = jest.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText },
+    });
+
+    render(
+      <ErrorBoundary>
+        <ThrowError shouldThrow={true} />
+      </ErrorBoundary>,
+    );
+
+    fireEvent.click(screen.getByText('Kopirovat technicke detaily'));
+
+    await waitFor(() => expect(writeText).toHaveBeenCalledTimes(1));
+    expect(writeText.mock.calls[0][0]).toContain('"errorMessage": "Test error"');
+    expect(writeText.mock.calls[0][0]).toContain('"route": "/dashboard/messages?errorDebug=*"');
   });
 });

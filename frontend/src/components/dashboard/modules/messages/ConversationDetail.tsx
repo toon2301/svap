@@ -47,6 +47,7 @@ import {
   OLDER_MESSAGES_SCROLL_THRESHOLD_PX,
 } from './messageListUtils';
 import { useConversationPresenceHeartbeat } from './useConversationPresenceHeartbeat';
+import { pushErrorDebugBreadcrumb } from '@/utils/debug/errorDebug';
 
 const MESSAGE_POLL_INTERVAL_MS = 10_000;
 const MOBILE_LATEST_SCROLL_THRESHOLD_PX = 80;
@@ -167,6 +168,22 @@ export function ConversationDetail({
   const targetUserType = otherConversation?.other_user?.user_type ?? null;
   const canCreateRequestFromOffer =
     targetUserId !== null && otherConversation?.has_requestable_offers === true;
+
+  useEffect(() => {
+    pushErrorDebugBreadcrumb('messages-conversation-screen', {
+      stage: 'mount',
+      hasConversation: true,
+      isMobile,
+    });
+
+    return () => {
+      pushErrorDebugBreadcrumb('messages-conversation-screen', {
+        stage: 'unmount',
+        hasConversation: true,
+        isMobile,
+      });
+    };
+  }, [conversationId, isMobile]);
 
   const closeMessageActions = useCallback(() => {
     setMessageActionsTarget(null);
