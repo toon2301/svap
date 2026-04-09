@@ -4,6 +4,7 @@ import React, { Suspense, useEffect, useRef } from 'react';
 import type { User } from '../../types';
 import type { ProfileTab } from './modules/profile/profileTypes';
 import DashboardContent from './components/DashboardContent';
+import DashboardDebugPanel from './DashboardDebugPanel';
 import { dashboardDebug } from '@/utils/debug/dashboardDebug';
 
 export interface DashboardProps {
@@ -39,8 +40,11 @@ export default function Dashboard(props: DashboardProps) {
   }, [props.initialRoute, props.initialUser]);
 
   return (
-    <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><div className="text-gray-500">Loading...</div></div>}>
-      <DashboardContent {...props} />
-    </Suspense>
+    <>
+      <Suspense fallback={<div className="flex items-center justify-center min-h-screen"><div className="text-gray-500">Loading...</div></div>}>
+        <DashboardContent {...props} />
+      </Suspense>
+      <DashboardDebugPanel />
+    </>
   );
 }

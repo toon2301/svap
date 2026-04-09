@@ -78,6 +78,7 @@ function syncEnabledFlagFromQueryParam(): void {
 }
 
 export function isDashboardDebugEnabled(): boolean {
+  initializeDashboardDebug();
   return hasWindow() && (process.env.NODE_ENV !== 'production' || readEnabledFlag());
 }
 
@@ -121,6 +122,11 @@ function initializeDashboardDebug(): void {
 
   syncEnabledFlagFromQueryParam();
   ensureWindowApi();
+}
+
+export function isDashboardDebugOptInEnabled(): boolean {
+  initializeDashboardDebug();
+  return hasWindow() && readEnabledFlag();
 }
 
 export function dashboardDebug(event: string, payload: DashboardDebugPayload = {}): void {
