@@ -223,36 +223,8 @@ export function DraftConversationDetail({
 
   return (
     <div className={`${containerClassName} flex h-full min-h-0 flex-col overflow-hidden overscroll-none`}>
-      <div
-        data-testid={!isMobile ? 'draft-conversation-header' : undefined}
-        className={
-          isMobile
-            ? 'mb-2'
-            : 'mb-3'
-        }
-      >
-        {isMobile ? (
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full overflow-hidden bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center flex-shrink-0">
-              {targetUser?.avatar_url ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={targetUser.avatar_url} alt={targetUserName} className="w-full h-full object-cover" />
-              ) : (
-                <span className="text-xs font-bold text-purple-700 dark:text-purple-300">
-                  {(targetUserName || 'U').slice(0, 1).toUpperCase()}
-                </span>
-              )}
-            </div>
-            <div className="min-w-0">
-              <div className="text-sm font-semibold text-gray-900 dark:text-white truncate">
-                {targetUserName}
-              </div>
-              <div className="text-xs text-gray-500 dark:text-gray-400">
-                {t('messages.firstMessageHint', 'Konverzácia sa vytvorí až po odoslaní prvej správy.')}
-              </div>
-            </div>
-          </div>
-        ) : (
+      {!isMobile ? (
+        <div data-testid="draft-conversation-header" className="mb-3">
           <div className="w-full border-b border-gray-200 dark:border-gray-800 px-4 sm:px-6 lg:px-8 py-2.5">
             <div className="flex items-center justify-center gap-3">
               <div className="w-10 h-10 rounded-full overflow-hidden bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center flex-shrink-0">
@@ -270,25 +242,19 @@ export function DraftConversationDetail({
               </div>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      ) : null}
 
       <div
         data-testid={!isMobile ? 'draft-conversation-scroll' : undefined}
-        className="flex-1 min-h-0 overflow-y-auto overscroll-y-contain touch-pan-y elegant-scrollbar p-4"
+        className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-contain touch-pan-y elegant-scrollbar p-4"
       >
-        <div className="h-full flex items-center justify-center">
+        <div className="flex min-h-0 flex-1 items-center justify-center">
           <div className="flex flex-col items-center text-center max-w-md">
             <ChatBubbleLeftRightIcon className="w-20 h-20 text-black dark:text-white mb-4" />
             <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">
               {t('messages.startConversation', 'Začnite konverzáciu')}
             </h2>
-            <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-              {t(
-                'messages.firstMessageHint',
-                'Konverzácia sa vytvorí až po odoslaní prvej správy.',
-              )}
-            </p>
           </div>
         </div>
       </div>

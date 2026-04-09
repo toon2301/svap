@@ -68,6 +68,10 @@ describe('profile edit navigation flow', () => {
 
     const { result } = renderHook(() => useDashboardState(undefined, 'home'));
 
+    expect(result.current.isLoading).toBe(false);
+    expect(result.current.user?.id).toBe(baseUser.id);
+    expect(mockRefreshUser).not.toHaveBeenCalled();
+
     await act(async () => {
       await Promise.resolve();
     });
@@ -81,8 +85,6 @@ describe('profile edit navigation flow', () => {
     mockRefreshUser.mockResolvedValue(undefined);
 
     const { result } = renderHook(() => useDashboardState(undefined, 'home'));
-
-    expect(result.current.isLoading).toBe(true);
 
     await waitFor(() => {
       expect(mockRefreshUser).toHaveBeenCalledTimes(1);

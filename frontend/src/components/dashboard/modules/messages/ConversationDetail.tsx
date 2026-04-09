@@ -1053,6 +1053,9 @@ export function ConversationDetail({
                     : 'bg-gray-100 dark:bg-[#141416] text-gray-900 dark:text-gray-100 border border-gray-200/60 dark:border-gray-800',
                 ].join(' ');
                 const suppressMobileOwnMessageSelection = mine && isMobile;
+                const messageTextClassName = `whitespace-pre-wrap break-words${
+                  suppressMobileOwnMessageSelection ? ' select-none' : ''
+                }`;
 
                 return mine ? (
                   <div
@@ -1105,7 +1108,21 @@ export function ConversationDetail({
                           }
                           {...ownMessageInteractionProps}
                         >
-                          <div className="whitespace-pre-wrap break-words">{displayText}</div>
+                          <div
+                            className={messageTextClassName}
+                            style={
+                              suppressMobileOwnMessageSelection
+                                ? MOBILE_OWN_MESSAGE_BUBBLE_SUPPRESSION_STYLE
+                                : undefined
+                            }
+                            onContextMenu={
+                              suppressMobileOwnMessageSelection
+                                ? suppressNativeMessageContextMenu
+                                : undefined
+                            }
+                          >
+                            {displayText}
+                          </div>
                         </div>
                       </div>
                       {showSeenIndicator ? (

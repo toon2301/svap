@@ -1476,11 +1476,17 @@ describe('ConversationDetail', () => {
     render(<ConversationDetail conversationId={9} currentUserId={1} />);
 
     const bubble = await screen.findByTestId('message-bubble-1');
+    const messageText = screen.getByText('Moja mobilna sprava');
     expect(bubble).toHaveClass('select-none');
+    expect(messageText).toHaveClass('select-none');
 
     const contextMenuEvent = createEvent.contextMenu(bubble);
     fireEvent(bubble, contextMenuEvent);
     expect(contextMenuEvent.defaultPrevented).toBe(true);
+
+    const textContextMenuEvent = createEvent.contextMenu(messageText);
+    fireEvent(messageText, textContextMenuEvent);
+    expect(textContextMenuEvent.defaultPrevented).toBe(true);
 
     fireEvent.touchStart(bubble);
 

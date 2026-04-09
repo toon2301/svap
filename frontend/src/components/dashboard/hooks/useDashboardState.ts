@@ -54,7 +54,7 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
   const { user: authUser, isLoading: authLoading, refreshUser: refreshAuthUser, logout: authLogout, updateUser: updateAuthUser } = useAuth();
   const [user, setUser] = useState<User | null>(initialUser || authUser || null);
   const userRef = useRef<User | null>(initialUser || authUser || null); // Ref pre sledovanie zmien slugu
-  const [isLoading, setIsLoading] = useState(!initialUser);
+  const [isLoading, setIsLoading] = useState(() => !initialUser && !authUser && authLoading);
   const hasCheckedAuth = useRef(false);
   
   // Inicializácia modulu - používame initialModule ak je poskytnutý (rovnaký pre SSR aj CSR)
