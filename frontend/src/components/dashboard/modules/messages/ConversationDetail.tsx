@@ -23,6 +23,7 @@ import {
   sendMessage,
 } from './messagingApi';
 import { ChatRequestOfferPicker } from './ChatRequestOfferPicker';
+import { ConversationMessagesSkeleton } from './ConversationMessagesSkeleton';
 import { ConversationActionsMenu } from './ConversationActionsMenu';
 import { DeleteConversationConfirmModal } from './DeleteConversationConfirmModal';
 import { DeleteMessageConfirmModal } from './DeleteMessageConfirmModal';
@@ -938,16 +939,6 @@ export function ConversationDetail({
 
   const containerClassName = `w-full ${className}`;
 
-  if (loading) {
-    return (
-      <div className={containerClassName}>
-        <div className="bg-white dark:bg-black rounded-2xl border border-gray-200 dark:border-gray-800 p-4">
-          <div className="text-sm text-gray-600 dark:text-gray-400">{t('messages.loading', 'Načítavam…')}</div>
-        </div>
-      </div>
-    );
-  }
-
   const hasTextToSend = text.trim().length > 0;
   const isComposerInputDisabled = !isMobile && sending;
 
@@ -1012,7 +1003,9 @@ export function ConversationDetail({
             isMobile ? MOBILE_MESSAGE_SIDE_PADDING_CLASS : DESKTOP_MESSAGE_SIDE_PADDING_CLASS
           }`}
         >
-          {ordered.length === 0 ? (
+          {loading ? (
+            <ConversationMessagesSkeleton isMobile={isMobile} />
+          ) : ordered.length === 0 ? (
             <div className="text-sm text-gray-600 dark:text-gray-400 text-center py-8">
               {t('messages.noMessagesYet', 'Zatiaľ bez správ')}
             </div>
@@ -1042,7 +1035,7 @@ export function ConversationDetail({
                   : m.text;
                 const bubbleClassName = [
                   'w-fit max-w-full rounded-2xl px-3 py-2 text-sm',
-                  mine
+                  mine && !m.is_deleted
                     ? 'bg-brand text-white'
                     : 'bg-gray-100 dark:bg-[#141416] text-gray-900 dark:text-gray-100 border border-gray-200/60 dark:border-gray-800',
                 ].join(' ');

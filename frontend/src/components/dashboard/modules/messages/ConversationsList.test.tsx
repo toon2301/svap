@@ -85,6 +85,18 @@ describe('ConversationsList', () => {
     ]);
   });
 
+  it('renders skeleton placeholders while the conversations list is loading', async () => {
+    (listConversations as jest.Mock).mockImplementation(
+      () => new Promise(() => undefined),
+    );
+
+    render(<ConversationsList currentUserId={1} variant="rail" />);
+
+    expect(screen.getByTestId('conversations-list-skeleton')).toBeInTheDocument();
+    expect(screen.getAllByTestId('conversation-skeleton-row')).toHaveLength(6);
+    expect(screen.queryByText('Loading...')).not.toBeInTheDocument();
+  });
+
   it('refreshes the list when a conversation refresh event is dispatched', async () => {
     (listConversations as jest.Mock)
       .mockResolvedValueOnce([

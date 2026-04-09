@@ -264,6 +264,27 @@ describe('ConversationDetail', () => {
     expect((input as HTMLInputElement).value).toBe('Ahoj');
   });
 
+  it('renders message skeleton placeholders while the initial messages request is loading', async () => {
+    const messagesRequest = deferred<MessageListPage>();
+    (listMessages as jest.Mock).mockReturnValue(messagesRequest.promise);
+
+    render(<ConversationDetail conversationId={9} currentUserId={1} />);
+
+    expect(await screen.findByTestId('conversation-messages-skeleton')).toBeInTheDocument();
+    expect(screen.getAllByTestId('conversation-message-skeleton-row')).toHaveLength(8);
+    expect(screen.queryByText(/bez/i)).not.toBeInTheDocument();
+
+    await act(async () => {
+      messagesRequest.resolve(messagePage([]));
+      await messagesRequest.promise;
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByTestId('conversation-messages-skeleton')).not.toBeInTheDocument();
+      expect(screen.getByText(/bez/i)).toBeInTheDocument();
+    });
+  });
+
   it('renders the request picker only when the conversation exposes requestable offers', async () => {
     render(<ConversationDetail conversationId={9} currentUserId={1} />);
 
@@ -364,6 +385,9 @@ describe('ConversationDetail', () => {
     render(<ConversationDetail conversationId={9} currentUserId={1} />);
 
     const headerTrigger = await screen.findByTestId('conversation-header-trigger');
+    await waitFor(() => {
+      expect(headerTrigger).not.toBeDisabled();
+    });
     fireEvent.click(headerTrigger);
 
     expect(profileEventSpy).toHaveBeenCalledTimes(1);
@@ -1423,7 +1447,7 @@ describe('ConversationDetail', () => {
     await waitFor(() => {
       expect(deleteMessage).toHaveBeenCalledWith(9, 1);
       expect(screen.queryByText('Moja sprava')).not.toBeInTheDocument();
-      expect(screen.getByText('Správa bola vymazaná')).toBeInTheDocument();
+      expect(screen.getByTestId('message-bubble-1')).toHaveTextContent(/vymazan/i);
     });
 
     expect(screen.queryByTestId('message-seen-indicator-1')).not.toBeInTheDocument();
@@ -1495,7 +1519,7 @@ describe('ConversationDetail', () => {
 
     await waitFor(() => {
       expect(screen.queryByText('Moja sprava')).not.toBeInTheDocument();
-      expect(screen.getByText('Správa bola vymazaná')).toBeInTheDocument();
+      expect(screen.getByTestId('message-bubble-3')).toHaveTextContent(/vymazan/i);
       expect(screen.getByText('Nova sprava')).toBeInTheDocument();
     });
   });

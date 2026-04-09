@@ -10,6 +10,7 @@ import toast from 'react-hot-toast';
 import type { ConversationListItem } from './types';
 import { getMessagingErrorMessage, hideConversation, listConversations } from './messagingApi';
 import { ConversationActionsMenu } from './ConversationActionsMenu';
+import { ConversationsListSkeleton } from './ConversationsListSkeleton';
 import { DeleteConversationConfirmModal } from './DeleteConversationConfirmModal';
 import {
   MESSAGING_CONVERSATIONS_REFRESH_EVENT,
@@ -49,6 +50,8 @@ export function ConversationsList({
   const isCompact = isSidebar || isRail;
   const showHoverAction = isRail;
   const shouldUseIntervalPolling = selectedConversationId == null;
+  const defaultWrapperClassName = isCompact ? 'space-y-2' : 'max-w-4xl mx-auto space-y-2';
+  const wrapperClassName = className || defaultWrapperClassName;
 
   const refresh = useCallback(
     async ({
@@ -205,25 +208,7 @@ export function ConversationsList({
   }, [refresh, shouldUseIntervalPolling]);
 
   if (loading) {
-    return (
-      <div className={className || (isCompact ? '' : 'max-w-4xl mx-auto')}>
-        {isRail ? (
-          <div className="px-3 py-2 text-sm text-gray-600 dark:text-gray-400">
-            {t('messages.loading', 'Loading...')}
-          </div>
-        ) : (
-          <div
-            className={`bg-white dark:bg-black rounded-2xl border border-gray-200 dark:border-gray-800 ${
-              isSidebar ? 'p-3' : 'p-4'
-            }`}
-          >
-            <div className="text-sm text-gray-600 dark:text-gray-400">
-              {t('messages.loading', 'Loading...')}
-            </div>
-          </div>
-        )}
-      </div>
-    );
+    return <ConversationsListSkeleton variant={variant} className={wrapperClassName} />;
   }
 
   if (items.length === 0) {
@@ -257,7 +242,7 @@ export function ConversationsList({
   }
 
   return (
-    <div className={className || (isCompact ? 'space-y-2' : 'max-w-4xl mx-auto space-y-2')}>
+    <div className={wrapperClassName}>
       {items.map((conversation) => {
         const other = conversation.other_user;
         const title = other?.display_name || t('messages.unknownUser', 'User');
@@ -311,72 +296,72 @@ export function ConversationsList({
               onClick={() => openConversation(conversation.id)}
               className="flex min-w-0 flex-1 items-center gap-3 text-left"
             >
-            <div
-              className={`rounded-full overflow-hidden flex items-center justify-center flex-shrink-0 ${
-                isCompact ? 'w-9 h-9' : 'w-11 h-11'
-              } ${
-                isSelected
-                  ? 'bg-purple-200 dark:bg-purple-800/70'
-                  : 'bg-purple-100 dark:bg-purple-900/40'
-              }`}
-            >
-              {other?.avatar_url ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={other.avatar_url} alt={title} className="w-full h-full object-cover" />
-              ) : (
-                <span
-                  className={`font-bold ${
+              <div
+                className={`rounded-full overflow-hidden flex items-center justify-center flex-shrink-0 ${
+                  isCompact ? 'w-9 h-9' : 'w-11 h-11'
+                } ${
+                  isSelected
+                    ? 'bg-purple-200 dark:bg-purple-800/70'
+                    : 'bg-purple-100 dark:bg-purple-900/40'
+                }`}
+              >
+                {other?.avatar_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={other.avatar_url} alt={title} className="w-full h-full object-cover" />
+                ) : (
+                  <span
+                    className={`font-bold ${
+                      isCompact ? 'text-[11px]' : 'text-sm'
+                    } ${
+                      isSelected
+                        ? 'text-purple-800 dark:text-purple-100'
+                        : 'text-purple-700 dark:text-purple-300'
+                    }`}
+                  >
+                    {(title || 'U').slice(0, 1).toUpperCase()}
+                  </span>
+                )}
+              </div>
+
+              <div
+                className={`min-w-0 flex-1 transition-[padding-right] duration-150 ${
+                  showHoverAction ? 'group-hover:pr-7 group-focus-visible:pr-7' : ''
+                }`}
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <span
+                    data-testid={showHoverAction ? `conversation-title-${conversation.id}` : undefined}
+                    className={`truncate ${
+                      isCompact ? 'text-xs' : 'text-base'
+                    } font-semibold ${isSelected ? 'text-purple-900 dark:text-white' : 'text-gray-900 dark:text-white'}`}
+                  >
+                    {title}
+                  </span>
+                  {isUnread ? (
+                    <span
+                      className={`inline-flex items-center justify-center rounded-full bg-purple-600 font-bold text-white flex-shrink-0 ${
+                        isCompact
+                          ? 'min-w-5 h-5 px-1.5 text-[10px]'
+                          : 'min-w-[22px] h-[22px] px-1.5 text-[11px]'
+                      }`}
+                      aria-label={`${unreadCount} unread messages`}
+                    >
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </span>
+                  ) : null}
+                </div>
+                <div
+                  className={`truncate ${
                     isCompact ? 'text-[11px]' : 'text-sm'
                   } ${
                     isSelected
-                      ? 'text-purple-800 dark:text-purple-100'
-                      : 'text-purple-700 dark:text-purple-300'
-                  }`}
+                      ? 'text-purple-700/90 dark:text-purple-200/90'
+                      : 'text-gray-600 dark:text-gray-400'
+                  } ${isUnread ? 'font-extrabold text-gray-900 dark:text-white' : 'font-normal'}`}
                 >
-                  {(title || 'U').slice(0, 1).toUpperCase()}
-                </span>
-              )}
-            </div>
-
-            <div
-              className={`min-w-0 flex-1 transition-[padding-right] duration-150 ${
-                showHoverAction ? 'group-hover:pr-7 group-focus-visible:pr-7' : ''
-              }`}
-            >
-              <div className="flex items-center gap-2 min-w-0">
-                <span
-                  data-testid={showHoverAction ? `conversation-title-${conversation.id}` : undefined}
-                  className={`truncate ${
-                    isCompact ? 'text-xs' : 'text-base'
-                  } font-semibold ${isSelected ? 'text-purple-900 dark:text-white' : 'text-gray-900 dark:text-white'}`}
-                >
-                  {title}
-                </span>
-                {isUnread ? (
-                  <span
-                    className={`inline-flex items-center justify-center rounded-full bg-purple-600 font-bold text-white flex-shrink-0 ${
-                      isCompact
-                        ? 'min-w-5 h-5 px-1.5 text-[10px]'
-                        : 'min-w-[22px] h-[22px] px-1.5 text-[11px]'
-                    }`}
-                    aria-label={`${unreadCount} unread messages`}
-                  >
-                    {unreadCount > 99 ? '99+' : unreadCount}
-                  </span>
-                ) : null}
+                  {preview}
+                </div>
               </div>
-              <div
-                className={`truncate ${
-                  isCompact ? 'text-[11px]' : 'text-sm'
-                } ${
-                  isSelected
-                    ? 'text-purple-700/90 dark:text-purple-200/90'
-                    : 'text-gray-600 dark:text-gray-400'
-                } ${isUnread ? 'font-extrabold text-gray-900 dark:text-white' : 'font-normal'}`}
-              >
-                {preview}
-              </div>
-            </div>
             </button>
 
             {showHoverAction ? (
