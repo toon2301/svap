@@ -57,6 +57,7 @@ const MOBILE_OWN_MESSAGE_BUBBLE_SUPPRESSION_STYLE: React.CSSProperties = {
   WebkitTouchCallout: 'none',
   WebkitUserSelect: 'none',
   userSelect: 'none',
+  touchAction: 'manipulation',
 };
 
 function formatTime(value: string): string {
@@ -181,6 +182,23 @@ export function ConversationDetail({
     messageLongPressTimerRef.current = null;
   }, []);
 
+  const clearActiveTextSelection = useCallback(() => {
+    if (typeof window !== 'undefined') {
+      window.getSelection?.()?.removeAllRanges();
+    }
+
+    if (typeof document === 'undefined') {
+      return;
+    }
+
+    const activeElement = document.activeElement;
+    if (!(activeElement instanceof HTMLElement) || activeElement === document.body) {
+      return;
+    }
+
+    activeElement.blur();
+  }, []);
+
   const suppressNativeMessageContextMenu = useCallback(
     (event: React.MouseEvent<HTMLDivElement>) => {
       if (!isMobile) return;
@@ -262,9 +280,13 @@ export function ConversationDetail({
     );
   }, [targetUserId, targetUserSlug]);
 
-  const openMessageActions = useCallback((messageId: number, anchorRect: DOMRect | null) => {
-    setMessageActionsTarget({ messageId, anchorRect });
-  }, []);
+  const openMessageActions = useCallback(
+    (messageId: number, anchorRect: DOMRect | null) => {
+      clearActiveTextSelection();
+      setMessageActionsTarget({ messageId, anchorRect });
+    },
+    [clearActiveTextSelection],
+  );
 
   const openConversationActions = useCallback((anchorRect: DOMRect | null) => {
     setConversationActionsAnchorRect(anchorRect);
@@ -398,6 +420,28 @@ export function ConversationDetail({
     // API vracia najnovšie prvé – v UI chceme chronologicky
     return [...messages].reverse();
   }, [messages]);
+
+  const selectedMessageForActions = useMemo(() => {
+    if (messageActionsTarget === null) {
+      return null;
+    }
+
+    return messages.find((item) => item.id === messageActionsTarget.messageId) ?? null;
+  }, [messageActionsTarget, messages]);
+
+  useEffect(() => {
+    if (messageActionsTarget === null) {
+      return;
+    }
+
+    if (
+      !selectedMessageForActions ||
+      selectedMessageForActions.is_deleted ||
+      selectedMessageForActions.sender?.id !== currentUserId
+    ) {
+      closeMessageActions();
+    }
+  }, [closeMessageActions, currentUserId, messageActionsTarget, selectedMessageForActions]);
 
   const lastSeenMessageId = useMemo(() => {
     const peerReadTimestamp = timestampValue(peerLastReadAt);
@@ -954,6 +998,14 @@ export function ConversationDetail({
 
   const hasTextToSend = text.trim().length > 0;
   const isComposerInputDisabled = !isMobile && sending;
+  const isMobileMessageActionsOpen = isMobile && messageActionsTarget !== null;
+  const selectedMessageActionPreview =
+    selectedMessageForActions && !selectedMessageForActions.is_deleted
+      ? {
+          text: selectedMessageForActions.text ?? '',
+          timestamp: formatTime(selectedMessageForActions.created_at),
+        }
+      : null;
 
   return (
     <div
@@ -1046,6 +1098,8 @@ export function ConversationDetail({
                 const displayText = m.is_deleted
                   ? t('messages.deleted', 'Správa bola vymazaná')
                   : m.text;
+                const isSelectedForMobileMessageActions =
+                  isMobileMessageActionsOpen && messageActionsTarget?.messageId === m.id;
                 const bubbleClassName = [
                   'w-fit max-w-full rounded-2xl px-3 py-2 text-sm',
                   mine && !m.is_deleted
@@ -1065,7 +1119,7 @@ export function ConversationDetail({
                     <div
                       className={`group flex min-w-0 flex-col items-end ${
                         isMobile ? 'max-w-full' : 'max-w-[80%]'
-                      }`}
+                      }${isSelectedForMobileMessageActions ? ' opacity-0 pointer-events-none' : ''}`}
                     >
                       {showTimestamp ? (
                         <div
@@ -1350,6 +1404,7 @@ export function ConversationDetail({
         open={messageActionsTarget !== null}
         isMobile={isMobile}
         anchorRect={messageActionsTarget?.anchorRect ?? null}
+        preview={selectedMessageActionPreview}
         onClose={closeMessageActions}
         onDelete={() => {
           if (messageActionsTarget === null) return;

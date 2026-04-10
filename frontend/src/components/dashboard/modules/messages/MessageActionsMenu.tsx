@@ -1,25 +1,73 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { TrashIcon } from '@heroicons/react/24/outline';
 import { useLanguage } from '@/contexts/LanguageContext';
+
+type MessageActionPreview = {
+  text: string;
+  timestamp?: string | null;
+};
 
 type MessageActionsMenuProps = {
   open: boolean;
   isMobile: boolean;
   anchorRect: DOMRect | null;
+  preview?: MessageActionPreview | null;
   onClose: () => void;
   onDelete: () => void;
 };
+
+const MOBILE_ACTIONS_INTERACTION_SUPPRESSION_STYLE: React.CSSProperties = {
+  WebkitTouchCallout: 'none',
+  WebkitUserSelect: 'none',
+  userSelect: 'none',
+  touchAction: 'manipulation',
+};
+
+function clamp(value: number, min: number, max: number): number {
+  if (max < min) {
+    return min;
+  }
+
+  return Math.min(Math.max(value, min), max);
+}
 
 export function MessageActionsMenu({
   open,
   isMobile,
   anchorRect,
+  preview = null,
   onClose,
   onDelete,
 }: MessageActionsMenuProps) {
   const { t } = useLanguage();
+  const [portalNode, setPortalNode] = useState<HTMLElement | null>(null);
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    setPortalNode(document.getElementById('app-root') ?? document.body);
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      event.preventDefault();
+      onClose();
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose, open]);
+
+  useEffect(() => {
+    if (!open || !isMobile || typeof window === 'undefined') return;
+
+    window.getSelection?.()?.removeAllRanges();
+  }, [isMobile, open]);
 
   const desktopPosition = useMemo(() => {
     if (typeof window === 'undefined' || !anchorRect) {
@@ -37,59 +85,153 @@ export function MessageActionsMenu({
     return { top, left };
   }, [anchorRect]);
 
+  const mobilePreviewPosition = useMemo(() => {
+    if (typeof window === 'undefined') {
+      return null;
+    }
+
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const horizontalPadding = 16;
+    const topPadding = 72;
+    const reservedBottomSpace = 300;
+    const fallbackWidth = Math.min(240, viewportWidth - horizontalPadding * 2);
+    const previewWidth =
+      anchorRect && anchorRect.width > 0
+        ? Math.min(anchorRect.width, viewportWidth - horizontalPadding * 2)
+        : fallbackWidth;
+    const previewLeft = anchorRect
+      ? clamp(anchorRect.left, horizontalPadding, viewportWidth - previewWidth - horizontalPadding)
+      : viewportWidth - previewWidth - horizontalPadding;
+    const previewTop = anchorRect
+      ? clamp(anchorRect.top, topPadding, viewportHeight - reservedBottomSpace)
+      : topPadding;
+
+    return {
+      left: previewLeft,
+      top: previewTop,
+      width: previewWidth,
+    };
+  }, [anchorRect]);
+
+  const suppressNativeContextMenu = (event: React.MouseEvent<HTMLElement>) => {
+    if (!isMobile) return;
+    event.preventDefault();
+  };
+
   if (!open) {
     return null;
   }
 
+  const mobileActions = (
+    <div
+      className="fixed inset-0 z-[105]"
+      role="dialog"
+      aria-modal="true"
+      aria-label={t('messages.openMessageActions', 'Otvoriť možnosti správy')}
+      data-testid="message-actions-dialog"
+      onContextMenu={suppressNativeContextMenu}
+      style={MOBILE_ACTIONS_INTERACTION_SUPPRESSION_STYLE}
+    >
+      <div
+        className="absolute inset-0 bg-white/82 backdrop-blur-md dark:bg-[#050506]/84"
+        data-testid="message-actions-backdrop"
+        onClick={onClose}
+      />
+
+      {preview && mobilePreviewPosition ? (
+        <div
+          className="pointer-events-none absolute"
+          data-testid="message-actions-mobile-preview"
+          style={{
+            ...MOBILE_ACTIONS_INTERACTION_SUPPRESSION_STYLE,
+            left: mobilePreviewPosition.left,
+            top: mobilePreviewPosition.top,
+            width: mobilePreviewPosition.width,
+          }}
+        >
+          {preview.timestamp ? (
+            <div className="mb-1.5 text-right text-[10px] tabular-nums text-gray-500 dark:text-gray-400">
+              {preview.timestamp}
+            </div>
+          ) : null}
+          <div className="ml-auto w-fit max-w-full rounded-2xl bg-brand px-3 py-2 text-sm text-white shadow-[0_16px_40px_rgba(15,23,42,0.18)] ring-1 ring-black/5">
+            <div className="whitespace-pre-wrap break-words">{preview.text}</div>
+          </div>
+        </div>
+      ) : null}
+
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))]">
+        <div
+          className="pointer-events-auto overflow-hidden rounded-[1.75rem] border border-gray-200 bg-white/96 shadow-[0_-8px_40px_rgba(15,23,42,0.16)] backdrop-blur-xl dark:border-gray-800 dark:bg-[#0f0f10]/96"
+          data-testid="message-actions-menu"
+          onClick={(event) => event.stopPropagation()}
+          onContextMenu={suppressNativeContextMenu}
+          style={MOBILE_ACTIONS_INTERACTION_SUPPRESSION_STYLE}
+        >
+          <div className="px-4 pb-4 pt-3">
+            <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-gray-300 dark:bg-gray-700" />
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                onDelete();
+              }}
+              onContextMenu={suppressNativeContextMenu}
+              className="flex w-full select-none items-center gap-3 rounded-2xl px-4 py-3 text-left text-sm font-medium text-red-600 transition-colors hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
+              data-testid="message-delete-action"
+              style={MOBILE_ACTIONS_INTERACTION_SUPPRESSION_STYLE}
+            >
+              <TrashIcon className="h-5 w-5" />
+              <span>{t('messages.deleteAction', 'Vymazať')}</span>
+            </button>
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                onClose();
+              }}
+              onContextMenu={suppressNativeContextMenu}
+              className="mt-2 flex w-full select-none items-center justify-center rounded-2xl px-4 py-3 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800/60"
+              style={MOBILE_ACTIONS_INTERACTION_SUPPRESSION_STYLE}
+            >
+              {t('common.cancel', 'Zrušiť')}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  if (isMobile) {
+    if (!portalNode) {
+      return null;
+    }
+
+    return createPortal(mobileActions, portalNode);
+  }
+
   return (
     <div
-      className={`fixed inset-0 z-[105] ${isMobile ? 'bg-black/35' : 'bg-transparent'}`}
+      className="fixed inset-0 z-[105] bg-transparent"
       onClick={onClose}
       data-testid="message-actions-menu"
     >
-      {isMobile ? (
-        <div className="absolute inset-x-0 bottom-0 rounded-t-3xl border border-gray-200 bg-white p-4 shadow-2xl dark:border-gray-800 dark:bg-[#0f0f10]">
-          <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-gray-300 dark:bg-gray-700" />
-          <button
-            type="button"
-            onClick={(event) => {
-              event.stopPropagation();
-              onDelete();
-            }}
-            className="flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left text-sm font-medium text-red-600 transition-colors hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
-            data-testid="message-delete-action"
-          >
-            <TrashIcon className="h-5 w-5" />
-            <span>{t('messages.deleteAction', 'Vymazať')}</span>
-          </button>
-          <button
-            type="button"
-            onClick={(event) => {
-              event.stopPropagation();
-              onClose();
-            }}
-            className="mt-2 flex w-full items-center justify-center rounded-2xl px-4 py-3 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800/60"
-          >
-            {t('common.cancel', 'Zrušiť')}
-          </button>
-        </div>
-      ) : (
-        <div
-          className="absolute w-48 rounded-2xl border border-gray-200 bg-white p-1.5 shadow-2xl dark:border-gray-800 dark:bg-[#0f0f10]"
-          style={desktopPosition ?? undefined}
-          onClick={(event) => event.stopPropagation()}
+      <div
+        className="absolute w-48 rounded-2xl border border-gray-200 bg-white p-1.5 shadow-2xl dark:border-gray-800 dark:bg-[#0f0f10]"
+        style={desktopPosition ?? undefined}
+        onClick={(event) => event.stopPropagation()}
+      >
+        <button
+          type="button"
+          onClick={onDelete}
+          className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-red-600 transition-colors hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
+          data-testid="message-delete-action"
         >
-          <button
-            type="button"
-            onClick={onDelete}
-            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-red-600 transition-colors hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
-            data-testid="message-delete-action"
-          >
-            <TrashIcon className="h-4 w-4" />
-            <span>{t('messages.deleteAction', 'Vymazať')}</span>
-          </button>
-        </div>
-      )}
+          <TrashIcon className="h-4 w-4" />
+          <span>{t('messages.deleteAction', 'Vymazať')}</span>
+        </button>
+      </div>
     </div>
   );
 }

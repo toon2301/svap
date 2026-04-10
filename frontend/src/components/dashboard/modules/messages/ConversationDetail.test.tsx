@@ -1496,6 +1496,15 @@ describe('ConversationDetail', () => {
 
     expect(await screen.findByTestId('message-actions-menu')).toBeInTheDocument();
     expect(screen.getByTestId('message-delete-action')).toBeInTheDocument();
+    expect(screen.getByTestId('message-actions-mobile-preview')).toHaveTextContent(
+      'Moja mobilna sprava',
+    );
+
+    fireEvent.click(screen.getByTestId('message-actions-backdrop'));
+
+    await waitFor(() => {
+      expect(screen.queryByTestId('message-actions-menu')).not.toBeInTheDocument();
+    });
   });
 
   it('updates the open conversation when a realtime delete event arrives', async () => {
