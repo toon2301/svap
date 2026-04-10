@@ -5,6 +5,7 @@ import MessagesModule from '../MessagesModule';
 jest.mock('@/hooks', () => ({
   __esModule: true,
   useIsMobile: jest.fn(),
+  useIsMobileState: jest.fn(),
 }));
 
 jest.mock('../messages/ConversationsList', () => ({
@@ -28,18 +29,21 @@ jest.mock('../messages/DraftConversationDetail', () => ({
   ),
 }));
 
-const { useIsMobile } = jest.requireMock('@/hooks') as {
-  useIsMobile: jest.Mock;
+const { useIsMobileState } = jest.requireMock('@/hooks') as {
+  useIsMobileState: jest.Mock;
 };
 
 describe('MessagesModule', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+
+    useIsMobileState.mockReturnValue({
+      isMobile: false,
+      isResolved: true,
+    });
   });
 
   it('renders desktop empty state without embedding the conversations rail', () => {
-    useIsMobile.mockReturnValue(false);
-
     render(<MessagesModule currentUserId={1} />);
 
     expect(screen.getByText(/Spr/)).toBeInTheDocument();
@@ -47,8 +51,6 @@ describe('MessagesModule', () => {
   });
 
   it('renders desktop detail content without the in-module conversations rail', () => {
-    useIsMobile.mockReturnValue(false);
-
     render(<MessagesModule currentUserId={1} conversationId={7} />);
 
     expect(screen.getByText('ConversationDetail:7')).toBeInTheDocument();
@@ -56,8 +58,6 @@ describe('MessagesModule', () => {
   });
 
   it('renders desktop draft compose content when target user id is present', () => {
-    useIsMobile.mockReturnValue(false);
-
     render(<MessagesModule currentUserId={1} targetUserId={42} />);
 
     expect(screen.getByText('DraftConversationDetail:42')).toBeInTheDocument();
@@ -65,7 +65,10 @@ describe('MessagesModule', () => {
   });
 
   it('keeps the mobile list flow unchanged', () => {
-    useIsMobile.mockReturnValue(true);
+    useIsMobileState.mockReturnValue({
+      isMobile: true,
+      isResolved: true,
+    });
 
     render(<MessagesModule currentUserId={1} />);
 
@@ -74,7 +77,10 @@ describe('MessagesModule', () => {
   });
 
   it('renders the draft compose detail on mobile too', () => {
-    useIsMobile.mockReturnValue(true);
+    useIsMobileState.mockReturnValue({
+      isMobile: true,
+      isResolved: true,
+    });
 
     render(<MessagesModule currentUserId={1} targetUserId={55} />);
 
@@ -83,7 +89,10 @@ describe('MessagesModule', () => {
   });
 
   it('stretches the mobile conversation detail flow to the full available height', () => {
-    useIsMobile.mockReturnValue(true);
+    useIsMobileState.mockReturnValue({
+      isMobile: true,
+      isResolved: true,
+    });
 
     render(<MessagesModule currentUserId={1} conversationId={7} />);
 
@@ -96,7 +105,10 @@ describe('MessagesModule', () => {
   });
 
   it('stretches the mobile draft compose flow to the full available height', () => {
-    useIsMobile.mockReturnValue(true);
+    useIsMobileState.mockReturnValue({
+      isMobile: true,
+      isResolved: true,
+    });
 
     render(<MessagesModule currentUserId={1} targetUserId={55} />);
 
@@ -106,6 +118,18 @@ describe('MessagesModule', () => {
     expect(wrapper).toHaveClass('min-h-0');
     expect(wrapper).toHaveClass('w-full');
     expect(wrapper).toHaveClass('flex-col');
+  });
+
+  it('shows only the safe loading fallback until the viewport is resolved', () => {
+    useIsMobileState.mockReturnValue({
+      isMobile: false,
+      isResolved: false,
+    });
+
+    render(<MessagesModule currentUserId={1} />);
+
+    expect(screen.getByTestId('conversations-list-skeleton')).toBeInTheDocument();
+    expect(screen.queryByText('ConversationsList:none')).not.toBeInTheDocument();
   });
 });
 

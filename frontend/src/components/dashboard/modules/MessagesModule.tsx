@@ -3,11 +3,37 @@
 
 import React from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useIsMobile } from '@/hooks';
+import { useIsMobileState } from '@/hooks';
 import { ChatBubbleLeftRightIcon } from '@heroicons/react/24/outline';
 import { ConversationsList } from './messages/ConversationsList';
+import { ConversationsListSkeleton } from './messages/ConversationsListSkeleton';
 import { ConversationDetail } from './messages/ConversationDetail';
 import { DraftConversationDetail } from './messages/DraftConversationDetail';
+
+function MessagesDesktopPlaceholder({ title }: { title: string }) {
+  return (
+    <div className="flex h-full min-h-0 items-center justify-center">
+      <div className="flex flex-col items-center text-center">
+        <ChatBubbleLeftRightIcon className="mb-4 h-28 w-28 text-black dark:text-white" />
+        <h2 className="text-4xl font-semibold text-gray-900 dark:text-white">{title}</h2>
+      </div>
+    </div>
+  );
+}
+
+function MessagesViewportPendingState({ title }: { title: string }) {
+  return (
+    <div className="w-full text-[var(--foreground)] lg:flex lg:h-full lg:min-h-0 lg:flex-col">
+      <div className="w-full lg:hidden">
+        <ConversationsListSkeleton />
+      </div>
+
+      <div className="hidden h-full min-h-0 lg:flex">
+        <MessagesDesktopPlaceholder title={title} />
+      </div>
+    </div>
+  );
+}
 
 export default function MessagesModule({
   conversationId,
@@ -19,8 +45,14 @@ export default function MessagesModule({
   currentUserId: number;
 }) {
   const { t } = useLanguage();
-  const isMobile = useIsMobile();
-  const shouldFillMobileHeight = Boolean(conversationId || targetUserId);
+  const { isMobile, isResolved: isViewportResolved } = useIsMobileState();
+  const hasActiveConversation = Boolean(conversationId || targetUserId);
+  const shouldFillMobileHeight = hasActiveConversation;
+  const messagesTitle = t('messages.title', 'Messages');
+
+  if (!hasActiveConversation && !isViewportResolved) {
+    return <MessagesViewportPendingState title={messagesTitle} />;
+  }
 
   if (isMobile) {
     return (
@@ -53,14 +85,7 @@ export default function MessagesModule({
       ) : targetUserId ? (
         <DraftConversationDetail targetUserId={targetUserId} className="max-w-none mx-0" />
       ) : (
-        <div className="flex h-full min-h-0 items-center justify-center">
-          <div className="flex flex-col items-center text-center">
-            <ChatBubbleLeftRightIcon className="w-28 h-28 text-black dark:text-white mb-4" />
-            <h2 className="text-4xl font-semibold text-gray-900 dark:text-white">
-              {t('messages.title', 'Messages')}
-            </h2>
-          </div>
-        </div>
+        <MessagesDesktopPlaceholder title={messagesTitle} />
       )}
     </div>
   );
