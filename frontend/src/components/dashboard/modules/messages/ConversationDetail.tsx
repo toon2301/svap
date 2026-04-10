@@ -1075,8 +1075,12 @@ export function ConversationDetail({
               {t('messages.noMessagesYet', 'Zatiaľ bez správ')}
             </div>
           ) : (
-            <div className="space-y-2">
-              {ordered.map((m, index) => {
+            <div
+              data-testid="conversation-messages-stack"
+              className="flex min-h-full flex-col justify-end"
+            >
+              <div className="space-y-2">
+                {ordered.map((m, index) => {
                 const mine = m.sender?.id === currentUserId;
                 const prev = index > 0 ? ordered[index - 1] : null;
                 const next = index < ordered.length - 1 ? ordered[index + 1] : null;
@@ -1260,7 +1264,8 @@ export function ConversationDetail({
                     </div>
                   </div>
                 );
-              })}
+                })}
+              </div>
             </div>
           )}
           <div ref={bottomRef} />

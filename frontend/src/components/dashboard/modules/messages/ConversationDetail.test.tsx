@@ -369,6 +369,30 @@ describe('ConversationDetail', () => {
     expect(messagesScroll.className).toContain('overflow-y-auto');
   });
 
+  it('anchors loaded messages to the bottom of the scroll area', async () => {
+    (listMessages as jest.Mock).mockResolvedValueOnce(
+      messagePage([
+        message({
+          id: 1,
+          sender: { id: 1, display_name: 'Me' },
+          text: 'Jedna sprava',
+          created_at: '2026-03-27T10:00:00Z',
+        }),
+      ]),
+    );
+
+    render(<ConversationDetail conversationId={9} currentUserId={1} />);
+
+    expect(await screen.findByText('Jedna sprava')).toBeInTheDocument();
+
+    const messagesStack = screen.getByTestId('conversation-messages-stack');
+
+    expect(messagesStack.className).toContain('flex');
+    expect(messagesStack.className).toContain('min-h-full');
+    expect(messagesStack.className).toContain('flex-col');
+    expect(messagesStack.className).toContain('justify-end');
+  });
+
   it('opens the other user profile when the desktop conversation header is clicked', async () => {
     const profileEventSpy = jest.fn();
     window.addEventListener('goToUserProfile', profileEventSpy as EventListener);
