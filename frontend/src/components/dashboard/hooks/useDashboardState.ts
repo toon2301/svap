@@ -54,8 +54,7 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
   const { user: authUser, isLoading: authLoading, refreshUser: refreshAuthUser, logout: authLogout, updateUser: updateAuthUser } = useAuth();
   const [user, setUser] = useState<User | null>(initialUser || authUser || null);
   const userRef = useRef<User | null>(initialUser || authUser || null); // Ref pre sledovanie zmien slugu
-  const [isLoading, setIsLoading] = useState(() => !initialUser && !authUser && authLoading);
-  const hasCheckedAuth = useRef(false);
+  const isLoading = !initialUser && authLoading;
   
   // Inicializácia modulu - používame initialModule ak je poskytnutý (rovnaký pre SSR aj CSR)
   // Ak nie, použijeme 'home' (hydration fix)
@@ -175,76 +174,39 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
   }, []);
 
   useEffect(() => {
-    // Ak už bola auth kontrola vykonaná, nevykonávať znova
-    if (hasCheckedAuth.current) return;
-    hasCheckedAuth.current = true;
+    if (typeof window === 'undefined' || sessionStorage.getItem('forceHome') !== '1') return;
 
-    const checkAuth = async () => {
-      if (typeof window !== 'undefined' && sessionStorage.getItem('forceHome') === '1') {
-        setActiveModule('home');
-        setIsRightSidebarOpen(false);
-        try {
-          localStorage.setItem('activeModule', 'home');
-          sessionStorage.removeItem('forceHome');
-        } catch {
-          // ignore
-        }
-      }
+    setActiveModule('home');
+    setIsRightSidebarOpen(false);
+    try {
+      localStorage.setItem('activeModule', 'home');
+      sessionStorage.removeItem('forceHome');
+    } catch {
+      // ignore
+    }
+  }, []);
 
-      if (initialUser) {
-        setIsLoading(false);
-        return;
-      }
-
-      // Ak authUser je už v AuthContext (napr. navigácia z /search), zobrazíme dashboard okamžite.
-      // Nepúšťame hneď druhý /auth/me/ refresh:
-      // po login/Google OAuth už AuthContext drží čerstvého používateľa a
-      // tento extra background call len duplikuje sieťový bootstrap dashboardu.
-      if (authUser && !authLoading) {
-        userRef.current = authUser;
-        setUser(authUser);
-        setIsLoading(false);
-        return;
-      }
-
-      // Single source of truth pre identity: AuthContext (/auth/me s requestId guardom).
-      try {
-        setIsLoading(true);
-        await refreshAuthUser();
-      } catch {
-        // ignore - redirect riešime nižšie podľa authUser/authLoading
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    checkAuth();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialUser, refreshAuthUser]); // Auth kontrola pri mounte (a pri zmene initialUser)
-
-  // Mirror AuthContext user do dashboard state (bez vlastných /me requestov).
+  // Dashboard state iba mirroruje AuthContext bootstrap; nesmie spúšťať vlastné
+  // /auth/me refresh cykly pri každom novom mounte dashboard shellu.
   useEffect(() => {
     if (initialUser) {
       userRef.current = initialUser;
       setUser(initialUser);
-      setIsLoading(false);
       return;
     }
 
-    // Kľúčové: nepresmerovať, kým beží auth refresh iniciovaný checkAuth().
-    if (authLoading || isLoading) return;
+    // Kľúčové: nepresmerovať, kým AuthContext ešte len dokončuje bootstrap.
+    if (authLoading) return;
 
     if (authUser) {
       userRef.current = authUser;
       setUser(authUser);
-      setIsLoading(false);
       return;
     }
 
     clearAuthState();
     router.push('/');
-    setIsLoading(false);
-  }, [authUser, authLoading, initialUser, isLoading, router]);
+  }, [authUser, authLoading, initialUser, router]);
 
   const handleModuleChange = useCallback(
     (moduleId: string) => {

@@ -496,7 +496,7 @@ export default function DashboardContent({
   }
 
   if (!user) {
-    return dashboardLoadingScreen;
+    return <div className="min-h-screen bg-[var(--background)]" aria-hidden="true" />;
   }
 
   // Module content pre ModuleRouter

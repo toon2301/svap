@@ -81,18 +81,25 @@ describe('profile edit navigation flow', () => {
     expect(mockRefreshUser).not.toHaveBeenCalled();
   });
 
-  it('redirects home after auth bootstrap finishes without an authenticated user', async () => {
-    mockRefreshUser.mockResolvedValue(undefined);
+  it('waits for auth bootstrap to resolve before redirecting without an authenticated user', async () => {
+    mockAuthLoading = true;
 
-    const { result } = renderHook(() => useDashboardState(undefined, 'home'));
+    const { result, rerender } = renderHook(() => useDashboardState(undefined, 'home'));
+
+    expect(result.current.isLoading).toBe(true);
+    expect(mockPush).not.toHaveBeenCalled();
+    expect(mockRefreshUser).not.toHaveBeenCalled();
+
+    mockAuthLoading = false;
+    rerender();
 
     await waitFor(() => {
-      expect(mockRefreshUser).toHaveBeenCalledTimes(1);
       expect(mockPush).toHaveBeenCalledWith('/');
     });
 
     expect(result.current.user).toBeNull();
     expect(result.current.isLoading).toBe(false);
+    expect(mockRefreshUser).not.toHaveBeenCalled();
   });
 
   it('opens and cleanly closes own profile edit with synchronized URL', () => {
