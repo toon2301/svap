@@ -22,11 +22,11 @@ export function MessageComposerImagePreview({
       data-testid="message-composer-image-preview"
       className="border-b border-gray-200 px-3 pb-3 pt-3 dark:border-gray-800"
     >
-      <div className="relative overflow-hidden rounded-2xl border border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-[#141416]">
+      <div className="relative w-fit max-w-[min(100%,16rem)] overflow-hidden rounded-2xl border border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-[#141416]">
         <img
           src={previewUrl}
           alt={t('messages.imagePreview', 'Náhľad obrázka')}
-          className="block max-h-56 w-full object-cover"
+          className="block h-auto max-h-40 w-auto max-w-full object-contain"
         />
         <button
           type="button"

@@ -1,4 +1,4 @@
-import { createEvent, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { createEvent, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { DraftConversationDetail } from './DraftConversationDetail';
 import { openConversation, sendDirectMessage } from './messagingApi';
@@ -164,7 +164,11 @@ describe('DraftConversationDetail', () => {
       target: { files: [attachment] },
     });
 
-    expect(await screen.findByTestId('message-composer-image-preview')).toBeInTheDocument();
+    const preview = await screen.findByTestId('message-composer-image-preview');
+    const previewImage = within(preview).getByRole('img');
+    expect(previewImage.className).toContain('object-contain');
+    expect(previewImage.className).not.toContain('object-cover');
+    expect(previewImage.className).toContain('max-h-40');
 
     fireEvent.click(screen.getByRole('button', { name: /odosla/i }));
 

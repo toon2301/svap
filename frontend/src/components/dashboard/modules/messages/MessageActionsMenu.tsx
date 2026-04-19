@@ -162,12 +162,12 @@ export function MessageActionsMenu({
               {preview.timestamp}
             </div>
           ) : null}
-          <div className="ml-auto w-fit max-w-full overflow-hidden rounded-2xl bg-brand text-sm text-white shadow-[0_16px_40px_rgba(15,23,42,0.18)] ring-1 ring-black/5">
+          <div className="ml-auto w-fit max-w-[min(75vw,18rem)] overflow-hidden rounded-2xl bg-brand text-sm text-white shadow-[0_16px_40px_rgba(15,23,42,0.18)] ring-1 ring-black/5">
             {preview.imageUrl ? (
               <img
                 src={preview.imageUrl}
                 alt={t('messages.imagePreview', 'Náhľad obrázka')}
-                className="block max-h-56 w-full object-cover"
+                className="block h-auto max-h-40 w-auto max-w-full object-contain"
               />
             ) : null}
             {preview.text ? (

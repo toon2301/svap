@@ -1321,13 +1321,13 @@ export function ConversationDetail({
                         type="button"
                         data-testid={`message-image-trigger-${m.id}`}
                         onClick={(event) => handleMessageImageClick(event, m.id, messageImageUrl)}
-                        className="block w-full cursor-zoom-in rounded-xl focus:outline-none focus:ring-2 focus:ring-white/50 dark:focus:ring-brand/50"
+                        className="block w-fit max-w-full cursor-zoom-in rounded-xl focus:outline-none focus:ring-2 focus:ring-white/50 dark:focus:ring-brand/50"
                         aria-label={t('messages.openImagePreview', 'Otvoriť obrázok na celú obrazovku')}
                       >
                         <img
                           src={messageImageUrl}
                           alt={imagePreviewAlt}
-                          className="block max-h-72 w-full max-w-full rounded-xl object-cover"
+                          className="block h-auto max-h-[22rem] w-auto max-w-[min(75vw,18rem)] rounded-xl object-contain"
                         />
                       </button>
                     ) : null}

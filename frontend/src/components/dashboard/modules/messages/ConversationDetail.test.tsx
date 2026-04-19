@@ -451,7 +451,11 @@ describe('ConversationDetail', () => {
       target: { files: [attachment] },
     });
 
-    expect(await screen.findByTestId('message-composer-image-preview')).toBeInTheDocument();
+    const preview = await screen.findByTestId('message-composer-image-preview');
+    const previewImage = within(preview).getByRole('img');
+    expect(previewImage.className).toContain('object-contain');
+    expect(previewImage.className).not.toContain('object-cover');
+    expect(previewImage.className).toContain('max-h-40');
 
     const input = screen.getByRole('textbox');
     fireEvent.change(input, { target: { value: 'Ahoj s obrazkom' } });
@@ -1540,6 +1544,9 @@ describe('ConversationDetail', () => {
     const imageElement = within(bubble).getByRole('img');
 
     expect(imageElement).toHaveAttribute('src', 'https://example.com/chat-image.png');
+    expect(imageElement.className).toContain('object-contain');
+    expect(imageElement.className).not.toContain('object-cover');
+    expect(imageElement.className).toContain('max-w-[min(75vw,18rem)]');
     expect(within(bubble).getByText('Sprava s obrazkom')).toBeInTheDocument();
   });
 
