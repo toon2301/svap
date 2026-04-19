@@ -20,15 +20,39 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+type AuthBootstrapSnapshot = {
+  initialized: boolean;
+  user: User | null;
+};
+
+// Keep the resolved auth bootstrap in memory for the current browser runtime.
+// This avoids repeating the dashboard loading flash when shared providers remount
+// during internal App Router navigations.
+const authBootstrapSnapshot: AuthBootstrapSnapshot = {
+  initialized: false,
+  user: null,
+};
+
+function syncAuthBootstrapSnapshot(user: User | null, initialized = true) {
+  authBootstrapSnapshot.initialized = initialized;
+  authBootstrapSnapshot.user = user;
+}
+
+export function __resetAuthBootstrapSnapshotForTests() {
+  syncAuthBootstrapSnapshot(null, false);
+}
+
 interface AuthProviderProps {
   children: ReactNode;
 }
 
 export function AuthProvider({ children }: AuthProviderProps) {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [user, setUser] = useState<User | null>(() =>
+    authBootstrapSnapshot.initialized ? authBootstrapSnapshot.user : null,
+  );
+  const [isLoading, setIsLoading] = useState(() => !authBootstrapSnapshot.initialized);
   const router = useRouter();
-  const userRef = useRef<User | null>(null);
+  const userRef = useRef<User | null>(authBootstrapSnapshot.initialized ? authBootstrapSnapshot.user : null);
 
   // Deterministic /me refresh:
   // - Each refreshUser call gets a requestId and sets latestRequestId.
@@ -43,6 +67,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
   useEffect(() => {
     userRef.current = user;
   }, [user]);
+
+  const applyResolvedUser = useCallback((nextUser: User | null) => {
+    userRef.current = nextUser;
+    setUser(nextUser);
+    syncAuthBootstrapSnapshot(nextUser, true);
+  }, []);
 
   const refreshUser = useCallback(async (options?: { force?: boolean }) => {
     // Explicit logout in progress => do not run /me requests.
@@ -81,14 +111,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
         if (logoutInProgressRef.current) return;
 
         if (resp?.status === 200 && resp.data) {
-          userRef.current = resp.data;
-          setUser(resp.data);
+          applyResolvedUser(resp.data);
           setMayHaveRefreshCookie(true);
           return;
         }
 
-        userRef.current = null;
-        setUser(null);
+        applyResolvedUser(null);
       } catch (error: any) {
         // Ignore stale errors
         if (requestId !== latestRequestIdRef.current) return;
@@ -112,15 +140,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
         // Pri 401 interceptor už skúsil refresh; ak zlyhal, markSessionInvalid() je zavolaný.
         // Iba nastav user=null – setMayHaveRefreshCookie nevoláme (interceptor to rieši).
         if (status === 401) {
-          userRef.current = null;
-          setUser(null);
+          applyResolvedUser(null);
           return;
         }
 
         console.error('Error refreshing user:', error);
         if (userRef.current) return;
-        userRef.current = null;
-        setUser(null);
+        applyResolvedUser(null);
       } finally {
         // Clear refs only if this request is still the latest in charge.
         if (requestId === latestRequestIdRef.current) {
@@ -132,7 +158,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     mePromiseRef.current = p;
     return p;
-  }, []);
+  }, [applyResolvedUser]);
 
   // Cleanup: abort pending /me request on unmount
   useEffect(() => {
@@ -159,8 +185,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       mePromiseRef.current = null;
 
       setMayHaveRefreshCookie(false);
-      userRef.current = null;
-      setUser(null);
+      applyResolvedUser(null);
+      setIsLoading(false);
 
       // Presmerovať len ak sme na chránenej trase – na verejných (/register, /login, …) nepresmerovať
       const path = typeof window !== 'undefined' ? window.location.pathname : '';
@@ -171,10 +197,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
     };
     window.addEventListener('auth:session-invalid', handler);
     return () => window.removeEventListener('auth:session-invalid', handler);
-  }, [router]);
+  }, [applyResolvedUser, router]);
 
   // Auth stav určujeme výhradne cez `/api/auth/me/` (HttpOnly cookies).
   useEffect(() => {
+    if (authBootstrapSnapshot.initialized) {
+      userRef.current = authBootstrapSnapshot.user;
+      setUser(authBootstrapSnapshot.user);
+      setIsLoading(false);
+      return;
+    }
+
     let cancelled = false;
 
     const wait = async (ms: number) =>
@@ -206,6 +239,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         }
       } finally {
         if (!cancelled) {
+          authBootstrapSnapshot.initialized = true;
           setIsLoading(false);
         }
       }
@@ -298,8 +332,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         }
       } finally {
         clearAuthState();
-        userRef.current = null;
-        setUser(null);
+        applyResolvedUser(null);
         setIsLoading(false);
         logoutInProgressRef.current = false;
         router.replace('/');
@@ -310,8 +343,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const updateUser = (userData: Partial<User>) => {
     if (user) {
       const updatedUser = { ...user, ...userData };
-      userRef.current = updatedUser;
-      setUser(updatedUser);
+      applyResolvedUser(updatedUser);
     }
   };
 

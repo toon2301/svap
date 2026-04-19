@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 
-import { AuthProvider, useAuth } from '../AuthContext';
+import { __resetAuthBootstrapSnapshotForTests, AuthProvider, useAuth } from '../AuthContext';
 import { api, endpoints, invalidateSession } from '@/lib/api';
 import { clearAuthState } from '@/utils/auth';
 import { fetchCsrfToken, hasCsrfToken } from '@/utils/csrf';
@@ -48,6 +48,13 @@ const mockInvalidateSession = invalidateSession as jest.MockedFunction<typeof in
 const mockClearAuthState = clearAuthState as jest.MockedFunction<typeof clearAuthState>;
 const mockFetchCsrfToken = fetchCsrfToken as jest.MockedFunction<typeof fetchCsrfToken>;
 const mockHasCsrfToken = hasCsrfToken as jest.MockedFunction<typeof hasCsrfToken>;
+const resolvedUser = {
+  id: 1,
+  email: 'test@example.com',
+  first_name: 'Test',
+  last_name: 'User',
+  is_verified: true,
+};
 
 function TestConsumer() {
   const { isLoading, isAuthenticated, logout } = useAuth();
@@ -66,6 +73,7 @@ function TestConsumer() {
 describe('AuthContext', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    __resetAuthBootstrapSnapshotForTests();
     localStorage.clear();
     sessionStorage.clear();
     mockApiGet.mockRejectedValue({ response: { status: 401 } });
@@ -87,6 +95,37 @@ describe('AuthContext', () => {
       expect(screen.getByText('Loading: no')).toBeInTheDocument();
       expect(screen.getByText('Authenticated: no')).toBeInTheDocument();
     });
+  });
+
+  it('reuses resolved authenticated bootstrap across provider remounts', async () => {
+    mockApiGet.mockResolvedValueOnce({ status: 200, data: resolvedUser } as any);
+
+    const firstRender = render(
+      <AuthProvider>
+        <TestConsumer />
+      </AuthProvider>,
+    );
+
+    expect(screen.getByText('Loading: yes')).toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(screen.getByText('Loading: no')).toBeInTheDocument();
+      expect(screen.getByText('Authenticated: yes')).toBeInTheDocument();
+    });
+
+    expect(mockApiGet).toHaveBeenCalledTimes(1);
+
+    firstRender.unmount();
+
+    render(
+      <AuthProvider>
+        <TestConsumer />
+      </AuthProvider>,
+    );
+
+    expect(screen.getByText('Loading: no')).toBeInTheDocument();
+    expect(screen.getByText('Authenticated: yes')).toBeInTheDocument();
+    expect(mockApiGet).toHaveBeenCalledTimes(1);
   });
 
   it('logout fetches CSRF token before server logout when token is missing', async () => {
@@ -139,6 +178,39 @@ describe('AuthContext', () => {
       expect(mockClearAuthState).toHaveBeenCalledTimes(1);
       expect(replaceMock).toHaveBeenCalledWith('/');
     });
+  });
+
+  it('clears the in-memory bootstrap snapshot on logout', async () => {
+    mockApiGet.mockResolvedValueOnce({ status: 200, data: resolvedUser } as any);
+
+    const firstRender = render(
+      <AuthProvider>
+        <TestConsumer />
+      </AuthProvider>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Authenticated: yes')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Logout' }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Authenticated: no')).toBeInTheDocument();
+      expect(mockClearAuthState).toHaveBeenCalledTimes(1);
+    });
+
+    firstRender.unmount();
+
+    render(
+      <AuthProvider>
+        <TestConsumer />
+      </AuthProvider>,
+    );
+
+    expect(screen.getByText('Loading: no')).toBeInTheDocument();
+    expect(screen.getByText('Authenticated: no')).toBeInTheDocument();
+    expect(mockApiGet).toHaveBeenCalledTimes(1);
   });
 
   it('throws error when useAuth is used outside provider', () => {
