@@ -252,7 +252,7 @@ export function ConversationsList({
               '{name}',
               title,
             );
-        const imageOnlyPreview = t('messages.imageOnlyPreview', 'ObrÃ¡zok');
+        const imageOnlyPreview = t('messages.imageOnlyPreview', 'Obrázok');
         const rawPreview =
           conversation.last_message_preview ||
           (conversation.last_message_has_image ? imageOnlyPreview : null) ||

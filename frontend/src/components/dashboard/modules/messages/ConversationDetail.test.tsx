@@ -4,6 +4,7 @@ import React from 'react';
 import { act, createEvent, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import toast from 'react-hot-toast';
 import { ConversationDetail } from './ConversationDetail';
+import { resolveMessagingImageUrl } from './resolveMessagingImageUrl';
 import {
   deleteMessage,
   getMessagingErrorMessage,
@@ -84,6 +85,8 @@ const clipboardWriteTextMock = jest.fn();
 const execCommandMock = jest.fn();
 const createObjectURLMock = jest.fn();
 const revokeObjectURLMock = jest.fn();
+const originalNextPublicApiUrl = process.env.NEXT_PUBLIC_API_URL;
+const originalNextPublicBackendOrigin = process.env.NEXT_PUBLIC_BACKEND_ORIGIN;
 
 jest.mock('next/navigation', () => ({
   useRouter: () => ({
@@ -187,6 +190,16 @@ const { useIsMobile } = jest.requireMock('@/hooks') as {
 describe('ConversationDetail', () => {
   beforeEach(() => {
     jest.resetAllMocks();
+    if (originalNextPublicApiUrl === undefined) {
+      delete process.env.NEXT_PUBLIC_API_URL;
+    } else {
+      process.env.NEXT_PUBLIC_API_URL = originalNextPublicApiUrl;
+    }
+    if (originalNextPublicBackendOrigin === undefined) {
+      delete process.env.NEXT_PUBLIC_BACKEND_ORIGIN;
+    } else {
+      process.env.NEXT_PUBLIC_BACKEND_ORIGIN = originalNextPublicBackendOrigin;
+    }
     useIsMobile.mockReturnValue(false);
     setVisibilityState('visible');
     Object.defineProperty(window, 'isSecureContext', {
@@ -253,6 +266,41 @@ describe('ConversationDetail', () => {
 
   afterEach(() => {
     jest.useRealTimers();
+  });
+
+  afterAll(() => {
+    if (originalNextPublicApiUrl === undefined) {
+      delete process.env.NEXT_PUBLIC_API_URL;
+    } else {
+      process.env.NEXT_PUBLIC_API_URL = originalNextPublicApiUrl;
+    }
+    if (originalNextPublicBackendOrigin === undefined) {
+      delete process.env.NEXT_PUBLIC_BACKEND_ORIGIN;
+    } else {
+      process.env.NEXT_PUBLIC_BACKEND_ORIGIN = originalNextPublicBackendOrigin;
+    }
+  });
+
+  it('rewrites authenticated message image URLs to the same-origin api path in proxied mode', () => {
+    process.env.NEXT_PUBLIC_API_URL = '/api';
+    delete process.env.NEXT_PUBLIC_BACKEND_ORIGIN;
+
+    expect(
+      resolveMessagingImageUrl(
+        'https://backend.example/api/auth/messaging/conversations/9/messages/1/image/',
+      ),
+    ).toBe('/api/auth/messaging/conversations/9/messages/1/image/');
+  });
+
+  it('keeps authenticated message image URLs absolute when the frontend talks to the backend directly', () => {
+    process.env.NEXT_PUBLIC_API_URL = 'http://localhost:8000/api';
+    delete process.env.NEXT_PUBLIC_BACKEND_ORIGIN;
+
+    expect(
+      resolveMessagingImageUrl(
+        'https://backend.example/api/auth/messaging/conversations/9/messages/1/image/',
+      ),
+    ).toBe('https://backend.example/api/auth/messaging/conversations/9/messages/1/image/');
   });
 
   it('shows a toast and re-enables sending when sendMessage fails', async () => {
@@ -1493,6 +1541,92 @@ describe('ConversationDetail', () => {
 
     expect(imageElement).toHaveAttribute('src', 'https://example.com/chat-image.png');
     expect(within(bubble).getByText('Sprava s obrazkom')).toBeInTheDocument();
+  });
+
+  it('rewrites a proxied message image URL and opens the lightbox from the message bubble', async () => {
+    process.env.NEXT_PUBLIC_API_URL = '/api';
+    delete process.env.NEXT_PUBLIC_BACKEND_ORIGIN;
+    (listMessages as jest.Mock).mockResolvedValueOnce(
+      messagePage([
+        message({
+          id: 1,
+          text: 'Sprava s proxied obrazkom',
+          image_url: 'https://backend.example/api/auth/messaging/conversations/9/messages/1/image/',
+          has_image: true,
+          created_at: '2026-03-27T10:00:00Z',
+        }),
+      ]),
+    );
+
+    render(<ConversationDetail conversationId={9} currentUserId={1} />);
+
+    const bubble = await screen.findByTestId('message-bubble-1');
+    const imageElement = within(bubble).getByRole('img');
+    expect(imageElement).toHaveAttribute('src', '/api/auth/messaging/conversations/9/messages/1/image/');
+
+    fireEvent.click(screen.getByTestId('message-image-trigger-1'));
+
+    expect(await screen.findByTestId('message-image-lightbox')).toBeInTheDocument();
+    expect(screen.getByTestId('message-image-lightbox-image')).toHaveAttribute(
+      'src',
+      '/api/auth/messaging/conversations/9/messages/1/image/',
+    );
+
+    fireEvent.click(screen.getByTestId('message-image-lightbox'));
+
+    await waitFor(() => {
+      expect(screen.queryByTestId('message-image-lightbox')).not.toBeInTheDocument();
+    });
+  });
+
+  it('closes the image lightbox on Escape and when the message is deleted in realtime', async () => {
+    (listMessages as jest.Mock).mockResolvedValueOnce(
+      messagePage([
+        message({
+          id: 3,
+          sender: { id: 1, display_name: 'Me' },
+          text: 'Moja sprava s obrazkom',
+          image_url: 'https://example.com/chat-image.png',
+          has_image: true,
+          created_at: '2026-03-27T10:02:00Z',
+        }),
+      ]),
+    );
+
+    render(<ConversationDetail conversationId={9} currentUserId={1} />);
+
+    await screen.findByText('Moja sprava s obrazkom');
+
+    fireEvent.click(screen.getByTestId('message-image-trigger-3'));
+    expect(await screen.findByTestId('message-image-lightbox')).toBeInTheDocument();
+
+    act(() => {
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByTestId('message-image-lightbox')).not.toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByTestId('message-image-trigger-3'));
+    expect(await screen.findByTestId('message-image-lightbox')).toBeInTheDocument();
+
+    act(() => {
+      window.dispatchEvent(
+        new CustomEvent(MESSAGING_REALTIME_DELETED_EVENT, {
+          detail: {
+            conversationId: 9,
+            messageId: 3,
+            deletedById: 1,
+          },
+        }),
+      );
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByTestId('message-image-lightbox')).not.toBeInTheDocument();
+      expect(screen.getByTestId('message-bubble-3')).toHaveTextContent(/vymazan/i);
+    });
   });
 
   it('updates the seen indicator when a peer read event arrives for the open conversation', async () => {

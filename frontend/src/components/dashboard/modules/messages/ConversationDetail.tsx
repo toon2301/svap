@@ -31,6 +31,7 @@ import { ConversationActionsMenu } from './ConversationActionsMenu';
 import { DeleteConversationConfirmModal } from './DeleteConversationConfirmModal';
 import { DeleteMessageConfirmModal } from './DeleteMessageConfirmModal';
 import { DesktopEmojiPickerButton } from './DesktopEmojiPickerButton';
+import { MessageImageLightbox } from './MessageImageLightbox';
 import { MessageComposerImagePreview } from './MessageComposerImagePreview';
 import { MessageActionsMenu } from './MessageActionsMenu';
 import {
@@ -51,6 +52,7 @@ import {
   OLDER_MESSAGES_SCROLL_THRESHOLD_PX,
 } from './messageListUtils';
 import { getMessageImageMaxSizeMb, validateMessageImageFile } from './messageImageUpload';
+import { resolveMessagingImageUrl } from './resolveMessagingImageUrl';
 import { useConversationPresenceHeartbeat } from './useConversationPresenceHeartbeat';
 
 const MESSAGE_POLL_INTERVAL_MS = 10_000;
@@ -143,6 +145,10 @@ export function ConversationDetail({
   const [isDeletingConversation, setIsDeletingConversation] = useState(false);
   const [messagePendingDeleteId, setMessagePendingDeleteId] = useState<number | null>(null);
   const [deletingMessageId, setDeletingMessageId] = useState<number | null>(null);
+  const [messageImageLightbox, setMessageImageLightbox] = useState<{
+    messageId: number;
+    imageUrl: string;
+  } | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const refreshInFlightRef = useRef<Promise<MessageListPage> | null>(null);
@@ -164,6 +170,7 @@ export function ConversationDetail({
   const shouldScrollToLatestOnRenderRef = useRef(false);
   const shouldPinFocusedViewportToBottomRef = useRef(false);
   const messageLongPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressedMessageIdRef = useRef<number | null>(null);
   const mobileViewportHeight = useMobileViewportHeight(isMobile && isComposerFocused);
   const [pendingImageFile, setPendingImageFile] = useState<File | null>(null);
   const [pendingImagePreviewUrl, setPendingImagePreviewUrl] = useState<string | null>(null);
@@ -178,12 +185,17 @@ export function ConversationDetail({
     targetUserId !== null && otherConversation?.has_requestable_offers === true;
 
   const closeMessageActions = useCallback(() => {
+    longPressedMessageIdRef.current = null;
     setMessageActionsTarget(null);
   }, []);
 
   const closeConversationActions = useCallback(() => {
     setIsConversationActionsOpen(false);
     setConversationActionsAnchorRect(null);
+  }, []);
+
+  const closeMessageImageLightbox = useCallback(() => {
+    setMessageImageLightbox(null);
   }, []);
 
   const clearMessageLongPressTimer = useCallback(() => {
@@ -231,6 +243,13 @@ export function ConversationDetail({
           : item,
       ),
     );
+    setMessageImageLightbox((current) =>
+      current?.messageId === messageId ? null : current,
+    );
+  }, []);
+
+  const openMessageImageLightbox = useCallback((messageId: number, imageUrl: string) => {
+    setMessageImageLightbox({ messageId, imageUrl });
   }, []);
 
   const focusComposer = useCallback(() => {
@@ -540,6 +559,17 @@ export function ConversationDetail({
       closeMessageActions();
     }
   }, [closeMessageActions, hasSelectedMessageActions, messageActionsTarget, selectedMessageForActions]);
+
+  useEffect(() => {
+    if (messageImageLightbox === null) {
+      return;
+    }
+
+    const activeMessage = messages.find((item) => item.id === messageImageLightbox.messageId) ?? null;
+    if (!activeMessage || activeMessage.is_deleted || !resolveMessagingImageUrl(activeMessage.image_url)) {
+      closeMessageImageLightbox();
+    }
+  }, [closeMessageImageLightbox, messageImageLightbox, messages]);
 
   const handleCopyMessage = useCallback(async () => {
     if (!canCopySelectedMessage || !selectedMessageForActions?.text) {
@@ -1100,8 +1130,10 @@ export function ConversationDetail({
         return {
           onTouchStart: (event: React.TouchEvent<HTMLDivElement>) => {
             clearMessageLongPressTimer();
+            longPressedMessageIdRef.current = null;
             const target = event.currentTarget;
             messageLongPressTimerRef.current = setTimeout(() => {
+              longPressedMessageIdRef.current = messageId;
               openMessageActions(messageId, target.getBoundingClientRect());
               messageLongPressTimerRef.current = null;
             }, 450);
@@ -1121,12 +1153,26 @@ export function ConversationDetail({
     ],
   );
 
+  const handleMessageImageClick = useCallback(
+    (event: React.MouseEvent<HTMLButtonElement>, messageId: number, imageUrl: string) => {
+      event.stopPropagation();
+      if (longPressedMessageIdRef.current === messageId) {
+        longPressedMessageIdRef.current = null;
+        return;
+      }
+
+      openMessageImageLightbox(messageId, imageUrl);
+    },
+    [openMessageImageLightbox],
+  );
+
   const containerClassName = `w-full ${className}`;
 
   const hasTextToSend = text.trim().length > 0;
   const hasContentToSend = hasTextToSend || pendingImageFile !== null;
   const isComposerInputDisabled = sending && (!isMobile || pendingImageFile !== null);
   const isMobileMessageActionsOpen = isMobile && messageActionsTarget !== null;
+  const imagePreviewAlt = t('messages.imagePreview', 'Náhľad obrázka');
   const selectedMessageActionPreviewText =
     selectedMessageForActions && !selectedMessageForActions.is_deleted
       ? selectedMessageForActions.text?.trim() ||
@@ -1138,7 +1184,7 @@ export function ConversationDetail({
     selectedMessageForActions && !selectedMessageForActions.is_deleted
       ? {
           text: selectedMessageActionPreviewText,
-          imageUrl: selectedMessageForActions.image_url ?? null,
+          imageUrl: resolveMessagingImageUrl(selectedMessageForActions.image_url),
           timestamp: formatTime(selectedMessageForActions.created_at),
         }
       : null;
@@ -1239,7 +1285,7 @@ export function ConversationDetail({
                 const showDesktopMessageActionsTrigger = messageHasActions && !isMobile;
                 const messageImageUrl =
                   !m.is_deleted && typeof m.image_url === 'string' && m.image_url.length > 0
-                    ? m.image_url
+                    ? resolveMessagingImageUrl(m.image_url)
                     : null;
                 const displayText = m.is_deleted
                   ? t('messages.deleted', 'Správa bola vymazaná')
@@ -1271,11 +1317,19 @@ export function ConversationDetail({
                     }
                   >
                     {messageImageUrl ? (
-                      <img
-                        src={messageImageUrl}
-                        alt={t('messages.imagePreview', 'Náhľad obrázka')}
-                        className="block max-h-72 w-full max-w-full rounded-xl object-cover"
-                      />
+                      <button
+                        type="button"
+                        data-testid={`message-image-trigger-${m.id}`}
+                        onClick={(event) => handleMessageImageClick(event, m.id, messageImageUrl)}
+                        className="block w-full cursor-zoom-in rounded-xl focus:outline-none focus:ring-2 focus:ring-white/50 dark:focus:ring-brand/50"
+                        aria-label={t('messages.openImagePreview', 'Otvoriť obrázok na celú obrazovku')}
+                      >
+                        <img
+                          src={messageImageUrl}
+                          alt={imagePreviewAlt}
+                          className="block max-h-72 w-full max-w-full rounded-xl object-cover"
+                        />
+                      </button>
                     ) : null}
                     {displayText ? <div className={messageTextClassName}>{displayText}</div> : null}
                   </div>
@@ -1676,6 +1730,12 @@ export function ConversationDetail({
           setMessagePendingDeleteId(messageActionsTarget.messageId);
           setMessageActionsTarget(null);
         }}
+      />
+      <MessageImageLightbox
+        open={messageImageLightbox !== null}
+        imageUrl={messageImageLightbox?.imageUrl ?? null}
+        alt={imagePreviewAlt}
+        onClose={closeMessageImageLightbox}
       />
       <ConversationActionsMenu
         open={isConversationActionsOpen}

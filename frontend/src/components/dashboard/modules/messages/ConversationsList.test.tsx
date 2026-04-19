@@ -419,7 +419,7 @@ describe('ConversationsList', () => {
     render(<ConversationsList currentUserId={1} variant="rail" />);
 
     await waitFor(() => {
-      expect(screen.getByText((content) => content.toLowerCase().includes('obr'))).toBeInTheDocument();
+      expect(screen.getByText('Obrázok')).toBeInTheDocument();
     });
   });
 });
