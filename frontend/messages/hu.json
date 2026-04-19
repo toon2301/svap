@@ -182,7 +182,15 @@
     "deleteConversationConfirmTitle": "Torli a beszelgetest?",
     "deleteConversationConfirmDescription": "A beszelgetes csak onnel tunik el. Ha a masik fel uj uzenetet kuld, a beszelgetes ujra megjelenik az uzenetlistaban.",
     "deleteConversationFailed": "A beszelgetest nem sikerult torolni. Probald ujra.",
-    "deleteConversationUnavailable": "Ez a beszelgetes mar nem torolheto."
+    "deleteConversationUnavailable": "Ez a beszelgetes mar nem torolheto.",
+    "attachImage": "K?p csatol?sa",
+    "chooseImage": "K?p kiv?laszt?sa",
+    "takePhoto": "Fot? k?sz?t?se",
+    "removeAttachment": "Mell?klet elt?vol?t?sa",
+    "imagePreview": "K?pel?n?zet",
+    "imageOnlyPreview": "K?p",
+    "invalidImageType": "V?lassz ?rv?nyes k?pet JPG, PNG, GIF, WebP vagy HEIC form?tumban.",
+    "imageTooLarge": "A k?p t?l nagy. A maxim?lis m?ret {size} MB."
   },
   "search": {
     "title": "Keresés",

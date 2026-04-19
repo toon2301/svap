@@ -102,10 +102,16 @@ def open_or_create_direct_conversation(*, actor: User, target: User) -> OpenConv
         return OpenConversationResult(conversation=convo, created=True)
 
 
-def send_direct_message(*, actor: User, target: User, text: str) -> StartDirectMessageResult:
+def send_direct_message(
+    *,
+    actor: User,
+    target: User,
+    text: str | None = None,
+    image=None,
+) -> StartDirectMessageResult:
     clean = (text or "").strip()
-    if not clean:
-        raise ValueError("Message text cannot be empty.")
+    if not clean and not image:
+        raise ValueError("Message must contain text or an image.")
     if actor.id == target.id:
         raise SelfConversationNotAllowed("Cannot open a conversation with self.")
 
@@ -130,6 +136,7 @@ def send_direct_message(*, actor: User, target: User, text: str) -> StartDirectM
             conversation=convo,
             sender=actor,
             text=clean,
+            image=image,
             created_at=now,
         )
         convo.last_message_at = now

@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import mimetypes
+
 from django.contrib.auth import get_user_model
+from django.http import FileResponse
 from django.db import connections
 from django.db.models import (
     BooleanField,
@@ -293,6 +296,22 @@ def _conversation_list_queryset_for_user(user):
                 Value(False),
                 output_field=BooleanField(),
             ),
+            last_message_has_image=Coalesce(
+                Subquery(
+                    last_msg_qs.annotate(
+                        has_image=Case(
+                            When(
+                                Q(image__isnull=True) | Q(image=""),
+                                then=Value(False),
+                            ),
+                            default=Value(True),
+                            output_field=BooleanField(),
+                        )
+                    ).values("has_image")[:1]
+                ),
+                Value(False),
+                output_field=BooleanField(),
+            ),
             last_read_at=Subquery(participant_qs.values("last_read_at")[:1]),
             other_user_id=Subquery(other_participant_qs.values("user_id")[:1]),
             other_user_first_name=Subquery(other_participant_qs.values("user__first_name")[:1]),
@@ -434,6 +453,7 @@ class OpenConversationView(APIView):
             "last_message_preview": None,
             "last_message_sender_id": None,
             "last_message_is_deleted": False,
+            "last_message_has_image": False,
             "last_read_at": None,
             "has_unread": False,
             "unread_count": 0,
@@ -570,6 +590,37 @@ class MessageListView(ListAPIView):
         )
 
 
+class MessageImageView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, conversation_id: int, message_id: int):
+        convo = _conversation_for_user_or_404(conversation_id=conversation_id, user=request.user)
+        message = get_object_or_404(
+            Message.objects.filter(
+                conversation_id=convo.id,
+                id=message_id,
+                is_deleted=False,
+            )
+        )
+
+        if not message.image:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            message.image.open("rb")
+            image_file = message.image.file
+        except Exception:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        content_type = (
+            mimetypes.guess_type(message.image.name or "")[0] or "application/octet-stream"
+        )
+        response = FileResponse(image_file, content_type=content_type)
+        response["Cache-Control"] = "private, max-age=3600"
+        response["X-Content-Type-Options"] = "nosniff"
+        return response
+
+
 class SendMessageView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -582,7 +633,8 @@ class SendMessageView(APIView):
             result = send_message(
                 conversation=convo,
                 sender=request.user,
-                text=serializer.validated_data["text"],
+                text=serializer.validated_data.get("text"),
+                image=serializer.validated_data.get("image"),
             )
         except NotParticipant:
             # Do not leak existence; treat as not found
@@ -718,7 +770,8 @@ class StartDirectMessageView(APIView):
             result = send_direct_message(
                 actor=request.user,
                 target=target,
-                text=serializer.validated_data["text"],
+                text=serializer.validated_data.get("text"),
+                image=serializer.validated_data.get("image"),
             )
         except SelfConversationNotAllowed:
             return Response(

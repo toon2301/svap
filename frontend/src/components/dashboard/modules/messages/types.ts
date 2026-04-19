@@ -14,6 +14,7 @@ export type ConversationListItem = {
   last_message_at: string | null;
   last_message_sender_id?: number | null;
   last_message_is_deleted?: boolean;
+  last_message_has_image?: boolean;
   last_read_at: string | null;
   has_unread: boolean;
   unread_count?: number;
@@ -31,6 +32,7 @@ export type ConversationDraft = {
   last_message_at: null;
   last_message_sender_id?: null;
   last_message_is_deleted?: false;
+  last_message_has_image?: false;
   last_read_at: null;
   has_unread: false;
   unread_count: 0;
@@ -47,6 +49,8 @@ export type MessageItem = {
   conversation: number;
   sender: MessagingUserBrief;
   text: string | null;
+  image_url?: string | null;
+  has_image?: boolean;
   created_at: string;
   edited_at: string | null;
   is_deleted: boolean;
@@ -63,6 +67,11 @@ export type DirectMessageStartResult = {
   conversation_id: number;
   conversation_created: boolean;
   message: MessageItem;
+};
+
+export type MessageSendPayload = {
+  text?: string;
+  image?: File | null;
 };
 
 export type MessagingUnreadSummary = {

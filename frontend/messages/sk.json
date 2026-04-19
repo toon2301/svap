@@ -182,7 +182,15 @@
     "deleteConversationConfirmTitle": "Vymazať konverzáciu?",
     "deleteConversationConfirmDescription": "Konverzácia zmizne iba vám. Ak vám druhý používateľ pošle novú správu, znovu sa zobrazí v zozname správ.",
     "deleteConversationFailed": "Konverzáciu sa nepodarilo vymazať. Skúste to znova.",
-    "deleteConversationUnavailable": "Konverzáciu už nie je možné vymazať."
+    "deleteConversationUnavailable": "Konverzáciu už nie je možné vymazať.",
+    "attachImage": "Prilo?i? obr?zok",
+    "chooseImage": "Vybra? obr?zok",
+    "takePhoto": "Odfoti?",
+    "removeAttachment": "Odstr?ni? pr?lohu",
+    "imagePreview": "N?h?ad obr?zka",
+    "imageOnlyPreview": "Obr?zok",
+    "invalidImageType": "Vyberte platn? obr?zok vo form?te JPG, PNG, GIF, WebP alebo HEIC.",
+    "imageTooLarge": "Obr?zok je pr?li? ve?k?. Maxim?lna ve?kos? je {size} MB."
   },
   "search": {
     "title": "Vyhľadávanie",
@@ -249,23 +257,7 @@
     "userProfileLoading": "Načítavam profil používateľa...",
     "userProfileNotFound": "Profil používateľa sa nepodarilo načítať.",
     "userProfileRateLimited": "Príliš veľa požiadaviek pri načítavaní profilu, skúste to o chvíľu.",
-    "pageTitle": "Vyhľadávanie",
-    "resultsCount": "{{count}} výsledkov",
-    "loading": "Načítavam…",
-    "sortNewest": "Najnovšie",
-    "sortRatingDesc": "Najlepšie hodnotené",
-    "sortPriceAsc": "Cena ↑",
-    "sortPriceDesc": "Cena ↓",
-    "ratingLabel": "Hodnotenie",
-    "emptyNoResults": "Žiadne výsledky pre \"{{q}}\"",
-    "emptyEnterQuery": "Zadajte výraz do vyhľadávacieho poľa.",
-    "emptyTry": "Skús:",
-    "emptyTryRemoveFilters": "odstrániť filtre",
-    "emptyTryShorterQuery": "použiť kratší výraz",
-    "emptyTryChangePrice": "zmeniť cenu",
-    "clearFilters": "Vymazať filtre",
-    "paginationPrevious": "Predošlá",
-    "paginationNext": "Ďalšia"
+    "pageTitle": "Vyhľadávanie"
   },
   "skills": {
     "offer": "Ponúkam",

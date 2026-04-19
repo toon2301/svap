@@ -7,9 +7,11 @@ import { useMessagesNotifications } from '@/components/dashboard/contexts/Reques
 import { useIsMobile } from '@/hooks';
 import {
   Bars3Icon,
+  CameraIcon,
   ChevronDownIcon,
   EllipsisHorizontalIcon,
   PaperAirplaneIcon,
+  PhotoIcon,
 } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 import type { ConversationListItem, MessageItem, MessageListPage } from './types';
@@ -29,6 +31,7 @@ import { ConversationActionsMenu } from './ConversationActionsMenu';
 import { DeleteConversationConfirmModal } from './DeleteConversationConfirmModal';
 import { DeleteMessageConfirmModal } from './DeleteMessageConfirmModal';
 import { DesktopEmojiPickerButton } from './DesktopEmojiPickerButton';
+import { MessageComposerImagePreview } from './MessageComposerImagePreview';
 import { MessageActionsMenu } from './MessageActionsMenu';
 import {
   MESSAGING_REALTIME_DELETED_EVENT,
@@ -47,6 +50,7 @@ import {
   mergeMessagesNewestFirst,
   OLDER_MESSAGES_SCROLL_THRESHOLD_PX,
 } from './messageListUtils';
+import { getMessageImageMaxSizeMb, validateMessageImageFile } from './messageImageUpload';
 import { useConversationPresenceHeartbeat } from './useConversationPresenceHeartbeat';
 
 const MESSAGE_POLL_INTERVAL_MS = 10_000;
@@ -152,12 +156,17 @@ export function ConversationDetail({
   const [isRequestPickerOpen, setIsRequestPickerOpen] = useState(false);
   const messagesScrollRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const imageInputRef = useRef<HTMLInputElement | null>(null);
+  const cameraInputRef = useRef<HTMLInputElement | null>(null);
+  const pendingImagePreviewUrlRef = useRef<string | null>(null);
   const shouldRestoreFocusRef = useRef(false);
   const pendingLatestScrollAfterRefreshRef = useRef(false);
   const shouldScrollToLatestOnRenderRef = useRef(false);
   const shouldPinFocusedViewportToBottomRef = useRef(false);
   const messageLongPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const mobileViewportHeight = useMobileViewportHeight(isMobile && isComposerFocused);
+  const [pendingImageFile, setPendingImageFile] = useState<File | null>(null);
+  const [pendingImagePreviewUrl, setPendingImagePreviewUrl] = useState<string | null>(null);
   useConversationPresenceHeartbeat(conversationId);
   const targetUserId = otherConversation?.other_user?.id ?? null;
   const targetUserSlug = otherConversation?.other_user?.slug ?? null;
@@ -216,6 +225,8 @@ export function ConversationDetail({
               ...item,
               is_deleted: true,
               text: null,
+              image_url: null,
+              has_image: false,
             }
           : item,
       ),
@@ -267,6 +278,81 @@ export function ConversationDetail({
     },
     [],
   );
+
+  const clearPendingImage = useCallback(() => {
+    if (pendingImagePreviewUrlRef.current) {
+      URL.revokeObjectURL(pendingImagePreviewUrlRef.current);
+      pendingImagePreviewUrlRef.current = null;
+    }
+    setPendingImageFile(null);
+    setPendingImagePreviewUrl(null);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (pendingImagePreviewUrlRef.current) {
+        URL.revokeObjectURL(pendingImagePreviewUrlRef.current);
+        pendingImagePreviewUrlRef.current = null;
+      }
+    };
+  }, []);
+
+  const applyPendingImageSelection = useCallback(
+    (file: File | null) => {
+      if (!file) {
+        return;
+      }
+
+      const validationError = validateMessageImageFile(file);
+      if (validationError === 'invalid_type') {
+        toast.error(
+          t(
+            'messages.invalidImageType',
+            'Vyberte platný obrázok vo formáte JPG, PNG, GIF, WebP alebo HEIC.',
+          ),
+        );
+        return;
+      }
+
+      if (validationError === 'too_large') {
+        toast.error(
+          t(
+            'messages.imageTooLarge',
+            'Obrázok je príliš veľký. Maximálna veľkosť je {size} MB.',
+          ).replace('{size}', String(getMessageImageMaxSizeMb())),
+        );
+        return;
+      }
+
+      const nextPreviewUrl = URL.createObjectURL(file);
+      if (pendingImagePreviewUrlRef.current) {
+        URL.revokeObjectURL(pendingImagePreviewUrlRef.current);
+      }
+      pendingImagePreviewUrlRef.current = nextPreviewUrl;
+      setPendingImageFile(file);
+      setPendingImagePreviewUrl(nextPreviewUrl);
+    },
+    [t],
+  );
+
+  const handlePendingImageInputChange = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0] ?? null;
+      event.target.value = '';
+      applyPendingImageSelection(file);
+    },
+    [applyPendingImageSelection],
+  );
+
+  const openImagePicker = useCallback(() => {
+    if (sending) return;
+    imageInputRef.current?.click();
+  }, [sending]);
+
+  const openCameraPicker = useCallback(() => {
+    if (sending) return;
+    cameraInputRef.current?.click();
+  }, [sending]);
 
   const handleOpenTargetUserProfile = useCallback(() => {
     const identifier =
@@ -936,9 +1022,9 @@ export function ConversationDetail({
   const handleSend = async () => {
     const draft = text;
     const clean = draft.trim();
-    if (!clean || sending) return;
+    if ((!clean && !pendingImageFile) || sending) return;
 
-    const keepMobileComposerInteractive = isMobile;
+    const keepMobileComposerInteractive = isMobile && pendingImageFile === null;
     let didSend = false;
 
     shouldRestoreFocusRef.current = true;
@@ -947,11 +1033,20 @@ export function ConversationDetail({
       setText('');
     }
     try {
-      await sendMessage(conversationId, clean);
+      await sendMessage(
+        conversationId,
+        pendingImageFile
+          ? {
+              text: clean,
+              image: pendingImageFile,
+            }
+          : clean,
+      );
       didSend = true;
       if (!keepMobileComposerInteractive) {
         setText('');
       }
+      clearPendingImage();
       await refresh({ showError: false, markAsRead: true, scrollBehavior: 'force_latest' });
       requestConversationsRefresh();
     } catch (error) {
@@ -1029,12 +1124,21 @@ export function ConversationDetail({
   const containerClassName = `w-full ${className}`;
 
   const hasTextToSend = text.trim().length > 0;
-  const isComposerInputDisabled = !isMobile && sending;
+  const hasContentToSend = hasTextToSend || pendingImageFile !== null;
+  const isComposerInputDisabled = sending && (!isMobile || pendingImageFile !== null);
   const isMobileMessageActionsOpen = isMobile && messageActionsTarget !== null;
+  const selectedMessageActionPreviewText =
+    selectedMessageForActions && !selectedMessageForActions.is_deleted
+      ? selectedMessageForActions.text?.trim() ||
+        (selectedMessageForActions.image_url
+          ? t('messages.imageOnlyPreview', 'Obrázok')
+          : '')
+      : '';
   const selectedMessageActionPreview =
     selectedMessageForActions && !selectedMessageForActions.is_deleted
       ? {
-          text: selectedMessageForActions.text ?? '',
+          text: selectedMessageActionPreviewText,
+          imageUrl: selectedMessageForActions.image_url ?? null,
           timestamp: formatTime(selectedMessageForActions.created_at),
         }
       : null;
@@ -1133,9 +1237,13 @@ export function ConversationDetail({
                 const messageHasActions = messageCanCopy || messageCanDelete;
                 const messageInteractionProps = getMessageInteractionProps(m.id, messageHasActions);
                 const showDesktopMessageActionsTrigger = messageHasActions && !isMobile;
+                const messageImageUrl =
+                  !m.is_deleted && typeof m.image_url === 'string' && m.image_url.length > 0
+                    ? m.image_url
+                    : null;
                 const displayText = m.is_deleted
                   ? t('messages.deleted', 'Správa bola vymazaná')
-                  : m.text;
+                  : m.text ?? '';
                 const isSelectedForMobileMessageActions =
                   isMobileMessageActionsOpen && messageActionsTarget?.messageId === m.id;
                 const bubbleClassName = [
@@ -1148,6 +1256,30 @@ export function ConversationDetail({
                 const messageTextClassName = `whitespace-pre-wrap break-words${
                   suppressMobileMessageSelection ? ' select-none' : ''
                 }`;
+                const messageContent = (
+                  <div
+                    className={`space-y-2${suppressMobileMessageSelection ? ' select-none' : ''}`}
+                    style={
+                      suppressMobileMessageSelection
+                        ? MOBILE_OWN_MESSAGE_BUBBLE_SUPPRESSION_STYLE
+                        : undefined
+                    }
+                    onContextMenu={
+                      suppressMobileMessageSelection
+                        ? suppressNativeMessageContextMenu
+                        : undefined
+                    }
+                  >
+                    {messageImageUrl ? (
+                      <img
+                        src={messageImageUrl}
+                        alt={t('messages.imagePreview', 'Náhľad obrázka')}
+                        className="block max-h-72 w-full max-w-full rounded-xl object-cover"
+                      />
+                    ) : null}
+                    {displayText ? <div className={messageTextClassName}>{displayText}</div> : null}
+                  </div>
+                );
 
                 return mine ? (
                   <div
@@ -1200,21 +1332,7 @@ export function ConversationDetail({
                           }
                           {...messageInteractionProps}
                         >
-                          <div
-                            className={messageTextClassName}
-                            style={
-                              suppressMobileMessageSelection
-                                ? MOBILE_OWN_MESSAGE_BUBBLE_SUPPRESSION_STYLE
-                                : undefined
-                            }
-                            onContextMenu={
-                              suppressMobileMessageSelection
-                                ? suppressNativeMessageContextMenu
-                                : undefined
-                            }
-                          >
-                            {displayText}
-                          </div>
+                          {messageContent}
                         </div>
                       </div>
                       {showSeenIndicator ? (
@@ -1308,21 +1426,7 @@ export function ConversationDetail({
                               }
                               {...messageInteractionProps}
                             >
-                              <div
-                                className={messageTextClassName}
-                                style={
-                                  suppressMobileMessageSelection
-                                    ? MOBILE_OWN_MESSAGE_BUBBLE_SUPPRESSION_STYLE
-                                    : undefined
-                                }
-                                onContextMenu={
-                                  suppressMobileMessageSelection
-                                    ? suppressNativeMessageContextMenu
-                                    : undefined
-                                }
-                              >
-                                {displayText}
-                              </div>
+                              {messageContent}
                             </div>
                             {showDesktopMessageActionsTrigger ? (
                               <button
@@ -1367,6 +1471,26 @@ export function ConversationDetail({
         ) : null}
       </div>
 
+      <input
+        ref={imageInputRef}
+        type="file"
+        accept="image/*"
+        data-testid="conversation-image-picker-input"
+        className="hidden"
+        onChange={handlePendingImageInputChange}
+      />
+      {isMobile ? (
+        <input
+          ref={cameraInputRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          data-testid="conversation-camera-picker-input"
+          className="hidden"
+          onChange={handlePendingImageInputChange}
+        />
+      ) : null}
+
       {isMobile ? (
         <div
           data-testid="conversation-mobile-composer-stack"
@@ -1390,12 +1514,42 @@ export function ConversationDetail({
                 className=""
               />
             ) : null}
+            {pendingImagePreviewUrl && pendingImageFile ? (
+              <MessageComposerImagePreview
+                previewUrl={pendingImagePreviewUrl}
+                fileName={pendingImageFile.name}
+                disabled={sending}
+                onRemove={clearPendingImage}
+              />
+            ) : null}
             <div
               data-testid="conversation-composer"
               onFocusCapture={handleComposerFocus}
               onBlurCapture={handleComposerBlur}
               className="relative z-10 flex w-full min-w-0 shrink-0 items-center gap-2 overflow-x-hidden border-t border-gray-200 bg-white/90 px-2.5 py-2.5 dark:border-gray-800 dark:bg-[#0f0f10]/90"
             >
+              <div className="flex shrink-0 items-center gap-1">
+                <button
+                  type="button"
+                  data-testid="conversation-image-picker-trigger"
+                  onClick={openImagePicker}
+                  disabled={sending}
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-brand/30 disabled:cursor-not-allowed disabled:opacity-60 dark:text-gray-400 dark:hover:bg-[#141416] dark:hover:text-gray-200"
+                  aria-label={t('messages.chooseImage', 'Vybrať obrázok')}
+                >
+                  <PhotoIcon className="h-5 w-5" />
+                </button>
+                <button
+                  type="button"
+                  data-testid="conversation-camera-picker-trigger"
+                  onClick={openCameraPicker}
+                  disabled={sending}
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-brand/30 disabled:cursor-not-allowed disabled:opacity-60 dark:text-gray-400 dark:hover:bg-[#141416] dark:hover:text-gray-200"
+                  aria-label={t('messages.takePhoto', 'Odfotiť')}
+                >
+                  <CameraIcon className="h-5 w-5" />
+                </button>
+              </div>
               <div className="relative flex min-h-0 min-w-0 flex-1 items-center overflow-hidden rounded-2xl border border-gray-200 bg-white px-2 dark:border-gray-800 dark:bg-black">
                 <input
                   ref={inputRef}
@@ -1409,13 +1563,13 @@ export function ConversationDetail({
                     }
                   }}
                   className={`min-w-0 w-full border-0 bg-transparent py-2 text-sm text-gray-900 focus:outline-none dark:text-gray-100 ${
-                    hasTextToSend
+                    hasContentToSend
                       ? 'overflow-x-hidden text-ellipsis whitespace-nowrap pl-2 pr-12'
                       : 'overflow-x-hidden text-ellipsis whitespace-nowrap px-2'
                   }`}
                   placeholder={t('messages.type', 'Napíš správu…')}
                 />
-                {hasTextToSend ? (
+                {hasContentToSend ? (
                   <button
                     type="button"
                     disabled={sending}
@@ -1447,12 +1601,30 @@ export function ConversationDetail({
                 className=""
               />
             ) : null}
+            {pendingImagePreviewUrl && pendingImageFile ? (
+              <MessageComposerImagePreview
+                previewUrl={pendingImagePreviewUrl}
+                fileName={pendingImageFile.name}
+                disabled={sending}
+                onRemove={clearPendingImage}
+              />
+            ) : null}
             <div
               data-testid="conversation-composer"
               onFocusCapture={handleComposerFocus}
               onBlurCapture={handleComposerBlur}
               className="flex w-full min-w-0 shrink-0 gap-2 border-t border-gray-200 bg-white/90 px-3 py-3 dark:border-gray-800 dark:bg-[#0f0f10]/90"
             >
+              <button
+                type="button"
+                data-testid="conversation-image-picker-trigger"
+                onClick={openImagePicker}
+                disabled={sending}
+                className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-gray-200 bg-white text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-brand/30 disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-800 dark:bg-black dark:text-gray-400 dark:hover:bg-[#141416] dark:hover:text-gray-200"
+                aria-label={t('messages.attachImage', 'Priložiť obrázok')}
+              >
+                <PhotoIcon className="h-5 w-5" />
+              </button>
               <div className="relative min-w-0 flex-1">
                 <input
                   ref={inputRef}
@@ -1477,7 +1649,7 @@ export function ConversationDetail({
               </div>
               <button
                 type="button"
-                disabled={sending || !hasTextToSend}
+                disabled={sending || !hasContentToSend}
                 onClick={() => void handleSend()}
                 className="shrink-0 rounded-2xl bg-brand px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-60"
               >

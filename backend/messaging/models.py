@@ -1,7 +1,19 @@
 from __future__ import annotations
 
+import uuid
+from pathlib import Path
+
 from django.conf import settings
 from django.db import models
+
+from swaply.validators import validate_image_file
+
+
+def message_image_upload_to(instance: "Message", filename: str) -> str:
+    suffix = Path(filename or "").suffix.lower()
+    safe_suffix = suffix if suffix else ".jpg"
+    conversation_id = instance.conversation_id or "pending"
+    return f"messages/{conversation_id}/{uuid.uuid4().hex}{safe_suffix}"
 
 
 class Conversation(models.Model):
@@ -64,7 +76,13 @@ class Message(models.Model):
         on_delete=models.PROTECT,
         related_name="sent_messages",
     )
-    text = models.TextField()
+    text = models.TextField(blank=True, default="")
+    image = models.ImageField(
+        upload_to=message_image_upload_to,
+        blank=True,
+        null=True,
+        validators=[validate_image_file],
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     edited_at = models.DateTimeField(null=True, blank=True)
     is_deleted = models.BooleanField(default=False)

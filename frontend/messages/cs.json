@@ -182,7 +182,15 @@
     "deleteConversationConfirmTitle": "Smazat konverzaci?",
     "deleteConversationConfirmDescription": "Konverzace zmizi jen vam. Pokud vam druhy uzivatel posle novou zpravu, znovu se zobrazi v seznamu zprav.",
     "deleteConversationFailed": "Konverzaci se nepodarilo smazat. Zkuste to znovu.",
-    "deleteConversationUnavailable": "Konverzaci uz neni mozne smazat."
+    "deleteConversationUnavailable": "Konverzaci uz neni mozne smazat.",
+    "attachImage": "P?ilo?it obr?zek",
+    "chooseImage": "Vybrat obr?zek",
+    "takePhoto": "Vyfotit",
+    "removeAttachment": "Odstranit p??lohu",
+    "imagePreview": "N?hled obr?zku",
+    "imageOnlyPreview": "Obr?zek",
+    "invalidImageType": "Vyberte platn? obr?zek ve form?tu JPG, PNG, GIF, WebP nebo HEIC.",
+    "imageTooLarge": "Obr?zek je p??li? velk?. Maxim?ln? velikost je {size} MB."
   },
   "search": {
     "title": "Hledat",

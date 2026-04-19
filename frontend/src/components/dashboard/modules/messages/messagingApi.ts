@@ -6,6 +6,7 @@ import type {
   HideConversationResult,
   MessageItem,
   MessageListPage,
+  MessageSendPayload,
   MessagingUnreadSummary,
   OpenConversationResult,
 } from './types';
@@ -69,14 +70,22 @@ export async function openConversation(targetUserId: number): Promise<OpenConver
 
 export async function sendDirectMessage(
   targetUserId: number,
-  text: string,
+  payload: string | MessageSendPayload,
 ): Promise<DirectMessageStartResult> {
+  const requestData =
+    typeof payload === 'string'
+      ? {
+          target_user_id: targetUserId,
+          text: payload,
+        }
+      : buildMessageSendRequestData({
+          targetUserId,
+          text: payload.text,
+          image: payload.image,
+        });
   const { data } = await api.post<DirectMessageStartResult>(
     '/auth/messaging/conversations/direct/send/',
-    {
-      target_user_id: targetUserId,
-      text,
-    },
+    requestData,
   );
   return data;
 }
@@ -131,10 +140,42 @@ export async function listMessages(
   };
 }
 
-export async function sendMessage(conversationId: number, text: string): Promise<MessageItem> {
+function buildMessageSendRequestData({
+  targetUserId,
+  text,
+  image,
+}: {
+  targetUserId?: number;
+  text?: string;
+  image?: File | null;
+}) {
+  if (!image) {
+    return targetUserId === undefined ? { text: text ?? '' } : { target_user_id: targetUserId, text: text ?? '' };
+  }
+
+  const formData = new FormData();
+  if (targetUserId !== undefined) {
+    formData.append('target_user_id', String(targetUserId));
+  }
+  formData.append('text', text ?? '');
+  formData.append('image', image, image.name);
+  return formData;
+}
+
+export async function sendMessage(
+  conversationId: number,
+  payload: string | MessageSendPayload,
+): Promise<MessageItem> {
+  const requestData =
+    typeof payload === 'string'
+      ? { text: payload }
+      : buildMessageSendRequestData({
+          text: payload.text,
+          image: payload.image,
+        });
   const { data } = await api.post<MessageItem>(
     `/auth/messaging/conversations/${conversationId}/messages/send/`,
-    { text },
+    requestData,
   );
   return data;
 }

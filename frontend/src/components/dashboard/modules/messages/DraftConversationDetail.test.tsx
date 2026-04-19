@@ -40,6 +40,8 @@ jest.mock('./messagingApi', () => ({
 const { useIsMobile } = jest.requireMock('@/hooks') as {
   useIsMobile: jest.Mock;
 };
+const createObjectURLMock = jest.fn();
+const revokeObjectURLMock = jest.fn();
 
 const draftResponse = {
   id: null,
@@ -58,6 +60,15 @@ describe('DraftConversationDetail', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     useIsMobile.mockReturnValue(false);
+    createObjectURLMock.mockReturnValue('blob:draft-preview');
+    Object.defineProperty(URL, 'createObjectURL', {
+      configurable: true,
+      value: createObjectURLMock,
+    });
+    Object.defineProperty(URL, 'revokeObjectURL', {
+      configurable: true,
+      value: revokeObjectURLMock,
+    });
   });
 
   it('redirects immediately when a started conversation already exists', async () => {
@@ -116,6 +127,10 @@ describe('DraftConversationDetail', () => {
 
     render(<DraftConversationDetail targetUserId={42} />);
 
+    await waitFor(() => {
+      expect(openConversation).toHaveBeenCalledWith(42);
+    });
+
     const input = (await screen.findByRole('textbox')) as HTMLInputElement;
     fireEvent.change(input, { target: { value: 'Ahoj' } });
     fireEvent.focus(input);
@@ -131,6 +146,38 @@ describe('DraftConversationDetail', () => {
     await waitFor(() => {
       expect(sendDirectMessage).toHaveBeenCalledWith(42, 'Ahoj');
       expect(replaceMock).toHaveBeenCalledWith('/dashboard/messages?conversationId=91');
+    });
+  });
+
+  it('sends the first draft message with an attached image', async () => {
+    const attachment = new File(['draft-image'], 'draft-photo.png', { type: 'image/png' });
+    (openConversation as jest.Mock).mockResolvedValue(draftResponse);
+    (sendDirectMessage as jest.Mock).mockResolvedValue({ conversation_id: 91 });
+
+    render(<DraftConversationDetail targetUserId={42} />);
+
+    await waitFor(() => {
+      expect(openConversation).toHaveBeenCalledWith(42);
+    });
+
+    fireEvent.change(await screen.findByTestId('draft-image-picker-input'), {
+      target: { files: [attachment] },
+    });
+
+    expect(await screen.findByTestId('message-composer-image-preview')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /odosla/i }));
+
+    await waitFor(() => {
+      expect(sendDirectMessage).toHaveBeenCalledWith(
+        42,
+        expect.objectContaining({
+          text: '',
+          image: attachment,
+        }),
+      );
+      expect(replaceMock).toHaveBeenCalledWith('/dashboard/messages?conversationId=91');
+      expect(revokeObjectURLMock).toHaveBeenCalledWith('blob:draft-preview');
     });
   });
 });

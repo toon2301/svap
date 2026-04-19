@@ -1,8 +1,13 @@
+from io import BytesIO
 import pytest
+import shutil
+import tempfile
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import override_settings
 from django.urls import reverse
+from PIL import Image
 from rest_framework import status
 from rest_framework.test import APITestCase
 from unittest.mock import patch
@@ -19,6 +24,14 @@ User = get_user_model()
 class TestMessagingApi(APITestCase):
     def setUp(self):
         cache.clear()
+        self.temp_media_root = tempfile.mkdtemp()
+        self.media_override = override_settings(
+            MEDIA_ROOT=self.temp_media_root,
+            SAFESEARCH_ENABLED=False,
+        )
+        self.media_override.enable()
+        self.addCleanup(self.media_override.disable)
+        self.addCleanup(lambda: shutil.rmtree(self.temp_media_root, ignore_errors=True))
         self.push_delay_patcher = patch(
             "messaging.services.push_enqueue.deliver_message_push_task.delay",
             return_value=None,
@@ -53,6 +66,11 @@ class TestMessagingApi(APITestCase):
     def _create_direct_conversation(self, actor, target) -> Conversation:
         result = open_or_create_direct_conversation(actor=actor, target=target)
         return result.conversation
+
+    def _sample_image_upload(self, name: str = "chat.png") -> SimpleUploadedFile:
+        buffer = BytesIO()
+        Image.new("RGB", (2, 2), (255, 0, 0)).save(buffer, format="PNG")
+        return SimpleUploadedFile(name, buffer.getvalue(), content_type="image/png")
 
     def test_open_conversation_returns_draft_without_creating_database_rows(self):
         self.client.force_authenticate(user=self.u1)
@@ -211,6 +229,108 @@ class TestMessagingApi(APITestCase):
         assert response.status_code == status.HTTP_201_CREATED
         assert Message.objects.count() == 1
 
+    def test_send_message_supports_image_only_messages(self):
+        convo = self._create_direct_conversation(actor=self.u1, target=self.u2)
+
+        self.client.force_authenticate(user=self.u1)
+        send_url = reverse(
+            "accounts:messaging_send_message",
+            kwargs={"conversation_id": convo.id},
+        )
+
+        response = self.client.post(
+            send_url,
+            {"image": self._sample_image_upload()},
+            format="multipart",
+        )
+
+        assert response.status_code == status.HTTP_201_CREATED
+        assert response.data["text"] is None
+        assert response.data["has_image"] is True
+        assert response.data["image_url"].endswith(
+            reverse(
+                "accounts:messaging_message_image",
+                kwargs={"conversation_id": convo.id, "message_id": response.data["id"]},
+            )
+        )
+
+        message = Message.objects.get(id=response.data["id"])
+        assert bool(message.image) is True
+
+    def test_send_direct_message_supports_text_and_image(self):
+        self.client.force_authenticate(user=self.u1)
+        url = reverse("accounts:messaging_send_direct_message")
+
+        response = self.client.post(
+            url,
+            {
+                "target_user_id": self.u2.id,
+                "text": "Ahoj",
+                "image": self._sample_image_upload("direct.png"),
+            },
+            format="multipart",
+        )
+
+        assert response.status_code == status.HTTP_201_CREATED
+        assert response.data["message"]["text"] == "Ahoj"
+        assert response.data["message"]["has_image"] is True
+
+    def test_message_image_endpoint_serves_participants_only(self):
+        convo = self._create_direct_conversation(actor=self.u1, target=self.u2)
+
+        self.client.force_authenticate(user=self.u1)
+        send_url = reverse(
+            "accounts:messaging_send_message",
+            kwargs={"conversation_id": convo.id},
+        )
+        send_response = self.client.post(
+            send_url,
+            {"image": self._sample_image_upload("endpoint.png")},
+            format="multipart",
+        )
+        assert send_response.status_code == status.HTTP_201_CREATED
+
+        image_url = reverse(
+            "accounts:messaging_message_image",
+            kwargs={"conversation_id": convo.id, "message_id": send_response.data["id"]},
+        )
+
+        self.client.force_authenticate(user=self.u2)
+        response = self.client.get(image_url)
+        assert response.status_code == status.HTTP_200_OK
+        assert response["Cache-Control"] == "private, max-age=3600"
+        assert response["X-Content-Type-Options"] == "nosniff"
+        assert response["Content-Type"].startswith("image/")
+        assert b"PNG" in b"".join(response.streaming_content)
+
+        self.client.force_authenticate(user=self.u3)
+        forbidden_response = self.client.get(image_url)
+        assert forbidden_response.status_code == status.HTTP_404_NOT_FOUND
+
+    def test_conversation_list_marks_image_only_last_message(self):
+        convo = self._create_direct_conversation(actor=self.u1, target=self.u2)
+
+        self.client.force_authenticate(user=self.u1)
+        send_url = reverse(
+            "accounts:messaging_send_message",
+            kwargs={"conversation_id": convo.id},
+        )
+        send_response = self.client.post(
+            send_url,
+            {"image": self._sample_image_upload("list.png")},
+            format="multipart",
+        )
+        assert send_response.status_code == status.HTTP_201_CREATED
+
+        list_url = reverse("accounts:messaging_list_conversations")
+        list_response = self.client.get(list_url)
+
+        assert list_response.status_code == status.HTTP_200_OK
+        results = list_response.data.get("results", [])
+        assert len(results) == 1
+        assert results[0]["last_message_preview"] is None
+        assert results[0]["last_message_has_image"] is True
+
     def test_non_participant_cannot_read_messages(self):
         convo = self._create_direct_conversation(actor=self.u1, target=self.u2)
 
@@ -311,6 +431,8 @@ class TestMessagingApi(APITestCase):
         assert delete_response.data["message"]["id"] == message_id
         assert delete_response.data["message"]["is_deleted"] is True
         assert delete_response.data["message"]["text"] is None
+        assert delete_response.data["message"]["image_url"] is None
+        assert delete_response.data["message"]["has_image"] is False
 
         message = Message.objects.get(id=message_id)
         assert message.is_deleted is True
@@ -343,6 +465,38 @@ class TestMessagingApi(APITestCase):
         recipient_event = next(args[1] for args in events if args[0] == self.u2.id)
         assert recipient_event["conversation_unread_count"] == 0
         assert recipient_event["total_unread_count"] == 0
+
+    def test_deleting_an_image_message_clears_the_attachment(self):
+        convo = self._create_direct_conversation(actor=self.u1, target=self.u2)
+
+        self.client.force_authenticate(user=self.u1)
+        send_url = reverse(
+            "accounts:messaging_send_message",
+            kwargs={"conversation_id": convo.id},
+        )
+        send_response = self.client.post(
+            send_url,
+            {"image": self._sample_image_upload("delete-image.png")},
+            format="multipart",
+        )
+        assert send_response.status_code == status.HTTP_201_CREATED
+
+        message_id = send_response.data["id"]
+        delete_url = reverse(
+            "accounts:messaging_delete_message",
+            kwargs={"conversation_id": convo.id, "message_id": message_id},
+        )
+
+        delete_response = self.client.post(delete_url, {}, format="json")
+
+        assert delete_response.status_code == status.HTTP_200_OK
+        assert delete_response.data["message"]["text"] is None
+        assert delete_response.data["message"]["image_url"] is None
+        assert delete_response.data["message"]["has_image"] is False
+
+        message = Message.objects.get(id=message_id)
+        assert message.is_deleted is True
+        assert bool(message.image) is False
 
     def test_deleting_latest_message_keeps_deleted_last_message_in_conversation_preview(self):
         convo = self._create_direct_conversation(actor=self.u1, target=self.u2)

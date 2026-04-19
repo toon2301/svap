@@ -6,6 +6,7 @@ from .api.views import (
     DeleteMessageView,
     HideConversationView,
     MarkConversationReadView,
+    MessageImageView,
     MessageListView,
     OpenConversationView,
     SendMessageView,
@@ -36,6 +37,11 @@ urlpatterns = [
         "conversations/<int:conversation_id>/messages/send/",
         SendMessageView.as_view(),
         name="messaging_send_message",
+    ),
+    path(
+        "conversations/<int:conversation_id>/messages/<int:message_id>/image/",
+        MessageImageView.as_view(),
+        name="messaging_message_image",
     ),
     path(
         "conversations/<int:conversation_id>/messages/<int:message_id>/delete/",

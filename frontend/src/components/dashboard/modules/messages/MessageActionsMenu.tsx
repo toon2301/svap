@@ -6,7 +6,8 @@ import { DocumentDuplicateIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 type MessageActionPreview = {
-  text: string;
+  text?: string | null;
+  imageUrl?: string | null;
   timestamp?: string | null;
 };
 
@@ -161,8 +162,19 @@ export function MessageActionsMenu({
               {preview.timestamp}
             </div>
           ) : null}
-          <div className="ml-auto w-fit max-w-full rounded-2xl bg-brand px-3 py-2 text-sm text-white shadow-[0_16px_40px_rgba(15,23,42,0.18)] ring-1 ring-black/5">
-            <div className="whitespace-pre-wrap break-words">{preview.text}</div>
+          <div className="ml-auto w-fit max-w-full overflow-hidden rounded-2xl bg-brand text-sm text-white shadow-[0_16px_40px_rgba(15,23,42,0.18)] ring-1 ring-black/5">
+            {preview.imageUrl ? (
+              <img
+                src={preview.imageUrl}
+                alt={t('messages.imagePreview', 'Náhľad obrázka')}
+                className="block max-h-56 w-full object-cover"
+              />
+            ) : null}
+            {preview.text ? (
+              <div className="px-3 py-2">
+                <div className="whitespace-pre-wrap break-words">{preview.text}</div>
+              </div>
+            ) : null}
           </div>
         </div>
       ) : null}

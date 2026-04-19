@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from django.core.files.storage import default_storage
 from django.db import transaction
 from django.utils import timezone
 
@@ -55,7 +56,13 @@ def _ensure_participant(*, conversation: Conversation, user_id: int) -> Conversa
     return participant
 
 
-def send_message(*, conversation: Conversation, sender, text: str) -> SendMessageResult:
+def send_message(
+    *,
+    conversation: Conversation,
+    sender,
+    text: str | None = None,
+    image=None,
+) -> SendMessageResult:
     """
     Send a message in a conversation.
 
@@ -63,8 +70,8 @@ def send_message(*, conversation: Conversation, sender, text: str) -> SendMessag
     - Updates conversation.last_message_at.
     """
     clean = (text or "").strip()
-    if not clean:
-        raise ValueError("Message text cannot be empty.")
+    if not clean and not image:
+        raise ValueError("Message must contain text or an image.")
 
     now = timezone.now()
     with transaction.atomic():
@@ -82,6 +89,7 @@ def send_message(*, conversation: Conversation, sender, text: str) -> SendMessag
             conversation=convo,
             sender=sender,
             text=clean,
+            image=image,
             created_at=now,
         )
         recipient_user_ids = tuple(
@@ -173,8 +181,18 @@ def delete_message_for_all(
                 changed=False,
             )
 
-        Message.objects.filter(id=message.id, is_deleted=False).update(is_deleted=True)
+        image_name = getattr(message.image, "name", "") or ""
+
+        Message.objects.filter(id=message.id, is_deleted=False).update(
+            is_deleted=True,
+            text="",
+            image="",
+        )
         message.is_deleted = True
+        message.text = ""
+        if image_name:
+            message.image.name = ""
+            transaction.on_commit(lambda: default_storage.delete(image_name))
 
         return DeleteMessageResult(
             message=message,

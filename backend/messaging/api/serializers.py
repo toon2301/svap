@@ -3,6 +3,7 @@ from __future__ import annotations
 from django.core.files.storage import default_storage
 from django.contrib.auth import get_user_model
 from django.db.models import QuerySet
+from django.urls import reverse
 from rest_framework import serializers
 
 from accounts.name_normalization import get_canonical_display_name
@@ -60,6 +61,7 @@ class ConversationListItemSerializer(serializers.ModelSerializer):
     last_message_preview = serializers.SerializerMethodField()
     last_message_sender_id = serializers.IntegerField(read_only=True, allow_null=True)
     last_message_is_deleted = serializers.BooleanField(read_only=True)
+    last_message_has_image = serializers.BooleanField(read_only=True)
     last_read_at = serializers.DateTimeField(read_only=True, allow_null=True)
     has_unread = serializers.BooleanField(read_only=True)
     unread_count = serializers.IntegerField(read_only=True)
@@ -72,6 +74,7 @@ class ConversationListItemSerializer(serializers.ModelSerializer):
             "last_message_preview",
             "last_message_sender_id",
             "last_message_is_deleted",
+            "last_message_has_image",
             "other_user",
             "has_requestable_offers",
             "last_read_at",
@@ -116,7 +119,8 @@ class ConversationListItemSerializer(serializers.ModelSerializer):
     def get_last_message_preview(self, obj: Conversation):
         if getattr(obj, "last_message_is_deleted", False):
             return None
-        return getattr(obj, "last_message_preview", None)
+        preview = getattr(obj, "last_message_preview", None)
+        return preview or None
 
     def get_has_requestable_offers(self, obj: Conversation) -> bool:
         return bool(getattr(obj, "has_requestable_offers", False))
@@ -125,10 +129,22 @@ class ConversationListItemSerializer(serializers.ModelSerializer):
 class MessageSerializer(serializers.ModelSerializer):
     sender = serializers.SerializerMethodField()
     text = serializers.SerializerMethodField()
+    image_url = serializers.SerializerMethodField()
+    has_image = serializers.SerializerMethodField()
 
     class Meta:
         model = Message
-        fields = ["id", "conversation", "sender", "text", "created_at", "edited_at", "is_deleted"]
+        fields = [
+            "id",
+            "conversation",
+            "sender",
+            "text",
+            "image_url",
+            "has_image",
+            "created_at",
+            "edited_at",
+            "is_deleted",
+        ]
 
     def get_sender(self, obj: Message):
         request = self.context.get("request")
@@ -144,16 +160,57 @@ class MessageSerializer(serializers.ModelSerializer):
     def get_text(self, obj: Message):
         if obj.is_deleted:
             return None
-        return obj.text
+        return obj.text or None
+
+    def get_image_url(self, obj: Message):
+        if obj.is_deleted or not obj.image:
+            return None
+
+        request = self.context.get("request")
+        url = reverse(
+            "accounts:messaging_message_image",
+            kwargs={
+                "conversation_id": obj.conversation_id,
+                "message_id": obj.id,
+            },
+        )
+        return request.build_absolute_uri(url) if request else url
+
+    def get_has_image(self, obj: Message):
+        return bool(not obj.is_deleted and obj.image)
 
 
 class SendMessageSerializer(serializers.Serializer):
-    text = serializers.CharField(allow_blank=False, trim_whitespace=True, max_length=5000)
+    text = serializers.CharField(required=False, allow_blank=True, trim_whitespace=True, max_length=5000)
+    image = serializers.ImageField(required=False, allow_null=True)
+
+    def validate(self, attrs):
+        text = (attrs.get("text") or "").strip()
+        image = attrs.get("image")
+
+        attrs["text"] = text
+
+        if not text and not image:
+            raise serializers.ValidationError("Either text or image is required.")
+
+        return attrs
 
 
 class StartDirectMessageSerializer(serializers.Serializer):
     target_user_id = serializers.IntegerField(min_value=1)
-    text = serializers.CharField(allow_blank=False, trim_whitespace=True, max_length=5000)
+    text = serializers.CharField(required=False, allow_blank=True, trim_whitespace=True, max_length=5000)
+    image = serializers.ImageField(required=False, allow_null=True)
+
+    def validate(self, attrs):
+        text = (attrs.get("text") or "").strip()
+        image = attrs.get("image")
+
+        attrs["text"] = text
+
+        if not text and not image:
+            raise serializers.ValidationError("Either text or image is required.")
+
+        return attrs
 
 
 class MarkReadSerializer(serializers.Serializer):

@@ -252,8 +252,10 @@ export function ConversationsList({
               '{name}',
               title,
             );
+        const imageOnlyPreview = t('messages.imageOnlyPreview', 'ObrÃ¡zok');
         const rawPreview =
           conversation.last_message_preview ||
+          (conversation.last_message_has_image ? imageOnlyPreview : null) ||
           (conversation.last_message_at
             ? t('messages.noPreview', 'Message')
             : t('messages.noMessagesYet', 'No messages yet'));

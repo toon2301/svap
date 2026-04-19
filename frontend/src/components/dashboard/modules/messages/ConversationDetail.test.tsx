@@ -82,6 +82,8 @@ jest.mock('./messagingApi', () => ({
 const pushMock = jest.fn();
 const clipboardWriteTextMock = jest.fn();
 const execCommandMock = jest.fn();
+const createObjectURLMock = jest.fn();
+const revokeObjectURLMock = jest.fn();
 
 jest.mock('next/navigation', () => ({
   useRouter: () => ({
@@ -203,6 +205,15 @@ describe('ConversationDetail', () => {
     });
     clipboardWriteTextMock.mockResolvedValue(undefined);
     execCommandMock.mockReturnValue(true);
+    createObjectURLMock.mockReturnValue('blob:message-preview');
+    Object.defineProperty(URL, 'createObjectURL', {
+      configurable: true,
+      value: createObjectURLMock,
+    });
+    Object.defineProperty(URL, 'revokeObjectURL', {
+      configurable: true,
+      value: revokeObjectURLMock,
+    });
     Object.defineProperty(Element.prototype, 'scrollIntoView', {
       configurable: true,
       value: jest.fn(),
@@ -375,6 +386,42 @@ describe('ConversationDetail', () => {
     await waitFor(() => {
       expect(input).toHaveFocus();
       expect(input.value).toBe('');
+    });
+  });
+
+  it('sends a desktop message with an attached image and clears the preview after success', async () => {
+    const attachment = new File(['image'], 'photo.png', { type: 'image/png' });
+    (sendMessage as jest.Mock).mockResolvedValue(undefined);
+
+    render(<ConversationDetail conversationId={9} currentUserId={1} />);
+
+    await waitFor(() => {
+      expect(listMessages).toHaveBeenCalledWith(9, 100);
+    });
+
+    fireEvent.change(screen.getByTestId('conversation-image-picker-input'), {
+      target: { files: [attachment] },
+    });
+
+    expect(await screen.findByTestId('message-composer-image-preview')).toBeInTheDocument();
+
+    const input = screen.getByRole('textbox');
+    fireEvent.change(input, { target: { value: 'Ahoj s obrazkom' } });
+    fireEvent.click(screen.getByRole('button', { name: /odosla/i }));
+
+    await waitFor(() => {
+      expect(sendMessage).toHaveBeenCalledWith(
+        9,
+        expect.objectContaining({
+          text: 'Ahoj s obrazkom',
+          image: attachment,
+        }),
+      );
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByTestId('message-composer-image-preview')).not.toBeInTheDocument();
+      expect(revokeObjectURLMock).toHaveBeenCalledWith('blob:message-preview');
     });
   });
 
@@ -1424,6 +1471,28 @@ describe('ConversationDetail', () => {
     expect(screen.getByTestId('message-seen-indicator-2')).toBeInTheDocument();
     expect(screen.queryByTestId('message-seen-indicator-1')).not.toBeInTheDocument();
     expect(screen.queryByTestId('message-seen-indicator-3')).not.toBeInTheDocument();
+  });
+
+  it('renders an attached image inside the message bubble', async () => {
+    (listMessages as jest.Mock).mockResolvedValueOnce(
+      messagePage([
+        message({
+          id: 1,
+          text: 'Sprava s obrazkom',
+          image_url: 'https://example.com/chat-image.png',
+          has_image: true,
+          created_at: '2026-03-27T10:00:00Z',
+        }),
+      ]),
+    );
+
+    render(<ConversationDetail conversationId={9} currentUserId={1} />);
+
+    const bubble = await screen.findByTestId('message-bubble-1');
+    const imageElement = within(bubble).getByRole('img');
+
+    expect(imageElement).toHaveAttribute('src', 'https://example.com/chat-image.png');
+    expect(within(bubble).getByText('Sprava s obrazkom')).toBeInTheDocument();
   });
 
   it('updates the seen indicator when a peer read event arrives for the open conversation', async () => {

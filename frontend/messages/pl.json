@@ -182,7 +182,15 @@
     "deleteConversationConfirmTitle": "Usunac konwersacje?",
     "deleteConversationConfirmDescription": "Konwersacja zniknie tylko dla ciebie. Jesli druga osoba wysle nowa wiadomosc, ponownie pojawi sie na liscie wiadomosci.",
     "deleteConversationFailed": "Nie udalo sie usunac konwersacji. Sprobuj ponownie.",
-    "deleteConversationUnavailable": "Nie mozna juz usunac tej konwersacji."
+    "deleteConversationUnavailable": "Nie mozna juz usunac tej konwersacji.",
+    "attachImage": "Do??cz obraz",
+    "chooseImage": "Wybierz obraz",
+    "takePhoto": "Zr?b zdj?cie",
+    "removeAttachment": "Usu? za??cznik",
+    "imagePreview": "Podgl?d obrazu",
+    "imageOnlyPreview": "Zdj?cie",
+    "invalidImageType": "Wybierz prawid?owy obraz w formacie JPG, PNG, GIF, WebP lub HEIC.",
+    "imageTooLarge": "Obraz jest za du?y. Maksymalny rozmiar to {size} MB."
   },
   "search": {
     "title": "Szukaj",

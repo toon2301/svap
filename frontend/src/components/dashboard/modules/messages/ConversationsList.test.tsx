@@ -403,4 +403,23 @@ describe('ConversationsList', () => {
       expect(screen.getByText('Tester vymazal/a správu')).toBeInTheDocument();
     });
   });
+  it('shows an image preview label when the latest message only contains an image', async () => {
+    (listConversations as jest.Mock).mockResolvedValue([
+      {
+        id: 9,
+        other_user: { id: 2, display_name: 'Tester' },
+        last_message_preview: null,
+        last_message_has_image: true,
+        last_message_at: '2026-03-27T10:00:00Z',
+        last_message_sender_id: 2,
+        has_unread: false,
+      },
+    ]);
+
+    render(<ConversationsList currentUserId={1} variant="rail" />);
+
+    await waitFor(() => {
+      expect(screen.getByText((content) => content.toLowerCase().includes('obr'))).toBeInTheDocument();
+    });
+  });
 });
