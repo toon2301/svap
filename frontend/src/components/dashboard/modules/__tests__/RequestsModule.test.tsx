@@ -1,10 +1,16 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import RequestsModule from '../RequestsModule';
+import { fetchSkillRequests } from '../requests/requestsApi';
 
 const mockMarkAllRead = jest.fn().mockResolvedValue(undefined);
 const mockRefreshUnreadCount = jest.fn();
 let mockUnreadCount = 0;
+
+const mockUseIsMobileState = jest.fn(() => ({
+  isMobile: false,
+  isResolved: true,
+}));
 
 jest.mock('@/contexts/LanguageContext', () => ({
   useLanguage: () => ({
@@ -25,7 +31,8 @@ jest.mock('@/contexts/AuthContext', () => ({
 }));
 
 jest.mock('@/hooks', () => ({
-  useIsMobile: () => false,
+  useIsMobile: () => mockUseIsMobileState().isMobile,
+  useIsMobileState: () => mockUseIsMobileState(),
 }));
 
 jest.mock('../../contexts/RequestsNotificationsContext', () => ({
@@ -46,6 +53,8 @@ describe('RequestsModule', () => {
     mockUnreadCount = 0;
     mockMarkAllRead.mockClear();
     mockRefreshUnreadCount.mockClear();
+    mockUseIsMobileState.mockReturnValue({ isMobile: false, isResolved: true });
+    (fetchSkillRequests as jest.Mock).mockClear();
   });
 
   it('renders heading and empty state', async () => {
@@ -65,5 +74,14 @@ describe('RequestsModule', () => {
     await waitFor(() => {
       expect(mockMarkAllRead).toHaveBeenCalledTimes(1);
     });
+  });
+
+  it('does not fetch skill requests until viewport breakpoint is resolved', () => {
+    mockUseIsMobileState.mockReturnValue({ isMobile: false, isResolved: false });
+
+    render(<RequestsModule />);
+
+    expect(fetchSkillRequests as jest.Mock).not.toHaveBeenCalled();
+    expect(screen.queryByText('Spolupráce')).not.toBeInTheDocument();
   });
 });
