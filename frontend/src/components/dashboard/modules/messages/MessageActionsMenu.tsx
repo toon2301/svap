@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { TrashIcon } from '@heroicons/react/24/outline';
+import { DocumentDuplicateIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 type MessageActionPreview = {
@@ -15,7 +15,10 @@ type MessageActionsMenuProps = {
   isMobile: boolean;
   anchorRect: DOMRect | null;
   preview?: MessageActionPreview | null;
+  canCopy?: boolean;
+  canDelete?: boolean;
   onClose: () => void;
+  onCopy: () => void;
   onDelete: () => void;
 };
 
@@ -39,7 +42,10 @@ export function MessageActionsMenu({
   isMobile,
   anchorRect,
   preview = null,
+  canCopy = false,
+  canDelete = false,
   onClose,
+  onCopy,
   onDelete,
 }: MessageActionsMenuProps) {
   const { t } = useLanguage();
@@ -171,20 +177,40 @@ export function MessageActionsMenu({
         >
           <div className="px-4 pb-4 pt-3">
             <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-gray-300 dark:bg-gray-700" />
-            <button
-              type="button"
-              onClick={(event) => {
-                event.stopPropagation();
-                onDelete();
-              }}
-              onContextMenu={suppressNativeContextMenu}
-              className="flex w-full select-none items-center gap-3 rounded-2xl px-4 py-3 text-left text-sm font-medium text-red-600 transition-colors hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
-              data-testid="message-delete-action"
-              style={MOBILE_ACTIONS_INTERACTION_SUPPRESSION_STYLE}
-            >
-              <TrashIcon className="h-5 w-5" />
-              <span>{t('messages.deleteAction', 'Vymazať')}</span>
-            </button>
+            {canCopy ? (
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onCopy();
+                }}
+                onContextMenu={suppressNativeContextMenu}
+                className="flex w-full select-none items-center gap-3 rounded-2xl px-4 py-3 text-left text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800/60"
+                data-testid="message-copy-action"
+                style={MOBILE_ACTIONS_INTERACTION_SUPPRESSION_STYLE}
+              >
+                <DocumentDuplicateIcon className="h-5 w-5" />
+                <span>{t('messages.copyAction', 'Kopírovať')}</span>
+              </button>
+            ) : null}
+            {canDelete ? (
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onDelete();
+                }}
+                onContextMenu={suppressNativeContextMenu}
+                className={`flex w-full select-none items-center gap-3 rounded-2xl px-4 py-3 text-left text-sm font-medium text-red-600 transition-colors hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20${
+                  canCopy ? ' mt-2' : ''
+                }`}
+                data-testid="message-delete-action"
+                style={MOBILE_ACTIONS_INTERACTION_SUPPRESSION_STYLE}
+              >
+                <TrashIcon className="h-5 w-5" />
+                <span>{t('messages.deleteAction', 'Vymazať')}</span>
+              </button>
+            ) : null}
             <button
               type="button"
               onClick={(event) => {
@@ -222,15 +248,30 @@ export function MessageActionsMenu({
         style={desktopPosition ?? undefined}
         onClick={(event) => event.stopPropagation()}
       >
-        <button
-          type="button"
-          onClick={onDelete}
-          className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-red-600 transition-colors hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
-          data-testid="message-delete-action"
-        >
-          <TrashIcon className="h-4 w-4" />
-          <span>{t('messages.deleteAction', 'Vymazať')}</span>
-        </button>
+        {canCopy ? (
+          <button
+            type="button"
+            onClick={onCopy}
+            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800/60"
+            data-testid="message-copy-action"
+          >
+            <DocumentDuplicateIcon className="h-4 w-4" />
+            <span>{t('messages.copyAction', 'Kopírovať')}</span>
+          </button>
+        ) : null}
+        {canDelete ? (
+          <button
+            type="button"
+            onClick={onDelete}
+            className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-red-600 transition-colors hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20${
+              canCopy ? ' mt-1' : ''
+            }`}
+            data-testid="message-delete-action"
+          >
+            <TrashIcon className="h-4 w-4" />
+            <span>{t('messages.deleteAction', 'Vymazať')}</span>
+          </button>
+        ) : null}
       </div>
     </div>
   );

@@ -13,6 +13,7 @@ import {
 } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 import type { ConversationListItem, MessageItem, MessageListPage } from './types';
+import { copyTextToClipboard } from '@/lib/clipboard';
 import {
   deleteMessage,
   getMessagingErrorMessage,
@@ -429,6 +430,17 @@ export function ConversationDetail({
     return messages.find((item) => item.id === messageActionsTarget.messageId) ?? null;
   }, [messageActionsTarget, messages]);
 
+  const canCopySelectedMessage =
+    selectedMessageForActions !== null &&
+    !selectedMessageForActions.is_deleted &&
+    typeof selectedMessageForActions.text === 'string' &&
+    selectedMessageForActions.text.length > 0;
+  const canDeleteSelectedMessage =
+    selectedMessageForActions !== null &&
+    !selectedMessageForActions.is_deleted &&
+    selectedMessageForActions.sender?.id === currentUserId;
+  const hasSelectedMessageActions = canCopySelectedMessage || canDeleteSelectedMessage;
+
   useEffect(() => {
     if (messageActionsTarget === null) {
       return;
@@ -437,11 +449,31 @@ export function ConversationDetail({
     if (
       !selectedMessageForActions ||
       selectedMessageForActions.is_deleted ||
-      selectedMessageForActions.sender?.id !== currentUserId
+      !hasSelectedMessageActions
     ) {
       closeMessageActions();
     }
-  }, [closeMessageActions, currentUserId, messageActionsTarget, selectedMessageForActions]);
+  }, [closeMessageActions, hasSelectedMessageActions, messageActionsTarget, selectedMessageForActions]);
+
+  const handleCopyMessage = useCallback(async () => {
+    if (!canCopySelectedMessage || !selectedMessageForActions?.text) {
+      return;
+    }
+
+    try {
+      const copied = await copyTextToClipboard(selectedMessageForActions.text);
+
+      if (copied) {
+        closeMessageActions();
+        toast.success(t('messages.copySuccess', 'Správa bola skopírovaná.'));
+        return;
+      }
+    } catch {
+      // Fall through to the error toast below.
+    }
+
+    toast.error(t('messages.copyFailed', 'Správu sa nepodarilo skopírovať.'));
+  }, [canCopySelectedMessage, closeMessageActions, selectedMessageForActions, t]);
 
   const lastSeenMessageId = useMemo(() => {
     const peerReadTimestamp = timestampValue(peerLastReadAt);
@@ -963,9 +995,9 @@ export function ConversationDetail({
     [openMessageActions],
   );
 
-  const getOwnMessageInteractionProps = useCallback(
-    (messageId: number, isDeleted: boolean) => {
-      if (isDeleted) {
+  const getMessageInteractionProps = useCallback(
+    (messageId: number, hasActions: boolean) => {
+      if (!hasActions) {
         return {};
       }
 
@@ -1095,10 +1127,12 @@ export function ConversationDetail({
                 const showSeenIndicator = mine && !m.is_deleted && lastSeenMessageId === m.id;
                 const senderAvatarUrl = m.sender?.avatar_url || targetUserAvatarUrl;
                 const senderDisplayName = (m.sender?.display_name || '').trim() || targetUserName;
-                const ownMessageInteractionProps = mine
-                  ? getOwnMessageInteractionProps(m.id, m.is_deleted)
-                  : {};
-                const showDesktopMessageActionsTrigger = mine && !m.is_deleted && !isMobile;
+                const messageCanDelete = mine && !m.is_deleted;
+                const messageCanCopy =
+                  !m.is_deleted && typeof m.text === 'string' && m.text.length > 0;
+                const messageHasActions = messageCanCopy || messageCanDelete;
+                const messageInteractionProps = getMessageInteractionProps(m.id, messageHasActions);
+                const showDesktopMessageActionsTrigger = messageHasActions && !isMobile;
                 const displayText = m.is_deleted
                   ? t('messages.deleted', 'Správa bola vymazaná')
                   : m.text;
@@ -1110,9 +1144,9 @@ export function ConversationDetail({
                     ? 'bg-brand text-white'
                     : 'bg-gray-100 dark:bg-[#141416] text-gray-900 dark:text-gray-100 border border-gray-200/60 dark:border-gray-800',
                 ].join(' ');
-                const suppressMobileOwnMessageSelection = mine && isMobile;
+                const suppressMobileMessageSelection = isMobile && messageHasActions;
                 const messageTextClassName = `whitespace-pre-wrap break-words${
-                  suppressMobileOwnMessageSelection ? ' select-none' : ''
+                  suppressMobileMessageSelection ? ' select-none' : ''
                 }`;
 
                 return mine ? (
@@ -1153,28 +1187,28 @@ export function ConversationDetail({
                         ) : null}
                         <div
                           data-testid={`message-bubble-${m.id}`}
-                          className={`${bubbleClassName}${suppressMobileOwnMessageSelection ? ' select-none' : ''}`}
+                          className={`${bubbleClassName}${suppressMobileMessageSelection ? ' select-none' : ''}`}
                           style={
-                            suppressMobileOwnMessageSelection
+                            suppressMobileMessageSelection
                               ? MOBILE_OWN_MESSAGE_BUBBLE_SUPPRESSION_STYLE
                               : undefined
                           }
                           onContextMenu={
-                            suppressMobileOwnMessageSelection
+                            suppressMobileMessageSelection
                               ? suppressNativeMessageContextMenu
                               : undefined
                           }
-                          {...ownMessageInteractionProps}
+                          {...messageInteractionProps}
                         >
                           <div
                             className={messageTextClassName}
                             style={
-                              suppressMobileOwnMessageSelection
+                              suppressMobileMessageSelection
                                 ? MOBILE_OWN_MESSAGE_BUBBLE_SUPPRESSION_STYLE
                                 : undefined
                             }
                             onContextMenu={
-                              suppressMobileOwnMessageSelection
+                              suppressMobileMessageSelection
                                 ? suppressNativeMessageContextMenu
                                 : undefined
                             }
@@ -1212,9 +1246,9 @@ export function ConversationDetail({
                     className={`flex justify-start ${isMobile ? 'pl-0' : 'pl-1'}`}
                   >
                     <div
-                      className={`flex min-w-0 flex-col ${
+                      className={`group flex min-w-0 flex-col ${
                         isMobile ? 'max-w-full' : 'max-w-[80%]'
-                      }`}
+                      }${isSelectedForMobileMessageActions ? ' opacity-0 pointer-events-none' : ''}`}
                     >
                       {showTimestamp ? (
                         <div
@@ -1256,8 +1290,57 @@ export function ConversationDetail({
                             isMobile ? 'max-w-[calc(100%-1.75rem)]' : ''
                           }`}
                         >
-                          <div data-testid={`message-bubble-${m.id}`} className={bubbleClassName}>
-                            <div className="whitespace-pre-wrap break-words">{displayText}</div>
+                          <div className="relative w-fit max-w-full">
+                            <div
+                              data-testid={`message-bubble-${m.id}`}
+                              className={`${bubbleClassName}${
+                                suppressMobileMessageSelection ? ' select-none' : ''
+                              }`}
+                              style={
+                                suppressMobileMessageSelection
+                                  ? MOBILE_OWN_MESSAGE_BUBBLE_SUPPRESSION_STYLE
+                                  : undefined
+                              }
+                              onContextMenu={
+                                suppressMobileMessageSelection
+                                  ? suppressNativeMessageContextMenu
+                                  : undefined
+                              }
+                              {...messageInteractionProps}
+                            >
+                              <div
+                                className={messageTextClassName}
+                                style={
+                                  suppressMobileMessageSelection
+                                    ? MOBILE_OWN_MESSAGE_BUBBLE_SUPPRESSION_STYLE
+                                    : undefined
+                                }
+                                onContextMenu={
+                                  suppressMobileMessageSelection
+                                    ? suppressNativeMessageContextMenu
+                                    : undefined
+                                }
+                              >
+                                {displayText}
+                              </div>
+                            </div>
+                            {showDesktopMessageActionsTrigger ? (
+                              <button
+                                type="button"
+                                data-testid={`message-actions-trigger-${m.id}`}
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  handleMessageActionTrigger(m.id, event.currentTarget);
+                                }}
+                                className="pointer-events-none absolute left-full top-1/2 ml-2 -translate-y-1/2 rounded-full p-1.5 text-gray-400 opacity-0 transition-all duration-150 hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-brand/30 focus-visible:pointer-events-auto focus-visible:opacity-100 group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100 dark:text-gray-500 dark:hover:bg-[#141416] dark:hover:text-gray-200"
+                                aria-label={t(
+                                  'messages.openMessageActions',
+                                  'OtvoriÅ¥ moÅ¾nosti sprÃ¡vy',
+                                )}
+                              >
+                                <EllipsisHorizontalIcon className="h-5 w-5" />
+                              </button>
+                            ) : null}
                           </div>
                         </div>
                       </div>
@@ -1410,7 +1493,12 @@ export function ConversationDetail({
         isMobile={isMobile}
         anchorRect={messageActionsTarget?.anchorRect ?? null}
         preview={selectedMessageActionPreview}
+        canCopy={canCopySelectedMessage}
+        canDelete={canDeleteSelectedMessage}
         onClose={closeMessageActions}
+        onCopy={() => {
+          void handleCopyMessage();
+        }}
         onDelete={() => {
           if (messageActionsTarget === null) return;
           setMessagePendingDeleteId(messageActionsTarget.messageId);

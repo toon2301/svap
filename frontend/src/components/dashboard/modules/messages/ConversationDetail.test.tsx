@@ -80,6 +80,8 @@ jest.mock('./messagingApi', () => ({
 }));
 
 const pushMock = jest.fn();
+const clipboardWriteTextMock = jest.fn();
+const execCommandMock = jest.fn();
 
 jest.mock('next/navigation', () => ({
   useRouter: () => ({
@@ -185,6 +187,22 @@ describe('ConversationDetail', () => {
     jest.resetAllMocks();
     useIsMobile.mockReturnValue(false);
     setVisibilityState('visible');
+    Object.defineProperty(window, 'isSecureContext', {
+      configurable: true,
+      value: true,
+    });
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: {
+        writeText: clipboardWriteTextMock,
+      },
+    });
+    Object.defineProperty(document, 'execCommand', {
+      configurable: true,
+      value: execCommandMock,
+    });
+    clipboardWriteTextMock.mockResolvedValue(undefined);
+    execCommandMock.mockReturnValue(true);
     Object.defineProperty(Element.prototype, 'scrollIntoView', {
       configurable: true,
       value: jest.fn(),
@@ -1483,6 +1501,95 @@ describe('ConversationDetail', () => {
     });
   });
 
+  it('copies an own message from the desktop message actions menu', async () => {
+    (listMessages as jest.Mock).mockResolvedValueOnce(
+      messagePage([
+        message({
+          id: 1,
+          sender: { id: 1, display_name: 'Me' },
+          text: 'Moja sprava',
+          created_at: '2026-03-27T10:00:00Z',
+        }),
+      ]),
+    );
+
+    render(<ConversationDetail conversationId={9} currentUserId={1} />);
+
+    await screen.findByText('Moja sprava');
+
+    fireEvent.click(screen.getByTestId('message-actions-trigger-1'));
+
+    expect(await screen.findByTestId('message-copy-action')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('message-copy-action'));
+
+    await waitFor(() => {
+      expect(clipboardWriteTextMock).toHaveBeenCalledWith('Moja sprava');
+      expect(toast.success).toHaveBeenCalledWith('Správa bola skopírovaná.');
+      expect(screen.queryByTestId('message-actions-menu')).not.toBeInTheDocument();
+    });
+
+    expect(deleteMessage).not.toHaveBeenCalled();
+  });
+
+  it('copies another users message from the desktop message actions menu without offering delete', async () => {
+    (listMessages as jest.Mock).mockResolvedValueOnce(
+      messagePage([
+        message({
+          id: 1,
+          text: 'Sprava od druheho uzivatela',
+          created_at: '2026-03-27T10:00:00Z',
+        }),
+      ]),
+    );
+
+    render(<ConversationDetail conversationId={9} currentUserId={1} />);
+
+    await screen.findByText('Sprava od druheho uzivatela');
+
+    fireEvent.click(screen.getByTestId('message-actions-trigger-1'));
+
+    expect(await screen.findByTestId('message-copy-action')).toBeInTheDocument();
+    expect(screen.queryByTestId('message-delete-action')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('message-copy-action'));
+
+    await waitFor(() => {
+      expect(clipboardWriteTextMock).toHaveBeenCalledWith('Sprava od druheho uzivatela');
+      expect(toast.success).toHaveBeenCalledWith('Správa bola skopírovaná.');
+      expect(screen.queryByTestId('message-actions-menu')).not.toBeInTheDocument();
+    });
+
+    expect(deleteMessage).not.toHaveBeenCalled();
+  });
+
+  it('shows an error toast when message copy fails', async () => {
+    clipboardWriteTextMock.mockRejectedValueOnce(new Error('copy failed'));
+    execCommandMock.mockReturnValue(false);
+    (listMessages as jest.Mock).mockResolvedValueOnce(
+      messagePage([
+        message({
+          id: 1,
+          sender: { id: 1, display_name: 'Me' },
+          text: 'Moja sprava',
+          created_at: '2026-03-27T10:00:00Z',
+        }),
+      ]),
+    );
+
+    render(<ConversationDetail conversationId={9} currentUserId={1} />);
+
+    await screen.findByText('Moja sprava');
+
+    fireEvent.click(screen.getByTestId('message-actions-trigger-1'));
+    fireEvent.click(await screen.findByTestId('message-copy-action'));
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith('Správu sa nepodarilo skopírovať.');
+      expect(screen.getByTestId('message-actions-menu')).toBeInTheDocument();
+    });
+  });
+
   it('opens the message action sheet on mobile long press for an own message', async () => {
     jest.useFakeTimers();
     useIsMobile.mockReturnValue(true);
@@ -1527,6 +1634,83 @@ describe('ConversationDetail', () => {
     fireEvent.click(screen.getByTestId('message-actions-backdrop'));
 
     await waitFor(() => {
+      expect(screen.queryByTestId('message-actions-menu')).not.toBeInTheDocument();
+    });
+  });
+
+  it('copies an own message from the mobile long-press menu using the fallback path', async () => {
+    jest.useFakeTimers();
+    useIsMobile.mockReturnValue(true);
+    Object.defineProperty(window, 'isSecureContext', {
+      configurable: true,
+      value: false,
+    });
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: undefined,
+    });
+    (listMessages as jest.Mock).mockResolvedValueOnce(
+      messagePage([
+        message({
+          id: 1,
+          sender: { id: 1, display_name: 'Me' },
+          text: 'Moja mobilna sprava',
+          created_at: '2026-03-27T10:00:00Z',
+        }),
+      ]),
+    );
+
+    render(<ConversationDetail conversationId={9} currentUserId={1} />);
+
+    const bubble = await screen.findByTestId('message-bubble-1');
+    fireEvent.touchStart(bubble);
+
+    act(() => {
+      jest.advanceTimersByTime(450);
+    });
+
+    expect(await screen.findByTestId('message-copy-action')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('message-copy-action'));
+
+    await waitFor(() => {
+      expect(execCommandMock).toHaveBeenCalledWith('copy');
+      expect(toast.success).toHaveBeenCalledWith('Správa bola skopírovaná.');
+      expect(screen.queryByTestId('message-actions-menu')).not.toBeInTheDocument();
+    });
+  });
+
+  it('opens the message action sheet for another users mobile message with copy only', async () => {
+    jest.useFakeTimers();
+    useIsMobile.mockReturnValue(true);
+    (listMessages as jest.Mock).mockResolvedValueOnce(
+      messagePage([
+        message({
+          id: 1,
+          text: 'Mobilna sprava od druheho uzivatela',
+          created_at: '2026-03-27T10:00:00Z',
+        }),
+      ]),
+    );
+
+    render(<ConversationDetail conversationId={9} currentUserId={1} />);
+
+    const bubble = await screen.findByTestId('message-bubble-1');
+    fireEvent.touchStart(bubble);
+
+    act(() => {
+      jest.advanceTimersByTime(450);
+    });
+
+    expect(await screen.findByTestId('message-actions-menu')).toBeInTheDocument();
+    expect(screen.getByTestId('message-copy-action')).toBeInTheDocument();
+    expect(screen.queryByTestId('message-delete-action')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('message-copy-action'));
+
+    await waitFor(() => {
+      expect(clipboardWriteTextMock).toHaveBeenCalledWith('Mobilna sprava od druheho uzivatela');
+      expect(toast.success).toHaveBeenCalledWith('Správa bola skopírovaná.');
       expect(screen.queryByTestId('message-actions-menu')).not.toBeInTheDocument();
     });
   });
