@@ -3,7 +3,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Bars3Icon } from '@heroicons/react/24/outline';
 import { ChatBubbleLeftRightIcon } from '@heroicons/react/24/outline';
-import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { ensureFreshSessionForBackgroundWork } from '@/lib/api';
 import { syncMessageUnreadCountFromConversations } from '@/components/dashboard/contexts/messageUnreadStore';
@@ -17,7 +16,7 @@ import {
   MESSAGING_CONVERSATIONS_REFRESH_EVENT,
   requestConversationsRefresh,
 } from './messagesEvents';
-import { buildMessagesUrl } from './messagesRouting';
+import { navigateMessagesUrl } from './messagesRouting';
 
 const IDLE_CONVERSATIONS_POLL_INTERVAL_MS = 30_000;
 
@@ -33,7 +32,6 @@ export function ConversationsList({
   className?: string;
 }) {
   const { t } = useLanguage();
-  const router = useRouter();
   const [items, setItems] = useState<ConversationListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [conversationActionsTarget, setConversationActionsTarget] = useState<{
@@ -120,9 +118,9 @@ export function ConversationsList({
             : item,
         ),
       );
-      router.push(buildMessagesUrl(conversationId));
+      navigateMessagesUrl(conversationId);
     },
-    [router],
+    [],
   );
 
   const handleDeleteConversation = useCallback(async () => {
@@ -137,7 +135,7 @@ export function ConversationsList({
       closeConversationActions();
       requestConversationsRefresh();
       if (selectedConversationId === conversationId) {
-        router.push(buildMessagesUrl());
+        navigateMessagesUrl();
       }
     } catch (error) {
       toast.error(
@@ -160,7 +158,6 @@ export function ConversationsList({
     conversationPendingDeleteId,
     isDeletingConversation,
     removeConversationLocally,
-    router,
     selectedConversationId,
     t,
   ]);

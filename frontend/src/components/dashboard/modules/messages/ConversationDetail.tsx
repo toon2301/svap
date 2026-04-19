@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useMessagesNotifications } from '@/components/dashboard/contexts/RequestsNotificationsContext';
 import { useIsMobile } from '@/hooks';
@@ -44,7 +43,7 @@ import {
   type MessagingRealtimeReadPayload,
   type MessagingRealtimeMessagePayload,
 } from './messagesEvents';
-import { buildMessagesUrl } from './messagesRouting';
+import { navigateMessagesUrl } from './messagesRouting';
 import { useMobileViewportHeight } from '../../hooks/useMobileViewportHeight';
 import {
   INITIAL_MESSAGES_PAGE_SIZE,
@@ -123,7 +122,6 @@ export function ConversationDetail({
   className?: string;
 }) {
   const { t } = useLanguage();
-  const router = useRouter();
   const isMobile = useIsMobile();
   const { setActiveConversationId, syncConversationReadState } = useMessagesNotifications();
   const [messages, setMessages] = useState<MessageItem[]>([]);
@@ -448,7 +446,7 @@ export function ConversationDetail({
         totalUnreadCount: result.total_unread_count,
       });
       requestConversationsRefresh();
-      router.push(buildMessagesUrl());
+      navigateMessagesUrl();
     } catch (error) {
       toast.error(
         getMessagingErrorMessage(error, {
@@ -469,7 +467,6 @@ export function ConversationDetail({
     closeConversationActions,
     conversationId,
     isDeletingConversation,
-    router,
     syncConversationReadState,
     t,
   ]);

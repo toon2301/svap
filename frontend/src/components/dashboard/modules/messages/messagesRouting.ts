@@ -34,3 +34,17 @@ export function buildMessagesUrl(
     ? `/dashboard/messages?targetUserId=${normalizedTargetId}`
     : '/dashboard/messages';
 }
+
+export function navigateMessagesUrl(
+  conversationId?: number | null,
+  options?: { targetUserId?: number | null; mode?: 'push' | 'replace' },
+): string {
+  const url = buildMessagesUrl(conversationId, options);
+
+  if (typeof window !== 'undefined') {
+    const method = options?.mode === 'replace' ? 'replaceState' : 'pushState';
+    window.history[method](null, '', url);
+  }
+
+  return url;
+}

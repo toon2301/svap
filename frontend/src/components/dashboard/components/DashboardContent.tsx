@@ -11,7 +11,12 @@ import ModuleRouter from '../ModuleRouter';
 import DashboardModals from '../DashboardModals';
 import SearchModule from '../modules/SearchModule';
 import { MessagesDesktopRail } from '../modules/messages/MessagesDesktopRail';
-import { buildMessagesUrl, parseConversationId, parseTargetUserId } from '../modules/messages/messagesRouting';
+import {
+  buildMessagesUrl,
+  navigateMessagesUrl,
+  parseConversationId,
+  parseTargetUserId,
+} from '../modules/messages/messagesRouting';
 import { listConversations, openConversation } from '../modules/messages/messagingApi';
 import type { MessagingUserBrief } from '../modules/messages/types';
 import { useDashboardState } from '../hooks/useDashboardState';
@@ -476,8 +481,8 @@ export default function DashboardContent({
     setIsRightSidebarOpen(false);
     setActiveRightItem('');
     setIsMobileMenuOpen(false);
-    router.push(buildMessagesUrl());
-  }, [router, setActiveModule, setActiveRightItem, setIsMobileMenuOpen, setIsRightSidebarOpen]);
+    navigateMessagesUrl();
+  }, [setActiveModule, setActiveRightItem, setIsMobileMenuOpen, setIsRightSidebarOpen]);
 
   const dashboardLoadingScreen = (
     <div className="min-h-screen flex items-center justify-center bg-[var(--background)]">

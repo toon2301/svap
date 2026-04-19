@@ -330,7 +330,7 @@ describe('ConversationsList', () => {
     });
 
     expect(refreshSpy).toHaveBeenCalledTimes(1);
-    expect(pushMock).not.toHaveBeenCalledWith('/dashboard/messages');
+    expect(window.location.pathname + window.location.search).not.toBe('/dashboard/messages');
     window.removeEventListener('messaging:conversations:refresh', refreshSpy);
   });
 
@@ -360,7 +360,7 @@ describe('ConversationsList', () => {
 
     await waitFor(() => {
       expect(hideConversation).toHaveBeenCalledWith(9);
-      expect(pushMock).toHaveBeenCalledWith('/dashboard/messages');
+      expect(window.location.pathname + window.location.search).toBe('/dashboard/messages');
     });
   });
 

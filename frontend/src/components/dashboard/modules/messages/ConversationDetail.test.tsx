@@ -558,7 +558,7 @@ describe('ConversationDetail', () => {
 
     await waitFor(() => {
       expect(hideConversation).toHaveBeenCalledWith(9);
-      expect(pushMock).toHaveBeenCalledWith('/dashboard/messages');
+      expect(window.location.pathname + window.location.search).toBe('/dashboard/messages');
       expect(conversationsRefreshSpy).toHaveBeenCalledTimes(1);
     });
 

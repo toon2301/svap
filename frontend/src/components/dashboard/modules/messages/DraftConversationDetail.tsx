@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import {
   CameraIcon,
@@ -20,7 +19,7 @@ import { DesktopEmojiPickerButton } from './DesktopEmojiPickerButton';
 import { MessageComposerImagePreview } from './MessageComposerImagePreview';
 import type { ConversationDraft, MessagingUserBrief } from './types';
 import { requestConversationsRefresh } from './messagesEvents';
-import { buildMessagesUrl } from './messagesRouting';
+import { navigateMessagesUrl } from './messagesRouting';
 import { getMessageImageMaxSizeMb, validateMessageImageFile } from './messageImageUpload';
 
 function resolveTargetName(targetUser: MessagingUserBrief | null, fallback: string): string {
@@ -37,7 +36,6 @@ export function DraftConversationDetail({
 }) {
   const { t } = useLanguage();
   const isMobile = useIsMobile();
-  const router = useRouter();
   const [draft, setDraft] = useState<ConversationDraft | null>(null);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
@@ -84,7 +82,7 @@ export function DraftConversationDetail({
         if (cancelled) return;
 
         if (!result.is_draft && typeof result.id === 'number') {
-          router.replace(buildMessagesUrl(result.id));
+          navigateMessagesUrl(result.id, { mode: 'replace' });
           return;
         }
 
@@ -115,7 +113,7 @@ export function DraftConversationDetail({
     return () => {
       cancelled = true;
     };
-  }, [router, t, targetUserId]);
+  }, [t, targetUserId]);
 
   const targetUser = draft?.other_user ?? null;
   const targetUserName = useMemo(
@@ -255,7 +253,7 @@ export function DraftConversationDetail({
       setText('');
       clearPendingImage();
       requestConversationsRefresh();
-      router.replace(buildMessagesUrl(result.conversation_id));
+      navigateMessagesUrl(result.conversation_id, { mode: 'replace' });
     } catch (error) {
       toast.error(
         getMessagingErrorMessage(error, {

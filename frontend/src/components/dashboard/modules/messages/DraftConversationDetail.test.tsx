@@ -87,7 +87,9 @@ describe('DraftConversationDetail', () => {
     render(<DraftConversationDetail targetUserId={42} />);
 
     await waitFor(() => {
-      expect(replaceMock).toHaveBeenCalledWith('/dashboard/messages?conversationId=77');
+      expect(window.location.pathname + window.location.search).toBe(
+        '/dashboard/messages?conversationId=77',
+      );
     });
   });
 
@@ -145,7 +147,9 @@ describe('DraftConversationDetail', () => {
 
     await waitFor(() => {
       expect(sendDirectMessage).toHaveBeenCalledWith(42, 'Ahoj');
-      expect(replaceMock).toHaveBeenCalledWith('/dashboard/messages?conversationId=91');
+      expect(window.location.pathname + window.location.search).toBe(
+        '/dashboard/messages?conversationId=91',
+      );
     });
   });
 
@@ -180,7 +184,9 @@ describe('DraftConversationDetail', () => {
           image: attachment,
         }),
       );
-      expect(replaceMock).toHaveBeenCalledWith('/dashboard/messages?conversationId=91');
+      expect(window.location.pathname + window.location.search).toBe(
+        '/dashboard/messages?conversationId=91',
+      );
       expect(revokeObjectURLMock).toHaveBeenCalledWith('blob:draft-preview');
     });
   });
