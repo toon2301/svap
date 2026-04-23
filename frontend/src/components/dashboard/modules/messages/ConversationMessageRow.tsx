@@ -9,6 +9,11 @@ import { MOBILE_OWN_MESSAGE_BUBBLE_SUPPRESSION_STYLE } from './conversationDetai
 
 const DESKTOP_ACTION_TRIGGER_HIDE_DELAY_MS = 150;
 
+type MessageRowRootDivAttributes = React.HTMLAttributes<HTMLDivElement> & {
+  'data-message-row-id'?: string;
+  'data-testid'?: string;
+};
+
 type ConversationMessageRowProps = {
   message: MessageItem;
   prevMessage: MessageItem | null;
@@ -25,7 +30,7 @@ type ConversationMessageRowProps = {
   seenLabel: string;
   isSelectedForMobileMessageActions: boolean;
   messageInteractionProps?: React.HTMLAttributes<HTMLDivElement>;
-  messageRowAttributes?: React.HTMLAttributes<HTMLDivElement>;
+  messageRowAttributes?: MessageRowRootDivAttributes;
   suppressNativeMessageContextMenu?: React.MouseEventHandler<HTMLDivElement>;
   onMessageActionTrigger: (messageId: number, element: HTMLElement | null) => void;
   onMessageImageClick: (

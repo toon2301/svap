@@ -18,7 +18,7 @@ type ConversationMobileComposerProps = {
   text: string;
   hasContentToSend: boolean;
   isComposerInputDisabled: boolean;
-  inputRef: React.RefObject<HTMLInputElement | null>;
+  inputRef: React.RefObject<HTMLInputElement>;
   chooseImageLabel: string;
   takePhotoLabel: string;
   typePlaceholder: string;

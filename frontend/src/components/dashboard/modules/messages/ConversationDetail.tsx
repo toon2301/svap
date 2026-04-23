@@ -98,7 +98,7 @@ export function ConversationDetail({
   const [isRequestPickerOpen, setIsRequestPickerOpen] = useState(false);
   const messagesScrollRef = useRef<HTMLDivElement | null>(null);
   const messagesStackRef = useRef<HTMLDivElement | null>(null);
-  const inputRef = useRef<HTMLInputElement | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const shouldRestoreFocusRef = useRef(false);
   const pendingLatestScrollAfterRefreshRef = useRef(false);
   const shouldScrollToLatestOnRenderRef = useRef(false);
