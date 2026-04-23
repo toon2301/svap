@@ -91,18 +91,8 @@ export function ConversationDesktopComposer({
           data-testid="conversation-composer"
           onFocusCapture={onFocusCapture}
           onBlurCapture={onBlurCapture}
-          className="flex w-full min-w-0 shrink-0 gap-2 border-t border-gray-200 bg-white/90 px-3 py-3 dark:border-gray-800 dark:bg-[#0f0f10]/90"
+          className="flex w-full min-w-0 shrink-0 gap-3 border-t border-gray-200 bg-white/90 px-3 py-3 dark:border-gray-800 dark:bg-[#0f0f10]/90"
         >
-          <button
-            type="button"
-            data-testid="conversation-image-picker-trigger"
-            onClick={onOpenImagePicker}
-            disabled={sending}
-            className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-gray-200 bg-white text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-brand/30 disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-800 dark:bg-black dark:text-gray-400 dark:hover:bg-[#141416] dark:hover:text-gray-200"
-            aria-label={attachImageLabel}
-          >
-            <PhotoIcon className="h-5 w-5" />
-          </button>
           <div className="relative min-w-0 flex-1">
             <input
               ref={inputRef}
@@ -110,9 +100,19 @@ export function ConversationDesktopComposer({
               onChange={(event) => onTextChange(event.target.value)}
               disabled={isComposerInputDisabled}
               onKeyDown={onInputKeyDown}
-              className="min-w-0 w-full rounded-2xl border border-gray-200 bg-white px-4 py-2 pr-12 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand/40 dark:border-gray-800 dark:bg-black dark:text-gray-100"
+              className="min-w-0 w-full rounded-2xl border border-gray-200 bg-white px-4 py-2 pr-24 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand/40 dark:border-gray-800 dark:bg-black dark:text-gray-100"
               placeholder={typePlaceholder}
             />
+            <button
+              type="button"
+              data-testid="conversation-image-picker-trigger"
+              onClick={onOpenImagePicker}
+              disabled={sending}
+              className="absolute right-10 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-brand/30 disabled:cursor-not-allowed disabled:opacity-60 dark:text-gray-400 dark:hover:bg-[#141416] dark:hover:text-gray-200"
+              aria-label={attachImageLabel}
+            >
+              <PhotoIcon className="h-4 w-4" />
+            </button>
             <DesktopEmojiPickerButton
               ariaLabel={addEmojiLabel}
               disabled={sending}

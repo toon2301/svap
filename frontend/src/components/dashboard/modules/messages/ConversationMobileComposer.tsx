@@ -99,30 +99,8 @@ export function ConversationMobileComposer({
           data-testid="conversation-composer"
           onFocusCapture={onFocusCapture}
           onBlurCapture={onBlurCapture}
-          className="relative z-10 flex w-full min-w-0 shrink-0 items-center gap-2 overflow-x-hidden border-t border-gray-200 bg-white/90 px-2.5 py-2.5 dark:border-gray-800 dark:bg-[#0f0f10]/90"
+          className="relative z-10 flex w-full min-w-0 shrink-0 items-center overflow-x-hidden border-t border-gray-200 bg-white/90 px-2.5 py-2.5 dark:border-gray-800 dark:bg-[#0f0f10]/90"
         >
-          <div className="flex shrink-0 items-center gap-1">
-            <button
-              type="button"
-              data-testid="conversation-image-picker-trigger"
-              onClick={onOpenImagePicker}
-              disabled={sending}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-brand/30 disabled:cursor-not-allowed disabled:opacity-60 dark:text-gray-400 dark:hover:bg-[#141416] dark:hover:text-gray-200"
-              aria-label={chooseImageLabel}
-            >
-              <PhotoIcon className="h-5 w-5" />
-            </button>
-            <button
-              type="button"
-              data-testid="conversation-camera-picker-trigger"
-              onClick={onOpenCameraPicker}
-              disabled={sending}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-brand/30 disabled:cursor-not-allowed disabled:opacity-60 dark:text-gray-400 dark:hover:bg-[#141416] dark:hover:text-gray-200"
-              aria-label={takePhotoLabel}
-            >
-              <CameraIcon className="h-5 w-5" />
-            </button>
-          </div>
           <div className="relative flex min-h-0 min-w-0 flex-1 items-center overflow-hidden rounded-2xl border border-gray-200 bg-white px-2 dark:border-gray-800 dark:bg-black">
             <input
               ref={inputRef}
@@ -132,23 +110,45 @@ export function ConversationMobileComposer({
               onKeyDown={onInputKeyDown}
               className={`min-w-0 w-full border-0 bg-transparent py-2 text-sm text-gray-900 focus:outline-none dark:text-gray-100 ${
                 hasContentToSend
-                  ? 'overflow-x-hidden text-ellipsis whitespace-nowrap pl-2 pr-12'
-                  : 'overflow-x-hidden text-ellipsis whitespace-nowrap px-2'
+                  ? 'overflow-x-hidden text-ellipsis whitespace-nowrap pl-2 pr-28'
+                  : 'overflow-x-hidden text-ellipsis whitespace-nowrap px-2 pr-20'
               }`}
               placeholder={typePlaceholder}
             />
-            {hasContentToSend ? (
+            <div className="absolute right-1 top-1/2 flex -translate-y-1/2 items-center gap-0.5">
+              {hasContentToSend ? (
+                <button
+                  type="button"
+                  disabled={sending}
+                  onPointerDown={onSendPointerDown}
+                  onClick={onSend}
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-brand text-white transition-colors hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-60"
+                  aria-label={sendLabel}
+                >
+                  <PaperAirplaneIcon className="h-4 w-4 -rotate-45" />
+                </button>
+              ) : null}
               <button
                 type="button"
+                data-testid="conversation-image-picker-trigger"
+                onClick={onOpenImagePicker}
                 disabled={sending}
-                onPointerDown={onSendPointerDown}
-                onClick={onSend}
-                className="absolute right-1.5 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-brand text-white transition-colors hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-60"
-                aria-label={sendLabel}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-brand/30 disabled:cursor-not-allowed disabled:opacity-60 dark:text-gray-400 dark:hover:bg-[#141416] dark:hover:text-gray-200"
+                aria-label={chooseImageLabel}
               >
-                <PaperAirplaneIcon className="h-4 w-4 -rotate-45" />
+                <PhotoIcon className="h-4 w-4" />
               </button>
-            ) : null}
+              <button
+                type="button"
+                data-testid="conversation-camera-picker-trigger"
+                onClick={onOpenCameraPicker}
+                disabled={sending}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-brand/30 disabled:cursor-not-allowed disabled:opacity-60 dark:text-gray-400 dark:hover:bg-[#141416] dark:hover:text-gray-200"
+                aria-label={takePhotoLabel}
+              >
+                <CameraIcon className="h-4 w-4" />
+              </button>
+            </div>
           </div>
         </div>
       </div>
