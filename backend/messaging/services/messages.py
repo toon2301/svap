@@ -183,6 +183,10 @@ def delete_message_for_all(
 
         image_name = getattr(message.image, "name", "") or ""
 
+        if convo.pinned_message_id == message.id:
+            Conversation.objects.filter(id=convo.id).update(pinned_message_id=None)
+            convo.pinned_message_id = None
+
         Message.objects.filter(id=message.id, is_deleted=False).update(
             is_deleted=True,
             text="",

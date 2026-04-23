@@ -61,6 +61,7 @@ export type MessageListPage = {
   nextPage: number | null;
   previousPage: number | null;
   peerLastReadAt: string | null;
+  pinnedMessage: MessageItem | null;
 };
 
 export type DirectMessageStartResult = {
@@ -90,5 +91,10 @@ export type HideConversationResult = {
   hidden_at: string | null;
   conversation_unread_count?: number;
   total_unread_count?: number;
+};
+
+export type PinMessageResult = {
+  conversation_id: number;
+  pinned_message: MessageItem | null;
 };
 

@@ -191,7 +191,15 @@
     "openImagePreview": "Otvoriť obrázok na celú obrazovku",
     "imageOnlyPreview": "Obrázok",
     "invalidImageType": "Vyberte platný obrázok vo formáte JPG, PNG, GIF, WebP alebo HEIC.",
-    "imageTooLarge": "Obrázok je príliš veľký. Maximálna veľkosť je {size} MB."
+    "imageTooLarge": "Obrázok je príliš veľký. Maximálna veľkosť je {size} MB.",
+    "pinAction": "Pripnúť správu",
+    "unpinAction": "Odopnúť správu",
+    "pinnedMessageLabel": "Pripnutá správa",
+    "jumpToPinnedMessage": "Prejsť na pripnutú správu",
+    "unpinPinnedMessage": "Odopnúť pripnutú správu",
+    "pinFailed": "Správu sa nepodarilo pripnúť. Skúste to znova.",
+    "unpinFailed": "Správu sa nepodarilo odopnúť. Skúste to znova.",
+    "pinnedMessageUnavailable": "Pripnutú správu sa nepodarilo nájsť v histórii konverzácie."
   },
   "search": {
     "title": "Vyhľadávanie",

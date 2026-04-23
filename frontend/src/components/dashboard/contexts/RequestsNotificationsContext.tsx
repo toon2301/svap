@@ -6,10 +6,12 @@ import { useAuth } from '@/contexts/AuthContext';
 import { getUnreadMessagesSummary } from '@/components/dashboard/modules/messages/messagingApi';
 import {
   dispatchMessagingRealtimeDeleted,
+  dispatchMessagingRealtimePinnedMessage,
   dispatchMessagingRealtimeRead,
   dispatchMessagingRealtimeMessage,
   requestConversationsRefresh,
 } from '@/components/dashboard/modules/messages/messagesEvents';
+import type { MessageItem } from '@/components/dashboard/modules/messages/types';
 import {
   applyIncomingMessageUnreadEvent,
   bindMessageUnreadCountStoreToUser,
@@ -56,6 +58,8 @@ type WsNotificationPayload = {
   peer_last_read_at?: string;
   reader_id?: number;
   deleted_by_id?: number;
+  actor_id?: number;
+  pinned_message?: MessageItem | null;
 };
 
 type WsListener = (payload: WsNotificationPayload) => void;
@@ -636,6 +640,19 @@ export function RequestsNotificationsProvider({ children }: { children: React.Re
           conversationId: payload.conversation_id,
           messageId: payload.message_id,
           deletedById: payload.deleted_by_id,
+        });
+        return;
+      }
+
+      if (
+        payload.type === 'messaging_pinned_message_updated' &&
+        typeof payload.conversation_id === 'number' &&
+        (payload.pinned_message === null || typeof payload.pinned_message === 'object')
+      ) {
+        dispatchMessagingRealtimePinnedMessage({
+          conversationId: payload.conversation_id,
+          pinnedMessage: payload.pinned_message ?? null,
+          actorId: payload.actor_id,
         });
         return;
       }

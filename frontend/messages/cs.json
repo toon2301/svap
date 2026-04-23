@@ -187,10 +187,19 @@
     "chooseImage": "Vybrat obr?zek",
     "takePhoto": "Vyfotit",
     "removeAttachment": "Odstranit p??lohu",
-    "imagePreview": "N?hled obr?zku",
+    "imagePreview": "Náhled obrázku",
+    "openImagePreview": "Otevřít obrázek na celou obrazovku",
     "imageOnlyPreview": "Obr?zek",
     "invalidImageType": "Vyberte platn? obr?zek ve form?tu JPG, PNG, GIF, WebP nebo HEIC.",
-    "imageTooLarge": "Obr?zek je p??li? velk?. Maxim?ln? velikost je {size} MB."
+    "imageTooLarge": "Obr?zek je p??li? velk?. Maxim?ln? velikost je {size} MB.",
+    "pinAction": "Připnout zprávu",
+    "unpinAction": "Odepnout zprávu",
+    "pinnedMessageLabel": "Připnutá zpráva",
+    "jumpToPinnedMessage": "Přejít na připnutou zprávu",
+    "unpinPinnedMessage": "Odepnout připnutou zprávu",
+    "pinFailed": "Zprávu se nepodařilo připnout. Zkuste to znovu.",
+    "unpinFailed": "Zprávu se nepodařilo odepnout. Zkuste to znovu.",
+    "pinnedMessageUnavailable": "Připnutou zprávu se nepodařilo najít v historii konverzace."
   },
   "search": {
     "title": "Hledat",

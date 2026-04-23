@@ -54,11 +54,16 @@ from ..services.messages import (
     mark_conversation_read,
     send_message,
 )
+from ..services.pins import (
+    InvalidPinnedMessage,
+    set_conversation_pinned_message,
+)
 from .serializers import (
     ConversationListItemSerializer,
     MarkReadSerializer,
     MessageSerializer,
     OpenConversationSerializer,
+    PinMessageSerializer,
     SendMessageSerializer,
     StartDirectMessageSerializer,
     serialize_user_brief,
@@ -250,6 +255,29 @@ def _participant_hidden_at_for_conversation(*, conversation_id: int, user_id: in
         .values_list("hidden_at", flat=True)
         .first()
     )
+
+
+def _pinned_message_for_conversation(*, conversation: Conversation) -> Message | None:
+    pinned_message_id = getattr(conversation, "pinned_message_id", None)
+    if pinned_message_id is None:
+        return None
+
+    return (
+        Message.objects.select_related("sender")
+        .filter(
+            conversation_id=conversation.id,
+            id=pinned_message_id,
+            is_deleted=False,
+        )
+        .first()
+    )
+
+
+def _serialize_pinned_message(*, request, conversation: Conversation):
+    pinned_message = _pinned_message_for_conversation(conversation=conversation)
+    if pinned_message is None:
+        return None
+    return MessageSerializer(pinned_message, context={"request": request}).data
 
 
 def _has_requestable_offers_for_user_id(user_id: int | None) -> bool:
@@ -566,26 +594,33 @@ class MessageListView(ListAPIView):
         return qs.select_related("sender").order_by("-created_at", "-id")
 
     def list(self, request, *args, **kwargs):
+        conversation = self.get_conversation()
         queryset = self.filter_queryset(self.get_queryset())
         page = self.paginate_queryset(queryset)
         serializer = self.get_serializer(page if page is not None else queryset, many=True)
         peer_last_read_at = _peer_last_read_at_for_conversation(
-            conversation_id=self.get_conversation().id,
+            conversation_id=conversation.id,
             user_id=request.user.id,
         )
         peer_last_read_at_value = (
             peer_last_read_at.isoformat() if peer_last_read_at is not None else None
         )
+        pinned_message_data = _serialize_pinned_message(
+            request=request,
+            conversation=conversation,
+        )
 
         if page is not None:
             response = self.get_paginated_response(serializer.data)
             response.data["peer_last_read_at"] = peer_last_read_at_value
+            response.data["pinned_message"] = pinned_message_data
             return response
 
         return Response(
             {
                 "results": serializer.data,
                 "peer_last_read_at": peer_last_read_at_value,
+                "pinned_message": pinned_message_data,
             }
         )
 
@@ -723,6 +758,52 @@ class DeleteMessageView(APIView):
                     user_id=request.user.id,
                 ),
                 "total_unread_count": total_unread_count,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+class PinMessageView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, conversation_id: int):
+        convo = _conversation_for_user_or_404(conversation_id=conversation_id, user=request.user)
+        serializer = PinMessageSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            result = set_conversation_pinned_message(
+                conversation=convo,
+                actor=request.user,
+                message_id=serializer.validated_data.get("message_id"),
+            )
+        except NotParticipant:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        except MessageNotFound:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        except InvalidPinnedMessage as exc:
+            return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+        pinned_message_data = (
+            MessageSerializer(result.pinned_message, context={"request": request}).data
+            if result.pinned_message is not None
+            else None
+        )
+
+        if result.changed:
+            event = {
+                "type": "messaging_pinned_message_updated",
+                "conversation_id": convo.id,
+                "pinned_message": pinned_message_data,
+                "actor_id": request.user.id,
+            }
+            for participant_id in result.participant_user_ids:
+                notify_user(participant_id, event)
+
+        return Response(
+            {
+                "conversation_id": convo.id,
+                "pinned_message": pinned_message_data,
             },
             status=status.HTTP_200_OK,
         )

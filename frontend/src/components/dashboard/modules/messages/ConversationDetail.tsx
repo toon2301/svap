@@ -4,14 +4,6 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useMessagesNotifications } from '@/components/dashboard/contexts/RequestsNotificationsContext';
 import { useIsMobile } from '@/hooks';
-import {
-  Bars3Icon,
-  CameraIcon,
-  ChevronDownIcon,
-  EllipsisHorizontalIcon,
-  PaperAirplaneIcon,
-  PhotoIcon,
-} from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 import type { ConversationListItem, MessageItem, MessageListPage } from './types';
 import { copyTextToClipboard } from '@/lib/clipboard';
@@ -23,94 +15,42 @@ import {
   listMessages,
   markConversationRead,
   sendMessage,
+  updateConversationPinnedMessage,
 } from './messagingApi';
-import { ChatRequestOfferPicker } from './ChatRequestOfferPicker';
 import { ConversationMessagesSkeleton } from './ConversationMessagesSkeleton';
 import { ConversationActionsMenu } from './ConversationActionsMenu';
+import { ConversationDesktopComposer } from './ConversationDesktopComposer';
+import { ConversationDetailHeader } from './ConversationDetailHeader';
+import { ConversationEmptyState } from './ConversationEmptyState';
+import { ConversationMessageRow } from './ConversationMessageRow';
+import { ConversationMobileComposer } from './ConversationMobileComposer';
+import { ConversationScrollToBottomButton } from './ConversationScrollToBottomButton';
 import { DeleteConversationConfirmModal } from './DeleteConversationConfirmModal';
 import { DeleteMessageConfirmModal } from './DeleteMessageConfirmModal';
-import { DesktopEmojiPickerButton } from './DesktopEmojiPickerButton';
 import { MessageImageLightbox } from './MessageImageLightbox';
-import { MessageComposerImagePreview } from './MessageComposerImagePreview';
 import { MessageActionsMenu } from './MessageActionsMenu';
-import {
-  MESSAGING_REALTIME_DELETED_EVENT,
-  MESSAGING_OPEN_CONVERSATION_ACTIONS_EVENT,
-  MESSAGING_REALTIME_READ_EVENT,
-  MESSAGING_REALTIME_MESSAGE_EVENT,
-  requestConversationsRefresh,
-  type MessagingRealtimeDeletedPayload,
-  type MessagingRealtimeReadPayload,
-  type MessagingRealtimeMessagePayload,
-} from './messagesEvents';
+import { PinnedMessageBanner } from './PinnedMessageBanner';
+import { requestConversationsRefresh } from './messagesEvents';
 import { navigateMessagesUrl } from './messagesRouting';
 import { useMobileViewportHeight } from '../../hooks/useMobileViewportHeight';
+import {
+  DESKTOP_MESSAGE_SIDE_PADDING_CLASS,
+  MOBILE_LATEST_SCROLL_THRESHOLD_PX,
+  MOBILE_MESSAGE_SIDE_PADDING_CLASS,
+  MOBILE_SCROLL_TO_BOTTOM_BUTTON_THRESHOLD_PX,
+} from './conversationDetailConstants';
+import { formatTime, pickLatestTimestamp, timestampValue } from './conversationDetailUtils';
 import {
   INITIAL_MESSAGES_PAGE_SIZE,
   mergeMessagesNewestFirst,
   OLDER_MESSAGES_SCROLL_THRESHOLD_PX,
 } from './messageListUtils';
-import { getMessageImageMaxSizeMb, validateMessageImageFile } from './messageImageUpload';
 import { resolveMessagingImageUrl } from './resolveMessagingImageUrl';
 import { useConversationPresenceHeartbeat } from './useConversationPresenceHeartbeat';
-
-const MESSAGE_POLL_INTERVAL_MS = 10_000;
-const MOBILE_LATEST_SCROLL_THRESHOLD_PX = 80;
-const MOBILE_SCROLL_TO_BOTTOM_BUTTON_THRESHOLD_PX = 300;
-const MOBILE_MESSAGE_SIDE_PADDING_CLASS = 'px-1.5 pt-4 pb-2';
-const DESKTOP_MESSAGE_SIDE_PADDING_CLASS = 'px-4 py-4 sm:px-5 lg:px-6';
-const MOBILE_OWN_MESSAGE_BUBBLE_SUPPRESSION_STYLE: React.CSSProperties = {
-  WebkitTouchCallout: 'none',
-  WebkitUserSelect: 'none',
-  userSelect: 'none',
-  touchAction: 'manipulation',
-};
-
-function formatTime(value: string): string {
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return '';
-
-  const now = new Date();
-  const isToday =
-    d.getFullYear() === now.getFullYear() &&
-    d.getMonth() === now.getMonth() &&
-    d.getDate() === now.getDate();
-
-  if (isToday) {
-    return d.toLocaleTimeString('sk-SK', {
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  }
-
-  return d.toLocaleString('sk-SK', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-}
-
-/** Kľúč minúty v lokálnom čase — na zoskupenie časových pečiatok pri viacerých správach za sebou. */
-function minuteBucketKey(iso: string): string {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return '';
-  return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}-${d.getHours()}-${d.getMinutes()}`;
-}
-
-function timestampValue(value: string | null | undefined): number {
-  if (!value) return Number.NEGATIVE_INFINITY;
-
-  const parsed = Date.parse(value);
-  return Number.isFinite(parsed) ? parsed : Number.NEGATIVE_INFINITY;
-}
-
-function pickLatestTimestamp(current: string | null, incoming: string | null): string | null {
-  if (!incoming) return current;
-  if (!current) return incoming;
-  return timestampValue(incoming) >= timestampValue(current) ? incoming : current;
-}
+import { useInitialBottomPin } from './useInitialBottomPin';
+import { useConversationPendingImage } from './useConversationPendingImage';
+import { useConversationReadState } from './useConversationReadState';
+import { useConversationRealtimeSync } from './useConversationRealtimeSync';
 
 export function ConversationDetail({
   conversationId,
@@ -133,6 +73,7 @@ export function ConversationDetail({
   const [isComposerFocused, setIsComposerFocused] = useState(false);
   const [showScrollToBottomButton, setShowScrollToBottomButton] = useState(false);
   const [peerLastReadAt, setPeerLastReadAt] = useState<string | null>(null);
+  const [pinnedMessage, setPinnedMessage] = useState<MessageItem | null>(null);
   const [messageActionsTarget, setMessageActionsTarget] = useState<{
     messageId: number;
     anchorRect: DOMRect | null;
@@ -143,26 +84,21 @@ export function ConversationDetail({
   const [isDeletingConversation, setIsDeletingConversation] = useState(false);
   const [messagePendingDeleteId, setMessagePendingDeleteId] = useState<number | null>(null);
   const [deletingMessageId, setDeletingMessageId] = useState<number | null>(null);
+  const [isUpdatingPinnedMessage, setIsUpdatingPinnedMessage] = useState(false);
+  const [isLocatingPinnedMessage, setIsLocatingPinnedMessage] = useState(false);
   const [messageImageLightbox, setMessageImageLightbox] = useState<{
     messageId: number;
     imageUrl: string;
   } | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
-  const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const refreshInFlightRef = useRef<Promise<MessageListPage> | null>(null);
   const pendingScrollRestoreRef = useRef<{ scrollHeight: number; scrollTop: number } | null>(null);
-  const lastMarkedIncomingMessageIdRef = useRef<number | null>(null);
-  const pendingMarkReadIncomingMessageIdRef = useRef<number | null>(null);
-  const markReadInFlightRef = useRef<Promise<void> | null>(null);
-  const markReadSessionRef = useRef(0);
   const latestKnownMessageIdRef = useRef<number | null>(null);
   const [otherConversation, setOtherConversation] = useState<ConversationListItem | null>(null);
   const [isRequestPickerOpen, setIsRequestPickerOpen] = useState(false);
   const messagesScrollRef = useRef<HTMLDivElement | null>(null);
+  const messagesStackRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
-  const imageInputRef = useRef<HTMLInputElement | null>(null);
-  const cameraInputRef = useRef<HTMLInputElement | null>(null);
-  const pendingImagePreviewUrlRef = useRef<string | null>(null);
   const shouldRestoreFocusRef = useRef(false);
   const pendingLatestScrollAfterRefreshRef = useRef(false);
   const shouldScrollToLatestOnRenderRef = useRef(false);
@@ -170,8 +106,16 @@ export function ConversationDetail({
   const messageLongPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const longPressedMessageIdRef = useRef<number | null>(null);
   const mobileViewportHeight = useMobileViewportHeight(isMobile && isComposerFocused);
-  const [pendingImageFile, setPendingImageFile] = useState<File | null>(null);
-  const [pendingImagePreviewUrl, setPendingImagePreviewUrl] = useState<string | null>(null);
+  const {
+    imageInputRef,
+    cameraInputRef,
+    pendingImageFile,
+    pendingImagePreviewUrl,
+    clearPendingImage,
+    handlePendingImageInputChange,
+    openImagePicker,
+    openCameraPicker,
+  } = useConversationPendingImage({ sending, t });
   useConversationPresenceHeartbeat(conversationId);
   const targetUserId = otherConversation?.other_user?.id ?? null;
   const targetUserSlug = otherConversation?.other_user?.slug ?? null;
@@ -181,6 +125,11 @@ export function ConversationDetail({
   const targetUserType = otherConversation?.other_user?.user_type ?? null;
   const canCreateRequestFromOffer =
     targetUserId !== null && otherConversation?.has_requestable_offers === true;
+  const { maybeMarkConversationRead, resetReadStateSession } = useConversationReadState({
+    conversationId,
+    currentUserId,
+    syncConversationReadState,
+  });
 
   const closeMessageActions = useCallback(() => {
     longPressedMessageIdRef.current = null;
@@ -244,6 +193,7 @@ export function ConversationDetail({
     setMessageImageLightbox((current) =>
       current?.messageId === messageId ? null : current,
     );
+    setPinnedMessage((current) => (current?.id === messageId ? null : current));
   }, []);
 
   const openMessageImageLightbox = useCallback((messageId: number, imageUrl: string) => {
@@ -295,81 +245,6 @@ export function ConversationDetail({
     },
     [],
   );
-
-  const clearPendingImage = useCallback(() => {
-    if (pendingImagePreviewUrlRef.current) {
-      URL.revokeObjectURL(pendingImagePreviewUrlRef.current);
-      pendingImagePreviewUrlRef.current = null;
-    }
-    setPendingImageFile(null);
-    setPendingImagePreviewUrl(null);
-  }, []);
-
-  useEffect(() => {
-    return () => {
-      if (pendingImagePreviewUrlRef.current) {
-        URL.revokeObjectURL(pendingImagePreviewUrlRef.current);
-        pendingImagePreviewUrlRef.current = null;
-      }
-    };
-  }, []);
-
-  const applyPendingImageSelection = useCallback(
-    (file: File | null) => {
-      if (!file) {
-        return;
-      }
-
-      const validationError = validateMessageImageFile(file);
-      if (validationError === 'invalid_type') {
-        toast.error(
-          t(
-            'messages.invalidImageType',
-            'Vyberte platný obrázok vo formáte JPG, PNG, GIF, WebP alebo HEIC.',
-          ),
-        );
-        return;
-      }
-
-      if (validationError === 'too_large') {
-        toast.error(
-          t(
-            'messages.imageTooLarge',
-            'Obrázok je príliš veľký. Maximálna veľkosť je {size} MB.',
-          ).replace('{size}', String(getMessageImageMaxSizeMb())),
-        );
-        return;
-      }
-
-      const nextPreviewUrl = URL.createObjectURL(file);
-      if (pendingImagePreviewUrlRef.current) {
-        URL.revokeObjectURL(pendingImagePreviewUrlRef.current);
-      }
-      pendingImagePreviewUrlRef.current = nextPreviewUrl;
-      setPendingImageFile(file);
-      setPendingImagePreviewUrl(nextPreviewUrl);
-    },
-    [t],
-  );
-
-  const handlePendingImageInputChange = useCallback(
-    (event: React.ChangeEvent<HTMLInputElement>) => {
-      const file = event.target.files?.[0] ?? null;
-      event.target.value = '';
-      applyPendingImageSelection(file);
-    },
-    [applyPendingImageSelection],
-  );
-
-  const openImagePicker = useCallback(() => {
-    if (sending) return;
-    imageInputRef.current?.click();
-  }, [sending]);
-
-  const openCameraPicker = useCallback(() => {
-    if (sending) return;
-    cameraInputRef.current?.click();
-  }, [sending]);
 
   const handleOpenTargetUserProfile = useCallback(() => {
     const identifier =
@@ -471,6 +346,111 @@ export function ConversationDetail({
     t,
   ]);
 
+  const findMessageRowElement = useCallback((messageId: number) => {
+    const scrollContainer = messagesScrollRef.current;
+    if (!scrollContainer) return null;
+
+    return scrollContainer.querySelector<HTMLElement>(`[data-message-row-id="${messageId}"]`);
+  }, []);
+
+  const waitForNextPaint = useCallback(
+    () =>
+      new Promise<void>((resolve) => {
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => resolve());
+        });
+      }),
+    [],
+  );
+
+  const handleUpdatePinnedMessage = useCallback(
+    async (messageId: number | null) => {
+      if (isUpdatingPinnedMessage) return;
+
+      const isUnpin = messageId === null;
+      closeMessageActions();
+      setIsUpdatingPinnedMessage(true);
+      try {
+        const result = await updateConversationPinnedMessage(conversationId, messageId);
+        setPinnedMessage(result.pinned_message);
+      } catch (error) {
+        toast.error(
+          getMessagingErrorMessage(error, {
+            fallback: isUnpin
+              ? t('messages.unpinFailed', 'Správu sa nepodarilo odopnúť. Skúste to znova.')
+              : t('messages.pinFailed', 'Správu sa nepodarilo pripnúť. Skúste to znova.'),
+          }),
+        );
+      } finally {
+        setIsUpdatingPinnedMessage(false);
+      }
+    },
+    [closeMessageActions, conversationId, isUpdatingPinnedMessage, t],
+  );
+
+  const handlePinnedMessageBannerClick = useCallback(async () => {
+    const messageId = pinnedMessage?.id ?? null;
+    if (messageId === null || isLocatingPinnedMessage) return;
+
+    let target = findMessageRowElement(messageId);
+    if (target) {
+      target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+
+    setIsLocatingPinnedMessage(true);
+    try {
+      let pageToLoad = nextOlderPage;
+
+      while (!target && pageToLoad !== null) {
+        const page = await listMessages(conversationId, INITIAL_MESSAGES_PAGE_SIZE, pageToLoad);
+        pageToLoad = page.nextPage;
+        setMessages((current) => mergeMessagesNewestFirst(current, page.results));
+        setNextOlderPage(page.nextPage);
+        setPeerLastReadAt((current) => pickLatestTimestamp(current, page.peerLastReadAt ?? null));
+        setPinnedMessage(page.pinnedMessage);
+        await waitForNextPaint();
+        target = findMessageRowElement(messageId);
+      }
+
+      if (!target) {
+        toast.error(
+          t(
+            'messages.pinnedMessageUnavailable',
+            'Pripnutú správu sa nepodarilo nájsť v histórii konverzácie.',
+          ),
+        );
+        return;
+      }
+
+      target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } catch (error) {
+      toast.error(
+        getMessagingErrorMessage(error, {
+          fallback: t(
+            'messages.pinnedMessageUnavailable',
+            'Pripnutú správu sa nepodarilo nájsť v histórii konverzácie.',
+          ),
+        }),
+      );
+    } finally {
+      setIsLocatingPinnedMessage(false);
+    }
+  }, [
+    conversationId,
+    findMessageRowElement,
+    isLocatingPinnedMessage,
+    nextOlderPage,
+    pinnedMessage,
+    t,
+    waitForNextPaint,
+  ]);
+
+  const handleUnpinPinnedMessage = useCallback(() => {
+    if (!pinnedMessage) return;
+    void handleUpdatePinnedMessage(null);
+  }, [handleUpdatePinnedMessage, pinnedMessage]);
+
   const scrollMessagesToLatest = useCallback(() => {
     const scrollContainer = messagesScrollRef.current;
     if (scrollContainer) {
@@ -523,6 +503,18 @@ export function ConversationDetail({
     // API vracia najnovšie prvé – v UI chceme chronologicky
     return [...messages].reverse();
   }, [messages]);
+  const hasRenderedCurrentConversationMessages =
+    !loading &&
+    ordered.length > 0 &&
+    ordered[ordered.length - 1]?.conversation === conversationId;
+
+  useInitialBottomPin({
+    conversationId,
+    enabled: hasRenderedCurrentConversationMessages,
+    scrollContainerRef: messagesScrollRef,
+    contentRef: messagesStackRef,
+    scrollToBottom: scrollMessagesToLatest,
+  });
 
   const selectedMessageForActions = useMemo(() => {
     if (messageActionsTarget === null) {
@@ -541,7 +533,22 @@ export function ConversationDetail({
     selectedMessageForActions !== null &&
     !selectedMessageForActions.is_deleted &&
     selectedMessageForActions.sender?.id === currentUserId;
-  const hasSelectedMessageActions = canCopySelectedMessage || canDeleteSelectedMessage;
+  const canToggleSelectedPinnedMessage =
+    selectedMessageForActions !== null && !selectedMessageForActions.is_deleted;
+  const isSelectedMessagePinned =
+    selectedMessageForActions !== null && pinnedMessage?.id === selectedMessageForActions.id;
+  const hasSelectedMessageActions =
+    canCopySelectedMessage || canDeleteSelectedMessage || canToggleSelectedPinnedMessage;
+
+  const handleToggleSelectedMessagePin = useCallback(() => {
+    if (!canToggleSelectedPinnedMessage || !selectedMessageForActions) return;
+    void handleUpdatePinnedMessage(isSelectedMessagePinned ? null : selectedMessageForActions.id);
+  }, [
+    canToggleSelectedPinnedMessage,
+    handleUpdatePinnedMessage,
+    isSelectedMessagePinned,
+    selectedMessageForActions,
+  ]);
 
   useEffect(() => {
     if (messageActionsTarget === null) {
@@ -615,85 +622,6 @@ export function ConversationDetail({
     [t],
   );
 
-  const queueMarkConversationRead = useCallback(
-    (list: MessageItem[]) => {
-      const newestMessage =
-        list.find((item) => item.sender?.id !== currentUserId && !item.is_deleted) ?? null;
-      if (!newestMessage) return false;
-      if (lastMarkedIncomingMessageIdRef.current === newestMessage.id) return false;
-
-      const pendingMessageId = pendingMarkReadIncomingMessageIdRef.current;
-      if (pendingMessageId === null || newestMessage.id > pendingMessageId) {
-        pendingMarkReadIncomingMessageIdRef.current = newestMessage.id;
-      }
-
-      return true;
-    },
-    [currentUserId],
-  );
-
-  const flushPendingMarkConversationRead = useCallback(
-    async (session: number) => {
-      while (markReadSessionRef.current === session) {
-        const messageId = pendingMarkReadIncomingMessageIdRef.current;
-        if (messageId === null) return;
-
-        pendingMarkReadIncomingMessageIdRef.current = null;
-        if (lastMarkedIncomingMessageIdRef.current === messageId) {
-          continue;
-        }
-
-        try {
-          const result = await markConversationRead(conversationId);
-          if (markReadSessionRef.current !== session) return;
-
-          lastMarkedIncomingMessageIdRef.current = messageId;
-          syncConversationReadState({
-            conversationId,
-            totalUnreadCount: result?.total_unread_count,
-          });
-        } catch {
-          if (
-            markReadSessionRef.current === session &&
-            lastMarkedIncomingMessageIdRef.current !== messageId &&
-            pendingMarkReadIncomingMessageIdRef.current === null
-          ) {
-            pendingMarkReadIncomingMessageIdRef.current = messageId;
-          }
-          return;
-        }
-      }
-    },
-    [conversationId, syncConversationReadState],
-  );
-
-  const maybeMarkConversationRead = useCallback(
-    async (list: MessageItem[]) => {
-      if (!queueMarkConversationRead(list)) return;
-
-      if (!markReadInFlightRef.current) {
-        const session = markReadSessionRef.current;
-        let request: Promise<void> | null = null;
-        request = (async () => {
-          try {
-            await flushPendingMarkConversationRead(session);
-          } finally {
-            if (markReadInFlightRef.current === request) {
-              markReadInFlightRef.current = null;
-            }
-          }
-        })();
-        markReadInFlightRef.current = request;
-      }
-
-      const inFlightRequest = markReadInFlightRef.current;
-      if (inFlightRequest) {
-        await inFlightRequest;
-      }
-    },
-    [flushPendingMarkConversationRead, queueMarkConversationRead],
-  );
-
   const refresh = useCallback(
     async (
       {
@@ -746,6 +674,7 @@ export function ConversationDetail({
         setMessages((current) => mergeMessagesNewestFirst(current, page.results));
         setNextOlderPage(page.nextPage);
         setPeerLastReadAt((current) => pickLatestTimestamp(current, page.peerLastReadAt ?? null));
+        setPinnedMessage(page.pinnedMessage);
         if (
           syncConversations &&
           newestMessageId !== previousNewestMessageId
@@ -778,21 +707,33 @@ export function ConversationDetail({
     [conversationId, isMobile, isNearMessagesBottom, maybeMarkConversationRead, showLoadErrorToast],
   );
 
+  useConversationRealtimeSync({
+    conversationId,
+    refresh,
+    isMobile,
+    openConversationActions,
+    markMessageDeletedLocally,
+    setPeerLastReadAt,
+    setMessageActionsTarget,
+    setMessagePendingDeleteId,
+    setPinnedMessage,
+  });
+
   useEffect(() => {
     let cancelled = false;
-    markReadSessionRef.current += 1;
-    markReadInFlightRef.current = null;
-    lastMarkedIncomingMessageIdRef.current = null;
-    pendingMarkReadIncomingMessageIdRef.current = null;
+    resetReadStateSession();
     latestKnownMessageIdRef.current = null;
     setMessages([]);
     setNextOlderPage(null);
     setPeerLastReadAt(null);
+    setPinnedMessage(null);
     setIsRequestPickerOpen(false);
     setIsConversationActionsOpen(false);
     setConversationActionsAnchorRect(null);
     setIsConversationPendingDelete(false);
     setIsDeletingConversation(false);
+    setIsUpdatingPinnedMessage(false);
+    setIsLocatingPinnedMessage(false);
     setMessageActionsTarget(null);
     setMessagePendingDeleteId(null);
     setDeletingMessageId(null);
@@ -821,111 +762,7 @@ export function ConversationDetail({
       cancelled = true;
       clearMessageLongPressTimer();
     };
-  }, [clearMessageLongPressTimer, conversationId, refresh]);
-
-  useEffect(() => {
-    const stopPolling = () => {
-      if (pollIntervalRef.current) {
-        clearInterval(pollIntervalRef.current);
-        pollIntervalRef.current = null;
-      }
-    };
-
-    const refreshIfVisible = () => {
-      if (document.visibilityState !== 'visible') return;
-      void refresh({
-        showError: false,
-        markAsRead: true,
-        syncConversations: true,
-        scrollBehavior: 'if_near_bottom',
-      });
-    };
-
-    pollIntervalRef.current = setInterval(() => {
-      refreshIfVisible();
-    }, MESSAGE_POLL_INTERVAL_MS);
-
-    window.addEventListener('focus', refreshIfVisible);
-    document.addEventListener('visibilitychange', refreshIfVisible);
-
-    return () => {
-      stopPolling();
-      window.removeEventListener('focus', refreshIfVisible);
-      document.removeEventListener('visibilitychange', refreshIfVisible);
-    };
-  }, [refresh]);
-
-  useEffect(() => {
-    const handleRealtimeMessage = (event: Event) => {
-      const detail = (event as CustomEvent<MessagingRealtimeMessagePayload>).detail;
-      if (!detail || detail.conversationId !== conversationId) return;
-      void refresh({
-        showError: false,
-        markAsRead: true,
-        syncConversations: true,
-        scrollBehavior: 'if_near_bottom',
-      });
-    };
-
-    window.addEventListener(MESSAGING_REALTIME_MESSAGE_EVENT, handleRealtimeMessage);
-
-    return () => {
-      window.removeEventListener(MESSAGING_REALTIME_MESSAGE_EVENT, handleRealtimeMessage);
-    };
-  }, [conversationId, refresh]);
-
-  useEffect(() => {
-    const handleRealtimeRead = (event: Event) => {
-      const detail = (event as CustomEvent<MessagingRealtimeReadPayload>).detail;
-      if (!detail || detail.conversationId !== conversationId) return;
-
-      setPeerLastReadAt((current) => pickLatestTimestamp(current, detail.peerLastReadAt || null));
-    };
-
-    window.addEventListener(MESSAGING_REALTIME_READ_EVENT, handleRealtimeRead);
-
-    return () => {
-      window.removeEventListener(MESSAGING_REALTIME_READ_EVENT, handleRealtimeRead);
-    };
-  }, [conversationId]);
-
-  useEffect(() => {
-    const handleRealtimeDeleted = (event: Event) => {
-      const detail = (event as CustomEvent<MessagingRealtimeDeletedPayload>).detail;
-      if (!detail || detail.conversationId !== conversationId) return;
-
-      markMessageDeletedLocally(detail.messageId);
-      setMessageActionsTarget((current) =>
-        current?.messageId === detail.messageId ? null : current,
-      );
-      setMessagePendingDeleteId((current) => (current === detail.messageId ? null : current));
-    };
-
-    window.addEventListener(MESSAGING_REALTIME_DELETED_EVENT, handleRealtimeDeleted);
-
-    return () => {
-      window.removeEventListener(MESSAGING_REALTIME_DELETED_EVENT, handleRealtimeDeleted);
-    };
-  }, [conversationId, markMessageDeletedLocally]);
-
-  useEffect(() => {
-    const handleOpenConversationActionsEvent = () => {
-      if (!isMobile) return;
-      openConversationActions(null);
-    };
-
-    window.addEventListener(
-      MESSAGING_OPEN_CONVERSATION_ACTIONS_EVENT,
-      handleOpenConversationActionsEvent,
-    );
-
-    return () => {
-      window.removeEventListener(
-        MESSAGING_OPEN_CONVERSATION_ACTIONS_EVENT,
-        handleOpenConversationActionsEvent,
-      );
-    };
-  }, [isMobile, openConversationActions]);
+  }, [clearMessageLongPressTimer, conversationId, refresh, resetReadStateSession]);
 
   useEffect(() => {
     // Pri nových správach jemne doroluj na spodok (ak už je konverzácia otvorená).
@@ -947,16 +784,6 @@ export function ConversationDetail({
     shouldScrollToLatestOnRenderRef.current = false;
     scrollMessagesToLatest();
   }, [ordered.length, scrollMessagesToLatest, updateScrollToBottomButtonVisibility]);
-
-  useEffect(() => {
-    // Pri každom otvorení/refreshi konverzácie sa vráť na najnovšie správy.
-    // Toto prepíše browser scroll-restoration aj po reload-e.
-    if (loading) return;
-
-    requestAnimationFrame(() => {
-      requestAnimationFrame(scrollMessagesToLatest);
-    });
-  }, [conversationId, isMobile, loading, scrollMessagesToLatest]);
 
   useEffect(() => {
     if (!isMobile || !isComposerFocused || loading) return;
@@ -1002,6 +829,7 @@ export function ConversationDetail({
       setMessages((current) => mergeMessagesNewestFirst(current, page.results));
       setNextOlderPage(page.nextPage);
       setPeerLastReadAt((current) => pickLatestTimestamp(current, page.peerLastReadAt ?? null));
+      setPinnedMessage(page.pinnedMessage);
     } catch (error) {
       pendingScrollRestoreRef.current = null;
       showLoadErrorToast(error);
@@ -1170,12 +998,11 @@ export function ConversationDetail({
   const isComposerInputDisabled = sending && (!isMobile || pendingImageFile !== null);
   const isMobileMessageActionsOpen = isMobile && messageActionsTarget !== null;
   const imagePreviewAlt = t('messages.imagePreview', 'Náhľad obrázka');
+  const imageOnlyPreviewLabel = t('messages.imageOnlyPreview', 'Obrázok');
   const selectedMessageActionPreviewText =
     selectedMessageForActions && !selectedMessageForActions.is_deleted
       ? selectedMessageForActions.text?.trim() ||
-        (selectedMessageForActions.image_url
-          ? t('messages.imageOnlyPreview', 'Obrázok')
-          : '')
+        (selectedMessageForActions.image_url ? imageOnlyPreviewLabel : '')
       : '';
   const selectedMessageActionPreview =
     selectedMessageForActions && !selectedMessageForActions.is_deleted
@@ -1185,57 +1012,73 @@ export function ConversationDetail({
           timestamp: formatTime(selectedMessageForActions.created_at),
         }
       : null;
+  const openPeerProfileLabel = t('messages.openPeerProfile', 'Otvoriť profil používateľa');
+  const openConversationActionsLabel = t(
+    'messages.openConversationActions',
+    'Otvoriť možnosti konverzácie',
+  );
+  const pinMessageActionLabel = t('messages.pinAction', 'Pripnúť správu');
+  const unpinMessageActionLabel = t('messages.unpinAction', 'Odopnúť správu');
+  const pinnedMessageLabel = t('messages.pinnedMessageLabel', 'Pripnutá správa');
+  const jumpToPinnedMessageLabel = t(
+    'messages.jumpToPinnedMessage',
+    'Prejsť na pripnutú správu',
+  );
+  const unpinPinnedMessageLabel = t(
+    'messages.unpinPinnedMessage',
+    'Odopnúť pripnutú správu',
+  );
+  const noMessagesYetText = t('messages.noMessagesYet', 'Zatiaľ bez správ');
+  const deletedMessageText = t('messages.deleted', 'Správa bola vymazaná');
+  const openImagePreviewLabel = t(
+    'messages.openImagePreview',
+    'Otvoriť obrázok na celú obrazovku',
+  );
+  const openMessageActionsLabel = t(
+    'messages.openMessageActions',
+    'Otvoriť možnosti správy',
+  );
+  const seenLabel = t('messages.seen', 'Prečítané');
+  const scrollToBottomLabel = t('messages.scrollToBottom', 'Prejsť na najnovšie správy');
+  const chooseImageLabel = t('messages.chooseImage', 'Vybrať obrázok');
+  const takePhotoLabel = t('messages.takePhoto', 'Odfotiť');
+  const attachImageLabel = t('messages.attachImage', 'Priložiť obrázok');
+  const typePlaceholder = t('messages.type', 'Napíš správu…');
+  const sendLabel = t('messages.send', 'Odoslať');
+  const addEmojiLabel = t('messages.addEmoji', 'Pridať emoji');
+  const sendingLabel = t('common.sending', 'Odosielam…');
 
   return (
     <div
       className={`${containerClassName} flex h-full min-h-0 flex-col overflow-hidden overscroll-none`}
     >
       {!isMobile ? (
-        <div
-          data-testid="conversation-header"
-          className="mb-3"
-        >
-          <div className="w-full border-b border-gray-200 dark:border-gray-800 px-4 sm:px-6 lg:px-8 py-2.5">
-            <div className="relative flex items-center justify-center">
-              <button
-                type="button"
-                data-testid="conversation-header-trigger"
-                onClick={handleOpenTargetUserProfile}
-                disabled={targetUserId === null && !targetUserSlug}
-                className="flex items-center gap-3 rounded-xl px-2 py-1 transition-colors hover:bg-black/[0.04] focus:outline-none focus:ring-2 focus:ring-brand/30 disabled:cursor-default disabled:hover:bg-transparent dark:hover:bg-white/[0.06]"
-                aria-label={t('messages.openPeerProfile', 'Otvoriť profil používateľa')}
-              >
-                <div className="w-10 h-10 rounded-full overflow-hidden bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center flex-shrink-0">
-                  {otherConversation?.other_user?.avatar_url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={otherConversation.other_user.avatar_url} alt={targetUserName} className="w-full h-full object-cover" />
-                  ) : (
-                    <span className="text-xs font-bold text-purple-700 dark:text-purple-300">
-                      {(targetUserName || 'U').slice(0, 1).toUpperCase()}
-                    </span>
-                  )}
-                </div>
-                <div className="text-sm font-semibold text-gray-900 dark:text-white truncate max-w-[24rem]">
-                  {targetUserName}
-                </div>
-              </button>
-              <button
-                type="button"
-                data-testid="conversation-actions-trigger"
-                onClick={(event) => {
-                  openConversationActions(event.currentTarget.getBoundingClientRect());
-                }}
-                className="absolute right-0 inline-flex h-9 w-9 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-brand/30 dark:text-gray-400 dark:hover:bg-[#141416] dark:hover:text-gray-200"
-                aria-label={t(
-                  'messages.openConversationActions',
-                  'Otvoriť možnosti konverzácie',
-                )}
-              >
-                <Bars3Icon className="h-5 w-5" />
-              </button>
-            </div>
-          </div>
-        </div>
+        <ConversationDetailHeader
+          avatarUrl={otherConversation?.other_user?.avatar_url ?? null}
+          targetUserName={targetUserName}
+          targetUserId={targetUserId}
+          targetUserSlug={targetUserSlug}
+          openPeerProfileLabel={openPeerProfileLabel}
+          openConversationActionsLabel={openConversationActionsLabel}
+          onOpenTargetUserProfile={handleOpenTargetUserProfile}
+          onOpenConversationActions={openConversationActions}
+        />
+      ) : null}
+
+      {pinnedMessage ? (
+        <PinnedMessageBanner
+          message={pinnedMessage}
+          isMobile={isMobile}
+          label={pinnedMessageLabel}
+          imageFallbackLabel={imageOnlyPreviewLabel}
+          jumpLabel={jumpToPinnedMessageLabel}
+          unpinLabel={unpinPinnedMessageLabel}
+          onClick={() => {
+            void handlePinnedMessageBannerClick();
+          }}
+          onUnpin={handleUnpinPinnedMessage}
+          isBusy={isUpdatingPinnedMessage || isLocatingPinnedMessage}
+        />
       ) : null}
 
       <div className="relative flex-1 min-h-0">
@@ -1250,259 +1093,46 @@ export function ConversationDetail({
           {loading ? (
             <ConversationMessagesSkeleton isMobile={isMobile} />
           ) : ordered.length === 0 ? (
-            <div className="text-sm text-gray-600 dark:text-gray-400 text-center py-8">
-              {t('messages.noMessagesYet', 'Zatiaľ bez správ')}
-            </div>
+            <ConversationEmptyState text={noMessagesYetText} />
           ) : (
             <div
+              ref={messagesStackRef}
               data-testid="conversation-messages-stack"
               className="flex min-h-full flex-col justify-end"
             >
               <div className="space-y-2">
-                {ordered.map((m, index) => {
-                const mine = m.sender?.id === currentUserId;
-                const prev = index > 0 ? ordered[index - 1] : null;
-                const next = index < ordered.length - 1 ? ordered[index + 1] : null;
-                const prevSenderId = prev?.sender?.id ?? null;
-                const curSenderId = m.sender?.id ?? null;
-                const nextSenderId = next?.sender?.id ?? null;
-                const showTimestamp =
-                  !prev ||
-                  prevSenderId !== curSenderId ||
-                  minuteBucketKey(prev.created_at) !== minuteBucketKey(m.created_at);
-                const showSenderAvatar = !mine && (!next || nextSenderId !== curSenderId);
-                const showSeenIndicator = mine && !m.is_deleted && lastSeenMessageId === m.id;
-                const senderAvatarUrl = m.sender?.avatar_url || targetUserAvatarUrl;
-                const senderDisplayName = (m.sender?.display_name || '').trim() || targetUserName;
-                const messageCanDelete = mine && !m.is_deleted;
-                const messageCanCopy =
-                  !m.is_deleted && typeof m.text === 'string' && m.text.length > 0;
-                const messageHasActions = messageCanCopy || messageCanDelete;
-                const messageInteractionProps = getMessageInteractionProps(m.id, messageHasActions);
-                const showDesktopMessageActionsTrigger = messageHasActions && !isMobile;
-                const messageImageUrl =
-                  !m.is_deleted && typeof m.image_url === 'string' && m.image_url.length > 0
-                    ? resolveMessagingImageUrl(m.image_url)
-                    : null;
-                const displayText = m.is_deleted
-                  ? t('messages.deleted', 'Správa bola vymazaná')
-                  : m.text ?? '';
-                const isSelectedForMobileMessageActions =
-                  isMobileMessageActionsOpen && messageActionsTarget?.messageId === m.id;
-                const bubbleClassName = [
-                  'w-fit max-w-full rounded-2xl px-3 py-2 text-sm',
-                  mine && !m.is_deleted
-                    ? 'bg-brand text-white'
-                    : 'bg-gray-100 dark:bg-[#141416] text-gray-900 dark:text-gray-100 border border-gray-200/60 dark:border-gray-800',
-                ].join(' ');
-                const suppressMobileMessageSelection = isMobile && messageHasActions;
-                const messageTextClassName = `whitespace-pre-wrap break-words${
-                  suppressMobileMessageSelection ? ' select-none' : ''
-                }`;
-                const messageContent = (
-                  <div
-                    className={`space-y-2${suppressMobileMessageSelection ? ' select-none' : ''}`}
-                    style={
-                      suppressMobileMessageSelection
-                        ? MOBILE_OWN_MESSAGE_BUBBLE_SUPPRESSION_STYLE
-                        : undefined
+                {ordered.map((message, index) => (
+                  <ConversationMessageRow
+                    key={message.id}
+                    message={message}
+                    prevMessage={index > 0 ? ordered[index - 1] : null}
+                    nextMessage={index < ordered.length - 1 ? ordered[index + 1] : null}
+                    currentUserId={currentUserId}
+                    isMobile={isMobile}
+                    lastSeenMessageId={lastSeenMessageId}
+                    targetUserName={targetUserName}
+                    targetUserAvatarUrl={targetUserAvatarUrl}
+                    imagePreviewAlt={imagePreviewAlt}
+                    deletedMessageText={deletedMessageText}
+                    openImagePreviewLabel={openImagePreviewLabel}
+                    openMessageActionsLabel={openMessageActionsLabel}
+                    seenLabel={seenLabel}
+                    isSelectedForMobileMessageActions={
+                      isMobileMessageActionsOpen && messageActionsTarget?.messageId === message.id
                     }
-                    onContextMenu={
-                      suppressMobileMessageSelection
-                        ? suppressNativeMessageContextMenu
-                        : undefined
-                    }
-                  >
-                    {messageImageUrl ? (
-                      <button
-                        type="button"
-                        data-testid={`message-image-trigger-${m.id}`}
-                        onClick={(event) => handleMessageImageClick(event, m.id, messageImageUrl)}
-                        className="block w-fit max-w-full cursor-zoom-in rounded-xl focus:outline-none focus:ring-2 focus:ring-white/50 dark:focus:ring-brand/50"
-                        aria-label={t('messages.openImagePreview', 'Otvoriť obrázok na celú obrazovku')}
-                      >
-                        <img
-                          src={messageImageUrl}
-                          alt={imagePreviewAlt}
-                          className="block h-auto max-h-[22rem] w-auto max-w-[min(75vw,18rem)] rounded-xl object-contain"
-                        />
-                      </button>
-                    ) : null}
-                    {displayText ? <div className={messageTextClassName}>{displayText}</div> : null}
-                  </div>
-                );
-
-                return mine ? (
-                  <div
-                    key={m.id}
-                    className={`flex justify-end ${isMobile ? 'pr-0' : 'pr-1'}`}
-                  >
-                    <div
-                      className={`group flex min-w-0 flex-col items-end ${
-                        isMobile ? 'max-w-full' : 'max-w-[80%]'
-                      }${isSelectedForMobileMessageActions ? ' opacity-0 pointer-events-none' : ''}`}
-                    >
-                      {showTimestamp ? (
-                        <div
-                          data-testid={`message-timestamp-${m.id}`}
-                          className="mb-1 text-[10px] tabular-nums text-right text-gray-500 dark:text-gray-400"
-                        >
-                          {formatTime(m.created_at)}
-                        </div>
-                      ) : null}
-                      <div className="relative">
-                        {showDesktopMessageActionsTrigger ? (
-                          <button
-                            type="button"
-                            data-testid={`message-actions-trigger-${m.id}`}
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              handleMessageActionTrigger(m.id, event.currentTarget);
-                            }}
-                            className="pointer-events-none absolute right-full top-1/2 mr-2 -translate-y-1/2 rounded-full p-1.5 text-gray-400 opacity-0 transition-all duration-150 hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-brand/30 focus-visible:pointer-events-auto focus-visible:opacity-100 group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100 dark:text-gray-500 dark:hover:bg-[#141416] dark:hover:text-gray-200"
-                            aria-label={t(
-                              'messages.openMessageActions',
-                              'Otvoriť možnosti správy',
-                            )}
-                          >
-                            <EllipsisHorizontalIcon className="h-5 w-5" />
-                          </button>
-                        ) : null}
-                        <div
-                          data-testid={`message-bubble-${m.id}`}
-                          className={`${bubbleClassName}${suppressMobileMessageSelection ? ' select-none' : ''}`}
-                          style={
-                            suppressMobileMessageSelection
-                              ? MOBILE_OWN_MESSAGE_BUBBLE_SUPPRESSION_STYLE
-                              : undefined
-                          }
-                          onContextMenu={
-                            suppressMobileMessageSelection
-                              ? suppressNativeMessageContextMenu
-                              : undefined
-                          }
-                          {...messageInteractionProps}
-                        >
-                          {messageContent}
-                        </div>
-                      </div>
-                      {showSeenIndicator ? (
-                        <div
-                          data-testid={`message-seen-indicator-${m.id}`}
-                          className="mt-1 inline-flex items-center gap-1 self-end text-[11px] text-gray-500 dark:text-gray-400"
-                        >
-                          <span>{t('messages.seen', 'Prečítané')}</span>
-                          <span className="inline-flex h-4 w-4 items-center justify-center overflow-hidden rounded-full bg-purple-100 dark:bg-purple-900/40">
-                            {targetUserAvatarUrl ? (
-                              <img
-                                src={targetUserAvatarUrl}
-                                alt={targetUserName}
-                                className="h-full w-full object-cover"
-                              />
-                            ) : (
-                              <span className="text-[8px] font-bold text-purple-700 dark:text-purple-300">
-                                {(targetUserName || 'U').slice(0, 1).toUpperCase()}
-                              </span>
-                            )}
-                          </span>
-                        </div>
-                      ) : null}
-                    </div>
-                  </div>
-                ) : (
-                  <div
-                    key={m.id}
-                    className={`flex justify-start ${isMobile ? 'pl-0' : 'pl-1'}`}
-                  >
-                    <div
-                      className={`group flex min-w-0 flex-col ${
-                        isMobile ? 'max-w-full' : 'max-w-[80%]'
-                      }${isSelectedForMobileMessageActions ? ' opacity-0 pointer-events-none' : ''}`}
-                    >
-                      {showTimestamp ? (
-                        <div
-                          data-testid={`message-timestamp-${m.id}`}
-                          className={`mb-1 text-[10px] tabular-nums text-left text-gray-500 dark:text-gray-400 ${
-                            isMobile ? 'pl-7' : 'pl-10'
-                          }`}
-                        >
-                          {formatTime(m.created_at)}
-                        </div>
-                      ) : null}
-                      <div
-                        className={`flex min-w-0 items-center ${isMobile ? 'gap-1' : 'gap-2'}`}
-                      >
-                        <div className={`flex shrink-0 justify-start ${isMobile ? 'w-6' : 'w-8'}`}>
-                          {showSenderAvatar ? (
-                            <div
-                              data-testid={`message-avatar-${m.id}`}
-                              className={`overflow-hidden rounded-full bg-purple-100 dark:bg-purple-900/40 ${
-                                isMobile ? 'h-6 w-6' : 'h-8 w-8'
-                              }`}
-                            >
-                              {senderAvatarUrl ? (
-                                <img
-                                  src={senderAvatarUrl}
-                                  alt={senderDisplayName}
-                                  className="h-full w-full object-cover"
-                                />
-                              ) : (
-                                <span className="flex h-full w-full items-center justify-center text-[9px] font-bold text-purple-700 dark:text-purple-300">
-                                  {senderDisplayName.slice(0, 1).toUpperCase()}
-                                </span>
-                              )}
-                            </div>
-                          ) : null}
-                        </div>
-                        <div
-                          className={`min-w-0 flex-1 ${
-                            isMobile ? 'max-w-[calc(100%-1.75rem)]' : ''
-                          }`}
-                        >
-                          <div className="relative w-fit max-w-full">
-                            <div
-                              data-testid={`message-bubble-${m.id}`}
-                              className={`${bubbleClassName}${
-                                suppressMobileMessageSelection ? ' select-none' : ''
-                              }`}
-                              style={
-                                suppressMobileMessageSelection
-                                  ? MOBILE_OWN_MESSAGE_BUBBLE_SUPPRESSION_STYLE
-                                  : undefined
-                              }
-                              onContextMenu={
-                                suppressMobileMessageSelection
-                                  ? suppressNativeMessageContextMenu
-                                  : undefined
-                              }
-                              {...messageInteractionProps}
-                            >
-                              {messageContent}
-                            </div>
-                            {showDesktopMessageActionsTrigger ? (
-                              <button
-                                type="button"
-                                data-testid={`message-actions-trigger-${m.id}`}
-                                onClick={(event) => {
-                                  event.stopPropagation();
-                                  handleMessageActionTrigger(m.id, event.currentTarget);
-                                }}
-                                className="pointer-events-none absolute left-full top-1/2 ml-2 -translate-y-1/2 rounded-full p-1.5 text-gray-400 opacity-0 transition-all duration-150 hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-brand/30 focus-visible:pointer-events-auto focus-visible:opacity-100 group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100 dark:text-gray-500 dark:hover:bg-[#141416] dark:hover:text-gray-200"
-                                aria-label={t(
-                                  'messages.openMessageActions',
-                                  'OtvoriÅ¥ moÅ¾nosti sprÃ¡vy',
-                                )}
-                              >
-                                <EllipsisHorizontalIcon className="h-5 w-5" />
-                              </button>
-                            ) : null}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-                })}
+                    messageRowAttributes={{
+                      'data-message-row-id': String(message.id),
+                      'data-testid': `message-row-${message.id}`,
+                    }}
+                    messageInteractionProps={getMessageInteractionProps(
+                      message.id,
+                      !message.is_deleted,
+                    )}
+                    suppressNativeMessageContextMenu={suppressNativeMessageContextMenu}
+                    onMessageActionTrigger={handleMessageActionTrigger}
+                    onMessageImageClick={handleMessageImageClick}
+                  />
+                ))}
               </div>
             </div>
           )}
@@ -1510,15 +1140,10 @@ export function ConversationDetail({
         </div>
 
         {isMobile && showScrollToBottomButton ? (
-          <button
-            type="button"
-            data-testid="conversation-scroll-to-bottom"
-            aria-label={t('messages.scrollToBottom', 'Prejsť na najnovšie správy')}
+          <ConversationScrollToBottomButton
+            ariaLabel={scrollToBottomLabel}
             onClick={handleScrollToBottomClick}
-            className="absolute bottom-3 right-3 z-10 inline-flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-white/95 text-gray-700 shadow-lg backdrop-blur transition-colors hover:bg-white focus:outline-none focus:ring-2 focus:ring-brand/40 dark:border-gray-800 dark:bg-[#0f0f10]/95 dark:text-gray-100 dark:hover:bg-[#0f0f10]"
-          >
-            <ChevronDownIcon className="h-5 w-5" />
-          </button>
+          />
         ) : null}
       </div>
 
@@ -1543,172 +1168,78 @@ export function ConversationDetail({
       ) : null}
 
       {isMobile ? (
-        <div
-          data-testid="conversation-mobile-composer-stack"
-          className={`mt-1 w-full shrink-0 pl-[max(0.75rem,env(safe-area-inset-left,0px))] pr-[max(0.75rem,env(safe-area-inset-right,0px))] ${
-            isComposerFocused
-              ? 'pb-[max(0.5rem,env(safe-area-inset-bottom,0px))]'
-              : 'pb-[max(1.75rem,env(safe-area-inset-bottom,0px))]'
-          }`}
-        >
-          <div className="overflow-hidden rounded-[1.75rem] border border-gray-200 bg-white/90 shadow-sm backdrop-blur dark:border-gray-800 dark:bg-[#0f0f10]/90">
-            {canCreateRequestFromOffer ? (
-              <ChatRequestOfferPicker
-                open={isRequestPickerOpen}
-                disabled={!targetUserId}
-                isMobile={isMobile}
-                pairWithComposerBelow
-                targetUserId={targetUserId}
-                targetUserSlug={targetUserSlug}
-                targetUserType={targetUserType}
-                onToggle={() => setIsRequestPickerOpen((prev) => !prev)}
-                className=""
-              />
-            ) : null}
-            {pendingImagePreviewUrl && pendingImageFile ? (
-              <MessageComposerImagePreview
-                previewUrl={pendingImagePreviewUrl}
-                fileName={pendingImageFile.name}
-                disabled={sending}
-                onRemove={clearPendingImage}
-              />
-            ) : null}
-            <div
-              data-testid="conversation-composer"
-              onFocusCapture={handleComposerFocus}
-              onBlurCapture={handleComposerBlur}
-              className="relative z-10 flex w-full min-w-0 shrink-0 items-center gap-2 overflow-x-hidden border-t border-gray-200 bg-white/90 px-2.5 py-2.5 dark:border-gray-800 dark:bg-[#0f0f10]/90"
-            >
-              <div className="flex shrink-0 items-center gap-1">
-                <button
-                  type="button"
-                  data-testid="conversation-image-picker-trigger"
-                  onClick={openImagePicker}
-                  disabled={sending}
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-brand/30 disabled:cursor-not-allowed disabled:opacity-60 dark:text-gray-400 dark:hover:bg-[#141416] dark:hover:text-gray-200"
-                  aria-label={t('messages.chooseImage', 'Vybrať obrázok')}
-                >
-                  <PhotoIcon className="h-5 w-5" />
-                </button>
-                <button
-                  type="button"
-                  data-testid="conversation-camera-picker-trigger"
-                  onClick={openCameraPicker}
-                  disabled={sending}
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-brand/30 disabled:cursor-not-allowed disabled:opacity-60 dark:text-gray-400 dark:hover:bg-[#141416] dark:hover:text-gray-200"
-                  aria-label={t('messages.takePhoto', 'Odfotiť')}
-                >
-                  <CameraIcon className="h-5 w-5" />
-                </button>
-              </div>
-              <div className="relative flex min-h-0 min-w-0 flex-1 items-center overflow-hidden rounded-2xl border border-gray-200 bg-white px-2 dark:border-gray-800 dark:bg-black">
-                <input
-                  ref={inputRef}
-                  value={text}
-                  onChange={(e) => setText(e.target.value)}
-                  disabled={isComposerInputDisabled}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      void handleSend();
-                    }
-                  }}
-                  className={`min-w-0 w-full border-0 bg-transparent py-2 text-sm text-gray-900 focus:outline-none dark:text-gray-100 ${
-                    hasContentToSend
-                      ? 'overflow-x-hidden text-ellipsis whitespace-nowrap pl-2 pr-12'
-                      : 'overflow-x-hidden text-ellipsis whitespace-nowrap px-2'
-                  }`}
-                  placeholder={t('messages.type', 'Napíš správu…')}
-                />
-                {hasContentToSend ? (
-                  <button
-                    type="button"
-                    disabled={sending}
-                    onPointerDown={handleMobileSendPointerDown}
-                    onClick={() => void handleSend()}
-                    className="absolute right-1.5 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-brand text-white transition-colors hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-60"
-                    aria-label={t('messages.send', 'Odoslať')}
-                  >
-                    <PaperAirplaneIcon className="h-4 w-4 -rotate-45" />
-                  </button>
-                ) : null}
-              </div>
-            </div>
-          </div>
-        </div>
+        <ConversationMobileComposer
+          isComposerFocused={isComposerFocused}
+          canCreateRequestFromOffer={canCreateRequestFromOffer}
+          isRequestPickerOpen={isRequestPickerOpen}
+          targetUserId={targetUserId}
+          targetUserSlug={targetUserSlug}
+          targetUserType={targetUserType}
+          pendingImagePreviewUrl={pendingImagePreviewUrl}
+          pendingImageFile={pendingImageFile}
+          sending={sending}
+          text={text}
+          hasContentToSend={hasContentToSend}
+          isComposerInputDisabled={isComposerInputDisabled}
+          inputRef={inputRef}
+          chooseImageLabel={chooseImageLabel}
+          takePhotoLabel={takePhotoLabel}
+          typePlaceholder={typePlaceholder}
+          sendLabel={sendLabel}
+          onToggleRequestPicker={() => setIsRequestPickerOpen((prev) => !prev)}
+          onRemovePendingImage={clearPendingImage}
+          onFocusCapture={handleComposerFocus}
+          onBlurCapture={handleComposerBlur}
+          onOpenImagePicker={openImagePicker}
+          onOpenCameraPicker={openCameraPicker}
+          onTextChange={setText}
+          onInputKeyDown={(event) => {
+            if (event.key === 'Enter' && !event.shiftKey) {
+              event.preventDefault();
+              void handleSend();
+            }
+          }}
+          onSendPointerDown={handleMobileSendPointerDown}
+          onSend={() => {
+            void handleSend();
+          }}
+        />
       ) : (
-        <div className="mt-2 w-full max-w-[min(100%,56rem)] mx-auto px-4 sm:px-6 lg:px-8 pb-[max(1rem,env(safe-area-inset-bottom,0px))] lg:pb-[max(1.25rem,env(safe-area-inset-bottom,0px))]">
-          <div className="overflow-hidden rounded-[1.75rem] border border-gray-200 bg-white/90 shadow-sm backdrop-blur dark:border-gray-800 dark:bg-[#0f0f10]/90">
-            {canCreateRequestFromOffer ? (
-              <ChatRequestOfferPicker
-                open={isRequestPickerOpen}
-                disabled={!targetUserId}
-                isMobile={isMobile}
-                pairWithComposerBelow
-                targetUserId={targetUserId}
-                targetUserSlug={targetUserSlug}
-                targetUserType={targetUserType}
-                onToggle={() => setIsRequestPickerOpen((prev) => !prev)}
-                className=""
-              />
-            ) : null}
-            {pendingImagePreviewUrl && pendingImageFile ? (
-              <MessageComposerImagePreview
-                previewUrl={pendingImagePreviewUrl}
-                fileName={pendingImageFile.name}
-                disabled={sending}
-                onRemove={clearPendingImage}
-              />
-            ) : null}
-            <div
-              data-testid="conversation-composer"
-              onFocusCapture={handleComposerFocus}
-              onBlurCapture={handleComposerBlur}
-              className="flex w-full min-w-0 shrink-0 gap-2 border-t border-gray-200 bg-white/90 px-3 py-3 dark:border-gray-800 dark:bg-[#0f0f10]/90"
-            >
-              <button
-                type="button"
-                data-testid="conversation-image-picker-trigger"
-                onClick={openImagePicker}
-                disabled={sending}
-                className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-gray-200 bg-white text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-brand/30 disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-800 dark:bg-black dark:text-gray-400 dark:hover:bg-[#141416] dark:hover:text-gray-200"
-                aria-label={t('messages.attachImage', 'Priložiť obrázok')}
-              >
-                <PhotoIcon className="h-5 w-5" />
-              </button>
-              <div className="relative min-w-0 flex-1">
-                <input
-                  ref={inputRef}
-                  value={text}
-                  onChange={(e) => setText(e.target.value)}
-                  disabled={isComposerInputDisabled}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      void handleSend();
-                    }
-                  }}
-                  className="min-w-0 w-full rounded-2xl border border-gray-200 bg-white px-4 py-2 pr-12 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand/40 dark:border-gray-800 dark:bg-black dark:text-gray-100"
-                  placeholder={t('messages.type', 'Napíš správu…')}
-                />
-                <DesktopEmojiPickerButton
-                  ariaLabel={t('messages.addEmoji', 'Pridať emoji')}
-                  disabled={sending}
-                  onSelect={handleEmojiSelect}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-[#141416] dark:hover:text-gray-200"
-                />
-              </div>
-              <button
-                type="button"
-                disabled={sending || !hasContentToSend}
-                onClick={() => void handleSend()}
-                className="shrink-0 rounded-2xl bg-brand px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {sending ? t('common.sending', 'Odosielam…') : t('messages.send', 'Odoslať')}
-              </button>
-            </div>
-          </div>
-        </div>
+        <ConversationDesktopComposer
+          canCreateRequestFromOffer={canCreateRequestFromOffer}
+          isRequestPickerOpen={isRequestPickerOpen}
+          targetUserId={targetUserId}
+          targetUserSlug={targetUserSlug}
+          targetUserType={targetUserType}
+          pendingImagePreviewUrl={pendingImagePreviewUrl}
+          pendingImageFile={pendingImageFile}
+          sending={sending}
+          text={text}
+          hasContentToSend={hasContentToSend}
+          isComposerInputDisabled={isComposerInputDisabled}
+          inputRef={inputRef}
+          attachImageLabel={attachImageLabel}
+          addEmojiLabel={addEmojiLabel}
+          typePlaceholder={typePlaceholder}
+          sendLabel={sendLabel}
+          sendingLabel={sendingLabel}
+          onToggleRequestPicker={() => setIsRequestPickerOpen((prev) => !prev)}
+          onRemovePendingImage={clearPendingImage}
+          onFocusCapture={handleComposerFocus}
+          onBlurCapture={handleComposerBlur}
+          onOpenImagePicker={openImagePicker}
+          onTextChange={setText}
+          onInputKeyDown={(event) => {
+            if (event.key === 'Enter' && !event.shiftKey) {
+              event.preventDefault();
+              void handleSend();
+            }
+          }}
+          onEmojiSelect={handleEmojiSelect}
+          onSend={() => {
+            void handleSend();
+          }}
+        />
       )}
 
       <MessageActionsMenu
@@ -1718,6 +1249,8 @@ export function ConversationDetail({
         preview={selectedMessageActionPreview}
         canCopy={canCopySelectedMessage}
         canDelete={canDeleteSelectedMessage}
+        canPin={canToggleSelectedPinnedMessage}
+        pinActionLabel={isSelectedMessagePinned ? unpinMessageActionLabel : pinMessageActionLabel}
         onClose={closeMessageActions}
         onCopy={() => {
           void handleCopyMessage();
@@ -1727,6 +1260,7 @@ export function ConversationDetail({
           setMessagePendingDeleteId(messageActionsTarget.messageId);
           setMessageActionsTarget(null);
         }}
+        onPinToggle={handleToggleSelectedMessagePin}
       />
       <MessageImageLightbox
         open={messageImageLightbox !== null}

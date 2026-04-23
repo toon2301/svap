@@ -10,6 +10,7 @@ import {
   MESSAGING_CONVERSATIONS_REFRESH_EVENT,
   MESSAGING_REALTIME_DELETED_EVENT,
   MESSAGING_REALTIME_MESSAGE_EVENT,
+  MESSAGING_REALTIME_PINNED_MESSAGE_EVENT,
   MESSAGING_REALTIME_READ_EVENT,
 } from '@/components/dashboard/modules/messages/messagesEvents';
 
@@ -537,6 +538,60 @@ describe('RequestsNotificationsProvider', () => {
 
     window.removeEventListener(MESSAGING_CONVERSATIONS_REFRESH_EVENT, conversationsRefreshSpy);
     window.removeEventListener(MESSAGING_REALTIME_DELETED_EVENT, realtimeDeletedSpy);
+  });
+
+  it('bridges pinned-message websocket payloads into browser events for message modules', async () => {
+    const conversationsRefreshSpy = jest.fn();
+    const realtimePinnedSpy = jest.fn();
+    window.addEventListener(MESSAGING_CONVERSATIONS_REFRESH_EVENT, conversationsRefreshSpy);
+    window.addEventListener(MESSAGING_REALTIME_PINNED_MESSAGE_EVENT, realtimePinnedSpy);
+
+    render(
+      <RequestsNotificationsProvider>
+        <Consumer />
+        <MessageConsumer />
+      </RequestsNotificationsProvider>,
+    );
+    await flushAsyncEffects();
+
+    expect(MockWebSocket.instances).toHaveLength(1);
+
+    act(() => {
+      MockWebSocket.instances[0].emitMessage({
+        type: 'messaging_pinned_message_updated',
+        conversation_id: 9,
+        actor_id: 77,
+        pinned_message: {
+          id: 12,
+          conversation: 9,
+          sender: {
+            id: 77,
+            display_name: 'Tester',
+          },
+          text: 'Pinned reply',
+          image_url: null,
+          has_image: false,
+          created_at: '2026-03-29T10:00:00Z',
+          edited_at: null,
+          is_deleted: false,
+        },
+      });
+    });
+
+    expect(conversationsRefreshSpy).not.toHaveBeenCalled();
+    expect(realtimePinnedSpy).toHaveBeenCalledTimes(1);
+    const [event] = realtimePinnedSpy.mock.calls[0] as [CustomEvent];
+    expect(event.detail).toMatchObject({
+      conversationId: 9,
+      actorId: 77,
+      pinnedMessage: expect.objectContaining({
+        id: 12,
+        text: 'Pinned reply',
+      }),
+    });
+
+    window.removeEventListener(MESSAGING_CONVERSATIONS_REFRESH_EVENT, conversationsRefreshSpy);
+    window.removeEventListener(MESSAGING_REALTIME_PINNED_MESSAGE_EVENT, realtimePinnedSpy);
   });
 
   it('keeps message unread state reactive in React strict mode after websocket updates', async () => {

@@ -9,6 +9,7 @@ import type {
   MessageSendPayload,
   MessagingUnreadSummary,
   OpenConversationResult,
+  PinMessageResult,
 } from './types';
 
 type Paginated<T> = {
@@ -17,6 +18,7 @@ type Paginated<T> = {
   previous?: string | null;
   results: T[];
   peer_last_read_at?: string | null;
+  pinned_message?: MessageItem | null;
 };
 
 export function getMessagingErrorMessage(
@@ -137,6 +139,8 @@ export async function listMessages(
     nextPage: parsePageNumber(data?.next),
     previousPage: parsePageNumber(data?.previous),
     peerLastReadAt: typeof data?.peer_last_read_at === 'string' ? data.peer_last_read_at : null,
+    pinnedMessage:
+      data?.pinned_message && typeof data.pinned_message === 'object' ? data.pinned_message : null,
   };
 }
 
@@ -199,6 +203,21 @@ export async function hideConversation(
     {},
   );
   return data;
+}
+
+export async function updateConversationPinnedMessage(
+  conversationId: number,
+  messageId: number | null,
+): Promise<PinMessageResult> {
+  const { data } = await api.post<PinMessageResult>(
+    `/auth/messaging/conversations/${conversationId}/pin/`,
+    { message_id: messageId },
+  );
+  return {
+    conversation_id: data?.conversation_id ?? conversationId,
+    pinned_message:
+      data?.pinned_message && typeof data.pinned_message === 'object' ? data.pinned_message : null,
+  };
 }
 
 export async function markConversationRead(conversationId: number): Promise<{

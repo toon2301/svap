@@ -572,6 +572,137 @@ class TestMessagingApi(APITestCase):
         assert delete_response.status_code == status.HTTP_403_FORBIDDEN
         assert Message.objects.get(id=message_id).is_deleted is False
 
+    def test_participant_can_pin_and_unpin_any_message_and_emit_realtime_event(self):
+        convo = self._create_direct_conversation(actor=self.u1, target=self.u2)
+
+        self.client.force_authenticate(user=self.u1)
+        send_url = reverse("accounts:messaging_send_message", kwargs={"conversation_id": convo.id})
+        send_response = self.client.post(send_url, {"text": "Ahoj"}, format="json")
+        assert send_response.status_code == status.HTTP_201_CREATED
+        message_id = send_response.data["id"]
+
+        self.client.force_authenticate(user=self.u2)
+        pin_url = reverse("accounts:messaging_pin_message", kwargs={"conversation_id": convo.id})
+        with patch("messaging.api.views.notify_user") as notify_user_mock:
+            pin_response = self.client.post(pin_url, {"message_id": message_id}, format="json")
+
+        assert pin_response.status_code == status.HTTP_200_OK
+        assert pin_response.data["conversation_id"] == convo.id
+        assert pin_response.data["pinned_message"]["id"] == message_id
+
+        convo.refresh_from_db()
+        assert convo.pinned_message_id == message_id
+        assert notify_user_mock.call_count == 2
+
+        for called_user_id, event in [call.args for call in notify_user_mock.call_args_list]:
+            assert called_user_id in {self.u1.id, self.u2.id}
+            assert event["type"] == "messaging_pinned_message_updated"
+            assert event["conversation_id"] == convo.id
+            assert event["actor_id"] == self.u2.id
+            assert event["pinned_message"]["id"] == message_id
+
+        with patch("messaging.api.views.notify_user") as notify_user_mock:
+            unpin_response = self.client.post(pin_url, {"message_id": None}, format="json")
+
+        assert unpin_response.status_code == status.HTTP_200_OK
+        assert unpin_response.data["pinned_message"] is None
+
+        convo.refresh_from_db()
+        assert convo.pinned_message_id is None
+        assert notify_user_mock.call_count == 2
+        for called_user_id, event in [call.args for call in notify_user_mock.call_args_list]:
+            assert called_user_id in {self.u1.id, self.u2.id}
+            assert event["type"] == "messaging_pinned_message_updated"
+            assert event["conversation_id"] == convo.id
+            assert event["actor_id"] == self.u2.id
+            assert event["pinned_message"] is None
+
+    def test_non_participant_cannot_pin_message(self):
+        convo = self._create_direct_conversation(actor=self.u1, target=self.u2)
+
+        self.client.force_authenticate(user=self.u1)
+        send_url = reverse("accounts:messaging_send_message", kwargs={"conversation_id": convo.id})
+        send_response = self.client.post(send_url, {"text": "Ahoj"}, format="json")
+        assert send_response.status_code == status.HTTP_201_CREATED
+
+        self.client.force_authenticate(user=self.u3)
+        pin_url = reverse("accounts:messaging_pin_message", kwargs={"conversation_id": convo.id})
+        response = self.client.post(
+            pin_url,
+            {"message_id": send_response.data["id"]},
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    def test_deleted_message_cannot_be_pinned(self):
+        convo = self._create_direct_conversation(actor=self.u1, target=self.u2)
+
+        self.client.force_authenticate(user=self.u1)
+        send_url = reverse("accounts:messaging_send_message", kwargs={"conversation_id": convo.id})
+        send_response = self.client.post(send_url, {"text": "Ahoj"}, format="json")
+        assert send_response.status_code == status.HTTP_201_CREATED
+        message_id = send_response.data["id"]
+
+        delete_url = reverse(
+            "accounts:messaging_delete_message",
+            kwargs={"conversation_id": convo.id, "message_id": message_id},
+        )
+        delete_response = self.client.post(delete_url, {}, format="json")
+        assert delete_response.status_code == status.HTTP_200_OK
+
+        self.client.force_authenticate(user=self.u2)
+        pin_url = reverse("accounts:messaging_pin_message", kwargs={"conversation_id": convo.id})
+        pin_response = self.client.post(pin_url, {"message_id": message_id}, format="json")
+
+        assert pin_response.status_code == status.HTTP_400_BAD_REQUEST
+        convo.refresh_from_db()
+        assert convo.pinned_message_id is None
+
+    def test_message_list_includes_pinned_message(self):
+        convo = self._create_direct_conversation(actor=self.u1, target=self.u2)
+
+        self.client.force_authenticate(user=self.u1)
+        send_url = reverse("accounts:messaging_send_message", kwargs={"conversation_id": convo.id})
+        first_response = self.client.post(send_url, {"text": "Prva sprava"}, format="json")
+        assert first_response.status_code == status.HTTP_201_CREATED
+        second_response = self.client.post(send_url, {"text": "Druha sprava"}, format="json")
+        assert second_response.status_code == status.HTTP_201_CREATED
+
+        convo.pinned_message_id = first_response.data["id"]
+        convo.save(update_fields=["pinned_message"])
+
+        self.client.force_authenticate(user=self.u2)
+        list_url = reverse("accounts:messaging_list_messages", kwargs={"conversation_id": convo.id})
+        list_response = self.client.get(list_url)
+
+        assert list_response.status_code == status.HTTP_200_OK
+        assert list_response.data["pinned_message"]["id"] == first_response.data["id"]
+        assert list_response.data["pinned_message"]["text"] == "Prva sprava"
+        assert list_response.data["results"][0]["id"] == second_response.data["id"]
+
+    def test_deleting_pinned_message_clears_conversation_pin(self):
+        convo = self._create_direct_conversation(actor=self.u1, target=self.u2)
+
+        self.client.force_authenticate(user=self.u1)
+        send_url = reverse("accounts:messaging_send_message", kwargs={"conversation_id": convo.id})
+        send_response = self.client.post(send_url, {"text": "Pripnuta sprava"}, format="json")
+        assert send_response.status_code == status.HTTP_201_CREATED
+        message_id = send_response.data["id"]
+
+        convo.pinned_message_id = message_id
+        convo.save(update_fields=["pinned_message"])
+
+        delete_url = reverse(
+            "accounts:messaging_delete_message",
+            kwargs={"conversation_id": convo.id, "message_id": message_id},
+        )
+        delete_response = self.client.post(delete_url, {}, format="json")
+
+        assert delete_response.status_code == status.HTTP_200_OK
+        convo.refresh_from_db()
+        assert convo.pinned_message_id is None
+
     def test_message_list_includes_peer_last_read_at(self):
         convo = self._create_direct_conversation(actor=self.u1, target=self.u2)
 

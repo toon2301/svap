@@ -187,10 +187,19 @@
     "chooseImage": "Wybierz obraz",
     "takePhoto": "Zr?b zdj?cie",
     "removeAttachment": "Usu? za??cznik",
-    "imagePreview": "Podgl?d obrazu",
+    "imagePreview": "Podgląd obrazu",
+    "openImagePreview": "Otwórz obraz na pełnym ekranie",
     "imageOnlyPreview": "Zdj?cie",
     "invalidImageType": "Wybierz prawid?owy obraz w formacie JPG, PNG, GIF, WebP lub HEIC.",
-    "imageTooLarge": "Obraz jest za du?y. Maksymalny rozmiar to {size} MB."
+    "imageTooLarge": "Obraz jest za du?y. Maksymalny rozmiar to {size} MB.",
+    "pinAction": "Przypnij wiadomość",
+    "unpinAction": "Odepnij wiadomość",
+    "pinnedMessageLabel": "Przypięta wiadomość",
+    "jumpToPinnedMessage": "Przejdź do przypiętej wiadomości",
+    "unpinPinnedMessage": "Odepnij przypiętą wiadomość",
+    "pinFailed": "Nie udało się przypiąć wiadomości. Spróbuj ponownie.",
+    "unpinFailed": "Nie udało się odpiąć wiadomości. Spróbuj ponownie.",
+    "pinnedMessageUnavailable": "Nie udało się odnaleźć przypiętej wiadomości w historii rozmowy."
   },
   "search": {
     "title": "Szukaj",

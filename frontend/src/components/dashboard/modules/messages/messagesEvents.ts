@@ -1,9 +1,12 @@
 'use client';
 
+import type { MessageItem } from './types';
+
 export const MESSAGING_CONVERSATIONS_REFRESH_EVENT = 'messaging:conversations:refresh';
 export const MESSAGING_REALTIME_MESSAGE_EVENT = 'messaging:realtime:message';
 export const MESSAGING_REALTIME_READ_EVENT = 'messaging:realtime:read';
 export const MESSAGING_REALTIME_DELETED_EVENT = 'messaging:realtime:deleted';
+export const MESSAGING_REALTIME_PINNED_MESSAGE_EVENT = 'messaging:realtime:pinned-message';
 export const MESSAGING_OPEN_CONVERSATION_ACTIONS_EVENT = 'messaging:conversation:actions:open';
 
 export type MessagingRealtimeMessagePayload = {
@@ -23,6 +26,12 @@ export type MessagingRealtimeDeletedPayload = {
   conversationId: number;
   messageId: number;
   deletedById?: number;
+};
+
+export type MessagingRealtimePinnedMessagePayload = {
+  conversationId: number;
+  pinnedMessage: MessageItem | null;
+  actorId?: number;
 };
 
 export function requestConversationsRefresh(): void {
@@ -60,6 +69,20 @@ export function dispatchMessagingRealtimeDeleted(
     new CustomEvent<MessagingRealtimeDeletedPayload>(MESSAGING_REALTIME_DELETED_EVENT, {
       detail: payload,
     }),
+  );
+}
+
+export function dispatchMessagingRealtimePinnedMessage(
+  payload: MessagingRealtimePinnedMessagePayload,
+): void {
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(
+    new CustomEvent<MessagingRealtimePinnedMessagePayload>(
+      MESSAGING_REALTIME_PINNED_MESSAGE_EVENT,
+      {
+        detail: payload,
+      },
+    ),
   );
 }
 

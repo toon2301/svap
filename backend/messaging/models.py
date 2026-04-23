@@ -22,6 +22,13 @@ class Conversation(models.Model):
         on_delete=models.PROTECT,
         related_name="created_conversations",
     )
+    pinned_message = models.ForeignKey(
+        "Message",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="+",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     last_message_at = models.DateTimeField(null=True, blank=True)

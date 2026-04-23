@@ -188,9 +188,18 @@
     "takePhoto": "Foto aufnehmen",
     "removeAttachment": "Anhang entfernen",
     "imagePreview": "Bildvorschau",
+    "openImagePreview": "Bild im Vollbild öffnen",
     "imageOnlyPreview": "Bild",
     "invalidImageType": "W?hle ein g?ltiges Bild im Format JPG, PNG, GIF, WebP oder HEIC aus.",
-    "imageTooLarge": "Das Bild ist zu gro?. Die maximale Gr??e betr?gt {size} MB."
+    "imageTooLarge": "Das Bild ist zu gro?. Die maximale Gr??e betr?gt {size} MB.",
+    "pinAction": "Nachricht anheften",
+    "unpinAction": "Nachricht lösen",
+    "pinnedMessageLabel": "Angeheftete Nachricht",
+    "jumpToPinnedMessage": "Zur angehefteten Nachricht springen",
+    "unpinPinnedMessage": "Angeheftete Nachricht lösen",
+    "pinFailed": "Die Nachricht konnte nicht angeheftet werden. Bitte versuche es erneut.",
+    "unpinFailed": "Die Nachricht konnte nicht gelöst werden. Bitte versuche es erneut.",
+    "pinnedMessageUnavailable": "Die angeheftete Nachricht konnte im Gesprächsverlauf nicht gefunden werden."
   },
   "search": {
     "title": "Suche",

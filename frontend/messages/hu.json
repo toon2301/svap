@@ -187,10 +187,19 @@
     "chooseImage": "K?p kiv?laszt?sa",
     "takePhoto": "Fot? k?sz?t?se",
     "removeAttachment": "Mell?klet elt?vol?t?sa",
-    "imagePreview": "K?pel?n?zet",
+    "imagePreview": "Képelőnézet",
+    "openImagePreview": "Kép megnyitása teljes képernyőn",
     "imageOnlyPreview": "K?p",
     "invalidImageType": "V?lassz ?rv?nyes k?pet JPG, PNG, GIF, WebP vagy HEIC form?tumban.",
-    "imageTooLarge": "A k?p t?l nagy. A maxim?lis m?ret {size} MB."
+    "imageTooLarge": "A k?p t?l nagy. A maxim?lis m?ret {size} MB.",
+    "pinAction": "Üzenet kitűzése",
+    "unpinAction": "Üzenet feloldása",
+    "pinnedMessageLabel": "Kitűzött üzenet",
+    "jumpToPinnedMessage": "Ugrás a kitűzött üzenethez",
+    "unpinPinnedMessage": "Kitűzött üzenet feloldása",
+    "pinFailed": "Nem sikerült kitűzni az üzenetet. Próbáld újra.",
+    "unpinFailed": "Nem sikerült feloldani az üzenet kitűzését. Próbáld újra.",
+    "pinnedMessageUnavailable": "A kitűzött üzenetet nem sikerült megtalálni a beszélgetés előzményeiben."
   },
   "search": {
     "title": "Keresés",

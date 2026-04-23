@@ -196,6 +196,14 @@ class SendMessageSerializer(serializers.Serializer):
         return attrs
 
 
+class PinMessageSerializer(serializers.Serializer):
+    message_id = serializers.IntegerField(
+        min_value=1,
+        required=False,
+        allow_null=True,
+    )
+
+
 class StartDirectMessageSerializer(serializers.Serializer):
     target_user_id = serializers.IntegerField(min_value=1)
     text = serializers.CharField(required=False, allow_blank=True, trim_whitespace=True, max_length=5000)

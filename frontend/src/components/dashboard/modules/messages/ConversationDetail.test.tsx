@@ -13,12 +13,14 @@ import {
   listMessages,
   markConversationRead,
   sendMessage,
+  updateConversationPinnedMessage,
 } from './messagingApi';
 import {
   MESSAGING_CONVERSATIONS_REFRESH_EVENT,
   MESSAGING_OPEN_CONVERSATION_ACTIONS_EVENT,
   MESSAGING_REALTIME_DELETED_EVENT,
   MESSAGING_REALTIME_MESSAGE_EVENT,
+  MESSAGING_REALTIME_PINNED_MESSAGE_EVENT,
   MESSAGING_REALTIME_READ_EVENT,
 } from './messagesEvents';
 import type { MessageItem, MessageListPage } from './types';
@@ -76,6 +78,7 @@ jest.mock('./messagingApi', () => ({
   listMessages: jest.fn(),
   markConversationRead: jest.fn(),
   sendMessage: jest.fn(),
+  updateConversationPinnedMessage: jest.fn(),
   updateMessagingPresence: jest.fn().mockResolvedValue(undefined),
   getMessagingErrorMessage: jest.fn(),
 }));
@@ -157,6 +160,57 @@ function mockVisualViewport({ innerHeight = 900, height = 900, offsetTop = 0 } =
   };
 }
 
+function installControllableResizeObserver() {
+  const originalResizeObserver = global.ResizeObserver;
+  const observers: Array<{
+    callback: ResizeObserverCallback;
+    observed: Set<Element>;
+  }> = [];
+
+  class ControllableResizeObserver {
+    private readonly callback: ResizeObserverCallback;
+
+    private readonly observed = new Set<Element>();
+
+    constructor(callback: ResizeObserverCallback) {
+      this.callback = callback;
+      observers.push({ callback, observed: this.observed });
+    }
+
+    observe = (element: Element) => {
+      this.observed.add(element);
+    };
+
+    unobserve = (element: Element) => {
+      this.observed.delete(element);
+    };
+
+    disconnect = () => {
+      this.observed.clear();
+    };
+  }
+
+  Object.defineProperty(global, 'ResizeObserver', {
+    configurable: true,
+    value: ControllableResizeObserver,
+  });
+
+  return {
+    trigger(target: Element) {
+      observers.forEach((observer) => {
+        if (!observer.observed.has(target)) return;
+        observer.callback([{ target } as ResizeObserverEntry], {} as ResizeObserver);
+      });
+    },
+    restore() {
+      Object.defineProperty(global, 'ResizeObserver', {
+        configurable: true,
+        value: originalResizeObserver,
+      });
+    },
+  };
+}
+
 function message(overrides: Partial<MessageItem> = {}): MessageItem {
   return {
     id: 1,
@@ -179,6 +233,7 @@ function messagePage(
     nextPage: null,
     previousPage: null,
     peerLastReadAt: null,
+    pinnedMessage: null,
     ...overrides,
   };
 }
@@ -245,6 +300,10 @@ describe('ConversationDetail', () => {
     (markConversationRead as jest.Mock).mockResolvedValue({
       conversation_id: 9,
       last_read_at: null,
+    });
+    (updateConversationPinnedMessage as jest.Mock).mockResolvedValue({
+      conversation_id: 9,
+      pinned_message: null,
     });
     (getMessagingErrorMessage as jest.Mock).mockReturnValue('Friendly messaging error');
     (deleteMessage as jest.Mock).mockResolvedValue({
@@ -508,6 +567,70 @@ describe('ConversationDetail', () => {
     expect(messagesStack.className).toContain('min-h-full');
     expect(messagesStack.className).toContain('flex-col');
     expect(messagesStack.className).toContain('justify-end');
+  });
+
+  it('keeps the initial thread open pinned to the bottom while the message layout is still settling', async () => {
+    const pendingInitialPage = deferred<MessageListPage>();
+    const resizeObserver = installControllableResizeObserver();
+
+    (listMessages as jest.Mock).mockReturnValueOnce(pendingInitialPage.promise);
+
+    try {
+      render(<ConversationDetail conversationId={9} currentUserId={1} />);
+
+      const messagesScroll = screen.getByTestId('conversation-messages-scroll');
+      let currentScrollTop = 0;
+      let currentScrollHeight = 640;
+      const currentClientHeight = 400;
+
+      Object.defineProperty(messagesScroll, 'scrollTop', {
+        configurable: true,
+        get: () => currentScrollTop,
+        set: (value: number) => {
+          currentScrollTop = value;
+        },
+      });
+      Object.defineProperty(messagesScroll, 'scrollHeight', {
+        configurable: true,
+        get: () => currentScrollHeight,
+      });
+      Object.defineProperty(messagesScroll, 'clientHeight', {
+        configurable: true,
+        get: () => currentClientHeight,
+      });
+
+      act(() => {
+        pendingInitialPage.resolve(
+          messagePage([
+            message({
+              id: 1,
+              sender: { id: 1, display_name: 'Me' },
+              text: 'Jedna sprava',
+              created_at: '2026-03-27T10:00:00Z',
+            }),
+          ]),
+        );
+      });
+
+      expect(await screen.findByText('Jedna sprava')).toBeInTheDocument();
+
+      await waitFor(() => {
+        expect(currentScrollTop).toBe(640);
+      });
+
+      const messagesStack = screen.getByTestId('conversation-messages-stack');
+      currentScrollHeight = 820;
+
+      act(() => {
+        resizeObserver.trigger(messagesStack);
+      });
+
+      await waitFor(() => {
+        expect(currentScrollTop).toBe(820);
+      });
+    } finally {
+      resizeObserver.restore();
+    }
   });
 
   it('opens the other user profile when the desktop conversation header is clicked', async () => {
@@ -1711,6 +1834,53 @@ describe('ConversationDetail', () => {
     });
   });
 
+  it('keeps the desktop message actions trigger clickable briefly after leaving the message row', async () => {
+    jest.useFakeTimers();
+    (listMessages as jest.Mock).mockResolvedValueOnce(
+      messagePage([
+        message({
+          id: 1,
+          sender: { id: 1, display_name: 'Me' },
+          text: 'Moja sprava',
+          created_at: '2026-03-27T10:00:00Z',
+        }),
+      ]),
+    );
+
+    render(<ConversationDetail conversationId={9} currentUserId={1} />);
+
+    await screen.findByText('Moja sprava');
+
+    const row = screen.getByTestId('message-row-1');
+    const trigger = screen.getByTestId('message-actions-trigger-1');
+
+    expect(trigger.className).toContain('pointer-events-none');
+    expect(trigger.className).toContain('opacity-0');
+
+    fireEvent.mouseEnter(row);
+
+    expect(trigger.className).toContain('pointer-events-auto');
+    expect(trigger.className).toContain('opacity-100');
+
+    fireEvent.mouseLeave(row);
+    fireEvent.click(trigger);
+
+    expect(await screen.findByTestId('message-actions-menu')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('message-actions-menu'));
+
+    await waitFor(() => {
+      expect(screen.queryByTestId('message-actions-menu')).not.toBeInTheDocument();
+    });
+
+    act(() => {
+      jest.advanceTimersByTime(151);
+    });
+
+    expect(trigger.className).toContain('pointer-events-none');
+    expect(trigger.className).toContain('opacity-0');
+  });
+
   it('copies an own message from the desktop message actions menu', async () => {
     (listMessages as jest.Mock).mockResolvedValueOnce(
       messagePage([
@@ -1771,6 +1941,156 @@ describe('ConversationDetail', () => {
     });
 
     expect(deleteMessage).not.toHaveBeenCalled();
+  });
+
+  it('renders a pinned message banner from the messages response and jumps to the loaded message', async () => {
+    const pinned = message({
+      id: 1,
+      sender: { id: 77, display_name: 'Tester' },
+      text: 'Pripnuta sprava',
+      created_at: '2026-03-27T10:00:00Z',
+    });
+    const scrollIntoViewMock = Element.prototype.scrollIntoView as jest.Mock;
+    (listMessages as jest.Mock).mockResolvedValueOnce(
+      messagePage([pinned], {
+        pinnedMessage: pinned,
+      }),
+    );
+
+    render(<ConversationDetail conversationId={9} currentUserId={1} />);
+
+    expect(await screen.findByTestId('pinned-message-banner')).toHaveTextContent(
+      'Pripnuta sprava',
+    );
+    scrollIntoViewMock.mockClear();
+
+    fireEvent.click(screen.getByTestId('pinned-message-banner-trigger'));
+
+    await waitFor(() => {
+      expect(scrollIntoViewMock).toHaveBeenCalled();
+    });
+  });
+
+  it('pins another users image-only message from the desktop actions menu', async () => {
+    const imageOnlyMessage = message({
+      id: 1,
+      sender: { id: 77, display_name: 'Tester' },
+      text: null,
+      image_url: 'https://example.com/chat-image.png',
+      has_image: true,
+      created_at: '2026-03-27T10:00:00Z',
+    });
+    (listMessages as jest.Mock).mockResolvedValueOnce(
+      messagePage([imageOnlyMessage], {
+        pinnedMessage: null,
+      }),
+    );
+    (updateConversationPinnedMessage as jest.Mock).mockResolvedValueOnce({
+      conversation_id: 9,
+      pinned_message: imageOnlyMessage,
+    });
+
+    render(<ConversationDetail conversationId={9} currentUserId={1} />);
+
+    expect(await screen.findByTestId('message-actions-trigger-1')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('message-actions-trigger-1'));
+
+    expect(await screen.findByTestId('message-pin-action')).toBeInTheDocument();
+    expect(screen.queryByTestId('message-copy-action')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('message-delete-action')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('message-pin-action'));
+
+    await waitFor(() => {
+      expect(updateConversationPinnedMessage).toHaveBeenCalledWith(9, 1);
+      expect(screen.getByTestId('pinned-message-banner')).toBeInTheDocument();
+      expect(screen.getByTestId('pinned-message-banner')).toHaveTextContent('Obrázok');
+    });
+  });
+
+  it('unpins the current banner without disturbing the thread', async () => {
+    const pinned = message({
+      id: 1,
+      sender: { id: 77, display_name: 'Tester' },
+      text: 'Pripnuta sprava',
+      created_at: '2026-03-27T10:00:00Z',
+    });
+    (listMessages as jest.Mock).mockResolvedValueOnce(
+      messagePage([pinned], {
+        pinnedMessage: pinned,
+      }),
+    );
+    (updateConversationPinnedMessage as jest.Mock).mockResolvedValueOnce({
+      conversation_id: 9,
+      pinned_message: null,
+    });
+
+    render(<ConversationDetail conversationId={9} currentUserId={1} />);
+
+    expect(await screen.findByTestId('pinned-message-banner')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('pinned-message-unpin-button'));
+
+    await waitFor(() => {
+      expect(updateConversationPinnedMessage).toHaveBeenCalledWith(9, null);
+      expect(screen.queryByTestId('pinned-message-banner')).not.toBeInTheDocument();
+    });
+  });
+
+  it('loads older pages until the pinned message is found before scrolling to it', async () => {
+    const oldPinnedMessage = message({
+      id: 1,
+      sender: { id: 77, display_name: 'Tester' },
+      text: 'Stara pripnuta sprava',
+      created_at: '2026-03-27T10:00:00Z',
+    });
+    const scrollIntoViewMock = Element.prototype.scrollIntoView as jest.Mock;
+    (listMessages as jest.Mock)
+      .mockResolvedValueOnce(
+        messagePage(
+          [
+            message({
+              id: 3,
+              sender: { id: 1, display_name: 'Me' },
+              text: 'Nova sprava',
+              created_at: '2026-03-27T10:02:00Z',
+            }),
+            message({
+              id: 2,
+              sender: { id: 77, display_name: 'Tester' },
+              text: 'Stred threadu',
+              created_at: '2026-03-27T10:01:00Z',
+            }),
+          ],
+          {
+            nextPage: 2,
+            pinnedMessage: oldPinnedMessage,
+          },
+        ),
+      )
+      .mockResolvedValueOnce(
+        messagePage([oldPinnedMessage], {
+          nextPage: null,
+          pinnedMessage: oldPinnedMessage,
+        }),
+      );
+
+    render(<ConversationDetail conversationId={9} currentUserId={1} />);
+
+    expect(await screen.findByTestId('pinned-message-banner')).toBeInTheDocument();
+    scrollIntoViewMock.mockClear();
+
+    fireEvent.click(screen.getByTestId('pinned-message-banner-trigger'));
+
+    await waitFor(() => {
+      expect(listMessages).toHaveBeenNthCalledWith(2, 9, 100, 2);
+    });
+
+    expect(await screen.findByText('Stara pripnuta sprava')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(scrollIntoViewMock).toHaveBeenCalled();
+    });
   });
 
   it('shows an error toast when message copy fails', async () => {
@@ -1962,6 +2282,82 @@ describe('ConversationDetail', () => {
       expect(screen.queryByText('Moja sprava')).not.toBeInTheDocument();
       expect(screen.getByTestId('message-bubble-3')).toHaveTextContent(/vymazan/i);
       expect(screen.getByText('Nova sprava')).toBeInTheDocument();
+    });
+  });
+
+  it('updates the pinned banner when a realtime pin event arrives for the open conversation', async () => {
+    const pinned = message({
+      id: 8,
+      sender: { id: 77, display_name: 'Tester' },
+      text: 'Realtime pripnuta sprava',
+      created_at: '2026-03-27T10:08:00Z',
+    });
+    (listMessages as jest.Mock).mockResolvedValueOnce(
+      messagePage([
+        message({
+          id: 3,
+          sender: { id: 1, display_name: 'Me' },
+          text: 'Moja sprava',
+          created_at: '2026-03-27T10:02:00Z',
+        }),
+      ]),
+    );
+
+    render(<ConversationDetail conversationId={9} currentUserId={1} />);
+
+    expect(await screen.findByText('Moja sprava')).toBeInTheDocument();
+    expect(screen.queryByTestId('pinned-message-banner')).not.toBeInTheDocument();
+
+    act(() => {
+      window.dispatchEvent(
+        new CustomEvent(MESSAGING_REALTIME_PINNED_MESSAGE_EVENT, {
+          detail: {
+            conversationId: 9,
+            pinnedMessage: pinned,
+            actorId: 77,
+          },
+        }),
+      );
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('pinned-message-banner')).toHaveTextContent(
+        'Realtime pripnuta sprava',
+      );
+    });
+  });
+
+  it('clears the pinned banner when the pinned message is deleted in realtime', async () => {
+    const pinned = message({
+      id: 3,
+      sender: { id: 77, display_name: 'Tester' },
+      text: 'Mazatelna pripnuta sprava',
+      created_at: '2026-03-27T10:03:00Z',
+    });
+    (listMessages as jest.Mock).mockResolvedValueOnce(
+      messagePage([pinned], {
+        pinnedMessage: pinned,
+      }),
+    );
+
+    render(<ConversationDetail conversationId={9} currentUserId={1} />);
+
+    expect(await screen.findByTestId('pinned-message-banner')).toBeInTheDocument();
+
+    act(() => {
+      window.dispatchEvent(
+        new CustomEvent(MESSAGING_REALTIME_DELETED_EVENT, {
+          detail: {
+            conversationId: 9,
+            messageId: 3,
+            deletedById: 77,
+          },
+        }),
+      );
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByTestId('pinned-message-banner')).not.toBeInTheDocument();
     });
   });
 

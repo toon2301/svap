@@ -188,9 +188,18 @@
     "takePhoto": "Take photo",
     "removeAttachment": "Remove attachment",
     "imagePreview": "Image preview",
+    "openImagePreview": "Open image in fullscreen",
     "imageOnlyPreview": "Photo",
     "invalidImageType": "Choose a valid image in JPG, PNG, GIF, WebP, or HEIC format.",
-    "imageTooLarge": "The image is too large. The maximum size is {size} MB."
+    "imageTooLarge": "The image is too large. The maximum size is {size} MB.",
+    "pinAction": "Pin message",
+    "unpinAction": "Unpin message",
+    "pinnedMessageLabel": "Pinned message",
+    "jumpToPinnedMessage": "Go to pinned message",
+    "unpinPinnedMessage": "Unpin pinned message",
+    "pinFailed": "Couldn't pin the message. Please try again.",
+    "unpinFailed": "Couldn't unpin the message. Please try again.",
+    "pinnedMessageUnavailable": "Couldn't find the pinned message in the conversation history."
   },
   "search": {
     "title": "Search",
