@@ -212,12 +212,14 @@
   },
   "favorites": {
     "description": "Lista użytkowników, których chcesz mieć szybko pod ręką.",
+    "subtitle": "Wybierz ulubionych",
     "loading": "Ładowanie ulubionych użytkowników...",
     "loadError": "Nie udało się załadować ulubionych użytkowników.",
     "emptyTitle": "Nie masz jeszcze żadnych ulubionych użytkowników",
     "emptyHint": "Gdy dodasz kogoś do ulubionych z poziomu profilu, pojawi się tutaj.",
     "unknownUser": "Użytkownik",
     "removeAction": "Usuń",
+    "confirmAction": "Potwierdź",
     "removeError": "Nie udało się usunąć użytkownika z ulubionych."
   },
   "search": {

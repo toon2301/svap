@@ -137,5 +137,6 @@
   "messages.pinnedConversationLabel": "Pinned conversation",
   "messages.pinConversationFailed": "Failed to pin the conversation. Please try again.",
   "messages.unpinConversationFailed": "Failed to unpin the conversation. Please try again.",
-  "messages.reportUserAction": "Report user"
+  "messages.reportUserAction": "Report user",
+  "favorites.subtitle": "Choose favorites"
 }

@@ -212,12 +212,14 @@
   },
   "favorites": {
     "description": "Liste der Nutzer, die du schnell zur Hand haben möchtest.",
+    "subtitle": "Favoriten auswählen",
     "loading": "Favorisierte Nutzer werden geladen...",
     "loadError": "Favorisierte Nutzer konnten nicht geladen werden.",
     "emptyTitle": "Du hast noch keine favorisierten Nutzer",
     "emptyHint": "Wenn du jemanden im Profil zu den Favoriten hinzufügst, erscheint er hier.",
     "unknownUser": "Nutzer",
     "removeAction": "Entfernen",
+    "confirmAction": "Bestätigen",
     "removeError": "Der Nutzer konnte nicht aus den Favoriten entfernt werden."
   },
   "search": {

@@ -36,6 +36,6 @@ describe('FavoritesModule', () => {
 
     render(<FavoritesModule />);
 
-    expect(screen.getByText('Načítavam obľúbených používateľov...')).toBeInTheDocument();
+    expect(screen.getByText('Nacitavam oblubenych pouzivatelov...')).toBeInTheDocument();
   });
 });

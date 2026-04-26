@@ -159,5 +159,6 @@
   "messages.pinnedConversationLabel": "Przypięta konwersacja",
   "messages.pinConversationFailed": "Nie udało się przypiąć konwersacji. Spróbuj ponownie.",
   "messages.unpinConversationFailed": "Nie udało się odpiąć konwersacji. Spróbuj ponownie.",
-  "messages.reportUserAction": "Zgłoś użytkownika"
+  "messages.reportUserAction": "Zgłoś użytkownika",
+  "favorites.subtitle": "Wybierz ulubionych"
 }

@@ -378,5 +378,6 @@
   "messages.pinnedConversationLabel": "Angeheftete Unterhaltung",
   "messages.pinConversationFailed": "Die Unterhaltung konnte nicht angeheftet werden. Bitte versuche es erneut.",
   "messages.unpinConversationFailed": "Die Anheftung der Unterhaltung konnte nicht aufgehoben werden. Bitte versuche es erneut.",
-  "messages.reportUserAction": "Nutzer melden"
+  "messages.reportUserAction": "Nutzer melden",
+  "favorites.subtitle": "Favoriten auswählen"
 }

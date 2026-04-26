@@ -45,32 +45,41 @@ describe('FavoritesModule', () => {
       {
         id: 7,
         slug: 'jana-novakova',
-        display_name: 'Jana Nováková',
+        display_name: 'Jana Novakova',
         avatar_url: null,
       },
     ]);
     (setFavoriteUserState as jest.Mock).mockResolvedValue(undefined);
   });
 
-  it('renders fetched favorite users and navigates to the profile', async () => {
+  it('renders fetched favorite users and navigates to the profile from the card', async () => {
     render(<FavoritesModule />);
 
-    expect(await screen.findByText('Jana Nováková')).toBeInTheDocument();
+    expect(await screen.findByText('Jana Novakova')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: /Jana Nováková/i }));
+    fireEvent.click(screen.getByLabelText('Jana Novakova'));
 
     expect(pushMock).toHaveBeenCalledWith('/dashboard/users/jana-novakova');
+  });
+
+  it('opens messages from the primary action button', async () => {
+    render(<FavoritesModule />);
+
+    const messageButton = await screen.findByRole('button', { name: 'Sprava' });
+    fireEvent.click(messageButton);
+
+    expect(pushMock).toHaveBeenCalledWith('/dashboard/messages?targetUserId=7');
   });
 
   it('removes a favorite user after clicking remove', async () => {
     render(<FavoritesModule />);
 
-    const removeButton = await screen.findByRole('button', { name: 'Odobrať' });
+    const removeButton = await screen.findByRole('button', { name: 'Odobrat' });
     fireEvent.click(removeButton);
 
     await waitFor(() => {
       expect(setFavoriteUserState).toHaveBeenCalledWith(7, false);
-      expect(screen.queryByText('Jana Nováková')).not.toBeInTheDocument();
+      expect(screen.queryByText('Jana Novakova')).not.toBeInTheDocument();
     });
   });
 
@@ -79,8 +88,6 @@ describe('FavoritesModule', () => {
 
     render(<FavoritesModule />);
 
-    expect(
-      await screen.findByText('Zatiaľ nemáte žiadnych obľúbených používateľov'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Zatial nemate ziadnych oblubenych pouzivatelov')).toBeInTheDocument();
   });
 });

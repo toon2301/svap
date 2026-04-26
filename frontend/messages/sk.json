@@ -212,12 +212,14 @@
   },
   "favorites": {
     "description": "Zoznam používateľov, ktorých si chcete mať rýchlo po ruke.",
+    "subtitle": "Zvoľte obľúbené",
     "loading": "Načítavam obľúbených používateľov...",
     "loadError": "Nepodarilo sa načítať obľúbených používateľov.",
     "emptyTitle": "Zatiaľ nemáte žiadnych obľúbených používateľov",
     "emptyHint": "Keď si niekoho pridáte k obľúbeným v profile, zobrazí sa tu.",
     "unknownUser": "Používateľ",
     "removeAction": "Odobrať",
+    "confirmAction": "Potvrdiť",
     "removeError": "Nepodarilo sa odobrať používateľa z obľúbených."
   },
   "search": {

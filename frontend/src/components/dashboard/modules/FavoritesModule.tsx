@@ -9,6 +9,7 @@ import toast from 'react-hot-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { DashboardFavoriteUser } from './favoritesApi';
 import { fetchFavoriteUsers, setFavoriteUserState } from './favoritesApi';
+import { buildMessagesUrl } from './messages/messagesRouting';
 import { patchUserProfileInCache } from './profile/profileUserCache';
 
 function buildProfileUrl(user: Pick<DashboardFavoriteUser, 'id' | 'slug'>): string {
@@ -35,6 +36,11 @@ export default function FavoritesModule() {
   const [error, setError] = useState<string | null>(null);
   const [pendingRemoveId, setPendingRemoveId] = useState<number | null>(null);
 
+  const handleOpenMessages = (favoriteUser: DashboardFavoriteUser) => {
+    if (!Number.isInteger(favoriteUser.id) || favoriteUser.id <= 0) return;
+    router.push(buildMessagesUrl(null, { targetUserId: favoriteUser.id }));
+  };
+
   useEffect(() => {
     let cancelled = false;
 
@@ -53,7 +59,7 @@ export default function FavoritesModule() {
           loadError?.response?.data?.error ||
           loadError?.response?.data?.detail ||
           loadError?.message ||
-          t('favorites.loadError', 'Nepodarilo sa načítať obľúbených používateľov.');
+          t('favorites.loadError', 'Nepodarilo sa nacitat oblubenych pouzivatelov.');
         setError(message);
       } finally {
         if (!cancelled) {
@@ -67,8 +73,8 @@ export default function FavoritesModule() {
     return () => {
       cancelled = true;
     };
-    // Zámerne neuvádzame t v závislostiach, aby sa pri zmene jazyka
-    // zbytočne nespúšťal nový request na tie isté dáta.
+    // Zamerne neuvadzame t v zavislostiach, aby sa pri zmene jazyka
+    // zbytocne nespustal novy request na tie iste data.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -85,7 +91,7 @@ export default function FavoritesModule() {
         removeError?.response?.data?.error ||
         removeError?.response?.data?.detail ||
         removeError?.message ||
-        t('favorites.removeError', 'Nepodarilo sa odobrať používateľa z obľúbených.');
+        t('favorites.removeError', 'Nepodarilo sa odobrat pouzivatela z oblubenych.');
       toast.error(message);
     } finally {
       setPendingRemoveId(null);
@@ -99,43 +105,41 @@ export default function FavoritesModule() {
       transition={{ duration: 0.3 }}
       className="space-y-6"
     >
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <h2 className="text-2xl font-bold text-gray-900">
+      <div className="mx-auto hidden w-full max-w-4xl space-y-1 lg:block">
+        <h1 className="text-3xl font-semibold text-gray-900 dark:text-white">
           {t('navigation.favorites', 'Obľúbené')}
-        </h2>
-        <p className="mt-2 text-sm text-gray-500">
-          {t(
-            'favorites.description',
-            'Zoznam používateľov, ktorých si chcete mať rýchlo po ruke.',
-          )}
+        </h1>
+        <p className="text-lg font-semibold text-gray-900 dark:text-white">
+          {t('favorites.description', 'Zoznam používateľov, ktorých si chcete mať rýchlo po ruke.')}
         </p>
+        <div className="h-px w-full bg-gray-200 dark:bg-gray-800" />
       </div>
 
       {isLoading ? (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center text-sm text-gray-500">
-          {t('favorites.loading', 'Načítavam obľúbených používateľov...')}
+        <div className="rounded-lg border border-gray-200 bg-white p-12 text-center text-sm text-gray-500 shadow-sm dark:border-gray-800 dark:bg-[#0f0f10] dark:text-gray-400">
+          {t('favorites.loading', 'Nacitavam oblubenych pouzivatelov...')}
         </div>
       ) : error ? (
-        <div className="bg-white rounded-lg shadow-sm border border-red-200 p-12 text-center">
+        <div className="rounded-lg border border-red-200 bg-white p-12 text-center shadow-sm dark:border-red-900/40 dark:bg-[#0f0f10]">
           <p className="text-sm text-red-600">{error}</p>
         </div>
       ) : favoriteUsers.length === 0 ? (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
-          <HeartIcon className="mx-auto h-12 w-12 text-gray-400" />
-          <h3 className="mt-2 text-sm font-medium text-gray-900">
-            {t('favorites.emptyTitle', 'Zatiaľ nemáte žiadnych obľúbených používateľov')}
+        <div className="rounded-lg border border-gray-200 bg-white p-12 text-center shadow-sm dark:border-gray-800 dark:bg-[#0f0f10]">
+          <HeartIcon className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" />
+          <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">
+            {t('favorites.emptyTitle', 'Zatial nemate ziadnych oblubenych pouzivatelov')}
           </h3>
-          <p className="mt-1 text-sm text-gray-500">
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
             {t(
               'favorites.emptyHint',
-              'Keď si niekoho pridáte k obľúbeným v profile, zobrazí sa tu.',
+              'Ked si niekoho pridate k oblubenym v profile, zobrazi sa tu.',
             )}
           </p>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4">
           {favoriteUsers.map((favoriteUser) => {
-            const displayName = favoriteUser.display_name || t('favorites.unknownUser', 'Používateľ');
+            const displayName = favoriteUser.display_name || t('favorites.unknownUser', 'Pouzivatel');
             const initials = initialsFromName(displayName);
             const isRemoving = pendingRemoveId === favoriteUser.id;
 
@@ -144,44 +148,57 @@ export default function FavoritesModule() {
                 key={favoriteUser.id}
                 initial={{ opacity: 0, scale: 0.98 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="bg-white rounded-lg shadow-sm border border-gray-200 p-5"
+                className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-[#202223]"
               >
-                <div className="flex items-center justify-between gap-4">
+                <button
+                  type="button"
+                  onClick={() => router.push(buildProfileUrl(favoriteUser))}
+                  className="block w-full text-left"
+                  aria-label={displayName}
+                >
+                  <div className="flex aspect-[16/9] w-full items-center justify-center overflow-hidden bg-purple-100 dark:bg-purple-950/40">
+                    {favoriteUser.avatar_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={favoriteUser.avatar_url}
+                        alt={displayName}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <span className="text-5xl font-bold text-purple-700 dark:text-purple-200">
+                        {initials || <UserIcon className="h-14 w-14" />}
+                      </span>
+                    )}
+                  </div>
+                </button>
+
+                <div className="space-y-3 p-3">
                   <button
                     type="button"
                     onClick={() => router.push(buildProfileUrl(favoriteUser))}
-                    className="min-w-0 flex items-center gap-4 text-left"
+                    className="block w-full text-left"
                   >
-                    <div className="w-12 h-12 rounded-full overflow-hidden bg-purple-100 flex items-center justify-center flex-shrink-0">
-                      {favoriteUser.avatar_url ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={favoriteUser.avatar_url}
-                          alt={displayName}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <span className="text-sm font-semibold text-purple-700">
-                          {initials || <UserIcon className="w-5 h-5" />}
-                        </span>
-                      )}
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-base font-semibold text-gray-900 truncate">
-                        {displayName}
-                      </p>
-                    </div>
+                    <h2 className="truncate text-base font-semibold text-gray-900 dark:text-white">
+                      {displayName}
+                    </h2>
                   </button>
 
+                  <button
+                    type="button"
+                    onClick={() => handleOpenMessages(favoriteUser)}
+                    className="w-full rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {t('skills.message', 'Sprava')}
+                  </button>
                   <button
                     type="button"
                     onClick={() => {
                       void handleRemoveFavorite(favoriteUser);
                     }}
                     disabled={isRemoving}
-                    className="px-4 py-2 text-sm font-medium text-purple-800 bg-purple-100 border border-purple-200 rounded-2xl transition-colors hover:bg-purple-200 disabled:opacity-60 disabled:cursor-not-allowed"
+                    className="w-full rounded-lg bg-gray-100 px-4 py-2.5 text-sm font-semibold text-gray-800 transition-colors hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-[#3a3c3d] dark:text-white dark:hover:bg-[#454748]"
                   >
-                    {t('favorites.removeAction', 'Odobrať')}
+                    {t('favorites.removeAction', 'Odobrat')}
                   </button>
                 </div>
               </motion.div>

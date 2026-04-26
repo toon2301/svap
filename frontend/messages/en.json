@@ -212,12 +212,14 @@
   },
   "favorites": {
     "description": "A list of users you want to keep close at hand.",
+    "subtitle": "Choose favorites",
     "loading": "Loading favorite users...",
     "loadError": "Failed to load favorite users.",
     "emptyTitle": "You don't have any favorite users yet",
     "emptyHint": "When you add someone to favorites from their profile, they will appear here.",
     "unknownUser": "User",
     "removeAction": "Remove",
+    "confirmAction": "Confirm",
     "removeError": "Failed to remove the user from favorites."
   },
   "search": {

@@ -114,5 +114,6 @@
   "messages.pinnedConversationLabel": "Rögzített beszélgetés",
   "messages.pinConversationFailed": "A beszélgetést nem sikerült rögzíteni. Kérjük, próbáld újra.",
   "messages.unpinConversationFailed": "A beszélgetés rögzítését nem sikerült feloldani. Kérjük, próbáld újra.",
-  "messages.reportUserAction": "Felhasználó jelentése"
+  "messages.reportUserAction": "Felhasználó jelentése",
+  "favorites.subtitle": "Válassz kedvenceket"
 }

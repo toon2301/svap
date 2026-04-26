@@ -403,5 +403,6 @@
   "messages.pinnedConversationLabel": "Připnutá konverzace",
   "messages.pinConversationFailed": "Konverzaci se nepodařilo připnout. Zkuste to znovu.",
   "messages.unpinConversationFailed": "Konverzaci se nepodařilo odepnout. Zkuste to znovu.",
-  "messages.reportUserAction": "Nahlásit uživatele"
+  "messages.reportUserAction": "Nahlásit uživatele",
+  "favorites.subtitle": "Zvolte oblíbené"
 }

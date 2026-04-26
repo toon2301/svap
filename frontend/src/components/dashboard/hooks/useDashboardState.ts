@@ -514,6 +514,17 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
       setActiveRightItem('');
       setIsMobileMenuOpen(false);
       return;
+    } else if (activeModule === 'favorites') {
+      setActiveModule('home');
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem('activeModule', 'home');
+          window.history.pushState(null, '', '/dashboard');
+        } catch {
+          // ignore
+        }
+      }
+      setIsMobileMenuOpen(false);
     }
     setIsRightSidebarOpen(false);
     setActiveRightItem('');

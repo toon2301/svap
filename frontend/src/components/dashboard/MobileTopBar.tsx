@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Bars3Icon, UserCircleIcon } from '@heroicons/react/24/outline';
+import { Bars3Icon, HeartIcon, UserCircleIcon } from '@heroicons/react/24/outline';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { requestOpenConversationActions } from './modules/messages/messagesEvents';
 
@@ -10,6 +10,7 @@ interface MobileTopBarProps {
   isEditMode?: boolean;
   onBackClick?: () => void;
   onProfileClick?: () => void;
+  onFavoritesClick?: () => void;
   activeModule?: string;
   activeRightItem?: string;
   subcategory?: string | null;
@@ -27,6 +28,7 @@ export default function MobileTopBar({
   isEditMode = false,
   onBackClick,
   onProfileClick,
+  onFavoritesClick,
   activeModule,
   activeRightItem,
   subcategory,
@@ -73,6 +75,24 @@ export default function MobileTopBar({
     requestOpenConversationActions();
   }, []);
 
+  const canShowQuickProfile =
+    Boolean(onProfileClick) &&
+    activeModule !== 'profile' &&
+    activeModule !== 'user-profile' &&
+    activeModule !== 'favorites' &&
+    activeModule !== 'skills-describe' &&
+    activeModule !== 'requests' &&
+    activeModule !== 'messages' &&
+    activeModule !== 'offer-reviews' &&
+    activeModule !== 'notifications' &&
+    activeModule !== 'account-type' &&
+    activeRightItem !== 'account-type' &&
+    activeModule !== 'privacy' &&
+    activeRightItem !== 'privacy';
+  const canShowQuickFavorites =
+    Boolean(onFavoritesClick) &&
+    activeModule === 'home';
+
   return (
     <div className="lg:hidden fixed top-0 left-0 right-0 z-30 bg-white dark:bg-black border-b border-gray-200 dark:border-gray-800 shadow-sm">
       <div
@@ -97,7 +117,7 @@ export default function MobileTopBar({
             <h1 className="text-base font-semibold text-gray-900 dark:text-white truncate">
               {t('requests.title', 'Spolupráce')}
             </h1>
-          ) : (isEditMode || activeRightItem === 'language' || activeRightItem === 'account-type' || activeRightItem === 'privacy' || activeModule === 'notifications' || activeModule === 'account-type' || activeModule === 'privacy' || activeModule === 'skills' || activeModule === 'skills-offer' || activeModule === 'skills-search' || activeModule === 'skills-select-category' || activeModule === 'user-profile' || activeModule === 'offer-reviews') ? (
+          ) : (isEditMode || activeRightItem === 'language' || activeRightItem === 'account-type' || activeRightItem === 'privacy' || activeModule === 'notifications' || activeModule === 'account-type' || activeModule === 'privacy' || activeModule === 'skills' || activeModule === 'skills-offer' || activeModule === 'skills-search' || activeModule === 'skills-select-category' || activeModule === 'user-profile' || activeModule === 'offer-reviews' || activeModule === 'favorites') ? (
             <button
               onClick={onBackClick}
               className="p-2 -ml-2"
@@ -196,6 +216,11 @@ export default function MobileTopBar({
           {activeModule === 'offer-reviews' && (
             <h1 className="text-lg font-semibold text-gray-900 dark:text-white">{t('reviews.title', 'Recenzie')}</h1>
           )}
+          {activeModule === 'favorites' && (
+            <h1 className="text-lg font-semibold text-gray-900 dark:text-white">
+              {t('navigation.favorites', 'Obľúbené')}
+            </h1>
+          )}
         </div>
         
         {/* Pravá strana - Obnoviť (žiadosti), Profil, Hamburger alebo Krížik */}
@@ -244,8 +269,19 @@ export default function MobileTopBar({
             </button>
           )}
 
+          {/* Ikona obľúbených – rýchly prechod na obľúbené */}
+          {canShowQuickFavorites && (
+            <button
+              onClick={onFavoritesClick}
+              className="p-1.5 rounded-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-black text-gray-600 dark:text-gray-300 shadow-sm hover:border-purple-400 hover:text-purple-600 hover:bg-gray-50 dark:hover:bg-gray-900 transition-all"
+              aria-label={t('navigation.favorites', 'Obľúbené')}
+            >
+              <HeartIcon className="w-5 h-5" />
+            </button>
+          )}
+
           {/* Ikona profilu – rýchly prechod na profil (skrytá v upozorneniach, účte a súkromí) */}
-          {onProfileClick && activeModule !== 'profile' && activeModule !== 'user-profile' && activeModule !== 'skills-describe' && activeModule !== 'requests' && activeModule !== 'messages' && activeModule !== 'offer-reviews' && activeModule !== 'notifications' && activeModule !== 'account-type' && activeRightItem !== 'account-type' && activeModule !== 'privacy' && activeRightItem !== 'privacy' && (
+          {canShowQuickProfile && (
             <button
               onClick={onProfileClick}
               className="p-1.5 rounded-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-black text-gray-600 dark:text-gray-300 shadow-sm hover:border-purple-400 hover:text-purple-600 hover:bg-gray-50 dark:hover:bg-gray-900 transition-all"

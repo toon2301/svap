@@ -171,6 +171,7 @@ export default function DashboardLayout({
           isEditMode={isMobileEditMode}
           onBackClick={onMobileBack}
           onProfileClick={onMobileProfileClick}
+          onFavoritesClick={() => onModuleChange('favorites')}
           activeModule={activeModule}
           activeRightItem={activeRightItem}
           subcategory={subcategory}
@@ -254,6 +255,8 @@ export default function DashboardLayout({
             ? 'pt-0'
             : activeModule === 'messages'
               ? 'pt-12 lg:pt-0' // mobil: h-12 = výška vrchnej lišty, bez extra medzery
+            : activeModule === 'favorites'
+              ? 'pt-12 lg:pt-0' // obľúbené: menšia medzera pod vrchnou lištou na mobile
             : activeModule === 'offer-reviews'
               ? 'pt-12 lg:pt-0' // mobil: h-12 = výška lišty, žiadna medzera; desktop bez pt
             : 'pt-16'
@@ -266,6 +269,8 @@ export default function DashboardLayout({
                 ? 'pt-0 pb-4 lg:py-8' // recenzie: žiadna medzera medzi hornou lištou a tabmi
                 : activeModule === 'messages'
                   ? `h-full min-h-0 pt-0 ${isOpenMobileMessagesConversation ? 'pb-0' : 'pb-2'} lg:py-0` // správy: na mobile bez medzery pod vrchnou lištou
+                : activeModule === 'favorites'
+                  ? 'pt-1 pb-4 lg:py-8' // obľúbené: ešte menšia medzera pod vrchnou lištou
                   : 'py-4 lg:py-8'
             } ${
               activeModule === 'search'
@@ -281,14 +286,15 @@ export default function DashboardLayout({
           >
             <div
               className={`w-full ${
-                activeModule === 'offer-reviews'
-                  ? '' // žiadne centrovanie pre recenzie
+                activeModule === 'offer-reviews' || activeModule === 'favorites'
+                  ? '' // žiadne centrovanie pre recenzie a obľúbené
                   : 'mx-auto'
               } ${
                 (activeModule === 'profile' && !isProfileEditMode) ||
                 activeModule === 'user-profile' ||
                 activeModule === 'requests' ||
                 activeModule === 'messages' ||
+                activeModule === 'favorites' ||
                 isSkillsModule
                   ? 'max-w-7xl'
                   : activeModule === 'offer-reviews'

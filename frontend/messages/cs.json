@@ -212,12 +212,14 @@
   },
   "favorites": {
     "description": "Seznam uživatelů, které chcete mít rychle po ruce.",
+    "subtitle": "Zvolte oblíbené",
     "loading": "Načítám oblíbené uživatele...",
     "loadError": "Nepodařilo se načíst oblíbené uživatele.",
     "emptyTitle": "Zatím nemáte žádné oblíbené uživatele",
     "emptyHint": "Když si někoho přidáte do oblíbených v profilu, zobrazí se tady.",
     "unknownUser": "Uživatel",
     "removeAction": "Odebrat",
+    "confirmAction": "Potvrdit",
     "removeError": "Nepodařilo se odebrat uživatele z oblíbených."
   },
   "search": {

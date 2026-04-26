@@ -212,12 +212,14 @@
   },
   "favorites": {
     "description": "Azoknak a felhasználóknak a listája, akiket gyorsan el szeretnél érni.",
+    "subtitle": "Válassz kedvenceket",
     "loading": "Kedvenc felhasználók betöltése...",
     "loadError": "Nem sikerült betölteni a kedvenc felhasználókat.",
     "emptyTitle": "Még nincsenek kedvenc felhasználóid",
     "emptyHint": "Ha valakit hozzáadsz a kedvencekhez a profilján, itt fog megjelenni.",
     "unknownUser": "Felhasználó",
     "removeAction": "Eltávolítás",
+    "confirmAction": "Megerősítés",
     "removeError": "Nem sikerült eltávolítani a felhasználót a kedvencek közül."
   },
   "search": {
