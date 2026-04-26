@@ -166,6 +166,9 @@
     "startConversation": "Start the conversation",
     "firstMessageHint": "The conversation will be created after you send the first message.",
     "sidebarSubtitle": "Conversation list",
+    "searchPlaceholder": "Search by name...",
+    "searchNoResultsTitle": "No conversations found",
+    "searchNoResultsHint": "Try changing the name or clearing the search.",
     "pickConversationTitle": "Choose a conversation",
     "pickConversationHint": "Select the conversation you want to open on the right.",
     "deleteAction": "Delete",
@@ -199,7 +202,13 @@
     "unpinPinnedMessage": "Unpin pinned message",
     "pinFailed": "Couldn't pin the message. Please try again.",
     "unpinFailed": "Couldn't unpin the message. Please try again.",
-    "pinnedMessageUnavailable": "Couldn't find the pinned message in the conversation history."
+    "pinnedMessageUnavailable": "Couldn't find the pinned message in the conversation history.",
+    "pinConversationAction": "Pin conversation",
+    "unpinConversationAction": "Unpin conversation",
+    "pinConversationFailed": "Couldn't pin the conversation. Please try again.",
+    "unpinConversationFailed": "Couldn't unpin the conversation. Please try again.",
+    "pinnedConversationLabel": "Pinned conversation",
+    "reportUserAction": "Report user"
   },
   "search": {
     "title": "Search",

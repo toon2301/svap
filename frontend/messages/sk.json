@@ -166,6 +166,9 @@
     "startConversation": "Začnite konverzáciu",
     "firstMessageHint": "Konverzácia sa vytvorí až po odoslaní prvej správy.",
     "sidebarSubtitle": "Zoznam konverzácií",
+    "searchPlaceholder": "Hľadať podľa mena...",
+    "searchNoResultsTitle": "Nenašli sa žiadne konverzácie",
+    "searchNoResultsHint": "Skúste zmeniť meno používateľa alebo vymazať vyhľadávanie.",
     "pickConversationTitle": "Vyber konverzáciu",
     "pickConversationHint": "Na pravej strane si zvoľ konverzáciu, ktorú chceš otvoriť.",
     "deleteAction": "Vymazať",
@@ -199,7 +202,13 @@
     "unpinPinnedMessage": "Odopnúť pripnutú správu",
     "pinFailed": "Správu sa nepodarilo pripnúť. Skúste to znova.",
     "unpinFailed": "Správu sa nepodarilo odopnúť. Skúste to znova.",
-    "pinnedMessageUnavailable": "Pripnutú správu sa nepodarilo nájsť v histórii konverzácie."
+    "pinnedMessageUnavailable": "Pripnutú správu sa nepodarilo nájsť v histórii konverzácie.",
+    "pinConversationAction": "Pripnúť konverzáciu",
+    "unpinConversationAction": "Odopnúť konverzáciu",
+    "pinConversationFailed": "Konverzáciu sa nepodarilo pripnúť. Skúste to znova.",
+    "unpinConversationFailed": "Konverzáciu sa nepodarilo odopnúť. Skúste to znova.",
+    "pinnedConversationLabel": "Pripnutá konverzácia",
+    "reportUserAction": "Nahlásiť užívateľa"
   },
   "search": {
     "title": "Vyhľadávanie",

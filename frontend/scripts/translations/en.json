@@ -131,5 +131,11 @@
   "skillsCatalog.subcategories.marketing-a-obchod.csr-projekty": "CSR projekty",
   "skillsCatalog.subcategories.marketing-a-obchod.b2b-marketing": "B2B marketing",
   "skillsCatalog.subcategories.marketing-a-obchod.b2c-marketing": "B2C marketing",
-  "skillsCatalog.subcategories.marketing-a-obchod.online-predajne-strategie": "Online predajné stratégie"
+  "skillsCatalog.subcategories.marketing-a-obchod.online-predajne-strategie": "Online predajné stratégie",
+  "messages.pinConversationAction": "Pin conversation",
+  "messages.unpinConversationAction": "Unpin conversation",
+  "messages.pinnedConversationLabel": "Pinned conversation",
+  "messages.pinConversationFailed": "Failed to pin the conversation. Please try again.",
+  "messages.unpinConversationFailed": "Failed to unpin the conversation. Please try again.",
+  "messages.reportUserAction": "Report user"
 }

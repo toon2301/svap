@@ -166,6 +166,9 @@
     "startConversation": "Konversation starten",
     "firstMessageHint": "Die Konversation wird erstellt, sobald Sie die erste Nachricht senden.",
     "sidebarSubtitle": "Konversationsliste",
+    "searchPlaceholder": "Nach Namen suchen...",
+    "searchNoResultsTitle": "Keine Konversationen gefunden",
+    "searchNoResultsHint": "Versuchen Sie, den Namen zu ändern oder die Suche zu löschen.",
     "pickConversationTitle": "Konversation auswählen",
     "pickConversationHint": "Wählen Sie rechts die Konversation aus, die Sie öffnen möchten.",
     "deleteAction": "Löschen",
@@ -199,7 +202,13 @@
     "unpinPinnedMessage": "Angeheftete Nachricht lösen",
     "pinFailed": "Die Nachricht konnte nicht angeheftet werden. Bitte versuche es erneut.",
     "unpinFailed": "Die Nachricht konnte nicht gelöst werden. Bitte versuche es erneut.",
-    "pinnedMessageUnavailable": "Die angeheftete Nachricht konnte im Gesprächsverlauf nicht gefunden werden."
+    "pinnedMessageUnavailable": "Die angeheftete Nachricht konnte im Gesprächsverlauf nicht gefunden werden.",
+    "pinConversationAction": "Konversation anheften",
+    "unpinConversationAction": "Konversation lösen",
+    "pinConversationFailed": "Die Konversation konnte nicht angeheftet werden. Bitte versuche es erneut.",
+    "unpinConversationFailed": "Die Konversation konnte nicht gelöst werden. Bitte versuche es erneut.",
+    "pinnedConversationLabel": "Angeheftete Konversation",
+    "reportUserAction": "Nutzer melden"
   },
   "search": {
     "title": "Suche",

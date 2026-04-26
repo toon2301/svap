@@ -16,6 +16,7 @@ export type ConversationListItem = {
   last_message_is_deleted?: boolean;
   last_message_has_image?: boolean;
   last_read_at: string | null;
+  is_pinned?: boolean;
   has_unread: boolean;
   unread_count?: number;
   updated_at: string;
@@ -34,6 +35,7 @@ export type ConversationDraft = {
   last_message_is_deleted?: false;
   last_message_has_image?: false;
   last_read_at: null;
+  is_pinned?: false;
   has_unread: false;
   unread_count: 0;
   updated_at: null;
@@ -91,6 +93,11 @@ export type HideConversationResult = {
   hidden_at: string | null;
   conversation_unread_count?: number;
   total_unread_count?: number;
+};
+
+export type ConversationPinStateResult = {
+  conversation_id: number;
+  is_pinned: boolean;
 };
 
 export type PinMessageResult = {

@@ -4,9 +4,12 @@ import React from 'react';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { ConversationsList } from './ConversationsList';
-import { hideConversation, listConversations } from './messagingApi';
+import { hideConversation, listConversations, updateConversationPinnedState } from './messagingApi';
 import { ensureFreshSessionForBackgroundWork } from '@/lib/api';
-import { syncMessageUnreadCountFromConversations } from '@/components/dashboard/contexts/messageUnreadStore';
+import {
+  publishMessageUnreadCount,
+  syncMessageUnreadCountFromConversations,
+} from '@/components/dashboard/contexts/messageUnreadStore';
 import { requestConversationsRefresh } from './messagesEvents';
 
 const pushMock = jest.fn();
@@ -15,16 +18,24 @@ jest.mock('./messagingApi', () => ({
   __esModule: true,
   listConversations: jest.fn(),
   hideConversation: jest.fn(),
+  updateConversationPinnedState: jest.fn(),
 }));
 
 jest.mock('@/components/dashboard/contexts/messageUnreadStore', () => ({
   __esModule: true,
+  publishMessageUnreadCount: jest.fn(),
   syncMessageUnreadCountFromConversations: jest.fn(),
 }));
 
 jest.mock('@/lib/api', () => ({
   __esModule: true,
   ensureFreshSessionForBackgroundWork: jest.fn(() => Promise.resolve('ready')),
+}));
+
+jest.mock('../profile/ReportUserModal', () => ({
+  __esModule: true,
+  ReportUserModal: ({ open, userId }: { open: boolean; userId: number }) =>
+    open ? <div data-testid="report-user-modal" data-user-id={userId} /> : null,
 }));
 
 jest.mock('next/navigation', () => ({
@@ -52,6 +63,12 @@ describe('ConversationsList', () => {
       conversation_unread_count: 0,
       total_unread_count: 0,
     });
+    (updateConversationPinnedState as jest.Mock).mockImplementation(
+      async (conversationId: number, isPinned: boolean) => ({
+        conversation_id: conversationId,
+        is_pinned: isPinned,
+      }),
+    );
   });
 
   afterEach(() => {
@@ -86,9 +103,7 @@ describe('ConversationsList', () => {
   });
 
   it('renders skeleton placeholders while the conversations list is loading', async () => {
-    (listConversations as jest.Mock).mockImplementation(
-      () => new Promise(() => undefined),
-    );
+    (listConversations as jest.Mock).mockImplementation(() => new Promise(() => undefined));
 
     render(<ConversationsList currentUserId={1} variant="rail" />);
 
@@ -274,12 +289,13 @@ describe('ConversationsList', () => {
 
     expect(listConversations).toHaveBeenCalledTimes(1);
   });
+
   it('renders a hover-only hamburger action slot for rail conversations', async () => {
     (listConversations as jest.Mock).mockResolvedValue([
       {
         id: 9,
-        other_user: { id: 2, display_name: 'VeÄ¾mi dlhÃ½ nÃ¡zov konverzÃ¡cie' },
-        last_message_preview: 'UkÃ¡Å¾ka sprÃ¡vy',
+        other_user: { id: 2, display_name: 'Veľmi dlhý názov konverzácie' },
+        last_message_preview: 'Ukážka správy',
         last_message_at: '2026-03-27T10:00:00Z',
         last_message_sender_id: 2,
         has_unread: false,
@@ -364,6 +380,124 @@ describe('ConversationsList', () => {
     });
   });
 
+  it('pins a conversation from the rail menu, moves it to the top, and shows a pinned indicator', async () => {
+    (listConversations as jest.Mock).mockResolvedValueOnce([
+      {
+        id: 9,
+        other_user: { id: 2, display_name: 'Newest Chat' },
+        last_message_preview: 'Novsia sprava',
+        last_message_at: '2026-03-27T10:05:00Z',
+        last_message_sender_id: 2,
+        has_unread: false,
+        is_pinned: false,
+      },
+      {
+        id: 8,
+        other_user: { id: 3, display_name: 'Older Pinned' },
+        last_message_preview: 'Starsia sprava',
+        last_message_at: '2026-03-27T10:00:00Z',
+        last_message_sender_id: 3,
+        has_unread: false,
+        is_pinned: false,
+      },
+    ]);
+
+    render(<ConversationsList currentUserId={1} variant="rail" />);
+
+    expect(await screen.findByText('Novsia sprava')).toBeInTheDocument();
+    expect(screen.getByText('Starsia sprava')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('conversation-hover-action-8'));
+    expect(await screen.findByTestId('conversation-actions-menu')).toBeInTheDocument();
+    expect(screen.getByText('Pripnúť konverzáciu')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('conversation-pin-action'));
+
+    await waitFor(() => {
+      expect(updateConversationPinnedState).toHaveBeenCalledWith(8, true);
+      expect(screen.getByTestId('conversation-pinned-indicator-8')).toBeInTheDocument();
+      const orderedTitles = screen
+        .getAllByTestId(/conversation-title-/)
+        .map((node) => node.textContent);
+      expect(orderedTitles).toEqual(['Older Pinned', 'Newest Chat']);
+    });
+
+    expect(listConversations).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows an unpin action for pinned conversations and removes the indicator after unpinning', async () => {
+    (listConversations as jest.Mock).mockResolvedValueOnce([
+      {
+        id: 9,
+        other_user: { id: 2, display_name: 'Pinned Chat' },
+        last_message_preview: 'Pripnuta sprava',
+        last_message_at: '2026-03-27T10:05:00Z',
+        last_message_sender_id: 2,
+        has_unread: false,
+        is_pinned: true,
+      },
+    ]);
+
+    render(<ConversationsList currentUserId={1} variant="rail" />);
+
+    expect(await screen.findByTestId('conversation-pinned-indicator-9')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('conversation-hover-action-9'));
+    expect(await screen.findByText('Odopnúť konverzáciu')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('conversation-pin-action'));
+
+    await waitFor(() => {
+      expect(updateConversationPinnedState).toHaveBeenCalledWith(9, false);
+      expect(screen.queryByTestId('conversation-pinned-indicator-9')).not.toBeInTheDocument();
+    });
+  });
+
+  it('opens the reusable user report modal with the other conversation participant id', async () => {
+    (listConversations as jest.Mock).mockResolvedValueOnce([
+      {
+        id: 9,
+        other_user: { id: 42, display_name: 'Reported User' },
+        last_message_preview: 'Sprava',
+        last_message_at: '2026-03-27T10:05:00Z',
+        last_message_sender_id: 42,
+        has_unread: false,
+      },
+    ]);
+
+    render(<ConversationsList currentUserId={1} variant="rail" />);
+
+    expect(await screen.findByText('Sprava')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('conversation-hover-action-9'));
+    fireEvent.click(await screen.findByTestId('conversation-report-user-action'));
+
+    expect(await screen.findByTestId('report-user-modal')).toHaveAttribute('data-user-id', '42');
+    expect(screen.queryByTestId('conversation-actions-menu')).not.toBeInTheDocument();
+  });
+
+  it('does not show the user report action when the other participant is unavailable', async () => {
+    (listConversations as jest.Mock).mockResolvedValueOnce([
+      {
+        id: 9,
+        other_user: null,
+        last_message_preview: 'Sprava',
+        last_message_at: '2026-03-27T10:05:00Z',
+        last_message_sender_id: null,
+        has_unread: false,
+      },
+    ]);
+
+    render(<ConversationsList currentUserId={1} variant="rail" />);
+
+    expect(await screen.findByText('Sprava')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('conversation-hover-action-9'));
+
+    expect(await screen.findByTestId('conversation-actions-menu')).toBeInTheDocument();
+    expect(screen.queryByTestId('conversation-report-user-action')).not.toBeInTheDocument();
+  });
+
   it('shows a deleted-preview label for the current user when the latest message was deleted by them', async () => {
     (listConversations as jest.Mock).mockResolvedValue([
       {
@@ -403,6 +537,7 @@ describe('ConversationsList', () => {
       expect(screen.getByText('Tester vymazal/a správu')).toBeInTheDocument();
     });
   });
+
   it('shows an image preview label when the latest message only contains an image', async () => {
     (listConversations as jest.Mock).mockResolvedValue([
       {
@@ -421,5 +556,149 @@ describe('ConversationsList', () => {
     await waitFor(() => {
       expect(screen.getByText('Obrázok')).toBeInTheDocument();
     });
+  });
+
+  it('searches conversations by name after a short debounce', async () => {
+    jest.useFakeTimers();
+    (listConversations as jest.Mock)
+      .mockResolvedValueOnce([
+        {
+          id: 9,
+          other_user: { id: 2, display_name: 'Anna Tester' },
+          last_message_preview: 'Prva sprava',
+          last_message_at: '2026-03-27T10:00:00Z',
+          last_message_sender_id: 2,
+          has_unread: true,
+          unread_count: 3,
+        },
+      ])
+      .mockResolvedValueOnce([
+        {
+          id: 10,
+          other_user: { id: 3, display_name: 'Anna Novak' },
+          last_message_preview: 'Filtrovana sprava',
+          last_message_at: '2026-03-27T10:01:00Z',
+          last_message_sender_id: 3,
+          has_unread: true,
+          unread_count: 1,
+        },
+      ]);
+
+    render(<ConversationsList currentUserId={1} variant="rail" />);
+
+    expect(await screen.findByText('Prva sprava')).toBeInTheDocument();
+    expect(syncMessageUnreadCountFromConversations).toHaveBeenCalledTimes(1);
+
+    fireEvent.change(screen.getByLabelText('Hľadať podľa mena...'), {
+      target: { value: '  Anna   Novak ' },
+    });
+
+    await act(async () => {
+      jest.advanceTimersByTime(300);
+    });
+
+    await waitFor(() => {
+      expect(listConversations).toHaveBeenLastCalledWith({ search: 'Anna Novak' });
+      expect(screen.getByText('Filtrovana sprava')).toBeInTheDocument();
+    });
+
+    expect(syncMessageUnreadCountFromConversations).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows a search-specific empty state when no conversation matches the query', async () => {
+    jest.useFakeTimers();
+    (listConversations as jest.Mock)
+      .mockResolvedValueOnce([
+        {
+          id: 9,
+          other_user: { id: 2, display_name: 'Anna Tester' },
+          last_message_preview: 'Prva sprava',
+          last_message_at: '2026-03-27T10:00:00Z',
+          last_message_sender_id: 2,
+          has_unread: false,
+        },
+      ])
+      .mockResolvedValueOnce([]);
+
+    render(<ConversationsList currentUserId={1} variant="rail" />);
+
+    expect(await screen.findByText('Prva sprava')).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText('Hľadať podľa mena...'), {
+      target: { value: 'Neexistuje' },
+    });
+
+    await act(async () => {
+      jest.advanceTimersByTime(300);
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('Nenašli sa žiadne konverzácie')).toBeInTheDocument();
+      expect(
+        screen.getByText('Skúste zmeniť meno používateľa alebo vymazať vyhľadávanie.'),
+      ).toBeInTheDocument();
+    });
+  });
+
+  it('publishes the unread count returned by hide conversation while a search is active', async () => {
+    jest.useFakeTimers();
+    (hideConversation as jest.Mock).mockResolvedValue({
+      conversation_id: 9,
+      hidden_at: '2026-03-27T10:05:00Z',
+      conversation_unread_count: 0,
+      total_unread_count: 4,
+    });
+    (listConversations as jest.Mock)
+      .mockResolvedValueOnce([
+        {
+          id: 9,
+          other_user: { id: 2, display_name: 'Anna Tester' },
+          last_message_preview: 'Prva sprava',
+          last_message_at: '2026-03-27T10:00:00Z',
+          last_message_sender_id: 2,
+          has_unread: true,
+          unread_count: 3,
+        },
+      ])
+      .mockResolvedValueOnce([
+        {
+          id: 9,
+          other_user: { id: 2, display_name: 'Anna Tester' },
+          last_message_preview: 'Prva sprava',
+          last_message_at: '2026-03-27T10:00:00Z',
+          last_message_sender_id: 2,
+          has_unread: true,
+          unread_count: 3,
+        },
+      ]);
+
+    render(<ConversationsList currentUserId={1} variant="rail" />);
+
+    expect(await screen.findByText('Prva sprava')).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText('Hľadať podľa mena...'), {
+      target: { value: 'Anna' },
+    });
+
+    await act(async () => {
+      jest.advanceTimersByTime(300);
+    });
+
+    await waitFor(() => {
+      expect(listConversations).toHaveBeenLastCalledWith({ search: 'Anna' });
+    });
+
+    fireEvent.click(screen.getByTestId('conversation-hover-action-9'));
+    fireEvent.click(await screen.findByTestId('conversation-delete-action'));
+
+    const modal = await screen.findByTestId('delete-conversation-confirm-modal');
+    fireEvent.click(within(modal).getByRole('button', { name: /vymaza/i }));
+
+    await waitFor(() => {
+      expect(hideConversation).toHaveBeenCalledWith(9);
+      expect(publishMessageUnreadCount).toHaveBeenCalledWith(4);
+    });
+
+    expect(syncMessageUnreadCountFromConversations).toHaveBeenCalledTimes(1);
   });
 });

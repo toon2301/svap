@@ -372,5 +372,11 @@
   "privacy.publicAccountDescription": "Pri verejnom účte môžu ostatní používatelia váš profil nájsť vo vyhľadávaní podľa mena, ponúkaných alebo hľadaných zručností a kategórií. Zobrazujú sa všetky informácie vo vašom profile vrátane profilovej fotografie, osobných údajov, príspevkov, portfólia, kontaktov a kompletného prehľadu toho, čo ponúkate alebo hľadáte. Verejný účet je vhodný, ak chcete byť viditeľní, osloviť ostatných používateľov a aktívne sa zapájať do komunity Svaply.",
   "privacy.publicAccountMobileDescription": "Pri verejnom účte vás ostatní môžu nájsť podľa mena, zručností alebo kategórií. Zobrazujú sa všetky údaje, fotky, príspevky, portfólio a kontakty. Vhodné, ak chcete byť viditeľní a aktívni v komunite Svaply.",
   "privacy.privateAccountModalTitle": "Chcete prepnúť svoj účet na súkromný?",
-  "privacy.publicAccountModalTitle": "Chcete prepnúť svoj účet na verejný?"
+  "privacy.publicAccountModalTitle": "Chcete prepnúť svoj účet na verejný?",
+  "messages.pinConversationAction": "Unterhaltung anheften",
+  "messages.unpinConversationAction": "Anheftung der Unterhaltung aufheben",
+  "messages.pinnedConversationLabel": "Angeheftete Unterhaltung",
+  "messages.pinConversationFailed": "Die Unterhaltung konnte nicht angeheftet werden. Bitte versuche es erneut.",
+  "messages.unpinConversationFailed": "Die Anheftung der Unterhaltung konnte nicht aufgehoben werden. Bitte versuche es erneut.",
+  "messages.reportUserAction": "Nutzer melden"
 }

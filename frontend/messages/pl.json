@@ -166,6 +166,9 @@
     "startConversation": "Rozpocznij konwersacje",
     "firstMessageHint": "Konwersacja zostanie utworzona dopiero po wyslaniu pierwszej wiadomosci.",
     "sidebarSubtitle": "Lista konwersacji",
+    "searchPlaceholder": "Szukaj po nazwie...",
+    "searchNoResultsTitle": "Nie znaleziono żadnych konwersacji",
+    "searchNoResultsHint": "Spróbuj zmienić nazwę lub wyczyścić wyszukiwanie.",
     "pickConversationTitle": "Wybierz konwersacje",
     "pickConversationHint": "Po prawej stronie wybierz konwersacje, ktora chcesz otworzyc.",
     "deleteAction": "Usun",
@@ -199,7 +202,13 @@
     "unpinPinnedMessage": "Odepnij przypiętą wiadomość",
     "pinFailed": "Nie udało się przypiąć wiadomości. Spróbuj ponownie.",
     "unpinFailed": "Nie udało się odpiąć wiadomości. Spróbuj ponownie.",
-    "pinnedMessageUnavailable": "Nie udało się odnaleźć przypiętej wiadomości w historii rozmowy."
+    "pinnedMessageUnavailable": "Nie udało się odnaleźć przypiętej wiadomości w historii rozmowy.",
+    "pinConversationAction": "Przypnij konwersacje",
+    "unpinConversationAction": "Odepnij konwersacje",
+    "pinConversationFailed": "Nie udalo sie przypiac konwersacji. Sprobuj ponownie.",
+    "unpinConversationFailed": "Nie udalo sie odpiac konwersacji. Sprobuj ponownie.",
+    "pinnedConversationLabel": "Przypieta konwersacja",
+    "reportUserAction": "Zgłoś użytkownika"
   },
   "search": {
     "title": "Szukaj",

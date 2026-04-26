@@ -1,14 +1,22 @@
 'use client';
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Bars3Icon } from '@heroicons/react/24/outline';
 import { ChatBubbleLeftRightIcon } from '@heroicons/react/24/outline';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useIsMobile } from '@/hooks';
 import { ensureFreshSessionForBackgroundWork } from '@/lib/api';
-import { syncMessageUnreadCountFromConversations } from '@/components/dashboard/contexts/messageUnreadStore';
+import {
+  publishMessageUnreadCount,
+  syncMessageUnreadCountFromConversations,
+} from '@/components/dashboard/contexts/messageUnreadStore';
 import toast from 'react-hot-toast';
 import type { ConversationListItem } from './types';
-import { getMessagingErrorMessage, hideConversation, listConversations } from './messagingApi';
+import {
+  getMessagingErrorMessage,
+  hideConversation,
+  listConversations,
+  updateConversationPinnedState,
+} from './messagingApi';
 import { ConversationActionsMenu } from './ConversationActionsMenu';
 import { ConversationsListSkeleton } from './ConversationsListSkeleton';
 import { DeleteConversationConfirmModal } from './DeleteConversationConfirmModal';
@@ -17,8 +25,46 @@ import {
   requestConversationsRefresh,
 } from './messagesEvents';
 import { navigateMessagesUrl } from './messagesRouting';
+import { ConversationsListRow } from './ConversationsListRow';
+import { ConversationsListSearchInput } from './ConversationsListSearchInput';
+import { ReportUserModal } from '../profile/ReportUserModal';
 
 const IDLE_CONVERSATIONS_POLL_INTERVAL_MS = 30_000;
+const CONVERSATION_SEARCH_DEBOUNCE_MS = 300;
+const MAX_CONVERSATION_SEARCH_LENGTH = 100;
+
+function normalizeConversationSearchQuery(value: string): string {
+  return value.trim().replace(/\s+/g, ' ');
+}
+
+function toSortableTimestamp(value?: string | null): number {
+  if (!value) return -1;
+  const parsed = Date.parse(value);
+  return Number.isFinite(parsed) ? parsed : -1;
+}
+
+function sortConversations(items: ConversationListItem[]): ConversationListItem[] {
+  return [...items].sort((left, right) => {
+    const leftPinned = Boolean(left.is_pinned);
+    const rightPinned = Boolean(right.is_pinned);
+    if (leftPinned !== rightPinned) {
+      return leftPinned ? -1 : 1;
+    }
+
+    const lastMessageDiff =
+      toSortableTimestamp(right.last_message_at) - toSortableTimestamp(left.last_message_at);
+    if (lastMessageDiff !== 0) {
+      return lastMessageDiff;
+    }
+
+    const updatedDiff = toSortableTimestamp(right.updated_at) - toSortableTimestamp(left.updated_at);
+    if (updatedDiff !== 0) {
+      return updatedDiff;
+    }
+
+    return right.id - left.id;
+  });
+}
 
 export function ConversationsList({
   currentUserId,
@@ -32,18 +78,28 @@ export function ConversationsList({
   className?: string;
 }) {
   const { t } = useLanguage();
+  const isMobile = useIsMobile();
   const [items, setItems] = useState<ConversationListItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeSearchQuery, setActiveSearchQuery] = useState('');
   const [conversationActionsTarget, setConversationActionsTarget] = useState<{
     conversationId: number;
     anchorRect: DOMRect | null;
   } | null>(null);
-  const [conversationPendingDeleteId, setConversationPendingDeleteId] = useState<number | null>(
-    null,
-  );
+  const [conversationPendingDeleteId, setConversationPendingDeleteId] = useState<number | null>(null);
   const [isDeletingConversation, setIsDeletingConversation] = useState(false);
-  const refreshInFlightRef = useRef<Promise<ConversationListItem[]> | null>(null);
+  const [conversationPinUpdateId, setConversationPinUpdateId] = useState<number | null>(null);
+  const [reportUserId, setReportUserId] = useState<number | null>(null);
+  const refreshInFlightRef = useRef<{
+    key: string;
+    promise: Promise<ConversationListItem[]>;
+  } | null>(null);
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const latestRequestIdRef = useRef(0);
+  const hasLoadedOnceRef = useRef(false);
+  const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
   const isSidebar = variant === 'sidebar';
   const isRail = variant === 'rail';
   const isCompact = isSidebar || isRail;
@@ -51,6 +107,22 @@ export function ConversationsList({
   const shouldUseIntervalPolling = selectedConversationId == null;
   const defaultWrapperClassName = isCompact ? 'space-y-2' : 'max-w-4xl mx-auto space-y-2';
   const wrapperClassName = className || defaultWrapperClassName;
+  const normalizedSearchQuery = normalizeConversationSearchQuery(searchQuery);
+  const isSearchActive = activeSearchQuery.length > 0;
+  const shouldRenderSearch =
+    items.length > 0 || normalizedSearchQuery.length > 0 || activeSearchQuery.length > 0;
+  const activeConversationActionItem = conversationActionsTarget
+    ? items.find((item) => item.id === conversationActionsTarget.conversationId) ?? null
+    : null;
+  const activeConversationReportUserId = activeConversationActionItem?.other_user?.id ?? null;
+
+  const commitSearchQuery = useCallback((nextQuery: string) => {
+    if (searchDebounceRef.current) {
+      clearTimeout(searchDebounceRef.current);
+      searchDebounceRef.current = null;
+    }
+    setActiveSearchQuery((current) => (current === nextQuery ? current : nextQuery));
+  }, []);
 
   const refresh = useCallback(
     async ({
@@ -60,68 +132,97 @@ export function ConversationsList({
       showLoader?: boolean;
       clearOnError?: boolean;
     } = {}) => {
-      if (refreshInFlightRef.current) {
-        return refreshInFlightRef.current;
+      const search = activeSearchQuery;
+      const inFlight = refreshInFlightRef.current;
+      if (inFlight && inFlight.key === search) {
+        return inFlight.promise;
       }
 
       if (showLoader) {
         setLoading(true);
       }
 
+      const requestId = latestRequestIdRef.current + 1;
+      latestRequestIdRef.current = requestId;
+
       const request = (async () => {
-        const data = await listConversations();
-        const safeItems = Array.isArray(data) ? data : [];
-        syncMessageUnreadCountFromConversations(safeItems);
-        setItems(safeItems);
+        const data = await listConversations({ search });
+        const safeItems = sortConversations(Array.isArray(data) ? data : []);
+        if (latestRequestIdRef.current === requestId) {
+          setItems(safeItems);
+          if (!search) {
+            syncMessageUnreadCountFromConversations(safeItems);
+          }
+        }
         return safeItems;
       })();
 
-      refreshInFlightRef.current = request;
+      refreshInFlightRef.current = {
+        key: search,
+        promise: request,
+      };
 
       try {
         return await request;
       } catch (error) {
-        if (clearOnError) {
+        if (clearOnError && latestRequestIdRef.current === requestId) {
           setItems([]);
         }
         throw error;
       } finally {
-        if (refreshInFlightRef.current === request) {
+        if (refreshInFlightRef.current?.promise === request) {
           refreshInFlightRef.current = null;
         }
-        if (showLoader) {
-          setLoading(false);
+        if (latestRequestIdRef.current === requestId) {
+          hasLoadedOnceRef.current = true;
+          if (showLoader) {
+            setLoading(false);
+          }
         }
       }
     },
-    [],
+    [activeSearchQuery],
   );
 
   const closeConversationActions = useCallback(() => {
     setConversationActionsTarget(null);
   }, []);
 
-  const removeConversationLocally = useCallback((conversationId: number) => {
-    setItems((current) => {
-      const next = current.filter((item) => item.id !== conversationId);
-      syncMessageUnreadCountFromConversations(next);
-      return next;
-    });
+  const removeConversationLocally = useCallback(
+    (conversationId: number, totalUnreadCount?: number) => {
+      setItems((current) => {
+        const next = current.filter((item) => item.id !== conversationId);
+        if (isSearchActive) {
+          if (typeof totalUnreadCount === 'number') {
+            publishMessageUnreadCount(totalUnreadCount);
+          }
+        } else {
+          syncMessageUnreadCountFromConversations(next);
+        }
+        return next;
+      });
+    },
+    [isSearchActive],
+  );
+
+  const openConversation = useCallback((conversationId: number) => {
+    setItems((prev) =>
+      prev.map((item) =>
+        item.id === conversationId ? { ...item, has_unread: false, unread_count: 0 } : item,
+      ),
+    );
+    navigateMessagesUrl(conversationId);
   }, []);
 
-  const openConversation = useCallback(
-    (conversationId: number) => {
-      setItems((prev) =>
-        prev.map((item) =>
-          item.id === conversationId
-            ? { ...item, has_unread: false, unread_count: 0 }
-            : item,
+  const updateConversationPinLocally = useCallback((conversationId: number, isPinned: boolean) => {
+    setItems((current) =>
+      sortConversations(
+        current.map((item) =>
+          item.id === conversationId ? { ...item, is_pinned: isPinned } : item,
         ),
-      );
-      navigateMessagesUrl(conversationId);
-    },
-    [],
-  );
+      ),
+    );
+  }, []);
 
   const handleDeleteConversation = useCallback(async () => {
     const conversationId = conversationPendingDeleteId;
@@ -129,8 +230,8 @@ export function ConversationsList({
 
     setIsDeletingConversation(true);
     try {
-      await hideConversation(conversationId);
-      removeConversationLocally(conversationId);
+      const result = await hideConversation(conversationId);
+      removeConversationLocally(conversationId, result.total_unread_count);
       setConversationPendingDeleteId(null);
       closeConversationActions();
       requestConversationsRefresh();
@@ -162,8 +263,61 @@ export function ConversationsList({
     t,
   ]);
 
+  const handleToggleConversationPinned = useCallback(
+    async (conversationId: number, nextPinned: boolean) => {
+      if (conversationPinUpdateId === conversationId) return;
+
+      setConversationPinUpdateId(conversationId);
+      try {
+        const result = await updateConversationPinnedState(conversationId, nextPinned);
+        updateConversationPinLocally(conversationId, result.is_pinned);
+      } catch (error) {
+        toast.error(
+          getMessagingErrorMessage(error, {
+            fallback: t(
+              nextPinned ? 'messages.pinConversationFailed' : 'messages.unpinConversationFailed',
+              nextPinned
+                ? 'Konverzáciu sa nepodarilo pripnúť. Skúste to znova.'
+                : 'Konverzáciu sa nepodarilo odopnúť. Skúste to znova.',
+            ),
+          }),
+        );
+      } finally {
+        setConversationPinUpdateId((current) => (current === conversationId ? null : current));
+      }
+    },
+    [conversationPinUpdateId, t, updateConversationPinLocally],
+  );
+
   useEffect(() => {
-    void refresh({ showLoader: true, clearOnError: true }).catch(() => undefined);
+    if (normalizedSearchQuery === activeSearchQuery) {
+      return;
+    }
+
+    if (searchDebounceRef.current) {
+      clearTimeout(searchDebounceRef.current);
+    }
+
+    searchDebounceRef.current = setTimeout(() => {
+      setActiveSearchQuery((current) =>
+        current === normalizedSearchQuery ? current : normalizedSearchQuery,
+      );
+      searchDebounceRef.current = null;
+    }, CONVERSATION_SEARCH_DEBOUNCE_MS);
+
+    return () => {
+      if (searchDebounceRef.current) {
+        clearTimeout(searchDebounceRef.current);
+        searchDebounceRef.current = null;
+      }
+    };
+  }, [activeSearchQuery, normalizedSearchQuery]);
+
+  useEffect(() => {
+    void refresh({
+      showLoader: !hasLoadedOnceRef.current,
+      clearOnError: true,
+    }).catch(() => undefined);
   }, [refresh]);
 
   useEffect(() => {
@@ -209,12 +363,12 @@ export function ConversationsList({
     return <ConversationsListSkeleton variant={variant} className={wrapperClassName} />;
   }
 
-  if (items.length === 0) {
+  if (items.length === 0 && !isSearchActive) {
     return (
       <div className={className || (isCompact ? '' : 'max-w-4xl mx-auto')}>
         {isRail ? (
           <div className="px-3 py-3">
-            <div className="text-sm font-semibold text-gray-900 dark:text-white mb-1">
+            <div className="mb-1 text-sm font-semibold text-gray-900 dark:text-white">
               {t('messages.none', 'No messages')}
             </div>
             <div className="text-xs text-gray-600 dark:text-gray-400">
@@ -237,161 +391,87 @@ export function ConversationsList({
 
   return (
     <div className={wrapperClassName}>
-      {items.map((conversation) => {
-        const other = conversation.other_user;
-        const title = other?.display_name || t('messages.unknownUser', 'User');
-        const isMine =
-          typeof conversation.last_message_sender_id === 'number' &&
-          conversation.last_message_sender_id === currentUserId;
-        const deletedPreview = isMine
-          ? t('messages.deletedPreviewSelf', 'Vymazali ste správu')
-          : t('messages.deletedPreviewOther', '{name} vymazal/a správu').replace(
-              '{name}',
-              title,
-            );
-        const imageOnlyPreview = t('messages.imageOnlyPreview', 'Obrázok');
-        const rawPreview =
-          conversation.last_message_preview ||
-          (conversation.last_message_has_image ? imageOnlyPreview : null) ||
-          (conversation.last_message_at
-            ? t('messages.noPreview', 'Message')
-            : t('messages.noMessagesYet', 'No messages yet'));
-        const preview = conversation.last_message_is_deleted
-          ? deletedPreview
-          : isMine
-            ? `Ty: ${rawPreview}`
-            : rawPreview;
-        const isSelected = selectedConversationId === conversation.id;
-        const unreadCount =
-          typeof conversation.unread_count === 'number'
-            ? conversation.unread_count
-            : conversation.has_unread
-              ? 1
-              : 0;
-        const isUnread = unreadCount > 0 && !isSelected && !isMine;
+      {shouldRenderSearch ? (
+        <ConversationsListSearchInput
+          value={searchQuery}
+          maxLength={MAX_CONVERSATION_SEARCH_LENGTH}
+          placeholder={t('messages.searchPlaceholder', 'Hľadať podľa mena...')}
+          clearLabel={t('search.clearSearch', 'Vyčistiť vyhľadávanie')}
+          className={
+            isMobile && !isCompact
+              ? 'sticky top-0 z-20 mx-3 pt-3 pb-2 bg-white/95 backdrop-blur dark:bg-black/95'
+              : ''
+          }
+          inputRef={searchInputRef}
+          onChange={setSearchQuery}
+          onClear={() => {
+            setSearchQuery('');
+            commitSearchQuery('');
+            searchInputRef.current?.focus();
+          }}
+          onEnter={() => {
+            commitSearchQuery(normalizedSearchQuery);
+          }}
+        />
+      ) : null}
 
-        return (
-          <div
-            key={conversation.id}
-            className={`group relative w-full text-left flex items-center gap-3 transition-colors ${
-              isRail
-                ? `rounded-2xl border ${
-                    isSelected
-                      ? 'border-purple-300 bg-purple-50/90 text-purple-900 dark:border-purple-700 dark:bg-purple-900/25 dark:text-white'
-                      : 'border-transparent bg-transparent text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-900 hover:text-gray-900 dark:hover:text-white'
-                  }`
-                : `${
-                    isSelected
-                      ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/25 dark:text-white'
-                      : 'bg-transparent text-gray-700 dark:text-gray-300'
-                  }`
-            } ${isCompact ? 'px-3 py-2.5' : 'px-4 py-3.5'}`}
-          >
-            <button
-              type="button"
-              onClick={() => openConversation(conversation.id)}
-              className="flex min-w-0 flex-1 items-center gap-3 text-left"
-            >
-              <div
-                className={`rounded-full overflow-hidden flex items-center justify-center flex-shrink-0 ${
-                  isCompact ? 'w-9 h-9' : 'w-11 h-11'
-                } ${
-                  isSelected
-                    ? 'bg-purple-200 dark:bg-purple-800/70'
-                    : 'bg-purple-100 dark:bg-purple-900/40'
-                }`}
-              >
-                {other?.avatar_url ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={other.avatar_url} alt={title} className="w-full h-full object-cover" />
-                ) : (
-                  <span
-                    className={`font-bold ${
-                      isCompact ? 'text-[11px]' : 'text-sm'
-                    } ${
-                      isSelected
-                        ? 'text-purple-800 dark:text-purple-100'
-                        : 'text-purple-700 dark:text-purple-300'
-                    }`}
-                  >
-                    {(title || 'U').slice(0, 1).toUpperCase()}
-                  </span>
-                )}
-              </div>
-
-              <div
-                className={`min-w-0 flex-1 transition-[padding-right] duration-150 ${
-                  showHoverAction ? 'group-hover:pr-7 group-focus-visible:pr-7' : ''
-                }`}
-              >
-                <div className="flex items-center gap-2 min-w-0">
-                  <span
-                    data-testid={showHoverAction ? `conversation-title-${conversation.id}` : undefined}
-                    className={`truncate ${
-                      isCompact ? 'text-xs' : 'text-base'
-                    } font-semibold ${isSelected ? 'text-purple-900 dark:text-white' : 'text-gray-900 dark:text-white'}`}
-                  >
-                    {title}
-                  </span>
-                  {isUnread ? (
-                    <span
-                      className={`inline-flex items-center justify-center rounded-full bg-purple-600 font-bold text-white flex-shrink-0 ${
-                        isCompact
-                          ? 'min-w-5 h-5 px-1.5 text-[10px]'
-                          : 'min-w-[22px] h-[22px] px-1.5 text-[11px]'
-                      }`}
-                      aria-label={`${unreadCount} unread messages`}
-                    >
-                      {unreadCount > 99 ? '99+' : unreadCount}
-                    </span>
-                  ) : null}
-                </div>
-                <div
-                  className={`truncate ${
-                    isCompact ? 'text-[11px]' : 'text-sm'
-                  } ${
-                    isSelected
-                      ? 'text-purple-700/90 dark:text-purple-200/90'
-                      : 'text-gray-600 dark:text-gray-400'
-                  } ${isUnread ? 'font-extrabold text-gray-900 dark:text-white' : 'font-normal'}`}
-                >
-                  {preview}
-                </div>
-              </div>
-            </button>
-
-            {showHoverAction ? (
-              <button
-                type="button"
-                data-testid={`conversation-hover-action-${conversation.id}`}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  setConversationActionsTarget({
-                    conversationId: conversation.id,
-                    anchorRect: event.currentTarget.getBoundingClientRect(),
-                  });
-                }}
-                aria-label={t(
-                  'messages.openConversationActions',
-                  'Otvoriť možnosti konverzácie',
-                )}
-                className={`pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 opacity-0 transition-opacity duration-150 group-hover:opacity-100 ${
-                  isSelected
-                    ? 'text-purple-700 dark:text-purple-200'
-                    : 'text-gray-400 dark:text-gray-500'
-                } group-hover:pointer-events-auto group-focus-within:pointer-events-auto focus:pointer-events-auto focus:opacity-100`}
-              >
-                <Bars3Icon className="h-4 w-4" />
-              </button>
-            ) : null}
+      {items.length === 0 ? (
+        <div className={isRail ? 'px-3 py-3' : 'px-4 py-12 text-center'}>
+          <div className="mb-1 text-sm font-semibold text-gray-900 dark:text-white">
+            {t('messages.searchNoResultsTitle', 'Nenašli sa žiadne konverzácie')}
           </div>
-        );
-      })}
+          <div className="text-xs text-gray-600 dark:text-gray-400">
+            {t(
+              'messages.searchNoResultsHint',
+              'Skúste zmeniť meno používateľa alebo vymazať vyhľadávanie.',
+            )}
+          </div>
+        </div>
+      ) : (
+        items.map((conversation) => {
+          return (
+            <ConversationsListRow
+              key={conversation.id}
+              conversation={conversation}
+              currentUserId={currentUserId}
+              selectedConversationId={selectedConversationId}
+              isCompact={isCompact}
+              isRail={isRail}
+              showHoverAction={showHoverAction}
+              onOpenConversation={openConversation}
+              onOpenActions={(conversationId, anchorRect) => {
+                setConversationActionsTarget({
+                  conversationId,
+                  anchorRect,
+                });
+              }}
+              t={t}
+            />
+          );
+        })
+      )}
+
       <ConversationActionsMenu
         open={conversationActionsTarget !== null}
         isMobile={false}
         anchorRect={conversationActionsTarget?.anchorRect ?? null}
+        isPinned={Boolean(activeConversationActionItem?.is_pinned)}
         onClose={closeConversationActions}
+        onTogglePinned={() => {
+          if (!activeConversationActionItem) return;
+          const conversationId = activeConversationActionItem.id;
+          const nextPinned = !Boolean(activeConversationActionItem.is_pinned);
+          closeConversationActions();
+          void handleToggleConversationPinned(conversationId, nextPinned);
+        }}
+        onReportUser={
+          activeConversationReportUserId === null
+            ? undefined
+            : () => {
+                setReportUserId(activeConversationReportUserId);
+                closeConversationActions();
+              }
+        }
         onDeleteConversation={() => {
           if (!conversationActionsTarget) return;
           setConversationPendingDeleteId(conversationActionsTarget.conversationId);
@@ -407,6 +487,13 @@ export function ConversationsList({
         }}
         onConfirm={() => void handleDeleteConversation()}
       />
+      {reportUserId !== null ? (
+        <ReportUserModal
+          open
+          userId={reportUserId}
+          onClose={() => setReportUserId(null)} onSuccess={() => setReportUserId(null)}
+        />
+      ) : null}
     </div>
   );
 }

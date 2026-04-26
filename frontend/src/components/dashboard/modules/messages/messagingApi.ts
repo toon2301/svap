@@ -1,5 +1,6 @@
 import { api } from '@/lib/api';
 import type {
+  ConversationPinStateResult,
   ConversationListItem,
   DeleteMessageResult,
   DirectMessageStartResult,
@@ -20,6 +21,10 @@ type Paginated<T> = {
   peer_last_read_at?: string | null;
   pinned_message?: MessageItem | null;
 };
+
+function normalizeConversationSearchQuery(value?: string): string {
+  return typeof value === 'string' ? value.trim().replace(/\s+/g, ' ') : '';
+}
 
 export function getMessagingErrorMessage(
   err: unknown,
@@ -92,8 +97,16 @@ export async function sendDirectMessage(
   return data;
 }
 
-export async function listConversations(): Promise<ConversationListItem[]> {
-  const { data } = await api.get<ConversationListItem[] | Paginated<ConversationListItem>>('/auth/messaging/conversations/');
+export async function listConversations({
+  search,
+}: {
+  search?: string;
+} = {}): Promise<ConversationListItem[]> {
+  const normalizedSearch = normalizeConversationSearchQuery(search);
+  const { data } = await api.get<ConversationListItem[] | Paginated<ConversationListItem>>(
+    '/auth/messaging/conversations/',
+    normalizedSearch ? { params: { search: normalizedSearch } } : undefined,
+  );
   if (Array.isArray(data)) return data;
   if (data && Array.isArray((data as Paginated<ConversationListItem>).results)) {
     return (data as Paginated<ConversationListItem>).results;
@@ -203,6 +216,20 @@ export async function hideConversation(
     {},
   );
   return data;
+}
+
+export async function updateConversationPinnedState(
+  conversationId: number,
+  isPinned: boolean,
+): Promise<ConversationPinStateResult> {
+  const { data } = await api.post<ConversationPinStateResult>(
+    `/auth/messaging/conversations/${conversationId}/pin-state/`,
+    { is_pinned: isPinned },
+  );
+  return {
+    conversation_id: data?.conversation_id ?? conversationId,
+    is_pinned: Boolean(data?.is_pinned),
+  };
 }
 
 export async function updateConversationPinnedMessage(

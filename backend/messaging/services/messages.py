@@ -45,6 +45,12 @@ class HideConversationResult:
     changed: bool
 
 
+@dataclass(frozen=True)
+class SetConversationPinnedStateResult:
+    participant: ConversationParticipant
+    changed: bool
+
+
 def _ensure_participant(*, conversation: Conversation, user_id: int) -> ConversationParticipant:
     participant = (
         ConversationParticipant.objects.select_for_update()
@@ -245,4 +251,37 @@ def hide_conversation_for_user(
         participant.last_read_at = now
 
         return HideConversationResult(participant=participant, changed=True)
+
+
+def set_conversation_pinned_state_for_user(
+    *,
+    conversation: Conversation,
+    user,
+    is_pinned: bool,
+) -> SetConversationPinnedStateResult:
+    """
+    Store the caller's list pin preference for this conversation.
+    """
+    next_pinned_at = timezone.now() if is_pinned else None
+
+    with transaction.atomic():
+        convo = (
+            Conversation.objects.select_for_update()
+            .filter(id=conversation.id)
+            .first()
+        )
+        if not convo:
+            raise ValueError("Conversation not found.")
+
+        participant = _ensure_participant(conversation=convo, user_id=user.id)
+        currently_pinned = participant.pinned_at is not None
+        if currently_pinned == is_pinned:
+            return SetConversationPinnedStateResult(participant=participant, changed=False)
+
+        ConversationParticipant.objects.filter(id=participant.id).update(
+            pinned_at=next_pinned_at,
+        )
+        participant.pinned_at = next_pinned_at
+
+        return SetConversationPinnedStateResult(participant=participant, changed=True)
 

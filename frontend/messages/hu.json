@@ -166,6 +166,9 @@
     "startConversation": "Beszelgetes inditasa",
     "firstMessageHint": "A beszelgetes csak az elso uzenet elkuldese utan jon letre.",
     "sidebarSubtitle": "Beszelgetesek listaja",
+    "searchPlaceholder": "Keresés név alapján...",
+    "searchNoResultsTitle": "Nem találhatók beszélgetések",
+    "searchNoResultsHint": "Próbálj más nevet megadni, vagy töröld a keresést.",
     "pickConversationTitle": "Valassz beszelgetest",
     "pickConversationHint": "A jobb oldalon valassza ki a megnyitni kivant beszelgetest.",
     "deleteAction": "Torles",
@@ -199,7 +202,13 @@
     "unpinPinnedMessage": "Kitűzött üzenet feloldása",
     "pinFailed": "Nem sikerült kitűzni az üzenetet. Próbáld újra.",
     "unpinFailed": "Nem sikerült feloldani az üzenet kitűzését. Próbáld újra.",
-    "pinnedMessageUnavailable": "A kitűzött üzenetet nem sikerült megtalálni a beszélgetés előzményeiben."
+    "pinnedMessageUnavailable": "A kitűzött üzenetet nem sikerült megtalálni a beszélgetés előzményeiben.",
+    "pinConversationAction": "Beszelgetes kituzese",
+    "unpinConversationAction": "Beszelgetes feloldasa",
+    "pinConversationFailed": "Nem sikerult kituzni a beszelgetest. Probald ujra.",
+    "unpinConversationFailed": "Nem sikerult feloldani a beszelgetes kituzeset. Probald ujra.",
+    "pinnedConversationLabel": "Kituzott beszelgetes",
+    "reportUserAction": "Felhasználó jelentése"
   },
   "search": {
     "title": "Keresés",

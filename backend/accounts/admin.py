@@ -15,6 +15,15 @@ from .models import (
 )
 
 
+class ReportDescriptionPreviewMixin:
+    @admin.display(description=_("Popis"))
+    def description_preview(self, obj):
+        description = (obj.description or "").strip()
+        if not description:
+            return "-"
+        return description if len(description) <= 80 else f"{description[:77]}..."
+
+
 @admin.register(User)
 class UserAdmin(BaseUserAdmin):
     """Admin interface for the custom User model."""
@@ -261,10 +270,18 @@ class WebPushSubscriptionAdmin(admin.ModelAdmin):
 
 
 @admin.register(ReviewReport)
-class ReviewReportAdmin(admin.ModelAdmin):
+class ReviewReportAdmin(ReportDescriptionPreviewMixin, admin.ModelAdmin):
     """Admin interface for review reports."""
 
-    list_display = ["id", "review", "reported_by", "reason", "is_resolved", "created_at"]
+    list_display = [
+        "id",
+        "review",
+        "reported_by",
+        "reason",
+        "description_preview",
+        "is_resolved",
+        "created_at",
+    ]
     list_filter = ["is_resolved", "created_at"]
     search_fields = [
         "reason",
@@ -285,10 +302,18 @@ class ReviewReportAdmin(admin.ModelAdmin):
 
 
 @admin.register(UserReport)
-class UserReportAdmin(admin.ModelAdmin):
+class UserReportAdmin(ReportDescriptionPreviewMixin, admin.ModelAdmin):
     """Admin interface for user reports."""
 
-    list_display = ["id", "reported_user", "reported_by", "reason", "is_resolved", "created_at"]
+    list_display = [
+        "id",
+        "reported_user",
+        "reported_by",
+        "reason",
+        "description_preview",
+        "is_resolved",
+        "created_at",
+    ]
     list_filter = ["is_resolved", "created_at"]
     search_fields = [
         "reason",

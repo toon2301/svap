@@ -800,6 +800,116 @@ class TestMessagingApi(APITestCase):
         returned_ids = [item["id"] for item in messages_response.data["results"]]
         assert returned_ids == [second_response.data["id"]]
 
+    def test_conversation_pin_state_is_stored_per_participant_and_exposed_in_list(self):
+        convo = self._create_direct_conversation(actor=self.u1, target=self.u2)
+
+        self.client.force_authenticate(user=self.u2)
+        send_url = reverse("accounts:messaging_send_message", kwargs={"conversation_id": convo.id})
+        assert self.client.post(send_url, {"text": "Ahoj"}, format="json").status_code == status.HTTP_201_CREATED
+
+        self.client.force_authenticate(user=self.u1)
+        pin_url = reverse(
+            "accounts:messaging_conversation_pin_state",
+            kwargs={"conversation_id": convo.id},
+        )
+        pin_response = self.client.post(pin_url, {"is_pinned": True}, format="json")
+
+        assert pin_response.status_code == status.HTTP_200_OK
+        assert pin_response.data["conversation_id"] == convo.id
+        assert pin_response.data["is_pinned"] is True
+
+        participant = ConversationParticipant.objects.get(conversation_id=convo.id, user=self.u1)
+        other_participant = ConversationParticipant.objects.get(conversation_id=convo.id, user=self.u2)
+        assert participant.pinned_at is not None
+        assert other_participant.pinned_at is None
+
+        list_url = reverse("accounts:messaging_list_conversations")
+        list_response = self.client.get(list_url)
+        assert list_response.status_code == status.HTTP_200_OK
+        results = list_response.data.get("results", [])
+        assert len(results) == 1
+        assert results[0]["id"] == convo.id
+        assert results[0]["is_pinned"] is True
+
+        self.client.force_authenticate(user=self.u2)
+        other_list_response = self.client.get(list_url)
+        assert other_list_response.status_code == status.HTTP_200_OK
+        other_results = other_list_response.data.get("results", [])
+        assert len(other_results) == 1
+        assert other_results[0]["id"] == convo.id
+        assert other_results[0]["is_pinned"] is False
+
+    def test_conversation_pin_state_can_be_cleared(self):
+        convo = self._create_direct_conversation(actor=self.u1, target=self.u2)
+
+        self.client.force_authenticate(user=self.u2)
+        send_url = reverse("accounts:messaging_send_message", kwargs={"conversation_id": convo.id})
+        assert self.client.post(send_url, {"text": "Ahoj"}, format="json").status_code == status.HTTP_201_CREATED
+
+        self.client.force_authenticate(user=self.u1)
+        pin_url = reverse(
+            "accounts:messaging_conversation_pin_state",
+            kwargs={"conversation_id": convo.id},
+        )
+        assert self.client.post(pin_url, {"is_pinned": True}, format="json").status_code == status.HTTP_200_OK
+
+        unpin_response = self.client.post(pin_url, {"is_pinned": False}, format="json")
+        assert unpin_response.status_code == status.HTTP_200_OK
+        assert unpin_response.data["is_pinned"] is False
+
+        participant = ConversationParticipant.objects.get(conversation_id=convo.id, user=self.u1)
+        assert participant.pinned_at is None
+
+    def test_non_participant_cannot_update_conversation_pin_state(self):
+        convo = self._create_direct_conversation(actor=self.u1, target=self.u2)
+
+        self.client.force_authenticate(user=self.u2)
+        send_url = reverse("accounts:messaging_send_message", kwargs={"conversation_id": convo.id})
+        assert self.client.post(send_url, {"text": "Ahoj"}, format="json").status_code == status.HTTP_201_CREATED
+
+        self.client.force_authenticate(user=self.u3)
+        pin_url = reverse(
+            "accounts:messaging_conversation_pin_state",
+            kwargs={"conversation_id": convo.id},
+        )
+        response = self.client.post(pin_url, {"is_pinned": True}, format="json")
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    def test_conversation_list_orders_pinned_conversations_before_newer_unpinned_ones(self):
+        pinned_convo = self._create_direct_conversation(actor=self.u1, target=self.u2)
+        newer_convo = self._create_direct_conversation(actor=self.u1, target=self.u3)
+
+        self.client.force_authenticate(user=self.u2)
+        send_pinned_url = reverse(
+            "accounts:messaging_send_message",
+            kwargs={"conversation_id": pinned_convo.id},
+        )
+        assert self.client.post(send_pinned_url, {"text": "Starsia sprava"}, format="json").status_code == status.HTTP_201_CREATED
+
+        self.client.force_authenticate(user=self.u3)
+        send_newer_url = reverse(
+            "accounts:messaging_send_message",
+            kwargs={"conversation_id": newer_convo.id},
+        )
+        assert self.client.post(send_newer_url, {"text": "Novsia sprava"}, format="json").status_code == status.HTTP_201_CREATED
+
+        self.client.force_authenticate(user=self.u1)
+        pin_url = reverse(
+            "accounts:messaging_conversation_pin_state",
+            kwargs={"conversation_id": pinned_convo.id},
+        )
+        assert self.client.post(pin_url, {"is_pinned": True}, format="json").status_code == status.HTTP_200_OK
+
+        list_url = reverse("accounts:messaging_list_conversations")
+        list_response = self.client.get(list_url)
+
+        assert list_response.status_code == status.HTTP_200_OK
+        results = list_response.data.get("results", [])
+        assert [item["id"] for item in results] == [pinned_convo.id, newer_convo.id]
+        assert results[0]["is_pinned"] is True
+        assert results[1]["is_pinned"] is False
+
     def test_conversation_list_returns_only_started_conversations_with_other_user(self):
         empty_convo = self._create_direct_conversation(actor=self.u1, target=self.u2)
         started_convo = self._create_direct_conversation(actor=self.u1, target=self.u3)
@@ -831,6 +941,73 @@ class TestMessagingApi(APITestCase):
         assert results[0]["has_requestable_offers"] is True
         assert results[0]["unread_count"] == 0
         assert all(item["id"] != empty_convo.id for item in results)
+
+    def test_conversation_list_search_matches_other_participant_name_tokens(self):
+        self.u2.first_name = "Jana"
+        self.u2.last_name = "Novakova"
+        self.u2.save(update_fields=["first_name", "last_name"])
+        self.u3.first_name = "Peter"
+        self.u3.last_name = "Hrasko"
+        self.u3.save(update_fields=["first_name", "last_name"])
+
+        convo_one = self._create_direct_conversation(actor=self.u1, target=self.u2)
+        convo_two = self._create_direct_conversation(actor=self.u1, target=self.u3)
+
+        self.client.force_authenticate(user=self.u2)
+        send_url_one = reverse(
+            "accounts:messaging_send_message",
+            kwargs={"conversation_id": convo_one.id},
+        )
+        assert self.client.post(send_url_one, {"text": "Ahoj Jana"}, format="json").status_code == status.HTTP_201_CREATED
+
+        self.client.force_authenticate(user=self.u3)
+        send_url_two = reverse(
+            "accounts:messaging_send_message",
+            kwargs={"conversation_id": convo_two.id},
+        )
+        assert self.client.post(send_url_two, {"text": "Ahoj Peter"}, format="json").status_code == status.HTTP_201_CREATED
+
+        self.client.force_authenticate(user=self.u1)
+        list_url = reverse("accounts:messaging_list_conversations")
+        response = self.client.get(list_url, {"search": "  jana   nova "})
+
+        assert response.status_code == status.HTTP_200_OK
+        results = response.data.get("results", [])
+        assert len(results) == 1
+        assert results[0]["id"] == convo_one.id
+        assert results[0]["other_user"]["display_name"] == "Jana Novakova"
+
+    def test_conversation_list_search_matches_company_name(self):
+        self.u2.user_type = "company"
+        self.u2.company_name = "Acme Studio"
+        self.u2.first_name = ""
+        self.u2.last_name = ""
+        self.u2.save(update_fields=["user_type", "company_name", "first_name", "last_name"])
+
+        convo = self._create_direct_conversation(actor=self.u1, target=self.u2)
+
+        self.client.force_authenticate(user=self.u2)
+        send_url = reverse("accounts:messaging_send_message", kwargs={"conversation_id": convo.id})
+        assert self.client.post(send_url, {"text": "Firemna sprava"}, format="json").status_code == status.HTTP_201_CREATED
+
+        self.client.force_authenticate(user=self.u1)
+        list_url = reverse("accounts:messaging_list_conversations")
+        response = self.client.get(list_url, {"search": "studio"})
+
+        assert response.status_code == status.HTTP_200_OK
+        results = response.data.get("results", [])
+        assert len(results) == 1
+        assert results[0]["id"] == convo.id
+        assert results[0]["other_user"]["display_name"] == "Acme Studio"
+
+    def test_conversation_list_search_rejects_too_long_query(self):
+        self.client.force_authenticate(user=self.u1)
+        list_url = reverse("accounts:messaging_list_conversations")
+
+        response = self.client.get(list_url, {"search": "a" * 101})
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert response.data["code"] == "VALIDATION_ERROR"
 
     def test_conversation_list_hides_request_picker_flag_when_peer_has_only_hidden_or_seeking_offers(self):
         convo = self._create_direct_conversation(actor=self.u1, target=self.u2)

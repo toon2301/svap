@@ -70,6 +70,12 @@ jest.mock('./ChatRequestOfferPicker', () => ({
   ChatRequestOfferPicker: () => <div data-testid="chat-request-offer-picker" />,
 }));
 
+jest.mock('../profile/ReportUserModal', () => ({
+  __esModule: true,
+  ReportUserModal: ({ open, userId }: { open: boolean; userId: number }) =>
+    open ? <div data-testid="report-user-modal" data-user-id={userId} /> : null,
+}));
+
 jest.mock('./messagingApi', () => ({
   __esModule: true,
   deleteMessage: jest.fn(),
@@ -722,6 +728,10 @@ describe('ConversationDetail', () => {
 
     expect(await screen.findByTestId('conversation-actions-menu')).toBeInTheDocument();
     expect(screen.getByTestId('conversation-delete-action')).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('conversation-report-user-action'));
+
+    expect(await screen.findByTestId('report-user-modal')).toHaveAttribute('data-user-id', '77');
+    expect(screen.queryByTestId('conversation-actions-menu')).not.toBeInTheDocument();
   });
 
   it('keeps the mobile composer in the normal layout flow even after focus', async () => {

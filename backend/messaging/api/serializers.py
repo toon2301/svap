@@ -16,6 +16,19 @@ class OpenConversationSerializer(serializers.Serializer):
     target_user_id = serializers.IntegerField(min_value=1)
 
 
+class ConversationListQuerySerializer(serializers.Serializer):
+    search = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        trim_whitespace=True,
+        max_length=100,
+    )
+
+
+class ConversationPinStateSerializer(serializers.Serializer):
+    is_pinned = serializers.BooleanField(required=True)
+
+
 class UserBriefSerializer(serializers.Serializer):
     id = serializers.IntegerField()
     display_name = serializers.CharField()
@@ -59,6 +72,7 @@ class ConversationListItemSerializer(serializers.ModelSerializer):
     other_user = serializers.SerializerMethodField()
     has_requestable_offers = serializers.SerializerMethodField()
     last_message_preview = serializers.SerializerMethodField()
+    is_pinned = serializers.SerializerMethodField()
     last_message_sender_id = serializers.IntegerField(read_only=True, allow_null=True)
     last_message_is_deleted = serializers.BooleanField(read_only=True)
     last_message_has_image = serializers.BooleanField(read_only=True)
@@ -78,6 +92,7 @@ class ConversationListItemSerializer(serializers.ModelSerializer):
             "other_user",
             "has_requestable_offers",
             "last_read_at",
+            "is_pinned",
             "has_unread",
             "unread_count",
             "updated_at",
@@ -124,6 +139,9 @@ class ConversationListItemSerializer(serializers.ModelSerializer):
 
     def get_has_requestable_offers(self, obj: Conversation) -> bool:
         return bool(getattr(obj, "has_requestable_offers", False))
+
+    def get_is_pinned(self, obj: Conversation) -> bool:
+        return bool(getattr(obj, "is_pinned", False))
 
 
 class MessageSerializer(serializers.ModelSerializer):

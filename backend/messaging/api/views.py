@@ -53,13 +53,17 @@ from ..services.messages import (
     hide_conversation_for_user,
     mark_conversation_read,
     send_message,
+    set_conversation_pinned_state_for_user,
 )
 from ..services.pins import (
     InvalidPinnedMessage,
     set_conversation_pinned_message,
 )
+from .conversation_search import apply_conversation_list_search
 from .serializers import (
+    ConversationListQuerySerializer,
     ConversationListItemSerializer,
+    ConversationPinStateSerializer,
     MarkReadSerializer,
     MessageSerializer,
     OpenConversationSerializer,
@@ -94,10 +98,7 @@ def _classify_conversations_sql(sql: str) -> str:
     ):
         return "count"
 
-    if (
-        'from "messaging_conversation"' in normalized
-        and 'order by "messaging_conversation"."last_message_at" desc' in normalized
-    ):
+    if 'from "messaging_conversation"' in normalized and " order by " in normalized:
         return "page"
 
     if (
@@ -317,6 +318,7 @@ def _conversation_list_queryset_for_user(user):
         .distinct()
         .annotate(
             participant_hidden_at=Subquery(participant_qs.values("hidden_at")[:1]),
+            participant_pinned_at=Subquery(participant_qs.values("pinned_at")[:1]),
             last_message_preview=Subquery(last_msg_qs.values("text")[:1]),
             last_message_sender_id=Subquery(last_msg_qs.values("sender_id")[:1]),
             last_message_is_deleted=Coalesce(
@@ -365,6 +367,11 @@ def _conversation_list_queryset_for_user(user):
             unread_count=_conversation_unread_count_expression_for_user(user),
         )
         .annotate(
+            is_pinned=Case(
+                When(participant_pinned_at__isnull=False, then=Value(True)),
+                default=Value(False),
+                output_field=BooleanField(),
+            ),
             has_unread=Case(
                 When(unread_count__gt=0, then=Value(True)),
                 default=Value(False),
@@ -485,6 +492,7 @@ class OpenConversationView(APIView):
             "last_read_at": None,
             "has_unread": False,
             "unread_count": 0,
+            "is_pinned": False,
             "updated_at": None,
             "created": False,
             "is_draft": True,
@@ -498,10 +506,20 @@ class ConversationListView(ListAPIView):
     serializer_class = ConversationListItemSerializer
     pagination_class = ConversationListPagination
 
+    def get_validated_query_params(self):
+        serializer = getattr(self, "_validated_query_params", None)
+        if serializer is None:
+            serializer = ConversationListQuerySerializer(data=self.request.query_params)
+            serializer.is_valid(raise_exception=True)
+            self._validated_query_params = serializer
+        return serializer
+
     def get_queryset(self):
         qs = _conversation_list_queryset_for_user(self.request.user)
-        # Ordering: newest activity first
-        return qs.order_by("-last_message_at", "-updated_at", "-id")
+        search_query = self.get_validated_query_params().validated_data.get("search", "")
+        qs = apply_conversation_list_search(qs, search_query)
+        # Ordering: pinned conversations first, then newest activity.
+        return qs.order_by("-is_pinned", "-last_message_at", "-updated_at", "-id")
 
     def list(self, request, *args, **kwargs):
         conn = connections["default"]
@@ -831,6 +849,32 @@ class HideConversationView(APIView):
                 "hidden_at": result.participant.hidden_at,
                 "conversation_unread_count": 0,
                 "total_unread_count": total_unread_count,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+class ConversationPinStateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, conversation_id: int):
+        convo = _conversation_for_user_or_404(conversation_id=conversation_id, user=request.user)
+        serializer = ConversationPinStateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            result = set_conversation_pinned_state_for_user(
+                conversation=convo,
+                user=request.user,
+                is_pinned=serializer.validated_data["is_pinned"],
+            )
+        except NotParticipant:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        return Response(
+            {
+                "conversation_id": convo.id,
+                "is_pinned": bool(result.participant.pinned_at),
             },
             status=status.HTTP_200_OK,
         )
