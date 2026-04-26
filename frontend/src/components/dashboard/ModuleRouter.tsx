@@ -12,6 +12,7 @@ import PrivacySettingsMobileSection from './modules/PrivacySettingsMobileSection
 import SkillsModuleRouter from './modules/skills/SkillsModuleRouter';
 import SearchModule from './modules/SearchModule';
 import CreateModule from './modules/CreateModule';
+import FavoritesModule from './modules/FavoritesModule';
 import MessagesModule from './modules/MessagesModule';
 import RequestsModule from './modules/RequestsModule';
 import AccountTypeSection from './modules/accountType/AccountTypeSection';
@@ -212,16 +213,7 @@ export default function ModuleRouter({
         />
       );
     case 'favorites':
-      return (
-        <div className="text-center py-20">
-          <h2 className="text-2xl font-semibold text-gray-600 mb-4">
-            {t('navigation.favorites', 'Obľúbené')}
-          </h2>
-          <p className="text-gray-500">
-            {t('dashboard.selectSection', 'Vyber si sekciu z navigácie pre pokračovanie.')}
-          </p>
-        </div>
-      );
+      return <FavoritesModule />;
     case 'settings':
       return (
         <div className="text-center py-20">

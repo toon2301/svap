@@ -41,7 +41,9 @@ interface ProfileMobileViewProps {
   isOtherUserProfile?: boolean;
   onSendMessage?: () => void;
   isOpeningConversation?: boolean;
-  onAddToFavorites?: () => void;
+  onToggleFavorite?: () => void;
+  isFavorited?: boolean;
+  isFavoritePending?: boolean;
   onHamburgerMenuClick?: () => void;
    highlightedSkillId?: number | null;
 }
@@ -70,7 +72,9 @@ export default function ProfileMobileView({
   isOtherUserProfile = false,
   onSendMessage,
   isOpeningConversation = false,
-  onAddToFavorites,
+  onToggleFavorite,
+  isFavorited = false,
+  isFavoritePending = false,
   onHamburgerMenuClick,
   highlightedSkillId,
 }: ProfileMobileViewProps) {
@@ -86,6 +90,9 @@ export default function ProfileMobileView({
       ? t('messages.opening', 'Otváram…')
       : t('profile.sendMessage', 'Poslať správu')
     : t('profile.editProfile', 'Upraviť profil');
+  const favoriteActionLabel = isFavorited
+    ? t('profile.removeFromFavorites', 'Odobrať z obľúbených')
+    : t('profile.addToFavorites', '+ Pridať k obľúbeným');
 
   // Skrátiť email ak je príliš dlhý (viac ako 20 znakov)
   const MAX_EMAIL_DISPLAY_LENGTH = 20;
@@ -368,14 +375,18 @@ export default function ProfileMobileView({
               </button>
               {isOtherUserProfile ? (
                 <button
+                  type="button"
                   onClick={() => {
-                    if (onAddToFavorites) {
-                      onAddToFavorites();
+                    if (onToggleFavorite) {
+                      onToggleFavorite();
                     }
                   }}
-                  className="flex-1 px-3 py-1.5 text-xs bg-purple-100 text-purple-800 border border-purple-200 rounded-2xl transition-colors hover:bg-purple-200 whitespace-nowrap min-w-0"
+                  aria-pressed={isFavorited}
+                  aria-busy={isFavoritePending}
+                  disabled={isFavoritePending}
+                  className="flex-1 px-3 py-1.5 text-xs bg-purple-100 text-purple-800 border border-purple-200 rounded-2xl transition-colors hover:bg-purple-200 whitespace-nowrap min-w-0 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  {t('profile.addToFavorites', '+ Pridať k obľúbeným')}
+                  {favoriteActionLabel}
                 </button>
               ) : (
                 <button

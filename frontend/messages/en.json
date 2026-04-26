@@ -210,6 +210,16 @@
     "pinnedConversationLabel": "Pinned conversation",
     "reportUserAction": "Report user"
   },
+  "favorites": {
+    "description": "A list of users you want to keep close at hand.",
+    "loading": "Loading favorite users...",
+    "loadError": "Failed to load favorite users.",
+    "emptyTitle": "You don't have any favorite users yet",
+    "emptyHint": "When you add someone to favorites from their profile, they will appear here.",
+    "unknownUser": "User",
+    "removeAction": "Remove",
+    "removeError": "Failed to remove the user from favorites."
+  },
   "search": {
     "title": "Search",
     "placeholder": "Search users, skills...",
@@ -261,6 +271,7 @@
     "resetFilters": "Reset",
     "applyFilters": "Apply filters",
     "addToFavoritesError": "Failed to add to favorites.",
+    "removeFromFavoritesError": "Failed to remove from favorites.",
     "back": "Back",
     "backToResults": "Back to search",
     "clearSearch": "Clear search",
@@ -694,6 +705,7 @@
     "facebookDescription": "Enter the URL of your Facebook profile",
     "linkedinDescription": "Enter the URL of your LinkedIn profile",
     "addToFavorites": "+ Add to favorites",
+    "removeFromFavorites": "Remove from favorites",
     "block": "Block",
     "enterWhatsAppNumber": "+421 912 345 678 alebo https://wa.me/421912345678",
     "enterYouTubeUrl": "https://youtube.com/@username alebo https://youtube.com/channel/...",

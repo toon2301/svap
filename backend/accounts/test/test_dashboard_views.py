@@ -15,6 +15,7 @@ from unittest.mock import patch
 from accounts.authentication import _build_lazy_auth_user, _serialize_user_for_cache
 from accounts.models import (
     DashboardSkillSearchProjection,
+    FavoriteUser,
     OfferedSkill,
     OfferedSkillImage,
     Review,
@@ -39,6 +40,14 @@ class DashboardViewsTestCase(TestCase):
             email="test@example.com",
             password="testpass123",
             first_name="Test",
+            last_name="User",
+            user_type="individual",
+        )
+        self.other_user = User.objects.create_user(
+            username="otheruser",
+            email="other@example.com",
+            password="testpass123",
+            first_name="Other",
             last_name="User",
             user_type="individual",
         )
@@ -664,23 +673,33 @@ class DashboardViewsTestCase(TestCase):
 
     def test_dashboard_favorites_get_success(self):
         """Test získania obľúbených"""
+        FavoriteUser.objects.create(user=self.user, favorite_user=self.other_user)
         url = reverse("accounts:dashboard_favorites")
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn("users", response.data)
         self.assertIn("skills", response.data)
+        self.assertEqual(len(response.data["users"]), 1)
+        self.assertEqual(response.data["users"][0]["id"], self.other_user.id)
 
     def test_dashboard_favorites_post_success(self):
         """Test pridania do obľúbených"""
         url = reverse("accounts:dashboard_favorites")
-        data = {"type": "user", "id": 1}
+        data = {"type": "user", "id": self.other_user.id}
         response = self.client.post(url, data)
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertIn("message", response.data)
         self.assertIn("type", response.data)
         self.assertIn("id", response.data)
+        self.assertTrue(response.data["is_favorited"])
+        self.assertTrue(
+            FavoriteUser.objects.filter(
+                user=self.user,
+                favorite_user=self.other_user,
+            ).exists()
+        )
 
     def test_dashboard_favorites_post_missing_params(self):
         """Test pridania do obľúbených bez povinných parametrov"""
@@ -689,16 +708,32 @@ class DashboardViewsTestCase(TestCase):
         response = self.client.post(url, data)
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("validation_errors", response.data)
+        self.assertIn("id", response.data["validation_errors"])
+
+    def test_dashboard_favorites_post_rejects_self(self):
+        url = reverse("accounts:dashboard_favorites")
+        response = self.client.post(url, {"type": "user", "id": self.user.id})
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("error", response.data)
 
     def test_dashboard_favorites_delete_success(self):
         """Test odstránenia z obľúbených"""
+        FavoriteUser.objects.create(user=self.user, favorite_user=self.other_user)
         url = reverse("accounts:dashboard_favorites")
-        data = {"type": "user", "id": 1}
+        data = {"type": "user", "id": self.other_user.id}
         response = self.client.delete(url, data)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn("message", response.data)
+        self.assertFalse(response.data["is_favorited"])
+        self.assertFalse(
+            FavoriteUser.objects.filter(
+                user=self.user,
+                favorite_user=self.other_user,
+            ).exists()
+        )
 
     def test_dashboard_profile_get_success(self):
         """Test získania profilu"""

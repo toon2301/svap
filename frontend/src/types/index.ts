@@ -31,6 +31,7 @@ export interface User {
   gender?: string;
   is_verified: boolean;
   is_public: boolean;
+  is_favorited?: boolean;
   completed_cooperations_count?: number;
   unread_skill_request_count?: number;
   created_at: string;

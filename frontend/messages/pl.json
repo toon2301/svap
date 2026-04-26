@@ -210,6 +210,16 @@
     "pinnedConversationLabel": "Przypieta konwersacja",
     "reportUserAction": "Zgłoś użytkownika"
   },
+  "favorites": {
+    "description": "Lista użytkowników, których chcesz mieć szybko pod ręką.",
+    "loading": "Ładowanie ulubionych użytkowników...",
+    "loadError": "Nie udało się załadować ulubionych użytkowników.",
+    "emptyTitle": "Nie masz jeszcze żadnych ulubionych użytkowników",
+    "emptyHint": "Gdy dodasz kogoś do ulubionych z poziomu profilu, pojawi się tutaj.",
+    "unknownUser": "Użytkownik",
+    "removeAction": "Usuń",
+    "removeError": "Nie udało się usunąć użytkownika z ulubionych."
+  },
   "search": {
     "title": "Szukaj",
     "placeholder": "Szukaj użytkowników, umiejętności...",
@@ -260,7 +270,8 @@
     "categoryTitle": "Kategorie umiejętności",
     "resetFilters": "Resetuj",
     "applyFilters": "Zastosuj filtry",
-    "addToFavoritesError": "Nepodarilo sa pridať k obľúbeným.",
+    "addToFavoritesError": "Nie udało się dodać do ulubionych.",
+    "removeFromFavoritesError": "Nie udało się usunąć z ulubionych.",
     "back": "Späť",
     "backToResults": "Späť na vyhľadávanie",
     "clearSearch": "Vyčistiť vyhľadávanie",
@@ -689,7 +700,8 @@
     "instagramDescription": "Wpisz adres URL swojego profilu na Instagramie",
     "facebookDescription": "Wpisz adres URL swojego profilu na Facebooku",
     "linkedinDescription": "Wpisz adres URL swojego profilu na LinkedIn",
-    "addToFavorites": "+ Pridať k obľúbeným",
+    "addToFavorites": "+ Dodaj do ulubionych",
+    "removeFromFavorites": "Usuń z ulubionych",
     "block": "Zablokovať",
     "enterWhatsAppNumber": "+421 912 345 678 alebo https://wa.me/421912345678",
     "enterYouTubeUrl": "https://youtube.com/@username alebo https://youtube.com/channel/...",

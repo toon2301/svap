@@ -8,8 +8,10 @@ import { useIsMobile } from "@/hooks";
 import { api, endpoints } from "@/lib/api";
 import type { User } from "@/types";
 import type { SearchUserResult } from "./types";
+import { setFavoriteUserState } from "../favoritesApi";
 import {
   getUserProfileFromCache,
+  patchUserProfileInCache,
   setUserProfileToCache,
 } from "../profile/profileUserCache";
 import ProfileMobileView from "../profile/ProfileMobileView";
@@ -45,6 +47,7 @@ export function SearchUserProfileModule({
   const [activeTab, setActiveTab] = useState<ProfileTab>(initialTab ?? "offers");
   const [isAllWebsitesModalOpen, setIsAllWebsitesModalOpen] = useState(false);
   const [isOpeningConversation, setIsOpeningConversation] = useState(false);
+  const [isFavoritePending, setIsFavoritePending] = useState(false);
 
   const handleTabsKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
     const order: ProfileTab[] = ["offers", "portfolio", "posts", "tagged"];
@@ -167,26 +170,37 @@ export function SearchUserProfileModule({
     })();
   };
 
-  const handleAddToFavorites = async () => {
-    if (!profileUser) return;
+  const handleToggleFavorite = async () => {
+    if (!profileUser || isFavoritePending) return;
+    if (!Number.isInteger(profileUser.id) || profileUser.id <= 0) return;
+
+    const nextIsFavorited = !Boolean(profileUser.is_favorited);
+    setIsFavoritePending(true);
 
     try {
-      await api.post(endpoints.dashboard.favorites, {
-        type: 'user',
-        id: profileUser.id,
+      await setFavoriteUserState(profileUser.id, nextIsFavorited);
+
+      setProfileUser((current) => {
+        if (!current) return current;
+        return {
+          ...current,
+          is_favorited: nextIsFavorited,
+        };
       });
-      // Show success message (could use toast notification)
-      // eslint-disable-next-line no-console
-      console.log('Používateľ bol pridaný k obľúbeným');
+      patchUserProfileInCache(profileUser.id, {
+        is_favorited: nextIsFavorited,
+      });
     } catch (error: any) {
-      // Show error message (could use toast notification)
       const message =
         error?.response?.data?.error ||
         error?.response?.data?.detail ||
         error?.message ||
-        t('search.addToFavoritesError', 'Nepodarilo sa pridať k obľúbeným.');
-      // eslint-disable-next-line no-console
-      console.error(message);
+        (nextIsFavorited
+          ? t('search.addToFavoritesError', 'Nepodarilo sa pridať k obľúbeným.')
+          : t('search.removeFromFavoritesError', 'Nepodarilo sa odobrať z obľúbených.'));
+      toast.error(message);
+    } finally {
+      setIsFavoritePending(false);
     }
   };
 
@@ -246,7 +260,9 @@ export function SearchUserProfileModule({
             highlightedSkillId={highlightedSkillId}
             onSendMessage={handleSendMessage}
             isOpeningConversation={isOpeningConversation}
-            onAddToFavorites={handleAddToFavorites}
+            onToggleFavorite={handleToggleFavorite}
+            isFavorited={Boolean(profileUser.is_favorited)}
+            isFavoritePending={isFavoritePending}
           />
         ) : (
           <ProfileDesktopView
@@ -269,7 +285,9 @@ export function SearchUserProfileModule({
             highlightedSkillId={highlightedSkillId}
             onSendMessage={handleSendMessage}
             isOpeningConversation={isOpeningConversation}
-            onAddToFavorites={handleAddToFavorites}
+            onToggleFavorite={handleToggleFavorite}
+            isFavorited={Boolean(profileUser.is_favorited)}
+            isFavoritePending={isFavoritePending}
           />
         )}
       </div>

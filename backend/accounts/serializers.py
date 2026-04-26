@@ -7,6 +7,7 @@ from django.core.exceptions import ValidationError
 from datetime import datetime, date
 from time import perf_counter
 from .models import (
+    FavoriteUser,
     User,
     UserProfile,
     UserType,
@@ -268,6 +269,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
     avatar_url = serializers.SerializerMethodField()
     completed_cooperations_count = serializers.SerializerMethodField()
     unread_skill_request_count = serializers.SerializerMethodField()
+    is_favorited = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -309,6 +311,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
             "name_modified_by_user",
             "completed_cooperations_count",
             "unread_skill_request_count",
+            "is_favorited",
         ]
         read_only_fields = [
             "id",
@@ -321,6 +324,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
             "name_modified_by_user",
             "completed_cooperations_count",
             "unread_skill_request_count",
+            "is_favorited",
         ]
 
     def _record_me_serializer_timing(self, name, started_at):
@@ -379,6 +383,27 @@ class UserProfileSerializer(serializers.ModelSerializer):
             return None
         self._record_me_serializer_timing("me_serialize_avatar_url", t0)
         return None
+
+    def get_is_favorited(self, obj):
+        request = (
+            self.context.get("request")
+            if isinstance(getattr(self, "context", None), dict)
+            else None
+        )
+        viewer = getattr(request, "user", None) if request is not None else None
+        if not getattr(viewer, "is_authenticated", False):
+            return False
+        if getattr(viewer, "id", None) == getattr(obj, "id", None):
+            return False
+
+        annotated = getattr(obj, "_is_favorited", None)
+        if annotated is not None:
+            return bool(annotated)
+
+        return FavoriteUser.objects.filter(
+            user_id=getattr(viewer, "id", None),
+            favorite_user_id=getattr(obj, "id", None),
+        ).exists()
 
     def to_representation(self, instance):
         """

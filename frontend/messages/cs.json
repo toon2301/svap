@@ -210,6 +210,16 @@
     "pinnedConversationLabel": "Pripnuta konverzace",
     "reportUserAction": "Nahlásit uživatele"
   },
+  "favorites": {
+    "description": "Seznam uživatelů, které chcete mít rychle po ruce.",
+    "loading": "Načítám oblíbené uživatele...",
+    "loadError": "Nepodařilo se načíst oblíbené uživatele.",
+    "emptyTitle": "Zatím nemáte žádné oblíbené uživatele",
+    "emptyHint": "Když si někoho přidáte do oblíbených v profilu, zobrazí se tady.",
+    "unknownUser": "Uživatel",
+    "removeAction": "Odebrat",
+    "removeError": "Nepodařilo se odebrat uživatele z oblíbených."
+  },
   "search": {
     "title": "Hledat",
     "placeholder": "Hledejte uživatele, dovednosti...",
@@ -260,7 +270,8 @@
     "categoryTitle": "Kategorie dovedností",
     "resetFilters": "Resetovat",
     "applyFilters": "Použít filtry",
-    "addToFavoritesError": "Nepodarilo sa pridať k obľúbeným.",
+    "addToFavoritesError": "Nepodařilo se přidat do oblíbených.",
+    "removeFromFavoritesError": "Nepodařilo se odebrat z oblíbených.",
     "back": "Späť",
     "backToResults": "Späť na vyhľadávanie",
     "clearSearch": "Vyčistiť vyhľadávanie",
@@ -689,7 +700,8 @@
     "instagramDescription": "Zadejte URL svého Instagram profilu",
     "facebookDescription": "Zadejte URL svého Facebook profilu",
     "linkedinDescription": "Zadejte URL svého LinkedIn profilu",
-    "addToFavorites": "+ Pridať k obľúbeným",
+    "addToFavorites": "+ Přidat do oblíbených",
+    "removeFromFavorites": "Odebrat z oblíbených",
     "block": "Zablokovať",
     "enterWhatsAppNumber": "+421 912 345 678 alebo https://wa.me/421912345678",
     "enterYouTubeUrl": "https://youtube.com/@username alebo https://youtube.com/channel/...",

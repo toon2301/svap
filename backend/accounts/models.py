@@ -980,6 +980,54 @@ class ReviewReport(models.Model):
         return f"Nahlásenie #{self.id}: recenzia {self.review_id} od {self.reported_by}"
 
 
+class FavoriteUser(models.Model):
+    """
+    SÃºkromnÃ½ vzÅ¥ah obÄ¾ÃºbenÃ©ho pouÅ¾Ã­vateÄ¾a.
+
+    KaÅ¾dÃ½ pouÅ¾Ã­vateÄ¾ si spravuje svoj vlastnÃ½ zoznam obÄ¾ÃºbenÃ½ch
+    profilov. RovnakÃ½ vzÅ¥ah nemÃ´Å¾e vzniknÃºÅ¥ viackrÃ¡t a pouÅ¾Ã­vateÄ¾ si
+    nemÃ´Å¾e pridaÅ¥ sÃ¡m seba.
+    """
+
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="favorite_users",
+        verbose_name=_("PouÅ¾Ã­vateÄ¾"),
+    )
+    favorite_user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="favorited_by_users",
+        verbose_name=_("ObÄ¾ÃºbenÃ½ pouÅ¾Ã­vateÄ¾"),
+    )
+    created_at = models.DateTimeField(_("VytvorenÃ©"), auto_now_add=True)
+
+    class Meta:
+        verbose_name = _("ObÄ¾ÃºbenÃ½ pouÅ¾Ã­vateÄ¾")
+        verbose_name_plural = _("ObÄ¾ÃºbenÃ­ pouÅ¾Ã­vatelia")
+        ordering = ["-created_at", "-id"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "favorite_user"],
+                name="unique_favorite_user_per_owner",
+            ),
+            models.CheckConstraint(
+                check=~models.Q(user=models.F("favorite_user")),
+                name="favorite_user_cannot_point_to_self",
+            ),
+        ]
+        indexes = [
+            models.Index(
+                fields=["user", "created_at"],
+                name="acc_fav_user_owner_created_idx",
+            ),
+        ]
+
+    def __str__(self):
+        return f"ObÄ¾ÃºbenÃ½ #{self.id}: user {self.user_id} -> {self.favorite_user_id}"
+
+
 class UserReport(models.Model):
     """
     Nahlásenie používateľa iným používateľom.

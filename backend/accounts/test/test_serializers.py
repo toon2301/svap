@@ -17,7 +17,7 @@ from accounts.serializers import (
     UserLoginSerializer,
     UserProfileSerializer,
 )
-from accounts.models import UserType
+from accounts.models import FavoriteUser, UserType
 
 User = get_user_model()
 
@@ -213,10 +213,12 @@ class TestUserProfileSerializer(TestCase):
         self.assertIn("email", data)
         self.assertIn("user_type", data)
         self.assertIn("profile_completeness", data)
+        self.assertFalse(data["is_favorited"])
 
     def test_serialization_non_owner_hides_sensitive_fields(self):
         """Ne-owner nesmie dostať PII."""
         other = UserFactory()
+        FavoriteUser.objects.create(user=other, favorite_user=self.user)
         req = types.SimpleNamespace(user=other)
         serializer = UserProfileSerializer(self.user, context={"request": req})
         data = serializer.data
@@ -224,6 +226,7 @@ class TestUserProfileSerializer(TestCase):
         assert "email" not in data
         assert "birth_date" not in data
         assert "gender" not in data
+        assert data["is_favorited"] is True
 
         # Phone only when visible
         self.user.phone = "0900123456"

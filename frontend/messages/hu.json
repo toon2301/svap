@@ -210,6 +210,16 @@
     "pinnedConversationLabel": "Kituzott beszelgetes",
     "reportUserAction": "Felhasználó jelentése"
   },
+  "favorites": {
+    "description": "Azoknak a felhasználóknak a listája, akiket gyorsan el szeretnél érni.",
+    "loading": "Kedvenc felhasználók betöltése...",
+    "loadError": "Nem sikerült betölteni a kedvenc felhasználókat.",
+    "emptyTitle": "Még nincsenek kedvenc felhasználóid",
+    "emptyHint": "Ha valakit hozzáadsz a kedvencekhez a profilján, itt fog megjelenni.",
+    "unknownUser": "Felhasználó",
+    "removeAction": "Eltávolítás",
+    "removeError": "Nem sikerült eltávolítani a felhasználót a kedvencek közül."
+  },
   "search": {
     "title": "Keresés",
     "placeholder": "Felhasználók, készségek keresése...",
@@ -261,6 +271,7 @@
     "resetFilters": "Visszaállítás",
     "applyFilters": "Szűrők alkalmazása",
     "addToFavoritesError": "Nem sikerült hozzáadni a kedvencekhez.",
+    "removeFromFavoritesError": "Nem sikerült eltávolítani a kedvencek közül.",
     "back": "Vissza",
     "backToResults": "Vissza a kereséshez",
     "clearSearch": "Keresés törlése",
@@ -690,6 +701,7 @@
     "facebookDescription": "Adja meg Facebook profiljának URL-jét",
     "linkedinDescription": "Adja meg LinkedIn profiljának URL-jét",
     "addToFavorites": "+ Kedvencekhez adás",
+    "removeFromFavorites": "Eltávolítás a kedvencek közül",
     "block": "Letiltás",
     "enterWhatsAppNumber": "+36 30 123 4567 vagy https://wa.me/36301234567",
     "enterYouTubeUrl": "https://youtube.com/@username vagy https://youtube.com/channel/...",

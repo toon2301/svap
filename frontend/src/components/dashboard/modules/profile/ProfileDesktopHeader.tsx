@@ -33,7 +33,9 @@ type Props = {
   onEditProfileClick?: () => void;
   onSendMessage?: () => void;
   isOpeningConversation?: boolean;
-  onAddToFavorites?: () => void;
+  onToggleFavorite?: () => void;
+  isFavorited?: boolean;
+  isFavoritePending?: boolean;
   onSkillsClick?: () => void;
   onHamburgerOpen: () => void;
 };
@@ -49,7 +51,9 @@ export function ProfileDesktopHeader({
   onEditProfileClick,
   onSendMessage,
   isOpeningConversation = false,
-  onAddToFavorites,
+  onToggleFavorite,
+  isFavorited = false,
+  isFavoritePending = false,
   onSkillsClick,
   onHamburgerOpen,
 }: Props) {
@@ -60,6 +64,9 @@ export function ProfileDesktopHeader({
       ? t('messages.opening', 'Otváram…')
       : t('profile.sendMessage', 'Poslať správu')
     : t('profile.editProfile');
+  const favoriteActionLabel = isFavorited
+    ? t('profile.removeFromFavorites', 'Odobrať z obľúbených')
+    : t('profile.addToFavorites', '+ Pridať k obľúbeným');
 
   return (
     <div className="flex flex-col items-start w-full lg:items-stretch xl:items-start">
@@ -222,14 +229,18 @@ export function ProfileDesktopHeader({
         {isOtherUserProfile ? (
           <>
             <button
+              type="button"
               onClick={() => {
-                if (onAddToFavorites) {
-                  onAddToFavorites();
+                if (onToggleFavorite) {
+                  onToggleFavorite();
                 }
               }}
-              className="flex-1 px-[clamp(4rem,8vw,8rem)] xl:px-16 2xl:px-32 py-2 text-sm bg-purple-100 text-purple-800 border border-purple-200 rounded-2xl transition-colors hover:bg-purple-200 whitespace-nowrap lg:min-w-0 lg:px-5 lg:text-center xl:min-w-auto xl:text-left"
+              aria-pressed={isFavorited}
+              aria-busy={isFavoritePending}
+              disabled={isFavoritePending}
+              className="flex-1 px-[clamp(4rem,8vw,8rem)] xl:px-16 2xl:px-32 py-2 text-sm bg-purple-100 text-purple-800 border border-purple-200 rounded-2xl transition-colors hover:bg-purple-200 whitespace-nowrap lg:min-w-0 lg:px-5 lg:text-center xl:min-w-auto xl:text-left disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              {t('profile.addToFavorites', '+ Pridať k obľúbeným')}
+              {favoriteActionLabel}
             </button>
             <button
               onClick={onHamburgerOpen}

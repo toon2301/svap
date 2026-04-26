@@ -1,114 +1,86 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
-import FavoritesModule from '../modules/FavoritesModule';
 
-// Mock framer-motion
+import FavoritesModule from '../modules/FavoritesModule';
+import { fetchFavoriteUsers, setFavoriteUserState } from '../modules/favoritesApi';
+
+const pushMock = jest.fn();
+
 jest.mock('framer-motion', () => ({
   motion: {
     div: ({ children, ...props }: any) => <div {...props}>{children}</div>,
   },
 }));
 
+jest.mock('react-hot-toast', () => ({
+  __esModule: true,
+  default: {
+    error: jest.fn(),
+  },
+}));
+
+jest.mock('@/contexts/LanguageContext', () => ({
+  __esModule: true,
+  useLanguage: () => ({
+    t: (_key: string, fallback?: string) => fallback ?? _key,
+  }),
+}));
+
+jest.mock('next/navigation', () => ({
+  useRouter: () => ({
+    push: pushMock,
+  }),
+}));
+
+jest.mock('../modules/favoritesApi', () => ({
+  __esModule: true,
+  fetchFavoriteUsers: jest.fn(),
+  setFavoriteUserState: jest.fn(),
+}));
+
 describe('FavoritesModule', () => {
-  it('renders favorites header', () => {
-    render(<FavoritesModule />);
-    
-    expect(screen.getByText('Oblúbené')).toBeInTheDocument();
+  beforeEach(() => {
+    jest.clearAllMocks();
+    (fetchFavoriteUsers as jest.Mock).mockResolvedValue([
+      {
+        id: 7,
+        slug: 'jana-novakova',
+        display_name: 'Jana Nováková',
+        avatar_url: null,
+      },
+    ]);
+    (setFavoriteUserState as jest.Mock).mockResolvedValue(undefined);
   });
 
-  it('renders tabs for users and skills', () => {
+  it('renders fetched favorite users and navigates to the profile', async () => {
     render(<FavoritesModule />);
-    
-    expect(screen.getByText('Používatelia')).toBeInTheDocument();
-    expect(screen.getByText('Zručnosti')).toBeInTheDocument();
+
+    expect(await screen.findByText('Jana Nováková')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /Jana Nováková/i }));
+
+    expect(pushMock).toHaveBeenCalledWith('/dashboard/users/jana-novakova');
   });
 
-  it('shows users tab as active by default', () => {
+  it('removes a favorite user after clicking remove', async () => {
     render(<FavoritesModule />);
-    
-    const usersTab = screen.getByText('Používatelia').closest('button');
-    expect(usersTab).toHaveClass('bg-white', 'text-purple-700');
+
+    const removeButton = await screen.findByRole('button', { name: 'Odobrať' });
+    fireEvent.click(removeButton);
+
+    await waitFor(() => {
+      expect(setFavoriteUserState).toHaveBeenCalledWith(7, false);
+      expect(screen.queryByText('Jana Nováková')).not.toBeInTheDocument();
+    });
   });
 
-  it('switches to skills tab when clicked', () => {
-    render(<FavoritesModule />);
-    
-    const skillsTab = screen.getByText('Zručnosti');
-    fireEvent.click(skillsTab);
-    
-    expect(skillsTab.closest('button')).toHaveClass('bg-white', 'text-purple-700');
-  });
+  it('shows the empty state when no favorites are returned', async () => {
+    (fetchFavoriteUsers as jest.Mock).mockResolvedValue([]);
 
-  it('shows mock users by default', () => {
     render(<FavoritesModule />);
-    
-    expect(screen.getByText('Jana Nováková')).toBeInTheDocument();
-    expect(screen.getByText('Peter Kováč')).toBeInTheDocument();
-  });
 
-  it('shows empty state for skills when no favorites', () => {
-    render(<FavoritesModule />);
-    
-    const skillsTab = screen.getByText('Zručnosti');
-    fireEvent.click(skillsTab);
-    
-    expect(screen.getByText('Žiadne obľúbené zručnosti')).toBeInTheDocument();
-    expect(screen.getByText('Pridajte zručnosti do obľúbených pre rýchlejšie vyhľadávanie')).toBeInTheDocument();
-  });
-
-  it('renders mock favorite users', () => {
-    render(<FavoritesModule />);
-    
-    // Check if mock users are rendered (they should be based on the component)
-    expect(screen.getByText('Jana Nováková')).toBeInTheDocument();
-    expect(screen.getByText('Peter Kováč')).toBeInTheDocument();
-  });
-
-  it('displays user information correctly', () => {
-    render(<FavoritesModule />);
-    
-    expect(screen.getByText('Jana Nováková')).toBeInTheDocument();
-    expect(screen.getByText('Bratislava')).toBeInTheDocument();
-    expect(screen.getByText('React')).toBeInTheDocument();
-    expect(screen.getByText('TypeScript')).toBeInTheDocument();
-    expect(screen.getByText('UI/UX')).toBeInTheDocument();
-  });
-
-  it('shows online status indicator', () => {
-    render(<FavoritesModule />);
-    
-    // Check for online indicator (green dot)
-    const onlineIndicator = document.querySelector('.bg-green-400');
-    expect(onlineIndicator).toBeInTheDocument();
-  });
-
-  it('displays user ratings', () => {
-    render(<FavoritesModule />);
-    
-    expect(screen.getByText('4.8')).toBeInTheDocument();
-    expect(screen.getByText('4.6')).toBeInTheDocument();
-  });
-
-  it('has remove button for each user', () => {
-    render(<FavoritesModule />);
-    
-    // Find buttons by their SVG content (X icon)
-    const removeButtons = screen.getAllByRole('button').filter(button => 
-      button.querySelector('svg path[d*="M6 18L18 6M6 6l12 12"]')
-    );
-    expect(removeButtons).toHaveLength(2); // Two mock users
-  });
-
-  it('calls remove function when remove button is clicked', () => {
-    render(<FavoritesModule />);
-    
-    // Find buttons by their SVG content (X icon)
-    const removeButtons = screen.getAllByRole('button').filter(button => 
-      button.querySelector('svg path[d*="M6 18L18 6M6 6l12 12"]')
-    );
-    fireEvent.click(removeButtons[0]);
-    
-    // User should be removed from the list
-    expect(screen.queryByText('Jana Nováková')).not.toBeInTheDocument();
+    expect(
+      await screen.findByText('Zatiaľ nemáte žiadnych obľúbených používateľov'),
+    ).toBeInTheDocument();
   });
 });

@@ -210,6 +210,16 @@
     "pinnedConversationLabel": "Angeheftete Konversation",
     "reportUserAction": "Nutzer melden"
   },
+  "favorites": {
+    "description": "Liste der Nutzer, die du schnell zur Hand haben möchtest.",
+    "loading": "Favorisierte Nutzer werden geladen...",
+    "loadError": "Favorisierte Nutzer konnten nicht geladen werden.",
+    "emptyTitle": "Du hast noch keine favorisierten Nutzer",
+    "emptyHint": "Wenn du jemanden im Profil zu den Favoriten hinzufügst, erscheint er hier.",
+    "unknownUser": "Nutzer",
+    "removeAction": "Entfernen",
+    "removeError": "Der Nutzer konnte nicht aus den Favoriten entfernt werden."
+  },
   "search": {
     "title": "Suche",
     "placeholder": "Suche nach Nutzern, Fähigkeiten...",
@@ -260,7 +270,8 @@
     "categoryTitle": "Skill-Kategorien",
     "resetFilters": "Zurücksetzen",
     "applyFilters": "Filter anwenden",
-    "addToFavoritesError": "Nepodarilo sa pridať k obľúbeným.",
+    "addToFavoritesError": "Zu Favoriten hinzufügen fehlgeschlagen.",
+    "removeFromFavoritesError": "Der Favorit konnte nicht entfernt werden.",
     "back": "Späť",
     "backToResults": "Späť na vyhľadávanie",
     "clearSearch": "Vyčistiť vyhľadávanie",
@@ -694,6 +705,7 @@
     "facebookDescription": "Geben Sie die URL Ihres Facebook-Profils ein",
     "linkedinDescription": "Geben Sie die URL Ihres LinkedIn-Profils ein",
     "addToFavorites": "+ Zu Favoriten hinzufügen",
+    "removeFromFavorites": "Aus Favoriten entfernen",
     "block": "Blockieren",
     "enterWhatsAppNumber": "+49 171 1234567 oder https://wa.me/491711234567",
     "enterYouTubeUrl": "https://youtube.com/@username oder https://youtube.com/channel/...",

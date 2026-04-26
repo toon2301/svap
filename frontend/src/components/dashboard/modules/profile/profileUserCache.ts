@@ -44,6 +44,25 @@ export const setUserProfileToCache = (userId: number, user: User): void => {
   }
 };
 
+export const patchUserProfileInCache = (
+  userId: number,
+  updater: Partial<User> | ((current: User) => User),
+): User | undefined => {
+  const current = getUserProfileFromCache(userId);
+  if (!current) return undefined;
+
+  const next =
+    typeof updater === 'function'
+      ? updater(current)
+      : {
+          ...current,
+          ...updater,
+        };
+
+  setUserProfileToCache(userId, next);
+  return next;
+};
+
 export const getUserIdBySlug = (slug: string): number | undefined => {
   return slugToUserIdCache.get(slug);
 };

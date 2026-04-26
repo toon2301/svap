@@ -3,7 +3,9 @@
 import React from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import toast from 'react-hot-toast';
+
 import { SearchUserProfileModule } from './SearchUserProfileModule';
+import { setFavoriteUserState } from '../favoritesApi';
 import { api } from '@/lib/api';
 import { getMessagingErrorMessage } from '../messages/messagingApi';
 
@@ -15,6 +17,13 @@ jest.mock('react-hot-toast', () => ({
     error: jest.fn(),
     success: jest.fn(),
   },
+}));
+
+jest.mock('@/contexts/LanguageContext', () => ({
+  __esModule: true,
+  useLanguage: () => ({
+    t: (_key: string, fallback?: string) => fallback ?? _key,
+  }),
 }));
 
 jest.mock('next/navigation', () => ({
@@ -45,6 +54,11 @@ jest.mock('@/lib/api', () => ({
   },
 }));
 
+jest.mock('../favoritesApi', () => ({
+  __esModule: true,
+  setFavoriteUserState: jest.fn(),
+}));
+
 jest.mock('../messages/messagingApi', () => ({
   __esModule: true,
   getMessagingErrorMessage: jest.fn(),
@@ -55,13 +69,24 @@ jest.mock('../profile/ProfileDesktopView', () => ({
   default: ({
     onSendMessage,
     isOpeningConversation,
+    onToggleFavorite,
+    isFavorited,
+    isFavoritePending,
   }: {
     onSendMessage?: () => void;
     isOpeningConversation?: boolean;
+    onToggleFavorite?: () => void;
+    isFavorited?: boolean;
+    isFavoritePending?: boolean;
   }) => (
-    <button type="button" onClick={onSendMessage} disabled={Boolean(isOpeningConversation)}>
-      {isOpeningConversation ? 'opening' : 'open message'}
-    </button>
+    <div>
+      <button type="button" onClick={onSendMessage} disabled={Boolean(isOpeningConversation)}>
+        {isOpeningConversation ? 'opening' : 'open message'}
+      </button>
+      <button type="button" onClick={onToggleFavorite} disabled={Boolean(isFavoritePending)}>
+        {isFavorited ? 'remove favorite' : 'add favorite'}
+      </button>
+    </div>
   ),
 }));
 
@@ -85,8 +110,10 @@ describe('SearchUserProfileModule', () => {
         user_type: 'personal',
         first_name: 'Test',
         last_name: 'User',
+        is_favorited: false,
       },
     });
+    (setFavoriteUserState as jest.Mock).mockResolvedValue(undefined);
     (getMessagingErrorMessage as jest.Mock).mockReturnValue('Friendly open error');
   });
 
@@ -115,6 +142,18 @@ describe('SearchUserProfileModule', () => {
 
     await waitFor(() => {
       expect(pushMock).toHaveBeenCalledWith('/dashboard/messages?targetUserId=42');
+    });
+  });
+
+  it('toggles the favorite state in the profile UI after a successful request', async () => {
+    render(<SearchUserProfileModule userId={42} />);
+
+    const favoriteButton = await screen.findByRole('button', { name: 'add favorite' });
+    fireEvent.click(favoriteButton);
+
+    await waitFor(() => {
+      expect(setFavoriteUserState).toHaveBeenCalledWith(42, true);
+      expect(screen.getByRole('button', { name: 'remove favorite' })).toBeInTheDocument();
     });
   });
 });

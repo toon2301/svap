@@ -37,7 +37,9 @@ interface ProfileDesktopViewProps {
   isOtherUserProfile?: boolean;
   onSendMessage?: () => void;
   isOpeningConversation?: boolean;
-  onAddToFavorites?: () => void;
+  onToggleFavorite?: () => void;
+  isFavorited?: boolean;
+  isFavoritePending?: boolean;
   highlightedSkillId?: number | null;
 }
 
@@ -65,7 +67,9 @@ export default function ProfileDesktopView({
   isOtherUserProfile = false,
   onSendMessage,
   isOpeningConversation = false,
-  onAddToFavorites,
+  onToggleFavorite,
+  isFavorited = false,
+  isFavoritePending = false,
   highlightedSkillId,
 }: ProfileDesktopViewProps) {
   const displayUser = displayUserProp ?? user;
@@ -111,7 +115,9 @@ export default function ProfileDesktopView({
                   onEditProfileClick={onEditProfileClick}
                   onSendMessage={onSendMessage}
                   isOpeningConversation={isOpeningConversation}
-                  onAddToFavorites={onAddToFavorites}
+                  onToggleFavorite={onToggleFavorite}
+                  isFavorited={isFavorited}
+                  isFavoritePending={isFavoritePending}
                   onSkillsClick={onSkillsClick}
                   onHamburgerOpen={() => setIsHamburgerModalOpen(true)}
                 />

@@ -210,6 +210,16 @@
     "pinnedConversationLabel": "Pripnutá konverzácia",
     "reportUserAction": "Nahlásiť užívateľa"
   },
+  "favorites": {
+    "description": "Zoznam používateľov, ktorých si chcete mať rýchlo po ruke.",
+    "loading": "Načítavam obľúbených používateľov...",
+    "loadError": "Nepodarilo sa načítať obľúbených používateľov.",
+    "emptyTitle": "Zatiaľ nemáte žiadnych obľúbených používateľov",
+    "emptyHint": "Keď si niekoho pridáte k obľúbeným v profile, zobrazí sa tu.",
+    "unknownUser": "Používateľ",
+    "removeAction": "Odobrať",
+    "removeError": "Nepodarilo sa odobrať používateľa z obľúbených."
+  },
   "search": {
     "title": "Vyhľadávanie",
     "placeholder": "Hľadajte používateľov, zručnosti...",
@@ -261,6 +271,7 @@
     "resetFilters": "Resetovať",
     "applyFilters": "Použiť filtre",
     "addToFavoritesError": "Nepodarilo sa pridať k obľúbeným.",
+    "removeFromFavoritesError": "Nepodarilo sa odobrať z obľúbených.",
     "back": "Späť",
     "backToResults": "Späť na vyhľadávanie",
     "clearSearch": "Vyčistiť vyhľadávanie",
@@ -694,6 +705,7 @@
     "facebookDescription": "Zadajte URL svojho Facebook profilu",
     "linkedinDescription": "Zadajte URL svojho LinkedIn profilu",
     "addToFavorites": "+ Pridať k obľúbeným",
+    "removeFromFavorites": "Odobrať z obľúbených",
     "block": "Zablokovať",
     "enterWhatsAppNumber": "+421 912 345 678 alebo https://wa.me/421912345678",
     "enterYouTubeUrl": "https://youtube.com/@username alebo https://youtube.com/channel/...",
