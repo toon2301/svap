@@ -6,8 +6,8 @@ import { ConversationMobileComposer } from './ConversationMobileComposer';
 
 type ConversationComposerSectionProps = {
   isMobile: boolean;
-  imageInputRef: React.RefObject<HTMLInputElement | null>;
-  cameraInputRef: React.RefObject<HTMLInputElement | null>;
+  imageInputRef: React.MutableRefObject<HTMLInputElement | null>;
+  cameraInputRef: React.MutableRefObject<HTMLInputElement | null>;
   onPendingImageInputChange: React.ChangeEventHandler<HTMLInputElement>;
   mobileComposerProps: React.ComponentProps<typeof ConversationMobileComposer>;
   desktopComposerProps: React.ComponentProps<typeof ConversationDesktopComposer>;

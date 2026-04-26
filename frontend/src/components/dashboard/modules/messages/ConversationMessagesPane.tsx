@@ -28,9 +28,9 @@ type ConversationMessagesPaneProps = {
   noMessagesYetText: string;
   showScrollToBottomButton: boolean;
   scrollToBottomLabel: string;
-  messagesScrollRef: React.RefObject<HTMLDivElement | null>;
-  messagesStackRef: React.RefObject<HTMLDivElement | null>;
-  bottomRef: React.RefObject<HTMLDivElement | null>;
+  messagesScrollRef: React.MutableRefObject<HTMLDivElement | null>;
+  messagesStackRef: React.MutableRefObject<HTMLDivElement | null>;
+  bottomRef: React.MutableRefObject<HTMLDivElement | null>;
   onScroll: React.UIEventHandler<HTMLDivElement>;
   getMessageInteractionProps: (
     messageId: number,
