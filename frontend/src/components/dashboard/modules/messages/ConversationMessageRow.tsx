@@ -341,7 +341,7 @@ export function ConversationMessageRow({
             ) : null}
           </div>
           <div className="min-w-0 flex-1">
-            <div className="relative w-fit max-w-full -mr-2 pr-2">
+            <div className="relative max-w-full -mr-2 pr-2">
               <div
                 data-testid={`message-bubble-${message.id}`}
                 className={`${bubbleClassName}${suppressMobileMessageSelection ? ' select-none' : ''}`}

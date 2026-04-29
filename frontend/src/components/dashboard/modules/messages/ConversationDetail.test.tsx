@@ -1572,15 +1572,17 @@ describe('ConversationDetail', () => {
 
     expect(incomingGroup?.className).toContain('max-w-[calc(80%+2.5rem)]');
     expect(bubble.parentElement?.parentElement?.className).toBe('min-w-0 flex-1');
+    expect(bubble.parentElement?.className).toBe('relative max-w-full -mr-2 pr-2');
+    expect(bubble.className).toContain('w-fit');
   });
 
-  it('does not subtract the avatar slot from incoming mobile message text width', async () => {
+  it('does not shrink-wrap short incoming mobile messages through the wrapper', async () => {
     useIsMobile.mockReturnValue(true);
     (listMessages as jest.Mock).mockResolvedValueOnce(
       messagePage([
         message({
           id: 1,
-          text: 'Incoming mobile message',
+          text: 'Cau',
           created_at: '2026-03-30T18:52:00Z',
         }),
       ]),
@@ -1588,9 +1590,12 @@ describe('ConversationDetail', () => {
 
     render(<ConversationDetail conversationId={9} currentUserId={1} />);
 
-    expect(await screen.findByText('Incoming mobile message')).toBeInTheDocument();
+    expect(await screen.findByText('Cau')).toBeInTheDocument();
     const bubble = screen.getByTestId('message-bubble-1');
 
+    expect(bubble.parentElement?.className).toBe('relative max-w-full -mr-2 pr-2');
+    expect(bubble.parentElement?.className).not.toContain('w-fit');
+    expect(bubble.className).toContain('w-fit');
     expect(bubble.parentElement?.parentElement?.className).toBe('min-w-0 flex-1');
     expect(bubble.parentElement?.parentElement?.className).not.toContain('calc(100%-1.75rem)');
   });
