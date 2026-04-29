@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { getUnreadMessagesSummary } from '@/components/dashboard/modules/messages/messagingApi';
 import {
   dispatchMessagingRealtimeDeleted,
+  dispatchMessagingRealtimeGroup,
   dispatchMessagingRealtimePinnedMessage,
   dispatchMessagingRealtimeRead,
   dispatchMessagingRealtimeMessage,
@@ -653,6 +654,19 @@ export function RequestsNotificationsProvider({ children }: { children: React.Re
           conversationId: payload.conversation_id,
           pinnedMessage: payload.pinned_message ?? null,
           actorId: payload.actor_id,
+        });
+        return;
+      }
+
+      if (
+        typeof payload.type === 'string' &&
+        payload.type.startsWith('messaging_group_') &&
+        typeof payload.conversation_id === 'number'
+      ) {
+        requestConversationsRefresh();
+        dispatchMessagingRealtimeGroup({
+          conversationId: payload.conversation_id,
+          type: payload.type,
         });
         return;
       }

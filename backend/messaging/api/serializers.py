@@ -7,7 +7,7 @@ from django.urls import reverse
 from rest_framework import serializers
 
 from accounts.name_normalization import get_canonical_display_name
-from ..models import Conversation, ConversationParticipant, Message
+from ..models import Conversation, ConversationParticipant, GroupInvitation, Message
 
 User = get_user_model()
 
@@ -27,6 +27,39 @@ class ConversationListQuerySerializer(serializers.Serializer):
 
 class ConversationPinStateSerializer(serializers.Serializer):
     is_pinned = serializers.BooleanField(required=True)
+
+
+class GroupConversationCreateSerializer(serializers.Serializer):
+    name = serializers.CharField(max_length=120, trim_whitespace=True)
+    invited_user_ids = serializers.ListField(
+        child=serializers.IntegerField(min_value=1),
+        required=False,
+        allow_empty=True,
+        max_length=49,
+    )
+    avatar = serializers.ImageField(required=False, allow_null=True)
+
+    def validate_name(self, value):
+        clean = (value or "").strip()
+        if not clean:
+            raise serializers.ValidationError("Názov skupiny je povinný.")
+        return clean
+
+
+class GroupConversationUpdateSerializer(serializers.Serializer):
+    name = serializers.CharField(max_length=120, trim_whitespace=True, required=False)
+    avatar = serializers.ImageField(required=False, allow_null=True)
+    clear_avatar = serializers.BooleanField(required=False, default=False)
+
+    def validate_name(self, value):
+        clean = (value or "").strip()
+        if not clean:
+            raise serializers.ValidationError("Názov skupiny je povinný.")
+        return clean
+
+
+class GroupInviteSerializer(serializers.Serializer):
+    user_id = serializers.IntegerField(min_value=1)
 
 
 class UserBriefSerializer(serializers.Serializer):
@@ -70,12 +103,19 @@ def _avatar_name_url(request, avatar_name: str | None) -> str | None:
 
 class ConversationListItemSerializer(serializers.ModelSerializer):
     other_user = serializers.SerializerMethodField()
+    avatar_url = serializers.SerializerMethodField()
+    avatar_members = serializers.SerializerMethodField()
+    participants = serializers.SerializerMethodField()
+    participant_count = serializers.SerializerMethodField()
+    current_user_role = serializers.SerializerMethodField()
+    current_user_status = serializers.SerializerMethodField()
     has_requestable_offers = serializers.SerializerMethodField()
     last_message_preview = serializers.SerializerMethodField()
+    last_message_sender_id = serializers.SerializerMethodField()
+    last_message_is_deleted = serializers.SerializerMethodField()
+    last_message_has_image = serializers.SerializerMethodField()
+    last_message_type = serializers.SerializerMethodField()
     is_pinned = serializers.SerializerMethodField()
-    last_message_sender_id = serializers.IntegerField(read_only=True, allow_null=True)
-    last_message_is_deleted = serializers.BooleanField(read_only=True)
-    last_message_has_image = serializers.BooleanField(read_only=True)
     last_read_at = serializers.DateTimeField(read_only=True, allow_null=True)
     has_unread = serializers.BooleanField(read_only=True)
     unread_count = serializers.IntegerField(read_only=True)
@@ -89,7 +129,16 @@ class ConversationListItemSerializer(serializers.ModelSerializer):
             "last_message_sender_id",
             "last_message_is_deleted",
             "last_message_has_image",
+            "last_message_type",
             "other_user",
+            "is_group",
+            "name",
+            "avatar_url",
+            "avatar_members",
+            "participants",
+            "participant_count",
+            "current_user_role",
+            "current_user_status",
             "has_requestable_offers",
             "last_read_at",
             "is_pinned",
@@ -98,7 +147,14 @@ class ConversationListItemSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
 
+    def _is_current_user_invited_group(self, obj: Conversation) -> bool:
+        if not getattr(obj, "is_group", False):
+            return False
+        return self.get_current_user_status(obj) == ConversationParticipant.Status.INVITED
+
     def get_other_user(self, obj: Conversation):
+        if getattr(obj, "is_group", False):
+            return None
         request = self.context.get("request")
         annotated_other_user_id = getattr(obj, "other_user_id", None)
         if annotated_other_user_id:
@@ -131,11 +187,129 @@ class ConversationListItemSerializer(serializers.ModelSerializer):
             return None
         return serialize_user_brief(other, request)
 
+    def get_avatar_url(self, obj: Conversation):
+        if not getattr(obj, "is_group", False):
+            return None
+        request = self.context.get("request")
+        try:
+            if obj.avatar and hasattr(obj.avatar, "url"):
+                url = obj.avatar.url
+                return request.build_absolute_uri(url) if request else url
+        except Exception:
+            return None
+        return None
+
+    def get_avatar_members(self, obj: Conversation):
+        if not getattr(obj, "is_group", False):
+            return []
+        if self._is_current_user_invited_group(obj):
+            return []
+        request = self.context.get("request")
+        me = request.user if request else None
+        participants = (
+            ConversationParticipant.objects.filter(
+                conversation=obj,
+                status=ConversationParticipant.Status.ACTIVE,
+            )
+            .select_related("user")
+            .order_by("role", "joined_at", "id")
+        )
+        if me is not None:
+            participants = participants.exclude(user_id=me.id)
+        return [serialize_user_brief(participant.user, request) for participant in participants[:4]]
+
+    def get_participant_count(self, obj: Conversation) -> int:
+        if not getattr(obj, "is_group", False):
+            return 2
+        if self._is_current_user_invited_group(obj):
+            return 0
+        annotated_count = getattr(obj, "participant_count", None)
+        if annotated_count is not None:
+            return int(annotated_count)
+        return ConversationParticipant.objects.filter(
+            conversation=obj,
+            status=ConversationParticipant.Status.ACTIVE,
+        ).count()
+
+    def get_participants(self, obj: Conversation):
+        if not getattr(obj, "is_group", False):
+            return []
+        if self._is_current_user_invited_group(obj):
+            return []
+        request = self.context.get("request")
+        participants = (
+            ConversationParticipant.objects.filter(
+                conversation=obj,
+                status__in=[
+                    ConversationParticipant.Status.ACTIVE,
+                    ConversationParticipant.Status.INVITED,
+                ],
+            )
+            .select_related("user")
+            .order_by("role", "status", "joined_at", "id")
+        )
+        return [
+            {
+                **serialize_user_brief(participant.user, request),
+                "role": participant.role,
+                "status": participant.status,
+            }
+            for participant in participants
+        ]
+
+    def get_current_user_role(self, obj: Conversation):
+        request = self.context.get("request")
+        if not request or not getattr(request, "user", None):
+            return None
+        annotated_role = getattr(obj, "current_user_role", None)
+        if annotated_role:
+            return annotated_role
+        participant = ConversationParticipant.objects.filter(
+            conversation=obj,
+            user=request.user,
+        ).only("role").first()
+        return participant.role if participant else None
+
+    def get_current_user_status(self, obj: Conversation):
+        request = self.context.get("request")
+        if not request or not getattr(request, "user", None):
+            return None
+        annotated_status = getattr(obj, "current_user_status", None)
+        if annotated_status:
+            return annotated_status
+        participant = ConversationParticipant.objects.filter(
+            conversation=obj,
+            user=request.user,
+        ).only("status").first()
+        return participant.status if participant else None
+
     def get_last_message_preview(self, obj: Conversation):
+        if self._is_current_user_invited_group(obj):
+            return None
         if getattr(obj, "last_message_is_deleted", False):
             return None
         preview = getattr(obj, "last_message_preview", None)
         return preview or None
+
+    def get_last_message_sender_id(self, obj: Conversation):
+        if self._is_current_user_invited_group(obj):
+            return None
+        return getattr(obj, "last_message_sender_id", None)
+
+    def get_last_message_is_deleted(self, obj: Conversation) -> bool:
+        if self._is_current_user_invited_group(obj):
+            return False
+        return bool(getattr(obj, "last_message_is_deleted", False))
+
+    def get_last_message_has_image(self, obj: Conversation) -> bool:
+        if self._is_current_user_invited_group(obj):
+            return False
+        return bool(getattr(obj, "last_message_has_image", False))
+
+    def get_last_message_type(self, obj: Conversation):
+        if self._is_current_user_invited_group(obj):
+            return Message.Type.GROUP_INVITATION
+        return getattr(obj, "last_message_type", None)
 
     def get_has_requestable_offers(self, obj: Conversation) -> bool:
         return bool(getattr(obj, "has_requestable_offers", False))
@@ -149,6 +323,7 @@ class MessageSerializer(serializers.ModelSerializer):
     text = serializers.SerializerMethodField()
     image_url = serializers.SerializerMethodField()
     has_image = serializers.SerializerMethodField()
+    group_invitation = serializers.SerializerMethodField()
 
     class Meta:
         model = Message
@@ -162,6 +337,9 @@ class MessageSerializer(serializers.ModelSerializer):
             "created_at",
             "edited_at",
             "is_deleted",
+            "message_type",
+            "metadata",
+            "group_invitation",
         ]
 
     def get_sender(self, obj: Message):
@@ -196,6 +374,38 @@ class MessageSerializer(serializers.ModelSerializer):
 
     def get_has_image(self, obj: Message):
         return bool(not obj.is_deleted and obj.image)
+
+    def get_group_invitation(self, obj: Message):
+        if obj.message_type != Message.Type.GROUP_INVITATION:
+            return None
+        try:
+            invitation = getattr(obj, "group_invitation", None)
+        except GroupInvitation.DoesNotExist:
+            invitation = None
+        if invitation is None:
+            invitation_id = (obj.metadata or {}).get("invitation_id")
+            if not invitation_id:
+                return None
+            invitation = (
+                GroupInvitation.objects.select_related("invited_user", "invited_by")
+                .filter(id=invitation_id)
+                .first()
+            )
+        if invitation is None:
+            return None
+        request = self.context.get("request")
+        return {
+            "id": invitation.id,
+            "status": invitation.status,
+            "invited_user": serialize_user_brief(invitation.invited_user, request),
+            "invited_by": serialize_user_brief(invitation.invited_by, request),
+            "can_respond": bool(
+                request
+                and getattr(request, "user", None)
+                and request.user.id == invitation.invited_user_id
+                and invitation.status == GroupInvitation.Status.PENDING
+            ),
+        }
 
 
 class SendMessageSerializer(serializers.Serializer):

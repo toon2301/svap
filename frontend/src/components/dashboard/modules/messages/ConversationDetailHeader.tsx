@@ -2,12 +2,16 @@
 
 import React from 'react';
 import { Bars3Icon } from '@heroicons/react/24/outline';
+import { GroupConversationAvatar } from './GroupConversationAvatar';
+import type { MessagingUserBrief } from './types';
 
 type ConversationDetailHeaderProps = {
   avatarUrl: string | null;
   targetUserName: string;
   targetUserId: number | null;
   targetUserSlug: string | null;
+  isGroup?: boolean;
+  avatarMembers?: MessagingUserBrief[];
   openPeerProfileLabel: string;
   openConversationActionsLabel: string;
   onOpenTargetUserProfile: () => void;
@@ -19,6 +23,8 @@ export function ConversationDetailHeader({
   targetUserName,
   targetUserId,
   targetUserSlug,
+  isGroup = false,
+  avatarMembers = [],
   openPeerProfileLabel,
   openConversationActionsLabel,
   onOpenTargetUserProfile,
@@ -32,12 +38,19 @@ export function ConversationDetailHeader({
             type="button"
             data-testid="conversation-header-trigger"
             onClick={onOpenTargetUserProfile}
-            disabled={targetUserId === null && !targetUserSlug}
+            disabled={!isGroup && targetUserId === null && !targetUserSlug}
             className="flex items-center gap-3 rounded-xl px-2 py-1 transition-colors hover:bg-black/[0.04] focus:outline-none focus:ring-2 focus:ring-brand/30 disabled:cursor-default disabled:hover:bg-transparent dark:hover:bg-white/[0.06]"
             aria-label={openPeerProfileLabel}
           >
             <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-purple-100 dark:bg-purple-900/40">
-              {avatarUrl ? (
+              {isGroup ? (
+                <GroupConversationAvatar
+                  name={targetUserName}
+                  avatarUrl={avatarUrl}
+                  members={avatarMembers}
+                  size="md"
+                />
+              ) : avatarUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={avatarUrl} alt={targetUserName} className="h-full w-full object-cover" />
               ) : (

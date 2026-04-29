@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useMemo } from 'react';
-import { ExclamationTriangleIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { Cog6ToothIcon, ExclamationTriangleIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { MessagePinIcon } from './MessagePinIcon';
 
@@ -12,6 +12,7 @@ type ConversationActionsMenuProps = {
   isPinned?: boolean;
   onClose: () => void;
   onTogglePinned?: () => void;
+  onOpenGroupSettings?: () => void;
   onReportUser?: () => void;
   onDeleteConversation: () => void;
 };
@@ -23,6 +24,7 @@ export function ConversationActionsMenu({
   isPinned = false,
   onClose,
   onTogglePinned,
+  onOpenGroupSettings,
   onReportUser,
   onDeleteConversation,
 }: ConversationActionsMenuProps) {
@@ -88,6 +90,20 @@ export function ConversationActionsMenu({
               <span>{t('messages.reportUserAction', 'Nahlásiť užívateľa')}</span>
             </button>
           ) : null}
+          {onOpenGroupSettings ? (
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                onOpenGroupSettings();
+              }}
+              className="mt-2 flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800/60"
+              data-testid="conversation-group-settings-action"
+            >
+              <Cog6ToothIcon className="h-5 w-5" />
+              <span>{t('messages.groupSettingsTitle', 'Nastavenia skupiny')}</span>
+            </button>
+          ) : null}
           <button
             type="button"
             onClick={(event) => {
@@ -137,6 +153,17 @@ export function ConversationActionsMenu({
             >
               <ExclamationTriangleIcon className="h-4 w-4" />
               <span>{t('messages.reportUserAction', 'Nahlásiť užívateľa')}</span>
+            </button>
+          ) : null}
+          {onOpenGroupSettings ? (
+            <button
+              type="button"
+              onClick={onOpenGroupSettings}
+              className="mt-1 flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800/60"
+              data-testid="conversation-group-settings-action"
+            >
+              <Cog6ToothIcon className="h-4 w-4" />
+              <span>{t('messages.groupSettingsTitle', 'Nastavenia skupiny')}</span>
             </button>
           ) : null}
           <button

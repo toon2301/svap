@@ -34,12 +34,29 @@ from rest_framework.utils.urls import remove_query_param, replace_query_param
 from accounts.models import OfferedSkill
 from accounts.realtime import notify_user
 from swaply.rate_limiting import (
+    api_rate_limit,
     messaging_mark_read_rate_limit,
     messaging_open_rate_limit,
     messaging_send_rate_limit,
 )
 
-from ..models import Conversation, ConversationParticipant, Message
+from ..models import Conversation, ConversationParticipant, GroupInvitation, Message
+from ..services.groups import (
+    CannotInviteSelf,
+    ConversationNotGroup,
+    GroupLimitExceeded,
+    GroupNameRequired,
+    InvitationNotPending,
+    NotActiveGroupMember,
+    NotGroupOwner,
+    create_group_conversation,
+    delete_group,
+    invite_user_to_group,
+    leave_group,
+    remove_group_member,
+    respond_to_group_invitation,
+    update_group_conversation,
+)
 from ..services.conversations import (
     SelfConversationNotAllowed,
     find_direct_conversation,
@@ -64,6 +81,9 @@ from .serializers import (
     ConversationListQuerySerializer,
     ConversationListItemSerializer,
     ConversationPinStateSerializer,
+    GroupConversationCreateSerializer,
+    GroupConversationUpdateSerializer,
+    GroupInviteSerializer,
     MarkReadSerializer,
     MessageSerializer,
     OpenConversationSerializer,
@@ -141,10 +161,20 @@ def _conversation_for_user_or_404(*, conversation_id: int, user) -> Conversation
     participant_qs = ConversationParticipant.objects.filter(
         conversation_id=OuterRef("pk"),
         user_id=user.id,
+        status__in=[
+            ConversationParticipant.Status.ACTIVE,
+            ConversationParticipant.Status.INVITED,
+        ],
     )
 
     return get_object_or_404(
-        Conversation.objects.filter(participants__user=user)
+        Conversation.objects.filter(
+            participants__user=user,
+            participants__status__in=[
+                ConversationParticipant.Status.ACTIVE,
+                ConversationParticipant.Status.INVITED,
+            ],
+        )
         .annotate(
             participant_hidden_at=Subquery(participant_qs.values("hidden_at")[:1]),
         )
@@ -161,6 +191,12 @@ def _conversation_unread_count_expression_for_user(user):
     return Count(
         "messages",
         filter=Q(participants__user=user)
+        & Q(
+            participants__status__in=[
+                ConversationParticipant.Status.ACTIVE,
+                ConversationParticipant.Status.INVITED,
+            ]
+        )
         & Q(messages__is_deleted=False)
         & ~Q(messages__sender_id=user.id)
         & (
@@ -175,7 +211,12 @@ def _conversation_unread_count_expression_for_user(user):
 def _conversation_unread_messages_count_for_user(*, conversation_id: int, user_id: int) -> int:
     participant = (
         ConversationParticipant.objects.filter(
-            conversation_id=conversation_id, user_id=user_id
+            conversation_id=conversation_id,
+            user_id=user_id,
+            status__in=[
+                ConversationParticipant.Status.ACTIVE,
+                ConversationParticipant.Status.INVITED,
+            ],
         )
         .values("last_read_at")
         .first()
@@ -196,6 +237,10 @@ def _total_unread_messages_count_for_user(user) -> int:
     total = (
         ConversationParticipant.objects.filter(
             user=user,
+            status__in=[
+                ConversationParticipant.Status.ACTIVE,
+                ConversationParticipant.Status.INVITED,
+            ],
             conversation__last_message_at__isnull=False,
         ).aggregate(
             total=Count(
@@ -219,6 +264,10 @@ def _total_unread_messages_count_for_user_id(user_id: int) -> int:
     total = (
         ConversationParticipant.objects.filter(
             user_id=user_id,
+            status__in=[
+                ConversationParticipant.Status.ACTIVE,
+                ConversationParticipant.Status.INVITED,
+            ],
             conversation__last_message_at__isnull=False,
         ).aggregate(
             total=Count(
@@ -252,8 +301,27 @@ def _participant_hidden_at_for_conversation(*, conversation_id: int, user_id: in
         ConversationParticipant.objects.filter(
             conversation_id=conversation_id,
             user_id=user_id,
+            status__in=[
+                ConversationParticipant.Status.ACTIVE,
+                ConversationParticipant.Status.INVITED,
+            ],
         )
         .values_list("hidden_at", flat=True)
+        .first()
+    )
+
+
+def _participant_status_for_conversation(*, conversation_id: int, user_id: int):
+    return (
+        ConversationParticipant.objects.filter(
+            conversation_id=conversation_id,
+            user_id=user_id,
+            status__in=[
+                ConversationParticipant.Status.ACTIVE,
+                ConversationParticipant.Status.INVITED,
+            ],
+        )
+        .values_list("status", flat=True)
         .first()
     )
 
@@ -281,6 +349,38 @@ def _serialize_pinned_message(*, request, conversation: Conversation):
     return MessageSerializer(pinned_message, context={"request": request}).data
 
 
+def _serialize_conversation_for_user(*, request, conversation_id: int):
+    conversation = _conversation_list_queryset_for_user(request.user).filter(id=conversation_id).first()
+    if conversation is None:
+        return None
+    return ConversationListItemSerializer(conversation, context={"request": request}).data
+
+
+def _group_error_response(exc: Exception):
+    if isinstance(exc, GroupNameRequired):
+        return Response({"error": "Názov skupiny je povinný."}, status=status.HTTP_400_BAD_REQUEST)
+    if isinstance(exc, GroupLimitExceeded):
+        return Response(
+            {"error": "Skupina môže mať maximálne 50 účastníkov."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    if isinstance(exc, CannotInviteSelf):
+        return Response(
+            {"error": "Nemôžete pozvať samého seba."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    if isinstance(exc, InvitationNotPending):
+        return Response(
+            {"error": "Pozvánka už nie je čakajúca."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    if isinstance(exc, NotGroupOwner):
+        return Response({"error": "Nemáte oprávnenie."}, status=status.HTTP_403_FORBIDDEN)
+    if isinstance(exc, (ConversationNotGroup, NotActiveGroupMember)):
+        return Response({"error": "Nemáte prístup."}, status=status.HTTP_403_FORBIDDEN)
+    return Response({"error": str(exc) or "Neplatná akcia."}, status=status.HTTP_400_BAD_REQUEST)
+
+
 def _has_requestable_offers_for_user_id(user_id: int | None) -> bool:
     if not user_id:
         return False
@@ -305,20 +405,38 @@ def _conversation_list_queryset_for_user(user):
     participant_qs = ConversationParticipant.objects.filter(
         conversation_id=OuterRef("pk"),
         user_id=user.id,
+        status__in=[
+            ConversationParticipant.Status.ACTIVE,
+            ConversationParticipant.Status.INVITED,
+        ],
     )
     last_msg_qs = Message.objects.filter(conversation_id=OuterRef("pk")).order_by(
         "-created_at", "-id"
     )
     other_participant_qs = ConversationParticipant.objects.filter(
-        conversation_id=OuterRef("pk")
+        conversation_id=OuterRef("pk"),
+        status=ConversationParticipant.Status.ACTIVE,
     ).exclude(user_id=user.id)
 
     qs = (
-        Conversation.objects.filter(participants__user=user)
+        Conversation.objects.filter(
+            participants__user=user,
+            participants__status__in=[
+                ConversationParticipant.Status.ACTIVE,
+                ConversationParticipant.Status.INVITED,
+            ],
+        )
         .distinct()
         .annotate(
             participant_hidden_at=Subquery(participant_qs.values("hidden_at")[:1]),
             participant_pinned_at=Subquery(participant_qs.values("pinned_at")[:1]),
+            current_user_role=Subquery(participant_qs.values("role")[:1]),
+            current_user_status=Subquery(participant_qs.values("status")[:1]),
+            participant_count=Count(
+                "participants",
+                filter=Q(participants__status=ConversationParticipant.Status.ACTIVE),
+                distinct=True,
+            ),
             last_message_preview=Subquery(last_msg_qs.values("text")[:1]),
             last_message_sender_id=Subquery(last_msg_qs.values("sender_id")[:1]),
             last_message_is_deleted=Coalesce(
@@ -342,6 +460,7 @@ def _conversation_list_queryset_for_user(user):
                 Value(False),
                 output_field=BooleanField(),
             ),
+            last_message_type=Subquery(last_msg_qs.values("message_type")[:1]),
             last_read_at=Subquery(participant_qs.values("last_read_at")[:1]),
             other_user_id=Subquery(other_participant_qs.values("user_id")[:1]),
             other_user_first_name=Subquery(other_participant_qs.values("user__first_name")[:1]),
@@ -602,31 +721,55 @@ class MessageListView(ListAPIView):
 
     def get_queryset(self):
         convo = self.get_conversation()
+        participant_status = _participant_status_for_conversation(
+            conversation_id=convo.id,
+            user_id=self.request.user.id,
+        )
         hidden_at = _participant_hidden_at_for_conversation(
             conversation_id=convo.id,
             user_id=self.request.user.id,
         )
         qs = Message.objects.filter(conversation=convo)
+        if convo.is_group and participant_status == ConversationParticipant.Status.INVITED:
+            qs = qs.filter(
+                message_type=Message.Type.GROUP_INVITATION,
+                group_invitation__invited_user_id=self.request.user.id,
+            )
         if hidden_at is not None:
             qs = qs.filter(created_at__gt=hidden_at)
-        return qs.select_related("sender").order_by("-created_at", "-id")
+        return qs.select_related(
+            "sender",
+            "group_invitation",
+            "group_invitation__invited_user",
+            "group_invitation__invited_by",
+        ).order_by("-created_at", "-id")
 
     def list(self, request, *args, **kwargs):
         conversation = self.get_conversation()
+        participant_status = _participant_status_for_conversation(
+            conversation_id=conversation.id,
+            user_id=request.user.id,
+        )
         queryset = self.filter_queryset(self.get_queryset())
         page = self.paginate_queryset(queryset)
         serializer = self.get_serializer(page if page is not None else queryset, many=True)
-        peer_last_read_at = _peer_last_read_at_for_conversation(
-            conversation_id=conversation.id,
-            user_id=request.user.id,
+        peer_last_read_at = (
+            None
+            if conversation.is_group
+            else _peer_last_read_at_for_conversation(
+                conversation_id=conversation.id,
+                user_id=request.user.id,
+            )
         )
         peer_last_read_at_value = (
             peer_last_read_at.isoformat() if peer_last_read_at is not None else None
         )
-        pinned_message_data = _serialize_pinned_message(
-            request=request,
-            conversation=conversation,
-        )
+        pinned_message_data = None
+        if participant_status != ConversationParticipant.Status.INVITED:
+            pinned_message_data = _serialize_pinned_message(
+                request=request,
+                conversation=conversation,
+            )
 
         if page is not None:
             response = self.get_paginated_response(serializer.data)
@@ -880,6 +1023,218 @@ class ConversationPinStateView(APIView):
         )
 
 
+class GroupConversationCreateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @method_decorator(api_rate_limit)
+    def post(self, request):
+        serializer = GroupConversationCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            result = create_group_conversation(
+                actor=request.user,
+                name=serializer.validated_data["name"],
+                invited_user_ids=serializer.validated_data.get("invited_user_ids") or [],
+                avatar=serializer.validated_data.get("avatar"),
+            )
+        except Exception as exc:
+            return _group_error_response(exc)
+
+        data = _serialize_conversation_for_user(
+            request=request,
+            conversation_id=result.conversation.id,
+        )
+        notify_ids = ConversationParticipant.objects.filter(
+            conversation_id=result.conversation.id,
+            status__in=[
+                ConversationParticipant.Status.ACTIVE,
+                ConversationParticipant.Status.INVITED,
+            ],
+        ).values_list("user_id", flat=True)
+        for participant_id in notify_ids:
+            if participant_id != request.user.id:
+                notify_user(
+                    int(participant_id),
+                    {
+                        "type": "messaging_group_updated",
+                        "conversation_id": result.conversation.id,
+                    },
+                )
+        return Response(data, status=status.HTTP_201_CREATED)
+
+
+class GroupConversationDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @method_decorator(api_rate_limit)
+    def patch(self, request, conversation_id: int):
+        convo = _conversation_for_user_or_404(conversation_id=conversation_id, user=request.user)
+        serializer = GroupConversationUpdateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            result = update_group_conversation(
+                conversation=convo,
+                actor=request.user,
+                name=serializer.validated_data.get("name"),
+                avatar=serializer.validated_data.get("avatar"),
+                clear_avatar=serializer.validated_data.get("clear_avatar", False),
+            )
+        except Exception as exc:
+            return _group_error_response(exc)
+
+        if result.changed:
+            event = {
+                "type": "messaging_group_updated",
+                "conversation_id": result.conversation.id,
+            }
+            for participant_id in result.participant_user_ids:
+                notify_user(participant_id, event)
+
+        data = _serialize_conversation_for_user(request=request, conversation_id=conversation_id)
+        return Response(data, status=status.HTTP_200_OK)
+
+    @method_decorator(api_rate_limit)
+    def delete(self, request, conversation_id: int):
+        convo = _conversation_for_user_or_404(conversation_id=conversation_id, user=request.user)
+        try:
+            result = delete_group(conversation=convo, actor=request.user)
+        except Exception as exc:
+            return _group_error_response(exc)
+
+        event = {
+            "type": "messaging_group_deleted",
+            "conversation_id": conversation_id,
+        }
+        for participant_id in result.participant_user_ids:
+            notify_user(participant_id, event)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class GroupInviteView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @method_decorator(api_rate_limit)
+    def post(self, request, conversation_id: int):
+        convo = _conversation_for_user_or_404(conversation_id=conversation_id, user=request.user)
+        serializer = GroupInviteSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        target = get_object_or_404(User, id=serializer.validated_data["user_id"], is_active=True)
+
+        try:
+            result = invite_user_to_group(
+                conversation=convo,
+                actor=request.user,
+                invited_user=target,
+            )
+        except Exception as exc:
+            return _group_error_response(exc)
+
+        event = {
+            "type": "messaging_message",
+            "conversation_id": convo.id,
+            "message_id": result.message.id if result.message is not None else None,
+            "sender_id": request.user.id,
+            "created_at": result.message.created_at.isoformat() if result.message else "",
+        }
+        for participant_id in result.participant_user_ids:
+            notify_user(
+                participant_id,
+                {
+                    **event,
+                    "total_unread_count": _total_unread_messages_count_for_user_id(participant_id),
+                    "conversation_unread_count": _conversation_unread_messages_count_for_user(
+                        conversation_id=convo.id,
+                        user_id=participant_id,
+                    ),
+                },
+            )
+
+        return Response(
+            MessageSerializer(result.message, context={"request": request}).data
+            if result.message is not None
+            else {},
+            status=status.HTTP_201_CREATED if result.created else status.HTTP_200_OK,
+        )
+
+
+class GroupInvitationResponseView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @method_decorator(api_rate_limit)
+    def post(self, request, invitation_id: int, action: str):
+        invitation = get_object_or_404(GroupInvitation, id=invitation_id)
+        if action not in {"accept", "decline"}:
+            return Response({"error": "Neplatná akcia."}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            result = respond_to_group_invitation(
+                invitation=invitation,
+                actor=request.user,
+                accept=action == "accept",
+            )
+        except Exception as exc:
+            return _group_error_response(exc)
+
+        event = {
+            "type": "messaging_group_invitation_updated",
+            "conversation_id": result.conversation.id,
+            "invitation_id": invitation_id,
+            "accepted": action == "accept",
+        }
+        for participant_id in result.participant_user_ids:
+            notify_user(participant_id, event)
+        return Response(
+            _serialize_conversation_for_user(
+                request=request,
+                conversation_id=result.conversation.id,
+            ),
+            status=status.HTTP_200_OK,
+        )
+
+
+class GroupMemberDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @method_decorator(api_rate_limit)
+    def delete(self, request, conversation_id: int, user_id: int):
+        convo = _conversation_for_user_or_404(conversation_id=conversation_id, user=request.user)
+        try:
+            result = remove_group_member(
+                conversation=convo,
+                actor=request.user,
+                user_id=user_id,
+            )
+        except Exception as exc:
+            return _group_error_response(exc)
+
+        event = {
+            "type": "messaging_group_members_updated",
+            "conversation_id": conversation_id,
+        }
+        for participant_id in result.participant_user_ids + (user_id,):
+            notify_user(participant_id, event)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class GroupLeaveView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @method_decorator(api_rate_limit)
+    def post(self, request, conversation_id: int):
+        convo = _conversation_for_user_or_404(conversation_id=conversation_id, user=request.user)
+        try:
+            result = leave_group(conversation=convo, actor=request.user)
+        except Exception as exc:
+            return _group_error_response(exc)
+
+        event = {
+            "type": "messaging_group_members_updated",
+            "conversation_id": conversation_id,
+        }
+        for participant_id in result.participant_user_ids + (request.user.id,):
+            notify_user(participant_id, event)
+        return Response(status=status.HTTP_200_OK)
+
+
 class StartDirectMessageView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -971,9 +1326,14 @@ class MarkConversationReadView(APIView):
                 else None
             ),
         }
-        recipient_ids = ConversationParticipant.objects.filter(conversation=convo).exclude(
-            user_id=request.user.id
-        ).values_list("user_id", flat=True)
+        recipient_ids = (
+            ConversationParticipant.objects.filter(
+                conversation=convo,
+                status=ConversationParticipant.Status.ACTIVE,
+            )
+            .exclude(user_id=request.user.id)
+            .values_list("user_id", flat=True)
+        )
         for participant_id in recipient_ids:
             notify_user(int(participant_id), peer_read_event)
 
@@ -986,4 +1346,3 @@ class MarkConversationReadView(APIView):
             },
             status=status.HTTP_200_OK,
         )
-

@@ -16,6 +16,13 @@ def message_image_upload_to(instance: "Message", filename: str) -> str:
     return f"messages/{conversation_id}/{uuid.uuid4().hex}{safe_suffix}"
 
 
+def conversation_avatar_upload_to(instance: "Conversation", filename: str) -> str:
+    suffix = Path(filename or "").suffix.lower()
+    safe_suffix = suffix if suffix else ".jpg"
+    conversation_id = instance.pk or "pending"
+    return f"conversation-avatars/{conversation_id}/{uuid.uuid4().hex}{safe_suffix}"
+
+
 class Conversation(models.Model):
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -28,6 +35,14 @@ class Conversation(models.Model):
         null=True,
         blank=True,
         related_name="+",
+    )
+    is_group = models.BooleanField(default=False, db_index=True)
+    name = models.CharField(max_length=120, blank=True, default="")
+    avatar = models.ImageField(
+        upload_to=conversation_avatar_upload_to,
+        blank=True,
+        null=True,
+        validators=[validate_image_file],
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -43,6 +58,16 @@ class Conversation(models.Model):
 
 
 class ConversationParticipant(models.Model):
+    class Role(models.TextChoices):
+        OWNER = "owner", "Owner"
+        MEMBER = "member", "Member"
+
+    class Status(models.TextChoices):
+        INVITED = "invited", "Invited"
+        ACTIVE = "active", "Active"
+        LEFT = "left", "Left"
+        REMOVED = "removed", "Removed"
+
     conversation = models.ForeignKey(
         Conversation,
         on_delete=models.CASCADE,
@@ -57,6 +82,9 @@ class ConversationParticipant(models.Model):
     last_read_at = models.DateTimeField(null=True, blank=True)
     hidden_at = models.DateTimeField(null=True, blank=True)
     pinned_at = models.DateTimeField(null=True, blank=True)
+    role = models.CharField(max_length=20, choices=Role.choices, default=Role.MEMBER)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.ACTIVE)
+    left_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         constraints = [
@@ -68,6 +96,8 @@ class ConversationParticipant(models.Model):
         indexes = [
             models.Index(fields=["user", "hidden_at"], name="conv_part_user_hidden_idx"),
             models.Index(fields=["user", "pinned_at"], name="conv_part_user_pinned_idx"),
+            models.Index(fields=["conversation", "status"], name="conv_part_conv_status_idx"),
+            models.Index(fields=["user", "status"], name="conv_part_user_status_idx"),
         ]
 
     def __str__(self) -> str:
@@ -75,6 +105,11 @@ class ConversationParticipant(models.Model):
 
 
 class Message(models.Model):
+    class Type(models.TextChoices):
+        USER = "user", "User"
+        SYSTEM = "system", "System"
+        GROUP_INVITATION = "group_invitation", "Group invitation"
+
     conversation = models.ForeignKey(
         Conversation,
         on_delete=models.CASCADE,
@@ -95,6 +130,12 @@ class Message(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     edited_at = models.DateTimeField(null=True, blank=True)
     is_deleted = models.BooleanField(default=False)
+    message_type = models.CharField(
+        max_length=32,
+        choices=Type.choices,
+        default=Type.USER,
+    )
+    metadata = models.JSONField(default=dict, blank=True)
 
     class Meta:
         indexes = [
@@ -104,4 +145,62 @@ class Message(models.Model):
 
     def __str__(self) -> str:
         return f"Message#{self.pk} (conv={self.conversation_id})"
+
+
+class GroupInvitation(models.Model):
+    class Status(models.TextChoices):
+        PENDING = "pending", "Pending"
+        ACCEPTED = "accepted", "Accepted"
+        DECLINED = "declined", "Declined"
+        CANCELLED = "cancelled", "Cancelled"
+
+    conversation = models.ForeignKey(
+        Conversation,
+        on_delete=models.CASCADE,
+        related_name="group_invitations",
+    )
+    invited_user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="received_group_invitations",
+    )
+    invited_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="sent_group_invitations",
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.PENDING,
+    )
+    message = models.OneToOneField(
+        Message,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="group_invitation",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    responded_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["conversation", "invited_user"],
+                condition=models.Q(status="pending"),
+                name="uniq_pending_group_invitation_user",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["invited_user", "status", "created_at"], name="grp_inv_user_status_idx"),
+            models.Index(fields=["conversation", "status"], name="grp_inv_conv_status_idx"),
+        ]
+
+    def __str__(self) -> str:
+        return (
+            f"GroupInvitation#{self.pk} "
+            f"(conv={self.conversation_id}, user={self.invited_user_id})"
+        )
 

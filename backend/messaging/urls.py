@@ -1,10 +1,17 @@
 from django.urls import path
 
+from .api.group_candidates import GroupMemberCandidatesView
 from .api.presence_views import MessagePresenceView
 from .api.views import (
     ConversationListView,
     ConversationPinStateView,
     DeleteMessageView,
+    GroupConversationCreateView,
+    GroupConversationDetailView,
+    GroupInvitationResponseView,
+    GroupInviteView,
+    GroupLeaveView,
+    GroupMemberDetailView,
     HideConversationView,
     MarkConversationReadView,
     MessageImageView,
@@ -27,6 +34,16 @@ urlpatterns = [
         "conversations/direct/send/",
         StartDirectMessageView.as_view(),
         name="messaging_send_direct_message",
+    ),
+    path(
+        "conversations/groups/",
+        GroupConversationCreateView.as_view(),
+        name="messaging_create_group_conversation",
+    ),
+    path(
+        "conversations/group-member-candidates/",
+        GroupMemberCandidatesView.as_view(),
+        name="messaging_group_member_candidates",
     ),
     path("conversations/", ConversationListView.as_view(), name="messaging_list_conversations"),
     path("presence/", MessagePresenceView.as_view(), name="messaging_presence"),
@@ -69,6 +86,31 @@ urlpatterns = [
         "conversations/<int:conversation_id>/pin-state/",
         ConversationPinStateView.as_view(),
         name="messaging_conversation_pin_state",
+    ),
+    path(
+        "conversations/<int:conversation_id>/group/",
+        GroupConversationDetailView.as_view(),
+        name="messaging_group_detail",
+    ),
+    path(
+        "conversations/<int:conversation_id>/group/invite/",
+        GroupInviteView.as_view(),
+        name="messaging_group_invite",
+    ),
+    path(
+        "conversations/<int:conversation_id>/group/members/<int:user_id>/",
+        GroupMemberDetailView.as_view(),
+        name="messaging_group_member_detail",
+    ),
+    path(
+        "conversations/<int:conversation_id>/group/leave/",
+        GroupLeaveView.as_view(),
+        name="messaging_group_leave",
+    ),
+    path(
+        "group-invitations/<int:invitation_id>/<str:action>/",
+        GroupInvitationResponseView.as_view(),
+        name="messaging_group_invitation_response",
     ),
 ]
 

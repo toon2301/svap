@@ -44,6 +44,8 @@ type ConversationMessagesPaneProps = {
     imageUrl: string,
   ) => void;
   onScrollToBottomClick: () => void;
+  onGroupInvitationRespond?: (invitationId: number, action: 'accept' | 'decline') => void;
+  busyInvitationId?: number | null;
 };
 
 export function ConversationMessagesPane({
@@ -72,6 +74,8 @@ export function ConversationMessagesPane({
   onMessageActionTrigger,
   onMessageImageClick,
   onScrollToBottomClick,
+  onGroupInvitationRespond,
+  busyInvitationId = null,
 }: ConversationMessagesPaneProps) {
   return (
     <div className="relative flex-1 min-h-0">
@@ -119,6 +123,8 @@ export function ConversationMessagesPane({
                   suppressNativeMessageContextMenu={suppressNativeMessageContextMenu}
                   onMessageActionTrigger={onMessageActionTrigger}
                   onMessageImageClick={onMessageImageClick}
+                  onGroupInvitationRespond={onGroupInvitationRespond}
+                  busyInvitationId={busyInvitationId}
                 />
               ))}
             </div>

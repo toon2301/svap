@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ChatBubbleLeftRightIcon } from '@heroicons/react/24/outline';
+import { ChatBubbleLeftRightIcon, UserGroupIcon } from '@heroicons/react/24/outline';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useIsMobile } from '@/hooks';
 import { ensureFreshSessionForBackgroundWork } from '@/lib/api';
@@ -28,10 +28,12 @@ import { navigateMessagesUrl } from './messagesRouting';
 import { ConversationsListRow } from './ConversationsListRow';
 import { ConversationsListSearchInput } from './ConversationsListSearchInput';
 import { ReportUserModal } from '../profile/ReportUserModal';
+import { CreateGroupConversationModal } from './CreateGroupConversationModal';
 
 const IDLE_CONVERSATIONS_POLL_INTERVAL_MS = 30_000;
 const CONVERSATION_SEARCH_DEBOUNCE_MS = 300;
 const MAX_CONVERSATION_SEARCH_LENGTH = 100;
+export const MESSAGING_CREATE_GROUP_OPEN_EVENT = 'messaging:create-group:open';
 
 function normalizeConversationSearchQuery(value: string): string {
   return value.trim().replace(/\s+/g, ' ');
@@ -91,6 +93,7 @@ export function ConversationsList({
   const [isDeletingConversation, setIsDeletingConversation] = useState(false);
   const [conversationPinUpdateId, setConversationPinUpdateId] = useState<number | null>(null);
   const [reportUserId, setReportUserId] = useState<number | null>(null);
+  const [isCreateGroupOpen, setIsCreateGroupOpen] = useState(false);
   const refreshInFlightRef = useRef<{
     key: string;
     promise: Promise<ConversationListItem[]>;
@@ -359,6 +362,12 @@ export function ConversationsList({
     };
   }, [refresh, shouldUseIntervalPolling]);
 
+  useEffect(() => {
+    const openCreateGroup = () => setIsCreateGroupOpen(true);
+    window.addEventListener(MESSAGING_CREATE_GROUP_OPEN_EVENT, openCreateGroup);
+    return () => window.removeEventListener(MESSAGING_CREATE_GROUP_OPEN_EVENT, openCreateGroup);
+  }, []);
+
   if (loading) {
     return <ConversationsListSkeleton variant={variant} className={wrapperClassName} />;
   }
@@ -382,15 +391,41 @@ export function ConversationsList({
               <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">
                 {t('messages.title', 'Vaše správy')}
               </h2>
+              <button
+                type="button"
+                onClick={() => setIsCreateGroupOpen(true)}
+                className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-purple-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-purple-700"
+              >
+                <UserGroupIcon className="h-5 w-5" />
+                {t('messages.createGroupAction', 'Vytvoriť skupinu')}
+              </button>
             </div>
           </div>
         )}
+        <CreateGroupConversationModal
+          open={isCreateGroupOpen}
+          onClose={() => setIsCreateGroupOpen(false)}
+          onCreated={(conversation) => {
+            setItems((current) => sortConversations([conversation, ...current]));
+            navigateMessagesUrl(conversation.id);
+          }}
+        />
       </div>
     );
   }
 
   return (
     <div className={wrapperClassName}>
+      <div className={`${isRail ? 'px-3' : 'px-3'} mb-3 flex justify-end`}>
+        <button
+          type="button"
+          onClick={() => setIsCreateGroupOpen(true)}
+          className="inline-flex items-center gap-2 rounded-2xl border border-purple-200 bg-purple-50 px-3 py-2 text-xs font-semibold text-purple-700 transition-colors hover:bg-purple-100 dark:border-purple-800/60 dark:bg-purple-900/20 dark:text-purple-200 dark:hover:bg-purple-900/35"
+        >
+          <UserGroupIcon className="h-4 w-4" />
+          {t('messages.createGroupShort', 'Skupina')}
+        </button>
+      </div>
       {shouldRenderSearch ? (
         <ConversationsListSearchInput
           value={searchQuery}
@@ -494,6 +529,15 @@ export function ConversationsList({
           onClose={() => setReportUserId(null)} onSuccess={() => setReportUserId(null)}
         />
       ) : null}
+      <CreateGroupConversationModal
+        open={isCreateGroupOpen}
+        onClose={() => setIsCreateGroupOpen(false)}
+        onCreated={(conversation) => {
+          setItems((current) => sortConversations([conversation, ...current]));
+          requestConversationsRefresh();
+          navigateMessagesUrl(conversation.id);
+        }}
+      />
     </div>
   );
 }

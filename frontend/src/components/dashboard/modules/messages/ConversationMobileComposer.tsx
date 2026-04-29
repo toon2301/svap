@@ -91,7 +91,7 @@ export function ConversationMobileComposer({
           <MessageComposerImagePreview
             previewUrl={pendingImagePreviewUrl}
             fileName={pendingImageFile.name}
-            disabled={sending}
+            disabled={sending || isComposerInputDisabled}
             onRemove={onRemovePendingImage}
           />
         ) : null}
@@ -119,7 +119,7 @@ export function ConversationMobileComposer({
               {hasContentToSend ? (
                 <button
                   type="button"
-                  disabled={sending}
+                  disabled={sending || isComposerInputDisabled}
                   onPointerDown={onSendPointerDown}
                   onClick={onSend}
                   className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-brand text-white transition-colors hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-60"
@@ -132,7 +132,7 @@ export function ConversationMobileComposer({
                 type="button"
                 data-testid="conversation-image-picker-trigger"
                 onClick={onOpenImagePicker}
-                disabled={sending}
+                disabled={sending || isComposerInputDisabled}
                 className="inline-flex h-8 w-8 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-brand/30 disabled:cursor-not-allowed disabled:opacity-60 dark:text-gray-400 dark:hover:bg-[#141416] dark:hover:text-gray-200"
                 aria-label={chooseImageLabel}
               >
@@ -142,7 +142,7 @@ export function ConversationMobileComposer({
                 type="button"
                 data-testid="conversation-camera-picker-trigger"
                 onClick={onOpenCameraPicker}
-                disabled={sending}
+                disabled={sending || isComposerInputDisabled}
                 className="inline-flex h-8 w-8 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-brand/30 disabled:cursor-not-allowed disabled:opacity-60 dark:text-gray-400 dark:hover:bg-[#141416] dark:hover:text-gray-200"
                 aria-label={takePhotoLabel}
               >

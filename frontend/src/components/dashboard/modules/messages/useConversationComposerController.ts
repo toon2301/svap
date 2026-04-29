@@ -17,6 +17,7 @@ type UseConversationComposerControllerArgs = {
   conversationId: number;
   isMobile: boolean;
   loading: boolean;
+  disabled?: boolean;
   t: Translate;
   refresh: RefreshMessages;
 };
@@ -25,6 +26,7 @@ export function useConversationComposerController({
   conversationId,
   isMobile,
   loading,
+  disabled = false,
   t,
   refresh,
 }: UseConversationComposerControllerArgs) {
@@ -93,6 +95,7 @@ export function useConversationComposerController({
   );
 
   const handleSend = useCallback(async () => {
+    if (disabled) return;
     const draft = text;
     const clean = draft.trim();
     if ((!clean && !pendingImageFile) || sending) return;
@@ -139,7 +142,7 @@ export function useConversationComposerController({
     } finally {
       setSending(false);
     }
-  }, [clearPendingImage, conversationId, isMobile, pendingImageFile, refresh, sending, t, text]);
+  }, [clearPendingImage, conversationId, disabled, isMobile, pendingImageFile, refresh, sending, t, text]);
 
   const handleEmojiSelect = useCallback((emoji: string) => {
     const input = inputRef.current;
@@ -195,8 +198,8 @@ export function useConversationComposerController({
     pendingImagePreviewUrl,
     mobileViewportHeight,
     shouldPinFocusedViewportToBottomRef,
-    hasContentToSend: text.trim().length > 0 || pendingImageFile !== null,
-    isComposerInputDisabled: sending && (!isMobile || pendingImageFile !== null),
+    hasContentToSend: !disabled && (text.trim().length > 0 || pendingImageFile !== null),
+    isComposerInputDisabled: disabled || (sending && (!isMobile || pendingImageFile !== null)),
     clearPendingImage,
     handlePendingImageInputChange,
     openImagePicker,

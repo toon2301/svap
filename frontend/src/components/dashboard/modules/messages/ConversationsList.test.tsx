@@ -4,7 +4,13 @@ import React from 'react';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { ConversationsList } from './ConversationsList';
-import { hideConversation, listConversations, updateConversationPinnedState } from './messagingApi';
+import {
+  createGroupConversation,
+  hideConversation,
+  listGroupMemberCandidates,
+  listConversations,
+  updateConversationPinnedState,
+} from './messagingApi';
 import { ensureFreshSessionForBackgroundWork } from '@/lib/api';
 import {
   publishMessageUnreadCount,
@@ -18,6 +24,9 @@ jest.mock('./messagingApi', () => ({
   __esModule: true,
   listConversations: jest.fn(),
   hideConversation: jest.fn(),
+  createGroupConversation: jest.fn(),
+  listGroupMemberCandidates: jest.fn(),
+  getMessagingErrorMessage: jest.fn((_error, options) => options?.fallback || 'Messaging error'),
   updateConversationPinnedState: jest.fn(),
 }));
 
@@ -69,6 +78,28 @@ describe('ConversationsList', () => {
         is_pinned: isPinned,
       }),
     );
+    (createGroupConversation as jest.Mock).mockResolvedValue({
+      id: 55,
+      is_group: true,
+      name: 'Nová skupina',
+      other_user: null,
+      last_message_at: '2026-03-27T10:05:00Z',
+      updated_at: '2026-03-27T10:05:00Z',
+    });
+    (listGroupMemberCandidates as jest.Mock).mockResolvedValue([
+      {
+        id: 2,
+        display_name: 'Anna',
+        avatar_url: null,
+        presence_status: 'unknown',
+      },
+      {
+        id: 3,
+        display_name: 'Peter',
+        avatar_url: null,
+        presence_status: 'unknown',
+      },
+    ]);
   });
 
   afterEach(() => {
@@ -700,5 +731,50 @@ describe('ConversationsList', () => {
     });
 
     expect(syncMessageUnreadCountFromConversations).toHaveBeenCalledTimes(1);
+  });
+
+  it('renders group conversations with their group title', async () => {
+    (listConversations as jest.Mock).mockResolvedValue([
+      {
+        id: 55,
+        is_group: true,
+        name: 'Projektový tím',
+        other_user: null,
+        avatar_members: [],
+        last_message_type: 'group_invitation',
+        last_message_preview: '',
+        last_message_at: '2026-03-27T10:05:00Z',
+        updated_at: '2026-03-27T10:05:00Z',
+        unread_count: 0,
+        has_unread: false,
+      },
+    ]);
+
+    render(<ConversationsList onSelectConversation={jest.fn()} />);
+
+    expect(await screen.findByText('Projektový tím')).toBeInTheDocument();
+    expect(screen.getByText('Pozvánka do skupiny')).toBeInTheDocument();
+  });
+
+  it('creates a group conversation from the create group modal', async () => {
+    (listConversations as jest.Mock).mockResolvedValue([]);
+
+    render(<ConversationsList onSelectConversation={jest.fn()} />);
+
+    fireEvent.click(await screen.findByRole('button', { name: /vytvoriť skupinu/i }));
+    fireEvent.change(screen.getByPlaceholderText('Napr. Projektový tím'), {
+      target: { value: 'Nová skupina' },
+    });
+    fireEvent.click(await screen.findByText('Anna'));
+    fireEvent.click(await screen.findByText('Peter'));
+    fireEvent.click(screen.getAllByRole('button', { name: 'Vytvoriť skupinu' }).at(-1)!);
+
+    await waitFor(() => {
+      expect(createGroupConversation).toHaveBeenCalledWith({
+        name: 'Nová skupina',
+        invited_user_ids: [2, 3],
+        avatar: null,
+      });
+    });
   });
 });

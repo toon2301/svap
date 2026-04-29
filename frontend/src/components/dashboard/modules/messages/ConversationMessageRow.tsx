@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { EllipsisHorizontalIcon } from '@heroicons/react/24/outline';
 import type { MessageItem } from './types';
+import { GroupInvitationMessageCard } from './GroupInvitationMessageCard';
 import { resolveMessagingImageUrl } from './resolveMessagingImageUrl';
 import { formatTime, minuteBucketKey } from './conversationDetailUtils';
 import { MOBILE_OWN_MESSAGE_BUBBLE_SUPPRESSION_STYLE } from './conversationDetailConstants';
@@ -38,6 +39,8 @@ type ConversationMessageRowProps = {
     messageId: number,
     imageUrl: string,
   ) => void;
+  onGroupInvitationRespond?: (invitationId: number, action: 'accept' | 'decline') => void;
+  busyInvitationId?: number | null;
 };
 
 export function ConversationMessageRow({
@@ -60,6 +63,8 @@ export function ConversationMessageRow({
   suppressNativeMessageContextMenu,
   onMessageActionTrigger,
   onMessageImageClick,
+  onGroupInvitationRespond,
+  busyInvitationId = null,
 }: ConversationMessageRowProps) {
   const hideDesktopActionTriggerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [isDesktopActionTriggerVisible, setIsDesktopActionTriggerVisible] = useState(false);
@@ -92,9 +97,12 @@ export function ConversationMessageRow({
   const messageTextClassName = `whitespace-pre-wrap break-words${
     suppressMobileMessageSelection ? ' select-none' : ''
   }`;
-  const incomingGroupMaxWidthClassName = isMobile ? 'max-w-full' : 'max-w-[calc(80%+2.5rem)]';
+  const incomingGroupWidthClassName = isMobile
+    ? 'w-full max-w-full'
+    : 'w-full max-w-[calc(80%+2.5rem)]';
+  const bubbleWidthClassName = mine ? 'w-fit max-w-full' : 'w-max max-w-full';
   const bubbleClassName = [
-    'w-max max-w-full rounded-2xl px-3 py-2 text-sm',
+    `${bubbleWidthClassName} rounded-2xl px-3 py-2 text-sm`,
     mine && !message.is_deleted
       ? 'bg-brand text-white'
       : 'border border-gray-200/60 bg-gray-100 text-gray-900 dark:border-gray-800 dark:bg-[#141416] dark:text-gray-100',
@@ -112,6 +120,38 @@ export function ConversationMessageRow({
     onBlurCapture: externalOnBlurCapture,
     ...messageRowRestAttributes
   } = messageRowAttributes;
+
+  if (message.message_type === 'group_invitation' && message.group_invitation) {
+    return (
+      <div
+        key={message.id}
+        className="flex justify-center py-1"
+        {...messageRowRestAttributes}
+      >
+        <GroupInvitationMessageCard
+          invitation={message.group_invitation}
+          isBusy={busyInvitationId === message.group_invitation.id}
+          onRespond={(invitationId, action) => {
+            onGroupInvitationRespond?.(invitationId, action);
+          }}
+        />
+      </div>
+    );
+  }
+
+  if (message.message_type === 'system') {
+    return (
+      <div
+        key={message.id}
+        className="flex justify-center py-1"
+        {...messageRowRestAttributes}
+      >
+        <div className="max-w-sm rounded-full bg-gray-100 px-3 py-1 text-center text-xs font-medium text-gray-600 dark:bg-gray-900 dark:text-gray-300">
+          {displayText}
+        </div>
+      </div>
+    );
+  }
 
   const clearDesktopActionTriggerHideTimer = useCallback(() => {
     if (!hideDesktopActionTriggerTimerRef.current) return;
@@ -303,7 +343,7 @@ export function ConversationMessageRow({
       onBlurCapture={handleRowBlurCapture}
     >
       <div
-        className={`group flex min-w-0 flex-col ${incomingGroupMaxWidthClassName}${
+        className={`group flex min-w-0 flex-col ${incomingGroupWidthClassName}${
           isSelectedForMobileMessageActions ? ' pointer-events-none opacity-0' : ''
         }`}
       >
@@ -341,7 +381,7 @@ export function ConversationMessageRow({
             ) : null}
           </div>
           <div className="min-w-0 flex-1">
-            <div className="relative max-w-full -mr-2 pr-2">
+            <div className="relative w-fit max-w-full -mr-2 pr-2">
               <div
                 data-testid={`message-bubble-${message.id}`}
                 className={`${bubbleClassName}${suppressMobileMessageSelection ? ' select-none' : ''}`}

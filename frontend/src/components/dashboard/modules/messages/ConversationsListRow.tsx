@@ -3,6 +3,7 @@
 import React from 'react';
 import { Bars3Icon } from '@heroicons/react/24/outline';
 import type { ConversationListItem } from './types';
+import { GroupConversationAvatar } from './GroupConversationAvatar';
 import { MessagePinIcon } from './MessagePinIcon';
 
 export function ConversationsListRow({
@@ -27,7 +28,10 @@ export function ConversationsListRow({
   t: (key: string, fallback: string) => string;
 }) {
   const other = conversation.other_user;
-  const title = other?.display_name || t('messages.unknownUser', 'User');
+  const isGroup = Boolean(conversation.is_group);
+  const title = isGroup
+    ? (conversation.name || t('messages.unknownGroup', 'Skupina'))
+    : other?.display_name || t('messages.unknownUser', 'User');
   const isMine =
     typeof conversation.last_message_sender_id === 'number' &&
     conversation.last_message_sender_id === currentUserId;
@@ -35,7 +39,9 @@ export function ConversationsListRow({
     ? t('messages.deletedPreviewSelf', 'Vymazali ste správu')
     : t('messages.deletedPreviewOther', '{name} vymazal/a správu').replace('{name}', title);
   const imageOnlyPreview = t('messages.imageOnlyPreview', 'Obrázok');
+  const groupInvitationPreview = t('messages.groupInvitationPreview', 'Pozvánka do skupiny');
   const rawPreview =
+    (conversation.last_message_type === 'group_invitation' ? groupInvitationPreview : null) ||
     conversation.last_message_preview ||
     (conversation.last_message_has_image ? imageOnlyPreview : null) ||
     (conversation.last_message_at
@@ -86,7 +92,14 @@ export function ConversationsListRow({
               : 'bg-purple-100 dark:bg-purple-900/40'
           }`}
         >
-          {other?.avatar_url ? (
+          {isGroup ? (
+            <GroupConversationAvatar
+              name={title}
+              avatarUrl={conversation.avatar_url}
+              members={conversation.avatar_members}
+              size={isCompact ? 'sm' : 'lg'}
+            />
+          ) : other?.avatar_url ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={other.avatar_url} alt={title} className="h-full w-full object-cover" />
           ) : (

@@ -4,6 +4,9 @@ import type {
   ConversationListItem,
   DeleteMessageResult,
   DirectMessageStartResult,
+  GroupConversationCreatePayload,
+  GroupConversationUpdatePayload,
+  GroupMemberCandidate,
   HideConversationResult,
   MessageItem,
   MessageListPage,
@@ -24,6 +27,105 @@ type Paginated<T> = {
 
 function normalizeConversationSearchQuery(value?: string): string {
   return typeof value === 'string' ? value.trim().replace(/\s+/g, ' ') : '';
+}
+
+function buildGroupConversationRequestData(
+  payload: GroupConversationCreatePayload | GroupConversationUpdatePayload,
+) {
+  const hasAvatar = payload.avatar instanceof File;
+  if (!hasAvatar) {
+    return payload;
+  }
+
+  const formData = new FormData();
+  Object.entries(payload).forEach(([key, value]) => {
+    if (value === undefined || value === null) return;
+    if (key === 'invited_user_ids' && Array.isArray(value)) {
+      value.forEach((id) => formData.append('invited_user_ids', String(id)));
+      return;
+    }
+    if (value instanceof File) {
+      formData.append(key, value, value.name);
+      return;
+    }
+    formData.append(key, String(value));
+  });
+  return formData;
+}
+
+export async function createGroupConversation(
+  payload: GroupConversationCreatePayload,
+): Promise<ConversationListItem> {
+  const { data } = await api.post<ConversationListItem>(
+    '/auth/messaging/conversations/groups/',
+    buildGroupConversationRequestData(payload),
+  );
+  return data;
+}
+
+export async function updateGroupConversation(
+  conversationId: number,
+  payload: GroupConversationUpdatePayload,
+): Promise<ConversationListItem> {
+  const { data } = await api.patch<ConversationListItem>(
+    `/auth/messaging/conversations/${conversationId}/group/`,
+    buildGroupConversationRequestData(payload),
+  );
+  return data;
+}
+
+export async function inviteUserToGroup(conversationId: number, userId: number): Promise<MessageItem> {
+  const { data } = await api.post<MessageItem>(
+    `/auth/messaging/conversations/${conversationId}/group/invite/`,
+    { user_id: userId },
+  );
+  return data;
+}
+
+export async function respondToGroupInvitation(
+  invitationId: number,
+  action: 'accept' | 'decline',
+): Promise<ConversationListItem> {
+  const { data } = await api.post<ConversationListItem>(
+    `/auth/messaging/group-invitations/${invitationId}/${action}/`,
+    {},
+  );
+  return data;
+}
+
+export async function removeGroupMember(conversationId: number, userId: number): Promise<void> {
+  await api.delete(`/auth/messaging/conversations/${conversationId}/group/members/${userId}/`);
+}
+
+export async function leaveGroup(conversationId: number): Promise<void> {
+  await api.post(`/auth/messaging/conversations/${conversationId}/group/leave/`, {});
+}
+
+export async function deleteGroupConversation(conversationId: number): Promise<void> {
+  await api.delete(`/auth/messaging/conversations/${conversationId}/group/`);
+}
+
+export async function listGroupMemberCandidates({
+  search,
+  conversationId,
+}: {
+  search?: string;
+  conversationId?: number | null;
+} = {}): Promise<GroupMemberCandidate[]> {
+  const normalizedSearch = normalizeConversationSearchQuery(search);
+  const params: Record<string, string | number> = {};
+  if (normalizedSearch) {
+    params.q = normalizedSearch;
+  }
+  if (typeof conversationId === 'number') {
+    params.conversation_id = conversationId;
+  }
+
+  const { data } = await api.get<{ results?: GroupMemberCandidate[] }>(
+    '/auth/messaging/conversations/group-member-candidates/',
+    Object.keys(params).length > 0 ? { params } : undefined,
+  );
+  return Array.isArray(data?.results) ? data.results : [];
 }
 
 export function getMessagingErrorMessage(
@@ -277,4 +379,3 @@ export async function updateMessagingPresence({
     active_conversation_id: visible ? activeConversationId : null,
   });
 }
-

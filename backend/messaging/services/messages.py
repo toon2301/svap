@@ -54,7 +54,11 @@ class SetConversationPinnedStateResult:
 def _ensure_participant(*, conversation: Conversation, user_id: int) -> ConversationParticipant:
     participant = (
         ConversationParticipant.objects.select_for_update()
-        .filter(conversation=conversation, user_id=user_id)
+        .filter(
+            conversation=conversation,
+            user_id=user_id,
+            status=ConversationParticipant.Status.ACTIVE,
+        )
         .first()
     )
     if not participant:
@@ -100,6 +104,7 @@ def send_message(
         )
         recipient_user_ids = tuple(
             ConversationParticipant.objects.filter(conversation=convo)
+            .filter(status=ConversationParticipant.Status.ACTIVE)
             .exclude(user_id=sender.id)
             .values_list("user_id", flat=True)
         )
@@ -122,7 +127,14 @@ def mark_conversation_read(*, conversation: Conversation, user) -> ConversationP
     now = timezone.now()
     participant = (
         ConversationParticipant.objects.only("id", "conversation_id", "user_id", "last_read_at")
-        .filter(conversation_id=conversation.id, user_id=user.id)
+        .filter(
+            conversation_id=conversation.id,
+            user_id=user.id,
+            status__in=[
+                ConversationParticipant.Status.ACTIVE,
+                ConversationParticipant.Status.INVITED,
+            ],
+        )
         .first()
     )
     if not participant:
@@ -174,7 +186,10 @@ def delete_message_for_all(
             raise NotMessageAuthor("Only the author can delete this message.")
 
         participant_user_ids = tuple(
-            ConversationParticipant.objects.filter(conversation_id=convo.id).values_list(
+            ConversationParticipant.objects.filter(
+                conversation_id=convo.id,
+                status=ConversationParticipant.Status.ACTIVE,
+            ).values_list(
                 "user_id",
                 flat=True,
             )

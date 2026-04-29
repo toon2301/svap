@@ -5,10 +5,12 @@ import { useEffect, useRef } from 'react';
 import {
   MESSAGING_OPEN_CONVERSATION_ACTIONS_EVENT,
   MESSAGING_REALTIME_DELETED_EVENT,
+  MESSAGING_REALTIME_GROUP_EVENT,
   MESSAGING_REALTIME_MESSAGE_EVENT,
   MESSAGING_REALTIME_PINNED_MESSAGE_EVENT,
   MESSAGING_REALTIME_READ_EVENT,
   type MessagingRealtimeDeletedPayload,
+  type MessagingRealtimeGroupPayload,
   type MessagingRealtimeMessagePayload,
   type MessagingRealtimePinnedMessagePayload,
   type MessagingRealtimeReadPayload,
@@ -101,6 +103,26 @@ export function useConversationRealtimeSync({
 
     return () => {
       window.removeEventListener(MESSAGING_REALTIME_MESSAGE_EVENT, handleRealtimeMessage);
+    };
+  }, [conversationId, refresh]);
+
+  useEffect(() => {
+    const handleRealtimeGroup = (event: Event) => {
+      const detail = (event as CustomEvent<MessagingRealtimeGroupPayload>).detail;
+      if (!detail || detail.conversationId !== conversationId) return;
+
+      void refresh({
+        showError: false,
+        markAsRead: true,
+        syncConversations: true,
+        scrollBehavior: 'if_near_bottom',
+      });
+    };
+
+    window.addEventListener(MESSAGING_REALTIME_GROUP_EVENT, handleRealtimeGroup);
+
+    return () => {
+      window.removeEventListener(MESSAGING_REALTIME_GROUP_EVENT, handleRealtimeGroup);
     };
   }, [conversationId, refresh]);
 

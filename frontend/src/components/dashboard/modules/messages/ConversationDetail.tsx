@@ -9,12 +9,17 @@ import { ConversationComposerSection } from './ConversationComposerSection';
 import { ConversationDetailHeader } from './ConversationDetailHeader';
 import { ConversationDetailOverlays } from './ConversationDetailOverlays';
 import { ConversationMessagesPane } from './ConversationMessagesPane';
+import { GroupSettingsModal } from './GroupSettingsModal';
 import { PinnedMessageBanner } from './PinnedMessageBanner';
 import { useConversationActionsController } from './useConversationActionsController';
 import { useConversationComposerController } from './useConversationComposerController';
 import { useConversationPresenceHeartbeat } from './useConversationPresenceHeartbeat';
 import { useConversationRealtimeSync } from './useConversationRealtimeSync';
 import { useConversationThreadController } from './useConversationThreadController';
+import { requestConversationsRefresh } from './messagesEvents';
+import { navigateMessagesUrl } from './messagesRouting';
+import { getMessagingErrorMessage, respondToGroupInvitation } from './messagingApi';
+import toast from 'react-hot-toast';
 
 export function ConversationDetail({
   conversationId,
@@ -28,6 +33,8 @@ export function ConversationDetail({
   const { t } = useLanguage();
   const isMobile = useIsMobile();
   const [isReportUserModalOpen, setIsReportUserModalOpen] = useState(false);
+  const [isGroupSettingsOpen, setIsGroupSettingsOpen] = useState(false);
+  const [busyInvitationId, setBusyInvitationId] = useState<number | null>(null);
   const { setActiveConversationId, syncConversationReadState } = useMessagesNotifications();
   useConversationPresenceHeartbeat(conversationId);
 
@@ -41,11 +48,16 @@ export function ConversationDetail({
     t,
     syncConversationReadState,
   });
+  const isCurrentUserInvitedGroup = Boolean(
+    thread.otherConversation?.is_group &&
+    thread.otherConversation.current_user_status === 'invited',
+  );
 
   const composer = useConversationComposerController({
     conversationId,
     isMobile,
     loading: thread.loading,
+    disabled: isCurrentUserInvitedGroup,
     t,
     refresh: thread.refresh,
   });
@@ -63,13 +75,23 @@ export function ConversationDetail({
     t,
   });
 
-  const targetUserId = thread.otherConversation?.other_user?.id ?? null;
-  const targetUserSlug = thread.otherConversation?.other_user?.slug ?? null;
+  const isGroupConversation = Boolean(thread.otherConversation?.is_group);
+  const targetUserId = isGroupConversation ? null : thread.otherConversation?.other_user?.id ?? null;
+  const targetUserSlug = isGroupConversation ? null : thread.otherConversation?.other_user?.slug ?? null;
   const targetUserName =
-    (thread.otherConversation?.other_user?.display_name || '').trim() ||
-    t('messages.unknownUser', 'Používateľ');
-  const targetUserAvatarUrl = thread.otherConversation?.other_user?.avatar_url ?? null;
-  const targetUserType = thread.otherConversation?.other_user?.user_type ?? null;
+    (
+      (isGroupConversation
+        ? thread.otherConversation?.name
+        : thread.otherConversation?.other_user?.display_name) || ''
+    ).trim() ||
+    t(
+      isGroupConversation ? 'messages.unknownGroup' : 'messages.unknownUser',
+      isGroupConversation ? 'Skupina' : 'Používateľ',
+    );
+  const targetUserAvatarUrl = isGroupConversation
+    ? thread.otherConversation?.avatar_url ?? null
+    : thread.otherConversation?.other_user?.avatar_url ?? null;
+  const targetUserType = isGroupConversation ? null : thread.otherConversation?.other_user?.user_type ?? null;
   const canCreateRequestFromOffer =
     targetUserId !== null && thread.otherConversation?.has_requestable_offers === true;
 
@@ -102,7 +124,36 @@ export function ConversationDetail({
     thread.handleScrollToBottomClick();
   }, [composer.shouldPinFocusedViewportToBottomRef, thread]);
 
+  const handleGroupInvitationRespond = useCallback(
+    async (invitationId: number, action: 'accept' | 'decline') => {
+      setBusyInvitationId(invitationId);
+      try {
+        await respondToGroupInvitation(invitationId, action);
+        await thread.refresh({
+          showError: false,
+          markAsRead: true,
+          syncConversations: true,
+          scrollBehavior: 'if_near_bottom',
+        });
+        requestConversationsRefresh();
+      } catch (error) {
+        toast.error(
+          getMessagingErrorMessage(error, {
+            fallback: t('messages.groupInvitationResponseFailed', 'Pozvánku sa nepodarilo spracovať.'),
+          }),
+        );
+      } finally {
+        setBusyInvitationId(null);
+      }
+    },
+    [t, thread],
+  );
+
   const handleOpenTargetUserProfile = useCallback(() => {
+    if (isGroupConversation) {
+      setIsGroupSettingsOpen(true);
+      return;
+    }
     const identifier =
       (targetUserSlug || '').trim() ||
       (typeof targetUserId === 'number' ? String(targetUserId) : '');
@@ -113,7 +164,7 @@ export function ConversationDetail({
         detail: { identifier },
       }),
     );
-  }, [targetUserId, targetUserSlug]);
+  }, [isGroupConversation, targetUserId, targetUserSlug]);
 
   useEffect(() => {
     if (!isMobile || !composer.isComposerFocused || thread.loading) return;
@@ -171,7 +222,9 @@ export function ConversationDetail({
   const chooseImageLabel = t('messages.chooseImage', 'Vybrať obrázok');
   const takePhotoLabel = t('messages.takePhoto', 'Odfotiť');
   const attachImageLabel = t('messages.attachImage', 'Priložiť obrázok');
-  const typePlaceholder = t('messages.type', 'Napíš správu…');
+  const typePlaceholder = isCurrentUserInvitedGroup
+    ? t('messages.acceptGroupInviteToReply', 'Prijmite pozvánku, aby ste mohli písať.')
+    : t('messages.type', 'Napíš správu…');
   const sendLabel = t('messages.send', 'Odoslať');
   const addEmojiLabel = t('messages.addEmoji', 'Pridať emoji');
   const sendingLabel = t('common.sending', 'Odosielam…');
@@ -249,6 +302,8 @@ export function ConversationDetail({
           targetUserName={targetUserName}
           targetUserId={targetUserId}
           targetUserSlug={targetUserSlug}
+          isGroup={isGroupConversation}
+          avatarMembers={thread.otherConversation?.avatar_members ?? []}
           openPeerProfileLabel={openPeerProfileLabel}
           openConversationActionsLabel={openConversationActionsLabel}
           onOpenTargetUserProfile={handleOpenTargetUserProfile}
@@ -298,6 +353,8 @@ export function ConversationDetail({
         onMessageActionTrigger={actions.handleMessageActionTrigger}
         onMessageImageClick={actions.handleMessageImageClick}
         onScrollToBottomClick={handleScrollToBottomClick}
+        onGroupInvitationRespond={handleGroupInvitationRespond}
+        busyInvitationId={busyInvitationId}
       />
 
       <ConversationComposerSection
@@ -335,8 +392,16 @@ export function ConversationDetail({
         onToggleSelectedMessagePin={actions.handleToggleSelectedMessagePin}
         onCloseMessageImageLightbox={actions.closeMessageImageLightbox}
         onCloseConversationActions={actions.closeConversationActions}
+        onOpenGroupSettings={
+          isGroupConversation
+            ? () => {
+                actions.closeConversationActions();
+                setIsGroupSettingsOpen(true);
+              }
+            : undefined
+        }
         onReportUser={
-          isMobile && targetUserId !== null
+          isMobile && !isGroupConversation && targetUserId !== null
             ? () => {
                 actions.closeConversationActions();
                 setIsReportUserModalOpen(true);
@@ -361,6 +426,20 @@ export function ConversationDetail({
           onSuccess={() => setIsReportUserModalOpen(false)}
         />
       ) : null}
+      <GroupSettingsModal
+        open={isGroupSettingsOpen}
+        conversation={thread.otherConversation}
+        onClose={() => setIsGroupSettingsOpen(false)}
+        onUpdated={() => {
+          void thread.refresh({ showError: false, syncConversations: true });
+          requestConversationsRefresh();
+        }}
+        onDeleted={() => {
+          setIsGroupSettingsOpen(false);
+          requestConversationsRefresh();
+          navigateMessagesUrl(null);
+        }}
+      />
     </div>
   );
 }

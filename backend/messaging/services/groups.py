@@ -1,0 +1,511 @@
+from __future__ import annotations
+
+from dataclasses import dataclass
+
+from django.contrib.auth import get_user_model
+from django.core.files.storage import default_storage
+from django.db import transaction
+from django.utils import timezone
+
+from ..models import Conversation, ConversationParticipant, GroupInvitation, Message
+from .push_enqueue import schedule_message_push_delivery
+
+User = get_user_model()
+
+MAX_GROUP_PARTICIPANTS = 50
+
+
+class GroupServiceError(Exception):
+    pass
+
+
+class ConversationNotGroup(GroupServiceError):
+    pass
+
+
+class GroupNameRequired(GroupServiceError):
+    pass
+
+
+class GroupLimitExceeded(GroupServiceError):
+    pass
+
+
+class NotGroupOwner(GroupServiceError):
+    pass
+
+
+class NotActiveGroupMember(GroupServiceError):
+    pass
+
+
+class InvitationNotPending(GroupServiceError):
+    pass
+
+
+class CannotInviteSelf(GroupServiceError):
+    pass
+
+
+@dataclass(frozen=True)
+class GroupMutationResult:
+    conversation: Conversation
+    participant_user_ids: tuple[int, ...]
+    changed: bool = True
+
+
+@dataclass(frozen=True)
+class GroupInvitationResult:
+    invitation: GroupInvitation
+    message: Message | None
+    participant_user_ids: tuple[int, ...]
+    created: bool = True
+
+
+def _active_or_invited_count(*, conversation: Conversation) -> int:
+    return ConversationParticipant.objects.filter(
+        conversation=conversation,
+        status__in=[
+            ConversationParticipant.Status.ACTIVE,
+            ConversationParticipant.Status.INVITED,
+        ],
+    ).count()
+
+
+def _active_participant_user_ids(*, conversation: Conversation) -> tuple[int, ...]:
+    return tuple(
+        ConversationParticipant.objects.filter(
+            conversation=conversation,
+            status=ConversationParticipant.Status.ACTIVE,
+        ).values_list("user_id", flat=True)
+    )
+
+
+def _ensure_group(conversation: Conversation) -> None:
+    if not conversation.is_group:
+        raise ConversationNotGroup("Conversation is not a group.")
+
+
+def ensure_active_group_member(*, conversation: Conversation, user_id: int) -> ConversationParticipant:
+    _ensure_group(conversation)
+    participant = (
+        ConversationParticipant.objects.select_for_update()
+        .filter(
+            conversation=conversation,
+            user_id=user_id,
+            status=ConversationParticipant.Status.ACTIVE,
+        )
+        .first()
+    )
+    if participant is None:
+        raise NotActiveGroupMember("User is not an active group member.")
+    return participant
+
+
+def ensure_group_owner(*, conversation: Conversation, user_id: int) -> ConversationParticipant:
+    participant = ensure_active_group_member(conversation=conversation, user_id=user_id)
+    if participant.role != ConversationParticipant.Role.OWNER:
+        raise NotGroupOwner("Only the group owner can perform this action.")
+    return participant
+
+
+def _create_system_message(*, conversation: Conversation, actor, text: str, metadata=None) -> Message:
+    now = timezone.now()
+    message = Message.objects.create(
+        conversation=conversation,
+        sender=actor,
+        text=text,
+        message_type=Message.Type.SYSTEM,
+        metadata=metadata or {},
+        created_at=now,
+    )
+    conversation.last_message_at = now
+    conversation.save(update_fields=["last_message_at", "updated_at"])
+    return message
+
+
+def create_group_conversation(
+    *,
+    actor,
+    name: str,
+    invited_user_ids=None,
+    avatar=None,
+) -> GroupMutationResult:
+    clean_name = (name or "").strip()
+    if not clean_name:
+        raise GroupNameRequired("Group name is required.")
+
+    unique_invited_ids = sorted(
+        {
+            int(user_id)
+            for user_id in (invited_user_ids or [])
+            if int(user_id) > 0 and int(user_id) != int(actor.id)
+        }
+    )
+    if len(unique_invited_ids) + 1 > MAX_GROUP_PARTICIPANTS:
+        raise GroupLimitExceeded("Group cannot have more than 50 participants.")
+
+    users_by_id = {
+        user.id: user
+        for user in User.objects.filter(id__in=unique_invited_ids, is_active=True)
+    }
+
+    with transaction.atomic():
+        conversation = Conversation.objects.create(
+            created_by=actor,
+            is_group=True,
+            name=clean_name,
+            avatar=avatar,
+        )
+        ConversationParticipant.objects.create(
+            conversation=conversation,
+            user=actor,
+            role=ConversationParticipant.Role.OWNER,
+            status=ConversationParticipant.Status.ACTIVE,
+        )
+        _create_system_message(
+            conversation=conversation,
+            actor=actor,
+            text=f"{actor.display_name or actor.username} vytvoril/a skupinu {clean_name}.",
+            metadata={"event": "group_created"},
+        )
+
+        for invited_user_id in unique_invited_ids:
+            target = users_by_id.get(invited_user_id)
+            if target is not None:
+                invite_user_to_group(
+                    conversation=conversation,
+                    actor=actor,
+                    invited_user=target,
+                    already_locked=True,
+                )
+
+        return GroupMutationResult(
+            conversation=conversation,
+            participant_user_ids=_active_participant_user_ids(conversation=conversation),
+        )
+
+
+def invite_user_to_group(
+    *,
+    conversation: Conversation,
+    actor,
+    invited_user,
+    already_locked: bool = False,
+) -> GroupInvitationResult:
+    if int(actor.id) == int(invited_user.id):
+        raise CannotInviteSelf("Cannot invite yourself.")
+
+    def _perform() -> GroupInvitationResult:
+        _ensure_group(conversation)
+        ensure_active_group_member(conversation=conversation, user_id=actor.id)
+
+        existing_participant = (
+            ConversationParticipant.objects.select_for_update()
+            .filter(conversation=conversation, user=invited_user)
+            .first()
+        )
+        if existing_participant and existing_participant.status in (
+            ConversationParticipant.Status.ACTIVE,
+            ConversationParticipant.Status.INVITED,
+        ):
+            existing_invitation = (
+                GroupInvitation.objects.select_for_update()
+                .filter(
+                    conversation=conversation,
+                    invited_user=invited_user,
+                    status=GroupInvitation.Status.PENDING,
+                )
+                .select_related("message")
+                .first()
+            )
+            if existing_invitation:
+                return GroupInvitationResult(
+                    invitation=existing_invitation,
+                    message=existing_invitation.message,
+                    participant_user_ids=_active_participant_user_ids(conversation=conversation)
+                    + (invited_user.id,),
+                    created=False,
+                )
+            raise InvitationNotPending("User is already in the group.")
+
+        if _active_or_invited_count(conversation=conversation) >= MAX_GROUP_PARTICIPANTS:
+            raise GroupLimitExceeded("Group cannot have more than 50 participants.")
+
+        participant_defaults = {
+            "role": ConversationParticipant.Role.MEMBER,
+            "status": ConversationParticipant.Status.INVITED,
+            "left_at": None,
+        }
+        if existing_participant:
+            for field, value in participant_defaults.items():
+                setattr(existing_participant, field, value)
+            existing_participant.save(update_fields=["role", "status", "left_at"])
+        else:
+            ConversationParticipant.objects.create(
+                conversation=conversation,
+                user=invited_user,
+                **participant_defaults,
+            )
+
+        now = timezone.now()
+        invitation = GroupInvitation.objects.create(
+            conversation=conversation,
+            invited_user=invited_user,
+            invited_by=actor,
+            status=GroupInvitation.Status.PENDING,
+        )
+        message = Message.objects.create(
+            conversation=conversation,
+            sender=actor,
+            text="",
+            message_type=Message.Type.GROUP_INVITATION,
+            metadata={
+                "invitation_id": invitation.id,
+                "invited_user_id": invited_user.id,
+                "invited_by_id": actor.id,
+            },
+            created_at=now,
+        )
+        invitation.message = message
+        invitation.save(update_fields=["message", "updated_at"])
+        conversation.last_message_at = now
+        conversation.save(update_fields=["last_message_at", "updated_at"])
+
+        recipient_user_ids = tuple(
+            sorted(set(_active_participant_user_ids(conversation=conversation) + (invited_user.id,)))
+        )
+        schedule_message_push_delivery(message_id=message.id, recipient_user_ids=recipient_user_ids)
+        return GroupInvitationResult(
+            invitation=invitation,
+            message=message,
+            participant_user_ids=recipient_user_ids,
+        )
+
+    if already_locked:
+        return _perform()
+    with transaction.atomic():
+        conversation = (
+            Conversation.objects.select_for_update()
+            .filter(id=conversation.id)
+            .first()
+        )
+        if conversation is None:
+            raise ValueError("Conversation not found.")
+        return _perform()
+
+
+def respond_to_group_invitation(*, invitation: GroupInvitation, actor, accept: bool) -> GroupMutationResult:
+    with transaction.atomic():
+        invitation = (
+            GroupInvitation.objects.select_for_update()
+            .select_related("conversation", "invited_user", "invited_by")
+            .filter(id=invitation.id)
+            .first()
+        )
+        if invitation is None:
+            raise ValueError("Invitation not found.")
+        if invitation.invited_user_id != actor.id:
+            raise NotActiveGroupMember("Only the invited user can respond.")
+        if invitation.status != GroupInvitation.Status.PENDING:
+            raise InvitationNotPending("Invitation is not pending.")
+
+        conversation = (
+            Conversation.objects.select_for_update()
+            .filter(id=invitation.conversation_id)
+            .first()
+        )
+        if conversation is None:
+            raise ValueError("Conversation not found.")
+        _ensure_group(conversation)
+
+        participant = (
+            ConversationParticipant.objects.select_for_update()
+            .filter(conversation=conversation, user=actor)
+            .first()
+        )
+        if participant is None:
+            raise NotActiveGroupMember("Invitation participant is missing.")
+
+        now = timezone.now()
+        invitation.status = (
+            GroupInvitation.Status.ACCEPTED if accept else GroupInvitation.Status.DECLINED
+        )
+        invitation.responded_at = now
+        invitation.save(update_fields=["status", "responded_at", "updated_at"])
+
+        participant.status = (
+            ConversationParticipant.Status.ACTIVE if accept else ConversationParticipant.Status.REMOVED
+        )
+        participant.left_at = None if accept else now
+        participant.save(update_fields=["status", "left_at"])
+
+        text = (
+            f"{actor.display_name or actor.username} prijal/a pozvánku do skupiny."
+            if accept
+            else f"{actor.display_name or actor.username} odmietol/a pozvánku do skupiny."
+        )
+        message = _create_system_message(
+            conversation=conversation,
+            actor=actor,
+            text=text,
+            metadata={"event": "group_invitation_accepted" if accept else "group_invitation_declined"},
+        )
+        recipient_user_ids = _active_participant_user_ids(conversation=conversation)
+        schedule_message_push_delivery(message_id=message.id, recipient_user_ids=recipient_user_ids)
+        return GroupMutationResult(
+            conversation=conversation,
+            participant_user_ids=recipient_user_ids,
+        )
+
+
+def update_group_conversation(
+    *,
+    conversation: Conversation,
+    actor,
+    name: str | None = None,
+    avatar=None,
+    clear_avatar: bool = False,
+) -> GroupMutationResult:
+    with transaction.atomic():
+        conversation = (
+            Conversation.objects.select_for_update()
+            .filter(id=conversation.id)
+            .first()
+        )
+        if conversation is None:
+            raise ValueError("Conversation not found.")
+        ensure_group_owner(conversation=conversation, user_id=actor.id)
+
+        update_fields: list[str] = []
+        if name is not None:
+            clean_name = name.strip()
+            if not clean_name:
+                raise GroupNameRequired("Group name is required.")
+            conversation.name = clean_name
+            update_fields.append("name")
+        if clear_avatar and conversation.avatar:
+            old_name = conversation.avatar.name
+            conversation.avatar = None
+            update_fields.append("avatar")
+            transaction.on_commit(lambda: default_storage.delete(old_name))
+        elif avatar is not None:
+            old_name = conversation.avatar.name if conversation.avatar else ""
+            conversation.avatar = avatar
+            update_fields.append("avatar")
+            if old_name:
+                transaction.on_commit(lambda: default_storage.delete(old_name))
+
+        if update_fields:
+            update_fields.append("updated_at")
+            conversation.save(update_fields=update_fields)
+
+        return GroupMutationResult(
+            conversation=conversation,
+            participant_user_ids=_active_participant_user_ids(conversation=conversation),
+            changed=bool(update_fields),
+        )
+
+
+def remove_group_member(*, conversation: Conversation, actor, user_id: int) -> GroupMutationResult:
+    with transaction.atomic():
+        conversation = (
+            Conversation.objects.select_for_update()
+            .filter(id=conversation.id)
+            .first()
+        )
+        if conversation is None:
+            raise ValueError("Conversation not found.")
+        ensure_group_owner(conversation=conversation, user_id=actor.id)
+        if int(user_id) == int(actor.id):
+            raise NotGroupOwner("The group owner cannot remove themselves.")
+
+        participant = (
+            ConversationParticipant.objects.select_for_update()
+            .filter(
+                conversation=conversation,
+                user_id=user_id,
+                status__in=[
+                    ConversationParticipant.Status.ACTIVE,
+                    ConversationParticipant.Status.INVITED,
+                ],
+            )
+            .first()
+        )
+        if participant is None:
+            raise NotActiveGroupMember("User is not a removable group member.")
+
+        now = timezone.now()
+        participant.status = ConversationParticipant.Status.REMOVED
+        participant.left_at = now
+        participant.save(update_fields=["status", "left_at"])
+        GroupInvitation.objects.filter(
+            conversation=conversation,
+            invited_user_id=user_id,
+            status=GroupInvitation.Status.PENDING,
+        ).update(status=GroupInvitation.Status.CANCELLED, responded_at=now)
+
+        removed_user = User.objects.filter(id=user_id).first()
+        name = getattr(removed_user, "display_name", "") or getattr(removed_user, "username", "")
+        _create_system_message(
+            conversation=conversation,
+            actor=actor,
+            text=f"{name or 'Používateľ'} bol/a odobraný/á zo skupiny.",
+            metadata={"event": "group_member_removed", "user_id": user_id},
+        )
+        return GroupMutationResult(
+            conversation=conversation,
+            participant_user_ids=_active_participant_user_ids(conversation=conversation),
+        )
+
+
+def leave_group(*, conversation: Conversation, actor) -> GroupMutationResult:
+    with transaction.atomic():
+        conversation = (
+            Conversation.objects.select_for_update()
+            .filter(id=conversation.id)
+            .first()
+        )
+        if conversation is None:
+            raise ValueError("Conversation not found.")
+        participant = ensure_active_group_member(conversation=conversation, user_id=actor.id)
+        if participant.role == ConversationParticipant.Role.OWNER:
+            raise NotGroupOwner("The group owner cannot leave the group.")
+
+        now = timezone.now()
+        participant.status = ConversationParticipant.Status.LEFT
+        participant.left_at = now
+        participant.save(update_fields=["status", "left_at"])
+        _create_system_message(
+            conversation=conversation,
+            actor=actor,
+            text=f"{actor.display_name or actor.username} opustil/a skupinu.",
+            metadata={"event": "group_member_left", "user_id": actor.id},
+        )
+        return GroupMutationResult(
+            conversation=conversation,
+            participant_user_ids=_active_participant_user_ids(conversation=conversation),
+        )
+
+
+def delete_group(*, conversation: Conversation, actor) -> GroupMutationResult:
+    with transaction.atomic():
+        conversation = (
+            Conversation.objects.select_for_update()
+            .filter(id=conversation.id)
+            .first()
+        )
+        if conversation is None:
+            raise ValueError("Conversation not found.")
+        ensure_group_owner(conversation=conversation, user_id=actor.id)
+        participant_user_ids = tuple(
+            ConversationParticipant.objects.filter(conversation=conversation).values_list(
+                "user_id",
+                flat=True,
+            )
+        )
+        conversation.delete()
+        return GroupMutationResult(
+            conversation=conversation,
+            participant_user_ids=participant_user_ids,
+        )

@@ -7,6 +7,7 @@ export const MESSAGING_REALTIME_MESSAGE_EVENT = 'messaging:realtime:message';
 export const MESSAGING_REALTIME_READ_EVENT = 'messaging:realtime:read';
 export const MESSAGING_REALTIME_DELETED_EVENT = 'messaging:realtime:deleted';
 export const MESSAGING_REALTIME_PINNED_MESSAGE_EVENT = 'messaging:realtime:pinned-message';
+export const MESSAGING_REALTIME_GROUP_EVENT = 'messaging:realtime:group';
 export const MESSAGING_OPEN_CONVERSATION_ACTIONS_EVENT = 'messaging:conversation:actions:open';
 
 export type MessagingRealtimeMessagePayload = {
@@ -32,6 +33,11 @@ export type MessagingRealtimePinnedMessagePayload = {
   conversationId: number;
   pinnedMessage: MessageItem | null;
   actorId?: number;
+};
+
+export type MessagingRealtimeGroupPayload = {
+  conversationId: number;
+  type: string;
 };
 
 export function requestConversationsRefresh(): void {
@@ -83,6 +89,15 @@ export function dispatchMessagingRealtimePinnedMessage(
         detail: payload,
       },
     ),
+  );
+}
+
+export function dispatchMessagingRealtimeGroup(payload: MessagingRealtimeGroupPayload): void {
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(
+    new CustomEvent<MessagingRealtimeGroupPayload>(MESSAGING_REALTIME_GROUP_EVENT, {
+      detail: payload,
+    }),
   );
 }
 

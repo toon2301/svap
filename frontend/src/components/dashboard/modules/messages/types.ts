@@ -6,15 +6,33 @@ export type MessagingUserBrief = {
   avatar_url?: string | null;
 };
 
+export type GroupMemberCandidate = MessagingUserBrief & {
+  presence_status?: 'online' | 'unknown';
+};
+
+export type GroupParticipantBrief = MessagingUserBrief & {
+  role: 'owner' | 'member';
+  status: 'invited' | 'active' | 'left' | 'removed';
+};
+
 export type ConversationListItem = {
   id: number;
   other_user: MessagingUserBrief | null;
+  is_group?: boolean;
+  name?: string;
+  avatar_url?: string | null;
+  avatar_members?: MessagingUserBrief[];
+  participants?: GroupParticipantBrief[];
+  participant_count?: number;
+  current_user_role?: 'owner' | 'member' | null;
+  current_user_status?: 'invited' | 'active' | 'left' | 'removed' | null;
   has_requestable_offers?: boolean;
   last_message_preview: string | null;
   last_message_at: string | null;
   last_message_sender_id?: number | null;
   last_message_is_deleted?: boolean;
   last_message_has_image?: boolean;
+  last_message_type?: 'user' | 'system' | 'group_invitation' | null;
   last_read_at: string | null;
   is_pinned?: boolean;
   has_unread: boolean;
@@ -28,12 +46,14 @@ export type ConversationListItem = {
 export type ConversationDraft = {
   id: null;
   other_user: MessagingUserBrief | null;
+  is_group?: false;
   has_requestable_offers?: boolean;
   last_message_preview: null;
   last_message_at: null;
   last_message_sender_id?: null;
   last_message_is_deleted?: false;
   last_message_has_image?: false;
+  last_message_type?: null;
   last_read_at: null;
   is_pinned?: false;
   has_unread: false;
@@ -56,6 +76,17 @@ export type MessageItem = {
   created_at: string;
   edited_at: string | null;
   is_deleted: boolean;
+  message_type?: 'user' | 'system' | 'group_invitation';
+  metadata?: Record<string, unknown>;
+  group_invitation?: GroupInvitationMessage | null;
+};
+
+export type GroupInvitationMessage = {
+  id: number;
+  status: 'pending' | 'accepted' | 'declined' | 'cancelled';
+  invited_user: MessagingUserBrief;
+  invited_by: MessagingUserBrief;
+  can_respond: boolean;
 };
 
 export type MessageListPage = {
@@ -103,5 +134,17 @@ export type ConversationPinStateResult = {
 export type PinMessageResult = {
   conversation_id: number;
   pinned_message: MessageItem | null;
+};
+
+export type GroupConversationCreatePayload = {
+  name: string;
+  invited_user_ids?: number[];
+  avatar?: File | null;
+};
+
+export type GroupConversationUpdatePayload = {
+  name?: string;
+  avatar?: File | null;
+  clear_avatar?: boolean;
 };
 

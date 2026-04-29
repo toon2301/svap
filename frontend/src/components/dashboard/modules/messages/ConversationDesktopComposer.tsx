@@ -83,7 +83,7 @@ export function ConversationDesktopComposer({
           <MessageComposerImagePreview
             previewUrl={pendingImagePreviewUrl}
             fileName={pendingImageFile.name}
-            disabled={sending}
+            disabled={sending || isComposerInputDisabled}
             onRemove={onRemovePendingImage}
           />
         ) : null}
@@ -107,7 +107,7 @@ export function ConversationDesktopComposer({
               type="button"
               data-testid="conversation-image-picker-trigger"
               onClick={onOpenImagePicker}
-              disabled={sending}
+              disabled={sending || isComposerInputDisabled}
               className="absolute right-10 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-brand/30 disabled:cursor-not-allowed disabled:opacity-60 dark:text-gray-400 dark:hover:bg-[#141416] dark:hover:text-gray-200"
               aria-label={attachImageLabel}
             >
@@ -115,7 +115,7 @@ export function ConversationDesktopComposer({
             </button>
             <DesktopEmojiPickerButton
               ariaLabel={addEmojiLabel}
-              disabled={sending}
+              disabled={sending || isComposerInputDisabled}
               onSelect={onEmojiSelect}
               className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-[#141416] dark:hover:text-gray-200"
             />

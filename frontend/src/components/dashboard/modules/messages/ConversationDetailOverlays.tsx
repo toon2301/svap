@@ -40,6 +40,7 @@ type ConversationDetailOverlaysProps = {
   onToggleSelectedMessagePin: () => void;
   onCloseMessageImageLightbox: () => void;
   onCloseConversationActions: () => void;
+  onOpenGroupSettings?: () => void;
   onReportUser?: () => void;
   onRequestDeleteConversation: () => void;
   onCloseDeleteConversationModal: () => void;
@@ -70,6 +71,7 @@ export function ConversationDetailOverlays({
   onToggleSelectedMessagePin,
   onCloseMessageImageLightbox,
   onCloseConversationActions,
+  onOpenGroupSettings,
   onReportUser,
   onRequestDeleteConversation,
   onCloseDeleteConversationModal,
@@ -104,6 +106,7 @@ export function ConversationDetailOverlays({
         isMobile={isMobile}
         anchorRect={conversationActionsAnchorRect}
         onClose={onCloseConversationActions}
+        onOpenGroupSettings={onOpenGroupSettings}
         onReportUser={onReportUser}
         onDeleteConversation={onRequestDeleteConversation}
       />

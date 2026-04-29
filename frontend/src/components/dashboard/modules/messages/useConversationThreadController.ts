@@ -308,6 +308,15 @@ export function useConversationThreadController({
         setNextOlderPage(page.nextPage);
         setPeerLastReadAt((current) => pickLatestTimestamp(current, page.peerLastReadAt ?? null));
         setPinnedMessage(page.pinnedMessage);
+        if (syncConversations) {
+          try {
+            const list = await listConversations();
+            const found = Array.isArray(list) ? list.find((item) => item?.id === conversationId) : null;
+            setOtherConversation(found ?? null);
+          } catch {
+            // Header/settings data is best-effort during message refresh.
+          }
+        }
         if (syncConversations && newestMessageId !== previousNewestMessageId) {
           requestConversationsRefresh();
         }

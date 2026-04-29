@@ -59,7 +59,7 @@ def _direct_conversation_queryset_for_pair(*, user_a_id: int, user_b_id: int):
         .values_list("conversation_id", flat=True)
     )
     return (
-        Conversation.objects.filter(id__in=pair_ids)
+        Conversation.objects.filter(id__in=pair_ids, is_group=False)
         .annotate(pcount=Count("participants", distinct=True))
         .filter(pcount=2)
     )

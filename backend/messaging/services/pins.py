@@ -60,7 +60,10 @@ def set_conversation_pinned_message(
             convo.pinned_message_id = next_pinned_message_id
 
         participant_user_ids = tuple(
-            ConversationParticipant.objects.filter(conversation_id=convo.id).values_list(
+            ConversationParticipant.objects.filter(
+                conversation_id=convo.id,
+                status=ConversationParticipant.Status.ACTIVE,
+            ).values_list(
                 "user_id",
                 flat=True,
             )

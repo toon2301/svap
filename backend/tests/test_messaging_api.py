@@ -7,14 +7,16 @@ from django.core.cache import cache
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import override_settings
 from django.urls import reverse
+from django.utils import timezone
 from PIL import Image
 from rest_framework import status
 from rest_framework.test import APITestCase
 from unittest.mock import patch
 
-from accounts.models import OfferedSkill
-from messaging.models import Conversation, ConversationParticipant, Message
+from accounts.models import FavoriteUser, OfferedSkill
+from messaging.models import Conversation, ConversationParticipant, GroupInvitation, Message
 from messaging.services.conversations import open_or_create_direct_conversation
+from messaging.services.presence import store_message_presence
 
 
 User = get_user_model()
@@ -1155,3 +1157,199 @@ class TestMessagingApi(APITestCase):
         assert first.status_code == status.HTTP_200_OK
         assert second.status_code == status.HTTP_429_TOO_MANY_REQUESTS
         assert second.json()["code"] == "RATE_LIMITED"
+
+    def test_create_group_conversation_creates_owner_and_pending_invitation(self):
+        self.client.force_authenticate(user=self.u1)
+        url = reverse("accounts:messaging_create_group_conversation")
+
+        response = self.client.post(
+            url,
+            {"name": "Test skupina", "invited_user_ids": [self.u2.id]},
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_201_CREATED
+        assert response.data["is_group"] is True
+        assert response.data["name"] == "Test skupina"
+        conversation = Conversation.objects.get(id=response.data["id"])
+        assert conversation.is_group is True
+        assert ConversationParticipant.objects.get(
+            conversation=conversation,
+            user=self.u1,
+        ).role == ConversationParticipant.Role.OWNER
+        invited_participant = ConversationParticipant.objects.get(
+            conversation=conversation,
+            user=self.u2,
+        )
+        assert invited_participant.status == ConversationParticipant.Status.INVITED
+        invitation = GroupInvitation.objects.get(conversation=conversation, invited_user=self.u2)
+        assert invitation.status == GroupInvitation.Status.PENDING
+        assert Message.objects.filter(
+            conversation=conversation,
+            message_type=Message.Type.GROUP_INVITATION,
+        ).exists()
+
+    def test_invited_user_can_accept_group_invitation(self):
+        self.client.force_authenticate(user=self.u1)
+        create_url = reverse("accounts:messaging_create_group_conversation")
+        create_response = self.client.post(
+            create_url,
+            {"name": "Test skupina", "invited_user_ids": [self.u2.id]},
+            format="json",
+        )
+        assert create_response.status_code == status.HTTP_201_CREATED
+        invitation = GroupInvitation.objects.get(invited_user=self.u2)
+
+        self.client.force_authenticate(user=self.u2)
+        response_url = reverse(
+            "accounts:messaging_group_invitation_response",
+            kwargs={"invitation_id": invitation.id, "action": "accept"},
+        )
+        response = self.client.post(response_url, {}, format="json")
+
+        assert response.status_code == status.HTTP_200_OK
+        invitation.refresh_from_db()
+        assert invitation.status == GroupInvitation.Status.ACCEPTED
+        participant = ConversationParticipant.objects.get(
+            conversation=invitation.conversation,
+            user=self.u2,
+        )
+        assert participant.status == ConversationParticipant.Status.ACTIVE
+
+    def test_group_owner_can_remove_member_but_regular_member_cannot(self):
+        self.client.force_authenticate(user=self.u1)
+        create_response = self.client.post(
+            reverse("accounts:messaging_create_group_conversation"),
+            {"name": "Test skupina", "invited_user_ids": [self.u2.id]},
+            format="json",
+        )
+        invitation = GroupInvitation.objects.get(invited_user=self.u2)
+        self.client.force_authenticate(user=self.u2)
+        response = self.client.post(
+            reverse(
+                "accounts:messaging_group_invitation_response",
+                kwargs={"invitation_id": invitation.id, "action": "accept"},
+            ),
+            {},
+            format="json",
+        )
+        assert response.status_code == status.HTTP_200_OK
+
+        conversation_id = create_response.data["id"]
+        self.client.force_authenticate(user=self.u2)
+        forbidden = self.client.delete(
+            reverse(
+                "accounts:messaging_group_member_detail",
+                kwargs={"conversation_id": conversation_id, "user_id": self.u1.id},
+            )
+        )
+        assert forbidden.status_code == status.HTTP_403_FORBIDDEN
+
+        self.client.force_authenticate(user=self.u1)
+        removed = self.client.delete(
+            reverse(
+                "accounts:messaging_group_member_detail",
+                kwargs={"conversation_id": conversation_id, "user_id": self.u2.id},
+            )
+        )
+        assert removed.status_code == status.HTTP_204_NO_CONTENT
+        assert ConversationParticipant.objects.get(
+            conversation_id=conversation_id,
+            user=self.u2,
+        ).status == ConversationParticipant.Status.REMOVED
+
+    def test_group_participant_limit_is_enforced(self):
+        users = [
+            User.objects.create_user(
+                username=f"limit-{index}",
+                email=f"limit-{index}@example.com",
+                password="StrongPass123",
+                is_verified=True,
+                is_active=True,
+            )
+            for index in range(50)
+        ]
+        self.client.force_authenticate(user=self.u1)
+
+        response = self.client.post(
+            reverse("accounts:messaging_create_group_conversation"),
+            {"name": "Príliš veľa", "invited_user_ids": [user.id for user in users]},
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    def test_group_member_candidates_include_direct_contacts_and_favorites(self):
+        convo = self._create_direct_conversation(actor=self.u1, target=self.u2)
+        now = timezone.now()
+        Message.objects.create(conversation=convo, sender=self.u1, text="Ahoj", created_at=now)
+        convo.last_message_at = now
+        convo.save(update_fields=["last_message_at", "updated_at"])
+        FavoriteUser.objects.create(user=self.u1, favorite_user=self.u3)
+        store_message_presence(user_id=self.u2.id, visible=True, active_conversation_id=convo.id)
+
+        self.client.force_authenticate(user=self.u1)
+        response = self.client.get(reverse("accounts:messaging_group_member_candidates"))
+
+        assert response.status_code == status.HTTP_200_OK
+        ids = [item["id"] for item in response.data["results"]]
+        assert self.u2.id in ids
+        assert self.u3.id in ids
+        u2_result = next(item for item in response.data["results"] if item["id"] == self.u2.id)
+        assert u2_result["presence_status"] == "online"
+        assert "email" not in u2_result
+
+    def test_group_member_candidates_search_excludes_existing_members(self):
+        self.u3.first_name = "Anna"
+        self.u3.save(update_fields=["first_name"])
+        self.client.force_authenticate(user=self.u1)
+        create_response = self.client.post(
+            reverse("accounts:messaging_create_group_conversation"),
+            {"name": "Test skupina", "invited_user_ids": [self.u2.id]},
+            format="json",
+        )
+        assert create_response.status_code == status.HTTP_201_CREATED
+
+        response = self.client.get(
+            reverse("accounts:messaging_group_member_candidates"),
+            {"conversation_id": create_response.data["id"], "q": "Anna"},
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        ids = [item["id"] for item in response.data["results"]]
+        assert self.u1.id not in ids
+        assert self.u2.id not in ids
+        assert self.u3.id in ids
+
+    def test_invited_group_user_cannot_read_group_history_before_accepting(self):
+        self.client.force_authenticate(user=self.u1)
+        create_response = self.client.post(
+            reverse("accounts:messaging_create_group_conversation"),
+            {"name": "Tajna skupina", "invited_user_ids": [self.u2.id]},
+            format="json",
+        )
+        assert create_response.status_code == status.HTTP_201_CREATED
+        conversation_id = create_response.data["id"]
+        send_response = self.client.post(
+            reverse("accounts:messaging_send_message", kwargs={"conversation_id": conversation_id}),
+            {"text": "secret group history"},
+            format="json",
+        )
+        assert send_response.status_code == status.HTTP_201_CREATED
+
+        self.client.force_authenticate(user=self.u2)
+        messages_response = self.client.get(
+            reverse("accounts:messaging_list_messages", kwargs={"conversation_id": conversation_id})
+        )
+        list_response = self.client.get(reverse("accounts:messaging_list_conversations"))
+
+        assert messages_response.status_code == status.HTTP_200_OK
+        message_texts = [item["text"] for item in messages_response.data["results"]]
+        assert "secret group history" not in message_texts
+        assert all(item["message_type"] == Message.Type.GROUP_INVITATION for item in messages_response.data["results"])
+
+        assert list_response.status_code == status.HTTP_200_OK
+        group_item = next(item for item in list_response.data["results"] if item["id"] == conversation_id)
+        assert group_item["last_message_preview"] is None
+        assert group_item["last_message_type"] == Message.Type.GROUP_INVITATION
+        assert group_item["participants"] == []

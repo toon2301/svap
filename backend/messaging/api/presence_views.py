@@ -30,6 +30,10 @@ class MessagePresenceView(APIView):
             is_participant = ConversationParticipant.objects.filter(
                 conversation_id=active_conversation_id,
                 user_id=request.user.id,
+                status__in=[
+                    ConversationParticipant.Status.ACTIVE,
+                    ConversationParticipant.Status.INVITED,
+                ],
             ).exists()
             if not is_participant:
                 return Response(

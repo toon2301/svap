@@ -14,7 +14,8 @@ def apply_conversation_list_search(queryset, search_query: str):
 
     for token in normalized_query.split(" "):
         queryset = queryset.filter(
-            Q(other_user_first_name__icontains=token)
+            Q(name__icontains=token)
+            | Q(other_user_first_name__icontains=token)
             | Q(other_user_last_name__icontains=token)
             | Q(other_user_company_name__icontains=token)
             | Q(other_user_username__icontains=token)

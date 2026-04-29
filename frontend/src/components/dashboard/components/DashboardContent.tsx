@@ -89,6 +89,10 @@ export default function DashboardContent({
   const [isInSubcategories, setIsInSubcategories] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [mobileMessagePeer, setMobileMessagePeer] = useState<MessagingUserBrief | null>(null);
+  const [mobileMessageGroup, setMobileMessageGroup] = useState<{
+    name: string;
+    avatarUrl: string | null;
+  } | null>(null);
   const skillsCategoryBackHandlerRef = useRef<(() => void) | null>(null);
 
   // Custom hooks pre rozdelenie logiky
@@ -226,6 +230,7 @@ export default function DashboardContent({
 
     if (activeModule !== 'messages') {
       setMobileMessagePeer(null);
+      setMobileMessageGroup(null);
       return () => {
         cancelled = true;
       };
@@ -242,9 +247,11 @@ export default function DashboardContent({
           const result = await openConversation(targetUserId);
           if (cancelled) return;
           setMobileMessagePeer(result.other_user ?? null);
+          setMobileMessageGroup(null);
         } catch {
           if (!cancelled) {
             setMobileMessagePeer(null);
+            setMobileMessageGroup(null);
           }
         }
       })();
@@ -261,6 +268,7 @@ export default function DashboardContent({
 
     if (conversationId == null) {
       setMobileMessagePeer(null);
+      setMobileMessageGroup(null);
       return () => {
         cancelled = true;
       };
@@ -271,10 +279,20 @@ export default function DashboardContent({
         const conversations = await listConversations();
         if (cancelled) return;
         const match = conversations.find((item) => item.id === conversationId) ?? null;
-        setMobileMessagePeer(match?.other_user ?? null);
+        if (match?.is_group) {
+          setMobileMessagePeer(null);
+          setMobileMessageGroup({
+            name: (match.name || '').trim() || t('messages.unknownGroup', 'Skupina'),
+            avatarUrl: match.avatar_url ?? null,
+          });
+        } else {
+          setMobileMessagePeer(match?.other_user ?? null);
+          setMobileMessageGroup(null);
+        }
       } catch {
         if (!cancelled) {
           setMobileMessagePeer(null);
+          setMobileMessageGroup(null);
         }
       }
     })();
@@ -282,7 +300,7 @@ export default function DashboardContent({
     return () => {
       cancelled = true;
     };
-  }, [activeModule, selectedConversationId, targetUserIdFromMessagesQuery]);
+  }, [activeModule, selectedConversationId, targetUserIdFromMessagesQuery, t]);
   useEffect(() => {
     const syncModuleFromPath = () => {
       if (typeof window === 'undefined') return;
@@ -565,6 +583,8 @@ export default function DashboardContent({
   const mobileMessagePeerIdentifier =
     (mobileMessagePeer?.slug || '').trim() ||
     (typeof mobileMessagePeer?.id === 'number' ? String(mobileMessagePeer.id) : null);
+  const mobileMessageTitle = mobileMessageGroup?.name || (mobileMessagePeer?.display_name || '').trim() || undefined;
+  const mobileMessageAvatarUrl = mobileMessageGroup?.avatarUrl ?? mobileMessagePeer?.avatar_url ?? null;
 
   return (
     <RequestsNotificationsProvider>
@@ -613,9 +633,9 @@ export default function DashboardContent({
         subcategory={activeModule === 'skills-describe' ? selectedSkillsCategory?.subcategory : null}
         onSkillSaveClick={activeModule === 'skills-describe' ? handleSkillSave : undefined}
         mobileAccountName={mobileAccountName}
-        mobileMessagePeerName={(mobileMessagePeer?.display_name || '').trim() || undefined}
-        mobileMessagePeerAvatarUrl={mobileMessagePeer?.avatar_url ?? null}
-        mobileMessagePeerIdentifier={mobileMessagePeerIdentifier}
+        mobileMessagePeerName={mobileMessageTitle}
+        mobileMessagePeerAvatarUrl={mobileMessageAvatarUrl}
+        mobileMessagePeerIdentifier={mobileMessageGroup ? null : mobileMessagePeerIdentifier}
         isMobileMessageConversationOpen={Boolean(
           activeModule === 'messages' &&
             (selectedConversationId != null || targetUserIdFromMessagesQuery != null),
