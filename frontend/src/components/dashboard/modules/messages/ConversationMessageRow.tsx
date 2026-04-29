@@ -94,7 +94,7 @@ export function ConversationMessageRow({
   }`;
   const incomingGroupMaxWidthClassName = isMobile ? 'max-w-full' : 'max-w-[calc(80%+2.5rem)]';
   const bubbleClassName = [
-    'w-fit max-w-full rounded-2xl px-3 py-2 text-sm',
+    'w-max max-w-full rounded-2xl px-3 py-2 text-sm',
     mine && !message.is_deleted
       ? 'bg-brand text-white'
       : 'border border-gray-200/60 bg-gray-100 text-gray-900 dark:border-gray-800 dark:bg-[#141416] dark:text-gray-100',

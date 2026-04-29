@@ -1550,7 +1550,7 @@ describe('ConversationDetail', () => {
     render(<ConversationDetail conversationId={9} currentUserId={1} />);
 
     expect(await screen.findByText('1')).toBeInTheDocument();
-    expect(screen.getByTestId('message-bubble-1').className).toContain('w-fit');
+    expect(screen.getByTestId('message-bubble-1').className).toContain('w-max');
   });
 
   it('keeps incoming message text width from being reduced by the avatar slot', async () => {
@@ -1573,7 +1573,7 @@ describe('ConversationDetail', () => {
     expect(incomingGroup?.className).toContain('max-w-[calc(80%+2.5rem)]');
     expect(bubble.parentElement?.parentElement?.className).toBe('min-w-0 flex-1');
     expect(bubble.parentElement?.className).toBe('relative max-w-full -mr-2 pr-2');
-    expect(bubble.className).toContain('w-fit');
+    expect(bubble.className).toContain('w-max');
   });
 
   it('does not shrink-wrap short incoming mobile messages through the wrapper', async () => {
@@ -1595,7 +1595,7 @@ describe('ConversationDetail', () => {
 
     expect(bubble.parentElement?.className).toBe('relative max-w-full -mr-2 pr-2');
     expect(bubble.parentElement?.className).not.toContain('w-fit');
-    expect(bubble.className).toContain('w-fit');
+    expect(bubble.className).toContain('w-max');
     expect(bubble.parentElement?.parentElement?.className).toBe('min-w-0 flex-1');
     expect(bubble.parentElement?.parentElement?.className).not.toContain('calc(100%-1.75rem)');
   });
