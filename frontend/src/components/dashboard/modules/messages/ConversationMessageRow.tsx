@@ -92,6 +92,7 @@ export function ConversationMessageRow({
   const messageTextClassName = `whitespace-pre-wrap break-words${
     suppressMobileMessageSelection ? ' select-none' : ''
   }`;
+  const incomingGroupMaxWidthClassName = isMobile ? 'max-w-full' : 'max-w-[calc(80%+2.5rem)]';
   const bubbleClassName = [
     'w-fit max-w-full rounded-2xl px-3 py-2 text-sm',
     mine && !message.is_deleted
@@ -302,9 +303,9 @@ export function ConversationMessageRow({
       onBlurCapture={handleRowBlurCapture}
     >
       <div
-        className={`group flex min-w-0 flex-col ${
-          isMobile ? 'max-w-full' : 'max-w-[80%]'
-        }${isSelectedForMobileMessageActions ? ' pointer-events-none opacity-0' : ''}`}
+        className={`group flex min-w-0 flex-col ${incomingGroupMaxWidthClassName}${
+          isSelectedForMobileMessageActions ? ' pointer-events-none opacity-0' : ''
+        }`}
       >
         {showTimestamp ? (
           <div
@@ -339,7 +340,7 @@ export function ConversationMessageRow({
               </div>
             ) : null}
           </div>
-          <div className={`min-w-0 flex-1 ${isMobile ? 'max-w-[calc(100%-1.75rem)]' : ''}`}>
+          <div className="min-w-0 flex-1">
             <div className="relative w-fit max-w-full -mr-2 pr-2">
               <div
                 data-testid={`message-bubble-${message.id}`}

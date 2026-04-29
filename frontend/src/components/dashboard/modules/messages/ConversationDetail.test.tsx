@@ -1553,6 +1553,48 @@ describe('ConversationDetail', () => {
     expect(screen.getByTestId('message-bubble-1').className).toContain('w-fit');
   });
 
+  it('keeps incoming message text width from being reduced by the avatar slot', async () => {
+    (listMessages as jest.Mock).mockResolvedValueOnce(
+      messagePage([
+        message({
+          id: 1,
+          text: 'Incoming message with enough text to use the available bubble width',
+          created_at: '2026-03-30T18:52:00Z',
+        }),
+      ]),
+    );
+
+    render(<ConversationDetail conversationId={9} currentUserId={1} />);
+
+    expect(await screen.findByText(/Incoming message/)).toBeInTheDocument();
+    const bubble = screen.getByTestId('message-bubble-1');
+    const incomingGroup = bubble.parentElement?.parentElement?.parentElement?.parentElement;
+
+    expect(incomingGroup?.className).toContain('max-w-[calc(80%+2.5rem)]');
+    expect(bubble.parentElement?.parentElement?.className).toBe('min-w-0 flex-1');
+  });
+
+  it('does not subtract the avatar slot from incoming mobile message text width', async () => {
+    useIsMobile.mockReturnValue(true);
+    (listMessages as jest.Mock).mockResolvedValueOnce(
+      messagePage([
+        message({
+          id: 1,
+          text: 'Incoming mobile message',
+          created_at: '2026-03-30T18:52:00Z',
+        }),
+      ]),
+    );
+
+    render(<ConversationDetail conversationId={9} currentUserId={1} />);
+
+    expect(await screen.findByText('Incoming mobile message')).toBeInTheDocument();
+    const bubble = screen.getByTestId('message-bubble-1');
+
+    expect(bubble.parentElement?.parentElement?.className).toBe('min-w-0 flex-1');
+    expect(bubble.parentElement?.parentElement?.className).not.toContain('calc(100%-1.75rem)');
+  });
+
   it('shows the other user avatar only on the last message in each consecutive block', async () => {
     useIsMobile.mockReturnValue(true);
     (listConversations as jest.Mock).mockResolvedValue([
