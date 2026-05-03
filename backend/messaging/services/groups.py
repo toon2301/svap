@@ -3,7 +3,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from django.contrib.auth import get_user_model
-from django.core.files.storage import default_storage
 from django.db import transaction
 from django.utils import timezone
 
@@ -129,7 +128,6 @@ def create_group_conversation(
     actor,
     name: str,
     invited_user_ids=None,
-    avatar=None,
 ) -> GroupMutationResult:
     clean_name = (name or "").strip()
     if not clean_name:
@@ -155,7 +153,6 @@ def create_group_conversation(
             created_by=actor,
             is_group=True,
             name=clean_name,
-            avatar=avatar,
         )
         ConversationParticipant.objects.create(
             conversation=conversation,
@@ -364,8 +361,6 @@ def update_group_conversation(
     conversation: Conversation,
     actor,
     name: str | None = None,
-    avatar=None,
-    clear_avatar: bool = False,
 ) -> GroupMutationResult:
     with transaction.atomic():
         conversation = (
@@ -384,18 +379,6 @@ def update_group_conversation(
                 raise GroupNameRequired("Group name is required.")
             conversation.name = clean_name
             update_fields.append("name")
-        if clear_avatar and conversation.avatar:
-            old_name = conversation.avatar.name
-            conversation.avatar = None
-            update_fields.append("avatar")
-            transaction.on_commit(lambda: default_storage.delete(old_name))
-        elif avatar is not None:
-            old_name = conversation.avatar.name if conversation.avatar else ""
-            conversation.avatar = avatar
-            update_fields.append("avatar")
-            if old_name:
-                transaction.on_commit(lambda: default_storage.delete(old_name))
-
         if update_fields:
             update_fields.append("updated_at")
             conversation.save(update_fields=update_fields)

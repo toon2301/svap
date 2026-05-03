@@ -95,7 +95,6 @@ export function ConversationsListRow({
           {isGroup ? (
             <GroupConversationAvatar
               name={title}
-              avatarUrl={conversation.avatar_url}
               members={conversation.avatar_members}
               size={isCompact ? 'sm' : 'lg'}
             />

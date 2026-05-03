@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { UserGroupIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, UserGroupIcon } from '@heroicons/react/24/outline';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { ConversationsList, MESSAGING_CREATE_GROUP_OPEN_EVENT } from './ConversationsList';
 
@@ -13,6 +13,10 @@ export function MessagesDesktopRail({
   selectedConversationId?: number | null;
 }) {
   const { t } = useLanguage();
+  const createGroupTooltip = t(
+    'messages.createGroupTooltip',
+    'Vytvoriť novú skupinovú konverzáciu. Pozvaní používatelia musia pozvánku potvrdiť v správach.',
+  );
 
   return (
     <div className="flex h-full flex-col bg-white dark:bg-black border-l border-gray-200 dark:border-gray-800">
@@ -23,10 +27,12 @@ export function MessagesDesktopRail({
         <button
           type="button"
           onClick={() => window.dispatchEvent(new Event(MESSAGING_CREATE_GROUP_OPEN_EVENT))}
-          className="inline-flex h-9 w-9 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-gray-100 hover:text-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-400/50 dark:text-gray-400 dark:hover:bg-gray-900 dark:hover:text-purple-200"
-          aria-label={t('messages.createGroupAction', 'Vytvoriť skupinu')}
+          title={createGroupTooltip}
+          className="inline-flex h-9 items-center justify-center gap-0.5 rounded-full px-2.5 text-gray-500 transition-colors hover:bg-gray-100 hover:text-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-400/50 dark:text-gray-400 dark:hover:bg-gray-900 dark:hover:text-purple-200"
+          aria-label={createGroupTooltip}
         >
-          <UserGroupIcon className="h-5 w-5" />
+          <PlusIcon className="h-4 w-4 shrink-0" strokeWidth={2.25} />
+          <UserGroupIcon className="h-5 w-5 shrink-0" />
         </button>
       </div>
 

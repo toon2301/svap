@@ -7,6 +7,7 @@ import Sidebar from './Sidebar';
 import RightSidebar from './RightSidebar';
 import MobileTopNav from './MobileTopNav';
 import MobileTopBar from './MobileTopBar';
+import type { MessagingUserBrief } from './modules/messages/types';
 
 interface DashboardLayoutProps {
   activeModule: string;
@@ -34,6 +35,8 @@ interface DashboardLayoutProps {
   mobileAccountName?: string;
   mobileMessagePeerName?: string;
   mobileMessagePeerAvatarUrl?: string | null;
+  mobileMessagePeerAvatarMembers?: MessagingUserBrief[];
+  mobileMessagePeerIsGroup?: boolean;
   mobileMessagePeerIdentifier?: string | null;
   isMobileMessageConversationOpen?: boolean;
   onMobileMessagesBack?: () => void;
@@ -66,6 +69,8 @@ export default function DashboardLayout({
   mobileAccountName,
   mobileMessagePeerName,
   mobileMessagePeerAvatarUrl,
+  mobileMessagePeerAvatarMembers,
+  mobileMessagePeerIsGroup,
   mobileMessagePeerIdentifier,
   isMobileMessageConversationOpen,
   onMobileMessagesBack,
@@ -179,6 +184,8 @@ export default function DashboardLayout({
           accountName={mobileAccountName}
           messagePeerName={mobileMessagePeerName}
           messagePeerAvatarUrl={mobileMessagePeerAvatarUrl}
+          messagePeerAvatarMembers={mobileMessagePeerAvatarMembers}
+          messagePeerIsGroup={mobileMessagePeerIsGroup}
           messagePeerIdentifier={mobileMessagePeerIdentifier}
           isMessageConversationOpen={isMobileMessageConversationOpen}
           onMessagesBackClick={onMobileMessagesBack}
@@ -286,8 +293,8 @@ export default function DashboardLayout({
           >
             <div
               className={`w-full ${
-                activeModule === 'offer-reviews' || activeModule === 'favorites'
-                  ? '' // žiadne centrovanie pre recenzie a obľúbené
+                activeModule === 'offer-reviews'
+                  ? '' // recenzie: obsah od kraja po kraj (taby)
                   : 'mx-auto'
               } ${
                 (activeModule === 'profile' && !isProfileEditMode) ||

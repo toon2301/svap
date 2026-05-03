@@ -1035,7 +1035,6 @@ class GroupConversationCreateView(APIView):
                 actor=request.user,
                 name=serializer.validated_data["name"],
                 invited_user_ids=serializer.validated_data.get("invited_user_ids") or [],
-                avatar=serializer.validated_data.get("avatar"),
             )
         except Exception as exc:
             return _group_error_response(exc)
@@ -1076,8 +1075,6 @@ class GroupConversationDetailView(APIView):
                 conversation=convo,
                 actor=request.user,
                 name=serializer.validated_data.get("name"),
-                avatar=serializer.validated_data.get("avatar"),
-                clear_avatar=serializer.validated_data.get("clear_avatar", False),
             )
         except Exception as exc:
             return _group_error_response(exc)

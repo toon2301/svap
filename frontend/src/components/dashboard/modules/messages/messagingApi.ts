@@ -29,36 +29,12 @@ function normalizeConversationSearchQuery(value?: string): string {
   return typeof value === 'string' ? value.trim().replace(/\s+/g, ' ') : '';
 }
 
-function buildGroupConversationRequestData(
-  payload: GroupConversationCreatePayload | GroupConversationUpdatePayload,
-) {
-  const hasAvatar = payload.avatar instanceof File;
-  if (!hasAvatar) {
-    return payload;
-  }
-
-  const formData = new FormData();
-  Object.entries(payload).forEach(([key, value]) => {
-    if (value === undefined || value === null) return;
-    if (key === 'invited_user_ids' && Array.isArray(value)) {
-      value.forEach((id) => formData.append('invited_user_ids', String(id)));
-      return;
-    }
-    if (value instanceof File) {
-      formData.append(key, value, value.name);
-      return;
-    }
-    formData.append(key, String(value));
-  });
-  return formData;
-}
-
 export async function createGroupConversation(
   payload: GroupConversationCreatePayload,
 ): Promise<ConversationListItem> {
   const { data } = await api.post<ConversationListItem>(
     '/auth/messaging/conversations/groups/',
-    buildGroupConversationRequestData(payload),
+    payload,
   );
   return data;
 }
@@ -69,7 +45,7 @@ export async function updateGroupConversation(
 ): Promise<ConversationListItem> {
   const { data } = await api.patch<ConversationListItem>(
     `/auth/messaging/conversations/${conversationId}/group/`,
-    buildGroupConversationRequestData(payload),
+    payload,
   );
   return data;
 }

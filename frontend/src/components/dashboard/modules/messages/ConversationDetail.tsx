@@ -89,7 +89,7 @@ export function ConversationDetail({
       isGroupConversation ? 'Skupina' : 'Používateľ',
     );
   const targetUserAvatarUrl = isGroupConversation
-    ? thread.otherConversation?.avatar_url ?? null
+    ? null
     : thread.otherConversation?.other_user?.avatar_url ?? null;
   const targetUserType = isGroupConversation ? null : thread.otherConversation?.other_user?.user_type ?? null;
   const canCreateRequestFromOffer =

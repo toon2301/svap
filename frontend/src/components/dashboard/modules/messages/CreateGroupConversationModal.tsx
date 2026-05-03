@@ -22,7 +22,6 @@ export function CreateGroupConversationModal({
   const { t } = useLanguage();
   const [name, setName] = useState('');
   const [selectedMembers, setSelectedMembers] = useState<GroupMemberCandidate[]>([]);
-  const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!open) return null;
@@ -45,12 +44,10 @@ export function CreateGroupConversationModal({
       const conversation = await createGroupConversation({
         name: cleanName,
         invited_user_ids: selectedMembers.map((member) => member.id),
-        avatar: avatarFile,
       });
       onCreated(conversation);
       setName('');
       setSelectedMembers([]);
-      setAvatarFile(null);
       onClose();
       toast.success(t('messages.groupCreated', 'Skupina bola vytvorená.'));
     } catch (error) {
@@ -66,8 +63,8 @@ export function CreateGroupConversationModal({
 
   return (
     <div className="fixed inset-0 z-[120] bg-black/45" role="dialog" aria-modal="true">
-      <div className="absolute inset-x-0 bottom-0 max-h-[92dvh] overflow-hidden rounded-t-3xl border border-gray-200 bg-white shadow-2xl dark:border-gray-800 dark:bg-[#0f0f10] sm:left-1/2 sm:top-1/2 sm:bottom-auto sm:max-w-lg sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-3xl">
-        <div className="flex items-start justify-between gap-3 border-b border-gray-200 p-5 dark:border-gray-800">
+      <div className="absolute inset-x-0 bottom-0 flex h-[92dvh] max-h-[92dvh] flex-col overflow-hidden rounded-t-3xl border border-gray-200 bg-white shadow-2xl dark:border-gray-800 dark:bg-[#0f0f10] sm:left-1/2 sm:top-1/2 sm:bottom-auto sm:h-auto sm:max-w-lg sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-3xl">
+        <div className="flex shrink-0 items-start justify-between gap-3 border-b border-gray-200 p-5 dark:border-gray-800">
           <div>
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
               {t('messages.createGroupTitle', 'Nová skupina')}
@@ -90,52 +87,39 @@ export function CreateGroupConversationModal({
           </button>
         </div>
 
-        <form className="max-h-[calc(92dvh-5.5rem)] space-y-4 overflow-y-auto p-5" onSubmit={handleSubmit}>
-          <label className="block">
-            <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
-              {t('messages.groupNameLabel', 'Názov skupiny')}
-            </span>
-            <input
-              value={name}
-              maxLength={120}
-              onChange={(event) => setName(event.target.value)}
-              disabled={isSubmitting}
-              className="mt-1 w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-200 disabled:opacity-60 dark:border-gray-800 dark:bg-black dark:text-white dark:focus:ring-purple-900/40"
-              placeholder={t('messages.groupNamePlaceholder', 'Napr. Projektový tím')}
-            />
-          </label>
+        <form
+          className="flex min-h-0 flex-1 flex-col overflow-hidden sm:max-h-[calc(92dvh-5.5rem)] sm:flex-none"
+          onSubmit={handleSubmit}
+        >
+          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-5">
+            <label className="block">
+              <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                {t('messages.groupNameLabel', 'Názov skupiny')}
+              </span>
+              <input
+                value={name}
+                maxLength={120}
+                onChange={(event) => setName(event.target.value)}
+                disabled={isSubmitting}
+                className="mt-1 w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-200 disabled:opacity-60 dark:border-gray-800 dark:bg-black dark:text-white dark:focus:ring-purple-900/40"
+                placeholder={t('messages.groupNamePlaceholder', 'Napr. Projektový tím')}
+              />
+            </label>
 
-          <label className="block">
-            <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
-              {t('messages.groupAvatarLabel', 'Profilová fotka skupiny')}
-            </span>
-            <input
-              type="file"
-              accept="image/*"
-              disabled={isSubmitting}
-              onChange={(event) => setAvatarFile(event.target.files?.[0] ?? null)}
-              className="mt-1 w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none file:mr-3 file:rounded-xl file:border-0 file:bg-purple-50 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-purple-700 hover:file:bg-purple-100 disabled:opacity-60 dark:border-gray-800 dark:bg-black dark:text-white dark:file:bg-purple-900/30 dark:file:text-purple-100"
-            />
-            <span className="mt-1 block text-xs text-gray-500 dark:text-gray-400">
-              {avatarFile
-                ? t('messages.groupAvatarSelected', 'Vybrané: {name}').replace('{name}', avatarFile.name)
-                : t('messages.groupAvatarHint', 'Voliteľné. Bez fotky sa zobrazia fotky členov.')}
-            </span>
-          </label>
-
-          <div>
-            <div className="mb-2 text-sm font-medium text-gray-800 dark:text-gray-200">
-              {t('messages.groupMembersToInvite', 'Členovia na pozvanie')}
+            <div>
+              <div className="mb-2 text-sm font-medium text-gray-800 dark:text-gray-200">
+                {t('messages.groupMembersToInvite', 'Členovia na pozvanie')}
+              </div>
+              <GroupUserPicker
+                selectedUsers={selectedMembers}
+                onSelectedUsersChange={setSelectedMembers}
+                maxSelected={49}
+                disabled={isSubmitting}
+              />
             </div>
-            <GroupUserPicker
-              selectedUsers={selectedMembers}
-              onSelectedUsersChange={setSelectedMembers}
-              maxSelected={49}
-              disabled={isSubmitting}
-            />
           </div>
 
-          <div className="flex gap-3 pt-1">
+          <div className="flex shrink-0 gap-3 border-t border-gray-200 bg-white p-5 pt-3 dark:border-gray-800 dark:bg-[#0f0f10]">
             <button
               type="button"
               onClick={handleClose}

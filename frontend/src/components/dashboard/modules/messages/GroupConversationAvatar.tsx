@@ -8,7 +8,6 @@ import type { MessagingUserBrief } from './types';
 
 type GroupConversationAvatarProps = {
   name: string;
-  avatarUrl?: string | null;
   members?: MessagingUserBrief[];
   size?: 'sm' | 'md' | 'lg';
 };
@@ -25,19 +24,10 @@ function initials(value: string): string {
 
 export function GroupConversationAvatar({
   name,
-  avatarUrl = null,
   members = [],
   size = 'md',
 }: GroupConversationAvatarProps) {
   const visibleMembers = members.slice(0, 3);
-
-  if (avatarUrl) {
-    return (
-      <div className={`overflow-hidden rounded-full bg-purple-100 dark:bg-purple-900/40 ${sizeClasses[size]}`}>
-        <img src={avatarUrl} alt={name} className="h-full w-full object-cover" />
-      </div>
-    );
-  }
 
   if (visibleMembers.length === 0) {
     return (

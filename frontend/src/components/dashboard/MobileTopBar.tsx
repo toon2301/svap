@@ -3,7 +3,9 @@
 import React from 'react';
 import { Bars3Icon, HeartIcon, UserCircleIcon } from '@heroicons/react/24/outline';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { GroupConversationAvatar } from './modules/messages/GroupConversationAvatar';
 import { requestOpenConversationActions } from './modules/messages/messagesEvents';
+import type { MessagingUserBrief } from './modules/messages/types';
 
 interface MobileTopBarProps {
   onMenuClick: () => void;
@@ -18,6 +20,8 @@ interface MobileTopBarProps {
   accountName?: string;
   messagePeerName?: string;
   messagePeerAvatarUrl?: string | null;
+  messagePeerAvatarMembers?: MessagingUserBrief[];
+  messagePeerIsGroup?: boolean;
   messagePeerIdentifier?: string | null;
   isMessageConversationOpen?: boolean;
   onMessagesBackClick?: () => void;
@@ -36,6 +40,8 @@ export default function MobileTopBar({
   accountName,
   messagePeerName,
   messagePeerAvatarUrl,
+  messagePeerAvatarMembers = [],
+  messagePeerIsGroup = false,
   messagePeerIdentifier,
   isMessageConversationOpen = false,
   onMessagesBackClick,
@@ -157,7 +163,13 @@ export default function MobileTopBar({
                 aria-label={t('messages.openPeerProfile', 'Otvoriť profil používateľa')}
               >
                 <div className="h-9 w-9 flex-shrink-0 overflow-hidden rounded-full bg-purple-100 dark:bg-purple-900/40">
-                  {messagePeerAvatarUrl ? (
+                  {messagePeerIsGroup ? (
+                    <GroupConversationAvatar
+                      name={messagePeerName || t('messages.unknownGroup', 'Skupina')}
+                      members={messagePeerAvatarMembers}
+                      size="sm"
+                    />
+                  ) : messagePeerAvatarUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={messagePeerAvatarUrl}

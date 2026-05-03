@@ -139,12 +139,9 @@ export type PinMessageResult = {
 export type GroupConversationCreatePayload = {
   name: string;
   invited_user_ids?: number[];
-  avatar?: File | null;
 };
 
 export type GroupConversationUpdatePayload = {
   name?: string;
-  avatar?: File | null;
-  clear_avatar?: boolean;
 };
 

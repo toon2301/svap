@@ -186,7 +186,7 @@ export default function FavoritesModule() {
                   <button
                     type="button"
                     onClick={() => handleOpenMessages(favoriteUser)}
-                    className="w-full rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="w-full rounded-lg border border-purple-200 bg-purple-100 px-4 py-2.5 text-sm font-semibold text-purple-800 transition-colors hover:bg-purple-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 disabled:cursor-not-allowed disabled:opacity-60 dark:border-purple-800/60 dark:bg-purple-900/40 dark:text-purple-100 dark:hover:bg-purple-900/60 dark:focus-visible:ring-purple-500/40"
                   >
                     {t('skills.message', 'Sprava')}
                   </button>

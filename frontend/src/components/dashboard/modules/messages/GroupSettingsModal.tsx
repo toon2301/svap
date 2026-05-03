@@ -31,16 +31,12 @@ export function GroupSettingsModal({
 }) {
   const { t } = useLanguage();
   const [name, setName] = useState(conversation?.name || '');
-  const [avatarFile, setAvatarFile] = useState<File | null>(null);
-  const [clearAvatar, setClearAvatar] = useState(false);
   const [busy, setBusy] = useState(false);
   const [busyUserId, setBusyUserId] = useState<number | null>(null);
   const [pickerVersion, setPickerVersion] = useState(0);
 
   React.useEffect(() => {
     setName(conversation?.name || '');
-    setAvatarFile(null);
-    setClearAvatar(false);
     setPickerVersion((current) => current + 1);
   }, [conversation?.id, conversation?.name]);
 
@@ -58,11 +54,7 @@ export function GroupSettingsModal({
     try {
       await updateGroupConversation(conversation.id, {
         name: cleanName,
-        avatar: avatarFile,
-        clear_avatar: clearAvatar,
       });
-      setAvatarFile(null);
-      setClearAvatar(false);
       toast.success(t('messages.groupUpdated', 'Skupina bola upravená.'));
       onUpdated();
     } catch (error) {
@@ -182,43 +174,6 @@ export function GroupSettingsModal({
                   className="mt-1 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-200 dark:border-gray-800 dark:bg-black dark:text-white dark:focus:ring-purple-900/40"
                 />
               </label>
-
-              <label className="block text-sm font-medium text-gray-800 dark:text-gray-200">
-                {t('messages.groupAvatarLabel', 'Profilová fotka skupiny')}
-                <input
-                  type="file"
-                  accept="image/*"
-                  disabled={busy}
-                  onChange={(event) => {
-                    setAvatarFile(event.target.files?.[0] ?? null);
-                    setClearAvatar(false);
-                  }}
-                  className="mt-1 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none file:mr-3 file:rounded-lg file:border-0 file:bg-purple-50 file:px-2.5 file:py-1.5 file:text-xs file:font-semibold file:text-purple-700 hover:file:bg-purple-100 disabled:opacity-60 dark:border-gray-800 dark:bg-black dark:text-white dark:file:bg-purple-900/30 dark:file:text-purple-100"
-                />
-              </label>
-
-              <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-                <span>
-                  {avatarFile
-                    ? t('messages.groupAvatarSelected', 'Vybrané: {name}').replace('{name}', avatarFile.name)
-                    : clearAvatar
-                      ? t('messages.groupAvatarWillBeRemoved', 'Fotka bude odstránená.')
-                      : t('messages.groupAvatarHint', 'Voliteľné. Bez fotky sa zobrazia fotky členov.')}
-                </span>
-                {conversation.avatar_url || avatarFile ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setAvatarFile(null);
-                      setClearAvatar(Boolean(conversation.avatar_url));
-                    }}
-                    disabled={busy}
-                    className="rounded-full bg-gray-100 px-3 py-1 font-semibold text-gray-700 hover:bg-gray-200 disabled:opacity-60 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
-                  >
-                    {t('messages.groupAvatarRemove', 'Odstrániť fotku')}
-                  </button>
-                ) : null}
-              </div>
 
               <button
                 type="button"

@@ -46,7 +46,6 @@ export function ConversationDetailHeader({
               {isGroup ? (
                 <GroupConversationAvatar
                   name={targetUserName}
-                  avatarUrl={avatarUrl}
                   members={avatarMembers}
                   size="md"
                 />

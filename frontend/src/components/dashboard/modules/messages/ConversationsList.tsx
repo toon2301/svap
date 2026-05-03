@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ChatBubbleLeftRightIcon, UserGroupIcon } from '@heroicons/react/24/outline';
+import { ChatBubbleLeftRightIcon, PlusIcon, UserGroupIcon } from '@heroicons/react/24/outline';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useIsMobile } from '@/hooks';
 import { ensureFreshSessionForBackgroundWork } from '@/lib/api';
@@ -416,16 +416,38 @@ export function ConversationsList({
 
   return (
     <div className={wrapperClassName}>
-      <div className={`${isRail ? 'px-3' : 'px-3'} mb-3 flex justify-end`}>
-        <button
-          type="button"
-          onClick={() => setIsCreateGroupOpen(true)}
-          className="inline-flex items-center gap-2 rounded-2xl border border-purple-200 bg-purple-50 px-3 py-2 text-xs font-semibold text-purple-700 transition-colors hover:bg-purple-100 dark:border-purple-800/60 dark:bg-purple-900/20 dark:text-purple-200 dark:hover:bg-purple-900/35"
+      {!isRail ? (
+        <div
+          className={
+            isMobile && !isCompact
+              ? 'mx-3 mt-4 mb-1'
+              : 'mb-3 flex justify-end px-3'
+          }
         >
-          <UserGroupIcon className="h-4 w-4" />
-          {t('messages.createGroupShort', 'Skupina')}
-        </button>
-      </div>
+          <button
+            type="button"
+            onClick={() => setIsCreateGroupOpen(true)}
+            className={
+              isMobile && !isCompact
+                ? 'inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-gray-300 bg-white px-3 py-2.5 text-sm font-semibold text-gray-500 transition-colors hover:bg-gray-100 hover:text-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-400/50 dark:border-gray-700 dark:bg-black dark:text-gray-400 dark:hover:bg-gray-900 dark:hover:text-purple-200'
+                : 'inline-flex items-center gap-2 rounded-2xl border border-purple-200 bg-purple-50 px-3 py-2 text-xs font-semibold text-purple-700 transition-colors hover:bg-purple-100 dark:border-purple-800/60 dark:bg-purple-900/20 dark:text-purple-200 dark:hover:bg-purple-900/35'
+            }
+          >
+            {isMobile && !isCompact ? (
+              <>
+                <PlusIcon className="h-4 w-4 shrink-0" strokeWidth={2.25} />
+                <UserGroupIcon className="h-5 w-5 shrink-0" />
+                {t('messages.createGroupMobileCta', 'Vytvoriť skupinový chat')}
+              </>
+            ) : (
+              <>
+                <UserGroupIcon className="h-4 w-4" />
+                {t('messages.createGroupShort', 'Skupina')}
+              </>
+            )}
+          </button>
+        </div>
+      ) : null}
       {shouldRenderSearch ? (
         <ConversationsListSearchInput
           value={searchQuery}
@@ -434,7 +456,7 @@ export function ConversationsList({
           clearLabel={t('search.clearSearch', 'Vyčistiť vyhľadávanie')}
           className={
             isMobile && !isCompact
-              ? 'sticky top-0 z-20 mx-3 pt-3 pb-2 bg-white/95 backdrop-blur dark:bg-black/95'
+              ? 'sticky top-0 z-20 mx-3 pt-1 pb-2 bg-white/95 backdrop-blur dark:bg-black/95'
               : ''
           }
           inputRef={searchInputRef}

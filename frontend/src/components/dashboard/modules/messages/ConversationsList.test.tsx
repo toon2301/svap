@@ -773,7 +773,6 @@ describe('ConversationsList', () => {
       expect(createGroupConversation).toHaveBeenCalledWith({
         name: 'Nová skupina',
         invited_user_ids: [2, 3],
-        avatar: null,
       });
     });
   });

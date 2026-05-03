@@ -91,7 +91,7 @@ export default function DashboardContent({
   const [mobileMessagePeer, setMobileMessagePeer] = useState<MessagingUserBrief | null>(null);
   const [mobileMessageGroup, setMobileMessageGroup] = useState<{
     name: string;
-    avatarUrl: string | null;
+    avatarMembers: MessagingUserBrief[];
   } | null>(null);
   const skillsCategoryBackHandlerRef = useRef<(() => void) | null>(null);
 
@@ -283,7 +283,7 @@ export default function DashboardContent({
           setMobileMessagePeer(null);
           setMobileMessageGroup({
             name: (match.name || '').trim() || t('messages.unknownGroup', 'Skupina'),
-            avatarUrl: match.avatar_url ?? null,
+            avatarMembers: match.avatar_members ?? [],
           });
         } else {
           setMobileMessagePeer(match?.other_user ?? null);
@@ -584,7 +584,7 @@ export default function DashboardContent({
     (mobileMessagePeer?.slug || '').trim() ||
     (typeof mobileMessagePeer?.id === 'number' ? String(mobileMessagePeer.id) : null);
   const mobileMessageTitle = mobileMessageGroup?.name || (mobileMessagePeer?.display_name || '').trim() || undefined;
-  const mobileMessageAvatarUrl = mobileMessageGroup?.avatarUrl ?? mobileMessagePeer?.avatar_url ?? null;
+  const mobileMessageAvatarUrl = mobileMessageGroup ? null : mobileMessagePeer?.avatar_url ?? null;
 
   return (
     <RequestsNotificationsProvider>
@@ -635,6 +635,8 @@ export default function DashboardContent({
         mobileAccountName={mobileAccountName}
         mobileMessagePeerName={mobileMessageTitle}
         mobileMessagePeerAvatarUrl={mobileMessageAvatarUrl}
+        mobileMessagePeerAvatarMembers={mobileMessageGroup?.avatarMembers ?? []}
+        mobileMessagePeerIsGroup={Boolean(mobileMessageGroup)}
         mobileMessagePeerIdentifier={mobileMessageGroup ? null : mobileMessagePeerIdentifier}
         isMobileMessageConversationOpen={Boolean(
           activeModule === 'messages' &&

@@ -12,6 +12,18 @@ from ..models import Conversation, ConversationParticipant, GroupInvitation, Mes
 User = get_user_model()
 
 
+def _reject_group_avatar_fields(serializer):
+    data = getattr(serializer, "initial_data", {}) or {}
+    blocked_fields = [field for field in ("avatar", "clear_avatar") if field in data]
+    if blocked_fields:
+        raise serializers.ValidationError(
+            {
+                field: "Group avatar is not supported."
+                for field in blocked_fields
+            }
+        )
+
+
 class OpenConversationSerializer(serializers.Serializer):
     target_user_id = serializers.IntegerField(min_value=1)
 
@@ -37,25 +49,30 @@ class GroupConversationCreateSerializer(serializers.Serializer):
         allow_empty=True,
         max_length=49,
     )
-    avatar = serializers.ImageField(required=False, allow_null=True)
 
     def validate_name(self, value):
         clean = (value or "").strip()
         if not clean:
             raise serializers.ValidationError("Názov skupiny je povinný.")
         return clean
+
+    def validate(self, attrs):
+        _reject_group_avatar_fields(self)
+        return attrs
 
 
 class GroupConversationUpdateSerializer(serializers.Serializer):
     name = serializers.CharField(max_length=120, trim_whitespace=True, required=False)
-    avatar = serializers.ImageField(required=False, allow_null=True)
-    clear_avatar = serializers.BooleanField(required=False, default=False)
 
     def validate_name(self, value):
         clean = (value or "").strip()
         if not clean:
             raise serializers.ValidationError("Názov skupiny je povinný.")
         return clean
+
+    def validate(self, attrs):
+        _reject_group_avatar_fields(self)
+        return attrs
 
 
 class GroupInviteSerializer(serializers.Serializer):
@@ -188,15 +205,7 @@ class ConversationListItemSerializer(serializers.ModelSerializer):
         return serialize_user_brief(other, request)
 
     def get_avatar_url(self, obj: Conversation):
-        if not getattr(obj, "is_group", False):
-            return None
-        request = self.context.get("request")
-        try:
-            if obj.avatar and hasattr(obj.avatar, "url"):
-                url = obj.avatar.url
-                return request.build_absolute_uri(url) if request else url
-        except Exception:
-            return None
+        # Group avatars are always composed from member avatars on the client.
         return None
 
     def get_avatar_members(self, obj: Conversation):
