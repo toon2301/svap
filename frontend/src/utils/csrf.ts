@@ -5,6 +5,7 @@
 import axios from 'axios';
 import Cookies from 'js-cookie';
 import { buildApiUrl } from '@/lib/apiUrl';
+import { logClientError } from '@/utils/clientLogging';
 
 /** Pri cross-origin (frontend ≠ backend) cookie csrftoken nie je čitateľná – držíme token z response body. */
 let csrfTokenFromResponse: string | null = null;
@@ -22,7 +23,7 @@ export const fetchCsrfToken = async (): Promise<void> => {
     const token = res?.data?.csrf_token;
     if (token) csrfTokenFromResponse = token;
   } catch (error) {
-    console.error('Chyba pri získavaní CSRF tokenu:', error);
+    logClientError('CSRF token fetch failed', error);
   }
 };
 

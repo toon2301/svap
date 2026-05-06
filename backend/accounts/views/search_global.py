@@ -7,7 +7,7 @@ Global public search endpoint:
 from __future__ import annotations
 
 from django.contrib.auth import get_user_model
-from django.db.models import Case, IntegerField, Q, Value, When
+from django.db.models import Avg, Case, Count, IntegerField, Q, Value, When
 from rest_framework import serializers, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
@@ -182,6 +182,7 @@ def global_search_view(request):
         offers_qs = (
             OfferedSkill.objects.filter(is_hidden=False, user__is_active=True, user__is_public=True)
             .select_related("user")
+            .prefetch_related("images")
         )
         if q:
             offers_qs = offers_qs.filter(
@@ -192,6 +193,8 @@ def global_search_view(request):
                 | Q(tags__icontains=q)
             )
         offers_qs = offers_qs.annotate(
+            _avg_rating=Avg("reviews__rating"),
+            _reviews_count=Count("reviews", distinct=True),
             relevance_score=(
                 Case(When(tags__icontains=q, then=Value(3)), default=Value(0), output_field=IntegerField())
                 + Case(

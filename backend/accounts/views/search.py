@@ -5,7 +5,7 @@ Isolated public search endpoint (no coupling to existing search views).
 from decimal import Decimal, InvalidOperation
 
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
-from django.db.models import Avg, Case, ExpressionWrapper, FloatField, IntegerField, Q, Value, When
+from django.db.models import Avg, Case, Count, ExpressionWrapper, FloatField, IntegerField, Q, Value, When
 from django.db.models.functions import Coalesce
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
@@ -15,6 +15,7 @@ from rest_framework.response import Response
 from ..models import OfferedSkill
 from ..serializers import OfferedSkillSearchSerializer
 from .dashboard_views.utils import _build_accent_insensitive_pattern, _sanitize_search_term
+from swaply.rate_limiting import api_rate_limit
 
 
 def _parse_decimal(value: str | None) -> Decimal | None:
@@ -38,13 +39,25 @@ def _invalid_param():
 
 @api_view(["GET"])
 @permission_classes([AllowAny])
+@api_rate_limit
 def search_view(request):
     """
     GET /api/auth/search/
     """
     qs = (
-        OfferedSkill.objects.filter(is_hidden=False)
+        OfferedSkill.objects.filter(
+            is_hidden=False,
+            user__is_active=True,
+            user__is_public=True,
+            user__is_staff=False,
+            user__is_superuser=False,
+        )
         .select_related("user")
+        .prefetch_related("images")
+        .annotate(
+            _avg_rating=Avg("reviews__rating"),
+            _reviews_count=Count("reviews", distinct=True),
+        )
     )
     if request.user and request.user.is_authenticated:
         qs = qs.exclude(user_id=request.user.id)

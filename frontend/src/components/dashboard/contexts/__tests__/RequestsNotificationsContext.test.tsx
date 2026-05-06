@@ -4,6 +4,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import {
   RequestsNotificationsProvider,
   useMessagesNotifications,
+  useNotificationsUnread,
   useRequestsNotifications,
 } from '../RequestsNotificationsContext';
 import {
@@ -56,6 +57,11 @@ function Consumer() {
 function MessageConsumer() {
   const { unreadCount } = useMessagesNotifications();
   return <div data-testid="message-count">{String(unreadCount)}</div>;
+}
+
+function NotificationConsumer() {
+  const { unreadCount } = useNotificationsUnread();
+  return <div data-testid="notification-count">{String(unreadCount)}</div>;
 }
 
 class MockWebSocket {
@@ -167,14 +173,15 @@ describe('RequestsNotificationsProvider', () => {
     delete (globalThis as typeof globalThis & { __SWAPLY_REQ_WS_STORE__?: unknown }).__SWAPLY_REQ_WS_STORE__;
     delete (globalThis as typeof globalThis & { __SWAPLY_REQ_UNREAD_STORE__?: unknown }).__SWAPLY_REQ_UNREAD_STORE__;
     delete (globalThis as typeof globalThis & { __SWAPLY_MSG_UNREAD_STORE__?: unknown }).__SWAPLY_MSG_UNREAD_STORE__;
+    delete (globalThis as typeof globalThis & { __SWAPLY_NOTIF_UNREAD_STORE__?: unknown }).__SWAPLY_NOTIF_UNREAD_STORE__;
     delete (globalThis as typeof globalThis & { __SWAPLY_MSG_AUDIO__?: unknown }).__SWAPLY_MSG_AUDIO__;
     delete (globalThis as typeof globalThis & { __SWAPLY_MSG_AUDIO_CTX__?: unknown }).__SWAPLY_MSG_AUDIO_CTX__;
     delete (globalThis as typeof globalThis & { __SWAPLY_MSG_AUDIO_BUFFER__?: unknown }).__SWAPLY_MSG_AUDIO_BUFFER__;
     delete (globalThis as typeof globalThis & { __SWAPLY_MSG_AUDIO_BUFFER_PROMISE__?: unknown }).__SWAPLY_MSG_AUDIO_BUFFER_PROMISE__;
     delete (globalThis as typeof globalThis & { __SWAPLY_MSG_AUDIO_PRIMER_INSTALLED__?: unknown }).__SWAPLY_MSG_AUDIO_PRIMER_INSTALLED__;
-    mockApiGet.mockImplementation((url: string) => {
+    mockApiGet.mockImplementation((url: string, config?: { params?: { type?: string } }) => {
       if (String(url).includes('/auth/notifications/unread-count/')) {
-        return Promise.resolve({ data: { count: 4 } });
+        return Promise.resolve({ data: { count: config?.params?.type === 'all' ? 5 : 4 } });
       }
       if (String(url).includes('/auth/messaging/conversations/unread-summary/')) {
         return Promise.resolve({ data: { count: 3 } });
@@ -205,7 +212,7 @@ describe('RequestsNotificationsProvider', () => {
     await flushAsyncEffects();
 
     await waitFor(() => {
-      expect(mockApiGet).toHaveBeenCalledTimes(2);
+      expect(mockApiGet).toHaveBeenCalledTimes(3);
       expect(screen.getByTestId('count')).toHaveTextContent('4');
       expect(screen.getByTestId('message-count')).toHaveTextContent('3');
     });
@@ -213,17 +220,48 @@ describe('RequestsNotificationsProvider', () => {
     act(() => {
       jest.advanceTimersByTime(10000);
     });
-    expect(mockApiGet).toHaveBeenCalledTimes(2);
+    expect(mockApiGet).toHaveBeenCalledTimes(3);
 
     act(() => {
       jest.advanceTimersByTime(10000);
     });
 
     await waitFor(() => {
-      expect(mockApiGet).toHaveBeenCalledTimes(4);
+      expect(mockApiGet).toHaveBeenCalledTimes(6);
     });
     expect(screen.getByTestId('count')).toHaveTextContent('4');
     expect(screen.getByTestId('message-count')).toHaveTextContent('3');
+  });
+
+  it('keeps the general notifications unread count reactive from websocket payloads', async () => {
+    render(
+      <RequestsNotificationsProvider>
+        <NotificationConsumer />
+      </RequestsNotificationsProvider>,
+    );
+    await flushAsyncEffects();
+
+    await waitFor(() => {
+      expect(screen.getByTestId('notification-count')).toHaveTextContent('5');
+    });
+
+    act(() => {
+      MockWebSocket.instances[0].emitMessage({
+        type: 'notification_created',
+        unread_count: 12,
+      });
+    });
+
+    expect(screen.getByTestId('notification-count')).toHaveTextContent('12');
+
+    act(() => {
+      MockWebSocket.instances[0].emitMessage({
+        type: 'notification_read',
+        unread_count: 0,
+      });
+    });
+
+    expect(screen.getByTestId('notification-count')).toHaveTextContent('0');
   });
 
   it('skips polling requests while background auth refresh is transiently unavailable', async () => {
@@ -262,7 +300,7 @@ describe('RequestsNotificationsProvider', () => {
     );
     await flushAsyncEffects();
 
-    expect(mockApiGet).toHaveBeenCalledTimes(1);
+    expect(mockApiGet).toHaveBeenCalledTimes(2);
     expect(screen.getByTestId('count')).toHaveTextContent('7');
     expect(screen.getByTestId('message-count')).toHaveTextContent('3');
   });
@@ -276,7 +314,7 @@ describe('RequestsNotificationsProvider', () => {
     await flushAsyncEffects();
 
     await waitFor(() => {
-      expect(mockApiGet).toHaveBeenCalledTimes(2);
+      expect(mockApiGet).toHaveBeenCalledTimes(3);
     });
 
     expect(MockWebSocket.instances).toHaveLength(1);
@@ -285,13 +323,13 @@ describe('RequestsNotificationsProvider', () => {
       MockWebSocket.instances[0].emitOpen();
     });
 
-    expect(mockApiGet).toHaveBeenCalledTimes(2);
+    expect(mockApiGet).toHaveBeenCalledTimes(3);
 
     act(() => {
       jest.advanceTimersByTime(30000);
     });
 
-    expect(mockApiGet).toHaveBeenCalledTimes(2);
+    expect(mockApiGet).toHaveBeenCalledTimes(3);
   });
 
   it('keeps websocket same-origin when api uses relative proxy paths', async () => {
@@ -343,14 +381,14 @@ describe('RequestsNotificationsProvider', () => {
     );
     await flushAsyncEffects();
 
-    expect(mockApiGet).toHaveBeenCalledTimes(2);
+    expect(mockApiGet).toHaveBeenCalledTimes(3);
 
     act(() => {
       window.dispatchEvent(new Event('focus'));
       document.dispatchEvent(new Event('visibilitychange'));
     });
 
-    expect(mockApiGet).toHaveBeenCalledTimes(2);
+    expect(mockApiGet).toHaveBeenCalledTimes(3);
 
     await act(async () => {
       pending.resolve({ data: { count: 9 } });
@@ -387,7 +425,7 @@ describe('RequestsNotificationsProvider', () => {
     });
 
     await waitFor(() => {
-      expect(mockApiGet).toHaveBeenCalledTimes(2);
+      expect(mockApiGet).toHaveBeenCalledTimes(3);
     });
   });
 
@@ -400,7 +438,7 @@ describe('RequestsNotificationsProvider', () => {
     await flushAsyncEffects();
 
     await waitFor(() => {
-      expect(mockApiGet).toHaveBeenCalledTimes(2);
+      expect(mockApiGet).toHaveBeenCalledTimes(3);
     });
 
     act(() => {
@@ -408,7 +446,7 @@ describe('RequestsNotificationsProvider', () => {
       document.dispatchEvent(new Event('visibilitychange'));
     });
 
-    expect(mockApiGet).toHaveBeenCalledTimes(2);
+    expect(mockApiGet).toHaveBeenCalledTimes(3);
   });
 
   it('does not refetch unread count after a fast provider remount', async () => {
@@ -420,7 +458,7 @@ describe('RequestsNotificationsProvider', () => {
     await flushAsyncEffects();
 
     await waitFor(() => {
-      expect(mockApiGet).toHaveBeenCalledTimes(2);
+      expect(mockApiGet).toHaveBeenCalledTimes(3);
       expect(screen.getByTestId('count')).toHaveTextContent('4');
     });
 
@@ -433,7 +471,7 @@ describe('RequestsNotificationsProvider', () => {
     );
     await flushAsyncEffects();
 
-    expect(mockApiGet).toHaveBeenCalledTimes(2);
+    expect(mockApiGet).toHaveBeenCalledTimes(3);
     expect(screen.getByTestId('count')).toHaveTextContent('4');
   });
 

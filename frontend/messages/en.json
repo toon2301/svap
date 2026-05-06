@@ -107,7 +107,8 @@
     "logout": "Logout",
     "search": "Search",
     "favorites": "Favorites",
-    "requests": "Requests"
+    "requests": "Requests",
+    "notifications": "Notifications"
   },
   "homepage": {
     "welcome": "Welcome to",
@@ -806,7 +807,35 @@
     "skillRequestDesc": "Turn notifications for skill requests on or off.",
     "on": "On",
     "off": "Off",
-    "turnOffAllDesc": "Temporarily disable all notifications"
+    "turnOffAllDesc": "Temporarily disable all notifications",
+    "preferencesTitle": "Notification settings",
+    "feedTitle": "Notifications",
+    "feedDescription": "Recent events and invitations that need your attention.",
+    "markAllRead": "Mark as read",
+    "retry": "Try again",
+    "loadingFeed": "Loading notifications...",
+    "emptyTitle": "You do not have any notifications yet",
+    "emptyDescription": "When something important happens, it will show up here.",
+    "loadFeedError": "Notifications could not be loaded.",
+    "markAllReadError": "Notifications could not be marked as read.",
+    "groupInvitationTitle": "Group invitation",
+    "groupInvitationBody": "{name} invited you to a group chat.",
+    "skillRequestFeedTitle": "New request",
+    "skillRequestAcceptedTitle": "Request accepted",
+    "skillRequestAcceptedBody": "{name} accepted your request.",
+    "skillRequestCompletionRequestedTitle": "Exchange marked as completed",
+    "skillRequestCompletionRequestedBody": "{name} marked the exchange as completed.",
+    "skillRequestCompletedTitle": "Exchange completion confirmed",
+    "skillRequestCompletedBody": "{name} confirmed the exchange completion.",
+    "reviewCreatedTitle": "New review",
+    "reviewCreatedBody": "{name} wrote a review on your card.",
+    "reviewReplyCreatedTitle": "Review reply",
+    "reviewReplyCreatedBody": "{name} replied to your review.",
+    "genericTitle": "New notification",
+    "genericBody": "Open the notification for more details.",
+    "unknownActor": "User",
+    "readLabel": "Read",
+    "unreadLabel": "Unread"
   },
   "skillsCatalog": {
     "categories": {

@@ -9,6 +9,7 @@ import {
 } from '@heroicons/react/24/outline';
 import {
   useMessagesNotifications,
+  useNotificationsUnread,
   useRequestsNotifications,
 } from './contexts/RequestsNotificationsContext';
 
@@ -20,6 +21,7 @@ interface MobileTopNavProps {
 export default function MobileTopNav({ activeItem, onItemClick }: MobileTopNavProps) {
   const { unreadCount } = useRequestsNotifications();
   const { unreadCount: messageUnreadCount } = useMessagesNotifications();
+  const { unreadCount: notificationsUnreadCount } = useNotificationsUnread();
   const navItems = [
     { id: 'home', icon: HomeIcon, label: 'Domov' },
     { id: 'search', icon: MagnifyingGlassIcon, label: 'Hľadať' },
@@ -64,6 +66,14 @@ export default function MobileTopNav({ activeItem, onItemClick }: MobileTopNavPr
                     aria-label={`${unreadCount} ${unreadCount === 1 ? 'nová žiadosť' : 'nové žiadosti'}`}
                   >
                     {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
+                {item.id === 'notifications' && activeItem !== 'notifications' && notificationsUnreadCount > 0 && (
+                  <span
+                    className="absolute right-0 top-0 z-10 flex h-4 min-w-[16px] -translate-y-1/2 translate-x-1/2 items-center justify-center rounded-full bg-purple-600 px-0.5 text-[10px] font-bold text-white"
+                    aria-hidden="true"
+                  >
+                    {notificationsUnreadCount > 99 ? '99+' : notificationsUnreadCount}
                   </span>
                 )}
               </span>

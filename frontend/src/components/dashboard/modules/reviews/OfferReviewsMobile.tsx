@@ -69,7 +69,7 @@ export type OfferReviewsMobileProps = {
   reviewsLoading: boolean;
   isOwnOffer: boolean;
   isBusinessOwner: boolean;
-  /** Z API detailu ponuky – môže pridať recenziu (accepted request, ešte nerecenzoval) */
+  /** Z API detailu ponuky – môže pridať recenziu (completed request, ešte nerecenzoval) */
   can_review: boolean;
   /** Z API detailu ponuky – už túto ponuku recenzoval */
   already_reviewed: boolean;
@@ -237,16 +237,12 @@ export function OfferReviewsMobile({
 
   return (
     <div className="w-full h-full space-y-0">
-      <style
-        dangerouslySetInnerHTML={{
-          __html: `
-            @keyframes reviews-marquee {
-              0%, 100% { transform: translateX(0); }
-              50% { transform: translateX(var(--marquee-distance, 0)); }
-            }
-          `,
-        }}
-      />
+      <style>{`
+        @keyframes reviews-marquee {
+          0%, 100% { transform: translateX(0); }
+          50% { transform: translateX(var(--marquee-distance, 0)); }
+        }
+      `}</style>
       <div className="px-4 pt-4 space-y-6">
           {/* Celkové hodnotenie na vrchu */}
           <div className="space-y-4">

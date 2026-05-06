@@ -6,6 +6,8 @@ from django.contrib.auth import get_user_model
 from django.db import transaction
 from django.utils import timezone
 
+from accounts.services.notifications import create_group_invitation_notification
+
 from ..models import Conversation, ConversationParticipant, GroupInvitation, Message
 from .push_enqueue import schedule_message_push_delivery
 
@@ -145,7 +147,13 @@ def create_group_conversation(
 
     users_by_id = {
         user.id: user
-        for user in User.objects.filter(id__in=unique_invited_ids, is_active=True)
+        for user in User.objects.filter(
+            id__in=unique_invited_ids,
+            is_active=True,
+            is_public=True,
+            is_staff=False,
+            is_superuser=False,
+        )
     }
 
     with transaction.atomic():
@@ -272,6 +280,7 @@ def invite_user_to_group(
         recipient_user_ids = tuple(
             sorted(set(_active_participant_user_ids(conversation=conversation) + (invited_user.id,)))
         )
+        create_group_invitation_notification(invitation=invitation, actor=actor)
         schedule_message_push_delivery(message_id=message.id, recipient_user_ids=recipient_user_ids)
         return GroupInvitationResult(
             invitation=invitation,

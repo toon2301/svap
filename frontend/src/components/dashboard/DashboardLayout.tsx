@@ -26,9 +26,13 @@ interface DashboardLayoutProps {
   onSidebarAccountTypeClick: () => void;
   onSidebarPrivacyClick?: () => void;
   isSearchOpen?: boolean;
+  isNotificationsPanelOpen?: boolean;
   onSidebarSearchClick?: () => void;
+  onSidebarNotificationsClick?: () => void;
   onSearchClose?: () => void;
+  onNotificationsPanelClose?: () => void;
   searchOverlay?: React.ReactNode;
+  notificationsOverlay?: React.ReactNode;
   desktopRightRail?: React.ReactNode;
   subcategory?: string | null;
   onSkillSaveClick?: () => void;
@@ -60,9 +64,13 @@ export default function DashboardLayout({
   onSidebarAccountTypeClick,
   onSidebarPrivacyClick,
   isSearchOpen,
+  isNotificationsPanelOpen,
   onSidebarSearchClick,
+  onSidebarNotificationsClick,
   onSearchClose,
+  onNotificationsPanelClose,
   searchOverlay,
+  notificationsOverlay,
   desktopRightRail,
   subcategory,
   onSkillSaveClick,
@@ -84,8 +92,9 @@ export default function DashboardLayout({
 
   const isMobileEditMode = isProfileEditMode;
 
-  const activeSidebarItem = isSearchOpen ? 'search' : activeModule;
-  const searchPanelRef = useRef<HTMLDivElement>(null);
+  const isAuxiliaryPanelOpen = Boolean(isSearchOpen || isNotificationsPanelOpen);
+  const activeSidebarItem = isNotificationsPanelOpen ? 'notifications' : isSearchOpen ? 'search' : activeModule;
+  const auxiliaryPanelRef = useRef<HTMLDivElement>(null);
   const hasAuxiliaryRightRail = !isRightSidebarOpen && Boolean(desktopRightRail);
   const hasDesktopRightColumn = isRightSidebarOpen || hasAuxiliaryRightRail;
   const isOpenMobileMessagesConversation =
@@ -98,9 +107,19 @@ export default function DashboardLayout({
       ? { height: `${mobileViewportHeight}px` }
       : undefined;
 
-  // Zatvor vyhľadávací panel pri kliknutí mimo neho alebo pri stlačení Esc
+  // Zatvor vedľajší panel pri kliknutí mimo neho alebo pri stlačení Esc
   useEffect(() => {
-    if (!isSearchOpen || !onSearchClose) return;
+    if (!isAuxiliaryPanelOpen) return;
+
+    const closeAuxiliaryPanel = () => {
+      if (isNotificationsPanelOpen) {
+        onNotificationsPanelClose?.();
+        return;
+      }
+      if (isSearchOpen) {
+        onSearchClose?.();
+      }
+    };
 
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node;
@@ -111,24 +130,27 @@ export default function DashboardLayout({
       }
 
       // Ak klikneme na vyhľadávací panel alebo jeho obsah, nič nerob
-      if (searchPanelRef.current && searchPanelRef.current.contains(target)) {
+      if (auxiliaryPanelRef.current && auxiliaryPanelRef.current.contains(target)) {
         return;
       }
 
-      // Ak klikneme na ľavú navigáciu (Sidebar), zatvor vyhľadávanie
+      // Ak klikneme na ľavú navigáciu (Sidebar), zatvor panel
       const leftSidebar = document.querySelector('[data-sidebar="left"]');
       if (leftSidebar && leftSidebar.contains(target)) {
-        // Tlačidlo „Vyhľadávanie“ – necháme iba onClick (toggle), nie mousedown-close
+        // Tlačidlá s vlastným toggle necháme riešiť cez onClick, nie mousedown-close.
         const el = target as HTMLElement;
-        if (el.closest?.('[data-sidebar-nav-item="search"]')) {
+        if (
+          el.closest?.('[data-sidebar-nav-item="search"]') ||
+          el.closest?.('[data-sidebar-nav-item="notifications"]')
+        ) {
           return;
         }
-        onSearchClose();
+        closeAuxiliaryPanel();
         return;
       }
 
       // Klik na hlavný obsah (výsledky) alebo inde mimo panelu – zatvor panel
-      onSearchClose();
+      closeAuxiliaryPanel();
     };
 
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -141,7 +163,7 @@ export default function DashboardLayout({
         // Ak nie sme v filter modale, zatvor search panel
         if (!isInFilterModal) {
           event.preventDefault();
-          onSearchClose();
+          closeAuxiliaryPanel();
         }
       }
     };
@@ -152,15 +174,21 @@ export default function DashboardLayout({
       document.removeEventListener('mousedown', handleClickOutside);
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isSearchOpen, onSearchClose]);
+  }, [
+    isAuxiliaryPanelOpen,
+    isNotificationsPanelOpen,
+    isSearchOpen,
+    onNotificationsPanelClose,
+    onSearchClose,
+  ]);
 
   // Desktop grid: search column always exists in DOM.
   // When closed, its width is 0px; to avoid visual shift of main content, we apply a matching left padding to <main>.
   const gridColsClassName = hasDesktopRightColumn
-    ? isSearchOpen
+    ? isAuxiliaryPanelOpen
       ? 'lg:grid-cols-[240px_240px_1fr_240px] xl:grid-cols-[280px_280px_1fr_280px] 2xl:grid-cols-[384px_384px_1fr_384px]'
       : 'lg:grid-cols-[240px_0px_1fr_240px] xl:grid-cols-[280px_0px_1fr_280px] 2xl:grid-cols-[384px_0px_1fr_384px]'
-    : isSearchOpen
+    : isAuxiliaryPanelOpen
       ? 'lg:grid-cols-[280px_280px_1fr] xl:grid-cols-[384px_384px_1fr]'
       : 'lg:grid-cols-[280px_0px_1fr] xl:grid-cols-[384px_0px_1fr]';
 
@@ -212,6 +240,7 @@ export default function DashboardLayout({
         onAccountTypeClick={onSidebarAccountTypeClick}
         onPrivacyClick={onSidebarPrivacyClick}
         onSearchClick={onSidebarSearchClick}
+        onNotificationsClick={onSidebarNotificationsClick}
       />
 
       {/* Desktop Layout - CSS Grid */}
@@ -228,24 +257,25 @@ export default function DashboardLayout({
             onItemClick={onModuleChange}
             onLogout={onLogout}
             onSearchClick={onSidebarSearchClick}
+            onNotificationsClick={onSidebarNotificationsClick}
           />
         </div>
 
-        {/* Desktop search panel – samostatný stĺpec v gride (vedľa ľavej navigácie) */}
+        {/* Desktop auxiliary panel – samostatný stĺpec v gride (vedľa ľavej navigácie) */}
         <div
-          ref={searchPanelRef}
+          ref={auxiliaryPanelRef}
           className={[
             'hidden lg:flex h-screen flex-col overflow-hidden bg-[var(--background)]',
             // Keep in DOM; when closed, width is 0 via grid template columns.
             // Hide interaction + visuals without translate.
-            isSearchOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none',
+            isAuxiliaryPanelOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none',
             // Only show separator/shadow when the column is visible
-            isSearchOpen ? 'border-r border-gray-800/60 shadow-2xl' : 'border-r-0 shadow-none',
+            isAuxiliaryPanelOpen ? 'border-r border-gray-800/60 shadow-2xl' : 'border-r-0 shadow-none',
             'transition-opacity duration-200 ease-out',
           ].join(' ')}
-          aria-hidden={!isSearchOpen}
+          aria-hidden={!isAuxiliaryPanelOpen}
         >
-          {searchOverlay}
+          {isNotificationsPanelOpen ? notificationsOverlay : searchOverlay}
         </div>
 
         {/* Main Content - data attr pre scroll preservation */}
@@ -262,6 +292,8 @@ export default function DashboardLayout({
             ? 'pt-0'
             : activeModule === 'messages'
               ? 'pt-12 lg:pt-0' // mobil: h-12 = výška vrchnej lišty, bez extra medzery
+            : activeModule === 'notifications'
+              ? 'pt-12 lg:pt-0' // upozornenia: rovnaký top offset ako správy
             : activeModule === 'favorites'
               ? 'pt-12 lg:pt-0' // obľúbené: menšia medzera pod vrchnou lištou na mobile
             : activeModule === 'offer-reviews'
@@ -276,6 +308,8 @@ export default function DashboardLayout({
                 ? 'pt-0 pb-4 lg:py-8' // recenzie: žiadna medzera medzi hornou lištou a tabmi
                 : activeModule === 'messages'
                   ? `h-full min-h-0 pt-0 ${isOpenMobileMessagesConversation ? 'pb-0' : 'pb-2'} lg:py-0` // správy: na mobile bez medzery pod vrchnou lištou
+                : activeModule === 'notifications'
+                  ? 'pt-0 pb-4 lg:py-8' // upozornenia: bez extra top medzery na mobile
                 : activeModule === 'favorites'
                   ? 'pt-1 pb-4 lg:py-8' // obľúbené: ešte menšia medzera pod vrchnou lištou
                   : 'py-4 lg:py-8'
@@ -284,6 +318,8 @@ export default function DashboardLayout({
                 ? 'px-0 sm:px-2 lg:px-8' // mobil: ešte menší padding, maximálne rozšírený obsah pre vyhľadávanie
                 : activeModule === 'messages'
                   ? 'px-0'
+                : activeModule === 'notifications'
+                  ? 'px-0 sm:px-6 lg:px-8' // upozornenia: na mobile rovnaká šírka CTA ako správy
                 : activeModule === 'requests'
                   ? 'px-2 sm:px-4 lg:px-8' // mobil: menší padding pre žiadosti (viac šírky pre zoznam)
                 : activeModule === 'offer-reviews'

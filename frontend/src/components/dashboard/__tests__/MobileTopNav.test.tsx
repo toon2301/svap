@@ -4,6 +4,8 @@ import MobileTopNav from '../MobileTopNav';
 
 let mockRequestsUnreadCount = 0;
 let mockMessageUnreadCount = 0;
+let mockNotificationsUnreadCount = 0;
+const mockMarkAllNotificationsRead = jest.fn();
 
 jest.mock('../contexts/RequestsNotificationsContext', () => ({
   __esModule: true,
@@ -17,6 +19,11 @@ jest.mock('../contexts/RequestsNotificationsContext', () => ({
     refreshUnreadCount: jest.fn(),
     setActiveConversationId: jest.fn(),
     syncConversationReadState: jest.fn(),
+  }),
+  useNotificationsUnread: () => ({
+    unreadCount: mockNotificationsUnreadCount,
+    refreshUnreadCount: jest.fn(),
+    markAllRead: mockMarkAllNotificationsRead,
   }),
 }));
 
@@ -41,6 +48,7 @@ describe('MobileTopNav', () => {
     jest.clearAllMocks();
     mockRequestsUnreadCount = 0;
     mockMessageUnreadCount = 0;
+    mockNotificationsUnreadCount = 0;
   });
 
   it('renders all navigation items', () => {
@@ -62,12 +70,14 @@ describe('MobileTopNav', () => {
     expect(mockOnItemClick).toHaveBeenCalledWith('home');
   });
 
-  // Menu button has been replaced by notifications; ensure notifications is clickable
-  it('calls onItemClick when notifications button is clicked', () => {
+  // Menu button has been replaced by notifications; ensure notifications is clickable.
+  it('opens notifications without marking them read', () => {
+    mockNotificationsUnreadCount = 2;
     render(<MobileTopNav {...defaultProps} />);
     const notifButton = screen.getByLabelText('Upozornenia');
     fireEvent.click(notifButton);
     expect(mockOnItemClick).toHaveBeenCalledWith('notifications');
+    expect(mockMarkAllNotificationsRead).not.toHaveBeenCalled();
   });
 
   it('highlights active item', () => {

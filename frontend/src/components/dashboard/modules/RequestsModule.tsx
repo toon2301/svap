@@ -5,6 +5,11 @@ import { useIsMobileState } from '@/hooks';
 import { RequestsDesktop } from './requests/RequestsDesktop';
 import { RequestsMobile } from './requests/RequestsMobile';
 import { RequestsSkeletonList } from './requests/ui/RequestsSkeletonList';
+import type { RequestsRouteIntent } from './requests/requestsRouting';
+
+interface RequestsModuleProps {
+  routeIntent?: RequestsRouteIntent | null;
+}
 
 /** Skeleton podľa breakpointu do prvého `matchMedia` (rovnaký pattern ako MessagesModule). */
 function RequestsViewportPendingState() {
@@ -23,12 +28,16 @@ function RequestsViewportPendingState() {
   );
 }
 
-export default function RequestsModule() {
+export default function RequestsModule({ routeIntent }: RequestsModuleProps) {
   const { isMobile, isResolved } = useIsMobileState();
 
   if (!isResolved) {
     return <RequestsViewportPendingState />;
   }
 
-  return isMobile ? <RequestsMobile /> : <RequestsDesktop />;
+  return isMobile ? (
+    <RequestsMobile routeIntent={routeIntent} />
+  ) : (
+    <RequestsDesktop routeIntent={routeIntent} />
+  );
 }

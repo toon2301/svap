@@ -13,6 +13,7 @@ from django.db.models import (
     F,
     IntegerField,
     OuterRef,
+    Prefetch,
     Q,
     Subquery,
     Value,
@@ -394,6 +395,23 @@ def _has_requestable_offers_for_user_id(user_id: int | None) -> bool:
     ).exists()
 
 
+def _can_open_direct_target(*, actor, target) -> bool:
+    if getattr(actor, "id", None) == getattr(target, "id", None):
+        return True
+    if getattr(target, "is_staff", False) or getattr(target, "is_superuser", False):
+        return False
+    if getattr(target, "is_public", False):
+        return True
+    try:
+        return find_direct_conversation(
+            actor=actor,
+            target=target,
+            require_started=True,
+        ) is not None
+    except SelfConversationNotAllowed:
+        return True
+
+
 def _conversation_list_queryset_for_user(user):
     """
     Conversations where the user is a participant, annotated for MVP UI:
@@ -497,6 +515,36 @@ def _conversation_list_queryset_for_user(user):
                 output_field=BooleanField(),
             )
         )
+        .prefetch_related(
+            Prefetch(
+                "participants",
+                queryset=ConversationParticipant.objects.filter(
+                    status__in=[
+                        ConversationParticipant.Status.ACTIVE,
+                        ConversationParticipant.Status.INVITED,
+                    ],
+                )
+                .select_related("user")
+                .only(
+                    "id",
+                    "conversation_id",
+                    "user_id",
+                    "role",
+                    "status",
+                    "joined_at",
+                    "user__id",
+                    "user__first_name",
+                    "user__last_name",
+                    "user__company_name",
+                    "user__username",
+                    "user__slug",
+                    "user__user_type",
+                    "user__avatar",
+                )
+                .order_by("role", "status", "joined_at", "id"),
+                to_attr="_prefetched_participants",
+            )
+        )
     )
     return qs.filter(last_message_at__isnull=False).filter(
         Q(participant_hidden_at__isnull=True)
@@ -578,6 +626,8 @@ class OpenConversationView(APIView):
         serializer.is_valid(raise_exception=True)
         target_user_id = serializer.validated_data["target_user_id"]
         target = get_object_or_404(User, id=target_user_id, is_active=True)
+        if not _can_open_direct_target(actor=request.user, target=target):
+            return Response(status=status.HTTP_404_NOT_FOUND)
         try:
             existing = find_direct_conversation(
                 actor=request.user,
@@ -1115,7 +1165,14 @@ class GroupInviteView(APIView):
         convo = _conversation_for_user_or_404(conversation_id=conversation_id, user=request.user)
         serializer = GroupInviteSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        target = get_object_or_404(User, id=serializer.validated_data["user_id"], is_active=True)
+        target = get_object_or_404(
+            User,
+            id=serializer.validated_data["user_id"],
+            is_active=True,
+            is_public=True,
+            is_staff=False,
+            is_superuser=False,
+        )
 
         try:
             result = invite_user_to_group(
@@ -1242,6 +1299,8 @@ class StartDirectMessageView(APIView):
 
         target_user_id = serializer.validated_data["target_user_id"]
         target = get_object_or_404(User, id=target_user_id, is_active=True)
+        if not _can_open_direct_target(actor=request.user, target=target):
+            return Response(status=status.HTTP_404_NOT_FOUND)
 
         try:
             result = send_direct_message(

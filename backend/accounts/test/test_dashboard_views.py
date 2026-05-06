@@ -563,6 +563,51 @@ class DashboardViewsTestCase(TestCase):
         self.assertEqual(second.data[0]["reviews_count"], 1)
         self.assertEqual(second.data[0]["average_rating"], 4.5)
 
+    def test_skill_detail_can_review_after_completed_request_until_review_exists(self):
+        """Detail ponuky má povoliť recenziu až po dokončenej spolupráci."""
+        self.other_user.is_public = True
+        self.other_user.save(update_fields=["is_public"])
+        skill = OfferedSkill.objects.create(
+            user=self.other_user,
+            category="Reviewable Skill",
+            subcategory="Sub",
+            description="Description",
+            detailed_description="Details",
+            is_hidden=False,
+        )
+        skill_request = SkillRequest.objects.create(
+            requester=self.user,
+            recipient=self.other_user,
+            offer=skill,
+            status=SkillRequestStatus.ACCEPTED,
+        )
+        url = reverse("accounts:skills_detail", args=[skill.id])
+
+        accepted = self.client.get(url)
+        self.assertEqual(accepted.status_code, status.HTTP_200_OK)
+        self.assertFalse(accepted.data["can_review"])
+        self.assertFalse(accepted.data["already_reviewed"])
+
+        skill_request.status = SkillRequestStatus.COMPLETED
+        skill_request.save(update_fields=["status"])
+
+        completed = self.client.get(url)
+        self.assertEqual(completed.status_code, status.HTTP_200_OK)
+        self.assertTrue(completed.data["can_review"])
+        self.assertFalse(completed.data["already_reviewed"])
+
+        Review.objects.create(
+            reviewer=self.user,
+            offer=skill,
+            rating="5.0",
+            text="Great collaboration",
+        )
+
+        reviewed = self.client.get(url)
+        self.assertEqual(reviewed.status_code, status.HTTP_200_OK)
+        self.assertFalse(reviewed.data["can_review"])
+        self.assertTrue(reviewed.data["already_reviewed"])
+
     def test_skills_list_cache_invalidates_on_image_change(self):
         skill = OfferedSkill.objects.create(
             user=self.user,

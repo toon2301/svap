@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.core.files.storage import default_storage
 from django.contrib.auth import get_user_model
 from django.db.models import QuerySet
@@ -7,9 +8,21 @@ from django.urls import reverse
 from rest_framework import serializers
 
 from accounts.name_normalization import get_canonical_display_name
+from swaply.validators import validate_image_file
 from ..models import Conversation, ConversationParticipant, GroupInvitation, Message
 
 User = get_user_model()
+
+
+def _validate_message_image(image):
+    if not image:
+        return
+    try:
+        validate_image_file(image)
+        if hasattr(image, "seek"):
+            image.seek(0)
+    except DjangoValidationError as exc:
+        raise serializers.ValidationError({"image": list(exc.messages)}) from exc
 
 
 def _reject_group_avatar_fields(serializer):
@@ -215,17 +228,26 @@ class ConversationListItemSerializer(serializers.ModelSerializer):
             return []
         request = self.context.get("request")
         me = request.user if request else None
-        participants = (
-            ConversationParticipant.objects.filter(
-                conversation=obj,
-                status=ConversationParticipant.Status.ACTIVE,
+        prefetched = getattr(obj, "_prefetched_participants", None)
+        if prefetched is not None:
+            participants = [
+                participant
+                for participant in prefetched
+                if participant.status == ConversationParticipant.Status.ACTIVE
+                and (me is None or participant.user_id != me.id)
+            ]
+        else:
+            participants = (
+                ConversationParticipant.objects.filter(
+                    conversation=obj,
+                    status=ConversationParticipant.Status.ACTIVE,
+                )
+                .select_related("user")
+                .order_by("role", "joined_at", "id")
             )
-            .select_related("user")
-            .order_by("role", "joined_at", "id")
-        )
-        if me is not None:
-            participants = participants.exclude(user_id=me.id)
-        return [serialize_user_brief(participant.user, request) for participant in participants[:4]]
+            if me is not None:
+                participants = participants.exclude(user_id=me.id)
+        return [serialize_user_brief(participant.user, request) for participant in list(participants)[:4]]
 
     def get_participant_count(self, obj: Conversation) -> int:
         if not getattr(obj, "is_group", False):
@@ -246,17 +268,19 @@ class ConversationListItemSerializer(serializers.ModelSerializer):
         if self._is_current_user_invited_group(obj):
             return []
         request = self.context.get("request")
-        participants = (
-            ConversationParticipant.objects.filter(
-                conversation=obj,
-                status__in=[
-                    ConversationParticipant.Status.ACTIVE,
-                    ConversationParticipant.Status.INVITED,
-                ],
+        participants = getattr(obj, "_prefetched_participants", None)
+        if participants is None:
+            participants = (
+                ConversationParticipant.objects.filter(
+                    conversation=obj,
+                    status__in=[
+                        ConversationParticipant.Status.ACTIVE,
+                        ConversationParticipant.Status.INVITED,
+                    ],
+                )
+                .select_related("user")
+                .order_by("role", "status", "joined_at", "id")
             )
-            .select_related("user")
-            .order_by("role", "status", "joined_at", "id")
-        )
         return [
             {
                 **serialize_user_brief(participant.user, request),
@@ -429,6 +453,7 @@ class SendMessageSerializer(serializers.Serializer):
 
         if not text and not image:
             raise serializers.ValidationError("Either text or image is required.")
+        _validate_message_image(image)
 
         return attrs
 
@@ -454,6 +479,7 @@ class StartDirectMessageSerializer(serializers.Serializer):
 
         if not text and not image:
             raise serializers.ValidationError("Either text or image is required.")
+        _validate_message_image(image)
 
         return attrs
 

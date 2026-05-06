@@ -33,6 +33,11 @@ from ..serializers import (
 from typing import Optional
 
 from ..realtime import notify_user
+from ..services.notifications import (
+    create_skill_request_accepted_notification,
+    create_skill_request_completed_notification,
+    create_skill_request_completion_requested_notification,
+)
 from .notifications import _unread_cache_key, UNREAD_COUNT_CACHE_TTL_SECONDS
 
 logger = logging.getLogger(__name__)
@@ -505,9 +510,11 @@ def skill_request_detail_view(request, request_id: int):
             )
 
         # Stavové prechody
+        accepted_notification = False
         if action == "accept" and obj.status == SkillRequestStatus.PENDING:
             obj.status = SkillRequestStatus.ACCEPTED
             obj.save(update_fields=["status", "updated_at"])
+            accepted_notification = True
         elif action == "reject" and obj.status == SkillRequestStatus.PENDING:
             obj.status = SkillRequestStatus.REJECTED
             obj.save(update_fields=["status", "updated_at"])
@@ -520,6 +527,26 @@ def skill_request_detail_view(request, request_id: int):
             _skill_requests_cache_invalidate_for_user(obj.recipient)
         except Exception:
             pass
+
+        if accepted_notification:
+
+            def notify_requester_about_acceptance():
+                try:
+                    create_skill_request_accepted_notification(
+                        skill_request=obj,
+                        actor=obj.recipient,
+                    )
+                except Exception:
+                    logger.exception(
+                        "Skill request accepted notification dispatch failed",
+                        extra={
+                            "skill_request_id": getattr(obj, "id", None),
+                            "requester_id": getattr(obj, "requester_id", None),
+                            "recipient_id": getattr(obj, "recipient_id", None),
+                        },
+                    )
+
+            transaction.on_commit(notify_requester_about_acceptance)
 
         return Response(
             SkillRequestSerializer(obj, context={"request": request}).data,
@@ -554,21 +581,45 @@ def skill_request_request_completion_view(request, request_id: int):
                 status=status.HTTP_403_FORBIDDEN,
             )
 
-        # Stavová podmienka: iba z accepted
-        if obj.status != SkillRequestStatus.ACCEPTED:
+        should_notify_completion_request = False
+        if obj.status == SkillRequestStatus.ACCEPTED:
+            obj.status = SkillRequestStatus.COMPLETION_REQUESTED
+            obj.save(update_fields=["status", "updated_at"])
+            should_notify_completion_request = True
+        elif obj.status == SkillRequestStatus.COMPLETION_REQUESTED:
+            # Idempotent retry: if the state already changed but notification was missed,
+            # repair it without creating duplicates or changing the workflow.
+            should_notify_completion_request = True
+        else:
             return Response(
                 {"error": "Žiadosť musí byť prijatá (accepted)."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-
-        obj.status = SkillRequestStatus.COMPLETION_REQUESTED
-        obj.save(update_fields=["status", "updated_at"])
 
         try:
             _skill_requests_cache_invalidate_for_user(obj.requester)
             _skill_requests_cache_invalidate_for_user(obj.recipient)
         except Exception:
             pass
+
+        def notify_requester_about_completion_request():
+            try:
+                create_skill_request_completion_requested_notification(
+                    skill_request=obj,
+                    actor=obj.recipient,
+                )
+            except Exception:
+                logger.exception(
+                    "Skill request completion notification dispatch failed",
+                    extra={
+                        "skill_request_id": getattr(obj, "id", None),
+                        "requester_id": getattr(obj, "requester_id", None),
+                        "recipient_id": getattr(obj, "recipient_id", None),
+                    },
+                )
+
+        if should_notify_completion_request:
+            transaction.on_commit(notify_requester_about_completion_request)
 
         return Response(
             SkillRequestSerializer(obj, context={"request": request}).data,
@@ -617,6 +668,24 @@ def skill_request_confirm_completion_view(request, request_id: int):
             _skill_requests_cache_invalidate_for_user(obj.recipient)
         except Exception:
             pass
+
+        def notify_recipient_about_confirmed_completion():
+            try:
+                create_skill_request_completed_notification(
+                    skill_request=obj,
+                    actor=obj.requester,
+                )
+            except Exception:
+                logger.exception(
+                    "Skill request completed notification dispatch failed",
+                    extra={
+                        "skill_request_id": getattr(obj, "id", None),
+                        "requester_id": getattr(obj, "requester_id", None),
+                        "recipient_id": getattr(obj, "recipient_id", None),
+                    },
+                )
+
+        transaction.on_commit(notify_recipient_about_confirmed_completion)
 
         return Response(
             SkillRequestSerializer(obj, context={"request": request}).data,

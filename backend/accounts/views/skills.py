@@ -43,7 +43,7 @@ def _skills_list_context(request, offer_ids):
         SkillRequest.objects.filter(
             offer_id__in=offer_ids,
             requester=request.user,
-            status=SkillRequestStatus.ACCEPTED,
+            status=SkillRequestStatus.COMPLETED,
         ).values_list("offer_id", flat=True)
     )
     request_status_by_offer = dict(

@@ -201,9 +201,7 @@ class SecurityValidator:
 
         for pattern in sql_patterns:
             if re.search(pattern, input_data, re.IGNORECASE):
-                logger.warning(
-                    f"Potential SQL injection attempt detected: {input_data}"
-                )
+                logger.warning("Potential SQL injection attempt detected")
                 raise ValidationError(_("Neplatné znaky v vstupných údajoch"))
 
         # Kontrola na XSS patterns
@@ -217,7 +215,7 @@ class SecurityValidator:
         # Najprv očistíme bežné skript tagy, ale nevyhadzujme 400 pre bežný obsah – sanitizácia prebehne v serializeri
         for pattern in xss_patterns:
             if re.search(pattern, input_data, re.IGNORECASE):
-                logger.warning(f"Potential XSS attempt detected: {input_data}")
+                logger.warning("Potential XSS attempt detected")
                 # ponechaj validáciu na vyššej vrstve (sanitizér), tu už nevyhadzuj výnimku
                 return input_data
 
@@ -305,22 +303,28 @@ class CAPTCHAValidator:
 
             if not result.get("success", False):
                 error_codes = result.get("error-codes", [])
-                logger.error("🔍 DEBUG CAPTCHA: Validation FAILED!")
-                logger.error(f"🔍 DEBUG CAPTCHA: Error codes: {error_codes}")
-                logger.error(f"🔍 DEBUG CAPTCHA: Full response: {result}")
-                logger.warning(f"CAPTCHA validation failed: {result}")
+                if getattr(settings, "DEBUG", False):
+                    logger.error("🔍 DEBUG CAPTCHA: Validation FAILED!")
+                    logger.error(f"🔍 DEBUG CAPTCHA: Error codes: {error_codes}")
+                logger.warning(
+                    "CAPTCHA validation failed",
+                    extra={"error_codes": error_codes},
+                )
                 raise ValidationError(_("CAPTCHA validácia zlyhala"))
 
             # Kontrola skóre (pre reCAPTCHA v3)
             score = result.get("score", 1.0)
-            logger.info(f"🔍 DEBUG CAPTCHA: Score: {score}")
+            if getattr(settings, "DEBUG", False):
+                logger.info(f"🔍 DEBUG CAPTCHA: Score: {score}")
 
             if score < 0.5:
-                logger.error(f"🔍 DEBUG CAPTCHA: Score too low: {score}")
+                if getattr(settings, "DEBUG", False):
+                    logger.error(f"🔍 DEBUG CAPTCHA: Score too low: {score}")
                 logger.warning(f"CAPTCHA score too low: {score}")
                 raise ValidationError(_("CAPTCHA skóre je príliš nízke"))
 
-            logger.info("🔍 DEBUG CAPTCHA: Validation SUCCESS! ✅")
+            if getattr(settings, "DEBUG", False):
+                logger.info("🔍 DEBUG CAPTCHA: Validation SUCCESS! ✅")
             return True
 
         except requests.RequestException as e:

@@ -13,6 +13,8 @@ import {
   requestConversationsRefresh,
 } from '@/components/dashboard/modules/messages/messagesEvents';
 import type { MessageItem } from '@/components/dashboard/modules/messages/types';
+import { dispatchNotificationsChanged } from '@/components/dashboard/modules/notifications/useNotificationsFeed';
+import type { DashboardNotification } from '@/components/dashboard/modules/notifications/types';
 import {
   applyIncomingMessageUnreadEvent,
   bindMessageUnreadCountStoreToUser,
@@ -22,6 +24,13 @@ import {
   subscribeToMessageUnreadCount,
 } from './messageUnreadStore';
 import {
+  bindNotificationUnreadCountStoreToUser,
+  getNotificationUnreadCountStore,
+  isNotificationUnreadCountFresh,
+  publishNotificationUnreadCount,
+  subscribeToNotificationUnreadCount,
+} from './notificationUnreadStore';
+import {
   installMessageNotificationAudioPrimer,
   playMessageNotificationSound,
 } from './messageNotificationAudio';
@@ -30,6 +39,9 @@ type DashboardNotificationsContextValue = {
   unreadCount: number;
   refreshUnreadCount: () => Promise<void>;
   markAllRead: () => Promise<void>;
+  notificationsUnreadCount: number;
+  refreshNotificationsUnreadCount: () => Promise<void>;
+  markAllNotificationsRead: () => Promise<void>;
   messageUnreadCount: number;
   refreshMessageUnreadCount: () => Promise<void>;
   setActiveConversationId: (conversationId: number | null) => void;
@@ -50,6 +62,7 @@ const MESSAGE_SOUND_COOLDOWN_MS = 750;
 type WsNotificationPayload = {
   type?: string;
   unread_count?: number;
+  notification?: DashboardNotification;
   conversation_id?: number;
   conversation_unread_count?: number;
   total_unread_count?: number;
@@ -356,6 +369,9 @@ export function RequestsNotificationsProvider({ children }: { children: React.Re
   const [messageUnreadCount, setMessageUnreadCount] = useState(
     () => getMessageUnreadCountStore().unreadCount,
   );
+  const [notificationsUnreadCount, setNotificationsUnreadCount] = useState(
+    () => getNotificationUnreadCountStore().unreadCount,
+  );
   const [isRealtimeConnected, setIsRealtimeConnected] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false;
     return getWsStore().isOpen;
@@ -371,6 +387,10 @@ export function RequestsNotificationsProvider({ children }: { children: React.Re
 
   const isMessageUnreadCountFreshEnough = useCallback(
     (maxAgeMs = UNREAD_COUNT_FRESH_MS) => isMessageUnreadCountFresh(maxAgeMs),
+    [],
+  );
+  const isNotificationsUnreadCountFreshEnough = useCallback(
+    (maxAgeMs = UNREAD_COUNT_FRESH_MS) => isNotificationUnreadCountFresh(maxAgeMs),
     [],
   );
 
@@ -394,14 +414,6 @@ export function RequestsNotificationsProvider({ children }: { children: React.Re
   }, [user?.unread_skill_request_count]);
 
   useEffect(() => {
-    const didRebind = bindMessageUnreadCountStoreToUser(user?.id ?? null);
-    if (!didRebind) return;
-    if (user?.id && !isLoading && isDocumentVisible()) {
-      void refreshMessageUnreadCount();
-    }
-  }, [isLoading, user?.id]);
-
-  useEffect(() => {
     const requestStore = getRequestUnreadCountStore();
     const requestListener: UnreadCountListener = (count) => {
       if (isMountedRef.current) {
@@ -420,6 +432,14 @@ export function RequestsNotificationsProvider({ children }: { children: React.Re
     return subscribeToMessageUnreadCount((count) => {
       if (isMountedRef.current) {
         setMessageUnreadCount(count);
+      }
+    });
+  }, []);
+
+  useEffect(() => {
+    return subscribeToNotificationUnreadCount((count) => {
+      if (isMountedRef.current) {
+        setNotificationsUnreadCount(count);
       }
     });
   }, []);
@@ -446,6 +466,40 @@ export function RequestsNotificationsProvider({ children }: { children: React.Re
         const count = typeof response?.data?.count === 'number' ? response.data.count : 0;
         store.lastSuccessfulRefreshAt = Date.now();
         publishUnreadCount(store, count);
+      } catch {
+        // fail-open
+      } finally {
+        if (store.refreshPromise === requestPromise) {
+          store.refreshPromise = null;
+        }
+      }
+    })();
+
+    store.refreshPromise = requestPromise;
+    return requestPromise;
+  }, [user?.id]);
+
+  const refreshNotificationsUnreadCount = useCallback(async () => {
+    if (!user?.id) return;
+    const store = getNotificationUnreadCountStore();
+    if (store.refreshPromise) {
+      return store.refreshPromise;
+    }
+
+    let requestPromise: Promise<void> | null = null;
+    requestPromise = (async () => {
+      try {
+        const sessionState = await ensureFreshSessionForBackgroundWork({
+          minValidityMs: POLL_INTERVAL_MS + 5_000,
+        });
+        if (sessionState === 'invalid_session' || sessionState === 'transient_failure') {
+          return;
+        }
+        const response = await api.get(endpoints.notifications.unreadCount, {
+          params: { type: 'all' },
+        });
+        const count = typeof response?.data?.count === 'number' ? response.data.count : 0;
+        publishNotificationUnreadCount(count);
       } catch {
         // fail-open
       } finally {
@@ -490,12 +544,36 @@ export function RequestsNotificationsProvider({ children }: { children: React.Re
     return requestPromise;
   }, [user?.id]);
 
+  useEffect(() => {
+    const didRebind = bindMessageUnreadCountStoreToUser(user?.id ?? null);
+    const didRebindNotifications = bindNotificationUnreadCountStoreToUser(user?.id ?? null);
+    if (!didRebind && !didRebindNotifications) return;
+    if (user?.id && !isLoading && isDocumentVisible()) {
+      void refreshMessageUnreadCount();
+      void refreshNotificationsUnreadCount();
+    }
+  }, [isLoading, refreshMessageUnreadCount, refreshNotificationsUnreadCount, user?.id]);
+
   const markAllRead = useCallback(async () => {
     try {
       await api.post(endpoints.notifications.markAllRead, { type: 'skill_request' });
       const store = getRequestUnreadCountStore();
       store.lastSuccessfulRefreshAt = Date.now();
       publishUnreadCount(store, 0);
+      void refreshNotificationsUnreadCount();
+    } catch {
+      // fail-open
+    }
+  }, [refreshNotificationsUnreadCount]);
+
+  const markAllNotificationsRead = useCallback(async () => {
+    try {
+      await api.post(endpoints.notifications.markAllRead, { type: 'all' });
+      publishNotificationUnreadCount(0);
+      const requestStore = getRequestUnreadCountStore();
+      requestStore.lastSuccessfulRefreshAt = Date.now();
+      publishUnreadCount(requestStore, 0);
+      dispatchNotificationsChanged();
     } catch {
       // fail-open
     }
@@ -531,14 +609,19 @@ export function RequestsNotificationsProvider({ children }: { children: React.Re
     if (!isUnreadCountFresh()) {
       void refreshUnreadCount();
     }
+    if (!isNotificationsUnreadCountFreshEnough()) {
+      void refreshNotificationsUnreadCount();
+    }
     if (!isMessageUnreadCountFreshEnough()) {
       void refreshMessageUnreadCount();
     }
   }, [
     isLoading,
     isMessageUnreadCountFreshEnough,
+    isNotificationsUnreadCountFreshEnough,
     isUnreadCountFresh,
     refreshMessageUnreadCount,
+    refreshNotificationsUnreadCount,
     refreshUnreadCount,
   ]);
 
@@ -548,6 +631,9 @@ export function RequestsNotificationsProvider({ children }: { children: React.Re
       if (!isDocumentVisible()) return;
       if (!isUnreadCountFresh()) {
         void refreshUnreadCount();
+      }
+      if (!isNotificationsUnreadCountFreshEnough()) {
+        void refreshNotificationsUnreadCount();
       }
       if (!isMessageUnreadCountFreshEnough()) {
         void refreshMessageUnreadCount();
@@ -564,8 +650,10 @@ export function RequestsNotificationsProvider({ children }: { children: React.Re
   }, [
     isLoading,
     isMessageUnreadCountFreshEnough,
+    isNotificationsUnreadCountFreshEnough,
     isUnreadCountFresh,
     refreshMessageUnreadCount,
+    refreshNotificationsUnreadCount,
     refreshUnreadCount,
   ]);
 
@@ -579,6 +667,9 @@ export function RequestsNotificationsProvider({ children }: { children: React.Re
       if (!isUnreadCountFresh()) {
         void refreshUnreadCount();
       }
+      if (!isNotificationsUnreadCountFreshEnough()) {
+        void refreshNotificationsUnreadCount();
+      }
       if (!isMessageUnreadCountFreshEnough()) {
         void refreshMessageUnreadCount();
       }
@@ -590,9 +681,11 @@ export function RequestsNotificationsProvider({ children }: { children: React.Re
   }, [
     isLoading,
     isMessageUnreadCountFreshEnough,
+    isNotificationsUnreadCountFreshEnough,
     isRealtimeConnected,
     isUnreadCountFresh,
     refreshMessageUnreadCount,
+    refreshNotificationsUnreadCount,
     refreshUnreadCount,
   ]);
 
@@ -601,6 +694,16 @@ export function RequestsNotificationsProvider({ children }: { children: React.Re
     const store = getWsStore();
 
     const onPayload: WsListener = (payload) => {
+      if (payload.type === 'notification_created' || payload.type === 'notification_read') {
+        if (typeof payload.unread_count === 'number') {
+          publishNotificationUnreadCount(payload.unread_count);
+        } else {
+          void refreshNotificationsUnreadCount();
+        }
+        dispatchNotificationsChanged();
+        return;
+      }
+
       if (payload.type === 'skill_request' && typeof payload.unread_count === 'number') {
         const unreadStore = getRequestUnreadCountStore();
         unreadStore.lastSuccessfulRefreshAt = Date.now();
@@ -714,6 +817,9 @@ export function RequestsNotificationsProvider({ children }: { children: React.Re
       if (!isUnreadCountFresh()) {
         void refreshUnreadCount();
       }
+      if (!isNotificationsUnreadCountFreshEnough()) {
+        void refreshNotificationsUnreadCount();
+      }
       if (!isMessageUnreadCountFreshEnough()) {
         void refreshMessageUnreadCount();
       }
@@ -752,8 +858,10 @@ export function RequestsNotificationsProvider({ children }: { children: React.Re
   }, [
     isLoading,
     isMessageUnreadCountFreshEnough,
+    isNotificationsUnreadCountFreshEnough,
     isUnreadCountFresh,
     refreshMessageUnreadCount,
+    refreshNotificationsUnreadCount,
     refreshUnreadCount,
     user?.id,
   ]);
@@ -763,6 +871,9 @@ export function RequestsNotificationsProvider({ children }: { children: React.Re
       unreadCount,
       refreshUnreadCount,
       markAllRead,
+      notificationsUnreadCount,
+      refreshNotificationsUnreadCount,
+      markAllNotificationsRead,
       messageUnreadCount,
       refreshMessageUnreadCount,
       setActiveConversationId,
@@ -770,8 +881,11 @@ export function RequestsNotificationsProvider({ children }: { children: React.Re
     }),
     [
       markAllRead,
+      markAllNotificationsRead,
       messageUnreadCount,
+      notificationsUnreadCount,
       refreshMessageUnreadCount,
+      refreshNotificationsUnreadCount,
       refreshUnreadCount,
       setActiveConversationId,
       syncConversationReadState,
@@ -807,5 +921,18 @@ export function useMessagesNotifications() {
     refreshUnreadCount: refreshMessageUnreadCount,
     setActiveConversationId,
     syncConversationReadState,
+  };
+}
+
+export function useNotificationsUnread() {
+  const {
+    notificationsUnreadCount,
+    refreshNotificationsUnreadCount,
+    markAllNotificationsRead,
+  } = useDashboardNotificationsContext();
+  return {
+    unreadCount: notificationsUnreadCount,
+    refreshUnreadCount: refreshNotificationsUnreadCount,
+    markAllRead: markAllNotificationsRead,
   };
 }

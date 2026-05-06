@@ -54,7 +54,13 @@ class FavoriteUserListItemSerializer(serializers.ModelSerializer):
 
 def _favorite_users_queryset(owner):
     return (
-        FavoriteUser.objects.filter(user=owner, favorite_user__is_active=True)
+        FavoriteUser.objects.filter(
+            user=owner,
+            favorite_user__is_active=True,
+            favorite_user__is_public=True,
+            favorite_user__is_staff=False,
+            favorite_user__is_superuser=False,
+        )
         .select_related("favorite_user")
         .only(
             "id",
@@ -103,7 +109,19 @@ def dashboard_favorites_view(request):
         )
 
     try:
-        target_user = User.objects.only("id", "is_active").get(id=item_id, is_active=True)
+        target_user = User.objects.only(
+            "id",
+            "is_active",
+            "is_public",
+            "is_staff",
+            "is_superuser",
+        ).get(
+            id=item_id,
+            is_active=True,
+            is_public=True,
+            is_staff=False,
+            is_superuser=False,
+        )
     except User.DoesNotExist:
         return Response(
             {"error": "PouÅ¾Ã­vateÄ¾ nebol nÃ¡jdenÃ½."},

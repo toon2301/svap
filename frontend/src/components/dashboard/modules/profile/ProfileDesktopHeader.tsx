@@ -215,9 +215,6 @@ export function ProfileDesktopHeader({
               onSendMessage();
             } else if (onEditProfileClick) {
               onEditProfileClick();
-            } else {
-              // eslint-disable-next-line no-console
-              console.log(isOtherUserProfile ? 'Poslať správu' : 'Upraviť profil');
             }
           }}
           disabled={isOtherUserProfile && isOpeningConversation}
@@ -258,9 +255,6 @@ export function ProfileDesktopHeader({
               // Desktop: prepnúť na prázdny screen Zručnosti
               if (typeof onSkillsClick === 'function') {
                 onSkillsClick();
-              } else {
-                // eslint-disable-next-line no-console
-                console.log('Zručnosti');
               }
             }}
             className="flex-1 px-[clamp(4rem,8vw,8rem)] xl:px-16 2xl:px-32 py-2 text-sm bg-purple-100 text-purple-800 border border-purple-200 rounded-2xl transition-colors hover:bg-purple-200 whitespace-nowrap lg:min-w-0 lg:px-5 lg:text-center xl:min-w-auto xl:text-left"

@@ -166,16 +166,13 @@ export default function ProfileEditForm({ user, onUserUpdate, onEditProfileClick
   };
 
   const handleProfessionSave = async () => {
-    console.log('handleProfessionSave called with:', profession);
     if (profession.trim() === user.job_title) return; // No change
     
     try {
-      console.log('Saving profession:', profession.trim());
       const response = await api.patch('/auth/profile/', {
         job_title: profession.trim()
       });
-      
-      console.log('Profession saved successfully:', response.data);
+
       if (onUserUpdate && response.data.user) {
         onUserUpdate(response.data.user);
       }
@@ -217,9 +214,7 @@ export default function ProfileEditForm({ user, onUserUpdate, onEditProfileClick
 
       const response = await api.patch('/auth/profile/', formData);
 
-      console.log('Upload response:', response.data);
       if (onUserUpdate && response.data.user) {
-        console.log('Updated user:', response.data.user);
         onUserUpdate(response.data.user);
       }
 

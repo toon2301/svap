@@ -6,6 +6,7 @@ import { useEffect, useRef, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { logClientDebug, logClientError } from '@/utils/clientLogging';
 
 function OAuthCallbackContent() {
   const searchParams = useSearchParams();
@@ -47,27 +48,24 @@ function OAuthCallbackContent() {
         oauthSuccess,
         hasUserId: Boolean(userId),
         hasError: Boolean(error),
-        search: searchParams?.toString() ?? '',
       });
       
-      const isProd = process.env.NODE_ENV === 'production';
-      if (!isProd) {
-        console.debug('OAuth callback loaded');
-        console.debug('Search params:', searchParams?.toString() ?? '');
-        console.debug('User ID:', userId);
-        console.debug('Error:', error);
-      }
+      logClientDebug('OAuth callback loaded', {
+        oauthSuccess,
+        hasUserId: Boolean(userId),
+        hasError: Boolean(error),
+      });
       
       if (error) {
-        trace('oauth_callback_error_param', { error });
-        console.error('OAuth error from URL:', error);
+        trace('oauth_callback_error_param', { hasError: true });
+        logClientError('OAuth callback returned an error');
         setError(`${t('auth.oauthLoginFailed')}: ${error}`);
         setStatus('error');
         
         // Pošli error správu do parent okna
         if (window.opener) {
           trace('oauth_callback_postmessage_error');
-          !isProd && console.debug('Sending error message to parent window');
+          logClientDebug('Sending OAuth error message to parent window');
           window.opener.postMessage({
             type: 'OAUTH_ERROR',
             error: `${t('auth.oauthLoginFailed')}: ${error}`

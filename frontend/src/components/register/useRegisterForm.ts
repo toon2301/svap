@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useGoogleReCaptcha } from 'react-google-recaptcha-v3';
 import { api, endpoints } from '@/lib/api';
 import { useAutoSave } from '@/hooks/useFormValidation';
 import { fetchCsrfToken } from '@/utils/csrf';
+import { logClientError, logClientWarn } from '@/utils/clientLogging';
 
 interface FormData {
   username: string;
@@ -66,21 +67,30 @@ export function useRegisterForm({ t }: UseRegisterFormParams) {
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
 
   // Auto-save funkcionalita - pridáno bez narušenia existujúcich funkcií (ticho v pozadí)
-  const { loadDraft, clearDraft } = useAutoSave(formData, 'registration_draft', 30000);
+  const registrationDraft = useMemo(() => {
+    const { password, password_confirm, ...safeDraft } = formData;
+    return safeDraft;
+  }, [formData]);
+
+  const { loadDraft, clearDraft } = useAutoSave(registrationDraft, 'registration_draft', 30000);
 
   useEffect(() => {
     // Načítanie draftu pri inicializácii - pridáno bez narušenia existujúcich funkcií (ticho v pozadí)
     const savedDraft = loadDraft();
     if (savedDraft) {
-      setFormData(savedDraft);
+      setFormData((current) => ({
+        ...current,
+        ...savedDraft,
+        password: '',
+        password_confirm: '',
+      }));
       // Žiadne hlášenie - funguje ticho v pozadí
     }
 
     // Získaj CSRF token z backendu – v testoch preskoč, aby sme nevolali sieťové requesty
     if (process.env.NODE_ENV !== 'test') {
       fetchCsrfToken().catch((err) => {
-        // eslint-disable-next-line no-console
-        console.error('Nepodarilo sa získať CSRF token:', err);
+        logClientError('Registration CSRF token fetch failed', err);
       });
     }
   }, [loadDraft]);
@@ -225,8 +235,7 @@ export function useRegisterForm({ t }: UseRegisterFormParams) {
       setEmailStatus(isAvailable ? 'available' : 'taken');
       setEmailError(null);
     } catch (error: any) {
-      // eslint-disable-next-line no-console
-      console.error('Chyba pri kontrole emailu:', error);
+      logClientError('Email availability check failed', error);
 
       // Ak API vráti chybu, zobrazíme ju
       if (error.response?.data?.error) {
@@ -332,17 +341,16 @@ export function useRegisterForm({ t }: UseRegisterFormParams) {
       
       // V development režime s test kľúčom alebo bez kľúča pokračujeme bez reCAPTCHA
       if (isTestKey && process.env.NODE_ENV === 'development') {
-        console.warn('⚠️ Registrácia bez reCAPTCHA (development režim s test kľúčom)');
+        logClientWarn('Registration continues without reCAPTCHA in development');
         // Pokračujeme bez captcha tokenu
       } else if (executeRecaptcha) {
         try {
           captchaToken = await executeRecaptcha('register');
         } catch (captchaError) {
-          // eslint-disable-next-line no-console
-          console.error('reCAPTCHA error:', captchaError);
+          logClientError('reCAPTCHA execution failed', captchaError);
           // Ak je to chyba s test-site-key, v development režime pokračujeme bez CAPTCHA
           if (isTestKey && process.env.NODE_ENV === 'development') {
-            console.warn('⚠️ reCAPTCHA error s test kľúčom - pokračujeme bez CAPTCHA v development režime');
+            logClientWarn('Registration continues after reCAPTCHA test-key error');
             // Pokračujeme bez captcha tokenu
           } else {
             setErrors({ general: t('auth.captchaError') });
@@ -351,8 +359,7 @@ export function useRegisterForm({ t }: UseRegisterFormParams) {
           }
         }
       } else {
-        // eslint-disable-next-line no-console
-        console.warn('reCAPTCHA nie je k dispozícii');
+        logClientWarn('reCAPTCHA is unavailable');
         // S test kľúčom (test-site-key) alebo v development mode pokračujeme bez CAPTCHA
         if (!isTestKey && process.env.NODE_ENV === 'production') {
           setErrors({ general: t('auth.captchaUnavailable') });
@@ -416,12 +423,7 @@ export function useRegisterForm({ t }: UseRegisterFormParams) {
       // Vymazanie draftu po úspešnej registrácii - pridáno bez narušenia existujúcich funkcií
       clearDraft();
     } catch (error: any) {
-      // eslint-disable-next-line no-console
-      console.error('Registration error:', error);
-      // eslint-disable-next-line no-console
-      console.error('Error response:', error.response?.data);
-      // eslint-disable-next-line no-console
-      console.error('Error status:', error.response?.status);
+      logClientError('Registration failed', error);
 
       // Detailné error handling - zobrazujeme všetko
       let errorMessage = t('auth.registrationError');

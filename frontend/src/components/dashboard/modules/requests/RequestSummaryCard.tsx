@@ -123,6 +123,15 @@ export function RequestSummaryCard({
   const dateToShow = item.updated_at ?? item.created_at;
   const created = formatDateSk(dateToShow);
   const canHide = item.status === 'cancelled' || item.status === 'rejected';
+  const reviewOfferId = Number(offer?.id ?? item.offer);
+  const canShowReviewButton =
+    showReviewButton &&
+    variant === 'sent' &&
+    item.status === 'completed' &&
+    Number.isInteger(reviewOfferId) &&
+    reviewOfferId > 0 &&
+    offer?.already_reviewed !== true &&
+    typeof onOpenReview === 'function';
 
   const avatarSrc = useMemo(() => {
     if (!whoAvatar) return '';
@@ -463,21 +472,17 @@ export function RequestSummaryCard({
           </div>
         )}
 
-        {/* Tlačidlo „Napíš recenziu“ – len v tabe Dokončené, requester, ešte nerecenzoval */}
-        {showReviewButton &&
-          variant === 'sent' &&
-          item.status === 'completed' &&
-          item.offer_summary?.already_reviewed === false &&
-          onOpenReview && (
-            <button
-              type="button"
-              onClick={() => onOpenReview(item.offer_summary!.id)}
-              disabled={isBusy}
-              className="shrink-0 w-full inline-flex items-center justify-center gap-1.5 rounded-md bg-purple-600 text-white px-2 py-2 text-[11px] sm:text-xs font-semibold hover:bg-purple-700 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60"
-            >
-              {t('requests.writeReview', 'Napíš recenziu')}
-            </button>
-          )}
+        {/* Tlačidlo recenzie – len dokončené odoslané výmeny bez existujúcej recenzie. */}
+        {canShowReviewButton && (
+          <button
+            type="button"
+            onClick={() => onOpenReview?.(reviewOfferId)}
+            disabled={isBusy}
+            className="shrink-0 w-full inline-flex items-center justify-center gap-1.5 rounded-md bg-purple-600 text-white px-2 py-2 text-[11px] sm:text-xs font-semibold hover:bg-purple-700 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60"
+          >
+            {t('reviews.addReview', 'Pridať recenziu')}
+          </button>
+        )}
 
         {/* Suma a stav: v pravom dolnom rohu, rovnaká veľkosť */}
         <div className="shrink-0 pt-2 pb-2 flex flex-row items-center justify-end gap-3">

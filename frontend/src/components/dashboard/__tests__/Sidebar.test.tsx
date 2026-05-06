@@ -5,6 +5,8 @@ import { ThemeProvider } from '@/contexts/ThemeContext';
 
 let mockRequestsUnreadCount = 0;
 let mockMessageUnreadCount = 0;
+let mockNotificationsUnreadCount = 0;
+const mockMarkAllNotificationsRead = jest.fn();
 
 jest.mock('../contexts/RequestsNotificationsContext', () => ({
   __esModule: true,
@@ -18,6 +20,11 @@ jest.mock('../contexts/RequestsNotificationsContext', () => ({
     refreshUnreadCount: jest.fn(),
     setActiveConversationId: jest.fn(),
     syncConversationReadState: jest.fn(),
+  }),
+  useNotificationsUnread: () => ({
+    unreadCount: mockNotificationsUnreadCount,
+    refreshUnreadCount: jest.fn(),
+    markAllRead: mockMarkAllNotificationsRead,
   }),
 }));
 
@@ -42,6 +49,7 @@ describe('Sidebar', () => {
     jest.clearAllMocks();
     mockRequestsUnreadCount = 0;
     mockMessageUnreadCount = 0;
+    mockNotificationsUnreadCount = 0;
   });
 
   it('renders all navigation items', () => {
@@ -183,5 +191,28 @@ describe('Sidebar', () => {
     );
 
     expect(screen.queryByText('5')).not.toBeInTheDocument();
+  });
+
+  it('shows a notifications unread badge without marking notifications read on click', () => {
+    mockNotificationsUnreadCount = 6;
+    const onNotificationsClick = jest.fn();
+
+    render(
+      <ThemeProvider>
+        <Sidebar
+          {...defaultProps}
+          onLogout={() => {}}
+          activeItem="home"
+          onNotificationsClick={onNotificationsClick}
+        />
+      </ThemeProvider>,
+    );
+
+    expect(screen.getByText('6')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('Upozornenia'));
+
+    expect(mockMarkAllNotificationsRead).not.toHaveBeenCalled();
+    expect(onNotificationsClick).toHaveBeenCalled();
   });
 });

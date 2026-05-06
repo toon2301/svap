@@ -366,11 +366,9 @@ def google_callback_view(request):
             "redirect_uri": backend_callback,
         }
 
-        # Debug log (bez citlivých údajov)
-        logger.info("Token exchange request initiated")
-        logger.info(f"Client ID: {client_id[:10]}...")
-        # Neloguj authorization code
-        logger.info(f"Redirect URI: {token_data['redirect_uri']}")
+        if getattr(settings, "DEBUG", False):
+            logger.info("Token exchange request initiated")
+            logger.info(f"Redirect URI: {token_data['redirect_uri']}")
 
         token_response = requests.post(token_url, data=token_data, timeout=10)
         if token_response.status_code != 200:
@@ -378,8 +376,7 @@ def google_callback_view(request):
                 "google_callback_token_exchange_failed",
                 status=token_response.status_code,
             )
-            logger.error(f"Token exchange failed: Status {token_response.status_code}")
-            logger.error(f"Response: {token_response.text}")
+            logger.error("Token exchange failed", extra={"status": token_response.status_code})
 
             # Pokús sa parsovať JSON chybu
             try:
@@ -387,12 +384,13 @@ def google_callback_view(request):
                 error_message = error_json.get(
                     "error_description", error_json.get("error", "Unknown error")
                 )
-                logger.error(f"Google OAuth error: {error_message}")
+                if getattr(settings, "DEBUG", False):
+                    logger.error(f"Google OAuth error: {error_message}")
             except Exception:
-                error_message = token_response.text
+                error_message = "token_exchange_failed"
 
             return redirect(
-                f"{frontend_callback}?error=token_exchange_failed&details={error_message[:100]}"
+                f"{frontend_callback}?error=token_exchange_failed"
             )
 
         token_json = token_response.json()

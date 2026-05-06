@@ -39,7 +39,7 @@ type OfferDetailLike = Offer & {
   price_per_hour?: number | null;
   city?: string | null;
   opening_hours?: Offer['opening_hours'];
-  /** Z API GET /api/auth/skills/<id>/ – môže používateľ pridať recenziu (má accepted request a ešte nerecenzoval) */
+  /** Z API GET /api/auth/skills/<id>/ – môže používateľ pridať recenziu (má completed request a ešte nerecenzoval) */
   can_review?: boolean;
   /** Z API GET /api/auth/skills/<id>/ – už túto ponuku recenzoval */
   already_reviewed?: boolean;
@@ -319,6 +319,9 @@ export default function OfferReviewsView({
             await api.delete(endpoints.reviews.detail(reviewIdToDelete));
             const { data } = await api.get<Review[]>(endpoints.reviews.list(offerId));
             setReviews(data);
+            setOffer((prev) =>
+              prev ? { ...prev, already_reviewed: false, can_review: true } : prev,
+            );
 
             // Po zmene recenzie invaliduj cache ponúk, aby sa ikona recenzií na profile prepnula hneď po návrate.
             if (viewerUserId != null) invalidateOffersCache(viewerUserId);
@@ -377,6 +380,11 @@ export default function OfferReviewsView({
             // Obnoviť zoznam recenzií
             const { data } = await api.get<Review[]>(endpoints.reviews.list(offerId));
             setReviews(data);
+            if (!reviewToEdit) {
+              setOffer((prev) =>
+                prev ? { ...prev, already_reviewed: true, can_review: false } : prev,
+              );
+            }
 
             // Po zmene recenzie invaliduj cache ponúk, aby sa ikona recenzií na profile prepnula hneď po návrate.
             if (viewerUserId != null) invalidateOffersCache(viewerUserId);

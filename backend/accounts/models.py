@@ -756,8 +756,19 @@ class SkillRequest(models.Model):
 class NotificationType(models.TextChoices):
     SKILL_REQUEST = "skill_request", _("Nová žiadosť")
     SKILL_REQUEST_ACCEPTED = "skill_request_accepted", _("Žiadosť prijatá")
+    SKILL_REQUEST_COMPLETION_REQUESTED = (
+        "skill_request_completion_requested",
+        _("Výmena označená ako dokončená"),
+    )
+    SKILL_REQUEST_COMPLETED = (
+        "skill_request_completed",
+        _("Dokončenie výmeny potvrdené"),
+    )
+    REVIEW_CREATED = "review_created", _("Nová recenzia")
+    REVIEW_REPLY_CREATED = "review_reply_created", _("Odpoveď na recenziu")
     SKILL_REQUEST_REJECTED = "skill_request_rejected", _("Žiadosť zamietnutá")
     SKILL_REQUEST_CANCELLED = "skill_request_cancelled", _("Žiadosť zrušená")
+    GROUP_INVITATION = "group_invitation", _("Pozvánka do skupiny")
 
 
 class Notification(models.Model):
@@ -785,6 +796,30 @@ class Notification(models.Model):
         blank=True,
         verbose_name=_("Žiadosť"),
     )
+    actor = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        related_name="+",
+        null=True,
+        blank=True,
+        verbose_name=_("Aktér"),
+    )
+    conversation = models.ForeignKey(
+        "messaging.Conversation",
+        on_delete=models.SET_NULL,
+        related_name="notifications",
+        null=True,
+        blank=True,
+        verbose_name=_("Konverzácia"),
+    )
+    group_invitation = models.ForeignKey(
+        "messaging.GroupInvitation",
+        on_delete=models.SET_NULL,
+        related_name="notifications",
+        null=True,
+        blank=True,
+        verbose_name=_("Skupinová pozvánka"),
+    )
     is_read = models.BooleanField(_("Prečítané"), default=False)
     created_at = models.DateTimeField(_("Vytvorené"), auto_now_add=True)
     read_at = models.DateTimeField(_("Prečítané o"), null=True, blank=True)
@@ -796,6 +831,7 @@ class Notification(models.Model):
         indexes = [
             models.Index(fields=["user", "is_read", "created_at"]),
             models.Index(fields=["user", "type", "is_read"]),
+            models.Index(fields=["user", "created_at"]),
         ]
 
     def mark_read(self):

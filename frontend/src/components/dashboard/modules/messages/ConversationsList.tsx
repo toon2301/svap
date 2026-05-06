@@ -385,22 +385,46 @@ export function ConversationsList({
             </div>
           </div>
         ) : (
-          <div className="flex h-full min-h-[calc(100dvh-12rem)] items-center justify-center">
-            <div className="flex flex-col items-center text-center">
-              <ChatBubbleLeftRightIcon className="mb-4 h-20 w-20 text-black dark:text-white" />
-              <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">
-                {t('messages.title', 'Vaše správy')}
-              </h2>
+          <>
+            <div
+              className={
+                isMobile && !isCompact
+                  ? 'mx-3 mt-4 mb-1'
+                  : 'mb-3 flex justify-end px-3'
+              }
+            >
               <button
                 type="button"
                 onClick={() => setIsCreateGroupOpen(true)}
-                className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-purple-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-purple-700"
+                className={
+                  isMobile && !isCompact
+                    ? 'inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-gray-300 bg-white px-3 py-2.5 text-sm font-semibold text-gray-500 transition-colors hover:bg-gray-100 hover:text-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-400/50 dark:border-gray-700 dark:bg-black dark:text-gray-400 dark:hover:bg-gray-900 dark:hover:text-purple-200'
+                    : 'inline-flex items-center gap-2 rounded-2xl border border-purple-200 bg-purple-50 px-3 py-2 text-xs font-semibold text-purple-700 transition-colors hover:bg-purple-100 dark:border-purple-800/60 dark:bg-purple-900/20 dark:text-purple-200 dark:hover:bg-purple-900/35'
+                }
               >
-                <UserGroupIcon className="h-5 w-5" />
-                {t('messages.createGroupAction', 'Vytvoriť skupinu')}
+                {isMobile && !isCompact ? (
+                  <>
+                    <PlusIcon className="h-4 w-4 shrink-0" strokeWidth={2.25} />
+                    <UserGroupIcon className="h-5 w-5 shrink-0" />
+                    {t('messages.createGroupMobileCta', 'Vytvoriť skupinový chat')}
+                  </>
+                ) : (
+                  <>
+                    <UserGroupIcon className="h-4 w-4" />
+                    {t('messages.createGroupShort', 'Skupina')}
+                  </>
+                )}
               </button>
             </div>
-          </div>
+            <div className="flex h-full min-h-[calc(100dvh-12rem)] items-center justify-center">
+              <div className="flex flex-col items-center text-center">
+                <ChatBubbleLeftRightIcon className="mb-4 h-20 w-20 text-black dark:text-white" />
+                <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">
+                  {t('messages.title', 'Vaše správy')}
+                </h2>
+              </div>
+            </div>
+          </>
         )}
         <CreateGroupConversationModal
           open={isCreateGroupOpen}

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { api, endpoints, invalidateSession, isTransientAuthFailureError, setMayHaveRefreshCookie } from '@/lib/api';
 import { clearAuthState } from '@/utils/auth';
 import { fetchCsrfToken, hasCsrfToken } from '@/utils/csrf';
+import { logClientError } from '@/utils/clientLogging';
 import type { User } from '@/types';
 
 interface AuthContextType {
@@ -144,7 +145,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           return;
         }
 
-        console.error('Error refreshing user:', error);
+        logClientError('Error refreshing user', error);
         if (userRef.current) return;
         applyResolvedUser(null);
       } finally {
@@ -229,7 +230,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
             attempt += 1;
             if (!retryable || attempt >= 3) {
               if (!retryable) {
-                console.error('Initial auth bootstrap failed:', error);
+                logClientError('Initial auth bootstrap failed', error);
               }
               return;
             }
@@ -269,7 +270,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
       router.push('/dashboard');
     } catch (error) {
-      console.error('Login error:', error);
+      logClientError('Login error', error);
       throw error;
     }
   };
@@ -287,7 +288,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // Po registrácii používateľ nie je prihlásený, musí overiť email
       router.push('/verify-email');
     } catch (error) {
-      console.error('Registration error:', error);
+      logClientError('Registration error', error);
       throw error;
     }
   };

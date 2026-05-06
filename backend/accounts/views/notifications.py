@@ -18,32 +18,30 @@ from swaply.rate_limiting import api_rate_limit
 from ..models import Notification, NotificationType
 from ..serializers import NotificationSerializer
 from ..realtime import notify_user
+from ..services.notifications import (
+    NOTIFICATION_FEED_LIMIT,
+    cache_unread_count,
+    exclude_general_notification_types,
+    get_unread_count,
+    _unread_cache_key as service_unread_cache_key,
+)
 
 
 UNREAD_COUNT_CACHE_TTL_SECONDS = int(os.getenv("UNREAD_COUNT_CACHE_TTL_SECONDS", "60") or "60")
 
 
 def _unread_cache_key(user_id: int, notif_type: str) -> str:
-    return f"notif_unread_count:{int(user_id)}:{str(notif_type).strip()}"
+    return service_unread_cache_key(user_id, notif_type)
 
 
 def _send_unread_count(user_id: int) -> None:
-    try:
-        unread = Notification.objects.filter(
-            user_id=user_id,
-            type=NotificationType.SKILL_REQUEST,
-            is_read=False,
-        ).count()
-    except Exception:
-        unread = 0
-    try:
-        cache.set(
-            _unread_cache_key(user_id, NotificationType.SKILL_REQUEST),
-            int(unread),
-            timeout=UNREAD_COUNT_CACHE_TTL_SECONDS,
-        )
-    except Exception:
-        pass
+    unread = get_unread_count(user_id=user_id, notif_type=NotificationType.SKILL_REQUEST)
+    cache_unread_count(
+        user_id=user_id,
+        notif_type=NotificationType.SKILL_REQUEST,
+        count=unread,
+        ttl_seconds=UNREAD_COUNT_CACHE_TTL_SECONDS,
+    )
     notify_user(user_id, {"type": "skill_request", "unread_count": unread})
 
 
@@ -51,11 +49,17 @@ def _send_unread_count(user_id: int) -> None:
 @permission_classes([IsAuthenticated])
 @api_rate_limit
 def notifications_list_view(request):
-    qs = Notification.objects.filter(user=request.user).order_by("-created_at")
+    qs = (
+        Notification.objects.filter(user=request.user)
+        .select_related("actor", "conversation", "group_invitation", "skill_request")
+        .order_by("-created_at", "-id")
+    )
 
     notif_type = (request.query_params.get("type") or "").strip()
-    if notif_type:
+    if notif_type and notif_type != "all":
         qs = qs.filter(type=notif_type)
+    else:
+        qs = exclude_general_notification_types(qs)
 
     unread_only = (request.query_params.get("unread") or "").strip().lower()
     if unread_only in {"1", "true", "yes"}:
@@ -63,13 +67,18 @@ def notifications_list_view(request):
 
     # jednoduché stránkovanie: limit
     try:
-        limit = int(request.query_params.get("limit") or 50)
+        limit = int(request.query_params.get("limit") or NOTIFICATION_FEED_LIMIT)
     except Exception:
-        limit = 50
-    limit = max(1, min(limit, 200))
+        limit = NOTIFICATION_FEED_LIMIT
+    limit = max(1, min(limit, 50))
 
     return Response(
-        NotificationSerializer(qs[:limit], many=True).data, status=status.HTTP_200_OK
+        NotificationSerializer(
+            qs[:limit],
+            many=True,
+            context={"request": request},
+        ).data,
+        status=status.HTTP_200_OK,
     )
 
 
@@ -80,12 +89,13 @@ def notifications_unread_count_view(request):
     notif_type = (
         request.query_params.get("type") or NotificationType.SKILL_REQUEST
     ).strip()
+    count_all = notif_type == "all"
 
     # Fast-path: Redis cache hit avoids slow DB connect on Railway.
-    cache_key = _unread_cache_key(request.user.id, notif_type)
+    cache_key = None if count_all else _unread_cache_key(request.user.id, notif_type)
     t_cache0 = perf_counter()
     try:
-        cached = cache.get(cache_key)
+        cached = cache.get(cache_key) if cache_key else None
     except Exception:
         cached = None
     cache_ms = (perf_counter() - t_cache0) * 1000.0
@@ -121,15 +131,19 @@ def notifications_unread_count_view(request):
 
     t_sql0 = perf_counter()
     try:
-        count = Notification.objects.filter(
-            user=request.user, type=notif_type, is_read=False
-        ).count()
+        qs = Notification.objects.filter(user=request.user, is_read=False)
+        if not count_all:
+            qs = qs.filter(type=notif_type)
+        else:
+            qs = exclude_general_notification_types(qs)
+        count = qs.count()
     except Exception:
         count = 0
     notif_sql_ms = (perf_counter() - t_sql0) * 1000.0
     db_ms = db_connect_ms + notif_sql_ms
     try:
-        cache.set(cache_key, int(count), timeout=UNREAD_COUNT_CACHE_TTL_SECONDS)
+        if cache_key:
+            cache.set(cache_key, int(count), timeout=UNREAD_COUNT_CACHE_TTL_SECONDS)
     except Exception:
         pass
     resp = Response({"count": count}, status=status.HTTP_200_OK)
@@ -158,22 +172,91 @@ def notifications_unread_count_view(request):
 def notifications_mark_all_read_view(request):
     notif_type = (request.data.get("type") or NotificationType.SKILL_REQUEST).strip()
     now = timezone.now()
+    count_all = notif_type == "all"
     try:
-        Notification.objects.filter(
-            user=request.user, type=notif_type, is_read=False
-        ).update(is_read=True, read_at=now)
+        qs = Notification.objects.filter(user=request.user, is_read=False)
+        if not count_all:
+            qs = qs.filter(type=notif_type)
+        else:
+            qs = exclude_general_notification_types(qs)
+        qs.update(is_read=True, read_at=now)
     except Exception:
         pass
 
     # Keep cache in sync (avoid DB hit in unread-count).
-    try:
-        cache.set(
-            _unread_cache_key(request.user.id, notif_type),
-            0,
-            timeout=UNREAD_COUNT_CACHE_TTL_SECONDS,
+    if not count_all:
+        cache_unread_count(
+            user_id=request.user.id,
+            notif_type=notif_type,
+            count=0,
+            ttl_seconds=UNREAD_COUNT_CACHE_TTL_SECONDS,
         )
-    except Exception:
-        pass
 
-    _send_unread_count(request.user.id)
+    if count_all:
+        notify_user(request.user.id, {"type": "notification_read", "unread_count": 0})
+    else:
+        _send_unread_count(request.user.id)
     return Response({"ok": True}, status=status.HTTP_200_OK)
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+@api_rate_limit
+def notifications_mark_read_view(request, notification_id: int):
+    notification = (
+        Notification.objects.only("id", "user_id", "type", "is_read", "read_at")
+        .filter(id=notification_id, user=request.user)
+        .first()
+    )
+    if notification is None:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+
+    changed = False
+    if not notification.is_read:
+        now = timezone.now()
+        changed = (
+            Notification.objects.filter(
+                id=notification.id,
+                user=request.user,
+                is_read=False,
+            ).update(is_read=True, read_at=now)
+            > 0
+        )
+        if changed:
+            notification.is_read = True
+            notification.read_at = now
+
+    if notification.type == NotificationType.SKILL_REQUEST:
+        unread = get_unread_count(
+            user_id=request.user.id,
+            notif_type=NotificationType.SKILL_REQUEST,
+        )
+        if changed:
+            cache_unread_count(
+                user_id=request.user.id,
+                notif_type=NotificationType.SKILL_REQUEST,
+                count=unread,
+                ttl_seconds=UNREAD_COUNT_CACHE_TTL_SECONDS,
+            )
+            notify_user(
+                request.user.id,
+                {"type": "skill_request", "unread_count": unread},
+            )
+    else:
+        unread = get_unread_count(user_id=request.user.id, notif_type="all")
+        if changed:
+            notify_user(
+                request.user.id,
+                {"type": "notification_read", "unread_count": unread},
+            )
+
+    return Response(
+        {
+            "ok": True,
+            "id": notification.id,
+            "is_read": True,
+            "read_at": notification.read_at.isoformat() if notification.read_at else None,
+            "unread_count": unread,
+        },
+        status=status.HTTP_200_OK,
+    )

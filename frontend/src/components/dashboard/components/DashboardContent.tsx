@@ -11,12 +11,16 @@ import ModuleRouter from '../ModuleRouter';
 import DashboardModals from '../DashboardModals';
 import SearchModule from '../modules/SearchModule';
 import { MessagesDesktopRail } from '../modules/messages/MessagesDesktopRail';
+import NotificationsFeed from '../modules/notifications/NotificationsFeed';
 import {
-  buildMessagesUrl,
   navigateMessagesUrl,
   parseConversationId,
   parseTargetUserId,
 } from '../modules/messages/messagesRouting';
+import {
+  parseRequestsTargetUrl,
+  type RequestsRouteIntent,
+} from '../modules/requests/requestsRouting';
 import { listConversations, openConversation } from '../modules/messages/messagingApi';
 import type { MessagingUserBrief } from '../modules/messages/types';
 import { useDashboardState } from '../hooks/useDashboardState';
@@ -41,6 +45,46 @@ interface DashboardContentProps {
   initialOfferId?: number | null;
 }
 
+function getDashboardModuleFromTarget(targetUrl: string): string | null {
+  if (targetUrl !== '/dashboard' && !targetUrl.startsWith('/dashboard/')) {
+    return null;
+  }
+
+  try {
+    const path = new URL(targetUrl, 'https://swaply.local').pathname;
+    if (path === '/dashboard' || path === '/dashboard/') return 'home';
+    if (/^\/dashboard\/requests\/?$/.test(path)) return 'requests';
+    if (/^\/dashboard\/messages(?:\/\d+)?\/?$/.test(path)) return 'messages';
+    if (/^\/dashboard\/offers\/\d+\/reviews\/?$/.test(path)) return 'offer-reviews';
+    if (/^\/dashboard\/notifications\/?$/.test(path)) return 'notifications';
+    if (/^\/dashboard\/favorites\/?$/.test(path)) return 'favorites';
+    if (/^\/dashboard\/search\/?$/.test(path)) return 'search';
+    if (/^\/dashboard\/settings\/?$/.test(path)) return 'settings';
+    if (/^\/dashboard\/language\/?$/.test(path)) return 'language';
+    if (/^\/dashboard\/account-type\/?$/.test(path)) return 'account-type';
+    if (/^\/dashboard\/privacy\/?$/.test(path)) return 'privacy';
+    if (/^\/dashboard\/skills\/offer\/?$/.test(path)) return 'skills-offer';
+    if (/^\/dashboard\/skills\/search\/?$/.test(path)) return 'skills-search';
+    if (/^\/dashboard\/skills\/?$/.test(path)) return 'skills';
+    if (/^\/dashboard\/profile\/?$/.test(path)) return 'profile';
+    if (/^\/dashboard\/users\/[^/]+\/?$/.test(path)) return 'user-profile';
+  } catch {
+    return null;
+  }
+
+  return null;
+}
+
+function getDashboardUserIdentifierFromTarget(targetUrl: string): string | null {
+  try {
+    const path = new URL(targetUrl, 'https://swaply.local').pathname;
+    const match = path.match(/^\/dashboard\/users\/([^/]+)\/?$/);
+    return match?.[1] ? decodeURIComponent(match[1]) : null;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * HlavnÃ½ obsah Dashboard komponenta s vÅ¡etkou logikou
  */
@@ -54,8 +98,8 @@ export default function DashboardContent({
   initialRightItem,
   initialOfferId,
 }: DashboardContentProps) {
-  const { t } = useLanguage();
   const router = useRouter();
+  const { t } = useLanguage();
   const searchParams = useSearchParams();
   const pathname = usePathname();
 
@@ -88,6 +132,8 @@ export default function DashboardContent({
   // Local component state
   const [isInSubcategories, setIsInSubcategories] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isNotificationsPanelOpen, setIsNotificationsPanelOpen] = useState(false);
+  const [requestsRouteIntent, setRequestsRouteIntent] = useState<RequestsRouteIntent | null>(null);
   const [mobileMessagePeer, setMobileMessagePeer] = useState<MessagingUserBrief | null>(null);
   const [mobileMessageGroup, setMobileMessageGroup] = useState<{
     name: string;
@@ -111,6 +157,9 @@ export default function DashboardContent({
     initialRightItem,
     setHighlightedSkillId: highlighting.setHighlightedSkillId,
   });
+  const setViewedUserId = userProfile.setViewedUserId;
+  const setViewedUserSlug = userProfile.setViewedUserSlug;
+  const setViewedUserSummary = userProfile.setViewedUserSummary;
 
   const navigation = useDashboardNavigation({
     user: dashboardState.user,
@@ -139,7 +188,6 @@ export default function DashboardContent({
     isRightSidebarOpen,
     isMobileMenuOpen,
     accountType,
-    handleModuleChange,
     handleRightSidebarToggle,
     closeOwnProfileEdit,
     handleRightItemClick,
@@ -183,6 +231,102 @@ export default function DashboardContent({
     removeCustomCategory,
   } = skillsState;
 
+  const handleMainModuleChange = useCallback(
+    (moduleId: string) => {
+      setRequestsRouteIntent(null);
+      setIsNotificationsPanelOpen(false);
+      navigation.handleMainModuleChange(moduleId);
+    },
+    [navigation],
+  );
+
+  useEffect(() => {
+    if (activeModule !== 'requests' && requestsRouteIntent) {
+      setRequestsRouteIntent(null);
+    }
+  }, [activeModule, requestsRouteIntent]);
+
+  const handleSidebarSearchClick = useCallback(() => {
+    setIsNotificationsPanelOpen(false);
+    navigation.handleSidebarSearchClick();
+  }, [navigation]);
+
+  const handleSidebarNotificationsClick = useCallback(() => {
+    setIsSearchOpen(false);
+    setIsRightSidebarOpen(false);
+    setActiveRightItem('');
+    setIsNotificationsPanelOpen((current) => !current);
+  }, [setActiveRightItem, setIsRightSidebarOpen]);
+
+  const handleNotificationsPanelClose = useCallback(() => {
+    setIsNotificationsPanelOpen(false);
+  }, []);
+
+  const handleNotificationNavigate = useCallback(
+    (targetUrl: string) => {
+      if (targetUrl !== '/dashboard' && !targetUrl.startsWith('/dashboard/')) {
+        return;
+      }
+
+      const moduleId = getDashboardModuleFromTarget(targetUrl);
+      if (moduleId) {
+        setActiveModule(moduleId);
+        try {
+          localStorage.setItem('activeModule', moduleId);
+        } catch {
+          // ignore
+        }
+      }
+
+      if (moduleId === 'requests') {
+        const requestsTarget = parseRequestsTargetUrl(targetUrl);
+        if (requestsTarget) {
+          setRequestsRouteIntent((current) => ({
+            ...requestsTarget,
+            key: (current?.key ?? 0) + 1,
+          }));
+        }
+      } else {
+        setRequestsRouteIntent(null);
+      }
+
+      if (moduleId === 'user-profile') {
+        const identifier = getDashboardUserIdentifierFromTarget(targetUrl);
+        setViewedUserSummary(null);
+        if (identifier && /^\d+$/.test(identifier)) {
+          setViewedUserId(Number(identifier));
+          setViewedUserSlug(null);
+        } else if (identifier) {
+          setViewedUserId(null);
+          setViewedUserSlug(identifier);
+        }
+      } else if (moduleId) {
+        setViewedUserId(null);
+        setViewedUserSlug(null);
+        setViewedUserSummary(null);
+      }
+
+      setIsNotificationsPanelOpen(false);
+      setIsSearchOpen(false);
+      setIsRightSidebarOpen(false);
+      setActiveRightItem('');
+      setIsMobileMenuOpen(false);
+      router.push(targetUrl);
+    },
+    [
+      router,
+      setActiveModule,
+      setActiveRightItem,
+      setIsMobileMenuOpen,
+      setIsNotificationsPanelOpen,
+      setIsRightSidebarOpen,
+      setIsSearchOpen,
+      setViewedUserId,
+      setViewedUserSlug,
+      setViewedUserSummary,
+    ],
+  );
+
   // Funkcia na uloÅ¾enie karty (presunutÃ¡ do samostatnÃ©ho hooku pre prehÄ¾adnosÅ¥)
   const handleSkillSave = useSkillSaveHandler({
     selectedSkillsCategory,
@@ -221,10 +365,6 @@ export default function DashboardContent({
 
   // Po stlaÄenÃ­ spÃ¤Å¥ z cudzieho profilu (user-profile) URL skoÄÃ­ sprÃ¡vne, ale activeModule ostÃ¡va
   // user-profile â€“ synchronizujeme modul podÄ¾a aktuÃ¡lnej URL pri popstate
-  const setViewedUserId = userProfile.setViewedUserId;
-  const setViewedUserSlug = userProfile.setViewedUserSlug;
-  const setViewedUserSummary = userProfile.setViewedUserSummary;
-
   useEffect(() => {
     let cancelled = false;
 
@@ -365,6 +505,7 @@ export default function DashboardContent({
       setActiveRightItem('');
       setIsMobileMenuOpen(false);
       setIsSearchOpen(false);
+      setIsNotificationsPanelOpen(false);
 
       // Nastav, akÃ½ profil sa mÃ¡ zobraziÅ¥
       if (/^\d+$/.test(identifier)) {
@@ -426,6 +567,7 @@ export default function DashboardContent({
     setActiveRightItem,
     setIsMobileMenuOpen,
     setIsSearchOpen,
+    setIsNotificationsPanelOpen,
     userProfile,
     highlighting,
   ]);
@@ -448,6 +590,7 @@ export default function DashboardContent({
       setActiveRightItem('');
       setIsMobileMenuOpen(false);
       setIsSearchOpen(false);
+      setIsNotificationsPanelOpen(false);
 
       // vyÄisti stav cudzÃ­ch profilov, aby sa UI nemieÅ¡alo
       try {
@@ -490,6 +633,7 @@ export default function DashboardContent({
     setActiveRightItem,
     setIsMobileMenuOpen,
     setIsSearchOpen,
+    setIsNotificationsPanelOpen,
     userProfile,
     highlighting,
   ]);
@@ -572,6 +716,8 @@ export default function DashboardContent({
           ? targetUserIdFromMessagesQuery
           : null
       }
+      onNotificationNavigate={handleNotificationNavigate}
+      requestsRouteIntent={requestsRouteIntent}
     />
   );
 
@@ -593,7 +739,7 @@ export default function DashboardContent({
         activeRightItem={activeRightItem}
         isRightSidebarOpen={isRightSidebarOpen}
         isMobileMenuOpen={isMobileMenuOpen}
-        onModuleChange={navigation.handleMainModuleChange}
+        onModuleChange={handleMainModuleChange}
         onLogout={handleLogout}
         onRightSidebarClose={navigation.handleRightSidebarClose}
         onRightItemClick={handleRightItemClick}
@@ -605,8 +751,11 @@ export default function DashboardContent({
         onSidebarAccountTypeClick={navigation.handleSidebarAccountTypeClick}
         onSidebarPrivacyClick={navigation.handleSidebarPrivacyClick}
         isSearchOpen={isSearchOpen}
-        onSidebarSearchClick={navigation.handleSidebarSearchClick}
+        isNotificationsPanelOpen={isNotificationsPanelOpen}
+        onSidebarSearchClick={handleSidebarSearchClick}
+        onSidebarNotificationsClick={handleSidebarNotificationsClick}
         onSearchClose={navigation.handleSearchClose}
+        onNotificationsPanelClose={handleNotificationsPanelClose}
         searchOverlay={
           user ? (
             <SearchModule
@@ -617,6 +766,12 @@ export default function DashboardContent({
               isActive={isSearchOpen}
             />
           ) : null
+        }
+        notificationsOverlay={
+          <NotificationsFeed
+            variant="panel"
+            onNavigate={handleNotificationNavigate}
+          />
         }
         desktopRightRail={
           activeModule === 'messages' ? (

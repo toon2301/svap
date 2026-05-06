@@ -97,6 +97,15 @@ export function RequestDetailModal({
   }, [isOfferHidden, isSeeking, t, variant]);
 
   const canHide = item?.status === 'cancelled' || item?.status === 'rejected';
+  const reviewOfferId = Number(offer?.id ?? item?.offer);
+  const canShowReviewButton =
+    showReviewButton &&
+    variant === 'sent' &&
+    item?.status === 'completed' &&
+    Number.isInteger(reviewOfferId) &&
+    reviewOfferId > 0 &&
+    offer?.already_reviewed !== true &&
+    typeof onOpenReview === 'function';
 
   const handleView = () => {
     if (!item) return;
@@ -334,21 +343,17 @@ export function RequestDetailModal({
             </>
           )}
 
-          {showReviewButton &&
-            variant === 'sent' &&
-            item?.status === 'completed' &&
-            item?.offer_summary?.already_reviewed === false &&
-            onOpenReview &&
-            item?.offer_summary?.id != null && (
-              <button
-                type="button"
-                onClick={() => onOpenReview(item.offer_summary!.id)}
-                disabled={isBusy}
-                className="w-full py-3 rounded-xl font-semibold bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60"
-              >
-                {t('requests.writeReview', 'Napíš recenziu')}
-              </button>
-            )}
+          {/* Tlačidlo recenzie – len dokončené odoslané výmeny bez existujúcej recenzie. */}
+          {canShowReviewButton && (
+            <button
+              type="button"
+              onClick={() => onOpenReview?.(reviewOfferId)}
+              disabled={isBusy}
+              className="w-full py-3 rounded-xl font-semibold bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60"
+            >
+              {t('reviews.addReview', 'Pridať recenziu')}
+            </button>
+          )}
 
           {canHide && onHide && (
             <button

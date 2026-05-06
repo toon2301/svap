@@ -9,6 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import Credentials from './login/Credentials';
 import GoogleLoginBlock from './login/GoogleLoginBlock';
 import { fetchCsrfToken, hasCsrfToken } from '@/utils/csrf';
+import { logClientDebug, logClientError } from '@/utils/clientLogging';
 // auth_state cookie sa nesmie nastavovať z frontendu
 
 interface LoginData {
@@ -176,9 +177,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
         });
         if (event.origin !== window.location.origin) return;
         if (oauthHandledRef.current) return;
-        if (process.env.NODE_ENV !== 'production') {
-          console.debug('Received message from popup');
-        }
+        logClientDebug('Received message from popup');
         
         if (event.data.type === 'OAUTH_SUCCESS') {
           const storedNonce = sessionStorage.getItem('oauth_nonce');
@@ -191,9 +190,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
           }
           oauthHandledRef.current = true;
           sessionStorage.removeItem('oauth_nonce');
-          if (process.env.NODE_ENV !== 'production') {
-            console.debug('OAuth success message received');
-          }
+          logClientDebug('OAuth success message received');
           clearInterval(checkClosed);
           window.removeEventListener('message', handleMessage);
           // Over session cez backend (HttpOnly cookies) – auth stav určujeme iba cez /me
@@ -225,9 +222,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
           router.push('/dashboard');
         } else if (event.data.type === 'OAUTH_ERROR') {
           trace('login_google_error_msg_received');
-          if (process.env.NODE_ENV !== 'production') {
-            console.debug('OAuth error message received');
-          }
+          logClientDebug('OAuth error message received');
           oauthHandledRef.current = true;
           clearInterval(checkClosed);
           window.removeEventListener('message', handleMessage);
@@ -260,15 +255,13 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
           }
         } catch (error) {
           trace('login_google_popup_poll_error');
-          if (process.env.NODE_ENV !== 'production') {
-            console.debug('Error checking popup status');
-          }
+          logClientDebug('Error checking popup status');
         }
       }, 1000);
 
     } catch (error: any) {
       trace('login_google_exception', { status: error?.response?.status ?? null });
-      console.error('Google login error:', error);
+      logClientError('Google login failed', error);
       setLoginErrors({ 
         general: error.response?.data?.error || t('auth.googleLoginFailed') 
       });
@@ -300,7 +293,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
       router.push('/dashboard');
       
     } catch (error: any) {
-      console.error('Login error:', error);
+      logClientError('Login failed', error);
       
       // Rate limit (429) - špeciálna správa
       if (error.response?.status === 429) {

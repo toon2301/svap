@@ -629,7 +629,6 @@ api.interceptors.response.use(
       if (error.response?.status === 429) {
         console.warn('🚨 429 Rate Limit Hit!', {
           endpoint: key,
-          url: error.config?.url,
           method: error.config?.method,
         });
         // Auto-print stats when 429 occurs

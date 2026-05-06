@@ -107,7 +107,8 @@
     "logout": "Abmelden",
     "search": "Suchen",
     "favorites": "Favoriten",
-    "requests": "Anfragen"
+    "requests": "Anfragen",
+    "notifications": "Benachrichtigungen"
   },
   "homepage": {
     "welcome": "Willkommen bei",
@@ -806,7 +807,35 @@
     "skillRequestDesc": "Benachrichtigungen für Fähigkeitsanfragen ein- oder ausschalten.",
     "on": "Ein",
     "off": "Aus",
-    "turnOffAllDesc": "Alle Benachrichtigungen vorübergehend ausschalten"
+    "turnOffAllDesc": "Alle Benachrichtigungen vorübergehend ausschalten",
+    "preferencesTitle": "Benachrichtigungseinstellungen",
+    "feedTitle": "Benachrichtigungen",
+    "feedDescription": "Neueste Ereignisse und Einladungen, die Ihre Aufmerksamkeit benötigen.",
+    "markAllRead": "Als gelesen markieren",
+    "retry": "Erneut versuchen",
+    "loadingFeed": "Benachrichtigungen werden geladen...",
+    "emptyTitle": "Sie haben noch keine Benachrichtigungen",
+    "emptyDescription": "Wenn etwas Wichtiges passiert, erscheint es hier.",
+    "loadFeedError": "Benachrichtigungen konnten nicht geladen werden.",
+    "markAllReadError": "Benachrichtigungen konnten nicht als gelesen markiert werden.",
+    "groupInvitationTitle": "Gruppeneinladung",
+    "groupInvitationBody": "{name} hat Sie zu einem Gruppenchat eingeladen.",
+    "skillRequestFeedTitle": "Neue Anfrage",
+    "skillRequestAcceptedTitle": "Anfrage angenommen",
+    "skillRequestAcceptedBody": "{name} hat deine Anfrage angenommen.",
+    "skillRequestCompletionRequestedTitle": "Austausch als abgeschlossen markiert",
+    "skillRequestCompletionRequestedBody": "{name} hat den Austausch als abgeschlossen markiert.",
+    "skillRequestCompletedTitle": "Abschluss des Austauschs bestätigt",
+    "skillRequestCompletedBody": "{name} hat den Abschluss des Austauschs bestätigt.",
+    "reviewCreatedTitle": "Neue Bewertung",
+    "reviewCreatedBody": "{name} hat eine Bewertung zu deiner Karte geschrieben.",
+    "reviewReplyCreatedTitle": "Antwort auf Bewertung",
+    "reviewReplyCreatedBody": "{name} hat auf deine Bewertung geantwortet.",
+    "genericTitle": "Neue Benachrichtigung",
+    "genericBody": "Öffnen Sie die Benachrichtigung für weitere Details.",
+    "unknownActor": "Benutzer",
+    "readLabel": "Gelesen",
+    "unreadLabel": "Ungelesen"
   },
   "skillsCatalog": {
     "categories": {

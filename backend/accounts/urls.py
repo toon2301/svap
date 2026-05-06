@@ -176,6 +176,11 @@ urlpatterns = [
         name="notifications_mark_all_read",
     ),
     path(
+        "notifications/<int:notification_id>/mark-read/",
+        views.notifications_mark_read_view,
+        name="notifications_mark_read",
+    ),
+    path(
         "push/vapid-public-key/",
         views.push_vapid_public_key_view,
         name="push_vapid_public_key",

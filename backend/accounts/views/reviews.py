@@ -2,10 +2,13 @@
 Reviews views pre Swaply
 """
 
+import logging
+
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
 
@@ -13,6 +16,12 @@ from swaply.rate_limiting import api_rate_limit
 
 from ..models import Review, ReviewReport, OfferedSkill, SkillRequest, SkillRequestStatus
 from ..serializers import ReviewSerializer
+from ..services.notifications import (
+    create_review_created_notification,
+    create_review_reply_notification,
+)
+
+logger = logging.getLogger(__name__)
 
 
 @api_view(["GET", "POST"])
@@ -93,6 +102,22 @@ def reviews_list_view(request, offer_id):
 
         # Uloženie recenzie s reviewerom a ponukou
         review = serializer.save(reviewer=request.user, offer=offer)
+
+        def notify_offer_owner_about_review():
+            try:
+                create_review_created_notification(review=review, actor=request.user)
+            except Exception:
+                logger.exception(
+                    "Review notification dispatch failed",
+                    extra={
+                        "review_id": getattr(review, "id", None),
+                        "offer_id": getattr(offer, "id", None),
+                        "owner_id": getattr(offer, "user_id", None),
+                        "reviewer_id": getattr(request.user, "id", None),
+                    },
+                )
+
+        transaction.on_commit(notify_offer_owner_about_review)
 
         # Vrátenie vytvorenej recenzie
         response_serializer = ReviewSerializer(review, context={"request": request})
@@ -208,6 +233,11 @@ def review_report_view(request, review_id):
     if description is None:
         description = ""
     description = description.strip() if isinstance(description, str) else str(description)
+    if len(description) > 2000:
+        return Response(
+            {"error": "Popis môže mať maximálne 2000 znakov."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
 
     ReviewReport.objects.create(
         review=review,
@@ -260,9 +290,27 @@ def review_respond_view(request, review_id):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
+    had_owner_response = bool((review.owner_response or "").strip())
     review.owner_response = owner_response
     review.owner_responded_at = timezone.now()
     review.save(update_fields=["owner_response", "owner_responded_at", "updated_at"])
+
+    if not had_owner_response:
+        def notify_reviewer_about_reply():
+            try:
+                create_review_reply_notification(review=review, actor=request.user)
+            except Exception:
+                logger.exception(
+                    "Review reply notification dispatch failed",
+                    extra={
+                        "review_id": getattr(review, "id", None),
+                        "offer_id": getattr(review, "offer_id", None),
+                        "reviewer_id": getattr(review, "reviewer_id", None),
+                        "owner_id": getattr(request.user, "id", None),
+                    },
+                )
+
+        transaction.on_commit(notify_reviewer_about_reply)
 
     serializer = ReviewSerializer(review, context={"request": request})
     return Response(serializer.data, status=status.HTTP_200_OK)

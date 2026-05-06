@@ -55,11 +55,13 @@ class RateLimiter:
         try:
             data = cache.get(key, {"attempts": 0, "first_attempt": None})
         except Exception as e:
-            # Fail-open: ak cache nie je dostupná (napr. Redis down), nepolož endpoint.
+            fail_open = bool(getattr(settings, "RATE_LIMIT_FAIL_OPEN", settings.DEBUG))
             logger.warning(
-                "Rate limiter cache.get failed, allowing request", exc_info=e
+                "Rate limiter cache.get failed",
+                extra={"fail_open": fail_open, "action": action},
+                exc_info=e,
             )
-            return True
+            return fail_open
 
         now = timezone.now()
 
@@ -287,6 +289,18 @@ register_rate_limit = rate_limit(
 # Password reset request: max 5 pokusov za hodinu per IP
 password_reset_rate_limit = rate_limit(
     max_attempts=5, window_minutes=60, block_minutes=60, action="password_reset"
+)
+password_reset_confirm_rate_limit = rate_limit(
+    max_attempts=10,
+    window_minutes=60,
+    block_minutes=60,
+    action="password_reset_confirm",
+)
+password_reset_verify_rate_limit = rate_limit(
+    max_attempts=20,
+    window_minutes=60,
+    block_minutes=60,
+    action="password_reset_verify",
 )
 email_verification_rate_limit = rate_limit(
     max_attempts=5, window_minutes=15, block_minutes=60, action="email_verification"

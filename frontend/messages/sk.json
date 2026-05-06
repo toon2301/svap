@@ -107,7 +107,8 @@
     "logout": "Odhlásiť sa",
     "search": "Vyhľadávanie",
     "favorites": "Obľúbené",
-    "requests": "Žiadosti"
+    "requests": "Žiadosti",
+    "notifications": "Upozornenia"
   },
   "homepage": {
     "welcome": "Víta ťa",
@@ -806,7 +807,35 @@
     "skillRequestDesc": "Zapnite alebo vypnite upozornenia na žiadosti o zručnosť.",
     "on": "Zapnuté",
     "off": "Vypnuté",
-    "turnOffAllDesc": "Dočasne vypnúť všetky upozornenia"
+    "turnOffAllDesc": "Dočasne vypnúť všetky upozornenia",
+    "preferencesTitle": "Nastavenia upozornení",
+    "feedTitle": "Upozornenia",
+    "feedDescription": "Najnovšie udalosti a pozvánky, ktoré si vyžadujú vašu pozornosť.",
+    "markAllRead": "Označiť ako prečítané",
+    "retry": "Skúsiť znova",
+    "loadingFeed": "Načítavam upozornenia...",
+    "emptyTitle": "Zatiaľ nemáte žiadne upozornenia",
+    "emptyDescription": "Keď sa stane niečo dôležité, zobrazí sa to tu.",
+    "loadFeedError": "Upozornenia sa nepodarilo načítať.",
+    "markAllReadError": "Upozornenia sa nepodarilo označiť ako prečítané.",
+    "groupInvitationTitle": "Pozvánka do skupiny",
+    "groupInvitationBody": "{name} vás pozýva do skupinového chatu.",
+    "skillRequestFeedTitle": "Nová žiadosť",
+    "skillRequestAcceptedTitle": "Žiadosť prijatá",
+    "skillRequestAcceptedBody": "{name} prijal tvoju žiadosť.",
+    "skillRequestCompletionRequestedTitle": "Výmena označená ako dokončená",
+    "skillRequestCompletionRequestedBody": "{name} označil výmenu ako dokončenú.",
+    "skillRequestCompletedTitle": "Dokončenie výmeny potvrdené",
+    "skillRequestCompletedBody": "{name} potvrdil dokončenie výmeny.",
+    "reviewCreatedTitle": "Nová recenzia",
+    "reviewCreatedBody": "{name} napísal recenziu na tvoju kartu.",
+    "reviewReplyCreatedTitle": "Odpoveď na recenziu",
+    "reviewReplyCreatedBody": "{name} odpovedal na tvoju recenziu.",
+    "genericTitle": "Nové upozornenie",
+    "genericBody": "Otvorte upozornenie pre viac detailov.",
+    "unknownActor": "Používateľ",
+    "readLabel": "Prečítané",
+    "unreadLabel": "Neprečítané"
   },
   "skillsCatalog": {
     "categories": {

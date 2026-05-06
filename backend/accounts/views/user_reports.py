@@ -67,6 +67,11 @@ def user_report_view(request, user_id: int):
     if description is None:
         description = ""
     description = description.strip() if isinstance(description, str) else str(description)
+    if len(description) > 2000:
+        return Response(
+            {"error": "Popis môže mať maximálne 2000 znakov."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
 
     UserReport.objects.create(
         reported_user=reported_user,

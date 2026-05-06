@@ -4,18 +4,24 @@ Password reset views pre Swaply
 
 from django.shortcuts import render, redirect
 from django.contrib.auth.tokens import default_token_generator
+from django.contrib.auth.password_validation import validate_password
 from django.contrib.sites.shortcuts import get_current_site
 from django.utils.encoding import force_bytes, force_str
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.template.loader import render_to_string
 from django.core.mail import send_mail
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.conf import settings
 from django.contrib import messages
 from django.http import JsonResponse
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework import status
-from swaply.rate_limiting import password_reset_rate_limit
+from swaply.rate_limiting import (
+    password_reset_confirm_rate_limit,
+    password_reset_rate_limit,
+    password_reset_verify_rate_limit,
+)
 from ..models import User
 import logging
 
@@ -151,6 +157,7 @@ def password_reset_request_view(request):
 
 @api_view(["POST"])
 @permission_classes([AllowAny])
+@password_reset_confirm_rate_limit
 def password_reset_confirm_view(request, uidb64, token):
     """
     API endpoint pre potvrdenie reset hesla
@@ -176,6 +183,14 @@ def password_reset_confirm_view(request, uidb64, token):
     if not default_token_generator.check_token(user, token):
         return JsonResponse(
             {"error": "Odkaz na reset hesla vypršal alebo je neplatný"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    try:
+        validate_password(new_password, user=user)
+    except DjangoValidationError as exc:
+        return JsonResponse(
+            {"error": "Heslo nespĺňa bezpečnostné požiadavky", "details": list(exc.messages)},
             status=status.HTTP_400_BAD_REQUEST,
         )
 
@@ -209,6 +224,7 @@ def password_reset_confirm_view(request, uidb64, token):
 
 @api_view(["GET"])
 @permission_classes([AllowAny])
+@password_reset_verify_rate_limit
 def password_reset_verify_token_view(request, uidb64, token):
     """
     API endpoint pre overenie platnosti tokenu
@@ -230,4 +246,4 @@ def password_reset_verify_token_view(request, uidb64, token):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    return JsonResponse({"valid": True, "email": user.email}, status=status.HTTP_200_OK)
+    return JsonResponse({"valid": True}, status=status.HTTP_200_OK)

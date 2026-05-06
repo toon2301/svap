@@ -16,6 +16,11 @@ jest.mock('../contexts/RequestsNotificationsContext', () => ({
     setActiveConversationId: jest.fn(),
     syncConversationReadState: jest.fn(),
   }),
+  useNotificationsUnread: () => ({
+    unreadCount: 0,
+    refreshUnreadCount: jest.fn(),
+    markAllRead: jest.fn(),
+  }),
 }));
 
 // framer-motion mocked globally in jest.setup

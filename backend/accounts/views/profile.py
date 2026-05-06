@@ -126,11 +126,27 @@ def update_profile_view(request):
 def save_draft_view(request):
     """Uložiť draft údajov používateľa"""
     try:
+        import json
         from django.core.cache import cache
 
         draft_data = request.data
+        if not isinstance(draft_data, dict):
+            return Response(
+                {"error": "Neplatný formát draftu"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         user_id = request.user.id
-        draft_type = request.data.get("draft_type", "general")
+        draft_type = str(request.data.get("draft_type", "general")).strip() or "general"
+        if len(draft_type) > 50:
+            return Response(
+                {"error": "Neplatný typ draftu"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if len(json.dumps(draft_data, ensure_ascii=False, default=str)) > 65536:
+            return Response(
+                {"error": "Draft je príliš veľký"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         # Uložiť do cache na 1 hodinu
         cache_key = f"draft_{user_id}_{draft_type}"
@@ -145,15 +161,16 @@ def save_draft_view(request):
             status=status.HTTP_200_OK,
         )
 
-    except Exception as e:
+    except Exception:
         return Response(
-            {"error": "Chyba pri ukladaní draftu", "details": str(e)},
+            {"error": "Chyba pri ukladaní draftu"},
             status=status.HTTP_400_BAD_REQUEST,
         )
 
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
+@api_rate_limit
 def get_draft_view(request, draft_type="general"):
     """Načítať draft údajov používateľa"""
     try:
@@ -178,15 +195,16 @@ def get_draft_view(request, draft_type="general"):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-    except Exception as e:
+    except Exception:
         return Response(
-            {"error": "Chyba pri načítaní draftu", "details": str(e)},
+            {"error": "Chyba pri načítaní draftu"},
             status=status.HTTP_400_BAD_REQUEST,
         )
 
 
 @api_view(["DELETE"])
 @permission_classes([IsAuthenticated])
+@api_rate_limit
 def clear_draft_view(request, draft_type="general"):
     """Vymazať draft údajov používateľa"""
     try:
@@ -205,8 +223,8 @@ def clear_draft_view(request, draft_type="general"):
             status=status.HTTP_200_OK,
         )
 
-    except Exception as e:
+    except Exception:
         return Response(
-            {"error": "Chyba pri mazaní draftu", "details": str(e)},
+            {"error": "Chyba pri mazaní draftu"},
             status=status.HTTP_400_BAD_REQUEST,
         )

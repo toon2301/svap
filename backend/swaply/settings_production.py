@@ -22,6 +22,31 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 if not SECRET_KEY:
     raise ValueError("SECRET_KEY must be set in production")
 
+if CAPTCHA_ENABLED:
+    invalid_captcha_values = {"", "test-secret-key", "test-site-key"}
+    if CAPTCHA_SECRET_KEY in invalid_captcha_values:
+        raise ValueError("CAPTCHA_SECRET_KEY must be set to a production value")
+    if CAPTCHA_SITE_KEY in invalid_captcha_values:
+        raise ValueError("CAPTCHA_SITE_KEY must be set to a production value")
+
+if not os.getenv("MFA_ENCRYPTION_KEY"):
+    raise ValueError("MFA_ENCRYPTION_KEY must be set in production")
+
+SAFESEARCH_ENABLED = os.getenv("SAFESEARCH_ENABLED", "true").strip().lower() in {
+    "1",
+    "true",
+    "yes",
+    "on",
+}
+SAFESEARCH_FAIL_OPEN = False
+if SAFESEARCH_ENABLED and not (
+    os.getenv("GCP_VISION_SERVICE_ACCOUNT_JSON")
+    or os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
+):
+    raise ValueError("SafeSearch credentials must be set in production")
+
+RATE_LIMIT_FAIL_OPEN = False
+
 # ALLOWED_HOSTS - nastavte v .env súbore pre produkciu (presne tieto hodnoty, žiadne wildcardy)
 _PROD_ALLOWED_HOSTS = {
     "svaply.com",
@@ -92,43 +117,30 @@ for host in _collect_env_allowed_hosts():
     if host not in ALLOWED_HOSTS:
         ALLOWED_HOSTS.append(host)
 
-# Database – preferuj DATABASE_URL, inak fallback na sqlite
+# Database – v produkcii musí byť explicitne nastavený podporovaný DATABASE_URL.
 db_url = os.getenv("DATABASE_URL")
-if db_url:
-    parsed = urlparse(db_url)
-    if parsed.scheme in ("postgres", "postgresql"):
-        DATABASES = {
-            "default": {
-                "ENGINE": "django.db.backends.postgresql",
-                "NAME": (parsed.path[1:] or ""),
-                "USER": parsed.username or "",
-                "PASSWORD": parsed.password or "",
-                "HOST": parsed.hostname or "",
-                "PORT": str(parsed.port or ""),
-            }
-        }
-    elif parsed.scheme == "sqlite":
-        DATABASES = {
-            "default": {
-                "ENGINE": "django.db.backends.sqlite3",
-                "NAME": parsed.path if parsed.path else BASE_DIR / "db.sqlite3",
-            }
-        }
-    else:
-        # Neznáma schéma -> fallback na sqlite
-        DATABASES = {
-            "default": {
-                "ENGINE": "django.db.backends.sqlite3",
-                "NAME": BASE_DIR / "db.sqlite3",
-            }
-        }
-else:
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.sqlite3",
-            "NAME": BASE_DIR / "db.sqlite3",
-        }
+if not db_url:
+    raise ValueError("DATABASE_URL must be set in production")
+
+parsed = urlparse(db_url)
+if parsed.scheme not in ("postgres", "postgresql"):
+    raise ValueError("DATABASE_URL must use postgres/postgresql in production")
+
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": (parsed.path[1:] or ""),
+        "USER": parsed.username or "",
+        "PASSWORD": parsed.password or "",
+        "HOST": parsed.hostname or "",
+        "PORT": str(parsed.port or ""),
     }
+}
+
+if not DATABASES["default"]["NAME"]:
+    raise ValueError("DATABASE_URL database name is required in production")
+if not DATABASES["default"]["HOST"]:
+    raise ValueError("DATABASE_URL host is required in production")
 
 # DB connection reuse (prod):
 # Keep connections open to avoid paying TLS/DNS/handshake per request on Railway.

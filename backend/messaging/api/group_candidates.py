@@ -125,7 +125,13 @@ def _candidate_queryset_for_suggestions(*, user, excluded_ids: set[int]):
 
     users_by_id = {
         candidate.id: candidate
-        for candidate in User.objects.filter(id__in=candidate_ids, is_active=True).only(
+        for candidate in User.objects.filter(
+            id__in=candidate_ids,
+            is_active=True,
+            is_public=True,
+            is_staff=False,
+            is_superuser=False,
+        ).only(
             "id",
             "first_name",
             "last_name",

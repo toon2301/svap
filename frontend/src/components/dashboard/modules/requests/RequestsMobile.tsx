@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import toast from 'react-hot-toast';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRequestsNotifications } from '../../contexts/RequestsNotificationsContext';
@@ -21,29 +22,34 @@ import { RequestDetailModal } from './RequestDetailModal';
 import { AddReviewModal } from '../reviews/AddReviewModal';
 import { api, endpoints } from '@/lib/api';
 import { useRequestUnreadAutoRead } from './useRequestUnreadAutoRead';
+import { buildMessagesUrl } from '../messages/messagesRouting';
+import {
+  STATUS_PARAMS,
+  parseRequestsSearchParams,
+  type RequestsRouteIntent,
+  type RequestsStatusTab,
+  type RequestsTab,
+} from './requestsRouting';
 
-type Tab = 'received' | 'sent';
-type StatusTab = 'pending' | 'active' | 'completed' | 'cancelled';
-
-const STATUS_PARAMS: Record<StatusTab, string> = {
-  pending: 'pending',
-  active: 'accepted,completion_requested',
-  completed: 'completed',
-  cancelled: 'cancelled,rejected',
-};
+interface RequestsMobileProps {
+  routeIntent?: RequestsRouteIntent | null;
+}
 
 function totalActiveCollaborations(res: SkillRequestsResponse): number {
   const sentLen = res.sent.filter((x) => x.status !== 'cancelled').length;
   return res.received.length + sentLen;
 }
 
-export function RequestsMobile() {
+export function RequestsMobile({ routeIntent }: RequestsMobileProps) {
   const { t } = useLanguage();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const { user } = useAuth();
   const { markAllRead, unreadCount } = useRequestsNotifications();
+  const requestedRoute = parseRequestsSearchParams(searchParams);
 
-  const [statusTab, setStatusTab] = useState<StatusTab>('pending');
-  const [tab, setTab] = useState<Tab>('received');
+  const [statusTab, setStatusTab] = useState<RequestsStatusTab>(requestedRoute.statusTab);
+  const [tab, setTab] = useState<RequestsTab>(requestedRoute.tab);
   const [data, setData] = useState<SkillRequestsResponse>({ received: [], sent: [] });
   const [activeTabTotal, setActiveTabTotal] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -56,6 +62,7 @@ export function RequestsMobile() {
   const [autoReviewOfferId, setAutoReviewOfferId] = useState<number | null>(null);
   const [isAutoReviewOpen, setIsAutoReviewOpen] = useState(false);
   const autoReviewOpenedForOfferIdsRef = useRef<Set<number>>(new Set());
+  const loadSeqRef = useRef(0);
 
   const reviewerName = useMemo(() => {
     if (!user) return '';
@@ -64,12 +71,26 @@ export function RequestsMobile() {
   }, [user]);
   const reviewerAvatarUrl = user?.avatar_url || null;
 
+  useEffect(() => {
+    setStatusTab(requestedRoute.statusTab);
+    setTab(requestedRoute.tab);
+  }, [requestedRoute.statusTab, requestedRoute.tab]);
+
+  useEffect(() => {
+    if (!routeIntent) return;
+    setStatusTab(routeIntent.statusTab);
+    setTab(routeIntent.tab);
+  }, [routeIntent]);
+
   const load = useCallback(async () => {
+    const loadSeq = loadSeqRef.current + 1;
+    loadSeqRef.current = loadSeq;
     setIsLoading(true);
     try {
       const statusQuery = STATUS_PARAMS[statusTab];
       if (statusTab === 'active') {
         const res = await fetchSkillRequests(statusQuery);
+        if (loadSeqRef.current !== loadSeq) return;
         setData(res);
         setActiveTabTotal(totalActiveCollaborations(res));
       } else {
@@ -77,11 +98,14 @@ export function RequestsMobile() {
           fetchSkillRequests(statusQuery),
           fetchSkillRequests(STATUS_PARAMS.active),
         ]);
+        if (loadSeqRef.current !== loadSeq) return;
         setData(res);
         setActiveTabTotal(totalActiveCollaborations(activeRes));
       }
     } finally {
-      setIsLoading(false);
+      if (loadSeqRef.current === loadSeq) {
+        setIsLoading(false);
+      }
     }
   }, [statusTab]);
 
@@ -174,9 +198,13 @@ export function RequestsMobile() {
       const updated = res?.data as SkillRequest;
       if (updated && typeof updated.id === 'number') {
         mutateItem(updated);
+        const acceptedPeerId =
+          action === 'accept' && updated.status === 'accepted' ? Number(updated.requester) : null;
         if (action === 'cancel' || action === 'hide') {
           setSelected((prev) => (prev?.id === id ? null : prev));
           void load();
+        } else if (acceptedPeerId !== null && Number.isInteger(acceptedPeerId) && acceptedPeerId > 0) {
+          router.push(buildMessagesUrl(null, { targetUserId: acceptedPeerId }));
         } else {
           void refreshActiveTabBadge();
         }
@@ -239,31 +267,25 @@ export function RequestsMobile() {
       const updated = res?.data as SkillRequest;
       if (updated && typeof updated.id === 'number') {
         mutateItem(updated);
-
-        // Po úspešnom potvrdení (status → completed): ak je používateľ requester a ešte nemá recenziu, otvor modal
         if (updated.status === 'completed') {
-          const offerId = (updated.offer_summary?.id ?? updated.offer) as unknown;
-          const offerInt = typeof offerId === 'number' ? offerId : Number(offerId);
+          setStatusTab('completed');
+          setTab('sent');
+
+          const offerInt = Number(updated.offer_summary?.id ?? updated.offer);
+          const alreadyReviewed = updated.offer_summary?.already_reviewed === true;
           if (
-            Number.isFinite(offerInt) &&
+            Number.isInteger(offerInt) &&
             offerInt > 0 &&
-            tab === 'sent' &&
+            !alreadyReviewed &&
             !autoReviewOpenedForOfferIdsRef.current.has(offerInt)
           ) {
-            try {
-              const { data: offerData } = await api.get<any>(endpoints.skills.detail(offerInt));
-              const alreadyReviewed = offerData?.already_reviewed === true;
-              if (!alreadyReviewed) {
-                autoReviewOpenedForOfferIdsRef.current.add(offerInt);
-                setAutoReviewOfferId(offerInt);
-                setIsAutoReviewOpen(true);
-              }
-            } catch {
-              // ak sa nepodarí zistiť already_reviewed, modal automaticky neotváraj
-            }
+            autoReviewOpenedForOfferIdsRef.current.add(offerInt);
+            setAutoReviewOfferId(offerInt);
+            setIsAutoReviewOpen(true);
           }
+        } else {
+          void load();
         }
-        void load();
       } else {
         void load();
       }

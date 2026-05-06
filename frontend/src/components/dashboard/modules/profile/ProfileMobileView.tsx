@@ -363,9 +363,6 @@ export default function ProfileMobileView({
                     onSendMessage();
                   } else if (onEditProfileClick) {
                     onEditProfileClick();
-                  } else {
-                    // eslint-disable-next-line no-console
-                    console.log(isOtherUserProfile ? 'Poslať správu' : 'Upraviť profil');
                   }
                 }}
                 disabled={isOtherUserProfile && isOpeningConversation}

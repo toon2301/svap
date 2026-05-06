@@ -16,6 +16,7 @@ import FavoritesModule from './modules/FavoritesModule';
 import MessagesModule from './modules/MessagesModule';
 import RequestsModule from './modules/RequestsModule';
 import AccountTypeSection from './modules/accountType/AccountTypeSection';
+import type { RequestsRouteIntent } from './modules/requests/requestsRouting';
 import type { DashboardSkill } from './hooks/useSkillsModals';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { SearchUserProfileModule } from './modules/search/SearchUserProfileModule';
@@ -65,6 +66,8 @@ interface ModuleRouterProps {
   conversationIdForMessages?: number | null;
   /** Target user ID for draft compose flow (from URL). */
   targetUserIdForMessages?: number | null;
+  onNotificationNavigate?: (targetUrl: string) => void;
+  requestsRouteIntent?: RequestsRouteIntent | null;
 }
 
 export default function ModuleRouter({
@@ -108,11 +111,13 @@ export default function ModuleRouter({
   offerIdForReviews,
   conversationIdForMessages,
   targetUserIdForMessages,
+  onNotificationNavigate,
+  requestsRouteIntent,
 }: ModuleRouterProps) {
   const { t } = useLanguage();
 
   if (isRightSidebarOpen && activeRightItem === 'notifications') {
-    return <NotificationsModule />;
+    return <NotificationsModule onNavigate={onNotificationNavigate} />;
   }
 
   if (isRightSidebarOpen && activeRightItem === 'language') {
@@ -236,9 +241,9 @@ export default function ModuleRouter({
         />
       );
     case 'requests':
-      return <RequestsModule />;
+      return <RequestsModule routeIntent={requestsRouteIntent} />;
     case 'notifications':
-      return <NotificationsModule />;
+      return <NotificationsModule onNavigate={onNotificationNavigate} />;
     case 'language':
       return <LanguageModule />;
     case 'skills':
