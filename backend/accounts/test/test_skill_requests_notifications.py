@@ -378,7 +378,7 @@ class TestSkillRequestsAndNotifications(APITestCase):
         )
         self.assertEqual(
             payload["target_url"],
-            f"/dashboard/profile?highlight={self.offer.id}",
+            f"/dashboard/profile?highlight={self.offer.id}&side=back",
         )
 
         self.client.force_authenticate(user=self.requester)

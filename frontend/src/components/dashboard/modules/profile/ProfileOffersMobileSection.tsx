@@ -1,15 +1,15 @@
 'use client';
  
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import type { AxiosRequestConfig } from 'axios';
 import { createPortal } from 'react-dom';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { api, endpoints } from '../../../../lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { OpeningHours } from '../skills/skillDescriptionModal/types';
-import type { Offer, ExperienceUnit } from './profileOffersTypes';
-import { HOURS_DAYS } from './profileOffersTypes';
+import type { Offer } from './profileOffersTypes';
 import { ProfileOfferDetailMobile } from './ProfileOfferDetailMobile';
 import { ProfileOpeningHoursMobileModal } from './ProfileOpeningHoursMobileModal';
 import { ProfileOfferCardMobile } from './ProfileOfferCardMobile';
@@ -25,6 +25,11 @@ import { fetchSkillRequests, getApiErrorMessage, updateSkillRequest } from '../r
 import { getMessagingErrorMessage } from '../messages/messagingApi';
 import { buildMessagesUrl } from '../messages/messagesRouting';
 import { setOfferLikeState, type OfferLikeResponse } from './offerLikesApi';
+import {
+  PROFILE_OFFER_LIKED_EVENT,
+  readProfileOfferLikedEvent,
+} from './profileOfferEvents';
+import { mapApiOfferToProfileOffer, mergeProfileOffer } from './profileOfferMapper';
 
 interface ProfileOffersMobileSectionProps {
   accountType?: 'personal' | 'business';
@@ -44,7 +49,10 @@ export default function ProfileOffersMobileSection({
 }: ProfileOffersMobileSectionProps) {
   const { t } = useLanguage();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user } = useAuth();
+  const shouldOpenHighlightedOfferBack = searchParams?.get('side') === 'back';
+  const hasAuthenticatedUser = Boolean(user);
   const [offers, setOffers] = useState<Offer[]>([]);
   const [requestStatusByOfferId, setRequestStatusByOfferId] = useState<Record<number, string>>({});
   const [requestIdByOfferId, setRequestIdByOfferId] = useState<Record<number, number>>({});
@@ -63,7 +71,11 @@ export default function ProfileOffersMobileSection({
   const statusFetchInFlightRef = useRef(false);
   const statusAbortControllerRef = useRef<AbortController | null>(null);
   const offerIdsRef = useRef<number[]>([]);
+  const offersRef = useRef<Offer[]>([]);
+  const offerRefetchInFlightRef = useRef<Set<number>>(new Set());
+  const offerRefetchQueuedRef = useRef<Set<number>>(new Set());
   const hasLoadedOffersRef = useRef(false);
+  const openedBackSideOfferRef = useRef<number | null>(null);
 
   const isOfferStillAvailable = useCallback(
     async (offerId: number) => {
@@ -72,20 +84,15 @@ export default function ProfileOffersMobileSection({
         const endpoint = endpoints.dashboard.userSkills(ownerUserId);
         const { data } = await api.get(endpoint);
         const list = Array.isArray(data) ? data : [];
-        return list.some((s: any) => s && typeof s.id === 'number' && s.id === offerId);
+        return list.some((s: unknown) => {
+          const id = s && typeof s === 'object' ? (s as { id?: unknown }).id : null;
+          return typeof id === 'number' && id === offerId;
+        });
       } catch {
         return true;
       }
     },
     [isOtherUserProfile, ownerUserId],
-  );
-
-  const checkOfferStillAvailable = useCallback(
-    async (offerId: number) => {
-      const ok = await isOfferStillAvailable(offerId);
-      if (!ok) setIsUnavailableModalOpen(true);
-    },
-    [isOfferStillAvailable],
   );
 
   const updateOfferLikeInState = useCallback(
@@ -293,65 +300,7 @@ export default function ProfileOffersMobileSection({
       const mappedOffers = await getOrCreateOffersRequest(cacheKey, async () => {
         const { data } = await api.get(endpoint);
         const list = Array.isArray(data) ? data : [];
-        return list.map((s: any) => {
-          const rawPrice = s.price_from;
-          const parsedPrice =
-            typeof rawPrice === 'number'
-              ? rawPrice
-              : typeof rawPrice === 'string' && rawPrice.trim() !== ''
-                ? parseFloat(rawPrice)
-                : null;
-
-          const experience = s.experience
-            ? {
-                value:
-                  typeof s.experience.value === 'number'
-                    ? s.experience.value
-                    : parseFloat(String(s.experience.value || 0)),
-                unit: (s.experience.unit === 'years' || s.experience.unit === 'months'
-                  ? s.experience.unit
-                  : 'years') as ExperienceUnit,
-              }
-            : undefined;
-
-          return {
-            id: s.id,
-            category: s.category,
-            subcategory: s.subcategory,
-            description: s.description || '',
-            detailed_description: (s.detailed_description || '') as string,
-            images: Array.isArray(s.images)
-              ? s.images.map((im: any) => ({
-                  id: im.id,
-                  image_url: im.image_url || im.image || null,
-                  order: im.order,
-                }))
-              : [],
-            price_from: parsedPrice,
-            price_currency:
-              typeof s.price_currency === 'string' && s.price_currency.trim() !== ''
-                ? s.price_currency
-                : '€',
-            district: typeof s.district === 'string' ? s.district : '',
-            location: typeof s.location === 'string' ? s.location : '',
-            experience,
-            tags: Array.isArray(s.tags) ? s.tags : [],
-            opening_hours: (s.opening_hours || undefined) as OpeningHours | undefined,
-            is_seeking: s.is_seeking === true,
-            urgency:
-              typeof s.urgency === 'string' && s.urgency.trim() !== ''
-                ? (s.urgency.trim() as 'low' | 'medium' | 'high' | '')
-                : '',
-            duration_type: s.duration_type || null,
-            is_hidden: s.is_hidden === true,
-            average_rating: s.average_rating,
-            reviews_count: s.reviews_count,
-            likes_count: Math.max(0, Number(s.likes_count ?? 0)),
-            is_liked_by_me: s.is_liked_by_me === true,
-            already_reviewed: typeof s.already_reviewed === 'boolean' ? s.already_reviewed : undefined,
-            my_request_status: typeof s.my_request_status === 'string' ? s.my_request_status : undefined,
-          };
-        });
+        return list.map(mapApiOfferToProfileOffer);
       });
 
       setOffers(mappedOffers);
@@ -368,10 +317,14 @@ export default function ProfileOffersMobileSection({
       if (showLoading) {
         setIsLoading(false);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Ak je to "Request in cooldown period" chyba, ignoruj ju a zobraz prázdny zoznam
       // (toto sa môže stať pri F5 refresh, keď lastRequestTime Map zostane v pamäti)
-      if (error?.message === 'Request in cooldown period') {
+      const err = error as {
+        message?: string;
+        response?: { data?: { error?: string; detail?: string } };
+      };
+      if (err?.message === 'Request in cooldown period') {
         setOffers([]);
         if (showLoading) {
           setIsLoading(false);
@@ -380,9 +333,9 @@ export default function ProfileOffersMobileSection({
       }
       
       const msg =
-        error?.response?.data?.error ||
-        error?.response?.data?.detail ||
-        error?.message ||
+        err?.response?.data?.error ||
+        err?.response?.data?.detail ||
+        err?.message ||
         t('profile.offersLoadError', 'Nepodarilo sa načítať ponuky. Skús to znova.');
       setLoadError(msg);
       if (showLoading) {
@@ -405,8 +358,75 @@ export default function ProfileOffersMobileSection({
 
   // Keep latest offer IDs in a ref for polling ticks (no extra re-renders)
   useEffect(() => {
+    offersRef.current = offers;
     offerIdsRef.current = offers.map((o) => o.id).filter((id): id is number => typeof id === 'number');
   }, [offers]);
+
+  useEffect(() => {
+    if (highlightedSkillId == null || !shouldOpenHighlightedOfferBack) {
+      openedBackSideOfferRef.current = null;
+      return;
+    }
+    if (openedBackSideOfferRef.current === highlightedSkillId) return;
+
+    const highlightedOffer = offers.find((offer) => offer.id === highlightedSkillId);
+    if (!highlightedOffer) return;
+
+    openedBackSideOfferRef.current = highlightedSkillId;
+    setSelectedOffer(highlightedOffer);
+    setTappedCards(new Set());
+  }, [highlightedSkillId, offers, shouldOpenHighlightedOfferBack]);
+
+  const refetchOfferById = useCallback(
+    async (offerId: number) => {
+      const currentOffers = offersRef.current;
+      if (!currentOffers.some((offer) => offer.id === offerId)) {
+        if (!isOtherUserProfile) {
+          invalidateOffersCache(ownerUserId);
+        }
+        return;
+      }
+      if (offerRefetchInFlightRef.current.has(offerId)) {
+        offerRefetchQueuedRef.current.add(offerId);
+        return;
+      }
+
+      offerRefetchInFlightRef.current.add(offerId);
+      try {
+        const { data } = await api.get(endpoints.skills.detail(offerId));
+        const nextOffer = mapApiOfferToProfileOffer(data);
+        if (nextOffer.id !== offerId) return;
+
+        const patchOffer = (offer: Offer): Offer =>
+          offer.id === offerId ? mergeProfileOffer(offer, nextOffer) : offer;
+
+        setOffers((prev) => prev.map(patchOffer));
+        setSelectedOffer((prev) => (prev ? patchOffer(prev) : prev));
+        invalidateOffersCache(ownerUserId);
+      } catch {
+        // Realtime refresh is best-effort; keep the current card state on failure.
+      } finally {
+        offerRefetchInFlightRef.current.delete(offerId);
+        if (offerRefetchQueuedRef.current.delete(offerId)) {
+          void refetchOfferById(offerId);
+        }
+      }
+    },
+    [isOtherUserProfile, ownerUserId],
+  );
+
+  useEffect(() => {
+    const handleOfferLiked = (event: Event) => {
+      const payload = readProfileOfferLikedEvent(event);
+      if (!payload) return;
+      void refetchOfferById(payload.offerId);
+    };
+
+    window.addEventListener(PROFILE_OFFER_LIKED_EVENT, handleOfferLiked);
+    return () => {
+      window.removeEventListener(PROFILE_OFFER_LIKED_EVENT, handleOfferLiked);
+    };
+  }, [refetchOfferById]);
 
   // Po načítaní ponúk a nastavení highlightedSkillId poscrolluj na danú kartu
   // Scroll len ak je highlightedSkillId nastavený (pri prvom zvýraznení)
@@ -428,7 +448,7 @@ export default function ProfileOffersMobileSection({
 
   // Status polling: iba keď user, isOtherUserProfile, visible; single interval + cleanup + no overlap
   useEffect(() => {
-    const shouldPoll = isOtherUserProfile && !!user;
+    const shouldPoll = isOtherUserProfile && hasAuthenticatedUser;
 
     const stop = () => {
       if (statusPollIntervalRef.current) {
@@ -462,10 +482,11 @@ export default function ProfileOffersMobileSection({
       const controller = new AbortController();
       statusAbortControllerRef.current = controller;
       try {
-        const res = await api.get(
-          endpoints.requests.status,
-          { params: { offer_ids: ids.join(',') }, signal: controller.signal } as any
-        );
+        const requestConfig: AxiosRequestConfig = {
+          params: { offer_ids: ids.join(',') },
+          signal: controller.signal,
+        };
+        const res = await api.get(endpoints.requests.status, requestConfig);
         const data = res?.data && typeof res.data === 'object' ? (res.data as Record<string, unknown>) : {};
         const requestIdsRaw =
           data.request_ids && typeof data.request_ids === 'object'
@@ -505,8 +526,9 @@ export default function ProfileOffersMobileSection({
           setRequestIdByOfferId(ridMap);
           setAlreadyReviewedByOfferId(alreadyReviewed);
         }
-      } catch (e: any) {
-        if (e?.name === 'CanceledError' || e?.code === 'ERR_CANCELED' || e?.name === 'AbortError') return;
+      } catch (e: unknown) {
+        const error = e as { name?: string; code?: string };
+        if (error?.name === 'CanceledError' || error?.code === 'ERR_CANCELED' || error?.name === 'AbortError') return;
       } finally {
         if (statusAbortControllerRef.current === controller) statusAbortControllerRef.current = null;
         statusFetchInFlightRef.current = false;
@@ -529,7 +551,7 @@ export default function ProfileOffersMobileSection({
       document.removeEventListener('visibilitychange', onVisibilityChange);
       stop();
     };
-  }, [isOtherUserProfile, !!user, offers]);
+  }, [isOtherUserProfile, hasAuthenticatedUser, offers]);
 
   const handleCardClick = (offer: Offer) => {
     const cardId = offer.id ?? `${offer.category || 'cat'}-${offer.subcategory || 'sub'}-${offer.description || 'desc'}`;
@@ -583,100 +605,6 @@ export default function ProfileOffersMobileSection({
       </div>
     );
   }
-
-  const renderHoursModal = () => {
-    if (!hoursModal || typeof document === 'undefined') return null;
-
-    const hasAny = HOURS_DAYS.some((d) => {
-      const data = hoursModal[d.key as keyof OpeningHours];
-      return data && (data as any).enabled;
-    });
-
-    return createPortal(
-      <>
-        <div
-          className="fixed inset-0 z-[70] bg-black/45"
-          onClick={() => setHoursModal(null)}
-        />
-        <div
-          className="fixed inset-0 z-[71] flex items-center justify-center px-4"
-          onClick={() => setHoursModal(null)}
-        >
-          <div
-            className="w-full max-w-xs rounded-2xl bg-[var(--background)] text-[var(--foreground)] border border-gray-200 dark:border-gray-700 shadow-2xl p-4"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth={1.5}
-                  stroke="currentColor"
-                  className="w-5 h-5 text-gray-600 dark:text-gray-300"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-                <div className="text-sm font-semibold">
-                  {t('skills.openingHours.title', 'Otváracie hodiny')}
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setHoursModal(null)}
-                aria-label={t('common.close', 'Zatvoriť')}
-                className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth={1.5}
-                  stroke="currentColor"
-                  className="w-4 h-4"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            <div className="rounded-xl bg-gray-50/80 dark:bg-[#101012] border border-gray-200/70 dark:border-gray-700/60 px-3 py-2 space-y-1 max-h-64 overflow-y-auto subtle-scrollbar">
-              {hasAny ? (
-                HOURS_DAYS.map((day) => {
-                  const data = hoursModal[day.key as keyof OpeningHours] as any;
-                  if (!data || !data.enabled) return null;
-                  return (
-                    <div
-                      key={day.key}
-                      className="flex items-center justify-between text-xs text-gray-700 dark:text-gray-200"
-                    >
-                      <span className="font-medium w-10">{day.shortLabel}</span>
-                      <span className="tabular-nums">
-                        {data.from || '—'} – {data.to || '—'}
-                      </span>
-                    </div>
-                  );
-                })
-              ) : (
-                <div className="text-xs text-gray-500 dark:text-gray-400 text-center py-2">
-                  {t(
-                    'skills.openingHours.empty',
-                    'Otváracie hodiny zatiaľ nie sú nastavené alebo je prevádzka zatvorená.'
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </>,
-      document.getElementById('app-root') ?? document.body
-    );
-  };
 
   return (
     <>

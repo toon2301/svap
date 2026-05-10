@@ -14,6 +14,10 @@ import {
   MESSAGING_REALTIME_PINNED_MESSAGE_EVENT,
   MESSAGING_REALTIME_READ_EVENT,
 } from '@/components/dashboard/modules/messages/messagesEvents';
+import {
+  PROFILE_OFFER_LIKED_EVENT,
+  type ProfileOfferLikedPayload,
+} from '@/components/dashboard/modules/profile/profileOfferEvents';
 
 const mockApiGet = jest.fn();
 const mockApiPost = jest.fn();
@@ -262,6 +266,37 @@ describe('RequestsNotificationsProvider', () => {
     });
 
     expect(screen.getByTestId('notification-count')).toHaveTextContent('0');
+  });
+
+  it('dispatches a profile offer refresh event for realtime offer like notifications', async () => {
+    const offerLikedListener = jest.fn();
+    window.addEventListener(PROFILE_OFFER_LIKED_EVENT, offerLikedListener as EventListener);
+
+    try {
+      render(
+        <RequestsNotificationsProvider>
+          <NotificationConsumer />
+        </RequestsNotificationsProvider>,
+      );
+      await flushAsyncEffects();
+
+      act(() => {
+        MockWebSocket.instances[0].emitMessage({
+          type: 'notification_created',
+          unread_count: 7,
+          notification: {
+            type: 'offer_liked',
+            data: { offer_id: 42 },
+          },
+        });
+      });
+
+      expect(offerLikedListener).toHaveBeenCalledTimes(1);
+      const event = offerLikedListener.mock.calls[0]?.[0] as CustomEvent<ProfileOfferLikedPayload>;
+      expect(event.detail).toEqual({ offerId: 42 });
+    } finally {
+      window.removeEventListener(PROFILE_OFFER_LIKED_EVENT, offerLikedListener as EventListener);
+    }
   });
 
   it('acknowledges the notification badge without marking notifications read', async () => {

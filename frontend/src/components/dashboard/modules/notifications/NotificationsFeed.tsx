@@ -71,14 +71,14 @@ export default function NotificationsFeed({
           ) : null}
         </div>
         {!isMobile || isPanel ? (
-          <div className="mt-1">
+          <div className="mt-1 w-full">
             <button
               type="button"
               onClick={() => {
                 if (hasUnread) void markAllRead();
               }}
               disabled={!hasUnread || markingRead}
-              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-2xl border border-gray-300 bg-white px-3 py-2.5 text-sm font-semibold text-gray-500 transition-colors hover:bg-gray-100 hover:text-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-400/50 disabled:cursor-not-allowed disabled:opacity-100 disabled:hover:bg-white disabled:hover:text-gray-500 dark:border-gray-700 dark:bg-black dark:text-gray-400 dark:hover:bg-gray-900 dark:hover:text-purple-200 dark:disabled:hover:bg-black dark:disabled:hover:text-gray-400"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-gray-300 bg-white px-3 py-2.5 text-sm font-semibold text-gray-500 transition-colors hover:bg-gray-100 hover:text-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-400/50 disabled:cursor-not-allowed disabled:opacity-100 disabled:hover:bg-white disabled:hover:text-gray-500 dark:border-gray-700 dark:bg-black dark:text-gray-400 dark:hover:bg-gray-900 dark:hover:text-purple-200 dark:disabled:hover:bg-black dark:disabled:hover:text-gray-400"
             >
               {t('notifications.markAllRead', 'Označiť ako prečítané')}
             </button>

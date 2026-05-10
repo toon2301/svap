@@ -139,12 +139,12 @@ describe('NotificationItem', () => {
     expect(mockPush).toHaveBeenCalledWith('/dashboard/offers/12/reviews');
   });
 
-  it('renders offer like notifications and navigates to highlighted own profile offer', () => {
+  it('renders offer like notifications and navigates to highlighted own profile offer back side', () => {
     const notification = makeNotification({
       type: 'offer_liked',
       title: '',
       body: '',
-      target_url: '/dashboard/profile?highlight=12',
+      target_url: '/dashboard/profile?highlight=12&side=back',
       actor: {
         id: 6,
         display_name: 'Offer Fan',
@@ -162,7 +162,7 @@ describe('NotificationItem', () => {
 
     fireEvent.click(screen.getByRole('button'));
 
-    expect(mockPush).toHaveBeenCalledWith('/dashboard/profile?highlight=12');
+    expect(mockPush).toHaveBeenCalledWith('/dashboard/profile?highlight=12&side=back');
   });
 
   it('renders actor avatar image when provided', () => {

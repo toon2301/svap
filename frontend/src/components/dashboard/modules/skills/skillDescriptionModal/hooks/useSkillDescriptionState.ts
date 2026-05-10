@@ -181,8 +181,9 @@ export const useSkillDescriptionState = ({
         setRemovedExistingImageIds([]);
       }
     } else {
+      // Len ref – pri zatvorenom modali sa removedExistingImageIds vyčistí v efekte závislom od [isOpen].
+      // setState([]) tu spôsoboval nekonečnú slučku, keď rodič posielal pri každom renderi novú referenciu initialImages.
       prevInitialImagesRef.current = [];
-      setRemovedExistingImageIds([]);
     }
   }, [initialImages, isOpen]);
 

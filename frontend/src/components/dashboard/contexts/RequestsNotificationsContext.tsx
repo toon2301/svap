@@ -16,6 +16,10 @@ import type { MessageItem } from '@/components/dashboard/modules/messages/types'
 import { dispatchNotificationsChanged } from '@/components/dashboard/modules/notifications/useNotificationsFeed';
 import type { DashboardNotification } from '@/components/dashboard/modules/notifications/types';
 import {
+  dispatchProfileOfferLiked,
+  parsePositiveOfferId,
+} from '@/components/dashboard/modules/profile/profileOfferEvents';
+import {
   applyIncomingMessageUnreadEvent,
   bindMessageUnreadCountStoreToUser,
   getMessageUnreadCountStore,
@@ -714,6 +718,17 @@ export function RequestsNotificationsProvider({
           void refreshNotificationsUnreadCount();
         }
         dispatchNotificationsChanged();
+
+        if (
+          payload.type === 'notification_created' &&
+          payload.notification?.type === 'offer_liked'
+        ) {
+          const offerId = parsePositiveOfferId(payload.notification.data?.offer_id);
+          if (offerId !== null) {
+            dispatchProfileOfferLiked({ offerId });
+          }
+        }
+
         return;
       }
 

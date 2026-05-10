@@ -1,14 +1,15 @@
 'use client';
  
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import type { AxiosRequestConfig } from 'axios';
 import { createPortal } from 'react-dom';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { api, endpoints } from '../../../../lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import toast from 'react-hot-toast';
 import type { ProfileTab } from './profileTypes';
-import type { Offer, ExperienceUnit } from './profileOffersTypes';
+import type { Offer } from './profileOffersTypes';
 import { HOURS_DAYS } from './profileOffersTypes';
 import type { OpeningHours } from '../skills/skillDescriptionModal/types';
 import ProfileOfferCard from './ProfileOfferCard';
@@ -24,6 +25,11 @@ import { fetchSkillRequests, getApiErrorMessage, updateSkillRequest } from '../r
 import { getMessagingErrorMessage } from '../messages/messagingApi';
 import { buildMessagesUrl } from '../messages/messagesRouting';
 import { setOfferLikeState, type OfferLikeResponse } from './offerLikesApi';
+import {
+  PROFILE_OFFER_LIKED_EVENT,
+  readProfileOfferLikedEvent,
+} from './profileOfferEvents';
+import { mapApiOfferToProfileOffer, mergeProfileOffer } from './profileOfferMapper';
 
 interface ProfileOffersSectionProps {
   activeTab: ProfileTab;
@@ -45,7 +51,10 @@ export default function ProfileOffersSection({
 }: ProfileOffersSectionProps) {
   const { t } = useLanguage();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user } = useAuth();
+  const shouldOpenHighlightedOfferBack = searchParams?.get('side') === 'back';
+  const hasAuthenticatedUser = Boolean(user);
   const [offers, setOffers] = useState<Offer[]>([]);
   const [requestStatusByOfferId, setRequestStatusByOfferId] = useState<Record<number, string>>({});
   const [requestIdByOfferId, setRequestIdByOfferId] = useState<Record<number, number>>({});
@@ -68,6 +77,9 @@ export default function ProfileOffersSection({
   const statusFetchInFlightRef = useRef(false);
   const statusAbortControllerRef = useRef<AbortController | null>(null);
   const offerIdsRef = useRef<number[]>([]);
+  const offersRef = useRef<Offer[]>([]);
+  const offerRefetchInFlightRef = useRef<Set<number>>(new Set());
+  const offerRefetchQueuedRef = useRef<Set<number>>(new Set());
 
   const isOfferStillAvailable = useCallback(
     async (offerId: number) => {
@@ -77,7 +89,10 @@ export default function ProfileOffersSection({
         const endpoint = endpoints.dashboard.userSkills(ownerUserId);
         const { data } = await api.get(endpoint);
         const list = Array.isArray(data) ? data : [];
-        const exists = list.some((s: any) => s && typeof s.id === 'number' && s.id === offerId);
+        const exists = list.some((s: unknown) => {
+          const id = s && typeof s === 'object' ? (s as { id?: unknown }).id : null;
+          return typeof id === 'number' && id === offerId;
+        });
         return exists;
       } catch {
         // Ak sa nepodarí overiť dostupnosť, necháme to bez hlášky (bezpečné minimum).
@@ -86,14 +101,6 @@ export default function ProfileOffersSection({
       return true;
     },
     [isOtherUserProfile, ownerUserId],
-  );
-
-  const checkOfferStillAvailable = useCallback(
-    async (offerId: number) => {
-      const ok = await isOfferStillAvailable(offerId);
-      if (!ok) setIsUnavailableModalOpen(true);
-    },
-    [isOfferStillAvailable],
   );
 
   const updateOfferLikeInState = useCallback(
@@ -294,65 +301,7 @@ export default function ProfileOffersSection({
       const mappedOffers = await getOrCreateOffersRequest(cacheKey, async () => {
         const { data } = await api.get(endpoint);
         const list = Array.isArray(data) ? data : [];
-        return list.map((s: any) => {
-          const rawPrice = s.price_from;
-          const parsedPrice =
-            typeof rawPrice === 'number'
-              ? rawPrice
-              : typeof rawPrice === 'string' && rawPrice.trim() !== ''
-                ? parseFloat(rawPrice)
-                : null;
-
-          const experience = s.experience
-            ? {
-                value:
-                  typeof s.experience.value === 'number'
-                    ? s.experience.value
-                    : parseFloat(String(s.experience.value || 0)),
-                unit: (s.experience.unit === 'years' || s.experience.unit === 'months'
-                  ? s.experience.unit
-                  : 'years') as ExperienceUnit,
-              }
-            : undefined;
-
-          return {
-            id: s.id,
-            category: s.category,
-            subcategory: s.subcategory,
-            description: s.description || '',
-            detailed_description: (s.detailed_description || '') as string,
-            images: Array.isArray(s.images)
-              ? s.images.map((im: any) => ({
-                  id: im.id,
-                  image_url: im.image_url || im.image || null,
-                  order: im.order,
-                }))
-              : [],
-            price_from: parsedPrice,
-            price_currency:
-              typeof s.price_currency === 'string' && s.price_currency.trim() !== ''
-                ? s.price_currency
-                : '€',
-            district: typeof s.district === 'string' ? s.district : '',
-            location: typeof s.location === 'string' ? s.location : '',
-            experience,
-            tags: Array.isArray(s.tags) ? s.tags : [],
-            opening_hours: (s.opening_hours || undefined) as OpeningHours | undefined,
-            is_seeking: s.is_seeking === true,
-            urgency:
-              typeof s.urgency === 'string' && s.urgency.trim() !== ''
-                ? (s.urgency.trim() as 'low' | 'medium' | 'high' | '')
-                : '',
-            duration_type: s.duration_type || null,
-            is_hidden: s.is_hidden === true,
-            average_rating: s.average_rating,
-            reviews_count: s.reviews_count,
-            likes_count: Math.max(0, Number(s.likes_count ?? 0)),
-            is_liked_by_me: s.is_liked_by_me === true,
-            already_reviewed: typeof s.already_reviewed === 'boolean' ? s.already_reviewed : undefined,
-            my_request_status: typeof s.my_request_status === 'string' ? s.my_request_status : undefined,
-          };
-        });
+        return list.map(mapApiOfferToProfileOffer);
       });
 
       setOffers(mappedOffers);
@@ -366,9 +315,10 @@ export default function ProfileOffersSection({
         return next;
       });
       setOffersToCache(cacheKey, mappedOffers);
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Pri 429 ponechaj posledné ponuky (z cache alebo prázdne) a zobraz jemnú hlášku
-      if (error?.response?.status === 429) {
+      const status = (error as { response?: { status?: unknown } })?.response?.status;
+      if (status === 429) {
         setLoadError(
           t(
             'profile.offersRateLimited',
@@ -396,8 +346,71 @@ export default function ProfileOffersSection({
 
   // Keep latest offer IDs in a ref for polling ticks
   useEffect(() => {
+    offersRef.current = offers;
     offerIdsRef.current = offers.map((o) => o.id).filter((id): id is number => typeof id === 'number');
   }, [offers]);
+
+  useEffect(() => {
+    if (highlightedSkillId == null || !shouldOpenHighlightedOfferBack) return;
+
+    setFlippedCards((prev) => {
+      if (prev.has(highlightedSkillId)) return prev;
+      const next = new Set(prev);
+      next.add(highlightedSkillId);
+      return next;
+    });
+  }, [highlightedSkillId, shouldOpenHighlightedOfferBack]);
+
+  const refetchOfferById = useCallback(
+    async (offerId: number) => {
+      const currentOffers = offersRef.current;
+      if (!currentOffers.some((offer) => offer.id === offerId)) {
+        if (!isOtherUserProfile) {
+          invalidateOffersCache(ownerUserId);
+        }
+        return;
+      }
+      if (offerRefetchInFlightRef.current.has(offerId)) {
+        offerRefetchQueuedRef.current.add(offerId);
+        return;
+      }
+
+      offerRefetchInFlightRef.current.add(offerId);
+      try {
+        const { data } = await api.get(endpoints.skills.detail(offerId));
+        const nextOffer = mapApiOfferToProfileOffer(data);
+        if (nextOffer.id !== offerId) return;
+
+        setOffers((prev) =>
+          prev.map((offer) =>
+            offer.id === offerId ? mergeProfileOffer(offer, nextOffer) : offer,
+          ),
+        );
+        invalidateOffersCache(ownerUserId);
+      } catch {
+        // Realtime refresh is best-effort; keep the current card state on failure.
+      } finally {
+        offerRefetchInFlightRef.current.delete(offerId);
+        if (offerRefetchQueuedRef.current.delete(offerId)) {
+          void refetchOfferById(offerId);
+        }
+      }
+    },
+    [isOtherUserProfile, ownerUserId],
+  );
+
+  useEffect(() => {
+    const handleOfferLiked = (event: Event) => {
+      const payload = readProfileOfferLikedEvent(event);
+      if (!payload) return;
+      void refetchOfferById(payload.offerId);
+    };
+
+    window.addEventListener(PROFILE_OFFER_LIKED_EVENT, handleOfferLiked);
+    return () => {
+      window.removeEventListener(PROFILE_OFFER_LIKED_EVENT, handleOfferLiked);
+    };
+  }, [refetchOfferById]);
 
   // Close hours popover when clicking outside
   useEffect(() => {
@@ -438,7 +451,7 @@ export default function ProfileOffersSection({
 
   // Status polling: iba keď user, isOtherUserProfile, activeTab=offers, visible; single interval + cleanup + no overlap
   useEffect(() => {
-    const shouldPoll = activeTab === 'offers' && isOtherUserProfile && !!user;
+    const shouldPoll = activeTab === 'offers' && isOtherUserProfile && hasAuthenticatedUser;
 
     const stop = () => {
       if (statusPollIntervalRef.current) {
@@ -472,10 +485,11 @@ export default function ProfileOffersSection({
       const controller = new AbortController();
       statusAbortControllerRef.current = controller;
       try {
-        const res = await api.get(endpoints.requests.status, {
+        const requestConfig: AxiosRequestConfig = {
           params: { offer_ids: ids.join(',') },
           signal: controller.signal,
-        } as any);
+        };
+        const res = await api.get(endpoints.requests.status, requestConfig);
         const data = res?.data && typeof res.data === 'object' ? (res.data as Record<string, unknown>) : {};
         const requestIdsRaw =
           data.request_ids && typeof data.request_ids === 'object'
@@ -518,9 +532,10 @@ export default function ProfileOffersSection({
           setRequestIdByOfferId(ridMap);
           setAlreadyReviewedByOfferId(alreadyReviewed);
         }
-      } catch (e: any) {
+      } catch (e: unknown) {
         // Abort/cancel is expected on unmount/logout/tab switch
-        if (e?.name === 'CanceledError' || e?.code === 'ERR_CANCELED' || e?.name === 'AbortError') return;
+        const error = e as { name?: string; code?: string };
+        if (error?.name === 'CanceledError' || error?.code === 'ERR_CANCELED' || error?.name === 'AbortError') return;
       } finally {
         if (statusAbortControllerRef.current === controller) statusAbortControllerRef.current = null;
         statusFetchInFlightRef.current = false;
@@ -543,7 +558,7 @@ export default function ProfileOffersSection({
       document.removeEventListener('visibilitychange', onVisibilityChange);
       stop();
     };
-  }, [activeTab, isOtherUserProfile, !!user, offers]);
+  }, [activeTab, isOtherUserProfile, hasAuthenticatedUser, offers]);
 
   if (activeTab !== 'offers') {
     return null;
@@ -594,7 +609,7 @@ export default function ProfileOffersSection({
               if (!offer.opening_hours) return;
 
               const hasAnyEnabled = Object.values(offer.opening_hours).some(
-                (day) => day && (day as any).enabled,
+                (day) => Boolean(day?.enabled),
               );
               if (!hasAnyEnabled) return;
 

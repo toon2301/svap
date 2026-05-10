@@ -19,6 +19,22 @@ function supportsSkillHighlight(activeModule: string): boolean {
   return activeModule === 'profile' || activeModule === 'user-profile';
 }
 
+function clearHighlightSearchParams(url: URL): boolean {
+  let changed = false;
+
+  if (url.searchParams.has('highlight')) {
+    url.searchParams.delete('highlight');
+    changed = true;
+  }
+
+  if (url.searchParams.get('side') === 'back') {
+    url.searchParams.delete('side');
+    changed = true;
+  }
+
+  return changed;
+}
+
 /**
  * Custom hook pre highlighting logiku skill kariet v Dashboard
  */
@@ -75,7 +91,7 @@ export function useDashboardHighlighting({
             sessionStorage.setItem('highlightedSkillId', String(id));
             sessionStorage.setItem('highlightedSkillTime', String(Date.now()));
           }
-        } catch (e) {
+        } catch {
           // ignore
         }
       }
@@ -106,7 +122,7 @@ export function useDashboardHighlighting({
             }
           }
         }
-      } catch (e) {
+      } catch {
         // ignore
       }
 
@@ -133,10 +149,9 @@ export function useDashboardHighlighting({
           sessionStorage.removeItem('highlightedSkillId');
           sessionStorage.removeItem('highlightedSkillTime');
           
-          // Odstrániť parameter highlight z URL
+          // Odstrániť parametre zvýraznenia z URL
           const currentUrl = new URL(window.location.href);
-          if (currentUrl.searchParams.has('highlight')) {
-            currentUrl.searchParams.delete('highlight');
+          if (clearHighlightSearchParams(currentUrl)) {
             window.history.replaceState(null, '', currentUrl.pathname + currentUrl.search);
           }
         }
@@ -166,7 +181,7 @@ export function useDashboardHighlighting({
             remainingTime = Math.max(1000, 1 * 60 * 1000 - elapsed);
           }
         }
-      } catch (e) {
+      } catch {
         // ignore
       }
 
@@ -181,12 +196,11 @@ export function useDashboardHighlighting({
             sessionStorage.removeItem('highlightedSkillTime');
             
             const currentUrl = new URL(window.location.href);
-            if (currentUrl.searchParams.has('highlight')) {
-              currentUrl.searchParams.delete('highlight');
+            if (clearHighlightSearchParams(currentUrl)) {
               router.replace(currentUrl.pathname + currentUrl.search);
             }
           }
-        } catch (e) {
+        } catch {
           // ignore
         }
       }, remainingTime);
