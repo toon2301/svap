@@ -57,6 +57,7 @@ def search_view(request):
         .annotate(
             _avg_rating=Avg("reviews__rating"),
             _reviews_count=Count("reviews", distinct=True),
+            _likes_count=Count("offer_likes", distinct=True),
         )
     )
     if request.user and request.user.is_authenticated:
@@ -231,7 +232,14 @@ def search_view(request):
         page_obj = paginator.page(page) if paginator.num_pages > 0 else []
 
     items = list(page_obj) if page_obj else []
-    serializer = OfferedSkillSearchSerializer(items, many=True, context={"request": request})
+    offer_ids = [item.id for item in items]
+    from .skills import _skills_list_context
+
+    serializer = OfferedSkillSearchSerializer(
+        items,
+        many=True,
+        context={"request": request, **_skills_list_context(request, offer_ids)},
+    )
 
     return Response(
         {

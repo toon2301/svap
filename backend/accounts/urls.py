@@ -113,6 +113,7 @@ urlpatterns = [
     path(
         "skills/<int:offer_id>/reviews/", views.reviews_list_view, name="reviews_list"
     ),
+    path("skills/<int:skill_id>/like/", views.offer_like_view, name="offer_like"),
     path("skills/<int:skill_id>/", views.skills_detail_view, name="skills_detail"),
     path("skills/<int:skill_id>/images/", views.skill_images_view, name="skill_images"),
     path(
@@ -140,6 +141,11 @@ urlpatterns = [
         "reviews/<int:review_id>/report/",
         views.review_report_view,
         name="review_report",
+    ),
+    path(
+        "reviews/<int:review_id>/like/",
+        views.review_like_view,
+        name="review_like",
     ),
     path("reviews/<int:review_id>/", views.review_detail_view, name="review_detail"),
     # Žiadosti + notifikácie

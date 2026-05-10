@@ -49,6 +49,8 @@ export function mapSearchResultToOffer(s: Record<string, unknown>): Offer {
     is_hidden: s.is_hidden === true,
     average_rating: s.average_rating as number | null | undefined,
     reviews_count: typeof s.reviews_count === 'number' ? s.reviews_count : 0,
+    likes_count: Math.max(0, Number(s.likes_count ?? 0)),
+    is_liked_by_me: s.is_liked_by_me === true,
   };
   return {
     ...base,

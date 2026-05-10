@@ -24,6 +24,7 @@ import {
   subscribeToMessageUnreadCount,
 } from './messageUnreadStore';
 import {
+  acknowledgeNotificationUnreadCount,
   bindNotificationUnreadCountStoreToUser,
   getNotificationUnreadCountStore,
   isNotificationUnreadCountFresh,
@@ -356,7 +357,13 @@ function scheduleWsRelease(store: WsStore): void {
   }, WS_CLOSE_GRACE_MS);
 }
 
-export function RequestsNotificationsProvider({ children }: { children: React.ReactNode }) {
+export function RequestsNotificationsProvider({
+  children,
+  acknowledgeNotificationsBadge = false,
+}: {
+  children: React.ReactNode;
+  acknowledgeNotificationsBadge?: boolean;
+}) {
   const { isLoading, user } = useAuth();
   const [unreadCount, setUnreadCount] = useState(() => {
     const store = getRequestUnreadCountStore();
@@ -499,7 +506,7 @@ export function RequestsNotificationsProvider({ children }: { children: React.Re
           params: { type: 'all' },
         });
         const count = typeof response?.data?.count === 'number' ? response.data.count : 0;
-        publishNotificationUnreadCount(count);
+        publishNotificationUnreadCount(count, { source: 'refresh' });
       } catch {
         // fail-open
       } finally {
@@ -554,6 +561,12 @@ export function RequestsNotificationsProvider({ children }: { children: React.Re
     }
   }, [isLoading, refreshMessageUnreadCount, refreshNotificationsUnreadCount, user?.id]);
 
+  useEffect(() => {
+    if (acknowledgeNotificationsBadge) {
+      acknowledgeNotificationUnreadCount();
+    }
+  }, [acknowledgeNotificationsBadge]);
+
   const markAllRead = useCallback(async () => {
     try {
       await api.post(endpoints.notifications.markAllRead, { type: 'skill_request' });
@@ -569,7 +582,7 @@ export function RequestsNotificationsProvider({ children }: { children: React.Re
   const markAllNotificationsRead = useCallback(async () => {
     try {
       await api.post(endpoints.notifications.markAllRead, { type: 'all' });
-      publishNotificationUnreadCount(0);
+      publishNotificationUnreadCount(0, { source: 'mutation' });
       const requestStore = getRequestUnreadCountStore();
       requestStore.lastSuccessfulRefreshAt = Date.now();
       publishUnreadCount(requestStore, 0);
@@ -696,7 +709,7 @@ export function RequestsNotificationsProvider({ children }: { children: React.Re
     const onPayload: WsListener = (payload) => {
       if (payload.type === 'notification_created' || payload.type === 'notification_read') {
         if (typeof payload.unread_count === 'number') {
-          publishNotificationUnreadCount(payload.unread_count);
+          publishNotificationUnreadCount(payload.unread_count, { source: 'realtime' });
         } else {
           void refreshNotificationsUnreadCount();
         }

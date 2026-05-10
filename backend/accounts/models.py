@@ -754,6 +754,7 @@ class SkillRequest(models.Model):
 
 
 class NotificationType(models.TextChoices):
+    OFFER_LIKED = "offer_liked", _("Páči sa mi ponuka")
     SKILL_REQUEST = "skill_request", _("Nová žiadosť")
     SKILL_REQUEST_ACCEPTED = "skill_request_accepted", _("Žiadosť prijatá")
     SKILL_REQUEST_COMPLETION_REQUESTED = (
@@ -766,6 +767,7 @@ class NotificationType(models.TextChoices):
     )
     REVIEW_CREATED = "review_created", _("Nová recenzia")
     REVIEW_REPLY_CREATED = "review_reply_created", _("Odpoveď na recenziu")
+    REVIEW_LIKED = "review_liked", _("Páči sa mi recenzia")
     SKILL_REQUEST_REJECTED = "skill_request_rejected", _("Žiadosť zamietnutá")
     SKILL_REQUEST_CANCELLED = "skill_request_cancelled", _("Žiadosť zrušená")
     GROUP_INVITATION = "group_invitation", _("Pozvánka do skupiny")
@@ -971,6 +973,90 @@ class Review(models.Model):
             raise ValidationError(
                 {"text": "Text recenzie môže mať maximálne 300 znakov."}
             )
+
+
+class ReviewLike(models.Model):
+    """Vzťah používateľa k recenzii, ktorá sa mu páči."""
+
+    review = models.ForeignKey(
+        Review,
+        on_delete=models.CASCADE,
+        related_name="likes",
+        verbose_name=_("Recenzia"),
+    )
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="review_likes",
+        verbose_name=_("Používateľ"),
+    )
+    created_at = models.DateTimeField(_("Vytvorené"), auto_now_add=True)
+
+    class Meta:
+        verbose_name = _("Páči sa mi recenzia")
+        verbose_name_plural = _("Páči sa mi recenzie")
+        ordering = ["-created_at", "-id"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["review", "user"],
+                name="unique_review_like_per_user",
+            )
+        ]
+        indexes = [
+            models.Index(
+                fields=["review", "created_at"],
+                name="acc_revlike_review_created_idx",
+            ),
+            models.Index(
+                fields=["user", "created_at"],
+                name="acc_revlike_user_created_idx",
+            ),
+        ]
+
+    def __str__(self):
+        return f"Like recenzie #{self.review_id} od používateľa {self.user_id}"
+
+
+class OfferedSkillLike(models.Model):
+    """Vzťah používateľa k ponuke, ktorá sa mu páči."""
+
+    offer = models.ForeignKey(
+        OfferedSkill,
+        on_delete=models.CASCADE,
+        related_name="offer_likes",
+        verbose_name=_("Ponuka"),
+    )
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="offered_skill_likes",
+        verbose_name=_("Používateľ"),
+    )
+    created_at = models.DateTimeField(_("Vytvorené"), auto_now_add=True)
+
+    class Meta:
+        verbose_name = _("Páči sa mi ponuka")
+        verbose_name_plural = _("Páči sa mi ponuky")
+        ordering = ["-created_at", "-id"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["offer", "user"],
+                name="unique_offer_like_per_user",
+            )
+        ]
+        indexes = [
+            models.Index(
+                fields=["offer", "created_at"],
+                name="acc_offlike_offer_cr_idx",
+            ),
+            models.Index(
+                fields=["user", "created_at"],
+                name="acc_offlike_user_cr_idx",
+            ),
+        ]
+
+    def __str__(self):
+        return f"Like ponuky #{self.offer_id} od používateľa {self.user_id}"
 
 
 class ReviewReport(models.Model):

@@ -733,7 +733,9 @@ export default function DashboardContent({
   const mobileMessageAvatarUrl = mobileMessageGroup ? null : mobileMessagePeer?.avatar_url ?? null;
 
   return (
-    <RequestsNotificationsProvider>
+    <RequestsNotificationsProvider
+      acknowledgeNotificationsBadge={activeModule === 'notifications' || isNotificationsPanelOpen}
+    >
       <DashboardLayout
         activeModule={activeModule}
         activeRightItem={activeRightItem}

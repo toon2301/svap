@@ -28,6 +28,8 @@ export type OfferCardFrontProps = {
   ownerDisplayName?: string;
   onRequestClick?: (offerId: number) => void;
   onMessageClick?: (offerId: number) => void;
+  onToggleLike?: (offerId: number) => void;
+  isLikePending?: boolean;
   requestLabel?: string;
   isRequestDisabled?: boolean;
   messageLabel?: string;
@@ -54,6 +56,8 @@ export function OfferCardFront({
   ownerDisplayName,
   onRequestClick,
   onMessageClick,
+  onToggleLike,
+  isLikePending = false,
   requestLabel,
   isRequestDisabled = false,
   messageLabel,
@@ -63,6 +67,8 @@ export function OfferCardFront({
   const showFront = !isFlipped;
   const router = useRouter();
   const isReviewIconFilled = isOtherUserProfile ? offer.already_reviewed === true : (offer.reviews_count ?? 0) > 0;
+  const isLiked = offer.is_liked_by_me === true;
+  const likeLabel = t('skills.likes', 'Páči sa mi to');
 
   return (
     <div className={showFront ? 'block' : 'hidden'} style={{ minHeight: '100%' }}>
@@ -86,11 +92,23 @@ export function OfferCardFront({
 
         <div className="absolute top-2 right-2 flex flex-col gap-0.5">
           <button
-            aria-label="Páči sa mi to"
-            title="Páči sa mi to"
-            className="p-1 rounded-full inline-flex items-center justify-center leading-none bg-purple-50 dark:bg-purple-900/80 dark:backdrop-blur-sm border border-purple-200 dark:border-purple-800/60 text-purple-700 dark:text-white hover:bg-purple-100 dark:hover:bg-purple-900/90 transition-colors"
+            type="button"
+            aria-label={likeLabel}
+            aria-pressed={isLiked}
+            aria-busy={isLikePending}
+            title={likeLabel}
+            disabled={isLikePending}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (typeof offer.id === 'number' && onToggleLike) {
+                onToggleLike(offer.id);
+              }
+            }}
+            className={`p-1 rounded-full inline-flex items-center justify-center leading-none bg-purple-50 dark:bg-purple-900/80 dark:backdrop-blur-sm border border-purple-200 dark:border-purple-800/60 text-purple-700 dark:text-white hover:bg-purple-100 dark:hover:bg-purple-900/90 transition-colors ${
+              isLikePending ? 'opacity-70 cursor-wait' : ''
+            }`}
           >
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill={isLiked ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3">
               <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
             </svg>
           </button>

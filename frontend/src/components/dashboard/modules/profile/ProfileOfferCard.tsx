@@ -1,10 +1,12 @@
 'use client';
 
-import React from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import toast from 'react-hot-toast';
 import type { Offer } from './profileOffersTypes';
 import { slugifyLabel } from './profileOffersTypes';
 import { OfferCardBack } from './offerCard/OfferCardBack';
 import { OfferCardFront } from './offerCard/OfferCardFront';
+import { setOfferLikeState, type OfferLikeResponse } from './offerLikesApi';
 
 interface ProfileOfferCardProps {
   offer: Offer;
@@ -19,6 +21,8 @@ interface ProfileOfferCardProps {
   ownerDisplayName?: string;
   onRequestClick?: (offerId: number) => void;
   onMessageClick?: (offerId: number) => void;
+  onToggleLike?: (offerId: number) => void;
+  isLikePending?: boolean;
   requestLabel?: string;
   isRequestDisabled?: boolean;
   messageLabel?: string;
@@ -39,50 +43,111 @@ export default function ProfileOfferCard({
   ownerDisplayName,
   onRequestClick,
   onMessageClick,
+  onToggleLike,
+  isLikePending = false,
   requestLabel,
   isRequestDisabled = false,
   messageLabel,
   isMessageDisabled = false,
   compactTop = false,
 }: ProfileOfferCardProps) {
-  const catSlug = offer.category ? slugifyLabel(offer.category) : '';
-  const subSlug = offer.subcategory ? slugifyLabel(offer.subcategory) : '';
+  const [localLikeState, setLocalLikeState] = useState(() => ({
+    isLiked: offer.is_liked_by_me === true,
+    likesCount: Math.max(0, Number(offer.likes_count ?? 0)),
+  }));
+  const [isLocalLikePending, setIsLocalLikePending] = useState(false);
+
+  useEffect(() => {
+    setLocalLikeState({
+      isLiked: offer.is_liked_by_me === true,
+      likesCount: Math.max(0, Number(offer.likes_count ?? 0)),
+    });
+  }, [offer.id, offer.is_liked_by_me, offer.likes_count]);
+
+  const effectiveOffer = useMemo(
+    () =>
+      onToggleLike
+        ? offer
+        : {
+            ...offer,
+            is_liked_by_me: localLikeState.isLiked,
+            likes_count: localLikeState.likesCount,
+          },
+    [localLikeState.isLiked, localLikeState.likesCount, offer, onToggleLike],
+  );
+
+  const handleInternalToggleLike = useCallback(
+    async (offerId: number) => {
+      if (onToggleLike) {
+        onToggleLike(offerId);
+        return;
+      }
+      if (isLocalLikePending) return;
+
+      const previousLiked = localLikeState.isLiked;
+      const previousLikesCount = localLikeState.likesCount;
+      const nextLiked = !previousLiked;
+      const optimisticLikesCount = Math.max(0, previousLikesCount + (nextLiked ? 1 : -1));
+
+      setIsLocalLikePending(true);
+      setLocalLikeState({ isLiked: nextLiked, likesCount: optimisticLikesCount });
+
+      try {
+        const data: OfferLikeResponse = await setOfferLikeState(offerId, nextLiked);
+        setLocalLikeState({
+          isLiked: data.is_liked_by_me === true,
+          likesCount: Math.max(0, Number(data.likes_count ?? optimisticLikesCount)),
+        });
+      } catch {
+        setLocalLikeState({ isLiked: previousLiked, likesCount: previousLikesCount });
+        toast.error(t('reviews.likeUpdateFailed', 'Nepodarilo sa aktualizovať páči sa mi.'));
+      } finally {
+        setIsLocalLikePending(false);
+      }
+    },
+    [isLocalLikePending, localLikeState.isLiked, localLikeState.likesCount, onToggleLike, t],
+  );
+
+  const effectiveIsLikePending = onToggleLike ? isLikePending : isLocalLikePending;
+  const displayOffer = effectiveOffer;
+  const catSlug = displayOffer.category ? slugifyLabel(displayOffer.category) : '';
+  const subSlug = displayOffer.subcategory ? slugifyLabel(displayOffer.subcategory) : '';
 
   const translatedLabel =
-    offer.subcategory && catSlug && subSlug
-      ? t(`skillsCatalog.subcategories.${catSlug}.${subSlug}`, offer.subcategory)
-      : offer.category && catSlug
-        ? t(`skillsCatalog.categories.${catSlug}`, offer.category)
-        : offer.subcategory || offer.category || '';
+    displayOffer.subcategory && catSlug && subSlug
+      ? t(`skillsCatalog.subcategories.${catSlug}.${subSlug}`, displayOffer.subcategory)
+      : displayOffer.category && catSlug
+        ? t(`skillsCatalog.categories.${catSlug}`, displayOffer.category)
+        : displayOffer.subcategory || displayOffer.category || '';
 
   const imageAlt =
-    (offer.description && offer.description.trim()) ||
+    (displayOffer.description && displayOffer.description.trim()) ||
     translatedLabel ||
     t('skills.offer', 'Ponúkam');
 
   const headline =
-    (offer.description && offer.description.trim()) ||
+    (displayOffer.description && displayOffer.description.trim()) ||
     translatedLabel ||
     t('skills.noDescription', 'Bez popisu');
 
   const label = translatedLabel;
 
   const priceLabel =
-    offer.price_from !== null && offer.price_from !== undefined
-      ? `${Number(offer.price_from).toLocaleString('sk-SK', {
+    displayOffer.price_from !== null && displayOffer.price_from !== undefined
+      ? `${Number(displayOffer.price_from).toLocaleString('sk-SK', {
           minimumFractionDigits: 0,
           maximumFractionDigits: 2,
-        })} ${offer.price_currency || '€'}`
+        })} ${displayOffer.price_currency || '€'}`
       : null;
 
-  const locationText = offer.location && offer.location.trim();
-  const districtText = offer.district && offer.district.trim();
+  const locationText = displayOffer.location && displayOffer.location.trim();
+  const districtText = displayOffer.district && displayOffer.district.trim();
   const displayLocationText = locationText || districtText || null;
 
-  const imageCount = offer.images?.filter((img) => img?.image_url || img?.image).length || 0;
+  const imageCount = displayOffer.images?.filter((img) => img?.image_url || img?.image).length || 0;
   const hasMultipleImages = imageCount > 1;
 
-  const isHidden = offer.is_hidden === true && !isOtherUserProfile;
+  const isHidden = displayOffer.is_hidden === true && !isOtherUserProfile;
 
   return (
     <div
@@ -116,14 +181,14 @@ export default function ProfileOfferCard({
         <div className="absolute left-0 right-0 top-[52.5%] -translate-y-1/2 pointer-events-none z-30 group-hover:opacity-0 group-hover:scale-90 transition-all duration-300">
           <div className="w-full py-1 border border-transparent rounded-none bg-white/80 dark:bg-[#0f0f10]/80 backdrop-blur-sm shadow-lg">
             <p className="text-xl md:text-2xl font-black text-gray-800 dark:text-gray-100 uppercase tracking-[0.2em] leading-tight text-center">
-              {offer.is_seeking ? t('skills.search', 'Hľadám') : t('skills.offering', 'Ponúkam')}
+              {displayOffer.is_seeking ? t('skills.search', 'Hľadám') : t('skills.offering', 'Ponúkam')}
             </p>
           </div>
         </div>
       )}
 
       <OfferCardFront
-        offer={offer}
+        offer={displayOffer}
         accountType={accountType}
         t={t}
         onToggleFlip={onToggleFlip}
@@ -141,6 +206,8 @@ export default function ProfileOfferCard({
         ownerDisplayName={ownerDisplayName}
         onRequestClick={onRequestClick}
         onMessageClick={onMessageClick}
+        onToggleLike={handleInternalToggleLike}
+        isLikePending={effectiveIsLikePending}
         requestLabel={requestLabel}
         isRequestDisabled={isRequestDisabled}
         messageLabel={messageLabel}
@@ -149,7 +216,7 @@ export default function ProfileOfferCard({
       />
 
       <OfferCardBack
-        offer={offer}
+        offer={displayOffer}
         accountType={accountType}
         t={t}
         onToggleFlip={onToggleFlip}

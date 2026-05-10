@@ -65,7 +65,7 @@ export function useNotificationsFeed() {
     setError(null);
     try {
       await markAllNotificationsRead();
-      publishNotificationUnreadCount(0);
+      publishNotificationUnreadCount(0, { source: 'mutation' });
       setItems((current) =>
         current.map((item) => ({
           ...item,
@@ -89,7 +89,7 @@ export function useNotificationsFeed() {
       const readAt = result.read_at || new Date().toISOString();
 
       if (notification.type !== 'skill_request' && typeof result.unread_count === 'number') {
-        publishNotificationUnreadCount(result.unread_count);
+        publishNotificationUnreadCount(result.unread_count, { source: 'mutation' });
       }
 
       setItems((current) =>

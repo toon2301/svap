@@ -831,11 +831,18 @@
     "reviewCreatedBody": "{name} napísal recenziu na tvoju kartu.",
     "reviewReplyCreatedTitle": "Odpoveď na recenziu",
     "reviewReplyCreatedBody": "{name} odpovedal na tvoju recenziu.",
+    "reviewLikedTitle": "Páči sa mi tvoja recenzia",
+    "reviewLikedBody": "{name} označil tvoju recenziu ako páči sa mi.",
+    "offerLikedTitle": "Páči sa mi tvoja ponuka",
+    "offerLikedBody": "{name} označil tvoju ponuku ako páči sa mi.",
     "genericTitle": "Nové upozornenie",
     "genericBody": "Otvorte upozornenie pre viac detailov.",
     "unknownActor": "Používateľ",
     "readLabel": "Prečítané",
-    "unreadLabel": "Neprečítané"
+    "unreadLabel": "Neprečítané",
+    "timeMinutesShort": "m",
+    "timeHoursShort": "h",
+    "timeDaysShort": "d"
   },
   "skillsCatalog": {
     "categories": {
@@ -3628,6 +3635,7 @@
     "heading": "Recenzie",
     "location": "Miesto",
     "like": "Páči sa mi",
+    "likeUpdateFailed": "Nepodarilo sa aktualizovať páči sa mi.",
     "maxItemsReached": "Maximálny počet položiek",
     "name": "Meno",
     "nameOrTitle": "Názov/Meno",

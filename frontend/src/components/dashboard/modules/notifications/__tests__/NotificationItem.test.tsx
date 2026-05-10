@@ -104,12 +104,106 @@ describe('NotificationItem', () => {
       />,
     );
 
-    expect(screen.getByText('Odpoveď na recenziu')).toBeInTheDocument();
-    expect(screen.getByText('Owner User odpovedal na tvoju recenziu.')).toBeInTheDocument();
+    expect(screen.getByRole('button').querySelector('p')).toHaveTextContent(
+      'Owner User odpovedal na tvoju recenziu.',
+    );
 
     fireEvent.click(screen.getByRole('button'));
 
     expect(onMarkRead).toHaveBeenCalledWith(notification);
     expect(onNavigate).toHaveBeenCalledWith('/dashboard/offers/12/reviews');
+  });
+
+  it('renders review like notifications and navigates to offer reviews', () => {
+    const notification = makeNotification({
+      type: 'review_liked',
+      title: '',
+      body: '',
+      actor: {
+        id: 3,
+        display_name: 'Like User',
+        slug: 'like-user',
+        user_type: 'individual',
+        avatar_url: null,
+      },
+    });
+
+    render(<NotificationItem notification={notification} />);
+
+    expect(screen.getByRole('button').querySelector('p')).toHaveTextContent(
+      'Like User označil tvoju recenziu ako páči sa mi.',
+    );
+
+    fireEvent.click(screen.getByRole('button'));
+
+    expect(mockPush).toHaveBeenCalledWith('/dashboard/offers/12/reviews');
+  });
+
+  it('renders offer like notifications and navigates to highlighted own profile offer', () => {
+    const notification = makeNotification({
+      type: 'offer_liked',
+      title: '',
+      body: '',
+      target_url: '/dashboard/profile?highlight=12',
+      actor: {
+        id: 6,
+        display_name: 'Offer Fan',
+        slug: 'offer-fan',
+        user_type: 'individual',
+        avatar_url: null,
+      },
+    });
+
+    render(<NotificationItem notification={notification} />);
+
+    expect(screen.getByRole('button').querySelector('p')).toHaveTextContent(
+      'Offer Fan označil tvoju ponuku ako páči sa mi.',
+    );
+
+    fireEvent.click(screen.getByRole('button'));
+
+    expect(mockPush).toHaveBeenCalledWith('/dashboard/profile?highlight=12');
+  });
+
+  it('renders actor avatar image when provided', () => {
+    const notification = makeNotification({
+      actor: {
+        id: 4,
+        display_name: 'Photo User',
+        slug: 'photo-user',
+        user_type: 'individual',
+        avatar_url: 'https://example.com/avatar.jpg',
+      },
+    });
+
+    render(<NotificationItem notification={notification} />);
+
+    const image = screen.getByRole('img', { name: 'Photo User' });
+    expect(image).toHaveAttribute('src', 'https://example.com/avatar.jpg');
+    expect(image).toHaveAttribute('referrerPolicy', 'no-referrer');
+  });
+
+  it('falls back to actor initials when avatar image fails', () => {
+    const notification = makeNotification({
+      actor: {
+        id: 5,
+        display_name: 'Fallback User',
+        slug: 'fallback-user',
+        user_type: 'individual',
+        avatar_url: 'https://example.com/missing.jpg',
+      },
+    });
+
+    render(<NotificationItem notification={notification} />);
+
+    fireEvent.error(screen.getByRole('img', { name: 'Fallback User' }));
+
+    expect(screen.getByText('FU')).toBeInTheDocument();
+  });
+
+  it('uses a safe fallback when notification actor is missing', () => {
+    render(<NotificationItem notification={makeNotification({ actor: null })} />);
+
+    expect(screen.getByText('?')).toBeInTheDocument();
   });
 });

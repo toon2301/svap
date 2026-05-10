@@ -255,3 +255,66 @@ def create_review_reply_notification(*, review, actor) -> Notification | None:
             "from_user_id": actor.id,
         },
     )
+
+
+def create_review_liked_notification(*, review, actor) -> Notification | None:
+    reviewer = getattr(review, "reviewer", None)
+    if reviewer is None or getattr(reviewer, "id", None) == getattr(actor, "id", None):
+        return None
+
+    existing = (
+        Notification.objects.filter(
+            user=reviewer,
+            type=NotificationType.REVIEW_LIKED,
+            data__review_id=review.id,
+            data__from_user_id=actor.id,
+        )
+        .order_by("-created_at", "-id")
+        .first()
+    )
+    if existing is not None:
+        return existing
+
+    actor_name = (getattr(actor, "display_name", "") or "").strip() or "Používateľ"
+    return create_notification(
+        user=reviewer,
+        notif_type=NotificationType.REVIEW_LIKED,
+        title="Páči sa mi tvoja recenzia",
+        body=f"{actor_name} označil tvoju recenziu ako páči sa mi.",
+        actor=actor,
+        data={
+            "review_id": review.id,
+            "offer_id": review.offer_id,
+            "from_user_id": actor.id,
+        },
+    )
+
+
+def create_offer_liked_notification(*, offer, actor) -> Notification | None:
+    owner = getattr(offer, "user", None)
+    if owner is None or getattr(owner, "id", None) == getattr(actor, "id", None):
+        return None
+
+    existing = (
+        Notification.objects.filter(
+            user=owner,
+            type=NotificationType.OFFER_LIKED,
+            data__offer_id=offer.id,
+            actor=actor,
+        )
+        .order_by("-created_at", "-id")
+        .first()
+    )
+    if existing is not None:
+        return existing
+
+    return create_notification(
+        user=owner,
+        notif_type=NotificationType.OFFER_LIKED,
+        title="Páči sa mi tvoja ponuka",
+        body="",
+        actor=actor,
+        data={
+            "offer_id": offer.id,
+        },
+    )

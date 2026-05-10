@@ -10,8 +10,11 @@ from factory.django import DjangoModelFactory
 from accounts.models import (
     UserType,
     OfferedSkill,
+    OfferedSkillLike,
     Notification,
     NotificationType,
+    Review,
+    ReviewLike,
     SkillRequest,
     SkillRequestStatus,
 )
@@ -64,6 +67,11 @@ class TestSkillRequestsAndNotifications(APITestCase):
         self.assertEqual(r.data["offer"], self.offer.id)
         self.assertEqual(r.data["recipient"], self.owner.id)
         self.assertEqual(r.data["requester"], self.requester.id)
+        notification = Notification.objects.get(
+            user=self.owner,
+            type=NotificationType.SKILL_REQUEST,
+        )
+        self.assertEqual(notification.actor_id, self.requester.id)
 
         # owner sees unread count 1
         self.client.force_authenticate(user=self.owner)
@@ -252,6 +260,169 @@ class TestSkillRequestsAndNotifications(APITestCase):
             ).count(),
             1,
         )
+
+    def test_review_like_toggle_updates_counts_and_notifies_reviewer_once(self):
+        review = Review.objects.create(
+            reviewer=self.requester,
+            offer=self.offer,
+            rating=5,
+            text="Výborná spolupráca.",
+            pros=["Rýchla komunikácia"],
+            cons=[],
+        )
+
+        self.client.force_authenticate(user=self.owner)
+        with self.captureOnCommitCallbacks(execute=True):
+            first_like = self.client.post(f"{self.base}/reviews/{review.id}/like/")
+
+        self.assertEqual(first_like.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(first_like.data["review_id"], review.id)
+        self.assertTrue(first_like.data["is_liked_by_me"])
+        self.assertEqual(first_like.data["likes_count"], 1)
+        self.assertTrue(
+            ReviewLike.objects.filter(review=review, user=self.owner).exists()
+        )
+
+        notification = Notification.objects.get(
+            user=self.requester,
+            type=NotificationType.REVIEW_LIKED,
+        )
+        self.assertEqual(notification.actor_id, self.owner.id)
+        self.assertEqual(notification.data.get("review_id"), review.id)
+        self.assertEqual(notification.data.get("offer_id"), self.offer.id)
+        self.assertEqual(notification.data.get("from_user_id"), self.owner.id)
+        self.assertNotIn("text", notification.data)
+
+        self.client.force_authenticate(user=self.requester)
+        count = self.client.get(
+            f"{self.base}/notifications/unread-count/", {"type": "all"}
+        )
+        self.assertEqual(count.status_code, status.HTTP_200_OK)
+        self.assertEqual(count.data.get("count"), 1)
+
+        feed = self.client.get(f"{self.base}/notifications/", {"type": "all"})
+        self.assertEqual(feed.status_code, status.HTTP_200_OK)
+        payload = next(
+            item for item in feed.data if item["type"] == NotificationType.REVIEW_LIKED
+        )
+        self.assertEqual(
+            payload["target_url"],
+            f"/dashboard/offers/{self.offer.id}/reviews",
+        )
+
+        self.client.force_authenticate(user=self.owner)
+        with self.captureOnCommitCallbacks(execute=True):
+            second_like = self.client.post(f"{self.base}/reviews/{review.id}/like/")
+        self.assertEqual(second_like.status_code, status.HTTP_200_OK)
+        self.assertTrue(second_like.data["is_liked_by_me"])
+        self.assertEqual(second_like.data["likes_count"], 1)
+        self.assertEqual(
+            Notification.objects.filter(
+                user=self.requester,
+                type=NotificationType.REVIEW_LIKED,
+            ).count(),
+            1,
+        )
+
+        list_response = self.client.get(f"{self.base}/skills/{self.offer.id}/reviews/")
+        self.assertEqual(list_response.status_code, status.HTTP_200_OK)
+        listed_review = next(item for item in list_response.data if item["id"] == review.id)
+        self.assertEqual(listed_review["likes_count"], 1)
+        self.assertTrue(listed_review["is_liked_by_me"])
+
+        unlike = self.client.delete(f"{self.base}/reviews/{review.id}/like/")
+        self.assertEqual(unlike.status_code, status.HTTP_200_OK)
+        self.assertFalse(unlike.data["is_liked_by_me"])
+        self.assertEqual(unlike.data["likes_count"], 0)
+        self.assertFalse(
+            ReviewLike.objects.filter(review=review, user=self.owner).exists()
+        )
+
+    def test_offer_like_toggle_updates_counts_and_notifies_owner_once(self):
+        self.client.force_authenticate(user=self.requester)
+        with self.captureOnCommitCallbacks(execute=True):
+            first_like = self.client.post(f"{self.base}/skills/{self.offer.id}/like/")
+
+        self.assertEqual(first_like.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(first_like.data["offer_id"], self.offer.id)
+        self.assertTrue(first_like.data["is_liked_by_me"])
+        self.assertEqual(first_like.data["likes_count"], 1)
+        self.assertTrue(
+            OfferedSkillLike.objects.filter(
+                offer=self.offer,
+                user=self.requester,
+            ).exists()
+        )
+
+        notification = Notification.objects.get(
+            user=self.owner,
+            type=NotificationType.OFFER_LIKED,
+        )
+        self.assertEqual(notification.actor_id, self.requester.id)
+        self.assertEqual(notification.data.get("offer_id"), self.offer.id)
+        self.assertNotIn("text", notification.data)
+        self.assertNotIn("description", notification.data)
+        self.assertNotIn("from_user_id", notification.data)
+
+        self.client.force_authenticate(user=self.owner)
+        count = self.client.get(
+            f"{self.base}/notifications/unread-count/", {"type": "all"}
+        )
+        self.assertEqual(count.status_code, status.HTTP_200_OK)
+        self.assertEqual(count.data.get("count"), 1)
+
+        feed = self.client.get(f"{self.base}/notifications/", {"type": "all"})
+        self.assertEqual(feed.status_code, status.HTTP_200_OK)
+        payload = next(
+            item for item in feed.data if item["type"] == NotificationType.OFFER_LIKED
+        )
+        self.assertEqual(
+            payload["target_url"],
+            f"/dashboard/profile?highlight={self.offer.id}",
+        )
+
+        self.client.force_authenticate(user=self.requester)
+        with self.captureOnCommitCallbacks(execute=True):
+            second_like = self.client.post(f"{self.base}/skills/{self.offer.id}/like/")
+        self.assertEqual(second_like.status_code, status.HTTP_200_OK)
+        self.assertTrue(second_like.data["is_liked_by_me"])
+        self.assertEqual(second_like.data["likes_count"], 1)
+        self.assertEqual(
+            Notification.objects.filter(
+                user=self.owner,
+                type=NotificationType.OFFER_LIKED,
+            ).count(),
+            1,
+        )
+
+        list_response = self.client.get(
+            f"{self.base}/dashboard/users/{self.owner.id}/skills/"
+        )
+        self.assertEqual(list_response.status_code, status.HTTP_200_OK)
+        listed_offer = next(item for item in list_response.data if item["id"] == self.offer.id)
+        self.assertEqual(listed_offer["likes_count"], 1)
+        self.assertTrue(listed_offer["is_liked_by_me"])
+
+        unlike = self.client.delete(f"{self.base}/skills/{self.offer.id}/like/")
+        self.assertEqual(unlike.status_code, status.HTTP_200_OK)
+        self.assertFalse(unlike.data["is_liked_by_me"])
+        self.assertEqual(unlike.data["likes_count"], 0)
+        self.assertFalse(
+            OfferedSkillLike.objects.filter(
+                offer=self.offer,
+                user=self.requester,
+            ).exists()
+        )
+
+    def test_offer_like_hidden_offer_is_not_available_to_other_users(self):
+        self.offer.is_hidden = True
+        self.offer.save(update_fields=["is_hidden"])
+
+        self.client.force_authenticate(user=self.requester)
+        response = self.client.post(f"{self.base}/skills/{self.offer.id}/like/")
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertFalse(OfferedSkillLike.objects.exists())
 
     def test_list_requests_received_and_sent(self):
         self.client.force_authenticate(user=self.requester)

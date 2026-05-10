@@ -318,6 +318,7 @@ def skill_requests_view(request):
                 "offer_is_seeking": bool(offer.is_seeking),
                 "from_user_id": request.user.id,
             },
+            actor=request.user,
             skill_request=obj,
         )
         _notify_unread_count(recipient.id, notif)

@@ -831,11 +831,18 @@
     "reviewCreatedBody": "{name} napisał(a) recenzję na Twojej karcie.",
     "reviewReplyCreatedTitle": "Odpowiedź na recenzję",
     "reviewReplyCreatedBody": "{name} odpowiedział(a) na Twoją recenzję.",
+    "reviewLikedTitle": "Ktoś polubił Twoją recenzję",
+    "reviewLikedBody": "{name} polubił(a) Twoją recenzję.",
+    "offerLikedTitle": "Ktoś polubił Twoją ofertę",
+    "offerLikedBody": "{name} polubił(a) Twoją ofertę.",
     "genericTitle": "Nowe powiadomienie",
     "genericBody": "Otwórz powiadomienie, aby zobaczyć szczegóły.",
     "unknownActor": "Użytkownik",
     "readLabel": "Przeczytane",
-    "unreadLabel": "Nieprzeczytane"
+    "unreadLabel": "Nieprzeczytane",
+    "timeMinutesShort": "min",
+    "timeHoursShort": "godz.",
+    "timeDaysShort": "d"
   },
   "skillsCatalog": {
     "categories": {
@@ -3628,6 +3635,7 @@
     "heading": "Opinie",
     "location": "Lokalizacja",
     "like": "Lubię to",
+    "likeUpdateFailed": "Nie udało się zaktualizować polubienia.",
     "maxItemsReached": "Maksymalna liczba pozycji",
     "name": "Imię",
     "nameOrTitle": "Nazwa/Imię",

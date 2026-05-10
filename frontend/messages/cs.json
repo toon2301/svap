@@ -831,11 +831,18 @@
     "reviewCreatedBody": "{name} napsal(a) recenzi na tvoji kartu.",
     "reviewReplyCreatedTitle": "Odpověď na recenzi",
     "reviewReplyCreatedBody": "{name} odpověděl(a) na tvoji recenzi.",
+    "reviewLikedTitle": "Někomu se líbí tvoje recenze",
+    "reviewLikedBody": "{name} označil(a), že se mu líbí tvoje recenze.",
+    "offerLikedTitle": "Někomu se líbí tvoje nabídka",
+    "offerLikedBody": "{name} označil(a), že se mu líbí tvoje nabídka.",
     "genericTitle": "Nové upozornění",
     "genericBody": "Otevřete upozornění pro více detailů.",
     "unknownActor": "Uživatel",
     "readLabel": "Přečtené",
-    "unreadLabel": "Nepřečtené"
+    "unreadLabel": "Nepřečtené",
+    "timeMinutesShort": "m",
+    "timeHoursShort": "h",
+    "timeDaysShort": "d"
   },
   "skillsCatalog": {
     "categories": {
@@ -3627,7 +3634,8 @@
     "experience": "Prax",
     "heading": "Recenzie",
     "location": "Miesto",
-    "like": "Páči sa mi",
+    "like": "Líbí se mi",
+    "likeUpdateFailed": "Nepodařilo se aktualizovat líbí se mi.",
     "maxItemsReached": "Maximálny počet položiek",
     "name": "Meno",
     "nameOrTitle": "Názov/Meno",

@@ -49,6 +49,8 @@ export type OfferReviewsDesktopProps = {
   onDeleteReviewClick: (reviewId: number) => void;
   onOpenHoursClick: () => void;
   onOwnerResponseSaved: (reviewId: number, ownerResponse: string, ownerRespondedAt: string) => void;
+  onToggleReviewLike?: (review: Review) => void;
+  pendingReviewLikeIds?: Set<number>;
   onReportReview?: (review: Review) => void;
   reportedReviewIds?: Set<number>;
 };
@@ -75,6 +77,8 @@ export function OfferReviewsDesktop({
   onDeleteReviewClick,
   onOpenHoursClick,
   onOwnerResponseSaved,
+  onToggleReviewLike,
+  pendingReviewLikeIds,
   onReportReview,
   reportedReviewIds,
 }: OfferReviewsDesktopProps) {
@@ -226,6 +230,8 @@ export function OfferReviewsDesktop({
                   setOwnerResponseModalReview(r);
                   setOwnerResponseModalMode('edit');
                 }}
+                onLikeToggle={onToggleReviewLike}
+                isLikePending={pendingReviewLikeIds?.has(review.id) ?? false}
                 onReportClick={onReportReview}
                 reportedReviewIds={reportedReviewIds}
               />

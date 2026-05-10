@@ -831,11 +831,18 @@
     "reviewCreatedBody": "{name} értékelést írt a kártyádhoz.",
     "reviewReplyCreatedTitle": "Válasz az értékelésre",
     "reviewReplyCreatedBody": "{name} válaszolt az értékelésedre.",
+    "reviewLikedTitle": "Tetszett valakinek az értékelésed",
+    "reviewLikedBody": "{name} kedvelte az értékelésedet.",
+    "offerLikedTitle": "Valakinek tetszik az ajánlatod",
+    "offerLikedBody": "{name} kedvelte az ajánlatodat.",
     "genericTitle": "Új értesítés",
     "genericBody": "Nyissa meg az értesítést a részletekért.",
     "unknownActor": "Felhasználó",
     "readLabel": "Olvasott",
-    "unreadLabel": "Olvasatlan"
+    "unreadLabel": "Olvasatlan",
+    "timeMinutesShort": "p",
+    "timeHoursShort": "ó",
+    "timeDaysShort": "n"
   },
   "skillsCatalog": {
     "categories": {
@@ -3628,6 +3635,7 @@
     "heading": "Értékelések",
     "location": "Helyszín",
     "like": "Tetszik",
+    "likeUpdateFailed": "Nem sikerült frissíteni a kedvelést.",
     "maxItemsReached": "Maximális elemszám",
     "name": "Név",
     "nameOrTitle": "Cím/Név",

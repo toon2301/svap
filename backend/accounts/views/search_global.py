@@ -195,6 +195,7 @@ def global_search_view(request):
         offers_qs = offers_qs.annotate(
             _avg_rating=Avg("reviews__rating"),
             _reviews_count=Count("reviews", distinct=True),
+            _likes_count=Count("offer_likes", distinct=True),
             relevance_score=(
                 Case(When(tags__icontains=q, then=Value(3)), default=Value(0), output_field=IntegerField())
                 + Case(
@@ -222,8 +223,13 @@ def global_search_view(request):
         op = min(offers_page, offers_total_pages)
         ooffset = (op - 1) * offers_page_size
         offers = list(offers_qs[ooffset : ooffset + offers_page_size])
+        offer_ids = [offer.id for offer in offers]
+        from .skills import _skills_list_context
+
         offers_data = OfferedSkillSearchSerializer(
-            offers, many=True, context={"request": request}
+            offers,
+            many=True,
+            context={"request": request, **_skills_list_context(request, offer_ids)},
         ).data
 
     return Response(

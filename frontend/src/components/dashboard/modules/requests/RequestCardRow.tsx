@@ -64,6 +64,8 @@ export function RequestCardRow({ item, onAccept, onReject, isBusy = false }: Pro
           is_hidden: data.is_hidden === true,
           average_rating: data.average_rating,
           reviews_count: data.reviews_count,
+          likes_count: Math.max(0, Number(data.likes_count ?? 0)),
+          is_liked_by_me: data.is_liked_by_me === true,
         };
         
         setOffer(mappedOffer);

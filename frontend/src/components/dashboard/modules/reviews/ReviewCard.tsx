@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { StarIcon, PencilIcon, TrashIcon, HeartIcon, ChatBubbleLeftIcon } from '@heroicons/react/24/outline';
-import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
+import { HeartIcon as HeartIconSolid, StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 export type Review = {
@@ -16,6 +16,8 @@ export type Review = {
   cons: string[];
   owner_response?: string | null;
   owner_responded_at?: string | null;
+  likes_count?: number;
+  is_liked_by_me?: boolean;
   created_at: string;
   updated_at: string;
 };
@@ -34,6 +36,10 @@ export type ReviewCardProps = {
   onViewOwnerResponse?: (review: Review) => void;
   /** Callback pri kliknutí na Odpovedať (iba pre vlastníka ponuky) */
   onAddOwnerResponse?: (review: Review) => void;
+  /** Callback pri kliknutí na Páči sa mi */
+  onLikeToggle?: (review: Review) => void;
+  /** true ak sa práve ukladá like stav tejto recenzie */
+  isLikePending?: boolean;
   /** Callback pri kliknutí na Nahlásiť (iba ak používateľ nie je autor recenzie) */
   onReportClick?: (review: Review) => void;
   /** Množina ID recenzií, ktoré používateľ už nahlásil */
@@ -72,6 +78,8 @@ export default function ReviewCard({
   onDeleteClick,
   onViewOwnerResponse,
   onAddOwnerResponse,
+  onLikeToggle,
+  isLikePending = false,
   onReportClick,
   reportedReviewIds,
 }: ReviewCardProps) {
@@ -79,6 +87,9 @@ export default function ReviewCard({
   
   const isOwner = currentUserId != null && review.reviewer_id === currentUserId;
   const isReported = reportedReviewIds?.has(review.id) ?? false;
+  const likesCount = Math.max(0, Number(review.likes_count ?? 0));
+  const isLiked = Boolean(review.is_liked_by_me);
+  const LikeIcon = isLiked ? HeartIconSolid : HeartIcon;
 
   const renderStars = (rating: number) => {
     const stars = [];
@@ -222,11 +233,19 @@ export default function ReviewCard({
           <div className="flex items-center gap-4 pt-2 border-t border-gray-300 dark:border-gray-700 flex-wrap">
             <button
               type="button"
-              className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-sm text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors"
+              onClick={onLikeToggle ? () => onLikeToggle(review) : undefined}
+              disabled={isLikePending}
+              aria-pressed={isLiked}
+              className={`flex items-center gap-1.5 px-2 py-1.5 rounded-lg text-sm transition-colors ${
+                isLiked
+                  ? 'text-red-600 bg-red-50 hover:bg-red-100 dark:text-red-400 dark:bg-red-900/20 dark:hover:bg-red-900/30'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-800/50'
+              } ${isLikePending ? 'opacity-60 cursor-wait' : ''}`}
               aria-label={t('reviews.like', 'Páči sa mi to')}
             >
-              <HeartIcon className="w-5 h-5" />
+              <LikeIcon className="w-5 h-5" />
               <span>{t('reviews.like', 'Páči sa mi to')}</span>
+              <span className="tabular-nums">{likesCount}</span>
             </button>
             {review.owner_response && onViewOwnerResponse && (
               <button

@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { StarIcon, HeartIcon, ChatBubbleLeftIcon, PencilIcon, TrashIcon, PlusIcon } from '@heroicons/react/24/outline';
-import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
+import { HeartIcon as HeartIconSolid, StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { Offer } from '../profile/profileOffersTypes';
 import type { Review } from './ReviewCard';
@@ -86,6 +86,8 @@ export type OfferReviewsMobileProps = {
   onDeleteReviewClick: (reviewId: number) => void;
   onOpenHoursClick: () => void;
   onOwnerResponseSaved: (reviewId: number, ownerResponse: string, ownerRespondedAt: string) => void;
+  onToggleReviewLike?: (review: Review) => void;
+  pendingReviewLikeIds?: Set<number>;
   onReportReview?: (review: Review) => void;
   reportedReviewIds?: Set<number>;
 };
@@ -112,6 +114,8 @@ export function OfferReviewsMobile({
   onDeleteReviewClick,
   onOpenHoursClick,
   onOwnerResponseSaved,
+  onToggleReviewLike,
+  pendingReviewLikeIds,
   onReportReview,
   reportedReviewIds,
 }: OfferReviewsMobileProps) {
@@ -379,6 +383,10 @@ export function OfferReviewsMobile({
                   {/* Páči sa mi to, Zobraziť odpoveď/Odpovedať a pri vlastnej recenzii Upraviť, Odstrániť */}
                   {(() => {
                     const isOwner = currentUserId != null && review.reviewer_id === currentUserId;
+                    const likesCount = Math.max(0, Number(review.likes_count ?? 0));
+                    const isLiked = Boolean(review.is_liked_by_me);
+                    const isLikePending = pendingReviewLikeIds?.has(review.id) ?? false;
+                    const LikeIcon = isLiked ? HeartIconSolid : HeartIcon;
                     const Divider = () => (
                       <div className="w-px bg-gray-300 dark:bg-gray-600 shrink-0 self-stretch" aria-hidden="true" />
                     );
@@ -387,10 +395,18 @@ export function OfferReviewsMobile({
                         <div className="flex-1 flex items-center justify-center">
                           <button
                             type="button"
-                            className="p-2 rounded-lg text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors"
+                            onClick={onToggleReviewLike ? () => onToggleReviewLike(review) : undefined}
+                            disabled={isLikePending}
+                            aria-pressed={isLiked}
+                            className={`inline-flex min-w-[3rem] items-center justify-center gap-1 p-2 rounded-lg transition-colors ${
+                              isLiked
+                                ? 'text-red-600 bg-red-50 hover:bg-red-100 dark:text-red-400 dark:bg-red-900/20 dark:hover:bg-red-900/30'
+                                : 'text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-800/50'
+                            } ${isLikePending ? 'opacity-60 cursor-wait' : ''}`}
                             aria-label={t('reviews.like', 'Páči sa mi to')}
                           >
-                            <HeartIcon className="w-5 h-5" />
+                            <LikeIcon className="w-5 h-5" />
+                            <span className="text-xs font-medium tabular-nums">{likesCount}</span>
                           </button>
                         </div>
                         {review.owner_response && (

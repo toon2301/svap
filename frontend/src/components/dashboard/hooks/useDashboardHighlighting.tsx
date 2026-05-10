@@ -15,6 +15,10 @@ interface UseDashboardHighlightingParams {
   initialHighlightedSkillId?: number | null;
 }
 
+function supportsSkillHighlight(activeModule: string): boolean {
+  return activeModule === 'profile' || activeModule === 'user-profile';
+}
+
 /**
  * Custom hook pre highlighting logiku skill kariet v Dashboard
  */
@@ -53,10 +57,10 @@ export function useDashboardHighlighting({
   };
 
   // Synchronizácia highlightedSkillId s URL parametrom 'highlight'
-  // A záloha v sessionStorage pre prípad full refreshu (len ak sme na user-profile module)
+  // A záloha v sessionStorage pre prípad full refreshu (profile aj user-profile)
   useEffect(() => {
-    // Ak nie sme na user-profile module, neobnovovať zo sessionStorage
-    if (activeModule !== 'user-profile') {
+    // Ak nie sme v profile s kartami ponúk, neobnovovať zo sessionStorage
+    if (!supportsSkillHighlight(activeModule)) {
       return;
     }
 
@@ -113,13 +117,12 @@ export function useDashboardHighlighting({
     }
   }, [searchParams, router, activeModule]);
 
-  // Zrušiť zvýraznenie pri opustení user-profile modulu
+  // Zrušiť zvýraznenie pri opustení profilu s kartami ponúk
   useEffect(() => {
     const prevModule = prevActiveModuleRef.current;
     
-    // Ak sa zmenil activeModule z 'user-profile' na niečo iné
-    if (prevModule === 'user-profile' && activeModule !== 'user-profile') {
-      // Zmenil sa activeModule z 'user-profile' na niečo iné - zrušiť zvýraznenie
+    // Ak sa odchádza z modulu, ktorý vie zvýrazniť kartu, zrušiť zvýraznenie
+    if (supportsSkillHighlight(prevModule) && !supportsSkillHighlight(activeModule)) {
       if (highlightTimeoutRef.current) {
         clearTimeout(highlightTimeoutRef.current);
         highlightTimeoutRef.current = null;

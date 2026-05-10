@@ -14,6 +14,7 @@ from .models import (
     EmailVerification,
     OfferedSkill,
     OfferedSkillImage,
+    OfferedSkillLike,
     SkillRequest,
     SkillRequestStatus,
     Notification,
@@ -767,6 +768,8 @@ class OfferedSkillSerializer(serializers.ModelSerializer):
     already_reviewed = serializers.SerializerMethodField()
     average_rating = serializers.SerializerMethodField()
     reviews_count = serializers.SerializerMethodField()
+    likes_count = serializers.SerializerMethodField()
+    is_liked_by_me = serializers.SerializerMethodField()
     my_request_status = serializers.SerializerMethodField()
 
     class Meta:
@@ -805,6 +808,8 @@ class OfferedSkillSerializer(serializers.ModelSerializer):
             "already_reviewed",
             "average_rating",
             "reviews_count",
+            "likes_count",
+            "is_liked_by_me",
             "my_request_status",
             "district_label",
         ]
@@ -821,6 +826,8 @@ class OfferedSkillSerializer(serializers.ModelSerializer):
             "already_reviewed",
             "average_rating",
             "reviews_count",
+            "likes_count",
+            "is_liked_by_me",
             "my_request_status",
         ]
 
@@ -930,6 +937,23 @@ class OfferedSkillSerializer(serializers.ModelSerializer):
     def get_reviews_count(self, obj):
         agg = self._get_review_stats(obj)
         return agg["cnt"] or 0
+
+    def get_likes_count(self, obj):
+        annotated_count = getattr(obj, "_likes_count", None)
+        if annotated_count is not None:
+            return int(annotated_count)
+        return obj.offer_likes.count()
+
+    def get_is_liked_by_me(self, obj):
+        liked_offer_ids = self.context.get("liked_offer_ids")
+        if liked_offer_ids is not None:
+            return obj.id in liked_offer_ids
+
+        request = self.context.get("request")
+        user = getattr(request, "user", None)
+        if user is None or not getattr(user, "is_authenticated", False):
+            return False
+        return OfferedSkillLike.objects.filter(offer=obj, user=user).exists()
 
     def get_can_review(self, obj):
         request = self.context.get("request")
@@ -1339,9 +1363,18 @@ class NotificationSerializer(serializers.ModelSerializer):
             return "/dashboard/requests?status=active&tab=sent"
         if obj.type == NotificationType.SKILL_REQUEST_COMPLETED:
             return "/dashboard/requests?status=completed&tab=received"
+        if obj.type == NotificationType.OFFER_LIKED:
+            data = obj.data if isinstance(obj.data, dict) else {}
+            try:
+                offer_id = int(data.get("offer_id") or 0)
+            except (TypeError, ValueError):
+                offer_id = 0
+            if offer_id > 0:
+                return f"/dashboard/profile?highlight={offer_id}"
         if obj.type in (
             NotificationType.REVIEW_CREATED,
             NotificationType.REVIEW_REPLY_CREATED,
+            NotificationType.REVIEW_LIKED,
         ):
             data = obj.data if isinstance(obj.data, dict) else {}
             try:
@@ -1361,6 +1394,8 @@ class ReviewSerializer(serializers.ModelSerializer):
         source="reviewer.display_name", read_only=True
     )
     reviewer_avatar_url = serializers.SerializerMethodField()
+    likes_count = serializers.SerializerMethodField()
+    is_liked_by_me = serializers.SerializerMethodField()
 
     class Meta:
         model = Review
@@ -1376,6 +1411,8 @@ class ReviewSerializer(serializers.ModelSerializer):
             "cons",
             "owner_response",
             "owner_responded_at",
+            "likes_count",
+            "is_liked_by_me",
             "created_at",
             "updated_at",
         ]
@@ -1386,6 +1423,8 @@ class ReviewSerializer(serializers.ModelSerializer):
             "reviewer_avatar_url",
             "offer",
             "owner_responded_at",
+            "likes_count",
+            "is_liked_by_me",
             "created_at",
             "updated_at",
         ]
@@ -1398,6 +1437,23 @@ class ReviewSerializer(serializers.ModelSerializer):
                 return request.build_absolute_uri(obj.reviewer.avatar.url)
             return obj.reviewer.avatar.url
         return None
+
+    def get_likes_count(self, obj):
+        annotated_count = getattr(obj, "likes_count", None)
+        if annotated_count is not None:
+            return int(annotated_count)
+        return obj.likes.count()
+
+    def get_is_liked_by_me(self, obj):
+        annotated_value = getattr(obj, "is_liked_by_me", None)
+        if annotated_value is not None:
+            return bool(annotated_value)
+
+        request = self.context.get("request")
+        user = getattr(request, "user", None)
+        if user is None or not getattr(user, "is_authenticated", False):
+            return False
+        return obj.likes.filter(user=user).exists()
 
     def validate_rating(self, value):
         """Validácia ratingu"""

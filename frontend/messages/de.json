@@ -831,11 +831,18 @@
     "reviewCreatedBody": "{name} hat eine Bewertung zu deiner Karte geschrieben.",
     "reviewReplyCreatedTitle": "Antwort auf Bewertung",
     "reviewReplyCreatedBody": "{name} hat auf deine Bewertung geantwortet.",
+    "reviewLikedTitle": "Deine Bewertung gefällt jemandem",
+    "reviewLikedBody": "{name} gefällt deine Bewertung.",
+    "offerLikedTitle": "Jemandem gefällt dein Angebot",
+    "offerLikedBody": "{name} gefällt dein Angebot.",
     "genericTitle": "Neue Benachrichtigung",
     "genericBody": "Öffnen Sie die Benachrichtigung für weitere Details.",
     "unknownActor": "Benutzer",
     "readLabel": "Gelesen",
-    "unreadLabel": "Ungelesen"
+    "unreadLabel": "Ungelesen",
+    "timeMinutesShort": "Min.",
+    "timeHoursShort": "Std.",
+    "timeDaysShort": "T."
   },
   "skillsCatalog": {
     "categories": {
@@ -3628,6 +3635,7 @@
     "heading": "Bewertungen",
     "location": "Standort",
     "like": "Gefällt mir",
+    "likeUpdateFailed": "Das Like konnte nicht aktualisiert werden.",
     "maxItemsReached": "Maximale Anzahl erreicht",
     "name": "Name",
     "nameOrTitle": "Titel/Name",

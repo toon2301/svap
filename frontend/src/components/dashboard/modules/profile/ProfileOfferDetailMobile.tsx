@@ -20,10 +20,13 @@ export function ProfileOfferDetailMobile({
   onClose,
   onShowHours,
 }: ProfileOfferDetailMobileProps) {
-  const { t } = useLanguage();
+  const { locale, t } = useLanguage();
 
   const reviewsCount = Number(offer?.reviews_count ?? 0);
   const averageRating = Number(offer?.average_rating ?? 0);
+  const likesCount = Math.max(0, Number(offer?.likes_count ?? 0));
+  const formattedLikesCount = new Intl.NumberFormat(locale).format(likesCount);
+  const isLiked = offer?.is_liked_by_me === true;
 
   if (!offer || typeof document === 'undefined') {
     return null;
@@ -227,7 +230,7 @@ export function ProfileOfferDetailMobile({
               </>
             )}
 
-            {/* Social / ratings (statické placeholdery ako na desktope) */}
+            {/* Social / ratings */}
             <div className="space-y-1 pt-1 border-t border-dashed border-gray-200 dark:border-gray-700/60">
               {/* Hodnotenia len pre Ponúkam */}
               {!offer.is_seeking && (
@@ -281,7 +284,7 @@ export function ProfileOfferDetailMobile({
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   viewBox="0 0 24 24"
-                  fill="none"
+                  fill={isLiked ? 'currentColor' : 'none'}
                   stroke="currentColor"
                   strokeWidth="2"
                   strokeLinecap="round"
@@ -291,7 +294,7 @@ export function ProfileOfferDetailMobile({
                   <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
                 </svg>
                 <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                  3 564
+                  {formattedLikesCount}
                 </span>
               </div>
             </div>

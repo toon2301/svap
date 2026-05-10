@@ -24,6 +24,7 @@ import {
 import { fetchSkillRequests, getApiErrorMessage, updateSkillRequest } from '../requests/requestsApi';
 import { getMessagingErrorMessage } from '../messages/messagingApi';
 import { buildMessagesUrl } from '../messages/messagesRouting';
+import { setOfferLikeState, type OfferLikeResponse } from './offerLikesApi';
 
 interface ProfileOffersMobileSectionProps {
   accountType?: 'personal' | 'business';
@@ -50,6 +51,7 @@ export default function ProfileOffersMobileSection({
   const [alreadyReviewedByOfferId, setAlreadyReviewedByOfferId] = useState<Record<number, boolean | undefined>>({});
   const [busyOfferId, setBusyOfferId] = useState<number | null>(null);
   const [busyMessageOfferId, setBusyMessageOfferId] = useState<number | null>(null);
+  const [pendingOfferLikeIds, setPendingOfferLikeIds] = useState<Set<number>>(() => new Set());
   const [isLoading, setIsLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [selectedOffer, setSelectedOffer] = useState<Offer | null>(null);
@@ -84,6 +86,61 @@ export default function ProfileOffersMobileSection({
       if (!ok) setIsUnavailableModalOpen(true);
     },
     [isOfferStillAvailable],
+  );
+
+  const updateOfferLikeInState = useCallback(
+    (offerId: number, isLiked: boolean, likesCount: number) => {
+      const safeLikesCount = Math.max(0, Number.isFinite(likesCount) ? Math.trunc(likesCount) : 0);
+      const patchOffer = (offer: Offer): Offer =>
+        offer.id === offerId
+          ? { ...offer, is_liked_by_me: isLiked, likes_count: safeLikesCount }
+          : offer;
+
+      setOffers((prev) => prev.map(patchOffer));
+      setSelectedOffer((prev) => (prev ? patchOffer(prev) : prev));
+    },
+    [],
+  );
+
+  const handleToggleOfferLike = useCallback(
+    async (offerId: number) => {
+      if (pendingOfferLikeIds.has(offerId)) return;
+
+      const offer = offers.find((item) => item.id === offerId);
+      if (!offer) return;
+
+      const previousLiked = offer.is_liked_by_me === true;
+      const previousLikesCount = Math.max(0, Number(offer.likes_count ?? 0));
+      const nextLiked = !previousLiked;
+      const optimisticLikesCount = Math.max(0, previousLikesCount + (nextLiked ? 1 : -1));
+
+      setPendingOfferLikeIds((prev) => {
+        const next = new Set(prev);
+        next.add(offerId);
+        return next;
+      });
+      updateOfferLikeInState(offerId, nextLiked, optimisticLikesCount);
+
+      try {
+        const data: OfferLikeResponse = await setOfferLikeState(offerId, nextLiked);
+        updateOfferLikeInState(
+          data.offer_id,
+          data.is_liked_by_me === true,
+          Number(data.likes_count ?? optimisticLikesCount),
+        );
+        invalidateOffersCache(ownerUserId);
+      } catch {
+        updateOfferLikeInState(offerId, previousLiked, previousLikesCount);
+        toast.error(t('reviews.likeUpdateFailed', 'Nepodarilo sa aktualizovať páči sa mi.'));
+      } finally {
+        setPendingOfferLikeIds((prev) => {
+          const next = new Set(prev);
+          next.delete(offerId);
+          return next;
+        });
+      }
+    },
+    [offers, ownerUserId, pendingOfferLikeIds, t, updateOfferLikeInState],
   );
 
   const handleMessageClick = useCallback(
@@ -289,6 +346,8 @@ export default function ProfileOffersMobileSection({
             is_hidden: s.is_hidden === true,
             average_rating: s.average_rating,
             reviews_count: s.reviews_count,
+            likes_count: Math.max(0, Number(s.likes_count ?? 0)),
+            is_liked_by_me: s.is_liked_by_me === true,
             already_reviewed: typeof s.already_reviewed === 'boolean' ? s.already_reviewed : undefined,
             my_request_status: typeof s.my_request_status === 'string' ? s.my_request_status : undefined,
           };
@@ -646,6 +705,8 @@ export default function ProfileOffersMobileSection({
                 ownerDisplayName={ownerDisplayName}
                 onRequestClick={handleRequestClick}
                 onMessageClick={handleMessageClick}
+                onToggleLike={handleToggleOfferLike}
+                isLikePending={pendingOfferLikeIds.has(offer.id)}
                 messageLabel={busyMessageOfferId === offer.id ? t('messages.opening', 'Otváram…') : undefined}
                 requestLabel={(() => {
                   const defaultRequest = offer.is_seeking ? t('requests.offer', 'Ponúknuť') : t('requests.request', 'Požiadať');

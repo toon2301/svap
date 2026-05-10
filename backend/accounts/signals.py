@@ -3,7 +3,7 @@ from django.db import DatabaseError
 from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
 
-from .models import OfferedSkill, OfferedSkillImage, Review, SkillRequest
+from .models import OfferedSkill, OfferedSkillImage, OfferedSkillLike, Review, SkillRequest
 from .authentication import invalidate_user_auth_cache
 from .search_projection import (
     sync_dashboard_skill_search_projection,
@@ -148,6 +148,21 @@ def _owner_id_for_skill_request(instance):
         return None
 
 
+def _owner_id_for_offer_like(instance):
+    offer = getattr(instance, "offer", None)
+    user_id = getattr(offer, "user_id", None)
+    if user_id:
+        return user_id
+    try:
+        return (
+            OfferedSkill.objects.filter(pk=getattr(instance, "offer_id", None))
+            .values_list("user_id", flat=True)
+            .first()
+        )
+    except Exception:
+        return None
+
+
 @receiver(post_save, sender=OfferedSkill)
 @receiver(post_delete, sender=OfferedSkill)
 def invalidate_skills_cache_after_skill_change(sender, instance, **kwargs):
@@ -170,6 +185,14 @@ def invalidate_skills_cache_after_skill_image_change(sender, instance, **kwargs)
 @receiver(post_delete, sender=Review)
 def invalidate_skills_cache_after_review_change(sender, instance, **kwargs):
     user_id = _owner_id_for_review(instance)
+    _invalidate_skills_list_cache_for_user(user_id)
+    _invalidate_dashboard_user_skills_cache_for_user(user_id)
+
+
+@receiver(post_save, sender=OfferedSkillLike)
+@receiver(post_delete, sender=OfferedSkillLike)
+def invalidate_skills_cache_after_offer_like_change(sender, instance, **kwargs):
+    user_id = _owner_id_for_offer_like(instance)
     _invalidate_skills_list_cache_for_user(user_id)
     _invalidate_dashboard_user_skills_cache_for_user(user_id)
 

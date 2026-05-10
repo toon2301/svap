@@ -9,19 +9,56 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Count, Exists, OuterRef
 from django.utils import timezone
 
 from swaply.rate_limiting import api_rate_limit
 
-from ..models import Review, ReviewReport, OfferedSkill, SkillRequest, SkillRequestStatus
+from ..models import (
+    OfferedSkill,
+    Review,
+    ReviewLike,
+    ReviewReport,
+    SkillRequest,
+    SkillRequestStatus,
+)
 from ..serializers import ReviewSerializer
 from ..services.notifications import (
     create_review_created_notification,
+    create_review_liked_notification,
     create_review_reply_notification,
 )
 
 logger = logging.getLogger(__name__)
+
+
+def _reviews_with_like_state(queryset, user):
+    queryset = queryset.annotate(likes_count=Count("likes", distinct=True))
+    if getattr(user, "is_authenticated", False):
+        return queryset.annotate(
+            is_liked_by_me=Exists(
+                ReviewLike.objects.filter(review_id=OuterRef("pk"), user_id=user.id)
+            )
+        )
+    return queryset
+
+
+def _offer_hidden_from_user(offer, user):
+    is_owner = offer.user_id == getattr(user, "id", None)
+    return not is_owner and (
+        offer.is_hidden or not getattr(offer.user, "is_public", True)
+    )
+
+
+def _review_like_payload(*, review_id: int, user_id: int) -> dict:
+    return {
+        "review_id": review_id,
+        "is_liked_by_me": ReviewLike.objects.filter(
+            review_id=review_id,
+            user_id=user_id,
+        ).exists(),
+        "likes_count": ReviewLike.objects.filter(review_id=review_id).count(),
+    }
 
 
 @api_view(["GET", "POST"])
@@ -46,10 +83,7 @@ def reviews_list_view(request, offer_id):
 
     # Kontrola, či ponuka nie je skrytá alebo z privátneho profilu (pre GET)
     if request.method == "GET":
-        is_owner = offer.user_id == request.user.id
-        if not is_owner and (
-            offer.is_hidden or not getattr(offer.user, "is_public", True)
-        ):
+        if _offer_hidden_from_user(offer, request.user):
             return Response(
                 {"error": "Ponuka nebola nájdená"}, status=status.HTTP_404_NOT_FOUND
             )
@@ -57,8 +91,10 @@ def reviews_list_view(request, offer_id):
     if request.method == "GET":
         # Zoznam všetkých recenzií pre túto ponuku
         reviews = (
-            Review.objects.filter(offer=offer)
-            .select_related("reviewer")
+            _reviews_with_like_state(
+                Review.objects.filter(offer=offer).select_related("reviewer"),
+                request.user,
+            )
             .order_by("-created_at")
         )
         serializer = ReviewSerializer(reviews, many=True, context={"request": request})
@@ -134,7 +170,12 @@ def review_detail_view(request, review_id):
     DELETE: Odstránenie recenzie (len vlastník recenzie)
     """
     try:
-        review = Review.objects.select_related("reviewer", "offer").get(id=review_id)
+        review = _reviews_with_like_state(
+            Review.objects.select_related("reviewer", "offer", "offer__user").filter(
+                id=review_id
+            ),
+            request.user,
+        ).get()
     except Review.DoesNotExist:
         return Response(
             {"error": "Recenzia nebola nájdená"}, status=status.HTTP_404_NOT_FOUND
@@ -145,10 +186,7 @@ def review_detail_view(request, review_id):
     if request.method == "GET":
         # Kontrola, či ponuka nie je skrytá alebo z privátneho profilu
         offer = review.offer
-        offer_is_owner = offer.user_id == request.user.id
-        if not offer_is_owner and (
-            offer.is_hidden or not getattr(offer.user, "is_public", True)
-        ):
+        if _offer_hidden_from_user(offer, request.user):
             return Response(
                 {"error": "Recenzia nebola nájdená"}, status=status.HTTP_404_NOT_FOUND
             )
@@ -182,6 +220,65 @@ def review_detail_view(request, review_id):
         return Response(
             {"message": "Recenzia bola odstránená"}, status=status.HTTP_204_NO_CONTENT
         )
+
+
+@api_view(["POST", "DELETE"])
+@permission_classes([IsAuthenticated])
+@api_rate_limit
+def review_like_view(request, review_id):
+    """
+    POST: Pridanie "páči sa mi" na recenziu.
+    DELETE: Odobratie "páči sa mi" z recenzie.
+
+    Endpoint je idempotentný: opakovaný POST nechá like zapnutý,
+    opakovaný DELETE nechá like vypnutý.
+    """
+    try:
+        review = Review.objects.select_related("reviewer", "offer", "offer__user").get(
+            id=review_id
+        )
+    except Review.DoesNotExist:
+        return Response(
+            {"error": "Recenzia nebola nájdená"}, status=status.HTTP_404_NOT_FOUND
+        )
+
+    if _offer_hidden_from_user(review.offer, request.user):
+        return Response(
+            {"error": "Recenzia nebola nájdená"}, status=status.HTTP_404_NOT_FOUND
+        )
+
+    if request.method == "POST":
+        def notify_reviewer_about_like():
+            try:
+                create_review_liked_notification(review=review, actor=request.user)
+            except Exception:
+                logger.exception(
+                    "Review like notification dispatch failed",
+                    extra={
+                        "review_id": getattr(review, "id", None),
+                        "offer_id": getattr(review, "offer_id", None),
+                        "reviewer_id": getattr(review, "reviewer_id", None),
+                        "actor_id": getattr(request.user, "id", None),
+                    },
+                )
+
+        with transaction.atomic():
+            _, created = ReviewLike.objects.get_or_create(
+                review=review,
+                user=request.user,
+            )
+            if created:
+                transaction.on_commit(notify_reviewer_about_like)
+
+        payload = _review_like_payload(review_id=review.id, user_id=request.user.id)
+        return Response(
+            payload,
+            status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
+        )
+
+    ReviewLike.objects.filter(review=review, user=request.user).delete()
+    payload = _review_like_payload(review_id=review.id, user_id=request.user.id)
+    return Response(payload, status=status.HTTP_200_OK)
 
 
 @api_view(["POST"])

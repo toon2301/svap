@@ -18,6 +18,8 @@ interface ProfileOfferCardMobileProps {
   ownerDisplayName?: string;
   onRequestClick?: (offerId: number) => void;
   onMessageClick?: (offerId: number) => void;
+  onToggleLike?: (offerId: number) => void;
+  isLikePending?: boolean;
   /** Rovnako ako desktop: Ponúknuť (is_seeking) / Požiadať, alebo stav: Požiadané, Prijaté, atď. */
   requestLabel?: string;
   isRequestDisabled?: boolean;
@@ -35,6 +37,8 @@ export function ProfileOfferCardMobile({
   ownerDisplayName,
   onRequestClick,
   onMessageClick,
+  onToggleLike,
+  isLikePending = false,
   requestLabel: requestLabelProp,
   isRequestDisabled = false,
   messageLabel,
@@ -45,6 +49,8 @@ export function ProfileOfferCardMobile({
   const defaultRequestLabel = offer.is_seeking ? t('requests.offer', 'Ponúknuť') : t('requests.request', 'Požiadať');
   const requestLabel = requestLabelProp ?? defaultRequestLabel;
   const isReviewIconFilled = isOtherUserProfile ? offer.already_reviewed === true : (offer.reviews_count ?? 0) > 0;
+  const isLiked = offer.is_liked_by_me === true;
+  const likeLabel = t('skills.likes', 'Páči sa mi to');
 
   const catSlug = offer.category ? slugifyLabel(offer.category) : '';
   const subSlug = offer.subcategory ? slugifyLabel(offer.subcategory) : '';
@@ -136,18 +142,26 @@ export function ProfileOfferCardMobile({
         )}
         <div className="absolute top-2 right-2 flex flex-col gap-1 z-10">
           <button
-            aria-label="Páči sa mi to"
-            title="Páči sa mi to"
-            className="p-1.5 rounded-full inline-flex items-center justify-center leading-none bg-purple-50 dark:bg-purple-900/80 dark:backdrop-blur-sm border border-purple-200 dark:border-purple-800/60 text-purple-700 dark:text-white hover:bg-purple-100 dark:hover:bg-purple-900/90 transition-colors active:scale-95"
+            type="button"
+            aria-label={likeLabel}
+            aria-pressed={isLiked}
+            aria-busy={isLikePending}
+            title={likeLabel}
+            disabled={isLikePending}
+            className={`p-1.5 rounded-full inline-flex items-center justify-center leading-none bg-purple-50 dark:bg-purple-900/80 dark:backdrop-blur-sm border border-purple-200 dark:border-purple-800/60 text-purple-700 dark:text-white hover:bg-purple-100 dark:hover:bg-purple-900/90 transition-colors active:scale-95 ${
+              isLikePending ? 'opacity-70 cursor-wait' : ''
+            }`}
             onClick={(e) => {
               e.stopPropagation();
-              // TODO: Implementovať páči sa mi to
+              if (typeof offer.id === 'number' && onToggleLike) {
+                onToggleLike(offer.id);
+              }
             }}
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 24 24"
-              fill="none"
+              fill={isLiked ? 'currentColor' : 'none'}
               stroke="currentColor"
               strokeWidth="2"
               strokeLinecap="round"

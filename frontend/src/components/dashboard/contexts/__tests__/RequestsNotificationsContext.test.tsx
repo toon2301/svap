@@ -264,6 +264,65 @@ describe('RequestsNotificationsProvider', () => {
     expect(screen.getByTestId('notification-count')).toHaveTextContent('0');
   });
 
+  it('acknowledges the notification badge without marking notifications read', async () => {
+    const view = render(
+      <RequestsNotificationsProvider>
+        <NotificationConsumer />
+      </RequestsNotificationsProvider>,
+    );
+    await flushAsyncEffects();
+
+    await waitFor(() => {
+      expect(screen.getByTestId('notification-count')).toHaveTextContent('5');
+    });
+
+    view.rerender(
+      <RequestsNotificationsProvider acknowledgeNotificationsBadge>
+        <NotificationConsumer />
+      </RequestsNotificationsProvider>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('notification-count')).toHaveTextContent('0');
+    });
+    expect(mockApiPost).not.toHaveBeenCalled();
+
+    const callsBeforeRefresh = mockApiGet.mock.calls.length;
+    act(() => {
+      jest.advanceTimersByTime(16_000);
+      window.dispatchEvent(new Event('focus'));
+    });
+
+    await waitFor(() => {
+      expect(mockApiGet.mock.calls.length).toBeGreaterThan(callsBeforeRefresh);
+    });
+    expect(screen.getByTestId('notification-count')).toHaveTextContent('0');
+
+    act(() => {
+      MockWebSocket.instances[0].emitMessage({
+        type: 'notification_created',
+        unread_count: 6,
+      });
+    });
+
+    expect(screen.getByTestId('notification-count')).toHaveTextContent('1');
+  });
+
+  it('keeps the notification badge acknowledged during initial notifications route load', async () => {
+    render(
+      <RequestsNotificationsProvider acknowledgeNotificationsBadge>
+        <NotificationConsumer />
+      </RequestsNotificationsProvider>,
+    );
+    await flushAsyncEffects();
+
+    await waitFor(() => {
+      expect(mockApiGet).toHaveBeenCalled();
+      expect(screen.getByTestId('notification-count')).toHaveTextContent('0');
+    });
+    expect(mockApiPost).not.toHaveBeenCalled();
+  });
+
   it('skips polling requests while background auth refresh is transiently unavailable', async () => {
     mockEnsureFreshSessionForBackgroundWork.mockResolvedValue('transient_failure');
 

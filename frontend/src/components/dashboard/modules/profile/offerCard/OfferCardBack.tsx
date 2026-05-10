@@ -27,6 +27,10 @@ export function OfferCardBack({
   ownerDisplayName,
   compactTop = false,
 }: OfferCardBackProps) {
+  const likesCount = Math.max(0, Number(offer.likes_count ?? 0));
+  const formattedLikesCount = new Intl.NumberFormat('sk-SK').format(likesCount);
+  const isLiked = offer.is_liked_by_me === true;
+
   return (
     <div className={isFlipped ? 'block' : 'hidden'} style={{ minHeight: '100%' }}>
       <div className={`relative aspect-[3/2] border-b border-gray-200/70 dark:border-gray-700/50 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-[#101012] dark:to-[#151518] ${compactTop ? 'rounded-t-none' : 'rounded-t-2xl'}`}>
@@ -191,7 +195,7 @@ export function OfferCardBack({
             <svg
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 24 24"
-              fill="none"
+              fill={isLiked ? 'currentColor' : 'none'}
               stroke="currentColor"
               strokeWidth="2"
               strokeLinecap="round"
@@ -200,7 +204,7 @@ export function OfferCardBack({
             >
               <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
             </svg>
-            <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">3 564</span>
+            <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">{formattedLikesCount}</span>
           </div>
 
           {offer.tags && offer.tags.length > 0 && (

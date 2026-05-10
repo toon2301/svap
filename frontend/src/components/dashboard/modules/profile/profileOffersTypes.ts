@@ -41,6 +41,10 @@ export interface Offer {
   average_rating?: number | null;
   /** Počet recenzií, 0 ak nie sú */
   reviews_count?: number;
+  /** Počet používateľov, ktorým sa ponuka páči. */
+  likes_count?: number;
+  /** True, ak aktuálny prihlásený používateľ už dal like tejto ponuke. */
+  is_liked_by_me?: boolean;
   /** Stav žiadosti aktuálneho používateľa (z API) – pre okamžité zobrazenie pri načítaní */
   my_request_status?: string | null;
 }

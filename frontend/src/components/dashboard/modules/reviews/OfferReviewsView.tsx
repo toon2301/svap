@@ -45,6 +45,12 @@ type OfferDetailLike = Offer & {
   already_reviewed?: boolean;
 };
 
+type ReviewLikeResponse = {
+  review_id: number;
+  is_liked_by_me: boolean;
+  likes_count: number;
+};
+
 export type OfferReviewsViewProps = {
   /** ID karty (ponuky) z URL. null = neplatné/nezistené ID (fallback). */
   offerId: number | null;
@@ -100,6 +106,7 @@ export default function OfferReviewsView({
   const [isDeletingReview, setIsDeletingReview] = useState(false);
   const [reviewToReport, setReviewToReport] = useState<Review | null>(null);
   const [reportedReviewIds, setReportedReviewIds] = useState<Set<number>>(() => new Set());
+  const [pendingReviewLikeIds, setPendingReviewLikeIds] = useState<Set<number>>(() => new Set());
 
   useEffect(() => {
     if (offerId == null) {
@@ -225,6 +232,62 @@ export default function OfferReviewsView({
   const isOpenToday = todayHours?.enabled === true && (todayHours?.from || todayHours?.to);
   const todayHoursText = isOpenToday ? `${todayHours?.from ?? '—'} – ${todayHours?.to ?? '—'}` : null;
 
+  const handleToggleReviewLike = async (review: Review) => {
+    if (pendingReviewLikeIds.has(review.id)) return;
+
+    const currentReview = reviews.find((item) => item.id === review.id) ?? review;
+    const previousReview = { ...currentReview };
+    const nextIsLiked = !Boolean(currentReview.is_liked_by_me);
+    const currentCount = Math.max(0, Number(currentReview.likes_count ?? 0));
+
+    setPendingReviewLikeIds((prev) => new Set(prev).add(review.id));
+    setReviews((prev) =>
+      prev.map((item) =>
+        item.id === review.id
+          ? {
+              ...item,
+              is_liked_by_me: nextIsLiked,
+              likes_count: nextIsLiked ? currentCount + 1 : Math.max(0, currentCount - 1),
+            }
+          : item,
+      ),
+    );
+
+    try {
+      const { data } = nextIsLiked
+        ? await api.post<ReviewLikeResponse>(endpoints.reviews.like(review.id))
+        : await api.delete<ReviewLikeResponse>(endpoints.reviews.like(review.id));
+
+      setReviews((prev) =>
+        prev.map((item) =>
+          item.id === review.id
+            ? {
+                ...item,
+                is_liked_by_me: Boolean(data?.is_liked_by_me),
+                likes_count: Math.max(0, Number(data?.likes_count ?? 0)),
+              }
+            : item,
+        ),
+      );
+    } catch (error: any) {
+      setReviews((prev) =>
+        prev.map((item) => (item.id === review.id ? previousReview : item)),
+      );
+      alert(
+        error?.response?.data?.error ||
+          error?.response?.data?.detail ||
+          error?.message ||
+          t('reviews.likeUpdateFailed', 'Nepodarilo sa aktualizovať páči sa mi.'),
+      );
+    } finally {
+      setPendingReviewLikeIds((prev) => {
+        const next = new Set(prev);
+        next.delete(review.id);
+        return next;
+      });
+    }
+  };
+
   return (
     <>
       {/* Mobilná verzia */}
@@ -262,6 +325,8 @@ export default function OfferReviewsView({
               )
             );
           }}
+          onToggleReviewLike={handleToggleReviewLike}
+          pendingReviewLikeIds={pendingReviewLikeIds}
           onReportReview={(review) => setReviewToReport(review)}
           reportedReviewIds={reportedReviewIds}
         />
@@ -302,6 +367,8 @@ export default function OfferReviewsView({
               )
             );
           }}
+          onToggleReviewLike={handleToggleReviewLike}
+          pendingReviewLikeIds={pendingReviewLikeIds}
           onReportReview={(review) => setReviewToReport(review)}
           reportedReviewIds={reportedReviewIds}
         />

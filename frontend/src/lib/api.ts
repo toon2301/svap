@@ -765,11 +765,13 @@ export const endpoints = {
     imageUploadInit: (skillId: number) => `/auth/skills/${skillId}/images/upload-init/`,
     imageUploadComplete: (skillId: number) => `/auth/skills/${skillId}/images/upload-complete/`,
     reviews: (offerId: number) => `/auth/skills/${offerId}/reviews/`,
+    like: (skillId: number) => `/auth/skills/${skillId}/like/`,
   },
   // Recenzie
   reviews: {
     list: (offerId: number) => `/auth/skills/${offerId}/reviews/`,
     detail: (reviewId: number) => `/auth/reviews/${reviewId}/`,
+    like: (reviewId: number) => `/auth/reviews/${reviewId}/like/`,
     respond: (reviewId: number) => `/auth/reviews/${reviewId}/respond/`,
     report: (reviewId: number) => `/auth/reviews/${reviewId}/report/`,
   },

@@ -5,6 +5,8 @@ export type NotificationType =
   | 'skill_request_completed'
   | 'review_created'
   | 'review_reply_created'
+  | 'review_liked'
+  | 'offer_liked'
   | 'group_invitation'
   | string;
 

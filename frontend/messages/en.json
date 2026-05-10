@@ -831,11 +831,18 @@
     "reviewCreatedBody": "{name} wrote a review on your card.",
     "reviewReplyCreatedTitle": "Review reply",
     "reviewReplyCreatedBody": "{name} replied to your review.",
+    "reviewLikedTitle": "Someone liked your review",
+    "reviewLikedBody": "{name} liked your review.",
+    "offerLikedTitle": "Someone liked your offer",
+    "offerLikedBody": "{name} liked your offer.",
     "genericTitle": "New notification",
     "genericBody": "Open the notification for more details.",
     "unknownActor": "User",
     "readLabel": "Read",
-    "unreadLabel": "Unread"
+    "unreadLabel": "Unread",
+    "timeMinutesShort": "min",
+    "timeHoursShort": "h",
+    "timeDaysShort": "d"
   },
   "skillsCatalog": {
     "categories": {
@@ -3628,6 +3635,7 @@
     "heading": "Recenzie",
     "location": "Miesto",
     "like": "Like",
+    "likeUpdateFailed": "Could not update the like.",
     "maxItemsReached": "Maximum number of items reached",
     "name": "Meno",
     "nameOrTitle": "Name/Title",

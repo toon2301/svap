@@ -13,7 +13,14 @@ from django.core.cache import cache
 
 from swaply.rate_limiting import api_rate_limit
 
-from ..models import OfferedSkill, OfferedSkillImage, Review, SkillRequest, SkillRequestStatus
+from ..models import (
+    OfferedSkill,
+    OfferedSkillImage,
+    OfferedSkillLike,
+    Review,
+    SkillRequest,
+    SkillRequestStatus,
+)
 from ..serializers import OfferedSkillSerializer
 from django.core.exceptions import ValidationError
 
@@ -26,6 +33,7 @@ def _skills_list_queryset(base_qs):
         .annotate(
             _avg_rating=Avg("reviews__rating"),
             _reviews_count=Count("reviews", distinct=True),
+            _likes_count=Count("offer_likes", distinct=True),
         )
     )
 
@@ -34,27 +42,37 @@ def _skills_list_context(request, offer_ids):
     """Bulk dotazy pre can_review, already_reviewed a request_status – namiesto N+1."""
     if not offer_ids:
         return {}
+    user = getattr(request, "user", None)
+    if user is None or not getattr(user, "is_authenticated", False):
+        return {"liked_offer_ids": set()}
     reviewed = set(
-        Review.objects.filter(offer_id__in=offer_ids, reviewer=request.user).values_list(
+        Review.objects.filter(offer_id__in=offer_ids, reviewer=user).values_list(
             "offer_id", flat=True
         )
     )
     can_review = set(
         SkillRequest.objects.filter(
             offer_id__in=offer_ids,
-            requester=request.user,
+            requester=user,
             status=SkillRequestStatus.COMPLETED,
         ).values_list("offer_id", flat=True)
     )
     request_status_by_offer = dict(
         SkillRequest.objects.filter(
-            requester=request.user, offer_id__in=offer_ids
+            requester=user, offer_id__in=offer_ids
         ).values_list("offer_id", "status")
+    )
+    liked_offer_ids = set(
+        OfferedSkillLike.objects.filter(
+            offer_id__in=offer_ids,
+            user=user,
+        ).values_list("offer_id", flat=True)
     )
     return {
         "reviewed_offer_ids": reviewed,
         "can_review_offer_ids": can_review,
         "request_status_by_offer_id": request_status_by_offer,
+        "liked_offer_ids": liked_offer_ids,
     }
 
 SKILLS_LIST_CACHE_TTL_SECONDS = int(

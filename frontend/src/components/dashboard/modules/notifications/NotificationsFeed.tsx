@@ -78,7 +78,7 @@ export default function NotificationsFeed({
                 if (hasUnread) void markAllRead();
               }}
               disabled={!hasUnread || markingRead}
-              className="shrink-0 rounded-2xl border border-purple-200 bg-purple-50 px-3 py-2 text-xs font-semibold text-purple-700 transition-colors hover:bg-purple-100 disabled:cursor-not-allowed disabled:opacity-100 disabled:hover:bg-purple-50 dark:border-purple-800/60 dark:bg-purple-900/20 dark:text-purple-200 dark:hover:bg-purple-900/35 dark:disabled:hover:bg-purple-900/20"
+              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-2xl border border-gray-300 bg-white px-3 py-2.5 text-sm font-semibold text-gray-500 transition-colors hover:bg-gray-100 hover:text-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-400/50 disabled:cursor-not-allowed disabled:opacity-100 disabled:hover:bg-white disabled:hover:text-gray-500 dark:border-gray-700 dark:bg-black dark:text-gray-400 dark:hover:bg-gray-900 dark:hover:text-purple-200 dark:disabled:hover:bg-black dark:disabled:hover:text-gray-400"
             >
               {t('notifications.markAllRead', 'Označiť ako prečítané')}
             </button>
@@ -118,7 +118,10 @@ export default function NotificationsFeed({
             </p>
           </div>
         ) : (
-          <div className="space-y-3" aria-busy={refreshing || markingRead}>
+          <div
+            className="space-y-0"
+            aria-busy={refreshing || markingRead}
+          >
             {items.map((notification) => (
               <NotificationItem
                 key={notification.id}
