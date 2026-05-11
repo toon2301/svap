@@ -1,4 +1,5 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import type { HTMLAttributes, ReactNode } from 'react';
+import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import ProfileModule from '../modules/ProfileModule';
 import { User } from '@/types';
@@ -6,8 +7,14 @@ import { User } from '@/types';
 // Mock framer-motion
 jest.mock('framer-motion', () => ({
   motion: {
-    div: ({ children, ...props }: any) => <div {...props}>{children}</div>,
+    div: ({ children, ...props }: HTMLAttributes<HTMLDivElement> & { children?: ReactNode }) => (
+      <div {...props}>{children}</div>
+    ),
   },
+}));
+
+jest.mock('@/contexts/AuthContext', () => ({
+  useAuth: () => ({ user: { id: 1 }, isAuthenticated: true }),
 }));
 
 const mockUser: User = {

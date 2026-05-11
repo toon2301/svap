@@ -1,7 +1,11 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import ProfileModule from '../ProfileModule';
 import { User } from '../../../../types';
+
+jest.mock('@/contexts/AuthContext', () => ({
+  useAuth: () => ({ user: { id: 1 }, isAuthenticated: true }),
+}));
 
 const mockUser: User = {
   id: 1,
@@ -58,5 +62,20 @@ describe('ProfileModule', () => {
     render(<ProfileModule user={userWithLocation} />);
     const all = screen.getAllByText(/Bratislava/);
     expect(all.length).toBeGreaterThan(0);
+  });
+
+  it('switches back to offers tab when a profile offer is highlighted', () => {
+    const { rerender } = render(<ProfileModule user={mockUser} />);
+
+    const portfolioTab = screen.getAllByRole('tab', { name: /Portf/i })[0];
+    fireEvent.click(portfolioTab);
+    expect(portfolioTab).toHaveAttribute('aria-selected', 'true');
+
+    rerender(<ProfileModule user={mockUser} highlightedSkillId={12} />);
+
+    expect(screen.getAllByRole('tab', { name: /Pon/i })[0]).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
   });
 });

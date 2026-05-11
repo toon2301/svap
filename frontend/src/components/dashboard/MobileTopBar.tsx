@@ -91,6 +91,7 @@ export default function MobileTopBar({
     activeModule !== 'messages' &&
     activeModule !== 'offer-reviews' &&
     activeModule !== 'notifications' &&
+    activeModule !== 'notification-settings' &&
     activeModule !== 'account-type' &&
     activeRightItem !== 'account-type' &&
     activeModule !== 'privacy' &&
@@ -123,7 +124,7 @@ export default function MobileTopBar({
             <h1 className="text-base font-semibold text-gray-900 dark:text-white truncate">
               {t('requests.title', 'Spolupráce')}
             </h1>
-          ) : (isEditMode || activeRightItem === 'language' || activeRightItem === 'account-type' || activeRightItem === 'privacy' || activeModule === 'account-type' || activeModule === 'privacy' || activeModule === 'skills' || activeModule === 'skills-offer' || activeModule === 'skills-search' || activeModule === 'skills-select-category' || activeModule === 'user-profile' || activeModule === 'offer-reviews' || activeModule === 'favorites') ? (
+          ) : (isEditMode || activeRightItem === 'language' || activeRightItem === 'account-type' || activeRightItem === 'privacy' || activeModule === 'account-type' || activeModule === 'privacy' || activeModule === 'notification-settings' || activeModule === 'skills' || activeModule === 'skills-offer' || activeModule === 'skills-search' || activeModule === 'skills-select-category' || activeModule === 'user-profile' || activeModule === 'offer-reviews' || activeModule === 'favorites') ? (
             <button
               onClick={onBackClick}
               className="p-2 -ml-2"
@@ -201,6 +202,9 @@ export default function MobileTopBar({
             <h1 className="text-base font-semibold text-gray-900 dark:text-white whitespace-nowrap">{t('privacy.mobileTitle', 'Súkromie účtu')}</h1>
           )}
           {activeModule === 'notifications' && (
+            <h1 className="text-lg font-semibold text-gray-900 dark:text-white">{t('rightSidebar.notifications', 'Upozornenia')}</h1>
+          )}
+          {activeModule === 'notification-settings' && (
             <h1 className="text-lg font-semibold text-gray-900 dark:text-white">{t('rightSidebar.notifications', 'Upozornenia')}</h1>
           )}
           {activeModule === 'account-type' && (

@@ -254,7 +254,7 @@ export default function Sidebar({
           {/* Upozornenia */}
           <div className="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-2xl p-2 mb-4 border border-purple-100 dark:border-purple-800/30">
             <button
-              onClick={() => handleItemClick('notifications')}
+              onClick={() => handleItemClick('notification-settings')}
               className="w-full flex items-center justify-between group"
             >
               <div className="flex items-center">

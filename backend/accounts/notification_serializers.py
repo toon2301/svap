@@ -80,6 +80,15 @@ class NotificationSerializer(serializers.ModelSerializer):
                 offer_id = int(data.get("offer_id") or 0)
             except (TypeError, ValueError):
                 offer_id = 0
+            try:
+                review_id = int(data.get("review_id") or 0)
+            except (TypeError, ValueError):
+                review_id = 0
             if offer_id > 0:
+                if review_id > 0:
+                    target_url = f"/dashboard/offers/{offer_id}/reviews?review_id={review_id}"
+                    if obj.type == NotificationType.REVIEW_REPLY_CREATED:
+                        return f"{target_url}&modal=owner_response"
+                    return target_url
                 return f"/dashboard/offers/{offer_id}/reviews"
         return None

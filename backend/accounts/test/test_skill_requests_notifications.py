@@ -181,7 +181,7 @@ class TestSkillRequestsAndNotifications(APITestCase):
         )
         self.assertEqual(
             payload["target_url"],
-            f"/dashboard/offers/{self.offer.id}/reviews",
+            f"/dashboard/offers/{self.offer.id}/reviews?review_id={response.data['id']}",
         )
 
     def test_owner_reply_to_review_notifies_reviewer_once(self):
@@ -242,7 +242,7 @@ class TestSkillRequestsAndNotifications(APITestCase):
         )
         self.assertEqual(
             payload["target_url"],
-            f"/dashboard/offers/{self.offer.id}/reviews",
+            f"/dashboard/offers/{self.offer.id}/reviews?review_id={review_response.data['id']}&modal=owner_response",
         )
 
         self.client.force_authenticate(user=self.owner)
@@ -307,7 +307,7 @@ class TestSkillRequestsAndNotifications(APITestCase):
         )
         self.assertEqual(
             payload["target_url"],
-            f"/dashboard/offers/{self.offer.id}/reviews",
+            f"/dashboard/offers/{self.offer.id}/reviews?review_id={review.id}",
         )
 
         self.client.force_authenticate(user=self.owner)

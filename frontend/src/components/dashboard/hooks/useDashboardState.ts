@@ -221,6 +221,7 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
         'messages',
         'requests',
         'notifications',
+        'notification-settings',
         'language',
         'account-type',
         'skills',
@@ -273,13 +274,13 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
         
         // Zmeniť URL bez reloadu - window.history.pushState mení URL bez prerenderovania stránky
       } else if (itemId === 'notifications') {
-        setActiveModule('notifications');
-        const url = '/dashboard/notifications';
+        setActiveModule('notification-settings');
+        const url = '/dashboard/settings/notifications';
         if (typeof window !== 'undefined') {
           // Zmeň URL bez reloadu - window.history.pushState mení URL bez prerenderovania stránky
           window.history.pushState(null, '', url);
           try {
-            localStorage.setItem('activeModule', 'notifications');
+            localStorage.setItem('activeModule', 'notification-settings');
           } catch {
             // ignore
           }
@@ -504,7 +505,7 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
       }
     } else if (activeRightItem === 'language' || activeRightItem === 'account-type' || activeRightItem === 'privacy') {
       setIsMobileMenuOpen(true);
-    } else if (activeModule === 'notifications') {
+    } else if (activeModule === 'notifications' || activeModule === 'notification-settings') {
       setActiveModule('');
       setIsMobileMenuOpen(true);
     } else if (activeModule === 'offer-reviews') {

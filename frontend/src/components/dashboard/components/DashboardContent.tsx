@@ -56,6 +56,7 @@ function getDashboardModuleFromTarget(targetUrl: string): string | null {
     if (/^\/dashboard\/requests\/?$/.test(path)) return 'requests';
     if (/^\/dashboard\/messages(?:\/\d+)?\/?$/.test(path)) return 'messages';
     if (/^\/dashboard\/offers\/\d+\/reviews\/?$/.test(path)) return 'offer-reviews';
+    if (/^\/dashboard\/settings\/notifications\/?$/.test(path)) return 'notification-settings';
     if (/^\/dashboard\/notifications\/?$/.test(path)) return 'notifications';
     if (/^\/dashboard\/favorites\/?$/.test(path)) return 'favorites';
     if (/^\/dashboard\/search\/?$/.test(path)) return 'search';
@@ -80,6 +81,17 @@ function getDashboardUserIdentifierFromTarget(targetUrl: string): string | null 
     const path = new URL(targetUrl, 'https://swaply.local').pathname;
     const match = path.match(/^\/dashboard\/users\/([^/]+)\/?$/);
     return match?.[1] ? decodeURIComponent(match[1]) : null;
+  } catch {
+    return null;
+  }
+}
+
+function getDashboardHighlightIdFromTarget(targetUrl: string): number | null {
+  try {
+    const raw = new URL(targetUrl, 'https://swaply.local').searchParams.get('highlight');
+    if (!raw) return null;
+    const id = Number(raw);
+    return Number.isFinite(id) && id >= 1 ? id : null;
   } catch {
     return null;
   }
@@ -306,6 +318,19 @@ export default function DashboardContent({
         setViewedUserSummary(null);
       }
 
+      if (moduleId === 'profile' || moduleId === 'user-profile') {
+        const highlightId = getDashboardHighlightIdFromTarget(targetUrl);
+        if (highlightId != null) {
+          highlighting.setHighlightedSkillId(highlightId);
+          try {
+            sessionStorage.setItem('highlightedSkillId', String(highlightId));
+            sessionStorage.setItem('highlightedSkillTime', String(Date.now()));
+          } catch {
+            // ignore
+          }
+        }
+      }
+
       setIsNotificationsPanelOpen(false);
       setIsSearchOpen(false);
       setIsRightSidebarOpen(false);
@@ -324,6 +349,7 @@ export default function DashboardContent({
       setViewedUserId,
       setViewedUserSlug,
       setViewedUserSummary,
+      highlighting,
     ],
   );
 
@@ -452,6 +478,8 @@ export default function DashboardContent({
         moduleId = 'search';
       } else if (p.match(/^\/dashboard\/messages\/?$/) || p.match(/^\/dashboard\/messages\/\d+\/?$/)) {
         moduleId = 'messages';
+      } else if (p.match(/^\/dashboard\/settings\/notifications\/?$/)) {
+        moduleId = 'notification-settings';
       } else if (p === '/dashboard' || p === '/dashboard/') {
         moduleId = 'home';
       } else if (p.match(/^\/dashboard\/profile\/?$/)) {

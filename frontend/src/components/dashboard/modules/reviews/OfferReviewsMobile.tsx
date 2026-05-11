@@ -7,6 +7,8 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import type { Offer } from '../profile/profileOffersTypes';
 import type { Review } from './ReviewCard';
 import { OwnerResponseModal } from './OwnerResponseModal';
+import { useTargetReviewScroll } from './useTargetReviewScroll';
+import { useTargetOwnerResponseModal } from './useTargetOwnerResponseModal';
 
 /** Meno recenzenta: pri pretečení zobrazí horizontálnu animáciu zo strany na stranu */
 function ReviewerName({ name }: { name: string }) {
@@ -90,6 +92,8 @@ export type OfferReviewsMobileProps = {
   pendingReviewLikeIds?: Set<number>;
   onReportReview?: (review: Review) => void;
   reportedReviewIds?: Set<number>;
+  targetReviewId?: number | null;
+  targetOwnerResponseReviewId?: number | null;
 };
 
 export function OfferReviewsMobile({
@@ -118,10 +122,24 @@ export function OfferReviewsMobile({
   pendingReviewLikeIds,
   onReportReview,
   reportedReviewIds,
+  targetReviewId,
+  targetOwnerResponseReviewId,
 }: OfferReviewsMobileProps) {
   const { t } = useLanguage();
   const [ownerResponseModalReview, setOwnerResponseModalReview] = useState<Review | null>(null);
   const [ownerResponseModalMode, setOwnerResponseModalMode] = useState<'read' | 'edit'>('read');
+  const openTargetOwnerResponse = useTargetOwnerResponseModal({
+    targetOwnerResponseReviewId,
+    reviews,
+    setOwnerResponseModalReview,
+    setOwnerResponseModalMode,
+  });
+  const { registerReviewElement } = useTargetReviewScroll<HTMLDivElement>({
+    targetReviewId,
+    reviewsLoading,
+    hasTargetReview: targetReviewId != null && reviews.some((review) => review.id === targetReviewId),
+    onTargetVisible: openTargetOwnerResponse,
+  });
 
   const summary = useMemo(() => {
     if (reviews.length === 0) {
@@ -310,6 +328,7 @@ export function OfferReviewsMobile({
               {reviews.map((review) => (
                 <div
                   key={review.id}
+                  ref={(node) => registerReviewElement(review.id, node)}
                   className="space-y-4 p-4 rounded-xl border border-gray-200/60 dark:border-gray-600/50 bg-gray-50/40 dark:bg-gray-800/25"
                 >
                   {/* Avatar + meno + dátum */}

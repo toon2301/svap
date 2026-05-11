@@ -99,7 +99,7 @@ describe('Sidebar extra coverage', () => {
     expect(onClose).toHaveBeenCalled();
   });
 
-  it('mobile: notifications row triggers onItemClick', () => {
+  it('mobile: notifications settings row triggers onItemClick', () => {
     render(
       <ThemeProvider>
         <Sidebar
@@ -114,7 +114,7 @@ describe('Sidebar extra coverage', () => {
     const notifRow = screen.getByText('Upozornenia').closest('button')!;
     fireEvent.click(notifRow);
 
-    expect(onItemClick).toHaveBeenCalledWith('notifications');
+    expect(onItemClick).toHaveBeenCalledWith('notification-settings');
   });
 });
 

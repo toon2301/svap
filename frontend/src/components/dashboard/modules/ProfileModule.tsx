@@ -91,6 +91,16 @@ function buildPatchPayload(editable: User): ProfilePatchPayload {
 
 type UserUpdateArg = User | ((prev: User | null) => User | null);
 type ProfileEditCloseTarget = Pick<User, 'id' | 'slug'>;
+type ProfileApiError = {
+  response?: {
+    data?: {
+      details?: Record<string, string[]>;
+      validation_errors?: Record<string, string[]>;
+      message?: string;
+      error?: string;
+    };
+  };
+};
 
 interface ProfileModuleProps {
   user: User;
@@ -100,6 +110,7 @@ interface ProfileModuleProps {
   onSkillsClick?: () => void;
   isEditMode?: boolean;
   accountType?: 'personal' | 'business';
+  highlightedSkillId?: number | null;
 }
 
 export default function ProfileModule({
@@ -110,6 +121,7 @@ export default function ProfileModule({
   onSkillsClick,
   isEditMode = false,
   accountType = 'personal',
+  highlightedSkillId = null,
 }: ProfileModuleProps) {
   const { t } = useLanguage();
   const isMobile = useIsMobile();
@@ -120,6 +132,12 @@ export default function ProfileModule({
   const [mounted, setMounted] = useState(false);
   const [isAllWebsitesModalOpen, setIsAllWebsitesModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<ProfileTab>('offers');
+
+  useEffect(() => {
+    if (highlightedSkillId != null) {
+      setActiveTab('offers');
+    }
+  }, [highlightedSkillId]);
 
   // Keep latest user snapshot for deterministic rollback and to avoid stale closures.
   const latestUserRef = useRef<User>(user);
@@ -336,7 +354,7 @@ export default function ProfileModule({
       }
       setUploadSuccess(true);
       setTimeout(() => setUploadSuccess(false), 3000);
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (activeActionIdRef.current !== actionId) return;
       // Deterministic rollback: restore exact snapshot from before the action.
       onUserUpdate(() => previousUser);
@@ -344,14 +362,13 @@ export default function ProfileModule({
         URL.revokeObjectURL(previewUrlForThisAction);
         avatarPreviewUrlRef.current = null;
       }
-      // eslint-disable-next-line no-console
-      console.error('Photo upload error:', error);
-      const details = error?.response?.data?.details || error?.response?.data?.validation_errors;
+      const data = (error as ProfileApiError)?.response?.data;
+      const details = data?.details || data?.validation_errors;
       const avatarErrors: string[] | undefined = details?.avatar;
       const message =
         avatarErrors?.[0] ||
-        error?.response?.data?.message ||
-        error?.response?.data?.error ||
+        data?.message ||
+        data?.error ||
         'Nepodarilo sa nahrať fotku. Skús to znova.';
       setUploadError(message);
     } finally {
@@ -398,16 +415,17 @@ export default function ProfileModule({
         }
       }
       setIsActionsOpen(false);
-    } catch (e: any) {
+    } catch (e: unknown) {
       if (activeActionIdRef.current !== actionId) return;
       // Deterministic rollback: restore exact snapshot from before the action.
       onUserUpdate(() => previousUser);
-      const details = e?.response?.data?.details || e?.response?.data?.validation_errors;
+      const data = (e as ProfileApiError)?.response?.data;
+      const details = data?.details || data?.validation_errors;
       const avatarErrors: string[] | undefined = details?.avatar;
       const message =
         avatarErrors?.[0] ||
-        e?.response?.data?.message ||
-        e?.response?.data?.error ||
+        data?.message ||
+        data?.error ||
         'Nepodarilo sa odstrániť fotku. Skúste znova.';
       setUploadError(message);
     } finally {
@@ -439,6 +457,7 @@ export default function ProfileModule({
             onTabsKeyDown={handleTabsKeyDown}
             onOpenAllWebsitesModal={() => setIsAllWebsitesModalOpen(true)}
             offersOwnerId={user.id}
+            highlightedSkillId={highlightedSkillId}
           />
         ) : (
           <ProfileDesktopView
@@ -461,6 +480,7 @@ export default function ProfileModule({
             onTabsKeyDown={handleTabsKeyDown}
             onOpenAllWebsitesModal={() => setIsAllWebsitesModalOpen(true)}
             offersOwnerId={user.id}
+            highlightedSkillId={highlightedSkillId}
           />
         )}
 

@@ -92,6 +92,8 @@ export function useDashboardNavigation({
       url = '/dashboard/settings';
     } else if (moduleId === 'notifications') {
       url = '/dashboard/notifications';
+    } else if (moduleId === 'notification-settings') {
+      url = '/dashboard/settings/notifications';
     } else if (moduleId === 'language') {
       url = '/dashboard/language';
     } else if (moduleId === 'account-type') {

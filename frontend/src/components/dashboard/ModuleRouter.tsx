@@ -5,6 +5,7 @@ import type { User } from '../../types';
 import type { SearchUserResult } from './modules/search/types';
 import ProfileModule from './modules/ProfileModule';
 import NotificationsModule from './modules/NotificationsModule';
+import NotificationSettingsModule from './modules/NotificationSettingsModule';
 import LanguageModule from './modules/LanguageModule';
 import AccountTypeModule from './modules/AccountTypeModule';
 import PrivacySettingsModule from './modules/PrivacySettingsModule';
@@ -94,7 +95,6 @@ export default function ModuleRouter({
   removeStandardCategory,
   removeCustomCategory,
   selectedSkillsCategory,
-  isInSubcategories,
   setIsInSubcategories,
   onSkillsCategoryBackHandlerSet,
   viewedUserId,
@@ -117,7 +117,7 @@ export default function ModuleRouter({
   const { t } = useLanguage();
 
   if (isRightSidebarOpen && activeRightItem === 'notifications') {
-    return <NotificationsModule onNavigate={onNotificationNavigate} />;
+    return <NotificationSettingsModule />;
   }
 
   if (isRightSidebarOpen && activeRightItem === 'language') {
@@ -207,6 +207,7 @@ export default function ModuleRouter({
           })}
           isEditMode={isRightSidebarOpen && activeRightItem === 'edit-profile'}
           accountType={accountType}
+          highlightedSkillId={highlightedSkillId ?? null}
         />
       );
     case 'search':
@@ -244,6 +245,8 @@ export default function ModuleRouter({
       return <RequestsModule routeIntent={requestsRouteIntent} />;
     case 'notifications':
       return <NotificationsModule onNavigate={onNotificationNavigate} />;
+    case 'notification-settings':
+      return <NotificationSettingsModule />;
     case 'language':
       return <LanguageModule />;
     case 'skills':

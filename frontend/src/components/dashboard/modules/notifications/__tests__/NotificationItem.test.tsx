@@ -32,7 +32,7 @@ function makeNotification(
     skill_request: null,
     conversation: null,
     group_invitation: null,
-    target_url: '/dashboard/offers/12/reviews',
+    target_url: '/dashboard/offers/12/reviews?review_id=99',
     is_read: false,
     created_at: '2026-05-06T12:00:00.000Z',
     read_at: null,
@@ -61,7 +61,7 @@ describe('NotificationItem', () => {
     fireEvent.click(screen.getByRole('button'));
 
     expect(onMarkRead).toHaveBeenCalledWith(notification);
-    expect(onNavigate).toHaveBeenCalledWith('/dashboard/offers/12/reviews');
+    expect(onNavigate).toHaveBeenCalledWith('/dashboard/offers/12/reviews?review_id=99');
     expect(mockPush).not.toHaveBeenCalled();
   });
 
@@ -77,7 +77,7 @@ describe('NotificationItem', () => {
     fireEvent.click(screen.getByRole('button'));
 
     expect(onMarkRead).not.toHaveBeenCalled();
-    expect(mockPush).toHaveBeenCalledWith('/dashboard/offers/12/reviews');
+    expect(mockPush).toHaveBeenCalledWith('/dashboard/offers/12/reviews?review_id=99');
   });
 
   it('renders review reply notifications and navigates to offer reviews', () => {
@@ -85,6 +85,7 @@ describe('NotificationItem', () => {
       type: 'review_reply_created',
       title: '',
       body: '',
+      target_url: '/dashboard/offers/12/reviews?review_id=99&modal=owner_response',
       actor: {
         id: 2,
         display_name: 'Owner User',
@@ -111,7 +112,9 @@ describe('NotificationItem', () => {
     fireEvent.click(screen.getByRole('button'));
 
     expect(onMarkRead).toHaveBeenCalledWith(notification);
-    expect(onNavigate).toHaveBeenCalledWith('/dashboard/offers/12/reviews');
+    expect(onNavigate).toHaveBeenCalledWith(
+      '/dashboard/offers/12/reviews?review_id=99&modal=owner_response',
+    );
   });
 
   it('renders review like notifications and navigates to offer reviews', () => {
@@ -136,7 +139,7 @@ describe('NotificationItem', () => {
 
     fireEvent.click(screen.getByRole('button'));
 
-    expect(mockPush).toHaveBeenCalledWith('/dashboard/offers/12/reviews');
+    expect(mockPush).toHaveBeenCalledWith('/dashboard/offers/12/reviews?review_id=99');
   });
 
   it('renders offer like notifications and navigates to highlighted own profile offer back side', () => {

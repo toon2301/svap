@@ -8,7 +8,7 @@ import {
 } from '@testing-library/react';
 import '@testing-library/jest-dom';
 
-import NotificationsModule from '../NotificationsModule';
+import NotificationSettingsModule from '../NotificationSettingsModule';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 
 jest.mock('@/lib/api', () => ({
@@ -129,7 +129,7 @@ async function renderNotificationsModule() {
 
   render(
     <LanguageProvider>
-      <NotificationsModule />
+      <NotificationSettingsModule />
     </LanguageProvider>,
   );
 
@@ -150,7 +150,7 @@ function getDesktopOffButton() {
   return within(getDesktopPushSection()).getByText(/Vypnut/i);
 }
 
-describe('NotificationsModule', () => {
+describe('NotificationSettingsModule', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     const { api } = require('@/lib/api');

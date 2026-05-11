@@ -8,6 +8,8 @@ import OfferImageCarousel from '../shared/OfferImageCarousel';
 import ReviewCard, { type Review } from './ReviewCard';
 import ReviewSummary from './ReviewSummary';
 import { OwnerResponseModal } from './OwnerResponseModal';
+import { useTargetReviewScroll } from './useTargetReviewScroll';
+import { useTargetOwnerResponseModal } from './useTargetOwnerResponseModal';
 
 type OfferOwnerLike = {
   id?: number;
@@ -53,6 +55,8 @@ export type OfferReviewsDesktopProps = {
   pendingReviewLikeIds?: Set<number>;
   onReportReview?: (review: Review) => void;
   reportedReviewIds?: Set<number>;
+  targetReviewId?: number | null;
+  targetOwnerResponseReviewId?: number | null;
 };
 
 export function OfferReviewsDesktop({
@@ -81,10 +85,24 @@ export function OfferReviewsDesktop({
   pendingReviewLikeIds,
   onReportReview,
   reportedReviewIds,
+  targetReviewId,
+  targetOwnerResponseReviewId,
 }: OfferReviewsDesktopProps) {
   const { t } = useLanguage();
   const [ownerResponseModalReview, setOwnerResponseModalReview] = useState<Review | null>(null);
   const [ownerResponseModalMode, setOwnerResponseModalMode] = useState<'read' | 'edit'>('read');
+  const openTargetOwnerResponse = useTargetOwnerResponseModal({
+    targetOwnerResponseReviewId,
+    reviews,
+    setOwnerResponseModalReview,
+    setOwnerResponseModalMode,
+  });
+  const { registerReviewElement } = useTargetReviewScroll<HTMLDivElement>({
+    targetReviewId,
+    reviewsLoading,
+    hasTargetReview: targetReviewId != null && reviews.some((review) => review.id === targetReviewId),
+    onTargetVisible: openTargetOwnerResponse,
+  });
 
   return (
     <div className="w-full h-full pt-6 pr-6 pb-6 pl-12 sm:pl-16 xl:pl-24">
@@ -215,26 +233,30 @@ export function OfferReviewsDesktop({
         ) : (
           <div className="space-y-4">
             {reviews.map((review) => (
-              <ReviewCard
+              <div
                 key={review.id}
-                review={review}
-                currentUserId={currentUserId}
-                isOfferOwner={isOwnOffer}
-                onEdit={onEditReview}
-                onDeleteClick={onDeleteReviewClick}
-                onViewOwnerResponse={(r) => {
-                  setOwnerResponseModalReview(r);
-                  setOwnerResponseModalMode('read');
-                }}
-                onAddOwnerResponse={(r) => {
-                  setOwnerResponseModalReview(r);
-                  setOwnerResponseModalMode('edit');
-                }}
-                onLikeToggle={onToggleReviewLike}
-                isLikePending={pendingReviewLikeIds?.has(review.id) ?? false}
-                onReportClick={onReportReview}
-                reportedReviewIds={reportedReviewIds}
-              />
+                ref={(node) => registerReviewElement(review.id, node)}
+              >
+                <ReviewCard
+                  review={review}
+                  currentUserId={currentUserId}
+                  isOfferOwner={isOwnOffer}
+                  onEdit={onEditReview}
+                  onDeleteClick={onDeleteReviewClick}
+                  onViewOwnerResponse={(r) => {
+                    setOwnerResponseModalReview(r);
+                    setOwnerResponseModalMode('read');
+                  }}
+                  onAddOwnerResponse={(r) => {
+                    setOwnerResponseModalReview(r);
+                    setOwnerResponseModalMode('edit');
+                  }}
+                  onLikeToggle={onToggleReviewLike}
+                  isLikePending={pendingReviewLikeIds?.has(review.id) ?? false}
+                  onReportClick={onReportReview}
+                  reportedReviewIds={reportedReviewIds}
+                />
+              </div>
             ))}
           </div>
         )}

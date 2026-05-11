@@ -6,7 +6,6 @@ import { api, endpoints } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { User } from '@/types';
-import type { SearchUserResult } from '../search/types';
 import type { Offer } from '../profile/profileOffersTypes';
 import { slugifyLabel } from '../profile/profileOffersTypes';
 import { AddReviewModal } from './AddReviewModal';
@@ -57,8 +56,6 @@ export type OfferReviewsViewProps = {
   accountType?: 'personal' | 'business';
   /** Používateľ z dashboardu (prihlásený používateľ). */
   user?: User | null;
-  /** Súhrn prezeraného používateľa (napr. pri zobrazení cudzieho profilu). */
-  viewedUserSummary?: SearchUserResult | null;
 };
 
 function formatOwnerNameFromOfferOwner(owner?: OfferOwnerLike | null): string {
@@ -83,17 +80,30 @@ function formatDashboardName(user?: NameLike | null): string {
   return [user.first_name, user.last_name].filter(Boolean).join(' ').trim();
 }
 
+function parsePositiveInteger(value: string | null): number | null {
+  if (!value) return null;
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+}
+
 export default function OfferReviewsView({
   offerId,
   accountType = 'personal',
   user: dashboardUser,
-  viewedUserSummary,
 }: OfferReviewsViewProps) {
   const { t } = useLanguage();
   const { user: authUser } = useAuth();
   const user = dashboardUser ?? authUser;
   const viewerUserId = user?.id ?? null;
   const searchParams = useSearchParams();
+  const targetReviewId = useMemo(
+    () => parsePositiveInteger(searchParams?.get('review_id') ?? null),
+    [searchParams],
+  );
+  const targetOwnerResponseReviewId = useMemo(
+    () => (searchParams?.get('modal') === 'owner_response' ? targetReviewId : null),
+    [searchParams, targetReviewId],
+  );
 
   const [offer, setOffer] = useState<OfferDetailLike | null>(null);
   const [loading, setLoading] = useState(false);
@@ -329,6 +339,8 @@ export default function OfferReviewsView({
           pendingReviewLikeIds={pendingReviewLikeIds}
           onReportReview={(review) => setReviewToReport(review)}
           reportedReviewIds={reportedReviewIds}
+          targetReviewId={targetReviewId}
+          targetOwnerResponseReviewId={targetOwnerResponseReviewId}
         />
       </div>
 
@@ -371,6 +383,8 @@ export default function OfferReviewsView({
           pendingReviewLikeIds={pendingReviewLikeIds}
           onReportReview={(review) => setReviewToReport(review)}
           reportedReviewIds={reportedReviewIds}
+          targetReviewId={targetReviewId}
+          targetOwnerResponseReviewId={targetOwnerResponseReviewId}
         />
       </div>
 
