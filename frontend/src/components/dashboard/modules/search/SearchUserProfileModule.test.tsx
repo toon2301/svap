@@ -67,12 +67,14 @@ jest.mock('../messages/messagingApi', () => ({
 jest.mock('../profile/ProfileDesktopView', () => ({
   __esModule: true,
   default: ({
+    onAvatarClick,
     onSendMessage,
     isOpeningConversation,
     onToggleFavorite,
     isFavorited,
     isFavoritePending,
   }: {
+    onAvatarClick?: () => void;
     onSendMessage?: () => void;
     isOpeningConversation?: boolean;
     onToggleFavorite?: () => void;
@@ -80,6 +82,9 @@ jest.mock('../profile/ProfileDesktopView', () => ({
     isFavoritePending?: boolean;
   }) => (
     <div>
+      <button type="button" onClick={onAvatarClick}>
+        open avatar
+      </button>
       <button type="button" onClick={onSendMessage} disabled={Boolean(isOpeningConversation)}>
         {isOpeningConversation ? 'opening' : 'open message'}
       </button>
@@ -98,6 +103,29 @@ jest.mock('../profile/ProfileMobileView', () => ({
 jest.mock('../profile/ProfileWebsitesModal', () => ({
   __esModule: true,
   default: () => null,
+}));
+
+jest.mock('../shared/OfferImageGalleryLightbox', () => ({
+  __esModule: true,
+  default: ({
+    open,
+    images,
+    alt,
+    onClose,
+  }: {
+    open: boolean;
+    images?: Array<{ image_url?: string | null }>;
+    alt: string;
+    onClose: () => void;
+  }) =>
+    open ? (
+      <div role="dialog" aria-label="mock avatar lightbox">
+        <img src={images?.[0]?.image_url || ''} alt={alt} />
+        <button type="button" onClick={onClose}>
+          close lightbox
+        </button>
+      </div>
+    ) : null,
 }));
 
 describe('SearchUserProfileModule', () => {
@@ -155,5 +183,38 @@ describe('SearchUserProfileModule', () => {
       expect(setFavoriteUserState).toHaveBeenCalledWith(42, true);
       expect(screen.getByRole('button', { name: 'remove favorite' })).toBeInTheDocument();
     });
+  });
+
+  it('opens the avatar lightbox when the foreign profile avatar is clicked', async () => {
+    (api.get as jest.Mock).mockResolvedValueOnce({
+      data: {
+        id: 42,
+        username: 'test-user',
+        user_type: 'personal',
+        first_name: 'Test',
+        last_name: 'User',
+        avatar_url: 'https://example.com/avatar.jpg',
+        updated_at: 'avatar-v1',
+        is_favorited: false,
+      },
+    });
+
+    render(<SearchUserProfileModule userId={42} />);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'open avatar' }));
+
+    expect(screen.getByRole('dialog', { name: 'mock avatar lightbox' })).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Test User' })).toHaveAttribute(
+      'src',
+      'https://example.com/avatar.jpg?v=avatar-v1',
+    );
+  });
+
+  it('does not open the avatar lightbox when the foreign profile has no avatar', async () => {
+    render(<SearchUserProfileModule userId={42} />);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'open avatar' }));
+
+    expect(screen.queryByRole('dialog', { name: 'mock avatar lightbox' })).not.toBeInTheDocument();
   });
 });

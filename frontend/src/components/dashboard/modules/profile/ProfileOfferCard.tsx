@@ -7,6 +7,7 @@ import { slugifyLabel } from './profileOffersTypes';
 import { OfferCardBack } from './offerCard/OfferCardBack';
 import { OfferCardFront } from './offerCard/OfferCardFront';
 import { setOfferLikeState, type OfferLikeResponse } from './offerLikesApi';
+import OfferImageGalleryLightbox from '../shared/OfferImageGalleryLightbox';
 
 interface ProfileOfferCardProps {
   offer: Offer;
@@ -29,6 +30,7 @@ interface ProfileOfferCardProps {
   isMessageDisabled?: boolean;
   /** Keď true, karta nemá zaoblený horný okraj ani horný border – pre použitie pod SearchOfferCardAuthorHeader. */
   compactTop?: boolean;
+  enableImageGallery?: boolean;
 }
 
 export default function ProfileOfferCard({
@@ -50,12 +52,14 @@ export default function ProfileOfferCard({
   messageLabel,
   isMessageDisabled = false,
   compactTop = false,
+  enableImageGallery = false,
 }: ProfileOfferCardProps) {
   const [localLikeState, setLocalLikeState] = useState(() => ({
     isLiked: offer.is_liked_by_me === true,
     likesCount: Math.max(0, Number(offer.likes_count ?? 0)),
   }));
   const [isLocalLikePending, setIsLocalLikePending] = useState(false);
+  const [isImageGalleryOpen, setIsImageGalleryOpen] = useState(false);
 
   useEffect(() => {
     setLocalLikeState({
@@ -146,6 +150,8 @@ export default function ProfileOfferCard({
 
   const imageCount = displayOffer.images?.filter((img) => img?.image_url || img?.image).length || 0;
   const hasMultipleImages = imageCount > 1;
+  const hasImages = imageCount > 0;
+  const canOpenImageGallery = enableImageGallery && hasImages;
 
   const isHidden = displayOffer.is_hidden === true && !isOtherUserProfile;
 
@@ -201,6 +207,7 @@ export default function ProfileOfferCard({
         priceLabel={priceLabel}
         displayLocationText={displayLocationText}
         hasMultipleImages={hasMultipleImages}
+        hasImages={hasImages}
         imageCount={imageCount}
         isOtherUserProfile={isOtherUserProfile}
         ownerDisplayName={ownerDisplayName}
@@ -213,6 +220,9 @@ export default function ProfileOfferCard({
         messageLabel={messageLabel}
         isMessageDisabled={isMessageDisabled}
         compactTop={compactTop}
+        onOpenImageGallery={
+          canOpenImageGallery ? () => setIsImageGalleryOpen(true) : undefined
+        }
       />
 
       <OfferCardBack
@@ -224,6 +234,13 @@ export default function ProfileOfferCard({
         isFlipped={isFlipped}
         ownerDisplayName={ownerDisplayName}
         compactTop={compactTop}
+      />
+
+      <OfferImageGalleryLightbox
+        open={isImageGalleryOpen}
+        images={displayOffer.images}
+        alt={imageAlt}
+        onClose={() => setIsImageGalleryOpen(false)}
       />
     </div>
   );

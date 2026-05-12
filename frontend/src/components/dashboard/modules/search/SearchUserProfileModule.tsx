@@ -17,6 +17,7 @@ import {
 import ProfileMobileView from "../profile/ProfileMobileView";
 import ProfileDesktopView from "../profile/ProfileDesktopView";
 import ProfileWebsitesModal from "../profile/ProfileWebsitesModal";
+import OfferImageGalleryLightbox from "../shared/OfferImageGalleryLightbox";
 import type { ProfileTab } from "../profile/profileTypes";
 import { getMessagingErrorMessage } from "../messages/messagingApi";
 import { buildMessagesUrl } from "../messages/messagesRouting";
@@ -28,6 +29,19 @@ interface SearchUserProfileModuleProps {
   highlightedSkillId?: number | null;
   initialSummary?: SearchUserResult;
   initialTab?: ProfileTab;
+}
+
+function withStableAvatarVersion(url: string, version?: string | null): string {
+  const cleanVersion = String(version || '').trim();
+  if (!cleanVersion) return url;
+  const separator = url.includes('?') ? '&' : '?';
+  return `${url}${separator}v=${encodeURIComponent(cleanVersion)}`;
+}
+
+function getProfileAvatarUrl(user: User): string | null {
+  const rawUrl = user.avatar_url || user.avatar || '';
+  const cleanUrl = rawUrl.trim();
+  return cleanUrl ? withStableAvatarVersion(cleanUrl, user.updated_at) : null;
 }
 
 export function SearchUserProfileModule({
@@ -46,6 +60,7 @@ export function SearchUserProfileModule({
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<ProfileTab>(initialTab ?? "offers");
   const [isAllWebsitesModalOpen, setIsAllWebsitesModalOpen] = useState(false);
+  const [isAvatarLightboxOpen, setIsAvatarLightboxOpen] = useState(false);
   const [isOpeningConversation, setIsOpeningConversation] = useState(false);
   const [isFavoritePending, setIsFavoritePending] = useState(false);
 
@@ -65,6 +80,7 @@ export function SearchUserProfileModule({
 
   useEffect(() => {
     let cancelled = false;
+    setIsAvatarLightboxOpen(false);
 
     const load = async () => {
       setIsLoading(true);
@@ -235,6 +251,16 @@ export function SearchUserProfileModule({
 
   // Určiť accountType na základe user_type používateľa.
   const accountType = profileUser.user_type === 'company' ? 'business' : 'personal';
+  const profileAvatarUrl = getProfileAvatarUrl(profileUser);
+  const profileDisplayName =
+    `${profileUser.first_name || ''} ${profileUser.last_name || ''}`.trim() ||
+    profileUser.username ||
+    t('skills.photos', 'Fotky');
+  const profileAvatarImages = profileAvatarUrl ? [{ image_url: profileAvatarUrl }] : [];
+  const handleAvatarClick = () => {
+    if (!profileAvatarUrl) return;
+    setIsAvatarLightboxOpen(true);
+  };
 
   return (
     <>
@@ -249,7 +275,7 @@ export function SearchUserProfileModule({
             onUserUpdate={undefined}
             onEditProfileClick={undefined}
             onPhotoUpload={() => {}}
-            onAvatarClick={() => {}}
+            onAvatarClick={handleAvatarClick}
             onSkillsClick={undefined}
             activeTab={activeTab}
             onChangeTab={setActiveTab}
@@ -274,7 +300,7 @@ export function SearchUserProfileModule({
             onUserUpdate={undefined}
             onEditProfileClick={undefined}
             onPhotoUpload={() => {}}
-            onAvatarClick={() => {}}
+            onAvatarClick={handleAvatarClick}
             onSkillsClick={undefined}
             activeTab={activeTab}
             onChangeTab={setActiveTab}
@@ -296,6 +322,13 @@ export function SearchUserProfileModule({
         open={isAllWebsitesModalOpen}
         user={profileUser}
         onClose={() => setIsAllWebsitesModalOpen(false)}
+      />
+
+      <OfferImageGalleryLightbox
+        open={isAvatarLightboxOpen}
+        images={profileAvatarImages}
+        alt={profileDisplayName}
+        onClose={() => setIsAvatarLightboxOpen(false)}
       />
     </>
   );

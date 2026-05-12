@@ -1,7 +1,10 @@
 'use client';
 
+/* eslint-disable @next/next/no-img-element */
+
 import React, { useEffect, useMemo, useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import BlurredContainImage from './BlurredContainImage';
 
 interface OfferImage {
   id?: number;
@@ -14,6 +17,7 @@ interface OfferImageCarouselProps {
   images?: OfferImage[];
   alt: string;
   intervalMs?: number;
+  variant?: 'cover' | 'contain-blur';
 }
 
 type PreparedImage = {
@@ -24,7 +28,12 @@ type PreparedImage = {
 
 const DEFAULT_INTERVAL = 5000;
 
-const OfferImageCarousel: React.FC<OfferImageCarouselProps> = ({ images, alt, intervalMs = DEFAULT_INTERVAL }) => {
+const OfferImageCarousel: React.FC<OfferImageCarouselProps> = ({
+  images,
+  alt,
+  intervalMs = DEFAULT_INTERVAL,
+  variant = 'cover',
+}) => {
   const { t } = useLanguage();
   const preparedImages: PreparedImage[] = useMemo(() => {
     if (!Array.isArray(images)) {
@@ -87,17 +96,30 @@ const OfferImageCarousel: React.FC<OfferImageCarouselProps> = ({ images, alt, in
 
   return (
     <div className="absolute inset-0">
-      {preparedImages.map((img, idx) => (
-        <img
-          key={img.key}
-          src={img.src}
-          alt={alt}
-          className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-700 ease-in-out ${
-            idx === activeIndex ? 'opacity-100' : 'opacity-0'
-          }`}
-          loading={idx === 0 ? 'eager' : 'lazy'}
-        />
-      ))}
+      {preparedImages.map((img, idx) => {
+        const imageClassName = `absolute inset-0 transition-opacity duration-700 ease-in-out ${
+          idx === activeIndex ? 'opacity-100' : 'opacity-0'
+        }`;
+        const loading = idx === 0 ? 'eager' : 'lazy';
+
+        return variant === 'contain-blur' ? (
+          <BlurredContainImage
+            key={img.key}
+            src={img.src}
+            alt={alt}
+            className={imageClassName}
+            loading={loading}
+          />
+        ) : (
+          <img
+            key={img.key}
+            src={img.src}
+            alt={alt}
+            className={`${imageClassName} h-full w-full object-cover`}
+            loading={loading}
+          />
+        );
+      })}
       <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-black/15 via-transparent to-transparent" />
     </div>
   );

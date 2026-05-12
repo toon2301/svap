@@ -21,6 +21,7 @@ export type OfferCardFrontProps = {
   priceLabel: string | null;
   displayLocationText: string | null;
   hasMultipleImages: boolean;
+  hasImages: boolean;
   imageCount: number;
 
   isOtherUserProfile?: boolean;
@@ -35,6 +36,7 @@ export type OfferCardFrontProps = {
   messageLabel?: string;
   isMessageDisabled?: boolean;
   compactTop?: boolean;
+  onOpenImageGallery?: () => void;
 };
 
 export function OfferCardFront({
@@ -43,14 +45,13 @@ export function OfferCardFront({
   t,
   onToggleFlip,
   isFlipped,
-  isHidden,
-  isHighlighted,
   imageAlt,
   label,
   headline,
   priceLabel,
   displayLocationText,
   hasMultipleImages,
+  hasImages,
   imageCount,
   isOtherUserProfile = false,
   ownerDisplayName,
@@ -63,6 +64,7 @@ export function OfferCardFront({
   messageLabel,
   isMessageDisabled = false,
   compactTop = false,
+  onOpenImageGallery,
 }: OfferCardFrontProps) {
   const showFront = !isFlipped;
   const router = useRouter();
@@ -73,13 +75,32 @@ export function OfferCardFront({
   return (
     <div className={showFront ? 'block' : 'hidden'} style={{ minHeight: '100%' }}>
       <div className={`relative aspect-[3/2] bg-gray-100 dark:bg-[#0e0e0f] overflow-hidden ${compactTop ? 'rounded-t-none' : 'rounded-t-2xl'}`}>
-        <OfferImageCarousel images={offer.images} alt={imageAlt} />
+        <OfferImageCarousel images={offer.images} alt={imageAlt} variant="contain-blur" />
         {accountType === 'business' && (
           <span className="absolute top-2 left-2 px-1.5 py-0.5 text-[10px] font-semibold bg-black/80 text-white rounded">
             PRO
           </span>
         )}
-        {hasMultipleImages && (
+        {onOpenImageGallery && hasImages ? (
+          <button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              onOpenImageGallery();
+            }}
+            onKeyDown={(event) => event.stopPropagation()}
+            aria-label={t('skills.photos', 'Fotky')}
+            title={t('skills.photos', 'Fotky')}
+            className="absolute bottom-2 right-2 px-2 py-1 rounded-full bg-black/40 backdrop-blur-sm text-white/90 text-[10px] font-medium flex items-center gap-1 transition-colors hover:bg-black/55 focus:outline-none focus:ring-2 focus:ring-white/60"
+          >
+            <svg className="w-3 h-3 opacity-80" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+              <circle cx="8.5" cy="8.5" r="1.5" />
+              <polyline points="21 15 16 10 5 21" />
+            </svg>
+            <span>{imageCount}</span>
+          </button>
+        ) : hasMultipleImages ? (
           <div className="absolute bottom-2 right-2 px-2 py-1 rounded-full bg-black/40 backdrop-blur-sm text-white/90 text-[10px] font-medium flex items-center gap-1">
             <svg className="w-3 h-3 opacity-80" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
               <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
@@ -88,7 +109,7 @@ export function OfferCardFront({
             </svg>
             <span>{imageCount}</span>
           </div>
-        )}
+        ) : null}
 
         <div className="absolute top-2 right-2 flex flex-col gap-0.5">
           <button

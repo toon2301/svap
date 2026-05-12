@@ -11,10 +11,26 @@ import type { DashboardFavoriteUser } from './favoritesApi';
 import { fetchFavoriteUsers, setFavoriteUserState } from './favoritesApi';
 import { buildMessagesUrl } from './messages/messagesRouting';
 import { patchUserProfileInCache } from './profile/profileUserCache';
+import BlurredContainImage from './shared/BlurredContainImage';
+
+type ApiErrorLike = {
+  response?: {
+    data?: {
+      error?: string;
+      detail?: string;
+    };
+  };
+  message?: string;
+};
 
 function buildProfileUrl(user: Pick<DashboardFavoriteUser, 'id' | 'slug'>): string {
   const identifier = user.slug && user.slug.trim() ? user.slug.trim() : String(user.id);
   return `/dashboard/users/${encodeURIComponent(identifier)}`;
+}
+
+function getErrorMessage(error: unknown, fallback: string): string {
+  const apiError = error as ApiErrorLike;
+  return apiError.response?.data?.error || apiError.response?.data?.detail || apiError.message || fallback;
 }
 
 function initialsFromName(name: string): string {
@@ -53,13 +69,12 @@ export default function FavoritesModule() {
         if (!cancelled) {
           setFavoriteUsers(users);
         }
-      } catch (loadError: any) {
+      } catch (loadError: unknown) {
         if (cancelled) return;
-        const message =
-          loadError?.response?.data?.error ||
-          loadError?.response?.data?.detail ||
-          loadError?.message ||
-          t('favorites.loadError', 'Nepodarilo sa nacitat oblubenych pouzivatelov.');
+        const message = getErrorMessage(
+          loadError,
+          t('favorites.loadError', 'Nepodarilo sa nacitat oblubenych pouzivatelov.'),
+        );
         setError(message);
       } finally {
         if (!cancelled) {
@@ -86,12 +101,11 @@ export default function FavoritesModule() {
       await setFavoriteUserState(favoriteUser.id, false);
       setFavoriteUsers((current) => current.filter((item) => item.id !== favoriteUser.id));
       patchUserProfileInCache(favoriteUser.id, { is_favorited: false });
-    } catch (removeError: any) {
-      const message =
-        removeError?.response?.data?.error ||
-        removeError?.response?.data?.detail ||
-        removeError?.message ||
-        t('favorites.removeError', 'Nepodarilo sa odobrat pouzivatela z oblubenych.');
+    } catch (removeError: unknown) {
+      const message = getErrorMessage(
+        removeError,
+        t('favorites.removeError', 'Nepodarilo sa odobrat pouzivatela z oblubenych.'),
+      );
       toast.error(message);
     } finally {
       setPendingRemoveId(null);
@@ -158,11 +172,10 @@ export default function FavoritesModule() {
                 >
                   <div className="flex aspect-[16/9] w-full items-center justify-center overflow-hidden bg-purple-100 dark:bg-purple-950/40">
                     {favoriteUser.avatar_url ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
+                      <BlurredContainImage
                         src={favoriteUser.avatar_url}
                         alt={displayName}
-                        className="h-full w-full object-cover"
+                        loading="lazy"
                       />
                     ) : (
                       <span className="text-5xl font-bold text-purple-700 dark:text-purple-200">

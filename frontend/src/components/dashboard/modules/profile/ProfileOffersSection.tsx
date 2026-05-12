@@ -727,6 +727,7 @@ export default function ProfileOffersSection({
                     return st === 'accepted' || st === 'completion_requested' || busyOfferId === offer.id;
                   })()}
                   isMessageDisabled={busyMessageOfferId === offer.id}
+                  enableImageGallery={isOtherUserProfile}
                 />
               </div>
             );
