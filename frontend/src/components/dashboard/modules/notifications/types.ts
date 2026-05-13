@@ -3,6 +3,7 @@ export type NotificationType =
   | 'skill_request_accepted'
   | 'skill_request_completion_requested'
   | 'skill_request_completed'
+  | 'skill_request_terminated'
   | 'review_created'
   | 'review_reply_created'
   | 'review_liked'

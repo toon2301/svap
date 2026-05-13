@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
-import { XMarkIcon } from '@heroicons/react/24/outline';
+import { NoSymbolIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import type { SkillRequest } from './types';
 import { StatusPill } from './ui/StatusPill';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -22,6 +22,7 @@ type Props = {
   showCompletionActions?: boolean;
   onRequestCompletion?: (id: number) => void;
   onConfirmCompletion?: (id: number) => void;
+  onTerminate?: (id: number) => void;
   showReviewButton?: boolean;
   onOpenReview?: (offerId: number) => void;
 };
@@ -50,6 +51,7 @@ export function RequestDetailModal({
   showCompletionActions = false,
   onRequestCompletion,
   onConfirmCompletion,
+  onTerminate,
   showReviewButton = false,
   onOpenReview,
 }: Props) {
@@ -96,7 +98,8 @@ export function RequestDetailModal({
     return text.endsWith('!') ? text : `${text}!`;
   }, [isOfferHidden, isSeeking, t, variant]);
 
-  const canHide = item?.status === 'cancelled' || item?.status === 'rejected';
+  const canHide =
+    item?.status === 'cancelled' || item?.status === 'rejected' || item?.status === 'terminated';
   const reviewOfferId = Number(offer?.id ?? item?.offer);
   const canShowReviewButton =
     showReviewButton &&
@@ -106,6 +109,10 @@ export function RequestDetailModal({
     reviewOfferId > 0 &&
     offer?.already_reviewed !== true &&
     typeof onOpenReview === 'function';
+  const canTerminate =
+    showCompletionActions &&
+    typeof onTerminate === 'function' &&
+    (item?.status === 'accepted' || item?.status === 'completion_requested');
 
   const handleView = () => {
     if (!item) return;
@@ -339,6 +346,17 @@ export function RequestDetailModal({
                 <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-2">
                   {t('requests.completionAwaitingOther', 'Čaká sa na potvrdenie druhej strany')}
                 </p>
+              )}
+              {canTerminate && (
+                <button
+                  type="button"
+                  onClick={() => onTerminate?.(item.id)}
+                  disabled={isBusy}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl border border-amber-300 bg-amber-50 py-3 font-semibold text-amber-800 hover:bg-amber-100 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/60 dark:border-amber-900/70 dark:bg-amber-950/30 dark:text-amber-200 dark:hover:bg-amber-950/50"
+                >
+                  <NoSymbolIcon className="h-5 w-5 shrink-0" />
+                  {t('requests.terminateExchange', 'Skončiť')}
+                </button>
               )}
             </>
           )}

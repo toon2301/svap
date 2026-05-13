@@ -646,6 +646,7 @@ export default function ProfileOffersMobileSection({
                     raw === 'completion_requested' ||
                     raw === 'rejected' ||
                     raw === 'cancelled' ||
+                    raw === 'terminated' ||
                     raw === 'completed'
                       ? raw
                       : '';
@@ -658,6 +659,7 @@ export default function ProfileOffersMobileSection({
                   }
                   if (st === 'rejected') return t('requests.statusRejected', 'Odmietnuté');
                   if (st === 'cancelled') return defaultRequest;
+                  if (st === 'terminated') return defaultRequest;
                   if (st === 'completed') return defaultRequest;
                   return defaultRequest;
                 })()}
@@ -670,6 +672,7 @@ export default function ProfileOffersMobileSection({
                     raw === 'completion_requested' ||
                     raw === 'rejected' ||
                     raw === 'cancelled' ||
+                    raw === 'terminated' ||
                     raw === 'completed'
                       ? raw
                       : '';

@@ -64,6 +64,7 @@ const STATUS_GRADIENT_CLASS: Record<SkillRequestStatus, string> = {
   accepted: 'from-emerald-500/20 to-transparent',
   completion_requested: 'from-sky-500/20 to-transparent',
   completed: 'from-violet-500/20 to-transparent',
+  terminated: 'from-slate-500/20 to-transparent',
   rejected: 'from-rose-500/20 to-transparent',
   cancelled: 'from-gray-500/15 to-transparent',
 };

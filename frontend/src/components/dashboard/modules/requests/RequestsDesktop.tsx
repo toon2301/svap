@@ -13,11 +13,13 @@ import {
   updateSkillRequest,
   requestCompletion,
   confirmCompletion,
+  terminateSkillRequest,
 } from './requestsApi';
-import type { SkillRequest, SkillRequestsResponse } from './types';
+import type { SkillRequest, SkillRequestTerminationReason, SkillRequestsResponse } from './types';
 import { RequestRow } from './RequestRow';
 import { RequestsSkeletonList } from './ui/RequestsSkeletonList';
 import { AddReviewModal } from '../reviews/AddReviewModal';
+import { TerminateExchangeModal } from './TerminateExchangeModal';
 import { api, endpoints } from '@/lib/api';
 import { useRequestUnreadAutoRead } from './useRequestUnreadAutoRead';
 import { buildMessagesUrl } from '../messages/messagesRouting';
@@ -53,6 +55,8 @@ export function RequestsDesktop({ routeIntent }: RequestsDesktopProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [busyId, setBusyId] = useState<number | null>(null);
   const [pendingConfirm, setPendingConfirm] = useState<{ action: 'reject' | 'cancel' | 'hide'; id: number } | null>(null);
+  const [pendingTerminateId, setPendingTerminateId] = useState<number | null>(null);
+  const [terminationError, setTerminationError] = useState<string | null>(null);
 
   const [autoReviewOfferId, setAutoReviewOfferId] = useState<number | null>(null);
   const [isAutoReviewOpen, setIsAutoReviewOpen] = useState(false);
@@ -215,6 +219,11 @@ export function RequestsDesktop({ routeIntent }: RequestsDesktopProps) {
     void handleAction(id, action);
   };
 
+  const handleOpenTerminate = (id: number) => {
+    setTerminationError(null);
+    setPendingTerminateId(id);
+  };
+
   const handleRequestCompletion = async (id: number) => {
     setBusyId(id);
     try {
@@ -260,6 +269,35 @@ export function RequestsDesktop({ routeIntent }: RequestsDesktopProps) {
     } catch (err: unknown) {
       toast.error(getApiErrorMessage(err, t('common.error', 'Nastala chyba.')));
       void load();
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const handleTerminateExchange = async (payload: {
+    reason: SkillRequestTerminationReason;
+    description: string;
+  }) => {
+    if (pendingTerminateId === null) return;
+    const id = pendingTerminateId;
+    setBusyId(id);
+    setTerminationError(null);
+    try {
+      const res = await terminateSkillRequest(id, payload);
+      const updated = res?.data as SkillRequest;
+      if (updated && typeof updated.id === 'number') {
+        mutateItem(updated);
+      }
+      setPendingTerminateId(null);
+      toast.success(t('requests.terminateExchangeSuccess', 'Výmena bola ukončená.'));
+      void load();
+    } catch (err: unknown) {
+      setTerminationError(
+        getApiErrorMessage(
+          err,
+          t('requests.terminateExchangeError', 'Výmenu sa nepodarilo skončiť.'),
+        ),
+      );
     } finally {
       setBusyId(null);
     }
@@ -422,10 +460,11 @@ export function RequestsDesktop({ routeIntent }: RequestsDesktopProps) {
                 onAccept={tab === 'received' ? () => void handleAction(it.id, 'accept') : undefined}
                 onReject={tab === 'received' ? () => setPendingConfirm({ action: 'reject', id: it.id }) : undefined}
                 onCancel={tab === 'sent' ? () => setPendingConfirm({ action: 'cancel', id: it.id }) : undefined}
-                onHide={(it.status === 'cancelled' || it.status === 'rejected') ? () => setPendingConfirm({ action: 'hide', id: it.id }) : undefined}
+                onHide={(it.status === 'cancelled' || it.status === 'rejected' || it.status === 'terminated') ? () => setPendingConfirm({ action: 'hide', id: it.id }) : undefined}
                 showCompletionActions={statusTab === 'active'}
                 onRequestCompletion={statusTab === 'active' ? handleRequestCompletion : undefined}
                 onConfirmCompletion={statusTab === 'active' ? handleConfirmCompletion : undefined}
+                onTerminate={statusTab === 'active' ? handleOpenTerminate : undefined}
                 showReviewButton={statusTab === 'completed'}
                 onOpenReview={statusTab === 'completed' ? handleOpenReview : undefined}
               />
@@ -488,6 +527,18 @@ export function RequestsDesktop({ routeIntent }: RequestsDesktopProps) {
           </div>,
           document.body,
         )}
+
+      <TerminateExchangeModal
+        open={pendingTerminateId !== null}
+        isSubmitting={pendingTerminateId !== null && busyId === pendingTerminateId}
+        error={terminationError}
+        onClose={() => {
+          if (pendingTerminateId !== null && busyId === pendingTerminateId) return;
+          setPendingTerminateId(null);
+          setTerminationError(null);
+        }}
+        onSubmit={(payload) => void handleTerminateExchange(payload)}
+      />
 
       <AddReviewModal
         key={autoReviewOfferId ?? 'auto-review'}

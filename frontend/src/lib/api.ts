@@ -762,6 +762,7 @@ export const endpoints = {
     detail: (id: number) => `/auth/skills/${id}/`,
     images: (skillId: number) => `/auth/skills/${skillId}/images/`,
     imageDetail: (skillId: number, imageId: number) => `/auth/skills/${skillId}/images/${imageId}/`,
+    reportImage: (skillId: number, imageId: number) => `/auth/skills/${skillId}/images/${imageId}/report/`,
     imageUploadInit: (skillId: number) => `/auth/skills/${skillId}/images/upload-init/`,
     imageUploadComplete: (skillId: number) => `/auth/skills/${skillId}/images/upload-complete/`,
     reviews: (offerId: number) => `/auth/skills/${offerId}/reviews/`,
@@ -782,10 +783,12 @@ export const endpoints = {
     status: '/auth/skill-requests/status/',
     requestCompletion: (id: number) => `/auth/skill-requests/${id}/request-completion/`,
     confirmCompletion: (id: number) => `/auth/skill-requests/${id}/confirm-completion/`,
+    terminate: (id: number) => `/auth/skill-requests/${id}/terminate/`,
   },
   // Nahlásenia používateľov
   users: {
     report: (userId: number) => `/auth/users/${userId}/report/`,
+    reportAvatar: (userId: number) => `/auth/users/${userId}/avatar/report/`,
   },
   // Verejné vyhľadávanie (OfferedSkill)
   search: '/auth/search/',

@@ -13,13 +13,15 @@ import {
   updateSkillRequest,
   requestCompletion,
   confirmCompletion,
+  terminateSkillRequest,
 } from './requestsApi';
-import type { SkillRequest, SkillRequestsResponse } from './types';
+import type { SkillRequest, SkillRequestTerminationReason, SkillRequestsResponse } from './types';
 import { RequestsSkeletonList } from './ui/RequestsSkeletonList';
 import { RequestsEmptyState } from './ui/RequestsEmptyState';
 import { RequestMobileCard } from './RequestMobileCard';
 import { RequestDetailModal } from './RequestDetailModal';
 import { AddReviewModal } from '../reviews/AddReviewModal';
+import { TerminateExchangeModal } from './TerminateExchangeModal';
 import { api, endpoints } from '@/lib/api';
 import { useRequestUnreadAutoRead } from './useRequestUnreadAutoRead';
 import { buildMessagesUrl } from '../messages/messagesRouting';
@@ -58,6 +60,8 @@ export function RequestsMobile({ routeIntent }: RequestsMobileProps) {
   const [pendingConfirm, setPendingConfirm] = useState<{ action: 'reject' | 'cancel' | 'hide'; id: number } | null>(
     null,
   );
+  const [pendingTerminateId, setPendingTerminateId] = useState<number | null>(null);
+  const [terminationError, setTerminationError] = useState<string | null>(null);
 
   const [autoReviewOfferId, setAutoReviewOfferId] = useState<number | null>(null);
   const [isAutoReviewOpen, setIsAutoReviewOpen] = useState(false);
@@ -241,6 +245,11 @@ export function RequestsMobile({ routeIntent }: RequestsMobileProps) {
     void handleAction(id, action);
   };
 
+  const handleOpenTerminate = (id: number) => {
+    setTerminationError(null);
+    setPendingTerminateId(id);
+  };
+
   const handleRequestCompletion = async (id: number) => {
     setBusyId(id);
     try {
@@ -297,9 +306,42 @@ export function RequestsMobile({ routeIntent }: RequestsMobileProps) {
     }
   };
 
+  const handleTerminateExchange = async (payload: {
+    reason: SkillRequestTerminationReason;
+    description: string;
+  }) => {
+    if (pendingTerminateId === null) return;
+    const id = pendingTerminateId;
+    setBusyId(id);
+    setTerminationError(null);
+    try {
+      const res = await terminateSkillRequest(id, payload);
+      const updated = res?.data as SkillRequest;
+      if (updated && typeof updated.id === 'number') {
+        mutateItem(updated);
+      }
+      setSelected((prev) => (prev?.id === id ? null : prev));
+      setPendingTerminateId(null);
+      toast.success(t('requests.terminateExchangeSuccess', 'Výmena bola ukončená.'));
+      void load();
+    } catch (err: unknown) {
+      setTerminationError(
+        getApiErrorMessage(
+          err,
+          t('requests.terminateExchangeError', 'Výmenu sa nepodarilo skončiť.'),
+        ),
+      );
+    } finally {
+      setBusyId(null);
+    }
+  };
+
   const selectedId = selected?.id ?? null;
   const selectedBusy = selectedId != null && busyId === selectedId;
-  const selectedCanHide = selected?.status === 'cancelled' || selected?.status === 'rejected';
+  const selectedCanHide =
+    selected?.status === 'cancelled' ||
+    selected?.status === 'rejected' ||
+    selected?.status === 'terminated';
 
   return (
     <div className="space-y-0">
@@ -474,6 +516,7 @@ export function RequestsMobile({ routeIntent }: RequestsMobileProps) {
         showCompletionActions={statusTab === 'active'}
         onRequestCompletion={statusTab === 'active' ? handleRequestCompletion : undefined}
         onConfirmCompletion={statusTab === 'active' ? handleConfirmCompletion : undefined}
+        onTerminate={statusTab === 'active' ? handleOpenTerminate : undefined}
         showReviewButton={statusTab === 'completed'}
         onOpenReview={statusTab === 'completed' ? handleOpenReview : undefined}
       />
@@ -542,6 +585,18 @@ export function RequestsMobile({ routeIntent }: RequestsMobileProps) {
           </div>,
           document.body,
         )}
+
+      <TerminateExchangeModal
+        open={pendingTerminateId !== null}
+        isSubmitting={pendingTerminateId !== null && busyId === pendingTerminateId}
+        error={terminationError}
+        onClose={() => {
+          if (pendingTerminateId !== null && busyId === pendingTerminateId) return;
+          setPendingTerminateId(null);
+          setTerminationError(null);
+        }}
+        onSubmit={(payload) => void handleTerminateExchange(payload)}
+      />
 
       <AddReviewModal
         key={autoReviewOfferId ?? 'auto-review-mobile'}

@@ -10,6 +10,7 @@ const STATUS_BADGE_KEYS: Record<SkillRequestStatus, string> = {
   accepted: 'requests.statusBadgeActive',
   completion_requested: 'requests.statusBadgeCompletionRequested',
   completed: 'requests.statusBadgeCompleted',
+  terminated: 'requests.statusBadgeTerminated',
   cancelled: 'requests.statusBadgeCancelled',
   rejected: 'requests.statusBadgeRejected',
 };
@@ -23,6 +24,8 @@ const STATUS_CLASS: Record<SkillRequestStatus, string> = {
     'bg-sky-50 text-sky-800 border-sky-200 dark:bg-sky-950/40 dark:text-sky-200 dark:border-sky-900/60',
   completed:
     'bg-violet-50 text-violet-800 border-violet-200 dark:bg-violet-950/40 dark:text-violet-200 dark:border-violet-900/60',
+  terminated:
+    'bg-slate-100 text-slate-800 border-slate-200 dark:bg-slate-900/70 dark:text-slate-200 dark:border-slate-800',
   cancelled:
     'bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-800',
   rejected:

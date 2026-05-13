@@ -62,6 +62,12 @@ class NotificationSerializer(serializers.ModelSerializer):
             return "/dashboard/requests?status=active&tab=sent"
         if obj.type == NotificationType.SKILL_REQUEST_COMPLETED:
             return "/dashboard/requests?status=completed&tab=received"
+        if obj.type == NotificationType.SKILL_REQUEST_TERMINATED:
+            tab = "received"
+            skill_request = getattr(obj, "skill_request", None)
+            if skill_request is not None and obj.user_id == skill_request.requester_id:
+                tab = "sent"
+            return f"/dashboard/requests?status=cancelled&tab={tab}"
         if obj.type == NotificationType.OFFER_LIKED:
             data = obj.data if isinstance(obj.data, dict) else {}
             try:

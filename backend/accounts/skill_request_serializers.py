@@ -4,6 +4,7 @@ from .models import (
     OfferedSkill,
     Review,
     SkillRequest,
+    SkillRequestTerminationReason,
     User,
 )
 
@@ -31,6 +32,21 @@ class SkillRequestCreateSerializer(serializers.Serializer):
         return value
 
 
+class SkillRequestTerminateSerializer(serializers.Serializer):
+    """Payload na predčasné skončenie aktívnej výmeny."""
+
+    reason = serializers.ChoiceField(choices=SkillRequestTerminationReason.choices)
+    description = serializers.CharField(
+        allow_blank=True,
+        max_length=1000,
+        required=False,
+        trim_whitespace=True,
+    )
+
+    def validate_description(self, value):
+        return (value or "").strip()
+
+
 class SkillRequestSerializer(serializers.ModelSerializer):
     """Read serializer pre žiadosti."""
 
@@ -56,6 +72,7 @@ class SkillRequestSerializer(serializers.ModelSerializer):
     requester_summary = serializers.SerializerMethodField()
     recipient_summary = serializers.SerializerMethodField()
     offer_summary = serializers.SerializerMethodField()
+    termination = serializers.SerializerMethodField()
 
     def _avatar_url(self, user: User):
         try:
@@ -125,6 +142,20 @@ class SkillRequestSerializer(serializers.ModelSerializer):
             "already_reviewed": already_reviewed,
         }
 
+    def get_termination(self, obj):
+        try:
+            termination = obj.termination
+        except Exception:
+            return None
+        terminated_by = getattr(termination, "terminated_by", None)
+        return {
+            "reason": termination.reason,
+            "description": termination.description or "",
+            "terminated_by": getattr(terminated_by, "id", None),
+            "terminated_by_display_name": getattr(terminated_by, "display_name", "") or "",
+            "created_at": termination.created_at,
+        }
+
     def to_representation(self, instance):
         """Override to ensure SerializerMethodField values are included."""
         ret = super().to_representation(instance)
@@ -132,6 +163,7 @@ class SkillRequestSerializer(serializers.ModelSerializer):
         ret["requester_summary"] = self.get_requester_summary(instance)
         ret["recipient_summary"] = self.get_recipient_summary(instance)
         ret["offer_summary"] = self.get_offer_summary(instance)
+        ret["termination"] = self.get_termination(instance)
         return ret
 
     class Meta:
@@ -156,5 +188,6 @@ class SkillRequestSerializer(serializers.ModelSerializer):
             "requester_summary",
             "recipient_summary",
             "offer_summary",
+            "termination",
         ]
         read_only_fields = fields

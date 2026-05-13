@@ -241,6 +241,7 @@ export default function ProfileOfferCard({
         images={displayOffer.images}
         alt={imageAlt}
         onClose={() => setIsImageGalleryOpen(false)}
+        reportTarget={{ type: 'offer_image', skillId: displayOffer.id }}
       />
     </div>
   );

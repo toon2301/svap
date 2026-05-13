@@ -329,6 +329,7 @@ export function SearchUserProfileModule({
         images={profileAvatarImages}
         alt={profileDisplayName}
         onClose={() => setIsAvatarLightboxOpen(false)}
+        reportTarget={{ type: 'user_avatar', userId: profileUser.id }}
       />
     </>
   );

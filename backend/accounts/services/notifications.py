@@ -204,6 +204,31 @@ def create_skill_request_completed_notification(*, skill_request, actor) -> Noti
     )
 
 
+def create_skill_request_terminated_notification(
+    *, skill_request, termination, actor
+) -> Notification:
+    recipient = (
+        skill_request.recipient
+        if getattr(actor, "id", None) == skill_request.requester_id
+        else skill_request.requester
+    )
+    actor_name = (getattr(actor, "display_name", "") or "").strip() or "Používateľ"
+    return create_notification(
+        user=recipient,
+        notif_type=NotificationType.SKILL_REQUEST_TERMINATED,
+        title="Výmena skončila",
+        body=f"{actor_name} skončil výmenu.",
+        actor=actor,
+        skill_request=skill_request,
+        data={
+            "skill_request_id": skill_request.id,
+            "offer_id": skill_request.offer_id,
+            "terminated_by_user_id": actor.id,
+            "termination_reason": termination.reason,
+        },
+    )
+
+
 def create_review_created_notification(*, review, actor) -> Notification | None:
     offer = getattr(review, "offer", None)
     owner = getattr(offer, "user", None)

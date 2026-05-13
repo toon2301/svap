@@ -14,7 +14,7 @@ export const STATUS_PARAMS: Record<RequestsStatusTab, string> = {
   pending: 'pending',
   active: 'accepted,completion_requested',
   completed: 'completed',
-  cancelled: 'cancelled,rejected',
+  cancelled: 'cancelled,rejected,terminated',
 };
 
 export function parseRequestsStatusTab(value: string | null): RequestsStatusTab {

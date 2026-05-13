@@ -29,6 +29,7 @@ from .skill_requests import (
     skill_request_request_completion_view,
     skill_request_confirm_completion_view,
 )
+from .skill_request_terminations import skill_request_terminate_view
 from .reviews import (
     reviews_list_view,
     review_detail_view,
@@ -50,6 +51,7 @@ from .push import (
     push_preferences_view,
 )
 from .user_reports import user_report_view
+from .photo_reports import offer_image_report_view, user_avatar_report_view
 from .search import search_view
 from .search_global import global_search_view
 from .dashboard import (
@@ -87,6 +89,7 @@ __all__ = [
     "skill_request_detail_view",
     "skill_request_request_completion_view",
     "skill_request_confirm_completion_view",
+    "skill_request_terminate_view",
     "reviews_list_view",
     "review_detail_view",
     "review_respond_view",
@@ -112,6 +115,8 @@ __all__ = [
     "dashboard_user_skills_by_slug_view",
     "dashboard_settings_view",
     "user_report_view",
+    "offer_image_report_view",
+    "user_avatar_report_view",
     "search_view",
     "global_search_view",
 ]

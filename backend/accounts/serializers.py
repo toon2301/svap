@@ -17,6 +17,7 @@ from .review_serializers import ReviewSerializer
 from .skill_request_serializers import (
     SkillRequestCreateSerializer,
     SkillRequestSerializer,
+    SkillRequestTerminateSerializer,
 )
 
 __all__ = [
@@ -28,6 +29,7 @@ __all__ = [
     "ReviewSerializer",
     "SkillRequestCreateSerializer",
     "SkillRequestSerializer",
+    "SkillRequestTerminateSerializer",
     "UserLoginSerializer",
     "UserProfileSerializer",
     "UserRegistrationSerializer",

@@ -55,6 +55,7 @@ INACTIVE_SKILL_REQUEST_STATUSES: tuple[str, ...] = (
     SkillRequestStatus.REJECTED,
     SkillRequestStatus.CANCELLED,
     SkillRequestStatus.COMPLETED,
+    SkillRequestStatus.TERMINATED,
 )
 
 
@@ -68,7 +69,7 @@ _SKILLREQ_STATUS_KEYS: tuple[str, ...] = (
     "pending",
     "accepted,completion_requested",
     "completed",
-    "cancelled,rejected",
+    "cancelled,rejected,terminated",
 )
 
 
@@ -76,11 +77,25 @@ def _compute_skill_requests_payload(*, viewer, request, status_param: str | None
     received = SkillRequest.objects.filter(
         recipient=viewer,
         hidden_by_recipient=False,
-    ).select_related("requester", "recipient", "offer", "offer__user")
+    ).select_related(
+        "requester",
+        "recipient",
+        "offer",
+        "offer__user",
+        "termination",
+        "termination__terminated_by",
+    )
     sent = SkillRequest.objects.filter(
         requester=viewer,
         hidden_by_requester=False,
-    ).select_related("requester", "recipient", "offer", "offer__user")
+    ).select_related(
+        "requester",
+        "recipient",
+        "offer",
+        "offer__user",
+        "termination",
+        "termination__terminated_by",
+    )
 
     if status_param:
         status_values = [s.strip().lower() for s in status_param.split(",") if s.strip()]
@@ -462,6 +477,7 @@ def skill_request_detail_view(request, request_id: int):
             if obj.status not in (
                 SkillRequestStatus.REJECTED,
                 SkillRequestStatus.CANCELLED,
+                SkillRequestStatus.TERMINATED,
             ):
                 return Response(
                     {

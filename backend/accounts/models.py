@@ -684,6 +684,24 @@ class SkillRequestStatus(models.TextChoices):
     CANCELLED = "cancelled", _("Zrušené")
     COMPLETION_REQUESTED = "completion_requested", _("Completion requested")
     COMPLETED = "completed", _("Completed")
+    TERMINATED = "terminated", _("Predčasne ukončené")
+
+
+class SkillRequestTerminationReason(models.TextChoices):
+    NO_RESPONSE = "no_response", _("Druhá strana nereaguje")
+    NO_TIME = "no_time", _("Nemám čas pokračovať")
+    CHANGED_CIRCUMSTANCES = "changed_circumstances", _("Zmena okolností")
+    COULD_NOT_AGREE = "could_not_agree", _("Nepodarilo sa dohodnúť")
+    COMMUNICATION_ISSUE = (
+        "communication_issue",
+        _("Nie som spokojný s komunikáciou"),
+    )
+    MEETING_NOT_HAPPENED = (
+        "meeting_not_happened",
+        _("Stretnutie / realizácia neprebehla"),
+    )
+    TRUST_CONCERNS = "trust_concerns", _("Mám obavy z dôveryhodnosti")
+    OTHER = "other", _("Iné")
 
 
 class SkillRequest(models.Model):
@@ -753,6 +771,42 @@ class SkillRequest(models.Model):
         return f"Request #{self.id}: {self.requester_id} -> {self.recipient_id} (offer {self.offer_id}) [{self.status}]"
 
 
+class SkillRequestTermination(models.Model):
+    """Auditný záznam predčasného skončenia aktívnej výmeny."""
+
+    skill_request = models.OneToOneField(
+        SkillRequest,
+        on_delete=models.CASCADE,
+        related_name="termination",
+        verbose_name=_("Výmena"),
+    )
+    terminated_by = models.ForeignKey(
+        User,
+        on_delete=models.PROTECT,
+        related_name="skill_request_terminations",
+        verbose_name=_("Ukončil"),
+    )
+    reason = models.CharField(
+        _("Dôvod"),
+        max_length=40,
+        choices=SkillRequestTerminationReason.choices,
+    )
+    description = models.TextField(_("Popis"), blank=True, max_length=1000)
+    created_at = models.DateTimeField(_("Vytvorené"), auto_now_add=True)
+
+    class Meta:
+        verbose_name = _("Ukončenie výmeny")
+        verbose_name_plural = _("Ukončenia výmen")
+        ordering = ["-created_at", "-id"]
+        indexes = [
+            models.Index(fields=["reason", "created_at"], name="acc_req_term_reason_cr_idx"),
+            models.Index(fields=["terminated_by", "created_at"], name="acc_req_term_by_cr_idx"),
+        ]
+
+    def __str__(self):
+        return f"Termination #{self.id}: request {self.skill_request_id} by {self.terminated_by_id}"
+
+
 class NotificationType(models.TextChoices):
     OFFER_LIKED = "offer_liked", _("Páči sa mi ponuka")
     SKILL_REQUEST = "skill_request", _("Nová žiadosť")
@@ -770,6 +824,10 @@ class NotificationType(models.TextChoices):
     REVIEW_LIKED = "review_liked", _("Páči sa mi recenzia")
     SKILL_REQUEST_REJECTED = "skill_request_rejected", _("Žiadosť zamietnutá")
     SKILL_REQUEST_CANCELLED = "skill_request_cancelled", _("Žiadosť zrušená")
+    SKILL_REQUEST_TERMINATED = (
+        "skill_request_terminated",
+        _("Výmena skončila"),
+    )
     GROUP_INVITATION = "group_invitation", _("Pozvánka do skupiny")
 
 
@@ -1057,6 +1115,113 @@ class OfferedSkillLike(models.Model):
 
     def __str__(self):
         return f"Like ponuky #{self.offer_id} od používateľa {self.user_id}"
+
+
+class PhotoReport(models.Model):
+    """
+    Nahlasenie fotky pouzivatelom.
+
+    Report cieli bud na konkretnu fotku ponuky, alebo na aktualny avatar
+    pouzivatela. Pri avatari ukladame nazov suboru v case nahlasenia, aby bolo
+    jasne, ktoru fotku pouzivatel nahlasil aj po neskorsej zmene avatara.
+    """
+
+    offer_image = models.ForeignKey(
+        OfferedSkillImage,
+        on_delete=models.CASCADE,
+        related_name="reports",
+        verbose_name=_("Nahlasena fotka ponuky"),
+        blank=True,
+        null=True,
+    )
+    reported_user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="avatar_reports_received",
+        verbose_name=_("Nahlaseny pouzivatel avatara"),
+        blank=True,
+        null=True,
+    )
+    reported_avatar_name = models.CharField(
+        _("Nazov nahlaseneho avataru"),
+        max_length=255,
+        blank=True,
+        default="",
+    )
+    reported_by = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="photo_reports_sent",
+        verbose_name=_("Nahlasil"),
+    )
+    reason = models.CharField(
+        _("Dovod"),
+        max_length=100,
+    )
+    description = models.TextField(
+        _("Popis"),
+        blank=True,
+    )
+    created_at = models.DateTimeField(_("Vytvorene"), auto_now_add=True)
+    is_resolved = models.BooleanField(_("Vyriesene"), default=False)
+
+    class Meta:
+        verbose_name = _("Nahlasenie fotky")
+        verbose_name_plural = _("Nahlasenia fotiek")
+        ordering = ["-created_at"]
+        constraints = [
+            models.CheckConstraint(
+                check=(
+                    Q(offer_image__isnull=False, reported_user__isnull=True)
+                    | Q(
+                        offer_image__isnull=True,
+                        reported_user__isnull=False,
+                        reported_avatar_name__gt="",
+                    )
+                ),
+                name="photo_report_has_exactly_one_target",
+            ),
+            models.CheckConstraint(
+                check=Q(reported_user__isnull=True)
+                | ~Q(reported_user=models.F("reported_by")),
+                name="photo_report_cannot_report_own_avatar",
+            ),
+            models.UniqueConstraint(
+                fields=["offer_image", "reported_by"],
+                condition=Q(offer_image__isnull=False),
+                name="unique_photo_report_per_offer_image",
+            ),
+            models.UniqueConstraint(
+                fields=["reported_user", "reported_avatar_name", "reported_by"],
+                condition=Q(reported_user__isnull=False),
+                name="unique_photo_report_per_avatar",
+            ),
+        ]
+        indexes = [
+            models.Index(
+                fields=["offer_image", "created_at"],
+                name="acc_photo_rep_offer_cr_idx",
+            ),
+            models.Index(
+                fields=["reported_user", "created_at"],
+                name="acc_photo_rep_user_cr_idx",
+            ),
+            models.Index(
+                fields=["reported_by", "created_at"],
+                name="acc_photo_rep_by_cr_idx",
+            ),
+            models.Index(
+                fields=["is_resolved", "created_at"],
+                name="acc_photo_rep_res_cr_idx",
+            ),
+        ]
+
+    def __str__(self):
+        if self.offer_image_id:
+            target = f"fotka ponuky {self.offer_image_id}"
+        else:
+            target = f"avatar pouzivatela {self.reported_user_id}"
+        return f"Nahlasenie #{self.id}: {target} od {self.reported_by_id}"
 
 
 class ReviewReport(models.Model):

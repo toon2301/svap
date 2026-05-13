@@ -366,6 +366,7 @@ export function ProfileOfferCardMobile({
         images={offer.images}
         alt={imageAlt}
         onClose={() => setIsImageGalleryOpen(false)}
+        reportTarget={{ type: 'offer_image', skillId: offer.id }}
       />
     </div>
   );

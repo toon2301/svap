@@ -6,6 +6,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { formatNotificationTimestamp } from '@/utils/formatNotificationTimestamp';
 
+import { getTerminationReasonLabel } from '../requests/terminationReasons';
 import type { DashboardNotification } from './types';
 
 interface NotificationItemProps {
@@ -96,6 +97,10 @@ export default function NotificationItem({
   const actorName = getActorName(notification, t('notifications.unknownActor', 'Používateľ'));
   const actorDisplayName = (notification.actor?.display_name || '').trim();
   const targetUrl = safeInternalTarget(notification.target_url);
+  const terminationReasonLabel = getTerminationReasonLabel(
+    notification.data?.termination_reason,
+    t,
+  );
 
   const title =
     notification.type === 'group_invitation'
@@ -114,6 +119,12 @@ export default function NotificationItem({
             t(
               'notifications.skillRequestCompletedTitle',
               'Dokončenie výmeny potvrdené',
+            )
+        : notification.type === 'skill_request_terminated'
+          ? notification.title ||
+            t(
+              'notifications.skillRequestTerminatedTitle',
+              'Výmena skončila',
             )
         : notification.type === 'review_created'
           ? notification.title || t('notifications.reviewCreatedTitle', 'Nová recenzia')
@@ -148,6 +159,16 @@ export default function NotificationItem({
               'notifications.skillRequestCompletedBody',
               '{name} potvrdil dokončenie výmeny.',
             ).replace('{name}', actorName)
+        : notification.type === 'skill_request_terminated'
+          ? t(
+              'notifications.skillRequestTerminatedBody',
+              '{name} skončil výmenu. Dôvod: {reason}.',
+            )
+              .replace('{name}', actorName)
+              .replace(
+                '{reason}',
+                terminationReasonLabel || t('notifications.reasonUnknown', 'neuvedený'),
+              )
         : notification.type === 'review_created'
           ? t(
               'notifications.reviewCreatedBody',

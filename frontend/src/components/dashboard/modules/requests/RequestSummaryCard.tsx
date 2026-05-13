@@ -22,6 +22,7 @@ type Props = {
   showCompletionActions?: boolean;
   onRequestCompletion?: (id: number) => void;
   onConfirmCompletion?: (id: number) => void;
+  onTerminate?: (id: number) => void;
   /** Iba v tabe „Dokončené“: zobraziť tlačidlo „Napíš recenziu“ */
   showReviewButton?: boolean;
   onOpenReview?: (offerId: number) => void;
@@ -102,6 +103,7 @@ export function RequestSummaryCard({
   showCompletionActions = false,
   onRequestCompletion,
   onConfirmCompletion,
+  onTerminate,
   showReviewButton = false,
   onOpenReview,
 }: Props) {
@@ -122,7 +124,8 @@ export function RequestSummaryCard({
   const description = (item.offer_description || '').trim();
   const dateToShow = item.updated_at ?? item.created_at;
   const created = formatDateSk(dateToShow);
-  const canHide = item.status === 'cancelled' || item.status === 'rejected';
+  const canHide =
+    item.status === 'cancelled' || item.status === 'rejected' || item.status === 'terminated';
   const reviewOfferId = Number(offer?.id ?? item.offer);
   const canShowReviewButton =
     showReviewButton &&
@@ -132,6 +135,10 @@ export function RequestSummaryCard({
     reviewOfferId > 0 &&
     offer?.already_reviewed !== true &&
     typeof onOpenReview === 'function';
+  const canTerminate =
+    showCompletionActions &&
+    typeof onTerminate === 'function' &&
+    (item.status === 'accepted' || item.status === 'completion_requested');
 
   const avatarSrc = useMemo(() => {
     if (!whoAvatar) return '';
@@ -468,6 +475,17 @@ export function RequestSummaryCard({
               <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 text-center py-1">
                 {t('requests.completionAwaitingOther', 'Čaká sa na potvrdenie druhej strany')}
               </p>
+            )}
+            {canTerminate && (
+              <button
+                type="button"
+                onClick={() => onTerminate?.(item.id)}
+                disabled={isBusy}
+                className="w-full inline-flex items-center justify-center gap-1.5 rounded-md border border-amber-300 bg-amber-50 text-amber-800 px-2 py-2 text-[11px] sm:text-xs font-semibold hover:bg-amber-100 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/60 dark:border-amber-900/70 dark:bg-amber-950/30 dark:text-amber-200 dark:hover:bg-amber-950/50"
+              >
+                <NoSymbolIcon className="h-4 w-4 shrink-0" />
+                {t('requests.terminateExchange', 'Skončiť')}
+              </button>
             )}
           </div>
         )}

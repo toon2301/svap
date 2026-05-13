@@ -84,6 +84,11 @@ urlpatterns = [
         name="user_report",
     ),
     path(
+        "users/<int:user_id>/avatar/report/",
+        views.user_avatar_report_view,
+        name="user_avatar_report",
+    ),
+    path(
         "dashboard/users/<int:user_id>/profile/",
         views.dashboard_user_profile_detail_view,
         name="dashboard_user_profile_detail",
@@ -125,6 +130,11 @@ urlpatterns = [
         "skills/<int:skill_id>/images/upload-complete/",
         views.skill_images_upload_complete_view,
         name="skill_images_upload_complete",
+    ),
+    path(
+        "skills/<int:skill_id>/images/<int:image_id>/report/",
+        views.offer_image_report_view,
+        name="offer_image_report",
     ),
     path(
         "skills/<int:skill_id>/images/<int:image_id>/",
@@ -169,6 +179,11 @@ urlpatterns = [
         "skill-requests/<int:request_id>/confirm-completion/",
         views.skill_request_confirm_completion_view,
         name="skill_request_confirm_completion",
+    ),
+    path(
+        "skill-requests/<int:request_id>/terminate/",
+        views.skill_request_terminate_view,
+        name="skill_request_terminate",
     ),
     path("notifications/", views.notifications_list_view, name="notifications_list"),
     path(

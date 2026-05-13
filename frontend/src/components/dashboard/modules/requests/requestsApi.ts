@@ -1,5 +1,5 @@
 import { api, endpoints } from '@/lib/api';
-import type { SkillRequestsResponse } from './types';
+import type { SkillRequestTerminationReason, SkillRequestsResponse } from './types';
 
 function toPositiveInt(value: unknown): number | null {
   const n = typeof value === 'number' ? value : Number(value);
@@ -59,6 +59,24 @@ export async function confirmCompletion(requestId: number) {
   return api.post(endpoints.requests.confirmCompletion(id), {}, {
     headers: { 'Content-Type': 'application/json' },
   });
+}
+
+export async function terminateSkillRequest(
+  requestId: number,
+  payload: { reason: SkillRequestTerminationReason; description?: string },
+) {
+  const id = toPositiveInt(requestId);
+  if (!id) throw new Error('Neplatné ID žiadosti');
+  return api.post(
+    endpoints.requests.terminate(id),
+    {
+      reason: payload.reason,
+      description: (payload.description || '').trim(),
+    },
+    {
+      headers: { 'Content-Type': 'application/json' },
+    },
+  );
 }
 
 
