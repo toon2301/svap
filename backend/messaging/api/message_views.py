@@ -16,6 +16,11 @@ from rest_framework.views import APIView
 from swaply.rate_limiting import messaging_send_rate_limit
 from ..models import Conversation, ConversationParticipant, Message
 from ..services.conversations import SelfConversationNotAllowed, send_direct_message
+from ..services.message_requests import (
+    MessageRequestLimitExceeded,
+    MessageRequestRecipientCannotReply,
+    is_pending_message_request,
+)
 from ..services.messages import (
     MessageNotFound,
     NotMessageAuthor,
@@ -44,6 +49,26 @@ from .view_helpers import (
 )
 
 User = get_user_model()
+
+
+def _message_request_send_error_response(exc: Exception):
+    if isinstance(exc, MessageRequestLimitExceeded):
+        return Response(
+            {
+                "code": "message_request_pending",
+                "error": "Čakáte na prijatie konverzácie.",
+            },
+            status=status.HTTP_403_FORBIDDEN,
+        )
+    if isinstance(exc, MessageRequestRecipientCannotReply):
+        return Response(
+            {
+                "code": "message_request_accept_required",
+                "error": "Najprv prijmite žiadosť, aby ste mohli odpovedať.",
+            },
+            status=status.HTTP_403_FORBIDDEN,
+        )
+    raise exc
 
 
 class MessagePagination(PageNumberPagination):
@@ -104,7 +129,7 @@ class MessageListView(ListAPIView):
         serializer = self.get_serializer(page if page is not None else queryset, many=True)
         peer_last_read_at = (
             None
-            if conversation.is_group
+            if conversation.is_group or is_pending_message_request(conversation)
             else _peer_last_read_at_for_conversation(
                 conversation_id=conversation.id,
                 user_id=request.user.id,
@@ -184,6 +209,8 @@ class SendMessageView(APIView):
         except NotParticipant:
             # Do not leak existence; treat as not found
             return Response(status=status.HTTP_404_NOT_FOUND)
+        except (MessageRequestLimitExceeded, MessageRequestRecipientCannotReply) as exc:
+            return _message_request_send_error_response(exc)
 
         event = {
             "type": "messaging_message",
@@ -344,6 +371,8 @@ class StartDirectMessageView(APIView):
                 {"error": "Nemôžete začať konverzáciu sami so sebou."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+        except (MessageRequestLimitExceeded, MessageRequestRecipientCannotReply) as exc:
+            return _message_request_send_error_response(exc)
 
         event = {
             "type": "messaging_message",

@@ -52,12 +52,15 @@ export function ConversationDetail({
     thread.otherConversation?.is_group &&
     thread.otherConversation.current_user_status === 'invited',
   );
+  const isPendingMessageRequest = thread.otherConversation?.request_status === 'pending';
+  const isMessageRequestRecipient =
+    isPendingMessageRequest && thread.otherConversation?.message_request_role === 'recipient';
 
   const composer = useConversationComposerController({
     conversationId,
     isMobile,
     loading: thread.loading,
-    disabled: isCurrentUserInvitedGroup,
+    disabled: isCurrentUserInvitedGroup || isMessageRequestRecipient,
     t,
     refresh: thread.refresh,
   });
@@ -224,6 +227,8 @@ export function ConversationDetail({
   const attachImageLabel = t('messages.attachImage', 'Priložiť obrázok');
   const typePlaceholder = isCurrentUserInvitedGroup
     ? t('messages.acceptGroupInviteToReply', 'Prijmite pozvánku, aby ste mohli písať.')
+    : isMessageRequestRecipient
+      ? t('messages.acceptMessageRequestToReply', 'Prijmite žiadosť, aby ste mohli odpovedať.')
     : t('messages.type', 'Napíš správu…');
   const sendLabel = t('messages.send', 'Odoslať');
   const addEmojiLabel = t('messages.addEmoji', 'Pridať emoji');

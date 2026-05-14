@@ -266,6 +266,14 @@ export function DraftConversationDetail({
             'messages.sendUnavailable',
             'Konverzácia už nie je dostupná.',
           ),
+          requestPendingFallback: t(
+            'messages.messageRequestPendingNotice',
+            'Čakáte na prijatie konverzácie.',
+          ),
+          requestAcceptRequiredFallback: t(
+            'messages.acceptMessageRequestToReply',
+            'Prijmite žiadosť, aby ste mohli odpovedať.',
+          ),
         }),
       );
     } finally {

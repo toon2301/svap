@@ -32,20 +32,61 @@ const STATUS_CLASS: Record<SkillRequestStatus, string> = {
     'bg-rose-50 text-rose-800 border-rose-200 dark:bg-rose-950/40 dark:text-rose-200 dark:border-rose-900/60',
 };
 
-export function StatusPill({ status }: { status: SkillRequestStatus }) {
+type StatusPillProps = {
+  status: SkillRequestStatus;
+  onClick?: (event: React.MouseEvent<HTMLButtonElement>) => void;
+  ariaControls?: string;
+  ariaExpanded?: boolean;
+  title?: string;
+};
+
+export function StatusPill({
+  status,
+  onClick,
+  ariaControls,
+  ariaExpanded,
+  title,
+}: StatusPillProps) {
   const { t } = useLanguage();
   const s = (status ?? 'pending') as SkillRequestStatus;
   const label = t(STATUS_BADGE_KEYS[s] ?? STATUS_BADGE_KEYS.pending);
   const className = STATUS_CLASS[s] ?? STATUS_CLASS.pending;
-  return (
-    <span
-      className={[
-        'inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-semibold tracking-wide',
-        className,
-      ].join(' ')}
-    >
+
+  const pillClassName = [
+    'inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-semibold tracking-wide',
+    onClick
+      ? 'cursor-pointer transition-opacity hover:opacity-85 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60'
+      : '',
+    className,
+  ]
+    .filter(Boolean)
+    .join(' ');
+
+  const content = (
+    <>
       <span className="inline-block size-1.5 rounded-full bg-current opacity-70" />
       {label}
+    </>
+  );
+
+  if (onClick) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        aria-controls={ariaControls}
+        aria-expanded={ariaExpanded}
+        title={title}
+        className={pillClassName}
+      >
+        {content}
+      </button>
+    );
+  }
+
+  return (
+    <span className={pillClassName}>
+      {content}
     </span>
   );
 }

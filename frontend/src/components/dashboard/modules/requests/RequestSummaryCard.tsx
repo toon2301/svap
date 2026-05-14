@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
-import { CheckIcon, NoSymbolIcon, TrashIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { Bars3Icon, CheckIcon, NoSymbolIcon, TrashIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { StatusPill } from './ui/StatusPill';
+import { TerminationReasonNotice } from './ui/TerminationReasonNotice';
 import type { SkillRequest } from './types';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -116,6 +117,9 @@ export function RequestSummaryCard({
   const whoName = who?.display_name || (variant === 'received' ? item.requester_display_name : item.recipient_display_name) || '';
   const whoAvatar = who?.avatar_url || null;
   const [avatarError, setAvatarError] = useState(false);
+  const [terminateMenuOpen, setTerminateMenuOpen] = useState(false);
+  const [terminationReasonOpen, setTerminationReasonOpen] = useState(false);
+  const terminateMenuRef = useRef<HTMLDivElement | null>(null);
 
   const offer = item.offer_summary || null;
   const isSeeking = offer?.is_seeking ?? item.offer_is_seeking ?? false;
@@ -139,6 +143,8 @@ export function RequestSummaryCard({
     showCompletionActions &&
     typeof onTerminate === 'function' &&
     (item.status === 'accepted' || item.status === 'completion_requested');
+  const hasTerminationReason = item.status === 'terminated' && Boolean(item.termination?.reason);
+  const terminationReasonId = `request-termination-reason-${item.id}`;
 
   const avatarSrc = useMemo(() => {
     if (!whoAvatar) return '';
@@ -150,6 +156,34 @@ export function RequestSummaryCard({
   useEffect(() => {
     setAvatarError(false);
   }, [avatarSrc]);
+
+  useEffect(() => {
+    setTerminateMenuOpen(false);
+    setTerminationReasonOpen(false);
+  }, [item.id]);
+
+  useEffect(() => {
+    if (isBusy) setTerminateMenuOpen(false);
+  }, [isBusy]);
+
+  useEffect(() => {
+    if (!terminateMenuOpen) return;
+    const onDocMouseDown = (e: MouseEvent) => {
+      const el = terminateMenuRef.current;
+      if (el && !el.contains(e.target as Node)) {
+        setTerminateMenuOpen(false);
+      }
+    };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setTerminateMenuOpen(false);
+    };
+    document.addEventListener('mousedown', onDocMouseDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', onDocMouseDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [terminateMenuOpen]);
 
   const hasAvatar = Boolean(avatarSrc && !avatarError);
 
@@ -283,6 +317,59 @@ export function RequestSummaryCard({
     router.push(`/dashboard/users/${encodeURIComponent(profileIdentifier)}?highlight=${encodeURIComponent(String(offerId))}`);
   };
 
+  const handleTerminationPillClick = useCallback(
+    (e: React.MouseEvent<HTMLButtonElement>) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (!hasTerminationReason) return;
+      setTerminationReasonOpen((open) => !open);
+    },
+    [hasTerminationReason],
+  );
+
+  const renderTerminateMenu = (align: 'stretch' | 'center') => {
+    if (!canTerminate) return null;
+    const wrapClass =
+      align === 'stretch'
+        ? 'relative flex shrink-0 items-stretch self-stretch'
+        : 'relative flex shrink-0 items-center self-center';
+    return (
+      <div ref={terminateMenuRef} className={wrapClass}>
+        <button
+          type="button"
+          aria-haspopup="menu"
+          aria-expanded={terminateMenuOpen}
+          aria-label={t('common.menu')}
+          disabled={isBusy}
+          onClick={() => setTerminateMenuOpen((open) => !open)}
+          className="inline-flex h-full min-h-[2.25rem] w-9 shrink-0 items-center justify-center rounded-md border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 dark:border-gray-800 dark:bg-[#0f0f10] dark:text-gray-200 dark:hover:bg-gray-900/60 sm:min-h-[2.5rem] sm:w-10"
+        >
+          <Bars3Icon className="h-5 w-5" aria-hidden />
+        </button>
+        {terminateMenuOpen ? (
+          <div
+            role="menu"
+            className="absolute right-0 top-full z-30 mt-1 min-w-[11rem] rounded-lg border border-gray-200 bg-white py-1 shadow-lg dark:border-gray-800 dark:bg-[#0f0f10]"
+          >
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                setTerminateMenuOpen(false);
+                onTerminate?.(item.id);
+              }}
+              disabled={isBusy}
+              className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-semibold text-amber-900 hover:bg-amber-50 disabled:opacity-50 dark:text-amber-100 dark:hover:bg-amber-950/40"
+            >
+              <NoSymbolIcon className="h-4 w-4 shrink-0" aria-hidden />
+              {t('requests.terminateExchange')}
+            </button>
+          </div>
+        ) : null}
+      </div>
+    );
+  };
+
   return (
     <div className="group relative pt-4 pb-4">
       {/* Pri skrytej karte: hláška o skrytí v pôvodnom mieste (v strede hore) */}
@@ -387,105 +474,106 @@ export function RequestSummaryCard({
           )}
         </div>
         <div className="flex flex-row items-stretch justify-center gap-1 compact-max:gap-1 sm:gap-2 wide:gap-3 shrink-0">
-        {variant === 'received' ? (
-          <>
-            <button
-              type="button"
-              onClick={onAccept}
-              disabled={isBusy || item.status !== 'pending'}
-              className="flex-1 inline-flex items-center justify-center gap-1 sm:gap-1.5 wide:gap-2 rounded-md bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-200 px-1.5 compact-max:px-1 sm:px-2 md:px-2.5 hd:px-4 py-1.5 compact-max:py-1 sm:py-2 hd:py-2.5 text-[11px] compact-max:text-[10px] sm:text-xs md:text-sm hd:text-sm font-semibold hover:bg-purple-200 dark:hover:bg-purple-900/50 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 shrink-0"
-            >
-              <CheckIcon className="w-3 h-3 compact-max:w-2.5 compact-max:h-2.5 sm:w-4 sm:h-4 hd:w-5 hd:h-5 shrink-0" />
-              {t('requests.accept')}
-            </button>
-            <button
-              type="button"
-              onClick={onReject}
-              disabled={isBusy || item.status !== 'pending'}
-              className="flex-1 inline-flex items-center justify-center gap-1 sm:gap-1.5 wide:gap-2 rounded-md bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-200 px-1.5 compact-max:px-1 sm:px-2 md:px-2.5 hd:px-4 py-1.5 compact-max:py-1 sm:py-2 hd:py-2.5 text-[11px] compact-max:text-[10px] sm:text-xs md:text-sm hd:text-sm font-semibold hover:bg-purple-200 dark:hover:bg-purple-900/50 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 shrink-0"
-            >
-              <XMarkIcon className="w-3 h-3 compact-max:w-2.5 compact-max:h-2.5 sm:w-4 sm:h-4 hd:w-5 hd:h-5 shrink-0" />
-              {t('requests.reject')}
-            </button>
-            {!isOfferHidden && (
+          {variant === 'received' ? (
+            <>
               <button
                 type="button"
-                onClick={handleView}
-                className="flex-[1.6] inline-flex items-center justify-center gap-1 sm:gap-1.5 wide:gap-2 rounded-md bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-200 px-1.5 compact-max:px-1 sm:px-2 md:px-2.5 hd:px-4 py-1.5 compact-max:py-1 sm:py-2 hd:py-2.5 text-[11px] compact-max:text-[10px] sm:text-xs md:text-sm hd:text-sm font-semibold hover:bg-purple-200 dark:hover:bg-purple-900/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 shrink-0 whitespace-nowrap"
+                onClick={onAccept}
+                disabled={isBusy || item.status !== 'pending'}
+                className="flex-1 inline-flex items-center justify-center gap-1 sm:gap-1.5 wide:gap-2 rounded-md bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-200 px-1.5 compact-max:px-1 sm:px-2 md:px-2.5 hd:px-4 py-1.5 compact-max:py-1 sm:py-2 hd:py-2.5 text-[11px] compact-max:text-[10px] sm:text-xs md:text-sm hd:text-sm font-semibold hover:bg-purple-200 dark:hover:bg-purple-900/50 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 shrink-0"
               >
-                {t('requests.showCard')}
+                <CheckIcon className="w-3 h-3 compact-max:w-2.5 compact-max:h-2.5 sm:w-4 sm:h-4 hd:w-5 hd:h-5 shrink-0" />
+                {t('requests.accept')}
               </button>
-            )}
-          </>
-        ) : (
-          <>
-            {!isOfferHidden && (
               <button
                 type="button"
-                onClick={handleView}
-                className="flex-[1.6] inline-flex items-center justify-center gap-1 sm:gap-1.5 wide:gap-2 rounded-md bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-200 px-1.5 compact-max:px-1 sm:px-2 md:px-2.5 hd:px-4 py-1.5 compact-max:py-1 sm:py-2 hd:py-2.5 text-[11px] compact-max:text-[10px] sm:text-xs md:text-sm hd:text-sm font-semibold hover:bg-purple-200 dark:hover:bg-purple-900/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 shrink-0 whitespace-nowrap"
+                onClick={onReject}
+                disabled={isBusy || item.status !== 'pending'}
+                className="flex-1 inline-flex items-center justify-center gap-1 sm:gap-1.5 wide:gap-2 rounded-md bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-200 px-1.5 compact-max:px-1 sm:px-2 md:px-2.5 hd:px-4 py-1.5 compact-max:py-1 sm:py-2 hd:py-2.5 text-[11px] compact-max:text-[10px] sm:text-xs md:text-sm hd:text-sm font-semibold hover:bg-purple-200 dark:hover:bg-purple-900/50 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 shrink-0"
               >
-                {t('requests.showCard')}
+                <XMarkIcon className="w-3 h-3 compact-max:w-2.5 compact-max:h-2.5 sm:w-4 sm:h-4 hd:w-5 hd:h-5 shrink-0" />
+                {t('requests.reject')}
               </button>
-            )}
-            {item.status === 'pending' && (
-              <button
-                type="button"
-                onClick={onCancel}
-                disabled={isBusy}
-                className="flex-1 inline-flex items-center justify-center gap-1 sm:gap-1.5 wide:gap-2 rounded-md bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-200 px-1.5 compact-max:px-1 sm:px-2 md:px-2.5 hd:px-4 py-1.5 compact-max:py-1 sm:py-2 hd:py-2.5 text-[11px] compact-max:text-[10px] sm:text-xs md:text-sm hd:text-sm font-semibold hover:bg-purple-200 dark:hover:bg-purple-900/50 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 shrink-0 whitespace-nowrap"
-              >
-                <NoSymbolIcon className="w-3 h-3 compact-max:w-2.5 compact-max:h-2.5 sm:w-4 sm:h-4 hd:w-5 hd:h-5 shrink-0" />
-                {t('requests.cancel')}
-              </button>
-            )}
-          </>
-        )}
+              {!isOfferHidden && (
+                <button
+                  type="button"
+                  onClick={handleView}
+                  className="flex-[1.6] inline-flex items-center justify-center gap-1 sm:gap-1.5 wide:gap-2 rounded-md bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-200 px-1.5 compact-max:px-1 sm:px-2 md:px-2.5 hd:px-4 py-1.5 compact-max:py-1 sm:py-2 hd:py-2.5 text-[11px] compact-max:text-[10px] sm:text-xs md:text-sm hd:text-sm font-semibold hover:bg-purple-200 dark:hover:bg-purple-900/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 shrink-0 whitespace-nowrap"
+                >
+                  {t('requests.showCard')}
+                </button>
+              )}
+            </>
+          ) : (
+            <>
+              {!isOfferHidden && (
+                <button
+                  type="button"
+                  onClick={handleView}
+                  className="flex-[1.6] inline-flex items-center justify-center gap-1 sm:gap-1.5 wide:gap-2 rounded-md bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-200 px-1.5 compact-max:px-1 sm:px-2 md:px-2.5 hd:px-4 py-1.5 compact-max:py-1 sm:py-2 hd:py-2.5 text-[11px] compact-max:text-[10px] sm:text-xs md:text-sm hd:text-sm font-semibold hover:bg-purple-200 dark:hover:bg-purple-900/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 shrink-0 whitespace-nowrap"
+                >
+                  {t('requests.showCard')}
+                </button>
+              )}
+              {item.status === 'pending' && (
+                <button
+                  type="button"
+                  onClick={onCancel}
+                  disabled={isBusy}
+                  className="flex-1 inline-flex items-center justify-center gap-1 sm:gap-1.5 wide:gap-2 rounded-md bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-200 px-1.5 compact-max:px-1 sm:px-2 md:px-2.5 hd:px-4 py-1.5 compact-max:py-1 sm:py-2 hd:py-2.5 text-[11px] compact-max:text-[10px] sm:text-xs md:text-sm hd:text-sm font-semibold hover:bg-purple-200 dark:hover:bg-purple-900/50 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 shrink-0 whitespace-nowrap"
+                >
+                  <NoSymbolIcon className="w-3 h-3 compact-max:w-2.5 compact-max:h-2.5 sm:w-4 sm:h-4 hd:w-5 hd:h-5 shrink-0" />
+                  {t('requests.cancel')}
+                </button>
+              )}
+            </>
+          )}
         </div>
 
         {/* Completion akcie – len v tabe Aktívne */}
         {showCompletionActions && (
           <div className="shrink-0 flex flex-col gap-1.5">
             {variant === 'received' && item.status === 'accepted' && onRequestCompletion && (
-              <button
-                type="button"
-                onClick={() => onRequestCompletion(item.id)}
-                disabled={isBusy}
-                className="w-full inline-flex items-center justify-center gap-1.5 rounded-md bg-emerald-600 text-white px-2 py-2 text-[11px] sm:text-xs font-semibold hover:bg-emerald-700 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/60"
-              >
-                {t('requests.markAsCompleted', 'Označiť ako dokončené')}
-              </button>
+              <div className="flex flex-row items-stretch gap-2">
+                <button
+                  type="button"
+                  onClick={() => onRequestCompletion(item.id)}
+                  disabled={isBusy}
+                  className="min-w-0 flex-1 inline-flex items-center justify-center gap-1.5 rounded-md bg-emerald-600 text-white px-2 py-2 text-[11px] sm:text-xs font-semibold hover:bg-emerald-700 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/60"
+                >
+                  {t('requests.markAsCompleted', 'Označiť ako dokončené')}
+                </button>
+                {renderTerminateMenu('stretch')}
+              </div>
             )}
             {variant === 'sent' && item.status === 'completion_requested' && onConfirmCompletion && (
-              <button
-                type="button"
-                onClick={() => onConfirmCompletion(item.id)}
-                disabled={isBusy}
-                className="w-full inline-flex items-center justify-center gap-1.5 rounded-md bg-emerald-600 text-white px-2 py-2 text-[11px] sm:text-xs font-semibold hover:bg-emerald-700 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/60"
-              >
-                {t('requests.confirmCompletion', 'Potvrdiť dokončenie')}
-              </button>
+              <div className="flex flex-row items-stretch gap-2">
+                <button
+                  type="button"
+                  onClick={() => onConfirmCompletion(item.id)}
+                  disabled={isBusy}
+                  className="min-w-0 flex-1 inline-flex items-center justify-center gap-1.5 rounded-md bg-emerald-600 text-white px-2 py-2 text-[11px] sm:text-xs font-semibold hover:bg-emerald-700 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/60"
+                >
+                  {t('requests.confirmCompletion', 'Potvrdiť dokončenie')}
+                </button>
+                {renderTerminateMenu('stretch')}
+              </div>
             )}
             {variant === 'sent' && item.status === 'accepted' && (
-              <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 text-center py-1">
-                {t('requests.completionInProgress', 'Spolupráca prebieha')}
-              </p>
+              <div className="flex flex-row items-center gap-2 py-1">
+                <p className="min-w-0 flex-1 text-center text-[11px] sm:text-xs text-gray-500 dark:text-gray-400">
+                  {t('requests.completionInProgress', 'Spolupráca prebieha')}
+                </p>
+                {renderTerminateMenu('center')}
+              </div>
             )}
             {variant === 'received' && item.status === 'completion_requested' && (
-              <p className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 text-center py-1">
-                {t('requests.completionAwaitingOther', 'Čaká sa na potvrdenie druhej strany')}
-              </p>
-            )}
-            {canTerminate && (
-              <button
-                type="button"
-                onClick={() => onTerminate?.(item.id)}
-                disabled={isBusy}
-                className="w-full inline-flex items-center justify-center gap-1.5 rounded-md border border-amber-300 bg-amber-50 text-amber-800 px-2 py-2 text-[11px] sm:text-xs font-semibold hover:bg-amber-100 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/60 dark:border-amber-900/70 dark:bg-amber-950/30 dark:text-amber-200 dark:hover:bg-amber-950/50"
-              >
-                <NoSymbolIcon className="h-4 w-4 shrink-0" />
-                {t('requests.terminateExchange', 'Skončiť')}
-              </button>
+              <div className="flex flex-row items-center gap-2 py-1">
+                <p className="min-w-0 flex-1 text-center text-[11px] sm:text-xs text-gray-500 dark:text-gray-400">
+                  {t('requests.completionAwaitingOther', 'Čaká sa na potvrdenie druhej strany')}
+                </p>
+                {renderTerminateMenu('center')}
+              </div>
             )}
           </div>
         )}
@@ -503,13 +591,30 @@ export function RequestSummaryCard({
         )}
 
         {/* Suma a stav: v pravom dolnom rohu, rovnaká veľkosť */}
-        <div className="shrink-0 pt-2 pb-2 flex flex-row items-center justify-end gap-3">
-          {priceLabel && (
-            <span className="inline-flex items-center rounded-full border border-purple-200 dark:border-purple-800/50 bg-purple-50 dark:bg-purple-900/20 px-2.5 py-1 text-[11px] font-semibold text-purple-800 dark:text-purple-200">
-              {priceLabel}
-            </span>
-          )}
-          <StatusPill status={item.status} />
+        <div className="shrink-0 pt-2 pb-2 flex flex-col items-end gap-2">
+          <div className="flex flex-row items-center justify-end gap-3">
+            {priceLabel && (
+              <span className="inline-flex items-center rounded-full border border-purple-200 dark:border-purple-800/50 bg-purple-50 dark:bg-purple-900/20 px-2.5 py-1 text-[11px] font-semibold text-purple-800 dark:text-purple-200">
+                {priceLabel}
+              </span>
+            )}
+            <StatusPill
+              status={item.status}
+              onClick={hasTerminationReason ? handleTerminationPillClick : undefined}
+              ariaControls={hasTerminationReason ? terminationReasonId : undefined}
+              ariaExpanded={hasTerminationReason ? terminationReasonOpen : undefined}
+              title={hasTerminationReason ? t('requests.terminationReasonLabel') : undefined}
+            />
+          </div>
+          {terminationReasonOpen ? (
+            <TerminationReasonNotice
+              id={terminationReasonId}
+              status={item.status}
+              termination={item.termination}
+              compact
+              className="w-full"
+            />
+          ) : null}
         </div>
       </div>
       </div>

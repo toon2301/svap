@@ -77,12 +77,12 @@ export function TerminateExchangeModal({
                   id="terminate-exchange-title"
                   className="text-lg font-semibold text-gray-900 dark:text-white"
                 >
-                  {t('requests.terminateExchangeTitle', 'Skončiť')}
+                  {t('requests.terminateExchangeTitle', 'Predčasne ukončiť')}
                 </h2>
                 <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
                   {t(
                     'requests.terminateExchangeDescription',
-                    'Výmena sa ukončí okamžite a recenzia nebude možná.',
+                    'Výmena sa predčasne ukončí okamžite a recenzia nebude možná.',
                   )}
                 </p>
               </div>
@@ -160,7 +160,7 @@ export function TerminateExchangeModal({
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex items-center gap-2 rounded-lg bg-amber-600 px-4 py-2.5 font-medium text-white transition-colors hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex items-center gap-2 rounded-lg bg-purple-600 px-4 py-2.5 font-medium text-white transition-colors hover:bg-purple-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isSubmitting ? (
                 <>
@@ -168,7 +168,7 @@ export function TerminateExchangeModal({
                   {t('common.sending', 'Odosielam...')}
                 </>
               ) : (
-                t('requests.terminateExchangeSubmit', 'Skončiť výmenu')
+                t('requests.terminateExchangeSubmit', 'Predčasne ukončiť výmenu')
               )}
             </button>
           </div>

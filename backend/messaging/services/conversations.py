@@ -8,6 +8,7 @@ from django.db.models import Count
 from django.utils import timezone
 
 from ..models import Conversation, ConversationParticipant, Message
+from .message_requests import ensure_can_send_pending_request_message
 from .push_enqueue import schedule_message_push_delivery
 
 User = get_user_model()
@@ -50,7 +51,9 @@ def _lock_users_for_direct_conversation(*, user_a_id: int, user_b_id: int) -> No
     )
 
 
-def _direct_conversation_queryset_for_pair(*, user_a_id: int, user_b_id: int):
+def _direct_conversation_queryset_for_pair(
+    *, user_a_id: int, user_b_id: int, include_deleted: bool = False
+):
     pair_ids = (
         ConversationParticipant.objects.filter(user_id__in=[user_a_id, user_b_id])
         .values("conversation_id")
@@ -58,18 +61,31 @@ def _direct_conversation_queryset_for_pair(*, user_a_id: int, user_b_id: int):
         .filter(users_count=2)
         .values_list("conversation_id", flat=True)
     )
-    return (
+    qs = (
         Conversation.objects.filter(id__in=pair_ids, is_group=False)
         .annotate(pcount=Count("participants", distinct=True))
         .filter(pcount=2)
     )
+    if not include_deleted:
+        qs = qs.exclude(request_status=Conversation.RequestStatus.DELETED)
+    return qs
 
 
-def find_direct_conversation(*, actor: User, target: User, require_started: bool = False) -> Conversation | None:
+def find_direct_conversation(
+    *,
+    actor: User,
+    target: User,
+    require_started: bool = False,
+    include_deleted: bool = False,
+) -> Conversation | None:
     if actor.id == target.id:
         raise SelfConversationNotAllowed("Cannot open a conversation with self.")
 
-    qs = _direct_conversation_queryset_for_pair(user_a_id=actor.id, user_b_id=target.id)
+    qs = _direct_conversation_queryset_for_pair(
+        user_a_id=actor.id,
+        user_b_id=target.id,
+        include_deleted=include_deleted,
+    )
     if require_started:
         qs = qs.filter(last_message_at__isnull=False)
     return qs.order_by("-last_message_at", "-updated_at", "-id").first()
@@ -89,9 +105,17 @@ def open_or_create_direct_conversation(*, actor: User, target: User) -> OpenConv
         _lock_users_for_direct_conversation(user_a_id=actor.id, user_b_id=target.id)
         existing = find_direct_conversation(actor=actor, target=target, require_started=False)
         if existing:
+            if existing.request_status == Conversation.RequestStatus.PENDING:
+                existing.request_status = Conversation.RequestStatus.ACCEPTED
+                existing.accepted_at = timezone.now()
+                existing.save(update_fields=["request_status", "accepted_at", "updated_at"])
             return OpenConversationResult(conversation=existing, created=False)
 
-        convo = Conversation.objects.create(created_by=actor)
+        convo = Conversation.objects.create(
+            created_by=actor,
+            request_status=Conversation.RequestStatus.ACCEPTED,
+            accepted_at=timezone.now(),
+        )
         now = timezone.now()
         ConversationParticipant.objects.bulk_create(
             [
@@ -123,7 +147,12 @@ def send_direct_message(
         created_conversation = False
 
         if convo is None:
-            convo = Conversation.objects.create(created_by=actor)
+            convo = Conversation.objects.create(
+                created_by=actor,
+                request_status=Conversation.RequestStatus.PENDING,
+                requested_by=actor,
+                requested_to=target,
+            )
             ConversationParticipant.objects.bulk_create(
                 [
                     ConversationParticipant(conversation=convo, user=actor, joined_at=now),
@@ -131,6 +160,8 @@ def send_direct_message(
                 ]
             )
             created_conversation = True
+
+        ensure_can_send_pending_request_message(conversation=convo, sender_id=actor.id)
 
         msg = Message.objects.create(
             conversation=convo,

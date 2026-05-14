@@ -1,12 +1,13 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
-import { NoSymbolIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { Bars3Icon, NoSymbolIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import type { SkillRequest } from './types';
 import { StatusPill } from './ui/StatusPill';
+import { TerminationReasonNotice } from './ui/TerminationReasonNotice';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 type Props = {
@@ -58,8 +59,46 @@ export function RequestDetailModal({
   const { t } = useLanguage();
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
+  const [terminateMenuOpen, setTerminateMenuOpen] = useState(false);
+  const [terminationReasonOpen, setTerminationReasonOpen] = useState(false);
+  const terminateMenuRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => setMounted(true), []);
+
+  useEffect(() => {
+    if (!open) {
+      setTerminateMenuOpen(false);
+      setTerminationReasonOpen(false);
+    }
+  }, [open]);
+
+  useEffect(() => {
+    setTerminateMenuOpen(false);
+    setTerminationReasonOpen(false);
+  }, [item?.id]);
+
+  useEffect(() => {
+    if (isBusy) setTerminateMenuOpen(false);
+  }, [isBusy]);
+
+  useEffect(() => {
+    if (!terminateMenuOpen) return;
+    const onDocMouseDown = (e: MouseEvent) => {
+      const el = terminateMenuRef.current;
+      if (el && !el.contains(e.target as Node)) {
+        setTerminateMenuOpen(false);
+      }
+    };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setTerminateMenuOpen(false);
+    };
+    document.addEventListener('mousedown', onDocMouseDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', onDocMouseDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [terminateMenuOpen]);
 
   const offer = item?.offer_summary || null;
   const isSeeking = offer?.is_seeking ?? item?.offer_is_seeking ?? false;
@@ -113,6 +152,9 @@ export function RequestDetailModal({
     showCompletionActions &&
     typeof onTerminate === 'function' &&
     (item?.status === 'accepted' || item?.status === 'completion_requested');
+  const hasTerminationReason = item?.status === 'terminated' && Boolean(item?.termination?.reason);
+  const terminationReasonId =
+    item?.id != null ? `request-detail-termination-reason-${item.id}` : undefined;
 
   const handleView = () => {
     if (!item) return;
@@ -195,6 +237,56 @@ export function RequestDetailModal({
     );
   };
 
+  const handleTerminationPillClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!hasTerminationReason) return;
+    setTerminationReasonOpen((open) => !open);
+  };
+
+  const renderTerminateMenu = (align: 'stretch' | 'center') => {
+    if (!canTerminate || !item) return null;
+    const wrapClass =
+      align === 'stretch'
+        ? 'relative flex shrink-0 items-stretch self-stretch'
+        : 'relative flex shrink-0 items-center self-center';
+    return (
+      <div ref={terminateMenuRef} className={wrapClass}>
+        <button
+          type="button"
+          aria-haspopup="menu"
+          aria-expanded={terminateMenuOpen}
+          aria-label={t('common.menu')}
+          disabled={isBusy}
+          onClick={() => setTerminateMenuOpen((v) => !v)}
+          className="inline-flex h-full min-h-[2.75rem] w-10 shrink-0 items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 dark:border-gray-800 dark:bg-[#0f0f10] dark:text-gray-200 dark:hover:bg-gray-900/60"
+        >
+          <Bars3Icon className="h-5 w-5" aria-hidden />
+        </button>
+        {terminateMenuOpen ? (
+          <div
+            role="menu"
+            className="absolute right-0 bottom-full z-[100] mb-1 min-w-[11rem] rounded-lg border border-gray-200 bg-white py-1 shadow-lg dark:border-gray-800 dark:bg-[#0f0f10]"
+          >
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                setTerminateMenuOpen(false);
+                onTerminate?.(item.id);
+              }}
+              disabled={isBusy}
+              className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm font-semibold text-amber-900 hover:bg-amber-50 disabled:opacity-50 dark:text-amber-100 dark:hover:bg-amber-950/40"
+            >
+              <NoSymbolIcon className="h-4 w-4 shrink-0" aria-hidden />
+              {t('requests.terminateExchange', 'Predčasne ukončiť')}
+            </button>
+          </div>
+        ) : null}
+      </div>
+    );
+  };
+
   if (!open || !mounted || typeof document === 'undefined') return null;
 
   return createPortal(
@@ -236,10 +328,26 @@ export function RequestDetailModal({
                   {priceLabel}
                 </span>
               )}
-              {item?.status && <StatusPill status={item.status} />}
+              {item?.status && (
+                <StatusPill
+                  status={item.status}
+                  onClick={hasTerminationReason ? handleTerminationPillClick : undefined}
+                  ariaControls={hasTerminationReason ? terminationReasonId : undefined}
+                  ariaExpanded={hasTerminationReason ? terminationReasonOpen : undefined}
+                  title={hasTerminationReason ? t('requests.terminationReasonLabel') : undefined}
+                />
+              )}
             </div>
             {created && <div className="text-xs text-gray-500 dark:text-gray-400">{created}</div>}
           </div>
+          {terminationReasonOpen ? (
+            <TerminationReasonNotice
+              id={terminationReasonId}
+              status={item?.status}
+              termination={item?.termination}
+              className="mt-3"
+            />
+          ) : null}
         </div>
 
         <div className="px-5 py-4 overflow-auto">
@@ -259,7 +367,7 @@ export function RequestDetailModal({
           )}
         </div>
 
-        <div className="px-5 pb-5 pt-3 border-t border-gray-200 dark:border-gray-800 space-y-3">
+        <div className="relative z-10 px-5 pb-5 pt-3 border-t border-gray-200 dark:border-gray-800 space-y-3 overflow-visible">
           {variant === 'received' ? (
             <>
               <div className="grid grid-cols-2 gap-3">
@@ -318,45 +426,46 @@ export function RequestDetailModal({
           {showCompletionActions && item && (
             <>
               {variant === 'received' && item.status === 'accepted' && onRequestCompletion && (
-                <button
-                  type="button"
-                  onClick={() => onRequestCompletion(item.id)}
-                  disabled={isBusy}
-                  className="w-full py-3 rounded-xl font-semibold bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/60"
-                >
-                  {t('requests.markAsCompleted', 'Označiť ako dokončené')}
-                </button>
+                <div className="flex flex-row items-stretch gap-2">
+                  <button
+                    type="button"
+                    onClick={() => onRequestCompletion(item.id)}
+                    disabled={isBusy}
+                    className="min-w-0 flex-1 rounded-xl bg-emerald-600 py-3 font-semibold text-white hover:bg-emerald-700 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/60"
+                  >
+                    {t('requests.markAsCompleted', 'Označiť ako dokončené')}
+                  </button>
+                  {renderTerminateMenu('stretch')}
+                </div>
               )}
               {variant === 'sent' && item.status === 'completion_requested' && onConfirmCompletion && (
-                <button
-                  type="button"
-                  onClick={() => onConfirmCompletion(item.id)}
-                  disabled={isBusy}
-                  className="w-full py-3 rounded-xl font-semibold bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/60"
-                >
-                  {t('requests.confirmCompletion', 'Potvrdiť dokončenie')}
-                </button>
+                <div className="flex flex-row items-stretch gap-2">
+                  <button
+                    type="button"
+                    onClick={() => onConfirmCompletion(item.id)}
+                    disabled={isBusy}
+                    className="min-w-0 flex-1 rounded-xl bg-emerald-600 py-3 font-semibold text-white hover:bg-emerald-700 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/60"
+                  >
+                    {t('requests.confirmCompletion', 'Potvrdiť dokončenie')}
+                  </button>
+                  {renderTerminateMenu('stretch')}
+                </div>
               )}
               {variant === 'sent' && item.status === 'accepted' && (
-                <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-2">
-                  {t('requests.completionInProgress', 'Spolupráca prebieha')}
-                </p>
+                <div className="flex flex-row items-center gap-2 py-1">
+                  <p className="min-w-0 flex-1 text-center text-sm text-gray-500 dark:text-gray-400">
+                    {t('requests.completionInProgress', 'Spolupráca prebieha')}
+                  </p>
+                  {renderTerminateMenu('center')}
+                </div>
               )}
               {variant === 'received' && item.status === 'completion_requested' && (
-                <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-2">
-                  {t('requests.completionAwaitingOther', 'Čaká sa na potvrdenie druhej strany')}
-                </p>
-              )}
-              {canTerminate && (
-                <button
-                  type="button"
-                  onClick={() => onTerminate?.(item.id)}
-                  disabled={isBusy}
-                  className="flex w-full items-center justify-center gap-2 rounded-xl border border-amber-300 bg-amber-50 py-3 font-semibold text-amber-800 hover:bg-amber-100 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/60 dark:border-amber-900/70 dark:bg-amber-950/30 dark:text-amber-200 dark:hover:bg-amber-950/50"
-                >
-                  <NoSymbolIcon className="h-5 w-5 shrink-0" />
-                  {t('requests.terminateExchange', 'Skončiť')}
-                </button>
+                <div className="flex flex-row items-center gap-2 py-1">
+                  <p className="min-w-0 flex-1 text-center text-sm text-gray-500 dark:text-gray-400">
+                    {t('requests.completionAwaitingOther', 'Čaká sa na potvrdenie druhej strany')}
+                  </p>
+                  {renderTerminateMenu('center')}
+                </div>
               )}
             </>
           )}

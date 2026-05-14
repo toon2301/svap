@@ -12,9 +12,14 @@ import {
 import toast from 'react-hot-toast';
 import type { ConversationListItem } from './types';
 import {
+  acceptMessageRequest,
+  deleteMessageRequest,
+  getMessageRequestsUnseenSummary,
   getMessagingErrorMessage,
   hideConversation,
   listConversations,
+  listMessageRequests,
+  markMessageRequestsSeen,
   updateConversationPinnedState,
 } from './messagingApi';
 import { ConversationActionsMenu } from './ConversationActionsMenu';
@@ -27,6 +32,8 @@ import {
 import { navigateMessagesUrl } from './messagesRouting';
 import { ConversationsListRow } from './ConversationsListRow';
 import { ConversationsListSearchInput } from './ConversationsListSearchInput';
+import { MessageConversationTabs, type MessagesTab } from './MessageConversationTabs';
+import { MessageRequestRow } from './MessageRequestRow';
 import { ReportUserModal } from '../profile/ReportUserModal';
 import { CreateGroupConversationModal } from './CreateGroupConversationModal';
 
@@ -82,6 +89,9 @@ export function ConversationsList({
   const { t } = useLanguage();
   const isMobile = useIsMobile();
   const [items, setItems] = useState<ConversationListItem[]>([]);
+  const [requestItems, setRequestItems] = useState<ConversationListItem[]>([]);
+  const [activeTab, setActiveTab] = useState<MessagesTab>('messages');
+  const [messageRequestBadgeCount, setMessageRequestBadgeCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeSearchQuery, setActiveSearchQuery] = useState('');
@@ -92,6 +102,7 @@ export function ConversationsList({
   const [conversationPendingDeleteId, setConversationPendingDeleteId] = useState<number | null>(null);
   const [isDeletingConversation, setIsDeletingConversation] = useState(false);
   const [conversationPinUpdateId, setConversationPinUpdateId] = useState<number | null>(null);
+  const [messageRequestActionId, setMessageRequestActionId] = useState<number | null>(null);
   const [reportUserId, setReportUserId] = useState<number | null>(null);
   const [isCreateGroupOpen, setIsCreateGroupOpen] = useState(false);
   const refreshInFlightRef = useRef<{
@@ -113,7 +124,11 @@ export function ConversationsList({
   const normalizedSearchQuery = normalizeConversationSearchQuery(searchQuery);
   const isSearchActive = activeSearchQuery.length > 0;
   const shouldRenderSearch =
-    items.length > 0 || normalizedSearchQuery.length > 0 || activeSearchQuery.length > 0;
+    items.length > 0 ||
+    requestItems.length > 0 ||
+    normalizedSearchQuery.length > 0 ||
+    activeSearchQuery.length > 0;
+  const activeItems = activeTab === 'requests' ? requestItems : items;
   const activeConversationActionItem = conversationActionsTarget
     ? items.find((item) => item.id === conversationActionsTarget.conversationId) ?? null
     : null;
@@ -127,6 +142,15 @@ export function ConversationsList({
     setActiveSearchQuery((current) => (current === nextQuery ? current : nextQuery));
   }, []);
 
+  const refreshMessageRequestBadge = useCallback(async () => {
+    try {
+      const summary = await getMessageRequestsUnseenSummary();
+      setMessageRequestBadgeCount(summary.count);
+    } catch {
+      // Badge freshness is best-effort; the list refresh remains the source of truth.
+    }
+  }, []);
+
   const refresh = useCallback(
     async ({
       showLoader = false,
@@ -136,8 +160,10 @@ export function ConversationsList({
       clearOnError?: boolean;
     } = {}) => {
       const search = activeSearchQuery;
+      const tab = activeTab;
       const inFlight = refreshInFlightRef.current;
-      if (inFlight && inFlight.key === search) {
+      const refreshKey = `${tab}:${search}`;
+      if (inFlight && inFlight.key === refreshKey) {
         return inFlight.promise;
       }
 
@@ -149,11 +175,18 @@ export function ConversationsList({
       latestRequestIdRef.current = requestId;
 
       const request = (async () => {
-        const data = await listConversations({ search });
+        const data =
+          tab === 'requests'
+            ? await listMessageRequests({ search })
+            : await listConversations({ search });
         const safeItems = sortConversations(Array.isArray(data) ? data : []);
         if (latestRequestIdRef.current === requestId) {
-          setItems(safeItems);
-          if (!search) {
+          if (tab === 'requests') {
+            setRequestItems(safeItems);
+          } else {
+            setItems(safeItems);
+          }
+          if (!search && tab === 'messages') {
             syncMessageUnreadCountFromConversations(safeItems);
           }
         }
@@ -161,7 +194,7 @@ export function ConversationsList({
       })();
 
       refreshInFlightRef.current = {
-        key: search,
+        key: refreshKey,
         promise: request,
       };
 
@@ -169,7 +202,11 @@ export function ConversationsList({
         return await request;
       } catch (error) {
         if (clearOnError && latestRequestIdRef.current === requestId) {
-          setItems([]);
+          if (tab === 'requests') {
+            setRequestItems([]);
+          } else {
+            setItems([]);
+          }
         }
         throw error;
       } finally {
@@ -184,7 +221,7 @@ export function ConversationsList({
         }
       }
     },
-    [activeSearchQuery],
+    [activeSearchQuery, activeTab],
   );
 
   const closeConversationActions = useCallback(() => {
@@ -214,8 +251,76 @@ export function ConversationsList({
         item.id === conversationId ? { ...item, has_unread: false, unread_count: 0 } : item,
       ),
     );
+    setRequestItems((prev) =>
+      prev.map((item) =>
+        item.id === conversationId ? { ...item, has_unread: false, unread_count: 0 } : item,
+      ),
+    );
     navigateMessagesUrl(conversationId);
   }, []);
+
+  const handleAcceptMessageRequest = useCallback(
+    async (conversationId: number) => {
+      if (messageRequestActionId !== null) return;
+      setMessageRequestActionId(conversationId);
+      try {
+        const accepted = await acceptMessageRequest(conversationId);
+        setRequestItems((current) => current.filter((item) => item.id !== conversationId));
+        setItems((current) => sortConversations([accepted, ...current.filter((item) => item.id !== conversationId)]));
+        if (typeof accepted.message_request_unseen_count === 'number') {
+          setMessageRequestBadgeCount(accepted.message_request_unseen_count);
+        }
+        setActiveTab('messages');
+        requestConversationsRefresh();
+        navigateMessagesUrl(conversationId);
+      } catch (error) {
+        toast.error(
+          getMessagingErrorMessage(error, {
+            fallback: t(
+              'messages.messageRequestActionFailed',
+              'Žiadosť sa nepodarilo spracovať. Skúste to znova.',
+            ),
+          }),
+        );
+      } finally {
+        setMessageRequestActionId(null);
+      }
+    },
+    [messageRequestActionId, t],
+  );
+
+  const handleDeleteMessageRequest = useCallback(
+    async (conversationId: number) => {
+      if (messageRequestActionId !== null) return;
+      setMessageRequestActionId(conversationId);
+      try {
+        const result = await deleteMessageRequest(conversationId);
+        setRequestItems((current) => current.filter((item) => item.id !== conversationId));
+        if (typeof result.message_request_unseen_count === 'number') {
+          setMessageRequestBadgeCount(result.message_request_unseen_count);
+        }
+        if (typeof result.total_unread_count === 'number') {
+          publishMessageUnreadCount(result.total_unread_count);
+        }
+        requestConversationsRefresh();
+        if (selectedConversationId === conversationId) {
+          navigateMessagesUrl();
+        }
+      } catch (error) {
+        toast.error(
+          getMessagingErrorMessage(error, {
+            fallback: t(
+              'messages.messageRequestActionFailed',
+              'Žiadosť sa nepodarilo spracovať. Skúste to znova.',
+            ),
+          }),
+        );
+      } finally {
+        setMessageRequestActionId(null);
+      }
+    },
+    [messageRequestActionId, selectedConversationId, t],
+  );
 
   const updateConversationPinLocally = useCallback((conversationId: number, isPinned: boolean) => {
     setItems((current) =>
@@ -324,6 +429,17 @@ export function ConversationsList({
   }, [refresh]);
 
   useEffect(() => {
+    void refreshMessageRequestBadge();
+  }, [refreshMessageRequestBadge]);
+
+  useEffect(() => {
+    if (activeTab !== 'requests') return;
+    setMessageRequestBadgeCount(0);
+    setRequestItems((current) => current.map((item) => ({ ...item, request_unseen: false })));
+    void markMessageRequestsSeen().catch(() => undefined);
+  }, [activeTab]);
+
+  useEffect(() => {
     const stopPolling = () => {
       if (pollIntervalRef.current) {
         clearInterval(pollIntervalRef.current);
@@ -340,7 +456,10 @@ export function ConversationsList({
         if (sessionState === 'invalid_session' || sessionState === 'transient_failure') {
           return;
         }
-        await refresh().catch(() => undefined);
+        await Promise.all([
+          refresh().catch(() => undefined),
+          refreshMessageRequestBadge().catch(() => undefined),
+        ]);
       })();
     };
 
@@ -360,7 +479,7 @@ export function ConversationsList({
       document.removeEventListener('visibilitychange', refreshIfVisible);
       window.removeEventListener(MESSAGING_CONVERSATIONS_REFRESH_EVENT, refreshIfVisible);
     };
-  }, [refresh, shouldUseIntervalPolling]);
+  }, [refresh, refreshMessageRequestBadge, shouldUseIntervalPolling]);
 
   useEffect(() => {
     const openCreateGroup = () => setIsCreateGroupOpen(true);
@@ -372,20 +491,40 @@ export function ConversationsList({
     return <ConversationsListSkeleton variant={variant} className={wrapperClassName} />;
   }
 
-  if (items.length === 0 && !isSearchActive) {
+  if (activeItems.length === 0 && !isSearchActive) {
+    const emptyTitle =
+      activeTab === 'requests'
+        ? t('messages.noMessageRequests', 'Žiadne žiadosti')
+        : t('messages.none', 'No messages');
+    const emptyHint =
+      activeTab === 'requests'
+        ? t(
+            'messages.noMessageRequestsHint',
+            'Nové správy od ľudí, s ktorými ešte nemáte prijatú konverzáciu, sa zobrazia tu.',
+          )
+        : t('messages.hint', 'When someone sends you a message, it will appear here.');
     return (
       <div className={className || (isCompact ? '' : 'max-w-4xl mx-auto')}>
+        <div className={isMobile && !isCompact ? 'mx-3 mt-4 mb-3' : 'mb-3 px-3'}>
+          <MessageConversationTabs
+            activeTab={activeTab}
+            requestCount={messageRequestBadgeCount}
+            onChange={setActiveTab}
+            t={t}
+          />
+        </div>
         {isRail ? (
           <div className="px-3 py-3">
             <div className="mb-1 text-sm font-semibold text-gray-900 dark:text-white">
-              {t('messages.none', 'No messages')}
+              {emptyTitle}
             </div>
             <div className="text-xs text-gray-600 dark:text-gray-400">
-              {t('messages.hint', 'When someone sends you a message, it will appear here.')}
+              {emptyHint}
             </div>
           </div>
         ) : (
           <>
+            {activeTab === 'messages' ? (
             <div
               className={
                 isMobile && !isCompact
@@ -396,6 +535,7 @@ export function ConversationsList({
               <button
                 type="button"
                 onClick={() => setIsCreateGroupOpen(true)}
+                aria-label={t('messages.createGroupAction', 'Vytvoriť skupinu')}
                 className={
                   isMobile && !isCompact
                     ? 'inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-gray-300 bg-white px-3 py-2.5 text-sm font-semibold text-gray-500 transition-colors hover:bg-gray-100 hover:text-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-400/50 dark:border-gray-700 dark:bg-black dark:text-gray-400 dark:hover:bg-gray-900 dark:hover:text-purple-200'
@@ -416,12 +556,14 @@ export function ConversationsList({
                 )}
               </button>
             </div>
+            ) : null}
             <div className="flex h-full min-h-[calc(100dvh-12rem)] items-center justify-center">
               <div className="flex flex-col items-center text-center">
                 <ChatBubbleLeftRightIcon className="mb-4 h-20 w-20 text-black dark:text-white" />
                 <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">
-                  {t('messages.title', 'Vaše správy')}
+                  {emptyTitle}
                 </h2>
+                <p className="mt-2 max-w-xs text-sm text-gray-500 dark:text-gray-400">{emptyHint}</p>
               </div>
             </div>
           </>
@@ -440,7 +582,15 @@ export function ConversationsList({
 
   return (
     <div className={wrapperClassName}>
-      {!isRail ? (
+      <div className={isMobile && !isCompact ? 'mx-3 mt-4 mb-3' : 'mb-3 px-3'}>
+        <MessageConversationTabs
+          activeTab={activeTab}
+          requestCount={messageRequestBadgeCount}
+          onChange={setActiveTab}
+          t={t}
+        />
+      </div>
+      {!isRail && activeTab === 'messages' ? (
         <div
           className={
             isMobile && !isCompact
@@ -451,6 +601,7 @@ export function ConversationsList({
           <button
             type="button"
             onClick={() => setIsCreateGroupOpen(true)}
+            aria-label={t('messages.createGroupAction', 'Vytvoriť skupinu')}
             className={
               isMobile && !isCompact
                 ? 'inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-gray-300 bg-white px-3 py-2.5 text-sm font-semibold text-gray-500 transition-colors hover:bg-gray-100 hover:text-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-400/50 dark:border-gray-700 dark:bg-black dark:text-gray-400 dark:hover:bg-gray-900 dark:hover:text-purple-200'
@@ -496,7 +647,7 @@ export function ConversationsList({
         />
       ) : null}
 
-      {items.length === 0 ? (
+      {activeItems.length === 0 ? (
         <div className={isRail ? 'px-3 py-3' : 'px-4 py-12 text-center'}>
           <div className="mb-1 text-sm font-semibold text-gray-900 dark:text-white">
             {t('messages.searchNoResultsTitle', 'Nenašli sa žiadne konverzácie')}
@@ -509,7 +660,21 @@ export function ConversationsList({
           </div>
         </div>
       ) : (
-        items.map((conversation) => {
+        activeItems.map((conversation) => {
+          if (activeTab === 'requests') {
+            return (
+              <MessageRequestRow
+                key={conversation.id}
+                conversation={conversation}
+                isCompact={isCompact}
+                isBusy={messageRequestActionId === conversation.id}
+                onOpen={openConversation}
+                onAccept={handleAcceptMessageRequest}
+                onDelete={handleDeleteMessageRequest}
+                t={t}
+              />
+            );
+          }
           return (
             <ConversationsListRow
               key={conversation.id}

@@ -24,6 +24,11 @@ def conversation_avatar_upload_to(instance: "Conversation", filename: str) -> st
 
 
 class Conversation(models.Model):
+    class RequestStatus(models.TextChoices):
+        ACCEPTED = "accepted", "Accepted"
+        PENDING = "pending", "Pending"
+        DELETED = "deleted", "Deleted"
+
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.PROTECT,
@@ -47,10 +52,40 @@ class Conversation(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     last_message_at = models.DateTimeField(null=True, blank=True)
+    request_status = models.CharField(
+        max_length=20,
+        choices=RequestStatus.choices,
+        default=RequestStatus.ACCEPTED,
+        db_index=True,
+    )
+    requested_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="sent_message_requests",
+        null=True,
+        blank=True,
+    )
+    requested_to = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="received_message_requests",
+        null=True,
+        blank=True,
+    )
+    accepted_at = models.DateTimeField(null=True, blank=True)
+    request_seen_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         indexes = [
             models.Index(fields=["last_message_at"], name="conv_last_msg_at_idx"),
+            models.Index(
+                fields=["requested_to", "request_status", "last_message_at"],
+                name="conv_req_to_status_last_idx",
+            ),
+            models.Index(
+                fields=["requested_by", "requested_to", "request_status"],
+                name="conv_req_pair_status_idx",
+            ),
         ]
 
     def __str__(self) -> str:

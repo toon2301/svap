@@ -140,6 +140,10 @@ class ConversationListItemSerializer(serializers.ModelSerializer):
     current_user_role = serializers.SerializerMethodField()
     current_user_status = serializers.SerializerMethodField()
     has_requestable_offers = serializers.SerializerMethodField()
+    message_request_role = serializers.SerializerMethodField()
+    request_unseen = serializers.SerializerMethodField()
+    requested_by_id = serializers.IntegerField(read_only=True, allow_null=True)
+    requested_to_id = serializers.IntegerField(read_only=True, allow_null=True)
     last_message_preview = serializers.SerializerMethodField()
     last_message_sender_id = serializers.SerializerMethodField()
     last_message_is_deleted = serializers.SerializerMethodField()
@@ -170,6 +174,13 @@ class ConversationListItemSerializer(serializers.ModelSerializer):
             "current_user_role",
             "current_user_status",
             "has_requestable_offers",
+            "request_status",
+            "message_request_role",
+            "requested_by_id",
+            "requested_to_id",
+            "accepted_at",
+            "request_seen_at",
+            "request_unseen",
             "last_read_at",
             "is_pinned",
             "has_unread",
@@ -315,6 +326,32 @@ class ConversationListItemSerializer(serializers.ModelSerializer):
             user=request.user,
         ).only("status").first()
         return participant.status if participant else None
+
+    def get_message_request_role(self, obj: Conversation):
+        request = self.context.get("request")
+        user_id = getattr(getattr(request, "user", None), "id", None)
+        if not user_id or obj.is_group:
+            return None
+        if obj.request_status != Conversation.RequestStatus.PENDING:
+            return None
+        if obj.requested_by_id == user_id:
+            return "sender"
+        if obj.requested_to_id == user_id:
+            return "recipient"
+        return None
+
+    def get_request_unseen(self, obj: Conversation) -> bool:
+        request = self.context.get("request")
+        user_id = getattr(getattr(request, "user", None), "id", None)
+        if (
+            not user_id
+            or obj.is_group
+            or obj.request_status != Conversation.RequestStatus.PENDING
+            or obj.requested_to_id != user_id
+            or obj.last_message_at is None
+        ):
+            return False
+        return obj.request_seen_at is None or obj.last_message_at > obj.request_seen_at
 
     def get_last_message_preview(self, obj: Conversation):
         if self._is_current_user_invited_group(obj):

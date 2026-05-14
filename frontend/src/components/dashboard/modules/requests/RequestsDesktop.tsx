@@ -289,13 +289,13 @@ export function RequestsDesktop({ routeIntent }: RequestsDesktopProps) {
         mutateItem(updated);
       }
       setPendingTerminateId(null);
-      toast.success(t('requests.terminateExchangeSuccess', 'Výmena bola ukončená.'));
+      toast.success(t('requests.terminateExchangeSuccess', 'Výmena bola predčasne ukončená.'));
       void load();
     } catch (err: unknown) {
       setTerminationError(
         getApiErrorMessage(
           err,
-          t('requests.terminateExchangeError', 'Výmenu sa nepodarilo skončiť.'),
+          t('requests.terminateExchangeError', 'Výmenu sa nepodarilo predčasne ukončiť.'),
         ),
       );
     } finally {

@@ -74,6 +74,9 @@ class TestMessagingApi(APITestCase):
         Image.new("RGB", (2, 2), (255, 0, 0)).save(buffer, format="PNG")
         return SimpleUploadedFile(name, buffer.getvalue(), content_type="image/png")
 
+    def _results(self, response):
+        return response.data.get("results", response.data)
+
     def test_open_conversation_returns_draft_without_creating_database_rows(self):
         self.client.force_authenticate(user=self.u1)
         url = reverse("accounts:messaging_open")
@@ -183,6 +186,10 @@ class TestMessagingApi(APITestCase):
         assert response.data["conversation_created"] is True
         assert isinstance(response.data["conversation_id"], int)
         assert response.data["message"]["text"] == "Ahoj"
+        convo = Conversation.objects.get(id=response.data["conversation_id"])
+        assert convo.request_status == Conversation.RequestStatus.PENDING
+        assert convo.requested_by_id == self.u1.id
+        assert convo.requested_to_id == self.u2.id
 
         notify_user_mock.assert_called_once()
         called_user_id, event = notify_user_mock.call_args.args
@@ -198,6 +205,129 @@ class TestMessagingApi(APITestCase):
             message_id=response.data["message"]["id"],
             recipient_user_ids=[self.u2.id],
         )
+
+    def test_message_request_is_separated_from_recipient_conversation_list(self):
+        self.client.force_authenticate(user=self.u1)
+        send_url = reverse("accounts:messaging_send_direct_message")
+        response = self.client.post(
+            send_url,
+            {"target_user_id": self.u2.id, "text": "Ahoj"},
+            format="json",
+        )
+        assert response.status_code == status.HTTP_201_CREATED
+        conversation_id = response.data["conversation_id"]
+
+        list_url = reverse("accounts:messaging_list_conversations")
+        request_list_url = reverse("accounts:messaging_list_message_requests")
+
+        self.client.force_authenticate(user=self.u1)
+        sender_list = self.client.get(list_url)
+        sender_results = self._results(sender_list)
+        assert [item["id"] for item in sender_results] == [conversation_id]
+        assert sender_results[0]["message_request_role"] == "sender"
+
+        self.client.force_authenticate(user=self.u2)
+        recipient_list = self.client.get(list_url)
+        assert self._results(recipient_list) == []
+
+        request_list = self.client.get(request_list_url)
+        request_results = self._results(request_list)
+        assert [item["id"] for item in request_results] == [conversation_id]
+        assert request_results[0]["message_request_role"] == "recipient"
+        assert request_results[0]["request_unseen"] is True
+
+    def test_pending_message_request_allows_only_two_sender_messages(self):
+        self.client.force_authenticate(user=self.u1)
+        direct_url = reverse("accounts:messaging_send_direct_message")
+        first = self.client.post(
+            direct_url,
+            {"target_user_id": self.u2.id, "text": "Prvá"},
+            format="json",
+        )
+        assert first.status_code == status.HTTP_201_CREATED
+        conversation_id = first.data["conversation_id"]
+        send_url = reverse("accounts:messaging_send_message", kwargs={"conversation_id": conversation_id})
+
+        second = self.client.post(send_url, {"text": "Druhá"}, format="json")
+        assert second.status_code == status.HTTP_201_CREATED
+
+        third = self.client.post(send_url, {"text": "Tretia"}, format="json")
+        assert third.status_code == status.HTTP_403_FORBIDDEN
+        assert third.data["code"] == "message_request_pending"
+        assert Message.objects.filter(conversation_id=conversation_id).count() == 2
+
+    def test_recipient_accepts_message_request_and_it_moves_to_conversations(self):
+        self.client.force_authenticate(user=self.u1)
+        direct_url = reverse("accounts:messaging_send_direct_message")
+        response = self.client.post(
+            direct_url,
+            {"target_user_id": self.u2.id, "text": "Ahoj"},
+            format="json",
+        )
+        conversation_id = response.data["conversation_id"]
+
+        self.client.force_authenticate(user=self.u2)
+        accept_url = reverse(
+            "accounts:messaging_accept_message_request",
+            kwargs={"conversation_id": conversation_id},
+        )
+        accepted = self.client.post(accept_url, {}, format="json")
+        assert accepted.status_code == status.HTTP_200_OK
+        assert accepted.data["request_status"] == Conversation.RequestStatus.ACCEPTED
+
+        Conversation.objects.get(id=conversation_id, request_status=Conversation.RequestStatus.ACCEPTED)
+        assert self._results(self.client.get(reverse("accounts:messaging_list_message_requests"))) == []
+        conversations = self.client.get(reverse("accounts:messaging_list_conversations"))
+        assert [item["id"] for item in self._results(conversations)] == [conversation_id]
+
+    def test_deleting_message_request_hides_it_without_notifying_sender(self):
+        self.client.force_authenticate(user=self.u1)
+        direct_url = reverse("accounts:messaging_send_direct_message")
+        response = self.client.post(
+            direct_url,
+            {"target_user_id": self.u2.id, "text": "Ahoj"},
+            format="json",
+        )
+        conversation_id = response.data["conversation_id"]
+
+        self.client.force_authenticate(user=self.u2)
+        delete_url = reverse(
+            "accounts:messaging_delete_message_request",
+            kwargs={"conversation_id": conversation_id},
+        )
+        with patch("messaging.api.conversation_views.notify_user") as notify_user_mock:
+            deleted = self.client.post(delete_url, {}, format="json")
+
+        assert deleted.status_code == status.HTTP_200_OK
+        assert deleted.data["message_request_unseen_count"] == 0
+        assert notify_user_mock.call_count == 0
+        assert Conversation.objects.get(id=conversation_id).request_status == Conversation.RequestStatus.DELETED
+        assert self._results(self.client.get(reverse("accounts:messaging_list_message_requests"))) == []
+
+    def test_pending_message_request_does_not_emit_peer_read_receipt(self):
+        self.client.force_authenticate(user=self.u1)
+        direct_url = reverse("accounts:messaging_send_direct_message")
+        response = self.client.post(
+            direct_url,
+            {"target_user_id": self.u2.id, "text": "Ahoj"},
+            format="json",
+        )
+        conversation_id = response.data["conversation_id"]
+
+        self.client.force_authenticate(user=self.u2)
+        messages_url = reverse("accounts:messaging_list_messages", kwargs={"conversation_id": conversation_id})
+        messages_response = self.client.get(messages_url)
+        assert messages_response.status_code == status.HTTP_200_OK
+        assert messages_response.data["peer_last_read_at"] is None
+
+        read_url = reverse("accounts:messaging_mark_read", kwargs={"conversation_id": conversation_id})
+        with patch("messaging.api.conversation_views.notify_user") as notify_user_mock:
+            read_response = self.client.post(read_url, {}, format="json")
+
+        assert read_response.status_code == status.HTTP_200_OK
+        emitted_types = [call.args[1]["type"] for call in notify_user_mock.call_args_list]
+        assert "messaging_read" in emitted_types
+        assert "messaging_peer_read" not in emitted_types
 
     def test_send_message_enqueues_web_push_delivery_after_commit(self):
         convo = self._create_direct_conversation(actor=self.u1, target=self.u2)

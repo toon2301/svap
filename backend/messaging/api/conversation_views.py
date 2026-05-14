@@ -21,6 +21,14 @@ from swaply.rate_limiting import (
 )
 from ..models import ConversationParticipant
 from ..services.conversations import SelfConversationNotAllowed, find_direct_conversation
+from ..services.message_requests import (
+    MessageRequestActionNotAllowed,
+    accept_message_request,
+    count_unseen_message_requests_for_user,
+    delete_message_request,
+    is_pending_message_request,
+    mark_message_requests_seen_for_user,
+)
 from ..services.messages import (
     NotParticipant,
     hide_conversation_for_user,
@@ -42,6 +50,7 @@ from .view_helpers import (
     _conversation_list_queryset_for_user,
     _conversation_for_user_or_404,
     _has_requestable_offers_for_user_id,
+    _message_request_list_queryset_for_user,
     _total_unread_messages_count_for_user,
 )
 
@@ -174,6 +183,24 @@ class UnreadMessagesSummaryView(APIView):
         )
 
 
+class MessageRequestUnreadSummaryView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        return Response(
+            {"count": count_unseen_message_requests_for_user(user=request.user)},
+            status=status.HTTP_200_OK,
+        )
+
+
+class MarkMessageRequestsSeenView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        mark_message_requests_seen_for_user(user=request.user)
+        return Response({"count": 0}, status=status.HTTP_200_OK)
+
+
 class OpenConversationView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -199,6 +226,8 @@ class OpenConversationView(APIView):
 
         if existing is not None:
             convo = _conversation_list_queryset_for_user(request.user).filter(id=existing.id).first()
+            if convo is None:
+                convo = _message_request_list_queryset_for_user(request.user).filter(id=existing.id).first()
             if convo is not None:
                 data = ConversationListItemSerializer(convo, context={"request": request}).data
                 data["created"] = False
@@ -304,6 +333,14 @@ class ConversationListView(ListAPIView):
         return response
 
 
+class MessageRequestListView(ConversationListView):
+    def get_queryset(self):
+        qs = _message_request_list_queryset_for_user(self.request.user)
+        search_query = self.get_validated_query_params().validated_data.get("search", "")
+        qs = apply_conversation_list_search(qs, search_query)
+        return qs.order_by("-last_message_at", "-updated_at", "-id")
+
+
 class HideConversationView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -380,32 +417,73 @@ class MarkConversationReadView(APIView):
                 "total_unread_count": total_unread_count,
             },
         )
-        peer_read_event = {
-            "type": "messaging_peer_read",
-            "conversation_id": convo.id,
-            "reader_id": request.user.id,
-            "peer_last_read_at": (
-                participant.last_read_at.isoformat()
-                if participant.last_read_at is not None
-                else None
-            ),
-        }
-        recipient_ids = (
-            ConversationParticipant.objects.filter(
-                conversation=convo,
-                status=ConversationParticipant.Status.ACTIVE,
+        if not is_pending_message_request(convo):
+            peer_read_event = {
+                "type": "messaging_peer_read",
+                "conversation_id": convo.id,
+                "reader_id": request.user.id,
+                "peer_last_read_at": (
+                    participant.last_read_at.isoformat()
+                    if participant.last_read_at is not None
+                    else None
+                ),
+            }
+            recipient_ids = (
+                ConversationParticipant.objects.filter(
+                    conversation=convo,
+                    status=ConversationParticipant.Status.ACTIVE,
+                )
+                .exclude(user_id=request.user.id)
+                .values_list("user_id", flat=True)
             )
-            .exclude(user_id=request.user.id)
-            .values_list("user_id", flat=True)
-        )
-        for participant_id in recipient_ids:
-            notify_user(int(participant_id), peer_read_event)
+            for participant_id in recipient_ids:
+                notify_user(int(participant_id), peer_read_event)
 
         return Response(
             {
                 "conversation_id": convo.id,
                 "last_read_at": participant.last_read_at,
                 "conversation_unread_count": 0,
+                "total_unread_count": total_unread_count,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+class AcceptMessageRequestView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, conversation_id: int):
+        convo = _conversation_for_user_or_404(conversation_id=conversation_id, user=request.user)
+        try:
+            result = accept_message_request(conversation=convo, user=request.user)
+        except MessageRequestActionNotAllowed:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        serialized = _conversation_list_queryset_for_user(request.user).filter(id=convo.id).first()
+        data = ConversationListItemSerializer(
+            serialized or result.conversation,
+            context={"request": request},
+        ).data
+        data["message_request_unseen_count"] = result.total_unseen_count
+        return Response(data, status=status.HTTP_200_OK)
+
+
+class DeleteMessageRequestView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, conversation_id: int):
+        convo = _conversation_for_user_or_404(conversation_id=conversation_id, user=request.user)
+        try:
+            result = delete_message_request(conversation=convo, user=request.user)
+        except MessageRequestActionNotAllowed:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        total_unread_count = _total_unread_messages_count_for_user(request.user)
+        return Response(
+            {
+                "conversation_id": convo.id,
+                "message_request_unseen_count": result.total_unseen_count,
                 "total_unread_count": total_unread_count,
             },
             status=status.HTTP_200_OK,

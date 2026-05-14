@@ -27,6 +27,13 @@ export type ConversationListItem = {
   current_user_role?: 'owner' | 'member' | null;
   current_user_status?: 'invited' | 'active' | 'left' | 'removed' | null;
   has_requestable_offers?: boolean;
+  request_status?: 'accepted' | 'pending' | 'deleted';
+  message_request_role?: 'sender' | 'recipient' | null;
+  requested_by_id?: number | null;
+  requested_to_id?: number | null;
+  accepted_at?: string | null;
+  request_seen_at?: string | null;
+  request_unseen?: boolean;
   last_message_preview: string | null;
   last_message_at: string | null;
   last_message_sender_id?: number | null;
@@ -110,6 +117,16 @@ export type MessageSendPayload = {
 
 export type MessagingUnreadSummary = {
   count: number;
+};
+
+export type MessageRequestMutationResult = ConversationListItem & {
+  message_request_unseen_count?: number;
+};
+
+export type DeleteMessageRequestResult = {
+  conversation_id: number;
+  message_request_unseen_count?: number;
+  total_unread_count?: number;
 };
 
 export type DeleteMessageResult = {

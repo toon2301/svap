@@ -3,11 +3,13 @@ import type {
   ConversationPinStateResult,
   ConversationListItem,
   DeleteMessageResult,
+  DeleteMessageRequestResult,
   DirectMessageStartResult,
   GroupConversationCreatePayload,
   GroupConversationUpdatePayload,
   GroupMemberCandidate,
   HideConversationResult,
+  MessageRequestMutationResult,
   MessageItem,
   MessageListPage,
   MessageSendPayload,
@@ -110,16 +112,21 @@ export function getMessagingErrorMessage(
     fallback,
     rateLimitFallback,
     unavailableFallback,
+    requestPendingFallback,
+    requestAcceptRequiredFallback,
   }: {
     fallback: string;
     rateLimitFallback?: string;
     unavailableFallback?: string;
+    requestPendingFallback?: string;
+    requestAcceptRequiredFallback?: string;
   },
 ): string {
   const error = err as {
     response?: {
       status?: number;
       data?: {
+        code?: string;
         message?: string;
         error?: string;
         detail?: string;
@@ -128,6 +135,13 @@ export function getMessagingErrorMessage(
     message?: string;
   };
   const status = error?.response?.status;
+  const code = error?.response?.data?.code;
+  if (code === 'message_request_pending' && requestPendingFallback) {
+    return requestPendingFallback;
+  }
+  if (code === 'message_request_accept_required' && requestAcceptRequiredFallback) {
+    return requestAcceptRequiredFallback;
+  }
   const responseMessage =
     (typeof error?.response?.data?.message === 'string' && error.response.data.message) ||
     (typeof error?.response?.data?.error === 'string' && error.response.data.error) ||
@@ -192,9 +206,45 @@ export async function listConversations({
   return [];
 }
 
+export async function listMessageRequests({
+  search,
+}: {
+  search?: string;
+} = {}): Promise<ConversationListItem[]> {
+  const normalizedSearch = normalizeConversationSearchQuery(search);
+  const { data } = await api.get<ConversationListItem[] | Paginated<ConversationListItem>>(
+    '/auth/messaging/conversations/requests/',
+    normalizedSearch ? { params: { search: normalizedSearch } } : undefined,
+  );
+  if (Array.isArray(data)) return data;
+  if (data && Array.isArray((data as Paginated<ConversationListItem>).results)) {
+    return (data as Paginated<ConversationListItem>).results;
+  }
+  return [];
+}
+
 export async function getUnreadMessagesSummary(): Promise<MessagingUnreadSummary> {
   const { data } = await api.get<MessagingUnreadSummary>(
     '/auth/messaging/conversations/unread-summary/',
+  );
+  return {
+    count: typeof data?.count === 'number' ? data.count : 0,
+  };
+}
+
+export async function getMessageRequestsUnseenSummary(): Promise<MessagingUnreadSummary> {
+  const { data } = await api.get<MessagingUnreadSummary>(
+    '/auth/messaging/conversations/requests/unseen-summary/',
+  );
+  return {
+    count: typeof data?.count === 'number' ? data.count : 0,
+  };
+}
+
+export async function markMessageRequestsSeen(): Promise<MessagingUnreadSummary> {
+  const { data } = await api.post<MessagingUnreadSummary>(
+    '/auth/messaging/conversations/requests/mark-seen/',
+    {},
   );
   return {
     count: typeof data?.count === 'number' ? data.count : 0,
@@ -271,6 +321,26 @@ export async function sendMessage(
   const { data } = await api.post<MessageItem>(
     `/auth/messaging/conversations/${conversationId}/messages/send/`,
     requestData,
+  );
+  return data;
+}
+
+export async function acceptMessageRequest(
+  conversationId: number,
+): Promise<MessageRequestMutationResult> {
+  const { data } = await api.post<MessageRequestMutationResult>(
+    `/auth/messaging/conversations/${conversationId}/requests/accept/`,
+    {},
+  );
+  return data;
+}
+
+export async function deleteMessageRequest(
+  conversationId: number,
+): Promise<DeleteMessageRequestResult> {
+  const { data } = await api.post<DeleteMessageRequestResult>(
+    `/auth/messaging/conversations/${conversationId}/requests/delete/`,
+    {},
   );
   return data;
 }

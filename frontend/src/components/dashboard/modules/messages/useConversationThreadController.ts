@@ -5,6 +5,7 @@ import type { ConversationListItem, MessageItem, MessageListPage } from './types
 import {
   getMessagingErrorMessage,
   listConversations,
+  listMessageRequests,
   listMessages,
   updateConversationPinnedMessage,
 } from './messagingApi';
@@ -312,7 +313,15 @@ export function useConversationThreadController({
           try {
             const list = await listConversations();
             const found = Array.isArray(list) ? list.find((item) => item?.id === conversationId) : null;
-            setOtherConversation(found ?? null);
+            if (found) {
+              setOtherConversation(found);
+            } else {
+              const requests = await listMessageRequests();
+              const requestConversation = Array.isArray(requests)
+                ? requests.find((item) => item?.id === conversationId)
+                : null;
+              setOtherConversation(requestConversation ?? null);
+            }
           } catch {
             // Header/settings data is best-effort during message refresh.
           }
@@ -368,7 +377,17 @@ export function useConversationThreadController({
           const list = await listConversations();
           const found = Array.isArray(list) ? list.find((item) => item?.id === conversationId) : null;
           if (!cancelled) {
-            setOtherConversation(found ?? null);
+            if (found) {
+              setOtherConversation(found);
+            } else {
+              const requests = await listMessageRequests();
+              const requestConversation = Array.isArray(requests)
+                ? requests.find((item) => item?.id === conversationId)
+                : null;
+              if (!cancelled) {
+                setOtherConversation(requestConversation ?? null);
+              }
+            }
           }
         } catch {
           // Ignore best-effort header data loading failures.

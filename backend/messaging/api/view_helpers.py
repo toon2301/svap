@@ -48,6 +48,7 @@ def _conversation_for_user_or_404(*, conversation_id: int, user) -> Conversation
             Q(participant_hidden_at__isnull=True)
             | Q(last_message_at__gt=F("participant_hidden_at"))
         )
+        .filter(Q(is_group=True) | ~Q(request_status=Conversation.RequestStatus.DELETED))
         .distinct(),
         id=conversation_id,
     )
@@ -108,6 +109,10 @@ def _total_unread_messages_count_for_user(user) -> int:
                 ConversationParticipant.Status.INVITED,
             ],
             conversation__last_message_at__isnull=False,
+        )
+        .filter(
+            Q(conversation__is_group=True)
+            | ~Q(conversation__request_status=Conversation.RequestStatus.DELETED)
         ).aggregate(
             total=Count(
                 "conversation__messages",
@@ -135,6 +140,10 @@ def _total_unread_messages_count_for_user_id(user_id: int) -> int:
                 ConversationParticipant.Status.INVITED,
             ],
             conversation__last_message_at__isnull=False,
+        )
+        .filter(
+            Q(conversation__is_group=True)
+            | ~Q(conversation__request_status=Conversation.RequestStatus.DELETED)
         ).aggregate(
             total=Count(
                 "conversation__messages",
@@ -252,7 +261,7 @@ def _can_open_direct_target(*, actor, target) -> bool:
         return True
 
 
-def _conversation_list_queryset_for_user(user):
+def _conversation_list_queryset_for_user(user, *, only_incoming_requests: bool = False):
     """
     Conversations where the user is a participant, annotated for MVP UI:
     - other participant info via prefetch (serializer computes)
@@ -386,7 +395,22 @@ def _conversation_list_queryset_for_user(user):
             )
         )
     )
-    return qs.filter(last_message_at__isnull=False).filter(
+    visible_qs = qs.filter(last_message_at__isnull=False).filter(
         Q(participant_hidden_at__isnull=True)
         | Q(last_message_at__gt=F("participant_hidden_at"))
     )
+    if only_incoming_requests:
+        return visible_qs.filter(
+            is_group=False,
+            request_status=Conversation.RequestStatus.PENDING,
+            requested_to=user,
+        )
+    return visible_qs.filter(
+        Q(is_group=True)
+        | Q(request_status=Conversation.RequestStatus.ACCEPTED)
+        | Q(requested_by=user)
+    )
+
+
+def _message_request_list_queryset_for_user(user):
+    return _conversation_list_queryset_for_user(user, only_incoming_requests=True)

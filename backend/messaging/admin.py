@@ -21,9 +21,28 @@ class MessageInline(admin.TabularInline):
 
 @admin.register(Conversation)
 class ConversationAdmin(admin.ModelAdmin):
-    list_display = ["id", "is_group", "name", "created_by", "created_at", "updated_at", "last_message_at"]
-    list_select_related = ["created_by"]
-    search_fields = ["id", "name", "created_by__username", "created_by__email"]
+    list_display = [
+        "id",
+        "is_group",
+        "request_status",
+        "name",
+        "created_by",
+        "requested_by",
+        "requested_to",
+        "created_at",
+        "updated_at",
+        "last_message_at",
+    ]
+    list_select_related = ["created_by", "requested_by", "requested_to"]
+    search_fields = [
+        "id",
+        "name",
+        "created_by__username",
+        "created_by__email",
+        "requested_by__username",
+        "requested_to__username",
+    ]
+    list_filter = ["is_group", "request_status"]
     readonly_fields = ["created_at", "updated_at"]
     inlines = [ConversationParticipantInline, MessageInline]
 

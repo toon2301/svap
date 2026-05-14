@@ -3,9 +3,11 @@ from django.urls import path
 from .api.group_candidates import GroupMemberCandidatesView
 from .api.presence_views import MessagePresenceView
 from .api.views import (
+    AcceptMessageRequestView,
     ConversationListView,
     ConversationPinStateView,
     DeleteMessageView,
+    DeleteMessageRequestView,
     GroupConversationCreateView,
     GroupConversationDetailView,
     GroupInvitationResponseView,
@@ -14,8 +16,11 @@ from .api.views import (
     GroupMemberDetailView,
     HideConversationView,
     MarkConversationReadView,
+    MarkMessageRequestsSeenView,
     MessageImageView,
     MessageListView,
+    MessageRequestListView,
+    MessageRequestUnreadSummaryView,
     OpenConversationView,
     PinMessageView,
     SendMessageView,
@@ -29,6 +34,21 @@ urlpatterns = [
         "conversations/unread-summary/",
         UnreadMessagesSummaryView.as_view(),
         name="messaging_unread_summary",
+    ),
+    path(
+        "conversations/requests/",
+        MessageRequestListView.as_view(),
+        name="messaging_list_message_requests",
+    ),
+    path(
+        "conversations/requests/unseen-summary/",
+        MessageRequestUnreadSummaryView.as_view(),
+        name="messaging_message_request_unseen_summary",
+    ),
+    path(
+        "conversations/requests/mark-seen/",
+        MarkMessageRequestsSeenView.as_view(),
+        name="messaging_mark_message_requests_seen",
     ),
     path(
         "conversations/direct/send/",
@@ -76,6 +96,16 @@ urlpatterns = [
         "conversations/<int:conversation_id>/read/",
         MarkConversationReadView.as_view(),
         name="messaging_mark_read",
+    ),
+    path(
+        "conversations/<int:conversation_id>/requests/accept/",
+        AcceptMessageRequestView.as_view(),
+        name="messaging_accept_message_request",
+    ),
+    path(
+        "conversations/<int:conversation_id>/requests/delete/",
+        DeleteMessageRequestView.as_view(),
+        name="messaging_delete_message_request",
     ),
     path(
         "conversations/<int:conversation_id>/hide/",

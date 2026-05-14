@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { api } from '@/lib/api';
 import { StatusPill } from './ui/StatusPill';
+import { TerminationReasonNotice } from './ui/TerminationReasonNotice';
 
 type Props = {
   item: SkillRequest;
@@ -81,6 +82,7 @@ export function RequestMobileCard({ item, variant, onPress }: Props) {
     t('requests.userFallback');
   const whoAvatar = who?.avatar_url || null;
   const [avatarError, setAvatarError] = useState(false);
+  const [terminationReasonOpen, setTerminationReasonOpen] = useState(false);
 
   const offer = item.offer_summary || null;
   const isSeeking = offer?.is_seeking ?? item.offer_is_seeking ?? false;
@@ -114,8 +116,14 @@ export function RequestMobileCard({ item, variant, onPress }: Props) {
     setAvatarError(false);
   }, [avatarSrc]);
 
+  useEffect(() => {
+    setTerminationReasonOpen(false);
+  }, [item.id]);
+
   const hasAvatar = Boolean(avatarSrc && !avatarError);
   const status = item.status ?? 'pending';
+  const hasTerminationReason = status === 'terminated' && Boolean(item.termination?.reason);
+  const terminationReasonId = `request-mobile-termination-reason-${item.id}`;
   const gradientClass = STATUS_GRADIENT_CLASS[status] ?? STATUS_GRADIENT_CLASS.pending;
 
   const handleProfileClick = useCallback(
@@ -141,6 +149,15 @@ export function RequestMobileCard({ item, variant, onPress }: Props) {
   );
 
   const profileAriaLabel = t('requests.openProfile', 'Otvoriť profil');
+  const handleTerminationPillClick = useCallback(
+    (e: React.MouseEvent<HTMLButtonElement>) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (!hasTerminationReason) return;
+      setTerminationReasonOpen((open) => !open);
+    },
+    [hasTerminationReason],
+  );
 
   return (
     <div className={`relative w-full bg-gradient-to-l ${gradientClass}`}>
@@ -194,13 +211,28 @@ export function RequestMobileCard({ item, variant, onPress }: Props) {
                   {intentText}
                 </div>
               </div>
-              <StatusPill status={status} />
+              <StatusPill
+                status={status}
+                onClick={hasTerminationReason ? handleTerminationPillClick : undefined}
+                ariaControls={hasTerminationReason ? terminationReasonId : undefined}
+                ariaExpanded={hasTerminationReason ? terminationReasonOpen : undefined}
+                title={hasTerminationReason ? t('requests.terminationReasonLabel') : undefined}
+              />
             </div>
 
             <div className="mt-2">
               <div className="text-sm font-semibold text-gray-900 dark:text-white leading-tight">
                 {subcategory || t('requests.noTitle')}
               </div>
+              {terminationReasonOpen ? (
+                <TerminationReasonNotice
+                  id={terminationReasonId}
+                  status={status}
+                  termination={item.termination}
+                  compact
+                  className="mt-2"
+                />
+              ) : null}
             </div>
           </div>
         </div>
