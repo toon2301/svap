@@ -17,8 +17,8 @@ from swaply.rate_limiting import messaging_send_rate_limit
 from ..models import Conversation, ConversationParticipant, Message
 from ..services.conversations import SelfConversationNotAllowed, send_direct_message
 from ..services.message_requests import (
+    MessageRequestActionNotAllowed,
     MessageRequestLimitExceeded,
-    MessageRequestRecipientCannotReply,
     is_pending_message_request,
 )
 from ..services.messages import (
@@ -60,14 +60,8 @@ def _message_request_send_error_response(exc: Exception):
             },
             status=status.HTTP_403_FORBIDDEN,
         )
-    if isinstance(exc, MessageRequestRecipientCannotReply):
-        return Response(
-            {
-                "code": "message_request_accept_required",
-                "error": "Najprv prijmite žiadosť, aby ste mohli odpovedať.",
-            },
-            status=status.HTTP_403_FORBIDDEN,
-        )
+    if isinstance(exc, MessageRequestActionNotAllowed):
+        return Response(status=status.HTTP_404_NOT_FOUND)
     raise exc
 
 
@@ -209,7 +203,7 @@ class SendMessageView(APIView):
         except NotParticipant:
             # Do not leak existence; treat as not found
             return Response(status=status.HTTP_404_NOT_FOUND)
-        except (MessageRequestLimitExceeded, MessageRequestRecipientCannotReply) as exc:
+        except (MessageRequestLimitExceeded, MessageRequestActionNotAllowed) as exc:
             return _message_request_send_error_response(exc)
 
         event = {
@@ -371,7 +365,7 @@ class StartDirectMessageView(APIView):
                 {"error": "Nemôžete začať konverzáciu sami so sebou."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        except (MessageRequestLimitExceeded, MessageRequestRecipientCannotReply) as exc:
+        except (MessageRequestLimitExceeded, MessageRequestActionNotAllowed) as exc:
             return _message_request_send_error_response(exc)
 
         event = {

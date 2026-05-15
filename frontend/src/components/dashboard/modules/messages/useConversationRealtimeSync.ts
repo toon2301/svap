@@ -69,7 +69,7 @@ export function useConversationRealtimeSync({
         markAsRead: true,
         syncConversations: true,
         scrollBehavior: 'if_near_bottom',
-      });
+      }).catch(() => undefined);
     };
 
     pollIntervalRef.current = setInterval(() => {
@@ -96,7 +96,7 @@ export function useConversationRealtimeSync({
         markAsRead: true,
         syncConversations: true,
         scrollBehavior: 'if_near_bottom',
-      });
+      }).catch(() => undefined);
     };
 
     window.addEventListener(MESSAGING_REALTIME_MESSAGE_EVENT, handleRealtimeMessage);
@@ -116,7 +116,7 @@ export function useConversationRealtimeSync({
         markAsRead: true,
         syncConversations: true,
         scrollBehavior: 'if_near_bottom',
-      });
+      }).catch(() => undefined);
     };
 
     window.addEventListener(MESSAGING_REALTIME_GROUP_EVENT, handleRealtimeGroup);

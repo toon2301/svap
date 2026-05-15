@@ -7,7 +7,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from ..models import Conversation, ConversationParticipant, Message
-from .message_requests import ensure_can_send_pending_request_message
+from .message_requests import prepare_pending_request_for_message
 from .push_enqueue import schedule_message_push_delivery
 
 
@@ -95,7 +95,11 @@ def send_message(
             raise ValueError("Conversation not found.")
 
         _ensure_participant(conversation=convo, user_id=sender.id)
-        ensure_can_send_pending_request_message(conversation=convo, sender_id=sender.id)
+        prepare_pending_request_for_message(
+            conversation=convo,
+            sender_id=sender.id,
+            now=now,
+        )
 
         msg = Message.objects.create(
             conversation=convo,

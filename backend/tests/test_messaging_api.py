@@ -280,6 +280,44 @@ class TestMessagingApi(APITestCase):
         conversations = self.client.get(reverse("accounts:messaging_list_conversations"))
         assert [item["id"] for item in self._results(conversations)] == [conversation_id]
 
+    def test_recipient_reply_auto_accepts_message_request(self):
+        self.client.force_authenticate(user=self.u1)
+        direct_url = reverse("accounts:messaging_send_direct_message")
+        response = self.client.post(
+            direct_url,
+            {"target_user_id": self.u2.id, "text": "Ahoj"},
+            format="json",
+        )
+        assert response.status_code == status.HTTP_201_CREATED
+        conversation_id = response.data["conversation_id"]
+
+        self.client.force_authenticate(user=self.u2)
+        send_url = reverse(
+            "accounts:messaging_send_message",
+            kwargs={"conversation_id": conversation_id},
+        )
+        with patch("messaging.api.message_views.notify_user") as notify_user_mock:
+            reply = self.client.post(send_url, {"text": "Jasne, odpovedam"}, format="json")
+
+        assert reply.status_code == status.HTTP_201_CREATED
+        assert reply.data["text"] == "Jasne, odpovedam"
+        convo = Conversation.objects.get(id=conversation_id)
+        assert convo.request_status == Conversation.RequestStatus.ACCEPTED
+        assert convo.accepted_at is not None
+        assert convo.request_seen_at is not None
+        assert Message.objects.filter(conversation_id=conversation_id).count() == 2
+        assert self._results(
+            self.client.get(reverse("accounts:messaging_list_message_requests"))
+        ) == []
+        conversations = self.client.get(reverse("accounts:messaging_list_conversations"))
+        assert [item["id"] for item in self._results(conversations)] == [conversation_id]
+
+        notify_user_mock.assert_called_once()
+        called_user_id, event = notify_user_mock.call_args.args
+        assert called_user_id == self.u1.id
+        assert event["type"] == "messaging_message"
+        assert event["sender_id"] == self.u2.id
+
     def test_deleting_message_request_hides_it_without_notifying_sender(self):
         self.client.force_authenticate(user=self.u1)
         direct_url = reverse("accounts:messaging_send_direct_message")

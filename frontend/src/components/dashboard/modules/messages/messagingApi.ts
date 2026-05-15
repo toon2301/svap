@@ -8,6 +8,7 @@ import type {
   GroupConversationCreatePayload,
   GroupConversationUpdatePayload,
   GroupMemberCandidate,
+  ForwardMessageResult,
   HideConversationResult,
   MessageRequestMutationResult,
   MessageItem,
@@ -354,6 +355,21 @@ export async function deleteMessage(
     {},
   );
   return data;
+}
+
+export async function forwardMessage(
+  conversationId: number,
+  messageId: number,
+  recipientUserIds: number[],
+): Promise<ForwardMessageResult> {
+  const { data } = await api.post<ForwardMessageResult>(
+    `/auth/messaging/conversations/${conversationId}/messages/${messageId}/forward/`,
+    { recipient_user_ids: recipientUserIds },
+  );
+  return {
+    sent: Array.isArray(data?.sent) ? data.sent : [],
+    failed: Array.isArray(data?.failed) ? data.failed : [],
+  };
 }
 
 export async function hideConversation(

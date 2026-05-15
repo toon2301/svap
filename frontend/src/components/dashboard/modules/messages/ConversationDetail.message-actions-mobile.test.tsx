@@ -14,9 +14,11 @@ import {
   deferred,
   deleteMessage,
   execCommandMock,
+  forwardMessage,
   hideConversation,
   installControllableResizeObserver,
   listConversations,
+  listGroupMemberCandidates,
   listMessages,
   markConversationRead,
   message,
@@ -159,5 +161,34 @@ describe('ConversationDetail mobile message actions', () => {
       expect(toast.success).toHaveBeenCalledWith('Správa bola skopírovaná.');
       expect(screen.queryByTestId('message-actions-menu')).not.toBeInTheDocument();
     });
+  });
+
+  it('opens the forward modal from the mobile long-press menu', async () => {
+    jest.useFakeTimers();
+    useIsMobile.mockReturnValue(true);
+    (listMessages as jest.Mock).mockResolvedValueOnce(
+      messagePage([
+        message({
+          id: 1,
+          text: 'Mobilna sprava na preposlanie',
+          created_at: '2026-03-27T10:00:00Z',
+        }),
+      ]),
+    );
+    (listGroupMemberCandidates as jest.Mock).mockResolvedValueOnce([]);
+
+    render(<ConversationDetail conversationId={9} currentUserId={1} />);
+
+    const bubble = await screen.findByTestId('message-bubble-1');
+    fireEvent.touchStart(bubble);
+
+    act(() => {
+      jest.advanceTimersByTime(450);
+    });
+
+    fireEvent.click(await screen.findByTestId('message-forward-action'));
+
+    expect(screen.getByText('Preposlať správu')).toBeInTheDocument();
+    expect(forwardMessage).not.toHaveBeenCalled();
   });
 });

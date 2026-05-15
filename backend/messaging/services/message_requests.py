@@ -19,10 +19,6 @@ class MessageRequestLimitExceeded(MessageRequestError):
     pass
 
 
-class MessageRequestRecipientCannotReply(MessageRequestError):
-    pass
-
-
 class MessageRequestActionNotAllowed(MessageRequestError):
     pass
 
@@ -40,12 +36,32 @@ def is_pending_message_request(conversation: Conversation) -> bool:
     )
 
 
-def ensure_can_send_pending_request_message(*, conversation: Conversation, sender_id: int) -> None:
+def prepare_pending_request_for_message(
+    *,
+    conversation: Conversation,
+    sender_id: int,
+    now=None,
+) -> None:
     if not is_pending_message_request(conversation):
         return
 
+    if conversation.requested_to_id == sender_id:
+        accepted_at = now or timezone.now()
+        conversation.request_status = Conversation.RequestStatus.ACCEPTED
+        conversation.accepted_at = accepted_at
+        conversation.request_seen_at = accepted_at
+        conversation.save(
+            update_fields=[
+                "request_status",
+                "accepted_at",
+                "request_seen_at",
+                "updated_at",
+            ]
+        )
+        return
+
     if conversation.requested_by_id != sender_id:
-        raise MessageRequestRecipientCannotReply("Only the requester can write before acceptance.")
+        raise MessageRequestActionNotAllowed("Message request sender is invalid.")
 
     sent_count = Message.objects.filter(
         conversation=conversation,

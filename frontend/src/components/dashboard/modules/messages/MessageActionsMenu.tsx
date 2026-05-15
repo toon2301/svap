@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { DocumentDuplicateIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { DocumentDuplicateIcon, PaperAirplaneIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { MessagePinIcon } from './MessagePinIcon';
 
@@ -20,11 +20,13 @@ type MessageActionsMenuProps = {
   canCopy?: boolean;
   canDelete?: boolean;
   canPin?: boolean;
+  canForward?: boolean;
   pinActionLabel?: string;
   onClose: () => void;
   onCopy: () => void;
   onDelete: () => void;
   onPinToggle: () => void;
+  onForward: () => void;
 };
 
 const MOBILE_ACTIONS_INTERACTION_SUPPRESSION_STYLE: React.CSSProperties = {
@@ -50,11 +52,13 @@ export function MessageActionsMenu({
   canCopy = false,
   canDelete = false,
   canPin = false,
+  canForward = false,
   pinActionLabel,
   onClose,
   onCopy,
   onDelete,
   onPinToggle,
+  onForward,
 }: MessageActionsMenuProps) {
   const { t } = useLanguage();
   const [portalNode, setPortalNode] = useState<HTMLElement | null>(null);
@@ -221,13 +225,31 @@ export function MessageActionsMenu({
                 }}
                 onContextMenu={suppressNativeContextMenu}
                 className={`flex w-full select-none items-center gap-3 rounded-2xl px-4 py-3 text-left text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800/60${
-                  canCopy || canDelete ? ' mt-2' : ''
+                  canCopy || canForward || canDelete ? ' mt-2' : ''
                 }`}
                 data-testid="message-pin-action"
                 style={MOBILE_ACTIONS_INTERACTION_SUPPRESSION_STYLE}
               >
                 <MessagePinIcon className="h-5 w-5" />
                 <span>{pinActionLabel || t('messages.pinAction', 'Pripnúť správu')}</span>
+              </button>
+            ) : null}
+            {canForward ? (
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onForward();
+                }}
+                onContextMenu={suppressNativeContextMenu}
+                className={`flex w-full select-none items-center gap-3 rounded-2xl px-4 py-3 text-left text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800/60${
+                  canCopy || canPin ? ' mt-2' : ''
+                }`}
+                data-testid="message-forward-action"
+                style={MOBILE_ACTIONS_INTERACTION_SUPPRESSION_STYLE}
+              >
+                <PaperAirplaneIcon className="h-5 w-5" />
+                <span>{t('messages.forwardAction', 'Preposlať')}</span>
               </button>
             ) : null}
             {canDelete ? (
@@ -239,7 +261,7 @@ export function MessageActionsMenu({
                 }}
                 onContextMenu={suppressNativeContextMenu}
                 className={`flex w-full select-none items-center gap-3 rounded-2xl px-4 py-3 text-left text-sm font-medium text-red-600 transition-colors hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20${
-                  canCopy || canPin ? ' mt-2' : ''
+                  canCopy || canPin || canForward ? ' mt-2' : ''
                 }`}
                 data-testid="message-delete-action"
                 style={MOBILE_ACTIONS_INTERACTION_SUPPRESSION_STYLE}
@@ -301,7 +323,7 @@ export function MessageActionsMenu({
             type="button"
             onClick={onPinToggle}
             className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800/60${
-              canCopy || canDelete ? ' mt-1' : ''
+              canCopy || canForward || canDelete ? ' mt-1' : ''
             }`}
             data-testid="message-pin-action"
           >
@@ -309,12 +331,25 @@ export function MessageActionsMenu({
             <span>{pinActionLabel || t('messages.pinAction', 'Pripnúť správu')}</span>
           </button>
         ) : null}
+        {canForward ? (
+          <button
+            type="button"
+            onClick={onForward}
+            className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800/60${
+              canCopy || canPin ? ' mt-1' : ''
+            }`}
+            data-testid="message-forward-action"
+          >
+            <PaperAirplaneIcon className="h-4 w-4" />
+            <span>{t('messages.forwardAction', 'Preposlať')}</span>
+          </button>
+        ) : null}
         {canDelete ? (
           <button
             type="button"
             onClick={onDelete}
             className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-red-600 transition-colors hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20${
-              canCopy || canPin ? ' mt-1' : ''
+              canCopy || canPin || canForward ? ' mt-1' : ''
             }`}
             data-testid="message-delete-action"
           >

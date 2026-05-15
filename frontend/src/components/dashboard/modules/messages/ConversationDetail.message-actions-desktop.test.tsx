@@ -14,9 +14,11 @@ import {
   deferred,
   deleteMessage,
   execCommandMock,
+  forwardMessage,
   hideConversation,
   installControllableResizeObserver,
   listConversations,
+  listGroupMemberCandidates,
   listMessages,
   markConversationRead,
   message,
@@ -210,6 +212,64 @@ describe('ConversationDetail desktop message actions', () => {
     await waitFor(() => {
       expect(toast.error).toHaveBeenCalledWith('Správu sa nepodarilo skopírovať.');
       expect(screen.getByTestId('message-actions-menu')).toBeInTheDocument();
+    });
+  });
+
+  it('forwards a text message from the desktop message actions menu', async () => {
+    jest.useFakeTimers();
+    (listMessages as jest.Mock).mockResolvedValueOnce(
+      messagePage([
+        message({
+          id: 1,
+          sender: { id: 1, display_name: 'Me' },
+          text: 'Sprava na preposlanie',
+          created_at: '2026-03-27T10:00:00Z',
+        }),
+      ]),
+    );
+    (listGroupMemberCandidates as jest.Mock).mockResolvedValueOnce([
+      {
+        id: 88,
+        display_name: 'Prijemca',
+        presence_status: 'unknown',
+      },
+    ]);
+    (forwardMessage as jest.Mock).mockResolvedValueOnce({
+      sent: [
+        {
+          user_id: 88,
+          conversation_id: 12,
+          message: message({
+            id: 12,
+            conversation: 12,
+            text: 'Sprava na preposlanie',
+          }),
+        },
+      ],
+      failed: [],
+    });
+
+    render(<ConversationDetail conversationId={9} currentUserId={1} />);
+
+    await screen.findByText('Sprava na preposlanie');
+
+    fireEvent.click(screen.getByTestId('message-actions-trigger-1'));
+    fireEvent.click(await screen.findByTestId('message-forward-action'));
+
+    expect(await screen.findByText('Preposlať správu')).toBeInTheDocument();
+
+    await act(async () => {
+      jest.advanceTimersByTime(260);
+    });
+
+    fireEvent.click(await screen.findByText('Prijemca'));
+    jest.useRealTimers();
+    fireEvent.click(screen.getByRole('button', { name: 'Preposlať' }));
+
+    await waitFor(() => {
+      expect(forwardMessage).toHaveBeenCalledWith(9, 1, [88]);
+      expect(toast.success).toHaveBeenCalled();
+      expect(screen.queryByText('Preposlať správu')).not.toBeInTheDocument();
     });
   });
 });

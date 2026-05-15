@@ -3,8 +3,10 @@
 import { ConversationActionsMenu } from './ConversationActionsMenu';
 import { DeleteConversationConfirmModal } from './DeleteConversationConfirmModal';
 import { DeleteMessageConfirmModal } from './DeleteMessageConfirmModal';
+import { ForwardMessageModal } from './ForwardMessageModal';
 import { MessageActionsMenu } from './MessageActionsMenu';
 import { MessageImageLightbox } from './MessageImageLightbox';
+import type { MessageItem } from './types';
 
 type MessageActionPreview = {
   text: string;
@@ -14,6 +16,7 @@ type MessageActionPreview = {
 
 type ConversationDetailOverlaysProps = {
   isMobile: boolean;
+  conversationId: number;
   imagePreviewAlt: string;
   pinActionLabel: string;
   messageActionsTarget: {
@@ -24,6 +27,8 @@ type ConversationDetailOverlaysProps = {
   canCopySelectedMessage: boolean;
   canDeleteSelectedMessage: boolean;
   canToggleSelectedPinnedMessage: boolean;
+  canForwardSelectedMessage: boolean;
+  forwardMessageTarget: MessageItem | null;
   messageImageLightbox: {
     messageId: number;
     imageUrl: string;
@@ -38,6 +43,8 @@ type ConversationDetailOverlaysProps = {
   onCopyMessage: () => void;
   onDeleteSelectedMessage: () => void;
   onToggleSelectedMessagePin: () => void;
+  onForwardSelectedMessage: () => void;
+  onCloseForwardMessageModal: () => void;
   onCloseMessageImageLightbox: () => void;
   onCloseConversationActions: () => void;
   onOpenGroupSettings?: () => void;
@@ -51,6 +58,7 @@ type ConversationDetailOverlaysProps = {
 
 export function ConversationDetailOverlays({
   isMobile,
+  conversationId,
   imagePreviewAlt,
   pinActionLabel,
   messageActionsTarget,
@@ -58,6 +66,8 @@ export function ConversationDetailOverlays({
   canCopySelectedMessage,
   canDeleteSelectedMessage,
   canToggleSelectedPinnedMessage,
+  canForwardSelectedMessage,
+  forwardMessageTarget,
   messageImageLightbox,
   isConversationActionsOpen,
   conversationActionsAnchorRect,
@@ -69,6 +79,8 @@ export function ConversationDetailOverlays({
   onCopyMessage,
   onDeleteSelectedMessage,
   onToggleSelectedMessagePin,
+  onForwardSelectedMessage,
+  onCloseForwardMessageModal,
   onCloseMessageImageLightbox,
   onCloseConversationActions,
   onOpenGroupSettings,
@@ -89,11 +101,19 @@ export function ConversationDetailOverlays({
         canCopy={canCopySelectedMessage}
         canDelete={canDeleteSelectedMessage}
         canPin={canToggleSelectedPinnedMessage}
+        canForward={canForwardSelectedMessage}
         pinActionLabel={pinActionLabel}
         onClose={onCloseMessageActions}
         onCopy={onCopyMessage}
         onDelete={onDeleteSelectedMessage}
         onPinToggle={onToggleSelectedMessagePin}
+        onForward={onForwardSelectedMessage}
+      />
+      <ForwardMessageModal
+        open={forwardMessageTarget !== null}
+        conversationId={conversationId}
+        message={forwardMessageTarget}
+        onClose={onCloseForwardMessageModal}
       />
       <MessageImageLightbox
         open={messageImageLightbox !== null}

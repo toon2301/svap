@@ -60,7 +60,7 @@ export function ConversationDetail({
     conversationId,
     isMobile,
     loading: thread.loading,
-    disabled: isCurrentUserInvitedGroup || isMessageRequestRecipient,
+    disabled: isCurrentUserInvitedGroup,
     t,
     refresh: thread.refresh,
   });
@@ -228,7 +228,7 @@ export function ConversationDetail({
   const typePlaceholder = isCurrentUserInvitedGroup
     ? t('messages.acceptGroupInviteToReply', 'Prijmite pozvánku, aby ste mohli písať.')
     : isMessageRequestRecipient
-      ? t('messages.acceptMessageRequestToReply', 'Prijmite žiadosť, aby ste mohli odpovedať.')
+      ? t('messages.replyAcceptsMessageRequest', 'Odpoveď automaticky prijme žiadosť.')
     : t('messages.type', 'Napíš správu…');
   const sendLabel = t('messages.send', 'Odoslať');
   const addEmojiLabel = t('messages.addEmoji', 'Pridať emoji');
@@ -373,6 +373,7 @@ export function ConversationDetail({
 
       <ConversationDetailOverlays
         isMobile={isMobile}
+        conversationId={conversationId}
         imagePreviewAlt={imagePreviewAlt}
         pinActionLabel={
           actions.isSelectedMessagePinned ? unpinMessageActionLabel : pinMessageActionLabel
@@ -382,6 +383,8 @@ export function ConversationDetail({
         canCopySelectedMessage={actions.canCopySelectedMessage}
         canDeleteSelectedMessage={actions.canDeleteSelectedMessage}
         canToggleSelectedPinnedMessage={actions.canToggleSelectedPinnedMessage}
+        canForwardSelectedMessage={actions.canForwardSelectedMessage}
+        forwardMessageTarget={actions.forwardMessageTarget}
         messageImageLightbox={actions.messageImageLightbox}
         isConversationActionsOpen={actions.isConversationActionsOpen}
         conversationActionsAnchorRect={actions.conversationActionsAnchorRect}
@@ -395,6 +398,8 @@ export function ConversationDetail({
         }}
         onDeleteSelectedMessage={actions.requestDeleteSelectedMessage}
         onToggleSelectedMessagePin={actions.handleToggleSelectedMessagePin}
+        onForwardSelectedMessage={actions.handleForwardSelectedMessage}
+        onCloseForwardMessageModal={actions.closeForwardMessageModal}
         onCloseMessageImageLightbox={actions.closeMessageImageLightbox}
         onCloseConversationActions={actions.closeConversationActions}
         onOpenGroupSettings={
@@ -436,7 +441,7 @@ export function ConversationDetail({
         conversation={thread.otherConversation}
         onClose={() => setIsGroupSettingsOpen(false)}
         onUpdated={() => {
-          void thread.refresh({ showError: false, syncConversations: true });
+          void thread.refresh({ showError: false, syncConversations: true }).catch(() => undefined);
           requestConversationsRefresh();
         }}
         onDeleted={() => {

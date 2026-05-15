@@ -63,6 +63,7 @@ export function useConversationActionsController({
     messageId: number;
     imageUrl: string;
   } | null>(null);
+  const [forwardMessageTarget, setForwardMessageTarget] = useState<MessageItem | null>(null);
   const messageLongPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const longPressedMessageIdRef = useRef<number | null>(null);
 
@@ -224,10 +225,22 @@ export function useConversationActionsController({
     selectedMessageForActions.sender?.id === currentUserId;
   const canToggleSelectedPinnedMessage =
     selectedMessageForActions !== null && !selectedMessageForActions.is_deleted;
+  const canForwardSelectedMessage =
+    selectedMessageForActions !== null &&
+    !selectedMessageForActions.is_deleted &&
+    (selectedMessageForActions.message_type ?? 'user') === 'user' &&
+    Boolean(
+      selectedMessageForActions.text?.trim() ||
+        selectedMessageForActions.image_url ||
+        selectedMessageForActions.has_image,
+    );
   const isSelectedMessagePinned =
     selectedMessageForActions !== null && pinnedMessage?.id === selectedMessageForActions.id;
   const hasSelectedMessageActions =
-    canCopySelectedMessage || canDeleteSelectedMessage || canToggleSelectedPinnedMessage;
+    canCopySelectedMessage ||
+    canDeleteSelectedMessage ||
+    canToggleSelectedPinnedMessage ||
+    canForwardSelectedMessage;
 
   const handleToggleSelectedMessagePin = useCallback(() => {
     if (!canToggleSelectedPinnedMessage || !selectedMessageForActions) return;
@@ -240,6 +253,12 @@ export function useConversationActionsController({
     onUpdatePinnedMessage,
     selectedMessageForActions,
   ]);
+
+  const handleForwardSelectedMessage = useCallback(() => {
+    if (!canForwardSelectedMessage || !selectedMessageForActions) return;
+    setForwardMessageTarget(selectedMessageForActions);
+    closeMessageActions();
+  }, [canForwardSelectedMessage, closeMessageActions, selectedMessageForActions]);
 
   useEffect(() => {
     if (messageActionsTarget === null) {
@@ -265,6 +284,17 @@ export function useConversationActionsController({
       closeMessageImageLightbox();
     }
   }, [closeMessageImageLightbox, messageImageLightbox, messages]);
+
+  useEffect(() => {
+    if (forwardMessageTarget === null) {
+      return;
+    }
+
+    const activeMessage = messages.find((item) => item.id === forwardMessageTarget.id) ?? null;
+    if (!activeMessage || activeMessage.is_deleted) {
+      setForwardMessageTarget(null);
+    }
+  }, [forwardMessageTarget, messages]);
 
   const handleCopyMessage = useCallback(async () => {
     if (!canCopySelectedMessage || !selectedMessageForActions?.text) {
@@ -346,6 +376,7 @@ export function useConversationActionsController({
     setMessagePendingDeleteId(null);
     setDeletingMessageId(null);
     setMessageImageLightbox(null);
+    setForwardMessageTarget(null);
   }, [clearMessageLongPressTimer, conversationId]);
 
   const selectedMessageActionPreviewText =
@@ -372,9 +403,11 @@ export function useConversationActionsController({
     messagePendingDeleteId,
     deletingMessageId,
     messageImageLightbox,
+    forwardMessageTarget,
     canCopySelectedMessage,
     canDeleteSelectedMessage,
     canToggleSelectedPinnedMessage,
+    canForwardSelectedMessage,
     isSelectedMessagePinned,
     selectedMessageActionPreview,
     setMessageActionsTarget,
@@ -388,6 +421,7 @@ export function useConversationActionsController({
     handleDeleteConversation,
     handleCopyMessage,
     handleToggleSelectedMessagePin,
+    handleForwardSelectedMessage,
     handleMessageActionTrigger,
     getMessageInteractionProps,
     handleMessageImageClick,
@@ -407,6 +441,9 @@ export function useConversationActionsController({
     closeDeleteMessageModal: () => {
       if (deletingMessageId !== null) return;
       setMessagePendingDeleteId(null);
+    },
+    closeForwardMessageModal: () => {
+      setForwardMessageTarget(null);
     },
   };
 }

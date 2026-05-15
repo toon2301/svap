@@ -136,6 +136,18 @@ export type DeleteMessageResult = {
   total_unread_count?: number;
 };
 
+export type ForwardMessageResult = {
+  sent: Array<{
+    user_id: number;
+    conversation_id: number;
+    message: MessageItem;
+  }>;
+  failed: Array<{
+    user_id: number;
+    code: 'message_request_pending' | 'recipient_unavailable' | string;
+  }>;
+};
+
 export type HideConversationResult = {
   conversation_id: number;
   hidden_at: string | null;

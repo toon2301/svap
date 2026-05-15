@@ -8,6 +8,7 @@ from .api.views import (
     ConversationPinStateView,
     DeleteMessageView,
     DeleteMessageRequestView,
+    ForwardMessageView,
     GroupConversationCreateView,
     GroupConversationDetailView,
     GroupInvitationResponseView,
@@ -86,6 +87,11 @@ urlpatterns = [
         "conversations/<int:conversation_id>/messages/<int:message_id>/delete/",
         DeleteMessageView.as_view(),
         name="messaging_delete_message",
+    ),
+    path(
+        "conversations/<int:conversation_id>/messages/<int:message_id>/forward/",
+        ForwardMessageView.as_view(),
+        name="messaging_forward_message",
     ),
     path(
         "conversations/<int:conversation_id>/pin/",

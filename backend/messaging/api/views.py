@@ -28,6 +28,7 @@ from .group_views import (
     GroupMemberDetailView,
     _group_error_response,
 )
+from .forward_views import ForwardMessageView, ForwardMessageSerializer
 from .message_views import (
     DeleteMessageView,
     MessageImageView,
@@ -59,6 +60,8 @@ __all__ = [
     "ConversationListView",
     "ConversationPinStateView",
     "DeleteMessageView",
+    "ForwardMessageSerializer",
+    "ForwardMessageView",
     "AcceptMessageRequestView",
     "DeleteMessageRequestView",
     "GroupConversationCreateView",

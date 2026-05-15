@@ -8,7 +8,7 @@ from django.db.models import Count
 from django.utils import timezone
 
 from ..models import Conversation, ConversationParticipant, Message
-from .message_requests import ensure_can_send_pending_request_message
+from .message_requests import prepare_pending_request_for_message
 from .push_enqueue import schedule_message_push_delivery
 
 User = get_user_model()
@@ -161,7 +161,11 @@ def send_direct_message(
             )
             created_conversation = True
 
-        ensure_can_send_pending_request_message(conversation=convo, sender_id=actor.id)
+        prepare_pending_request_for_message(
+            conversation=convo,
+            sender_id=actor.id,
+            now=now,
+        )
 
         msg = Message.objects.create(
             conversation=convo,

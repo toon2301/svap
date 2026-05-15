@@ -6,9 +6,11 @@ import { ConversationDetail } from './ConversationDetail';
 import { resolveMessagingImageUrl } from './resolveMessagingImageUrl';
 import {
   deleteMessage,
+  forwardMessage,
   getMessagingErrorMessage,
   hideConversation,
   listConversations,
+  listGroupMemberCandidates,
   listMessages,
   markConversationRead,
   sendMessage,
@@ -78,8 +80,10 @@ jest.mock('../profile/ReportUserModal', () => ({
 jest.mock('./messagingApi', () => ({
   __esModule: true,
   deleteMessage: jest.fn(),
+  forwardMessage: jest.fn(),
   hideConversation: jest.fn(),
   listConversations: jest.fn(),
+  listGroupMemberCandidates: jest.fn(),
   listMessages: jest.fn(),
   markConversationRead: jest.fn(),
   sendMessage: jest.fn(),
@@ -252,9 +256,11 @@ export {
   ConversationDetail,
   resolveMessagingImageUrl,
   deleteMessage,
+  forwardMessage,
   getMessagingErrorMessage,
   hideConversation,
   listConversations,
+  listGroupMemberCandidates,
   listMessages,
   markConversationRead,
   sendMessage,
@@ -322,6 +328,7 @@ export function setupConversationDetailTestDefaults() {
       },
     ]);
     (listMessages as jest.Mock).mockResolvedValue(messagePage([]));
+    (listGroupMemberCandidates as jest.Mock).mockResolvedValue([]);
     (markConversationRead as jest.Mock).mockResolvedValue({
       conversation_id: 9,
       last_read_at: null,
@@ -331,6 +338,10 @@ export function setupConversationDetailTestDefaults() {
       pinned_message: null,
     });
     (getMessagingErrorMessage as jest.Mock).mockReturnValue('Friendly messaging error');
+    (forwardMessage as jest.Mock).mockResolvedValue({
+      sent: [],
+      failed: [],
+    });
     (deleteMessage as jest.Mock).mockResolvedValue({
       conversation_id: 9,
       message: message({
