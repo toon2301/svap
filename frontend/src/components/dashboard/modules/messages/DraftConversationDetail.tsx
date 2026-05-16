@@ -10,7 +10,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useIsMobile } from '@/hooks';
-import { getMessagingErrorCode, getMessagingErrorMessage, openConversation, sendDirectMessage } from './messagingApi';
+import { getMessagingErrorCode, getMessagingErrorMessage, getMessagingErrorStatus, openConversation, sendDirectMessage } from './messagingApi';
 import { DesktopEmojiPickerButton } from './DesktopEmojiPickerButton';
 import { MessageComposerImagePreview } from './MessageComposerImagePreview';
 import type { ConversationDraft, MessagingUserBrief } from './types';
@@ -251,7 +251,7 @@ export function DraftConversationDetail({
       requestConversationsRefresh();
       navigateMessagesUrl(result.conversation_id, { mode: 'replace' });
     } catch (error) {
-      if (getMessagingErrorCode(error) === 'message_request_pending') {
+      if (getMessagingErrorCode(error) === 'message_request_pending' || getMessagingErrorStatus(error) === 403) {
         suppressPassiveMessagingRefresh();
       }
       toast.error(

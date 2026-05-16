@@ -74,11 +74,11 @@ describe('ConversationDetail desktop composer', () => {
     expect((input as HTMLInputElement).value).toBe('Ahoj');
   });
 
-  it('suppresses only passive refreshes after a pending request send limit error', async () => {
+  it('suppresses only passive refreshes after a forbidden send error', async () => {
     (sendMessage as jest.Mock).mockRejectedValueOnce({
       response: {
         status: 403,
-        data: { code: 'message_request_pending' },
+        data: {},
       },
     });
 

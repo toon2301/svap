@@ -9,6 +9,7 @@ import {
   forwardMessage,
   getMessagingErrorCode,
   getMessagingErrorMessage,
+  getMessagingErrorStatus,
   hideConversation,
   listConversations,
   listGroupMemberCandidates,
@@ -86,6 +87,10 @@ jest.mock('./messagingApi', () => ({
   getMessagingErrorCode: jest.fn((error) => {
     const code = (error as { response?: { data?: { code?: unknown } } })?.response?.data?.code;
     return typeof code === 'string' ? code : null;
+  }),
+  getMessagingErrorStatus: jest.fn((error) => {
+    const status = (error as { response?: { status?: unknown } })?.response?.status;
+    return typeof status === 'number' ? status : null;
   }),
   hideConversation: jest.fn(),
   listConversations: jest.fn(),
@@ -265,6 +270,7 @@ export {
   forwardMessage,
   getMessagingErrorCode,
   getMessagingErrorMessage,
+  getMessagingErrorStatus,
   hideConversation,
   listConversations,
   listGroupMemberCandidates,
@@ -349,6 +355,10 @@ export function setupConversationDetailTestDefaults() {
     (getMessagingErrorCode as jest.Mock).mockImplementation((error) => {
       const code = (error as { response?: { data?: { code?: unknown } } })?.response?.data?.code;
       return typeof code === 'string' ? code : null;
+    });
+    (getMessagingErrorStatus as jest.Mock).mockImplementation((error) => {
+      const status = (error as { response?: { status?: unknown } })?.response?.status;
+      return typeof status === 'number' ? status : null;
     });
     (forwardMessage as jest.Mock).mockResolvedValue({
       sent: [],

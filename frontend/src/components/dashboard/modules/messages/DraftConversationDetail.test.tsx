@@ -4,6 +4,7 @@ import { DraftConversationDetail } from './DraftConversationDetail';
 import {
   getMessagingErrorCode,
   getMessagingErrorMessage,
+  getMessagingErrorStatus,
   openConversation,
   sendDirectMessage,
 } from './messagingApi';
@@ -48,6 +49,10 @@ jest.mock('./messagingApi', () => ({
     const code = (error as { response?: { data?: { code?: unknown } } })?.response?.data?.code;
     return typeof code === 'string' ? code : null;
   }),
+  getMessagingErrorStatus: jest.fn((error) => {
+    const status = (error as { response?: { status?: unknown } })?.response?.status;
+    return typeof status === 'number' ? status : null;
+  }),
   getMessagingErrorMessage: jest.fn(),
 }));
 
@@ -87,6 +92,10 @@ describe('DraftConversationDetail', () => {
       const code = (error as { response?: { data?: { code?: unknown } } })?.response?.data?.code;
       return typeof code === 'string' ? code : null;
     });
+    (getMessagingErrorStatus as jest.Mock).mockImplementation((error) => {
+      const status = (error as { response?: { status?: unknown } })?.response?.status;
+      return typeof status === 'number' ? status : null;
+    });
     (getMessagingErrorMessage as jest.Mock).mockReturnValue('Friendly messaging error');
     createObjectURLMock.mockReturnValue('blob:draft-preview');
     Object.defineProperty(URL, 'createObjectURL', {
@@ -99,12 +108,12 @@ describe('DraftConversationDetail', () => {
     });
   });
 
-  it('suppresses passive refreshes after a pending request send limit error', async () => {
+  it('suppresses passive refreshes after a forbidden send error', async () => {
     (openConversation as jest.Mock).mockResolvedValue(draftResponse);
     (sendDirectMessage as jest.Mock).mockRejectedValueOnce({
       response: {
         status: 403,
-        data: { code: 'message_request_pending' },
+        data: {},
       },
     });
 

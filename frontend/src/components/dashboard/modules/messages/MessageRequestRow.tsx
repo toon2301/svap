@@ -75,7 +75,7 @@ export function MessageRequestRow({
           type="button"
           disabled={isBusy}
           onClick={() => onAccept(conversation.id)}
-          className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-purple-600 text-white transition-colors hover:bg-purple-700 disabled:cursor-not-allowed disabled:opacity-60"
+          className="inline-flex h-9 w-9 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900 disabled:cursor-not-allowed disabled:opacity-60 dark:text-gray-400 dark:hover:bg-gray-900 dark:hover:text-white"
           aria-label={t('messages.acceptMessageRequest', 'Prijať žiadosť')}
           title={t('messages.acceptMessageRequest', 'Prijať žiadosť')}
         >

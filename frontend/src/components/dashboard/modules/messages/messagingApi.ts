@@ -112,6 +112,11 @@ export function getMessagingErrorCode(err: unknown): string | null {
   return typeof code === 'string' ? code : null;
 }
 
+export function getMessagingErrorStatus(err: unknown): number | null {
+  const status = (err as { response?: { status?: unknown } })?.response?.status;
+  return typeof status === 'number' ? status : null;
+}
+
 export function getMessagingErrorMessage(
   err: unknown,
   {
@@ -140,7 +145,7 @@ export function getMessagingErrorMessage(
     };
     message?: string;
   };
-  const status = error?.response?.status;
+  const status = getMessagingErrorStatus(err);
   const code = getMessagingErrorCode(err);
   if (code === 'message_request_pending' && requestPendingFallback) {
     return requestPendingFallback;
