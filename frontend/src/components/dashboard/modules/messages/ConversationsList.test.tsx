@@ -271,6 +271,14 @@ describe('ConversationsList', () => {
     expect(listConversations).toHaveBeenCalledTimes(1);
 
     act(() => {
+      jest.advanceTimersByTime(3_000);
+      window.dispatchEvent(new Event('focus'));
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+
+    expect(listConversations).toHaveBeenCalledTimes(1);
+
+    act(() => {
       requestConversationsRefresh();
     });
 
