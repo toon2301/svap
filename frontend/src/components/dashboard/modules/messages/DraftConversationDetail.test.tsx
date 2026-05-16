@@ -1,7 +1,17 @@
 import { createEvent, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { DraftConversationDetail } from './DraftConversationDetail';
-import { openConversation, sendDirectMessage } from './messagingApi';
+import {
+  getMessagingErrorCode,
+  getMessagingErrorMessage,
+  openConversation,
+  sendDirectMessage,
+} from './messagingApi';
+import toast from 'react-hot-toast';
+import {
+  clearPassiveMessagingRefreshSuppression,
+  isPassiveMessagingRefreshSuppressed,
+} from './messagesEvents';
 
 jest.mock('@emoji-mart/data', () => ({}));
 
@@ -34,7 +44,19 @@ jest.mock('./messagingApi', () => ({
   __esModule: true,
   openConversation: jest.fn(),
   sendDirectMessage: jest.fn(),
+  getMessagingErrorCode: jest.fn((error) => {
+    const code = (error as { response?: { data?: { code?: unknown } } })?.response?.data?.code;
+    return typeof code === 'string' ? code : null;
+  }),
   getMessagingErrorMessage: jest.fn(),
+}));
+
+jest.mock('react-hot-toast', () => ({
+  __esModule: true,
+  default: {
+    error: jest.fn(),
+    success: jest.fn(),
+  },
 }));
 
 const { useIsMobile } = jest.requireMock('@/hooks') as {
@@ -59,7 +81,13 @@ const draftResponse = {
 describe('DraftConversationDetail', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    clearPassiveMessagingRefreshSuppression();
     useIsMobile.mockReturnValue(false);
+    (getMessagingErrorCode as jest.Mock).mockImplementation((error) => {
+      const code = (error as { response?: { data?: { code?: unknown } } })?.response?.data?.code;
+      return typeof code === 'string' ? code : null;
+    });
+    (getMessagingErrorMessage as jest.Mock).mockReturnValue('Friendly messaging error');
     createObjectURLMock.mockReturnValue('blob:draft-preview');
     Object.defineProperty(URL, 'createObjectURL', {
       configurable: true,
@@ -69,6 +97,34 @@ describe('DraftConversationDetail', () => {
       configurable: true,
       value: revokeObjectURLMock,
     });
+  });
+
+  it('suppresses passive refreshes after a pending request send limit error', async () => {
+    (openConversation as jest.Mock).mockResolvedValue(draftResponse);
+    (sendDirectMessage as jest.Mock).mockRejectedValueOnce({
+      response: {
+        status: 403,
+        data: { code: 'message_request_pending' },
+      },
+    });
+
+    render(<DraftConversationDetail targetUserId={42} />);
+
+    await waitFor(() => {
+      expect(openConversation).toHaveBeenCalledWith(42);
+    });
+
+    fireEvent.change(await screen.findByRole('textbox'), { target: { value: 'Tretia sprava' } });
+    fireEvent.click(screen.getByRole('button', { name: /odosla/i }));
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith('Friendly messaging error');
+    });
+
+    expect(isPassiveMessagingRefreshSuppressed()).toBe(true);
+    expect(window.location.pathname + window.location.search).not.toBe(
+      '/dashboard/messages?conversationId=91',
+    );
   });
 
   it('redirects immediately when a started conversation already exists', async () => {

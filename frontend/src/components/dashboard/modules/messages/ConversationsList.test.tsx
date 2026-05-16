@@ -16,7 +16,11 @@ import {
   publishMessageUnreadCount,
   syncMessageUnreadCountFromConversations,
 } from '@/components/dashboard/contexts/messageUnreadStore';
-import { requestConversationsRefresh } from './messagesEvents';
+import {
+  clearPassiveMessagingRefreshSuppression,
+  requestConversationsRefresh,
+  suppressPassiveMessagingRefresh,
+} from './messagesEvents';
 
 const pushMock = jest.fn();
 
@@ -64,6 +68,7 @@ function setVisibilityState(state: 'visible' | 'hidden') {
 describe('ConversationsList', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    clearPassiveMessagingRefreshSuppression();
     setVisibilityState('visible');
     (ensureFreshSessionForBackgroundWork as jest.Mock).mockResolvedValue('ready');
     (hideConversation as jest.Mock).mockResolvedValue({
@@ -220,6 +225,57 @@ describe('ConversationsList', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Viditeľná správa')).toBeInTheDocument();
+      expect(listConversations).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  it('skips suppressed passive refreshes but keeps explicit refresh events active', async () => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date('2020-01-01T00:00:00Z'));
+
+    (listConversations as jest.Mock)
+      .mockResolvedValueOnce([
+        {
+          id: 9,
+          other_user: { id: 2, display_name: 'Tester' },
+          last_message_preview: 'Stara sprava',
+          last_message_at: '2026-03-27T10:00:00Z',
+          last_message_sender_id: 2,
+          has_unread: false,
+        },
+      ])
+      .mockResolvedValueOnce([
+        {
+          id: 9,
+          other_user: { id: 2, display_name: 'Tester' },
+          last_message_preview: 'Explicitna obnova',
+          last_message_at: '2026-03-27T10:01:00Z',
+          last_message_sender_id: 2,
+          has_unread: true,
+        },
+      ]);
+
+    render(<ConversationsList currentUserId={1} variant="rail" selectedConversationId={9} />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Stara sprava')).toBeInTheDocument();
+    });
+
+    suppressPassiveMessagingRefresh();
+
+    act(() => {
+      window.dispatchEvent(new Event('focus'));
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+
+    expect(listConversations).toHaveBeenCalledTimes(1);
+
+    act(() => {
+      requestConversationsRefresh();
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('Explicitna obnova')).toBeInTheDocument();
       expect(listConversations).toHaveBeenCalledTimes(2);
     });
   });

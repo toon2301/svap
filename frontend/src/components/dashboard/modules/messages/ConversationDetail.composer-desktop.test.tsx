@@ -74,6 +74,37 @@ describe('ConversationDetail desktop composer', () => {
     expect((input as HTMLInputElement).value).toBe('Ahoj');
   });
 
+  it('suppresses only passive refreshes after a pending request send limit error', async () => {
+    (sendMessage as jest.Mock).mockRejectedValueOnce({
+      response: {
+        status: 403,
+        data: { code: 'message_request_pending' },
+      },
+    });
+
+    render(<ConversationDetail conversationId={9} currentUserId={1} />);
+
+    await waitFor(() => {
+      expect(listMessages).toHaveBeenCalledTimes(1);
+    });
+
+    const input = screen.getByRole('textbox');
+    fireEvent.change(input, { target: { value: 'Tretia sprava' } });
+    fireEvent.click(screen.getByRole('button', { name: /odosla/i }));
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith('Friendly messaging error');
+    });
+
+    await act(async () => {
+      window.dispatchEvent(new Event('focus'));
+      document.dispatchEvent(new Event('visibilitychange'));
+      await Promise.resolve();
+    });
+
+    expect(listMessages).toHaveBeenCalledTimes(1);
+  });
+
   it('inserts emoji into the desktop composer input', async () => {
     render(<ConversationDetail conversationId={9} currentUserId={1} />);
 

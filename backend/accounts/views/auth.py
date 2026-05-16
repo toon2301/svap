@@ -474,6 +474,12 @@ def register_view(request):
                         "📝 DEBUG REGISTRATION: Registration logged successfully"
                     )
 
+            email_verification_required = getattr(
+                settings,
+                "EMAIL_VERIFICATION_REQUIRED",
+                False,
+            )
+
             # Odošli verifikačný email MIMO transakcie a s ochranou pred timeoutom
             import threading
 
@@ -490,23 +496,24 @@ def register_view(request):
                     )
 
             verification = None
-            try:
-                from accounts.models import EmailVerification
+            if email_verification_required:
+                try:
+                    from accounts.models import EmailVerification
 
-                verification = (
-                    EmailVerification.objects.filter(user=user)
-                    .order_by("-created_at")
-                    .first()
-                )
-                if verification:
-                    t = threading.Thread(
-                        target=_send_email_async,
-                        args=(verification, request),
-                        daemon=True,
+                    verification = (
+                        EmailVerification.objects.filter(user=user)
+                        .order_by("-created_at")
+                        .first()
                     )
-                    t.start()
-            except Exception as e:
-                logger.warning("Could not start email thread", extra={"error": str(e)})
+                    if verification:
+                        t = threading.Thread(
+                            target=_send_email_async,
+                            args=(verification, request),
+                            daemon=True,
+                        )
+                        t.start()
+                except Exception as e:
+                    logger.warning("Could not start email thread", extra={"error": str(e)})
 
             if getattr(settings, "DEBUG", False):
                 logger.info(
@@ -523,9 +530,14 @@ def register_view(request):
                 request.user = _prev_user
             return Response(
                 {
-                    "message": "Registrácia bola úspešná. Skontrolujte si email a potvrďte registráciu.",
+                    "message": (
+                        "Registrácia bola úspešná. Skontrolujte si email a potvrďte registráciu."
+                        if email_verification_required
+                        else "Registrácia bola úspešná. Môžete sa prihlásiť."
+                    ),
                     "user": user_data,
                     "email_sent": verification is not None,
+                    "email_verification_required": email_verification_required,
                 },
                 status=status.HTTP_201_CREATED,
             )

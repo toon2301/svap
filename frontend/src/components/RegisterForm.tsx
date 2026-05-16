@@ -38,6 +38,7 @@ export default function RegisterForm() {
     checkEmailAvailability,
     handleSubmit,
     getButtonText,
+    emailVerificationRequired,
   } = useRegisterForm({ t });
 
   return (
@@ -81,7 +82,11 @@ export default function RegisterForm() {
                   </svg>
                   <div>
                     <p className="font-semibold">{t('auth.registrationSuccess')}</p>
-                    <p className="text-sm mt-1">{t('auth.registrationSuccessMessage')}</p>
+                    <p className="text-sm mt-1">
+                      {emailVerificationRequired
+                        ? t('auth.registrationSuccessMessage')
+                        : t('auth.registrationSuccessLoginMessage')}
+                    </p>
                   </div>
                 </div>
               </motion.div>
@@ -210,7 +215,9 @@ export default function RegisterForm() {
                 transition={{ duration: 0.5, delay: 0.6 }}
               >
                 <p className="text-2xl text-gray-600 dark:text-gray-300 max-lg:text-base mb-4">
-                  {t('auth.afterVerification')}
+                  {emailVerificationRequired
+                    ? t('auth.afterVerification')
+                    : t('auth.afterRegistrationLogin')}
                 </p>
                 <a 
                   href="/" 

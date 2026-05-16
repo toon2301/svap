@@ -3,8 +3,8 @@
 import type React from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
-import { requestConversationsRefresh } from './messagesEvents';
-import { getMessagingErrorMessage, sendMessage } from './messagingApi';
+import { requestConversationsRefresh, suppressPassiveMessagingRefresh } from './messagesEvents';
+import { getMessagingErrorCode, getMessagingErrorMessage, sendMessage } from './messagingApi';
 import { useConversationPendingImage } from './useConversationPendingImage';
 import { useMobileViewportHeight } from '../../hooks/useMobileViewportHeight';
 import type { ConversationRefreshOptions } from './useConversationThreadController';
@@ -128,6 +128,9 @@ export function useConversationComposerController({
     } catch (error) {
       if (keepMobileComposerInteractive && !didSend) {
         setText((current) => (current === '' ? draft : current));
+      }
+      if (getMessagingErrorCode(error) === 'message_request_pending') {
+        suppressPassiveMessagingRefresh();
       }
       toast.error(
         getMessagingErrorMessage(error, {

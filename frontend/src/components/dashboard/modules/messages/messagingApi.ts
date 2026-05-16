@@ -107,6 +107,11 @@ export async function listGroupMemberCandidates({
   return Array.isArray(data?.results) ? data.results : [];
 }
 
+export function getMessagingErrorCode(err: unknown): string | null {
+  const code = (err as { response?: { data?: { code?: unknown } } })?.response?.data?.code;
+  return typeof code === 'string' ? code : null;
+}
+
 export function getMessagingErrorMessage(
   err: unknown,
   {
@@ -136,7 +141,7 @@ export function getMessagingErrorMessage(
     message?: string;
   };
   const status = error?.response?.status;
-  const code = error?.response?.data?.code;
+  const code = getMessagingErrorCode(err);
   if (code === 'message_request_pending' && requestPendingFallback) {
     return requestPendingFallback;
   }

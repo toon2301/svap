@@ -36,7 +36,12 @@ class TestCAPTCHARegistration:
             "captcha_token": "valid_captcha_token",
         }
 
-    @override_settings(CAPTCHA_SKIP_IN_TESTS=True, RATE_LIMITING_ENABLED=False)
+    @override_settings(
+        CAPTCHA_SKIP_IN_TESTS=True,
+        RATE_LIMITING_ENABLED=False,
+        EMAIL_VERIFICATION_REQUIRED=True,
+        ALLOW_UNVERIFIED_LOGIN=True,
+    )
     def test_registration_with_valid_captcha_success(self):
         """Test úspešnej registrácie s platnou CAPTCHA"""
         response = self.client.post(self.registration_url, self.valid_data)
@@ -271,7 +276,12 @@ class TestRegistrationFlow:
         self.verify_url = reverse("accounts:verify_email")
         self.login_url = reverse("accounts:login")
 
-    @override_settings(CAPTCHA_SKIP_IN_TESTS=True, RATE_LIMITING_ENABLED=False)
+    @override_settings(
+        CAPTCHA_SKIP_IN_TESTS=True,
+        RATE_LIMITING_ENABLED=False,
+        EMAIL_VERIFICATION_REQUIRED=True,
+        ALLOW_UNVERIFIED_LOGIN=True,
+    )
     def test_complete_registration_and_verification_flow(self):
         """Test kompletný flow registrácie a verifikácie"""
         # 1. Registrácia

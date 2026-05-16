@@ -55,6 +55,7 @@ export function useRegisterForm({ t }: UseRegisterFormParams) {
   const [showPassword, setShowPassword] = useState(false);
   const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
   const [registrationSuccess, setRegistrationSuccess] = useState(false);
+  const [emailVerificationRequired, setEmailVerificationRequired] = useState(true);
 
   // Smart validácia - email availability
   const [emailStatus, setEmailStatus] = useState<
@@ -416,6 +417,9 @@ export function useRegisterForm({ t }: UseRegisterFormParams) {
       // Backend v DEBUG režime má captcha_token ako nepovinný
 
       const response = await api.post(endpoints.auth.register, dataWithCaptcha);
+      setEmailVerificationRequired(
+        response.data?.email_verification_required !== false,
+      );
 
       // Zobrazenie úspešnej hlášky
       setRegistrationSuccess(true);
@@ -479,6 +483,7 @@ export function useRegisterForm({ t }: UseRegisterFormParams) {
     showPasswordConfirm,
     setShowPasswordConfirm,
     registrationSuccess,
+    emailVerificationRequired,
     emailStatus,
     emailError,
     handleInputChange,

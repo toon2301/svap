@@ -285,8 +285,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         throw new Error('Registrácia zlyhala');
       }
 
-      // Po registrácii používateľ nie je prihlásený, musí overiť email
-      router.push('/verify-email');
+      router.push(response.data?.email_verification_required === false ? '/' : '/verify-email');
     } catch (error) {
       logClientError('Registration error', error);
       throw error;

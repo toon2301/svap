@@ -27,6 +27,7 @@ import { ConversationsListSkeleton } from './ConversationsListSkeleton';
 import { DeleteConversationConfirmModal } from './DeleteConversationConfirmModal';
 import {
   MESSAGING_CONVERSATIONS_REFRESH_EVENT,
+  isPassiveMessagingRefreshSuppressed,
   requestConversationsRefresh,
 } from './messagesEvents';
 import { navigateMessagesUrl } from './messagesRouting';
@@ -447,7 +448,7 @@ export function ConversationsList({
       }
     };
 
-    const refreshIfVisible = () => {
+    const runVisibleRefresh = () => {
       if (document.visibilityState !== 'visible') return;
       void (async () => {
         const sessionState = await ensureFreshSessionForBackgroundWork({
@@ -463,6 +464,11 @@ export function ConversationsList({
       })();
     };
 
+    const refreshIfVisible = () => {
+      if (isPassiveMessagingRefreshSuppressed()) return;
+      runVisibleRefresh();
+    };
+
     if (shouldUseIntervalPolling) {
       pollIntervalRef.current = setInterval(() => {
         refreshIfVisible();
@@ -471,13 +477,13 @@ export function ConversationsList({
 
     window.addEventListener('focus', refreshIfVisible);
     document.addEventListener('visibilitychange', refreshIfVisible);
-    window.addEventListener(MESSAGING_CONVERSATIONS_REFRESH_EVENT, refreshIfVisible);
+    window.addEventListener(MESSAGING_CONVERSATIONS_REFRESH_EVENT, runVisibleRefresh);
 
     return () => {
       stopPolling();
       window.removeEventListener('focus', refreshIfVisible);
       document.removeEventListener('visibilitychange', refreshIfVisible);
-      window.removeEventListener(MESSAGING_CONVERSATIONS_REFRESH_EVENT, refreshIfVisible);
+      window.removeEventListener(MESSAGING_CONVERSATIONS_REFRESH_EVENT, runVisibleRefresh);
     };
   }, [refresh, refreshMessageRequestBadge, shouldUseIntervalPolling]);
 

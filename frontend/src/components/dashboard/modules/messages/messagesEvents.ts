@@ -10,6 +10,10 @@ export const MESSAGING_REALTIME_PINNED_MESSAGE_EVENT = 'messaging:realtime:pinne
 export const MESSAGING_REALTIME_GROUP_EVENT = 'messaging:realtime:group';
 export const MESSAGING_OPEN_CONVERSATION_ACTIONS_EVENT = 'messaging:conversation:actions:open';
 
+const DEFAULT_PASSIVE_REFRESH_SUPPRESSION_MS = 2_000;
+
+let passiveMessagingRefreshSuppressedUntil = 0;
+
 export type MessagingRealtimeMessagePayload = {
   conversationId: number;
   messageId: number;
@@ -39,6 +43,21 @@ export type MessagingRealtimeGroupPayload = {
   conversationId: number;
   type: string;
 };
+
+export function suppressPassiveMessagingRefresh(durationMs = DEFAULT_PASSIVE_REFRESH_SUPPRESSION_MS): void {
+  passiveMessagingRefreshSuppressedUntil = Math.max(
+    passiveMessagingRefreshSuppressedUntil,
+    Date.now() + Math.max(0, durationMs),
+  );
+}
+
+export function isPassiveMessagingRefreshSuppressed(): boolean {
+  return Date.now() < passiveMessagingRefreshSuppressedUntil;
+}
+
+export function clearPassiveMessagingRefreshSuppression(): void {
+  passiveMessagingRefreshSuppressedUntil = 0;
+}
 
 export function requestConversationsRefresh(): void {
   if (typeof window === 'undefined') return;

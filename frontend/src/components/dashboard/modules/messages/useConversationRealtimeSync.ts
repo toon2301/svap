@@ -9,6 +9,7 @@ import {
   MESSAGING_REALTIME_MESSAGE_EVENT,
   MESSAGING_REALTIME_PINNED_MESSAGE_EVENT,
   MESSAGING_REALTIME_READ_EVENT,
+  isPassiveMessagingRefreshSuppressed,
   type MessagingRealtimeDeletedPayload,
   type MessagingRealtimeGroupPayload,
   type MessagingRealtimeMessagePayload,
@@ -64,6 +65,7 @@ export function useConversationRealtimeSync({
 
     const refreshIfVisible = () => {
       if (document.visibilityState !== 'visible') return;
+      if (isPassiveMessagingRefreshSuppressed()) return;
       void refresh({
         showError: false,
         markAsRead: true,

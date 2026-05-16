@@ -3,7 +3,7 @@ Testy pre email verifikáciu
 """
 
 import pytest
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
 from django.urls import reverse
@@ -233,6 +233,7 @@ class TestRegistrationWithEmailVerification(APITestCase):
 
     @patch("accounts.models.send_mail")
     @patch("threading.Thread")
+    @override_settings(EMAIL_VERIFICATION_REQUIRED=True, ALLOW_UNVERIFIED_LOGIN=False)
     def test_registration_creates_verification(self, mock_thread_class, mock_send_mail):
         """Test, že registrácia vytvorí verifikačný token"""
         mock_send_mail.return_value = True
@@ -297,6 +298,31 @@ class TestRegistrationWithEmailVerification(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertIn("access_token", response.cookies)
         self.assertIn("refresh_token", response.cookies)
+
+    @override_settings(EMAIL_VERIFICATION_REQUIRED=False, ALLOW_UNVERIFIED_LOGIN=True)
+    def test_registration_without_email_verification_marks_user_verified(self):
+        url = reverse("accounts:register")
+        data = {
+            "username": "newuser",
+            "email": "newuser@example.com",
+            "password": "newpass123",
+            "password_confirm": "newpass123",
+            "user_type": "individual",
+            "birth_day": "15",
+            "birth_month": "06",
+            "birth_year": "1990",
+            "gender": "male",
+            "captcha_token": "test_captcha_token",
+        }
+
+        response = self.client.post(url, data, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertFalse(response.data["email_sent"])
+        self.assertFalse(response.data["email_verification_required"])
+        user = User.objects.get(email="newuser@example.com")
+        self.assertTrue(user.is_verified)
+        self.assertFalse(EmailVerification.objects.filter(user=user).exists())
 
     def test_login_with_verification_success(self):
         """Test, že prihlásenie s verifikáciou funguje"""

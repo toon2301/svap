@@ -1,6 +1,7 @@
 import pytest
 from django.urls import reverse
 from django.contrib.auth import get_user_model
+from django.test import override_settings
 from rest_framework.test import APITestCase
 from rest_framework import status
 from unittest.mock import patch
@@ -19,6 +20,7 @@ class TestAuthEndpoints(APITestCase):
         assert "required_fields" in r.data
 
     @patch("accounts.models.send_mail")
+    @override_settings(EMAIL_VERIFICATION_REQUIRED=True, ALLOW_UNVERIFIED_LOGIN=True)
     def test_register_post_success(self, mock_send_mail):
         mock_send_mail.return_value = True
         url = reverse("accounts:register")

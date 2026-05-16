@@ -7,6 +7,7 @@ import { resolveMessagingImageUrl } from './resolveMessagingImageUrl';
 import {
   deleteMessage,
   forwardMessage,
+  getMessagingErrorCode,
   getMessagingErrorMessage,
   hideConversation,
   listConversations,
@@ -23,6 +24,7 @@ import {
   MESSAGING_REALTIME_MESSAGE_EVENT,
   MESSAGING_REALTIME_PINNED_MESSAGE_EVENT,
   MESSAGING_REALTIME_READ_EVENT,
+  clearPassiveMessagingRefreshSuppression,
 } from './messagesEvents';
 import type { MessageItem, MessageListPage } from './types';
 
@@ -81,6 +83,10 @@ jest.mock('./messagingApi', () => ({
   __esModule: true,
   deleteMessage: jest.fn(),
   forwardMessage: jest.fn(),
+  getMessagingErrorCode: jest.fn((error) => {
+    const code = (error as { response?: { data?: { code?: unknown } } })?.response?.data?.code;
+    return typeof code === 'string' ? code : null;
+  }),
   hideConversation: jest.fn(),
   listConversations: jest.fn(),
   listGroupMemberCandidates: jest.fn(),
@@ -257,6 +263,7 @@ export {
   resolveMessagingImageUrl,
   deleteMessage,
   forwardMessage,
+  getMessagingErrorCode,
   getMessagingErrorMessage,
   hideConversation,
   listConversations,
@@ -276,6 +283,7 @@ export {
 
 export function setupConversationDetailTestDefaults() {
     jest.resetAllMocks();
+    clearPassiveMessagingRefreshSuppression();
     if (originalNextPublicApiUrl === undefined) {
       delete process.env.NEXT_PUBLIC_API_URL;
     } else {
@@ -338,6 +346,10 @@ export function setupConversationDetailTestDefaults() {
       pinned_message: null,
     });
     (getMessagingErrorMessage as jest.Mock).mockReturnValue('Friendly messaging error');
+    (getMessagingErrorCode as jest.Mock).mockImplementation((error) => {
+      const code = (error as { response?: { data?: { code?: unknown } } })?.response?.data?.code;
+      return typeof code === 'string' ? code : null;
+    });
     (forwardMessage as jest.Mock).mockResolvedValue({
       sent: [],
       failed: [],

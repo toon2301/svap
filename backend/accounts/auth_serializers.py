@@ -158,12 +158,17 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         validated_data.pop("birth_year", None)
 
         password = validated_data.pop("password")
-        validated_data["is_verified"] = False
+        email_verification_required = getattr(
+            settings,
+            "EMAIL_VERIFICATION_REQUIRED",
+            False,
+        )
+        validated_data["is_verified"] = not email_verification_required
 
-        # Vytvorenie používateľa s is_verified=False
+        # Vytvorenie používateľa s configurable email verification.
         # Vytvoriť User objekt bez volania full_clean() (ktorý validuje username)
         user = User(**validated_data)
-        user.is_verified = False
+        user.is_verified = not email_verification_required
         # Nastaviť heslo pomocou set_password (hashuje heslo)
         user.set_password(password)
         user.save()
@@ -171,8 +176,8 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         # Vytvorenie profilu
         UserProfile.objects.create(user=user)
 
-        # Vytvorenie verifikačného tokenu
-        verification = EmailVerification.objects.create(user=user)
+        if email_verification_required:
+            EmailVerification.objects.create(user=user)
 
         # Vymazanie hesla z validated_data pre bezpečnosť
         validated_data.pop("password", None)
@@ -198,8 +203,17 @@ class UserLoginSerializer(serializers.Serializer):
                 raise serializers.ValidationError("Neplatné prihlasovacie údaje.")
             if not user.is_active:
                 raise serializers.ValidationError("Účet je deaktivovaný.")
-            # Overenie emailu – dá sa vypnúť cez ALLOW_UNVERIFIED_LOGIN (pre test/dev)
-            if not getattr(settings, "ALLOW_UNVERIFIED_LOGIN", False):
+            # Overenie emailu sa dá dočasne vypnúť počas testovania aplikácie.
+            email_verification_required = getattr(
+                settings,
+                "EMAIL_VERIFICATION_REQUIRED",
+                not getattr(settings, "ALLOW_UNVERIFIED_LOGIN", False),
+            )
+            if email_verification_required and not getattr(
+                settings,
+                "ALLOW_UNVERIFIED_LOGIN",
+                False,
+            ):
                 if not getattr(user, "is_verified", False):
                     raise serializers.ValidationError(
                         "Účet nie je overený. Skontrolujte si email a kliknite na verifikačný odkaz."
