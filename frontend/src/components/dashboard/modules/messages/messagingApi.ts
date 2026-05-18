@@ -32,6 +32,12 @@ function normalizeConversationSearchQuery(value?: string): string {
   return typeof value === 'string' ? value.trim().replace(/\s+/g, ' ') : '';
 }
 
+const conversationsListInFlight = new Map<string, Promise<ConversationListItem[]>>();
+
+function conversationsListRequestKey(search: string): string {
+  return `search:${search.length}:${search}`;
+}
+
 export async function createGroupConversation(
   payload: GroupConversationCreatePayload,
 ): Promise<ConversationListItem> {
@@ -206,15 +212,30 @@ export async function listConversations({
   search?: string;
 } = {}): Promise<ConversationListItem[]> {
   const normalizedSearch = normalizeConversationSearchQuery(search);
-  const { data } = await api.get<ConversationListItem[] | Paginated<ConversationListItem>>(
-    '/auth/messaging/conversations/',
-    normalizedSearch ? { params: { search: normalizedSearch } } : undefined,
-  );
-  if (Array.isArray(data)) return data;
-  if (data && Array.isArray((data as Paginated<ConversationListItem>).results)) {
-    return (data as Paginated<ConversationListItem>).results;
+  const requestKey = conversationsListRequestKey(normalizedSearch);
+  const inFlight = conversationsListInFlight.get(requestKey);
+  if (inFlight) return inFlight;
+
+  const request = (async () => {
+    const { data } = await api.get<ConversationListItem[] | Paginated<ConversationListItem>>(
+      '/auth/messaging/conversations/',
+      normalizedSearch ? { params: { search: normalizedSearch } } : undefined,
+    );
+    if (Array.isArray(data)) return data;
+    if (data && Array.isArray((data as Paginated<ConversationListItem>).results)) {
+      return (data as Paginated<ConversationListItem>).results;
+    }
+    return [];
+  })();
+
+  conversationsListInFlight.set(requestKey, request);
+  try {
+    return await request;
+  } finally {
+    if (conversationsListInFlight.get(requestKey) === request) {
+      conversationsListInFlight.delete(requestKey);
+    }
   }
-  return [];
 }
 
 export async function listMessageRequests({
