@@ -702,6 +702,7 @@ def skill_request_confirm_completion_view(request, request_id: int):
                     },
                 )
 
+
         transaction.on_commit(notify_recipient_about_confirmed_completion)
 
         return Response(
