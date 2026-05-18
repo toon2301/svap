@@ -36,12 +36,16 @@ jest.mock('@/hooks', () => ({
 
 export const mockSetActiveConversationId = jest.fn();
 export const mockSyncConversationReadState = jest.fn();
+export const mockMessagesNotificationsState = {
+  isRealtimeConnected: false,
+};
 
 jest.mock('@/components/dashboard/contexts/RequestsNotificationsContext', () => ({
   __esModule: true,
   useMessagesNotifications: () => ({
     unreadCount: 0,
     refreshUnreadCount: jest.fn(),
+    isRealtimeConnected: mockMessagesNotificationsState.isRealtimeConnected,
     setActiveConversationId: mockSetActiveConversationId,
     syncConversationReadState: mockSyncConversationReadState,
   }),
@@ -290,6 +294,7 @@ export {
 export function setupConversationDetailTestDefaults() {
     jest.resetAllMocks();
     clearPassiveMessagingRefreshSuppression();
+    mockMessagesNotificationsState.isRealtimeConnected = false;
     if (originalNextPublicApiUrl === undefined) {
       delete process.env.NEXT_PUBLIC_API_URL;
     } else {

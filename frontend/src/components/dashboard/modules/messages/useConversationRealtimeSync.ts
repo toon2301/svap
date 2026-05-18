@@ -33,6 +33,7 @@ type UseConversationRealtimeSyncArgs = {
     syncConversations?: boolean;
     scrollBehavior?: 'none' | 'force_latest' | 'if_near_bottom';
   }) => Promise<unknown>;
+  isRealtimeConnected: boolean;
   isMobile: boolean;
   openConversationActions: (anchorRect: DOMRect | null) => void;
   markMessageDeletedLocally: (messageId: number) => void;
@@ -45,6 +46,7 @@ type UseConversationRealtimeSyncArgs = {
 export function useConversationRealtimeSync({
   conversationId,
   refresh,
+  isRealtimeConnected,
   isMobile,
   openConversationActions,
   markMessageDeletedLocally,
@@ -74,9 +76,11 @@ export function useConversationRealtimeSync({
       }).catch(() => undefined);
     };
 
-    pollIntervalRef.current = setInterval(() => {
-      refreshIfVisible();
-    }, MESSAGE_POLL_INTERVAL_MS);
+    if (!isRealtimeConnected) {
+      pollIntervalRef.current = setInterval(() => {
+        refreshIfVisible();
+      }, MESSAGE_POLL_INTERVAL_MS);
+    }
 
     window.addEventListener('focus', refreshIfVisible);
     document.addEventListener('visibilitychange', refreshIfVisible);
@@ -86,7 +90,7 @@ export function useConversationRealtimeSync({
       window.removeEventListener('focus', refreshIfVisible);
       document.removeEventListener('visibilitychange', refreshIfVisible);
     };
-  }, [refresh]);
+  }, [isRealtimeConnected, refresh]);
 
   useEffect(() => {
     const handleRealtimeMessage = (event: Event) => {

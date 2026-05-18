@@ -49,6 +49,7 @@ type DashboardNotificationsContextValue = {
   markAllNotificationsRead: () => Promise<void>;
   messageUnreadCount: number;
   refreshMessageUnreadCount: () => Promise<void>;
+  isMessagingRealtimeConnected: boolean;
   setActiveConversationId: (conversationId: number | null) => void;
   syncConversationReadState: (options: {
     conversationId: number;
@@ -904,6 +905,7 @@ export function RequestsNotificationsProvider({
       markAllNotificationsRead,
       messageUnreadCount,
       refreshMessageUnreadCount,
+      isMessagingRealtimeConnected: isRealtimeConnected,
       setActiveConversationId,
       syncConversationReadState,
     }),
@@ -915,6 +917,7 @@ export function RequestsNotificationsProvider({
       refreshMessageUnreadCount,
       refreshNotificationsUnreadCount,
       refreshUnreadCount,
+      isRealtimeConnected,
       setActiveConversationId,
       syncConversationReadState,
       unreadCount,
@@ -941,12 +944,14 @@ export function useMessagesNotifications() {
   const {
     messageUnreadCount,
     refreshMessageUnreadCount,
+    isMessagingRealtimeConnected,
     setActiveConversationId,
     syncConversationReadState,
   } = useDashboardNotificationsContext();
   return {
     unreadCount: messageUnreadCount,
     refreshUnreadCount: refreshMessageUnreadCount,
+    isRealtimeConnected: isMessagingRealtimeConnected,
     setActiveConversationId,
     syncConversationReadState,
   };
