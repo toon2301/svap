@@ -19,7 +19,6 @@ export interface NotificationActor {
   avatar_url?: string | null;
 }
 
-
 export interface DashboardNotification {
   id: number;
   type: NotificationType;
