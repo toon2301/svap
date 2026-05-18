@@ -24,7 +24,16 @@ import os
 from .migrate_api import run_migrations_view
 from accounts.views import update_profile_view, google_oauth_simple, get_csrf_token_view
 from accounts.views.token_refresh_cookie import token_refresh_cookie_view
+from django.urls import path
 
+# Testovacia funkcia, ktorá nasimuluje pád
+def trigger_error(request):
+    division_by_zero = 1 / 0
+
+urlpatterns = [
+    path('sentry-debug/', trigger_error), # Pridaj tento riadok
+    # ... tvoje ostatné cesty
+]
 
 def api_root(request):
     """Root API endpoint"""

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useMessagesNotifications } from '@/components/dashboard/contexts/RequestsNotificationsContext';
 import { useIsMobile } from '@/hooks';
@@ -52,6 +52,12 @@ export function ConversationDetail({
     t,
     syncConversationReadState,
   });
+  const loadedMessageIdsRef = useRef<Set<number>>(new Set());
+  loadedMessageIdsRef.current = new Set(thread.messages.map((item) => item.id));
+  const hasLoadedMessage = useCallback(
+    (messageId: number) => loadedMessageIdsRef.current.has(messageId),
+    [],
+  );
   const isCurrentUserInvitedGroup = Boolean(
     thread.otherConversation?.is_group &&
     thread.otherConversation.current_user_status === 'invited',
@@ -108,6 +114,7 @@ export function ConversationDetail({
     isRealtimeConnected,
     isMobile,
     openConversationActions: actions.openConversationActions,
+    hasLoadedMessage,
     markMessageDeletedLocally: thread.markMessageDeletedLocally,
     setPeerLastReadAt: thread.setPeerLastReadAt,
     setMessageActionsTarget: actions.setMessageActionsTarget,

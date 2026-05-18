@@ -314,4 +314,48 @@ describe('ConversationDetail read state and realtime refresh', () => {
 
     window.removeEventListener(MESSAGING_CONVERSATIONS_REFRESH_EVENT, conversationsRefreshSpy);
   });
+
+  it('skips a realtime message refresh when that message is already loaded', async () => {
+    (listMessages as jest.Mock).mockResolvedValueOnce(
+      messagePage([
+        message({
+          id: 2,
+          text: 'Uz nacitana sprava',
+          created_at: '2026-03-27T10:01:00Z',
+        }),
+        message({
+          id: 1,
+          sender: { id: 1, display_name: 'Me' },
+          text: 'Moja sprava',
+          created_at: '2026-03-27T10:00:00Z',
+        }),
+      ]),
+    );
+
+    render(<ConversationDetail conversationId={9} currentUserId={1} />);
+
+    await waitFor(() => {
+      expect(listMessages).toHaveBeenCalledTimes(1);
+      expect(screen.getByText('Uz nacitana sprava')).toBeInTheDocument();
+    });
+
+    act(() => {
+      window.dispatchEvent(
+        new CustomEvent(MESSAGING_REALTIME_MESSAGE_EVENT, {
+          detail: {
+            conversationId: 9,
+            messageId: 2,
+            senderId: 77,
+            createdAt: '2026-03-27T10:01:00Z',
+          },
+        }),
+      );
+    });
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(listMessages).toHaveBeenCalledTimes(1);
+  });
 });
