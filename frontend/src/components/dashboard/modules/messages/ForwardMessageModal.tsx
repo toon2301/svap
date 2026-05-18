@@ -5,7 +5,7 @@ import { XMarkIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { forwardMessage, getMessagingErrorMessage } from './messagingApi';
-import { requestConversationsRefresh } from './messagesEvents';
+import { requestConversationsRefresh, suppressPassiveMessagingRefresh } from './messagesEvents';
 import { GroupUserPicker } from './GroupUserPicker';
 import { resolveMessagingImageUrl } from './resolveMessagingImageUrl';
 import type { GroupMemberCandidate, MessageItem } from './types';
@@ -16,6 +16,8 @@ type ForwardMessageModalProps = {
   message: MessageItem | null;
   onClose: () => void;
 };
+
+const FORWARD_PASSIVE_REFRESH_SUPPRESSION_MS = 2_000;
 
 function messagePreviewText(message: MessageItem | null): string {
   if (!message || message.is_deleted) return '';
@@ -73,6 +75,7 @@ export function ForwardMessageModal({
         return;
       }
       setSelectedRecipients([]);
+      suppressPassiveMessagingRefresh(FORWARD_PASSIVE_REFRESH_SUPPRESSION_MS);
       onClose();
       requestConversationsRefresh();
       toast.success(
