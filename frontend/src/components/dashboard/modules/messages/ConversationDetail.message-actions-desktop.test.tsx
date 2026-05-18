@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { act, createEvent, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { isPassiveMessagingRefreshSuppressed } from './messagesEvents';
 import {
   ConversationDetail,
   MESSAGING_CONVERSATIONS_REFRESH_EVENT,
@@ -217,6 +218,8 @@ describe('ConversationDetail desktop message actions', () => {
 
   it('forwards a text message from the desktop message actions menu', async () => {
     jest.useFakeTimers();
+    const conversationsRefreshSpy = jest.fn();
+    window.addEventListener(MESSAGING_CONVERSATIONS_REFRESH_EVENT, conversationsRefreshSpy);
     (listMessages as jest.Mock).mockResolvedValueOnce(
       messagePage([
         message({
@@ -263,13 +266,26 @@ describe('ConversationDetail desktop message actions', () => {
     });
 
     fireEvent.click(await screen.findByText('Prijemca'));
+    const messagesCallsBeforeForward = (listMessages as jest.Mock).mock.calls.length;
     jest.useRealTimers();
     fireEvent.click(screen.getByRole('button', { name: 'Preposlať' }));
 
     await waitFor(() => {
       expect(forwardMessage).toHaveBeenCalledWith(9, 1, [88]);
       expect(toast.success).toHaveBeenCalled();
+      expect(conversationsRefreshSpy).toHaveBeenCalled();
       expect(screen.queryByText('Preposlať správu')).not.toBeInTheDocument();
     });
+
+    expect(isPassiveMessagingRefreshSuppressed()).toBe(true);
+    expect(listMessages).toHaveBeenCalledTimes(messagesCallsBeforeForward);
+
+    await act(async () => {
+      window.dispatchEvent(new Event('focus'));
+      await Promise.resolve();
+    });
+
+    expect(listMessages).toHaveBeenCalledTimes(messagesCallsBeforeForward);
+    window.removeEventListener(MESSAGING_CONVERSATIONS_REFRESH_EVENT, conversationsRefreshSpy);
   });
 });
