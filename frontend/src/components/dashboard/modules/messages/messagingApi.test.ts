@@ -10,6 +10,13 @@ jest.mock('@/lib/api', () => ({
   },
 }));
 
+/**
+ * Creates a manually controlled promise for exercising in-flight request behavior.
+ *
+ * @template T Value type resolved by the promise.
+ * @returns An object containing the promise, resolve callback, and reject callback.
+ * The shape is `{ promise: Promise<T>, resolve: (value: T) => void, reject: (error: unknown) => void }`.
+ */
 function deferred<T>() {
   let resolve!: (value: T) => void;
   let reject!: (error: unknown) => void;
@@ -20,92 +27,127 @@ function deferred<T>() {
   return { promise, resolve, reject };
 }
 
-describe('messagingApi listConversations', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
-  it('shares one in-flight request for duplicate conversation list calls', async () => {
-    const request = deferred<{
-      data: Array<{
-        id: number;
-        other_user: { id: number; display_name: string };
-      }>;
-    }>();
-    const response = [
-      {
-        id: 9,
-        other_user: { id: 2, display_name: 'Tester' },
+describe(
+  'messagingApi listConversations',
+  /**
+   * Test suite callback for listConversations in-flight request behavior.
+   */
+  () => {
+    beforeEach(
+      /**
+       * Test setup callback for resetting API mocks before each assertion.
+       */
+      () => {
+        jest.clearAllMocks();
       },
-    ];
-    (api.get as jest.Mock).mockReturnValueOnce(request.promise);
+    );
 
-    const first = listConversations({ search: '  Tester   Name ' });
-    const second = listConversations({ search: 'Tester Name' });
+    it(
+      'shares one in-flight request for duplicate conversation list calls',
+      /**
+       * Test callback for asserting duplicate normalized searches share one successful request.
+       */
+      async () => {
+        const request = deferred<{
+          data: Array<{
+            id: number;
+            other_user: { id: number; display_name: string };
+          }>;
+        }>();
+        const response = [
+          {
+            id: 9,
+            other_user: { id: 2, display_name: 'Tester' },
+          },
+        ];
+        (api.get as jest.Mock).mockReturnValueOnce(request.promise);
 
-    expect(api.get).toHaveBeenCalledTimes(1);
-    expect(api.get).toHaveBeenCalledWith('/auth/messaging/conversations/', {
-      params: { search: 'Tester Name' },
-    });
+        const first = listConversations({ search: '  Tester   Name ' });
+        const second = listConversations({ search: 'Tester Name' });
 
-    request.resolve({ data: response });
+        expect(api.get).toHaveBeenCalledTimes(1);
+        expect(api.get).toHaveBeenCalledWith('/auth/messaging/conversations/', {
+          params: { search: 'Tester Name' },
+        });
 
-    await expect(first).resolves.toEqual(response);
-    await expect(second).resolves.toEqual(response);
-  });
+        request.resolve({ data: response });
 
-  it('shares one in-flight rejection for duplicate conversation list calls', async () => {
-    const request = deferred<{ data: [] }>();
-    const error = new Error('Conversation list failed');
-    (api.get as jest.Mock).mockReturnValueOnce(request.promise);
+        await expect(first).resolves.toEqual(response);
+        await expect(second).resolves.toEqual(response);
+      },
+    );
 
-    const first = listConversations({ search: 'Tester' });
-    const second = listConversations({ search: '  Tester ' });
+    it(
+      'shares one in-flight rejection for duplicate conversation list calls',
+      /**
+       * Test callback for asserting duplicate normalized searches share one rejected request.
+       */
+      async () => {
+        const request = deferred<{ data: [] }>();
+        const error = new Error('Conversation list failed');
+        (api.get as jest.Mock).mockReturnValueOnce(request.promise);
 
-    expect(api.get).toHaveBeenCalledTimes(1);
-    expect(api.get).toHaveBeenCalledWith('/auth/messaging/conversations/', {
-      params: { search: 'Tester' },
-    });
+        const first = listConversations({ search: 'Tester' });
+        const second = listConversations({ search: '  Tester ' });
 
-    request.reject(error);
+        expect(api.get).toHaveBeenCalledTimes(1);
+        expect(api.get).toHaveBeenCalledWith('/auth/messaging/conversations/', {
+          params: { search: 'Tester' },
+        });
 
-    await expect(Promise.allSettled([first, second])).resolves.toEqual([
-      { status: 'rejected', reason: error },
-      { status: 'rejected', reason: error },
-    ]);
-  });
+        request.reject(error);
 
-  it('starts a new request after the previous conversation list call finishes', async () => {
-    (api.get as jest.Mock)
-      .mockResolvedValueOnce({ data: [] })
-      .mockResolvedValueOnce({ data: [] });
+        await expect(Promise.allSettled([first, second])).resolves.toEqual([
+          { status: 'rejected', reason: error },
+          { status: 'rejected', reason: error },
+        ]);
+      },
+    );
 
-    await listConversations();
-    await listConversations();
+    it(
+      'starts a new request after the previous conversation list call finishes',
+      /**
+       * Test callback for asserting completed requests are removed from the in-flight cache.
+       */
+      async () => {
+        (api.get as jest.Mock)
+          .mockResolvedValueOnce({ data: [] })
+          .mockResolvedValueOnce({ data: [] });
 
-    expect(api.get).toHaveBeenCalledTimes(2);
-  });
+        await listConversations();
+        await listConversations();
 
-  it('does not share empty conversation search with a literal sentinel-like search value', async () => {
-    const emptySearchRequest = deferred<{ data: [] }>();
-    const sentinelSearchRequest = deferred<{ data: [] }>();
-    (api.get as jest.Mock)
-      .mockReturnValueOnce(emptySearchRequest.promise)
-      .mockReturnValueOnce(sentinelSearchRequest.promise);
+        expect(api.get).toHaveBeenCalledTimes(2);
+      },
+    );
 
-    const emptySearch = listConversations();
-    const sentinelSearch = listConversations({ search: '__all__' });
+    it(
+      'does not share empty conversation search with a literal sentinel-like search value',
+      /**
+       * Test callback for asserting empty search and sentinel-like search use distinct keys.
+       */
+      async () => {
+        const emptySearchRequest = deferred<{ data: [] }>();
+        const sentinelSearchRequest = deferred<{ data: [] }>();
+        (api.get as jest.Mock)
+          .mockReturnValueOnce(emptySearchRequest.promise)
+          .mockReturnValueOnce(sentinelSearchRequest.promise);
 
-    expect(api.get).toHaveBeenCalledTimes(2);
-    expect(api.get).toHaveBeenNthCalledWith(1, '/auth/messaging/conversations/', undefined);
-    expect(api.get).toHaveBeenNthCalledWith(2, '/auth/messaging/conversations/', {
-      params: { search: '__all__' },
-    });
+        const emptySearch = listConversations();
+        const sentinelSearch = listConversations({ search: '__all__' });
 
-    emptySearchRequest.resolve({ data: [] });
-    sentinelSearchRequest.resolve({ data: [] });
+        expect(api.get).toHaveBeenCalledTimes(2);
+        expect(api.get).toHaveBeenNthCalledWith(1, '/auth/messaging/conversations/', undefined);
+        expect(api.get).toHaveBeenNthCalledWith(2, '/auth/messaging/conversations/', {
+          params: { search: '__all__' },
+        });
 
-    await expect(emptySearch).resolves.toEqual([]);
-    await expect(sentinelSearch).resolves.toEqual([]);
-  });
-});
+        emptySearchRequest.resolve({ data: [] });
+        sentinelSearchRequest.resolve({ data: [] });
+
+        await expect(emptySearch).resolves.toEqual([]);
+        await expect(sentinelSearch).resolves.toEqual([]);
+      },
+    );
+  },
+);
