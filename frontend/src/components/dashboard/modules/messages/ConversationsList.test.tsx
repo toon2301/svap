@@ -187,6 +187,55 @@ describe('ConversationsList', () => {
     });
   });
 
+  it('coalesces rapid conversation refresh events into one list refresh', async () => {
+    jest.useFakeTimers();
+    (listConversations as jest.Mock)
+      .mockResolvedValueOnce([
+        {
+          id: 9,
+          other_user: { id: 2, display_name: 'Tester' },
+          last_message_preview: 'Povodna sprava',
+          last_message_at: '2026-03-27T10:00:00Z',
+          last_message_sender_id: 2,
+          has_unread: false,
+        },
+      ])
+      .mockResolvedValueOnce([
+        {
+          id: 9,
+          other_user: { id: 2, display_name: 'Tester' },
+          last_message_preview: 'Spojena obnova',
+          last_message_at: '2026-03-27T10:01:00Z',
+          last_message_sender_id: 2,
+          has_unread: true,
+        },
+      ]);
+
+    render(<ConversationsList currentUserId={1} variant="rail" />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Povodna sprava')).toBeInTheDocument();
+    });
+
+    act(() => {
+      requestConversationsRefresh();
+      requestConversationsRefresh();
+      requestConversationsRefresh();
+    });
+
+    expect(listConversations).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      jest.advanceTimersByTime(350);
+      await Promise.resolve();
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText('Spojena obnova')).toBeInTheDocument();
+      expect(listConversations).toHaveBeenCalledTimes(2);
+    });
+  });
+
   it('refreshes the list when the tab becomes visible again', async () => {
     setVisibilityState('hidden');
 
@@ -438,6 +487,7 @@ describe('ConversationsList', () => {
     await waitFor(() => {
       expect(hideConversation).toHaveBeenCalledWith(9);
       expect(screen.queryByText('Nova sprava')).not.toBeInTheDocument();
+      expect(listConversations).toHaveBeenCalledTimes(2);
     });
 
     expect(refreshSpy).toHaveBeenCalledTimes(1);
@@ -472,6 +522,7 @@ describe('ConversationsList', () => {
     await waitFor(() => {
       expect(hideConversation).toHaveBeenCalledWith(9);
       expect(window.location.pathname + window.location.search).toBe('/dashboard/messages');
+      expect(listConversations).toHaveBeenCalledTimes(2);
     });
   });
 

@@ -39,6 +39,7 @@ import { ReportUserModal } from '../profile/ReportUserModal';
 import { CreateGroupConversationModal } from './CreateGroupConversationModal';
 
 const IDLE_CONVERSATIONS_POLL_INTERVAL_MS = 30_000;
+const CONVERSATIONS_REFRESH_DEBOUNCE_MS = 350;
 const CONVERSATION_SEARCH_DEBOUNCE_MS = 300;
 const MAX_CONVERSATION_SEARCH_LENGTH = 100;
 export const MESSAGING_CREATE_GROUP_OPEN_EVENT = 'messaging:create-group:open';
@@ -441,10 +442,19 @@ export function ConversationsList({
   }, [activeTab]);
 
   useEffect(() => {
+    let refreshDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+
     const stopPolling = () => {
       if (pollIntervalRef.current) {
         clearInterval(pollIntervalRef.current);
         pollIntervalRef.current = null;
+      }
+    };
+
+    const clearRefreshDebounce = () => {
+      if (refreshDebounceTimer) {
+        clearTimeout(refreshDebounceTimer);
+        refreshDebounceTimer = null;
       }
     };
 
@@ -464,9 +474,18 @@ export function ConversationsList({
       })();
     };
 
+    const scheduleVisibleRefresh = () => {
+      if (document.visibilityState !== 'visible') return;
+      clearRefreshDebounce();
+      refreshDebounceTimer = setTimeout(() => {
+        refreshDebounceTimer = null;
+        runVisibleRefresh();
+      }, CONVERSATIONS_REFRESH_DEBOUNCE_MS);
+    };
+
     const refreshIfVisible = () => {
       if (isPassiveMessagingRefreshSuppressed()) return;
-      runVisibleRefresh();
+      scheduleVisibleRefresh();
     };
 
     if (shouldUseIntervalPolling) {
@@ -477,13 +496,14 @@ export function ConversationsList({
 
     window.addEventListener('focus', refreshIfVisible);
     document.addEventListener('visibilitychange', refreshIfVisible);
-    window.addEventListener(MESSAGING_CONVERSATIONS_REFRESH_EVENT, runVisibleRefresh);
+    window.addEventListener(MESSAGING_CONVERSATIONS_REFRESH_EVENT, scheduleVisibleRefresh);
 
     return () => {
+      clearRefreshDebounce();
       stopPolling();
       window.removeEventListener('focus', refreshIfVisible);
       document.removeEventListener('visibilitychange', refreshIfVisible);
-      window.removeEventListener(MESSAGING_CONVERSATIONS_REFRESH_EVENT, runVisibleRefresh);
+      window.removeEventListener(MESSAGING_CONVERSATIONS_REFRESH_EVENT, scheduleVisibleRefresh);
     };
   }, [refresh, refreshMessageRequestBadge, shouldUseIntervalPolling]);
 
