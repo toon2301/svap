@@ -35,7 +35,7 @@ function normalizeConversationSearchQuery(value?: string): string {
 const conversationsListInFlight = new Map<string, Promise<ConversationListItem[]>>();
 
 function conversationsListRequestKey(search: string): string {
-  return search || '__all__';
+  return `search:${search.length}:${search}`;
 }
 
 export async function createGroupConversation(

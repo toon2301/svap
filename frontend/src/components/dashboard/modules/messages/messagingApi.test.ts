@@ -64,4 +64,27 @@ describe('messagingApi listConversations', () => {
 
     expect(api.get).toHaveBeenCalledTimes(2);
   });
+
+  it('does not share empty conversation search with a literal sentinel-like search value', async () => {
+    const emptySearchRequest = deferred<{ data: [] }>();
+    const sentinelSearchRequest = deferred<{ data: [] }>();
+    (api.get as jest.Mock)
+      .mockReturnValueOnce(emptySearchRequest.promise)
+      .mockReturnValueOnce(sentinelSearchRequest.promise);
+
+    const emptySearch = listConversations();
+    const sentinelSearch = listConversations({ search: '__all__' });
+
+    expect(api.get).toHaveBeenCalledTimes(2);
+    expect(api.get).toHaveBeenNthCalledWith(1, '/auth/messaging/conversations/', undefined);
+    expect(api.get).toHaveBeenNthCalledWith(2, '/auth/messaging/conversations/', {
+      params: { search: '__all__' },
+    });
+
+    emptySearchRequest.resolve({ data: [] });
+    sentinelSearchRequest.resolve({ data: [] });
+
+    await expect(emptySearch).resolves.toEqual([]);
+    await expect(sentinelSearch).resolves.toEqual([]);
+  });
 });
