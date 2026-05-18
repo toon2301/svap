@@ -21,6 +21,7 @@ import {
   markConversationRead,
   message,
   messagePage,
+  mockMessagesNotificationsState,
   mockSyncConversationReadState,
   mockVisualViewport,
   resolveMessagingImageUrl,
@@ -221,6 +222,36 @@ describe('ConversationDetail read state and realtime refresh', () => {
     });
 
     window.removeEventListener(MESSAGING_CONVERSATIONS_REFRESH_EVENT, conversationsRefreshSpy);
+  });
+
+  it('does not poll the open conversation while realtime is connected', async () => {
+    jest.useFakeTimers();
+    mockMessagesNotificationsState.isRealtimeConnected = true;
+
+    (listMessages as jest.Mock).mockResolvedValueOnce(
+      messagePage([
+        message({
+          id: 1,
+          sender: { id: 1, display_name: 'Me' },
+          text: 'Moja sprava',
+          created_at: '2026-03-27T10:00:00Z',
+        }),
+      ]),
+    );
+
+    render(<ConversationDetail conversationId={9} currentUserId={1} />);
+
+    await waitFor(() => {
+      expect(listMessages).toHaveBeenCalledTimes(1);
+      expect(screen.getByText('Moja sprava')).toBeInTheDocument();
+    });
+
+    await act(async () => {
+      jest.advanceTimersByTime(30_000);
+      await Promise.resolve();
+    });
+
+    expect(listMessages).toHaveBeenCalledTimes(1);
   });
 
   it('refreshes immediately when a realtime event arrives for the open conversation', async () => {

@@ -35,7 +35,11 @@ export function ConversationDetail({
   const [isReportUserModalOpen, setIsReportUserModalOpen] = useState(false);
   const [isGroupSettingsOpen, setIsGroupSettingsOpen] = useState(false);
   const [busyInvitationId, setBusyInvitationId] = useState<number | null>(null);
-  const { setActiveConversationId, syncConversationReadState } = useMessagesNotifications();
+  const {
+    isRealtimeConnected,
+    setActiveConversationId,
+    syncConversationReadState,
+  } = useMessagesNotifications();
   useConversationPresenceHeartbeat(conversationId);
 
   const imagePreviewAlt = t('messages.imagePreview', 'Náhľad obrázka');
@@ -101,6 +105,7 @@ export function ConversationDetail({
   useConversationRealtimeSync({
     conversationId,
     refresh: thread.refresh,
+    isRealtimeConnected,
     isMobile,
     openConversationActions: actions.openConversationActions,
     markMessageDeletedLocally: thread.markMessageDeletedLocally,
