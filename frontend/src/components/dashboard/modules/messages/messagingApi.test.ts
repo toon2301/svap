@@ -54,6 +54,27 @@ describe('messagingApi listConversations', () => {
     await expect(second).resolves.toEqual(response);
   });
 
+  it('shares one in-flight rejection for duplicate conversation list calls', async () => {
+    const request = deferred<{ data: [] }>();
+    const error = new Error('Conversation list failed');
+    (api.get as jest.Mock).mockReturnValueOnce(request.promise);
+
+    const first = listConversations({ search: 'Tester' });
+    const second = listConversations({ search: '  Tester ' });
+
+    expect(api.get).toHaveBeenCalledTimes(1);
+    expect(api.get).toHaveBeenCalledWith('/auth/messaging/conversations/', {
+      params: { search: 'Tester' },
+    });
+
+    request.reject(error);
+
+    await expect(Promise.allSettled([first, second])).resolves.toEqual([
+      { status: 'rejected', reason: error },
+      { status: 'rejected', reason: error },
+    ]);
+  });
+
   it('starts a new request after the previous conversation list call finishes', async () => {
     (api.get as jest.Mock)
       .mockResolvedValueOnce({ data: [] })
