@@ -280,7 +280,11 @@ export function useConversationActionsController({
     }
 
     const activeMessage = messages.find((item) => item.id === messageImageLightbox.messageId) ?? null;
-    if (!activeMessage || activeMessage.is_deleted || !resolveMessagingImageUrl(activeMessage.image_url)) {
+    if (
+      !activeMessage ||
+      activeMessage.is_deleted ||
+      !resolveMessagingImageUrl(activeMessage.image_url ?? activeMessage.image_thumbnail_url)
+    ) {
       closeMessageImageLightbox();
     }
   }, [closeMessageImageLightbox, messageImageLightbox, messages]);
@@ -382,14 +386,18 @@ export function useConversationActionsController({
   const selectedMessageActionPreviewText =
     selectedMessageForActions && !selectedMessageForActions.is_deleted
       ? selectedMessageForActions.text?.trim() ||
-        (selectedMessageForActions.image_url ? imageOnlyPreviewLabel : '')
+        (selectedMessageForActions.image_url || selectedMessageForActions.image_thumbnail_url
+          ? imageOnlyPreviewLabel
+          : '')
       : '';
 
   const selectedMessageActionPreview =
     selectedMessageForActions && !selectedMessageForActions.is_deleted
       ? {
           text: selectedMessageActionPreviewText,
-          imageUrl: resolveMessagingImageUrl(selectedMessageForActions.image_url),
+          imageUrl: resolveMessagingImageUrl(
+            selectedMessageForActions.image_thumbnail_url ?? selectedMessageForActions.image_url,
+          ),
           timestamp: formatTime(selectedMessageForActions.created_at),
         }
       : null;

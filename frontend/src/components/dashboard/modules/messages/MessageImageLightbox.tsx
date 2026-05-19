@@ -79,6 +79,7 @@ export function MessageImageLightbox({
         <img
           src={imageUrl}
           alt={alt}
+          decoding="async"
           className="max-h-[calc(100vh-2rem)] max-w-full rounded-2xl object-contain shadow-2xl"
           data-testid="message-image-lightbox-image"
         />

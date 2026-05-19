@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { DocumentDuplicateIcon, PaperAirplaneIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -35,6 +35,10 @@ const MOBILE_ACTIONS_INTERACTION_SUPPRESSION_STYLE: React.CSSProperties = {
   userSelect: 'none',
   touchAction: 'manipulation',
 };
+const DESKTOP_MENU_WIDTH = 192;
+const DESKTOP_MENU_GAP = 8;
+const DESKTOP_MENU_VIEWPORT_PADDING = 8;
+const DESKTOP_MENU_FALLBACK_HEIGHT = 184;
 
 function clamp(value: number, min: number, max: number): number {
   if (max < min) {
@@ -42,6 +46,38 @@ function clamp(value: number, min: number, max: number): number {
   }
 
   return Math.min(Math.max(value, min), max);
+}
+
+/**
+ * Calculates a viewport-safe top coordinate for the desktop action menu.
+ *
+ * @param anchorRect - Trigger button position in viewport coordinates.
+ * @param menuHeight - Measured menu height or a fallback before first layout.
+ * @param viewportHeight - Current viewport height.
+ * @returns The top coordinate that keeps the menu inside the viewport.
+ */
+function getDesktopMenuTop(
+  anchorRect: DOMRect,
+  menuHeight: number,
+  viewportHeight: number,
+): number {
+  const maxMenuHeight = Math.max(0, viewportHeight - DESKTOP_MENU_VIEWPORT_PADDING * 2);
+  const effectiveMenuHeight = Math.min(
+    menuHeight || DESKTOP_MENU_FALLBACK_HEIGHT,
+    maxMenuHeight,
+  );
+  const spaceBelow = viewportHeight - anchorRect.bottom - DESKTOP_MENU_GAP;
+  const spaceAbove = anchorRect.top - DESKTOP_MENU_GAP;
+  const shouldOpenUp = spaceBelow < effectiveMenuHeight && spaceAbove > spaceBelow;
+  const preferredTop = shouldOpenUp
+    ? anchorRect.top - effectiveMenuHeight - DESKTOP_MENU_GAP
+    : anchorRect.bottom + DESKTOP_MENU_GAP;
+
+  return clamp(
+    preferredTop,
+    DESKTOP_MENU_VIEWPORT_PADDING,
+    viewportHeight - effectiveMenuHeight - DESKTOP_MENU_VIEWPORT_PADDING,
+  );
 }
 
 export function MessageActionsMenu({
@@ -62,6 +98,12 @@ export function MessageActionsMenu({
 }: MessageActionsMenuProps) {
   const { t } = useLanguage();
   const [portalNode, setPortalNode] = useState<HTMLElement | null>(null);
+  const desktopMenuRef = useRef<HTMLDivElement | null>(null);
+  const [desktopMenuHeight, setDesktopMenuHeight] = useState(DESKTOP_MENU_FALLBACK_HEIGHT);
+  const [desktopViewportSize, setDesktopViewportSize] = useState(() => ({
+    width: typeof window === 'undefined' ? 0 : window.innerWidth,
+    height: typeof window === 'undefined' ? 0 : window.innerHeight,
+  }));
 
   useEffect(() => {
     if (typeof document === 'undefined') return;
@@ -87,21 +129,51 @@ export function MessageActionsMenu({
     window.getSelection?.()?.removeAllRanges();
   }, [isMobile, open]);
 
+  useEffect(() => {
+    if (!open || isMobile || typeof window === 'undefined') return;
+
+    const updateDesktopViewportSize = () => {
+      const nextWidth = window.innerWidth;
+      const nextHeight = window.innerHeight;
+      setDesktopViewportSize((current) =>
+        current.width === nextWidth && current.height === nextHeight
+          ? current
+          : { width: nextWidth, height: nextHeight },
+      );
+    };
+
+    updateDesktopViewportSize();
+    window.addEventListener('resize', updateDesktopViewportSize);
+    return () => window.removeEventListener('resize', updateDesktopViewportSize);
+  }, [isMobile, open]);
+
+  useLayoutEffect(() => {
+    if (!open || isMobile) return;
+
+    const measuredHeight = desktopMenuRef.current?.offsetHeight ?? 0;
+    if (measuredHeight <= 0) return;
+    setDesktopMenuHeight((current) => (current === measuredHeight ? current : measuredHeight));
+  }, [canCopy, canDelete, canForward, canPin, isMobile, open, pinActionLabel]);
+
   const desktopPosition = useMemo(() => {
-    if (typeof window === 'undefined' || !anchorRect) {
+    const viewportWidth = desktopViewportSize.width;
+    const viewportHeight = desktopViewportSize.height;
+
+    if (!anchorRect || viewportWidth <= 0 || viewportHeight <= 0) {
       return null;
     }
 
-    const menuWidth = 192;
-    const horizontalPadding = 8;
-    const top = Math.min(anchorRect.bottom + 8, window.innerHeight - 80);
+    const menuWidth = DESKTOP_MENU_WIDTH;
+    const horizontalPadding = DESKTOP_MENU_VIEWPORT_PADDING;
+    const top = getDesktopMenuTop(anchorRect, desktopMenuHeight, viewportHeight);
     const left = Math.max(
       horizontalPadding,
-      Math.min(anchorRect.right - menuWidth, window.innerWidth - menuWidth - horizontalPadding),
+      Math.min(anchorRect.right - menuWidth, viewportWidth - menuWidth - horizontalPadding),
     );
+    const maxHeight = Math.max(0, viewportHeight - DESKTOP_MENU_VIEWPORT_PADDING * 2);
 
-    return { top, left };
-  }, [anchorRect]);
+    return { top, left, maxHeight };
+  }, [anchorRect, desktopMenuHeight, desktopViewportSize.height, desktopViewportSize.width]);
 
   const mobilePreviewPosition = useMemo(() => {
     if (typeof window === 'undefined') {
@@ -178,6 +250,8 @@ export function MessageActionsMenu({
               <img
                 src={preview.imageUrl}
                 alt={t('messages.imagePreview', 'Náhľad obrázka')}
+                loading="lazy"
+                decoding="async"
                 className="block h-auto max-h-40 w-auto max-w-full object-contain"
               />
             ) : null}
@@ -303,7 +377,8 @@ export function MessageActionsMenu({
       data-testid="message-actions-menu"
     >
       <div
-        className="absolute w-48 rounded-2xl border border-gray-200 bg-white p-1.5 shadow-2xl dark:border-gray-800 dark:bg-[#0f0f10]"
+        ref={desktopMenuRef}
+        className="absolute w-48 overflow-y-auto rounded-2xl border border-gray-200 bg-white p-1.5 shadow-2xl dark:border-gray-800 dark:bg-[#0f0f10]"
         style={desktopPosition ?? undefined}
         onClick={(event) => event.stopPropagation()}
       >

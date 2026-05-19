@@ -8,6 +8,7 @@ from django.db.models import Count
 from django.utils import timezone
 
 from ..models import Conversation, ConversationParticipant, Message
+from .image_thumbnails import attach_message_thumbnail
 from .message_requests import prepare_pending_request_for_message
 from .push_enqueue import schedule_message_push_delivery
 
@@ -174,6 +175,7 @@ def send_direct_message(
             image=image,
             created_at=now,
         )
+        attach_message_thumbnail(msg)
         convo.last_message_at = now
         convo.save(update_fields=["last_message_at", "updated_at"])
         recipient_user_ids = (int(target.id),)

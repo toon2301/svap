@@ -43,7 +43,9 @@ export function ForwardMessageModal({
   if (!open || !message) return null;
 
   const previewText = messagePreviewText(message);
-  const previewImageUrl = resolveMessagingImageUrl(message.image_url);
+  const previewImageUrl = resolveMessagingImageUrl(
+    message.image_thumbnail_url ?? message.image_url,
+  );
   const hasForwardableContent = Boolean(previewText || previewImageUrl || message.has_image);
 
   const handleClose = () => {

@@ -79,6 +79,7 @@ export type MessageItem = {
   sender: MessagingUserBrief;
   text: string | null;
   image_url?: string | null;
+  image_thumbnail_url?: string | null;
   has_image?: boolean;
   created_at: string;
   edited_at: string | null;

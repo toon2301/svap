@@ -92,6 +92,14 @@ export function ConversationMessageRow({
     message.image_url.length > 0
       ? resolveMessagingImageUrl(message.image_url)
       : null;
+  const messageThumbnailUrl =
+    !message.is_deleted &&
+    typeof message.image_thumbnail_url === 'string' &&
+    message.image_thumbnail_url.length > 0
+      ? resolveMessagingImageUrl(message.image_thumbnail_url)
+      : null;
+  const messagePreviewImageUrl = messageThumbnailUrl ?? messageImageUrl;
+  const messageLightboxImageUrl = messageImageUrl ?? messagePreviewImageUrl;
   const displayText = message.is_deleted ? deletedMessageText : message.text ?? '';
   const suppressMobileMessageSelection = isMobile && messageHasActions;
   const messageTextClassName = `whitespace-pre-wrap break-words${
@@ -238,17 +246,19 @@ export function ConversationMessageRow({
       style={maybeSuppressedStyle}
       onContextMenu={maybeSuppressedContextMenu}
     >
-      {messageImageUrl ? (
+      {messagePreviewImageUrl && messageLightboxImageUrl ? (
         <button
           type="button"
           data-testid={`message-image-trigger-${message.id}`}
-          onClick={(event) => onMessageImageClick(event, message.id, messageImageUrl)}
+          onClick={(event) => onMessageImageClick(event, message.id, messageLightboxImageUrl)}
           className="block w-fit max-w-full cursor-zoom-in rounded-xl focus:outline-none focus:ring-2 focus:ring-white/50 dark:focus:ring-brand/50"
           aria-label={openImagePreviewLabel}
         >
           <img
-            src={messageImageUrl}
+            src={messagePreviewImageUrl}
             alt={imagePreviewAlt}
+            loading="lazy"
+            decoding="async"
             className="block h-auto max-h-[22rem] w-auto max-w-[min(75vw,18rem)] rounded-xl object-contain"
           />
         </button>

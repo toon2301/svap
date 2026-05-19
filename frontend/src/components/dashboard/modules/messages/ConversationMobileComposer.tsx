@@ -99,7 +99,7 @@ export function ConversationMobileComposer({
           data-testid="conversation-composer"
           onFocusCapture={onFocusCapture}
           onBlurCapture={onBlurCapture}
-          className="relative z-10 flex w-full min-w-0 shrink-0 items-center overflow-x-hidden border-t border-gray-200 bg-white/90 px-2.5 py-2.5 dark:border-gray-800 dark:bg-[#0f0f10]/90"
+          className="relative z-10 flex w-full min-w-0 shrink-0 items-center gap-2 overflow-x-hidden border-t border-gray-200 bg-white/90 px-2.5 py-2.5 dark:border-gray-800 dark:bg-[#0f0f10]/90"
         >
           <div className="relative flex min-h-0 min-w-0 flex-1 items-center overflow-hidden rounded-2xl border border-gray-200 bg-white px-2 dark:border-gray-800 dark:bg-black">
             <input
@@ -108,26 +108,10 @@ export function ConversationMobileComposer({
               onChange={(event) => onTextChange(event.target.value)}
               disabled={isComposerInputDisabled}
               onKeyDown={onInputKeyDown}
-              className={`min-w-0 w-full border-0 bg-transparent py-2 text-sm text-gray-900 focus:outline-none dark:text-gray-100 ${
-                hasContentToSend
-                  ? 'overflow-x-hidden text-ellipsis whitespace-nowrap pl-2 pr-28'
-                  : 'overflow-x-hidden text-ellipsis whitespace-nowrap px-2 pr-20'
-              }`}
+              className="min-w-0 w-full overflow-x-hidden text-ellipsis whitespace-nowrap border-0 bg-transparent py-2.5 pl-2 pr-[4.5rem] text-sm text-gray-900 focus:outline-none dark:text-gray-100"
               placeholder={typePlaceholder}
             />
             <div className="absolute right-1 top-1/2 flex -translate-y-1/2 items-center gap-0.5">
-              {hasContentToSend ? (
-                <button
-                  type="button"
-                  disabled={sending || isComposerInputDisabled}
-                  onPointerDown={onSendPointerDown}
-                  onClick={onSend}
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-brand text-white transition-colors hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-60"
-                  aria-label={sendLabel}
-                >
-                  <PaperAirplaneIcon className="h-4 w-4 -rotate-45" />
-                </button>
-              ) : null}
               <button
                 type="button"
                 data-testid="conversation-image-picker-trigger"
@@ -150,6 +134,19 @@ export function ConversationMobileComposer({
               </button>
             </div>
           </div>
+          {hasContentToSend ? (
+            <button
+              type="button"
+              data-testid="conversation-send-button"
+              disabled={sending || isComposerInputDisabled}
+              onPointerDown={onSendPointerDown}
+              onClick={onSend}
+              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand text-white shadow-md shadow-brand/20 ring-1 ring-brand/15 transition-all hover:bg-brand-dark hover:shadow-lg hover:shadow-brand/25 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 disabled:shadow-none"
+              aria-label={sendLabel}
+            >
+              <PaperAirplaneIcon className="h-[1.125rem] w-[1.125rem] -rotate-45" strokeWidth={2} />
+            </button>
+          ) : null}
         </div>
       </div>
     </div>

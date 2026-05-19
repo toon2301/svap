@@ -47,6 +47,17 @@ describe('ConversationDetail URL helpers', () => {
     ).toBe('/api/auth/messaging/conversations/9/messages/1/image/');
   });
 
+  it('rewrites authenticated message thumbnail URLs to the same-origin api path in proxied mode', () => {
+    process.env.NEXT_PUBLIC_API_URL = '/api';
+    delete process.env.NEXT_PUBLIC_BACKEND_ORIGIN;
+
+    expect(
+      resolveMessagingImageUrl(
+        'https://backend.example/api/auth/messaging/conversations/9/messages/1/thumbnail/',
+      ),
+    ).toBe('/api/auth/messaging/conversations/9/messages/1/thumbnail/');
+  });
+
   it('keeps authenticated message image URLs absolute when the frontend talks to the backend directly', () => {
     process.env.NEXT_PUBLIC_API_URL = 'http://localhost:8000/api';
     delete process.env.NEXT_PUBLIC_BACKEND_ORIGIN;

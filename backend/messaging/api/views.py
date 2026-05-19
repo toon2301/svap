@@ -32,6 +32,7 @@ from .forward_views import ForwardMessageView, ForwardMessageSerializer
 from .message_views import (
     DeleteMessageView,
     MessageImageView,
+    MessageImageThumbnailView,
     MessageListView,
     MessagePagination,
     PinMessageView,
@@ -74,6 +75,7 @@ __all__ = [
     "MarkConversationReadView",
     "MarkMessageRequestsSeenView",
     "MessageImageView",
+    "MessageImageThumbnailView",
     "MessageListView",
     "MessagePagination",
     "MessageRequestListView",
