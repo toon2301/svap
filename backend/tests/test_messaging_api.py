@@ -408,11 +408,12 @@ class TestMessagingApi(APITestCase):
             kwargs={"conversation_id": convo.id},
         )
 
-        response = self.client.post(
-            send_url,
-            {"image": self._sample_image_upload()},
-            format="multipart",
-        )
+        with self.captureOnCommitCallbacks(execute=True):
+            response = self.client.post(
+                send_url,
+                {"image": self._sample_image_upload()},
+                format="multipart",
+            )
 
         assert response.status_code == status.HTTP_201_CREATED
         assert response.data["text"] is None
@@ -438,15 +439,16 @@ class TestMessagingApi(APITestCase):
         self.client.force_authenticate(user=self.u1)
         url = reverse("accounts:messaging_send_direct_message")
 
-        response = self.client.post(
-            url,
-            {
-                "target_user_id": self.u2.id,
-                "text": "Ahoj",
-                "image": self._sample_image_upload("direct.png"),
-            },
-            format="multipart",
-        )
+        with self.captureOnCommitCallbacks(execute=True):
+            response = self.client.post(
+                url,
+                {
+                    "target_user_id": self.u2.id,
+                    "text": "Ahoj",
+                    "image": self._sample_image_upload("direct.png"),
+                },
+                format="multipart",
+            )
 
         assert response.status_code == status.HTTP_201_CREATED
         assert response.data["message"]["text"] == "Ahoj"
@@ -461,11 +463,12 @@ class TestMessagingApi(APITestCase):
             "accounts:messaging_send_message",
             kwargs={"conversation_id": convo.id},
         )
-        send_response = self.client.post(
-            send_url,
-            {"image": self._sample_image_upload("endpoint.png")},
-            format="multipart",
-        )
+        with self.captureOnCommitCallbacks(execute=True):
+            send_response = self.client.post(
+                send_url,
+                {"image": self._sample_image_upload("endpoint.png")},
+                format="multipart",
+            )
         assert send_response.status_code == status.HTTP_201_CREATED
 
         image_url = reverse(

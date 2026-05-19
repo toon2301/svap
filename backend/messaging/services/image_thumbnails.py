@@ -4,6 +4,7 @@ import io
 from typing import TYPE_CHECKING
 
 from django.core.files.base import ContentFile
+from django.db import transaction
 
 if TYPE_CHECKING:
     from ..models import Message
@@ -73,7 +74,25 @@ def attach_message_thumbnail(message: "Message") -> None:
     if thumbnail is None:
         return
 
-    message.image_thumbnail.save(thumbnail.name, thumbnail, save=False)
-    type(message).objects.filter(id=message.id).update(
-        image_thumbnail=message.image_thumbnail.name,
+    message.image_thumbnail.name = message.image_thumbnail.field.generate_filename(
+        message,
+        thumbnail.name,
     )
+
+    def save_thumbnail_after_commit() -> None:
+        saved_name = ""
+        try:
+            message.image_thumbnail.save(thumbnail.name, thumbnail, save=False)
+            saved_name = message.image_thumbnail.name
+            type(message).objects.filter(id=message.id).update(
+                image_thumbnail=saved_name,
+            )
+        except Exception:
+            if saved_name:
+                try:
+                    message.image_thumbnail.storage.delete(saved_name)
+                except Exception:
+                    pass
+            return
+
+    transaction.on_commit(save_thumbnail_after_commit)

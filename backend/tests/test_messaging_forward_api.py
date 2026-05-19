@@ -119,19 +119,21 @@ class TestMessagingForwardApi(APITestCase):
 
     def test_forward_image_message_copies_attachment(self):
         source_convo = self._create_direct_conversation(actor=self.u1, target=self.u2)
-        source_response = self._send_source_message(
-            source_convo,
-            {"image": self._sample_image_upload("source.png")},
-            format="multipart",
-        )
+        with self.captureOnCommitCallbacks(execute=True):
+            source_response = self._send_source_message(
+                source_convo,
+                {"image": self._sample_image_upload("source.png")},
+                format="multipart",
+            )
         assert source_response.status_code == status.HTTP_201_CREATED
         source_message = Message.objects.get(id=source_response.data["id"])
 
-        forward_response = self.client.post(
-            self._forward_url(source_convo, source_message.id),
-            {"recipient_user_ids": [self.u3.id]},
-            format="json",
-        )
+        with self.captureOnCommitCallbacks(execute=True):
+            forward_response = self.client.post(
+                self._forward_url(source_convo, source_message.id),
+                {"recipient_user_ids": [self.u3.id]},
+                format="json",
+            )
 
         assert forward_response.status_code == status.HTTP_200_OK
         assert forward_response.data["failed"] == []

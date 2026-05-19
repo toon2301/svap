@@ -174,7 +174,10 @@ def _message_image_response(request, conversation_id: int, message_id: int, fiel
     except Exception:
         return Response(status=status.HTTP_404_NOT_FOUND)
 
-    content_type = mimetypes.guess_type(image_field.name or "")[0] or "application/octet-stream"
+    content_type = mimetypes.guess_type(image_field.name or "")[0]
+    if content_type is None and (image_field.name or "").lower().endswith(".webp"):
+        content_type = "image/webp"
+    content_type = content_type or "application/octet-stream"
     response = FileResponse(image_file, content_type=content_type)
     response["Cache-Control"] = "private, max-age=3600"
     response["X-Content-Type-Options"] = "nosniff"
