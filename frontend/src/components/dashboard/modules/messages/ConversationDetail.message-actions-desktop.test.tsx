@@ -127,6 +127,70 @@ describe('ConversationDetail desktop message actions', () => {
     expect(trigger.className).toContain('opacity-0');
   });
 
+  it('opens the desktop message actions upward when the trigger is near the viewport bottom', async () => {
+    const originalInnerHeight = window.innerHeight;
+    const originalInnerWidth = window.innerWidth;
+    Object.defineProperty(window, 'innerHeight', {
+      configurable: true,
+      value: 260,
+    });
+    Object.defineProperty(window, 'innerWidth', {
+      configurable: true,
+      value: 1024,
+    });
+
+    try {
+      (listMessages as jest.Mock).mockResolvedValueOnce(
+        messagePage([
+          message({
+            id: 1,
+            sender: { id: 1, display_name: 'Me' },
+            text: 'Sprava pri spodku',
+            created_at: '2026-03-27T10:00:00Z',
+          }),
+        ]),
+      );
+
+      render(<ConversationDetail conversationId={9} currentUserId={1} />);
+
+      await screen.findByText('Sprava pri spodku');
+
+      const trigger = screen.getByTestId('message-actions-trigger-1');
+      trigger.getBoundingClientRect = jest.fn(
+        () =>
+          ({
+            x: 600,
+            y: 210,
+            width: 32,
+            height: 24,
+            top: 210,
+            right: 632,
+            bottom: 234,
+            left: 600,
+            toJSON: () => ({}),
+          }) as DOMRect,
+      );
+
+      fireEvent.click(trigger);
+
+      const menuOverlay = await screen.findByTestId('message-actions-menu');
+      const menuPanel = menuOverlay.firstElementChild as HTMLElement | null;
+
+      expect(menuPanel).not.toBeNull();
+      expect(Number.parseFloat(menuPanel?.style.top ?? '')).toBeLessThan(210);
+      expect(menuPanel?.style.maxHeight).toBe('244px');
+    } finally {
+      Object.defineProperty(window, 'innerHeight', {
+        configurable: true,
+        value: originalInnerHeight,
+      });
+      Object.defineProperty(window, 'innerWidth', {
+        configurable: true,
+        value: originalInnerWidth,
+      });
+    }
+  });
+
   it('copies an own message from the desktop message actions menu', async () => {
     (listMessages as jest.Mock).mockResolvedValueOnce(
       messagePage([

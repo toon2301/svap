@@ -248,16 +248,6 @@ export function ConversationsList({
   );
 
   const openConversation = useCallback((conversationId: number) => {
-    setItems((prev) =>
-      prev.map((item) =>
-        item.id === conversationId ? { ...item, has_unread: false, unread_count: 0 } : item,
-      ),
-    );
-    setRequestItems((prev) =>
-      prev.map((item) =>
-        item.id === conversationId ? { ...item, has_unread: false, unread_count: 0 } : item,
-      ),
-    );
     navigateMessagesUrl(conversationId);
   }, []);
 
