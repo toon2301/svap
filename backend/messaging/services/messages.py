@@ -7,6 +7,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from ..models import Conversation, ConversationParticipant, Message
+from .image_thumbnails import attach_message_thumbnail
 from .message_requests import prepare_pending_request_for_message
 from .push_enqueue import schedule_message_push_delivery
 
@@ -108,6 +109,7 @@ def send_message(
             image=image,
             created_at=now,
         )
+        attach_message_thumbnail(msg)
         recipient_user_ids = tuple(
             ConversationParticipant.objects.filter(conversation=convo)
             .filter(status=ConversationParticipant.Status.ACTIVE)
@@ -209,6 +211,7 @@ def delete_message_for_all(
             )
 
         image_name = getattr(message.image, "name", "") or ""
+        thumbnail_name = getattr(message.image_thumbnail, "name", "") or ""
 
         if convo.pinned_message_id == message.id:
             Conversation.objects.filter(id=convo.id).update(pinned_message_id=None)
@@ -218,12 +221,16 @@ def delete_message_for_all(
             is_deleted=True,
             text="",
             image="",
+            image_thumbnail="",
         )
         message.is_deleted = True
         message.text = ""
         if image_name:
             message.image.name = ""
             transaction.on_commit(lambda: default_storage.delete(image_name))
+        if thumbnail_name:
+            message.image_thumbnail.name = ""
+            transaction.on_commit(lambda: default_storage.delete(thumbnail_name))
 
         return DeleteMessageResult(
             message=message,

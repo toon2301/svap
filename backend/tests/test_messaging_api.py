@@ -423,9 +423,16 @@ class TestMessagingApi(APITestCase):
                 kwargs={"conversation_id": convo.id, "message_id": response.data["id"]},
             )
         )
+        assert response.data["image_thumbnail_url"].endswith(
+            reverse(
+                "accounts:messaging_message_image_thumbnail",
+                kwargs={"conversation_id": convo.id, "message_id": response.data["id"]},
+            )
+        )
 
         message = Message.objects.get(id=response.data["id"])
         assert bool(message.image) is True
+        assert bool(message.image_thumbnail) is True
 
     def test_send_direct_message_supports_text_and_image(self):
         self.client.force_authenticate(user=self.u1)
@@ -444,6 +451,7 @@ class TestMessagingApi(APITestCase):
         assert response.status_code == status.HTTP_201_CREATED
         assert response.data["message"]["text"] == "Ahoj"
         assert response.data["message"]["has_image"] is True
+        assert response.data["message"]["image_thumbnail_url"]
 
     def test_message_image_endpoint_serves_participants_only(self):
         convo = self._create_direct_conversation(actor=self.u1, target=self.u2)
@@ -464,6 +472,10 @@ class TestMessagingApi(APITestCase):
             "accounts:messaging_message_image",
             kwargs={"conversation_id": convo.id, "message_id": send_response.data["id"]},
         )
+        thumbnail_url = reverse(
+            "accounts:messaging_message_image_thumbnail",
+            kwargs={"conversation_id": convo.id, "message_id": send_response.data["id"]},
+        )
 
         self.client.force_authenticate(user=self.u2)
         response = self.client.get(image_url)
@@ -473,9 +485,18 @@ class TestMessagingApi(APITestCase):
         assert response["Content-Type"].startswith("image/")
         assert b"PNG" in b"".join(response.streaming_content)
 
+        thumbnail_response = self.client.get(thumbnail_url)
+        assert thumbnail_response.status_code == status.HTTP_200_OK
+        assert thumbnail_response["Cache-Control"] == "private, max-age=3600"
+        assert thumbnail_response["X-Content-Type-Options"] == "nosniff"
+        assert thumbnail_response["Content-Type"].startswith("image/")
+        assert b"WEBP" in b"".join(thumbnail_response.streaming_content)
+
         self.client.force_authenticate(user=self.u3)
         forbidden_response = self.client.get(image_url)
         assert forbidden_response.status_code == status.HTTP_404_NOT_FOUND
+        forbidden_thumbnail_response = self.client.get(thumbnail_url)
+        assert forbidden_thumbnail_response.status_code == status.HTTP_404_NOT_FOUND
 
     def test_conversation_list_marks_image_only_last_message(self):
         convo = self._create_direct_conversation(actor=self.u1, target=self.u2)

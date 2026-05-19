@@ -154,35 +154,45 @@ class MessageListView(ListAPIView):
         )
 
 
+def _message_image_response(request, conversation_id: int, message_id: int, field_name: str):
+    """Serve a protected message image field after verifying conversation membership."""
+    convo = _conversation_for_user_or_404(conversation_id=conversation_id, user=request.user)
+    message = get_object_or_404(
+        Message.objects.filter(
+            conversation_id=convo.id,
+            id=message_id,
+            is_deleted=False,
+        )
+    )
+    image_field = getattr(message, field_name, None)
+    if not image_field:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+
+    try:
+        image_field.open("rb")
+        image_file = image_field.file
+    except Exception:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+
+    content_type = mimetypes.guess_type(image_field.name or "")[0] or "application/octet-stream"
+    response = FileResponse(image_file, content_type=content_type)
+    response["Cache-Control"] = "private, max-age=3600"
+    response["X-Content-Type-Options"] = "nosniff"
+    return response
+
+
 class MessageImageView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, conversation_id: int, message_id: int):
-        convo = _conversation_for_user_or_404(conversation_id=conversation_id, user=request.user)
-        message = get_object_or_404(
-            Message.objects.filter(
-                conversation_id=convo.id,
-                id=message_id,
-                is_deleted=False,
-            )
-        )
+        return _message_image_response(request, conversation_id, message_id, "image")
 
-        if not message.image:
-            return Response(status=status.HTTP_404_NOT_FOUND)
 
-        try:
-            message.image.open("rb")
-            image_file = message.image.file
-        except Exception:
-            return Response(status=status.HTTP_404_NOT_FOUND)
+class MessageImageThumbnailView(APIView):
+    permission_classes = [IsAuthenticated]
 
-        content_type = (
-            mimetypes.guess_type(message.image.name or "")[0] or "application/octet-stream"
-        )
-        response = FileResponse(image_file, content_type=content_type)
-        response["Cache-Control"] = "private, max-age=3600"
-        response["X-Content-Type-Options"] = "nosniff"
-        return response
+    def get(self, request, conversation_id: int, message_id: int):
+        return _message_image_response(request, conversation_id, message_id, "image_thumbnail")
 
 
 class SendMessageView(APIView):

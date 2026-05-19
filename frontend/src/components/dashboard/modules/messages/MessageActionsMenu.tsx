@@ -250,6 +250,8 @@ export function MessageActionsMenu({
               <img
                 src={preview.imageUrl}
                 alt={t('messages.imagePreview', 'Náhľad obrázka')}
+                loading="lazy"
+                decoding="async"
                 className="block h-auto max-h-40 w-auto max-w-full object-contain"
               />
             ) : null}

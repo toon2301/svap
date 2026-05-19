@@ -392,6 +392,7 @@ class MessageSerializer(serializers.ModelSerializer):
     sender = serializers.SerializerMethodField()
     text = serializers.SerializerMethodField()
     image_url = serializers.SerializerMethodField()
+    image_thumbnail_url = serializers.SerializerMethodField()
     has_image = serializers.SerializerMethodField()
     group_invitation = serializers.SerializerMethodField()
 
@@ -403,6 +404,7 @@ class MessageSerializer(serializers.ModelSerializer):
             "sender",
             "text",
             "image_url",
+            "image_thumbnail_url",
             "has_image",
             "created_at",
             "edited_at",
@@ -435,6 +437,20 @@ class MessageSerializer(serializers.ModelSerializer):
         request = self.context.get("request")
         url = reverse(
             "accounts:messaging_message_image",
+            kwargs={
+                "conversation_id": obj.conversation_id,
+                "message_id": obj.id,
+            },
+        )
+        return request.build_absolute_uri(url) if request else url
+
+    def get_image_thumbnail_url(self, obj: Message):
+        if obj.is_deleted or not obj.image or not obj.image_thumbnail:
+            return None
+
+        request = self.context.get("request")
+        url = reverse(
+            "accounts:messaging_message_image_thumbnail",
             kwargs={
                 "conversation_id": obj.conversation_id,
                 "message_id": obj.id,

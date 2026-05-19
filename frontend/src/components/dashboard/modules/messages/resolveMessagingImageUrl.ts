@@ -1,7 +1,7 @@
 import { getConfiguredApiUrl } from '@/lib/apiUrl';
 
 const MESSAGE_IMAGE_PATH_RE =
-  /^\/api\/auth\/messaging\/conversations\/\d+\/messages\/\d+\/image\/?$/;
+  /^\/api\/auth\/messaging\/conversations\/\d+\/messages\/\d+\/(?:image|thumbnail)\/?$/;
 
 function normalizePathname(pathname: string): string {
   if (!pathname) {

@@ -19,6 +19,7 @@ from .api.views import (
     MarkConversationReadView,
     MarkMessageRequestsSeenView,
     MessageImageView,
+    MessageImageThumbnailView,
     MessageListView,
     MessageRequestListView,
     MessageRequestUnreadSummaryView,
@@ -82,6 +83,11 @@ urlpatterns = [
         "conversations/<int:conversation_id>/messages/<int:message_id>/image/",
         MessageImageView.as_view(),
         name="messaging_message_image",
+    ),
+    path(
+        "conversations/<int:conversation_id>/messages/<int:message_id>/thumbnail/",
+        MessageImageThumbnailView.as_view(),
+        name="messaging_message_image_thumbnail",
     ),
     path(
         "conversations/<int:conversation_id>/messages/<int:message_id>/delete/",

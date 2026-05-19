@@ -139,7 +139,9 @@ class TestMessagingForwardApi(APITestCase):
             id=forward_response.data["sent"][0]["message"]["id"],
         )
         assert bool(forwarded_message.image) is True
+        assert bool(forwarded_message.image_thumbnail) is True
         assert forwarded_message.image.name != source_message.image.name
+        assert forwarded_message.image_thumbnail.name != source_message.image_thumbnail.name
 
     def test_forward_message_respects_pending_request_limit(self):
         source_convo = self._create_direct_conversation(actor=self.u1, target=self.u2)

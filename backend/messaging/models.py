@@ -16,6 +16,13 @@ def message_image_upload_to(instance: "Message", filename: str) -> str:
     return f"messages/{conversation_id}/{uuid.uuid4().hex}{safe_suffix}"
 
 
+def message_thumbnail_upload_to(instance: "Message", filename: str) -> str:
+    suffix = Path(filename or "").suffix.lower()
+    safe_suffix = suffix if suffix else ".webp"
+    conversation_id = instance.conversation_id or "pending"
+    return f"messages/{conversation_id}/thumbnails/{uuid.uuid4().hex}{safe_suffix}"
+
+
 def conversation_avatar_upload_to(instance: "Conversation", filename: str) -> str:
     suffix = Path(filename or "").suffix.lower()
     safe_suffix = suffix if suffix else ".jpg"
@@ -161,6 +168,11 @@ class Message(models.Model):
         blank=True,
         null=True,
         validators=[validate_image_file],
+    )
+    image_thumbnail = models.ImageField(
+        upload_to=message_thumbnail_upload_to,
+        blank=True,
+        null=True,
     )
     created_at = models.DateTimeField(auto_now_add=True)
     edited_at = models.DateTimeField(null=True, blank=True)

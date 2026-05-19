@@ -55,10 +55,41 @@ describe('ConversationDetail message media lightbox', () => {
     const imageElement = within(bubble).getByRole('img');
 
     expect(imageElement).toHaveAttribute('src', 'https://example.com/chat-image.png');
+    expect(imageElement).toHaveAttribute('loading', 'lazy');
+    expect(imageElement).toHaveAttribute('decoding', 'async');
     expect(imageElement.className).toContain('object-contain');
     expect(imageElement.className).not.toContain('object-cover');
     expect(imageElement.className).toContain('max-w-[min(75vw,18rem)]');
     expect(within(bubble).getByText('Sprava s obrazkom')).toBeInTheDocument();
+  });
+
+  it('uses a thumbnail in the message bubble and opens the original image in the lightbox', async () => {
+    (listMessages as jest.Mock).mockResolvedValueOnce(
+      messagePage([
+        message({
+          id: 1,
+          text: 'Sprava s nahladom',
+          image_url: 'https://example.com/chat-image.png',
+          image_thumbnail_url: 'https://example.com/chat-image-thumb.webp',
+          has_image: true,
+          created_at: '2026-03-27T10:00:00Z',
+        }),
+      ]),
+    );
+
+    render(<ConversationDetail conversationId={9} currentUserId={1} />);
+
+    const bubble = await screen.findByTestId('message-bubble-1');
+    const imageElement = within(bubble).getByRole('img');
+    expect(imageElement).toHaveAttribute('src', 'https://example.com/chat-image-thumb.webp');
+
+    fireEvent.click(screen.getByTestId('message-image-trigger-1'));
+
+    expect(await screen.findByTestId('message-image-lightbox')).toBeInTheDocument();
+    expect(screen.getByTestId('message-image-lightbox-image')).toHaveAttribute(
+      'src',
+      'https://example.com/chat-image.png',
+    );
   });
 
   it('rewrites a proxied message image URL and opens the lightbox from the message bubble', async () => {
