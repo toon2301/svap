@@ -132,10 +132,12 @@ describe('ConversationDetail desktop message actions', () => {
     const originalInnerWidth = window.innerWidth;
     Object.defineProperty(window, 'innerHeight', {
       configurable: true,
+      writable: true,
       value: 260,
     });
     Object.defineProperty(window, 'innerWidth', {
       configurable: true,
+      writable: true,
       value: 1024,
     });
 
@@ -179,13 +181,29 @@ describe('ConversationDetail desktop message actions', () => {
       expect(menuPanel).not.toBeNull();
       expect(Number.parseFloat(menuPanel?.style.top ?? '')).toBeLessThan(210);
       expect(menuPanel?.style.maxHeight).toBe('244px');
+
+      Object.defineProperty(window, 'innerHeight', {
+        configurable: true,
+        writable: true,
+        value: 500,
+      });
+      act(() => {
+        window.dispatchEvent(new Event('resize'));
+      });
+
+      await waitFor(() => {
+        expect(menuPanel?.style.maxHeight).toBe('484px');
+        expect(Number.parseFloat(menuPanel?.style.top ?? '')).toBeGreaterThan(210);
+      });
     } finally {
       Object.defineProperty(window, 'innerHeight', {
         configurable: true,
+        writable: true,
         value: originalInnerHeight,
       });
       Object.defineProperty(window, 'innerWidth', {
         configurable: true,
+        writable: true,
         value: originalInnerWidth,
       });
     }

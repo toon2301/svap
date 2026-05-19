@@ -100,6 +100,10 @@ export function MessageActionsMenu({
   const [portalNode, setPortalNode] = useState<HTMLElement | null>(null);
   const desktopMenuRef = useRef<HTMLDivElement | null>(null);
   const [desktopMenuHeight, setDesktopMenuHeight] = useState(DESKTOP_MENU_FALLBACK_HEIGHT);
+  const [desktopViewportSize, setDesktopViewportSize] = useState(() => ({
+    width: typeof window === 'undefined' ? 0 : window.innerWidth,
+    height: typeof window === 'undefined' ? 0 : window.innerHeight,
+  }));
 
   useEffect(() => {
     if (typeof document === 'undefined') return;
@@ -125,6 +129,24 @@ export function MessageActionsMenu({
     window.getSelection?.()?.removeAllRanges();
   }, [isMobile, open]);
 
+  useEffect(() => {
+    if (!open || isMobile || typeof window === 'undefined') return;
+
+    const updateDesktopViewportSize = () => {
+      const nextWidth = window.innerWidth;
+      const nextHeight = window.innerHeight;
+      setDesktopViewportSize((current) =>
+        current.width === nextWidth && current.height === nextHeight
+          ? current
+          : { width: nextWidth, height: nextHeight },
+      );
+    };
+
+    updateDesktopViewportSize();
+    window.addEventListener('resize', updateDesktopViewportSize);
+    return () => window.removeEventListener('resize', updateDesktopViewportSize);
+  }, [isMobile, open]);
+
   useLayoutEffect(() => {
     if (!open || isMobile) return;
 
@@ -134,21 +156,24 @@ export function MessageActionsMenu({
   }, [canCopy, canDelete, canForward, canPin, isMobile, open, pinActionLabel]);
 
   const desktopPosition = useMemo(() => {
-    if (typeof window === 'undefined' || !anchorRect) {
+    const viewportWidth = desktopViewportSize.width;
+    const viewportHeight = desktopViewportSize.height;
+
+    if (!anchorRect || viewportWidth <= 0 || viewportHeight <= 0) {
       return null;
     }
 
     const menuWidth = DESKTOP_MENU_WIDTH;
     const horizontalPadding = DESKTOP_MENU_VIEWPORT_PADDING;
-    const top = getDesktopMenuTop(anchorRect, desktopMenuHeight, window.innerHeight);
+    const top = getDesktopMenuTop(anchorRect, desktopMenuHeight, viewportHeight);
     const left = Math.max(
       horizontalPadding,
-      Math.min(anchorRect.right - menuWidth, window.innerWidth - menuWidth - horizontalPadding),
+      Math.min(anchorRect.right - menuWidth, viewportWidth - menuWidth - horizontalPadding),
     );
-    const maxHeight = Math.max(0, window.innerHeight - DESKTOP_MENU_VIEWPORT_PADDING * 2);
+    const maxHeight = Math.max(0, viewportHeight - DESKTOP_MENU_VIEWPORT_PADDING * 2);
 
     return { top, left, maxHeight };
-  }, [anchorRect, desktopMenuHeight]);
+  }, [anchorRect, desktopMenuHeight, desktopViewportSize.height, desktopViewportSize.width]);
 
   const mobilePreviewPosition = useMemo(() => {
     if (typeof window === 'undefined') {
