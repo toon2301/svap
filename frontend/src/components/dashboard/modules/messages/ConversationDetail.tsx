@@ -54,6 +54,13 @@ export function ConversationDetail({
   });
   const loadedMessageIdsRef = useRef<Set<number>>(new Set());
   loadedMessageIdsRef.current = new Set(thread.messages.map((item) => item.id));
+  /**
+   * Checks the latest rendered message set without recreating realtime listeners
+   * after every message-list update.
+   *
+   * @param messageId - Message identifier announced by a realtime event.
+   * @returns True when the message is already present in the open thread.
+   */
   const hasLoadedMessage = useCallback(
     (messageId: number) => loadedMessageIdsRef.current.has(messageId),
     [],

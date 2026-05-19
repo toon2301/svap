@@ -42,6 +42,14 @@ type UseConversationRealtimeSyncArgs = {
   setPinnedMessage: React.Dispatch<React.SetStateAction<MessageItem | null>>;
 };
 
+/**
+ * Combines multiple pending refresh requests so the eventual fetch preserves
+ * the strongest requested side effects.
+ *
+ * @param current - Refresh options already waiting to run.
+ * @param next - New refresh options requested by a realtime or visibility event.
+ * @returns A single refresh options object for the coalesced request.
+ */
 function mergeRefreshOptions(
   current: ConversationRefreshOptions | null,
   next: ConversationRefreshOptions,
@@ -63,6 +71,13 @@ function mergeRefreshOptions(
   };
 }
 
+/**
+ * Keeps the open conversation synchronized with realtime messaging events while
+ * coalescing redundant full message refreshes.
+ *
+ * @param args - Conversation identifiers, realtime state, refresh callbacks, and local state setters.
+ * @returns Nothing; the hook registers and cleans up browser event listeners.
+ */
 export function useConversationRealtimeSync({
   conversationId,
   refresh,
@@ -82,6 +97,11 @@ export function useConversationRealtimeSync({
   const pendingRefreshOptionsRef = useRef<ConversationRefreshOptions | null>(null);
   const lastRefreshStartedAtRef = useRef(0);
 
+  /**
+   * Executes the currently queued message refresh when no refresh is already running.
+   *
+   * @returns Nothing; errors are intentionally swallowed because passive refreshes are best-effort.
+   */
   const runPendingRefresh = useCallback(() => {
     if (refreshDebounceTimerRef.current) {
       clearTimeout(refreshDebounceTimerRef.current);
@@ -110,6 +130,12 @@ export function useConversationRealtimeSync({
     refreshInFlightRef.current = request;
   }, [refresh]);
 
+  /**
+   * Queues a refresh request and collapses rapid follow-up events into one fetch.
+   *
+   * @param options - Refresh options requested by the event handler.
+   * @returns Nothing; the queued refresh runs immediately or after the debounce window.
+   */
   const requestCoalescedRefresh = useCallback(
     (options: ConversationRefreshOptions) => {
       if (refreshInFlightRef.current) return;
