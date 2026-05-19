@@ -30,11 +30,6 @@ from django.urls import path
 def trigger_error(request):
     division_by_zero = 1 / 0
 
-urlpatterns = [
-    path('sentry-debug/', trigger_error), # Pridaj tento riadok
-    # ... tvoje ostatné cesty
-]
-
 def api_root(request):
     """Root API endpoint"""
     return JsonResponse(
@@ -52,6 +47,7 @@ Pre Railway a oddelený frontend už Django neservuje frontendové HTML.
 
 urlpatterns = [
     # API endpoints
+    path("sentry-debug/", trigger_error),
     path("api/", api_root, name="api_root"),
     path("api/token/refresh/", token_refresh_cookie_view, name="token_refresh"),
     path("api/auth/", include("accounts.urls")),
