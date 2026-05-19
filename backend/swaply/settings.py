@@ -16,7 +16,7 @@ sentry_sdk.init(
     dsn="https://d5262d1a48da7e68b296bfd85c2b53ef@o4511412186841088.ingest.de.sentry.io/4511412222034000",
     integrations=[DjangoIntegration()],
     send_default_pii=True,
-    traces_sample_rate=1.0,
+    traces_sample_rate=0.1,
 )
 
 # Test helper `swaply/test/test_settings_runtime.py` načíta settings.py do nového (temp) názvu modulu,

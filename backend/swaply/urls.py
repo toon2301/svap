@@ -27,8 +27,6 @@ from accounts.views.token_refresh_cookie import token_refresh_cookie_view
 from django.urls import path
 
 # Testovacia funkcia, ktorá nasimuluje pád
-def trigger_error(request):
-    division_by_zero = 1 / 0
 
 def api_root(request):
     """Root API endpoint"""
@@ -47,7 +45,6 @@ Pre Railway a oddelený frontend už Django neservuje frontendové HTML.
 
 urlpatterns = [
     # API endpoints
-    path("sentry-debug/", trigger_error),
     path("api/", api_root, name="api_root"),
     path("api/token/refresh/", token_refresh_cookie_view, name="token_refresh"),
     path("api/auth/", include("accounts.urls")),
