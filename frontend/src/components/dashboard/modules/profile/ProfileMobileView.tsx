@@ -12,6 +12,8 @@ import type { ProfileTab } from './profileTypes';
 import ProfileMobileSocialLinks from './ProfileMobileSocialLinks';
 import ProfileMobileHamburgerModal from './ProfileMobileHamburgerModal';
 import { ReportUserModal } from './ReportUserModal';
+import { ProfileShareModal } from './ProfileShareModal';
+import { buildProfileShareUrl } from './profileShareUrl';
 import { InformationCircleIcon, ClipboardIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 import { createPortal } from 'react-dom';
@@ -81,6 +83,7 @@ export default function ProfileMobileView({
   const displayUser = displayUserProp ?? user;
   const { t } = useLanguage();
   const [isHamburgerModalOpen, setIsHamburgerModalOpen] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [reportModalOpen, setReportModalOpen] = useState(false);
   const [reportedUserIds, setReportedUserIds] = useState<Set<number>>(() => new Set());
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
@@ -386,16 +389,28 @@ export default function ProfileMobileView({
                   {favoriteActionLabel}
                 </button>
               ) : (
-                <button
-                  onClick={() => {
-                    if (typeof onSkillsClick === 'function') {
-                      onSkillsClick();
-                    }
-                  }}
-                  className="flex-1 px-3 py-1.5 text-xs bg-purple-100 text-purple-800 border border-purple-200 rounded-2xl transition-colors hover:bg-purple-200 whitespace-nowrap min-w-0"
-                >
-                  {t('profile.skills', 'Ponúkam/Hľadám')}
-                </button>
+                <>
+                  <button
+                    onClick={() => {
+                      if (typeof onSkillsClick === 'function') {
+                        onSkillsClick();
+                      }
+                    }}
+                    className="flex-1 px-3 py-1.5 text-xs bg-purple-100 text-purple-800 border border-purple-200 rounded-2xl transition-colors hover:bg-purple-200 whitespace-nowrap min-w-0"
+                  >
+                    {t('profile.skills', 'Ponúkam/Hľadám')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsHamburgerModalOpen(true)}
+                    className="px-3 py-1.5 bg-purple-100 text-purple-800 border border-purple-200 rounded-2xl transition-colors hover:bg-purple-200 flex items-center justify-center shrink-0"
+                    aria-label={t('profile.moreActions', 'Viac možností')}
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                  </button>
+                </>
               )}
             </div>
             {/* Ikonová navigácia sekcií profilu (mobile) */}
@@ -551,16 +566,26 @@ export default function ProfileMobileView({
         </>
       )}
 
-      {/* Hamburger Menu Modal - len na cudzom profile */}
+      {/* Hamburger Menu Modal */}
+      <ProfileMobileHamburgerModal
+        isOpen={isHamburgerModalOpen}
+        mounted={mounted}
+        onClose={() => setIsHamburgerModalOpen(false)}
+        onReportClick={isOtherUserProfile ? () => setReportModalOpen(true) : undefined}
+        onShareClick={() => setIsShareModalOpen(true)}
+        isReported={reportedUserIds.has(displayUser.id)}
+        showModerationActions={isOtherUserProfile}
+      />
+      {mounted && (
+        <ProfileShareModal
+          open={isShareModalOpen}
+          onClose={() => setIsShareModalOpen(false)}
+          profileUrl={buildProfileShareUrl(displayUser)}
+          displayName={getProfileDisplayName(displayUser, accountType)}
+        />
+      )}
       {isOtherUserProfile && (
         <>
-          <ProfileMobileHamburgerModal
-            isOpen={isHamburgerModalOpen}
-            mounted={mounted}
-            onClose={() => setIsHamburgerModalOpen(false)}
-            onReportClick={() => setReportModalOpen(true)}
-            isReported={reportedUserIds.has(displayUser.id)}
-          />
           <ReportUserModal
             open={reportModalOpen}
             onClose={() => setReportModalOpen(false)}

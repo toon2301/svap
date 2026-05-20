@@ -250,17 +250,28 @@ export function ProfileDesktopHeader({
             </button>
           </>
         ) : (
-          <button
-            onClick={() => {
-              // Desktop: prepnúť na prázdny screen Zručnosti
-              if (typeof onSkillsClick === 'function') {
-                onSkillsClick();
-              }
-            }}
-            className="flex-1 px-[clamp(4rem,8vw,8rem)] xl:px-16 2xl:px-32 py-2 text-sm bg-purple-100 text-purple-800 border border-purple-200 rounded-2xl transition-colors hover:bg-purple-200 whitespace-nowrap lg:min-w-0 lg:px-5 lg:text-center xl:min-w-auto xl:text-left"
-          >
-            {t('profile.skills', 'Ponúkam/Hľadám')}
-          </button>
+          <>
+            <button
+              onClick={() => {
+                // Desktop: prepnúť na prázdny screen Zručnosti
+                if (typeof onSkillsClick === 'function') {
+                  onSkillsClick();
+                }
+              }}
+              className="flex-1 px-[clamp(4rem,8vw,8rem)] xl:px-16 2xl:px-32 py-2 text-sm bg-purple-100 text-purple-800 border border-purple-200 rounded-2xl transition-colors hover:bg-purple-200 whitespace-nowrap lg:min-w-0 lg:px-5 lg:text-center xl:min-w-auto xl:text-left"
+            >
+              {t('profile.skills', 'Ponúkam/Hľadám')}
+            </button>
+            <button
+              onClick={onHamburgerOpen}
+              className="px-3 py-2 bg-purple-100 text-purple-800 border border-purple-200 rounded-2xl transition-colors hover:bg-purple-200 flex items-center justify-center lg:shrink-0 xl:shrink"
+              aria-label={t('profile.moreActions', 'Viac možností')}
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+          </>
         )}
       </div>
     </div>

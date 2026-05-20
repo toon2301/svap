@@ -8,10 +8,19 @@ type Props = {
   open: boolean;
   onClose: () => void;
   onReportClick?: () => void;
+  onShareClick?: () => void;
   isReported?: boolean;
+  showModerationActions?: boolean;
 };
 
-export function ProfileDesktopHamburgerModal({ open, onClose, onReportClick, isReported }: Props) {
+export function ProfileDesktopHamburgerModal({
+  open,
+  onClose,
+  onReportClick,
+  onShareClick,
+  isReported,
+  showModerationActions = true,
+}: Props) {
   const { t } = useLanguage();
 
   if (!open) return null;
@@ -28,34 +37,39 @@ export function ProfileDesktopHamburgerModal({ open, onClose, onReportClick, isR
           onClick={(e) => e.stopPropagation()}
         >
           <div className="p-4 space-y-2">
-            <button
-              onClick={() => {
-                // Zablokovať - TODO: implementovať funkcionalitu
-              }}
-              className="w-full text-center px-4 py-3 text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-            >
-              {t('profile.block', 'Zablokovať')}
-            </button>
-            {onReportClick && (
-              isReported ? (
-                <div className="w-full text-center px-4 py-3 text-gray-500 dark:text-gray-400 rounded-lg bg-gray-50 dark:bg-gray-800/50 cursor-not-allowed">
-                  {t('profile.reported', 'Nahlásené')}
-                </div>
-              ) : (
+            {showModerationActions && (
+              <>
                 <button
                   onClick={() => {
-                    onReportClick();
-                    onClose();
+                    // Zablokovať - TODO: implementovať funkcionalitu
                   }}
                   className="w-full text-center px-4 py-3 text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
                 >
-                  {t('profile.report', 'Nahlásiť profil')}
+                  {t('profile.block', 'Zablokovať')}
                 </button>
-              )
+                {onReportClick && (
+                  isReported ? (
+                    <div className="w-full text-center px-4 py-3 text-gray-500 dark:text-gray-400 rounded-lg bg-gray-50 dark:bg-gray-800/50 cursor-not-allowed">
+                      {t('profile.reported', 'Nahlásené')}
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        onReportClick();
+                        onClose();
+                      }}
+                      className="w-full text-center px-4 py-3 text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                    >
+                      {t('profile.report', 'Nahlásiť profil')}
+                    </button>
+                  )
+                )}
+              </>
             )}
             <button
               onClick={() => {
-                // Zdieľať - TODO: implementovať funkcionalitu
+                onShareClick?.();
+                onClose();
               }}
               className="w-full text-center px-4 py-3 text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
             >

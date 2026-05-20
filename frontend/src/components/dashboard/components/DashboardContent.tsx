@@ -21,7 +21,7 @@ import {
   parseRequestsTargetUrl,
   type RequestsRouteIntent,
 } from '../modules/requests/requestsRouting';
-import { listConversations, openConversation } from '../modules/messages/messagingApi';
+import { listConversations, listMessageRequests, openConversation } from '../modules/messages/messagingApi';
 import type { MessagingUserBrief } from '../modules/messages/types';
 import { useDashboardState } from '../hooks/useDashboardState';
 import { useSkillsModals } from '../hooks/useSkillsModals';
@@ -444,7 +444,12 @@ export default function DashboardContent({
       try {
         const conversations = await listConversations();
         if (cancelled) return;
-        const match = conversations.find((item) => item.id === conversationId) ?? null;
+        let match = conversations.find((item) => item.id === conversationId) ?? null;
+        if (!match) {
+          const requests = await listMessageRequests();
+          if (cancelled) return;
+          match = requests.find((item) => item.id === conversationId) ?? null;
+        }
         if (match?.is_group) {
           setMobileMessagePeer(null);
           setMobileMessageGroup({

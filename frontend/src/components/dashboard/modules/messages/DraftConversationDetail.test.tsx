@@ -218,6 +218,30 @@ describe('DraftConversationDetail', () => {
     });
   });
 
+  it('keeps the desktop draft send button compact and bottom-aligned when an image preview is shown', async () => {
+    const attachment = new File(['draft-image'], 'draft-photo.png', { type: 'image/png' });
+    (openConversation as jest.Mock).mockResolvedValue(draftResponse);
+
+    render(<DraftConversationDetail targetUserId={42} />);
+
+    await waitFor(() => {
+      expect(openConversation).toHaveBeenCalledWith(42);
+    });
+
+    fireEvent.change(await screen.findByTestId('draft-image-picker-input'), {
+      target: { files: [attachment] },
+    });
+
+    await screen.findByTestId('message-composer-image-preview');
+
+    const composer = screen.getByTestId('draft-conversation-composer');
+    expect(composer.className).toContain('items-end');
+
+    const sendButton = screen.getByRole('button', { name: /odosla/i });
+    expect(sendButton.className).toContain('self-end');
+    expect(sendButton.className).toContain('shrink-0');
+  });
+
   it('sends the first draft message with an attached image', async () => {
     const attachment = new File(['draft-image'], 'draft-photo.png', { type: 'image/png' });
     (openConversation as jest.Mock).mockResolvedValue(draftResponse);
