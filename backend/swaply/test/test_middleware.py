@@ -13,7 +13,7 @@ from swaply.middleware import (
     custom_exception_handler,
     EnforceCSRFMiddleware,
 )
-from rest_framework.exceptions import ValidationError, AuthenticationFailed
+from rest_framework.exceptions import APIException, ValidationError, AuthenticationFailed
 from rest_framework.test import APIRequestFactory
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -126,6 +126,52 @@ class TestCustomExceptionHandler(TestCase):
         self.assertIn("error", data)
         self.assertIn("message", data)
         self.assertIn("code", data)
+
+    @patch("swaply.middleware.logger")
+    def test_auth_me_401_does_not_create_sentry_error_event(self, mock_logger):
+        """Expected anonymous auth bootstrap must not be reported as a Sentry error."""
+        with self.settings(DEBUG=False):
+            exception = AuthenticationFailed("Authentication credentials were not provided.")
+            context = {"request": self.factory.get("/api/auth/me/")}
+
+            response = custom_exception_handler(exception, context)
+
+            self.assertIsNotNone(response)
+            self.assertEqual(response.status_code, 401)
+            mock_logger.error.assert_not_called()
+            mock_logger.info.assert_called_once()
+            self.assertEqual(
+                mock_logger.info.call_args.kwargs["extra"]["response_status"],
+                401,
+            )
+
+    @patch("swaply.middleware.logger")
+    def test_unexpected_4xx_still_creates_sentry_error_event(self, mock_logger):
+        """Unexpected 4xx responses remain error-level logs for Sentry visibility."""
+        with self.settings(DEBUG=False):
+            exception = AuthenticationFailed("Invalid credentials")
+            context = {"request": self.factory.get("/api/private/")}
+
+            response = custom_exception_handler(exception, context)
+
+            self.assertIsNotNone(response)
+            self.assertEqual(response.status_code, 401)
+            mock_logger.error.assert_called_once()
+            mock_logger.info.assert_not_called()
+
+    @patch("swaply.middleware.logger")
+    def test_5xx_still_creates_sentry_error_event(self, mock_logger):
+        """Server-side API failures must stay error-level logs."""
+        with self.settings(DEBUG=False):
+            exception = APIException("Upstream unavailable")
+            context = {"request": self.factory.get("/api/auth/me/")}
+
+            response = custom_exception_handler(exception, context)
+
+            self.assertIsNotNone(response)
+            self.assertEqual(response.status_code, 500)
+            mock_logger.error.assert_called_once()
+            mock_logger.info.assert_not_called()
 
     def test_unhandled_exception(self):
         """Test spracovania neočakávanej chyby"""
