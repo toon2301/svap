@@ -25,6 +25,7 @@ echo "✓ Virtual environment activated!"
 
 echo
 echo "[3/4] Running Django migrations..."
+export ALLOWED_HOSTS="${ALLOWED_HOSTS:-svaply.com,www.svaply.com,api.svaply.com,stunning-inspiration-svap.up.railway.app,exemplary-tranquility-svap.up.railway.app}"
 python manage.py migrate --settings=swaply.settings_production
 if [ $? -ne 0 ]; then
     echo "ERROR: Migrations failed!"
