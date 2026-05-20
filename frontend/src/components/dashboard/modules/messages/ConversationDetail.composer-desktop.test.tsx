@@ -147,6 +147,29 @@ describe('ConversationDetail desktop composer', () => {
     });
   });
 
+  it('keeps the desktop send button compact and bottom-aligned when an image preview is shown', async () => {
+    const attachment = new File(['image'], 'photo.png', { type: 'image/png' });
+
+    render(<ConversationDetail conversationId={9} currentUserId={1} />);
+
+    await waitFor(() => {
+      expect(listMessages).toHaveBeenCalledWith(9, 100);
+    });
+
+    fireEvent.change(screen.getByTestId('conversation-image-picker-input'), {
+      target: { files: [attachment] },
+    });
+
+    await screen.findByTestId('message-composer-image-preview');
+
+    const composer = screen.getByTestId('conversation-composer');
+    expect(composer.className).toContain('items-end');
+
+    const sendButton = screen.getByRole('button', { name: /odosla/i });
+    expect(sendButton.className).toContain('self-end');
+    expect(sendButton.className).toContain('shrink-0');
+  });
+
   it('sends a desktop message with an attached image and clears the preview after success', async () => {
     const attachment = new File(['image'], 'photo.png', { type: 'image/png' });
     (sendMessage as jest.Mock).mockResolvedValue(undefined);

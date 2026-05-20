@@ -91,7 +91,7 @@ export function ConversationDesktopComposer({
           data-testid="conversation-composer"
           onFocusCapture={onFocusCapture}
           onBlurCapture={onBlurCapture}
-          className="flex w-full min-w-0 shrink-0 gap-3 border-t border-gray-200 bg-white/90 px-3 py-3 dark:border-gray-800 dark:bg-[#0f0f10]/90"
+          className="flex w-full min-w-0 shrink-0 items-end gap-3 border-t border-gray-200 bg-white/90 px-3 py-3 dark:border-gray-800 dark:bg-[#0f0f10]/90"
         >
           <div className="relative min-w-0 flex-1">
             <input
@@ -124,7 +124,7 @@ export function ConversationDesktopComposer({
             type="button"
             disabled={sending || !hasContentToSend}
             onClick={onSend}
-            className="shrink-0 rounded-2xl bg-brand px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-60"
+            className="shrink-0 self-end rounded-2xl bg-brand px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-60"
           >
             {sending ? sendingLabel : sendLabel}
           </button>

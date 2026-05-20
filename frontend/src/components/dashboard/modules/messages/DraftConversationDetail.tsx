@@ -370,7 +370,7 @@ export function DraftConversationDetail({
                   ? 'pb-[max(0.5rem,env(safe-area-inset-bottom,0px))]'
                   : 'pb-[max(1.75rem,env(safe-area-inset-bottom,0px))]'
               }`
-            : 'mt-2 flex w-full min-w-0 shrink-0 gap-2 px-4 sm:px-6 lg:px-8 mx-auto pb-[max(1rem,env(safe-area-inset-bottom,0px))] lg:pb-[max(1.25rem,env(safe-area-inset-bottom,0px))] sm:max-w-[min(100%,36rem)] md:max-w-[min(100%,44rem)] lg:max-w-[min(100%,52rem)] xl:max-w-[min(100%,64rem)]'
+            : 'mt-2 flex w-full min-w-0 shrink-0 items-end gap-2 px-4 sm:px-6 lg:px-8 mx-auto pb-[max(1rem,env(safe-area-inset-bottom,0px))] lg:pb-[max(1.25rem,env(safe-area-inset-bottom,0px))] sm:max-w-[min(100%,36rem)] md:max-w-[min(100%,44rem)] lg:max-w-[min(100%,52rem)] xl:max-w-[min(100%,64rem)]'
         }
       >
         <input
@@ -486,7 +486,7 @@ export function DraftConversationDetail({
             type="button"
             disabled={sending || !hasContentToSend}
             onClick={() => void handleSend()}
-            className="px-4 py-2 rounded-2xl bg-brand text-white text-sm font-semibold disabled:opacity-60 disabled:cursor-not-allowed hover:bg-brand-dark transition-colors"
+            className="shrink-0 self-end rounded-2xl bg-brand px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-60"
           >
             {sending ? t('common.sending', 'Odosielam…') : t('messages.send', 'Odoslať')}
           </button>

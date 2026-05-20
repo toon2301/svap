@@ -11,6 +11,8 @@ import { ProfileDesktopHeader } from './ProfileDesktopHeader';
 import { ProfileDesktopTabs } from './ProfileDesktopTabs';
 import { ProfileDesktopHamburgerModal } from './ProfileDesktopHamburgerModal';
 import { ReportUserModal } from './ReportUserModal';
+import { ProfileShareModal } from './ProfileShareModal';
+import { buildProfileShareUrl } from './profileShareUrl';
 
 interface ProfileDesktopViewProps {
   user: User;
@@ -74,6 +76,7 @@ export default function ProfileDesktopView({
 }: ProfileDesktopViewProps) {
   const displayUser = displayUserProp ?? user;
   const [isHamburgerModalOpen, setIsHamburgerModalOpen] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [reportModalOpen, setReportModalOpen] = useState(false);
   const [reportedUserIds, setReportedUserIds] = useState<Set<number>>(() => new Set());
   const [mounted, setMounted] = useState(false);
@@ -142,23 +145,33 @@ export default function ProfileDesktopView({
         </div>
       </div>
 
-      {isOtherUserProfile && mounted && (
+      {mounted && (
         <>
           <ProfileDesktopHamburgerModal
             open={isHamburgerModalOpen}
             onClose={() => setIsHamburgerModalOpen(false)}
-            onReportClick={() => setReportModalOpen(true)}
+            onReportClick={isOtherUserProfile ? () => setReportModalOpen(true) : undefined}
+            onShareClick={() => setIsShareModalOpen(true)}
             isReported={reportedUserIds.has(displayUser.id)}
+            showModerationActions={isOtherUserProfile}
           />
-          <ReportUserModal
-            open={reportModalOpen}
-            onClose={() => setReportModalOpen(false)}
-            userId={displayUser.id}
-            onSuccess={() => {
-              setReportedUserIds((prev) => new Set(prev).add(displayUser.id));
-              setReportModalOpen(false);
-            }}
+          <ProfileShareModal
+            open={isShareModalOpen}
+            onClose={() => setIsShareModalOpen(false)}
+            profileUrl={buildProfileShareUrl(displayUser)}
+            displayName={getProfileDisplayName(displayUser, accountType)}
           />
+          {isOtherUserProfile && (
+            <ReportUserModal
+              open={reportModalOpen}
+              onClose={() => setReportModalOpen(false)}
+              userId={displayUser.id}
+              onSuccess={() => {
+                setReportedUserIds((prev) => new Set(prev).add(displayUser.id));
+                setReportModalOpen(false);
+              }}
+            />
+          )}
         </>
       )}
     </div>
