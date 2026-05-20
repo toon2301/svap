@@ -16,6 +16,34 @@ from django.http import HttpResponseForbidden
 
 logger = logging.getLogger(__name__)
 
+
+EXPECTED_API_4XX_RESPONSES = frozenset({
+    ("GET", "/api/auth/me/", 401),
+})
+
+
+def _normalize_request_path(path: str) -> str:
+    normalized = (path or "").split("?", 1)[0] or "/"
+    return normalized if normalized.endswith("/") else f"{normalized}/"
+
+
+def is_expected_api_4xx_response(request, status_code: int) -> bool:
+    if status_code < 400 or status_code >= 500 or request is None:
+        return False
+
+    method = str(getattr(request, "method", "") or "").upper()
+    path = _normalize_request_path(str(getattr(request, "path", "") or ""))
+    return (method, path, status_code) in EXPECTED_API_4XX_RESPONSES
+
+
+def should_report_api_error_to_sentry(request, status_code: int) -> bool:
+    if status_code >= 500:
+        return True
+    if status_code < 400:
+        return False
+    return not is_expected_api_4xx_response(request, status_code)
+
+
 class ServerTimingMiddleware:
     """
     Adds Server-Timing and X-App-Duration-Ms headers.
@@ -142,36 +170,39 @@ def custom_exception_handler(exc, context):
     if response is not None:
         # Log chybu (v produkcii bez user_agent a bez response_data)
         request = context.get("request")
+        report_to_sentry = should_report_api_error_to_sentry(request, response.status_code)
         if getattr(settings, "DEBUG", False):
-            logger.error(
-                f"API Error: {str(exc)}",
-                extra={
-                    "request_path": request.path if request else "unknown",
-                    "request_method": request.method if request else "unknown",
-                    "user_id": (
-                        getattr(request.user, "id", None)
-                        if request and hasattr(request, "user")
-                        else None
-                    ),
-                    "response_status": response.status_code,
-                    "response_data": response.data,
-                },
-            )
+            log_extra = {
+                "request_path": request.path if request else "unknown",
+                "request_method": request.method if request else "unknown",
+                "user_id": (
+                    getattr(request.user, "id", None)
+                    if request and hasattr(request, "user")
+                    else None
+                ),
+                "response_status": response.status_code,
+                "response_data": response.data,
+            }
+            if report_to_sentry:
+                logger.error(f"API Error: {str(exc)}", extra=log_extra)
+            else:
+                logger.info(f"Expected API Error: {str(exc)}", extra=log_extra)
         else:
-            logger.error(
-                "API Error",
-                extra={
-                    "request_path": request.path if request else "unknown",
-                    "request_method": request.method if request else "unknown",
-                    "user_id": (
-                        getattr(request.user, "id", None)
-                        if request and hasattr(request, "user")
-                        else None
-                    ),
-                    "response_status": response.status_code,
-                    "exception_type": exc.__class__.__name__,
-                },
-            )
+            log_extra = {
+                "request_path": request.path if request else "unknown",
+                "request_method": request.method if request else "unknown",
+                "user_id": (
+                    getattr(request.user, "id", None)
+                    if request and hasattr(request, "user")
+                    else None
+                ),
+                "response_status": response.status_code,
+                "exception_type": exc.__class__.__name__,
+            }
+            if report_to_sentry:
+                logger.error("API Error", extra=log_extra)
+            else:
+                logger.info("Expected API Error", extra=log_extra)
 
         # Vytvor konzistentnú error response
         custom_response_data = {
