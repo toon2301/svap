@@ -92,7 +92,9 @@ def find_direct_conversation(
     return qs.order_by("-last_message_at", "-updated_at", "-id").first()
 
 
-def open_or_create_direct_conversation(*, actor: User, target: User) -> OpenConversationResult:
+def open_or_create_direct_conversation(
+    *, actor: User, target: User
+) -> OpenConversationResult:
     """
     Open or create a 1:1 conversation between actor and target.
 
@@ -104,12 +106,16 @@ def open_or_create_direct_conversation(*, actor: User, target: User) -> OpenConv
 
     with transaction.atomic():
         _lock_users_for_direct_conversation(user_a_id=actor.id, user_b_id=target.id)
-        existing = find_direct_conversation(actor=actor, target=target, require_started=False)
+        existing = find_direct_conversation(
+            actor=actor, target=target, require_started=False
+        )
         if existing:
             if existing.request_status == Conversation.RequestStatus.PENDING:
                 existing.request_status = Conversation.RequestStatus.ACCEPTED
                 existing.accepted_at = timezone.now()
-                existing.save(update_fields=["request_status", "accepted_at", "updated_at"])
+                existing.save(
+                    update_fields=["request_status", "accepted_at", "updated_at"]
+                )
             return OpenConversationResult(conversation=existing, created=False)
 
         convo = Conversation.objects.create(
@@ -133,10 +139,17 @@ def send_direct_message(
     target: User,
     text: str | None = None,
     image=None,
+    message_type: str = Message.Type.USER,
+    metadata: dict | None = None,
 ) -> StartDirectMessageResult:
     clean = (text or "").strip()
-    if not clean and not image:
+    valid_message_types = {choice for choice, _label in Message.Type.choices}
+    if message_type not in valid_message_types:
+        raise ValueError("Unsupported message type.")
+    if message_type == Message.Type.USER and not clean and not image:
         raise ValueError("Message must contain text or an image.")
+    if message_type != Message.Type.USER and image:
+        raise ValueError("Structured messages cannot include an image.")
     if actor.id == target.id:
         raise SelfConversationNotAllowed("Cannot open a conversation with self.")
 
@@ -144,7 +157,9 @@ def send_direct_message(
     with transaction.atomic():
         _lock_users_for_direct_conversation(user_a_id=actor.id, user_b_id=target.id)
 
-        convo = find_direct_conversation(actor=actor, target=target, require_started=False)
+        convo = find_direct_conversation(
+            actor=actor, target=target, require_started=False
+        )
         created_conversation = False
 
         if convo is None:
@@ -156,8 +171,12 @@ def send_direct_message(
             )
             ConversationParticipant.objects.bulk_create(
                 [
-                    ConversationParticipant(conversation=convo, user=actor, joined_at=now),
-                    ConversationParticipant(conversation=convo, user=target, joined_at=now),
+                    ConversationParticipant(
+                        conversation=convo, user=actor, joined_at=now
+                    ),
+                    ConversationParticipant(
+                        conversation=convo, user=target, joined_at=now
+                    ),
                 ]
             )
             created_conversation = True
@@ -173,6 +192,8 @@ def send_direct_message(
             sender=actor,
             text=clean,
             image=image,
+            message_type=message_type,
+            metadata=dict(metadata or {}),
             created_at=now,
         )
         attach_message_thumbnail(msg)
@@ -190,4 +211,3 @@ def send_direct_message(
             message=msg,
             recipient_user_ids=recipient_user_ids,
         )
-

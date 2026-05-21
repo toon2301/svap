@@ -1136,6 +1136,31 @@ class TestMessagingApi(APITestCase):
         assert results[0]["unread_count"] == 0
         assert all(item["id"] != empty_convo.id for item in results)
 
+    def test_message_list_includes_requestable_offers_for_empty_conversation(self):
+        empty_convo = self._create_direct_conversation(actor=self.u1, target=self.u2)
+        OfferedSkill.objects.create(
+            user=self.u2,
+            category="IT",
+            subcategory="Frontend",
+            description="Mentoring",
+            location="Bratislava",
+            district="Bratislava I",
+            is_hidden=False,
+            is_seeking=False,
+        )
+
+        self.client.force_authenticate(user=self.u1)
+        messages_url = reverse(
+            "accounts:messaging_list_messages",
+            kwargs={"conversation_id": empty_convo.id},
+        )
+        response = self.client.get(messages_url)
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["conversation"]["id"] == empty_convo.id
+        assert response.data["conversation"]["has_requestable_offers"] is True
+        assert response.data["conversation"]["other_user"]["id"] == self.u2.id
+
     def test_conversation_list_search_matches_other_participant_name_tokens(self):
         self.u2.first_name = "Jana"
         self.u2.last_name = "Novakova"

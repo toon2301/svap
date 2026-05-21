@@ -151,6 +151,7 @@ class Message(models.Model):
         USER = "user", "User"
         SYSTEM = "system", "System"
         GROUP_INVITATION = "group_invitation", "Group invitation"
+        PROFILE_SHARE = "profile_share", "Profile share"
 
     conversation = models.ForeignKey(
         Conversation,
@@ -241,8 +242,13 @@ class GroupInvitation(models.Model):
             ),
         ]
         indexes = [
-            models.Index(fields=["invited_user", "status", "created_at"], name="grp_inv_user_status_idx"),
-            models.Index(fields=["conversation", "status"], name="grp_inv_conv_status_idx"),
+            models.Index(
+                fields=["invited_user", "status", "created_at"],
+                name="grp_inv_user_status_idx",
+            ),
+            models.Index(
+                fields=["conversation", "status"], name="grp_inv_conv_status_idx"
+            ),
         ]
 
     def __str__(self) -> str:
@@ -250,4 +256,3 @@ class GroupInvitation(models.Model):
             f"GroupInvitation#{self.pk} "
             f"(conv={self.conversation_id}, user={self.invited_user_id})"
         )
-

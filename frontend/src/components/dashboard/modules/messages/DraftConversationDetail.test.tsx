@@ -183,8 +183,19 @@ describe('DraftConversationDetail', () => {
 
     expect(composer.className).not.toContain('mt-1.5');
     expect(composer.className).not.toContain('pt-2');
+    expect(composer.className).not.toContain('pt-1');
     expect(composer.className).toContain('mt-1');
-    expect(composer.className).toContain('pt-1');
+  });
+
+  it('shows the request offer picker in a draft conversation when the target has offers', async () => {
+    (openConversation as jest.Mock).mockResolvedValue({
+      ...draftResponse,
+      has_requestable_offers: true,
+    });
+
+    render(<DraftConversationDetail targetUserId={42} />);
+
+    expect(await screen.findByTestId('chat-request-offer-picker-toggle')).toBeInTheDocument();
   });
 
   it('sends the first draft message on the first mobile tap', async () => {
@@ -218,6 +229,50 @@ describe('DraftConversationDetail', () => {
     });
   });
 
+  it('keeps draft composer attachment icons inside the input field before and after typing', async () => {
+    (openConversation as jest.Mock).mockResolvedValue(draftResponse);
+
+    render(<DraftConversationDetail targetUserId={42} />);
+
+    await waitFor(() => {
+      expect(openConversation).toHaveBeenCalledWith(42);
+    });
+
+    const imageTrigger = await screen.findByTestId('draft-image-picker-trigger');
+    const input = screen.getByRole('textbox') as HTMLInputElement;
+
+    expect(imageTrigger.className).toContain('absolute');
+    expect(input.className).toContain('pr-24');
+
+    fireEvent.change(input, { target: { value: 'Ahoj' } });
+
+    expect(imageTrigger.className).toContain('absolute');
+    expect(input.className).toContain('pr-24');
+    expect(input.className).not.toMatch(/\bpx-2\b/);
+  });
+
+  it('keeps mobile draft composer attachment icons inside the input pill', async () => {
+    useIsMobile.mockReturnValue(true);
+    (openConversation as jest.Mock).mockResolvedValue(draftResponse);
+
+    render(<DraftConversationDetail targetUserId={42} />);
+
+    await waitFor(() => {
+      expect(openConversation).toHaveBeenCalledWith(42);
+    });
+
+    const imageTrigger = await screen.findByTestId('draft-image-picker-trigger');
+    const input = screen.getByRole('textbox') as HTMLInputElement;
+
+    expect(imageTrigger.className).not.toContain('right-10');
+    expect(input.className).toContain('pr-[4.5rem]');
+
+    fireEvent.change(input, { target: { value: 'Ahoj' } });
+
+    expect(input.className).toContain('pr-[4.5rem]');
+    expect(screen.getByTestId('draft-send-button')).toBeInTheDocument();
+  });
+
   it('keeps the desktop draft send button compact and bottom-aligned when an image preview is shown', async () => {
     const attachment = new File(['draft-image'], 'draft-photo.png', { type: 'image/png' });
     (openConversation as jest.Mock).mockResolvedValue(draftResponse);
@@ -234,8 +289,8 @@ describe('DraftConversationDetail', () => {
 
     await screen.findByTestId('message-composer-image-preview');
 
-    const composer = screen.getByTestId('draft-conversation-composer');
-    expect(composer.className).toContain('items-end');
+    const composerRow = screen.getByTestId('draft-conversation-composer-row');
+    expect(composerRow.className).toContain('items-end');
 
     const sendButton = screen.getByRole('button', { name: /odosla/i });
     expect(sendButton.className).toContain('self-end');

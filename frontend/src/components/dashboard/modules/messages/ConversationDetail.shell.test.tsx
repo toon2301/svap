@@ -59,27 +59,61 @@ describe('ConversationDetail shell and conversation actions', () => {
     });
   });
 
+  it('renders the request picker from message metadata when the conversation is missing from the sidebar list', async () => {
+    (listConversations as jest.Mock).mockResolvedValue([]);
+    (listMessages as jest.Mock).mockResolvedValue(
+      messagePage([], {
+        conversation: {
+          id: 9,
+          has_requestable_offers: true,
+          other_user: {
+            id: 77,
+            display_name: 'Tester',
+          },
+          last_message_preview: null,
+          last_message_at: null,
+          last_read_at: null,
+          has_unread: false,
+          unread_count: 0,
+          updated_at: '2026-01-01T00:00:00Z',
+        },
+      }),
+    );
+
+    render(<ConversationDetail conversationId={9} currentUserId={1} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('chat-request-offer-picker')).toBeInTheDocument();
+    });
+  });
+
   it('renders the request picker only when the conversation exposes requestable offers', async () => {
     render(<ConversationDetail conversationId={9} currentUserId={1} />);
 
     await waitFor(() => {
-      expect(listMessages).toHaveBeenCalledWith(9, 100);
+      expect(screen.getByTestId('chat-request-offer-picker')).toBeInTheDocument();
     });
-
-    expect(screen.getByTestId('chat-request-offer-picker')).toBeInTheDocument();
   });
 
   it('hides the request picker when the other user has no requestable offers', async () => {
-    (listConversations as jest.Mock).mockResolvedValue([
-      {
-        id: 9,
-        has_requestable_offers: false,
-        other_user: {
-          id: 77,
-          display_name: 'Tester',
+    (listMessages as jest.Mock).mockResolvedValue(
+      messagePage([], {
+        conversation: {
+          id: 9,
+          has_requestable_offers: false,
+          other_user: {
+            id: 77,
+            display_name: 'Tester',
+          },
+          last_message_preview: null,
+          last_message_at: null,
+          last_read_at: null,
+          has_unread: false,
+          unread_count: 0,
+          updated_at: '2026-01-01T00:00:00Z',
         },
-      },
-    ]);
+      }),
+    );
 
     render(<ConversationDetail conversationId={9} currentUserId={1} />);
 

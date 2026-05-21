@@ -43,6 +43,7 @@ from .view_helpers import (
     _participant_hidden_at_for_conversation,
     _participant_status_for_conversation,
     _peer_last_read_at_for_conversation,
+    _serialize_conversation_for_user,
     _serialize_pinned_message,
     _total_unread_messages_count_for_user,
     _total_unread_messages_count_for_user_id,
@@ -138,11 +139,16 @@ class MessageListView(ListAPIView):
                 request=request,
                 conversation=conversation,
             )
+        conversation_data = _serialize_conversation_for_user(
+            request=request,
+            conversation_id=conversation.id,
+        )
 
         if page is not None:
             response = self.get_paginated_response(serializer.data)
             response.data["peer_last_read_at"] = peer_last_read_at_value
             response.data["pinned_message"] = pinned_message_data
+            response.data["conversation"] = conversation_data
             return response
 
         return Response(
@@ -150,6 +156,7 @@ class MessageListView(ListAPIView):
                 "results": serializer.data,
                 "peer_last_read_at": peer_last_read_at_value,
                 "pinned_message": pinned_message_data,
+                "conversation": conversation_data,
             }
         )
 

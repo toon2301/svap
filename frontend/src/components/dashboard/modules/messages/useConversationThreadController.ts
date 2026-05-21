@@ -309,7 +309,9 @@ export function useConversationThreadController({
         setNextOlderPage(page.nextPage);
         setPeerLastReadAt((current) => pickLatestTimestamp(current, page.peerLastReadAt ?? null));
         setPinnedMessage(page.pinnedMessage);
-        if (syncConversations) {
+        if (page.conversation) {
+          setOtherConversation(page.conversation);
+        } else if (syncConversations) {
           try {
             const list = await listConversations();
             const found = Array.isArray(list) ? list.find((item) => item?.id === conversationId) : null;
@@ -373,25 +375,6 @@ export function useConversationThreadController({
     void (async () => {
       try {
         setLoading(true);
-        try {
-          const list = await listConversations();
-          const found = Array.isArray(list) ? list.find((item) => item?.id === conversationId) : null;
-          if (!cancelled) {
-            if (found) {
-              setOtherConversation(found);
-            } else {
-              const requests = await listMessageRequests();
-              const requestConversation = Array.isArray(requests)
-                ? requests.find((item) => item?.id === conversationId)
-                : null;
-              if (!cancelled) {
-                setOtherConversation(requestConversation ?? null);
-              }
-            }
-          }
-        } catch {
-          // Ignore best-effort header data loading failures.
-        }
         await refresh({ markAsRead: true });
       } catch {
         // refresh already surfaced a user-facing error

@@ -10,6 +10,7 @@ from rest_framework import serializers
 from accounts.name_normalization import get_canonical_display_name
 from swaply.validators import validate_image_file
 from ..models import Conversation, ConversationParticipant, GroupInvitation, Message
+from ..services.profile_shares import PROFILE_SHARE_METADATA_USER_ID
 
 User = get_user_model()
 
@@ -30,10 +31,7 @@ def _reject_group_avatar_fields(serializer):
     blocked_fields = [field for field in ("avatar", "clear_avatar") if field in data]
     if blocked_fields:
         raise serializers.ValidationError(
-            {
-                field: "Group avatar is not supported."
-                for field in blocked_fields
-            }
+            {field: "Group avatar is not supported." for field in blocked_fields}
         )
 
 
@@ -191,7 +189,9 @@ class ConversationListItemSerializer(serializers.ModelSerializer):
     def _is_current_user_invited_group(self, obj: Conversation) -> bool:
         if not getattr(obj, "is_group", False):
             return False
-        return self.get_current_user_status(obj) == ConversationParticipant.Status.INVITED
+        return (
+            self.get_current_user_status(obj) == ConversationParticipant.Status.INVITED
+        )
 
     def get_other_user(self, obj: Conversation):
         if getattr(obj, "is_group", False):
@@ -216,9 +216,12 @@ class ConversationListItemSerializer(serializers.ModelSerializer):
             }
 
         me = request.user if request else None
-        participants: QuerySet[ConversationParticipant] | list[ConversationParticipant] = getattr(
-            obj, "_prefetched_participants", None
-        ) or getattr(obj, "participants", []).all()
+        participants: (
+            QuerySet[ConversationParticipant] | list[ConversationParticipant]
+        ) = (
+            getattr(obj, "_prefetched_participants", None)
+            or getattr(obj, "participants", []).all()
+        )
         other = None
         for p in participants:
             if me is None or p.user_id != me.id:
@@ -258,7 +261,10 @@ class ConversationListItemSerializer(serializers.ModelSerializer):
             )
             if me is not None:
                 participants = participants.exclude(user_id=me.id)
-        return [serialize_user_brief(participant.user, request) for participant in list(participants)[:4]]
+        return [
+            serialize_user_brief(participant.user, request)
+            for participant in list(participants)[:4]
+        ]
 
     def get_participant_count(self, obj: Conversation) -> int:
         if not getattr(obj, "is_group", False):
@@ -308,10 +314,14 @@ class ConversationListItemSerializer(serializers.ModelSerializer):
         annotated_role = getattr(obj, "current_user_role", None)
         if annotated_role:
             return annotated_role
-        participant = ConversationParticipant.objects.filter(
-            conversation=obj,
-            user=request.user,
-        ).only("role").first()
+        participant = (
+            ConversationParticipant.objects.filter(
+                conversation=obj,
+                user=request.user,
+            )
+            .only("role")
+            .first()
+        )
         return participant.role if participant else None
 
     def get_current_user_status(self, obj: Conversation):
@@ -321,10 +331,14 @@ class ConversationListItemSerializer(serializers.ModelSerializer):
         annotated_status = getattr(obj, "current_user_status", None)
         if annotated_status:
             return annotated_status
-        participant = ConversationParticipant.objects.filter(
-            conversation=obj,
-            user=request.user,
-        ).only("status").first()
+        participant = (
+            ConversationParticipant.objects.filter(
+                conversation=obj,
+                user=request.user,
+            )
+            .only("status")
+            .first()
+        )
         return participant.status if participant else None
 
     def get_message_request_role(self, obj: Conversation):
@@ -391,10 +405,12 @@ class ConversationListItemSerializer(serializers.ModelSerializer):
 class MessageSerializer(serializers.ModelSerializer):
     sender = serializers.SerializerMethodField()
     text = serializers.SerializerMethodField()
+    metadata = serializers.SerializerMethodField()
     image_url = serializers.SerializerMethodField()
     image_thumbnail_url = serializers.SerializerMethodField()
     has_image = serializers.SerializerMethodField()
     group_invitation = serializers.SerializerMethodField()
+    profile_share = serializers.SerializerMethodField()
 
     class Meta:
         model = Message
@@ -412,6 +428,7 @@ class MessageSerializer(serializers.ModelSerializer):
             "message_type",
             "metadata",
             "group_invitation",
+            "profile_share",
         ]
 
     def get_sender(self, obj: Message):
@@ -429,6 +446,11 @@ class MessageSerializer(serializers.ModelSerializer):
         if obj.is_deleted:
             return None
         return obj.text or None
+
+    def get_metadata(self, obj: Message):
+        if obj.message_type == Message.Type.PROFILE_SHARE:
+            return {}
+        return obj.metadata or {}
 
     def get_image_url(self, obj: Message):
         if obj.is_deleted or not obj.image:
@@ -493,9 +515,50 @@ class MessageSerializer(serializers.ModelSerializer):
             ),
         }
 
+    def get_profile_share(self, obj: Message):
+        if obj.is_deleted or obj.message_type != Message.Type.PROFILE_SHARE:
+            return None
+        try:
+            shared_user_id = int(
+                (obj.metadata or {}).get(PROFILE_SHARE_METADATA_USER_ID)
+            )
+        except (TypeError, ValueError):
+            return None
+        if shared_user_id <= 0:
+            return None
+
+        cache = self.context.setdefault("_profile_share_user_cache", {})
+        if shared_user_id not in cache:
+            cache[shared_user_id] = (
+                User.objects.filter(
+                    id=shared_user_id,
+                    is_active=True,
+                    is_public=True,
+                )
+                .exclude(is_staff=True)
+                .exclude(is_superuser=True)
+                .only(
+                    "id",
+                    "first_name",
+                    "last_name",
+                    "company_name",
+                    "username",
+                    "slug",
+                    "user_type",
+                    "avatar",
+                )
+                .first()
+            )
+        shared_user = cache.get(shared_user_id)
+        if shared_user is None:
+            return None
+        return serialize_user_brief(shared_user, self.context.get("request"))
+
 
 class SendMessageSerializer(serializers.Serializer):
-    text = serializers.CharField(required=False, allow_blank=True, trim_whitespace=True, max_length=5000)
+    text = serializers.CharField(
+        required=False, allow_blank=True, trim_whitespace=True, max_length=5000
+    )
     image = serializers.ImageField(required=False, allow_null=True)
 
     def validate(self, attrs):
@@ -521,7 +584,9 @@ class PinMessageSerializer(serializers.Serializer):
 
 class StartDirectMessageSerializer(serializers.Serializer):
     target_user_id = serializers.IntegerField(min_value=1)
-    text = serializers.CharField(required=False, allow_blank=True, trim_whitespace=True, max_length=5000)
+    text = serializers.CharField(
+        required=False, allow_blank=True, trim_whitespace=True, max_length=5000
+    )
     image = serializers.ImageField(required=False, allow_null=True)
 
     def validate(self, attrs):
@@ -563,4 +628,3 @@ class MessagePresenceSerializer(serializers.Serializer):
             attrs["active_conversation_id"] = None
 
         return attrs
-
