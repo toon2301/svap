@@ -41,28 +41,64 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
         
-    - name: Run Django migrations
+    - name: Run Django system checks
       working-directory: ./backend
-      run: |
-        python manage.py migrate --settings=swaply.settings_production
-        python manage.py collectstatic --noinput --settings=swaply.settings_production
+      run: python manage.py check --settings=swaply.settings
       env:
-        SECRET_KEY: ${{ secrets.SECRET_KEY }}
-        DEBUG: 'False'
-        ALLOWED_HOSTS: ${{ env.PRODUCTION_ALLOWED_HOSTS }}
+        DEBUG: 'True'
+        SECRET_KEY: ci-check-secret
+        SAFESEARCH_ENABLED: 'False'
         
     - name: Deploy to PythonAnywhere
-      uses: appleboy/ssh-action@v1.0.3
+      uses: appleboy/ssh-action@029f5b4aeeeb58fdfe1410a5d17f967dacf36262
+      env:
+        DEPLOY_EMAIL_HOST: ${{ secrets.EMAIL_HOST }}
+        DEPLOY_EMAIL_PORT: ${{ secrets.EMAIL_PORT }}
+        DEPLOY_EMAIL_HOST_USER: ${{ secrets.EMAIL_HOST_USER }}
+        DEPLOY_EMAIL_HOST_PASSWORD: ${{ secrets.EMAIL_HOST_PASSWORD }}
+        DEPLOY_EMAIL_USE_TLS: ${{ secrets.EMAIL_USE_TLS }}
+        DEPLOY_DEFAULT_FROM_EMAIL: ${{ secrets.DEFAULT_FROM_EMAIL }}
       with:
         host: ${{ secrets.PYTHONANYWHERE_HOST }}
         username: ${{ secrets.PYTHONANYWHERE_USERNAME }}
         key: ${{ secrets.PYTHONANYWHERE_SSH_KEY }}
+        envs: DEPLOY_EMAIL_HOST,DEPLOY_EMAIL_PORT,DEPLOY_EMAIL_HOST_USER,DEPLOY_EMAIL_HOST_PASSWORD,DEPLOY_EMAIL_USE_TLS,DEPLOY_DEFAULT_FROM_EMAIL
         script: |
+          set -e
           cd /home/${{ secrets.PYTHONANYWHERE_USERNAME }}/svap
           git pull origin main
           cd backend
           source venv/bin/activate
           export ALLOWED_HOSTS="${{ env.PRODUCTION_ALLOWED_HOSTS }}"
+          [ -n "${DEPLOY_EMAIL_HOST:-}" ] && export EMAIL_HOST="$DEPLOY_EMAIL_HOST"
+          [ -n "${DEPLOY_EMAIL_PORT:-}" ] && export EMAIL_PORT="$DEPLOY_EMAIL_PORT"
+          [ -n "${DEPLOY_EMAIL_HOST_USER:-}" ] && export EMAIL_HOST_USER="$DEPLOY_EMAIL_HOST_USER"
+          [ -n "${DEPLOY_EMAIL_HOST_PASSWORD:-}" ] && export EMAIL_HOST_PASSWORD="$DEPLOY_EMAIL_HOST_PASSWORD"
+          [ -n "${DEPLOY_EMAIL_USE_TLS:-}" ] && export EMAIL_USE_TLS="$DEPLOY_EMAIL_USE_TLS"
+          [ -n "${DEPLOY_DEFAULT_FROM_EMAIL:-}" ] && export DEFAULT_FROM_EMAIL="$DEPLOY_DEFAULT_FROM_EMAIL"
+          python - <<'PY'
+          import os
+          from pathlib import Path
+          from dotenv import set_key
+
+          env_path = Path(".env")
+          env_path.touch(exist_ok=True)
+          email_env = {
+              "EMAIL_HOST": os.getenv("DEPLOY_EMAIL_HOST"),
+              "EMAIL_PORT": os.getenv("DEPLOY_EMAIL_PORT"),
+              "EMAIL_HOST_USER": os.getenv("DEPLOY_EMAIL_HOST_USER"),
+              "EMAIL_HOST_PASSWORD": os.getenv("DEPLOY_EMAIL_HOST_PASSWORD"),
+              "EMAIL_USE_TLS": os.getenv("DEPLOY_EMAIL_USE_TLS"),
+              "DEFAULT_FROM_EMAIL": os.getenv("DEPLOY_DEFAULT_FROM_EMAIL"),
+          }
+          for key, value in email_env.items():
+              if value:
+                  set_key(str(env_path), key, value, quote_mode="always")
+          PY
+          # Production settings are only invoked on the server, where backend/.env
+          # or server env must provide EMAIL_HOST, EMAIL_PORT, EMAIL_HOST_USER,
+          # and EMAIL_HOST_PASSWORD. EMAIL_USE_TLS defaults to true, and
+          # DEFAULT_FROM_EMAIL defaults to EMAIL_HOST_USER.
           python manage.py migrate --settings=swaply.settings_production
           python manage.py collectstatic --noinput --settings=swaply.settings_production
           # Copy frontend build to frontend directory
