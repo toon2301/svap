@@ -732,7 +732,18 @@ def me_view(request):
     db_conn.ensure_connection()
     t_db_connect1 = perf_counter()
     t_db0 = perf_counter()
-    user = _me_user_queryset().get(pk=user.pk)
+    try:
+        user = _me_user_queryset().get(pk=user.pk)
+    except User.DoesNotExist:
+        from ..authentication import invalidate_user_auth_cache
+
+        invalidate_user_auth_cache(getattr(user, "pk", None))
+        resp = Response(
+            {"detail": "Authentication credentials were not provided."},
+            status=status.HTTP_401_UNAUTHORIZED,
+        )
+        _clear_auth_cookies(resp)
+        return resp
     t_db1 = perf_counter()
     t_serialize0 = perf_counter()
     serializer_context = {"request": request, "_me_serializer_timing": {}}

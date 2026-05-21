@@ -223,6 +223,28 @@ class TestAuthViews(APITestCase):
             f"Expected a single annotated /me query on warm auth cache, got {len(ctx.captured_queries)} queries",
         )
 
+    def test_me_view_returns_401_for_deleted_user_with_warm_auth_cache(self):
+        url = reverse("accounts:me")
+        refresh = RefreshToken.for_user(self.user)
+        user_id = self.user.id
+        cached_payload = _serialize_user_for_cache(self.user)
+        self.user.delete()
+        cache.set(_redis_user_cache_key(user_id), cached_payload, timeout=300)
+        self.client.cookies["access_token"] = str(refresh.access_token)
+
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(
+            response.data["detail"],
+            "Authentication credentials were not provided.",
+        )
+        self.assertIsNone(cache.get(_redis_user_cache_key(user_id)))
+        for cookie_name in ("access_token", "refresh_token", "auth_state"):
+            self.assertIn(cookie_name, response.cookies)
+            self.assertEqual(response.cookies[cookie_name].value, "")
+            self.assertEqual(response.cookies[cookie_name]["max-age"], 0)
+
     def test_me_view_exposes_server_timing_breakdown(self):
         url = reverse("accounts:me")
         refresh = RefreshToken.for_user(self.user)
