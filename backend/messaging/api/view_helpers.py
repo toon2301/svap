@@ -225,7 +225,9 @@ def _serialize_pinned_message(*, request, conversation: Conversation):
 
 
 def _serialize_conversation_for_user(*, request, conversation_id: int):
-    conversation = _conversation_list_queryset_for_user(request.user).filter(id=conversation_id).first()
+    conversation = (
+        _conversation_accessible_queryset_for_user(request.user).filter(id=conversation_id).first()
+    )
     if conversation is None:
         return None
     return ConversationListItemSerializer(conversation, context={"request": request}).data
@@ -261,13 +263,10 @@ def _can_open_direct_target(*, actor, target) -> bool:
         return True
 
 
-def _conversation_list_queryset_for_user(user, *, only_incoming_requests: bool = False):
+def _conversation_annotated_queryset_for_user(user):
     """
-    Conversations where the user is a participant, annotated for MVP UI:
-    - other participant info via prefetch (serializer computes)
-    - last message preview fields via subquery
-    - last_read_at for current user via subquery
-    - has_unread boolean
+    Participant conversations with list/detail serializer annotations.
+    Does not apply sidebar visibility filters (started/hidden).
     """
     participant_qs = ConversationParticipant.objects.filter(
         conversation_id=OuterRef("pk"),
@@ -395,21 +394,35 @@ def _conversation_list_queryset_for_user(user, *, only_incoming_requests: bool =
             )
         )
     )
-    visible_qs = qs.filter(last_message_at__isnull=False).filter(
+    return qs
+
+
+def _conversation_accessible_queryset_for_user(user, *, only_incoming_requests: bool = False):
+    qs = _conversation_annotated_queryset_for_user(user).filter(
         Q(participant_hidden_at__isnull=True)
         | Q(last_message_at__gt=F("participant_hidden_at"))
     )
     if only_incoming_requests:
-        return visible_qs.filter(
+        return qs.filter(
             is_group=False,
             request_status=Conversation.RequestStatus.PENDING,
             requested_to=user,
         )
-    return visible_qs.filter(
+    return qs.filter(
         Q(is_group=True)
         | Q(request_status=Conversation.RequestStatus.ACCEPTED)
         | Q(requested_by=user)
     )
+
+
+def _conversation_list_queryset_for_user(user, *, only_incoming_requests: bool = False):
+    """
+    Conversations visible in the sidebar list (started + access rules).
+    """
+    return _conversation_accessible_queryset_for_user(
+        user,
+        only_incoming_requests=only_incoming_requests,
+    ).filter(last_message_at__isnull=False)
 
 
 def _message_request_list_queryset_for_user(user):

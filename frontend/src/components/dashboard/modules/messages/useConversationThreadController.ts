@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import type { ConversationListItem, MessageItem, MessageListPage } from './types';
 import {
   getMessagingErrorMessage,
+  getMessagingErrorStatus,
   listConversations,
   listMessageRequests,
   listMessages,
@@ -38,6 +39,7 @@ type UseConversationThreadControllerArgs = {
     conversationId: number;
     totalUnreadCount?: number | null;
   }) => void;
+  onConversationUnavailable?: (conversationId: number) => void;
 };
 export function useConversationThreadController({
   conversationId,
@@ -45,6 +47,7 @@ export function useConversationThreadController({
   isMobile,
   t,
   syncConversationReadState,
+  onConversationUnavailable,
 }: UseConversationThreadControllerArgs) {
   const [messages, setMessages] = useState<MessageItem[]>([]);
   const [nextOlderPage, setNextOlderPage] = useState<number | null>(null);
@@ -64,6 +67,8 @@ export function useConversationThreadController({
   const messagesStackRef = useRef<HTMLDivElement | null>(null);
   const pendingLatestScrollAfterRefreshRef = useRef(false);
   const shouldScrollToLatestOnRenderRef = useRef(false);
+  const hasNotifiedConversationUnavailableRef = useRef(false);
+  const latestConversationIdRef = useRef(conversationId);
   const { maybeMarkConversationRead, resetReadStateSession } = useConversationReadState({
     conversationId,
     currentUserId,
@@ -263,6 +268,23 @@ export function useConversationThreadController({
     },
     [t],
   );
+  const handleRefreshError = useCallback(
+    (error: unknown, showError: boolean) => {
+      if (getMessagingErrorStatus(error) === 404) {
+        const isLatestConversation = conversationId === latestConversationIdRef.current;
+        if (isLatestConversation && !hasNotifiedConversationUnavailableRef.current) {
+          hasNotifiedConversationUnavailableRef.current = true;
+          onConversationUnavailable?.(conversationId);
+        }
+        return;
+      }
+
+      if (showError) {
+        showLoadErrorToast(error);
+      }
+    },
+    [conversationId, onConversationUnavailable, showLoadErrorToast],
+  );
   const refresh = useCallback(
     async ({
       showError = true,
@@ -289,9 +311,7 @@ export function useConversationThreadController({
           return sharedPage.results;
         } catch (error) {
           pendingLatestScrollAfterRefreshRef.current = false;
-          if (showError) {
-            showLoadErrorToast(error);
-          }
+          handleRefreshError(error, showError);
           throw error;
         }
       }
@@ -309,7 +329,9 @@ export function useConversationThreadController({
         setNextOlderPage(page.nextPage);
         setPeerLastReadAt((current) => pickLatestTimestamp(current, page.peerLastReadAt ?? null));
         setPinnedMessage(page.pinnedMessage);
-        if (syncConversations) {
+        if (page.conversation) {
+          setOtherConversation(page.conversation);
+        } else if (syncConversations) {
           try {
             const list = await listConversations();
             const found = Array.isArray(list) ? list.find((item) => item?.id === conversationId) : null;
@@ -341,9 +363,7 @@ export function useConversationThreadController({
         return page.results;
       } catch (error) {
         pendingLatestScrollAfterRefreshRef.current = false;
-        if (showError) {
-          showLoadErrorToast(error);
-        }
+        handleRefreshError(error, showError);
         throw error;
       } finally {
         if (refreshInFlightRef.current === request) {
@@ -351,12 +371,14 @@ export function useConversationThreadController({
         }
       }
     },
-    [conversationId, isMobile, isNearMessagesBottom, maybeMarkConversationRead, showLoadErrorToast],
+    [conversationId, handleRefreshError, isMobile, isNearMessagesBottom, maybeMarkConversationRead],
   );
   useEffect(() => {
     let cancelled = false;
+    latestConversationIdRef.current = conversationId;
     resetReadStateSession();
     latestKnownMessageIdRef.current = null;
+    hasNotifiedConversationUnavailableRef.current = false;
     refreshInFlightRef.current = null;
     pendingScrollRestoreRef.current = null;
     pendingLatestScrollAfterRefreshRef.current = false;
@@ -373,25 +395,6 @@ export function useConversationThreadController({
     void (async () => {
       try {
         setLoading(true);
-        try {
-          const list = await listConversations();
-          const found = Array.isArray(list) ? list.find((item) => item?.id === conversationId) : null;
-          if (!cancelled) {
-            if (found) {
-              setOtherConversation(found);
-            } else {
-              const requests = await listMessageRequests();
-              const requestConversation = Array.isArray(requests)
-                ? requests.find((item) => item?.id === conversationId)
-                : null;
-              if (!cancelled) {
-                setOtherConversation(requestConversation ?? null);
-              }
-            }
-          }
-        } catch {
-          // Ignore best-effort header data loading failures.
-        }
         await refresh({ markAsRead: true });
       } catch {
         // refresh already surfaced a user-facing error

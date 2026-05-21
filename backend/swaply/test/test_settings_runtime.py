@@ -4,6 +4,7 @@ import importlib.util
 from pathlib import Path
 import random
 import string
+from unittest.mock import Mock
 import pytest
 
 
@@ -34,6 +35,9 @@ _TEST_ENV_KEYS = {
     "LOG_TO_STDOUT",
     "REDIS_URL",
     "SECRET_KEY",
+    "SENTRY_DSN",
+    "SENTRY_ENVIRONMENT",
+    "SENTRY_TRACES_SAMPLE_RATE",
 }
 
 
@@ -55,6 +59,44 @@ def load_settings_with_env(monkeypatch, env_overrides: dict):
     assert spec.loader is not None
     spec.loader.exec_module(module)
     return module
+
+
+def test_sentry_is_not_initialized_without_dsn(monkeypatch):
+    init_mock = Mock()
+    monkeypatch.setattr("sentry_sdk.init", init_mock)
+
+    load_settings_with_env(
+        monkeypatch,
+        {
+            "DEBUG": "True",
+            "SECRET_KEY": "dev-secret",
+            "SENTRY_DSN": None,
+        },
+    )
+
+    init_mock.assert_not_called()
+
+
+def test_sentry_uses_env_configuration_when_dsn_is_set(monkeypatch):
+    init_mock = Mock()
+    monkeypatch.setattr("sentry_sdk.init", init_mock)
+
+    load_settings_with_env(
+        monkeypatch,
+        {
+            "DEBUG": "True",
+            "SECRET_KEY": "dev-secret",
+            "SENTRY_DSN": "https://public@example.com/1",
+            "SENTRY_ENVIRONMENT": "staging",
+            "SENTRY_TRACES_SAMPLE_RATE": "0.25",
+        },
+    )
+
+    init_mock.assert_called_once()
+    _, kwargs = init_mock.call_args
+    assert kwargs["dsn"] == "https://public@example.com/1"
+    assert kwargs["environment"] == "staging"
+    assert kwargs["traces_sample_rate"] == 0.25
 
 
 def test_prod_csrf_and_redis_enforced(monkeypatch):

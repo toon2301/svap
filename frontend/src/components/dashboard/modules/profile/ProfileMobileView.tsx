@@ -582,6 +582,7 @@ export default function ProfileMobileView({
           onClose={() => setIsShareModalOpen(false)}
           profileUrl={buildProfileShareUrl(displayUser)}
           displayName={getProfileDisplayName(displayUser, accountType)}
+          sharedUserId={displayUser.id}
         />
       )}
       {isOtherUserProfile && (

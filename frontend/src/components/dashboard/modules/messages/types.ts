@@ -39,7 +39,7 @@ export type ConversationListItem = {
   last_message_sender_id?: number | null;
   last_message_is_deleted?: boolean;
   last_message_has_image?: boolean;
-  last_message_type?: 'user' | 'system' | 'group_invitation' | null;
+  last_message_type?: 'user' | 'system' | 'group_invitation' | 'profile_share' | null;
   last_read_at: string | null;
   is_pinned?: boolean;
   has_unread: boolean;
@@ -84,9 +84,10 @@ export type MessageItem = {
   created_at: string;
   edited_at: string | null;
   is_deleted: boolean;
-  message_type?: 'user' | 'system' | 'group_invitation';
+  message_type?: 'user' | 'system' | 'group_invitation' | 'profile_share';
   metadata?: Record<string, unknown>;
   group_invitation?: GroupInvitationMessage | null;
+  profile_share?: MessagingUserBrief | null;
 };
 
 export type GroupInvitationMessage = {
@@ -103,6 +104,7 @@ export type MessageListPage = {
   previousPage: number | null;
   peerLastReadAt: string | null;
   pinnedMessage: MessageItem | null;
+  conversation: ConversationListItem | null;
 };
 
 export type DirectMessageStartResult = {
@@ -148,6 +150,8 @@ export type ForwardMessageResult = {
     code: 'message_request_pending' | 'recipient_unavailable' | string;
   }>;
 };
+
+export type ProfileShareSendResult = ForwardMessageResult;
 
 export type HideConversationResult = {
   conversation_id: number;

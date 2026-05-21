@@ -17,6 +17,7 @@ import type {
   MessagingUnreadSummary,
   OpenConversationResult,
   PinMessageResult,
+  ProfileShareSendResult,
 } from './types';
 
 type Paginated<T> = {
@@ -26,6 +27,7 @@ type Paginated<T> = {
   results: T[];
   peer_last_read_at?: string | null;
   pinned_message?: MessageItem | null;
+  conversation?: ConversationListItem | null;
 };
 
 function normalizeConversationSearchQuery(value?: string): string {
@@ -314,6 +316,10 @@ export async function listMessages(
     peerLastReadAt: typeof data?.peer_last_read_at === 'string' ? data.peer_last_read_at : null,
     pinnedMessage:
       data?.pinned_message && typeof data.pinned_message === 'object' ? data.pinned_message : null,
+    conversation:
+      data?.conversation && typeof data.conversation === 'object'
+        ? data.conversation
+        : null,
   };
 }
 
@@ -396,6 +402,23 @@ export async function forwardMessage(
   const { data } = await api.post<ForwardMessageResult>(
     `/auth/messaging/conversations/${conversationId}/messages/${messageId}/forward/`,
     { recipient_user_ids: recipientUserIds },
+  );
+  return {
+    sent: Array.isArray(data?.sent) ? data.sent : [],
+    failed: Array.isArray(data?.failed) ? data.failed : [],
+  };
+}
+
+export async function sendProfileShare(
+  sharedUserId: number,
+  recipientUserIds: number[],
+): Promise<ProfileShareSendResult> {
+  const { data } = await api.post<ProfileShareSendResult>(
+    '/auth/messaging/profile-shares/',
+    {
+      shared_user_id: sharedUserId,
+      recipient_user_ids: recipientUserIds,
+    },
   );
   return {
     sent: Array.isArray(data?.sent) ? data.sent : [],

@@ -25,6 +25,7 @@ from .api.views import (
     MessageRequestUnreadSummaryView,
     OpenConversationView,
     PinMessageView,
+    ProfileShareSendView,
     SendMessageView,
     StartDirectMessageView,
     UnreadMessagesSummaryView,
@@ -56,6 +57,11 @@ urlpatterns = [
         "conversations/direct/send/",
         StartDirectMessageView.as_view(),
         name="messaging_send_direct_message",
+    ),
+    path(
+        "profile-shares/",
+        ProfileShareSendView.as_view(),
+        name="messaging_send_profile_share",
     ),
     path(
         "conversations/groups/",

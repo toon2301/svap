@@ -4,6 +4,7 @@ import React from 'react';
 import { act, createEvent, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import {
   ConversationDetail,
+  MESSAGING_CONVERSATION_UNAVAILABLE_EVENT,
   MESSAGING_CONVERSATIONS_REFRESH_EVENT,
   MESSAGING_OPEN_CONVERSATION_ACTIONS_EVENT,
   MESSAGING_REALTIME_DELETED_EVENT,
@@ -59,27 +60,61 @@ describe('ConversationDetail shell and conversation actions', () => {
     });
   });
 
+  it('renders the request picker from message metadata when the conversation is missing from the sidebar list', async () => {
+    (listConversations as jest.Mock).mockResolvedValue([]);
+    (listMessages as jest.Mock).mockResolvedValue(
+      messagePage([], {
+        conversation: {
+          id: 9,
+          has_requestable_offers: true,
+          other_user: {
+            id: 77,
+            display_name: 'Tester',
+          },
+          last_message_preview: null,
+          last_message_at: null,
+          last_read_at: null,
+          has_unread: false,
+          unread_count: 0,
+          updated_at: '2026-01-01T00:00:00Z',
+        },
+      }),
+    );
+
+    render(<ConversationDetail conversationId={9} currentUserId={1} />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('chat-request-offer-picker')).toBeInTheDocument();
+    });
+  });
+
   it('renders the request picker only when the conversation exposes requestable offers', async () => {
     render(<ConversationDetail conversationId={9} currentUserId={1} />);
 
     await waitFor(() => {
-      expect(listMessages).toHaveBeenCalledWith(9, 100);
+      expect(screen.getByTestId('chat-request-offer-picker')).toBeInTheDocument();
     });
-
-    expect(screen.getByTestId('chat-request-offer-picker')).toBeInTheDocument();
   });
 
   it('hides the request picker when the other user has no requestable offers', async () => {
-    (listConversations as jest.Mock).mockResolvedValue([
-      {
-        id: 9,
-        has_requestable_offers: false,
-        other_user: {
-          id: 77,
-          display_name: 'Tester',
+    (listMessages as jest.Mock).mockResolvedValue(
+      messagePage([], {
+        conversation: {
+          id: 9,
+          has_requestable_offers: false,
+          other_user: {
+            id: 77,
+            display_name: 'Tester',
+          },
+          last_message_preview: null,
+          last_message_at: null,
+          last_read_at: null,
+          has_unread: false,
+          unread_count: 0,
+          updated_at: '2026-01-01T00:00:00Z',
         },
-      },
-    ]);
+      }),
+    );
 
     render(<ConversationDetail conversationId={9} currentUserId={1} />);
 
@@ -88,6 +123,34 @@ describe('ConversationDetail shell and conversation actions', () => {
     });
 
     expect(screen.queryByTestId('chat-request-offer-picker')).not.toBeInTheDocument();
+  });
+
+  it('redirects to the messages list when the selected conversation is unavailable', async () => {
+    const conversationsRefreshSpy = jest.fn();
+    const unavailableSpy = jest.fn();
+    window.history.replaceState(null, '', '/dashboard/messages?conversationId=9');
+    window.addEventListener(MESSAGING_CONVERSATIONS_REFRESH_EVENT, conversationsRefreshSpy);
+    window.addEventListener(MESSAGING_CONVERSATION_UNAVAILABLE_EVENT, unavailableSpy);
+    (listMessages as jest.Mock).mockRejectedValueOnce({
+      response: {
+        status: 404,
+      },
+    });
+
+    try {
+      render(<ConversationDetail conversationId={9} currentUserId={1} />);
+
+      await waitFor(() => {
+        expect(window.location.pathname + window.location.search).toBe('/dashboard/messages');
+      });
+
+      expect(unavailableSpy).toHaveBeenCalledTimes(1);
+      expect(conversationsRefreshSpy).toHaveBeenCalledTimes(1);
+      expect(toast.error).not.toHaveBeenCalledWith('Friendly messaging error');
+    } finally {
+      window.removeEventListener(MESSAGING_CONVERSATIONS_REFRESH_EVENT, conversationsRefreshSpy);
+      window.removeEventListener(MESSAGING_CONVERSATION_UNAVAILABLE_EVENT, unavailableSpy);
+    }
   });
 
   it('keeps the desktop conversation header fixed while only the messages area scrolls', async () => {

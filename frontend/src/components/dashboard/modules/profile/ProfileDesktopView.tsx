@@ -160,6 +160,7 @@ export default function ProfileDesktopView({
             onClose={() => setIsShareModalOpen(false)}
             profileUrl={buildProfileShareUrl(displayUser)}
             displayName={getProfileDisplayName(displayUser, accountType)}
+            sharedUserId={displayUser.id}
           />
           {isOtherUserProfile && (
             <ReportUserModal

@@ -67,18 +67,17 @@ def prepare_pending_request_for_message(
         conversation=conversation,
         sender_id=sender_id,
         is_deleted=False,
-        message_type=Message.Type.USER,
     ).count()
     if sent_count >= PENDING_REQUEST_MESSAGE_LIMIT:
         raise MessageRequestLimitExceeded("Message request limit reached.")
 
 
-def accept_message_request(*, conversation: Conversation, user) -> MessageRequestMutationResult:
+def accept_message_request(
+    *, conversation: Conversation, user
+) -> MessageRequestMutationResult:
     with transaction.atomic():
         convo = (
-            Conversation.objects.select_for_update()
-            .filter(id=conversation.id)
-            .first()
+            Conversation.objects.select_for_update().filter(id=conversation.id).first()
         )
         if (
             convo is None
@@ -92,7 +91,14 @@ def accept_message_request(*, conversation: Conversation, user) -> MessageReques
         convo.request_status = Conversation.RequestStatus.ACCEPTED
         convo.accepted_at = now
         convo.request_seen_at = now
-        convo.save(update_fields=["request_status", "accepted_at", "request_seen_at", "updated_at"])
+        convo.save(
+            update_fields=[
+                "request_status",
+                "accepted_at",
+                "request_seen_at",
+                "updated_at",
+            ]
+        )
 
     return MessageRequestMutationResult(
         conversation=convo,
@@ -100,12 +106,12 @@ def accept_message_request(*, conversation: Conversation, user) -> MessageReques
     )
 
 
-def delete_message_request(*, conversation: Conversation, user) -> MessageRequestMutationResult:
+def delete_message_request(
+    *, conversation: Conversation, user
+) -> MessageRequestMutationResult:
     with transaction.atomic():
         convo = (
-            Conversation.objects.select_for_update()
-            .filter(id=conversation.id)
-            .first()
+            Conversation.objects.select_for_update().filter(id=conversation.id).first()
         )
         if (
             convo is None
@@ -134,7 +140,10 @@ def count_unseen_message_requests_for_user(*, user) -> int:
             request_status=Conversation.RequestStatus.PENDING,
             last_message_at__isnull=False,
         )
-        .filter(Q(request_seen_at__isnull=True) | Q(last_message_at__gt=F("request_seen_at")))
+        .filter(
+            Q(request_seen_at__isnull=True)
+            | Q(last_message_at__gt=F("request_seen_at"))
+        )
         .count()
     )
 
@@ -148,6 +157,9 @@ def mark_message_requests_seen_for_user(*, user) -> int:
             request_status=Conversation.RequestStatus.PENDING,
             last_message_at__isnull=False,
         )
-        .filter(Q(request_seen_at__isnull=True) | Q(last_message_at__gt=F("request_seen_at")))
+        .filter(
+            Q(request_seen_at__isnull=True)
+            | Q(last_message_at__gt=F("request_seen_at"))
+        )
         .update(request_seen_at=now)
     )

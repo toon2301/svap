@@ -40,8 +40,10 @@ export function ConversationsListRow({
     : t('messages.deletedPreviewOther', '{name} vymazal/a správu').replace('{name}', title);
   const imageOnlyPreview = t('messages.imageOnlyPreview', 'Obrázok');
   const groupInvitationPreview = t('messages.groupInvitationPreview', 'Pozvánka do skupiny');
+  const profileSharePreview = t('messages.profileSharePreview', 'Zdieľaný profil');
   const rawPreview =
     (conversation.last_message_type === 'group_invitation' ? groupInvitationPreview : null) ||
+    (conversation.last_message_type === 'profile_share' ? profileSharePreview : null) ||
     conversation.last_message_preview ||
     (conversation.last_message_has_image ? imageOnlyPreview : null) ||
     (conversation.last_message_at

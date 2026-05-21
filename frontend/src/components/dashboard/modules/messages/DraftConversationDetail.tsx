@@ -11,6 +11,7 @@ import {
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useIsMobile } from '@/hooks';
 import { getMessagingErrorCode, getMessagingErrorMessage, getMessagingErrorStatus, openConversation, sendDirectMessage } from './messagingApi';
+import { ChatRequestOfferPicker } from './ChatRequestOfferPicker';
 import { DesktopEmojiPickerButton } from './DesktopEmojiPickerButton';
 import { MessageComposerImagePreview } from './MessageComposerImagePreview';
 import type { ConversationDraft, MessagingUserBrief } from './types';
@@ -37,6 +38,7 @@ export function DraftConversationDetail({
   const [sending, setSending] = useState(false);
   const [text, setText] = useState('');
   const [isComposerFocused, setIsComposerFocused] = useState(false);
+  const [isRequestPickerOpen, setIsRequestPickerOpen] = useState(false);
   const [pendingImageFile, setPendingImageFile] = useState<File | null>(null);
   const [pendingImagePreviewUrl, setPendingImagePreviewUrl] = useState<string | null>(null);
   const resolvedTargetIdRef = useRef<number>(targetUserId);
@@ -116,6 +118,9 @@ export function DraftConversationDetail({
     () => resolveTargetName(targetUser, t('messages.unknownUser', 'Používateľ')),
     [t, targetUser],
   );
+  const targetUserSlug = targetUser?.slug ?? null;
+  const targetUserType = targetUser?.user_type ?? null;
+  const canCreateRequestFromOffer = draft?.has_requestable_offers === true;
   const hasTextToSend = text.trim().length > 0;
   const hasContentToSend = hasTextToSend || pendingImageFile !== null;
   const containerClassName = `w-full ${className}`;
@@ -361,16 +366,14 @@ export function DraftConversationDetail({
 
       <div
         data-testid="draft-conversation-composer"
-        onFocusCapture={handleComposerFocus}
-        onBlurCapture={handleComposerBlur}
         className={
           isMobile
-            ? `relative z-10 mt-1 flex w-full min-w-0 shrink-0 items-center overflow-x-hidden pl-[max(0.75rem,env(safe-area-inset-left,0px))] pr-[max(0.75rem,env(safe-area-inset-right,0px))] pt-1 ${
+            ? `mt-1 w-full shrink-0 pl-[max(0.75rem,env(safe-area-inset-left,0px))] pr-[max(0.75rem,env(safe-area-inset-right,0px))] ${
                 isComposerFocused
                   ? 'pb-[max(0.5rem,env(safe-area-inset-bottom,0px))]'
                   : 'pb-[max(1.75rem,env(safe-area-inset-bottom,0px))]'
               }`
-            : 'mt-2 flex w-full min-w-0 shrink-0 items-end gap-2 px-4 sm:px-6 lg:px-8 mx-auto pb-[max(1rem,env(safe-area-inset-bottom,0px))] lg:pb-[max(1.25rem,env(safe-area-inset-bottom,0px))] sm:max-w-[min(100%,36rem)] md:max-w-[min(100%,44rem)] lg:max-w-[min(100%,52rem)] xl:max-w-[min(100%,64rem)]'
+            : 'mx-auto mt-2 w-full max-w-[min(100%,56rem)] px-4 pb-[max(1rem,env(safe-area-inset-bottom,0px))] sm:px-6 lg:px-8 lg:pb-[max(1.25rem,env(safe-area-inset-bottom,0px))]'
         }
       >
         <input
@@ -392,7 +395,20 @@ export function DraftConversationDetail({
             onChange={handlePendingImageInputChange}
           />
         ) : null}
-        <div className="flex min-w-0 flex-1 flex-col gap-2">
+        <div className="overflow-hidden rounded-[1.75rem] border border-gray-200 bg-white/90 shadow-sm backdrop-blur dark:border-gray-800 dark:bg-[#0f0f10]/90">
+          {canCreateRequestFromOffer ? (
+            <ChatRequestOfferPicker
+              open={isRequestPickerOpen}
+              disabled={!targetUserId}
+              isMobile={isMobile}
+              pairWithComposerBelow
+              targetUserId={targetUserId}
+              targetUserSlug={targetUserSlug}
+              targetUserType={targetUserType}
+              onToggle={() => setIsRequestPickerOpen((current) => !current)}
+              className=""
+            />
+          ) : null}
           {pendingImagePreviewUrl && pendingImageFile ? (
             <MessageComposerImagePreview
               previewUrl={pendingImagePreviewUrl}
@@ -402,42 +418,22 @@ export function DraftConversationDetail({
             />
           ) : null}
           <div
-            className={`relative min-w-0 flex-1 ${
+            data-testid="draft-conversation-composer-row"
+            onFocusCapture={handleComposerFocus}
+            onBlurCapture={handleComposerBlur}
+            className={
               isMobile
-                ? 'flex min-h-0 items-center gap-1 overflow-hidden rounded-2xl border border-gray-200 bg-white px-2 dark:border-gray-800 dark:bg-black'
-                : 'flex min-h-0 items-center gap-2'
-            }`}
+                ? 'relative z-10 flex w-full min-w-0 shrink-0 items-center gap-2 overflow-x-hidden border-t border-gray-200 bg-white/90 px-2.5 py-2.5 dark:border-gray-800 dark:bg-[#0f0f10]/90'
+                : 'flex w-full min-w-0 shrink-0 items-end gap-3 border-t border-gray-200 bg-white/90 px-3 py-3 dark:border-gray-800 dark:bg-[#0f0f10]/90'
+            }
           >
-            <button
-              type="button"
-              data-testid="draft-image-picker-trigger"
-              onClick={openImagePicker}
-              disabled={sending}
+            <div
               className={
                 isMobile
-                  ? 'inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-brand/30 disabled:cursor-not-allowed disabled:opacity-60 dark:text-gray-400 dark:hover:bg-[#141416] dark:hover:text-gray-200'
-                  : 'inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-gray-200 bg-white text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-brand/30 disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-800 dark:bg-black dark:text-gray-400 dark:hover:bg-[#141416] dark:hover:text-gray-200'
+                  ? 'relative flex min-h-0 min-w-0 flex-1 items-center overflow-hidden rounded-2xl border border-gray-200 bg-white px-2 dark:border-gray-800 dark:bg-black'
+                  : 'relative min-w-0 flex-1'
               }
-              aria-label={t(
-                isMobile ? 'messages.chooseImage' : 'messages.attachImage',
-                isMobile ? 'Vybrať obrázok' : 'Priložiť obrázok',
-              )}
             >
-              <PhotoIcon className="h-5 w-5" />
-            </button>
-            {isMobile ? (
-              <button
-                type="button"
-                data-testid="draft-camera-picker-trigger"
-                onClick={openCameraPicker}
-                disabled={sending}
-                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-brand/30 disabled:cursor-not-allowed disabled:opacity-60 dark:text-gray-400 dark:hover:bg-[#141416] dark:hover:text-gray-200"
-                aria-label={t('messages.takePhoto', 'Odfotiť')}
-              >
-                <CameraIcon className="h-5 w-5" />
-              </button>
-            ) : null}
-            <div className="relative min-w-0 flex-1">
               <input
                 ref={inputRef}
                 value={text}
@@ -451,46 +447,81 @@ export function DraftConversationDetail({
                 }}
                 className={`min-w-0 w-full text-sm text-gray-900 dark:text-gray-100 ${
                   isMobile
-                    ? `border-0 bg-transparent py-2 focus:outline-none overflow-x-hidden text-ellipsis whitespace-nowrap ${
-                        hasContentToSend ? 'pl-2 pr-12' : 'px-2'
-                      }`
-                    : 'rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-black px-4 py-2 focus:outline-none focus:ring-2 focus:ring-brand/40 pr-12'
+                    ? 'overflow-x-hidden text-ellipsis whitespace-nowrap border-0 bg-transparent py-2.5 pl-2 pr-[4.5rem] focus:outline-none'
+                    : 'rounded-2xl border border-gray-200 bg-white px-4 py-2 pr-24 focus:outline-none focus:ring-2 focus:ring-brand/40 dark:border-gray-800 dark:bg-black dark:text-gray-100'
                 }`}
                 placeholder={t('messages.type', 'Napíš správu…')}
               />
-              {isMobile && hasContentToSend ? (
+              <div
+                className={
+                  isMobile
+                    ? 'absolute right-1 top-1/2 flex -translate-y-1/2 items-center gap-0.5'
+                    : 'contents'
+                }
+              >
                 <button
                   type="button"
+                  data-testid="draft-image-picker-trigger"
+                  onClick={openImagePicker}
                   disabled={sending}
-                  onPointerDown={handleMobileSendPointerDown}
-                  onClick={() => void handleSend()}
-                  className="absolute right-1.5 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-brand text-white transition-colors hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-60"
-                  aria-label={t('messages.send', 'Odoslať')}
+                  className={
+                    isMobile
+                      ? 'inline-flex h-8 w-8 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-brand/30 disabled:cursor-not-allowed disabled:opacity-60 dark:text-gray-400 dark:hover:bg-[#141416] dark:hover:text-gray-200'
+                      : 'absolute right-10 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-brand/30 disabled:cursor-not-allowed disabled:opacity-60 dark:text-gray-400 dark:hover:bg-[#141416] dark:hover:text-gray-200'
+                  }
+                  aria-label={t(
+                    isMobile ? 'messages.chooseImage' : 'messages.attachImage',
+                    isMobile ? 'Vybrať obrázok' : 'Priložiť obrázok',
+                  )}
                 >
-                  <PaperAirplaneIcon className="h-4 w-4 -rotate-45" />
+                  <PhotoIcon className="h-4 w-4" />
                 </button>
-              ) : null}
-              {!isMobile ? (
-                <DesktopEmojiPickerButton
-                  ariaLabel={t('messages.addEmoji', 'Pridať emoji')}
-                  disabled={sending}
-                  onSelect={handleEmojiSelect}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-[#141416] dark:hover:text-gray-200"
-                />
-              ) : null}
+                {isMobile ? (
+                  <button
+                    type="button"
+                    data-testid="draft-camera-picker-trigger"
+                    onClick={openCameraPicker}
+                    disabled={sending}
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-brand/30 disabled:cursor-not-allowed disabled:opacity-60 dark:text-gray-400 dark:hover:bg-[#141416] dark:hover:text-gray-200"
+                    aria-label={t('messages.takePhoto', 'Odfotiť')}
+                  >
+                    <CameraIcon className="h-4 w-4" />
+                  </button>
+                ) : (
+                  <DesktopEmojiPickerButton
+                    ariaLabel={t('messages.addEmoji', 'Pridať emoji')}
+                    disabled={sending}
+                    onSelect={handleEmojiSelect}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-[#141416] dark:hover:text-gray-200"
+                  />
+                )}
+              </div>
             </div>
+            {isMobile && hasContentToSend ? (
+              <button
+                type="button"
+                data-testid="draft-send-button"
+                disabled={sending}
+                onPointerDown={handleMobileSendPointerDown}
+                onClick={() => void handleSend()}
+                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand text-white shadow-md shadow-brand/20 ring-1 ring-brand/15 transition-all hover:bg-brand-dark hover:shadow-lg hover:shadow-brand/25 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 disabled:shadow-none"
+                aria-label={t('messages.send', 'Odoslať')}
+              >
+                <PaperAirplaneIcon className="h-[1.125rem] w-[1.125rem] -rotate-45" strokeWidth={2} />
+              </button>
+            ) : null}
+            {isMobile ? null : (
+              <button
+                type="button"
+                disabled={sending || !hasContentToSend}
+                onClick={() => void handleSend()}
+                className="shrink-0 self-end rounded-2xl bg-brand px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {sending ? t('common.sending', 'Odosielam…') : t('messages.send', 'Odoslať')}
+              </button>
+            )}
           </div>
         </div>
-        {isMobile ? null : (
-          <button
-            type="button"
-            disabled={sending || !hasContentToSend}
-            onClick={() => void handleSend()}
-            className="shrink-0 self-end rounded-2xl bg-brand px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-dark disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {sending ? t('common.sending', 'Odosielam…') : t('messages.send', 'Odoslať')}
-          </button>
-        )}
       </div>
     </div>
   );

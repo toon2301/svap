@@ -19,6 +19,7 @@ import {
   updateConversationPinnedMessage,
 } from './messagingApi';
 import {
+  MESSAGING_CONVERSATION_UNAVAILABLE_EVENT,
   MESSAGING_CONVERSATIONS_REFRESH_EVENT,
   MESSAGING_OPEN_CONVERSATION_ACTIONS_EVENT,
   MESSAGING_REALTIME_DELETED_EVENT,
@@ -258,6 +259,7 @@ export function messagePage(
     previousPage: null,
     peerLastReadAt: null,
     pinnedMessage: null,
+    conversation: null,
     ...overrides,
   };
 }
@@ -283,6 +285,7 @@ export {
   sendMessage,
   toast,
   updateConversationPinnedMessage,
+  MESSAGING_CONVERSATION_UNAVAILABLE_EVENT,
   MESSAGING_CONVERSATIONS_REFRESH_EVENT,
   MESSAGING_OPEN_CONVERSATION_ACTIONS_EVENT,
   MESSAGING_REALTIME_DELETED_EVENT,
@@ -346,7 +349,25 @@ export function setupConversationDetailTestDefaults() {
         },
       },
     ]);
-    (listMessages as jest.Mock).mockResolvedValue(messagePage([]));
+    (listMessages as jest.Mock).mockResolvedValue(
+      messagePage([], {
+        conversation: {
+          id: 9,
+          has_requestable_offers: true,
+          other_user: {
+            id: 77,
+            slug: 'tester-slug',
+            display_name: 'Tester',
+          },
+          last_message_preview: null,
+          last_message_at: null,
+          last_read_at: null,
+          has_unread: false,
+          unread_count: 0,
+          updated_at: '2026-01-01T00:00:00Z',
+        },
+      }),
+    );
     (listGroupMemberCandidates as jest.Mock).mockResolvedValue([]);
     (markConversationRead as jest.Mock).mockResolvedValue({
       conversation_id: 9,

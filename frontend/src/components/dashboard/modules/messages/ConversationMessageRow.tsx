@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { EllipsisHorizontalIcon } from '@heroicons/react/24/outline';
 import type { MessageItem } from './types';
 import { GroupInvitationMessageCard } from './GroupInvitationMessageCard';
+import { ProfileShareMessageCard } from './ProfileShareMessageCard';
 import { resolveMessagingImageUrl } from './resolveMessagingImageUrl';
 import { formatTime, minuteBucketKey } from './conversationDetailUtils';
 import { MOBILE_OWN_MESSAGE_BUBBLE_SUPPRESSION_STYLE } from './conversationDetailConstants';
@@ -78,6 +79,7 @@ export function ConversationMessageRow({
     minuteBucketKey(prevMessage.created_at) !== minuteBucketKey(message.created_at);
   const showSenderAvatar = !mine && (!nextMessage || nextSenderId !== curSenderId);
   const showSeenIndicator = mine && !message.is_deleted && lastSeenMessageId === message.id;
+  const isProfileShareMessage = message.message_type === 'profile_share';
   const senderAvatarUrl = message.sender?.avatar_url || targetUserAvatarUrl;
   const senderDisplayName = (message.sender?.display_name || '').trim() || targetUserName;
   const messageCanDelete = mine && !message.is_deleted;
@@ -246,7 +248,10 @@ export function ConversationMessageRow({
       style={maybeSuppressedStyle}
       onContextMenu={maybeSuppressedContextMenu}
     >
-      {messagePreviewImageUrl && messageLightboxImageUrl ? (
+      {!message.is_deleted && isProfileShareMessage ? (
+        <ProfileShareMessageCard profile={message.profile_share ?? null} outgoing={mine} />
+      ) : null}
+      {!isProfileShareMessage && messagePreviewImageUrl && messageLightboxImageUrl ? (
         <button
           type="button"
           data-testid={`message-image-trigger-${message.id}`}
@@ -263,7 +268,12 @@ export function ConversationMessageRow({
           />
         </button>
       ) : null}
-      {displayText ? <div className={messageTextClassName}>{displayText}</div> : null}
+      {!isProfileShareMessage && displayText ? (
+        <div className={messageTextClassName}>{displayText}</div>
+      ) : null}
+      {isProfileShareMessage && message.is_deleted && displayText ? (
+        <div className={messageTextClassName}>{displayText}</div>
+      ) : null}
     </div>
   );
 
