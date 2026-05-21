@@ -68,6 +68,7 @@ export function useConversationThreadController({
   const pendingLatestScrollAfterRefreshRef = useRef(false);
   const shouldScrollToLatestOnRenderRef = useRef(false);
   const hasNotifiedConversationUnavailableRef = useRef(false);
+  const latestConversationIdRef = useRef(conversationId);
   const { maybeMarkConversationRead, resetReadStateSession } = useConversationReadState({
     conversationId,
     currentUserId,
@@ -270,7 +271,8 @@ export function useConversationThreadController({
   const handleRefreshError = useCallback(
     (error: unknown, showError: boolean) => {
       if (getMessagingErrorStatus(error) === 404) {
-        if (!hasNotifiedConversationUnavailableRef.current) {
+        const isLatestConversation = conversationId === latestConversationIdRef.current;
+        if (isLatestConversation && !hasNotifiedConversationUnavailableRef.current) {
           hasNotifiedConversationUnavailableRef.current = true;
           onConversationUnavailable?.(conversationId);
         }
@@ -373,6 +375,7 @@ export function useConversationThreadController({
   );
   useEffect(() => {
     let cancelled = false;
+    latestConversationIdRef.current = conversationId;
     resetReadStateSession();
     latestKnownMessageIdRef.current = null;
     hasNotifiedConversationUnavailableRef.current = false;

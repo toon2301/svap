@@ -137,18 +137,20 @@ describe('ConversationDetail shell and conversation actions', () => {
       },
     });
 
-    render(<ConversationDetail conversationId={9} currentUserId={1} />);
+    try {
+      render(<ConversationDetail conversationId={9} currentUserId={1} />);
 
-    await waitFor(() => {
-      expect(window.location.pathname + window.location.search).toBe('/dashboard/messages');
-    });
+      await waitFor(() => {
+        expect(window.location.pathname + window.location.search).toBe('/dashboard/messages');
+      });
 
-    expect(unavailableSpy).toHaveBeenCalledTimes(1);
-    expect(conversationsRefreshSpy).toHaveBeenCalledTimes(1);
-    expect(toast.error).not.toHaveBeenCalledWith('Friendly messaging error');
-
-    window.removeEventListener(MESSAGING_CONVERSATIONS_REFRESH_EVENT, conversationsRefreshSpy);
-    window.removeEventListener(MESSAGING_CONVERSATION_UNAVAILABLE_EVENT, unavailableSpy);
+      expect(unavailableSpy).toHaveBeenCalledTimes(1);
+      expect(conversationsRefreshSpy).toHaveBeenCalledTimes(1);
+      expect(toast.error).not.toHaveBeenCalledWith('Friendly messaging error');
+    } finally {
+      window.removeEventListener(MESSAGING_CONVERSATIONS_REFRESH_EVENT, conversationsRefreshSpy);
+      window.removeEventListener(MESSAGING_CONVERSATION_UNAVAILABLE_EVENT, unavailableSpy);
+    }
   });
 
   it('keeps the desktop conversation header fixed while only the messages area scrolls', async () => {

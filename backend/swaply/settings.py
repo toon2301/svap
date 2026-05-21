@@ -73,15 +73,25 @@ def _sentry_before_send(event, hint):
     return event
 
 
+def _safe_sentry_traces_sample_rate() -> float:
+    raw_value = os.getenv("SENTRY_TRACES_SAMPLE_RATE", "0.1")
+    try:
+        value = float(raw_value)
+    except (TypeError, ValueError):
+        value = 0.1
+    return max(0.0, min(1.0, value))
+
+
 SENTRY_DSN = os.getenv("SENTRY_DSN")
 if SENTRY_DSN:
+    SENTRY_TRACES_SAMPLE_RATE = _safe_sentry_traces_sample_rate()
     sentry_sdk.init(
         dsn=SENTRY_DSN,
         integrations=[DjangoIntegration()],
         before_send=_sentry_before_send,
         send_default_pii=True,
         environment=os.getenv("SENTRY_ENVIRONMENT", "production"),
-        traces_sample_rate=float(os.getenv("SENTRY_TRACES_SAMPLE_RATE", "0.1")),
+        traces_sample_rate=SENTRY_TRACES_SAMPLE_RATE,
     )
 
 # Test helper `swaply/test/test_settings_runtime.py` načíta settings.py do nového (temp) názvu modulu,
