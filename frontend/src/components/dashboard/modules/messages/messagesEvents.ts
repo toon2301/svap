@@ -9,6 +9,7 @@ export const MESSAGING_REALTIME_DELETED_EVENT = 'messaging:realtime:deleted';
 export const MESSAGING_REALTIME_PINNED_MESSAGE_EVENT = 'messaging:realtime:pinned-message';
 export const MESSAGING_REALTIME_GROUP_EVENT = 'messaging:realtime:group';
 export const MESSAGING_OPEN_CONVERSATION_ACTIONS_EVENT = 'messaging:conversation:actions:open';
+export const MESSAGING_CONVERSATION_UNAVAILABLE_EVENT = 'messaging:conversation:unavailable';
 
 const DEFAULT_PASSIVE_REFRESH_SUPPRESSION_MS = 12_000;
 
@@ -44,6 +45,10 @@ export type MessagingRealtimeGroupPayload = {
   type: string;
 };
 
+export type MessagingConversationUnavailablePayload = {
+  conversationId: number;
+};
+
 export function suppressPassiveMessagingRefresh(durationMs = DEFAULT_PASSIVE_REFRESH_SUPPRESSION_MS): void {
   passiveMessagingRefreshSuppressedUntil = Math.max(
     passiveMessagingRefreshSuppressedUntil,
@@ -62,6 +67,18 @@ export function clearPassiveMessagingRefreshSuppression(): void {
 export function requestConversationsRefresh(): void {
   if (typeof window === 'undefined') return;
   window.dispatchEvent(new Event(MESSAGING_CONVERSATIONS_REFRESH_EVENT));
+}
+
+export function dispatchConversationUnavailable(conversationId: number): void {
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(
+    new CustomEvent<MessagingConversationUnavailablePayload>(
+      MESSAGING_CONVERSATION_UNAVAILABLE_EVENT,
+      {
+        detail: { conversationId },
+      },
+    ),
+  );
 }
 
 export function dispatchMessagingRealtimeMessage(

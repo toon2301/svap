@@ -6,6 +6,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useIsMobile } from '@/hooks';
 
 import NotificationItem from './NotificationItem';
+import { NotificationsFeedSkeleton } from './NotificationsFeedSkeleton';
 import { useNotificationsFeed } from './useNotificationsFeed';
 
 interface NotificationsFeedProps {
@@ -101,9 +102,12 @@ export default function NotificationsFeed({
         ) : null}
 
         {loading ? (
-          <div className="rounded-2xl border border-gray-200 bg-white p-6 text-sm text-gray-500 dark:border-gray-800 dark:bg-black dark:text-gray-400">
-            {t('notifications.loadingFeed', 'Načítavam upozornenia...')}
-          </div>
+          <>
+            <span className="sr-only">
+              {t('notifications.loadingFeed', 'Načítavam upozornenia...')}
+            </span>
+            <NotificationsFeedSkeleton />
+          </>
         ) : items.length === 0 ? (
           <div className="rounded-2xl border border-gray-200 bg-white p-8 text-center dark:border-gray-800 dark:bg-black">
             <BellIcon className="mx-auto h-10 w-10 text-gray-400 dark:text-gray-500" />

@@ -18,6 +18,7 @@ import {
 } from '@/components/dashboard/contexts/messageUnreadStore';
 import {
   clearPassiveMessagingRefreshSuppression,
+  dispatchConversationUnavailable,
   requestConversationsRefresh,
   suppressPassiveMessagingRefresh,
 } from './messagesEvents';
@@ -524,6 +525,31 @@ describe('ConversationsList', () => {
       expect(window.location.pathname + window.location.search).toBe('/dashboard/messages');
       expect(listConversations).toHaveBeenCalledTimes(2);
     });
+  });
+
+  it('removes an unavailable selected conversation from the local list and messages URL', async () => {
+    window.history.replaceState(null, '', '/dashboard/messages?conversationId=9');
+    (listConversations as jest.Mock).mockResolvedValueOnce([
+      {
+        id: 9,
+        other_user: { id: 2, display_name: 'Tester' },
+        last_message_preview: 'Nova sprava',
+        last_message_at: '2026-03-27T10:00:00Z',
+        last_message_sender_id: 2,
+        has_unread: false,
+      },
+    ]);
+
+    render(<ConversationsList currentUserId={1} variant="rail" selectedConversationId={9} />);
+
+    expect(await screen.findByText('Nova sprava')).toBeInTheDocument();
+
+    act(() => {
+      dispatchConversationUnavailable(9);
+    });
+
+    expect(screen.queryByText('Nova sprava')).not.toBeInTheDocument();
+    expect(window.location.pathname + window.location.search).toBe('/dashboard/messages');
   });
 
   it('pins a conversation from the rail menu, moves it to the top, and shows a pinned indicator', async () => {

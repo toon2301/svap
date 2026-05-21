@@ -273,7 +273,7 @@ export function ProfileShareModal({
             className="flex min-h-0 flex-1 flex-col overflow-hidden"
             onSubmit={handleSendProfileShare}
           >
-            <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4 sm:p-5">
+            <div className="subtle-scrollbar min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain p-4 sm:p-5">
               <div className="rounded-2xl border border-gray-200 bg-gray-50 p-3 dark:border-gray-800 dark:bg-black">
                 <div className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
                   {t('messages.profileShareCardTitle', 'Zdieľaný profil')}
@@ -314,7 +314,7 @@ export function ProfileShareModal({
             </div>
           </form>
         ) : (
-          <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-5">
+          <div className="subtle-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain p-4 sm:p-5">
             <div className="grid gap-2">
               <button
                 type="button"

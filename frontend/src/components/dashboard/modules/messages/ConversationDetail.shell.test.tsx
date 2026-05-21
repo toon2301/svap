@@ -4,6 +4,7 @@ import React from 'react';
 import { act, createEvent, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import {
   ConversationDetail,
+  MESSAGING_CONVERSATION_UNAVAILABLE_EVENT,
   MESSAGING_CONVERSATIONS_REFRESH_EVENT,
   MESSAGING_OPEN_CONVERSATION_ACTIONS_EVENT,
   MESSAGING_REALTIME_DELETED_EVENT,
@@ -122,6 +123,32 @@ describe('ConversationDetail shell and conversation actions', () => {
     });
 
     expect(screen.queryByTestId('chat-request-offer-picker')).not.toBeInTheDocument();
+  });
+
+  it('redirects to the messages list when the selected conversation is unavailable', async () => {
+    const conversationsRefreshSpy = jest.fn();
+    const unavailableSpy = jest.fn();
+    window.history.replaceState(null, '', '/dashboard/messages?conversationId=9');
+    window.addEventListener(MESSAGING_CONVERSATIONS_REFRESH_EVENT, conversationsRefreshSpy);
+    window.addEventListener(MESSAGING_CONVERSATION_UNAVAILABLE_EVENT, unavailableSpy);
+    (listMessages as jest.Mock).mockRejectedValueOnce({
+      response: {
+        status: 404,
+      },
+    });
+
+    render(<ConversationDetail conversationId={9} currentUserId={1} />);
+
+    await waitFor(() => {
+      expect(window.location.pathname + window.location.search).toBe('/dashboard/messages');
+    });
+
+    expect(unavailableSpy).toHaveBeenCalledTimes(1);
+    expect(conversationsRefreshSpy).toHaveBeenCalledTimes(1);
+    expect(toast.error).not.toHaveBeenCalledWith('Friendly messaging error');
+
+    window.removeEventListener(MESSAGING_CONVERSATIONS_REFRESH_EVENT, conversationsRefreshSpy);
+    window.removeEventListener(MESSAGING_CONVERSATION_UNAVAILABLE_EVENT, unavailableSpy);
   });
 
   it('keeps the desktop conversation header fixed while only the messages area scrolls', async () => {

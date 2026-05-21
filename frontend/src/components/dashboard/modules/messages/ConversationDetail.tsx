@@ -16,7 +16,7 @@ import { useConversationComposerController } from './useConversationComposerCont
 import { useConversationPresenceHeartbeat } from './useConversationPresenceHeartbeat';
 import { useConversationRealtimeSync } from './useConversationRealtimeSync';
 import { useConversationThreadController } from './useConversationThreadController';
-import { requestConversationsRefresh } from './messagesEvents';
+import { dispatchConversationUnavailable, requestConversationsRefresh } from './messagesEvents';
 import { navigateMessagesUrl } from './messagesRouting';
 import { getMessagingErrorMessage, respondToGroupInvitation } from './messagingApi';
 import toast from 'react-hot-toast';
@@ -42,6 +42,12 @@ export function ConversationDetail({
   } = useMessagesNotifications();
   useConversationPresenceHeartbeat(conversationId);
 
+  const handleConversationUnavailable = useCallback((unavailableConversationId: number) => {
+    dispatchConversationUnavailable(unavailableConversationId);
+    requestConversationsRefresh();
+    navigateMessagesUrl(null, { mode: 'replace' });
+  }, []);
+
   const imagePreviewAlt = t('messages.imagePreview', 'Náhľad obrázka');
   const imageOnlyPreviewLabel = t('messages.imageOnlyPreview', 'Obrázok');
 
@@ -51,6 +57,7 @@ export function ConversationDetail({
     isMobile,
     t,
     syncConversationReadState,
+    onConversationUnavailable: handleConversationUnavailable,
   });
   const loadedMessageIdsRef = useRef<Set<number>>(new Set());
   loadedMessageIdsRef.current = new Set(thread.messages.map((item) => item.id));

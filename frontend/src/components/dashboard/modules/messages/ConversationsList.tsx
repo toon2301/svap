@@ -26,7 +26,9 @@ import { ConversationActionsMenu } from './ConversationActionsMenu';
 import { ConversationsListSkeleton } from './ConversationsListSkeleton';
 import { DeleteConversationConfirmModal } from './DeleteConversationConfirmModal';
 import {
+  MESSAGING_CONVERSATION_UNAVAILABLE_EVENT,
   MESSAGING_CONVERSATIONS_REFRESH_EVENT,
+  type MessagingConversationUnavailablePayload,
   isPassiveMessagingRefreshSuppressed,
   requestConversationsRefresh,
 } from './messagesEvents';
@@ -251,6 +253,23 @@ export function ConversationsList({
     navigateMessagesUrl(conversationId);
   }, []);
 
+  const handleConversationUnavailable = useCallback(
+    (conversationId: number) => {
+      removeConversationLocally(conversationId);
+      setRequestItems((current) => current.filter((item) => item.id !== conversationId));
+      setConversationActionsTarget((current) =>
+        current?.conversationId === conversationId ? null : current,
+      );
+      setConversationPendingDeleteId((current) =>
+        current === conversationId ? null : current,
+      );
+      if (selectedConversationId === conversationId) {
+        navigateMessagesUrl(null, { mode: 'replace' });
+      }
+    },
+    [removeConversationLocally, selectedConversationId],
+  );
+
   const handleAcceptMessageRequest = useCallback(
     async (conversationId: number) => {
       if (messageRequestActionId !== null) return;
@@ -423,6 +442,26 @@ export function ConversationsList({
   useEffect(() => {
     void refreshMessageRequestBadge();
   }, [refreshMessageRequestBadge]);
+
+  useEffect(() => {
+    const handleUnavailableEvent = (event: Event) => {
+      const conversationId = (event as CustomEvent<MessagingConversationUnavailablePayload>)
+        .detail?.conversationId;
+      if (typeof conversationId !== 'number') return;
+      handleConversationUnavailable(conversationId);
+    };
+
+    window.addEventListener(
+      MESSAGING_CONVERSATION_UNAVAILABLE_EVENT,
+      handleUnavailableEvent,
+    );
+    return () => {
+      window.removeEventListener(
+        MESSAGING_CONVERSATION_UNAVAILABLE_EVENT,
+        handleUnavailableEvent,
+      );
+    };
+  }, [handleConversationUnavailable]);
 
   useEffect(() => {
     if (activeTab !== 'requests') return;
