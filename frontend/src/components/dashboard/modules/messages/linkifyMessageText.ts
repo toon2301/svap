@@ -3,10 +3,37 @@ export type LinkifiedMessageSegment =
   | { type: 'link'; value: string; href: string };
 
 const MESSAGE_URL_REGEX = /(?:https?:\/\/|www\.)[^\s<]+/gi;
-const TRAILING_URL_PUNCTUATION = /[),.;:!?"'\]}>]+$/;
+const TRAILING_URL_PUNCTUATION = /[,.;:!?"'\]}>]+$/;
+
+function hasUnmatchedTrailingClosingParen(value: string): boolean {
+  const openCount = (value.match(/\(/g) ?? []).length;
+  const closeCount = (value.match(/\)/g) ?? []).length;
+  return closeCount > openCount;
+}
+
+function stripTrailingUrlPunctuation(rawUrl: string): string {
+  let candidate = rawUrl;
+
+  while (candidate) {
+    const withoutOtherPunctuation = candidate.replace(TRAILING_URL_PUNCTUATION, '');
+    if (withoutOtherPunctuation !== candidate) {
+      candidate = withoutOtherPunctuation;
+      continue;
+    }
+
+    if (candidate.endsWith(')') && hasUnmatchedTrailingClosingParen(candidate)) {
+      candidate = candidate.slice(0, -1);
+      continue;
+    }
+
+    return candidate;
+  }
+
+  return candidate;
+}
 
 function normalizeMessageUrl(rawUrl: string): string | null {
-  const trimmed = rawUrl.replace(TRAILING_URL_PUNCTUATION, '');
+  const trimmed = stripTrailingUrlPunctuation(rawUrl);
   const candidate = trimmed.startsWith('www.') ? `https://${trimmed}` : trimmed;
 
   try {
@@ -31,7 +58,7 @@ export function linkifyMessageText(text: string): LinkifiedMessageSegment[] {
   for (const match of text.matchAll(MESSAGE_URL_REGEX)) {
     const start = match.index ?? 0;
     const raw = match[0];
-    const display = raw.replace(TRAILING_URL_PUNCTUATION, '');
+    const display = stripTrailingUrlPunctuation(raw);
 
     if (start > lastIndex) {
       segments.push({ type: 'text', value: text.slice(lastIndex, start) });

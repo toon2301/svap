@@ -37,4 +37,24 @@ describe('linkifyMessageText', () => {
       { type: 'text', value: 'javascript:alert(1)' },
     ]);
   });
+
+  it('keeps matched closing parentheses in URLs', () => {
+    expect(linkifyMessageText('Wiki https://example.com/wiki/Foo_(bar).')).toEqual([
+      { type: 'text', value: 'Wiki ' },
+      {
+        type: 'link',
+        value: 'https://example.com/wiki/Foo_(bar)',
+        href: 'https://example.com/wiki/Foo_(bar)',
+      },
+      { type: 'text', value: '.' },
+    ]);
+  });
+
+  it('strips unmatched closing parentheses after URLs', () => {
+    expect(linkifyMessageText('Pozri (https://example.com/path).')).toEqual([
+      { type: 'text', value: 'Pozri (' },
+      { type: 'link', value: 'https://example.com/path', href: 'https://example.com/path' },
+      { type: 'text', value: ').' },
+    ]);
+  });
 });

@@ -244,7 +244,7 @@ export default function ProfileEditFormMobile({
           />
         </div>
         {user.email ? (
-          <p className="mt-3 max-w-full break-all text-center text-sm text-gray-600 dark:text-gray-300">
+          <p className="mt-3 max-w-full break-words text-center text-sm text-gray-600 dark:text-gray-300">
             {user.email}
           </p>
         ) : null}
