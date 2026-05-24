@@ -33,7 +33,7 @@ class OfferShareSendSerializer(serializers.Serializer):
     def validate_recipient_user_ids(self, value):
         normalized = normalize_offer_share_recipient_ids(value)
         if not normalized:
-            raise serializers.ValidationError("Vyberte aspon jedneho prijemcu.")
+            raise serializers.ValidationError("Vyberte aspoň jedného príjemcu.")
         return normalized
 
 

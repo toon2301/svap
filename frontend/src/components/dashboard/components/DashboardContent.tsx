@@ -86,13 +86,21 @@ function getDashboardUserIdentifierFromTarget(targetUrl: string): string | null 
   }
 }
 
+function parseDashboardHighlightId(value: number | string | null | undefined): number | null {
+  const id =
+    typeof value === 'number'
+      ? value
+      : value != null && String(value).trim()
+        ? Number(value)
+        : null;
+  return id != null && Number.isFinite(id) && Number.isInteger(id) && id >= 1 ? id : null;
+}
+
 function getDashboardHighlightIdFromTarget(targetUrl: string): number | null {
   try {
     const searchParams = new URL(targetUrl, 'https://swaply.local').searchParams;
     const raw = searchParams.get('offer') ?? searchParams.get('highlight');
-    if (!raw) return null;
-    const id = Number(raw);
-    return Number.isFinite(id) && id >= 1 ? id : null;
+    return parseDashboardHighlightId(raw);
   } catch {
     return null;
   }
@@ -530,13 +538,7 @@ export default function DashboardContent({
 
       const rawHighlight = detail?.offerId ?? detail?.highlightId;
       const useOfferParam = detail?.offerId != null;
-      const parsedHighlight =
-        typeof rawHighlight === 'number'
-          ? rawHighlight
-          : rawHighlight != null && String(rawHighlight).trim()
-            ? Number(rawHighlight)
-            : null;
-      const highlightId = parsedHighlight != null && Number.isFinite(parsedHighlight) ? parsedHighlight : null;
+      const highlightId = parseDashboardHighlightId(rawHighlight);
 
       // Prepni modul a zavri vedÄ¾ajÅ¡ie UI
       setActiveModule('user-profile');
@@ -617,14 +619,7 @@ export default function DashboardContent({
   useEffect(() => {
     const handler = (evt: Event) => {
       const detail = (evt as CustomEvent<{ highlightId?: number | string | null }>).detail;
-      const rawHighlight = detail?.highlightId;
-      const parsedHighlight =
-        typeof rawHighlight === 'number'
-          ? rawHighlight
-          : rawHighlight != null && String(rawHighlight).trim()
-            ? Number(rawHighlight)
-            : null;
-      const highlightId = parsedHighlight != null && Number.isFinite(parsedHighlight) ? parsedHighlight : null;
+      const highlightId = parseDashboardHighlightId(detail?.highlightId);
 
       setActiveModule('profile');
       setIsRightSidebarOpen(false);

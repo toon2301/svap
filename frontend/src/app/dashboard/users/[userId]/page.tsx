@@ -14,7 +14,14 @@ interface UserDashboardPageProps {
 export default function UserDashboardPage({ params, searchParams }: UserDashboardPageProps) {
   const identifier = params.userId;
   const rawHighlightId = searchParams.offer ?? searchParams.highlight;
-  const highlightId = rawHighlightId ? Number(rawHighlightId) : null;
+  const parsedHighlightId = rawHighlightId ? Number(rawHighlightId) : null;
+  const highlightId =
+    parsedHighlightId != null &&
+    Number.isFinite(parsedHighlightId) &&
+    Number.isInteger(parsedHighlightId) &&
+    parsedHighlightId > 0
+      ? parsedHighlightId
+      : null;
 
   return (
     <Dashboard
@@ -22,7 +29,7 @@ export default function UserDashboardPage({ params, searchParams }: UserDashboar
       // Ak je identifier čisto numerický, môžeme ho použiť aj ako ID (fallback)
       initialViewedUserId={/^\d+$/.test(identifier) ? Number(identifier) : null}
       initialProfileSlug={identifier}
-      initialHighlightedSkillId={!isNaN(Number(highlightId)) ? highlightId : null}
+      initialHighlightedSkillId={highlightId}
     />
   );
 }

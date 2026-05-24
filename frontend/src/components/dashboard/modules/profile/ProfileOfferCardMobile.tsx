@@ -188,6 +188,12 @@ export function ProfileOfferCardMobile({
               e.stopPropagation();
               onShareClick?.(offer);
             }}
+            onKeyDown={(e) => {
+              if (e.key !== 'Enter' && e.key !== ' ' && e.key !== 'Space') return;
+              e.preventDefault();
+              e.stopPropagation();
+              onShareClick?.(offer);
+            }}
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"

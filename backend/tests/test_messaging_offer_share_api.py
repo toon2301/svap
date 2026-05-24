@@ -90,6 +90,60 @@ class TestMessagingOfferShareApi(APITestCase):
             self.recipient.id
         ]
 
+    def test_send_offer_share_partial_failure_for_multiple_recipients(self):
+        unavailable_recipient_id = self.sender.id
+        self.client.force_authenticate(user=self.sender)
+
+        with patch("messaging.api.offer_share_views.notify_user") as notify_user_mock:
+            response = self.client.post(
+                self._url(),
+                {
+                    "shared_offer_id": self.offer.id,
+                    "recipient_user_ids": [
+                        self.recipient.id,
+                        unavailable_recipient_id,
+                    ],
+                },
+                format="json",
+            )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert [item["user_id"] for item in response.data["sent"]] == [
+            self.recipient.id
+        ]
+        assert response.data["failed"] == [
+            {"user_id": unavailable_recipient_id, "code": "recipient_unavailable"}
+        ]
+        assert Message.objects.filter(message_type=Message.Type.OFFER_SHARE).count() == 1
+        assert Conversation.objects.filter(
+            requested_by=self.sender,
+            requested_to=self.recipient,
+            request_status=Conversation.RequestStatus.PENDING,
+        ).count() == 1
+        assert Conversation.objects.filter(
+            requested_by=self.sender,
+            requested_to=self.sender,
+        ).count() == 0
+        assert [call.args[0] for call in notify_user_mock.call_args_list] == [
+            self.recipient.id
+        ]
+
+    def test_share_nonexistent_offer_returns_404(self):
+        self.client.force_authenticate(user=self.sender)
+        missing_offer_id = self.offer.id + 10_000
+
+        response = self.client.post(
+            self._url(),
+            {
+                "shared_offer_id": missing_offer_id,
+                "recipient_user_ids": [self.recipient.id],
+            },
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+        assert Message.objects.filter(message_type=Message.Type.OFFER_SHARE).count() == 0
+
     def test_offer_share_requires_public_visible_offer(self):
         self.offer.is_hidden = True
         self.offer.save(update_fields=["is_hidden"])
