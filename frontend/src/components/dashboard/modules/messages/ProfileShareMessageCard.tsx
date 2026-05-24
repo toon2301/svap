@@ -51,7 +51,7 @@ export function ProfileShareMessageCard({
       className={[
         'flex w-full min-w-52 max-w-72 items-center gap-3 rounded-xl border px-3 py-2 text-left transition-colors focus:outline-none focus:ring-2',
         outgoing
-          ? 'border-white/25 bg-white/95 text-gray-900 hover:bg-white focus:ring-white/60'
+          ? 'border-purple-200 bg-white text-gray-900 hover:bg-purple-50 focus:ring-purple-300 dark:border-purple-800/50 dark:bg-[#141416] dark:text-white dark:hover:bg-[#1a1a1d]'
           : 'border-gray-200 bg-white text-gray-900 hover:bg-gray-50 focus:ring-purple-300 dark:border-gray-800 dark:bg-black dark:text-white dark:hover:bg-gray-950',
       ].join(' ')}
       aria-label={t('messages.profileShareOpenProfile', 'Otvoriť profil')}

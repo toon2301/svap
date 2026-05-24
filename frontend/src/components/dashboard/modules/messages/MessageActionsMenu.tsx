@@ -4,6 +4,7 @@ import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 're
 import { createPortal } from 'react-dom';
 import { DocumentDuplicateIcon, PaperAirplaneIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { OUTGOING_MESSAGE_BUBBLE_CLASS } from './conversationDetailConstants';
 import { MessagePinIcon } from './MessagePinIcon';
 
 type MessageActionPreview = {
@@ -245,7 +246,9 @@ export function MessageActionsMenu({
               {preview.timestamp}
             </div>
           ) : null}
-          <div className="ml-auto w-fit max-w-[min(75vw,18rem)] overflow-hidden rounded-2xl bg-brand text-sm text-white shadow-[0_16px_40px_rgba(15,23,42,0.18)] ring-1 ring-black/5">
+          <div
+            className={`ml-auto w-fit max-w-[min(75vw,18rem)] overflow-hidden rounded-2xl text-sm shadow-[0_16px_40px_rgba(15,23,42,0.18)] ring-1 ring-black/5 ${OUTGOING_MESSAGE_BUBBLE_CLASS}`}
+          >
             {preview.imageUrl ? (
               <img
                 src={preview.imageUrl}

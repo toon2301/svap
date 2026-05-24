@@ -1,0 +1,83 @@
+export type LinkifiedMessageSegment =
+  | { type: 'text'; value: string }
+  | { type: 'link'; value: string; href: string };
+
+type NormalizedMessageUrl = { display: string; href: string | null };
+
+const MESSAGE_URL_REGEX = /(?:https?:\/\/|www\.)[^\s<]+/gi;
+const TRAILING_URL_PUNCTUATION = /[,.;:!?"'\]}>]+$/;
+
+function hasUnmatchedTrailingClosingParen(value: string): boolean {
+  const openCount = (value.match(/\(/g) ?? []).length;
+  const closeCount = (value.match(/\)/g) ?? []).length;
+  return closeCount > openCount;
+}
+
+function stripTrailingUrlPunctuation(rawUrl: string): string {
+  let candidate = rawUrl;
+
+  while (candidate) {
+    const withoutOtherPunctuation = candidate.replace(TRAILING_URL_PUNCTUATION, '');
+    if (withoutOtherPunctuation !== candidate) {
+      candidate = withoutOtherPunctuation;
+      continue;
+    }
+
+    if (candidate.endsWith(')') && hasUnmatchedTrailingClosingParen(candidate)) {
+      candidate = candidate.slice(0, -1);
+      continue;
+    }
+
+    return candidate;
+  }
+
+  return candidate;
+}
+
+function normalizeMessageUrl(rawUrl: string): NormalizedMessageUrl {
+  const display = stripTrailingUrlPunctuation(rawUrl);
+  const candidate = display.startsWith('www.') ? `https://${display}` : display;
+
+  try {
+    const parsed = new URL(candidate);
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      return { display, href: null };
+    }
+    return { display, href: parsed.toString() };
+  } catch {
+    return { display, href: null };
+  }
+}
+
+export function linkifyMessageText(text: string): LinkifiedMessageSegment[] {
+  if (!text) {
+    return [];
+  }
+
+  const segments: LinkifiedMessageSegment[] = [];
+  let lastIndex = 0;
+
+  for (const match of text.matchAll(MESSAGE_URL_REGEX)) {
+    const start = match.index ?? 0;
+    const raw = match[0];
+    const normalized = normalizeMessageUrl(raw);
+
+    if (start > lastIndex) {
+      segments.push({ type: 'text', value: text.slice(lastIndex, start) });
+    }
+
+    if (normalized.href) {
+      segments.push({ type: 'link', value: normalized.display, href: normalized.href });
+    } else {
+      segments.push({ type: 'text', value: normalized.display });
+    }
+
+    lastIndex = start + normalized.display.length;
+  }
+
+  if (lastIndex < text.length) {
+    segments.push({ type: 'text', value: text.slice(lastIndex) });
+  }
+
+  return segments.length > 0 ? segments : [{ type: 'text', value: text }];
+}

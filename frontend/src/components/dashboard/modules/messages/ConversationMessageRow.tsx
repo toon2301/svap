@@ -7,7 +7,11 @@ import { GroupInvitationMessageCard } from './GroupInvitationMessageCard';
 import { ProfileShareMessageCard } from './ProfileShareMessageCard';
 import { resolveMessagingImageUrl } from './resolveMessagingImageUrl';
 import { formatTime, minuteBucketKey } from './conversationDetailUtils';
-import { MOBILE_OWN_MESSAGE_BUBBLE_SUPPRESSION_STYLE } from './conversationDetailConstants';
+import { MessageTextWithLinks } from './MessageTextWithLinks';
+import {
+  MOBILE_OWN_MESSAGE_BUBBLE_SUPPRESSION_STYLE,
+  OUTGOING_MESSAGE_BUBBLE_CLASS,
+} from './conversationDetailConstants';
 
 const DESKTOP_ACTION_TRIGGER_HIDE_DELAY_MS = 150;
 
@@ -114,7 +118,7 @@ export function ConversationMessageRow({
   const bubbleClassName = [
     `${bubbleWidthClassName} rounded-2xl px-3 py-2 text-sm`,
     mine && !message.is_deleted
-      ? 'bg-brand text-white'
+      ? OUTGOING_MESSAGE_BUBBLE_CLASS
       : 'border border-gray-200/60 bg-gray-100 text-gray-900 dark:border-gray-800 dark:bg-[#141416] dark:text-gray-100',
   ].join(' ');
   const maybeSuppressedContextMenu = suppressMobileMessageSelection
@@ -269,10 +273,18 @@ export function ConversationMessageRow({
         </button>
       ) : null}
       {!isProfileShareMessage && displayText ? (
-        <div className={messageTextClassName}>{displayText}</div>
+        <MessageTextWithLinks
+          text={displayText}
+          className={messageTextClassName}
+          variant={mine ? 'outgoing' : 'incoming'}
+        />
       ) : null}
       {isProfileShareMessage && message.is_deleted && displayText ? (
-        <div className={messageTextClassName}>{displayText}</div>
+        <MessageTextWithLinks
+          text={displayText}
+          className={messageTextClassName}
+          variant={mine ? 'outgoing' : 'incoming'}
+        />
       ) : null}
     </div>
   );
