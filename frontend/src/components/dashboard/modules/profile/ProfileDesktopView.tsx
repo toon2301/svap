@@ -12,7 +12,7 @@ import { ProfileDesktopTabs } from './ProfileDesktopTabs';
 import { ProfileDesktopHamburgerModal } from './ProfileDesktopHamburgerModal';
 import { ReportUserModal } from './ReportUserModal';
 import { ProfileShareModal } from './ProfileShareModal';
-import { buildProfileShareUrl } from './profileShareUrl';
+import { buildProfileShareUrl, getProfileShareIdentifier } from './profileShareUrl';
 
 interface ProfileDesktopViewProps {
   user: User;
@@ -133,6 +133,7 @@ export default function ProfileDesktopView({
                 accountType={accountType}
                 ownerUserId={offersOwnerId ?? displayUser.id}
                 ownerDisplayName={getProfileDisplayName(displayUser, accountType)}
+                ownerProfileIdentifier={getProfileShareIdentifier(displayUser)}
                 highlightedSkillId={highlightedSkillId ?? null}
                 isOtherUserProfile={isOtherUserProfile}
               />

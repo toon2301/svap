@@ -12,6 +12,7 @@ import type { ProfileTab } from './profileTypes';
 import type { Offer } from './profileOffersTypes';
 import { HOURS_DAYS } from './profileOffersTypes';
 import type { OpeningHours } from '../skills/skillDescriptionModal/types';
+import { OfferShareModal } from './OfferShareModal';
 import ProfileOfferCard from './ProfileOfferCard';
 import { ProfileOfferCardSkeleton } from './ProfileOfferCardSkeleton';
 import {
@@ -30,6 +31,15 @@ import {
   readProfileOfferLikedEvent,
 } from './profileOfferEvents';
 import { mapApiOfferToProfileOffer, mergeProfileOffer } from './profileOfferMapper';
+import {
+  buildOfferShareUrl,
+  getOfferOwnerIdentifier,
+} from './offerShareUrl';
+import {
+  getOfferShareImageUrl,
+  getOfferShareLocation,
+  getOfferShareTitle,
+} from './offerSharePreview';
 
 interface ProfileOffersSectionProps {
   activeTab: ProfileTab;
@@ -37,6 +47,7 @@ interface ProfileOffersSectionProps {
   ownerUserId?: number;
   /** Meno/názov majiteľa profilu (kvôli recenziám v URL). */
   ownerDisplayName?: string;
+  ownerProfileIdentifier?: string;
   highlightedSkillId?: number | null;
   isOtherUserProfile?: boolean;
 }
@@ -46,6 +57,7 @@ export default function ProfileOffersSection({
   accountType = 'personal',
   ownerUserId,
   ownerDisplayName,
+  ownerProfileIdentifier,
   highlightedSkillId,
   isOtherUserProfile = false,
 }: ProfileOffersSectionProps) {
@@ -70,6 +82,7 @@ export default function ProfileOffersSection({
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isUnavailableModalOpen, setIsUnavailableModalOpen] = useState(false);
+  const [shareOffer, setShareOffer] = useState<Offer | null>(null);
   const hasLoadedOffersRef = useRef(false);
 
   // Polling refs (stable, no re-render storms)
@@ -156,6 +169,25 @@ export default function ProfileOffersSection({
       }
     },
     [offers, ownerUserId, pendingOfferLikeIds, t, updateOfferLikeInState],
+  );
+
+  const handleShareOffer = useCallback(
+    (offer: Offer) => {
+      if (offer.is_hidden) {
+        toast.error(t('profile.offerShareUnavailable', 'Táto ponuka už nie je dostupná.'));
+        return;
+      }
+      const ownerIdentifier = getOfferOwnerIdentifier(
+        offer,
+        ownerProfileIdentifier ?? ownerUserId,
+      );
+      if (!ownerIdentifier) {
+        toast.error(t('profile.offerShareUnavailable', 'Táto ponuka už nie je dostupná.'));
+        return;
+      }
+      setShareOffer(offer);
+    },
+    [ownerProfileIdentifier, ownerUserId, t],
   );
 
   const handleMessageClick = useCallback(
@@ -683,6 +715,7 @@ export default function ProfileOffersSection({
                   ownerDisplayName={ownerDisplayName}
                   onRequestClick={handleRequestClick}
                   onMessageClick={handleMessageClick}
+                  onShareClick={handleShareOffer}
                   onToggleLike={handleToggleOfferLike}
                   isLikePending={pendingOfferLikeIds.has(offer.id)}
                   messageLabel={busyMessageOfferId === offer.id ? t('messages.opening', 'Otváram…') : undefined}
@@ -743,6 +776,29 @@ export default function ProfileOffersSection({
           {loadError}
         </p>
       )}
+
+      {shareOffer && (() => {
+        const ownerIdentifier = getOfferOwnerIdentifier(
+          shareOffer,
+          ownerProfileIdentifier ?? ownerUserId,
+        );
+        if (!ownerIdentifier) return null;
+
+        const title = getOfferShareTitle(shareOffer, t);
+        return (
+          <OfferShareModal
+            open={Boolean(shareOffer)}
+            onClose={() => setShareOffer(null)}
+            offerUrl={buildOfferShareUrl(ownerIdentifier, shareOffer.id)}
+            offer={{
+              id: shareOffer.id,
+              title,
+              imageUrl: getOfferShareImageUrl(shareOffer),
+              location: getOfferShareLocation(shareOffer),
+            }}
+          />
+        );
+      })()}
 
       {activeHoursOfferId && hoursPopoverPosition && activeOpeningHours &&
         typeof document !== 'undefined' &&

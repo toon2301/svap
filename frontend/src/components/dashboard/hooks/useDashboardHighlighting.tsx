@@ -27,6 +27,11 @@ function clearHighlightSearchParams(url: URL): boolean {
     changed = true;
   }
 
+  if (url.searchParams.has('offer')) {
+    url.searchParams.delete('offer');
+    changed = true;
+  }
+
   if (url.searchParams.get('side') === 'back') {
     url.searchParams.delete('side');
     changed = true;
@@ -80,7 +85,7 @@ export function useDashboardHighlighting({
       return;
     }
 
-    const highlightParam = searchParams?.get('highlight') ?? null;
+    const highlightParam = searchParams?.get('offer') ?? searchParams?.get('highlight') ?? null;
     if (highlightParam) {
       const id = Number(highlightParam);
       if (!isNaN(id)) {
@@ -110,7 +115,10 @@ export function useDashboardHighlighting({
               // Obnovíme aj URL parameter, aby to bolo konzistentné
               // Ale opatrne, aby sme nespôsobili loop
               const currentUrl = new URL(window.location.href);
-              if (!currentUrl.searchParams.has('highlight')) {
+              if (
+                !currentUrl.searchParams.has('highlight') &&
+                !currentUrl.searchParams.has('offer')
+              ) {
                  currentUrl.searchParams.set('highlight', storedId);
                  router.replace(currentUrl.pathname + currentUrl.search);
               }

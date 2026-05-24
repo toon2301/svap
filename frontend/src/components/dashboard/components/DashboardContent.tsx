@@ -88,7 +88,8 @@ function getDashboardUserIdentifierFromTarget(targetUrl: string): string | null 
 
 function getDashboardHighlightIdFromTarget(targetUrl: string): number | null {
   try {
-    const raw = new URL(targetUrl, 'https://swaply.local').searchParams.get('highlight');
+    const searchParams = new URL(targetUrl, 'https://swaply.local').searchParams;
+    const raw = searchParams.get('offer') ?? searchParams.get('highlight');
     if (!raw) return null;
     const id = Number(raw);
     return Number.isFinite(id) && id >= 1 ? id : null;
@@ -519,11 +520,16 @@ export default function DashboardContent({
   // toho, aby Next router prerenderoval strÃ¡nku (napr. window.history.pushState).
   useEffect(() => {
     const handler = (evt: Event) => {
-      const detail = (evt as CustomEvent<{ identifier?: string; highlightId?: number | string | null }>).detail;
+      const detail = (evt as CustomEvent<{
+        identifier?: string;
+        highlightId?: number | string | null;
+        offerId?: number | string | null;
+      }>).detail;
       const identifier = (detail?.identifier || '').trim();
       if (!identifier) return;
 
-      const rawHighlight = detail?.highlightId;
+      const rawHighlight = detail?.offerId ?? detail?.highlightId;
+      const useOfferParam = detail?.offerId != null;
       const parsedHighlight =
         typeof rawHighlight === 'number'
           ? rawHighlight
@@ -584,7 +590,9 @@ export default function DashboardContent({
       // Aktualizuj URL bez reloadu
       if (typeof window !== 'undefined') {
         const url = `/dashboard/users/${encodeURIComponent(identifier)}${
-          highlightId != null ? `?highlight=${encodeURIComponent(String(highlightId))}` : ''
+          highlightId != null
+            ? `?${useOfferParam ? 'offer' : 'highlight'}=${encodeURIComponent(String(highlightId))}`
+            : ''
         }`;
         window.history.pushState(null, '', url);
       }

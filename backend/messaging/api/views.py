@@ -39,6 +39,7 @@ from .message_views import (
     SendMessageView,
     StartDirectMessageView,
 )
+from .offer_share_views import OfferShareSendSerializer, OfferShareSendView
 from .profile_share_views import ProfileShareSendSerializer, ProfileShareSendView
 from .view_helpers import (
     _can_open_direct_target,
@@ -82,6 +83,8 @@ __all__ = [
     "MessageRequestListView",
     "MessageRequestUnreadSummaryView",
     "OpenConversationView",
+    "OfferShareSendSerializer",
+    "OfferShareSendView",
     "PinMessageView",
     "ProfileShareSendSerializer",
     "ProfileShareSendView",

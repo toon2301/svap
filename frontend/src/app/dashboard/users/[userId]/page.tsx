@@ -6,13 +6,15 @@ interface UserDashboardPageProps {
   };
   searchParams: {
     highlight?: string;
+    offer?: string;
   };
 }
 
 // Tento route segment `[userId]` slúži ako slug alebo numerické ID (backward compatible).
 export default function UserDashboardPage({ params, searchParams }: UserDashboardPageProps) {
   const identifier = params.userId;
-  const highlightId = searchParams.highlight ? Number(searchParams.highlight) : null;
+  const rawHighlightId = searchParams.offer ?? searchParams.highlight;
+  const highlightId = rawHighlightId ? Number(rawHighlightId) : null;
 
   return (
     <Dashboard

@@ -10,6 +10,16 @@ export type GroupMemberCandidate = MessagingUserBrief & {
   presence_status?: 'online' | 'unknown';
 };
 
+export type OfferShareBrief = {
+  id: number;
+  title: string;
+  category?: string | null;
+  subcategory?: string | null;
+  image_url?: string | null;
+  location?: string | null;
+  owner: MessagingUserBrief;
+};
+
 export type GroupParticipantBrief = MessagingUserBrief & {
   role: 'owner' | 'member';
   status: 'invited' | 'active' | 'left' | 'removed';
@@ -39,7 +49,7 @@ export type ConversationListItem = {
   last_message_sender_id?: number | null;
   last_message_is_deleted?: boolean;
   last_message_has_image?: boolean;
-  last_message_type?: 'user' | 'system' | 'group_invitation' | 'profile_share' | null;
+  last_message_type?: 'user' | 'system' | 'group_invitation' | 'profile_share' | 'offer_share' | null;
   last_read_at: string | null;
   is_pinned?: boolean;
   has_unread: boolean;
@@ -84,10 +94,11 @@ export type MessageItem = {
   created_at: string;
   edited_at: string | null;
   is_deleted: boolean;
-  message_type?: 'user' | 'system' | 'group_invitation' | 'profile_share';
+  message_type?: 'user' | 'system' | 'group_invitation' | 'profile_share' | 'offer_share';
   metadata?: Record<string, unknown>;
   group_invitation?: GroupInvitationMessage | null;
   profile_share?: MessagingUserBrief | null;
+  offer_share?: OfferShareBrief | null;
 };
 
 export type GroupInvitationMessage = {
@@ -152,6 +163,8 @@ export type ForwardMessageResult = {
 };
 
 export type ProfileShareSendResult = ForwardMessageResult;
+
+export type OfferShareSendResult = ForwardMessageResult;
 
 export type HideConversationResult = {
   conversation_id: number;

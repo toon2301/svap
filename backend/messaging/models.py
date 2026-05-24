@@ -152,6 +152,7 @@ class Message(models.Model):
         SYSTEM = "system", "System"
         GROUP_INVITATION = "group_invitation", "Group invitation"
         PROFILE_SHARE = "profile_share", "Profile share"
+        OFFER_SHARE = "offer_share", "Offer share"
 
     conversation = models.ForeignKey(
         Conversation,
