@@ -198,6 +198,41 @@ describe('ConversationDetail message rendering', () => {
     expect(screen.queryByTestId('message-avatar-4')).not.toBeInTheDocument();
   });
 
+  it('renders URLs in message text as clickable links', async () => {
+    (listMessages as jest.Mock).mockResolvedValueOnce(
+      messagePage([
+        message({
+          id: 1,
+          sender: { id: 1, display_name: 'Me' },
+          text: 'Pozri https://svaply.com/dashboard/users/tester',
+          created_at: '2026-03-27T10:00:00Z',
+        }),
+        message({
+          id: 2,
+          text: 'Tu je www.example.com/info',
+          created_at: '2026-03-27T10:01:00Z',
+        }),
+      ]),
+    );
+
+    render(<ConversationDetail conversationId={9} currentUserId={1} />);
+
+    const outgoingLink = await screen.findByRole('link', {
+      name: 'https://svaply.com/dashboard/users/tester',
+    });
+    const incomingLink = await screen.findByRole('link', {
+      name: 'www.example.com/info',
+    });
+
+    expect(outgoingLink).toHaveAttribute(
+      'href',
+      'https://svaply.com/dashboard/users/tester',
+    );
+    expect(outgoingLink).toHaveAttribute('target', '_blank');
+    expect(outgoingLink).toHaveAttribute('rel', 'noopener noreferrer');
+    expect(incomingLink).toHaveAttribute('href', 'https://www.example.com/info');
+  });
+
   it('shows seen only under the latest outgoing message read by the other user', async () => {
     (listConversations as jest.Mock).mockResolvedValue([
       {

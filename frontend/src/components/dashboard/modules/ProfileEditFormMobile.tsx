@@ -233,8 +233,8 @@ export default function ProfileEditFormMobile({
 
   return (
     <div className="pt-2 pb-8">
-      {/* Fotka v strede */}
-      <div className="flex justify-center mb-4 px-4">
+      {/* Fotka a registračný email v strede */}
+      <div className="mb-4 flex flex-col items-center px-4">
         <div className="relative">
           <UserAvatar
             user={user}
@@ -243,6 +243,11 @@ export default function ProfileEditFormMobile({
             isUploading={isUploading}
           />
         </div>
+        {user.email ? (
+          <p className="mt-3 max-w-full break-all text-center text-sm text-gray-600 dark:text-gray-300">
+            {user.email}
+          </p>
+        ) : null}
       </div>
 
       {/* List položiek */}
