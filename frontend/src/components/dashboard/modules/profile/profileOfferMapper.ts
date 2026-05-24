@@ -91,6 +91,11 @@ export function mapApiOfferToProfileOffer(raw: unknown): Offer {
     already_reviewed:
       typeof s.already_reviewed === 'boolean' ? s.already_reviewed : undefined,
     my_request_status: toOptionalString(s.my_request_status),
+    user_display_name: toOptionalString(s.user_display_name),
+    user_id: toNullableNumber(s.user_id) ?? undefined,
+    owner_user_type: toOptionalString(s.owner_user_type) ?? null,
+    owner_slug: toOptionalString(s.owner_slug) ?? null,
+    owner_avatar_url: toOptionalString(s.owner_avatar_url) ?? null,
   };
 }
 

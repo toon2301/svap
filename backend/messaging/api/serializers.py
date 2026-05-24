@@ -11,6 +11,7 @@ from accounts.name_normalization import get_canonical_display_name
 from swaply.validators import validate_image_file
 from ..models import Conversation, ConversationParticipant, GroupInvitation, Message
 from ..services.profile_shares import PROFILE_SHARE_METADATA_USER_ID
+from .offer_share_serialization import serialize_offer_share_message
 
 User = get_user_model()
 
@@ -127,6 +128,16 @@ def _avatar_name_url(request, avatar_name: str | None) -> str | None:
         return request.build_absolute_uri(url) if request else url
     except Exception:
         return None
+
+
+def _positive_metadata_int(metadata: dict | None, key: str) -> int | None:
+    if not isinstance(metadata, dict):
+        return None
+    try:
+        value = int((metadata or {}).get(key))
+    except (TypeError, ValueError):
+        return None
+    return value if value > 0 else None
 
 
 class ConversationListItemSerializer(serializers.ModelSerializer):
@@ -411,6 +422,7 @@ class MessageSerializer(serializers.ModelSerializer):
     has_image = serializers.SerializerMethodField()
     group_invitation = serializers.SerializerMethodField()
     profile_share = serializers.SerializerMethodField()
+    offer_share = serializers.SerializerMethodField()
 
     class Meta:
         model = Message
@@ -429,6 +441,7 @@ class MessageSerializer(serializers.ModelSerializer):
             "metadata",
             "group_invitation",
             "profile_share",
+            "offer_share",
         ]
 
     def get_sender(self, obj: Message):
@@ -448,7 +461,7 @@ class MessageSerializer(serializers.ModelSerializer):
         return obj.text or None
 
     def get_metadata(self, obj: Message):
-        if obj.message_type == Message.Type.PROFILE_SHARE:
+        if obj.message_type in (Message.Type.PROFILE_SHARE, Message.Type.OFFER_SHARE):
             return {}
         return obj.metadata or {}
 
@@ -518,13 +531,10 @@ class MessageSerializer(serializers.ModelSerializer):
     def get_profile_share(self, obj: Message):
         if obj.is_deleted or obj.message_type != Message.Type.PROFILE_SHARE:
             return None
-        try:
-            shared_user_id = int(
-                (obj.metadata or {}).get(PROFILE_SHARE_METADATA_USER_ID)
-            )
-        except (TypeError, ValueError):
-            return None
-        if shared_user_id <= 0:
+        shared_user_id = _positive_metadata_int(
+            obj.metadata, PROFILE_SHARE_METADATA_USER_ID
+        )
+        if shared_user_id is None:
             return None
 
         cache = self.context.setdefault("_profile_share_user_cache", {})
@@ -553,6 +563,14 @@ class MessageSerializer(serializers.ModelSerializer):
         if shared_user is None:
             return None
         return serialize_user_brief(shared_user, self.context.get("request"))
+
+    def get_offer_share(self, obj: Message):
+        return serialize_offer_share_message(
+            message=obj,
+            context=self.context,
+            parent_instance=getattr(getattr(self, "parent", None), "instance", None),
+            serialize_user_brief=serialize_user_brief,
+        )
 
 
 class SendMessageSerializer(serializers.Serializer):

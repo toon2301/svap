@@ -13,7 +13,7 @@ import ProfileMobileSocialLinks from './ProfileMobileSocialLinks';
 import ProfileMobileHamburgerModal from './ProfileMobileHamburgerModal';
 import { ReportUserModal } from './ReportUserModal';
 import { ProfileShareModal } from './ProfileShareModal';
-import { buildProfileShareUrl } from './profileShareUrl';
+import { buildProfileShareUrl, getProfileShareIdentifier } from './profileShareUrl';
 import { InformationCircleIcon, ClipboardIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 import { createPortal } from 'react-dom';
@@ -556,6 +556,7 @@ export default function ProfileMobileView({
               accountType={accountType}
               ownerUserId={offersOwnerId ?? displayUser.id}
               ownerDisplayName={getProfileDisplayName(displayUser, accountType)}
+              ownerProfileIdentifier={getProfileShareIdentifier(displayUser)}
               highlightedSkillId={highlightedSkillId ?? null}
               isOtherUserProfile={isOtherUserProfile}
             />

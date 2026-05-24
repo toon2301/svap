@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { EllipsisHorizontalIcon } from '@heroicons/react/24/outline';
 import type { MessageItem } from './types';
 import { GroupInvitationMessageCard } from './GroupInvitationMessageCard';
+import { OfferShareMessageCard } from './OfferShareMessageCard';
 import { ProfileShareMessageCard } from './ProfileShareMessageCard';
 import { resolveMessagingImageUrl } from './resolveMessagingImageUrl';
 import { formatTime, minuteBucketKey } from './conversationDetailUtils';
@@ -84,6 +85,8 @@ export function ConversationMessageRow({
   const showSenderAvatar = !mine && (!nextMessage || nextSenderId !== curSenderId);
   const showSeenIndicator = mine && !message.is_deleted && lastSeenMessageId === message.id;
   const isProfileShareMessage = message.message_type === 'profile_share';
+  const isOfferShareMessage = message.message_type === 'offer_share';
+  const isStructuredShareMessage = isProfileShareMessage || isOfferShareMessage;
   const senderAvatarUrl = message.sender?.avatar_url || targetUserAvatarUrl;
   const senderDisplayName = (message.sender?.display_name || '').trim() || targetUserName;
   const messageCanDelete = mine && !message.is_deleted;
@@ -255,7 +258,10 @@ export function ConversationMessageRow({
       {!message.is_deleted && isProfileShareMessage ? (
         <ProfileShareMessageCard profile={message.profile_share ?? null} outgoing={mine} />
       ) : null}
-      {!isProfileShareMessage && messagePreviewImageUrl && messageLightboxImageUrl ? (
+      {!message.is_deleted && isOfferShareMessage ? (
+        <OfferShareMessageCard offer={message.offer_share ?? null} outgoing={mine} />
+      ) : null}
+      {!isStructuredShareMessage && messagePreviewImageUrl && messageLightboxImageUrl ? (
         <button
           type="button"
           data-testid={`message-image-trigger-${message.id}`}
@@ -272,14 +278,14 @@ export function ConversationMessageRow({
           />
         </button>
       ) : null}
-      {!isProfileShareMessage && displayText ? (
+      {!isStructuredShareMessage && displayText ? (
         <MessageTextWithLinks
           text={displayText}
           className={messageTextClassName}
           variant={mine ? 'outgoing' : 'incoming'}
         />
       ) : null}
-      {isProfileShareMessage && message.is_deleted && displayText ? (
+      {isStructuredShareMessage && message.is_deleted && displayText ? (
         <MessageTextWithLinks
           text={displayText}
           className={messageTextClassName}

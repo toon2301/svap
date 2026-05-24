@@ -86,12 +86,21 @@ function getDashboardUserIdentifierFromTarget(targetUrl: string): string | null 
   }
 }
 
+function parseDashboardHighlightId(value: number | string | null | undefined): number | null {
+  const id =
+    typeof value === 'number'
+      ? value
+      : value != null && String(value).trim()
+        ? Number(value)
+        : null;
+  return id != null && Number.isFinite(id) && Number.isInteger(id) && id >= 1 ? id : null;
+}
+
 function getDashboardHighlightIdFromTarget(targetUrl: string): number | null {
   try {
-    const raw = new URL(targetUrl, 'https://swaply.local').searchParams.get('highlight');
-    if (!raw) return null;
-    const id = Number(raw);
-    return Number.isFinite(id) && id >= 1 ? id : null;
+    const searchParams = new URL(targetUrl, 'https://swaply.local').searchParams;
+    const raw = searchParams.get('offer') ?? searchParams.get('highlight');
+    return parseDashboardHighlightId(raw);
   } catch {
     return null;
   }
@@ -519,18 +528,17 @@ export default function DashboardContent({
   // toho, aby Next router prerenderoval strÃ¡nku (napr. window.history.pushState).
   useEffect(() => {
     const handler = (evt: Event) => {
-      const detail = (evt as CustomEvent<{ identifier?: string; highlightId?: number | string | null }>).detail;
+      const detail = (evt as CustomEvent<{
+        identifier?: string;
+        highlightId?: number | string | null;
+        offerId?: number | string | null;
+      }>).detail;
       const identifier = (detail?.identifier || '').trim();
       if (!identifier) return;
 
-      const rawHighlight = detail?.highlightId;
-      const parsedHighlight =
-        typeof rawHighlight === 'number'
-          ? rawHighlight
-          : rawHighlight != null && String(rawHighlight).trim()
-            ? Number(rawHighlight)
-            : null;
-      const highlightId = parsedHighlight != null && Number.isFinite(parsedHighlight) ? parsedHighlight : null;
+      const rawHighlight = detail?.offerId ?? detail?.highlightId;
+      const useOfferParam = detail?.offerId != null;
+      const highlightId = parseDashboardHighlightId(rawHighlight);
 
       // Prepni modul a zavri vedÄ¾ajÅ¡ie UI
       setActiveModule('user-profile');
@@ -584,7 +592,9 @@ export default function DashboardContent({
       // Aktualizuj URL bez reloadu
       if (typeof window !== 'undefined') {
         const url = `/dashboard/users/${encodeURIComponent(identifier)}${
-          highlightId != null ? `?highlight=${encodeURIComponent(String(highlightId))}` : ''
+          highlightId != null
+            ? `?${useOfferParam ? 'offer' : 'highlight'}=${encodeURIComponent(String(highlightId))}`
+            : ''
         }`;
         window.history.pushState(null, '', url);
       }
@@ -609,14 +619,7 @@ export default function DashboardContent({
   useEffect(() => {
     const handler = (evt: Event) => {
       const detail = (evt as CustomEvent<{ highlightId?: number | string | null }>).detail;
-      const rawHighlight = detail?.highlightId;
-      const parsedHighlight =
-        typeof rawHighlight === 'number'
-          ? rawHighlight
-          : rawHighlight != null && String(rawHighlight).trim()
-            ? Number(rawHighlight)
-            : null;
-      const highlightId = parsedHighlight != null && Number.isFinite(parsedHighlight) ? parsedHighlight : null;
+      const highlightId = parseDashboardHighlightId(detail?.highlightId);
 
       setActiveModule('profile');
       setIsRightSidebarOpen(false);

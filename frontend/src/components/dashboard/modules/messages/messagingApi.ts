@@ -16,6 +16,7 @@ import type {
   MessageSendPayload,
   MessagingUnreadSummary,
   OpenConversationResult,
+  OfferShareSendResult,
   PinMessageResult,
   ProfileShareSendResult,
 } from './types';
@@ -417,6 +418,23 @@ export async function sendProfileShare(
     '/auth/messaging/profile-shares/',
     {
       shared_user_id: sharedUserId,
+      recipient_user_ids: recipientUserIds,
+    },
+  );
+  return {
+    sent: Array.isArray(data?.sent) ? data.sent : [],
+    failed: Array.isArray(data?.failed) ? data.failed : [],
+  };
+}
+
+export async function sendOfferShare(
+  sharedOfferId: number,
+  recipientUserIds: number[],
+): Promise<OfferShareSendResult> {
+  const { data } = await api.post<OfferShareSendResult>(
+    '/auth/messaging/offer-shares/',
+    {
+      shared_offer_id: sharedOfferId,
       recipient_user_ids: recipientUserIds,
     },
   );

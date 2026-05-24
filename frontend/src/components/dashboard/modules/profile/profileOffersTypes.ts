@@ -47,6 +47,11 @@ export interface Offer {
   is_liked_by_me?: boolean;
   /** Stav žiadosti aktuálneho používateľa (z API) – pre okamžité zobrazenie pri načítaní */
   my_request_status?: string | null;
+  user_display_name?: string;
+  user_id?: number;
+  owner_user_type?: string | null;
+  owner_slug?: string | null;
+  owner_avatar_url?: string | null;
 }
 
 export const HOURS_DAYS = [

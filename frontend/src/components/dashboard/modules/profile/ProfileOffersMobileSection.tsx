@@ -10,6 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { OpeningHours } from '../skills/skillDescriptionModal/types';
 import type { Offer } from './profileOffersTypes';
+import { OfferShareModal } from './OfferShareModal';
 import { ProfileOfferDetailMobile } from './ProfileOfferDetailMobile';
 import { ProfileOpeningHoursMobileModal } from './ProfileOpeningHoursMobileModal';
 import { ProfileOfferCardMobile } from './ProfileOfferCardMobile';
@@ -30,12 +31,22 @@ import {
   readProfileOfferLikedEvent,
 } from './profileOfferEvents';
 import { mapApiOfferToProfileOffer, mergeProfileOffer } from './profileOfferMapper';
+import {
+  buildOfferShareUrl,
+  getOfferOwnerIdentifier,
+} from './offerShareUrl';
+import {
+  getOfferShareImageUrl,
+  getOfferShareLocation,
+  getOfferShareTitle,
+} from './offerSharePreview';
 
 interface ProfileOffersMobileSectionProps {
   accountType?: 'personal' | 'business';
   ownerUserId?: number;
   /** Meno/názov majiteľa profilu (kvôli recenziám v URL). */
   ownerDisplayName?: string;
+  ownerProfileIdentifier?: string;
   highlightedSkillId?: number | null;
   isOtherUserProfile?: boolean;
 }
@@ -44,6 +55,7 @@ export default function ProfileOffersMobileSection({
   accountType = 'personal',
   ownerUserId,
   ownerDisplayName,
+  ownerProfileIdentifier,
   highlightedSkillId,
   isOtherUserProfile = false,
 }: ProfileOffersMobileSectionProps) {
@@ -64,6 +76,7 @@ export default function ProfileOffersMobileSection({
   const [loadError, setLoadError] = useState<string | null>(null);
   const [selectedOffer, setSelectedOffer] = useState<Offer | null>(null);
   const [hoursModal, setHoursModal] = useState<OpeningHours | null>(null);
+  const [shareOffer, setShareOffer] = useState<Offer | null>(null);
   const [tappedCards, setTappedCards] = useState<Set<number | string>>(() => new Set());
   const highlightedCardRef = useRef<HTMLDivElement | null>(null);
   const [isUnavailableModalOpen, setIsUnavailableModalOpen] = useState(false);
@@ -148,6 +161,25 @@ export default function ProfileOffersMobileSection({
       }
     },
     [offers, ownerUserId, pendingOfferLikeIds, t, updateOfferLikeInState],
+  );
+
+  const handleShareOffer = useCallback(
+    (offer: Offer) => {
+      if (offer.is_hidden) {
+        toast.error(t('profile.offerShareUnavailable', 'Táto ponuka už nie je dostupná.'));
+        return;
+      }
+      const ownerIdentifier = getOfferOwnerIdentifier(
+        offer,
+        ownerProfileIdentifier ?? ownerUserId,
+      );
+      if (!ownerIdentifier) {
+        toast.error(t('profile.offerShareUnavailable', 'Táto ponuka už nie je dostupná.'));
+        return;
+      }
+      setShareOffer(offer);
+    },
+    [ownerProfileIdentifier, ownerUserId, t],
   );
 
   const handleMessageClick = useCallback(
@@ -633,6 +665,7 @@ export default function ProfileOffersMobileSection({
                 ownerDisplayName={ownerDisplayName}
                 onRequestClick={handleRequestClick}
                 onMessageClick={handleMessageClick}
+                onShareClick={handleShareOffer}
                 onToggleLike={handleToggleOfferLike}
                 isLikePending={pendingOfferLikeIds.has(offer.id)}
                 messageLabel={busyMessageOfferId === offer.id ? t('messages.opening', 'Otváram…') : undefined}
@@ -696,6 +729,29 @@ export default function ProfileOffersMobileSection({
         hours={hoursModal}
         onClose={() => setHoursModal(null)}
       />
+
+      {shareOffer && (() => {
+        const ownerIdentifier = getOfferOwnerIdentifier(
+          shareOffer,
+          ownerProfileIdentifier ?? ownerUserId,
+        );
+        if (!ownerIdentifier) return null;
+
+        const title = getOfferShareTitle(shareOffer, t);
+        return (
+          <OfferShareModal
+            open={Boolean(shareOffer)}
+            onClose={() => setShareOffer(null)}
+            offerUrl={buildOfferShareUrl(ownerIdentifier, shareOffer.id)}
+            offer={{
+              id: shareOffer.id,
+              title,
+              imageUrl: getOfferShareImageUrl(shareOffer),
+              location: getOfferShareLocation(shareOffer),
+            }}
+          />
+        );
+      })()}
 
       {isUnavailableModalOpen &&
         typeof document !== 'undefined' &&
