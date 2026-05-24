@@ -2,6 +2,8 @@ export type LinkifiedMessageSegment =
   | { type: 'text'; value: string }
   | { type: 'link'; value: string; href: string };
 
+type NormalizedMessageUrl = { display: string; href: string | null };
+
 const MESSAGE_URL_REGEX = /(?:https?:\/\/|www\.)[^\s<]+/gi;
 const TRAILING_URL_PUNCTUATION = /[,.;:!?"'\]}>]+$/;
 
@@ -32,18 +34,18 @@ function stripTrailingUrlPunctuation(rawUrl: string): string {
   return candidate;
 }
 
-function normalizeMessageUrl(rawUrl: string): string | null {
-  const trimmed = stripTrailingUrlPunctuation(rawUrl);
-  const candidate = trimmed.startsWith('www.') ? `https://${trimmed}` : trimmed;
+function normalizeMessageUrl(rawUrl: string): NormalizedMessageUrl {
+  const display = stripTrailingUrlPunctuation(rawUrl);
+  const candidate = display.startsWith('www.') ? `https://${display}` : display;
 
   try {
     const parsed = new URL(candidate);
     if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-      return null;
+      return { display, href: null };
     }
-    return parsed.toString();
+    return { display, href: parsed.toString() };
   } catch {
-    return null;
+    return { display, href: null };
   }
 }
 
@@ -58,20 +60,19 @@ export function linkifyMessageText(text: string): LinkifiedMessageSegment[] {
   for (const match of text.matchAll(MESSAGE_URL_REGEX)) {
     const start = match.index ?? 0;
     const raw = match[0];
-    const display = stripTrailingUrlPunctuation(raw);
+    const normalized = normalizeMessageUrl(raw);
 
     if (start > lastIndex) {
       segments.push({ type: 'text', value: text.slice(lastIndex, start) });
     }
 
-    const href = normalizeMessageUrl(display);
-    if (href) {
-      segments.push({ type: 'link', value: display, href });
+    if (normalized.href) {
+      segments.push({ type: 'link', value: normalized.display, href: normalized.href });
     } else {
-      segments.push({ type: 'text', value: display });
+      segments.push({ type: 'text', value: normalized.display });
     }
 
-    lastIndex = start + display.length;
+    lastIndex = start + normalized.display.length;
   }
 
   if (lastIndex < text.length) {
