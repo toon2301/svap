@@ -37,12 +37,14 @@ class UserAdmin(BaseUserAdmin):
         "username",
         "email",
         "user_type",
+        "subscription_tier",
         "is_verified",
         "is_active",
         "created_at",
     ]
     list_filter = [
         "user_type",
+        "subscription_tier",
         "is_verified",
         "is_active",
         "is_staff",
@@ -68,7 +70,10 @@ class UserAdmin(BaseUserAdmin):
                 )
             },
         ),
-        (_("Typ uctu"), {"fields": ("user_type", "company_name", "website")}),
+        (
+            _("Typ uctu"),
+            {"fields": ("user_type", "subscription_tier", "company_name", "website")},
+        ),
         (
             _("Socialne siete"),
             {"fields": ("linkedin", "facebook", "instagram"), "classes": ("collapse",)},

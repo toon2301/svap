@@ -1,4 +1,19 @@
 // User types
+export type SubscriptionTier = 'free' | 'premium';
+
+export type EntitlementFeatureKey =
+  | 'can_use_verified_badge'
+  | 'can_use_priority_ranking';
+
+export type EntitlementLimitKey = 'max_active_cards' | 'monthly_boosts';
+
+export interface UserEntitlements {
+  tier: SubscriptionTier;
+  is_premium: boolean;
+  features: Record<EntitlementFeatureKey, boolean>;
+  limits: Record<EntitlementLimitKey, number>;
+}
+
 export interface User {
   id: number;
   username: string;
@@ -8,6 +23,8 @@ export interface User {
   first_name: string;
   last_name: string;
   user_type: 'individual' | 'company' | 'school';
+  subscription_tier?: SubscriptionTier;
+  entitlements?: UserEntitlements;
   phone?: string;
   phone_visible?: boolean;
   contact_email?: string;

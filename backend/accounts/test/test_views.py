@@ -156,6 +156,19 @@ class TestAuthViews(APITestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["email"], self.user.email)
+        self.assertEqual(response.data["subscription_tier"], "free")
+        self.assertEqual(response.data["entitlements"]["tier"], "free")
+        self.assertEqual(response.data["entitlements"]["is_premium"], False)
+        self.assertEqual(response.data["entitlements"]["limits"]["max_active_cards"], 3)
+        self.assertEqual(response.data["entitlements"]["limits"]["monthly_boosts"], 0)
+        self.assertEqual(
+            response.data["entitlements"]["features"]["can_use_verified_badge"],
+            False,
+        )
+        self.assertEqual(
+            response.data["entitlements"]["features"]["can_use_priority_ranking"],
+            False,
+        )
         self.assertEqual(response.data["unread_skill_request_count"], 0)
         self.assertIn("X-Swaply-Access-Expires-At", response.headers)
         self.assertIn("X-Swaply-Access-Expires-In", response.headers)
