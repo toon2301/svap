@@ -424,6 +424,30 @@ class TestSkillRequestsAndNotifications(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.assertFalse(OfferedSkillLike.objects.exists())
 
+    def test_create_request_hidden_offer_is_not_available_to_other_users(self):
+        self.offer.is_hidden = True
+        self.offer.save(update_fields=["is_hidden"])
+
+        self.client.force_authenticate(user=self.requester)
+        response = self.client.post(
+            f"{self.base}/skill-requests/", {"offer_id": self.offer.id}, format="json"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertFalse(SkillRequest.objects.exists())
+
+    def test_create_request_private_owner_offer_is_not_available_to_other_users(self):
+        self.owner.is_public = False
+        self.owner.save(update_fields=["is_public"])
+
+        self.client.force_authenticate(user=self.requester)
+        response = self.client.post(
+            f"{self.base}/skill-requests/", {"offer_id": self.offer.id}, format="json"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertFalse(SkillRequest.objects.exists())
+
     def test_list_requests_received_and_sent(self):
         self.client.force_authenticate(user=self.requester)
         self.client.post(

@@ -281,12 +281,11 @@ export default function DashboardModals({
       // Invalidovať cache ponúk, aby sa pri návrate na profil načítali nové dáta
       const { invalidateOffersCache } = await import('./modules/profile/profileOffersCache');
       invalidateOffersCache(user?.id);
+      setIsSkillDescriptionModalOpen(false);
     } catch (e: any) {
       const msg = e?.response?.data?.error || e?.response?.data?.detail || 'Ukladanie zručnosti zlyhalo';
       alert(msg);
       return;
-    } finally {
-      setIsSkillDescriptionModalOpen(false);
     }
   };
 

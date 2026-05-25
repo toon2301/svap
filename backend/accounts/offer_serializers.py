@@ -156,11 +156,19 @@ class OfferedSkillSerializer(serializers.ModelSerializer):
         - Nové asynchrónne spracovanie používa `approved_key` a `status`.
         """
         request = self.context.get("request")
+        is_owner = bool(
+            request
+            and getattr(request, "user", None)
+            and getattr(request.user, "is_authenticated", False)
+            and getattr(obj, "user_id", None) == request.user.id
+        )
         results = []
         try:
             for img in getattr(obj, "images", []).all():
                 url = None
                 status = getattr(img, "status", None)
+                if not is_owner and status not in (None, "approved"):
+                    continue
 
                 # Prefer approved_key when present and approved
                 approved_key = (getattr(img, "approved_key", "") or "").strip()
@@ -174,14 +182,15 @@ class OfferedSkillSerializer(serializers.ModelSerializer):
                     url = img.image.url
                     if request:
                         url = request.build_absolute_uri(url)
-                results.append(
-                    {
-                        "id": img.id,
-                        "image_url": url,
-                        "order": img.order,
-                        "status": status,
-                    }
-                )
+                item = {
+                    "id": img.id,
+                    "image_url": url,
+                    "order": img.order,
+                    "status": status,
+                }
+                if is_owner:
+                    item["rejected_reason"] = getattr(img, "rejected_reason", "") or ""
+                results.append(item)
         except Exception:
             pass
         return results

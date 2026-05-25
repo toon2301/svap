@@ -141,9 +141,10 @@ export function OfferCardFront({
             title={t('profile.shareOfferTitle', 'Zdieľať ponuku')}
             onClick={(e) => {
               e.stopPropagation();
-              onShareClick?.(offer);
+              if (!onShareClick) return;
+              onShareClick(offer);
             }}
-            className="p-1 rounded-full inline-flex items-center justify-center leading-none bg-purple-50 dark:bg-purple-900/80 dark:backdrop-blur-sm border border-purple-200 dark:border-purple-800/60 text-purple-700 dark:text-white hover:bg-purple-100 dark:hover:bg-purple-900/90 transition-colors"
+            className={`${onShareClick ? 'inline-flex' : 'hidden'} p-1 rounded-full items-center justify-center leading-none bg-purple-50 dark:bg-purple-900/80 dark:backdrop-blur-sm border border-purple-200 dark:border-purple-800/60 text-purple-700 dark:text-white hover:bg-purple-100 dark:hover:bg-purple-900/90 transition-colors`}
           >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3">
               <circle cx="18" cy="5" r="3" />

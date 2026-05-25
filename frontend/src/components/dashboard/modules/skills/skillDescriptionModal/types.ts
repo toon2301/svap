@@ -8,6 +8,7 @@ export type SkillImage = {
   image?: string | null;
   order?: number;
   status?: 'pending' | 'approved' | 'rejected' | string | null;
+  rejected_reason?: string | null;
 };
 
 export const CURRENCY_OPTIONS = ['€', 'Kč', '$', 'zł', 'Ft'] as const;
@@ -123,5 +124,7 @@ export interface SkillsDescriptionScreenProps {
   initialOpeningHours?: OpeningHours;
   onOpeningHoursChange?: (openingHours: OpeningHours) => void;
   accountType?: 'personal' | 'business';
+  initialIsHidden?: boolean;
+  onIsHiddenChange?: (isHidden: boolean) => void;
 }
 

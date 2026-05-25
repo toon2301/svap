@@ -34,7 +34,7 @@ interface ModuleRouterProps {
   closeOwnProfileEdit: (targetUser?: Pick<User, 'id' | 'slug'> | null) => void;
   setActiveModule: (module: string) => void;
   setIsSkillsCategoryModalOpen: (value: boolean) => void;
-  setSelectedSkillsCategory: (value: DashboardSkill | null) => void;
+  setSelectedSkillsCategory: React.Dispatch<React.SetStateAction<DashboardSkill | null>>;
   setIsSkillDescriptionModalOpen: (value: boolean) => void;
   setIsAddCustomCategoryModalOpen: (value: boolean) => void;
   setEditingCustomCategoryIndex: (value: number | null) => void;

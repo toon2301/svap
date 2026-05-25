@@ -114,6 +114,7 @@
     "chatNoRequestableOffers": "Používateľ momentálne nemá žiadne aktívne ponuky, z ktorých by sa dala vytvoriť žiadosť.",
     "loadOffersFailed": "Nepodarilo sa načítať ponuky používateľa. Skús to znova.",
     "toastCancelFailed": "Zrušenie žiadosti zlyhalo.",
+    "toastCreateFailed": "Žiadosť sa nepodarilo odoslať.",
     "toastRequestCancelled": "Žiadosť bola zrušená používateľom.",
     "toastRequestAlreadyProcessed": "Žiadosť už bola spracovaná."
   },
@@ -557,6 +558,8 @@
     "uploadingPhotosMayTake": "Nahrávam fotky, môže to trvať pár sekúnd...",
     "deletingPhotosLong": "Odstraňujem fotky…",
     "imageDeleteFailed": "Odstránenie obrázka zlyhalo.",
+    "cardDeleteFailed": "Kartu sa nepodarilo odstrániť. Skúste to znova.",
+    "maxCardsPerTypeAlert": "Môžeš mať maximálne 3 karty v tejto sekcii.",
     "fileMustBeImage": "Súbor musí byť obrázok.",
     "backSidePlaceholder": "Zadná strana",
     "backSideEmpty": "Sem pridáme ďalšie informácie.",

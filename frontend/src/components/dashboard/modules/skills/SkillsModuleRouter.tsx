@@ -12,6 +12,8 @@ import AddCustomCategoryScreen from './AddCustomCategoryScreen';
 import type { DashboardSkill } from '../../hooks/useSkillsModals';
 import type { OpeningHours } from './skillDescriptionModal/types';
 
+const MAX_SKILLS_PER_TYPE = 3;
+
 interface SkillsModuleRouterProps {
   activeModule: string;
   accountType: 'personal' | 'business';
@@ -20,7 +22,7 @@ interface SkillsModuleRouterProps {
   selectedSkillsCategory: DashboardSkill | null;
   setActiveModule: (module: string) => void;
   setIsSkillsCategoryModalOpen: (value: boolean) => void;
-  setSelectedSkillsCategory: (value: DashboardSkill | null) => void;
+  setSelectedSkillsCategory: React.Dispatch<React.SetStateAction<DashboardSkill | null>>;
   setIsSkillDescriptionModalOpen: (value: boolean) => void;
   setIsAddCustomCategoryModalOpen: (value: boolean) => void;
   setEditingCustomCategoryIndex: (value: number | null) => void;
@@ -54,6 +56,12 @@ export default function SkillsModuleRouter({
   onSkillsSearchClick,
 }: SkillsModuleRouterProps) {
   const { t } = useLanguage();
+  const updateSelectedSkill = React.useCallback(
+    (patch: Partial<DashboardSkill>) => {
+      setSelectedSkillsCategory((prev) => (prev ? { ...prev, ...patch } : prev));
+    },
+    [setSelectedSkillsCategory],
+  );
 
   switch (activeModule) {
     case 'skills':
@@ -88,6 +96,7 @@ export default function SkillsModuleRouter({
     case 'skills-offer': {
       const filteredStandard = standardCategories.filter((s) => !(s.is_seeking ?? false));
       const filteredCustom = customCategories.filter((s) => !(s.is_seeking ?? false));
+      const filteredTotal = filteredStandard.length + filteredCustom.length;
 
       return (
         <SkillsScreen
@@ -103,9 +112,9 @@ export default function SkillsModuleRouter({
             } catch {
               // ignore
             }
-            if (filteredStandard.length >= 5) {
+            if (filteredTotal >= MAX_SKILLS_PER_TYPE) {
               // eslint-disable-next-line no-alert
-              alert('Môžeš mať maximálne 5 výberov z kategórií.');
+              alert(t('skills.maxCardsPerTypeAlert', 'Môžeš mať maximálne 3 karty v tejto sekcii.'));
               return;
             }
             if (typeof window !== 'undefined' && window.innerWidth < 1024) {
@@ -147,9 +156,9 @@ export default function SkillsModuleRouter({
             }
           }}
           onAddCategory={() => {
-            if (filteredCustom.length >= 5) {
+            if (filteredTotal >= MAX_SKILLS_PER_TYPE) {
               // eslint-disable-next-line no-alert
-              alert('Môžeš pridať maximálne 5 vlastných kategórií.');
+              alert(t('skills.maxCardsPerTypeAlert', 'Môžeš mať maximálne 3 karty v tejto sekcii.'));
               return;
             }
             if (typeof window !== 'undefined' && window.innerWidth < 1024) {
@@ -201,6 +210,7 @@ export default function SkillsModuleRouter({
     case 'skills-search': {
       const filteredStandard = standardCategories.filter((s) => s.is_seeking === true);
       const filteredCustom = customCategories.filter((s) => s.is_seeking === true);
+      const filteredTotal = filteredStandard.length + filteredCustom.length;
 
       return (
         <SkillsScreen
@@ -216,6 +226,11 @@ export default function SkillsModuleRouter({
               localStorage.setItem('skillsDescribeMode', 'search');
             } catch {
               // ignore
+            }
+            if (filteredTotal >= MAX_SKILLS_PER_TYPE) {
+              // eslint-disable-next-line no-alert
+              alert(t('skills.maxCardsPerTypeAlert', 'Môžeš mať maximálne 3 karty v tejto sekcii.'));
+              return;
             }
             if (typeof window !== 'undefined' && window.innerWidth < 1024) {
               setActiveModule('skills-select-category');
@@ -234,9 +249,9 @@ export default function SkillsModuleRouter({
             'Nastav si presne to, čo hľadáš, podľa vlastných predstáv.',
           )}
           onSecondOptionClick={() => {
-            if (filteredCustom.length >= 5) {
+            if (filteredTotal >= MAX_SKILLS_PER_TYPE) {
               // eslint-disable-next-line no-alert
-              alert('Môžeš pridať maximálne 5 vlastných kategórií.');
+              alert(t('skills.maxCardsPerTypeAlert', 'Môžeš mať maximálne 3 karty v tejto sekcii.'));
               return;
             }
             if (typeof window !== 'undefined' && window.innerWidth < 1024) {
@@ -343,92 +358,55 @@ export default function SkillsModuleRouter({
           }}
           initialDescription={selectedSkillsCategory.description}
           onDescriptionChange={(description) => {
-            setSelectedSkillsCategory({
-              ...selectedSkillsCategory,
-              description,
-            });
+            updateSelectedSkill({ description });
           }}
           initialDetailedDescription={selectedSkillsCategory.detailed_description}
           onDetailedDescriptionChange={(detailedDescription) => {
-            setSelectedSkillsCategory({
-              ...selectedSkillsCategory,
-              detailed_description: detailedDescription,
-            });
+            updateSelectedSkill({ detailed_description: detailedDescription });
           }}
           initialTags={selectedSkillsCategory.tags || []}
           onTagsChange={(tags) => {
-            setSelectedSkillsCategory({
-              ...selectedSkillsCategory,
-              tags,
-            });
+            updateSelectedSkill({ tags });
           }}
           initialDistrict={selectedSkillsCategory.district || ''}
           onDistrictChange={(district) => {
-            setSelectedSkillsCategory({
-              ...selectedSkillsCategory,
-              district,
-            });
+            updateSelectedSkill({ district });
           }}
           initialCountryCode={selectedSkillsCategory.country_code || ''}
           onCountryCodeChange={(countryCode) => {
-            setSelectedSkillsCategory({
-              ...selectedSkillsCategory,
-              country_code: countryCode,
-            });
+            updateSelectedSkill({ country_code: countryCode });
           }}
           initialDistrictCode={selectedSkillsCategory.district_code || ''}
           onDistrictCodeChange={(districtCode) => {
-            setSelectedSkillsCategory({
-              ...selectedSkillsCategory,
-              district_code: districtCode,
-            });
+            updateSelectedSkill({ district_code: districtCode });
           }}
           initialLocation={selectedSkillsCategory.location || ''}
           onLocationChange={(location) => {
-            setSelectedSkillsCategory({
-              ...selectedSkillsCategory,
-              location,
-            });
+            updateSelectedSkill({ location });
           }}
           initialExperience={selectedSkillsCategory.experience}
           onExperienceChange={(experience) => {
-            setSelectedSkillsCategory({
-              ...selectedSkillsCategory,
-              experience,
-            });
+            updateSelectedSkill({ experience });
           }}
           initialPriceFrom={selectedSkillsCategory.price_from ?? null}
           initialPriceCurrency={selectedSkillsCategory.price_currency ?? '€'}
           onPriceChange={(priceFrom, priceCurrency) => {
-            setSelectedSkillsCategory({
-              ...selectedSkillsCategory,
-              price_from: priceFrom,
-              price_currency: priceCurrency,
-            });
+            updateSelectedSkill({ price_from: priceFrom, price_currency: priceCurrency });
           }}
           initialUrgency={selectedSkillsCategory.urgency || 'low'}
           onUrgencyChange={(urgency) => {
-            setSelectedSkillsCategory({
-              ...selectedSkillsCategory,
-              urgency,
-              is_seeking: derivedIsSeeking,
-            });
+            updateSelectedSkill({ urgency, is_seeking: derivedIsSeeking });
           }}
           initialDurationType={selectedSkillsCategory.duration_type || null}
           onDurationTypeChange={(durationType) => {
-            setSelectedSkillsCategory({
-              ...selectedSkillsCategory,
-              duration_type: durationType,
-              is_seeking: derivedIsSeeking,
-            });
+            updateSelectedSkill({ duration_type: durationType, is_seeking: derivedIsSeeking });
           }}
           initialImages={selectedSkillsCategory.images || []}
           onImagesChange={(images) => {
-            (selectedSkillsCategory as any)._newImages = images;
+            updateSelectedSkill({ _newImages: images });
           }}
           onExistingImagesChange={(existingImages) => {
-            setSelectedSkillsCategory({
-              ...selectedSkillsCategory,
+            updateSelectedSkill({
               images: existingImages
                 .filter(
                   (
@@ -438,6 +416,8 @@ export default function SkillsModuleRouter({
                     image_url?: string | null;
                     image?: string | null;
                     order?: number;
+                    status?: string | null;
+                    rejected_reason?: string | null;
                   } => img.id !== undefined,
                 )
                 .map((img) => ({
@@ -445,6 +425,8 @@ export default function SkillsModuleRouter({
                   image_url: img.image_url,
                   image: img.image,
                   order: img.order,
+                  status: img.status,
+                  rejected_reason: img.rejected_reason,
                 })),
             });
           }}
@@ -468,10 +450,11 @@ export default function SkillsModuleRouter({
           }
           initialOpeningHours={selectedSkillsCategory.opening_hours as OpeningHours | undefined}
           onOpeningHoursChange={(openingHours) => {
-            setSelectedSkillsCategory({
-              ...selectedSkillsCategory,
-              opening_hours: openingHours,
-            });
+            updateSelectedSkill({ opening_hours: openingHours });
+          }}
+          initialIsHidden={selectedSkillsCategory.is_hidden || false}
+          onIsHiddenChange={(isHidden) => {
+            updateSelectedSkill({ is_hidden: isHidden });
           }}
           accountType={accountType}
         />

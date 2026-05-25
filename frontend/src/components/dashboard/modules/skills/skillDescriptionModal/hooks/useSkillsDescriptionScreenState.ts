@@ -45,6 +45,8 @@ export function useSkillsDescriptionScreenState({
   initialOpeningHours,
   onOpeningHoursChange,
   accountType = 'personal',
+  initialIsHidden = false,
+  onIsHiddenChange,
 }: SkillsDescriptionScreenProps) {
   const { t, country: appCountry } = useLanguage();
   const resolvedInitialDistrictSelection = useMemo(
@@ -59,9 +61,9 @@ export function useSkillsDescriptionScreenState({
   );
 
   const [description, setDescription] = useState(initialDescription);
-  const [originalDescription] = useState(initialDescription);
+  const [originalDescription, setOriginalDescription] = useState(initialDescription);
   const [detailedDescription, setDetailedDescription] = useState(initialDetailedDescription);
-  const [originalDetailedDescription] = useState(initialDetailedDescription);
+  const [originalDetailedDescription, setOriginalDetailedDescription] = useState(initialDetailedDescription);
   const [tags, setTags] = useState<string[]>(initialTags);
   const [originalTags, setOriginalTags] = useState<string[]>(initialTags);
   const [countryCode, setCountryCode] = useState(resolvedInitialDistrictSelection.countryCode);
@@ -188,43 +190,66 @@ export function useSkillsDescriptionScreenState({
   const [isDurationModalOpen, setIsDurationModalOpen] = useState(false);
   const [openingHours, setOpeningHours] = useState<OpeningHours>(initialOpeningHours || {});
   const [originalOpeningHours] = useState<OpeningHours>(initialOpeningHours || {});
+  const [isHideCardEnabled, setIsHideCardEnabled] = useState(initialIsHidden);
 
   useEffect(() => {
     setOpeningHours(initialOpeningHours || {});
   }, [initialOpeningHours]);
 
+  useEffect(() => {
+    setDescription(initialDescription || '');
+    setOriginalDescription(initialDescription || '');
+  }, [initialDescription]);
+
+  useEffect(() => {
+    setDetailedDescription(initialDetailedDescription || '');
+    setOriginalDetailedDescription(initialDetailedDescription || '');
+  }, [initialDetailedDescription]);
+
+  useEffect(() => {
+    setIsHideCardEnabled(initialIsHidden);
+  }, [initialIsHidden]);
+
   const handleDescriptionChange = (value: string) => {
     setDescription(value);
-    if (onDescriptionChange) {
-      onDescriptionChange(value);
-    }
   };
 
   const handleDetailedDescriptionChange = (value: string) => {
     if (value.length <= MAX_DETAILED_LENGTH) {
       setDetailedDescription(value);
       setDetailedError('');
-      if (onDetailedDescriptionChange) {
-        onDetailedDescriptionChange(value);
-      }
     }
   };
 
   const handleDescriptionSave = () => {
+    setOriginalDescription(description);
+    if (onDescriptionChange) {
+      onDescriptionChange(description);
+    }
     setIsDescriptionModalOpen(false);
   };
 
   const handleDescriptionBack = () => {
     setDescription(originalDescription);
+    if (onDescriptionChange) {
+      onDescriptionChange(originalDescription);
+    }
     setIsDescriptionModalOpen(false);
   };
 
   const handleDetailedDescriptionSave = () => {
+    setOriginalDetailedDescription(detailedDescription);
+    if (onDetailedDescriptionChange) {
+      onDetailedDescriptionChange(detailedDescription);
+    }
     setIsDetailedDescriptionModalOpen(false);
   };
 
   const handleDetailedDescriptionBack = () => {
     setDetailedDescription(originalDetailedDescription);
+    if (onDetailedDescriptionChange) {
+      onDetailedDescriptionChange(originalDetailedDescription);
+    }
     setIsDetailedDescriptionModalOpen(false);
   };
 
@@ -232,10 +257,11 @@ export function useSkillsDescriptionScreenState({
     setTags(newTags);
   };
 
-  const handleTagsSave = () => {
-    setOriginalTags(tags);
+  const handleTagsSave = (nextTags = tags) => {
+    setTags(nextTags);
+    setOriginalTags(nextTags);
     if (onTagsChange) {
-      onTagsChange(tags);
+      onTagsChange(nextTags);
     }
     setIsTagsModalOpen(false);
   };
@@ -256,12 +282,14 @@ export function useSkillsDescriptionScreenState({
     setCountryCode(newCountryCode);
     setDistrictCode('');
     setDistrict('');
+    onCountryCodeChange?.(newCountryCode);
     onDistrictCodeChange?.('');
     onDistrictChange?.('');
   };
 
   const handleDistrictCodeChange = (newDistrictCode: string) => {
     setDistrictCode(newDistrictCode);
+    onDistrictCodeChange?.(newDistrictCode);
   };
 
   const handleLocationChange = (newLocation: string) => {
@@ -281,6 +309,10 @@ export function useSkillsDescriptionScreenState({
   };
 
   const handleLocationSave = () => {
+    onCountryCodeChange?.(countryCode);
+    onDistrictCodeChange?.(districtCode);
+    onDistrictChange?.(district);
+    onLocationChange?.(location);
     setIsLocationModalOpen(false);
   };
 
@@ -289,6 +321,10 @@ export function useSkillsDescriptionScreenState({
     setDistrictCode(originalDistrictCode);
     setDistrict(originalDistrict);
     setLocation(originalLocation);
+    onCountryCodeChange?.(originalCountryCode);
+    onDistrictCodeChange?.(originalDistrictCode);
+    onDistrictChange?.(originalDistrict);
+    onLocationChange?.(originalLocation);
     setIsLocationModalOpen(false);
   };
 
@@ -400,6 +436,16 @@ export function useSkillsDescriptionScreenState({
     setIsOpeningHoursModalOpen(false);
   };
 
+  const handleHideCardToggle = () => {
+    setIsHideCardEnabled((current) => {
+      const next = !current;
+      if (onIsHiddenChange) {
+        onIsHiddenChange(next);
+      }
+      return next;
+    });
+  };
+
   const handleOpeningHoursBack = () => {
     setOpeningHours(originalOpeningHours);
     setIsOpeningHoursModalOpen(false);
@@ -488,6 +534,7 @@ export function useSkillsDescriptionScreenState({
     urgency,
     durationType,
     openingHours,
+    isHideCardEnabled,
     images,
     imagePreviews,
     existingImages,
@@ -559,6 +606,7 @@ export function useSkillsDescriptionScreenState({
     handleDurationBack,
     handleOpeningHoursSave,
     handleOpeningHoursBack,
+    handleHideCardToggle,
     handleImageInputChange,
     handleRemoveExistingImageClick,
     handleRemoveNewImage,

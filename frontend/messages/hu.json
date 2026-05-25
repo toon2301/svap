@@ -109,6 +109,7 @@
     "openProfile": "Profil megnyitása",
     "createFromChat": "Kérés létrehozása ajánlatból",
     "toastCancelFailed": "A kérés visszavonása sikertelen.",
+    "toastCreateFailed": "A kérést nem sikerült elküldeni.",
     "toastRequestCancelled": "A keres visszavonva.",
     "toastRequestAlreadyProcessed": "Ezt a kerest mar feldolgoztak.",
     "statusSent": "Elkuldve",
@@ -550,6 +551,8 @@
       "turnOffAll": "Összes nap kikapcsolása"
     },
     "imageDeleteFailed": "A kép törlése nem sikerült.",
+    "cardDeleteFailed": "A kártyát nem sikerült eltávolítani. Próbáld újra.",
+    "maxCardsPerTypeAlert": "Ebben a szakaszban legfeljebb 3 kártyád lehet.",
     "fileMustBeImage": "A fájlnak képnek kell lennie.",
     "backSidePlaceholder": "Hátoldal",
     "backSideEmpty": "Itt további információkat adunk hozzá.",

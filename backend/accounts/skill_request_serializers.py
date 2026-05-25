@@ -21,12 +21,23 @@ class SkillRequestCreateSerializer(serializers.Serializer):
             raise serializers.ValidationError("Karta neexistuje.")
 
         request = self.context.get("request")
+        requester_id = getattr(getattr(request, "user", None), "id", None)
         if (
             request
             and getattr(request, "user", None)
-            and offer.user_id == request.user.id
+            and offer.user_id == requester_id
         ):
             raise serializers.ValidationError("Nemôžeš požiadať o vlastnú kartu.")
+
+        owner = offer.user
+        if (
+            offer.is_hidden
+            or not getattr(owner, "is_public", True)
+            or not getattr(owner, "is_active", True)
+            or getattr(owner, "is_staff", False)
+            or getattr(owner, "is_superuser", False)
+        ):
+            raise serializers.ValidationError("Karta neexistuje.")
 
         self.context["offer_obj"] = offer
         return value

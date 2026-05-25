@@ -14,6 +14,8 @@ export interface OfferImage {
   image_url?: string | null;
   image?: string | null;
   order?: number;
+  status?: string | null;
+  rejected_reason?: string | null;
 }
 
 export interface Offer {

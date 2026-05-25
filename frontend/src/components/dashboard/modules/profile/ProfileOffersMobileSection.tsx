@@ -276,8 +276,8 @@ export default function ProfileOffersMobileSection({
         if (Number.isFinite(createdId) && createdId >= 1) {
           setRequestIdByOfferId((prev) => ({ ...prev, [offerId]: createdId }));
         }
-      } catch {
-        // fail-open
+      } catch (err: unknown) {
+        toast.error(getApiErrorMessage(err, t('requests.toastCreateFailed', 'Žiadosť sa nepodarilo odoslať.')));
       } finally {
         setBusyOfferId(null);
       }
