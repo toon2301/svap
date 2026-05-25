@@ -90,6 +90,18 @@ export default function SkillsDescriptionMobileModals({ state }: SkillsDescripti
     handleDurationBack,
   } = state;
 
+  const handleTagsModalSave = () => {
+    const pendingTag = tagsSectionRef.current?.getTagInput().trim() || '';
+    if (!pendingTag) {
+      handleTagsSave();
+      return;
+    }
+
+    const nextTags = tagsSectionRef.current?.addTag();
+    if (!nextTags) return;
+    handleTagsSave(nextTags);
+  };
+
   return (
     <>
       {/* Description Modal */}
@@ -172,7 +184,7 @@ export default function SkillsDescriptionMobileModals({ state }: SkillsDescripti
         isOpen={isTagsModalOpen}
         title={t('skills.tags', 'Tagy')}
         onBack={handleTagsBack}
-        onSave={handleTagsSave}
+        onSave={handleTagsModalSave}
       >
         <TagsSection ref={tagsSectionRef} tags={tags} onTagsChange={handleTagsChange} isOpen={isTagsModalOpen} />
       </MobileFullScreenModal>

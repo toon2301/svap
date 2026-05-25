@@ -17,6 +17,7 @@ export interface SkillItem {
   opening_hours?: OpeningHours;
   is_seeking?: boolean;
   urgency?: 'low' | 'medium' | 'high' | '';
+  is_hidden?: boolean;
 }
 
 export interface SkillsScreenProps {

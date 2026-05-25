@@ -114,6 +114,7 @@
     "chatNoRequestableOffers": "Dieser Benutzer hat derzeit keine aktiven Angebote, aus denen eine Anfrage erstellt werden kann.",
     "loadOffersFailed": "Die Angebote des Benutzers konnten nicht geladen werden. Bitte versuchen Sie es erneut.",
     "toastCancelFailed": "Anfrage konnte nicht zurückgezogen werden.",
+    "toastCreateFailed": "Anfrage konnte nicht gesendet werden.",
     "toastRequestCancelled": "Die Anfrage wurde vom Benutzer storniert.",
     "toastRequestAlreadyProcessed": "Die Anfrage wurde bereits bearbeitet."
   },
@@ -557,6 +558,8 @@
     "uploadingPhotosMayTake": "Fotos werden hochgeladen, das kann ein paar Sekunden dauern...",
     "deletingPhotosLong": "Fotos werden entfernt…",
     "imageDeleteFailed": "Löschen des Bildes fehlgeschlagen.",
+    "cardDeleteFailed": "Die Karte konnte nicht entfernt werden. Bitte versuchen Sie es erneut.",
+    "maxCardsPerTypeAlert": "Sie können in diesem Bereich höchstens 3 Karten haben.",
     "fileMustBeImage": "Die Datei muss ein Bild sein.",
     "backSidePlaceholder": "Rückseite",
     "backSideEmpty": "Hier werden wir weitere Informationen hinzufügen.",

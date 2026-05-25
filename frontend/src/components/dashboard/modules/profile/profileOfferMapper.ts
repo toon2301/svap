@@ -56,6 +56,9 @@ function toImages(value: unknown): OfferImage[] {
       id: Number(image.id) || 0,
       image_url: typeof imageUrl === 'string' ? imageUrl : null,
       order: typeof image.order === 'number' ? image.order : undefined,
+      status: typeof image.status === 'string' ? image.status : null,
+      rejected_reason:
+        typeof image.rejected_reason === 'string' ? image.rejected_reason : null,
     };
   });
 }

@@ -27,7 +27,7 @@ interface TagsSectionProps {
 }
 
 export interface TagsSectionRef {
-  addTag: () => void;
+  addTag: () => string[] | null;
   getTagInput: () => string;
   canAddTag: () => boolean;
 }
@@ -58,26 +58,29 @@ const TagsSection = forwardRef<TagsSectionRef, TagsSectionProps>(
     setCanAdd(canAddTag);
   }, [tagInput, tagError, tags]);
 
-  const addTag = () => {
+  const addTag = (): string[] | null => {
     const raw = tagInput.trim();
-    if (!raw) return;
+    if (!raw) return tags;
     const candidate = raw.replace(/,+$/g, '');
+    if (!candidate) return tags;
     if (candidate.length > 15) {
       setTagError(t('skills.tagTooLong', 'Tag môže mať maximálne 15 znakov'));
-      return;
+      return null;
     }
     const lower = candidate.toLowerCase();
     if (tags.some((t) => t.toLowerCase() === lower)) {
       setTagError(t('skills.tagDuplicateError', 'Tento tag už máš pridaný'));
-      return;
+      return null;
     }
     if (tags.length >= 5) {
       alert(t('skills.maxTagsAlert', 'Môžeš pridať maximálne 5 tagov.'));
-      return;
+      return null;
     }
-    onTagsChange([...tags, candidate]);
+    const nextTags = [...tags, candidate];
+    onTagsChange(nextTags);
     setTagInput('');
     setTagError('');
+    return nextTags;
   };
 
   const removeTag = (tag: string) => {
@@ -85,9 +88,7 @@ const TagsSection = forwardRef<TagsSectionRef, TagsSectionProps>(
   };
 
   useImperativeHandle(ref, () => ({
-    addTag: () => {
-      addTag();
-    },
+    addTag,
     getTagInput: () => tagInput,
     canAddTag: () => canAdd,
   }));

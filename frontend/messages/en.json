@@ -114,6 +114,7 @@
     "chatNoRequestableOffers": "This user currently has no active offers that can be used to create a request.",
     "loadOffersFailed": "Failed to load the user's offers. Please try again.",
     "toastCancelFailed": "Failed to cancel request.",
+    "toastCreateFailed": "Failed to send request.",
     "toastRequestCancelled": "The request was cancelled by the user.",
     "toastRequestAlreadyProcessed": "The request has already been processed."
   },
@@ -557,6 +558,8 @@
     "uploadingPhotosMayTake": "Uploading photos, this may take a few seconds...",
     "deletingPhotosLong": "Removing photos…",
     "imageDeleteFailed": "Failed to delete image.",
+    "cardDeleteFailed": "Could not remove the card. Please try again.",
+    "maxCardsPerTypeAlert": "You can have at most 3 cards in this section.",
     "fileMustBeImage": "File must be an image.",
     "backSidePlaceholder": "Back side",
     "backSideEmpty": "We will add more information here.",

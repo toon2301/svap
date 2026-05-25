@@ -32,6 +32,7 @@ export default function SkillsDescriptionMobileLayout({
     urgency,
     durationType,
     openingHours,
+    isHideCardEnabled,
     validExistingImages,
     imagePreviews,
     totalImagesCount,
@@ -48,6 +49,7 @@ export default function SkillsDescriptionMobileLayout({
     handleImageInputChange,
     handleRemoveExistingImageClick,
     handleRemoveNewImage,
+    handleHideCardToggle,
   } = state;
 
   return (
@@ -83,11 +85,11 @@ export default function SkillsDescriptionMobileLayout({
               </span>
               <button
                 type="button"
-                onClick={() => {
-                  // TODO: Implementovať funkcionalitu skrytia karty
-                }}
+                onClick={handleHideCardToggle}
+                aria-pressed={isHideCardEnabled}
+                aria-label={t('skills.hideCardToggle', 'Skryť túto kartu')}
                 className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 ${
-                  false ? 'bg-purple-400 border border-purple-400' : 'bg-gray-300 dark:bg-gray-600'
+                  isHideCardEnabled ? 'bg-purple-400 border border-purple-400' : 'bg-gray-300 dark:bg-gray-600'
                 }`}
                 style={{
                   transform: 'scaleY(0.8)',
@@ -96,7 +98,7 @@ export default function SkillsDescriptionMobileLayout({
               >
                 <span
                   className={`absolute h-3 w-3 rounded-full bg-white shadow-sm transition-all duration-200 ease-in-out ${
-                    false ? 'left-5' : 'left-0.5'
+                    isHideCardEnabled ? 'left-5' : 'left-0.5'
                   }`}
                 />
               </button>

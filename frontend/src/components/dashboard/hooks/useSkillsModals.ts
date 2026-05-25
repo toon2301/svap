@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useState, useRef } from 'react';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { api, endpoints } from '../../../lib/api';
 
 export type OpeningHours = {
@@ -41,6 +42,7 @@ export type DashboardSkill = {
   urgency?: 'low' | 'medium' | 'high' | '';
   duration_type?: 'one_time' | 'long_term' | 'project' | '' | null;
   is_hidden?: boolean;
+  _newImages?: File[];
 };
 
 export interface UseSkillsModalsResult {
@@ -70,6 +72,7 @@ export interface UseSkillsModalsResult {
 }
 
 export function useSkillsModals(): UseSkillsModalsResult {
+  const { t } = useLanguage();
   const [selectedSkillsCategory, setSelectedSkillsCategory] = useState<DashboardSkill | null>(null);
   const [standardCategories, setStandardCategories] = useState<DashboardSkill[]>([]);
   const [customCategories, setCustomCategories] = useState<DashboardSkill[]>([]);
@@ -245,13 +248,16 @@ export function useSkillsModals(): UseSkillsModalsResult {
         if (item?.id) {
           await api.delete(endpoints.skills.detail(item.id));
         }
-      } catch {
-        // ignore
-      } finally {
         setStandardCategories((prev) => prev.filter((_, i) => i !== index));
+      } catch (error: any) {
+        const msg =
+          error?.response?.data?.error ||
+          error?.response?.data?.detail ||
+          t('skills.cardDeleteFailed', 'Kartu sa nepodarilo odstrániť. Skúste to znova.');
+        alert(msg);
       }
     },
-    [standardCategories]
+    [standardCategories, t]
   );
 
   const removeCustomCategory = useCallback(
@@ -261,13 +267,16 @@ export function useSkillsModals(): UseSkillsModalsResult {
         if (skill?.id) {
           await api.delete(endpoints.skills.detail(skill.id));
         }
-      } catch {
-        // ignore
-      } finally {
         setCustomCategories((prev) => prev.filter((_, i) => i !== index));
+      } catch (error: any) {
+        const msg =
+          error?.response?.data?.error ||
+          error?.response?.data?.detail ||
+          t('skills.cardDeleteFailed', 'Kartu sa nepodarilo odstrániť. Skúste to znova.');
+        alert(msg);
       }
     },
-    [customCategories]
+    [customCategories, t]
   );
 
   return {
