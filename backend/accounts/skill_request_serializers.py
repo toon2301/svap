@@ -142,6 +142,7 @@ class SkillRequestSerializer(serializers.ModelSerializer):
             "is_hidden": bool(getattr(offer, "is_hidden", False)),
             "price_from": getattr(offer, "price_from", None),
             "price_currency": getattr(offer, "price_currency", "") or "€",
+            "price_negotiable": bool(getattr(offer, "price_negotiable", False)),
             "owner": (
                 {
                     "id": getattr(owner, "id", None),

@@ -390,8 +390,13 @@ export default function SkillsModuleRouter({
           }}
           initialPriceFrom={selectedSkillsCategory.price_from ?? null}
           initialPriceCurrency={selectedSkillsCategory.price_currency ?? '€'}
-          onPriceChange={(priceFrom, priceCurrency) => {
-            updateSelectedSkill({ price_from: priceFrom, price_currency: priceCurrency });
+          initialPriceNegotiable={selectedSkillsCategory.price_negotiable === true}
+          onPriceChange={(priceFrom, priceCurrency, priceNegotiable) => {
+            updateSelectedSkill({
+              price_from: priceNegotiable ? null : priceFrom,
+              price_currency: priceNegotiable ? '' : priceCurrency,
+              price_negotiable: priceNegotiable,
+            });
           }}
           initialUrgency={selectedSkillsCategory.urgency || 'low'}
           onUrgencyChange={(urgency) => {
@@ -473,6 +478,7 @@ export default function SkillsModuleRouter({
               country_code: 'SK',
               district_code: '',
               price_currency: '€',
+              price_negotiable: false,
               location: '',
               detailed_description: '',
             });
@@ -538,6 +544,7 @@ export default function SkillsModuleRouter({
               country_code: 'SK',
               district_code: '',
               price_currency: '€',
+              price_negotiable: false,
               location: '',
               detailed_description: '',
             });

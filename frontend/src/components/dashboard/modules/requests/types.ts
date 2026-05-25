@@ -31,6 +31,7 @@ export type SkillRequestOfferSummary = {
   is_hidden?: boolean;
   price_from: number | null;
   price_currency: string;
+  price_negotiable?: boolean;
   owner?: {
     id: number | null;
     slug?: string | null;

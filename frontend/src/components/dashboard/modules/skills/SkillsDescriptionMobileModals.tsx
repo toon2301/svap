@@ -37,6 +37,7 @@ export default function SkillsDescriptionMobileModals({ state }: SkillsDescripti
     experienceUnit,
     priceFrom,
     priceCurrency,
+    priceNegotiable,
     urgency,
     durationType,
     openingHours,
@@ -80,6 +81,7 @@ export default function SkillsDescriptionMobileModals({ state }: SkillsDescripti
     handleExperienceSave,
     handleExperienceBack,
     handlePriceValueChange,
+    handlePriceNegotiableChange,
     handlePriceSave,
     handlePriceBack,
     handleOpeningHoursSave,
@@ -259,6 +261,8 @@ export default function SkillsDescriptionMobileModals({ state }: SkillsDescripti
           onChange={handlePriceValueChange}
           currency={priceCurrency}
           onCurrencyChange={(val) => setPriceCurrency(val)}
+          isNegotiable={priceNegotiable}
+          onNegotiableChange={handlePriceNegotiableChange}
           error={priceError}
           isSeeking={isSeeking}
         />

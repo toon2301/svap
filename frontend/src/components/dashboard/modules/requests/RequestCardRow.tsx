@@ -48,6 +48,7 @@ export function RequestCardRow({ item, onAccept, onReject, isBusy = false }: Pro
             : [],
           price_from: typeof data.price_from === 'number' ? data.price_from : null,
           price_currency: data.price_currency || '€',
+          price_negotiable: data.price_negotiable === true,
           district: data.district || '',
           location: data.location || '',
           experience: data.experience

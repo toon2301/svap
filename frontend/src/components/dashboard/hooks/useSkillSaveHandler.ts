@@ -128,12 +128,18 @@ export function useSkillSaveHandler({
         payload.experience_unit = '';
       }
 
-      if (typeof skill.price_from === 'number' && !isNaN(skill.price_from)) {
+      if (skill.price_negotiable === true) {
+        payload.price_from = null;
+        payload.price_currency = '';
+        payload.price_negotiable = true;
+      } else if (typeof skill.price_from === 'number' && !isNaN(skill.price_from)) {
         payload.price_from = skill.price_from;
         payload.price_currency = skill.price_currency || '€';
+        payload.price_negotiable = false;
       } else {
         payload.price_from = null;
         payload.price_currency = '';
+        payload.price_negotiable = false;
       }
 
       if (skill.opening_hours) {

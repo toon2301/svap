@@ -78,6 +78,7 @@ export function mapApiOfferToProfileOffer(raw: unknown): Offer {
     price_from: toPrice(s.price_from),
     price_currency:
       typeof rawCurrency === 'string' && rawCurrency.trim() !== '' ? rawCurrency : '\u20ac',
+    price_negotiable: s.price_negotiable === true,
     district: toStringValue(s.district),
     location: toStringValue(s.location),
     experience: toExperience(s.experience),

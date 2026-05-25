@@ -139,7 +139,9 @@ export default function ProfileOfferCard({
   const label = translatedLabel;
 
   const priceLabel =
-    displayOffer.price_from !== null && displayOffer.price_from !== undefined
+    displayOffer.price_negotiable === true
+      ? t('skills.priceNegotiable', 'Dohodou')
+      : displayOffer.price_from !== null && displayOffer.price_from !== undefined
       ? `${Number(displayOffer.price_from).toLocaleString('sk-SK', {
           minimumFractionDigits: 0,
           maximumFractionDigits: 2,

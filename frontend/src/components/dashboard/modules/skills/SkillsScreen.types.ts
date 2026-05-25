@@ -12,6 +12,7 @@ export interface SkillItem {
   images?: Array<{ id: number; image_url?: string | null; image?: string | null; order?: number; status?: string | null }>;
   price_from?: number | null;
   price_currency?: string;
+  price_negotiable?: boolean;
   district?: string;
   location?: string;
   opening_hours?: OpeningHours;

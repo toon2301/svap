@@ -14,6 +14,7 @@ interface UseSkillDescriptionStateProps {
   initialImages?: SkillImage[];
   initialPriceFrom?: number | null;
   initialPriceCurrency?: string;
+  initialPriceNegotiable?: boolean;
   initialLocation?: string;
   initialDistrict?: string;
   initialCountryCode?: string;
@@ -35,6 +36,7 @@ export const useSkillDescriptionState = ({
   initialImages = [],
   initialPriceFrom = null,
   initialPriceCurrency = '€',
+  initialPriceNegotiable = false,
   initialLocation = '',
   initialDistrict = '',
   initialCountryCode = 'SK',
@@ -68,6 +70,7 @@ export const useSkillDescriptionState = ({
   const [removedExistingImageIds, setRemovedExistingImageIds] = useState<number[]>([]);
   const [priceFrom, setPriceFrom] = useState('');
   const [priceCurrency, setPriceCurrency] = useState<CurrencyOption>('€');
+  const [priceNegotiable, setPriceNegotiable] = useState(false);
   const [userTouchedCurrency, setUserTouchedCurrency] = useState(false);
   const [priceError, setPriceError] = useState('');
   const [location, setLocation] = useState('');
@@ -104,6 +107,7 @@ export const useSkillDescriptionState = ({
       setExistingImages(Array.isArray(initialImages) ? initialImages : []);
       setRemovedExistingImageIds([]);
       setPriceFrom(initialPriceFrom !== null && initialPriceFrom !== undefined ? String(initialPriceFrom) : '');
+      setPriceNegotiable(initialPriceNegotiable);
       if ((initialPriceCurrency ?? '') === '' && (initialPriceFrom === null || initialPriceFrom === undefined)) {
         setPriceCurrency(currencyFromLocale(locale));
       } else {
@@ -132,6 +136,7 @@ export const useSkillDescriptionState = ({
       setRemovedExistingImageIds([]);
       setPriceFrom('');
       setPriceCurrency(currencyFromLocale(locale));
+      setPriceNegotiable(false);
       setUserTouchedCurrency(false);
       setPriceError('');
       setCountryCode(resolvedInitialDistrictSelection.countryCode);
@@ -262,6 +267,8 @@ export const useSkillDescriptionState = ({
     setPriceFrom,
     priceCurrency,
     setPriceCurrency,
+    priceNegotiable,
+    setPriceNegotiable,
     userTouchedCurrency,
     setUserTouchedCurrency,
     priceError,

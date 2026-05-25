@@ -33,6 +33,7 @@ export function useSkillsDescriptionScreenState({
   onExperienceChange,
   initialPriceFrom = null,
   initialPriceCurrency = '€',
+  initialPriceNegotiable = false,
   onPriceChange,
   initialUrgency = 'low',
   onUrgencyChange,
@@ -77,11 +78,13 @@ export function useSkillsDescriptionScreenState({
   const [priceFrom, setPriceFrom] = useState(
     initialPriceFrom !== null && initialPriceFrom !== undefined ? String(initialPriceFrom) : '',
   );
-  const [originalPriceFrom] = useState(initialPriceFrom);
+  const [priceNegotiable, setPriceNegotiable] = useState(initialPriceNegotiable);
+  const originalPriceFromRef = useRef(initialPriceFrom);
+  const originalPriceNegotiableRef = useRef(initialPriceNegotiable);
   const [priceCurrency, setPriceCurrency] = useState<CurrencyOption>(
     (initialPriceCurrency || '€') as CurrencyOption,
   );
-  const [originalPriceCurrency] = useState(initialPriceCurrency || '€');
+  const originalPriceCurrencyRef = useRef(initialPriceCurrency || '€');
   const [urgency, setUrgency] = useState<'low' | 'medium' | 'high' | ''>(initialUrgency || 'low');
   const originalUrgencyRef = useRef<'low' | 'medium' | 'high' | ''>(initialUrgency || 'low');
   const [durationType, setDurationType] = useState<DurationOption | ''>(initialDurationType || '');
@@ -154,8 +157,12 @@ export function useSkillsDescriptionScreenState({
 
   useEffect(() => {
     setPriceFrom(initialPriceFrom !== null && initialPriceFrom !== undefined ? String(initialPriceFrom) : '');
+    setPriceNegotiable(initialPriceNegotiable);
     setPriceCurrency((initialPriceCurrency || '€') as CurrencyOption);
-  }, [initialPriceFrom, initialPriceCurrency]);
+    originalPriceFromRef.current = initialPriceFrom;
+    originalPriceNegotiableRef.current = initialPriceNegotiable;
+    originalPriceCurrencyRef.current = initialPriceCurrency || '€';
+  }, [initialPriceFrom, initialPriceCurrency, initialPriceNegotiable]);
 
   useEffect(() => {
     const newUrgency = initialUrgency || 'low';
@@ -368,9 +375,17 @@ export function useSkillsDescriptionScreenState({
     setPriceError('');
   };
 
+  const handlePriceNegotiableChange = (value: boolean) => {
+    setPriceNegotiable(value);
+    setPriceError('');
+    if (value) {
+      setPriceFrom('');
+    }
+  };
+
   const handlePriceSave = () => {
     let newPriceFrom: number | null = null;
-    if (priceFrom.trim()) {
+    if (!priceNegotiable && priceFrom.trim()) {
       const parsed = parseFloat(priceFrom.trim().replace(',', '.'));
       if (isNaN(parsed) || parsed < 0) {
         setPriceError(t('skills.priceNonNegative', 'Cena musí byť nezáporné číslo'));
@@ -380,14 +395,19 @@ export function useSkillsDescriptionScreenState({
     }
     setPriceError('');
     if (onPriceChange) {
-      onPriceChange(newPriceFrom, priceCurrency);
+      onPriceChange(newPriceFrom, priceCurrency, priceNegotiable);
     }
     setIsPriceModalOpen(false);
   };
 
   const handlePriceBack = () => {
-    setPriceFrom(originalPriceFrom !== null && originalPriceFrom !== undefined ? String(originalPriceFrom) : '');
-    setPriceCurrency(originalPriceCurrency as CurrencyOption);
+    setPriceFrom(
+      originalPriceFromRef.current !== null && originalPriceFromRef.current !== undefined
+        ? String(originalPriceFromRef.current)
+        : '',
+    );
+    setPriceNegotiable(originalPriceNegotiableRef.current);
+    setPriceCurrency(originalPriceCurrencyRef.current as CurrencyOption);
     setPriceError('');
     setIsPriceModalOpen(false);
   };
@@ -523,6 +543,7 @@ export function useSkillsDescriptionScreenState({
     experienceUnit,
     priceFrom,
     priceCurrency,
+    priceNegotiable,
     urgency,
     durationType,
     openingHours,
@@ -566,6 +587,7 @@ export function useSkillsDescriptionScreenState({
     setIsUrgencyModalOpen,
     setIsDurationModalOpen,
     setPriceCurrency,
+    setPriceNegotiable,
     setExperienceUnit,
     setOpeningHours,
 
@@ -590,6 +612,7 @@ export function useSkillsDescriptionScreenState({
     handleExperienceSave,
     handleExperienceBack,
     handlePriceValueChange,
+    handlePriceNegotiableChange,
     handlePriceSave,
     handlePriceBack,
     handleUrgencySave,

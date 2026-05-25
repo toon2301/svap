@@ -29,6 +29,7 @@ export interface Offer {
   images?: OfferImage[];
   price_from?: number | null;
   price_currency?: string;
+  price_negotiable?: boolean;
   district?: string;
   location?: string;
   experience?: OfferExperience;

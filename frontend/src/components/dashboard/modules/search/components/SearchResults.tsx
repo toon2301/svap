@@ -102,7 +102,9 @@ export function SearchResults({
     const hasPrice = skill.price_from !== null && skill.price_from !== undefined;
     const priceValue = hasPrice ? Number(skill.price_from) : null;
     const priceCurrency = skill.price_currency || '€';
-    const priceLabel = hasPrice 
+    const priceLabel = skill.price_negotiable === true
+      ? t('skills.priceNegotiable', 'Dohodou')
+      : hasPrice 
       ? isSeeking
         ? `${t('search.priceToShort', 'do')} ${priceValue!.toLocaleString('sk-SK')}${priceCurrency}`
         : `${t('search.priceFromShort', 'od')} ${priceValue!.toLocaleString('sk-SK')}${priceCurrency}`

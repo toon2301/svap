@@ -30,6 +30,7 @@ export interface SkillItem {
   images?: Array<ImageItem>;
   price_from?: number | null;
   price_currency?: string;
+  price_negotiable?: boolean;
   country_code?: string;
   district_code?: string;
   district_label?: string | null;
@@ -114,6 +115,7 @@ export default function SkillModals(props: Props) {
         typeof s.price_currency === 'string' && s.price_currency.trim() !== ''
           ? s.price_currency
           : '€',
+      price_negotiable: s.price_negotiable === true,
       country_code:
         typeof s.country_code === 'string' && s.country_code.trim() !== ''
           ? s.country_code.trim().toUpperCase()
@@ -158,6 +160,7 @@ export default function SkillModals(props: Props) {
             subcategory,
             price_from: null,
             price_currency: '€',
+            price_negotiable: false,
             country_code: 'SK',
             district_code: '',
             location: '',
@@ -190,6 +193,7 @@ export default function SkillModals(props: Props) {
           initialCountryCode={selectedSkillsCategory.country_code ?? ''}
           initialDistrictCode={selectedSkillsCategory.district_code ?? ''}
           initialPriceCurrency={selectedSkillsCategory.price_currency ?? '€'}
+          initialPriceNegotiable={selectedSkillsCategory.price_negotiable === true}
           initialDistrict={selectedSkillsCategory.district ?? ''}
           initialLocation={selectedSkillsCategory.location ?? ''}
           initialDetailedDescription={selectedSkillsCategory.detailed_description || ''}
@@ -206,12 +210,18 @@ export default function SkillModals(props: Props) {
               ? (imageId) => handleRemoveSkillImage(selectedSkillsCategory.id!, imageId)
               : undefined
           }
-          onSave={async (description, experience, tags, images, priceFrom, priceCurrency, locationValue, detailedDescription, openingHours, districtValue, countryCode, districtCode, urgency, durationType) => {
+          onSave={async (description, experience, tags, images, priceFrom, priceCurrency, priceNegotiable, locationValue, detailedDescription, openingHours, districtValue, countryCode, districtCode, urgency, durationType) => {
             const trimmedLocation = typeof locationValue === 'string' ? locationValue.trim() : '';
             const trimmedDistrict = typeof districtValue === 'string' ? districtValue.trim() : '';
             const trimmedCountryCode = typeof countryCode === 'string' ? countryCode.trim().toUpperCase() : '';
             const trimmedDistrictCode = typeof districtCode === 'string' ? districtCode.trim().toLowerCase() : '';
             const detailedText = typeof detailedDescription === 'string' ? detailedDescription.trim() : '';
+            const pricePayload =
+              priceNegotiable === true
+                ? { price_from: null, price_currency: '', price_negotiable: true }
+                : typeof priceFrom === 'number' && !isNaN(priceFrom)
+                  ? { price_from: priceFrom, price_currency: priceCurrency || '€', price_negotiable: false }
+                  : { price_from: null, price_currency: '', price_negotiable: false };
             const buildPayload = () => {
               const isSeeking = activeModule === 'skills-search';
               const payload: any = {
@@ -233,13 +243,7 @@ export default function SkillModals(props: Props) {
                 payload.experience_value = null;
                 payload.experience_unit = '';
               }
-              if (typeof priceFrom === 'number' && !isNaN(priceFrom)) {
-                payload.price_from = priceFrom;
-                payload.price_currency = priceCurrency || '€';
-              } else {
-                payload.price_from = null;
-                payload.price_currency = '';
-              }
+              Object.assign(payload, pricePayload);
               payload.district = trimmedDistrict;
               payload.location = trimmedLocation;
               return payload;
@@ -256,9 +260,7 @@ export default function SkillModals(props: Props) {
                     ...(experience && typeof experience.value === 'number' && experience.unit
                       ? { experience_value: experience.value, experience_unit: experience.unit }
                       : { experience_value: null, experience_unit: '' }),
-                    ...(typeof priceFrom === 'number' && !isNaN(priceFrom)
-                      ? { price_from: priceFrom, price_currency: priceCurrency || '€' }
-                      : { price_from: null, price_currency: '' }),
+                    ...pricePayload,
                     country_code: trimmedCountryCode,
                     district_code: trimmedDistrictCode,
                     district: trimmedDistrict,
@@ -296,9 +298,7 @@ export default function SkillModals(props: Props) {
                     ...(experience && typeof experience.value === 'number' && experience.unit
                       ? { experience_value: experience.value, experience_unit: experience.unit }
                       : { experience_value: null, experience_unit: '' }),
-                    ...(typeof priceFrom === 'number' && !isNaN(priceFrom)
-                      ? { price_from: priceFrom, price_currency: priceCurrency || '€' }
-                      : { price_from: null, price_currency: '' }),
+                    ...pricePayload,
                     country_code: trimmedCountryCode,
                     district_code: trimmedDistrictCode,
                     district: trimmedDistrict,
@@ -378,9 +378,7 @@ export default function SkillModals(props: Props) {
                       ...(experience && typeof experience.value === 'number' && experience.unit
                         ? { experience_value: experience.value, experience_unit: experience.unit }
                         : { experience_value: null, experience_unit: '' }),
-                      ...(typeof priceFrom === 'number' && !isNaN(priceFrom)
-                        ? { price_from: priceFrom, price_currency: priceCurrency || '€' }
-                        : { price_from: null, price_currency: '' }),
+                      ...pricePayload,
                       country_code: trimmedCountryCode,
                       district_code: trimmedDistrictCode,
                       district: trimmedDistrict,

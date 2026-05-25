@@ -83,3 +83,56 @@ class SkillDistrictCodeApiTests(APITestCase):
         self.assertEqual(skill.district, "Nitra")
         self.assertEqual(skill.country_code, "")
         self.assertEqual(skill.district_code, "")
+
+    def test_price_negotiable_clears_numeric_price(self):
+        response = self.client.post(
+            self.list_url,
+            {
+                "category": "Remeslá",
+                "subcategory": "Maliar",
+                "description": "Maľovanie stien",
+                "country_code": "SK",
+                "district_code": "nitra",
+                "price_from": "25.00",
+                "price_currency": "€",
+                "price_negotiable": True,
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(response.data["price_negotiable"])
+        self.assertIsNone(response.data["price_from"])
+        self.assertEqual(response.data["price_currency"], "")
+
+        skill = OfferedSkill.objects.get(id=response.data["id"])
+        self.assertTrue(skill.price_negotiable)
+        self.assertIsNone(skill.price_from)
+        self.assertEqual(skill.price_currency, "")
+
+    def test_price_can_be_set_after_disabling_negotiable(self):
+        skill = OfferedSkill.objects.create(
+            user=self.user,
+            category="Remeslá",
+            subcategory="Maliar",
+            description="Maľovanie stien",
+            country_code="SK",
+            district_code="nitra",
+            district="Nitra",
+            price_negotiable=True,
+        )
+
+        response = self.client.patch(
+            reverse("accounts:skills_detail", args=[skill.id]),
+            {
+                "price_negotiable": False,
+                "price_from": "30.00",
+                "price_currency": "€",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(response.data["price_negotiable"])
+        self.assertEqual(response.data["price_from"], "30.00")
+        self.assertEqual(response.data["price_currency"], "€")

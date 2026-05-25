@@ -104,6 +104,7 @@ export default function DashboardModals({
     images?: File[],
     priceFrom?: number | null,
     priceCurrency?: string,
+    priceNegotiable?: boolean,
     locationValue?: string,
     detailedDescription?: string,
     openingHours?: { [key: string]: { enabled: boolean; from: string; to: string } },
@@ -121,6 +122,12 @@ export default function DashboardModals({
     const trimmedDistrictCode =
       typeof districtCode === 'string' ? districtCode.trim().toLowerCase() : '';
     const detailedText = typeof detailedDescription === 'string' ? detailedDescription.trim() : '';
+    const pricePayload =
+      priceNegotiable === true
+        ? { price_from: null, price_currency: '', price_negotiable: true }
+        : typeof priceFrom === 'number' && !Number.isNaN(priceFrom)
+          ? { price_from: priceFrom, price_currency: priceCurrency || '€', price_negotiable: false }
+          : { price_from: null, price_currency: '', price_negotiable: false };
     const buildPayload = () => {
       const isSeeking = activeModule === 'skills-search';
       const payload: any = {
@@ -145,13 +152,7 @@ export default function DashboardModals({
         payload.experience_value = null;
         payload.experience_unit = '';
       }
-      if (typeof priceFrom === 'number' && !Number.isNaN(priceFrom)) {
-        payload.price_from = priceFrom;
-        payload.price_currency = priceCurrency || '€';
-      } else {
-        payload.price_from = null;
-        payload.price_currency = '';
-      }
+      Object.assign(payload, pricePayload);
       payload.country_code = trimmedCountryCode;
       payload.district_code = trimmedDistrictCode;
       payload.district = trimmedDistrict;
@@ -177,9 +178,7 @@ export default function DashboardModals({
             ...(experience && typeof experience.value === 'number' && experience.unit
               ? { experience_value: experience.value, experience_unit: experience.unit }
               : { experience_value: null, experience_unit: '' }),
-            ...(typeof priceFrom === 'number' && !Number.isNaN(priceFrom)
-              ? { price_from: priceFrom, price_currency: priceCurrency || '€' }
-              : { price_from: null, price_currency: '' }),
+            ...pricePayload,
             country_code: trimmedCountryCode,
             district_code: trimmedDistrictCode,
             district: trimmedDistrict,
@@ -247,9 +246,7 @@ export default function DashboardModals({
               ...(experience && typeof experience.value === 'number' && experience.unit
                 ? { experience_value: experience.value, experience_unit: experience.unit }
                 : { experience_value: null, experience_unit: '' }),
-              ...(typeof priceFrom === 'number' && !Number.isNaN(priceFrom)
-                ? { price_from: priceFrom, price_currency: priceCurrency || '€' }
-                : { price_from: null, price_currency: '' }),
+              ...pricePayload,
               country_code: trimmedCountryCode,
               district_code: trimmedDistrictCode,
               district: trimmedDistrict,
@@ -354,6 +351,7 @@ export default function DashboardModals({
             country_code: 'SK',
             district_code: '',
             price_currency: '€',
+            price_negotiable: false,
             district: '',
             location: '',
           });
@@ -382,6 +380,7 @@ export default function DashboardModals({
           initialCountryCode={selectedSkillsCategory.country_code ?? ''}
           initialDistrictCode={selectedSkillsCategory.district_code ?? ''}
           initialPriceCurrency={selectedSkillsCategory.price_currency ?? '€'}
+          initialPriceNegotiable={selectedSkillsCategory.price_negotiable === true}
           initialDistrict={selectedSkillsCategory.district ?? ''}
           initialLocation={selectedSkillsCategory.location ?? ''}
           initialDetailedDescription={selectedSkillsCategory.detailed_description || ''}

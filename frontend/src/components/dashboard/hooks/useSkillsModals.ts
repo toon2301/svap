@@ -32,6 +32,7 @@ export type DashboardSkill = {
   }>;
   price_from?: number | null;
   price_currency?: string;
+  price_negotiable?: boolean;
   country_code?: string;
   district_code?: string;
   district_label?: string | null;
@@ -116,6 +117,7 @@ export function useSkillsModals(): UseSkillsModalsResult {
         typeof s.price_currency === 'string' && s.price_currency.trim() !== ''
           ? s.price_currency
           : '€',
+      price_negotiable: s.price_negotiable === true,
       country_code:
         typeof s.country_code === 'string' && s.country_code.trim() !== ''
           ? s.country_code.trim().toUpperCase()
