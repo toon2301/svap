@@ -52,6 +52,11 @@ class UserType(models.TextChoices):
     COMPANY = "company", _("Firma")
 
 
+class SubscriptionTier(models.TextChoices):
+    FREE = "free", _("Free")
+    PREMIUM = "premium", _("Premium")
+
+
 class User(AbstractUser):
     """Rozšírený User model pre Swaply"""
 
@@ -61,6 +66,13 @@ class User(AbstractUser):
         max_length=20,
         choices=UserType.choices,
         default=UserType.INDIVIDUAL,
+    )
+    subscription_tier = models.CharField(
+        _("Subscription tier"),
+        max_length=20,
+        choices=SubscriptionTier.choices,
+        default=SubscriptionTier.FREE,
+        db_index=True,
     )
     phone = models.CharField(_("Telefón"), max_length=15, blank=True)
     phone_visible = models.BooleanField(_("Zobraziť telefón verejne"), default=True)

@@ -26,6 +26,7 @@ from .name_normalization import (
     clean_name_value,
     normalize_profile_name_fields,
 )
+from .services.entitlements import get_entitlements_for_user
 
 
 class UserProfileSerializer(serializers.ModelSerializer):
@@ -37,6 +38,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
     completed_cooperations_count = serializers.SerializerMethodField()
     unread_skill_request_count = serializers.SerializerMethodField()
     is_favorited = serializers.SerializerMethodField()
+    entitlements = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -47,6 +49,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
             "first_name",
             "last_name",
             "user_type",
+            "subscription_tier",
             "phone",
             "phone_visible",
             "contact_email",
@@ -79,10 +82,12 @@ class UserProfileSerializer(serializers.ModelSerializer):
             "completed_cooperations_count",
             "unread_skill_request_count",
             "is_favorited",
+            "entitlements",
         ]
         read_only_fields = [
             "id",
             "email",
+            "subscription_tier",
             "is_verified",
             "created_at",
             "updated_at",
@@ -92,6 +97,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
             "completed_cooperations_count",
             "unread_skill_request_count",
             "is_favorited",
+            "entitlements",
         ]
 
     def _record_me_serializer_timing(self, name, started_at):
@@ -131,6 +137,9 @@ class UserProfileSerializer(serializers.ModelSerializer):
             type=NotificationType.SKILL_REQUEST,
             is_read=False,
         ).count()
+
+    def get_entitlements(self, obj):
+        return get_entitlements_for_user(obj)
 
     def get_avatar_url(self, obj):
         """Vráti plnú URL k avataru (ak existuje)."""
@@ -203,6 +212,8 @@ class UserProfileSerializer(serializers.ModelSerializer):
         ret.pop("birth_date", None)
         ret.pop("gender", None)
         ret.pop("unread_skill_request_count", None)
+        ret.pop("subscription_tier", None)
+        ret.pop("entitlements", None)
 
         # Conditional fields
         if not getattr(instance, "phone_visible", False):

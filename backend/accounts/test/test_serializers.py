@@ -212,6 +212,8 @@ class TestUserProfileSerializer(TestCase):
         self.assertIn("username", data)
         self.assertIn("email", data)
         self.assertIn("user_type", data)
+        self.assertIn("subscription_tier", data)
+        self.assertIn("entitlements", data)
         self.assertIn("profile_completeness", data)
         self.assertFalse(data["is_favorited"])
 
@@ -226,6 +228,8 @@ class TestUserProfileSerializer(TestCase):
         assert "email" not in data
         assert "birth_date" not in data
         assert "gender" not in data
+        assert "subscription_tier" not in data
+        assert "entitlements" not in data
         assert data["is_favorited"] is True
 
         # Phone only when visible
@@ -271,6 +275,8 @@ class TestUserProfileSerializer(TestCase):
             "created_at",
             "updated_at",
             "profile_completeness",
+            "subscription_tier",
+            "entitlements",
         ]
 
         for field in read_only_fields:
