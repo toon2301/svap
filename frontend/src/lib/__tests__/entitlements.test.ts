@@ -49,4 +49,30 @@ describe('entitlement helpers', () => {
     });
     expect(getEntitlementLimit(user, 'max_active_cards')).toBe(3);
   });
+
+  it('treats subscription_tier as authoritative over nested entitlement tier', () => {
+    const user = {
+      subscription_tier: 'free' as const,
+      entitlements: {
+        tier: 'premium' as const,
+        is_premium: true,
+        features: {
+          can_use_verified_badge: true,
+          can_use_priority_ranking: true,
+        },
+        limits: {
+          max_active_cards: 10,
+          monthly_boosts: 5,
+        },
+      },
+    };
+
+    expect(getUserEntitlements(user)).toMatchObject({
+      tier: 'free',
+      is_premium: false,
+    });
+    expect(isPremiumUser(user)).toBe(false);
+    expect(hasEntitlementFeature(user, 'can_use_verified_badge')).toBe(true);
+    expect(getEntitlementLimit(user, 'monthly_boosts')).toBe(5);
+  });
 });

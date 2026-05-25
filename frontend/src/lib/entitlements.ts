@@ -47,8 +47,8 @@ export function getUserEntitlements(
   }
 
   return {
-    tier: entitlements.tier,
-    is_premium: entitlements.tier === PREMIUM_TIER,
+    tier: fallbackTier,
+    is_premium: fallbackTier === PREMIUM_TIER,
     features: {
       ...DEFAULT_USER_ENTITLEMENTS.features,
       ...(entitlements.features || {}),
