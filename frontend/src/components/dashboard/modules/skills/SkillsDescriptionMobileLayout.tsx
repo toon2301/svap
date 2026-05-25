@@ -87,6 +87,7 @@ export default function SkillsDescriptionMobileLayout({
                 type="button"
                 onClick={handleHideCardToggle}
                 aria-pressed={isHideCardEnabled}
+                aria-label={t('skills.hideCardToggle', 'Skryť túto kartu')}
                 className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 ${
                   isHideCardEnabled ? 'bg-purple-400 border border-purple-400' : 'bg-gray-300 dark:bg-gray-600'
                 }`}

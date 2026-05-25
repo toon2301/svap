@@ -276,11 +276,20 @@ export default function DashboardModals({
         }
       }
 
-      await loadSkills();
+      try {
+        await loadSkills();
+      } catch (loadError) {
+        console.error('Failed to refresh skills after save:', loadError);
+      }
 
-      // Invalidovať cache ponúk, aby sa pri návrate na profil načítali nové dáta
-      const { invalidateOffersCache } = await import('./modules/profile/profileOffersCache');
-      invalidateOffersCache(user?.id);
+      try {
+        // Invalidovať cache ponúk, aby sa pri návrate na profil načítali nové dáta
+        const { invalidateOffersCache } = await import('./modules/profile/profileOffersCache');
+        invalidateOffersCache(user?.id);
+      } catch (cacheError) {
+        console.error('Failed to invalidate profile offers cache after skill save:', cacheError);
+      }
+
       setIsSkillDescriptionModalOpen(false);
     } catch (e: any) {
       const msg = e?.response?.data?.error || e?.response?.data?.detail || 'Ukladanie zručnosti zlyhalo';

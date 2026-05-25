@@ -67,13 +67,9 @@ export function useSkillsDescriptionScreenState({
   const [tags, setTags] = useState<string[]>(initialTags);
   const [originalTags, setOriginalTags] = useState<string[]>(initialTags);
   const [countryCode, setCountryCode] = useState(resolvedInitialDistrictSelection.countryCode);
-  const [originalCountryCode] = useState(resolvedInitialDistrictSelection.countryCode);
   const [districtCode, setDistrictCode] = useState(resolvedInitialDistrictSelection.districtCode);
-  const [originalDistrictCode] = useState(resolvedInitialDistrictSelection.districtCode);
   const [district, setDistrict] = useState(resolvedInitialDistrictSelection.districtLabel);
-  const [originalDistrict] = useState(resolvedInitialDistrictSelection.districtLabel);
   const [location, setLocation] = useState(initialLocation);
-  const [originalLocation] = useState(initialLocation);
   const [experience, setExperience] = useState<{ value: number; unit: UnitOption } | undefined>(initialExperience);
   const [originalExperience] = useState<{ value: number; unit: UnitOption } | undefined>(initialExperience);
   const [experienceValue, setExperienceValue] = useState(initialExperience ? initialExperience.value.toString() : '');
@@ -282,14 +278,10 @@ export function useSkillsDescriptionScreenState({
     setCountryCode(newCountryCode);
     setDistrictCode('');
     setDistrict('');
-    onCountryCodeChange?.(newCountryCode);
-    onDistrictCodeChange?.('');
-    onDistrictChange?.('');
   };
 
   const handleDistrictCodeChange = (newDistrictCode: string) => {
     setDistrictCode(newDistrictCode);
-    onDistrictCodeChange?.(newDistrictCode);
   };
 
   const handleLocationChange = (newLocation: string) => {
@@ -317,14 +309,14 @@ export function useSkillsDescriptionScreenState({
   };
 
   const handleLocationBack = () => {
-    setCountryCode(originalCountryCode);
-    setDistrictCode(originalDistrictCode);
-    setDistrict(originalDistrict);
-    setLocation(originalLocation);
-    onCountryCodeChange?.(originalCountryCode);
-    onDistrictCodeChange?.(originalDistrictCode);
-    onDistrictChange?.(originalDistrict);
-    onLocationChange?.(originalLocation);
+    setCountryCode(resolvedInitialDistrictSelection.countryCode);
+    setDistrictCode(resolvedInitialDistrictSelection.districtCode);
+    setDistrict(resolvedInitialDistrictSelection.districtLabel);
+    setLocation(initialLocation);
+    onCountryCodeChange?.(resolvedInitialDistrictSelection.countryCode);
+    onDistrictCodeChange?.(resolvedInitialDistrictSelection.districtCode);
+    onDistrictChange?.(resolvedInitialDistrictSelection.districtLabel);
+    onLocationChange?.(initialLocation);
     setIsLocationModalOpen(false);
   };
 
