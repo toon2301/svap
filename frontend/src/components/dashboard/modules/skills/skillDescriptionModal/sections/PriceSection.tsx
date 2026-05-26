@@ -60,20 +60,21 @@ export default function PriceSection({
         aria-hidden={isNegotiable}
       >
         <div className="min-h-0 overflow-hidden">
-          <div className="flex h-11 items-stretch overflow-visible rounded-lg border border-gray-300 bg-white transition-all hover:border-gray-400 focus-within:border-purple-300 focus-within:ring-1 focus-within:ring-purple-300 dark:border-gray-700 dark:bg-black dark:focus-within:border-purple-500 dark:hover:border-gray-600">
-            <input
-              type="number"
-              min="0"
-              step="1"
-              value={value}
-              onChange={(e) => onChange(e.target.value)}
-              placeholder="0"
-              disabled={isNegotiable}
-              className="h-full flex-1 border-0 bg-transparent px-3 text-sm font-medium text-gray-900 focus:outline-none focus:ring-0 dark:text-white [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-            />
-            <div className="w-px self-stretch bg-gray-300 dark:bg-gray-600" />
-            <CurrencySelect value={currency} onChange={onCurrencyChange} />
-          </div>
+          {!isNegotiable ? (
+            <div className="flex h-11 items-stretch overflow-visible rounded-lg border border-gray-300 bg-white transition-all hover:border-gray-400 focus-within:border-purple-300 focus-within:ring-1 focus-within:ring-purple-300 dark:border-gray-700 dark:bg-black dark:focus-within:border-purple-500 dark:hover:border-gray-600">
+              <input
+                type="number"
+                min="0"
+                step="1"
+                value={value}
+                onChange={(e) => onChange(e.target.value)}
+                placeholder="0"
+                className="h-full flex-1 border-0 bg-transparent px-3 text-sm font-medium text-gray-900 focus:outline-none focus:ring-0 dark:text-white [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+              />
+              <div className="w-px self-stretch bg-gray-300 dark:bg-gray-600" />
+              <CurrencySelect value={currency} onChange={onCurrencyChange} />
+            </div>
+          ) : null}
         </div>
       </div>
 

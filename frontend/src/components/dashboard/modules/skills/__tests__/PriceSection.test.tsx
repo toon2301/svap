@@ -24,7 +24,8 @@ describe('PriceSection', () => {
     );
 
     expect(screen.getByText('Dohodou')).toBeInTheDocument();
-    expect(screen.getByPlaceholderText('0').closest('[aria-hidden="true"]')).not.toBeNull();
+    expect(screen.queryByPlaceholderText('0')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /€/ })).not.toBeInTheDocument();
   });
 
   it('notifies parent when negotiable option is toggled', () => {
