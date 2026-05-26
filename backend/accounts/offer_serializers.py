@@ -368,6 +368,9 @@ class OfferedSkillSerializer(serializers.ModelSerializer):
             "price_negotiable",
             bool(getattr(instance, "price_negotiable", False)) if instance else False,
         )
+        initial_data = getattr(self, "initial_data", {}) or {}
+        price_from_was_provided = "price_from" in initial_data
+
         if price_negotiable:
             attrs["price_from"] = None
             attrs["price_currency"] = ""
@@ -376,7 +379,8 @@ class OfferedSkillSerializer(serializers.ModelSerializer):
             if price_from is not None and price_from < 0:
                 raise serializers.ValidationError({"price_from": "Cena musí byť nezáporná"})
             if price_from is None:
-                attrs["price_currency"] = ""
+                if price_from_was_provided or instance is None:
+                    attrs["price_currency"] = ""
             elif not attrs.get("price_currency"):
                 attrs["price_currency"] = "€"
 

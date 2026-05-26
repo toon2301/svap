@@ -464,6 +464,22 @@ class TestSkillRequestsAndNotifications(APITestCase):
         self.assertEqual(r_req.status_code, status.HTTP_200_OK)
         self.assertEqual(len(r_req.data.get("sent", [])), 1)
 
+    def test_offer_summary_omits_currency_for_negotiable_offer(self):
+        self.offer.price_negotiable = True
+        self.offer.price_currency = "€"
+        self.offer.save(update_fields=["price_negotiable", "price_currency"])
+
+        self.client.force_authenticate(user=self.requester)
+        self.client.post(
+            f"{self.base}/skill-requests/", {"offer_id": self.offer.id}, format="json"
+        )
+
+        response = self.client.get(f"{self.base}/skill-requests/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        offer_summary = response.data["sent"][0]["offer_summary"]
+        self.assertTrue(offer_summary["price_negotiable"])
+        self.assertEqual(offer_summary["price_currency"], "")
+
     def test_accept_request_changes_status(self):
         self.client.force_authenticate(user=self.requester)
         created = self.client.post(

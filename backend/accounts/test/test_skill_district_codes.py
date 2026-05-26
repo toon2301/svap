@@ -136,3 +136,35 @@ class SkillDistrictCodeApiTests(APITestCase):
         self.assertFalse(response.data["price_negotiable"])
         self.assertEqual(response.data["price_from"], "30.00")
         self.assertEqual(response.data["price_currency"], "€")
+
+    def test_price_unchanged_when_patch_without_price_fields(self):
+        skill = OfferedSkill.objects.create(
+            user=self.user,
+            category="Remeslá",
+            subcategory="Maliar",
+            description="Maľovanie stien",
+            country_code="SK",
+            district_code="nitra",
+            district="Nitra",
+            price_from="25.00",
+            price_currency="€",
+            price_negotiable=True,
+        )
+
+        response = self.client.patch(
+            reverse("accounts:skills_detail", args=[skill.id]),
+            {
+                "description": "Maľovanie stien a stropov",
+                "price_negotiable": False,
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(response.data["price_negotiable"])
+        self.assertEqual(response.data["price_from"], "25.00")
+        self.assertEqual(response.data["price_currency"], "€")
+
+        skill.refresh_from_db()
+        self.assertEqual(str(skill.price_from), "25.00")
+        self.assertEqual(skill.price_currency, "€")

@@ -1,5 +1,5 @@
 import React from 'react';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 
 import PriceSection from '../skillDescriptionModal/sections/PriceSection';
 
@@ -23,8 +23,8 @@ describe('PriceSection', () => {
       />,
     );
 
-    expect(screen.getByLabelText('Dohodou')).toBeChecked();
-    expect(screen.queryByPlaceholderText('0')).not.toBeInTheDocument();
+    expect(screen.getByText('Dohodou')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('0').closest('[aria-hidden="true"]')).not.toBeNull();
   });
 
   it('notifies parent when negotiable option is toggled', () => {
@@ -42,7 +42,9 @@ describe('PriceSection', () => {
       />,
     );
 
-    fireEvent.click(screen.getByLabelText('Dohodou'));
+    const row = screen.getByText('Dohodou').closest('div');
+    expect(row).not.toBeNull();
+    fireEvent.click(within(row!).getByRole('button'));
 
     expect(onNegotiableChange).toHaveBeenCalledWith(true);
   });
