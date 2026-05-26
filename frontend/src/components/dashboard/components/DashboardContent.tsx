@@ -836,6 +836,8 @@ export default function DashboardContent({
             (selectedConversationId != null || targetUserIdFromMessagesQuery != null),
         )}
         onMobileMessagesBack={handleMobileMessagesBack}
+        onSkillsOfferClick={navigation.handleSkillsOfferClick}
+        onSkillsSearchClick={navigation.handleSkillsSearchClick}
       >
         {moduleContent}
       </DashboardLayout>

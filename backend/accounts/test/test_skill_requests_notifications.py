@@ -18,6 +18,7 @@ from accounts.models import (
     SkillRequest,
     SkillRequestStatus,
 )
+from messaging.models import Conversation
 
 User = get_user_model()
 
@@ -493,6 +494,31 @@ class TestSkillRequestsAndNotifications(APITestCase):
         )
         self.assertEqual(upd.status_code, status.HTTP_200_OK)
         self.assertEqual(upd.data["status"], "accepted")
+
+    def test_accept_request_returns_direct_conversation_id(self):
+        self.client.force_authenticate(user=self.requester)
+        created = self.client.post(
+            f"{self.base}/skill-requests/", {"offer_id": self.offer.id}, format="json"
+        )
+        req_id = created.data["id"]
+
+        self.client.force_authenticate(user=self.owner)
+        upd = self.client.patch(
+            f"{self.base}/skill-requests/{req_id}/", {"action": "accept"}, format="json"
+        )
+
+        self.assertEqual(upd.status_code, status.HTTP_200_OK)
+        conversation_id = upd.data.get("conversation_id")
+        self.assertIsInstance(conversation_id, int)
+        self.assertTrue(upd.data.get("conversation_created"))
+
+        conversation = Conversation.objects.get(id=conversation_id)
+        self.assertFalse(conversation.is_group)
+        self.assertEqual(conversation.request_status, Conversation.RequestStatus.ACCEPTED)
+        self.assertEqual(
+            set(conversation.participants.values_list("user_id", flat=True)),
+            {self.owner.id, self.requester.id},
+        )
 
     def test_mark_all_read_resets_unread_count(self):
         self.client.force_authenticate(user=self.requester)
