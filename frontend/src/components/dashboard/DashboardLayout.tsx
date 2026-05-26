@@ -8,6 +8,7 @@ import RightSidebar from './RightSidebar';
 import MobileTopNav from './MobileTopNav';
 import MobileTopBar from './MobileTopBar';
 import type { MessagingUserBrief } from './modules/messages/types';
+import { ProfileMobileModalProvider } from './contexts/ProfileMobileModalContext';
 
 interface DashboardLayoutProps {
   activeModule: string;
@@ -197,10 +198,11 @@ export default function DashboardLayout({
       : 'lg:grid-cols-[280px_0px_1fr] xl:grid-cols-[384px_0px_1fr]';
 
   return (
-    <div
-      className="h-screen bg-[var(--background)] text-[var(--foreground)] overflow-hidden"
-      style={mobileMessagesViewportStyle}
-    >
+    <ProfileMobileModalProvider resetKey={activeModule}>
+      <div
+        className="h-screen bg-[var(--background)] text-[var(--foreground)] overflow-hidden"
+        style={mobileMessagesViewportStyle}
+      >
       {/* Mobile Top Bar - skryť pre search modul */}
       {activeModule !== 'search' && (
         <MobileTopBar
@@ -373,6 +375,7 @@ export default function DashboardLayout({
           </div>
         )}
       </div>
-    </div>
+      </div>
+    </ProfileMobileModalProvider>
   );
 }

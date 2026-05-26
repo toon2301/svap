@@ -6,6 +6,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { GroupConversationAvatar } from './modules/messages/GroupConversationAvatar';
 import { requestOpenConversationActions } from './modules/messages/messagesEvents';
 import type { MessagingUserBrief } from './modules/messages/types';
+import { useProfileMobileModal } from './contexts/ProfileMobileModalContext';
 
 interface MobileTopBarProps {
   onMenuClick: () => void;
@@ -51,6 +52,7 @@ export default function MobileTopBar({
   onSkillsSearchClick,
 }: MobileTopBarProps) {
   const { t } = useLanguage();
+  const { openOwnProfileShareModal, openUserProfileModal } = useProfileMobileModal();
   const [describeMode, setDescribeMode] = React.useState<'offer' | 'search' | null>(null);
   const isOpenMessagesConversation = activeModule === 'messages' && isMessageConversationOpen;
   const canOpenMessagePeerProfile = Boolean((messagePeerIdentifier || '').trim());
@@ -352,12 +354,7 @@ export default function MobileTopBar({
               <>
                 <button
                   type="button"
-                  onClick={() => {
-                    const openShare = (window as Window & { __openOwnProfileShareModal?: () => void }).__openOwnProfileShareModal;
-                    if (typeof openShare === 'function') {
-                      openShare();
-                    }
-                  }}
+                  onClick={openOwnProfileShareModal}
                   className="p-1.5 rounded-lg text-gray-600 dark:text-gray-300 hover:text-purple-600 hover:bg-gray-50 dark:hover:bg-gray-900 transition-all"
                   aria-label={t('profile.shareProfileTitle', 'Zdieľať profil')}
                 >
@@ -382,12 +379,7 @@ export default function MobileTopBar({
             activeRightItem !== 'privacy' && (
               <button
                 type="button"
-                onClick={() => {
-                  const openModal = (window as Window & { __openUserProfileModal?: () => void }).__openUserProfileModal;
-                  if (typeof openModal === 'function') {
-                    openModal();
-                  }
-                }}
+                onClick={openUserProfileModal}
                 className="p-1.5 rounded-lg text-gray-600 dark:text-gray-300 hover:text-purple-600 hover:bg-gray-50 dark:hover:bg-gray-900 transition-all"
                 aria-label={t('common.menu', 'Menu')}
               >

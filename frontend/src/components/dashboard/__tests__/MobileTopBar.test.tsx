@@ -1,7 +1,12 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import React from 'react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 
 import MobileTopBar from '../MobileTopBar';
+import {
+  ProfileMobileModalProvider,
+  useProfileMobileModal,
+} from '../contexts/ProfileMobileModalContext';
 import { MESSAGING_OPEN_CONVERSATION_ACTIONS_EVENT } from '../modules/messages/messagesEvents';
 
 jest.mock('@/contexts/LanguageContext', () => ({
@@ -16,6 +21,30 @@ const baseProps = {
   activeModule: 'messages',
   isMessageConversationOpen: true,
 };
+
+function ProfileShareStateProbe({ onOpen }: { onOpen: () => void }) {
+  const { isProfileShareModalOpen } = useProfileMobileModal();
+
+  React.useEffect(() => {
+    if (isProfileShareModalOpen) {
+      onOpen();
+    }
+  }, [isProfileShareModalOpen, onOpen]);
+
+  return null;
+}
+
+function UserProfileModalStateProbe({ onOpen }: { onOpen: () => void }) {
+  const { isUserProfileModalOpen } = useProfileMobileModal();
+
+  React.useEffect(() => {
+    if (isUserProfileModalOpen) {
+      onOpen();
+    }
+  }, [isUserProfileModalOpen, onOpen]);
+
+  return null;
+}
 
 describe('MobileTopBar', () => {
   it('dispatches goToUserProfile when the open conversation peer header is clicked', () => {
@@ -72,24 +101,46 @@ describe('MobileTopBar', () => {
     expect(onSkillsOfferClick).toHaveBeenCalledTimes(1);
   });
 
-  it('shows share and menu buttons on own profile and opens share modal', () => {
+  it('shows share and menu buttons on own profile and opens share modal', async () => {
     const openShare = jest.fn();
-    (window as Window & { __openOwnProfileShareModal?: () => void }).__openOwnProfileShareModal = openShare;
 
     render(
-      <MobileTopBar
-        onMenuClick={jest.fn()}
-        activeModule="profile"
-      />,
+      <ProfileMobileModalProvider>
+        <MobileTopBar
+          onMenuClick={jest.fn()}
+          activeModule="profile"
+        />
+        <ProfileShareStateProbe onOpen={openShare} />
+      </ProfileMobileModalProvider>,
     );
 
     expect(screen.getByRole('button', { name: 'Zdieľať profil' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Menu' })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Zdieľať profil' }));
-    expect(openShare).toHaveBeenCalledTimes(1);
+    await waitFor(() => {
+      expect(openShare).toHaveBeenCalledTimes(1);
+    });
+  });
 
-    delete (window as Window & { __openOwnProfileShareModal?: () => void }).__openOwnProfileShareModal;
+  it('opens the user profile menu through context on other profiles', async () => {
+    const openUserProfileMenu = jest.fn();
+
+    render(
+      <ProfileMobileModalProvider>
+        <MobileTopBar
+          onMenuClick={jest.fn()}
+          activeModule="user-profile"
+        />
+        <UserProfileModalStateProbe onOpen={openUserProfileMenu} />
+      </ProfileMobileModalProvider>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Menu' }));
+
+    await waitFor(() => {
+      expect(openUserProfileMenu).toHaveBeenCalledTimes(1);
+    });
   });
 
   it('dispatches the open conversation actions event from the mobile message header', () => {
