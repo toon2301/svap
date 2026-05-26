@@ -78,7 +78,9 @@ export function ProfileOfferCardMobile({
     t('skills.noDescription', 'Bez popisu');
 
   const priceLabel =
-    offer.price_from !== null && offer.price_from !== undefined
+    offer.price_negotiable === true
+      ? t('skills.priceNegotiable', 'Dohodou')
+      : offer.price_from !== null && offer.price_from !== undefined
       ? `${Number(offer.price_from).toLocaleString('sk-SK', {
           minimumFractionDigits: 0,
           maximumFractionDigits: 2,

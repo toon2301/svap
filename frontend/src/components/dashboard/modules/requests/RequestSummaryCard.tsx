@@ -188,11 +188,12 @@ export function RequestSummaryCard({
   const hasAvatar = Boolean(avatarSrc && !avatarError);
 
   const priceLabel = useMemo(() => {
+    if (offer?.price_negotiable === true) return t('skills.priceNegotiable', 'Dohodou');
     const p = offer?.price_from ?? null;
     if (typeof p !== 'number') return '';
     const cur = (offer?.price_currency || '€').trim() || '€';
     return `od ${p} ${cur}`;
-  }, [offer?.price_currency, offer?.price_from]);
+  }, [offer?.price_currency, offer?.price_from, offer?.price_negotiable, t]);
 
   const intentText = useMemo(() => {
     if (isOfferHidden) {

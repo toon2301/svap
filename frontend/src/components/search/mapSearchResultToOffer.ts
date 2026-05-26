@@ -35,6 +35,7 @@ export function mapSearchResultToOffer(s: Record<string, unknown>): Offer {
     price_from: parsedPrice,
     price_currency:
       typeof s.price_currency === 'string' && s.price_currency.trim() !== '' ? s.price_currency : '€',
+    price_negotiable: s.price_negotiable === true,
     district: typeof s.district === 'string' ? s.district : '',
     location: typeof s.location === 'string' ? s.location : '',
     experience,

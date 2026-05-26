@@ -45,7 +45,9 @@ function renderOfferCard(
   const tagsMarginTop = item.experience || displayLocationText ? 'mt-1.5' : 'mt-2';
   const imageAlt = headline || t('skills.offer', 'Ponúkam');
   const priceLabel =
-    item.price_from !== null && item.price_from !== undefined
+    item.price_negotiable === true
+      ? t('skills.priceNegotiable', 'Dohodou')
+      : item.price_from !== null && item.price_from !== undefined
       ? `${Number(item.price_from).toLocaleString('sk-SK', {
           minimumFractionDigits: 0,
           maximumFractionDigits: 2,

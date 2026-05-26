@@ -70,6 +70,7 @@ class OfferedSkillSerializer(serializers.ModelSerializer):
             "images",
             "price_from",
             "price_currency",
+            "price_negotiable",
             "country_code",
             "district_code",
             "district",
@@ -363,13 +364,25 @@ class OfferedSkillSerializer(serializers.ModelSerializer):
         if not experience_value and experience_unit:
             attrs["experience_unit"] = ""  # Vyčistiť jednotku ak nie je hodnota
 
-        price_from = attrs.get("price_from")
-        if price_from is not None and price_from < 0:
-            raise serializers.ValidationError({"price_from": "Cena musí byť nezáporná"})
-        if price_from is None:
+        price_negotiable = attrs.get(
+            "price_negotiable",
+            bool(getattr(instance, "price_negotiable", False)) if instance else False,
+        )
+        initial_data = getattr(self, "initial_data", {}) or {}
+        price_from_was_provided = "price_from" in initial_data
+
+        if price_negotiable:
+            attrs["price_from"] = None
             attrs["price_currency"] = ""
-        elif not attrs.get("price_currency"):
-            attrs["price_currency"] = "€"
+        else:
+            price_from = attrs.get("price_from")
+            if price_from is not None and price_from < 0:
+                raise serializers.ValidationError({"price_from": "Cena musí byť nezáporná"})
+            if price_from is None:
+                if price_from_was_provided or instance is None:
+                    attrs["price_currency"] = ""
+            elif not attrs.get("price_currency"):
+                attrs["price_currency"] = "€"
 
         district_fields_present = instance is None or any(
             key in attrs for key in ("country_code", "district_code", "district")

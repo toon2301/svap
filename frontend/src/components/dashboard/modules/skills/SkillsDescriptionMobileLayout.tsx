@@ -29,6 +29,7 @@ export default function SkillsDescriptionMobileLayout({
     experience,
     priceFrom,
     priceCurrency,
+    priceNegotiable,
     urgency,
     durationType,
     openingHours,
@@ -236,7 +237,9 @@ export default function SkillsDescriptionMobileLayout({
             <div className="flex items-center flex-1 ml-4 pr-2">
               <div className="w-px h-4 bg-gray-300 dark:bg-gray-700 mr-3" />
               <span className="text-gray-600 dark:text-gray-300 text-sm">
-                {priceFrom && parseFloat(priceFrom) > 0
+                {priceNegotiable
+                  ? t('skills.priceNegotiable', 'Dohodou')
+                  : priceFrom && parseFloat(priceFrom) > 0
                   ? `${parseFloat(priceFrom).toLocaleString('sk-SK', {
                       minimumFractionDigits: 0,
                       maximumFractionDigits: 2,

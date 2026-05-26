@@ -44,6 +44,7 @@ function mapOffer(value: any): Offer | null {
           ? Number(value.price_from)
           : null,
     price_currency: typeof value?.price_currency === 'string' ? value.price_currency : undefined,
+    price_negotiable: value?.price_negotiable === true,
     district: typeof value?.district === 'string' ? value.district : undefined,
     location: typeof value?.location === 'string' ? value.location : undefined,
     experience:

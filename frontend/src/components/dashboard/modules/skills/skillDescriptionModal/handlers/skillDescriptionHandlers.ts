@@ -21,6 +21,7 @@ interface HandleSaveParams {
   images: File[];
   priceFrom: string;
   priceCurrency: CurrencyOption;
+  priceNegotiable: boolean;
   location: string;
   district: string;
   countryCode: string;
@@ -38,6 +39,7 @@ interface HandleSaveParams {
   initialDistrictCode?: string;
   initialOpeningHours?: OpeningHours;
   initialPriceFrom?: number | null;
+  initialPriceNegotiable?: boolean;
   urgency?: 'low' | 'medium' | 'high' | '';
   durationType?: DurationOption | '' | null;
   isHidden?: boolean;
@@ -48,6 +50,7 @@ interface HandleSaveParams {
     images?: File[],
     priceFrom?: number | null,
     priceCurrency?: string,
+    priceNegotiable?: boolean,
     location?: string,
     detailedDescription?: string,
     openingHours?: OpeningHours,
@@ -72,6 +75,7 @@ export const handleSave = async ({
   images,
   priceFrom,
   priceCurrency,
+  priceNegotiable,
   location,
   district,
   countryCode,
@@ -89,6 +93,7 @@ export const handleSave = async ({
   initialDistrictCode,
   initialOpeningHours,
   initialPriceFrom,
+  initialPriceNegotiable,
   urgency,
   durationType,
   isHidden,
@@ -111,7 +116,8 @@ export const handleSave = async ({
     initialCountryCode ||
     initialDistrictCode ||
     (initialOpeningHours && Object.keys(initialOpeningHours).length > 0) ||
-    (initialPriceFrom !== null && initialPriceFrom !== undefined && initialPriceFrom > 0);
+    (initialPriceFrom !== null && initialPriceFrom !== undefined && initialPriceFrom > 0) ||
+    initialPriceNegotiable;
 
   if (!isEditing && !trimmed) {
     setError(t('skills.descriptionRequired', 'Popis zručnosti je povinný'));
@@ -143,7 +149,7 @@ export const handleSave = async ({
   setExperienceError('');
 
   let priceValue: number | null = null;
-  if (priceFrom.trim()) {
+  if (!priceNegotiable && priceFrom.trim()) {
     const parsed = parseFloat(priceFrom.trim().replace(',', '.'));
     if (Number.isNaN(parsed) || parsed < 0) {
       setPriceError(t('skills.priceNonNegative', 'Cena musí byť nezáporné číslo'));
@@ -181,6 +187,7 @@ export const handleSave = async ({
         images,
         priceValue,
         priceCurrency,
+        priceNegotiable,
         locationValue,
         detailedValue,
         openingHoursValue,

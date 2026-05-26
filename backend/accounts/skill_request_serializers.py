@@ -135,13 +135,17 @@ class SkillRequestSerializer(serializers.ModelSerializer):
                 already_reviewed = Review.objects.filter(
                     reviewer=request.user, offer=offer
                 ).exists()
+        price_negotiable = bool(getattr(offer, "price_negotiable", False))
         return {
             "id": offer.id,
             "subcategory": getattr(offer, "subcategory", "") or "",
             "is_seeking": bool(getattr(offer, "is_seeking", False)),
             "is_hidden": bool(getattr(offer, "is_hidden", False)),
             "price_from": getattr(offer, "price_from", None),
-            "price_currency": getattr(offer, "price_currency", "") or "€",
+            "price_currency": ""
+            if price_negotiable
+            else getattr(offer, "price_currency", "") or "€",
+            "price_negotiable": price_negotiable,
             "owner": (
                 {
                     "id": getattr(owner, "id", None),

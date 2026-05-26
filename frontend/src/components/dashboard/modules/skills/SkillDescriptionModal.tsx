@@ -36,6 +36,7 @@ export default function SkillDescriptionModal({
   onRemoveExistingImage,
   initialPriceFrom = null,
   initialPriceCurrency = '€',
+  initialPriceNegotiable = false,
   initialLocation = '',
   initialDistrict = '',
   initialCountryCode = '',
@@ -78,6 +79,7 @@ export default function SkillDescriptionModal({
     initialImages,
     initialPriceFrom,
     initialPriceCurrency,
+    initialPriceNegotiable,
     initialLocation,
     initialDistrict,
     initialCountryCode,
@@ -106,6 +108,7 @@ export default function SkillDescriptionModal({
       images: state.images,
       priceFrom: state.priceFrom,
       priceCurrency: state.priceCurrency,
+      priceNegotiable: state.priceNegotiable,
       location: state.location,
       district: state.district,
       countryCode: state.countryCode,
@@ -123,6 +126,7 @@ export default function SkillDescriptionModal({
       initialDistrictCode,
       initialOpeningHours,
       initialPriceFrom,
+      initialPriceNegotiable,
       urgency: state.urgency,
       durationType: state.durationType,
       isHidden: state.isHideCardEnabled,
@@ -317,6 +321,14 @@ export default function SkillDescriptionModal({
               onCurrencyChange={(val) => {
                 state.setPriceCurrency(val);
                 state.setUserTouchedCurrency(true);
+              }}
+              isNegotiable={state.priceNegotiable}
+              onNegotiableChange={(next) => {
+                state.setPriceNegotiable(next);
+                state.setPriceError('');
+                if (next) {
+                  state.setPriceFrom('');
+                }
               }}
               error={state.priceError}
               isSeeking={isSeeking}

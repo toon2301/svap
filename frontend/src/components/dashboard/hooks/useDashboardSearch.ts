@@ -17,6 +17,7 @@ interface BackendSkill {
   tags?: string[];
   price_from?: number | string | null;
   price_currency?: string;
+  price_negotiable?: boolean;
   district?: string;
   location?: string;
   opening_hours?: unknown;

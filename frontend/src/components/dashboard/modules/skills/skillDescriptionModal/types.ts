@@ -56,6 +56,7 @@ export interface SkillDescriptionModalProps {
     images?: File[],
     priceFrom?: number | null,
     priceCurrency?: string,
+    priceNegotiable?: boolean,
     location?: string,
     detailedDescription?: string,
     openingHours?: OpeningHours,
@@ -73,6 +74,7 @@ export interface SkillDescriptionModalProps {
   onRemoveExistingImage?: (imageId: number) => Promise<SkillImage[] | void>;
   initialPriceFrom?: number | null;
   initialPriceCurrency?: string;
+  initialPriceNegotiable?: boolean;
   initialLocation?: string;
   initialDistrict?: string;
   initialCountryCode?: string;
@@ -112,7 +114,8 @@ export interface SkillsDescriptionScreenProps {
   onExperienceChange?: (experience: { value: number; unit: UnitOption } | undefined) => void;
   initialPriceFrom?: number | null;
   initialPriceCurrency?: string;
-  onPriceChange?: (priceFrom: number | null, priceCurrency: string) => void;
+  initialPriceNegotiable?: boolean;
+  onPriceChange?: (priceFrom: number | null, priceCurrency: string, priceNegotiable: boolean) => void;
   initialUrgency?: 'low' | 'medium' | 'high' | '';
   onUrgencyChange?: (urgency: 'low' | 'medium' | 'high' | '') => void;
   initialDurationType?: DurationOption | '' | null;
