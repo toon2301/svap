@@ -46,8 +46,7 @@ interface ProfileMobileViewProps {
   onToggleFavorite?: () => void;
   isFavorited?: boolean;
   isFavoritePending?: boolean;
-  onHamburgerMenuClick?: () => void;
-   highlightedSkillId?: number | null;
+  highlightedSkillId?: number | null;
 }
 
 export default function ProfileMobileView({
@@ -77,7 +76,6 @@ export default function ProfileMobileView({
   onToggleFavorite,
   isFavorited = false,
   isFavoritePending = false,
-  onHamburgerMenuClick,
   highlightedSkillId,
 }: ProfileMobileViewProps) {
   const displayUser = displayUserProp ?? user;
@@ -121,15 +119,19 @@ export default function ProfileMobileView({
     setMounted(true);
   }, []);
 
-  // Exponovať funkciu na otvorenie modalu cez window event
+  // Exponovať otvorenie modalov cez window (top bar hamburger na mobile)
   useEffect(() => {
     if (isOtherUserProfile) {
-      // Uložiť referenciu na otvorenie modalu
       (window as any).__openUserProfileModal = () => setIsHamburgerModalOpen(true);
+    } else {
+      (window as any).__openOwnProfileShareModal = () => setIsShareModalOpen(true);
     }
     return () => {
       if ((window as any).__openUserProfileModal) {
         delete (window as any).__openUserProfileModal;
+      }
+      if ((window as any).__openOwnProfileShareModal) {
+        delete (window as any).__openOwnProfileShareModal;
       }
     };
   }, [isOtherUserProfile]);
@@ -389,28 +391,16 @@ export default function ProfileMobileView({
                   {favoriteActionLabel}
                 </button>
               ) : (
-                <>
-                  <button
-                    onClick={() => {
-                      if (typeof onSkillsClick === 'function') {
-                        onSkillsClick();
-                      }
-                    }}
-                    className="flex-1 px-3 py-1.5 text-xs bg-purple-100 text-purple-800 border border-purple-200 rounded-2xl transition-colors hover:bg-purple-200 whitespace-nowrap min-w-0"
-                  >
-                    {t('profile.skills', 'Ponúkam/Hľadám')}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setIsHamburgerModalOpen(true)}
-                    className="px-3 py-1.5 bg-purple-100 text-purple-800 border border-purple-200 rounded-2xl transition-colors hover:bg-purple-200 flex items-center justify-center shrink-0"
-                    aria-label={t('profile.moreActions', 'Viac možností')}
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                    </svg>
-                  </button>
-                </>
+                <button
+                  onClick={() => {
+                    if (typeof onSkillsClick === 'function') {
+                      onSkillsClick();
+                    }
+                  }}
+                  className="flex-1 px-3 py-1.5 text-xs bg-purple-100 text-purple-800 border border-purple-200 rounded-2xl transition-colors hover:bg-purple-200 whitespace-nowrap min-w-0"
+                >
+                  {t('profile.skills', 'Ponúkam/Hľadám')}
+                </button>
               )}
             </div>
             {/* Ikonová navigácia sekcií profilu (mobile) */}

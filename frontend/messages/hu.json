@@ -404,6 +404,8 @@
     "offer": "Kínálok",
     "offerCta": "Készséget kínál? Kattintson, hogy hozzáadja a Svaply-hoz.",
     "search": "Keresek",
+    "switchToOffer": "Váltás erre: Kínálok",
+    "switchToSearch": "Váltás erre: Keresek",
     "searchTitle": "Válaszd ki, mit keresel, hogy mások azonnal lássák, miben tudnak segíteni.",
     "setWhatYouSeek": "Válaszd ki, mit keresel",
     "seekCategoryHint": "Válaszd ki a kategóriát, amit keresel – és ha semmi nem illik, lent pontosan beállíthatod, mire van szükséged.",

@@ -55,6 +55,43 @@ describe('MobileTopBar', () => {
     ).toBeDisabled();
   });
 
+  it('shows skills view switch instead of profile on skills-search', () => {
+    const onSkillsOfferClick = jest.fn();
+
+    render(
+      <MobileTopBar
+        onMenuClick={jest.fn()}
+        activeModule="skills-search"
+        onProfileClick={jest.fn()}
+        onSkillsOfferClick={onSkillsOfferClick}
+      />,
+    );
+
+    expect(screen.queryByLabelText('Profil')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Prepnúť na Ponúkam' }));
+    expect(onSkillsOfferClick).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows share and menu buttons on own profile and opens share modal', () => {
+    const openShare = jest.fn();
+    (window as Window & { __openOwnProfileShareModal?: () => void }).__openOwnProfileShareModal = openShare;
+
+    render(
+      <MobileTopBar
+        onMenuClick={jest.fn()}
+        activeModule="profile"
+      />,
+    );
+
+    expect(screen.getByRole('button', { name: 'Zdieľať profil' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Menu' })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Zdieľať profil' }));
+    expect(openShare).toHaveBeenCalledTimes(1);
+
+    delete (window as Window & { __openOwnProfileShareModal?: () => void }).__openOwnProfileShareModal;
+  });
+
   it('dispatches the open conversation actions event from the mobile message header', () => {
     const actionsSpy = jest.fn();
     window.addEventListener(MESSAGING_OPEN_CONVERSATION_ACTIONS_EVENT, actionsSpy);

@@ -44,6 +44,8 @@ interface DashboardLayoutProps {
   mobileMessagePeerIdentifier?: string | null;
   isMobileMessageConversationOpen?: boolean;
   onMobileMessagesBack?: () => void;
+  onSkillsOfferClick?: () => void;
+  onSkillsSearchClick?: () => void;
   children: React.ReactNode;
 }
 
@@ -82,6 +84,8 @@ export default function DashboardLayout({
   mobileMessagePeerIdentifier,
   isMobileMessageConversationOpen,
   onMobileMessagesBack,
+  onSkillsOfferClick,
+  onSkillsSearchClick,
   children,
 }: DashboardLayoutProps) {
   const isProfileEditMode =
@@ -217,6 +221,8 @@ export default function DashboardLayout({
           messagePeerIdentifier={mobileMessagePeerIdentifier}
           isMessageConversationOpen={isMobileMessageConversationOpen}
           onMessagesBackClick={onMobileMessagesBack}
+          onSkillsOfferClick={onSkillsOfferClick}
+          onSkillsSearchClick={onSkillsSearchClick}
         />
       )}
 

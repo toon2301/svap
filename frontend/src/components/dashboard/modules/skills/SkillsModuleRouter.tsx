@@ -62,35 +62,43 @@ export default function SkillsModuleRouter({
     },
     [setSelectedSkillsCategory],
   );
+  const navigateToSkillsOffer = React.useCallback(() => {
+    if (onSkillsOfferClick) {
+      onSkillsOfferClick();
+      return;
+    }
+    setActiveModule('skills-offer');
+    try {
+      localStorage.setItem('activeModule', 'skills-offer');
+    } catch {
+      // ignore
+    }
+    if (typeof window !== 'undefined') {
+      window.history.pushState(null, '', '/dashboard/skills/offer');
+    }
+  }, [onSkillsOfferClick, setActiveModule]);
+  const navigateToSkillsSearch = React.useCallback(() => {
+    if (onSkillsSearchClick) {
+      onSkillsSearchClick();
+      return;
+    }
+    setActiveModule('skills-search');
+    try {
+      localStorage.setItem('activeModule', 'skills-search');
+    } catch {
+      // ignore
+    }
+    if (typeof window !== 'undefined') {
+      window.history.pushState(null, '', '/dashboard/skills/search');
+    }
+  }, [onSkillsSearchClick, setActiveModule]);
 
   switch (activeModule) {
     case 'skills':
       return (
         <SkillsHome
-          onOffer={onSkillsOfferClick || (() => {
-            setActiveModule('skills-offer');
-            try {
-              localStorage.setItem('activeModule', 'skills-offer');
-            } catch {
-              // ignore
-            }
-            // Zmeniť URL bez reloadu - window.history.pushState mení URL bez prerenderovania stránky
-            if (typeof window !== 'undefined') {
-              window.history.pushState(null, '', '/dashboard/skills/offer');
-            }
-          })}
-          onSearch={onSkillsSearchClick || (() => {
-            setActiveModule('skills-search');
-            try {
-              localStorage.setItem('activeModule', 'skills-search');
-            } catch {
-              // ignore
-            }
-            // Zmeniť URL bez reloadu - window.history.pushState mení URL bez prerenderovania stránky
-            if (typeof window !== 'undefined') {
-              window.history.pushState(null, '', '/dashboard/skills/search');
-            }
-          })}
+          onOffer={navigateToSkillsOffer}
+          onSearch={navigateToSkillsSearch}
         />
       );
     case 'skills-offer': {
@@ -105,6 +113,9 @@ export default function SkillsModuleRouter({
             'skills.offerSelectAreaTitle',
             'Zvoľ oblasť, v ktorej vynikáš alebo ponúkaš svoje služby.',
           )}
+          viewSwitchLabel={t('skills.search', 'Hľadám')}
+          viewSwitchAriaLabel={t('skills.switchToSearch', 'Prepnúť na Hľadám')}
+          onViewSwitchClick={navigateToSkillsSearch}
           firstOptionText={t('skills.selectCategoryTitle', 'Vyber kategóriu')}
           onFirstOptionClick={() => {
             try {
@@ -216,6 +227,9 @@ export default function SkillsModuleRouter({
         <SkillsScreen
           isSeeking={true}
           title="Vyber, čo hľadáš, aby ostatní hneď vedeli, s čím ti môžu pomôcť."
+          viewSwitchLabel={t('skills.offer', 'Ponúkam')}
+          viewSwitchAriaLabel={t('skills.switchToOffer', 'Prepnúť na Ponúkam')}
+          onViewSwitchClick={navigateToSkillsOffer}
           firstOptionText={t('skills.setWhatYouSeek', 'Vyber čo hľadáš')}
           firstOptionHint={t(
             'skills.seekCategoryHint',
