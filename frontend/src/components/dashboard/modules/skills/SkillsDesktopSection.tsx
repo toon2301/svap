@@ -21,9 +21,6 @@ interface SkillsDesktopSectionProps {
   onEditStandardCategoryDescription?: (index: number) => void;
   onRemoveCustomCategory?: (index: number) => void;
   onEditCustomCategoryDescription?: (index: number) => void;
-  viewSwitchLabel?: string;
-  viewSwitchAriaLabel?: string;
-  onViewSwitchClick?: () => void;
 }
 
 function renderOfferCard(
@@ -180,27 +177,14 @@ export default function SkillsDesktopSection({
   onEditStandardCategoryDescription,
   onRemoveCustomCategory,
   onEditCustomCategoryDescription,
-  viewSwitchLabel,
-  viewSwitchAriaLabel,
-  onViewSwitchClick,
 }: SkillsDesktopSectionProps) {
   return (
     <div className="w-full">
       <div className="flex flex-col items-stretch w-full">
-        <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <h2 className="max-w-3xl text-2xl font-semibold text-gray-800 dark:text-white">
+        <div className="w-full">
+          <h2 className="text-2xl font-semibold text-gray-800 dark:text-white mb-2">
             {title}
           </h2>
-          {viewSwitchLabel && onViewSwitchClick ? (
-            <button
-              type="button"
-              onClick={onViewSwitchClick}
-              aria-label={viewSwitchAriaLabel || viewSwitchLabel}
-              className="inline-flex shrink-0 items-center justify-center rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-800 shadow-sm transition-colors hover:border-purple-300 hover:bg-purple-50 hover:text-purple-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 dark:border-gray-700 dark:bg-black dark:text-gray-100 dark:hover:border-purple-500/70 dark:hover:bg-purple-950/30 dark:hover:text-purple-200"
-            >
-              {viewSwitchLabel}
-            </button>
-          ) : null}
         </div>
 
         <div className="mt-6 w-full">

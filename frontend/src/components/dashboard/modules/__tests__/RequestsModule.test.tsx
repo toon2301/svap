@@ -197,7 +197,7 @@ describe('RequestsModule', () => {
       sent: [],
     }));
     (updateSkillRequest as jest.Mock).mockResolvedValueOnce({
-      data: { ...pendingReceivedRequest, status: 'accepted', conversation_id: 123 },
+      data: { ...pendingReceivedRequest, status: 'accepted' },
     });
 
     render(<RequestsModule />);
@@ -208,7 +208,7 @@ describe('RequestsModule', () => {
       expect(updateSkillRequest).toHaveBeenCalledWith(11, 'accept');
     });
     await waitFor(() => {
-      expect(mockPush).toHaveBeenCalledWith('/dashboard/messages?conversationId=123');
+      expect(mockPush).toHaveBeenCalledWith('/dashboard/messages?targetUserId=42');
     });
   });
 
@@ -219,34 +219,13 @@ describe('RequestsModule', () => {
       sent: [],
     }));
     (updateSkillRequest as jest.Mock).mockResolvedValueOnce({
-      data: { ...pendingReceivedRequest, status: 'accepted', conversation_id: 123 },
+      data: { ...pendingReceivedRequest, status: 'accepted' },
     });
 
     render(<RequestsModule />);
 
     const requesterName = await screen.findByText('Requester User');
     fireEvent.click(requesterName.closest('[role="button"]') as Element);
-    fireEvent.click(await screen.findByRole('button', { name: 'requests.accept' }));
-
-    await waitFor(() => {
-      expect(updateSkillRequest).toHaveBeenCalledWith(11, 'accept');
-    });
-    await waitFor(() => {
-      expect(mockPush).toHaveBeenCalledWith('/dashboard/messages?conversationId=123');
-    });
-  });
-
-  it('falls back to requester draft route after accepting when no conversation id is returned', async () => {
-    (fetchSkillRequests as jest.Mock).mockImplementation(async (statusQuery?: string) => ({
-      received: statusQuery === 'pending' ? [pendingReceivedRequest] : [],
-      sent: [],
-    }));
-    (updateSkillRequest as jest.Mock).mockResolvedValueOnce({
-      data: { ...pendingReceivedRequest, status: 'accepted' },
-    });
-
-    render(<RequestsModule />);
-
     fireEvent.click(await screen.findByRole('button', { name: 'requests.accept' }));
 
     await waitFor(() => {

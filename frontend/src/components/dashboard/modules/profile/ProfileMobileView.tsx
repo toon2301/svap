@@ -17,7 +17,6 @@ import { buildProfileShareUrl, getProfileShareIdentifier } from './profileShareU
 import { InformationCircleIcon, ClipboardIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 import { createPortal } from 'react-dom';
-import { useProfileMobileModal } from '../../contexts/ProfileMobileModalContext';
 
 interface ProfileMobileViewProps {
   user: User;
@@ -47,7 +46,8 @@ interface ProfileMobileViewProps {
   onToggleFavorite?: () => void;
   isFavorited?: boolean;
   isFavoritePending?: boolean;
-  highlightedSkillId?: number | null;
+  onHamburgerMenuClick?: () => void;
+   highlightedSkillId?: number | null;
 }
 
 export default function ProfileMobileView({
@@ -77,17 +77,13 @@ export default function ProfileMobileView({
   onToggleFavorite,
   isFavorited = false,
   isFavoritePending = false,
+  onHamburgerMenuClick,
   highlightedSkillId,
 }: ProfileMobileViewProps) {
   const displayUser = displayUserProp ?? user;
   const { t } = useLanguage();
-  const {
-    isUserProfileModalOpen,
-    closeUserProfileModal,
-    isProfileShareModalOpen,
-    openOwnProfileShareModal,
-    closeProfileShareModal,
-  } = useProfileMobileModal();
+  const [isHamburgerModalOpen, setIsHamburgerModalOpen] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [reportModalOpen, setReportModalOpen] = useState(false);
   const [reportedUserIds, setReportedUserIds] = useState<Set<number>>(() => new Set());
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
@@ -124,6 +120,19 @@ export default function ProfileMobileView({
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Exponovať funkciu na otvorenie modalu cez window event
+  useEffect(() => {
+    if (isOtherUserProfile) {
+      // Uložiť referenciu na otvorenie modalu
+      (window as any).__openUserProfileModal = () => setIsHamburgerModalOpen(true);
+    }
+    return () => {
+      if ((window as any).__openUserProfileModal) {
+        delete (window as any).__openUserProfileModal;
+      }
+    };
+  }, [isOtherUserProfile]);
 
   return (
     <div className="lg:hidden">
@@ -380,16 +389,28 @@ export default function ProfileMobileView({
                   {favoriteActionLabel}
                 </button>
               ) : (
-                <button
-                  onClick={() => {
-                    if (typeof onSkillsClick === 'function') {
-                      onSkillsClick();
-                    }
-                  }}
-                  className="flex-1 px-3 py-1.5 text-xs bg-purple-100 text-purple-800 border border-purple-200 rounded-2xl transition-colors hover:bg-purple-200 whitespace-nowrap min-w-0"
-                >
-                  {t('profile.skills', 'Ponúkam/Hľadám')}
-                </button>
+                <>
+                  <button
+                    onClick={() => {
+                      if (typeof onSkillsClick === 'function') {
+                        onSkillsClick();
+                      }
+                    }}
+                    className="flex-1 px-3 py-1.5 text-xs bg-purple-100 text-purple-800 border border-purple-200 rounded-2xl transition-colors hover:bg-purple-200 whitespace-nowrap min-w-0"
+                  >
+                    {t('profile.skills', 'Ponúkam/Hľadám')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsHamburgerModalOpen(true)}
+                    className="px-3 py-1.5 bg-purple-100 text-purple-800 border border-purple-200 rounded-2xl transition-colors hover:bg-purple-200 flex items-center justify-center shrink-0"
+                    aria-label={t('profile.moreActions', 'Viac možností')}
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                  </button>
+                </>
               )}
             </div>
             {/* Ikonová navigácia sekcií profilu (mobile) */}
@@ -548,18 +569,18 @@ export default function ProfileMobileView({
 
       {/* Hamburger Menu Modal */}
       <ProfileMobileHamburgerModal
-        isOpen={isUserProfileModalOpen}
+        isOpen={isHamburgerModalOpen}
         mounted={mounted}
-        onClose={closeUserProfileModal}
+        onClose={() => setIsHamburgerModalOpen(false)}
         onReportClick={isOtherUserProfile ? () => setReportModalOpen(true) : undefined}
-        onShareClick={openOwnProfileShareModal}
+        onShareClick={() => setIsShareModalOpen(true)}
         isReported={reportedUserIds.has(displayUser.id)}
         showModerationActions={isOtherUserProfile}
       />
       {mounted && (
         <ProfileShareModal
-          open={isProfileShareModalOpen}
-          onClose={closeProfileShareModal}
+          open={isShareModalOpen}
+          onClose={() => setIsShareModalOpen(false)}
           profileUrl={buildProfileShareUrl(displayUser)}
           displayName={getProfileDisplayName(displayUser, accountType)}
           sharedUserId={displayUser.id}

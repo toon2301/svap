@@ -127,7 +127,7 @@ describe('Sidebar', () => {
       </ThemeProvider>
     );
     
-    const closeButton = screen.getByRole('button', { name: /zatvoriť/i });
+    const closeButton = screen.getByRole('button', { name: /close/i });
     expect(closeButton).toBeInTheDocument();
   });
 
@@ -145,8 +145,8 @@ describe('Sidebar', () => {
     );
     
     // Find the close button by looking for the X icon
-    const closeButton = screen.getByRole('button', {
-      name: /zatvoriť/i,
+    const closeButton = screen.getByRole('button', { 
+      name: /close/i 
     });
     fireEvent.click(closeButton);
     
