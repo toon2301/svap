@@ -121,7 +121,9 @@ class SkillRequestCreateSerializer(serializers.Serializer):
 
         price_from = attrs.get("proposal_price_from")
         price_currency = (attrs.get("proposal_price_currency") or "").strip()
-        attrs["proposal_price_negotiable"] = False
+        attrs["proposal_price_negotiable"] = bool(
+            attrs.get("proposal_price_negotiable", False)
+        )
         if price_from is None:
             attrs["proposal_price_currency"] = ""
         else:

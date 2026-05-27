@@ -359,11 +359,11 @@ export function RequestSummaryCard({
     try {
       window.dispatchEvent(
         new CustomEvent('goToUserProfile', {
-          detail: { identifier: profileIdentifier, offerId },
+          detail: { identifier: profileIdentifier, highlightId: offerId },
         }),
       );
     } catch {
-      router.push(`/dashboard/users/${encodeURIComponent(profileIdentifier)}?offer=${encodeURIComponent(String(offerId))}`);
+      router.push(`/dashboard/users/${encodeURIComponent(profileIdentifier)}?highlight=${encodeURIComponent(String(offerId))}`);
     }
   };
 

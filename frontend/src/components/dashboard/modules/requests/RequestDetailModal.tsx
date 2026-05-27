@@ -288,13 +288,13 @@ export function RequestDetailModal({
     try {
       window.dispatchEvent(
         new CustomEvent('goToUserProfile', {
-          detail: { identifier: profileIdentifier, offerId },
+          detail: { identifier: profileIdentifier, highlightId: offerId },
         }),
       );
       onClose();
     } catch {
       onClose();
-      router.push(`/dashboard/users/${encodeURIComponent(profileIdentifier)}?offer=${encodeURIComponent(String(offerId))}`);
+      router.push(`/dashboard/users/${encodeURIComponent(profileIdentifier)}?highlight=${encodeURIComponent(String(offerId))}`);
     }
   };
 

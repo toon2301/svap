@@ -128,7 +128,7 @@ class TestSkillRequestsAndNotifications(APITestCase):
         )
         self.assertEqual(str(obj.proposal_price_from), "30.00")
         self.assertEqual(obj.proposal_price_currency, "€")
-        self.assertFalse(obj.proposal_price_negotiable)
+        self.assertTrue(obj.proposal_price_negotiable)
         self.assertEqual(obj.proposal_experience_value, 2)
         self.assertEqual(obj.proposal_experience_unit, "years")
         self.assertEqual(response.data["proposed_offer"], proposed_offer.id)

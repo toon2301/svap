@@ -53,7 +53,7 @@ export function ProfileOfferCardMobile({
   const router = useRouter();
   const [isImageGalleryOpen, setIsImageGalleryOpen] = React.useState(false);
   const defaultRequestLabel = offer.is_seeking
-    ? t('requests.wantToHelpCta', 'Chcem pomôcť')
+    ? t('requests.wantToHelpCta', 'Pomôcť')
     : t('requests.interestCta', 'Mám záujem');
   const requestLabel = requestLabelProp ?? defaultRequestLabel;
   const isReviewIconFilled = isOtherUserProfile ? offer.already_reviewed === true : (offer.reviews_count ?? 0) > 0;

@@ -83,13 +83,26 @@ export function RequestCardRow({ item, onAccept, onReject, isBusy = false }: Pro
     
     const card = cardRef.current;
     const buttons = card.querySelectorAll('button');
+    const fallbackLabels = [
+      t('requests.wantToHelpCta', ''),
+      t('requests.interestCta', ''),
+      t('skills.message', ''),
+      'Požiadať',
+      'Správa',
+      'Mám záujem',
+      'Chcem pomôcť',
+    ].filter((label): label is string => Boolean(label));
     buttons.forEach((btn) => {
       const text = btn.textContent || '';
-      if (text.includes('Požiadať') || text.includes('Správa')) {
+      const isDefaultCardAction =
+        btn.dataset.defaultCta === 'true' ||
+        btn.dataset.messageCta === 'true' ||
+        fallbackLabels.some((label) => text.includes(label));
+      if (isDefaultCardAction) {
         (btn as HTMLElement).style.display = 'none';
       }
     });
-  }, [item.status, offer]);
+  }, [item.status, offer, t]);
 
   if (isLoading) {
     return (

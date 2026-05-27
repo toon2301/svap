@@ -332,6 +332,7 @@ export default function ProfileOffersSection({
   const handleHelpRequestSubmitted = useCallback(
     (offerId: number, requestId: number | null) => {
       setRequestStatusByOfferId((prev) => ({ ...prev, [offerId]: 'pending' }));
+      setProposedRequestStatusByOfferId((prev) => ({ ...prev, [offerId]: 'pending' }));
       invalidateOffersCache(ownerUserId);
       if (requestId) {
         setRequestIdByOfferId((prev) => ({ ...prev, [offerId]: requestId }));
@@ -602,18 +603,19 @@ export default function ProfileOffersSection({
           if (Number.isFinite(n) && Number.isFinite(id) && id >= 1) ridMap[n] = id;
         });
 
-        let proposedNormalized: Record<number, string> = {};
+        let proposedNormalized: Record<number, string> | null = null;
         try {
           const proposedRes = await api.get(endpoints.requests.proposedStatus, requestConfig);
           const proposedData =
             proposedRes?.data && typeof proposedRes.data === 'object'
               ? (proposedRes.data as Record<string, unknown>)
               : {};
-          proposedNormalized = {};
+          const parsedProposed: Record<number, string> = {};
           Object.entries(proposedData).forEach(([k, v]) => {
             const n = Number(k);
-            if (Number.isFinite(n) && typeof v === 'string') proposedNormalized[n] = v;
+            if (Number.isFinite(n) && typeof v === 'string') parsedProposed[n] = v;
           });
+          proposedNormalized = parsedProposed;
         } catch (e: unknown) {
           const error = e as { name?: string; code?: string };
           if (error?.name === 'CanceledError' || error?.code === 'ERR_CANCELED' || error?.name === 'AbortError') return;
@@ -621,7 +623,9 @@ export default function ProfileOffersSection({
 
         if (!cancelled) {
           setRequestStatusByOfferId(normalized);
-          setProposedRequestStatusByOfferId(proposedNormalized);
+          if (proposedNormalized !== null) {
+            setProposedRequestStatusByOfferId(proposedNormalized);
+          }
           setRequestIdByOfferId(ridMap);
           setAlreadyReviewedByOfferId(alreadyReviewed);
         }
@@ -782,7 +786,7 @@ export default function ProfileOffersSection({
                   messageLabel={busyMessageOfferId === offer.id ? t('messages.opening', 'Otváram…') : undefined}
                   requestLabel={(() => {
                     const defaultRequestLabel = offer.is_seeking
-                      ? t('requests.wantToHelpCta', 'Chcem pomôcť')
+                      ? t('requests.wantToHelpCta', 'Pomôcť')
                       : t('requests.interestCta', 'Mám záujem');
                     if (typeof offer.id !== 'number') return defaultRequestLabel;
                     const directStatus = requestStatusByOfferId[offer.id] ?? offer.my_request_status ?? '';

@@ -14,13 +14,7 @@ export function hasHelpProposal(item: SkillRequest | null | undefined): boolean 
       item.proposal_experience,
   );
 
-  return Boolean(
-    item.proposed_offer ||
-      item.proposed_offer_summary ||
-      hasProposalDetails ||
-      item.offer_summary?.is_seeking ||
-      item.offer_is_seeking,
-  );
+  return Boolean(item.proposed_offer || item.proposed_offer_summary || hasProposalDetails);
 }
 
 export function getLinkedProposedOfferId(item: SkillRequest | null | undefined): number | null {
