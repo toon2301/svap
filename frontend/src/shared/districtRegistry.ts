@@ -1,5 +1,6 @@
 'use client';
 
+// Bundled copy; canonical source: backend/accounts/data/district_registry.json
 import districtRegistryJson from './districtRegistry.json';
 
 export type OfferCountryCode = 'SK' | 'CZ' | 'PL' | 'HU' | 'AT' | 'DE';
