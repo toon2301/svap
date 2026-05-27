@@ -49,7 +49,6 @@ export type SkillRequest = {
   requester: number;
   recipient: number;
   offer: number;
-<<<<<<< HEAD
   proposed_offer?: number | null;
   proposal_description?: string;
   proposal_price_from?: number | string | null;
@@ -63,8 +62,6 @@ export type SkillRequest = {
   } | null;
   conversation_id?: number | null;
   conversation_created?: boolean;
-=======
->>>>>>> 640ea492d4980d6056cf1ba5364387e1d222f552
 
   requester_display_name?: string;
   recipient_display_name?: string;

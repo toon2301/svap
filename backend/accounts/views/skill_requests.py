@@ -608,11 +608,8 @@ def skill_request_detail_view(request, request_id: int):
 
         # Stavové prechody
         accepted_notification = False
-<<<<<<< HEAD
         rejected_notification = False
         conversation_result = None
-=======
->>>>>>> 640ea492d4980d6056cf1ba5364387e1d222f552
         if action == "accept" and obj.status == SkillRequestStatus.PENDING:
             obj.status = SkillRequestStatus.ACCEPTED
             obj.save(update_fields=["status", "updated_at"])
@@ -651,7 +648,6 @@ def skill_request_detail_view(request, request_id: int):
 
             transaction.on_commit(notify_requester_about_acceptance)
 
-<<<<<<< HEAD
         if rejected_notification:
 
             def notify_requester_about_rejection():
@@ -674,12 +670,10 @@ def skill_request_detail_view(request, request_id: int):
 
         response_data = dict(
             SkillRequestSerializer(obj, context={"request": request}).data
-=======
-        return Response(
-            SkillRequestSerializer(obj, context={"request": request}).data,
-            status=status.HTTP_200_OK,
->>>>>>> 640ea492d4980d6056cf1ba5364387e1d222f552
         )
+        if conversation_result:
+            response_data.update(conversation_result)
+        return Response(response_data, status=status.HTTP_200_OK)
 
 
 @api_view(["POST"])
