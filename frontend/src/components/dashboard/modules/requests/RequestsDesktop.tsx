@@ -178,20 +178,10 @@ export function RequestsDesktop({ routeIntent }: RequestsDesktopProps) {
       const updated = res?.data as SkillRequest;
       if (updated && typeof updated.id === 'number') {
         mutateItem(updated);
-        const acceptedConversationId =
-          action === 'accept' && updated.status === 'accepted'
-            ? Number(updated.conversation_id)
-            : null;
         const acceptedPeerId =
           action === 'accept' && updated.status === 'accepted' ? Number(updated.requester) : null;
         if (action === 'cancel' || action === 'hide') {
           void load();
-        } else if (
-          acceptedConversationId !== null &&
-          Number.isInteger(acceptedConversationId) &&
-          acceptedConversationId > 0
-        ) {
-          router.push(buildMessagesUrl(acceptedConversationId));
         } else if (acceptedPeerId !== null && Number.isInteger(acceptedPeerId) && acceptedPeerId > 0) {
           router.push(buildMessagesUrl(null, { targetUserId: acceptedPeerId }));
         } else {
