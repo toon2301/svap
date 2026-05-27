@@ -27,9 +27,6 @@ export default function SkillsScreen(props: SkillsScreenProps) {
     onRemoveCustomCategory,
     onEditCustomCategoryDescription,
     isSeeking = false,
-    viewSwitchLabel,
-    viewSwitchAriaLabel,
-    onViewSwitchClick,
   } = props;
 
   useEffect(() => {
@@ -134,9 +131,6 @@ export default function SkillsScreen(props: SkillsScreenProps) {
           onEditStandardCategoryDescription={onEditStandardCategoryDescription}
           onRemoveCustomCategory={onRemoveCustomCategory}
           onEditCustomCategoryDescription={onEditCustomCategoryDescription}
-          viewSwitchLabel={viewSwitchLabel}
-          viewSwitchAriaLabel={viewSwitchAriaLabel}
-          onViewSwitchClick={onViewSwitchClick}
         />
       </div>
 

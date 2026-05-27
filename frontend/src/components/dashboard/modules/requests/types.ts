@@ -47,8 +47,6 @@ export type SkillRequest = {
   requester: number;
   recipient: number;
   offer: number;
-  conversation_id?: number | null;
-  conversation_created?: boolean;
 
   requester_display_name?: string;
   recipient_display_name?: string;

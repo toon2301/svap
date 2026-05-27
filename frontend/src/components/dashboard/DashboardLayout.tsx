@@ -8,7 +8,6 @@ import RightSidebar from './RightSidebar';
 import MobileTopNav from './MobileTopNav';
 import MobileTopBar from './MobileTopBar';
 import type { MessagingUserBrief } from './modules/messages/types';
-import { ProfileMobileModalProvider } from './contexts/ProfileMobileModalContext';
 
 interface DashboardLayoutProps {
   activeModule: string;
@@ -45,8 +44,6 @@ interface DashboardLayoutProps {
   mobileMessagePeerIdentifier?: string | null;
   isMobileMessageConversationOpen?: boolean;
   onMobileMessagesBack?: () => void;
-  onSkillsOfferClick?: () => void;
-  onSkillsSearchClick?: () => void;
   children: React.ReactNode;
 }
 
@@ -85,8 +82,6 @@ export default function DashboardLayout({
   mobileMessagePeerIdentifier,
   isMobileMessageConversationOpen,
   onMobileMessagesBack,
-  onSkillsOfferClick,
-  onSkillsSearchClick,
   children,
 }: DashboardLayoutProps) {
   const isProfileEditMode =
@@ -198,11 +193,10 @@ export default function DashboardLayout({
       : 'lg:grid-cols-[280px_0px_1fr] xl:grid-cols-[384px_0px_1fr]';
 
   return (
-    <ProfileMobileModalProvider resetKey={activeModule}>
-      <div
-        className="h-screen bg-[var(--background)] text-[var(--foreground)] overflow-hidden"
-        style={mobileMessagesViewportStyle}
-      >
+    <div
+      className="h-screen bg-[var(--background)] text-[var(--foreground)] overflow-hidden"
+      style={mobileMessagesViewportStyle}
+    >
       {/* Mobile Top Bar - skryť pre search modul */}
       {activeModule !== 'search' && (
         <MobileTopBar
@@ -223,8 +217,6 @@ export default function DashboardLayout({
           messagePeerIdentifier={mobileMessagePeerIdentifier}
           isMessageConversationOpen={isMobileMessageConversationOpen}
           onMessagesBackClick={onMobileMessagesBack}
-          onSkillsOfferClick={onSkillsOfferClick}
-          onSkillsSearchClick={onSkillsSearchClick}
         />
       )}
 
@@ -375,7 +367,6 @@ export default function DashboardLayout({
           </div>
         )}
       </div>
-      </div>
-    </ProfileMobileModalProvider>
+    </div>
   );
 }

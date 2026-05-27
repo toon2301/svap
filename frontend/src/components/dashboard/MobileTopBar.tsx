@@ -1,12 +1,11 @@
 'use client';
 
 import React from 'react';
-import { Bars3Icon, HeartIcon, ShareIcon, UserCircleIcon } from '@heroicons/react/24/outline';
+import { Bars3Icon, HeartIcon, UserCircleIcon } from '@heroicons/react/24/outline';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { GroupConversationAvatar } from './modules/messages/GroupConversationAvatar';
 import { requestOpenConversationActions } from './modules/messages/messagesEvents';
 import type { MessagingUserBrief } from './modules/messages/types';
-import { useProfileMobileModal } from './contexts/ProfileMobileModalContext';
 
 interface MobileTopBarProps {
   onMenuClick: () => void;
@@ -26,8 +25,6 @@ interface MobileTopBarProps {
   messagePeerIdentifier?: string | null;
   isMessageConversationOpen?: boolean;
   onMessagesBackClick?: () => void;
-  onSkillsOfferClick?: () => void;
-  onSkillsSearchClick?: () => void;
 }
 
 export default function MobileTopBar({
@@ -48,11 +45,8 @@ export default function MobileTopBar({
   messagePeerIdentifier,
   isMessageConversationOpen = false,
   onMessagesBackClick,
-  onSkillsOfferClick,
-  onSkillsSearchClick,
 }: MobileTopBarProps) {
   const { t } = useLanguage();
-  const { openOwnProfileShareModal, openUserProfileModal } = useProfileMobileModal();
   const [describeMode, setDescribeMode] = React.useState<'offer' | 'search' | null>(null);
   const isOpenMessagesConversation = activeModule === 'messages' && isMessageConversationOpen;
   const canOpenMessagePeerProfile = Boolean((messagePeerIdentifier || '').trim());
@@ -87,31 +81,11 @@ export default function MobileTopBar({
     requestOpenConversationActions();
   }, []);
 
-  const skillsViewSwitch =
-    activeModule === 'skills-offer' && onSkillsSearchClick
-      ? {
-          label: t('skills.search', 'Hľadám'),
-          ariaLabel: t('skills.switchToSearch', 'Prepnúť na Hľadám'),
-          onClick: onSkillsSearchClick,
-        }
-      : activeModule === 'skills-search' && onSkillsOfferClick
-        ? {
-            label: t('skills.offer', 'Ponúkam'),
-            ariaLabel: t('skills.switchToOffer', 'Prepnúť na Ponúkam'),
-            onClick: onSkillsOfferClick,
-          }
-        : null;
-
   const canShowQuickProfile =
     Boolean(onProfileClick) &&
     activeModule !== 'profile' &&
     activeModule !== 'user-profile' &&
     activeModule !== 'favorites' &&
-    activeModule !== 'skills' &&
-    activeModule !== 'skills-offer' &&
-    activeModule !== 'skills-search' &&
-    activeModule !== 'skills-select-category' &&
-    activeModule !== 'skills-add-custom-category' &&
     activeModule !== 'skills-describe' &&
     activeModule !== 'requests' &&
     activeModule !== 'messages' &&
@@ -311,18 +285,6 @@ export default function MobileTopBar({
             </button>
           )}
 
-          {/* Ponúkam / Hľadám – prepínač v skills sekcii */}
-          {skillsViewSwitch ? (
-            <button
-              type="button"
-              onClick={skillsViewSwitch.onClick}
-              aria-label={skillsViewSwitch.ariaLabel}
-              className="inline-flex min-h-9 max-w-[9.5rem] items-center justify-center truncate rounded-xl border border-gray-200 bg-white px-3 py-1.5 text-sm font-semibold text-gray-900 shadow-sm transition-colors hover:bg-gray-50 active:bg-gray-50 dark:border-gray-800 dark:bg-black dark:text-gray-100 dark:hover:bg-gray-900 dark:active:bg-gray-900"
-            >
-              {skillsViewSwitch.label}
-            </button>
-          ) : null}
-
           {/* Ikona obľúbených – rýchly prechod na obľúbené */}
           {canShowQuickFavorites && (
             <button
@@ -345,41 +307,24 @@ export default function MobileTopBar({
             </button>
           )}
 
-          {/* Zdieľať profil + hamburger – vlastný profil */}
-          {activeModule === 'profile' &&
-            !isEditMode &&
-            activeRightItem !== 'language' &&
-            activeRightItem !== 'account-type' &&
-            activeRightItem !== 'privacy' && (
-              <>
-                <button
-                  type="button"
-                  onClick={openOwnProfileShareModal}
-                  className="p-1.5 rounded-lg text-gray-600 dark:text-gray-300 hover:text-purple-600 hover:bg-gray-50 dark:hover:bg-gray-900 transition-all"
-                  aria-label={t('profile.shareProfileTitle', 'Zdieľať profil')}
-                >
-                  <ShareIcon className="w-5 h-5" strokeWidth={2} />
-                </button>
-                <button
-                  type="button"
-                  onClick={onMenuClick}
-                  className="p-1.5 rounded-lg text-gray-600 dark:text-gray-300 hover:text-purple-600 hover:bg-gray-50 dark:hover:bg-gray-900 transition-all"
-                  aria-label={t('common.menu', 'Menu')}
-                >
-                  <Bars3Icon className="w-5 h-5" strokeWidth={2} />
-                </button>
-              </>
-            )}
-
-          {/* Hamburger – cudzí profil (user-profile) */}
-          {activeModule === 'user-profile' &&
+          {/* Hamburger menu - v profile module alebo na cudzom profile (user-profile), nie v edit móde ani v jazyk/account-type/prípadne privacy modale */}
+          {(activeModule === 'profile' || activeModule === 'user-profile') &&
             !isEditMode &&
             activeRightItem !== 'language' &&
             activeRightItem !== 'account-type' &&
             activeRightItem !== 'privacy' && (
               <button
-                type="button"
-                onClick={openUserProfileModal}
+                onClick={() => {
+                  if (activeModule === 'user-profile') {
+                    // Na cudzom profile otvor modal cez window event
+                    if (typeof (window as any).__openUserProfileModal === 'function') {
+                      (window as any).__openUserProfileModal();
+                    }
+                  } else {
+                    // Na vlastnom profile otvor normálne menu
+                    onMenuClick();
+                  }
+                }}
                 className="p-1.5 rounded-lg text-gray-600 dark:text-gray-300 hover:text-purple-600 hover:bg-gray-50 dark:hover:bg-gray-900 transition-all"
                 aria-label={t('common.menu', 'Menu')}
               >
