@@ -186,7 +186,7 @@ class TestCustomExceptionHandler(TestCase):
 
     @patch("swaply.middleware.CRITICAL_API_4XX_RESPONSES", frozenset({("POST", "/api/auth/security/", 403)}))
     @patch("swaply.middleware.capture_reportable_exception")
-    @patch("swaply.middleware.logger")
+    @patch("swaply.sentry_reporting.logger")
     def test_explicit_critical_4xx_still_reported_to_sentry(
         self, mock_logger, mock_capture
     ):
@@ -204,7 +204,7 @@ class TestCustomExceptionHandler(TestCase):
             mock_logger.info.assert_called_once()
 
     @patch("swaply.middleware.capture_reportable_exception")
-    @patch("swaply.middleware.logger")
+    @patch("swaply.sentry_reporting.logger")
     def test_5xx_still_reported_to_sentry(self, mock_logger, mock_capture):
         """Server-side API failures must be captured in Sentry with stack traces."""
         with self.settings(DEBUG=False):

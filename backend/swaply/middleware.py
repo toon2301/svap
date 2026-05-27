@@ -127,7 +127,7 @@ class GlobalErrorHandlingMiddleware(MiddlewareMixin):
         Zachytáva všetky neodchytané výnimky
         """
         debug = getattr(settings, "DEBUG", False)
-        is_api = request.path.startswith("/api/")
+        is_api = is_api_request(request)
 
         # API errors are handled here (JsonResponse), so Sentry must be told explicitly.
         # Non-API errors return None and are reported by DjangoIntegration.
@@ -165,7 +165,7 @@ class GlobalErrorHandlingMiddleware(MiddlewareMixin):
             )
 
         # Ak je to API request, vráť JSON response
-        if request.path.startswith("/api/"):
+        if is_api:
             return JsonResponse(
                 {
                     "error": "Internal server error",
