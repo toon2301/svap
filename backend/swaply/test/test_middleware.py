@@ -41,18 +41,20 @@ class TestGlobalErrorHandlingMiddleware(TestCase):
             result = self.middleware.process_exception(request, exception)
             self.assertIsNone(result)
 
+    @patch("swaply.middleware.capture_reportable_exception")
     @patch("swaply.middleware.logger")
-    def test_process_exception_in_production(self, mock_logger):
-        """Test, že v production mode sa chyby logujú a vráti sa JSON odpoveď"""
+    def test_process_exception_non_api_delegates_to_django(self, mock_logger, mock_capture):
+        """Non-API errors are not captured in middleware (DjangoIntegration handles them)."""
         with self.settings(DEBUG=False):
             request = self.factory.get("/")
             exception = Exception("Test exception")
 
-            # Middleware vracia None ak nevie spracovať chybu
             result = self.middleware.process_exception(request, exception)
 
-            # V testoch middleware vracia None, takže testujeme len logovanie
-            mock_logger.error.assert_called_once()
+            mock_capture.assert_not_called()
+            mock_logger.error.assert_not_called()
+            mock_logger.info.assert_called_once()
+            self.assertIsNone(result)
 
 
 class TestSecurityHeadersMiddleware(TestCase):
@@ -183,9 +185,12 @@ class TestCustomExceptionHandler(TestCase):
             self.assertEqual(mock_logger.info.call_args.kwargs["extra"]["response_status"], 403)
 
     @patch("swaply.middleware.CRITICAL_API_4XX_RESPONSES", frozenset({("POST", "/api/auth/security/", 403)}))
+    @patch("swaply.middleware.capture_reportable_exception")
     @patch("swaply.middleware.logger")
-    def test_explicit_critical_4xx_still_creates_sentry_error_event(self, mock_logger):
-        """Only explicitly configured critical 4xx responses remain error-level logs."""
+    def test_explicit_critical_4xx_still_reported_to_sentry(
+        self, mock_logger, mock_capture
+    ):
+        """Only explicitly configured critical 4xx responses are sent to Sentry."""
         with self.settings(DEBUG=False):
             exception = PermissionDenied("Forbidden")
             context = {"request": self.factory.post("/api/auth/security/")}
@@ -194,12 +199,14 @@ class TestCustomExceptionHandler(TestCase):
 
             self.assertIsNotNone(response)
             self.assertEqual(response.status_code, 403)
-            mock_logger.error.assert_called_once()
-            mock_logger.info.assert_not_called()
+            mock_capture.assert_called_once_with(exception, context["request"])
+            mock_logger.error.assert_not_called()
+            mock_logger.info.assert_called_once()
 
+    @patch("swaply.middleware.capture_reportable_exception")
     @patch("swaply.middleware.logger")
-    def test_5xx_still_creates_sentry_error_event(self, mock_logger):
-        """Server-side API failures must stay error-level logs."""
+    def test_5xx_still_reported_to_sentry(self, mock_logger, mock_capture):
+        """Server-side API failures must be captured in Sentry with stack traces."""
         with self.settings(DEBUG=False):
             exception = APIException("Upstream unavailable")
             context = {"request": self.factory.get("/api/auth/me/")}
@@ -208,8 +215,9 @@ class TestCustomExceptionHandler(TestCase):
 
             self.assertIsNotNone(response)
             self.assertEqual(response.status_code, 500)
-            mock_logger.error.assert_called_once()
-            mock_logger.info.assert_not_called()
+            mock_capture.assert_called_once_with(exception, context["request"])
+            mock_logger.error.assert_not_called()
+            mock_logger.info.assert_called_once()
 
     def test_unhandled_exception(self):
         """Test spracovania neočakávanej chyby"""
@@ -239,15 +247,18 @@ def test_security_headers_added():
     assert resp["X-XSS-Protection"] == "1; mode=block"
 
 
-def test_global_error_handling_returns_json_for_api():
+@patch("swaply.middleware.capture_reportable_exception")
+def test_global_error_handling_returns_json_for_api(mock_capture):
     rf = RequestFactory()
     request = rf.get("/api/test")
+    exc = RuntimeError("boom")
 
     def get_response(req):
         raise RuntimeError("boom")
 
     mw = GlobalErrorHandlingMiddleware(get_response)
-    resp = mw.process_exception(request, RuntimeError("boom"))
+    resp = mw.process_exception(request, exc)
+    mock_capture.assert_called_once_with(exc, request)
     assert resp.status_code == 500
     assert "Internal server error" in resp.content.decode("utf-8")
 
