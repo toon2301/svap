@@ -4,7 +4,6 @@ Custom middleware pre Swaply
 
 import logging
 import time
-import traceback
 from django.http import JsonResponse
 from django.conf import settings
 from django.utils.deprecation import MiddlewareMixin
@@ -13,6 +12,11 @@ from rest_framework.response import Response
 from rest_framework.views import exception_handler
 from django.middleware.csrf import CsrfViewMiddleware
 from django.http import HttpResponseForbidden
+
+from swaply.sentry_reporting import (
+    capture_reportable_exception,
+    log_handled_api_exception,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -122,10 +126,19 @@ class GlobalErrorHandlingMiddleware(MiddlewareMixin):
         """
         Zachytáva všetky neodchytané výnimky
         """
+        debug = getattr(settings, "DEBUG", False)
+        is_api = is_api_request(request)
+
+        # API errors are handled here (JsonResponse), so Sentry must be told explicitly.
+        # Non-API errors return None and are reported by DjangoIntegration.
+        if is_api:
+            capture_reportable_exception(exception, request)
+
         # V produkcii neloguj user_agent ani celé exception/traceback (môže obsahovať PII).
-        if getattr(settings, "DEBUG", False):
-            logger.error(
-                f"Unhandled exception: {str(exception)}",
+        if debug:
+            logger.exception(
+                "Unhandled exception: %s",
+                exception,
                 extra={
                     "request_path": request.path,
                     "request_method": request.method,
@@ -134,11 +147,10 @@ class GlobalErrorHandlingMiddleware(MiddlewareMixin):
                         if hasattr(request, "user")
                         else None
                     ),
-                    "traceback": traceback.format_exc(),
                 },
             )
         else:
-            logger.error(
+            logger.info(
                 "Unhandled exception",
                 extra={
                     "request_path": request.path,
@@ -153,7 +165,7 @@ class GlobalErrorHandlingMiddleware(MiddlewareMixin):
             )
 
         # Ak je to API request, vráť JSON response
-        if request.path.startswith("/api/"):
+        if is_api:
             return JsonResponse(
                 {
                     "error": "Internal server error",
@@ -176,41 +188,50 @@ def custom_exception_handler(exc, context):
     response = exception_handler(exc, context)
 
     if response is not None:
-        # Log chybu (v produkcii bez user_agent a bez response_data)
         request = context.get("request")
         report_to_sentry = should_report_api_error_to_sentry(request, response.status_code)
-        if getattr(settings, "DEBUG", False):
-            log_extra = {
-                "request_path": request.path if request else "unknown",
-                "request_method": request.method if request else "unknown",
-                "user_id": (
-                    getattr(request.user, "id", None)
-                    if request and hasattr(request, "user")
-                    else None
-                ),
-                "response_status": response.status_code,
-                "response_data": response.data,
-            }
-            if report_to_sentry:
-                logger.error(f"API Error: {str(exc)}", extra=log_extra)
-            else:
-                logger.info(f"Expected API Error: {str(exc)}", extra=log_extra)
+        debug = getattr(settings, "DEBUG", False)
+
+        if report_to_sentry:
+            capture_reportable_exception(exc, request)
+            log_handled_api_exception(
+                exc,
+                request,
+                debug=debug,
+                response_status=response.status_code,
+                response_data=response.data if debug else None,
+            )
+        elif debug:
+            logger.info(
+                "Expected API Error: %s",
+                exc,
+                extra={
+                    "request_path": request.path if request else "unknown",
+                    "request_method": request.method if request else "unknown",
+                    "user_id": (
+                        getattr(request.user, "id", None)
+                        if request and hasattr(request, "user")
+                        else None
+                    ),
+                    "response_status": response.status_code,
+                    "response_data": response.data,
+                },
+            )
         else:
-            log_extra = {
-                "request_path": request.path if request else "unknown",
-                "request_method": request.method if request else "unknown",
-                "user_id": (
-                    getattr(request.user, "id", None)
-                    if request and hasattr(request, "user")
-                    else None
-                ),
-                "response_status": response.status_code,
-                "exception_type": exc.__class__.__name__,
-            }
-            if report_to_sentry:
-                logger.error("API Error", extra=log_extra)
-            else:
-                logger.info("Expected API Error", extra=log_extra)
+            logger.info(
+                "Expected API Error",
+                extra={
+                    "request_path": request.path if request else "unknown",
+                    "request_method": request.method if request else "unknown",
+                    "user_id": (
+                        getattr(request.user, "id", None)
+                        if request and hasattr(request, "user")
+                        else None
+                    ),
+                    "response_status": response.status_code,
+                    "exception_type": exc.__class__.__name__,
+                },
+            )
 
         # Vytvor konzistentnú error response
         custom_response_data = {
