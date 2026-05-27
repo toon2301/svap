@@ -575,7 +575,7 @@ export function RequestsMobile({ routeIntent }: RequestsMobileProps) {
                 <button
                   type="button"
                   onClick={handleConfirmAction}
-                  className="w-full py-3 text-base rounded-lg font-semibold bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-200 hover:bg-purple-200 dark:hover:bg-purple-900/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60"
+                  className="w-full py-3 text-base rounded-lg font-semibold border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400/60 dark:border-rose-900/60 dark:bg-rose-950/20 dark:text-rose-200 dark:hover:bg-rose-950/40"
                 >
                   {pendingConfirm.action === 'reject'
                     ? t('requests.reject', 'Odmietnúť')

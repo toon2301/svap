@@ -58,6 +58,8 @@ class NotificationSerializer(serializers.ModelSerializer):
             return "/dashboard/requests"
         if obj.type == NotificationType.SKILL_REQUEST_ACCEPTED:
             return "/dashboard/requests?status=active&tab=sent"
+        if obj.type == NotificationType.SKILL_REQUEST_REJECTED:
+            return "/dashboard/requests?status=cancelled&tab=sent"
         if obj.type == NotificationType.SKILL_REQUEST_COMPLETION_REQUESTED:
             return "/dashboard/requests?status=active&tab=sent"
         if obj.type == NotificationType.SKILL_REQUEST_COMPLETED:

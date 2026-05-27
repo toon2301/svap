@@ -166,6 +166,11 @@ urlpatterns = [
         name="skill_requests_status",
     ),
     path(
+        "skill-requests/proposed-status/",
+        views.skill_requests_proposed_status_view,
+        name="skill_requests_proposed_status",
+    ),
+    path(
         "skill-requests/<int:request_id>/",
         views.skill_request_detail_view,
         name="skill_request_detail",

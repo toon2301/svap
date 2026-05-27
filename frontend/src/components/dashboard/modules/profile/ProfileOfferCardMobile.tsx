@@ -22,7 +22,7 @@ interface ProfileOfferCardMobileProps {
   onShareClick?: (offer: Offer) => void;
   onToggleLike?: (offerId: number) => void;
   isLikePending?: boolean;
-  /** Rovnako ako desktop: Ponúknuť (is_seeking) / Požiadať, alebo stav: Požiadané, Prijaté, atď. */
+  /** Rovnako ako desktop: text CTA podľa aktuálneho stavu záujmu. */
   requestLabel?: string;
   isRequestDisabled?: boolean;
   messageLabel?: string;
@@ -52,7 +52,9 @@ export function ProfileOfferCardMobile({
   const { t } = useLanguage();
   const router = useRouter();
   const [isImageGalleryOpen, setIsImageGalleryOpen] = React.useState(false);
-  const defaultRequestLabel = offer.is_seeking ? t('requests.offer', 'Ponúknuť') : t('requests.request', 'Požiadať');
+  const defaultRequestLabel = offer.is_seeking
+    ? t('requests.wantToHelpCta', 'Chcem pomôcť')
+    : t('requests.interestCta', 'Mám záujem');
   const requestLabel = requestLabelProp ?? defaultRequestLabel;
   const isReviewIconFilled = isOtherUserProfile ? offer.already_reviewed === true : (offer.reviews_count ?? 0) > 0;
   const isLiked = offer.is_liked_by_me === true;
@@ -332,7 +334,7 @@ export function ProfileOfferCardMobile({
             </div>
           </div>
         )}
-        {/* Tlačidlá Požiadať/Ponúknuť a Správa - len na cudzom profile (rovnako ako desktop) */}
+        {/* Tlačidlá Záujem a Správa - len na cudzom profile (rovnako ako desktop) */}
         {isOtherUserProfile && (
           <div className="flex gap-2 mt-2">
             <button

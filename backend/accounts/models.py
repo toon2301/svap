@@ -744,6 +744,43 @@ class SkillRequest(models.Model):
         related_name="skill_requests",
         verbose_name=_("Karta"),
     )
+    proposed_offer = models.ForeignKey(
+        OfferedSkill,
+        on_delete=models.SET_NULL,
+        related_name="proposed_skill_requests",
+        null=True,
+        blank=True,
+        verbose_name=_("Navrhovaná karta"),
+    )
+    proposal_description = models.TextField(
+        _("Opis pomoci"), max_length=200, blank=True, default=""
+    )
+    proposal_price_from = models.DecimalField(
+        _("Navrhovaná cena od"),
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+    )
+    proposal_price_currency = models.CharField(
+        _("Navrhovaná mena"), max_length=8, blank=True, default=""
+    )
+    proposal_price_negotiable = models.BooleanField(
+        _("Navrhovaná cena dohodou"), default=False
+    )
+    proposal_experience_value = models.FloatField(
+        _("Navrhovaná dĺžka praxe"), null=True, blank=True
+    )
+    proposal_experience_unit = models.CharField(
+        _("Jednotka navrhovanej praxe"),
+        max_length=10,
+        choices=[
+            ("years", _("Roky")),
+            ("months", _("Mesiace")),
+        ],
+        blank=True,
+        default="",
+    )
     status = models.CharField(
         _("Stav"),
         max_length=25,

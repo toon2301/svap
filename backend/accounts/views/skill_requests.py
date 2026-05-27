@@ -38,6 +38,7 @@ from ..services.notifications import (
     create_skill_request_accepted_notification,
     create_skill_request_completed_notification,
     create_skill_request_completion_requested_notification,
+    create_skill_request_rejected_notification,
 )
 from .notifications import _unread_cache_key, UNREAD_COUNT_CACHE_TTL_SECONDS
 
@@ -83,6 +84,8 @@ def _compute_skill_requests_payload(*, viewer, request, status_param: str | None
         "recipient",
         "offer",
         "offer__user",
+        "proposed_offer",
+        "proposed_offer__user",
         "termination",
         "termination__terminated_by",
     )
@@ -94,6 +97,8 @@ def _compute_skill_requests_payload(*, viewer, request, status_param: str | None
         "recipient",
         "offer",
         "offer__user",
+        "proposed_offer",
+        "proposed_offer__user",
         "termination",
         "termination__terminated_by",
     )
@@ -240,6 +245,7 @@ def skill_requests_view(request):
         return Response(create_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     offer = create_serializer.context.get("offer_obj")
+    proposed_offer = create_serializer.context.get("proposed_offer_obj")
     if not offer:
         return Response(
             {"error": "Karta neexistuje."}, status=status.HTTP_400_BAD_REQUEST
@@ -258,7 +264,7 @@ def skill_requests_view(request):
             # nikdy nepoužívaj .get() na requester+offer.
             qs = (
                 SkillRequest.objects.select_for_update()
-                .select_related("offer", "requester", "recipient")
+                .select_related("offer", "requester", "recipient", "proposed_offer", "proposed_offer__user")
                 .filter(requester=request.user, offer=offer)
                 .order_by("-updated_at", "-id")
             )
@@ -278,13 +284,34 @@ def skill_requests_view(request):
                     requester=request.user,
                     recipient=recipient,
                     offer=offer,
+                    proposed_offer=proposed_offer,
+                    proposal_description=create_serializer.validated_data.get(
+                        "proposal_description", ""
+                    ),
+                    proposal_price_from=create_serializer.validated_data.get(
+                        "proposal_price_from"
+                    ),
+                    proposal_price_currency=create_serializer.validated_data.get(
+                        "proposal_price_currency", ""
+                    ),
+                    proposal_price_negotiable=create_serializer.validated_data.get(
+                        "proposal_price_negotiable", False
+                    ),
+                    proposal_experience_value=create_serializer.validated_data.get(
+                        "proposal_experience_value"
+                    ),
+                    proposal_experience_unit=create_serializer.validated_data.get(
+                        "proposal_experience_unit", ""
+                    ),
                     status=SkillRequestStatus.PENDING,
                 )
                 created = True
             except IntegrityError:
                 # Partial unique constraint race (active-only): parallel request created an active row.
                 obj = (
-                    SkillRequest.objects.select_related("offer", "requester", "recipient")
+                    SkillRequest.objects.select_related(
+                        "offer", "requester", "recipient", "proposed_offer", "proposed_offer__user"
+                    )
                     .filter(
                         requester=request.user,
                         offer=offer,
@@ -302,7 +329,9 @@ def skill_requests_view(request):
     except IntegrityError:
         # Safety net: if a DB-level race happens outside the inner block, return existing request.
         obj = (
-            SkillRequest.objects.select_related("offer", "requester", "recipient")
+            SkillRequest.objects.select_related(
+                "offer", "requester", "recipient", "proposed_offer", "proposed_offer__user"
+            )
             .filter(requester=request.user, offer=offer)
             .order_by("-updated_at", "-id")
             .first()
@@ -332,6 +361,7 @@ def skill_requests_view(request):
                 "skill_request_id": obj.id,
                 "offer_id": offer.id,
                 "offer_is_seeking": bool(offer.is_seeking),
+                "proposed_offer_id": getattr(proposed_offer, "id", None),
                 "from_user_id": request.user.id,
             },
             actor=request.user,
@@ -413,6 +443,56 @@ def skill_requests_status_view(request):
     return Response(result, status=status.HTTP_200_OK)
 
 
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+@api_rate_limit
+def skill_requests_proposed_status_view(request):
+    """
+    GET /skill-requests/proposed-status/?offer_ids=1,2,3
+    Vrati mapu stavov pre ziadosti, kde dana karta vystupuje ako proposed_offer.
+    Pouziva sa na profile odosielatela pomoci, aby prijemca videl spravny stav CTA.
+    """
+    raw = (request.query_params.get("offer_ids") or "").strip()
+    if not raw:
+        return Response({}, status=status.HTTP_200_OK)
+
+    ids = []
+    for part in raw.split(","):
+        part = part.strip()
+        if not part:
+            continue
+        try:
+            ids.append(int(part))
+        except Exception:
+            continue
+
+    if not ids:
+        return Response({}, status=status.HTTP_200_OK)
+
+    qs = SkillRequest.objects.filter(
+        recipient=request.user,
+        proposed_offer_id__in=ids,
+    ).exclude(proposed_offer_id__isnull=True).order_by("-updated_at", "-id")
+
+    best_by_offer: dict[int, SkillRequest] = {}
+    for r in qs:
+        oid = int(r.proposed_offer_id) if r.proposed_offer_id else None
+        if not oid:
+            continue
+        current = best_by_offer.get(oid)
+        if current is None:
+            best_by_offer[oid] = r
+            continue
+
+        cur_active = current.status in ACTIVE_SKILL_REQUEST_STATUSES
+        r_active = r.status in ACTIVE_SKILL_REQUEST_STATUSES
+        if r_active and not cur_active:
+            best_by_offer[oid] = r
+
+    result = {str(oid): obj.status for oid, obj in best_by_offer.items()}
+    return Response(result, status=status.HTTP_200_OK)
+
+
 @api_view(["PATCH"])
 @permission_classes([IsAuthenticated])
 @api_rate_limit
@@ -424,7 +504,7 @@ def skill_request_detail_view(request, request_id: int):
     with transaction.atomic():
         try:
             obj = SkillRequest.objects.select_for_update().select_related(
-                "offer", "requester", "recipient"
+                "offer", "requester", "recipient", "proposed_offer", "proposed_offer__user"
             ).get(id=request_id)
         except SkillRequest.DoesNotExist:
             return Response(
@@ -529,6 +609,7 @@ def skill_request_detail_view(request, request_id: int):
 
         # Stavové prechody
         accepted_notification = False
+        rejected_notification = False
         conversation_result = None
         if action == "accept" and obj.status == SkillRequestStatus.PENDING:
             obj.status = SkillRequestStatus.ACCEPTED
@@ -541,6 +622,7 @@ def skill_request_detail_view(request, request_id: int):
         elif action == "reject" and obj.status == SkillRequestStatus.PENDING:
             obj.status = SkillRequestStatus.REJECTED
             obj.save(update_fields=["status", "updated_at"])
+            rejected_notification = True
         elif action == "cancel" and obj.status == SkillRequestStatus.PENDING:
             obj.status = SkillRequestStatus.CANCELLED
             obj.save(update_fields=["status", "updated_at"])
@@ -571,6 +653,26 @@ def skill_request_detail_view(request, request_id: int):
 
             transaction.on_commit(notify_requester_about_acceptance)
 
+        if rejected_notification:
+
+            def notify_requester_about_rejection():
+                try:
+                    create_skill_request_rejected_notification(
+                        skill_request=obj,
+                        actor=obj.recipient,
+                    )
+                except Exception:
+                    logger.exception(
+                        "Skill request rejected notification dispatch failed",
+                        extra={
+                            "skill_request_id": getattr(obj, "id", None),
+                            "requester_id": getattr(obj, "requester_id", None),
+                            "recipient_id": getattr(obj, "recipient_id", None),
+                        },
+                    )
+
+            transaction.on_commit(notify_requester_about_rejection)
+
         response_data = dict(
             SkillRequestSerializer(obj, context={"request": request}).data
         )
@@ -594,7 +696,7 @@ def skill_request_request_completion_view(request, request_id: int):
     with transaction.atomic():
         try:
             obj = SkillRequest.objects.select_for_update().select_related(
-                "offer", "requester", "recipient"
+                "offer", "requester", "recipient", "proposed_offer", "proposed_offer__user"
             ).get(id=request_id)
         except SkillRequest.DoesNotExist:
             return Response(
@@ -667,7 +769,7 @@ def skill_request_confirm_completion_view(request, request_id: int):
     with transaction.atomic():
         try:
             obj = SkillRequest.objects.select_for_update().select_related(
-                "offer", "requester", "recipient"
+                "offer", "requester", "recipient", "proposed_offer", "proposed_offer__user"
             ).get(id=request_id)
         except SkillRequest.DoesNotExist:
             return Response(

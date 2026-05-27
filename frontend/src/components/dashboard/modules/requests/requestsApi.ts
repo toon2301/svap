@@ -1,6 +1,17 @@
 import { api, endpoints } from '@/lib/api';
 import type { SkillRequestTerminationReason, SkillRequestsResponse } from './types';
 
+export type SkillRequestCreatePayload = {
+  offer_id: number;
+  proposed_offer_id?: number | null;
+  proposal_description?: string;
+  proposal_price_from?: number | null;
+  proposal_price_currency?: string;
+  proposal_price_negotiable?: boolean;
+  proposal_experience_value?: number | null;
+  proposal_experience_unit?: 'years' | 'months' | '';
+};
+
 function toPositiveInt(value: unknown): number | null {
   const n = typeof value === 'number' ? value : Number(value);
   if (!Number.isFinite(n)) return null;
@@ -32,8 +43,9 @@ export async function fetchSkillRequests(statusQuery?: string): Promise<SkillReq
   };
 }
 
-export async function createSkillRequest(offerId: number) {
-  return api.post(endpoints.requests.list, { offer_id: offerId });
+export async function createSkillRequest(payload: number | SkillRequestCreatePayload) {
+  const body = typeof payload === 'number' ? { offer_id: payload } : payload;
+  return api.post(endpoints.requests.list, body);
 }
 
 export async function updateSkillRequest(requestId: number, action: 'accept' | 'reject' | 'cancel' | 'hide') {

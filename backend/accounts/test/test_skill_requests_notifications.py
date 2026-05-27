@@ -82,6 +82,197 @@ class TestSkillRequestsAndNotifications(APITestCase):
         self.assertEqual(c.status_code, status.HTTP_200_OK)
         self.assertEqual(c.data.get("count"), 1)
 
+    def test_create_help_request_stores_proposal_for_seeking_card(self):
+        seeking_offer = OfferedSkill.objects.create(
+            user=self.owner,
+            category="Domácnosť",
+            subcategory="Hľadám maľovanie",
+            description="Potrebujem vymaľovať izbu",
+            is_seeking=True,
+        )
+        proposed_offer = OfferedSkill.objects.create(
+            user=self.requester,
+            category="Domácnosť",
+            subcategory="Maľovanie",
+            description="Maľujem byty",
+            price_from=30,
+            price_currency="€",
+            experience_value=2,
+            experience_unit="years",
+            is_seeking=False,
+        )
+
+        self.client.force_authenticate(user=self.requester)
+        response = self.client.post(
+            f"{self.base}/skill-requests/",
+            {
+                "offer_id": seeking_offer.id,
+                "proposed_offer_id": proposed_offer.id,
+                "proposal_description": "Viem prísť cez víkend a pomôcť s maľovaním.",
+                "proposal_price_from": "30",
+                "proposal_price_currency": "€",
+                "proposal_price_negotiable": True,
+                "proposal_experience_value": 2,
+                "proposal_experience_unit": "years",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        obj = SkillRequest.objects.get(id=response.data["id"])
+        self.assertEqual(obj.offer_id, seeking_offer.id)
+        self.assertEqual(obj.proposed_offer_id, proposed_offer.id)
+        self.assertEqual(
+            obj.proposal_description,
+            "Viem prísť cez víkend a pomôcť s maľovaním.",
+        )
+        self.assertEqual(str(obj.proposal_price_from), "30.00")
+        self.assertEqual(obj.proposal_price_currency, "€")
+        self.assertFalse(obj.proposal_price_negotiable)
+        self.assertEqual(obj.proposal_experience_value, 2)
+        self.assertEqual(obj.proposal_experience_unit, "years")
+        self.assertEqual(response.data["proposed_offer"], proposed_offer.id)
+        self.assertEqual(
+            response.data["proposed_offer_summary"]["subcategory"],
+            "Maľovanie",
+        )
+
+        notification = Notification.objects.get(
+            user=self.owner,
+            type=NotificationType.SKILL_REQUEST,
+            skill_request=obj,
+        )
+        self.assertEqual(notification.data.get("proposed_offer_id"), proposed_offer.id)
+
+    def test_create_help_request_requires_description_for_seeking_card(self):
+        seeking_offer = OfferedSkill.objects.create(
+            user=self.owner,
+            category="Domácnosť",
+            subcategory="Hľadám maľovanie",
+            description="Potrebujem vymaľovať izbu",
+            is_seeking=True,
+        )
+
+        self.client.force_authenticate(user=self.requester)
+        response = self.client.post(
+            f"{self.base}/skill-requests/",
+            {"offer_id": seeking_offer.id, "proposal_description": " "},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("proposal_description", response.data)
+        self.assertFalse(SkillRequest.objects.exists())
+
+    def test_create_help_request_rejects_foreign_proposed_offer(self):
+        other_user = UserFactory()
+        seeking_offer = OfferedSkill.objects.create(
+            user=self.owner,
+            category="Domácnosť",
+            subcategory="Hľadám maľovanie",
+            description="Potrebujem vymaľovať izbu",
+            is_seeking=True,
+        )
+        foreign_offer = OfferedSkill.objects.create(
+            user=other_user,
+            category="Domácnosť",
+            subcategory="Maľovanie",
+            description="Maľujem byty",
+            is_seeking=False,
+        )
+
+        self.client.force_authenticate(user=self.requester)
+        response = self.client.post(
+            f"{self.base}/skill-requests/",
+            {
+                "offer_id": seeking_offer.id,
+                "proposed_offer_id": foreign_offer.id,
+                "proposal_description": "Viem pomôcť.",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("proposed_offer_id", response.data)
+        self.assertFalse(SkillRequest.objects.exists())
+
+    def test_create_regular_request_ignores_proposal_fields(self):
+        proposed_offer = OfferedSkill.objects.create(
+            user=self.requester,
+            category="Domácnosť",
+            subcategory="Maľovanie",
+            description="Maľujem byty",
+            is_seeking=False,
+        )
+
+        self.client.force_authenticate(user=self.requester)
+        response = self.client.post(
+            f"{self.base}/skill-requests/",
+            {
+                "offer_id": self.offer.id,
+                "proposed_offer_id": proposed_offer.id,
+                "proposal_description": "Toto sa pri karte Ponúkam neukladá.",
+                "proposal_price_from": "30",
+                "proposal_price_currency": "€",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        obj = SkillRequest.objects.get(id=response.data["id"])
+        self.assertIsNone(obj.proposed_offer_id)
+        self.assertEqual(obj.proposal_description, "")
+        self.assertIsNone(obj.proposal_price_from)
+
+    def test_proposed_status_returns_state_for_recipient_only(self):
+        seeking_offer = OfferedSkill.objects.create(
+            user=self.owner,
+            category="Domácnosť",
+            subcategory="Hľadám maľovanie",
+            description="Potrebujem vymaľovať izbu",
+            is_seeking=True,
+        )
+        proposed_offer = OfferedSkill.objects.create(
+            user=self.requester,
+            category="Domácnosť",
+            subcategory="Maľovanie",
+            description="Maľujem byty",
+            is_seeking=False,
+        )
+        skill_request = SkillRequest.objects.create(
+            requester=self.requester,
+            recipient=self.owner,
+            offer=seeking_offer,
+            proposed_offer=proposed_offer,
+            proposal_description="Viem pomôcť.",
+            status=SkillRequestStatus.PENDING,
+        )
+
+        self.client.force_authenticate(user=self.owner)
+        response = self.client.get(
+            f"{self.base}/skill-requests/proposed-status/",
+            {"offer_ids": str(proposed_offer.id)},
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data.get(str(proposed_offer.id)), SkillRequestStatus.PENDING)
+
+        skill_request.status = SkillRequestStatus.ACCEPTED
+        skill_request.save(update_fields=["status", "updated_at"])
+        accepted = self.client.get(
+            f"{self.base}/skill-requests/proposed-status/",
+            {"offer_ids": str(proposed_offer.id)},
+        )
+        self.assertEqual(accepted.data.get(str(proposed_offer.id)), SkillRequestStatus.ACCEPTED)
+
+        stranger = UserFactory()
+        self.client.force_authenticate(user=stranger)
+        forbidden = self.client.get(
+            f"{self.base}/skill-requests/proposed-status/",
+            {"offer_ids": str(proposed_offer.id)},
+        )
+        self.assertEqual(forbidden.status_code, status.HTTP_200_OK)
+        self.assertEqual(forbidden.data, {})
+
     def test_general_notifications_exclude_new_skill_request(self):
         self.client.force_authenticate(user=self.requester)
         created = self.client.post(
@@ -627,6 +818,7 @@ class TestSkillRequestsAndNotifications(APITestCase):
         self.assertEqual(accepted.data.get("skill_request_id"), req_id)
         self.assertEqual(accepted.data.get("offer_id"), self.offer.id)
         self.assertEqual(accepted.data.get("accepted_by_user_id"), self.owner.id)
+        self.assertEqual(accepted.data.get("request_kind"), "skill_request")
         self.assertFalse(Notification.objects.filter(type=NotificationType.SKILL_REQUEST_REJECTED).exists())
         self.assertFalse(Notification.objects.filter(type=NotificationType.SKILL_REQUEST_CANCELLED).exists())
 
@@ -643,6 +835,138 @@ class TestSkillRequestsAndNotifications(APITestCase):
         )
         self.assertEqual(unread.status_code, status.HTTP_200_OK)
         self.assertEqual(unread.data.get("count"), 1)
+
+    def test_reject_request_creates_rejected_notification_for_requester(self):
+        self.client.force_authenticate(user=self.requester)
+        created = self.client.post(
+            f"{self.base}/skill-requests/", {"offer_id": self.offer.id}, format="json"
+        )
+        req_id = created.data["id"]
+
+        self.client.force_authenticate(user=self.owner)
+        with self.captureOnCommitCallbacks(execute=True):
+            upd = self.client.patch(
+                f"{self.base}/skill-requests/{req_id}/",
+                {"action": "reject"},
+                format="json",
+            )
+
+        self.assertEqual(upd.status_code, status.HTTP_200_OK)
+        self.assertEqual(upd.data["status"], SkillRequestStatus.REJECTED)
+        self.assertEqual(Notification.objects.filter(skill_request_id=req_id).count(), 2)
+        rejected = Notification.objects.get(
+            skill_request_id=req_id,
+            type=NotificationType.SKILL_REQUEST_REJECTED,
+        )
+        self.assertEqual(rejected.user_id, self.requester.id)
+        self.assertEqual(rejected.actor_id, self.owner.id)
+        self.assertEqual(rejected.data.get("skill_request_id"), req_id)
+        self.assertEqual(rejected.data.get("offer_id"), self.offer.id)
+        self.assertEqual(rejected.data.get("rejected_by_user_id"), self.owner.id)
+        self.assertEqual(rejected.data.get("request_kind"), "skill_request")
+        self.assertFalse(
+            Notification.objects.filter(type=NotificationType.SKILL_REQUEST_ACCEPTED).exists()
+        )
+        self.assertFalse(
+            Notification.objects.filter(type=NotificationType.SKILL_REQUEST_CANCELLED).exists()
+        )
+
+        self.client.force_authenticate(user=self.requester)
+        feed = self.client.get(f"{self.base}/notifications/", {"type": "all"})
+        self.assertEqual(feed.status_code, status.HTTP_200_OK)
+        rejected_payload = next(
+            item for item in feed.data if item["type"] == NotificationType.SKILL_REQUEST_REJECTED
+        )
+        self.assertEqual(
+            rejected_payload["target_url"],
+            "/dashboard/requests?status=cancelled&tab=sent",
+        )
+
+        unread = self.client.get(
+            f"{self.base}/notifications/unread-count/", {"type": "all"}
+        )
+        self.assertEqual(unread.status_code, status.HTTP_200_OK)
+        self.assertEqual(unread.data.get("count"), 1)
+
+    def test_help_offer_decision_notifications_are_tagged(self):
+        seeking_offer = OfferedSkill.objects.create(
+            user=self.owner,
+            category="Domácnosť",
+            subcategory="Hľadám maľovanie",
+            description="Potrebujem vymaľovať izbu",
+            is_seeking=True,
+        )
+        proposed_offer = OfferedSkill.objects.create(
+            user=self.requester,
+            category="Domácnosť",
+            subcategory="Maľovanie",
+            description="Maľujem byty",
+            is_seeking=False,
+        )
+        self.client.force_authenticate(user=self.requester)
+        created = self.client.post(
+            f"{self.base}/skill-requests/",
+            {
+                "offer_id": seeking_offer.id,
+                "proposed_offer_id": proposed_offer.id,
+                "proposal_description": "Viem pomôcť.",
+            },
+            format="json",
+        )
+        req_id = created.data["id"]
+
+        self.client.force_authenticate(user=self.owner)
+        with self.captureOnCommitCallbacks(execute=True):
+            accepted = self.client.patch(
+                f"{self.base}/skill-requests/{req_id}/",
+                {"action": "accept"},
+                format="json",
+            )
+
+        self.assertEqual(accepted.status_code, status.HTTP_200_OK)
+        notification = Notification.objects.get(
+            skill_request_id=req_id,
+            type=NotificationType.SKILL_REQUEST_ACCEPTED,
+        )
+        self.assertEqual(notification.data.get("request_kind"), "help_offer")
+        self.assertEqual(notification.title, "Tvoja ponuka bola prijatá")
+        self.assertIn("ponuku pomoci", notification.body)
+
+        second_seeking_offer = OfferedSkill.objects.create(
+            user=self.owner,
+            category="Domácnosť",
+            subcategory="Hľadám opravu",
+            description="Potrebujem opravu",
+            is_seeking=True,
+        )
+        self.client.force_authenticate(user=self.requester)
+        rejected_created = self.client.post(
+            f"{self.base}/skill-requests/",
+            {
+                "offer_id": second_seeking_offer.id,
+                "proposed_offer_id": proposed_offer.id,
+                "proposal_description": "Viem pomôcť aj s opravou.",
+            },
+            format="json",
+        )
+        rejected_req_id = rejected_created.data["id"]
+
+        self.client.force_authenticate(user=self.owner)
+        with self.captureOnCommitCallbacks(execute=True):
+            rejected_response = self.client.patch(
+                f"{self.base}/skill-requests/{rejected_req_id}/",
+                {"action": "reject"},
+                format="json",
+            )
+
+        self.assertEqual(rejected_response.status_code, status.HTTP_200_OK)
+        rejected_notification = Notification.objects.get(
+            skill_request_id=rejected_req_id,
+            type=NotificationType.SKILL_REQUEST_REJECTED,
+        )
+        self.assertEqual(rejected_notification.data.get("request_kind"), "help_offer")
+        self.assertEqual(rejected_notification.title, "Tvoja ponuka bola odmietnutá")
+        self.assertIn("ponuku pomoci", rejected_notification.body)
 
     def test_request_completion_creates_notification_for_requester(self):
         self.client.force_authenticate(user=self.requester)

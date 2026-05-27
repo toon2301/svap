@@ -1,12 +1,10 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import type { SkillRequest, SkillRequestStatus } from './types';
+import type { SkillRequest } from './types';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { api } from '@/lib/api';
-import { StatusPill } from './ui/StatusPill';
-import { TerminationReasonNotice } from './ui/TerminationReasonNotice';
 
 type Props = {
   item: SkillRequest;
@@ -60,16 +58,6 @@ function resolveMediaUrl(rawUrl: string, backendOrigin: string): string {
   return origin ? `${origin}/${raw}` : raw;
 }
 
-const STATUS_GRADIENT_CLASS: Record<SkillRequestStatus, string> = {
-  pending: 'from-amber-500/20 to-transparent',
-  accepted: 'from-emerald-500/20 to-transparent',
-  completion_requested: 'from-sky-500/20 to-transparent',
-  completed: 'from-violet-500/20 to-transparent',
-  terminated: 'from-slate-500/20 to-transparent',
-  rejected: 'from-rose-500/20 to-transparent',
-  cancelled: 'from-gray-500/15 to-transparent',
-};
-
 export function RequestMobileCard({ item, variant, onPress }: Props) {
   const { t } = useLanguage();
   const { user } = useAuth();
@@ -82,7 +70,6 @@ export function RequestMobileCard({ item, variant, onPress }: Props) {
     t('requests.userFallback');
   const whoAvatar = who?.avatar_url || null;
   const [avatarError, setAvatarError] = useState(false);
-  const [terminationReasonOpen, setTerminationReasonOpen] = useState(false);
 
   const offer = item.offer_summary || null;
   const isSeeking = offer?.is_seeking ?? item.offer_is_seeking ?? false;
@@ -116,15 +103,7 @@ export function RequestMobileCard({ item, variant, onPress }: Props) {
     setAvatarError(false);
   }, [avatarSrc]);
 
-  useEffect(() => {
-    setTerminationReasonOpen(false);
-  }, [item.id]);
-
   const hasAvatar = Boolean(avatarSrc && !avatarError);
-  const status = item.status ?? 'pending';
-  const hasTerminationReason = status === 'terminated' && Boolean(item.termination?.reason);
-  const terminationReasonId = `request-mobile-termination-reason-${item.id}`;
-  const gradientClass = STATUS_GRADIENT_CLASS[status] ?? STATUS_GRADIENT_CLASS.pending;
 
   const handleProfileClick = useCallback(
     (e: React.MouseEvent) => {
@@ -149,18 +128,9 @@ export function RequestMobileCard({ item, variant, onPress }: Props) {
   );
 
   const profileAriaLabel = t('requests.openProfile', 'Otvoriť profil');
-  const handleTerminationPillClick = useCallback(
-    (e: React.MouseEvent<HTMLButtonElement>) => {
-      e.preventDefault();
-      e.stopPropagation();
-      if (!hasTerminationReason) return;
-      setTerminationReasonOpen((open) => !open);
-    },
-    [hasTerminationReason],
-  );
 
   return (
-    <div className={`relative w-full bg-gradient-to-l ${gradientClass}`}>
+    <div className="relative w-full bg-white dark:bg-[#0f0f10]">
       <div
         role="button"
         tabIndex={0}
@@ -197,42 +167,24 @@ export function RequestMobileCard({ item, variant, onPress }: Props) {
           </button>
 
           <div className="min-w-0 flex-1">
-            <div className="flex items-start justify-between gap-2">
-              <div className="min-w-0">
-                <button
-                  type="button"
-                  onClick={handleProfileClick}
-                  className="block w-full text-left text-sm font-semibold text-gray-900 dark:text-white truncate bg-transparent border-0 p-0 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 rounded focus-visible:ring-offset-1"
-                  aria-label={profileAriaLabel}
-                >
-                  {whoName}
-                </button>
-                <div className="text-xs font-semibold text-purple-700 dark:text-purple-300 truncate mt-0.5">
-                  {intentText}
-                </div>
+            <div className="min-w-0">
+              <button
+                type="button"
+                onClick={handleProfileClick}
+                className="block w-full text-left text-sm font-semibold text-gray-900 dark:text-white truncate bg-transparent border-0 p-0 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 rounded focus-visible:ring-offset-1"
+                aria-label={profileAriaLabel}
+              >
+                {whoName}
+              </button>
+              <div className="text-xs font-semibold text-purple-700 dark:text-purple-300 truncate mt-0.5">
+                {intentText}
               </div>
-              <StatusPill
-                status={status}
-                onClick={hasTerminationReason ? handleTerminationPillClick : undefined}
-                ariaControls={hasTerminationReason ? terminationReasonId : undefined}
-                ariaExpanded={hasTerminationReason ? terminationReasonOpen : undefined}
-                title={hasTerminationReason ? t('requests.terminationReasonLabel') : undefined}
-              />
             </div>
 
             <div className="mt-2">
               <div className="text-sm font-semibold text-gray-900 dark:text-white leading-tight">
                 {subcategory || t('requests.noTitle')}
               </div>
-              {terminationReasonOpen ? (
-                <TerminationReasonNotice
-                  id={terminationReasonId}
-                  status={status}
-                  termination={item.termination}
-                  compact
-                  className="mt-2"
-                />
-              ) : null}
             </div>
           </div>
         </div>

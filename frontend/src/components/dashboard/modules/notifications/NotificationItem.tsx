@@ -101,13 +101,21 @@ export default function NotificationItem({
     notification.data?.termination_reason,
     t,
   );
+  const isHelpOfferDecision = notification.data?.request_kind === 'help_offer';
 
   const title =
     notification.type === 'group_invitation'
       ? t('notifications.groupInvitationTitle', 'Pozvánka do skupiny')
       : notification.type === 'skill_request_accepted'
-        ? notification.title ||
-          t('notifications.skillRequestAcceptedTitle', 'Žiadosť prijatá')
+        ? isHelpOfferDecision
+          ? t('notifications.helpOfferAcceptedTitle', 'Tvoja ponuka bola prijatá')
+          : notification.title ||
+            t('notifications.skillRequestAcceptedTitle', 'Žiadosť prijatá')
+        : notification.type === 'skill_request_rejected'
+          ? isHelpOfferDecision
+            ? t('notifications.helpOfferRejectedTitle', 'Tvoja ponuka bola odmietnutá')
+            : notification.title ||
+              t('notifications.skillRequestRejectedTitle', 'Žiadosť odmietnutá')
         : notification.type === 'skill_request_completion_requested'
           ? notification.title ||
             t(
@@ -145,10 +153,29 @@ export default function NotificationItem({
           '{name} vás pozýva do skupinového chatu.',
         ).replace('{name}', actorName)
       : notification.type === 'skill_request_accepted'
-        ? t(
-            'notifications.skillRequestAcceptedBody',
-            '{name} prijal tvoju žiadosť.',
+        ? (
+            isHelpOfferDecision
+              ? t(
+                  'notifications.helpOfferAcceptedBody',
+                  '{name} prijal tvoju ponuku pomoci.',
+                )
+              : t(
+                  'notifications.skillRequestAcceptedBody',
+                  '{name} prijal tvoju žiadosť.',
+                )
           ).replace('{name}', actorName)
+        : notification.type === 'skill_request_rejected'
+          ? (
+              isHelpOfferDecision
+                ? t(
+                    'notifications.helpOfferRejectedBody',
+                    '{name} odmietol tvoju ponuku pomoci.',
+                  )
+                : t(
+                    'notifications.skillRequestRejectedBody',
+                    '{name} odmietol tvoju žiadosť.',
+                  )
+            ).replace('{name}', actorName)
         : notification.type === 'skill_request_completion_requested'
           ? t(
               'notifications.skillRequestCompletionRequestedBody',

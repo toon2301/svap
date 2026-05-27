@@ -26,7 +26,9 @@ export type SkillRequestUserSummary = {
 
 export type SkillRequestOfferSummary = {
   id: number;
+  category?: string;
   subcategory: string;
+  description?: string;
   is_seeking: boolean;
   is_hidden?: boolean;
   price_from: number | null;
@@ -47,6 +49,17 @@ export type SkillRequest = {
   requester: number;
   recipient: number;
   offer: number;
+  proposed_offer?: number | null;
+  proposal_description?: string;
+  proposal_price_from?: number | string | null;
+  proposal_price_currency?: string;
+  proposal_price_negotiable?: boolean;
+  proposal_experience_value?: number | null;
+  proposal_experience_unit?: 'years' | 'months' | '' | null;
+  proposal_experience?: {
+    value: number;
+    unit: 'years' | 'months';
+  } | null;
   conversation_id?: number | null;
   conversation_created?: boolean;
 
@@ -62,6 +75,7 @@ export type SkillRequest = {
   requester_summary?: SkillRequestUserSummary | null;
   recipient_summary?: SkillRequestUserSummary | null;
   offer_summary?: SkillRequestOfferSummary | null;
+  proposed_offer_summary?: SkillRequestOfferSummary | null;
   termination?: {
     reason: SkillRequestTerminationReason;
     description: string;

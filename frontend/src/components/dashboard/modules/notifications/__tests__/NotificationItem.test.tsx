@@ -168,6 +168,48 @@ describe('NotificationItem', () => {
     expect(mockPush).toHaveBeenCalledWith('/dashboard/profile?highlight=12&side=back');
   });
 
+  it('uses help-offer copy for accepted and rejected request decisions', () => {
+    const actor = {
+      id: 7,
+      display_name: 'Owner User',
+      slug: 'owner-user',
+      user_type: 'individual',
+      avatar_url: null,
+    };
+
+    const { rerender } = render(
+      <NotificationItem
+        notification={makeNotification({
+          type: 'skill_request_accepted',
+          title: 'Žiadosť prijatá',
+          body: 'Owner User prijal tvoju žiadosť.',
+          data: { request_kind: 'help_offer' },
+          actor,
+        })}
+      />,
+    );
+
+    expect(screen.getByRole('button').querySelector('p')).toHaveTextContent(
+      'Owner User prijal tvoju ponuku pomoci.',
+    );
+
+    rerender(
+      <NotificationItem
+        notification={makeNotification({
+          type: 'skill_request_rejected',
+          title: 'Žiadosť odmietnutá',
+          body: 'Owner User odmietol tvoju žiadosť.',
+          data: { request_kind: 'help_offer' },
+          actor,
+        })}
+      />,
+    );
+
+    expect(screen.getByRole('button').querySelector('p')).toHaveTextContent(
+      'Owner User odmietol tvoju ponuku pomoci.',
+    );
+  });
+
   it('renders actor avatar image when provided', () => {
     const notification = makeNotification({
       actor: {
