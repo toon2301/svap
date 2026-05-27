@@ -8,13 +8,9 @@ from pathlib import Path
 from typing import Any
 
 
-DISTRICT_REGISTRY_PATH = (
-    Path(__file__).resolve().parents[2]
-    / "frontend"
-    / "src"
-    / "shared"
-    / "districtRegistry.json"
-)
+# Backend-owned data shipped with the accounts app (see accounts/data/).
+_DATA_DIR = Path(__file__).resolve().parent / "data"
+DISTRICT_REGISTRY_PATH = _DATA_DIR / "district_registry.json"
 
 SUPPORTED_OFFER_COUNTRIES = ("SK", "CZ", "PL", "HU", "AT", "DE")
 
