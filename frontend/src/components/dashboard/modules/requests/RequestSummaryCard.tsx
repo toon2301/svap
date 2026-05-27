@@ -3,9 +3,13 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
-import { Bars3Icon, CheckIcon, NoSymbolIcon, TrashIcon, XMarkIcon } from '@heroicons/react/24/outline';
-import { StatusPill } from './ui/StatusPill';
-import { TerminationReasonNotice } from './ui/TerminationReasonNotice';
+import { Bars3Icon, NoSymbolIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { HelpProposalDetailsModal } from './HelpProposalDetailsModal';
+import {
+  getLinkedProposedOfferId,
+  getRequesterProfileIdentifier,
+  hasHelpProposal,
+} from './helpProposalUtils';
 import type { SkillRequest } from './types';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -93,6 +97,27 @@ function resolveMediaUrl(rawUrl: string, backendOrigin: string): string {
   return origin ? `${origin}/${raw}` : raw;
 }
 
+const summaryPrimaryActionClass =
+  'min-w-0 flex-1 inline-flex items-center justify-center gap-1 sm:gap-1.5 wide:gap-2 rounded-md border border-transparent bg-emerald-600 text-white px-1.5 compact-max:px-1 sm:px-2 md:px-2.5 hd:px-4 py-1.5 compact-max:py-1 sm:py-2 hd:py-2.5 text-[11px] compact-max:text-[10px] sm:text-xs md:text-sm hd:text-sm font-semibold hover:bg-emerald-700 disabled:border-gray-200 disabled:bg-gray-100 disabled:text-gray-400 disabled:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/60 dark:disabled:border-gray-800 dark:disabled:bg-gray-900 dark:disabled:text-gray-500';
+
+const summarySecondaryDangerActionClass =
+  'min-w-0 flex-1 inline-flex items-center justify-center gap-1 sm:gap-1.5 wide:gap-2 rounded-md border border-rose-200 bg-rose-50 text-rose-700 px-1.5 compact-max:px-1 sm:px-2 md:px-2.5 hd:px-4 py-1.5 compact-max:py-1 sm:py-2 hd:py-2.5 text-[11px] compact-max:text-[10px] sm:text-xs md:text-sm hd:text-sm font-semibold hover:bg-rose-100 disabled:border-gray-200 disabled:bg-gray-100 disabled:text-gray-400 disabled:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400/60 dark:border-rose-900/60 dark:bg-rose-950/20 dark:text-rose-200 dark:hover:bg-rose-950/40 dark:disabled:border-gray-800 dark:disabled:bg-gray-900 dark:disabled:text-gray-500 shrink-0';
+
+const summaryTertiaryActionClass =
+  'flex-[1.6] inline-flex items-center justify-center gap-1 sm:gap-1.5 wide:gap-2 rounded-md bg-transparent text-gray-500 px-1.5 compact-max:px-1 sm:px-2 md:px-2.5 hd:px-4 py-1.5 compact-max:py-1 sm:py-2 hd:py-2.5 text-[11px] compact-max:text-[10px] sm:text-xs md:text-sm hd:text-sm font-semibold hover:bg-gray-100 hover:text-gray-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 dark:text-gray-400 dark:hover:bg-gray-900/50 dark:hover:text-gray-200 shrink-0 whitespace-nowrap';
+
+const summaryProposalActionClass =
+  'flex-[1.6] inline-flex items-center justify-center gap-1 sm:gap-1.5 wide:gap-2 rounded-md border border-purple-200 bg-purple-50 text-purple-700 px-1.5 compact-max:px-1 sm:px-2 md:px-2.5 hd:px-4 py-1.5 compact-max:py-1 sm:py-2 hd:py-2.5 text-[11px] compact-max:text-[10px] sm:text-xs md:text-sm hd:text-sm font-semibold hover:border-purple-300 hover:bg-purple-100 hover:text-purple-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 dark:border-purple-900/50 dark:bg-purple-950/30 dark:text-purple-200 dark:hover:border-purple-800 dark:hover:bg-purple-950/50 shrink-0 whitespace-nowrap';
+
+const summarySecondaryActionClass =
+  'shrink-0 w-full inline-flex items-center justify-center gap-1.5 rounded-md border border-gray-200 bg-white text-gray-700 px-2 py-2 text-[11px] sm:text-xs font-semibold hover:bg-gray-50 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 dark:border-gray-800 dark:bg-[#0f0f10] dark:text-gray-200 dark:hover:bg-gray-900/60';
+
+const summaryOverflowActionClass =
+  'inline-flex h-full min-h-[2.25rem] w-9 shrink-0 items-center justify-center rounded-md border border-transparent bg-transparent text-gray-500 hover:bg-gray-100 hover:text-gray-800 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 dark:text-gray-400 dark:hover:bg-gray-900/50 dark:hover:text-gray-200 sm:min-h-[2.5rem] sm:w-10';
+
+const summaryNavigationRowClass =
+  'flex flex-row items-stretch justify-end gap-1 compact-max:gap-1 sm:gap-2 wide:gap-3 shrink-0';
+
 export function RequestSummaryCard({
   item,
   variant,
@@ -118,7 +143,7 @@ export function RequestSummaryCard({
   const whoAvatar = who?.avatar_url || null;
   const [avatarError, setAvatarError] = useState(false);
   const [terminateMenuOpen, setTerminateMenuOpen] = useState(false);
-  const [terminationReasonOpen, setTerminationReasonOpen] = useState(false);
+  const [proposalModalOpen, setProposalModalOpen] = useState(false);
   const terminateMenuRef = useRef<HTMLDivElement | null>(null);
 
   const offer = item.offer_summary || null;
@@ -143,8 +168,6 @@ export function RequestSummaryCard({
     showCompletionActions &&
     typeof onTerminate === 'function' &&
     (item.status === 'accepted' || item.status === 'completion_requested');
-  const hasTerminationReason = item.status === 'terminated' && Boolean(item.termination?.reason);
-  const terminationReasonId = `request-termination-reason-${item.id}`;
 
   const avatarSrc = useMemo(() => {
     if (!whoAvatar) return '';
@@ -159,7 +182,6 @@ export function RequestSummaryCard({
 
   useEffect(() => {
     setTerminateMenuOpen(false);
-    setTerminationReasonOpen(false);
   }, [item.id]);
 
   useEffect(() => {
@@ -186,6 +208,7 @@ export function RequestSummaryCard({
   }, [terminateMenuOpen]);
 
   const hasAvatar = Boolean(avatarSrc && !avatarError);
+  const canShowProposal = variant === 'received' && hasHelpProposal(item);
 
   const priceLabel = useMemo(() => {
     if (offer?.price_negotiable === true) return t('skills.priceNegotiable', 'Dohodou');
@@ -318,15 +341,31 @@ export function RequestSummaryCard({
     router.push(`/dashboard/users/${encodeURIComponent(profileIdentifier)}?highlight=${encodeURIComponent(String(offerId))}`);
   };
 
-  const handleTerminationPillClick = useCallback(
-    (e: React.MouseEvent<HTMLButtonElement>) => {
-      e.preventDefault();
-      e.stopPropagation();
-      if (!hasTerminationReason) return;
-      setTerminationReasonOpen((open) => !open);
-    },
-    [hasTerminationReason],
-  );
+  const handleViewProposal = () => {
+    const offerId = getLinkedProposedOfferId(item);
+    const profileIdentifier = getRequesterProfileIdentifier(item);
+    if (!offerId || !profileIdentifier || typeof window === 'undefined') {
+      setProposalModalOpen(true);
+      return;
+    }
+
+    try {
+      sessionStorage.setItem('highlightedSkillId', String(offerId));
+      sessionStorage.setItem('highlightedSkillTime', String(Date.now()));
+    } catch {
+      // ignore
+    }
+
+    try {
+      window.dispatchEvent(
+        new CustomEvent('goToUserProfile', {
+          detail: { identifier: profileIdentifier, highlightId: offerId },
+        }),
+      );
+    } catch {
+      router.push(`/dashboard/users/${encodeURIComponent(profileIdentifier)}?highlight=${encodeURIComponent(String(offerId))}`);
+    }
+  };
 
   const renderTerminateMenu = (align: 'stretch' | 'center') => {
     if (!canTerminate) return null;
@@ -343,7 +382,7 @@ export function RequestSummaryCard({
           aria-label={t('common.menu')}
           disabled={isBusy}
           onClick={() => setTerminateMenuOpen((open) => !open)}
-          className="inline-flex h-full min-h-[2.25rem] w-9 shrink-0 items-center justify-center rounded-md border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 dark:border-gray-800 dark:bg-[#0f0f10] dark:text-gray-200 dark:hover:bg-gray-900/60 sm:min-h-[2.5rem] sm:w-10"
+          className={summaryOverflowActionClass}
         >
           <Bars3Icon className="h-5 w-5" aria-hidden />
         </button>
@@ -372,6 +411,7 @@ export function RequestSummaryCard({
   };
 
   return (
+    <>
     <div className="group relative pt-4 pb-4">
       {/* Pri skrytej karte: hláška o skrytí v pôvodnom mieste (v strede hore) */}
       {isOfferHidden && (
@@ -474,44 +514,57 @@ export function RequestSummaryCard({
             </button>
           )}
         </div>
-        <div className="flex flex-row items-stretch justify-center gap-1 compact-max:gap-1 sm:gap-2 wide:gap-3 shrink-0">
+        <div className="flex flex-col gap-2 shrink-0">
           {variant === 'received' ? (
             <>
-              <button
-                type="button"
-                onClick={onAccept}
-                disabled={isBusy || item.status !== 'pending'}
-                className="flex-1 inline-flex items-center justify-center gap-1 sm:gap-1.5 wide:gap-2 rounded-md bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-200 px-1.5 compact-max:px-1 sm:px-2 md:px-2.5 hd:px-4 py-1.5 compact-max:py-1 sm:py-2 hd:py-2.5 text-[11px] compact-max:text-[10px] sm:text-xs md:text-sm hd:text-sm font-semibold hover:bg-purple-200 dark:hover:bg-purple-900/50 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 shrink-0"
-              >
-                <CheckIcon className="w-3 h-3 compact-max:w-2.5 compact-max:h-2.5 sm:w-4 sm:h-4 hd:w-5 hd:h-5 shrink-0" />
-                {t('requests.accept')}
-              </button>
-              <button
-                type="button"
-                onClick={onReject}
-                disabled={isBusy || item.status !== 'pending'}
-                className="flex-1 inline-flex items-center justify-center gap-1 sm:gap-1.5 wide:gap-2 rounded-md bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-200 px-1.5 compact-max:px-1 sm:px-2 md:px-2.5 hd:px-4 py-1.5 compact-max:py-1 sm:py-2 hd:py-2.5 text-[11px] compact-max:text-[10px] sm:text-xs md:text-sm hd:text-sm font-semibold hover:bg-purple-200 dark:hover:bg-purple-900/50 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 shrink-0"
-              >
-                <XMarkIcon className="w-3 h-3 compact-max:w-2.5 compact-max:h-2.5 sm:w-4 sm:h-4 hd:w-5 hd:h-5 shrink-0" />
-                {t('requests.reject')}
-              </button>
-              {!isOfferHidden && (
+              <div className="flex flex-row items-stretch justify-center gap-1 compact-max:gap-1 sm:gap-2 wide:gap-3">
                 <button
                   type="button"
-                  onClick={handleView}
-                  className="flex-[1.6] inline-flex items-center justify-center gap-1 sm:gap-1.5 wide:gap-2 rounded-md bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-200 px-1.5 compact-max:px-1 sm:px-2 md:px-2.5 hd:px-4 py-1.5 compact-max:py-1 sm:py-2 hd:py-2.5 text-[11px] compact-max:text-[10px] sm:text-xs md:text-sm hd:text-sm font-semibold hover:bg-purple-200 dark:hover:bg-purple-900/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 shrink-0 whitespace-nowrap"
+                  onClick={onAccept}
+                  disabled={isBusy || item.status !== 'pending'}
+                  className={summaryPrimaryActionClass}
                 >
-                  {t('requests.showCard')}
+                  {t('requests.accept')}
                 </button>
+                <button
+                  type="button"
+                  onClick={onReject}
+                  disabled={isBusy || item.status !== 'pending'}
+                  className={summarySecondaryDangerActionClass}
+                >
+                  {t('requests.reject')}
+                </button>
+              </div>
+              {(canShowProposal || !isOfferHidden) && (
+                <div className={summaryNavigationRowClass}>
+                  {canShowProposal && (
+                    <button
+                      type="button"
+                      onClick={handleViewProposal}
+                      className={summaryProposalActionClass}
+                    >
+                      {t('requests.showProposal', 'Zobraziť ponuku')}
+                    </button>
+                  )}
+                  {!isOfferHidden && (
+                    <button
+                      type="button"
+                      onClick={handleView}
+                      className={summaryTertiaryActionClass}
+                    >
+                      {t('requests.showCard')}
+                    </button>
+                  )}
+                </div>
               )}
             </>
           ) : (
-            <>
+            <div className="flex flex-row items-stretch justify-center gap-1 compact-max:gap-1 sm:gap-2 wide:gap-3">
               {!isOfferHidden && (
                 <button
                   type="button"
                   onClick={handleView}
-                  className="flex-[1.6] inline-flex items-center justify-center gap-1 sm:gap-1.5 wide:gap-2 rounded-md bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-200 px-1.5 compact-max:px-1 sm:px-2 md:px-2.5 hd:px-4 py-1.5 compact-max:py-1 sm:py-2 hd:py-2.5 text-[11px] compact-max:text-[10px] sm:text-xs md:text-sm hd:text-sm font-semibold hover:bg-purple-200 dark:hover:bg-purple-900/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 shrink-0 whitespace-nowrap"
+                  className={summaryTertiaryActionClass}
                 >
                   {t('requests.showCard')}
                 </button>
@@ -521,13 +574,13 @@ export function RequestSummaryCard({
                   type="button"
                   onClick={onCancel}
                   disabled={isBusy}
-                  className="flex-1 inline-flex items-center justify-center gap-1 sm:gap-1.5 wide:gap-2 rounded-md bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-200 px-1.5 compact-max:px-1 sm:px-2 md:px-2.5 hd:px-4 py-1.5 compact-max:py-1 sm:py-2 hd:py-2.5 text-[11px] compact-max:text-[10px] sm:text-xs md:text-sm hd:text-sm font-semibold hover:bg-purple-200 dark:hover:bg-purple-900/50 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 shrink-0 whitespace-nowrap"
+                  className={summarySecondaryDangerActionClass}
                 >
                   <NoSymbolIcon className="w-3 h-3 compact-max:w-2.5 compact-max:h-2.5 sm:w-4 sm:h-4 hd:w-5 hd:h-5 shrink-0" />
                   {t('requests.cancel')}
                 </button>
               )}
-            </>
+            </div>
           )}
         </div>
 
@@ -540,7 +593,7 @@ export function RequestSummaryCard({
                   type="button"
                   onClick={() => onRequestCompletion(item.id)}
                   disabled={isBusy}
-                  className="min-w-0 flex-1 inline-flex items-center justify-center gap-1.5 rounded-md bg-emerald-600 text-white px-2 py-2 text-[11px] sm:text-xs font-semibold hover:bg-emerald-700 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/60"
+                  className={summaryPrimaryActionClass}
                 >
                   {t('requests.markAsCompleted', 'Označiť ako dokončené')}
                 </button>
@@ -553,7 +606,7 @@ export function RequestSummaryCard({
                   type="button"
                   onClick={() => onConfirmCompletion(item.id)}
                   disabled={isBusy}
-                  className="min-w-0 flex-1 inline-flex items-center justify-center gap-1.5 rounded-md bg-emerald-600 text-white px-2 py-2 text-[11px] sm:text-xs font-semibold hover:bg-emerald-700 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/60"
+                  className={summaryPrimaryActionClass}
                 >
                   {t('requests.confirmCompletion', 'Potvrdiť dokončenie')}
                 </button>
@@ -585,41 +638,28 @@ export function RequestSummaryCard({
             type="button"
             onClick={() => onOpenReview?.(reviewOfferId)}
             disabled={isBusy}
-            className="shrink-0 w-full inline-flex items-center justify-center gap-1.5 rounded-md bg-purple-600 text-white px-2 py-2 text-[11px] sm:text-xs font-semibold hover:bg-purple-700 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60"
+            className={summarySecondaryActionClass}
           >
             {t('reviews.addReview', 'Pridať recenziu')}
           </button>
         )}
 
-        {/* Suma a stav: v pravom dolnom rohu, rovnaká veľkosť */}
-        <div className="shrink-0 pt-2 pb-2 flex flex-col items-end gap-2">
-          <div className="flex flex-row items-center justify-end gap-3">
-            {priceLabel && (
-              <span className="inline-flex items-center rounded-full border border-purple-200 dark:border-purple-800/50 bg-purple-50 dark:bg-purple-900/20 px-2.5 py-1 text-[11px] font-semibold text-purple-800 dark:text-purple-200">
-                {priceLabel}
-              </span>
-            )}
-            <StatusPill
-              status={item.status}
-              onClick={hasTerminationReason ? handleTerminationPillClick : undefined}
-              ariaControls={hasTerminationReason ? terminationReasonId : undefined}
-              ariaExpanded={hasTerminationReason ? terminationReasonOpen : undefined}
-              title={hasTerminationReason ? t('requests.terminationReasonLabel') : undefined}
-            />
+        {priceLabel && (
+          <div className="shrink-0 pt-2 pb-2 flex justify-end">
+            <span className="inline-flex items-center rounded-full border border-purple-200 dark:border-purple-800/50 bg-purple-50 dark:bg-purple-900/20 px-2.5 py-1 text-[11px] font-semibold text-purple-800 dark:text-purple-200">
+              {priceLabel}
+            </span>
           </div>
-          {terminationReasonOpen ? (
-            <TerminationReasonNotice
-              id={terminationReasonId}
-              status={item.status}
-              termination={item.termination}
-              compact
-              className="w-full"
-            />
-          ) : null}
-        </div>
+        )}
       </div>
       </div>
     </div>
+    <HelpProposalDetailsModal
+      open={proposalModalOpen}
+      item={item}
+      onClose={() => setProposalModalOpen(false)}
+    />
+    </>
   );
 }
 

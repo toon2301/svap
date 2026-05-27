@@ -17,9 +17,8 @@ from django.http import HttpResponseForbidden
 logger = logging.getLogger(__name__)
 
 
-EXPECTED_API_4XX_RESPONSES = frozenset({
-    ("GET", "/api/auth/me/", 401),
-})
+ROUTINE_API_AUTH_STATUSES = frozenset({401, 403})
+CRITICAL_API_4XX_RESPONSES = frozenset()
 
 
 def _normalize_request_path(path: str) -> str:
@@ -27,13 +26,18 @@ def _normalize_request_path(path: str) -> str:
     return normalized if normalized.endswith("/") else f"{normalized}/"
 
 
-def is_expected_api_4xx_response(request, status_code: int) -> bool:
+def is_api_request(request) -> bool:
+    path = _normalize_request_path(str(getattr(request, "path", "") or ""))
+    return path.startswith("/api/")
+
+
+def is_critical_api_4xx_response(request, status_code: int) -> bool:
     if status_code < 400 or status_code >= 500 or request is None:
         return False
 
     method = str(getattr(request, "method", "") or "").upper()
     path = _normalize_request_path(str(getattr(request, "path", "") or ""))
-    return (method, path, status_code) in EXPECTED_API_4XX_RESPONSES
+    return (method, path, status_code) in CRITICAL_API_4XX_RESPONSES
 
 
 def should_report_api_error_to_sentry(request, status_code: int) -> bool:
@@ -41,7 +45,11 @@ def should_report_api_error_to_sentry(request, status_code: int) -> bool:
         return True
     if status_code < 400:
         return False
-    return not is_expected_api_4xx_response(request, status_code)
+    if status_code < 500 and is_critical_api_4xx_response(request, status_code):
+        return True
+    if is_api_request(request) and status_code in ROUTINE_API_AUTH_STATUSES:
+        return False
+    return False
 
 
 class ServerTimingMiddleware:

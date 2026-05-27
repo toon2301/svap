@@ -1,6 +1,7 @@
 export type NotificationType =
   | 'skill_request'
   | 'skill_request_accepted'
+  | 'skill_request_rejected'
   | 'skill_request_completion_requested'
   | 'skill_request_completed'
   | 'skill_request_terminated'

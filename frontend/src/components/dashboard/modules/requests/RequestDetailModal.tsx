@@ -8,6 +8,12 @@ import { Bars3Icon, NoSymbolIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import type { SkillRequest } from './types';
 import { StatusPill } from './ui/StatusPill';
 import { TerminationReasonNotice } from './ui/TerminationReasonNotice';
+import { HelpProposalDetailsModal } from './HelpProposalDetailsModal';
+import {
+  getLinkedProposedOfferId,
+  getRequesterProfileIdentifier,
+  hasHelpProposal,
+} from './helpProposalUtils';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 type Props = {
@@ -39,6 +45,27 @@ function formatDateSk(iso?: string) {
   }
 }
 
+const detailPrimaryActionClass =
+  'min-w-0 flex-1 rounded-xl border border-transparent bg-emerald-600 py-3 font-semibold text-white hover:bg-emerald-700 disabled:border-gray-200 disabled:bg-gray-100 disabled:text-gray-400 disabled:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/60 dark:disabled:border-gray-800 dark:disabled:bg-gray-900 dark:disabled:text-gray-500';
+
+const detailFullPrimaryActionClass =
+  'w-full rounded-xl border border-transparent bg-emerald-600 py-3 font-semibold text-white hover:bg-emerald-700 disabled:border-gray-200 disabled:bg-gray-100 disabled:text-gray-400 disabled:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/60 dark:disabled:border-gray-800 dark:disabled:bg-gray-900 dark:disabled:text-gray-500';
+
+const detailSecondaryDangerActionClass =
+  'w-full rounded-xl border border-rose-200 bg-rose-50 py-3 font-semibold text-rose-700 hover:bg-rose-100 disabled:border-gray-200 disabled:bg-gray-100 disabled:text-gray-400 disabled:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400/60 dark:border-rose-900/60 dark:bg-rose-950/20 dark:text-rose-200 dark:hover:bg-rose-950/40 dark:disabled:border-gray-800 dark:disabled:bg-gray-900 dark:disabled:text-gray-500';
+
+const detailSecondaryActionClass =
+  'w-full rounded-xl border border-gray-200 bg-white py-3 font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 dark:border-gray-800 dark:bg-[#0f0f10] dark:text-gray-200 dark:hover:bg-gray-900/60';
+
+const detailTertiaryActionClass =
+  'w-full rounded-xl bg-transparent py-3 font-semibold text-gray-500 hover:bg-gray-100 hover:text-gray-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 dark:text-gray-400 dark:hover:bg-gray-900/50 dark:hover:text-gray-200';
+
+const detailProposalActionClass =
+  'w-full rounded-xl border border-purple-200 bg-purple-50 py-3 font-semibold text-purple-700 hover:border-purple-300 hover:bg-purple-100 hover:text-purple-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 dark:border-purple-900/50 dark:bg-purple-950/30 dark:text-purple-200 dark:hover:border-purple-800 dark:hover:bg-purple-950/50';
+
+const detailOverflowActionClass =
+  'inline-flex h-full min-h-[2.75rem] w-10 shrink-0 items-center justify-center rounded-xl border border-transparent bg-transparent text-gray-500 hover:bg-gray-100 hover:text-gray-800 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 dark:text-gray-400 dark:hover:bg-gray-900/50 dark:hover:text-gray-200';
+
 export function RequestDetailModal({
   open,
   item,
@@ -61,6 +88,7 @@ export function RequestDetailModal({
   const [mounted, setMounted] = useState(false);
   const [terminateMenuOpen, setTerminateMenuOpen] = useState(false);
   const [terminationReasonOpen, setTerminationReasonOpen] = useState(false);
+  const [proposalModalOpen, setProposalModalOpen] = useState(false);
   const terminateMenuRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => setMounted(true), []);
@@ -69,12 +97,14 @@ export function RequestDetailModal({
     if (!open) {
       setTerminateMenuOpen(false);
       setTerminationReasonOpen(false);
+      setProposalModalOpen(false);
     }
   }, [open]);
 
   useEffect(() => {
     setTerminateMenuOpen(false);
     setTerminationReasonOpen(false);
+    setProposalModalOpen(false);
   }, [item?.id]);
 
   useEffect(() => {
@@ -154,6 +184,7 @@ export function RequestDetailModal({
     typeof onTerminate === 'function' &&
     (item?.status === 'accepted' || item?.status === 'completion_requested');
   const hasTerminationReason = item?.status === 'terminated' && Boolean(item?.termination?.reason);
+  const canShowProposal = variant === 'received' && hasHelpProposal(item);
   const terminationReasonId =
     item?.id != null ? `request-detail-termination-reason-${item.id}` : undefined;
 
@@ -238,6 +269,35 @@ export function RequestDetailModal({
     );
   };
 
+  const handleViewProposal = () => {
+    if (!item) return;
+    const offerId = getLinkedProposedOfferId(item);
+    const profileIdentifier = getRequesterProfileIdentifier(item);
+    if (!offerId || !profileIdentifier || typeof window === 'undefined') {
+      setProposalModalOpen(true);
+      return;
+    }
+
+    try {
+      sessionStorage.setItem('highlightedSkillId', String(offerId));
+      sessionStorage.setItem('highlightedSkillTime', String(Date.now()));
+    } catch {
+      // ignore
+    }
+
+    try {
+      window.dispatchEvent(
+        new CustomEvent('goToUserProfile', {
+          detail: { identifier: profileIdentifier, highlightId: offerId },
+        }),
+      );
+      onClose();
+    } catch {
+      onClose();
+      router.push(`/dashboard/users/${encodeURIComponent(profileIdentifier)}?highlight=${encodeURIComponent(String(offerId))}`);
+    }
+  };
+
   const handleTerminationPillClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     e.stopPropagation();
@@ -260,7 +320,7 @@ export function RequestDetailModal({
           aria-label={t('common.menu')}
           disabled={isBusy}
           onClick={() => setTerminateMenuOpen((v) => !v)}
-          className="inline-flex h-full min-h-[2.75rem] w-10 shrink-0 items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 dark:border-gray-800 dark:bg-[#0f0f10] dark:text-gray-200 dark:hover:bg-gray-900/60"
+          className={detailOverflowActionClass}
         >
           <Bars3Icon className="h-5 w-5" aria-hidden />
         </button>
@@ -290,7 +350,9 @@ export function RequestDetailModal({
 
   if (!open || !mounted || typeof document === 'undefined') return null;
 
-  return createPortal(
+  return (
+    <>
+    {createPortal(
     <div
       className="fixed inset-0 z-[9999] bg-black/50"
       role="dialog"
@@ -369,61 +431,6 @@ export function RequestDetailModal({
         </div>
 
         <div className="relative z-10 px-5 pb-5 pt-3 border-t border-gray-200 dark:border-gray-800 space-y-3 overflow-visible">
-          {variant === 'received' ? (
-            <>
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={onAccept}
-                  disabled={isBusy || item?.status !== 'pending'}
-                  className="w-full py-3 rounded-xl font-semibold bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-200 hover:bg-purple-200 dark:hover:bg-purple-900/60 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60"
-                >
-                  {t('requests.accept')}
-                </button>
-                <button
-                  type="button"
-                  onClick={onReject}
-                  disabled={isBusy || item?.status !== 'pending'}
-                  className="w-full py-3 rounded-xl font-semibold bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60"
-                >
-                  {t('requests.reject')}
-                </button>
-              </div>
-
-              {!isOfferHidden && (
-                <button
-                  type="button"
-                  onClick={handleView}
-                  className="w-full py-3 rounded-xl font-semibold bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-200 hover:bg-purple-200 dark:hover:bg-purple-900/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60"
-                >
-                  {t('requests.showCard')}
-                </button>
-              )}
-            </>
-          ) : (
-            <>
-              {!isOfferHidden && (
-                <button
-                  type="button"
-                  onClick={handleView}
-                  className="w-full py-3 rounded-xl font-semibold bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-200 hover:bg-purple-200 dark:hover:bg-purple-900/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60"
-                >
-                  {t('requests.showCard')}
-                </button>
-              )}
-              {item?.status === 'pending' && (
-                <button
-                  type="button"
-                  onClick={onCancel}
-                  disabled={isBusy}
-                  className="w-full py-3 rounded-xl font-semibold bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60"
-                >
-                  {t('requests.cancel')}
-                </button>
-              )}
-            </>
-          )}
-
           {showCompletionActions && item && (
             <>
               {variant === 'received' && item.status === 'accepted' && onRequestCompletion && (
@@ -432,7 +439,7 @@ export function RequestDetailModal({
                     type="button"
                     onClick={() => onRequestCompletion(item.id)}
                     disabled={isBusy}
-                    className="min-w-0 flex-1 rounded-xl bg-emerald-600 py-3 font-semibold text-white hover:bg-emerald-700 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/60"
+                    className={detailPrimaryActionClass}
                   >
                     {t('requests.markAsCompleted', 'Označiť ako dokončené')}
                   </button>
@@ -445,7 +452,7 @@ export function RequestDetailModal({
                     type="button"
                     onClick={() => onConfirmCompletion(item.id)}
                     disabled={isBusy}
-                    className="min-w-0 flex-1 rounded-xl bg-emerald-600 py-3 font-semibold text-white hover:bg-emerald-700 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400/60"
+                    className={detailPrimaryActionClass}
                   >
                     {t('requests.confirmCompletion', 'Potvrdiť dokončenie')}
                   </button>
@@ -471,13 +478,78 @@ export function RequestDetailModal({
             </>
           )}
 
+          {variant === 'received' ? (
+            <>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={onAccept}
+                  disabled={isBusy || item?.status !== 'pending'}
+                  className={detailFullPrimaryActionClass}
+                >
+                  {t('requests.accept')}
+                </button>
+                <button
+                  type="button"
+                  onClick={onReject}
+                  disabled={isBusy || item?.status !== 'pending'}
+                  className={detailSecondaryDangerActionClass}
+                >
+                  {t('requests.reject')}
+                </button>
+              </div>
+
+              {canShowProposal && (
+                <button
+                  type="button"
+                  onClick={handleViewProposal}
+                  className={detailProposalActionClass}
+                >
+                  {t('requests.showProposal', 'Zobraziť ponuku')}
+                </button>
+              )}
+
+              {!isOfferHidden && (
+                <button
+                  type="button"
+                  onClick={handleView}
+                  className={detailTertiaryActionClass}
+                >
+                  {t('requests.showCard')}
+                </button>
+              )}
+            </>
+          ) : (
+            <>
+              {!isOfferHidden && (
+                <button
+                  type="button"
+                  onClick={handleView}
+                  className={detailTertiaryActionClass}
+                >
+                  {t('requests.showCard')}
+                </button>
+              )}
+              {item?.status === 'pending' && (
+                <button
+                  type="button"
+                  onClick={onCancel}
+                  disabled={isBusy}
+                  className={detailSecondaryDangerActionClass}
+                >
+                  {t('requests.cancel')}
+                </button>
+              )}
+            </>
+          )}
+
           {/* Tlačidlo recenzie – len dokončené odoslané výmeny bez existujúcej recenzie. */}
           {canShowReviewButton && (
             <button
               type="button"
               onClick={() => onOpenReview?.(reviewOfferId)}
               disabled={isBusy}
-              className="w-full py-3 rounded-xl font-semibold bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60"
+              className={detailSecondaryActionClass}
             >
               {t('reviews.addReview', 'Pridať recenziu')}
             </button>
@@ -497,6 +569,13 @@ export function RequestDetailModal({
       </div>
     </div>,
     document.body,
+    )}
+    <HelpProposalDetailsModal
+      open={proposalModalOpen}
+      item={item}
+      onClose={() => setProposalModalOpen(false)}
+    />
+    </>
   );
 }
 

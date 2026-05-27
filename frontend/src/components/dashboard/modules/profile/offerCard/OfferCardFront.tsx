@@ -234,11 +234,12 @@ export function OfferCardFront({
             {offer.is_seeking ? t('skills.search', 'Hľadám') : t('skills.offering', 'Ponúkam')}
           </p>
 
-          {/* Tlačidlá Požiadať/Ponúknuť a Správa - len na cudzom profile */}
+          {/* Tlačidlá Záujem a Správa - len na cudzom profile */}
           {isOtherUserProfile && (
             <div className="flex gap-2 mt-2">
               <button
                 type="button"
+                data-default-cta="true"
                 onClick={(e) => {
                   e.stopPropagation();
                   if (isRequestDisabled) return;
@@ -251,10 +252,11 @@ export function OfferCardFront({
                   isRequestDisabled ? 'opacity-70 cursor-not-allowed' : 'hover:bg-purple-200 dark:hover:bg-purple-900/60'
                 }`}
               >
-                {requestLabel ?? (offer.is_seeking ? t('requests.offer', 'Ponúknuť') : t('requests.request', 'Požiadať'))}
+                {requestLabel ?? (offer.is_seeking ? t('requests.wantToHelpCta', 'Pomôcť') : t('requests.interestCta', 'Mám záujem'))}
               </button>
               <button
                 type="button"
+                data-message-cta="true"
                 onClick={(e) => {
                   e.stopPropagation();
                   if (isMessageDisabled) return;

@@ -127,19 +127,61 @@ def create_group_invitation_notification(*, invitation, actor) -> Notification:
     )
 
 
+def _skill_request_kind(skill_request) -> str:
+    offer = getattr(skill_request, "offer", None)
+    if (
+        getattr(skill_request, "proposal_description", "")
+        or getattr(skill_request, "proposed_offer_id", None)
+        or bool(getattr(offer, "is_seeking", False))
+    ):
+        return "help_offer"
+    return "skill_request"
+
+
 def create_skill_request_accepted_notification(*, skill_request, actor) -> Notification:
     actor_name = (getattr(actor, "display_name", "") or "").strip() or "Používateľ"
+    request_kind = _skill_request_kind(skill_request)
+    is_help_offer = request_kind == "help_offer"
     return create_notification(
         user=skill_request.requester,
         notif_type=NotificationType.SKILL_REQUEST_ACCEPTED,
-        title="Žiadosť prijatá",
-        body=f"{actor_name} prijal tvoju žiadosť.",
+        title="Tvoja ponuka bola prijatá" if is_help_offer else "Žiadosť prijatá",
+        body=(
+            f"{actor_name} prijal tvoju ponuku pomoci."
+            if is_help_offer
+            else f"{actor_name} prijal tvoju žiadosť."
+        ),
         actor=actor,
         skill_request=skill_request,
         data={
             "skill_request_id": skill_request.id,
             "offer_id": skill_request.offer_id,
             "accepted_by_user_id": actor.id,
+            "request_kind": request_kind,
+        },
+    )
+
+
+def create_skill_request_rejected_notification(*, skill_request, actor) -> Notification:
+    actor_name = (getattr(actor, "display_name", "") or "").strip() or "Používateľ"
+    request_kind = _skill_request_kind(skill_request)
+    is_help_offer = request_kind == "help_offer"
+    return create_notification(
+        user=skill_request.requester,
+        notif_type=NotificationType.SKILL_REQUEST_REJECTED,
+        title="Tvoja ponuka bola odmietnutá" if is_help_offer else "Žiadosť odmietnutá",
+        body=(
+            f"{actor_name} odmietol tvoju ponuku pomoci."
+            if is_help_offer
+            else f"{actor_name} odmietol tvoju žiadosť."
+        ),
+        actor=actor,
+        skill_request=skill_request,
+        data={
+            "skill_request_id": skill_request.id,
+            "offer_id": skill_request.offer_id,
+            "rejected_by_user_id": actor.id,
+            "request_kind": request_kind,
         },
     )
 

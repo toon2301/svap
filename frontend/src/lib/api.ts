@@ -781,6 +781,7 @@ export const endpoints = {
     list: '/auth/skill-requests/',
     detail: (id: number) => `/auth/skill-requests/${id}/`,
     status: '/auth/skill-requests/status/',
+    proposedStatus: '/auth/skill-requests/proposed-status/',
     requestCompletion: (id: number) => `/auth/skill-requests/${id}/request-completion/`,
     confirmCompletion: (id: number) => `/auth/skill-requests/${id}/confirm-completion/`,
     terminate: (id: number) => `/auth/skill-requests/${id}/terminate/`,

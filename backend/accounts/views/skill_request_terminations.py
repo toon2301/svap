@@ -40,7 +40,7 @@ def skill_request_terminate_view(request, request_id: int):
         try:
             obj = (
                 SkillRequest.objects.select_for_update()
-                .select_related("offer", "requester", "recipient")
+                .select_related("offer", "requester", "recipient", "proposed_offer", "proposed_offer__user")
                 .get(id=request_id)
             )
         except SkillRequest.DoesNotExist:

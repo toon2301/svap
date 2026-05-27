@@ -6,7 +6,6 @@ import { api, endpoints } from '@/lib/api';
 import ProfileOfferCard from '../profile/ProfileOfferCard';
 import type { Offer } from '../profile/profileOffersTypes';
 import type { SkillRequest } from './types';
-import { CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
 
 type Props = {
   item: SkillRequest;
@@ -84,13 +83,26 @@ export function RequestCardRow({ item, onAccept, onReject, isBusy = false }: Pro
     
     const card = cardRef.current;
     const buttons = card.querySelectorAll('button');
+    const fallbackLabels = [
+      t('requests.wantToHelpCta', ''),
+      t('requests.interestCta', ''),
+      t('skills.message', ''),
+      'Požiadať',
+      'Správa',
+      'Mám záujem',
+      'Chcem pomôcť',
+    ].filter((label): label is string => Boolean(label));
     buttons.forEach((btn) => {
       const text = btn.textContent || '';
-      if (text.includes('Požiadať') || text.includes('Správa')) {
+      const isDefaultCardAction =
+        btn.dataset.defaultCta === 'true' ||
+        btn.dataset.messageCta === 'true' ||
+        fallbackLabels.some((label) => text.includes(label));
+      if (isDefaultCardAction) {
         (btn as HTMLElement).style.display = 'none';
       }
     });
-  }, [item.status, offer]);
+  }, [item.status, offer, t]);
 
   if (isLoading) {
     return (
@@ -133,10 +145,9 @@ export function RequestCardRow({ item, onAccept, onReject, isBusy = false }: Pro
               if (onReject) onReject();
             }}
             disabled={isBusy}
-            className="flex-1 px-3 py-1.5 text-xs font-medium bg-white dark:bg-black text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-800 rounded-lg transition-colors hover:bg-gray-50 dark:hover:bg-gray-900 disabled:opacity-60 flex items-center justify-center gap-1.5"
+            className="flex-1 px-3 py-1.5 text-xs font-medium bg-rose-50 text-rose-700 border border-rose-200 rounded-lg transition-colors hover:bg-rose-100 disabled:border-gray-200 disabled:bg-gray-100 disabled:text-gray-400 disabled:opacity-100 dark:border-rose-900/60 dark:bg-rose-950/20 dark:text-rose-200 dark:hover:bg-rose-950/40 dark:disabled:border-gray-800 dark:disabled:bg-gray-900 dark:disabled:text-gray-500 flex items-center justify-center"
           >
-            <XMarkIcon className="w-3.5 h-3.5" />
-            Zamietnuť
+            {t('requests.reject')}
           </button>
           <button
             type="button"
@@ -145,9 +156,8 @@ export function RequestCardRow({ item, onAccept, onReject, isBusy = false }: Pro
               if (onAccept) onAccept();
             }}
             disabled={isBusy}
-            className="flex-1 px-3 py-1.5 text-xs font-medium bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg transition-colors hover:from-purple-700 hover:to-indigo-700 disabled:opacity-60 flex items-center justify-center gap-1.5"
+            className="flex-1 px-3 py-1.5 text-xs font-semibold bg-emerald-600 text-white border border-transparent rounded-lg transition-colors hover:bg-emerald-700 disabled:border-gray-200 disabled:bg-gray-100 disabled:text-gray-400 disabled:opacity-100 dark:disabled:border-gray-800 dark:disabled:bg-gray-900 dark:disabled:text-gray-500 flex items-center justify-center"
           >
-            <CheckIcon className="w-3.5 h-3.5" />
             {t('requests.accept')}
           </button>
         </div>

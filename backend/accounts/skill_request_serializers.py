@@ -13,6 +13,37 @@ class SkillRequestCreateSerializer(serializers.Serializer):
     """Vytvorenie žiadosti o kartu."""
 
     offer_id = serializers.IntegerField()
+    proposed_offer_id = serializers.IntegerField(required=False, allow_null=True)
+    proposal_description = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        trim_whitespace=True,
+    )
+    proposal_price_from = serializers.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        required=False,
+        allow_null=True,
+    )
+    proposal_price_currency = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        max_length=8,
+        trim_whitespace=True,
+    )
+    proposal_price_negotiable = serializers.BooleanField(required=False, default=False)
+    proposal_experience_value = serializers.FloatField(
+        required=False,
+        allow_null=True,
+        min_value=0,
+        max_value=100,
+    )
+    proposal_experience_unit = serializers.ChoiceField(
+        choices=("years", "months"),
+        required=False,
+        allow_blank=True,
+        allow_null=True,
+    )
 
     def validate_offer_id(self, value):
         try:
@@ -41,6 +72,77 @@ class SkillRequestCreateSerializer(serializers.Serializer):
 
         self.context["offer_obj"] = offer
         return value
+
+    def validate(self, attrs):
+        offer = self.context.get("offer_obj")
+        is_help_request = bool(getattr(offer, "is_seeking", False))
+
+        description = (attrs.get("proposal_description") or "").strip()
+        if is_help_request and not description:
+            raise serializers.ValidationError(
+                {"proposal_description": "Opis pomoci je povinný."}
+            )
+        if is_help_request and len(description) > 200:
+            raise serializers.ValidationError(
+                {"proposal_description": "Opis môže mať maximálne 200 znakov."}
+            )
+        attrs["proposal_description"] = description if is_help_request else ""
+
+        if not is_help_request:
+            attrs["proposed_offer_id"] = None
+            attrs["proposal_price_from"] = None
+            attrs["proposal_price_currency"] = ""
+            attrs["proposal_price_negotiable"] = False
+            attrs["proposal_experience_value"] = None
+            attrs["proposal_experience_unit"] = ""
+            self.context["proposed_offer_obj"] = None
+            return attrs
+
+        proposed_offer_id = attrs.get("proposed_offer_id")
+        if proposed_offer_id:
+            request = self.context.get("request")
+            requester = getattr(request, "user", None)
+            try:
+                proposed_offer = OfferedSkill.objects.get(id=proposed_offer_id, user=requester)
+            except OfferedSkill.DoesNotExist:
+                raise serializers.ValidationError(
+                    {"proposed_offer_id": "Vybraná karta neexistuje."}
+                )
+
+            if proposed_offer.is_hidden or proposed_offer.is_seeking:
+                raise serializers.ValidationError(
+                    {"proposed_offer_id": "Vyber kartu typu Ponúkam."}
+                )
+
+            self.context["proposed_offer_obj"] = proposed_offer
+        else:
+            attrs["proposed_offer_id"] = None
+            self.context["proposed_offer_obj"] = None
+
+        price_from = attrs.get("proposal_price_from")
+        price_currency = (attrs.get("proposal_price_currency") or "").strip()
+        attrs["proposal_price_negotiable"] = bool(
+            attrs.get("proposal_price_negotiable", False)
+        )
+        if price_from is None:
+            attrs["proposal_price_currency"] = ""
+        else:
+            if price_from < 0:
+                raise serializers.ValidationError(
+                    {"proposal_price_from": "Cena musí byť nezáporná."}
+                )
+            attrs["proposal_price_currency"] = price_currency or "€"
+
+        experience_value = attrs.get("proposal_experience_value")
+        experience_unit = attrs.get("proposal_experience_unit") or ""
+        if experience_value is None:
+            attrs["proposal_experience_unit"] = ""
+        elif not experience_unit:
+            raise serializers.ValidationError(
+                {"proposal_experience_unit": "Jednotka praxe je povinná."}
+            )
+
+        return attrs
 
 
 class SkillRequestTerminateSerializer(serializers.Serializer):
@@ -83,6 +185,8 @@ class SkillRequestSerializer(serializers.ModelSerializer):
     requester_summary = serializers.SerializerMethodField()
     recipient_summary = serializers.SerializerMethodField()
     offer_summary = serializers.SerializerMethodField()
+    proposed_offer_summary = serializers.SerializerMethodField()
+    proposal_experience = serializers.SerializerMethodField()
     termination = serializers.SerializerMethodField()
 
     def _avatar_url(self, user: User):
@@ -157,6 +261,39 @@ class SkillRequestSerializer(serializers.ModelSerializer):
             "already_reviewed": already_reviewed,
         }
 
+    def get_proposed_offer_summary(self, obj):
+        offer = getattr(obj, "proposed_offer", None)
+        if not offer:
+            return None
+        owner = getattr(offer, "user", None)
+        return {
+            "id": offer.id,
+            "category": getattr(offer, "category", "") or "",
+            "subcategory": getattr(offer, "subcategory", "") or "",
+            "description": getattr(offer, "description", "") or "",
+            "is_seeking": bool(getattr(offer, "is_seeking", False)),
+            "is_hidden": bool(getattr(offer, "is_hidden", False)),
+            "price_from": getattr(offer, "price_from", None),
+            "price_currency": getattr(offer, "price_currency", "") or "",
+            "price_negotiable": bool(getattr(offer, "price_negotiable", False)),
+            "owner": (
+                {
+                    "id": getattr(owner, "id", None),
+                    "slug": getattr(owner, "slug", None),
+                }
+                if owner is not None
+                else None
+            ),
+        }
+
+    def get_proposal_experience(self, obj):
+        if obj.proposal_experience_value is None or not obj.proposal_experience_unit:
+            return None
+        return {
+            "value": obj.proposal_experience_value,
+            "unit": obj.proposal_experience_unit,
+        }
+
     def get_termination(self, obj):
         try:
             termination = obj.termination
@@ -178,6 +315,8 @@ class SkillRequestSerializer(serializers.ModelSerializer):
         ret["requester_summary"] = self.get_requester_summary(instance)
         ret["recipient_summary"] = self.get_recipient_summary(instance)
         ret["offer_summary"] = self.get_offer_summary(instance)
+        ret["proposed_offer_summary"] = self.get_proposed_offer_summary(instance)
+        ret["proposal_experience"] = self.get_proposal_experience(instance)
         ret["termination"] = self.get_termination(instance)
         return ret
 
@@ -193,6 +332,14 @@ class SkillRequestSerializer(serializers.ModelSerializer):
             "requester",
             "recipient",
             "offer",
+            "proposed_offer",
+            "proposal_description",
+            "proposal_price_from",
+            "proposal_price_currency",
+            "proposal_price_negotiable",
+            "proposal_experience_value",
+            "proposal_experience_unit",
+            "proposal_experience",
             "requester_display_name",
             "recipient_display_name",
             "offer_is_seeking",
@@ -203,6 +350,7 @@ class SkillRequestSerializer(serializers.ModelSerializer):
             "requester_summary",
             "recipient_summary",
             "offer_summary",
+            "proposed_offer_summary",
             "termination",
         ]
         read_only_fields = fields

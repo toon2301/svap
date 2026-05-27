@@ -11,6 +11,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import type { OpeningHours } from '../skills/skillDescriptionModal/types';
 import type { Offer } from './profileOffersTypes';
 import { OfferShareModal } from './OfferShareModal';
+import { HelpRequestModal } from './HelpRequestModal';
 import { ProfileOfferDetailMobile } from './ProfileOfferDetailMobile';
 import { ProfileOpeningHoursMobileModal } from './ProfileOpeningHoursMobileModal';
 import { ProfileOfferCardMobile } from './ProfileOfferCardMobile';
@@ -22,7 +23,12 @@ import {
   getOrCreateOffersRequest,
   invalidateOffersCache,
 } from './profileOffersCache';
-import { fetchSkillRequests, getApiErrorMessage, updateSkillRequest } from '../requests/requestsApi';
+import {
+  createSkillRequest,
+  fetchSkillRequests,
+  getApiErrorMessage,
+  updateSkillRequest,
+} from '../requests/requestsApi';
 import { getMessagingErrorMessage } from '../messages/messagingApi';
 import { buildMessagesUrl } from '../messages/messagesRouting';
 import { setOfferLikeState, type OfferLikeResponse } from './offerLikesApi';
@@ -67,6 +73,7 @@ export default function ProfileOffersMobileSection({
   const hasAuthenticatedUser = Boolean(user);
   const [offers, setOffers] = useState<Offer[]>([]);
   const [requestStatusByOfferId, setRequestStatusByOfferId] = useState<Record<number, string>>({});
+  const [proposedRequestStatusByOfferId, setProposedRequestStatusByOfferId] = useState<Record<number, string>>({});
   const [requestIdByOfferId, setRequestIdByOfferId] = useState<Record<number, number>>({});
   const [alreadyReviewedByOfferId, setAlreadyReviewedByOfferId] = useState<Record<number, boolean | undefined>>({});
   const [busyOfferId, setBusyOfferId] = useState<number | null>(null);
@@ -77,6 +84,7 @@ export default function ProfileOffersMobileSection({
   const [selectedOffer, setSelectedOffer] = useState<Offer | null>(null);
   const [hoursModal, setHoursModal] = useState<OpeningHours | null>(null);
   const [shareOffer, setShareOffer] = useState<Offer | null>(null);
+  const [helpRequestOffer, setHelpRequestOffer] = useState<Offer | null>(null);
   const [tappedCards, setTappedCards] = useState<Set<number | string>>(() => new Set());
   const highlightedCardRef = useRef<HTMLDivElement | null>(null);
   const [isUnavailableModalOpen, setIsUnavailableModalOpen] = useState(false);
@@ -186,6 +194,7 @@ export default function ProfileOffersMobileSection({
     async (offerId: number) => {
       if (!isOtherUserProfile) return;
       if (busyMessageOfferId === offerId) return;
+      if (proposedRequestStatusByOfferId[offerId] === 'pending') return;
       const ok = await isOfferStillAvailable(offerId);
       if (!ok) {
         setIsUnavailableModalOpen(true);
@@ -207,7 +216,7 @@ export default function ProfileOffersMobileSection({
         setBusyMessageOfferId(null);
       }
     },
-    [busyMessageOfferId, isOtherUserProfile, isOfferStillAvailable, ownerUserId, router, t],
+    [busyMessageOfferId, isOtherUserProfile, isOfferStillAvailable, ownerUserId, proposedRequestStatusByOfferId, router, t],
   );
 
   const resolvePendingRequestIdForOffer = useCallback(
@@ -234,6 +243,14 @@ export default function ProfileOffersMobileSection({
       if (!isOtherUserProfile) return;
       if (busyOfferId === offerId) return;
       const offer = offers.find((o) => o.id === offerId);
+      const proposedCurrent = proposedRequestStatusByOfferId[offerId] ?? '';
+      if (
+        proposedCurrent === 'pending' ||
+        proposedCurrent === 'accepted' ||
+        proposedCurrent === 'completion_requested'
+      ) {
+        return;
+      }
       const current = requestStatusByOfferId[offerId] ?? offer?.my_request_status ?? '';
       if (current === 'accepted') return;
 
@@ -267,9 +284,14 @@ export default function ProfileOffersMobileSection({
         return;
       }
 
+      if (offer?.is_seeking === true) {
+        setHelpRequestOffer(offer);
+        return;
+      }
+
       try {
         setBusyOfferId(offerId);
-        const { data } = await api.post(endpoints.requests.list, { offer_id: offerId });
+        const { data } = await createSkillRequest(offerId);
         setRequestStatusByOfferId((prev) => ({ ...prev, [offerId]: 'pending' }));
         invalidateOffersCache(ownerUserId);
         const createdId = data?.id != null ? Number(data.id) : NaN;
@@ -285,6 +307,7 @@ export default function ProfileOffersMobileSection({
     [
       isOtherUserProfile,
       isOfferStillAvailable,
+      proposedRequestStatusByOfferId,
       requestStatusByOfferId,
       busyOfferId,
       resolvePendingRequestIdForOffer,
@@ -292,6 +315,18 @@ export default function ProfileOffersMobileSection({
       ownerUserId,
       t,
     ],
+  );
+
+  const handleHelpRequestSubmitted = useCallback(
+    (offerId: number, requestId: number | null) => {
+      setRequestStatusByOfferId((prev) => ({ ...prev, [offerId]: 'pending' }));
+      setProposedRequestStatusByOfferId((prev) => ({ ...prev, [offerId]: 'pending' }));
+      invalidateOffersCache(ownerUserId);
+      if (requestId) {
+        setRequestIdByOfferId((prev) => ({ ...prev, [offerId]: requestId }));
+      }
+    },
+    [ownerUserId],
   );
 
   // Load offers function (použitá pre prvotné načítanie aj polling)
@@ -553,8 +588,30 @@ export default function ProfileOffersMobileSection({
           const id = typeof v === 'number' ? v : Number(v);
           if (Number.isFinite(n) && Number.isFinite(id) && id >= 1) ridMap[n] = id;
         });
+
+        let proposedNormalized: Record<number, string> | null = null;
+        try {
+          const proposedRes = await api.get(endpoints.requests.proposedStatus, requestConfig);
+          const proposedData =
+            proposedRes?.data && typeof proposedRes.data === 'object'
+              ? (proposedRes.data as Record<string, unknown>)
+              : {};
+          const parsedProposed: Record<number, string> = {};
+          Object.entries(proposedData).forEach(([k, v]) => {
+            const n = Number(k);
+            if (Number.isFinite(n) && typeof v === 'string') parsedProposed[n] = v;
+          });
+          proposedNormalized = parsedProposed;
+        } catch (e: unknown) {
+          const error = e as { name?: string; code?: string };
+          if (error?.name === 'CanceledError' || error?.code === 'ERR_CANCELED' || error?.name === 'AbortError') return;
+        }
+
         if (!cancelled) {
           setRequestStatusByOfferId(normalized);
+          if (proposedNormalized !== null) {
+            setProposedRequestStatusByOfferId(proposedNormalized);
+          }
           setRequestIdByOfferId(ridMap);
           setAlreadyReviewedByOfferId(alreadyReviewed);
         }
@@ -670,35 +727,23 @@ export default function ProfileOffersMobileSection({
                 isLikePending={pendingOfferLikeIds.has(offer.id)}
                 messageLabel={busyMessageOfferId === offer.id ? t('messages.opening', 'Otváram…') : undefined}
                 requestLabel={(() => {
-                  const defaultRequest = offer.is_seeking ? t('requests.offer', 'Ponúknuť') : t('requests.request', 'Požiadať');
-                  if (typeof offer.id !== 'number') return defaultRequest;
-                  const raw = requestStatusByOfferId[offer.id] ?? offer.my_request_status ?? '';
-                  const st =
-                    raw === 'pending' ||
-                    raw === 'accepted' ||
-                    raw === 'completion_requested' ||
-                    raw === 'rejected' ||
-                    raw === 'cancelled' ||
-                    raw === 'terminated' ||
-                    raw === 'completed'
-                      ? raw
-                      : '';
-                  if (st === 'accepted') return t('requests.statusAccepted', 'Prijaté');
-                  if (st === 'completion_requested') return t('requests.statusSent', 'Žiadosť odoslaná');
-                  if (st === 'pending') {
-                    return offer.is_seeking
-                      ? t('requests.cancelOffer', 'Zrušiť ponuku')
-                      : t('requests.cancelRequest', 'Zrušiť žiadosť');
+                  const defaultRequestLabel = offer.is_seeking
+                    ? t('requests.wantToHelpCta', 'Pomôcť')
+                    : t('requests.interestCta', 'Mám záujem');
+                  if (typeof offer.id !== 'number') return defaultRequestLabel;
+                  const directStatus = requestStatusByOfferId[offer.id] ?? offer.my_request_status ?? '';
+                  const st = directStatus || proposedRequestStatusByOfferId[offer.id] || '';
+                  if (st === 'pending') return t('requests.interestSent', 'Záujem odoslaný');
+                  if (st === 'accepted') return t('requests.interestAgreed', 'Dohodnuté');
+                  if (st === 'completion_requested') {
+                    return t('requests.interestAwaitingConfirmation', 'Čaká na potvrdenie');
                   }
-                  if (st === 'rejected') return t('requests.statusRejected', 'Odmietnuté');
-                  if (st === 'cancelled') return defaultRequest;
-                  if (st === 'terminated') return defaultRequest;
-                  if (st === 'completed') return defaultRequest;
-                  return defaultRequest;
+                  return defaultRequestLabel;
                 })()}
                 isRequestDisabled={(() => {
                   if (typeof offer.id !== 'number') return false;
-                  const raw = requestStatusByOfferId[offer.id] ?? offer.my_request_status ?? '';
+                  const directStatus = requestStatusByOfferId[offer.id] ?? offer.my_request_status ?? '';
+                  const raw = directStatus || proposedRequestStatusByOfferId[offer.id] || '';
                   const st =
                     raw === 'pending' ||
                     raw === 'accepted' ||
@@ -709,9 +754,9 @@ export default function ProfileOffersMobileSection({
                     raw === 'completed'
                       ? raw
                       : '';
-                  return st === 'accepted' || st === 'completion_requested' || busyOfferId === offer.id;
+                  return st === 'pending' || st === 'accepted' || st === 'completion_requested' || busyOfferId === offer.id;
                 })()}
-                isMessageDisabled={busyMessageOfferId === offer.id}
+                isMessageDisabled={proposedRequestStatusByOfferId[offer.id] === 'pending' || busyMessageOfferId === offer.id}
                 enableImageGallery={isOtherUserProfile}
               />
             </div>
@@ -752,6 +797,13 @@ export default function ProfileOffersMobileSection({
           />
         );
       })()}
+
+      <HelpRequestModal
+        open={Boolean(helpRequestOffer)}
+        offer={helpRequestOffer}
+        onClose={() => setHelpRequestOffer(null)}
+        onSubmitted={handleHelpRequestSubmitted}
+      />
 
       {isUnavailableModalOpen &&
         typeof document !== 'undefined' &&

@@ -25,6 +25,7 @@ from .skills import (
 from .skill_requests import (
     skill_requests_view,
     skill_requests_status_view,
+    skill_requests_proposed_status_view,
     skill_request_detail_view,
     skill_request_request_completion_view,
     skill_request_confirm_completion_view,
@@ -86,6 +87,7 @@ __all__ = [
     "skill_images_upload_complete_view",
     "skill_requests_view",
     "skill_requests_status_view",
+    "skill_requests_proposed_status_view",
     "skill_request_detail_view",
     "skill_request_request_completion_view",
     "skill_request_confirm_completion_view",
