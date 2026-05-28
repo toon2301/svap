@@ -75,4 +75,36 @@ describe('MobileTopBar', () => {
 
     window.removeEventListener(MESSAGING_OPEN_CONVERSATION_ACTIONS_EVENT, actionsSpy);
   });
+
+  it('shows the search switch action on the offer skills view', () => {
+    const onSkillsModeToggle = jest.fn();
+
+    render(
+      <MobileTopBar
+        onMenuClick={jest.fn()}
+        activeModule="skills-offer"
+        onSkillsModeToggle={onSkillsModeToggle}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Hľadám' }));
+
+    expect(onSkillsModeToggle).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows the offer switch action on the search skills view', () => {
+    const onSkillsModeToggle = jest.fn();
+
+    render(
+      <MobileTopBar
+        onMenuClick={jest.fn()}
+        activeModule="skills-search"
+        onSkillsModeToggle={onSkillsModeToggle}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ponúkam' }));
+
+    expect(onSkillsModeToggle).toHaveBeenCalledTimes(1);
+  });
 });

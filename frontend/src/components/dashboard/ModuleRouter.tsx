@@ -61,6 +61,7 @@ interface ModuleRouterProps {
   onSkillsClick?: () => void;
   onSkillsOfferClick?: () => void;
   onSkillsSearchClick?: () => void;
+  onSkillsModeToggle?: () => void;
   /** ID karty (ponuky) pre view recenzií. */
   offerIdForReviews?: number | null;
   /** Conversation ID for messages detail view (from URL). */
@@ -108,6 +109,7 @@ export default function ModuleRouter({
   onSkillsClick,
   onSkillsOfferClick,
   onSkillsSearchClick,
+  onSkillsModeToggle,
   offerIdForReviews,
   conversationIdForMessages,
   targetUserIdForMessages,
@@ -275,6 +277,7 @@ export default function ModuleRouter({
           onSkillsCategoryBackHandlerSet={onSkillsCategoryBackHandlerSet}
           onSkillsOfferClick={onSkillsOfferClick}
           onSkillsSearchClick={onSkillsSearchClick}
+          onSkillsModeToggle={onSkillsModeToggle}
         />
       );
     case 'account-type':

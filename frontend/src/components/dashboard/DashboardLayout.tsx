@@ -22,6 +22,7 @@ interface DashboardLayoutProps {
   onMobileMenuClose: () => void;
   onMobileBack: () => void;
   onMobileProfileClick: () => void;
+  onSkillsModeToggle?: () => void;
   onSidebarLanguageClick: () => void;
   onSidebarAccountTypeClick: () => void;
   onSidebarPrivacyClick?: () => void;
@@ -60,6 +61,7 @@ export default function DashboardLayout({
   onMobileMenuClose,
   onMobileBack,
   onMobileProfileClick,
+  onSkillsModeToggle,
   onSidebarLanguageClick,
   onSidebarAccountTypeClick,
   onSidebarPrivacyClick,
@@ -205,6 +207,7 @@ export default function DashboardLayout({
           onBackClick={onMobileBack}
           onProfileClick={onMobileProfileClick}
           onFavoritesClick={() => onModuleChange('favorites')}
+          onSkillsModeToggle={onSkillsModeToggle}
           activeModule={activeModule}
           activeRightItem={activeRightItem}
           subcategory={subcategory}

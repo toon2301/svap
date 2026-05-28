@@ -3,6 +3,7 @@
 import React from 'react';
 import OfferImageCarousel from '../shared/OfferImageCarousel';
 import { SkillItem, slugifyLabel } from './SkillsScreen.types';
+import SkillsModeSwitchButton from './SkillsModeSwitchButton';
 
 interface SkillsDesktopSectionProps {
   t: (key: string, defaultValue: string) => string;
@@ -21,6 +22,7 @@ interface SkillsDesktopSectionProps {
   onEditStandardCategoryDescription?: (index: number) => void;
   onRemoveCustomCategory?: (index: number) => void;
   onEditCustomCategoryDescription?: (index: number) => void;
+  onModeSwitch?: () => void;
 }
 
 function renderOfferCard(
@@ -177,14 +179,20 @@ export default function SkillsDesktopSection({
   onEditStandardCategoryDescription,
   onRemoveCustomCategory,
   onEditCustomCategoryDescription,
+  onModeSwitch,
 }: SkillsDesktopSectionProps) {
   return (
     <div className="w-full">
       <div className="flex flex-col items-stretch w-full">
-        <div className="w-full">
-          <h2 className="text-2xl font-semibold text-gray-800 dark:text-white mb-2">
+        <div className="flex w-full items-start justify-between gap-3">
+          <h2 className="mb-2 min-w-0 text-2xl font-semibold text-gray-800 dark:text-white">
             {title}
           </h2>
+          <SkillsModeSwitchButton
+            targetMode={isSeeking ? 'offer' : 'search'}
+            onClick={onModeSwitch}
+            className="flex-shrink-0"
+          />
         </div>
 
         <div className="mt-6 w-full">

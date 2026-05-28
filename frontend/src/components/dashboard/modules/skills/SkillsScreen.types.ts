@@ -37,6 +37,7 @@ export interface SkillsScreenProps {
   onRemoveCustomCategory?: (index: number) => void;
   onEditCustomCategoryDescription?: (index: number) => void;
   isSeeking?: boolean;
+  onModeSwitch?: () => void;
 }
 
 export function slugifyLabel(label: string): string {
