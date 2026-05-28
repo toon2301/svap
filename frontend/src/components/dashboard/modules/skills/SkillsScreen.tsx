@@ -27,6 +27,7 @@ export default function SkillsScreen(props: SkillsScreenProps) {
     onRemoveCustomCategory,
     onEditCustomCategoryDescription,
     isSeeking = false,
+    onModeSwitch,
   } = props;
 
   useEffect(() => {
@@ -131,6 +132,7 @@ export default function SkillsScreen(props: SkillsScreenProps) {
           onEditStandardCategoryDescription={onEditStandardCategoryDescription}
           onRemoveCustomCategory={onRemoveCustomCategory}
           onEditCustomCategoryDescription={onEditCustomCategoryDescription}
+          onModeSwitch={onModeSwitch}
         />
       </div>
 

@@ -5,6 +5,7 @@ import { Bars3Icon, HeartIcon, UserCircleIcon } from '@heroicons/react/24/outlin
 import { useLanguage } from '@/contexts/LanguageContext';
 import { GroupConversationAvatar } from './modules/messages/GroupConversationAvatar';
 import { requestOpenConversationActions } from './modules/messages/messagesEvents';
+import SkillsModeSwitchButton from './modules/skills/SkillsModeSwitchButton';
 import type { MessagingUserBrief } from './modules/messages/types';
 
 interface MobileTopBarProps {
@@ -13,6 +14,7 @@ interface MobileTopBarProps {
   onBackClick?: () => void;
   onProfileClick?: () => void;
   onFavoritesClick?: () => void;
+  onSkillsModeToggle?: () => void;
   activeModule?: string;
   activeRightItem?: string;
   subcategory?: string | null;
@@ -33,6 +35,7 @@ export default function MobileTopBar({
   onBackClick,
   onProfileClick,
   onFavoritesClick,
+  onSkillsModeToggle,
   activeModule,
   activeRightItem,
   subcategory,
@@ -251,6 +254,13 @@ export default function MobileTopBar({
               <Bars3Icon className="w-5 h-5" strokeWidth={2} />
             </button>
           ) : null}
+          {(activeModule === 'skills-offer' || activeModule === 'skills-search') && (
+            <SkillsModeSwitchButton
+              targetMode={activeModule === 'skills-offer' ? 'search' : 'offer'}
+              onClick={onSkillsModeToggle}
+              compact
+            />
+          )}
           {/* Obnoviť pre modul Žiadosti */}
           {activeModule === 'requests' && (
             <button

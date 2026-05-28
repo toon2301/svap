@@ -33,6 +33,7 @@ interface SkillsModuleRouterProps {
   onSkillsCategoryBackHandlerSet?: (handler: () => void) => void;
   onSkillsOfferClick?: () => void;
   onSkillsSearchClick?: () => void;
+  onSkillsModeToggle?: () => void;
 }
 
 export default function SkillsModuleRouter({
@@ -54,6 +55,7 @@ export default function SkillsModuleRouter({
   onSkillsCategoryBackHandlerSet,
   onSkillsOfferClick,
   onSkillsSearchClick,
+  onSkillsModeToggle,
 }: SkillsModuleRouterProps) {
   const { t } = useLanguage();
   const updateSelectedSkill = React.useCallback(
@@ -178,6 +180,7 @@ export default function SkillsModuleRouter({
             }
           }}
           customCategories={filteredCustom}
+          onModeSwitch={onSkillsModeToggle}
           onRemoveCustomCategory={async (index) => {
             const item = filteredCustom[index];
             const originalIndex = customCategories.findIndex((s) => s.id === item.id);
@@ -298,6 +301,7 @@ export default function SkillsModuleRouter({
             }
           }}
           customCategories={filteredCustom}
+          onModeSwitch={onSkillsModeToggle}
           onRemoveCustomCategory={async (index) => {
             const item = filteredCustom[index];
             const originalIndex = customCategories.findIndex((s) => s.id === item.id);

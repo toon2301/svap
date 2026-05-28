@@ -279,6 +279,17 @@ export default function DashboardContent({
     setIsNotificationsPanelOpen((current) => !current);
   }, [setActiveRightItem, setIsRightSidebarOpen]);
 
+  const handleSkillsModeToggle = useCallback(() => {
+    if (activeModule === 'skills-offer') {
+      handleMainModuleChange('skills-search');
+      return;
+    }
+
+    if (activeModule === 'skills-search') {
+      handleMainModuleChange('skills-offer');
+    }
+  }, [activeModule, handleMainModuleChange]);
+
   const handleNotificationsPanelClose = useCallback(() => {
     setIsNotificationsPanelOpen(false);
   }, []);
@@ -743,6 +754,7 @@ export default function DashboardContent({
       initialProfileTab={initialProfileTab}
       onSkillsOfferClick={navigation.handleSkillsOfferClick}
       onSkillsSearchClick={navigation.handleSkillsSearchClick}
+      onSkillsModeToggle={handleSkillsModeToggle}
       offerIdForReviews={effectiveOfferIdForReviews}
       conversationIdForMessages={
         selectedConversationId != null && Number.isFinite(selectedConversationId) ? selectedConversationId : null
@@ -785,6 +797,7 @@ export default function DashboardContent({
         onMobileMenuClose={() => setIsMobileMenuOpen(false)}
         onMobileBack={activeModule === 'skills-select-category' ? handleSkillsCategoryBack : handleMobileBack}
         onMobileProfileClick={navigation.handleMobileProfileClick}
+        onSkillsModeToggle={handleSkillsModeToggle}
         onSidebarLanguageClick={navigation.handleSidebarLanguageClick}
         onSidebarAccountTypeClick={navigation.handleSidebarAccountTypeClick}
         onSidebarPrivacyClick={navigation.handleSidebarPrivacyClick}
