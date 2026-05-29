@@ -9,9 +9,100 @@ Actual settings are split into modules under `swaply/settings_split/`.
 
 import importlib
 import os
+import re
 import sys
 import sentry_sdk
 from sentry_sdk.integrations.django import DjangoIntegration
+
+_SENTRY_MAX_TRACES_SAMPLE_RATE = 0.2
+_SENSITIVE_SENTRY_HEADERS = {
+    "authorization",
+    "cookie",
+    "set-cookie",
+    "x-csrftoken",
+    "x-csrf-token",
+}
+_UUID_RE = re.compile(
+    r"^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+    re.IGNORECASE,
+)
+
+
+def _sentry_release() -> str | None:
+    for key in ("SENTRY_RELEASE", "RAILWAY_GIT_COMMIT_SHA", "VERCEL_GIT_COMMIT_SHA"):
+        value = os.getenv(key)
+        if value and value.strip():
+            return value.strip()
+    return None
+
+
+def _strip_query(value: str) -> str:
+    return str(value or "").split("?", 1)[0]
+
+
+def _normalize_sentry_path(value: str) -> str:
+    raw = _strip_query(value).strip()
+    if not raw:
+        return raw
+
+    try:
+        from urllib.parse import urlparse
+
+        parsed = urlparse(raw)
+        path = parsed.path if parsed.scheme and parsed.netloc else raw
+    except Exception:
+        path = raw
+
+    if not path.startswith("/"):
+        path = f"/{path}"
+
+    parts = []
+    for segment in path.split("/"):
+        if not segment:
+            parts.append(segment)
+            continue
+        if segment.isdigit() or _UUID_RE.match(segment):
+            parts.append(":id")
+        else:
+            parts.append(segment)
+    return "/".join(parts) or "/"
+
+
+def _sanitize_sentry_request(request):
+    if not isinstance(request, dict):
+        return
+
+    url = request.get("url")
+    if isinstance(url, str):
+        request["url"] = _normalize_sentry_path(url)
+
+    request.pop("query_string", None)
+    request.pop("cookies", None)
+    request.pop("data", None)
+
+    headers = request.get("headers")
+    if isinstance(headers, dict):
+        for key in list(headers.keys()):
+            if str(key).lower() in _SENSITIVE_SENTRY_HEADERS:
+                headers.pop(key, None)
+
+
+def _sentry_before_send_transaction(event, hint):
+    transaction = event.get("transaction")
+    if isinstance(transaction, str):
+        event["transaction"] = _normalize_sentry_path(transaction)
+
+    _sanitize_sentry_request(event.get("request"))
+
+    for span in event.get("spans") or []:
+        if not isinstance(span, dict):
+            continue
+        op = str(span.get("op") or "")
+        description = span.get("description")
+        if isinstance(description, str) and op.startswith("http"):
+            span["description"] = _normalize_sentry_path(description)
+
+    return event
 
 
 def _sentry_event_exception_types(event):
@@ -79,7 +170,7 @@ def _safe_sentry_traces_sample_rate() -> float:
         value = float(raw_value)
     except (TypeError, ValueError):
         value = 0.1
-    return max(0.0, min(1.0, value))
+    return max(0.0, min(_SENTRY_MAX_TRACES_SAMPLE_RATE, value))
 
 
 SENTRY_DSN = os.getenv("SENTRY_DSN")
@@ -89,8 +180,10 @@ if SENTRY_DSN:
         dsn=SENTRY_DSN,
         integrations=[DjangoIntegration()],
         before_send=_sentry_before_send,
-        send_default_pii=True,
+        before_send_transaction=_sentry_before_send_transaction,
+        send_default_pii=False,
         environment=os.getenv("SENTRY_ENVIRONMENT", "production"),
+        release=_sentry_release(),
         traces_sample_rate=SENTRY_TRACES_SAMPLE_RATE,
     )
 

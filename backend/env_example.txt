@@ -40,6 +40,12 @@ RATE_LIMIT_DISABLED=False
 # Audit logging
 AUDIT_LOGGING_ENABLED=True
 
+# Sentry monitoring (optional)
+# SENTRY_DSN=https://public@example.ingest.sentry.io/project-id
+# SENTRY_ENVIRONMENT=production
+# SENTRY_RELEASE=swaply@your-git-sha
+# SENTRY_TRACES_SAMPLE_RATE=0.1
+
 # SafeSearch (Google Cloud Vision)
 SAFESEARCH_ENABLED=True
 SAFESEARCH_FAIL_OPEN=True
