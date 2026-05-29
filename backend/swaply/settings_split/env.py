@@ -14,7 +14,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 # Load environment variables from .env file (if it exists)
 env_path = BASE_DIR / ".env"
-if env_path.exists():
+if env_path.exists() and os.getenv("PYTHON_DOTENV_DISABLED", "").lower() not in {
+    "1",
+    "true",
+    "yes",
+    "on",
+}:
     load_dotenv(env_path)
 
 

@@ -37,7 +37,11 @@ _TEST_ENV_KEYS = {
     "SECRET_KEY",
     "SENTRY_DSN",
     "SENTRY_ENVIRONMENT",
+    "SENTRY_RELEASE",
     "SENTRY_TRACES_SAMPLE_RATE",
+    "RAILWAY_GIT_COMMIT_SHA",
+    "VERCEL_GIT_COMMIT_SHA",
+    "PYTHON_DOTENV_DISABLED",
 }
 
 
@@ -45,6 +49,7 @@ def load_settings_with_env(monkeypatch, env_overrides: dict):
     for key in _TEST_ENV_KEYS:
         if key not in env_overrides:
             monkeypatch.delenv(key, raising=False)
+    monkeypatch.setenv("PYTHON_DOTENV_DISABLED", "1")
     for k, v in env_overrides.items():
         if v is None:
             monkeypatch.delenv(k, raising=False)
@@ -88,6 +93,7 @@ def test_sentry_uses_env_configuration_when_dsn_is_set(monkeypatch):
             "SECRET_KEY": "dev-secret",
             "SENTRY_DSN": "https://public@example.com/1",
             "SENTRY_ENVIRONMENT": "staging",
+            "SENTRY_RELEASE": "swaply@abc123",
             "SENTRY_TRACES_SAMPLE_RATE": "0.25",
         },
     )
@@ -96,7 +102,77 @@ def test_sentry_uses_env_configuration_when_dsn_is_set(monkeypatch):
     _, kwargs = init_mock.call_args
     assert kwargs["dsn"] == "https://public@example.com/1"
     assert kwargs["environment"] == "staging"
-    assert kwargs["traces_sample_rate"] == 0.25
+    assert kwargs["release"] == "swaply@abc123"
+    assert kwargs["send_default_pii"] is False
+    assert kwargs["traces_sample_rate"] == 0.2
+    assert callable(kwargs["before_send_transaction"])
+
+
+def test_sentry_release_falls_back_to_railway_commit(monkeypatch):
+    init_mock = Mock()
+    monkeypatch.setattr("sentry_sdk.init", init_mock)
+
+    load_settings_with_env(
+        monkeypatch,
+        {
+            "DEBUG": "True",
+            "SECRET_KEY": "dev-secret",
+            "SENTRY_DSN": "https://public@example.com/1",
+            "RAILWAY_GIT_COMMIT_SHA": "railway-sha",
+        },
+    )
+
+    _, kwargs = init_mock.call_args
+    assert kwargs["release"] == "railway-sha"
+
+
+def test_sentry_transaction_sanitizer_removes_sensitive_request_data(monkeypatch):
+    mod = load_settings_with_env(
+        monkeypatch,
+        {
+            "DEBUG": "True",
+            "SECRET_KEY": "dev-secret",
+            "SENTRY_DSN": None,
+        },
+    )
+
+    event = {
+        "transaction": "https://api.example.com/api/users/123/?email=test@example.com",
+        "request": {
+            "url": "https://api.example.com/api/users/123/?token=secret",
+            "query_string": "token=secret",
+            "cookies": {"sessionid": "secret"},
+            "data": {"password": "secret"},
+            "headers": {
+                "Authorization": "Bearer secret",
+                "X-CSRFToken": "secret",
+                "User-Agent": "pytest",
+            },
+        },
+        "spans": [
+            {
+                "op": "http.client",
+                "description": "https://api.example.com/api/offers/42/?q=secret",
+            },
+            {
+                "op": "db",
+                "description": "SELECT * FROM accounts_user",
+            },
+        ],
+    }
+
+    sanitized = mod._sentry_before_send_transaction(event, {})
+
+    assert sanitized["transaction"] == "/api/users/:id/"
+    assert sanitized["request"]["url"] == "/api/users/:id/"
+    assert "query_string" not in sanitized["request"]
+    assert "cookies" not in sanitized["request"]
+    assert "data" not in sanitized["request"]
+    assert "Authorization" not in sanitized["request"]["headers"]
+    assert "X-CSRFToken" not in sanitized["request"]["headers"]
+    assert sanitized["request"]["headers"]["User-Agent"] == "pytest"
+    assert sanitized["spans"][0]["description"] == "/api/offers/:id/"
+    assert sanitized["spans"][1]["description"] == "SELECT * FROM accounts_user"
 
 
 def test_prod_csrf_and_redis_enforced(monkeypatch):

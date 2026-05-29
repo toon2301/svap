@@ -1,4 +1,5 @@
 const path = require('path');
+const { withSentryConfig } = require('@sentry/nextjs');
 
 function normalizeOrigin(value) {
   return String(value || '').trim().replace(/\/+$/, '');
@@ -10,6 +11,15 @@ function toWsConnectSrc(origin) {
   if (normalized.startsWith('https://')) return normalized.replace(/^https:\/\//, 'wss://');
   if (normalized.startsWith('http://')) return normalized.replace(/^http:\/\//, 'ws://');
   return '';
+}
+
+function originFromDsn(dsn) {
+  try {
+    const parsed = new URL(String(dsn || ''));
+    return `${parsed.protocol}//${parsed.host}`;
+  } catch {
+    return '';
+  }
 }
 
 /** @type {import('next').NextConfig} */
@@ -156,6 +166,15 @@ const nextConfig = {
       ]
         .filter(Boolean)
         .map((origin) => normalizeOrigin(origin));
+      const sentryConnectCandidates = [
+        process.env.NEXT_PUBLIC_SENTRY_INGEST_ORIGIN?.trim(),
+        originFromDsn(process.env.NEXT_PUBLIC_SENTRY_DSN),
+      ]
+        .filter(Boolean)
+        .map((origin) => normalizeOrigin(origin));
+      const directConnectExtra = [...backendConnectCandidates, ...sentryConnectCandidates]
+        .filter((origin) => origin.startsWith('https://') || origin.startsWith('http://'))
+        .join(' ');
       const wsConnectExtra = backendConnectCandidates
         .map((origin) => toWsConnectSrc(origin))
         .filter(Boolean)
@@ -168,6 +187,7 @@ const nextConfig = {
         'https://www.recaptcha.net/',
         'https://ipapi.co',
         connectSrcExtra,
+        directConnectExtra,
         wsConnectExtra,
       ]
         .filter(Boolean)
@@ -213,5 +233,15 @@ const nextConfig = {
   // output: 'export', // Zakomentované pre Railway deployment
 };
 
-module.exports = nextConfig;
-
+module.exports = withSentryConfig(nextConfig, {
+  silent: true,
+  telemetry: false,
+  webpack: {
+    treeshake: {
+      removeDebugLogging: true,
+    },
+  },
+  sourcemaps: {
+    disable: !process.env.SENTRY_AUTH_TOKEN,
+  },
+});
