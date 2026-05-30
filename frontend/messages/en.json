@@ -608,6 +608,57 @@
     "description": "Exchange skills with others. Learn something new and teach others your skills.",
     "keywords": "skills, exchange, education, mentoring, learning"
   },
+  "about": {
+    "backToHome": "Back to home",
+    "hero": {
+      "title": "Find people, services and opportunities in one place",
+      "subtitle": "Svaply connects people through skills, services and help. Whether you are looking for something or can offer what you do, you will find it simply and clearly in one place."
+    },
+    "why": {
+      "title": "Why was Svaply created?",
+      "body": "Svaply was born from the idea of simplifying how people today search for help, services or collaboration. We often have to browse dozens of websites, Facebook groups or post repeatedly just to find someone reliable. The goal was to create a simple place where people can offer their skills, showcase their work, find new opportunities and easily find what they need right now. Whether someone is looking for legal help, a craftsman, a designer, help on a construction site or wants to showcase their work and get jobs, Svaply connects people naturally, simply and without unnecessary chaos."
+    },
+    "whatYouCanDo": {
+      "title": "What can you do on Svaply?",
+      "item1": "Offer your services and skills",
+      "item2": "Search for help or collaboration",
+      "item3": "Create your own portfolio and showcase your work",
+      "item4": "Communicate directly via messages",
+      "item5": "Find people near you",
+      "item6": "Gain new opportunities or jobs"
+    },
+    "whoIsItFor": {
+      "title": "Who is Svaply for?",
+      "item1": "For people who need something",
+      "item2": "For people who want to offer what they can do",
+      "item3": "For freelancers, craftsmen, creatives and everyday help",
+      "item4": "For anyone who wants to find services or opportunities more easily"
+    },
+    "values": {
+      "title": "What matters to us",
+      "simplicity": {
+        "title": "Simplicity",
+        "description": "Without unnecessary chaos, complicated searching and endless posting."
+      },
+      "realPeople": {
+        "title": "Real people and real skills",
+        "description": "Svaply is built on what people can actually do and offer to others."
+      },
+      "opportunities": {
+        "title": "Opportunities for everyone",
+        "description": "Everyone can showcase their work, find jobs or simply help others."
+      },
+      "clarity": {
+        "title": "Clarity and connection",
+        "description": "Everything important in one place — from offers to communication."
+      }
+    },
+    "cta": {
+      "title": "Join Svaply",
+      "text": "Create your profile, show what you can do or find exactly what you need.",
+      "button": "Register"
+    }
+  },
   "footer": {
     "howItWorks": "How it works",
     "forIndividuals": "For individuals",

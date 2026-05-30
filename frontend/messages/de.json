@@ -608,6 +608,57 @@
     "description": "Tauschen Sie Fähigkeiten mit anderen aus. Lernen Sie etwas Neues und lehren Sie andere Ihre Fähigkeiten.",
     "keywords": "Fähigkeiten, Austausch, Bildung, Mentoring, Lernen"
   },
+  "about": {
+    "backToHome": "Zurück zur Startseite",
+    "hero": {
+      "title": "Finde Menschen, Dienstleistungen und Chancen an einem Ort",
+      "subtitle": "Svaply verbindet Menschen durch Fähigkeiten, Dienstleistungen und Hilfe. Ob du etwas suchst oder anbieten kannst, was du tust – alles findest du einfach und übersichtlich an einem Ort."
+    },
+    "why": {
+      "title": "Warum wurde Svaply gegründet?",
+      "body": "Svaply entstand aus der Idee, die Art zu vereinfachen, wie Menschen heute Hilfe, Dienstleistungen oder Zusammenarbeit suchen. Oft müssen wir Dutzende Websites, Facebook-Gruppen durchsuchen oder ständig Beiträge schreiben, nur um jemanden Verlässliches zu finden. Ziel war ein einfacher Ort, an dem Menschen ihre Fähigkeiten anbieten, ihre Arbeit zeigen, neue Chancen finden und leicht finden, was sie gerade brauchen. Ob jemand Rechtshilfe, einen Handwerker, einen Grafiker, Hilfe auf der Baustelle sucht oder seine Arbeit zeigen und Aufträge gewinnen will – Svaply verbindet Menschen natürlich, einfach und ohne unnötiges Chaos."
+    },
+    "whatYouCanDo": {
+      "title": "Was kannst du auf Svaply tun?",
+      "item1": "Deine Dienstleistungen und Fähigkeiten anbieten",
+      "item2": "Hilfe oder Zusammenarbeit suchen",
+      "item3": "Ein eigenes Portfolio erstellen und deine Arbeit zeigen",
+      "item4": "Direkt per Nachrichten kommunizieren",
+      "item5": "Menschen in deiner Nähe finden",
+      "item6": "Neue Chancen oder Aufträge gewinnen"
+    },
+    "whoIsItFor": {
+      "title": "Für wen ist Svaply?",
+      "item1": "Für Menschen, die etwas brauchen",
+      "item2": "Für Menschen, die anbieten wollen, was sie können",
+      "item3": "Für Freelancer, Handwerker, Kreative und alltägliche Hilfe",
+      "item4": "Für alle, die Dienstleistungen oder Chancen einfacher finden wollen"
+    },
+    "values": {
+      "title": "Was uns wichtig ist",
+      "simplicity": {
+        "title": "Einfachheit",
+        "description": "Ohne unnötiges Chaos, komplizierte Suche und endloses Posten."
+      },
+      "realPeople": {
+        "title": "Echte Menschen und echte Fähigkeiten",
+        "description": "Svaply baut auf dem auf, was Menschen wirklich können und anderen anbieten."
+      },
+      "opportunities": {
+        "title": "Chancen für alle",
+        "description": "Jeder kann seine Arbeit zeigen, Aufträge finden oder anderen einfach helfen."
+      },
+      "clarity": {
+        "title": "Übersicht und Verbindung",
+        "description": "Alles Wichtige an einem Ort – von Angeboten bis zur Kommunikation."
+      }
+    },
+    "cta": {
+      "title": "Werde Teil von Svaply",
+      "text": "Erstelle dein Profil, zeige, was du kannst, oder finde genau das, was du brauchst.",
+      "button": "Registrieren"
+    }
+  },
   "footer": {
     "howItWorks": "Wie es funktioniert",
     "forIndividuals": "Für Privatpersonen",

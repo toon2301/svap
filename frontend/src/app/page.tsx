@@ -3,6 +3,7 @@
 import { lazy, Suspense, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 import LoginForm from '../components/LoginForm';
@@ -127,9 +128,9 @@ export default function Home() {
               <a href="#" className="hover:text-purple-800 dark:hover:text-purple-400 transition-colors">
                 {t('footer.reportIssue', 'Nahlásiť problém')}
               </a>
-              <a href="#" className="hover:text-purple-800 dark:hover:text-purple-400 transition-colors">
+              <Link href="/about" className="hover:text-purple-800 dark:hover:text-purple-400 transition-colors">
                 {t('footer.aboutUs', 'O nás')}
-              </a>
+              </Link>
               <a href="#" className="hover:text-purple-800 dark:hover:text-purple-400 transition-colors">
                 {t('footer.termsOfUse', 'Podmienky používania')}
               </a>

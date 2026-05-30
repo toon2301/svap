@@ -608,6 +608,57 @@
     "description": "Cseréljen készségeket másokkal. Tanuljon valami újat és tanítson másokat a készségeire.",
     "keywords": "készségek, csere, oktatás, mentorálás, tanulás"
   },
+  "about": {
+    "backToHome": "Vissza a kezdőlapra",
+    "hero": {
+      "title": "Találj embereket, szolgáltatásokat és lehetőségeket egy helyen",
+      "subtitle": "A Svaply készségek, szolgáltatások és segítség révén köt össze embereket. Akár valamit keresel, akár fel tudod ajánlani, amit csinálsz, mindent egyszerűen és áttekinthetően találsz meg egy helyen."
+    },
+    "why": {
+      "title": "Miért jött létre a Svaply?",
+      "body": "A Svaply abból az ötletből született, hogy leegyszerűsítse, ahogyan ma az emberek segítséget, szolgáltatásokat vagy együttműködést keresnek. Gyakran tucatnyi weboldalt, Facebook-csoportot kell átnéznünk, vagy újra és újra posztolni, csak hogy megbízható embert találjunk. A cél egy egyszerű hely volt, ahol az emberek kínálhatják készségeiket, bemutathatják munkájukat, új lehetőségeket találhatnak, és könnyen megtalálhatják, amire éppen szükségük van. Akár jogi segítséget, mestert, grafikust, építési segítséget keres valaki, akár bemutatná alkotásait és megbízásokat szerezne – a Svaply természetesen, egyszerűen és felesleges káosz nélkül köt össze embereket."
+    },
+    "whatYouCanDo": {
+      "title": "Mit tehetsz a Svaply-n?",
+      "item1": "Kínálhatod szolgáltatásaidat és készségeidet",
+      "item2": "Segítséget vagy együttműködést kereshetsz",
+      "item3": "Saját portfóliót hozhatsz létre és bemutathatod munkádat",
+      "item4": "Közvetlenül üzenetekben kommunikálhatsz",
+      "item5": "Embereket találhatsz a környékeden",
+      "item6": "Új lehetőségeket vagy megbízásokat szerezhetsz"
+    },
+    "whoIsItFor": {
+      "title": "Kinek szól a Svaply?",
+      "item1": "Azoknak, akiknek valamire szükségük van",
+      "item2": "Azoknak, akik fel szeretnék ajánlani, amit tudnak",
+      "item3": "Freelancereknek, mestereknek, kreatívoknak és mindennapi segítségnek",
+      "item4": "Mindenkinek, aki egyszerűbben szeretne szolgáltatásokat vagy lehetőségeket találni"
+    },
+    "values": {
+      "title": "Mi fontos számunkra?",
+      "simplicity": {
+        "title": "Egyszerűség",
+        "description": "Felesleges káosz, bonyolult keresés és végtelen posztolás nélkül."
+      },
+      "realPeople": {
+        "title": "Valódi emberek és valódi készségek",
+        "description": "A Svaply arra épül, amit az emberek valóban tudnak és mit tudnak másoknak felajánlani."
+      },
+      "opportunities": {
+        "title": "Lehetőségek mindenkinek",
+        "description": "Mindenki bemutathatja munkáját, megbízásokat találhat vagy egyszerűen segíthet másoknak."
+      },
+      "clarity": {
+        "title": "Áttekinthetőség és kapcsolat",
+        "description": "Minden fontos egy helyen — az ajánlatoktól a kommunikációig."
+      }
+    },
+    "cta": {
+      "title": "Csatlakozz a Svaply-hoz",
+      "text": "Hozd létre profilodat, mutasd meg, mit tudsz, vagy találd meg pontosan azt, amire szükséged van.",
+      "button": "Regisztráció"
+    }
+  },
   "footer": {
     "howItWorks": "Hogyan működik",
     "forIndividuals": "Magánszemélyeknek",

@@ -608,6 +608,57 @@
     "description": "Vymieňajte si zručnosti s ostatnými. Naučte sa niečo nové a naučte ostatných svoje zručnosti.",
     "keywords": "zručnosti, výmena, vzdelávanie, mentoring, učenie"
   },
+  "about": {
+    "backToHome": "Späť na úvod",
+    "hero": {
+      "title": "Nájdi ľudí, služby a príležitosti na jednom mieste",
+      "subtitle": "Svaply prepája ľudí cez zručnosti, služby a pomoc. Či už niečo hľadáš alebo vieš ponúknuť to, čo robíš, všetko nájdeš jednoducho a prehľadne na jednom mieste."
+    },
+    "why": {
+      "title": "Prečo vzniklo Svaply?",
+      "body": "Svaply vzniklo z myšlienky zjednodušiť spôsob, akým dnes ľudia hľadajú pomoc, služby alebo spoluprácu. Často musíme prechádzať desiatky stránok, Facebook skupín alebo vypisovať príspevky len preto, aby sme našli niekoho spoľahlivého. Cieľom bolo vytvoriť jednoduché miesto, kde môžu ľudia ponúknuť svoje zručnosti, ukázať svoju prácu, nájsť nové príležitosti a zároveň jednoducho nájsť to, čo práve potrebujú. Či už niekto hľadá právnu pomoc, remeselníka, grafika, pomoc na stavbe alebo chce ukázať svoju tvorbu a získať zákazky, Svaply prepája ľudí prirodzene, jednoducho a bez zbytočného chaosu."
+    },
+    "whatYouCanDo": {
+      "title": "Čo môžeš na Svaply robiť?",
+      "item1": "Ponúkať svoje služby a zručnosti",
+      "item2": "Hľadať pomoc alebo spoluprácu",
+      "item3": "Vytvoriť si vlastné portfólio a ukázať svoju prácu",
+      "item4": "Komunikovať priamo cez správy",
+      "item5": "Nájsť ľudí vo svojom okolí",
+      "item6": "Získať nové príležitosti alebo zákazky"
+    },
+    "whoIsItFor": {
+      "title": "Pre koho je Svaply?",
+      "item1": "Pre ľudí, ktorí niečo potrebujú",
+      "item2": "Pre ľudí, ktorí chcú ponúknuť to, čo vedia robiť",
+      "item3": "Pre freelancerov, remeselníkov, kreatívcov aj bežnú pomoc",
+      "item4": "Pre každého, kto chce jednoduchšie nájsť služby alebo príležitosti"
+    },
+    "values": {
+      "title": "Na čom nám záleží?",
+      "simplicity": {
+        "title": "Jednoduchosť",
+        "description": "Bez zbytočného chaosu, komplikovaného hľadania a nekonečného vypisovania príspevkov."
+      },
+      "realPeople": {
+        "title": "Reálni ľudia a reálne zručnosti",
+        "description": "Svaply stavia na tom, čo ľudia naozaj vedia robiť a čo dokážu ponúknuť ostatným."
+      },
+      "opportunities": {
+        "title": "Príležitosti pre každého",
+        "description": "Každý má možnosť ukázať svoju prácu, nájsť zákazky alebo jednoducho pomôcť ostatným."
+      },
+      "clarity": {
+        "title": "Prehľadnosť a spojenie",
+        "description": "Všetko dôležité na jednom mieste — od ponúk až po komunikáciu."
+      }
+    },
+    "cta": {
+      "title": "Pridaj sa k Svaply",
+      "text": "Vytvor si profil, ukáž čo vieš alebo nájdi presne to, čo práve potrebuješ.",
+      "button": "Registrovať sa"
+    }
+  },
   "footer": {
     "howItWorks": "Ako to funguje",
     "forIndividuals": "Pre jednotlivcov",
