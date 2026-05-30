@@ -127,7 +127,7 @@ export default function Home() {
               <a href="#" className="hover:text-purple-800 dark:hover:text-purple-400 transition-colors">
                 {t('footer.reportIssue', 'Nahlásiť problém')}
               </a>
-              <a href="#" className="hover:text-purple-800 dark:hover:text-purple-400 transition-colors">
+              <a href="/about" className="hover:text-purple-800 dark:hover:text-purple-400 transition-colors">
                 {t('footer.aboutUs', 'O nás')}
               </a>
               <a href="#" className="hover:text-purple-800 dark:hover:text-purple-400 transition-colors">
