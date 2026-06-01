@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from django.db.models import Max
 from django.db.models import Prefetch, Q
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
@@ -8,7 +9,7 @@ from rest_framework.response import Response
 from swaply.rate_limiting import api_rate_limit
 
 from .models import PortfolioImage, PortfolioItem
-from .serializers import PortfolioItemSerializer
+from .serializers import PortfolioItemSerializer, PortfolioItemWriteSerializer
 
 User = get_user_model()
 
@@ -99,6 +100,32 @@ def _serialize_items(request, items, *, is_owner: bool, featured_item_id: int | 
     ).data
 
 
+def _featured_item_id(user, *, is_owner: bool) -> int | None:
+    return (
+        _portfolio_queryset(user, is_owner=is_owner)
+        .values_list("id", flat=True)
+        .first()
+    )
+
+
+def _serialize_item(request, item, *, is_owner: bool):
+    return PortfolioItemSerializer(
+        item,
+        context={
+            "request": request,
+            "is_owner": is_owner,
+            "featured_item_id": _featured_item_id(item.owner, is_owner=is_owner),
+        },
+    ).data
+
+
+def _next_sort_order(user) -> int:
+    current_max = PortfolioItem.objects.filter(owner=user).aggregate(
+        value=Max("sort_order")
+    )["value"]
+    return 0 if current_max is None else current_max + 1
+
+
 def _portfolio_list_response(request, user):
     owner_view = _is_owner(request, user)
     queryset = _portfolio_queryset(user, is_owner=owner_view)
@@ -115,17 +142,61 @@ def _portfolio_list_response(request, user):
     )
 
 
-@api_view(["GET"])
+@api_view(["GET", "POST"])
 @permission_classes([IsAuthenticated])
 @api_rate_limit
 def my_portfolio_list_view(request):
+    if request.method == "POST":
+        serializer = PortfolioItemWriteSerializer(
+            data=request.data,
+            context={"request": request},
+        )
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        item = serializer.save(
+            owner=request.user,
+            sort_order=_next_sort_order(request.user),
+        )
+        return Response(
+            _serialize_item(request, item, is_owner=True),
+            status=status.HTTP_201_CREATED,
+        )
+
     return _portfolio_list_response(request, request.user)
 
 
-@api_view(["GET"])
+@api_view(["GET", "PATCH", "DELETE"])
 @permission_classes([IsAuthenticated])
 @api_rate_limit
 def portfolio_item_detail_view(request, item_id: int):
+    if request.method in {"PATCH", "DELETE"}:
+        try:
+            item = PortfolioItem.objects.select_related(
+                "owner", "related_offer", "cover_image"
+            ).get(id=item_id, owner=request.user)
+        except PortfolioItem.DoesNotExist:
+            return _portfolio_item_not_found()
+
+        if request.method == "DELETE":
+            item.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+
+        serializer = PortfolioItemWriteSerializer(
+            item,
+            data=request.data,
+            partial=True,
+            context={"request": request},
+        )
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        item = serializer.save()
+        return Response(
+            _serialize_item(request, item, is_owner=True),
+            status=status.HTTP_200_OK,
+        )
+
     try:
         item = PortfolioItem.objects.select_related("owner").get(id=item_id)
     except PortfolioItem.DoesNotExist:
@@ -148,15 +219,17 @@ def portfolio_item_detail_view(request, item_id: int):
     except PortfolioItem.DoesNotExist:
         return _portfolio_item_not_found()
 
-    serializer = PortfolioItemSerializer(
-        item,
-        context={
-            "request": request,
-            "is_owner": owner_view,
-            "featured_item_id": featured_item_id,
-        },
+    return Response(
+        PortfolioItemSerializer(
+            item,
+            context={
+                "request": request,
+                "is_owner": owner_view,
+                "featured_item_id": featured_item_id,
+            },
+        ).data,
+        status=status.HTTP_200_OK,
     )
-    return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 @api_view(["GET"])
