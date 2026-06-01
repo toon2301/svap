@@ -200,6 +200,25 @@ class PortfolioCrudApiTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("description", response.data)
 
+    def test_create_portfolio_item_allows_plain_text_punctuation(self):
+        self.client.force_authenticate(user=self.owner)
+
+        response = self.client.post(
+            reverse("accounts:portfolio_list"),
+            data=self._payload(
+                title="O'Brien; create & share",
+                description="It's a portfolio; semicolons are fine.",
+            ),
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data["title"], "O'Brien; create & share")
+        self.assertEqual(
+            response.data["description"],
+            "It's a portfolio; semicolons are fine.",
+        )
+
     def test_create_portfolio_item_allows_own_related_offer(self):
         offer = OfferedSkill.objects.create(
             user=self.owner,

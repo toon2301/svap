@@ -1,11 +1,9 @@
 import re
 
 from django.conf import settings
-from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
 
 from accounts.models import OfferedSkill
-from swaply.validators import SecurityValidator
 
 from .constants import PORTFOLIO_CATEGORY_CHOICES, normalize_portfolio_category
 from .models import PortfolioImage, PortfolioItem
@@ -18,13 +16,8 @@ def _validate_plain_text(value: str, *, allow_blank: bool) -> str:
     value = (value or "").strip()
     if not allow_blank and not value:
         raise serializers.ValidationError("Toto pole je povinne.")
-    if value:
-        try:
-            value = SecurityValidator.validate_input_safety(value)
-        except DjangoValidationError as exc:
-            raise serializers.ValidationError(exc.messages) from exc
-        if HTML_TAG_RE.search(value):
-            raise serializers.ValidationError("HTML nie je povolene.")
+    if value and HTML_TAG_RE.search(value):
+        raise serializers.ValidationError("HTML nie je povolene.")
     return value
 
 

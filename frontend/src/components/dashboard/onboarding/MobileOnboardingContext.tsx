@@ -180,13 +180,13 @@ export function MobileOnboardingProvider({
     setIsPausedUi(true);
   }, []);
 
-  // "Neskôr" / close — resume when user returns to Domov.
+  // "Neskôr" / close — resume when user returns to Domov (any in-progress step).
   useEffect(() => {
     if (!isPausedUi) return;
-    if (activeModule === 'home' && stored.step === 'home') {
+    if (activeModule === 'home') {
       setIsPausedUi(false);
     }
-  }, [activeModule, isPausedUi, stored.step]);
+  }, [activeModule, isPausedUi]);
 
   const close = pause;
 
