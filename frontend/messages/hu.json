@@ -3810,6 +3810,13 @@
     "showPassword": "Jelszó megjelenítése",
     "hidePassword": "Jelszó elrejtése"
   },
+  "portfolio": {
+    "title": "Portfólió",
+    "coverImage": "Borítókép",
+    "relatedOffer": "Kapcsolódó ajánlat",
+    "itemNotFound": "A portfólióelem nem található.",
+    "profileNotFound": "A felhasználó nem található."
+  },
   "reviews": {
     "addReview": "Értékelés hozzáadása",
     "addOwnerResponse": "Válasz hozzáadása",

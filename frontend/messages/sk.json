@@ -3810,6 +3810,13 @@
     "showPassword": "Zobraziť heslo",
     "hidePassword": "Skryť heslo"
   },
+  "portfolio": {
+    "title": "Portfólio",
+    "coverImage": "Titulná fotka",
+    "relatedOffer": "Súvisiaca ponuka",
+    "itemNotFound": "Položka portfólia nebola nájdená.",
+    "profileNotFound": "Používateľ nebol nájdený."
+  },
   "reviews": {
     "addReview": "Pridať recenziu",
     "addOwnerResponse": "Pridať odpoveď majiteľa",

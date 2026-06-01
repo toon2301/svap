@@ -109,6 +109,7 @@ urlpatterns = [
         views.dashboard_user_skills_by_slug_view,
         name="dashboard_user_skills_by_slug",
     ),
+    path("", include("portfolio.urls")),
     path(
         "dashboard/settings/", views.dashboard_settings_view, name="dashboard_settings"
     ),

@@ -3810,6 +3810,13 @@
     "showPassword": "Show password",
     "hidePassword": "Hide password"
   },
+  "portfolio": {
+    "title": "Portfolio",
+    "coverImage": "Cover photo",
+    "relatedOffer": "Related offer",
+    "itemNotFound": "Portfolio item was not found.",
+    "profileNotFound": "User was not found."
+  },
   "reviews": {
     "addReview": "Add review",
     "addOwnerResponse": "Add owner response",

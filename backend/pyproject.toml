@@ -35,11 +35,12 @@ ignore = [
 
 [tool.ruff.lint.isort]
 combine-as-imports = true
-known-first-party = ["accounts", "swaply"]
+known-first-party = ["accounts", "portfolio", "swaply"]
 
 [tool.ruff.lint.per-file-ignores]
 # Tests: allow common pytest patterns / intentional unused vars.
 "accounts/test/**/*.py" = ["B007", "B011", "B017", "F811", "F841"]
+"portfolio/test/**/*.py" = ["B007", "B011", "B017", "F811", "F841"]
 "swaply/test/**/*.py" = ["B007", "B011", "B017", "F811", "F841", "E402"]
 "tests/**/*.py" = ["B007", "B011", "B017", "F811", "F841"]
 
@@ -102,12 +103,13 @@ addopts = [
   "--disable-warnings",
   "--cov=accounts",
   "--cov=swaply",
+  "--cov=portfolio",
   "--cov-report=term-missing",
   "--cov-report=html:htmlcov",
   "--cov-config=.coveragerc",
   "--cov-fail-under=85",
 ]
-testpaths = ["accounts/test", "swaply/test", "tests"]
+testpaths = ["accounts/test", "swaply/test", "tests", "portfolio/test"]
 markers = [
   "slow: marks tests as slow (deselect with '-m \"not slow\"')",
   "integration: marks tests as integration tests",

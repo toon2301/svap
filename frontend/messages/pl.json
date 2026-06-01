@@ -3810,6 +3810,13 @@
     "showPassword": "Pokaż hasło",
     "hidePassword": "Ukryj hasło"
   },
+  "portfolio": {
+    "title": "Portfolio",
+    "coverImage": "Zdjęcie główne",
+    "relatedOffer": "Powiązana oferta",
+    "itemNotFound": "Element portfolio nie został znaleziony.",
+    "profileNotFound": "Użytkownik nie został znaleziony."
+  },
   "reviews": {
     "addReview": "Dodaj opinię",
     "addOwnerResponse": "Dodaj odpowiedź właściciela",

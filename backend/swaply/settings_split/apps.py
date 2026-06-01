@@ -23,4 +23,5 @@ INSTALLED_APPS = [
     # Local apps
     "accounts",
     "messaging",
+    "portfolio",
 ]
