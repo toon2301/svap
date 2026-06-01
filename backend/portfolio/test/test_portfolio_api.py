@@ -239,3 +239,15 @@ class PortfolioApiTests(APITestCase):
 
         with self.assertRaises(ValidationError):
             second.save(update_fields=["cover_image", "updated_at"])
+
+    def test_cover_image_is_validated_on_create(self):
+        existing = self._item(title="Existing")
+        existing_image = self._image(existing)
+
+        with self.assertRaises(ValidationError):
+            PortfolioItem.objects.create(
+                owner=self.owner,
+                title="New item",
+                category="Craft",
+                cover_image=existing_image,
+            )

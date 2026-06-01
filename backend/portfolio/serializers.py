@@ -43,7 +43,14 @@ class PortfolioImageSerializer(serializers.ModelSerializer):
             "status",
             "rejected_reason",
         ]
-        read_only_fields = fields
+        read_only_fields = [
+            "id",
+            "order",
+            "width",
+            "height",
+            "status",
+            "rejected_reason",
+        ]
 
     def get_image_url(self, obj):
         return _image_url(self.context.get("request"), obj)
@@ -86,7 +93,15 @@ class PortfolioItemSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
-        read_only_fields = fields
+        read_only_fields = [
+            "id",
+            "title",
+            "category",
+            "description",
+            "sort_order",
+            "created_at",
+            "updated_at",
+        ]
 
     def get_is_featured(self, obj):
         return obj.id == self.context.get("featured_item_id")

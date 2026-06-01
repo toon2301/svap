@@ -53,6 +53,22 @@ class PortfolioItem(models.Model):
     def __str__(self):
         return f"{self.title} ({self.owner_id})"
 
+    def save(self, *args, **kwargs):
+        update_fields = kwargs.get("update_fields")
+        if update_fields is None:
+            self.full_clean()
+        else:
+            update_field_names = self._model_field_names(update_fields)
+            excluded = [
+                field.name
+                for field in self._meta.fields
+                if field.name not in update_field_names
+            ]
+            self.clean_fields(exclude=excluded)
+            if {"owner", "related_offer", "cover_image"} & update_field_names:
+                self.clean()
+        return super().save(*args, **kwargs)
+
     def clean(self):
         super().clean()
         if self.related_offer_id and self.owner_id:
@@ -73,7 +89,7 @@ class PortfolioItem(models.Model):
                     }
                 )
 
-        if self.cover_image_id and self.pk:
+        if self.cover_image_id:
             cover = self._state.fields_cache.get("cover_image")
             cover_item_id = getattr(cover, "item_id", None)
             if cover_item_id is None:
@@ -82,7 +98,7 @@ class PortfolioItem(models.Model):
                     .values_list("item_id", flat=True)
                     .first()
                 )
-            if cover_item_id != self.pk:
+            if cover_item_id is not None and cover_item_id != self.pk:
                 raise ValidationError(
                     {
                         "cover_image": _(
@@ -91,9 +107,15 @@ class PortfolioItem(models.Model):
                     }
                 )
 
-    def save(self, *args, **kwargs):
-        self.full_clean()
-        return super().save(*args, **kwargs)
+    def _model_field_names(self, update_fields):
+        field_names = set()
+        for update_field in update_fields or ():
+            update_field = str(update_field)
+            for field in self._meta.fields:
+                if update_field in (field.name, field.attname):
+                    field_names.add(field.name)
+                    break
+        return field_names
 
 
 class PortfolioImage(models.Model):
