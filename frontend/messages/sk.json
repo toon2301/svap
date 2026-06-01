@@ -166,6 +166,34 @@
     "skillSaveError": "Nepodarilo sa uložiť zručnosť",
     "userNotFound": "Používateľ nebol nájdený."
   },
+  "onboarding": {
+    "mobile": {
+      "progress": "Krok {current} z {total}",
+      "next": "Ďalej",
+      "later": "Neskôr",
+      "skip": "Preskočiť",
+      "home": {
+        "title": "Vitaj na Svaply",
+        "body": "Tu budeš objavovať príspevky, ponuky, dopyty a prácu ostatných používateľov."
+      },
+      "profileIcon": {
+        "title": "Toto je tvoj profil",
+        "body": "Uprav si profil, pridaj portfólio a spravuj svoje ponuky, dopyty či nové príležitosti."
+      },
+      "profile": {
+        "title": "Toto je tvoj profil",
+        "body": "Tu môžu ostatní vidieť tvoju prácu, portfólio, ponuky a informácie o tebe."
+      },
+      "editProfile": {
+        "title": "Vyplň svoj profil",
+        "body": "Ostatní používatelia tak lepšie uvidia kto si a čo ponúkaš."
+      },
+      "profileEditing": {
+        "title": "Doplň o sebe základné informácie",
+        "body": "Profil s fotkou a popisom pôsobí dôveryhodnejšie."
+      }
+    }
+  },
   "create": {
     "title": "Vytvoriť",
     "subtitle": "Čo by ste chceli pridať?",

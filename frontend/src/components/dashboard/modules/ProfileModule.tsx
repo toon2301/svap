@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { User } from '../../../types';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useIsMobile } from '@/hooks';
+import { useOptionalMobileOnboarding } from '../onboarding/MobileOnboardingContext';
 import { api } from '../../../lib/api';
 import ProfileMobileView from './profile/ProfileMobileView';
 import ProfileDesktopView from './profile/ProfileDesktopView';
@@ -125,6 +126,7 @@ export default function ProfileModule({
 }: ProfileModuleProps) {
   const { t } = useLanguage();
   const isMobile = useIsMobile();
+  const onboarding = useOptionalMobileOnboarding();
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string>('');
   const [uploadSuccess, setUploadSuccess] = useState(false);
@@ -258,6 +260,7 @@ export default function ProfileModule({
           const scrollEl = document.querySelector('[data-dashboard-main]') as HTMLElement | null;
           const scrollTop = scrollEl?.scrollTop ?? 0;
           mergeUserIfChanged(nextPartial);
+          onboarding?.notifyProfileSaved();
           onEditCancel(responseUser);
           // Zachovať scroll – po save sa obsah prepne a prehliadač resetuje scroll; obnoviť po re-renderi
           const restoreScroll = () => {
@@ -287,7 +290,7 @@ export default function ProfileModule({
     } finally {
       endAction(actionId);
     }
-  }, [editableUser, onUserUpdate, onEditCancel, beginAction, endAction, mergeUserIfChanged]);
+  }, [editableUser, onUserUpdate, onEditCancel, beginAction, endAction, mergeUserIfChanged, onboarding]);
 
   const handleCancel = useCallback(() => {
     setUploadError('');

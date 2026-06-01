@@ -166,6 +166,34 @@
     "skillSaveError": "Failed to save skill",
     "userNotFound": "User not found."
   },
+  "onboarding": {
+    "mobile": {
+      "progress": "Step {current} of {total}",
+      "next": "Next",
+      "later": "Later",
+      "skip": "Skip",
+      "home": {
+        "title": "Welcome to Svaply",
+        "body": "Here you’ll discover posts, offers, requests and work from other users."
+      },
+      "profileIcon": {
+        "title": "This is your profile",
+        "body": "Edit your profile, add a portfolio and manage your offers, requests or new opportunities."
+      },
+      "profile": {
+        "title": "This is your profile",
+        "body": "This is where others can see your work, portfolio, offers and information about you."
+      },
+      "editProfile": {
+        "title": "Fill in your profile",
+        "body": "Other users will better see who you are and what you offer."
+      },
+      "profileEditing": {
+        "title": "Add the basics about yourself",
+        "body": "A profile with a photo and description feels more trustworthy."
+      }
+    }
+  },
   "create": {
     "title": "Create",
     "subtitle": "What would you like to add?",

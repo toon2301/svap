@@ -1,0 +1,339 @@
+'use client';
+
+import React, { useMemo } from 'react';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { ONBOARDING_TARGETS, useMobileOnboarding } from './MobileOnboardingContext';
+import { useOnboardingTargetRect } from './useOnboardingTargetRect';
+
+const SPOTLIGHT_PADDING = 8;
+const OVERLAY_Z = 10000;
+
+function SpotlightHole({ rect }: { rect: { top: number; left: number; width: number; height: number } }) {
+  const style: React.CSSProperties = {
+    position: 'fixed',
+    top: rect.top - SPOTLIGHT_PADDING,
+    left: rect.left - SPOTLIGHT_PADDING,
+    width: rect.width + SPOTLIGHT_PADDING * 2,
+    height: rect.height + SPOTLIGHT_PADDING * 2,
+    borderRadius: 12,
+    boxShadow: '0 0 0 9999px rgba(15, 23, 42, 0.55)',
+    pointerEvents: 'none',
+    zIndex: OVERLAY_Z,
+    animation: 'mobileOnboardingPulse 2.2s ease-in-out infinite',
+  };
+
+  return <div aria-hidden style={style} />;
+}
+
+type TooltipPlacement = 'below' | 'above';
+
+function TooltipCard({
+  title,
+  body,
+  stepIndex,
+  totalSteps,
+  placement,
+  anchorRect,
+  onNext,
+  onSkip,
+  onPause,
+  nextLabel,
+  showSkip = true,
+  showPause = true,
+}: {
+  title: string;
+  body: string;
+  stepIndex: number;
+  totalSteps: number;
+  placement: TooltipPlacement;
+  anchorRect: { top: number; left: number; width: number; height: number } | null;
+  onNext: () => void;
+  onSkip: () => void;
+  onPause: () => void;
+  nextLabel: string;
+  showSkip?: boolean;
+  showPause?: boolean;
+}) {
+  const top =
+    placement === 'below' && anchorRect
+      ? anchorRect.top + anchorRect.height + SPOTLIGHT_PADDING + 12
+      : placement === 'above' && anchorRect
+        ? anchorRect.top - SPOTLIGHT_PADDING - 12
+        : undefined;
+
+  const style: React.CSSProperties = {
+    position: 'fixed',
+    left: 16,
+    right: 16,
+    maxWidth: 360,
+    marginLeft: 'auto',
+    marginRight: 'auto',
+    zIndex: OVERLAY_Z + 1,
+    ...(top != null
+      ? { top: Math.max(72, Math.min(top, window.innerHeight - 220)) }
+      : { bottom: 96 }),
+    ...(placement === 'above' && top != null ? { transform: 'translateY(-100%)' } : {}),
+  };
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="false"
+      aria-labelledby="mobile-onboarding-title"
+      className="rounded-2xl border border-purple-200/80 dark:border-purple-800/60 bg-white dark:bg-gray-950 shadow-xl p-4 animate-in fade-in duration-300"
+      style={style}
+    >
+      <div className="flex items-center justify-between gap-2 mb-2">
+        <div className="flex gap-1.5" aria-label={`${stepIndex} / ${totalSteps}`}>
+          {Array.from({ length: totalSteps }, (_, i) => (
+            <span
+              key={i}
+              className={`h-1.5 rounded-full transition-all ${
+                i + 1 === stepIndex ? 'w-6 bg-purple-600' : 'w-1.5 bg-gray-300 dark:bg-gray-600'
+              }`}
+            />
+          ))}
+        </div>
+        <button
+          type="button"
+          onClick={onPause}
+          className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 px-1"
+        >
+          ×
+        </button>
+      </div>
+      <h3 id="mobile-onboarding-title" className="text-base font-semibold text-gray-900 dark:text-white whitespace-pre-line">
+        {title}
+      </h3>
+      <p className="mt-2 text-sm text-gray-600 dark:text-gray-300 leading-relaxed whitespace-pre-line">{body}</p>
+      <div className="mt-4 flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={onNext}
+          className="flex-1 min-w-[120px] rounded-xl bg-purple-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-purple-700 transition-colors"
+        >
+          {nextLabel}
+        </button>
+        {showPause && (
+          <button
+            type="button"
+            onClick={onPause}
+            className="rounded-xl border border-gray-200 dark:border-gray-700 px-3 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-900"
+          >
+            {/* filled via parent - use translation in overlay */}
+          </button>
+        )}
+      </div>
+      {showSkip && (
+        <button
+          type="button"
+          onClick={onSkip}
+          className="mt-3 w-full text-center text-xs text-gray-500 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400"
+        >
+          {/* skip label */}
+        </button>
+      )}
+    </div>
+  );
+}
+
+export default function MobileOnboardingOverlay() {
+  const { t } = useLanguage();
+  const { isOverlayVisible, step, goNext, skip, pause, close } = useMobileOnboarding();
+
+  const mainSteps: Array<'home' | 'profile_icon' | 'profile_edit'> = ['home', 'profile_icon', 'profile_edit'];
+  const displayStep: (typeof mainSteps)[number] | null =
+    step === 'edit_form' ? 'profile_edit' : mainSteps.includes(step as (typeof mainSteps)[number])
+      ? (step as (typeof mainSteps)[number])
+      : null;
+
+  const targetSelector = useMemo(() => {
+    if (!isOverlayVisible || !displayStep) return null;
+    if (displayStep === 'home') return ONBOARDING_TARGETS.home;
+    if (displayStep === 'profile_icon') return ONBOARDING_TARGETS.profileIcon;
+    if (displayStep === 'profile_edit') return ONBOARDING_TARGETS.profileEditButton;
+    return null;
+  }, [displayStep, isOverlayVisible]);
+
+  const rect = useOnboardingTargetRect(targetSelector, isOverlayVisible);
+
+  if (!isOverlayVisible) return null;
+
+  const stepIndex = displayStep ? mainSteps.indexOf(displayStep) + 1 : 1;
+
+  const pauseLabel = t('onboarding.mobile.later', 'Neskôr');
+  const skipLabel = t('onboarding.mobile.skip', 'Preskočiť');
+
+  const configs = {
+    home: {
+      title: t('onboarding.mobile.home.title', 'Vitaj na Svaply'),
+      body: t(
+        'onboarding.mobile.home.body',
+        'Tu budeš objavovať príspevky, ponuky, dopyty a prácu ostatných používateľov.',
+      ),
+      placement: 'below' as const,
+    },
+    profile_icon: {
+      title: t('onboarding.mobile.profileIcon.title', 'Toto je tvoj profil'),
+      body: t(
+        'onboarding.mobile.profileIcon.body',
+        'Uprav si profil, pridaj portfólio a spravuj svoje ponuky, dopyty či nové príležitosti.',
+      ),
+      placement: 'below' as const,
+    },
+    profile_edit: {
+      title: t('onboarding.mobile.editProfile.title', 'Vyplň svoj profil'),
+      body: t(
+        'onboarding.mobile.editProfile.body',
+        'Ostatní používatelia tak lepšie uvidia kto si a čo ponúkaš.',
+      ),
+      placement: 'above' as const,
+    },
+  };
+
+  const config = displayStep ? configs[displayStep] : null;
+  if (!config) return null;
+
+  const nextLabel =
+    displayStep === 'profile_edit'
+      ? t('onboarding.mobile.editProfileCta', 'Upraviť profil')
+      : t('onboarding.mobile.next', 'Ďalej');
+
+  const handleNext = () => {
+    goNext();
+  };
+
+  const tooltipStyle: React.CSSProperties = {
+    position: 'fixed',
+    left: 16,
+    right: 16,
+    maxWidth: 360,
+    marginLeft: 'auto',
+    marginRight: 'auto',
+    zIndex: OVERLAY_Z + 1,
+  };
+
+  const nav = typeof document !== 'undefined'
+    ? document.querySelector<HTMLElement>('[data-mobile-bottom-nav]')
+    : null;
+  const navHeight = nav ? Math.ceil(nav.getBoundingClientRect().height) : 88;
+  const bottomReserve = navHeight + 24;
+
+  if (config.placement === 'below' && rect) {
+    tooltipStyle.top = Math.min(
+      rect.top + rect.height + SPOTLIGHT_PADDING + 12,
+      window.innerHeight - bottomReserve - 180,
+    );
+  } else if (config.placement === 'above' && rect) {
+    tooltipStyle.bottom = Math.max(
+      window.innerHeight - rect.top + SPOTLIGHT_PADDING + 12,
+      bottomReserve,
+    );
+  } else {
+    tooltipStyle.bottom = bottomReserve;
+  }
+
+  if (tooltipStyle.top != null) {
+    tooltipStyle.top = Math.min(
+      tooltipStyle.top,
+      window.innerHeight - bottomReserve - 180,
+    );
+  }
+
+  return (
+    <>
+      {rect ? <SpotlightHole rect={rect} /> : null}
+      {!rect ? (
+        <div
+          aria-hidden
+          className="fixed inset-0 pointer-events-none"
+          style={{ zIndex: OVERLAY_Z, background: 'rgba(15, 23, 42, 0.55)' }}
+        />
+      ) : null}
+      <div
+        role="dialog"
+        aria-modal="false"
+        aria-labelledby="mobile-onboarding-title"
+        className="rounded-2xl border border-purple-200/80 dark:border-purple-800/60 bg-white dark:bg-gray-950 shadow-xl p-4"
+        style={{
+          ...tooltipStyle,
+          animation: 'mobileOnboardingFadeIn 0.35s ease-out',
+        }}
+      >
+        <div className="flex items-center justify-between gap-2 mb-2">
+          <div className="flex gap-1.5">
+            {[1, 2, 3].map((i) => (
+              <span
+                key={i}
+                className={`h-1.5 rounded-full transition-all ${
+                  i === stepIndex ? 'w-6 bg-purple-600' : 'w-1.5 bg-gray-300 dark:bg-gray-600'
+                }`}
+              />
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={close}
+            className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+            aria-label={t('common.close', 'Zavrieť')}
+          >
+            ×
+          </button>
+        </div>
+        <h3
+          id="mobile-onboarding-title"
+          className="text-base font-semibold text-gray-900 dark:text-white whitespace-pre-line"
+        >
+          {config.title}
+        </h3>
+        <p className="mt-2 text-sm text-gray-600 dark:text-gray-300 leading-relaxed whitespace-pre-line">
+          {config.body}
+        </p>
+        <div className="mt-4 flex gap-2">
+          <button
+            type="button"
+            onClick={handleNext}
+            className="flex-1 rounded-xl bg-purple-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-purple-700 transition-colors"
+          >
+            {nextLabel}
+          </button>
+          <button
+            type="button"
+            onClick={pause}
+            className="shrink-0 rounded-xl border border-gray-200 dark:border-gray-700 px-3 py-2.5 text-sm text-gray-700 dark:text-gray-200"
+          >
+            {pauseLabel}
+          </button>
+        </div>
+        <button
+          type="button"
+          onClick={skip}
+          className="mt-3 w-full text-center text-xs text-gray-500 dark:text-gray-400 hover:text-purple-600"
+        >
+          {skipLabel}
+        </button>
+      </div>
+      <style jsx global>{`
+        @keyframes mobileOnboardingPulse {
+          0%,
+          100% {
+            box-shadow: 0 0 0 9999px rgba(15, 23, 42, 0.52);
+          }
+          50% {
+            box-shadow: 0 0 0 9999px rgba(15, 23, 42, 0.62);
+          }
+        }
+        @keyframes mobileOnboardingFadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(6px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
+    </>
+  );
+}

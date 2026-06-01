@@ -166,6 +166,34 @@
     "skillSaveError": "A készség mentése sikertelen",
     "userNotFound": "A felhasználó nem található."
   },
+  "onboarding": {
+    "mobile": {
+      "progress": "{current}. lépés / {total}",
+      "next": "Tovább",
+      "later": "Később",
+      "skip": "Kihagyás",
+      "home": {
+        "title": "Üdv a Svaply-n",
+        "body": "Itt bejegyzéseket, ajánlatokat, kéréseket és más felhasználók munkáit fedezheted fel."
+      },
+      "profileIcon": {
+        "title": "Ez a profilod",
+        "body": "Szerkeszd a profilodat, adj hozzá portfóliót, és kezeld ajánlataidat, kéréseidet vagy új lehetőségeidet."
+      },
+      "profile": {
+        "title": "Ez a profilod",
+        "body": "Itt mások láthatják a munkáidat, portfóliódat, ajánlataidat és a rólad szóló információkat."
+      },
+      "editProfile": {
+        "title": "Töltsd ki a profilodat",
+        "body": "Így más felhasználók jobban látják, ki vagy és mit kínálsz."
+      },
+      "profileEditing": {
+        "title": "Add meg az alapvető információkat magadról",
+        "body": "Egy fotóval és leírással ellátott profil megbízhatóbbnak hat."
+      }
+    }
+  },
   "create": {
     "title": "Létrehozás",
     "subtitle": "Mit szeretne hozzáadni?",

@@ -1,9 +1,24 @@
+import re
+
 from django.conf import settings
 from rest_framework import serializers
 
 from accounts.models import OfferedSkill
 
+from .constants import PORTFOLIO_CATEGORY_CHOICES, normalize_portfolio_category
 from .models import PortfolioImage, PortfolioItem
+
+HTML_TAG_RE = re.compile(r"<[^>]+>")
+PORTFOLIO_WRITE_FIELDS = {"title", "category", "description", "related_offer"}
+
+
+def _validate_plain_text(value: str, *, allow_blank: bool) -> str:
+    value = (value or "").strip()
+    if not allow_blank and not value:
+        raise serializers.ValidationError("Toto pole je povinne.")
+    if value and HTML_TAG_RE.search(value):
+        raise serializers.ValidationError("HTML nie je povolene.")
+    return value
 
 
 def _build_media_url(request, key: str) -> str:
@@ -70,6 +85,59 @@ class RelatedOfferSerializer(serializers.ModelSerializer):
         model = OfferedSkill
         fields = ["id", "category", "subcategory", "is_seeking"]
         read_only_fields = fields
+
+
+class PortfolioItemWriteSerializer(serializers.ModelSerializer):
+    related_offer = serializers.PrimaryKeyRelatedField(
+        queryset=OfferedSkill.objects.none(),
+        required=False,
+        allow_null=True,
+    )
+
+    class Meta:
+        model = PortfolioItem
+        fields = ["title", "category", "description", "related_offer"]
+        extra_kwargs = {
+            "title": {"required": True, "allow_blank": False},
+            "category": {"required": True, "allow_blank": False},
+            "description": {"required": False, "allow_blank": True},
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        request = self.context.get("request")
+        user = getattr(request, "user", None)
+        if user is not None and getattr(user, "is_authenticated", False):
+            self.fields["related_offer"].queryset = OfferedSkill.objects.filter(
+                user=user
+            )
+
+    def to_internal_value(self, data):
+        if not hasattr(data, "keys"):
+            raise serializers.ValidationError("Ocakava sa objekt.")
+        extra_fields = set(data.keys()) - PORTFOLIO_WRITE_FIELDS
+        if extra_fields:
+            raise serializers.ValidationError(
+                {
+                    field: ["Toto pole nie je povolene."]
+                    for field in sorted(extra_fields)
+                }
+            )
+        return super().to_internal_value(data)
+
+    def validate_title(self, value):
+        return _validate_plain_text(value, allow_blank=False)
+
+    def validate_category(self, value):
+        category = normalize_portfolio_category(
+            _validate_plain_text(value, allow_blank=False)
+        )
+        if category not in PORTFOLIO_CATEGORY_CHOICES:
+            raise serializers.ValidationError("Neplatna kategoria portfolia.")
+        return category
+
+    def validate_description(self, value):
+        return _validate_plain_text(value, allow_blank=True)
 
 
 class PortfolioItemSerializer(serializers.ModelSerializer):

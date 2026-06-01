@@ -7,6 +7,7 @@ import { GroupConversationAvatar } from './modules/messages/GroupConversationAva
 import { requestOpenConversationActions } from './modules/messages/messagesEvents';
 import SkillsModeSwitchButton from './modules/skills/SkillsModeSwitchButton';
 import type { MessagingUserBrief } from './modules/messages/types';
+import { useOptionalMobileOnboarding } from './onboarding/MobileOnboardingContext';
 
 interface MobileTopBarProps {
   onMenuClick: () => void;
@@ -50,6 +51,7 @@ export default function MobileTopBar({
   onMessagesBackClick,
 }: MobileTopBarProps) {
   const { t } = useLanguage();
+  const onboarding = useOptionalMobileOnboarding();
   const [describeMode, setDescribeMode] = React.useState<'offer' | 'search' | null>(null);
   const isOpenMessagesConversation = activeModule === 'messages' && isMessageConversationOpen;
   const canOpenMessagePeerProfile = Boolean((messagePeerIdentifier || '').trim());
@@ -89,6 +91,9 @@ export default function MobileTopBar({
     activeModule !== 'profile' &&
     activeModule !== 'user-profile' &&
     activeModule !== 'favorites' &&
+    activeModule !== 'skills' &&
+    activeModule !== 'skills-offer' &&
+    activeModule !== 'skills-search' &&
     activeModule !== 'skills-describe' &&
     activeModule !== 'requests' &&
     activeModule !== 'messages' &&
@@ -309,7 +314,12 @@ export default function MobileTopBar({
           {/* Ikona profilu – rýchly prechod na profil (skrytá v upozorneniach, účte a súkromí) */}
           {canShowQuickProfile && (
             <button
-              onClick={onProfileClick}
+              type="button"
+              data-onboarding="profile-icon"
+              onClick={() => {
+                onboarding?.registerProfileIconClick();
+                onProfileClick?.();
+              }}
               className="p-1.5 rounded-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-black text-gray-600 dark:text-gray-300 shadow-sm hover:border-purple-400 hover:text-purple-600 hover:bg-gray-50 dark:hover:bg-gray-900 transition-all"
               aria-label={t('navigation.profile', 'Profil')}
             >
