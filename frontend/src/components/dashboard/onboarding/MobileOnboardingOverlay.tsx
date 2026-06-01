@@ -235,7 +235,7 @@ export default function MobileOnboardingOverlay() {
 
   if (tooltipStyle.top != null) {
     tooltipStyle.top = Math.min(
-      tooltipStyle.top,
+      tooltipStyle.top as number,
       window.innerHeight - bottomReserve - 180,
     );
   }
