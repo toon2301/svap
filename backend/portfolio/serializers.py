@@ -1,0 +1,119 @@
+from django.conf import settings
+from rest_framework import serializers
+
+from accounts.models import OfferedSkill
+
+from .models import PortfolioImage, PortfolioItem
+
+
+def _build_media_url(request, key: str) -> str:
+    base = getattr(settings, "MEDIA_URL", "/media/")
+    url = f"{base}{key.lstrip('/')}"
+    return request.build_absolute_uri(url) if request else url
+
+
+def _image_url(request, image: PortfolioImage) -> str | None:
+    approved_key = (getattr(image, "approved_key", "") or "").strip()
+    if image.status == PortfolioImage.Status.APPROVED and approved_key:
+        return _build_media_url(request, approved_key)
+
+    image_field = getattr(image, "image", None)
+    image_name = (getattr(image_field, "name", "") or "").strip()
+    if image.status != PortfolioImage.Status.REJECTED and image_name:
+        try:
+            url = image_field.url
+        except Exception:
+            return None
+        return request.build_absolute_uri(url) if request else url
+
+    return None
+
+
+class PortfolioImageSerializer(serializers.ModelSerializer):
+    image_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = PortfolioImage
+        fields = [
+            "id",
+            "image_url",
+            "order",
+            "width",
+            "height",
+            "status",
+            "rejected_reason",
+        ]
+        read_only_fields = fields
+
+    def get_image_url(self, obj):
+        return _image_url(self.context.get("request"), obj)
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        if not self.context.get("is_owner", False):
+            data.pop("status", None)
+            data.pop("rejected_reason", None)
+        elif data.get("status") != PortfolioImage.Status.REJECTED:
+            data.pop("rejected_reason", None)
+        return data
+
+
+class RelatedOfferSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OfferedSkill
+        fields = ["id", "category", "subcategory", "is_seeking"]
+        read_only_fields = fields
+
+
+class PortfolioItemSerializer(serializers.ModelSerializer):
+    is_featured = serializers.SerializerMethodField()
+    related_offer = serializers.SerializerMethodField()
+    cover_image = serializers.SerializerMethodField()
+    images = serializers.SerializerMethodField()
+
+    class Meta:
+        model = PortfolioItem
+        fields = [
+            "id",
+            "title",
+            "category",
+            "description",
+            "sort_order",
+            "is_featured",
+            "related_offer",
+            "cover_image",
+            "images",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = fields
+
+    def get_is_featured(self, obj):
+        return obj.id == self.context.get("featured_item_id")
+
+    def get_related_offer(self, obj):
+        offer = getattr(obj, "related_offer", None)
+        if offer is None:
+            return None
+        if not self.context.get("is_owner", False) and getattr(
+            offer, "is_hidden", False
+        ):
+            return None
+        return RelatedOfferSerializer(offer, context=self.context).data
+
+    def get_cover_image(self, obj):
+        cover = getattr(obj, "cover_image", None)
+        if cover is None:
+            return None
+        if (
+            not self.context.get("is_owner", False)
+            and cover.status != PortfolioImage.Status.APPROVED
+        ):
+            return None
+        return PortfolioImageSerializer(cover, context=self.context).data
+
+    def get_images(self, obj):
+        images = getattr(obj, "prefetched_portfolio_images", None)
+        if images is None:
+            images = obj.images.all()
+        return PortfolioImageSerializer(images, many=True, context=self.context).data

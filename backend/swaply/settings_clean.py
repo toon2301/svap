@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     "skills",
     "exchanges",
     "messaging",
+    "portfolio",
 ]
 
 MIDDLEWARE = [

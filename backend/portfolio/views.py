@@ -1,0 +1,193 @@
+from django.contrib.auth import get_user_model
+from django.db.models import Prefetch, Q
+from rest_framework import status
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+
+from swaply.rate_limiting import api_rate_limit
+
+from .models import PortfolioImage, PortfolioItem
+from .serializers import PortfolioItemSerializer
+
+User = get_user_model()
+
+
+def _not_found():
+    return Response(
+        {"error": "Pouzivatel nebol najdeny"},
+        status=status.HTTP_404_NOT_FOUND,
+    )
+
+
+def _portfolio_item_not_found():
+    return Response(
+        {"error": "Polozka portfolia nebola najdena"},
+        status=status.HTTP_404_NOT_FOUND,
+    )
+
+
+def _is_owner(request, user) -> bool:
+    return bool(
+        getattr(request.user, "is_authenticated", False)
+        and int(user.id) == int(request.user.id)
+    )
+
+
+def _enforce_public_or_owner(request, user) -> Response | None:
+    if not _is_owner(request, user) and not getattr(user, "is_public", True):
+        return _not_found()
+    return None
+
+
+def _public_image_file_q(prefix: str = ""):
+    approved_key = f"{prefix}approved_key__gt"
+    image_isnull = f"{prefix}image__isnull"
+    image_exact = f"{prefix}image"
+    return Q(**{approved_key: ""}) | (
+        Q(**{image_isnull: False}) & ~Q(**{image_exact: ""})
+    )
+
+
+def _visible_cover_q():
+    return Q(cover_image__status=PortfolioImage.Status.APPROVED) & (
+        Q(cover_image__approved_key__gt="")
+        | (Q(cover_image__image__isnull=False) & ~Q(cover_image__image=""))
+    )
+
+
+def _prefetch_images(is_owner: bool):
+    images = PortfolioImage.objects.order_by("order", "id")
+    if not is_owner:
+        images = images.filter(status=PortfolioImage.Status.APPROVED).filter(
+            _public_image_file_q()
+        )
+    return Prefetch("images", queryset=images, to_attr="prefetched_portfolio_images")
+
+
+def _portfolio_queryset(user, *, is_owner: bool):
+    queryset = (
+        PortfolioItem.objects.filter(owner_id=user.id)
+        .select_related("owner", "related_offer", "cover_image")
+        .prefetch_related(_prefetch_images(is_owner))
+        .order_by("sort_order", "id")
+    )
+    if not is_owner:
+        queryset = queryset.filter(_visible_cover_q())
+    return queryset
+
+
+def _target_user_by_id(request, user_id: int):
+    if getattr(request.user, "is_authenticated", False) and int(request.user.id) == int(
+        user_id
+    ):
+        return request.user
+    return User.objects.only("id", "is_active", "is_public", "slug").get(
+        id=user_id, is_active=True
+    )
+
+
+def _serialize_items(request, items, *, is_owner: bool, featured_item_id: int | None):
+    return PortfolioItemSerializer(
+        items,
+        many=True,
+        context={
+            "request": request,
+            "is_owner": is_owner,
+            "featured_item_id": featured_item_id,
+        },
+    ).data
+
+
+def _portfolio_list_response(request, user):
+    owner_view = _is_owner(request, user)
+    queryset = _portfolio_queryset(user, is_owner=owner_view)
+    items = list(queryset)
+    featured_item_id = items[0].id if items else None
+    return Response(
+        _serialize_items(
+            request,
+            items,
+            is_owner=owner_view,
+            featured_item_id=featured_item_id,
+        ),
+        status=status.HTTP_200_OK,
+    )
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+@api_rate_limit
+def my_portfolio_list_view(request):
+    return _portfolio_list_response(request, request.user)
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+@api_rate_limit
+def portfolio_item_detail_view(request, item_id: int):
+    try:
+        item = PortfolioItem.objects.select_related("owner").get(id=item_id)
+    except PortfolioItem.DoesNotExist:
+        return _portfolio_item_not_found()
+
+    owner = item.owner
+    if not _is_owner(request, owner) and not getattr(owner, "is_active", True):
+        return _portfolio_item_not_found()
+
+    privacy_resp = _enforce_public_or_owner(request, owner)
+    if privacy_resp is not None:
+        return _portfolio_item_not_found()
+
+    owner_view = _is_owner(request, owner)
+    queryset = _portfolio_queryset(owner, is_owner=owner_view)
+    featured_item_id = queryset.values_list("id", flat=True).first()
+
+    try:
+        item = queryset.get(id=item_id)
+    except PortfolioItem.DoesNotExist:
+        return _portfolio_item_not_found()
+
+    serializer = PortfolioItemSerializer(
+        item,
+        context={
+            "request": request,
+            "is_owner": owner_view,
+            "featured_item_id": featured_item_id,
+        },
+    )
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+@api_rate_limit
+def user_portfolio_list_view(request, user_id: int):
+    try:
+        user = _target_user_by_id(request, user_id)
+    except User.DoesNotExist:
+        return _not_found()
+
+    privacy_resp = _enforce_public_or_owner(request, user)
+    if privacy_resp is not None:
+        return privacy_resp
+
+    return _portfolio_list_response(request, user)
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+@api_rate_limit
+def user_portfolio_list_by_slug_view(request, slug: str):
+    try:
+        user = User.objects.only("id", "is_active", "is_public", "slug").get(
+            slug=slug, is_active=True
+        )
+    except User.DoesNotExist:
+        return _not_found()
+
+    privacy_resp = _enforce_public_or_owner(request, user)
+    if privacy_resp is not None:
+        return privacy_resp
+
+    return _portfolio_list_response(request, user)
