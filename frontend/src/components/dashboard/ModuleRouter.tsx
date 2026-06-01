@@ -146,11 +146,11 @@ export default function ModuleRouter({
       return <OfferReviewsView offerId={offerIdForReviews ?? null} accountType={accountType} user={user} />;
     case 'home':
       return (
-        <div className="text-center py-20">
-          <h2 className="text-2xl font-semibold text-gray-600 mb-4">
+        <div className="text-center py-20" data-onboarding="home-content">
+          <h2 className="text-2xl font-semibold text-gray-600 dark:text-gray-400 mb-4">
             {t('dashboard.welcomeToSwaply', 'Vitaj v Swaply!')}
           </h2>
-          <p className="text-gray-500">
+          <p className="text-gray-500 dark:text-gray-500">
             {t('dashboard.selectSection', 'Vyber si sekciu z navigácie pre pokračovanie.')}
           </p>
         </div>

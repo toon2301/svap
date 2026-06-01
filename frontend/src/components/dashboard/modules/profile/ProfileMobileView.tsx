@@ -153,7 +153,10 @@ export default function ProfileMobileView({
       ) : (
         // Normal profile view
         <>
-          <div className="mb-4">
+          <div
+            data-onboarding={!isOtherUserProfile ? 'profile-header' : undefined}
+            className="mb-4"
+          >
             <div className="flex gap-3 items-start">
               <div className="flex-shrink-0">
                 <UserAvatar
@@ -359,6 +362,7 @@ export default function ProfileMobileView({
             {/* Tlačidlá POD webovou stránkou */}
             <div className="flex gap-2 mt-2">
               <button
+                data-onboarding={!isOtherUserProfile ? 'profile-edit-button' : undefined}
                 type="button"
                 onClick={() => {
                   if (isOtherUserProfile && isOpeningConversation) return;

@@ -234,7 +234,10 @@ export default function ProfileEditFormMobile({
   return (
     <div className="pt-2 pb-8">
       {/* Fotka a registračný email v strede */}
-      <div className="mb-4 flex flex-col items-center px-4">
+      <div
+        data-onboarding="profile-edit-form"
+        className="mb-4 flex flex-col items-center px-4"
+      >
         <div className="relative">
           <UserAvatar
             user={user}
@@ -392,6 +395,7 @@ export default function ProfileEditFormMobile({
           )}
           {onEditSave && (
             <button
+              data-onboarding="profile-edit-save"
               type="button"
               onClick={async () => {
                 try {

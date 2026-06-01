@@ -31,7 +31,10 @@ export default function MobileTopNav({ activeItem, onItemClick }: MobileTopNavPr
   ];
 
   return (
-    <div className="lg:hidden fixed bottom-0 left-0 right-0 z-[60] bg-white dark:bg-black border-t border-gray-200 dark:border-gray-800 shadow-lg overflow-visible">
+    <div
+      data-mobile-bottom-nav
+      className="lg:hidden fixed bottom-0 left-0 right-0 z-[60] bg-white dark:bg-black border-t border-gray-200 dark:border-gray-800 shadow-lg overflow-visible"
+    >
       <div className="flex items-start justify-between overflow-visible px-2 pt-1 pb-[max(1.5rem,env(safe-area-inset-bottom,0px))]">
         {navItems.map((item) => {
           const Icon = item.icon;

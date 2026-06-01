@@ -166,6 +166,34 @@
     "skillSaveError": "Fähigkeit konnte nicht gespeichert werden.",
     "userNotFound": "Nutzer wurde nicht gefunden."
   },
+  "onboarding": {
+    "mobile": {
+      "progress": "Schritt {current} von {total}",
+      "next": "Weiter",
+      "later": "Später",
+      "skip": "Überspringen",
+      "home": {
+        "title": "Willkommen bei Svaply",
+        "body": "Hier entdeckst du Beiträge, Angebote, Gesuche und Arbeiten anderer Nutzer."
+      },
+      "profileIcon": {
+        "title": "Das ist dein Profil",
+        "body": "Bearbeite dein Profil, füge ein Portfolio hinzu und verwalte deine Angebote, Gesuche oder neuen Möglichkeiten."
+      },
+      "profile": {
+        "title": "Das ist dein Profil",
+        "body": "Hier können andere deine Arbeit, dein Portfolio, deine Angebote und Informationen über dich sehen."
+      },
+      "editProfile": {
+        "title": "Fülle dein Profil aus",
+        "body": "So sehen andere Nutzer besser, wer du bist und was du anbietest."
+      },
+      "profileEditing": {
+        "title": "Ergänze die wichtigsten Infos über dich",
+        "body": "Ein Profil mit Foto und Beschreibung wirkt vertrauenswürdiger."
+      }
+    }
+  },
   "create": {
     "title": "Erstellen",
     "subtitle": "Was möchten Sie hinzufügen?",

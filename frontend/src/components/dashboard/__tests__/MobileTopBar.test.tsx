@@ -107,4 +107,37 @@ describe('MobileTopBar', () => {
 
     expect(onSkillsModeToggle).toHaveBeenCalledTimes(1);
   });
+
+  it('hides quick profile on skills picker, offer and search views', () => {
+    const onProfileClick = jest.fn();
+
+    const { rerender } = render(
+      <MobileTopBar
+        onMenuClick={jest.fn()}
+        activeModule="skills"
+        onProfileClick={onProfileClick}
+      />,
+    );
+    expect(screen.queryByRole('button', { name: 'Profil' })).not.toBeInTheDocument();
+
+    rerender(
+      <MobileTopBar
+        onMenuClick={jest.fn()}
+        activeModule="skills-offer"
+        onProfileClick={onProfileClick}
+        onSkillsModeToggle={jest.fn()}
+      />,
+    );
+    expect(screen.queryByRole('button', { name: 'Profil' })).not.toBeInTheDocument();
+
+    rerender(
+      <MobileTopBar
+        onMenuClick={jest.fn()}
+        activeModule="skills-search"
+        onProfileClick={onProfileClick}
+        onSkillsModeToggle={jest.fn()}
+      />,
+    );
+    expect(screen.queryByRole('button', { name: 'Profil' })).not.toBeInTheDocument();
+  });
 });

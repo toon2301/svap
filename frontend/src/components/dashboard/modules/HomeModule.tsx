@@ -16,7 +16,10 @@ export default function HomeModule({ user }: HomeModuleProps) {
       className="space-y-8"
     >
       {/* Welcome section */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      <div
+        data-onboarding="home-welcome"
+        className="bg-white rounded-lg shadow-sm border border-gray-200 p-6"
+      >
         <h2 className="text-3xl font-bold text-gray-900 mb-4">
           Vitaj v Swaply!
         </h2>

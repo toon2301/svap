@@ -9,6 +9,8 @@ import type { ProfileTab } from '../modules/profile/profileTypes';
 import DashboardLayout from '../DashboardLayout';
 import ModuleRouter from '../ModuleRouter';
 import DashboardModals from '../DashboardModals';
+import { MobileOnboardingProvider } from '../onboarding/MobileOnboardingContext';
+import MobileOnboardingOverlay from '../onboarding/MobileOnboardingOverlay';
 import SearchModule from '../modules/SearchModule';
 import { MessagesDesktopRail } from '../modules/messages/MessagesDesktopRail';
 import NotificationsFeed from '../modules/notifications/NotificationsFeed';
@@ -779,79 +781,91 @@ export default function DashboardContent({
     (typeof mobileMessagePeer?.id === 'number' ? String(mobileMessagePeer.id) : null);
   const mobileMessageTitle = mobileMessageGroup?.name || (mobileMessagePeer?.display_name || '').trim() || undefined;
   const mobileMessageAvatarUrl = mobileMessageGroup ? null : mobileMessagePeer?.avatar_url ?? null;
+  const isMobileProfileEditMode =
+    activeModule === 'profile' &&
+    activeRightItem === 'edit-profile' &&
+    isRightSidebarOpen;
 
   return (
     <RequestsNotificationsProvider
       acknowledgeNotificationsBadge={activeModule === 'notifications' || isNotificationsPanelOpen}
     >
-      <DashboardLayout
+      <MobileOnboardingProvider
         activeModule={activeModule}
-        activeRightItem={activeRightItem}
-        isRightSidebarOpen={isRightSidebarOpen}
-        isMobileMenuOpen={isMobileMenuOpen}
-        onModuleChange={handleMainModuleChange}
-        onLogout={handleLogout}
-        onRightSidebarClose={navigation.handleRightSidebarClose}
-        onRightItemClick={handleRightItemClick}
-        onMobileMenuOpen={() => setIsMobileMenuOpen(true)}
-        onMobileMenuClose={() => setIsMobileMenuOpen(false)}
-        onMobileBack={activeModule === 'skills-select-category' ? handleSkillsCategoryBack : handleMobileBack}
-        onMobileProfileClick={navigation.handleMobileProfileClick}
-        onSkillsModeToggle={handleSkillsModeToggle}
-        onSidebarLanguageClick={navigation.handleSidebarLanguageClick}
-        onSidebarAccountTypeClick={navigation.handleSidebarAccountTypeClick}
-        onSidebarPrivacyClick={navigation.handleSidebarPrivacyClick}
-        isSearchOpen={isSearchOpen}
-        isNotificationsPanelOpen={isNotificationsPanelOpen}
-        onSidebarSearchClick={handleSidebarSearchClick}
-        onSidebarNotificationsClick={handleSidebarNotificationsClick}
-        onSearchClose={navigation.handleSearchClose}
-        onNotificationsPanelClose={handleNotificationsPanelClose}
-        searchOverlay={
-          user ? (
-            <SearchModule
-              user={user}
-              onUserClick={navigation.handleViewUserProfileFromSearch}
-              onSkillClick={navigation.handleViewUserSkillFromSearch}
-              isOverlay
-              isActive={isSearchOpen}
-            />
-          ) : null
-        }
-        notificationsOverlay={
-          <NotificationsFeed
-            variant="panel"
-            onNavigate={handleNotificationNavigate}
-          />
-        }
-        desktopRightRail={
-          activeModule === 'messages' ? (
-            <MessagesDesktopRail
-              currentUserId={user.id}
-              selectedConversationId={
-                selectedConversationId != null && Number.isFinite(selectedConversationId)
-                  ? selectedConversationId
-                  : null
-              }
-            />
-          ) : null
-        }
-        subcategory={activeModule === 'skills-describe' ? selectedSkillsCategory?.subcategory : null}
-        onSkillSaveClick={activeModule === 'skills-describe' ? handleSkillSave : undefined}
-        mobileAccountName={mobileAccountName}
-        mobileMessagePeerName={mobileMessageTitle}
-        mobileMessagePeerAvatarUrl={mobileMessageAvatarUrl}
-        mobileMessagePeerAvatarMembers={mobileMessageGroup?.avatarMembers ?? []}
-        mobileMessagePeerIsGroup={Boolean(mobileMessageGroup)}
-        mobileMessagePeerIdentifier={mobileMessageGroup ? null : mobileMessagePeerIdentifier}
-        isMobileMessageConversationOpen={Boolean(
-          activeModule === 'messages' &&
-            (selectedConversationId != null || targetUserIdFromMessagesQuery != null),
-        )}
-        onMobileMessagesBack={handleMobileMessagesBack}
+        isProfileEditMode={isMobileProfileEditMode}
+        onOpenProfile={navigation.handleMobileProfileClick}
+        onOpenEditProfile={navigation.handleEditProfileClick}
       >
-        {moduleContent}
-      </DashboardLayout>
+        <DashboardLayout
+          activeModule={activeModule}
+          activeRightItem={activeRightItem}
+          isRightSidebarOpen={isRightSidebarOpen}
+          isMobileMenuOpen={isMobileMenuOpen}
+          onModuleChange={handleMainModuleChange}
+          onLogout={handleLogout}
+          onRightSidebarClose={navigation.handleRightSidebarClose}
+          onRightItemClick={handleRightItemClick}
+          onMobileMenuOpen={() => setIsMobileMenuOpen(true)}
+          onMobileMenuClose={() => setIsMobileMenuOpen(false)}
+          onMobileBack={activeModule === 'skills-select-category' ? handleSkillsCategoryBack : handleMobileBack}
+          onMobileProfileClick={navigation.handleMobileProfileClick}
+          onSkillsModeToggle={handleSkillsModeToggle}
+          onSidebarLanguageClick={navigation.handleSidebarLanguageClick}
+          onSidebarAccountTypeClick={navigation.handleSidebarAccountTypeClick}
+          onSidebarPrivacyClick={navigation.handleSidebarPrivacyClick}
+          isSearchOpen={isSearchOpen}
+          isNotificationsPanelOpen={isNotificationsPanelOpen}
+          onSidebarSearchClick={handleSidebarSearchClick}
+          onSidebarNotificationsClick={handleSidebarNotificationsClick}
+          onSearchClose={navigation.handleSearchClose}
+          onNotificationsPanelClose={handleNotificationsPanelClose}
+          searchOverlay={
+            user ? (
+              <SearchModule
+                user={user}
+                onUserClick={navigation.handleViewUserProfileFromSearch}
+                onSkillClick={navigation.handleViewUserSkillFromSearch}
+                isOverlay
+                isActive={isSearchOpen}
+              />
+            ) : null
+          }
+          notificationsOverlay={
+            <NotificationsFeed
+              variant="panel"
+              onNavigate={handleNotificationNavigate}
+            />
+          }
+          desktopRightRail={
+            activeModule === 'messages' ? (
+              <MessagesDesktopRail
+                currentUserId={user.id}
+                selectedConversationId={
+                  selectedConversationId != null && Number.isFinite(selectedConversationId)
+                    ? selectedConversationId
+                    : null
+                }
+              />
+            ) : null
+          }
+          subcategory={activeModule === 'skills-describe' ? selectedSkillsCategory?.subcategory : null}
+          onSkillSaveClick={activeModule === 'skills-describe' ? handleSkillSave : undefined}
+          mobileAccountName={mobileAccountName}
+          mobileMessagePeerName={mobileMessageTitle}
+          mobileMessagePeerAvatarUrl={mobileMessageAvatarUrl}
+          mobileMessagePeerAvatarMembers={mobileMessageGroup?.avatarMembers ?? []}
+          mobileMessagePeerIsGroup={Boolean(mobileMessageGroup)}
+          mobileMessagePeerIdentifier={mobileMessageGroup ? null : mobileMessagePeerIdentifier}
+          isMobileMessageConversationOpen={Boolean(
+            activeModule === 'messages' &&
+              (selectedConversationId != null || targetUserIdFromMessagesQuery != null),
+          )}
+          onMobileMessagesBack={handleMobileMessagesBack}
+        >
+          {moduleContent}
+        </DashboardLayout>
+        <MobileOnboardingOverlay />
+      </MobileOnboardingProvider>
 
       <DashboardModals
         accountType={accountType}

@@ -159,8 +159,122 @@ export default function Sidebar({
     }
   };
 
+  const themeLogoutActions = (
+    <>
+      <button
+        onClick={toggleTheme}
+        className="w-full flex items-center px-2 py-2 text-sm font-medium rounded-2xl transition-colors bg-gray-100 dark:bg-gray-900 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-800 lg:px-2 lg:py-2 xl:px-3 xl:py-2.5"
+        aria-label="Prepínač témy"
+      >
+        {theme === 'dark' ? (
+          <SunIcon className="w-4 h-4 mr-2 xl:w-5 xl:h-5 xl:mr-3" />
+        ) : (
+          <MoonIcon className="w-4 h-4 mr-2 xl:w-5 xl:h-5 xl:mr-3" />
+        )}
+        <span className="text-sm">
+          {theme === 'dark' ? t('common.lightMode', 'Svetlý režim') : t('common.darkMode', 'Tmavý režim')}
+        </span>
+      </button>
+      <button
+        onClick={onLogout}
+        className="w-full flex items-center px-2 py-2 text-sm font-medium text-red-600 rounded-2xl hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors lg:px-2 lg:py-2 xl:px-3 xl:py-2.5"
+      >
+        <ArrowRightOnRectangleIcon className="w-4 h-4 mr-2 text-red-500 xl:w-5 xl:h-5 xl:mr-3" />
+        <span className="text-sm">{t('navigation.logout', 'Odhlásiť sa')}</span>
+      </button>
+    </>
+  );
+
+  const mobileSettingsItems = (
+    <div className="px-6 py-4">
+      <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-4">{t('rightSidebar.appUsage', 'Použitie aplikácie')}</h3>
+
+      {/* Upozornenia */}
+      <div className="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-2xl p-2 mb-4 border border-purple-100 dark:border-purple-800/30">
+        <button
+          onClick={() => handleItemClick('notification-settings')}
+          className="w-full flex items-center justify-between group"
+        >
+          <div className="flex items-center">
+            <div className="mr-3 group-hover:scale-110 transition-transform duration-200">
+              <Cog6ToothIcon className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+            </div>
+            <div className="text-left">
+              <div className="text-sm font-semibold text-gray-900 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
+                {t('rightSidebar.notifications', 'Upozornenia')}
+              </div>
+            </div>
+          </div>
+          <ChevronRightIcon className="w-5 h-5 text-gray-400 dark:text-gray-500 group-hover:text-purple-500 group-hover:translate-x-1 transition-all duration-200" />
+        </button>
+      </div>
+
+      {/* Účet */}
+      <div className="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-2xl p-2 mb-4 border border-purple-100 dark:border-purple-800/30">
+        <button
+          onClick={() => handleItemClick('account-type')}
+          className="w-full flex items-center justify-between group"
+        >
+          <div className="flex items-center">
+            <div className="mr-3 group-hover:scale-110 transition-transform duration-200">
+              <UserIcon className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+            </div>
+            <div className="text-left">
+              <div className="text-sm font-semibold text-gray-900 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
+                {t('rightSidebar.account', 'Účet')}
+              </div>
+            </div>
+          </div>
+          <ChevronRightIcon className="w-5 h-5 text-gray-400 dark:text-gray-500 group-hover:text-purple-500 group-hover:translate-x-1 transition-all duration-200" />
+        </button>
+      </div>
+
+      {/* Súkromie */}
+      <div className="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-2xl p-2 mb-4 border border-purple-100 dark:border-purple-800/30">
+        <button
+          onClick={() => handleItemClick('privacy')}
+          className="w-full flex items-center justify-between group"
+        >
+          <div className="flex items-center">
+            <div className="mr-3 group-hover:scale-110 transition-transform duration-200">
+              <LockClosedIcon className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+            </div>
+            <div className="text-left">
+              <div className="text-sm font-semibold text-gray-900 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
+                {t('rightSidebar.privacyShort', 'Súkromie')}
+              </div>
+            </div>
+          </div>
+          <ChevronRightIcon className="w-5 h-5 text-gray-400 dark:text-gray-500 group-hover:text-purple-500 group-hover:translate-x-1 transition-all duration-200" />
+        </button>
+      </div>
+
+      <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-4">{t('rightSidebar.appSettings', 'App Settings')}</h3>
+
+      {/* Jazyk */}
+      <div className="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-2xl p-2 mb-4 border border-purple-100 dark:border-purple-800/30">
+        <button
+          onClick={() => handleItemClick('language')}
+          className="w-full flex items-center justify-between group"
+        >
+          <div className="flex items-center">
+            <div className="mr-3 group-hover:scale-110 transition-transform duration-200">
+              <LanguageIcon className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+            </div>
+            <div className="text-left">
+              <div className="text-sm font-semibold text-gray-900 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
+                {t('rightSidebar.language', 'Jazyk')}
+              </div>
+            </div>
+          </div>
+          <ChevronRightIcon className="w-5 h-5 text-gray-400 dark:text-gray-500 group-hover:text-purple-500 group-hover:translate-x-1 transition-all duration-200" />
+        </button>
+      </div>
+    </div>
+  );
+
   const sidebarContent = (
-    <div className={`flex flex-col ${isMobile ? 'h-dvh pb-16' : 'h-screen'} bg-white dark:bg-black ${isMobile ? '' : 'border-r border-gray-200 dark:border-gray-800'}`}>
+    <div className={`flex flex-col ${isMobile ? 'h-dvh min-h-0' : 'h-screen'} bg-white dark:bg-black ${isMobile ? '' : 'border-r border-gray-200 dark:border-gray-800'}`}>
       {/* Logo - Desktop only */}
       {!isMobile && (
         <div className="flex items-center justify-center py-1 border-b border-gray-200 dark:border-gray-800">
@@ -178,7 +292,7 @@ export default function Sidebar({
 
       {/* Mobile header with close button */}
       {isMobile && (
-        <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-800">
+        <div className="shrink-0 flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-800">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{t('rightSidebar.settings', 'Nastavenia')}</h2>
           <button
             onClick={onClose}
@@ -246,119 +360,25 @@ export default function Sidebar({
         </nav>
       )}
 
-      {/* Prázdny priestor pre mobilnú verziu */}
+      {/* Mobilné nastavenia – scrollovateľný obsah vrátane témy a odhlásenia */}
       {isMobile && (
-        <div className="flex-1 px-6 py-4">
-          <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-4">{t('rightSidebar.appUsage', 'Použitie aplikácie')}</h3>
-          
-          {/* Upozornenia */}
-          <div className="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-2xl p-2 mb-4 border border-purple-100 dark:border-purple-800/30">
-            <button
-              onClick={() => handleItemClick('notification-settings')}
-              className="w-full flex items-center justify-between group"
-            >
-              <div className="flex items-center">
-                <div className="mr-3 group-hover:scale-110 transition-transform duration-200">
-                  <Cog6ToothIcon className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-                </div>
-                <div className="text-left">
-                  <div className="text-sm font-semibold text-gray-900 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
-                    {t('rightSidebar.notifications', 'Upozornenia')}
-                  </div>
-                </div>
-              </div>
-              <ChevronRightIcon className="w-5 h-5 text-gray-400 dark:text-gray-500 group-hover:text-purple-500 group-hover:translate-x-1 transition-all duration-200" />
-            </button>
-          </div>
-
-          {/* Účet */}
-          <div className="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-2xl p-2 mb-4 border border-purple-100 dark:border-purple-800/30">
-            <button
-              onClick={() => handleItemClick('account-type')}
-              className="w-full flex items-center justify-between group"
-            >
-              <div className="flex items-center">
-                <div className="mr-3 group-hover:scale-110 transition-transform duration-200">
-                  <UserIcon className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-                </div>
-                <div className="text-left">
-                  <div className="text-sm font-semibold text-gray-900 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
-                    {t('rightSidebar.account', 'Účet')}
-                  </div>
-                </div>
-              </div>
-              <ChevronRightIcon className="w-5 h-5 text-gray-400 dark:text-gray-500 group-hover:text-purple-500 group-hover:translate-x-1 transition-all duration-200" />
-            </button>
-          </div>
-
-          {/* Súkromie */}
-          <div className="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-2xl p-2 mb-4 border border-purple-100 dark:border-purple-800/30">
-            <button
-              onClick={() => handleItemClick('privacy')}
-              className="w-full flex items-center justify-between group"
-            >
-              <div className="flex items-center">
-                <div className="mr-3 group-hover:scale-110 transition-transform duration-200">
-                  <LockClosedIcon className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-                </div>
-                <div className="text-left">
-                  <div className="text-sm font-semibold text-gray-900 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
-                    {t('rightSidebar.privacyShort', 'Súkromie')}
-                  </div>
-                </div>
-              </div>
-              <ChevronRightIcon className="w-5 h-5 text-gray-400 dark:text-gray-500 group-hover:text-purple-500 group-hover:translate-x-1 transition-all duration-200" />
-            </button>
-          </div>
-          
-          <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-4">{t('rightSidebar.appSettings', 'App Settings')}</h3>
-          
-                 {/* Jazyk a preklady - krajší štýl */}
-                 <div className="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-2xl p-2 mb-4 border border-purple-100 dark:border-purple-800/30">
-            <button
-              onClick={() => handleItemClick('language')}
-              className="w-full flex items-center justify-between group"
-            >
-                     <div className="flex items-center">
-                       <div className="mr-3 group-hover:scale-110 transition-transform duration-200">
-                         <LanguageIcon className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-                       </div>
-                <div className="text-left">
-                  <div className="text-sm font-semibold text-gray-900 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
-                    {t('rightSidebar.language', 'Jazyk')}
-                  </div>
-                </div>
-              </div>
-              <ChevronRightIcon className="w-5 h-5 text-gray-400 dark:text-gray-500 group-hover:text-purple-500 group-hover:translate-x-1 transition-all duration-200" />
-            </button>
+        <div
+          className="flex-1 min-h-0 overflow-y-auto overscroll-contain elegant-scrollbar pb-[max(7rem,calc(env(safe-area-inset-bottom,0px)+5rem))]"
+          data-mobile-settings-scroll
+        >
+          {mobileSettingsItems}
+          <div className="border-t border-gray-200 dark:border-gray-800 space-y-1.5 p-6">
+            {themeLogoutActions}
           </div>
         </div>
       )}
 
-      {/* Theme Toggle + Logout */}
-      <div className={`border-t border-gray-200 dark:border-gray-800 space-y-1.5 ${isMobile ? 'p-6' : 'p-3 lg:p-3 xl:p-4 xl:space-y-2'}`}>
-        <button
-          onClick={toggleTheme}
-          className="w-full flex items-center px-2 py-2 text-sm font-medium rounded-2xl transition-colors bg-gray-100 dark:bg-gray-900 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-800 lg:px-2 lg:py-2 xl:px-3 xl:py-2.5"
-          aria-label="Prepínač témy"
-        >
-          {theme === 'dark' ? (
-            <SunIcon className="w-4 h-4 mr-2 xl:w-5 xl:h-5 xl:mr-3" />
-          ) : (
-            <MoonIcon className="w-4 h-4 mr-2 xl:w-5 xl:h-5 xl:mr-3" />
-          )}
-          <span className="text-sm">
-            {theme === 'dark' ? t('common.lightMode', 'Svetlý režim') : t('common.darkMode', 'Tmavý režim')}
-          </span>
-        </button>
-        <button
-          onClick={onLogout}
-          className="w-full flex items-center px-2 py-2 text-sm font-medium text-red-600 rounded-2xl hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors lg:px-2 lg:py-2 xl:px-3 xl:py-2.5"
-        >
-          <ArrowRightOnRectangleIcon className="w-4 h-4 mr-2 text-red-500 xl:w-5 xl:h-5 xl:mr-3" />
-          <span className="text-sm">{t('navigation.logout', 'Odhlásiť sa')}</span>
-        </button>
-      </div>
+      {/* Theme Toggle + Logout – desktop */}
+      {!isMobile && (
+        <div className="border-t border-gray-200 dark:border-gray-800 space-y-1.5 p-3 lg:p-3 xl:p-4 xl:space-y-2">
+          {themeLogoutActions}
+        </div>
+      )}
     </div>
   );
 
