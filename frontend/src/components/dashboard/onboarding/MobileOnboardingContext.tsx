@@ -335,9 +335,8 @@ export function MobileOnboardingProvider({
   const advanceProfileEditToPhase2 = useCallback(() => {
     setMobileOnboardingResumePhase2();
     setIsProfileEditPhase2(true);
-    writeMobileOnboardingCachedProgress(userId, 'profile_edit', true);
     cacheStateForUser(stored, true);
-  }, [cacheStateForUser, stored, userId]);
+  }, [cacheStateForUser, stored]);
 
   const goNext = useCallback(() => {
     if (!isEligible) return;
