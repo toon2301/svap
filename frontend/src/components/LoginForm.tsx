@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { api, endpoints } from '@/lib/api';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { clearMobileOnboardingPostponedForSession } from '@/lib/mobileOnboardingSession';
+import { clearMobileOnboardingPostponedForSession, clearMobileOnboardingResumePhase2 } from '@/lib/mobileOnboardingSession';
 import Credentials from './login/Credentials';
 import GoogleLoginBlock from './login/GoogleLoginBlock';
 import { fetchCsrfToken, hasCsrfToken } from '@/utils/csrf';
@@ -215,6 +215,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
           // Reset preferovaného modulu a nastav flag na vynútenie HOME
           try {
             clearMobileOnboardingPostponedForSession();
+            clearMobileOnboardingResumePhase2();
             localStorage.setItem('activeModule', 'home');
             sessionStorage.setItem('forceHome', '1');
           } catch (e) {}
@@ -288,6 +289,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
       // Reset preferovaného modulu po prihlásení a nastav flag na vynútenie HOME
       if (typeof window !== 'undefined') {
         clearMobileOnboardingPostponedForSession();
+        clearMobileOnboardingResumePhase2();
         localStorage.setItem('activeModule', 'home');
         sessionStorage.setItem('forceHome', '1');
       }

@@ -862,6 +862,7 @@ export default function DashboardContent({
               (selectedConversationId != null || targetUserIdFromMessagesQuery != null),
           )}
           onMobileMessagesBack={handleMobileMessagesBack}
+          currentUser={user}
         >
           {moduleContent}
         </DashboardLayout>

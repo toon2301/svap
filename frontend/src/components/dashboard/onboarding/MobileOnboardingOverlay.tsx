@@ -28,7 +28,8 @@ function SpotlightHole({ rect }: { rect: { top: number; left: number; width: num
 
 export default function MobileOnboardingOverlay() {
   const { t } = useLanguage();
-  const { isOverlayVisible, step, goNext, skip, pause, close } = useMobileOnboarding();
+  const { isOverlayVisible, step, goNext, skip, pause, close, isProfileEditPhase2 } =
+    useMobileOnboarding();
   const [profileHighlightTarget, setProfileHighlightTarget] = useState<'edit' | 'skills'>('edit');
   const tooltipRef = useRef<HTMLDivElement | null>(null);
   const [tooltipHeight, setTooltipHeight] = useState(180);
@@ -43,7 +44,14 @@ export default function MobileOnboardingOverlay() {
 
   useEffect(() => {
     if (!isOverlayVisible || displayStep !== 'profile_edit') {
-      setProfileHighlightTarget('edit');
+      if (!isOverlayVisible || displayStep !== 'profile_edit') {
+        setProfileHighlightTarget('edit');
+      }
+      return;
+    }
+
+    if (isProfileEditPhase2) {
+      setProfileHighlightTarget('skills');
       return;
     }
 
@@ -55,6 +63,22 @@ export default function MobileOnboardingOverlay() {
     return () => {
       window.clearInterval(intervalId);
     };
+  }, [displayStep, isOverlayVisible, isProfileEditPhase2]);
+
+  const [profileEditMeasurePass, setProfileEditMeasurePass] = useState(0);
+
+  useLayoutEffect(() => {
+    if (!isOverlayVisible || displayStep !== 'profile_edit') return;
+
+    setProfileEditMeasurePass((pass) => pass + 1);
+
+    const timeoutId = window.setTimeout(() => {
+      setProfileEditMeasurePass((pass) => pass + 1);
+    }, 100);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
   }, [displayStep, isOverlayVisible]);
 
   const targetSelector = useMemo(() => {
@@ -63,7 +87,7 @@ export default function MobileOnboardingOverlay() {
     if (displayStep === 'profile_icon') return ONBOARDING_TARGETS.profileIcon;
     if (displayStep === 'profile_edit') {
       if (
-        profileHighlightTarget === 'skills' &&
+        (profileHighlightTarget === 'skills' || isProfileEditPhase2) &&
         typeof document !== 'undefined' &&
         document.querySelector(ONBOARDING_TARGETS.profileSkillsButton)
       ) {
@@ -73,42 +97,67 @@ export default function MobileOnboardingOverlay() {
       return ONBOARDING_TARGETS.profileEditButton;
     }
     return null;
-  }, [displayStep, isOverlayVisible, profileHighlightTarget]);
+  }, [displayStep, isOverlayVisible, isProfileEditPhase2, profileHighlightTarget]);
 
-  const rect = useOnboardingTargetRect(targetSelector, isOverlayVisible);
+  const rect = useOnboardingTargetRect(
+    targetSelector,
+    isOverlayVisible,
+    displayStep === 'profile_edit' ? `${profileEditMeasurePass}:${isProfileEditPhase2}` : displayStep ?? undefined,
+  );
   const stepIndex = displayStep ? mainSteps.indexOf(displayStep) + 1 : 1;
 
   const pauseLabel = t('onboarding.mobile.later', 'Neskôr');
   const skipLabel = t('onboarding.mobile.skip', 'Ukončiť');
 
-  const configs = {
-    home: {
-      title: t('onboarding.mobile.home.title', 'Vitaj na Svaply'),
-      body: t(
-        'onboarding.mobile.home.body',
-        'Tu budeš objavovať príspevky, ponuky, dopyty a prácu ostatných používateľov.',
-      ),
-      placement: 'below' as const,
-    },
-    profile_icon: {
-      title: t('onboarding.mobile.profileIcon.title', 'Toto je tvoj profil'),
-      body: t(
-        'onboarding.mobile.profileIcon.body',
-        'Uprav si profil, pridaj portfólio a spravuj svoje ponuky, dopyty či nové príležitosti.',
-      ),
-      placement: 'below' as const,
-    },
-    profile_edit: {
-      title: t('onboarding.mobile.editProfile.title', 'Vyplň svoj profil'),
-      body: t(
-        'onboarding.mobile.editProfile.body',
-        'Ostatní používatelia tak lepšie uvidia kto si a čo ponúkaš.',
-      ),
-      placement: 'above' as const,
-    },
-  };
+  const config = useMemo(() => {
+    if (!displayStep) return null;
 
-  const config = displayStep ? configs[displayStep] : null;
+    if (displayStep === 'home') {
+      return {
+        title: t('onboarding.mobile.home.title', 'Vitaj na Svaply'),
+        body: t(
+          'onboarding.mobile.home.body',
+          'Tu budeš objavovať príspevky, ponuky, dopyty a prácu ostatných používateľov.',
+        ),
+        placement: 'below' as const,
+      };
+    }
+
+    if (displayStep === 'profile_icon') {
+      return {
+        title: t('onboarding.mobile.profileIcon.title', 'Toto je tvoj profil'),
+        body: t(
+          'onboarding.mobile.profileIcon.body',
+          'Uprav si profil, pridaj portfólio a spravuj svoje ponuky, dopyty či nové príležitosti.',
+        ),
+        placement: 'below' as const,
+      };
+    }
+
+    if (displayStep === 'profile_edit') {
+      if (profileHighlightTarget === 'skills' || isProfileEditPhase2) {
+        return {
+          title: t('tutorial.createCardStep.title', 'Vytvor svoju prvú kartu'),
+          body: t(
+            'tutorial.createCardStep.description',
+            'Môžeš ponúknuť svoje služby alebo pridať dopyt na to, čo hľadáš.',
+          ),
+          placement: 'above' as const,
+        };
+      }
+
+      return {
+        title: t('onboarding.mobile.editProfile.title', 'Vyplň svoj profil'),
+        body: t(
+          'onboarding.mobile.editProfile.body',
+          'Ostatní používatelia tak lepšie uvidia kto si a čo ponúkaš.',
+        ),
+        placement: 'above' as const,
+      };
+    }
+
+    return null;
+  }, [displayStep, isProfileEditPhase2, profileHighlightTarget, t]);
   const nextLabel = t('onboarding.mobile.next', 'Ďalej');
 
   const handleNext = () => {
@@ -120,7 +169,7 @@ export default function MobileOnboardingOverlay() {
     const nextHeight = tooltipRef.current?.getBoundingClientRect().height;
     if (!nextHeight) return;
     setTooltipHeight((prev) => (Math.abs(prev - nextHeight) > 1 ? nextHeight : prev));
-  }, [config, isOverlayVisible, nextLabel, pauseLabel, skipLabel, stepIndex]);
+  }, [config, isOverlayVisible, nextLabel, pauseLabel, profileHighlightTarget, skipLabel, stepIndex]);
 
   if (!isOverlayVisible || !config) return null;
 

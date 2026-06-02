@@ -16,10 +16,14 @@ import {
   ArrowRightOnRectangleIcon,
   LanguageIcon,
   ChevronRightIcon,
-  LockClosedIcon
+  LockClosedIcon,
+  ShareIcon,
 } from '@heroicons/react/24/outline';
 import { SunIcon, MoonIcon } from '@heroicons/react/24/outline';
 import { useTheme } from '@/contexts/ThemeContext';
+import toast from 'react-hot-toast';
+import type { User } from '@/types';
+import { shareOwnProfileLink } from './modules/profile/shareOwnProfileLink';
 import {
   useMessagesNotifications,
   useNotificationsUnread,
@@ -45,6 +49,7 @@ interface SidebarProps {
   onPrivacyClick?: () => void;
   onSearchClick?: () => void;
   onNotificationsClick?: () => void;
+  currentUser?: User | null;
 }
 
 const sidebarItems: SidebarItem[] = [
@@ -102,12 +107,31 @@ export default function Sidebar({
   onPrivacyClick,
   onSearchClick,
   onNotificationsClick,
+  currentUser = null,
 }: SidebarProps) {
   const { t } = useLanguage();
   const { theme, toggleTheme } = useTheme();
   const { unreadCount, markAllRead } = useRequestsNotifications();
   const { unreadCount: messageUnreadCount } = useMessagesNotifications();
   const { unreadCount: notificationsUnreadCount } = useNotificationsUnread();
+
+  const handleShareProfile = async () => {
+    if (!currentUser) return;
+
+    await shareOwnProfileLink(
+      currentUser,
+      {
+        shareTitle: t('profile.shareProfileTitle', 'Zdieľať profil'),
+        linkCopied: t('profile.profileLinkCopied', 'Odkaz na profil bol skopírovaný.'),
+        linkCopyFailed: t('profile.profileLinkCopyFailed', 'Odkaz sa nepodarilo skopírovať.'),
+      },
+      {
+        onCopied: (message) => toast.success(message),
+        onCopyFailed: (message) => toast.error(message),
+      },
+    );
+  };
+
   const handleItemClick = (itemId: string) => {
     // Desktop: pre vyhľadávanie otvor špeciálny search panel namiesto zmeny hlavného modulu
     if (itemId === 'search' && onSearchClick && !isMobile) {
@@ -294,13 +318,27 @@ export default function Sidebar({
       {isMobile && (
         <div className="shrink-0 flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-800">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{t('rightSidebar.settings', 'Nastavenia')}</h2>
-          <button
-            onClick={onClose}
-            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-900 transition-colors"
-            aria-label="Close"
-          >
-            <XMarkIcon className="w-5 h-5 text-gray-600 dark:text-gray-300" />
-          </button>
+          <div className="flex items-center gap-1">
+            {currentUser ? (
+              <button
+                type="button"
+                onClick={() => {
+                  void handleShareProfile();
+                }}
+                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-900 transition-colors"
+                aria-label={t('profile.shareProfileTitle', 'Zdieľať profil')}
+              >
+                <ShareIcon className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+              </button>
+            ) : null}
+            <button
+              onClick={onClose}
+              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-900 transition-colors"
+              aria-label={t('rightSidebar.close', 'Zatvoriť')}
+            >
+              <XMarkIcon className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+            </button>
+          </div>
         </div>
       )}
 

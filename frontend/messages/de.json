@@ -195,6 +195,12 @@
       }
     }
   },
+  "tutorial": {
+    "createCardStep": {
+      "title": "Erstelle deine erste Karte",
+      "description": "Du kannst deine Dienste anbieten oder hinzufügen, wonach du suchst."
+    }
+  },
   "create": {
     "title": "Erstellen",
     "subtitle": "Was möchten Sie hinzufügen?",

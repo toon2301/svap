@@ -8,6 +8,7 @@ import RightSidebar from './RightSidebar';
 import MobileTopNav from './MobileTopNav';
 import MobileTopBar from './MobileTopBar';
 import type { MessagingUserBrief } from './modules/messages/types';
+import type { User } from '@/types';
 
 interface DashboardLayoutProps {
   activeModule: string;
@@ -45,6 +46,7 @@ interface DashboardLayoutProps {
   mobileMessagePeerIdentifier?: string | null;
   isMobileMessageConversationOpen?: boolean;
   onMobileMessagesBack?: () => void;
+  currentUser?: User | null;
   children: React.ReactNode;
 }
 
@@ -84,6 +86,7 @@ export default function DashboardLayout({
   mobileMessagePeerIdentifier,
   isMobileMessageConversationOpen,
   onMobileMessagesBack,
+  currentUser = null,
   children,
 }: DashboardLayoutProps) {
   const isProfileEditMode =
@@ -244,6 +247,7 @@ export default function DashboardLayout({
         onPrivacyClick={onSidebarPrivacyClick}
         onSearchClick={onSidebarSearchClick}
         onNotificationsClick={onSidebarNotificationsClick}
+        currentUser={currentUser}
       />
 
       {/* Desktop Layout - CSS Grid */}

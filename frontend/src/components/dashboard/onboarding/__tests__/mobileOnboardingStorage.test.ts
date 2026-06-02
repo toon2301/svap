@@ -1,7 +1,10 @@
 import {
   clearMobileOnboardingPostponedForSession,
+  clearMobileOnboardingResumePhase2,
   isMobileOnboardingPostponedForSession,
+  isMobileOnboardingResumePhase2,
   postponeMobileOnboardingForSession,
+  setMobileOnboardingResumePhase2,
 } from '@/lib/mobileOnboardingSession';
 import {
   getInitialMobileOnboardingState,
@@ -105,5 +108,52 @@ describe('mobileOnboardingState helpers', () => {
 
     clearMobileOnboardingPostponedForSession();
     expect(isMobileOnboardingPostponedForSession()).toBe(false);
+  });
+
+  it('stores phase2 resume flag only in sessionStorage', () => {
+    expect(isMobileOnboardingResumePhase2()).toBe(false);
+
+    setMobileOnboardingResumePhase2();
+    expect(isMobileOnboardingResumePhase2()).toBe(true);
+
+    clearMobileOnboardingResumePhase2();
+    expect(isMobileOnboardingResumePhase2()).toBe(false);
+  });
+
+  it('keeps phase2 resume helpers safe when sessionStorage throws', () => {
+    const originalSessionStorage = window.sessionStorage;
+    const throwingStorage = {
+      getItem: jest.fn(() => {
+        throw new Error('get failed');
+      }),
+      setItem: jest.fn(() => {
+        throw new Error('set failed');
+      }),
+      removeItem: jest.fn(() => {
+        throw new Error('remove failed');
+      }),
+      clear: jest.fn(),
+      key: jest.fn(),
+      length: 0,
+    };
+
+    Object.defineProperty(window, 'sessionStorage', {
+      configurable: true,
+      value: throwingStorage,
+    });
+
+    try {
+      expect(() => setMobileOnboardingResumePhase2()).not.toThrow();
+      expect(isMobileOnboardingResumePhase2()).toBe(false);
+      expect(() => clearMobileOnboardingResumePhase2()).not.toThrow();
+      expect(throwingStorage.setItem).toHaveBeenCalled();
+      expect(throwingStorage.getItem).toHaveBeenCalled();
+      expect(throwingStorage.removeItem).toHaveBeenCalled();
+    } finally {
+      Object.defineProperty(window, 'sessionStorage', {
+        configurable: true,
+        value: originalSessionStorage,
+      });
+    }
   });
 });
