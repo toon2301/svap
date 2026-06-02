@@ -7,15 +7,19 @@ import {
   setMobileOnboardingResumePhase2,
 } from '@/lib/mobileOnboardingSession';
 import {
+  clearMobileOnboardingCachedProgress,
   getInitialMobileOnboardingState,
   isMobileOnboardingFinished,
   normalizeMobileOnboardingState,
+  readMobileOnboardingCachedProgress,
   reconcileOnboardingState,
+  writeMobileOnboardingCachedProgress,
 } from '../mobileOnboardingStorage';
 
 describe('mobileOnboardingState helpers', () => {
   beforeEach(() => {
     window.sessionStorage.clear();
+    window.localStorage.clear();
   });
 
   it('returns default in_progress home when server state is missing', () => {
@@ -30,9 +34,9 @@ describe('mobileOnboardingState helpers', () => {
     expect(
       normalizeMobileOnboardingState({
         version: 1,
-        status: 'paused' as any,
+        status: 'paused',
         step: 'profile_icon',
-      }),
+      } as Parameters<typeof normalizeMobileOnboardingState>[0]),
     ).toEqual({
       version: 1,
       status: 'in_progress',
@@ -120,6 +124,39 @@ describe('mobileOnboardingState helpers', () => {
     expect(isMobileOnboardingResumePhase2()).toBe(false);
   });
 
+  it('stores cached onboarding progress per user in localStorage', () => {
+    writeMobileOnboardingCachedProgress(10, 'profile_edit', true);
+    writeMobileOnboardingCachedProgress(11, 'profile_icon');
+
+    expect(readMobileOnboardingCachedProgress(10)).toEqual({
+      version: 1,
+      step: 'profile_edit',
+      profileEditPhase2: true,
+    });
+    expect(readMobileOnboardingCachedProgress(11)).toEqual({
+      version: 1,
+      step: 'profile_icon',
+      profileEditPhase2: false,
+    });
+  });
+
+  it('removes invalid cached onboarding progress', () => {
+    window.localStorage.setItem(
+      'svaplyMobileOnboardingStepV1:10',
+      JSON.stringify({ version: 1, step: 'unknown' }),
+    );
+
+    expect(readMobileOnboardingCachedProgress(10)).toBeNull();
+    expect(window.localStorage.getItem('svaplyMobileOnboardingStepV1:10')).toBeNull();
+  });
+
+  it('clears cached onboarding progress', () => {
+    writeMobileOnboardingCachedProgress(10, 'profile_icon');
+    clearMobileOnboardingCachedProgress(10);
+
+    expect(readMobileOnboardingCachedProgress(10)).toBeNull();
+  });
+
   it('keeps phase2 resume helpers safe when sessionStorage throws', () => {
     const originalSessionStorage = window.sessionStorage;
     const throwingStorage = {
@@ -153,6 +190,43 @@ describe('mobileOnboardingState helpers', () => {
       Object.defineProperty(window, 'sessionStorage', {
         configurable: true,
         value: originalSessionStorage,
+      });
+    }
+  });
+
+  it('keeps cached progress helpers safe when localStorage throws', () => {
+    const originalLocalStorage = window.localStorage;
+    const throwingStorage = {
+      getItem: jest.fn(() => {
+        throw new Error('get failed');
+      }),
+      setItem: jest.fn(() => {
+        throw new Error('set failed');
+      }),
+      removeItem: jest.fn(() => {
+        throw new Error('remove failed');
+      }),
+      clear: jest.fn(),
+      key: jest.fn(),
+      length: 0,
+    };
+
+    Object.defineProperty(window, 'localStorage', {
+      configurable: true,
+      value: throwingStorage,
+    });
+
+    try {
+      expect(() => writeMobileOnboardingCachedProgress(10, 'profile_icon')).not.toThrow();
+      expect(readMobileOnboardingCachedProgress(10)).toBeNull();
+      expect(() => clearMobileOnboardingCachedProgress(10)).not.toThrow();
+      expect(throwingStorage.setItem).toHaveBeenCalled();
+      expect(throwingStorage.getItem).toHaveBeenCalled();
+      expect(throwingStorage.removeItem).toHaveBeenCalled();
+    } finally {
+      Object.defineProperty(window, 'localStorage', {
+        configurable: true,
+        value: originalLocalStorage,
       });
     }
   });

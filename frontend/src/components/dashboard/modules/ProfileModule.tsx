@@ -436,8 +436,14 @@ export default function ProfileModule({
     }
   };
 
+  const handleEditProfileClick = useCallback(() => {
+    if (onboarding?.registerProfileEditClick()) return;
+    onEditProfileClick?.();
+  }, [onEditProfileClick, onboarding]);
+
   const handleSkillsClick = useCallback(() => {
-    onboarding?.registerProfileSkillsClick();
+    const shouldNavigate = onboarding?.registerProfileSkillsClick();
+    if (shouldNavigate === false) return;
     onSkillsClick?.();
   }, [onSkillsClick, onboarding]);
 
@@ -453,7 +459,7 @@ export default function ProfileModule({
             isUploading={isUploading}
             onUserUpdate={onUserUpdate}
             onEditableUserUpdate={handleEditableUserUpdate}
-            onEditProfileClick={onEditProfileClick}
+            onEditProfileClick={handleEditProfileClick}
             onEditCancel={handleCancel}
             onEditSave={handleSave}
             onPhotoUpload={handlePhotoUpload}
@@ -476,7 +482,7 @@ export default function ProfileModule({
             isUploading={isUploading}
             onUserUpdate={onUserUpdate}
             onEditableUserUpdate={handleEditableUserUpdate}
-            onEditProfileClick={onEditProfileClick}
+            onEditProfileClick={handleEditProfileClick}
             onEditCancel={handleCancel}
             onEditSave={handleSave}
             onPhotoUpload={handlePhotoUpload}
