@@ -108,18 +108,6 @@ export default function Home() {
                 {t('footer.howItWorks', 'Ako to funguje')}
               </a>
               <a href="#" className="hover:text-purple-800 dark:hover:text-purple-400 transition-colors">
-                {t('footer.forIndividuals', 'Pre jednotlivcov')}
-              </a>
-              <a href="#" className="hover:text-purple-800 dark:hover:text-purple-400 transition-colors">
-                {t('footer.forCompanies', 'Pre firmy')}
-              </a>
-              <a href="#" className="hover:text-purple-800 dark:hover:text-purple-400 transition-colors">
-                {t('footer.forSchools', 'Pre školy')}
-              </a>
-              <a href="#" className="hover:text-purple-800 dark:hover:text-purple-400 transition-colors">
-                {t('footer.help', 'Pomocník')}
-              </a>
-              <a href="#" className="hover:text-purple-800 dark:hover:text-purple-400 transition-colors">
                 {t('footer.faq', 'FAQ')}
               </a>
               <a href="#" className="hover:text-purple-800 dark:hover:text-purple-400 transition-colors">
@@ -139,9 +127,6 @@ export default function Home() {
               </a>
               <a href="#" className="hover:text-purple-800 dark:hover:text-purple-400 transition-colors">
                 {t('footer.cookies', 'Cookies')}
-              </a>
-              <a href="#" className="hover:text-purple-800 dark:hover:text-purple-400 transition-colors">
-                {t('footer.gdpr', 'GDPR')}
               </a>
             </div>
             <div className="mt-6 lg:mt-8 border-t border-gray-200 dark:border-gray-800 pt-4 lg:pt-6 text-center text-sm text-gray-500 dark:text-gray-400">
