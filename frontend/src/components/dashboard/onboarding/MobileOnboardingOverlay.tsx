@@ -35,9 +35,11 @@ export default function MobileOnboardingOverlay() {
 
   const mainSteps: Array<'home' | 'profile_icon' | 'profile_edit'> = ['home', 'profile_icon', 'profile_edit'];
   const displayStep: (typeof mainSteps)[number] | null =
-    step === 'edit_form' ? 'profile_edit' : mainSteps.includes(step as (typeof mainSteps)[number])
-      ? (step as (typeof mainSteps)[number])
-      : null;
+    step === 'edit_form'
+      ? 'profile_edit'
+      : mainSteps.includes(step as (typeof mainSteps)[number])
+        ? (step as (typeof mainSteps)[number])
+        : null;
 
   useEffect(() => {
     if (!isOverlayVisible || displayStep !== 'profile_edit') {
@@ -74,7 +76,6 @@ export default function MobileOnboardingOverlay() {
   }, [displayStep, isOverlayVisible, profileHighlightTarget]);
 
   const rect = useOnboardingTargetRect(targetSelector, isOverlayVisible);
-
   const stepIndex = displayStep ? mainSteps.indexOf(displayStep) + 1 : 1;
 
   const pauseLabel = t('onboarding.mobile.later', 'Neskôr');
@@ -108,7 +109,6 @@ export default function MobileOnboardingOverlay() {
   };
 
   const config = displayStep ? configs[displayStep] : null;
-
   const nextLabel = t('onboarding.mobile.next', 'Ďalej');
 
   const handleNext = () => {
@@ -129,9 +129,10 @@ export default function MobileOnboardingOverlay() {
     zIndex: OVERLAY_Z + 1,
   };
 
-  const nav = typeof document !== 'undefined'
-    ? document.querySelector<HTMLElement>('[data-mobile-bottom-nav]')
-    : null;
+  const nav =
+    typeof document !== 'undefined'
+      ? document.querySelector<HTMLElement>('[data-mobile-bottom-nav]')
+      : null;
   const navHeight = nav ? Math.ceil(nav.getBoundingClientRect().height) : 88;
   const bottomReserve = navHeight + 24;
 
@@ -154,6 +155,13 @@ export default function MobileOnboardingOverlay() {
     tooltipStyle.top = shouldPlaceAbove
       ? Math.max(viewportPadding, aboveTop)
       : Math.max(viewportPadding, belowTop);
+
+    if (tooltipStyle.top != null) {
+      tooltipStyle.top = Math.min(
+        tooltipStyle.top as number,
+        window.innerHeight - bottomReserve - 180,
+      );
+    }
   } else {
     tooltipStyle.left = 16;
     tooltipStyle.right = 16;
@@ -204,15 +212,18 @@ export default function MobileOnboardingOverlay() {
             ×
           </button>
         </div>
+
         <h3
           id="mobile-onboarding-title"
           className="text-base font-semibold text-gray-900 dark:text-white whitespace-pre-line"
         >
           {config.title}
         </h3>
+
         <p className="mt-2 text-sm text-gray-600 dark:text-gray-300 leading-relaxed whitespace-pre-line">
           {config.body}
         </p>
+
         <div className="mt-4 flex gap-2">
           <button
             type="button"
@@ -229,6 +240,7 @@ export default function MobileOnboardingOverlay() {
             {pauseLabel}
           </button>
         </div>
+
         <button
           type="button"
           onClick={skip}
@@ -237,6 +249,7 @@ export default function MobileOnboardingOverlay() {
           {skipLabel}
         </button>
       </div>
+
       <style jsx global>{`
         @keyframes mobileOnboardingPulse {
           0%,
@@ -247,6 +260,7 @@ export default function MobileOnboardingOverlay() {
             box-shadow: 0 0 0 9999px rgba(15, 23, 42, 0.62);
           }
         }
+
         @keyframes mobileOnboardingFadeIn {
           from {
             opacity: 0;
