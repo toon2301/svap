@@ -102,7 +102,7 @@ export default function MobileOnboardingOverlay() {
   const rect = useOnboardingTargetRect(
     targetSelector,
     isOverlayVisible,
-    displayStep === 'profile_edit' ? `${profileEditMeasurePass}:${isProfileEditPhase2}` : displayStep,
+    displayStep === 'profile_edit' ? `${profileEditMeasurePass}:${isProfileEditPhase2}` : displayStep ?? undefined,
   );
   const stepIndex = displayStep ? mainSteps.indexOf(displayStep) + 1 : 1;
 

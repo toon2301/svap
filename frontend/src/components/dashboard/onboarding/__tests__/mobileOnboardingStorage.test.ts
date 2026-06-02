@@ -119,4 +119,41 @@ describe('mobileOnboardingState helpers', () => {
     clearMobileOnboardingResumePhase2();
     expect(isMobileOnboardingResumePhase2()).toBe(false);
   });
+
+  it('keeps phase2 resume helpers safe when sessionStorage throws', () => {
+    const originalSessionStorage = window.sessionStorage;
+    const throwingStorage = {
+      getItem: jest.fn(() => {
+        throw new Error('get failed');
+      }),
+      setItem: jest.fn(() => {
+        throw new Error('set failed');
+      }),
+      removeItem: jest.fn(() => {
+        throw new Error('remove failed');
+      }),
+      clear: jest.fn(),
+      key: jest.fn(),
+      length: 0,
+    };
+
+    Object.defineProperty(window, 'sessionStorage', {
+      configurable: true,
+      value: throwingStorage,
+    });
+
+    try {
+      expect(() => setMobileOnboardingResumePhase2()).not.toThrow();
+      expect(isMobileOnboardingResumePhase2()).toBe(false);
+      expect(() => clearMobileOnboardingResumePhase2()).not.toThrow();
+      expect(throwingStorage.setItem).toHaveBeenCalled();
+      expect(throwingStorage.getItem).toHaveBeenCalled();
+      expect(throwingStorage.removeItem).toHaveBeenCalled();
+    } finally {
+      Object.defineProperty(window, 'sessionStorage', {
+        configurable: true,
+        value: originalSessionStorage,
+      });
+    }
+  });
 });

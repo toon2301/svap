@@ -42,15 +42,25 @@ export function useOnboardingTargetRect(
     }
 
     let cancelled = false;
-    const timeoutIds: ReturnType<typeof setTimeout>[] = [];
+    const timeoutIds: number[] = [];
     let resizeObserver: ResizeObserver | null = null;
     let observedEl: Element | null = null;
+
+    const disconnectObservedElement = () => {
+      resizeObserver?.disconnect();
+      resizeObserver = null;
+      observedEl = null;
+    };
 
     const measure = (): boolean => {
       if (cancelled) return false;
 
       const next = readTargetRect(selector);
-      if (!next) return false;
+      if (!next) {
+        setRect(null);
+        disconnectObservedElement();
+        return false;
+      }
 
       setRect((prev) => {
         if (
@@ -118,8 +128,7 @@ export function useOnboardingTargetRect(
       window.removeEventListener('resize', onChange);
       window.removeEventListener('scroll', onChange, true);
       main?.removeEventListener('scroll', onChange);
-      resizeObserver?.disconnect();
-      observedEl = null;
+      disconnectObservedElement();
     };
   }, [enabled, refreshKey, selector]);
 

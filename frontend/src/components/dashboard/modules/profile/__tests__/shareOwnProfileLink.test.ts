@@ -63,4 +63,24 @@ describe('shareOwnProfileLink', () => {
     expect(writeText).toHaveBeenCalledWith('https://example.com/dashboard/users/test-user');
     expect(onCopied).toHaveBeenCalledWith('Copied');
   });
+
+  it('falls back to clipboard when navigator.share fails with a real error', async () => {
+    const share = jest.fn().mockRejectedValue(new Error('share failed'));
+    Object.defineProperty(navigator, 'share', {
+      configurable: true,
+      value: share,
+    });
+    const writeText = jest.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText },
+    });
+    const onCopied = jest.fn();
+
+    await shareOwnProfileLink(baseUser, messages, { onCopied });
+
+    expect(share).toHaveBeenCalled();
+    expect(writeText).toHaveBeenCalledWith('https://example.com/dashboard/users/test-user');
+    expect(onCopied).toHaveBeenCalledWith('Copied');
+  });
 });

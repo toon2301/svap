@@ -64,6 +64,26 @@ type MobileOnboardingProviderProps = {
   serverState?: MobileOnboardingState | null;
 };
 
+function canRestoreProfileEditPhase2(state: MobileOnboardingState): boolean {
+  return state.status === 'in_progress' && (state.step === 'profile_edit' || state.step === 'edit_form');
+}
+
+function readValidPausedUi(state: MobileOnboardingState): boolean {
+  if (isMobileOnboardingFinished(state.status) || state.status !== 'in_progress') {
+    clearMobileOnboardingPostponedForSession();
+    return false;
+  }
+  return isMobileOnboardingPostponedForSession();
+}
+
+function readValidProfileEditPhase2(state: MobileOnboardingState): boolean {
+  if (canRestoreProfileEditPhase2(state) && isMobileOnboardingResumePhase2()) {
+    return true;
+  }
+  clearMobileOnboardingResumePhase2();
+  return false;
+}
+
 export function MobileOnboardingProvider({
   children,
   activeModule,
@@ -77,12 +97,8 @@ export function MobileOnboardingProvider({
     getInitialMobileOnboardingState(serverState, activeModule, isProfileEditMode),
   );
   const [isStorageReady, setIsStorageReady] = useState(false);
-  const [isPausedUi, setIsPausedUi] = useState(() =>
-    isMobileOnboardingPostponedForSession(),
-  );
-  const [isProfileEditPhase2, setIsProfileEditPhase2] = useState(() =>
-    isMobileOnboardingResumePhase2(),
-  );
+  const [isPausedUi, setIsPausedUi] = useState(false);
+  const [isProfileEditPhase2, setIsProfileEditPhase2] = useState(false);
   const hasAutoStartedRef = useRef(false);
   const previousModuleRef = useRef(activeModule);
   const previousEditModeRef = useRef(isProfileEditMode);
@@ -120,8 +136,8 @@ export function MobileOnboardingProvider({
       setIsPausedUi(false);
       setIsProfileEditPhase2(false);
     } else {
-      setIsPausedUi(isMobileOnboardingPostponedForSession());
-      setIsProfileEditPhase2(isMobileOnboardingResumePhase2());
+      setIsPausedUi(readValidPausedUi(initial));
+      setIsProfileEditPhase2(readValidProfileEditPhase2(initial));
     }
     setIsStorageReady(true);
     hasAutoStartedRef.current = false;
@@ -320,11 +336,17 @@ export function MobileOnboardingProvider({
 
   useEffect(() => {
     if (!isEligible || isPausedUi || isProfileEditMode) return;
-    if (stored.step !== 'profile_edit') return;
-    if (isMobileOnboardingResumePhase2()) {
-      setIsProfileEditPhase2(true);
+    if (!canRestoreProfileEditPhase2(stored)) {
+      setIsProfileEditPhase2(false);
+      clearMobileOnboardingResumePhase2();
+      return;
     }
-  }, [isEligible, isPausedUi, isProfileEditMode, stored.step]);
+    if (readValidProfileEditPhase2(stored)) {
+      setIsProfileEditPhase2(true);
+    } else {
+      setIsProfileEditPhase2(false);
+    }
+  }, [isEligible, isPausedUi, isProfileEditMode, stored]);
 
   const value = useMemo<MobileOnboardingContextValue>(
     () => ({

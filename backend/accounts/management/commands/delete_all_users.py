@@ -5,6 +5,7 @@ POUŽÍVAJTE OPATRNE - TOTO VYMAŽE VŠETKY ÚČTY!
 
 from django.core.management.base import BaseCommand
 from django.db import transaction
+from django.db.models.deletion import ProtectedError
 
 from accounts.models import EmailVerification, User, UserProfile
 
@@ -19,15 +20,19 @@ class Command(BaseCommand):
             help="Potvrdenie, že naozaj chceš vymazať všetkých používateľov",
         )
 
-    def _safe_delete_step(self, step_label, delete_fn):
-        """Vymaže queryset; pri chybe zaloguje varovanie a pokračuje."""
+    def _safe_delete_step(self, step_label, queryset):
+        """Vymaze queryset; pri ocakavanom PROTECT konflikte pokracuje."""
+        if not queryset.exists():
+            self.stdout.write(self.style.SUCCESS(f"Vymazane: 0 x {step_label}"))
+            return 0
+
         try:
-            deleted_count, _ = delete_fn()
+            deleted_count, _ = queryset.delete()
             self.stdout.write(
                 self.style.SUCCESS(f"Vymazane: {deleted_count} x {step_label}")
             )
             return deleted_count
-        except Exception as exc:
+        except ProtectedError as exc:
             self.stdout.write(
                 self.style.WARNING(
                     f"Varovanie: krok '{step_label}' preskoceny ({exc})"
@@ -58,19 +63,19 @@ class Command(BaseCommand):
         self.stdout.write("Vymazavam messaging zaznamy...")
         self._safe_delete_step(
             "pozvanky do skupin (GroupInvitation)",
-            lambda: GroupInvitation.objects.all().delete(),
+            GroupInvitation.objects.all(),
         )
         self._safe_delete_step(
             "spravy (Message)",
-            lambda: Message.objects.all().delete(),
+            Message.objects.all(),
         )
         self._safe_delete_step(
             "ucastnikov konverzacii (ConversationParticipant)",
-            lambda: ConversationParticipant.objects.all().delete(),
+            ConversationParticipant.objects.all(),
         )
         self._safe_delete_step(
             "konverzacie (Conversation)",
-            lambda: Conversation.objects.all().delete(),
+            Conversation.objects.all(),
         )
 
     def _delete_accounts_protect_records(self):
@@ -87,7 +92,7 @@ class Command(BaseCommand):
 
         self._safe_delete_step(
             "ukoncenia spoluprac (SkillRequestTermination)",
-            lambda: SkillRequestTermination.objects.all().delete(),
+            SkillRequestTermination.objects.all(),
         )
 
     def handle(self, *args, **options):
