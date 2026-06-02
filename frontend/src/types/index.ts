@@ -14,6 +14,15 @@ export interface UserEntitlements {
   limits: Record<EntitlementLimitKey, number>;
 }
 
+export type MobileOnboardingStep = 'home' | 'profile_icon' | 'profile_edit' | 'edit_form';
+export type MobileOnboardingStatus = 'in_progress' | 'completed' | 'skipped';
+
+export interface MobileOnboardingState {
+  version: 1;
+  status: MobileOnboardingStatus;
+  step: MobileOnboardingStep;
+}
+
 export interface User {
   id: number;
   username: string;
@@ -51,6 +60,7 @@ export interface User {
   is_favorited?: boolean;
   completed_cooperations_count?: number;
   unread_skill_request_count?: number;
+  mobile_onboarding?: MobileOnboardingState;
   created_at: string;
   updated_at: string;
   profile_completeness: number;

@@ -171,7 +171,7 @@
       "progress": "Krok {current} z {total}",
       "next": "Dalej",
       "later": "Później",
-      "skip": "Pomiń",
+      "skip": "Pomiń samouczek",
       "home": {
         "title": "Witaj w Svaply",
         "body": "Tutaj będziesz odkrywać posty, oferty, zapytania i prace innych użytkowników."
@@ -188,6 +188,7 @@
         "title": "Uzupełnij swój profil",
         "body": "Dzięki temu inni użytkownicy lepiej zobaczą, kim jesteś i co oferujesz."
       },
+      "editProfileCta": "Edytuj profil",
       "profileEditing": {
         "title": "Dodaj podstawowe informacje o sobie",
         "body": "Profil ze zdjęciem i opisem budzi większe zaufanie."

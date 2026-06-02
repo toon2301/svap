@@ -171,7 +171,7 @@
       "progress": "{current}. lépés / {total}",
       "next": "Tovább",
       "later": "Később",
-      "skip": "Kihagyás",
+      "skip": "Befejezés",
       "home": {
         "title": "Üdv a Svaply-n",
         "body": "Itt bejegyzéseket, ajánlatokat, kéréseket és más felhasználók munkáit fedezheted fel."
@@ -188,6 +188,7 @@
         "title": "Töltsd ki a profilodat",
         "body": "Így más felhasználók jobban látják, ki vagy és mit kínálsz."
       },
+      "editProfileCta": "Profil szerkesztése",
       "profileEditing": {
         "title": "Add meg az alapvető információkat magadról",
         "body": "Egy fotóval és leírással ellátott profil megbízhatóbbnak hat."

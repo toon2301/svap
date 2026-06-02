@@ -57,6 +57,19 @@ class SubscriptionTier(models.TextChoices):
     PREMIUM = "premium", _("Premium")
 
 
+class MobileOnboardingStatus(models.TextChoices):
+    IN_PROGRESS = "in_progress", _("In progress")
+    COMPLETED = "completed", _("Completed")
+    SKIPPED = "skipped", _("Skipped")
+
+
+class MobileOnboardingStep(models.TextChoices):
+    HOME = "home", _("Home")
+    PROFILE_ICON = "profile_icon", _("Profile icon")
+    PROFILE_EDIT = "profile_edit", _("Profile edit")
+    EDIT_FORM = "edit_form", _("Edit form")
+
+
 class User(AbstractUser):
     """Rozšírený User model pre Swaply"""
 
@@ -127,6 +140,18 @@ class User(AbstractUser):
     # Nastavenia
     is_verified = models.BooleanField(_("Overený"), default=False)
     is_public = models.BooleanField(_("Verejný profil"), default=True)
+    mobile_onboarding_status = models.CharField(
+        _("Mobile onboarding status"),
+        max_length=20,
+        choices=MobileOnboardingStatus.choices,
+        default=MobileOnboardingStatus.IN_PROGRESS,
+    )
+    mobile_onboarding_step = models.CharField(
+        _("Mobile onboarding step"),
+        max_length=20,
+        choices=MobileOnboardingStep.choices,
+        default=MobileOnboardingStep.HOME,
+    )
     # Flag označujúci, že používateľ manuálne upravil meno/priezvisko cez profil
     # Ak je True, OAuth prihlásenie neprepíše meno z Google účtu
     name_modified_by_user = models.BooleanField(

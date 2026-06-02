@@ -171,7 +171,7 @@
       "progress": "Krok {current} z {total}",
       "next": "Ďalej",
       "later": "Neskôr",
-      "skip": "Preskočiť",
+      "skip": "Ukončiť",
       "home": {
         "title": "Vitaj na Svaply",
         "body": "Tu budeš objavovať príspevky, ponuky, dopyty a prácu ostatných používateľov."
@@ -188,6 +188,7 @@
         "title": "Vyplň svoj profil",
         "body": "Ostatní používatelia tak lepšie uvidia kto si a čo ponúkaš."
       },
+      "editProfileCta": "Upraviť profil",
       "profileEditing": {
         "title": "Doplň o sebe základné informácie",
         "body": "Profil s fotkou a popisom pôsobí dôveryhodnejšie."

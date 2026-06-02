@@ -39,6 +39,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
     unread_skill_request_count = serializers.SerializerMethodField()
     is_favorited = serializers.SerializerMethodField()
     entitlements = serializers.SerializerMethodField()
+    mobile_onboarding = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -83,6 +84,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
             "unread_skill_request_count",
             "is_favorited",
             "entitlements",
+            "mobile_onboarding",
         ]
         read_only_fields = [
             "id",
@@ -98,6 +100,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
             "unread_skill_request_count",
             "is_favorited",
             "entitlements",
+            "mobile_onboarding",
         ]
 
     def _record_me_serializer_timing(self, name, started_at):
@@ -140,6 +143,13 @@ class UserProfileSerializer(serializers.ModelSerializer):
 
     def get_entitlements(self, obj):
         return get_entitlements_for_user(obj)
+
+    def get_mobile_onboarding(self, obj):
+        return {
+            "version": 1,
+            "status": getattr(obj, "mobile_onboarding_status", "in_progress"),
+            "step": getattr(obj, "mobile_onboarding_step", "home"),
+        }
 
     def get_avatar_url(self, obj):
         """Vráti plnú URL k avataru (ak existuje)."""
@@ -214,6 +224,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
         ret.pop("unread_skill_request_count", None)
         ret.pop("subscription_tier", None)
         ret.pop("entitlements", None)
+        ret.pop("mobile_onboarding", None)
 
         # Conditional fields
         if not getattr(instance, "phone_visible", False):

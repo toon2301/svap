@@ -50,6 +50,10 @@ interface ProfileMobileViewProps {
    highlightedSkillId?: number | null;
 }
 
+type UserProfileModalWindow = Window & {
+  __openUserProfileModal?: () => void;
+};
+
 export default function ProfileMobileView({
   user,
   displayUser: displayUserProp,
@@ -57,7 +61,6 @@ export default function ProfileMobileView({
   isEditMode,
   accountType = 'personal',
   isUploading,
-  onUserUpdate,
   onEditableUserUpdate,
   onEditProfileClick,
   onEditCancel,
@@ -77,7 +80,6 @@ export default function ProfileMobileView({
   onToggleFavorite,
   isFavorited = false,
   isFavoritePending = false,
-  onHamburgerMenuClick,
   highlightedSkillId,
 }: ProfileMobileViewProps) {
   const displayUser = displayUserProp ?? user;
@@ -125,11 +127,12 @@ export default function ProfileMobileView({
   useEffect(() => {
     if (isOtherUserProfile) {
       // Uložiť referenciu na otvorenie modalu
-      (window as any).__openUserProfileModal = () => setIsHamburgerModalOpen(true);
+      (window as UserProfileModalWindow).__openUserProfileModal = () => setIsHamburgerModalOpen(true);
     }
     return () => {
-      if ((window as any).__openUserProfileModal) {
-        delete (window as any).__openUserProfileModal;
+      const modalWindow = window as UserProfileModalWindow;
+      if (modalWindow.__openUserProfileModal) {
+        delete modalWindow.__openUserProfileModal;
       }
     };
   }, [isOtherUserProfile]);
@@ -395,6 +398,8 @@ export default function ProfileMobileView({
               ) : (
                 <>
                   <button
+                    data-onboarding={!isOtherUserProfile ? 'profile-skills-button' : undefined}
+                    type="button"
                     onClick={() => {
                       if (typeof onSkillsClick === 'function') {
                         onSkillsClick();
