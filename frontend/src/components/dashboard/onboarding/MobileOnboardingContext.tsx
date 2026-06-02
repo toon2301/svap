@@ -91,17 +91,16 @@ export function MobileOnboardingProvider({
   }, [isProfileEditMode]);
 
   useEffect(() => {
-    if (!serverOnboardingStatus || !serverOnboardingStep) {
-      setIsStorageReady(false);
-      return;
-    }
-
+    const serverInitial =
+      serverOnboardingStatus && serverOnboardingStep
+        ? {
+            version: 1 as const,
+            status: serverOnboardingStatus,
+            step: serverOnboardingStep,
+          }
+        : null;
     const initial = getInitialMobileOnboardingState(
-      {
-        version: 1,
-        status: serverOnboardingStatus,
-        step: serverOnboardingStep,
-      },
+      serverInitial,
       activeModuleRef.current,
       isProfileEditModeRef.current,
     );
@@ -116,7 +115,7 @@ export function MobileOnboardingProvider({
     hasAutoStartedRef.current = false;
   }, [serverOnboardingStatus, serverOnboardingStep]);
 
-  const persistState = useCallback((next: MobileOnboardingState) => {
+  const persistState = useCallback((next: MobileOnboardingState, previous: MobileOnboardingState) => {
     void updateMobileOnboardingState(next)
       .then((serverNext) => {
         setStored((current) => {
@@ -129,6 +128,11 @@ export function MobileOnboardingProvider({
         });
       })
       .catch((error) => {
+        setStored((current) => {
+          const isFailedOptimisticState =
+            current.status === next.status && current.step === next.step;
+          return isFailedOptimisticState ? previous : current;
+        });
         logClientError('Mobile onboarding state update failed', error);
       });
   }, []);
@@ -140,7 +144,7 @@ export function MobileOnboardingProvider({
     const reconciled = reconcileOnboardingState(stored, activeModule, isProfileEditMode);
     if (reconciled.step !== stored.step) {
       setStored(reconciled);
-      persistState(reconciled);
+      persistState(reconciled, stored);
     }
   }, [
     activeModule,
@@ -165,10 +169,11 @@ export function MobileOnboardingProvider({
 
   const setState = useCallback(
     (next: MobileOnboardingState) => {
+      const previous = stored;
       setStored(next);
-      persistState(next);
+      persistState(next, previous);
     },
-    [persistState],
+    [persistState, stored],
   );
 
   const isOverlayVisible =
