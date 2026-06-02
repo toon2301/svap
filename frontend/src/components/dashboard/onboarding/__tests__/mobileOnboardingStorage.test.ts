@@ -1,7 +1,10 @@
 import {
   clearMobileOnboardingPostponedForSession,
+  clearMobileOnboardingResumePhase2,
   isMobileOnboardingPostponedForSession,
+  isMobileOnboardingResumePhase2,
   postponeMobileOnboardingForSession,
+  setMobileOnboardingResumePhase2,
 } from '@/lib/mobileOnboardingSession';
 import {
   getInitialMobileOnboardingState,
@@ -105,5 +108,15 @@ describe('mobileOnboardingState helpers', () => {
 
     clearMobileOnboardingPostponedForSession();
     expect(isMobileOnboardingPostponedForSession()).toBe(false);
+  });
+
+  it('stores phase2 resume flag only in sessionStorage', () => {
+    expect(isMobileOnboardingResumePhase2()).toBe(false);
+
+    setMobileOnboardingResumePhase2();
+    expect(isMobileOnboardingResumePhase2()).toBe(true);
+
+    clearMobileOnboardingResumePhase2();
+    expect(isMobileOnboardingResumePhase2()).toBe(false);
   });
 });

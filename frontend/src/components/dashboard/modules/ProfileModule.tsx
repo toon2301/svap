@@ -436,6 +436,11 @@ export default function ProfileModule({
     }
   };
 
+  const handleSkillsClick = useCallback(() => {
+    onboarding?.registerProfileSkillsClick();
+    onSkillsClick?.();
+  }, [onSkillsClick, onboarding]);
+
   return (
     <>
       <div className="max-w-2xl lg:max-w-full mx-auto lg:mx-0 text-[var(--foreground)] w-full">
@@ -454,7 +459,7 @@ export default function ProfileModule({
             onPhotoUpload={handlePhotoUpload}
             onRemoveAvatar={handleRemoveAvatar}
             onAvatarClick={handleAvatarClick}
-            onSkillsClick={onSkillsClick}
+            onSkillsClick={handleSkillsClick}
             activeTab={activeTab}
             onChangeTab={setActiveTab}
             onTabsKeyDown={handleTabsKeyDown}
@@ -477,7 +482,7 @@ export default function ProfileModule({
             onPhotoUpload={handlePhotoUpload}
             onRemoveAvatar={handleRemoveAvatar}
             onAvatarClick={handleAvatarClick}
-            onSkillsClick={onSkillsClick}
+            onSkillsClick={handleSkillsClick}
             activeTab={activeTab}
             onChangeTab={setActiveTab}
             onTabsKeyDown={handleTabsKeyDown}

@@ -195,6 +195,12 @@
       }
     }
   },
+  "tutorial": {
+    "createCardStep": {
+      "title": "Vytvoř svou první kartu",
+      "description": "Můžeš nabídnout své služby nebo přidat poptávku na to, co hledáš."
+    }
+  },
   "create": {
     "title": "Vytvořit",
     "subtitle": "Co byste chtěli přidat?",

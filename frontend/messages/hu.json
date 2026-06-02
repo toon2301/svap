@@ -195,6 +195,12 @@
       }
     }
   },
+  "tutorial": {
+    "createCardStep": {
+      "title": "Hozd létre az első kártyádat",
+      "description": "Kínálhatod a szolgáltatásaidat, vagy hozzáadhatsz egy keresést arra, amit keresel."
+    }
+  },
   "create": {
     "title": "Létrehozás",
     "subtitle": "Mit szeretne hozzáadni?",

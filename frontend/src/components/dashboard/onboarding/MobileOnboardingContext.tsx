@@ -12,8 +12,11 @@ import React, {
 import { useIsMobileState } from '@/hooks/useIsMobile';
 import {
   clearMobileOnboardingPostponedForSession,
+  clearMobileOnboardingResumePhase2,
   isMobileOnboardingPostponedForSession,
+  isMobileOnboardingResumePhase2,
   postponeMobileOnboardingForSession,
+  setMobileOnboardingResumePhase2,
 } from '@/lib/mobileOnboardingSession';
 import { logClientError } from '@/utils/clientLogging';
 import { updateMobileOnboardingState } from './mobileOnboardingApi';
@@ -37,6 +40,8 @@ type MobileOnboardingContextValue = {
   isEligible: boolean;
   /** Spotlight + tooltip layer (hidden during profile edit). */
   isOverlayVisible: boolean;
+  /** Phase 2 of profile_edit step — skills button locked after profile save. */
+  isProfileEditPhase2: boolean;
   step: MobileOnboardingStep;
   goNext: () => void;
   skip: () => void;
@@ -45,6 +50,7 @@ type MobileOnboardingContextValue = {
   complete: () => void;
   notifyProfileSaved: () => void;
   registerProfileIconClick: () => void;
+  registerProfileSkillsClick: () => void;
 };
 
 const MobileOnboardingContext = createContext<MobileOnboardingContextValue | null>(null);
@@ -73,6 +79,9 @@ export function MobileOnboardingProvider({
   const [isStorageReady, setIsStorageReady] = useState(false);
   const [isPausedUi, setIsPausedUi] = useState(() =>
     isMobileOnboardingPostponedForSession(),
+  );
+  const [isProfileEditPhase2, setIsProfileEditPhase2] = useState(() =>
+    isMobileOnboardingResumePhase2(),
   );
   const hasAutoStartedRef = useRef(false);
   const previousModuleRef = useRef(activeModule);
@@ -107,9 +116,12 @@ export function MobileOnboardingProvider({
     setStored(initial);
     if (isMobileOnboardingFinished(initial.status)) {
       clearMobileOnboardingPostponedForSession();
+      clearMobileOnboardingResumePhase2();
       setIsPausedUi(false);
+      setIsProfileEditPhase2(false);
     } else {
       setIsPausedUi(isMobileOnboardingPostponedForSession());
+      setIsProfileEditPhase2(isMobileOnboardingResumePhase2());
     }
     setIsStorageReady(true);
     hasAutoStartedRef.current = false;
@@ -228,15 +240,21 @@ export function MobileOnboardingProvider({
     }
   }, [isEligible, isPausedUi, isProfileEditMode, setState, stored.status, stored.step]);
 
-  const complete = useCallback(() => {
+  const finishOnboarding = useCallback(() => {
     clearMobileOnboardingPostponedForSession();
+    clearMobileOnboardingResumePhase2();
     setIsPausedUi(false);
+    setIsProfileEditPhase2(false);
     setState({ version: 1, status: 'completed', step: 'edit_form' });
   }, [setState]);
 
+  const complete = finishOnboarding;
+
   const skip = useCallback(() => {
     clearMobileOnboardingPostponedForSession();
+    clearMobileOnboardingResumePhase2();
     setIsPausedUi(false);
+    setIsProfileEditPhase2(false);
     setState({ version: 1, status: 'skipped', step: stored.step });
   }, [setState, stored.step]);
 
@@ -265,15 +283,20 @@ export function MobileOnboardingProvider({
     }
 
     if (stored.step === 'profile_edit') {
+      if (isProfileEditPhase2) {
+        finishOnboarding();
+        return;
+      }
+
       onOpenEditProfile();
       setState({ version: 1, status: 'in_progress', step: 'edit_form' });
       return;
     }
 
     if (stored.step === 'edit_form') {
-      complete();
+      finishOnboarding();
     }
-  }, [complete, isEligible, onOpenEditProfile, onOpenProfile, setState, stored.step]);
+  }, [finishOnboarding, isEligible, isProfileEditPhase2, onOpenEditProfile, onOpenProfile, setState, stored.step]);
 
   const registerProfileIconClick = useCallback(() => {
     if (!isEligible || stored.step !== 'profile_icon') return;
@@ -282,16 +305,32 @@ export function MobileOnboardingProvider({
   }, [isEligible, setState, stored.step]);
 
   const notifyProfileSaved = useCallback(() => {
-    if (!isEligible) return;
+    if (!isEligible || isPausedUi) return;
     if (stored.step === 'edit_form') {
-      complete();
+      setMobileOnboardingResumePhase2();
+      setIsProfileEditPhase2(true);
     }
-  }, [complete, isEligible, stored.step]);
+  }, [isEligible, isPausedUi, stored.step]);
+
+  const registerProfileSkillsClick = useCallback(() => {
+    if (!isEligible || isPausedUi) return;
+    if (stored.step !== 'profile_edit' || !isProfileEditPhase2) return;
+    finishOnboarding();
+  }, [finishOnboarding, isEligible, isPausedUi, isProfileEditPhase2, stored.step]);
+
+  useEffect(() => {
+    if (!isEligible || isPausedUi || isProfileEditMode) return;
+    if (stored.step !== 'profile_edit') return;
+    if (isMobileOnboardingResumePhase2()) {
+      setIsProfileEditPhase2(true);
+    }
+  }, [isEligible, isPausedUi, isProfileEditMode, stored.step]);
 
   const value = useMemo<MobileOnboardingContextValue>(
     () => ({
       isEligible,
       isOverlayVisible,
+      isProfileEditPhase2,
       step: stored.step,
       goNext,
       skip,
@@ -300,6 +339,7 @@ export function MobileOnboardingProvider({
       complete,
       notifyProfileSaved,
       registerProfileIconClick,
+      registerProfileSkillsClick,
     }),
     [
       close,
@@ -307,9 +347,11 @@ export function MobileOnboardingProvider({
       goNext,
       isEligible,
       isOverlayVisible,
+      isProfileEditPhase2,
       notifyProfileSaved,
       pause,
       registerProfileIconClick,
+      registerProfileSkillsClick,
       skip,
       stored.step,
     ],

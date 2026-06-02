@@ -195,6 +195,12 @@
       }
     }
   },
+  "tutorial": {
+    "createCardStep": {
+      "title": "Create your first card",
+      "description": "You can offer your services or add a request for what you're looking for."
+    }
+  },
   "create": {
     "title": "Create",
     "subtitle": "What would you like to add?",
