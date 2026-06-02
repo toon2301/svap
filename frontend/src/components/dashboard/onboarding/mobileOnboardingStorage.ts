@@ -12,8 +12,24 @@ export const DEFAULT_MOBILE_ONBOARDING_STATE: MobileOnboardingState = {
   step: 'home',
 };
 
+type MobileOnboardingCachedProgress = {
+  version: 1;
+  step: MobileOnboardingStep;
+  profileEditPhase2?: boolean;
+};
+
 const VALID_STEPS: MobileOnboardingStep[] = ['home', 'profile_icon', 'profile_edit', 'edit_form'];
 const TERMINAL_STATUSES: MobileOnboardingStatus[] = ['completed', 'skipped'];
+const MOBILE_ONBOARDING_PROGRESS_KEY_PREFIX = 'svaplyMobileOnboardingStepV1';
+
+function isValidStep(step: unknown): step is MobileOnboardingStep {
+  return VALID_STEPS.includes(step as MobileOnboardingStep);
+}
+
+function getCachedProgressKey(userId?: number | null): string | null {
+  if (typeof userId !== 'number' || !Number.isSafeInteger(userId) || userId <= 0) return null;
+  return `${MOBILE_ONBOARDING_PROGRESS_KEY_PREFIX}:${userId}`;
+}
 
 export function normalizeMobileOnboardingState(
   state?: MobileOnboardingState | null,
@@ -91,4 +107,63 @@ export function getInitialMobileOnboardingState(
 
 export function isMobileOnboardingFinished(status: MobileOnboardingStatus): boolean {
   return TERMINAL_STATUSES.includes(status);
+}
+
+export function readMobileOnboardingCachedProgress(
+  userId?: number | null,
+): MobileOnboardingCachedProgress | null {
+  const key = getCachedProgressKey(userId);
+  if (!key || typeof window === 'undefined') return null;
+
+  try {
+    const raw = window.localStorage.getItem(key);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<MobileOnboardingCachedProgress>;
+
+    if (parsed.version !== 1 || !isValidStep(parsed.step)) {
+      window.localStorage.removeItem(key);
+      return null;
+    }
+
+    return {
+      version: 1,
+      step: parsed.step,
+      profileEditPhase2: parsed.profileEditPhase2 === true,
+    };
+  } catch {
+    return null;
+  }
+}
+
+export function writeMobileOnboardingCachedProgress(
+  userId: number | null | undefined,
+  step: MobileOnboardingStep,
+  profileEditPhase2 = false,
+): void {
+  const key = getCachedProgressKey(userId);
+  if (!key || typeof window === 'undefined') return;
+
+  try {
+    window.localStorage.setItem(
+      key,
+      JSON.stringify({
+        version: 1,
+        step,
+        profileEditPhase2,
+      } satisfies MobileOnboardingCachedProgress),
+    );
+  } catch {
+    // Best effort only. DB remains the source of truth.
+  }
+}
+
+export function clearMobileOnboardingCachedProgress(userId?: number | null): void {
+  const key = getCachedProgressKey(userId);
+  if (!key || typeof window === 'undefined') return;
+
+  try {
+    window.localStorage.removeItem(key);
+  } catch {
+    // Best effort only.
+  }
 }

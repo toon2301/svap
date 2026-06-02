@@ -796,6 +796,7 @@ export default function DashboardContent({
         onOpenProfile={navigation.handleMobileProfileClick}
         onOpenEditProfile={navigation.handleEditProfileClick}
         serverState={user?.mobile_onboarding ?? null}
+        userId={user?.id ?? null}
       >
         <DashboardLayout
           activeModule={activeModule}
