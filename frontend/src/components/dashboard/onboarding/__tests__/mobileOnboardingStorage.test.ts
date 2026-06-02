@@ -1,46 +1,53 @@
 import {
+  clearMobileOnboardingPostponedForSession,
+  isMobileOnboardingPostponedForSession,
+  postponeMobileOnboardingForSession,
+} from '@/lib/mobileOnboardingSession';
+import {
   getInitialMobileOnboardingState,
   isMobileOnboardingFinished,
-  MOBILE_ONBOARDING_STORAGE_KEY,
-  readMobileOnboardingState,
+  normalizeMobileOnboardingState,
   reconcileOnboardingState,
-  writeMobileOnboardingState,
 } from '../mobileOnboardingStorage';
 
-describe('mobileOnboardingStorage', () => {
+describe('mobileOnboardingState helpers', () => {
   beforeEach(() => {
-    window.localStorage.clear();
+    window.sessionStorage.clear();
   });
 
-  it('returns default in_progress home when empty', () => {
-    expect(getInitialMobileOnboardingState()).toEqual({
+  it('returns default in_progress home when server state is missing', () => {
+    expect(getInitialMobileOnboardingState(null)).toEqual({
       version: 1,
       status: 'in_progress',
       step: 'home',
     });
   });
 
-  it('migrates legacy paused state to in_progress', () => {
-    window.localStorage.setItem(
-      'svaplyMobileOnboardingV1',
-      JSON.stringify({ version: 1, status: 'paused', step: 'profile_icon' }),
-    );
-    expect(readMobileOnboardingState()).toEqual({
+  it('normalizes invalid server state to default', () => {
+    expect(
+      normalizeMobileOnboardingState({
+        version: 1,
+        status: 'paused' as any,
+        step: 'profile_icon',
+      }),
+    ).toEqual({
       version: 1,
       status: 'in_progress',
-      step: 'profile_icon',
+      step: 'home',
     });
   });
 
-  it('migrates legacy phase1 storage key', () => {
-    window.localStorage.setItem(
-      'svaply.mobileOnboarding.phase1.v1',
-      JSON.stringify({ status: 'active', stepIndex: 1 }),
-    );
-    expect(readMobileOnboardingState()).toEqual({
+  it('forces completed state to edit_form step', () => {
+    expect(
+      normalizeMobileOnboardingState({
+        version: 1,
+        status: 'completed',
+        step: 'home',
+      }),
+    ).toEqual({
       version: 1,
-      status: 'in_progress',
-      step: 'profile_icon',
+      status: 'completed',
+      step: 'edit_form',
     });
   });
 
@@ -74,22 +81,29 @@ describe('mobileOnboardingStorage', () => {
     ).toBe('home');
   });
 
-  it('getInitialMobileOnboardingState reconciles for active module', () => {
-    window.localStorage.setItem(
-      MOBILE_ONBOARDING_STORAGE_KEY,
-      JSON.stringify({ version: 1, status: 'in_progress', step: 'profile_edit' }),
-    );
-    expect(getInitialMobileOnboardingState('home', false).step).toBe('home');
+  it('reconciles initial server state for active module', () => {
+    expect(
+      getInitialMobileOnboardingState(
+        { version: 1, status: 'in_progress', step: 'profile_edit' },
+        'home',
+        false,
+      ).step,
+    ).toBe('home');
   });
 
-  it('treats completed as finished', () => {
-    writeMobileOnboardingState({
-      version: 1,
-      status: 'completed',
-      step: 'edit_form',
-    });
+  it('treats completed and skipped as finished', () => {
     expect(isMobileOnboardingFinished('completed')).toBe(true);
-    expect(getInitialMobileOnboardingState().status).toBe('completed');
-    expect(window.localStorage.getItem(MOBILE_ONBOARDING_STORAGE_KEY)).toContain('completed');
+    expect(isMobileOnboardingFinished('skipped')).toBe(true);
+    expect(isMobileOnboardingFinished('in_progress')).toBe(false);
+  });
+
+  it('stores postponement only in sessionStorage', () => {
+    expect(isMobileOnboardingPostponedForSession()).toBe(false);
+
+    postponeMobileOnboardingForSession();
+    expect(isMobileOnboardingPostponedForSession()).toBe(true);
+
+    clearMobileOnboardingPostponedForSession();
+    expect(isMobileOnboardingPostponedForSession()).toBe(false);
   });
 });

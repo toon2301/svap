@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { api, endpoints, invalidateSession, isTransientAuthFailureError, setMayHaveRefreshCookie } from '@/lib/api';
+import { clearMobileOnboardingPostponedForSession } from '@/lib/mobileOnboardingSession';
 import { clearAuthState } from '@/utils/auth';
 import { fetchCsrfToken, hasCsrfToken } from '@/utils/csrf';
 import { logClientError } from '@/utils/clientLogging';
@@ -265,6 +266,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       await refreshUser({ force: true });
       // Reset preferovaného modulu po prihlásení a nastav flag na vynútenie HOME
       if (typeof window !== 'undefined') {
+        clearMobileOnboardingPostponedForSession();
         localStorage.setItem('activeModule', 'home');
         sessionStorage.setItem('forceHome', '1');
       }

@@ -736,6 +736,7 @@ export const endpoints = {
     refresh: '/token/refresh/',
     logout: '/auth/logout/',
     me: '/auth/me/',
+    mobileOnboarding: '/auth/onboarding/mobile/',
     verifyEmail: '/auth/verify-email/',
     resendVerification: '/auth/resend-verification/',
     oauthCallback: '/oauth/callback/',

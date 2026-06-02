@@ -11,18 +11,25 @@ import React, {
 } from 'react';
 import { useIsMobileState } from '@/hooks/useIsMobile';
 import {
+  clearMobileOnboardingPostponedForSession,
+  isMobileOnboardingPostponedForSession,
+  postponeMobileOnboardingForSession,
+} from '@/lib/mobileOnboardingSession';
+import { logClientError } from '@/utils/clientLogging';
+import { updateMobileOnboardingState } from './mobileOnboardingApi';
+import {
   getInitialMobileOnboardingState,
   isMobileOnboardingFinished,
   reconcileOnboardingState,
   type MobileOnboardingState,
   type MobileOnboardingStep,
-  writeMobileOnboardingState,
 } from './mobileOnboardingStorage';
 
 export const ONBOARDING_TARGETS = {
   home: '[data-onboarding="home-content"]',
   profileIcon: '[data-onboarding="profile-icon"]',
   profileEditButton: '[data-onboarding="profile-edit-button"]',
+  profileSkillsButton: '[data-onboarding="profile-skills-button"]',
   profileEditForm: '[data-onboarding="profile-edit-form"]',
 } as const;
 
@@ -48,11 +55,8 @@ type MobileOnboardingProviderProps = {
   isProfileEditMode: boolean;
   onOpenProfile: () => void;
   onOpenEditProfile: () => void;
+  serverState?: MobileOnboardingState | null;
 };
-
-function persist(state: MobileOnboardingState) {
-  writeMobileOnboardingState(state);
-}
 
 export function MobileOnboardingProvider({
   children,
@@ -60,40 +64,92 @@ export function MobileOnboardingProvider({
   isProfileEditMode,
   onOpenProfile,
   onOpenEditProfile,
+  serverState,
 }: MobileOnboardingProviderProps) {
   const { isMobile, isResolved } = useIsMobileState();
-  const [stored, setStored] = useState<MobileOnboardingState>(() => ({
-    version: 1,
-    status: 'in_progress',
-    step: 'home',
-  }));
+  const [stored, setStored] = useState<MobileOnboardingState>(() =>
+    getInitialMobileOnboardingState(serverState, activeModule, isProfileEditMode),
+  );
   const [isStorageReady, setIsStorageReady] = useState(false);
-  const [isPausedUi, setIsPausedUi] = useState(false);
+  const [isPausedUi, setIsPausedUi] = useState(() =>
+    isMobileOnboardingPostponedForSession(),
+  );
   const hasAutoStartedRef = useRef(false);
   const previousModuleRef = useRef(activeModule);
-  const hasHydratedStorageRef = useRef(false);
   const previousEditModeRef = useRef(isProfileEditMode);
+  const activeModuleRef = useRef(activeModule);
+  const isProfileEditModeRef = useRef(isProfileEditMode);
+  const serverOnboardingStatus = serverState?.status ?? null;
+  const serverOnboardingStep = serverState?.step ?? null;
 
   useEffect(() => {
-    if (hasHydratedStorageRef.current) return;
-    hasHydratedStorageRef.current = true;
+    activeModuleRef.current = activeModule;
+  }, [activeModule]);
 
-    const initial = getInitialMobileOnboardingState(activeModule, isProfileEditMode);
+  useEffect(() => {
+    isProfileEditModeRef.current = isProfileEditMode;
+  }, [isProfileEditMode]);
+
+  useEffect(() => {
+    if (!serverOnboardingStatus || !serverOnboardingStep) {
+      setIsStorageReady(false);
+      return;
+    }
+
+    const initial = getInitialMobileOnboardingState(
+      {
+        version: 1,
+        status: serverOnboardingStatus,
+        step: serverOnboardingStep,
+      },
+      activeModuleRef.current,
+      isProfileEditModeRef.current,
+    );
     setStored(initial);
-    writeMobileOnboardingState(initial);
+    if (isMobileOnboardingFinished(initial.status)) {
+      clearMobileOnboardingPostponedForSession();
+      setIsPausedUi(false);
+    } else {
+      setIsPausedUi(isMobileOnboardingPostponedForSession());
+    }
     setIsStorageReady(true);
-  }, [activeModule, isProfileEditMode]);
+    hasAutoStartedRef.current = false;
+  }, [serverOnboardingStatus, serverOnboardingStep]);
+
+  const persistState = useCallback((next: MobileOnboardingState) => {
+    void updateMobileOnboardingState(next)
+      .then((serverNext) => {
+        setStored((current) => {
+          const isSameRequestState =
+            current.status === next.status && current.step === next.step;
+          if (isSameRequestState || isMobileOnboardingFinished(serverNext.status)) {
+            return serverNext;
+          }
+          return current;
+        });
+      })
+      .catch((error) => {
+        logClientError('Mobile onboarding state update failed', error);
+      });
+  }, []);
 
   // Keep saved step aligned with the current screen (avoids invisible tutorial on wrong step).
   useEffect(() => {
-    if (!isStorageReady || stored.status !== 'in_progress') return;
+    if (!isStorageReady || isPausedUi || stored.status !== 'in_progress') return;
 
     const reconciled = reconcileOnboardingState(stored, activeModule, isProfileEditMode);
     if (reconciled.step !== stored.step) {
       setStored(reconciled);
-      persist(reconciled);
+      persistState(reconciled);
     }
-  }, [activeModule, isProfileEditMode, isStorageReady, stored.status, stored.step]);
+  }, [
+    activeModule,
+    isPausedUi,
+    isProfileEditMode,
+    isStorageReady,
+    persistState,
+    stored,
+  ]);
 
   const isFinished = isMobileOnboardingFinished(stored.status);
   const isEligible = isStorageReady && isResolved && isMobile && !isFinished;
@@ -107,10 +163,13 @@ export function MobileOnboardingProvider({
     return false;
   }, [activeModule, isProfileEditMode, stored.step]);
 
-  const setState = useCallback((next: MobileOnboardingState) => {
-    setStored(next);
-    persist(next);
-  }, []);
+  const setState = useCallback(
+    (next: MobileOnboardingState) => {
+      setStored(next);
+      persistState(next);
+    },
+    [persistState],
+  );
 
   const isOverlayVisible =
     isEligible &&
@@ -122,7 +181,6 @@ export function MobileOnboardingProvider({
   // Resume in_progress on mount (not paused until user explicitly paused)
   useEffect(() => {
     if (!isEligible) return;
-    if (stored.status === 'paused') return;
     if (hasAutoStartedRef.current) return;
     hasAutoStartedRef.current = true;
     if (stored.status !== 'in_progress') {
@@ -166,29 +224,25 @@ export function MobileOnboardingProvider({
   }, [isEligible, isPausedUi, isProfileEditMode, setState, stored.status, stored.step]);
 
   const complete = useCallback(() => {
+    clearMobileOnboardingPostponedForSession();
     setIsPausedUi(false);
     setState({ version: 1, status: 'completed', step: 'edit_form' });
   }, [setState]);
 
   const skip = useCallback(() => {
+    clearMobileOnboardingPostponedForSession();
     setIsPausedUi(false);
     setState({ version: 1, status: 'skipped', step: stored.step });
   }, [setState, stored.step]);
 
   const pause = useCallback(() => {
-    // Hide for current session only — do not persist "paused" (it blocked the tutorial on reload).
+    // Hide only for this browser tab/session; do not persist completion to the server.
+    postponeMobileOnboardingForSession();
     setIsPausedUi(true);
   }, []);
 
-  // "Neskôr" / close — resume when user returns to Domov (any in-progress step).
-  useEffect(() => {
-    if (!isPausedUi) return;
-    if (activeModule === 'home') {
-      setIsPausedUi(false);
-    }
-  }, [activeModule, isPausedUi]);
-
-  const close = pause;
+  // X closes the tutorial permanently in the same way as the skip action.
+  const close = skip;
 
   const goNext = useCallback(() => {
     if (!isEligible) return;

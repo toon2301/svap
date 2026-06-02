@@ -1,12 +1,13 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { ONBOARDING_TARGETS, useMobileOnboarding } from './MobileOnboardingContext';
 import { useOnboardingTargetRect } from './useOnboardingTargetRect';
 
 const SPOTLIGHT_PADDING = 8;
 const OVERLAY_Z = 10000;
+const PROFILE_HIGHLIGHT_ROTATION_MS = 6000;
 
 function SpotlightHole({ rect }: { rect: { top: number; left: number; width: number; height: number } }) {
   const style: React.CSSProperties = {
@@ -25,121 +26,12 @@ function SpotlightHole({ rect }: { rect: { top: number; left: number; width: num
   return <div aria-hidden style={style} />;
 }
 
-type TooltipPlacement = 'below' | 'above';
-
-function TooltipCard({
-  title,
-  body,
-  stepIndex,
-  totalSteps,
-  placement,
-  anchorRect,
-  onNext,
-  onSkip,
-  onPause,
-  nextLabel,
-  showSkip = true,
-  showPause = true,
-}: {
-  title: string;
-  body: string;
-  stepIndex: number;
-  totalSteps: number;
-  placement: TooltipPlacement;
-  anchorRect: { top: number; left: number; width: number; height: number } | null;
-  onNext: () => void;
-  onSkip: () => void;
-  onPause: () => void;
-  nextLabel: string;
-  showSkip?: boolean;
-  showPause?: boolean;
-}) {
-  const top =
-    placement === 'below' && anchorRect
-      ? anchorRect.top + anchorRect.height + SPOTLIGHT_PADDING + 12
-      : placement === 'above' && anchorRect
-        ? anchorRect.top - SPOTLIGHT_PADDING - 12
-        : undefined;
-
-  const style: React.CSSProperties = {
-    position: 'fixed',
-    left: 16,
-    right: 16,
-    maxWidth: 360,
-    marginLeft: 'auto',
-    marginRight: 'auto',
-    zIndex: OVERLAY_Z + 1,
-    ...(top != null
-      ? { top: Math.max(72, Math.min(top, window.innerHeight - 220)) }
-      : { bottom: 96 }),
-    ...(placement === 'above' && top != null ? { transform: 'translateY(-100%)' } : {}),
-  };
-
-  return (
-    <div
-      role="dialog"
-      aria-modal="false"
-      aria-labelledby="mobile-onboarding-title"
-      className="rounded-2xl border border-purple-200/80 dark:border-purple-800/60 bg-white dark:bg-gray-950 shadow-xl p-4 animate-in fade-in duration-300"
-      style={style}
-    >
-      <div className="flex items-center justify-between gap-2 mb-2">
-        <div className="flex gap-1.5" aria-label={`${stepIndex} / ${totalSteps}`}>
-          {Array.from({ length: totalSteps }, (_, i) => (
-            <span
-              key={i}
-              className={`h-1.5 rounded-full transition-all ${
-                i + 1 === stepIndex ? 'w-6 bg-purple-600' : 'w-1.5 bg-gray-300 dark:bg-gray-600'
-              }`}
-            />
-          ))}
-        </div>
-        <button
-          type="button"
-          onClick={onPause}
-          className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 px-1"
-        >
-          ×
-        </button>
-      </div>
-      <h3 id="mobile-onboarding-title" className="text-base font-semibold text-gray-900 dark:text-white whitespace-pre-line">
-        {title}
-      </h3>
-      <p className="mt-2 text-sm text-gray-600 dark:text-gray-300 leading-relaxed whitespace-pre-line">{body}</p>
-      <div className="mt-4 flex flex-wrap gap-2">
-        <button
-          type="button"
-          onClick={onNext}
-          className="flex-1 min-w-[120px] rounded-xl bg-purple-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-purple-700 transition-colors"
-        >
-          {nextLabel}
-        </button>
-        {showPause && (
-          <button
-            type="button"
-            onClick={onPause}
-            className="rounded-xl border border-gray-200 dark:border-gray-700 px-3 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-900"
-          >
-            {/* filled via parent - use translation in overlay */}
-          </button>
-        )}
-      </div>
-      {showSkip && (
-        <button
-          type="button"
-          onClick={onSkip}
-          className="mt-3 w-full text-center text-xs text-gray-500 dark:text-gray-400 hover:text-purple-600 dark:hover:text-purple-400"
-        >
-          {/* skip label */}
-        </button>
-      )}
-    </div>
-  );
-}
-
 export default function MobileOnboardingOverlay() {
   const { t } = useLanguage();
   const { isOverlayVisible, step, goNext, skip, pause, close } = useMobileOnboarding();
+  const [profileHighlightTarget, setProfileHighlightTarget] = useState<'edit' | 'skills'>('edit');
+  const tooltipRef = useRef<HTMLDivElement | null>(null);
+  const [tooltipHeight, setTooltipHeight] = useState(180);
 
   const mainSteps: Array<'home' | 'profile_icon' | 'profile_edit'> = ['home', 'profile_icon', 'profile_edit'];
   const displayStep: (typeof mainSteps)[number] | null =
@@ -147,22 +39,46 @@ export default function MobileOnboardingOverlay() {
       ? (step as (typeof mainSteps)[number])
       : null;
 
+  useEffect(() => {
+    if (!isOverlayVisible || displayStep !== 'profile_edit') {
+      setProfileHighlightTarget('edit');
+      return;
+    }
+
+    setProfileHighlightTarget('edit');
+    const intervalId = window.setInterval(() => {
+      setProfileHighlightTarget((current) => (current === 'edit' ? 'skills' : 'edit'));
+    }, PROFILE_HIGHLIGHT_ROTATION_MS);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [displayStep, isOverlayVisible]);
+
   const targetSelector = useMemo(() => {
     if (!isOverlayVisible || !displayStep) return null;
     if (displayStep === 'home') return ONBOARDING_TARGETS.home;
     if (displayStep === 'profile_icon') return ONBOARDING_TARGETS.profileIcon;
-    if (displayStep === 'profile_edit') return ONBOARDING_TARGETS.profileEditButton;
+    if (displayStep === 'profile_edit') {
+      if (
+        profileHighlightTarget === 'skills' &&
+        typeof document !== 'undefined' &&
+        document.querySelector(ONBOARDING_TARGETS.profileSkillsButton)
+      ) {
+        return ONBOARDING_TARGETS.profileSkillsButton;
+      }
+
+      return ONBOARDING_TARGETS.profileEditButton;
+    }
     return null;
-  }, [displayStep, isOverlayVisible]);
+  }, [displayStep, isOverlayVisible, profileHighlightTarget]);
 
   const rect = useOnboardingTargetRect(targetSelector, isOverlayVisible);
-
-  if (!isOverlayVisible) return null;
 
   const stepIndex = displayStep ? mainSteps.indexOf(displayStep) + 1 : 1;
 
   const pauseLabel = t('onboarding.mobile.later', 'Neskôr');
-  const skipLabel = t('onboarding.mobile.skip', 'Preskočiť');
+  const skipLabel = t('onboarding.mobile.skip', 'Ukončiť');
 
   const configs = {
     home: {
@@ -192,24 +108,24 @@ export default function MobileOnboardingOverlay() {
   };
 
   const config = displayStep ? configs[displayStep] : null;
-  if (!config) return null;
 
-  const nextLabel =
-    displayStep === 'profile_edit'
-      ? t('onboarding.mobile.editProfileCta', 'Upraviť profil')
-      : t('onboarding.mobile.next', 'Ďalej');
+  const nextLabel = t('onboarding.mobile.next', 'Ďalej');
 
   const handleNext = () => {
     goNext();
   };
 
+  useLayoutEffect(() => {
+    if (!isOverlayVisible || !config) return;
+    const nextHeight = tooltipRef.current?.getBoundingClientRect().height;
+    if (!nextHeight) return;
+    setTooltipHeight((prev) => (Math.abs(prev - nextHeight) > 1 ? nextHeight : prev));
+  }, [config, isOverlayVisible, nextLabel, pauseLabel, skipLabel, stepIndex]);
+
+  if (!isOverlayVisible || !config) return null;
+
   const tooltipStyle: React.CSSProperties = {
     position: 'fixed',
-    left: 16,
-    right: 16,
-    maxWidth: 360,
-    marginLeft: 'auto',
-    marginRight: 'auto',
     zIndex: OVERLAY_Z + 1,
   };
 
@@ -219,25 +135,32 @@ export default function MobileOnboardingOverlay() {
   const navHeight = nav ? Math.ceil(nav.getBoundingClientRect().height) : 88;
   const bottomReserve = navHeight + 24;
 
-  if (config.placement === 'below' && rect) {
-    tooltipStyle.top = Math.min(
-      rect.top + rect.height + SPOTLIGHT_PADDING + 12,
-      window.innerHeight - bottomReserve - 180,
+  if (rect && typeof window !== 'undefined') {
+    const viewportPadding = 16;
+    const offset = 12;
+    const tooltipWidth = Math.min(360, window.innerWidth - viewportPadding * 2);
+    const anchorCenterX = rect.left + rect.width / 2;
+    const clampedCenterX = Math.max(
+      viewportPadding + tooltipWidth / 2,
+      Math.min(anchorCenterX, window.innerWidth - viewportPadding - tooltipWidth / 2),
     );
-  } else if (config.placement === 'above' && rect) {
-    tooltipStyle.bottom = Math.max(
-      window.innerHeight - rect.top + SPOTLIGHT_PADDING + 12,
-      bottomReserve,
-    );
-  } else {
-    tooltipStyle.bottom = bottomReserve;
-  }
+    const belowTop = rect.top + rect.height + SPOTLIGHT_PADDING + offset;
+    const aboveTop = rect.top - tooltipHeight - SPOTLIGHT_PADDING - offset;
+    const shouldPlaceAbove = belowTop + tooltipHeight > window.innerHeight - viewportPadding;
 
-  if (tooltipStyle.top != null) {
-    tooltipStyle.top = Math.min(
-      tooltipStyle.top,
-      window.innerHeight - bottomReserve - 180,
-    );
+    tooltipStyle.left = clampedCenterX;
+    tooltipStyle.width = tooltipWidth;
+    tooltipStyle.transform = 'translateX(-50%)';
+    tooltipStyle.top = shouldPlaceAbove
+      ? Math.max(viewportPadding, aboveTop)
+      : Math.max(viewportPadding, belowTop);
+  } else {
+    tooltipStyle.left = 16;
+    tooltipStyle.right = 16;
+    tooltipStyle.maxWidth = 360;
+    tooltipStyle.marginLeft = 'auto';
+    tooltipStyle.marginRight = 'auto';
+    tooltipStyle.bottom = bottomReserve;
   }
 
   return (
@@ -251,6 +174,7 @@ export default function MobileOnboardingOverlay() {
         />
       ) : null}
       <div
+        ref={tooltipRef}
         role="dialog"
         aria-modal="false"
         aria-labelledby="mobile-onboarding-title"

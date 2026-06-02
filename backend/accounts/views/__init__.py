@@ -13,6 +13,7 @@ from .auth import (
     get_csrf_token_view,
 )
 from .email_check import check_email_availability_view
+from .onboarding import mobile_onboarding_view
 from .profile import update_profile_view
 from .skills import (
     skills_list_view,
@@ -78,6 +79,7 @@ __all__ = [
     "resend_verification_view",
     "get_csrf_token_view",
     "check_email_availability_view",
+    "mobile_onboarding_view",
     "update_profile_view",
     "skills_list_view",
     "skills_detail_view",
