@@ -5,13 +5,18 @@ export type ProfileEditGoNextAction =
   | 'finish_and_navigate'
   | null;
 
+export type ProfileEditHighlightTarget = 'edit' | 'skills';
+
 /** Pure helper for profile_edit "Ďalej" behavior (unit-tested). */
 export function resolveProfileEditGoNextAction(
   step: MobileOnboardingStep,
   isProfileEditPhase2: boolean,
+  highlightedTarget?: ProfileEditHighlightTarget,
 ): ProfileEditGoNextAction {
   if (step !== 'profile_edit') return null;
-  return isProfileEditPhase2 ? 'finish_and_navigate' : 'advance_to_phase_2';
+  return isProfileEditPhase2 || highlightedTarget === 'skills'
+    ? 'finish_and_navigate'
+    : 'advance_to_phase_2';
 }
 
 export type ProfileSkillsClickAction =
@@ -24,9 +29,12 @@ export function resolveProfileSkillsClickAction(
   step: MobileOnboardingStep,
   isProfileEditPhase2: boolean,
   isOnboardingActive: boolean,
+  highlightedTarget?: ProfileEditHighlightTarget,
 ): ProfileSkillsClickAction {
   if (!isOnboardingActive || step !== 'profile_edit') {
     return 'default_navigate';
   }
-  return isProfileEditPhase2 ? 'finish_and_navigate' : 'advance_to_phase_2_only';
+  return isProfileEditPhase2 || highlightedTarget === 'skills'
+    ? 'finish_and_navigate'
+    : 'advance_to_phase_2_only';
 }

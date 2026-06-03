@@ -16,8 +16,9 @@ import {
   writeMobileOnboardingCachedProgress,
 } from '../mobileOnboardingStorage';
 import {
+  getMobileOnboardingStepModule,
+  isMobileOnboardingBlockedByUi,
   isMobileOnboardingStepSceneReady,
-  shouldResumeMobileOnboardingProfileScene,
 } from '../mobileOnboardingScene';
 
 describe('mobileOnboardingState helpers', () => {
@@ -122,19 +123,51 @@ describe('mobileOnboardingState helpers', () => {
     expect(isMobileOnboardingStepSceneReady('profile_edit', 'profile', true)).toBe(false);
   });
 
-  it('resumes profile-scoped progress from dashboard home only', () => {
-    const state = { version: 1, status: 'in_progress', step: 'profile_edit' } as const;
+  it('maps steps to their owning module for scene-gated display', () => {
+    expect(getMobileOnboardingStepModule('home')).toBe('home');
+    expect(getMobileOnboardingStepModule('profile_icon')).toBe('home');
+    expect(getMobileOnboardingStepModule('profile_edit')).toBe('profile');
+    expect(getMobileOnboardingStepModule('edit_form')).toBe('profile');
+  });
 
-    expect(shouldResumeMobileOnboardingProfileScene(state, 'home', false)).toBe(true);
-    expect(shouldResumeMobileOnboardingProfileScene(state, 'messages', false)).toBe(false);
-    expect(shouldResumeMobileOnboardingProfileScene(state, 'profile', false)).toBe(false);
-    expect(
-      shouldResumeMobileOnboardingProfileScene(
-        { version: 1, status: 'completed', step: 'edit_form' },
-        'home',
-        false,
-      ),
-    ).toBe(false);
+  it('keeps profile-scoped progress hidden until the user opens profile', () => {
+    expect(isMobileOnboardingStepSceneReady('profile_edit', 'home', false)).toBe(false);
+    expect(isMobileOnboardingStepSceneReady('profile_edit', 'messages', false)).toBe(false);
+    expect(isMobileOnboardingStepSceneReady('profile_edit', 'profile', false)).toBe(true);
+  });
+
+  it('blocks mobile onboarding while temporary UI panels are open', () => {
+    expect(isMobileOnboardingBlockedByUi({ activeModule: 'profile', isMobileMenuOpen: true }))
+      .toBe(true);
+    expect(isMobileOnboardingBlockedByUi({ activeModule: 'profile', isSearchOpen: true }))
+      .toBe(true);
+    expect(isMobileOnboardingBlockedByUi({
+      activeModule: 'profile',
+      isNotificationsPanelOpen: true,
+    })).toBe(true);
+  });
+
+  it('blocks mobile onboarding on settings-style modules and side panels', () => {
+    expect(isMobileOnboardingBlockedByUi({ activeModule: 'settings' })).toBe(true);
+    expect(isMobileOnboardingBlockedByUi({ activeModule: 'notification-settings' })).toBe(true);
+    expect(isMobileOnboardingBlockedByUi({ activeModule: 'language' })).toBe(true);
+    expect(isMobileOnboardingBlockedByUi({ activeModule: 'account-type' })).toBe(true);
+    expect(isMobileOnboardingBlockedByUi({ activeModule: 'privacy' })).toBe(true);
+    expect(isMobileOnboardingBlockedByUi({
+      activeModule: 'profile',
+      activeRightItem: 'language',
+      isRightSidebarOpen: true,
+    })).toBe(true);
+  });
+
+  it('does not treat normal scenes or profile edit mode as generic UI blockers', () => {
+    expect(isMobileOnboardingBlockedByUi({ activeModule: 'profile' })).toBe(false);
+    expect(isMobileOnboardingBlockedByUi({ activeModule: 'home' })).toBe(false);
+    expect(isMobileOnboardingBlockedByUi({
+      activeModule: 'profile',
+      activeRightItem: 'edit-profile',
+      isRightSidebarOpen: true,
+    })).toBe(false);
   });
 
   it('treats completed and skipped as finished', () => {

@@ -24,8 +24,9 @@ import {
   type MobileOnboardingStep,
   writeMobileOnboardingCachedProgress,
 } from './mobileOnboardingStorage';
-import { isMobileOnboardingStepSceneReady, shouldResumeMobileOnboardingProfileScene } from './mobileOnboardingScene';
+import { isMobileOnboardingStepSceneReady } from './mobileOnboardingScene';
 import {
+  type ProfileEditHighlightTarget,
   resolveProfileEditGoNextAction,
   resolveProfileSkillsClickAction,
 } from './profileEditTutorialLogic';
@@ -45,7 +46,7 @@ type MobileOnboardingContextValue = {
   /** Phase 2 of profile_edit step — skills button locked after profile save. */
   isProfileEditPhase2: boolean;
   step: MobileOnboardingStep;
-  goNext: () => void;
+  goNext: (options?: MobileOnboardingGoNextOptions) => void;
   skip: () => void;
   pause: () => void;
   close: () => void;
@@ -56,14 +57,20 @@ type MobileOnboardingContextValue = {
   registerProfileEditClick: () => boolean;
   /** Returns false when onboarding consumed the click (caller should not navigate). */
   registerProfileSkillsClick: () => boolean;
+  syncProfileHighlightTarget: (target: ProfileEditHighlightTarget) => void;
 };
 
 const MobileOnboardingContext = createContext<MobileOnboardingContextValue | null>(null);
+
+type MobileOnboardingGoNextOptions = {
+  profileHighlightTarget?: ProfileEditHighlightTarget;
+};
 
 type MobileOnboardingProviderProps = {
   children: React.ReactNode;
   activeModule: string;
   isProfileEditMode: boolean;
+  isBlockedByUi?: boolean;
   onOpenProfile: () => void;
   onOpenEditProfile: () => void;
   onOpenSkillsOffer: () => void;
@@ -95,6 +102,7 @@ export function MobileOnboardingProvider({
   children,
   activeModule,
   isProfileEditMode,
+  isBlockedByUi = false,
   onOpenProfile,
   onOpenEditProfile,
   onOpenSkillsOffer,
@@ -110,11 +118,11 @@ export function MobileOnboardingProvider({
   const [isPausedUi, setIsPausedUi] = useState(false);
   const [isProfileEditPhase2, setIsProfileEditPhase2] = useState(false);
   const hasAutoStartedRef = useRef(false);
-  const lastAutoResumedStepRef = useRef<MobileOnboardingStep | null>(null);
   const previousModuleRef = useRef(activeModule);
   const previousEditModeRef = useRef(isProfileEditMode);
   const activeModuleRef = useRef(activeModule);
   const isProfileEditModeRef = useRef(isProfileEditMode);
+  const profileHighlightTargetRef = useRef<ProfileEditHighlightTarget>('edit');
   const serverOnboardingStatus = serverState?.status ?? null;
   const serverOnboardingStep = serverState?.step ?? null;
 
@@ -180,7 +188,6 @@ export function MobileOnboardingProvider({
     }
     setIsStorageReady(true);
     hasAutoStartedRef.current = false;
-    lastAutoResumedStepRef.current = null;
   }, [serverOnboardingStatus, serverOnboardingStep, userId]);
 
   const persistState = useCallback((next: MobileOnboardingState, previous: MobileOnboardingState) => {
@@ -242,22 +249,10 @@ export function MobileOnboardingProvider({
     isEligible &&
     !isPausedUi &&
     !isProfileEditMode &&
+    !isBlockedByUi &&
     stored.status === 'in_progress' &&
+    // Scene gating only decides visibility; it must never auto-navigate the user.
     isStepSceneReady;
-
-  // Continue profile-scoped tutorial steps on profile instead of rewinding
-  // persisted progress to the home step when the user returns to dashboard home.
-  useEffect(() => {
-    if (!isEligible || isPausedUi) return;
-    if (!shouldResumeMobileOnboardingProfileScene(stored, activeModule, isProfileEditMode)) {
-      lastAutoResumedStepRef.current = null;
-      return;
-    }
-
-    if (lastAutoResumedStepRef.current === stored.step) return;
-    lastAutoResumedStepRef.current = stored.step;
-    onOpenProfile();
-  }, [activeModule, isEligible, isPausedUi, isProfileEditMode, onOpenProfile, stored]);
 
   // Resume in_progress on mount (not paused until user explicitly paused)
   useEffect(() => {
@@ -309,6 +304,7 @@ export function MobileOnboardingProvider({
     clearMobileOnboardingResumePhase2();
     setIsPausedUi(false);
     setIsProfileEditPhase2(false);
+    profileHighlightTargetRef.current = 'edit';
     setState({ version: 1, status: 'completed', step: 'edit_form' });
   }, [setState]);
 
@@ -319,6 +315,7 @@ export function MobileOnboardingProvider({
     clearMobileOnboardingResumePhase2();
     setIsPausedUi(false);
     setIsProfileEditPhase2(false);
+    profileHighlightTargetRef.current = 'edit';
     setState({ version: 1, status: 'skipped', step: stored.step });
   }, [setState, stored.step]);
 
@@ -334,10 +331,15 @@ export function MobileOnboardingProvider({
   const advanceProfileEditToPhase2 = useCallback(() => {
     setMobileOnboardingResumePhase2();
     setIsProfileEditPhase2(true);
+    profileHighlightTargetRef.current = 'skills';
     cacheStateForUser(stored, true);
   }, [cacheStateForUser, stored]);
 
-  const goNext = useCallback(() => {
+  const syncProfileHighlightTarget = useCallback((target: ProfileEditHighlightTarget) => {
+    profileHighlightTargetRef.current = target;
+  }, []);
+
+  const goNext = useCallback((options?: MobileOnboardingGoNextOptions) => {
     if (!isEligible) return;
     setIsPausedUi(false);
 
@@ -353,7 +355,13 @@ export function MobileOnboardingProvider({
     }
 
     if (stored.step === 'profile_edit') {
-      const profileEditAction = resolveProfileEditGoNextAction(stored.step, isProfileEditPhase2);
+      const highlightedTarget =
+        options?.profileHighlightTarget ?? profileHighlightTargetRef.current;
+      const profileEditAction = resolveProfileEditGoNextAction(
+        stored.step,
+        isProfileEditPhase2,
+        highlightedTarget,
+      );
       if (profileEditAction === 'finish_and_navigate') {
         finishOnboarding();
         onOpenSkillsOffer();
@@ -407,12 +415,14 @@ export function MobileOnboardingProvider({
       stored.step,
       isProfileEditPhase2,
       isEligible && !isPausedUi,
+      profileHighlightTargetRef.current,
     );
 
     if (skillsAction === 'default_navigate') return true;
     if (skillsAction === 'finish_and_navigate') {
       finishOnboarding();
-      return true;
+      onOpenSkillsOffer();
+      return false;
     }
 
     advanceProfileEditToPhase2();
@@ -423,6 +433,7 @@ export function MobileOnboardingProvider({
     isEligible,
     isPausedUi,
     isProfileEditPhase2,
+    onOpenSkillsOffer,
     stored.step,
   ]);
 
@@ -455,6 +466,7 @@ export function MobileOnboardingProvider({
       registerProfileIconClick,
       registerProfileEditClick,
       registerProfileSkillsClick,
+      syncProfileHighlightTarget,
     }),
     [
       close,
@@ -470,6 +482,7 @@ export function MobileOnboardingProvider({
       registerProfileSkillsClick,
       skip,
       stored.step,
+      syncProfileHighlightTarget,
     ],
   );
 

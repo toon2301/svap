@@ -7,10 +7,19 @@ describe('profileEditTutorialLogic', () => {
   describe('resolveProfileEditGoNextAction', () => {
     it('advances to phase 2 from profile_edit phase 1', () => {
       expect(resolveProfileEditGoNextAction('profile_edit', false)).toBe('advance_to_phase_2');
+      expect(resolveProfileEditGoNextAction('profile_edit', false, 'edit')).toBe(
+        'advance_to_phase_2',
+      );
     });
 
     it('finishes onboarding and navigates from profile_edit phase 2', () => {
       expect(resolveProfileEditGoNextAction('profile_edit', true)).toBe('finish_and_navigate');
+    });
+
+    it('finishes and navigates when the rotating highlight is on skills', () => {
+      expect(resolveProfileEditGoNextAction('profile_edit', false, 'skills')).toBe(
+        'finish_and_navigate',
+      );
     });
 
     it('returns null for other steps', () => {
@@ -23,10 +32,19 @@ describe('profileEditTutorialLogic', () => {
       expect(resolveProfileSkillsClickAction('profile_edit', false, true)).toBe(
         'advance_to_phase_2_only',
       );
+      expect(resolveProfileSkillsClickAction('profile_edit', false, true, 'edit')).toBe(
+        'advance_to_phase_2_only',
+      );
     });
 
     it('finishes and navigates in profile_edit phase 2', () => {
       expect(resolveProfileSkillsClickAction('profile_edit', true, true)).toBe(
+        'finish_and_navigate',
+      );
+    });
+
+    it('finishes and navigates when direct skills click matches the rotating highlight', () => {
+      expect(resolveProfileSkillsClickAction('profile_edit', false, true, 'skills')).toBe(
         'finish_and_navigate',
       );
     });

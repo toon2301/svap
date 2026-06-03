@@ -11,6 +11,7 @@ import ModuleRouter from '../ModuleRouter';
 import DashboardModals from '../DashboardModals';
 import { MobileOnboardingProvider } from '../onboarding/MobileOnboardingContext';
 import MobileOnboardingOverlay from '../onboarding/MobileOnboardingOverlay';
+import { isMobileOnboardingBlockedByUi } from '../onboarding/mobileOnboardingScene';
 import SearchModule from '../modules/SearchModule';
 import { MessagesDesktopRail } from '../modules/messages/MessagesDesktopRail';
 import NotificationsFeed from '../modules/notifications/NotificationsFeed';
@@ -786,6 +787,14 @@ export default function DashboardContent({
     activeModule === 'profile' &&
     activeRightItem === 'edit-profile' &&
     isRightSidebarOpen;
+  const isMobileOnboardingBlocked = isMobileOnboardingBlockedByUi({
+    activeModule,
+    activeRightItem,
+    isRightSidebarOpen,
+    isMobileMenuOpen,
+    isSearchOpen,
+    isNotificationsPanelOpen,
+  });
 
   return (
     <RequestsNotificationsProvider
@@ -794,6 +803,7 @@ export default function DashboardContent({
       <MobileOnboardingProvider
         activeModule={activeModule}
         isProfileEditMode={isMobileProfileEditMode}
+        isBlockedByUi={isMobileOnboardingBlocked}
         onOpenProfile={navigation.handleMobileProfileClick}
         onOpenEditProfile={navigation.handleEditProfileClick}
         onOpenSkillsOffer={navigation.handleSkillsOfferClick}
