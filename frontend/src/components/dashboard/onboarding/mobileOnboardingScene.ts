@@ -1,6 +1,23 @@
-import type { MobileOnboardingState, MobileOnboardingStep } from '@/types';
+import type { MobileOnboardingStep } from '@/types';
 
 type MobileOnboardingSceneModule = 'home' | 'profile';
+
+type MobileOnboardingUiBlockerInput = {
+  activeModule: string;
+  activeRightItem?: string | null;
+  isRightSidebarOpen?: boolean;
+  isMobileMenuOpen?: boolean;
+  isSearchOpen?: boolean;
+  isNotificationsPanelOpen?: boolean;
+};
+
+const ONBOARDING_BLOCKING_MODULES = new Set([
+  'settings',
+  'notification-settings',
+  'language',
+  'account-type',
+  'privacy',
+]);
 
 export function getMobileOnboardingStepModule(
   step: MobileOnboardingStep,
@@ -26,13 +43,21 @@ export function isMobileOnboardingStepSceneReady(
   return activeModule === 'profile' && !isProfileEditMode;
 }
 
-export function shouldResumeMobileOnboardingProfileScene(
-  state: MobileOnboardingState,
-  activeModule: string,
-  isProfileEditMode: boolean,
-): boolean {
-  if (state.status !== 'in_progress') return false;
-  if (activeModule !== 'home' || isProfileEditMode) return false;
+export function isMobileOnboardingBlockedByUi({
+  activeModule,
+  activeRightItem,
+  isRightSidebarOpen = false,
+  isMobileMenuOpen = false,
+  isSearchOpen = false,
+  isNotificationsPanelOpen = false,
+}: MobileOnboardingUiBlockerInput): boolean {
+  if (isMobileMenuOpen || isSearchOpen || isNotificationsPanelOpen) {
+    return true;
+  }
 
-  return getMobileOnboardingStepModule(state.step) === 'profile';
+  if (ONBOARDING_BLOCKING_MODULES.has(activeModule)) {
+    return true;
+  }
+
+  return isRightSidebarOpen && activeRightItem !== 'edit-profile';
 }

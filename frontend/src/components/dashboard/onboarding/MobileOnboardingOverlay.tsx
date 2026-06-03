@@ -3,6 +3,7 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { ONBOARDING_TARGETS, useMobileOnboarding } from './MobileOnboardingContext';
+import type { ProfileEditHighlightTarget } from './profileEditTutorialLogic';
 import { useOnboardingTargetRect } from './useOnboardingTargetRect';
 
 const SPOTLIGHT_PADDING = 8;
@@ -28,9 +29,18 @@ function SpotlightHole({ rect }: { rect: { top: number; left: number; width: num
 
 export default function MobileOnboardingOverlay() {
   const { t } = useLanguage();
-  const { isOverlayVisible, step, goNext, skip, pause, close, isProfileEditPhase2 } =
-    useMobileOnboarding();
-  const [profileHighlightTarget, setProfileHighlightTarget] = useState<'edit' | 'skills'>('edit');
+  const {
+    isOverlayVisible,
+    step,
+    goNext,
+    skip,
+    pause,
+    close,
+    isProfileEditPhase2,
+    syncProfileHighlightTarget,
+  } = useMobileOnboarding();
+  const [profileHighlightTarget, setProfileHighlightTarget] =
+    useState<ProfileEditHighlightTarget>('edit');
   const tooltipRef = useRef<HTMLDivElement | null>(null);
   const [tooltipHeight, setTooltipHeight] = useState(180);
 
@@ -41,29 +51,36 @@ export default function MobileOnboardingOverlay() {
       : mainSteps.includes(step as (typeof mainSteps)[number])
         ? (step as (typeof mainSteps)[number])
         : null;
+  const activeProfileHighlightTarget: ProfileEditHighlightTarget =
+    isProfileEditPhase2 || profileHighlightTarget === 'skills' ? 'skills' : 'edit';
 
   useEffect(() => {
     if (!isOverlayVisible || displayStep !== 'profile_edit') {
-      if (!isOverlayVisible || displayStep !== 'profile_edit') {
-        setProfileHighlightTarget('edit');
-      }
+      setProfileHighlightTarget('edit');
+      syncProfileHighlightTarget('edit');
       return;
     }
 
     if (isProfileEditPhase2) {
       setProfileHighlightTarget('skills');
+      syncProfileHighlightTarget('skills');
       return;
     }
 
     setProfileHighlightTarget('edit');
+    syncProfileHighlightTarget('edit');
     const intervalId = window.setInterval(() => {
-      setProfileHighlightTarget((current) => (current === 'edit' ? 'skills' : 'edit'));
+      setProfileHighlightTarget((current) => {
+        const next = current === 'edit' ? 'skills' : 'edit';
+        syncProfileHighlightTarget(next);
+        return next;
+      });
     }, PROFILE_HIGHLIGHT_ROTATION_MS);
 
     return () => {
       window.clearInterval(intervalId);
     };
-  }, [displayStep, isOverlayVisible, isProfileEditPhase2]);
+  }, [displayStep, isOverlayVisible, isProfileEditPhase2, syncProfileHighlightTarget]);
 
   const [profileEditMeasurePass, setProfileEditMeasurePass] = useState(0);
 
@@ -161,7 +178,11 @@ export default function MobileOnboardingOverlay() {
   const nextLabel = t('onboarding.mobile.next', 'Ďalej');
 
   const handleNext = () => {
-    goNext();
+    goNext(
+      displayStep === 'profile_edit'
+        ? { profileHighlightTarget: activeProfileHighlightTarget }
+        : undefined,
+    );
   };
 
   useLayoutEffect(() => {
