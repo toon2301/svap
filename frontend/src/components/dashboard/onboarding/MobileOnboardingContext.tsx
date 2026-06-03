@@ -1,15 +1,8 @@
 'use client';
 
-import React, {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useIsMobileState } from '@/hooks/useIsMobile';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   clearMobileOnboardingPostponedForSession,
   clearMobileOnboardingResumePhase2,
@@ -31,6 +24,7 @@ import {
   type MobileOnboardingStep,
   writeMobileOnboardingCachedProgress,
 } from './mobileOnboardingStorage';
+import { isMobileOnboardingStepSceneReady, shouldResumeMobileOnboardingProfileScene } from './mobileOnboardingScene';
 import {
   resolveProfileEditGoNextAction,
   resolveProfileSkillsClickAction,
@@ -72,6 +66,7 @@ type MobileOnboardingProviderProps = {
   isProfileEditMode: boolean;
   onOpenProfile: () => void;
   onOpenEditProfile: () => void;
+  onOpenSkillsOffer: () => void;
   serverState?: MobileOnboardingState | null;
   userId?: number | null;
 };
@@ -102,10 +97,12 @@ export function MobileOnboardingProvider({
   isProfileEditMode,
   onOpenProfile,
   onOpenEditProfile,
+  onOpenSkillsOffer,
   serverState,
   userId,
 }: MobileOnboardingProviderProps) {
   const { isMobile, isResolved } = useIsMobileState();
+  const { updateUser } = useAuth();
   const [stored, setStored] = useState<MobileOnboardingState>(() =>
     getInitialMobileOnboardingState(serverState, activeModule, isProfileEditMode),
   );
@@ -113,6 +110,7 @@ export function MobileOnboardingProvider({
   const [isPausedUi, setIsPausedUi] = useState(false);
   const [isProfileEditPhase2, setIsProfileEditPhase2] = useState(false);
   const hasAutoStartedRef = useRef(false);
+  const lastAutoResumedStepRef = useRef<MobileOnboardingStep | null>(null);
   const previousModuleRef = useRef(activeModule);
   const previousEditModeRef = useRef(isProfileEditMode);
   const activeModuleRef = useRef(activeModule);
@@ -182,11 +180,14 @@ export function MobileOnboardingProvider({
     }
     setIsStorageReady(true);
     hasAutoStartedRef.current = false;
+    lastAutoResumedStepRef.current = null;
   }, [serverOnboardingStatus, serverOnboardingStep, userId]);
 
   const persistState = useCallback((next: MobileOnboardingState, previous: MobileOnboardingState) => {
     void updateMobileOnboardingState(next)
       .then((serverNext) => {
+        cacheStateForUser(serverNext);
+        updateUser({ mobile_onboarding: serverNext });
         setStored((current) => {
           const isSameRequestState =
             current.status === next.status && current.step === next.step;
@@ -207,40 +208,13 @@ export function MobileOnboardingProvider({
         });
         logClientError('Mobile onboarding state update failed', error);
       });
-  }, [cacheStateForUser]);
-
-  // Keep saved step aligned with the current screen (avoids invisible tutorial on wrong step).
-  useEffect(() => {
-    if (!isStorageReady || isPausedUi || stored.status !== 'in_progress') return;
-
-    const reconciled = reconcileOnboardingState(stored, activeModule, isProfileEditMode);
-    if (reconciled.step !== stored.step) {
-      setStored(reconciled);
-      if (reconciled.step !== 'home') {
-        cacheStateForUser(reconciled);
-      }
-      persistState(reconciled, stored);
-    }
-  }, [
-    activeModule,
-    isPausedUi,
-    isProfileEditMode,
-    isStorageReady,
-    cacheStateForUser,
-    persistState,
-    stored,
-  ]);
+  }, [cacheStateForUser, updateUser]);
 
   const isFinished = isMobileOnboardingFinished(stored.status);
   const isEligible = isStorageReady && isResolved && isMobile && !isFinished;
 
   const isStepSceneReady = useMemo(() => {
-    if (stored.step === 'home') return activeModule === 'home';
-    if (stored.step === 'profile_icon') return activeModule === 'home';
-    if (stored.step === 'profile_edit' || stored.step === 'edit_form') {
-      return activeModule === 'profile' && !isProfileEditMode;
-    }
-    return false;
+    return isMobileOnboardingStepSceneReady(stored.step, activeModule, isProfileEditMode);
   }, [activeModule, isProfileEditMode, stored.step]);
 
   const setState = useCallback(
@@ -253,12 +227,37 @@ export function MobileOnboardingProvider({
     [cacheStateForUser, persistState, stored],
   );
 
+  // Keep profile-only tutorial steps visible on the profile scene without
+  // rewinding progress to the beginning when the user is elsewhere.
+  useEffect(() => {
+    if (!isStorageReady || isPausedUi || stored.status !== 'in_progress') return;
+
+    const reconciled = reconcileOnboardingState(stored, activeModule, isProfileEditMode);
+    if (reconciled.step !== stored.step) {
+      setState(reconciled);
+    }
+  }, [activeModule, isPausedUi, isProfileEditMode, isStorageReady, setState, stored]);
+
   const isOverlayVisible =
     isEligible &&
     !isPausedUi &&
     !isProfileEditMode &&
     stored.status === 'in_progress' &&
     isStepSceneReady;
+
+  // Continue profile-scoped tutorial steps on profile instead of rewinding
+  // persisted progress to the home step when the user returns to dashboard home.
+  useEffect(() => {
+    if (!isEligible || isPausedUi) return;
+    if (!shouldResumeMobileOnboardingProfileScene(stored, activeModule, isProfileEditMode)) {
+      lastAutoResumedStepRef.current = null;
+      return;
+    }
+
+    if (lastAutoResumedStepRef.current === stored.step) return;
+    lastAutoResumedStepRef.current = stored.step;
+    onOpenProfile();
+  }, [activeModule, isEligible, isPausedUi, isProfileEditMode, onOpenProfile, stored]);
 
   // Resume in_progress on mount (not paused until user explicitly paused)
   useEffect(() => {
@@ -355,8 +354,9 @@ export function MobileOnboardingProvider({
 
     if (stored.step === 'profile_edit') {
       const profileEditAction = resolveProfileEditGoNextAction(stored.step, isProfileEditPhase2);
-      if (profileEditAction === 'finish_onboarding') {
+      if (profileEditAction === 'finish_and_navigate') {
         finishOnboarding();
+        onOpenSkillsOffer();
         return;
       }
       if (profileEditAction === 'advance_to_phase_2') {
@@ -374,6 +374,7 @@ export function MobileOnboardingProvider({
     isEligible,
     isProfileEditPhase2,
     onOpenProfile,
+    onOpenSkillsOffer,
     setState,
     stored.step,
   ]);

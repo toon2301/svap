@@ -2,7 +2,7 @@ import type { MobileOnboardingStep } from '@/types';
 
 export type ProfileEditGoNextAction =
   | 'advance_to_phase_2'
-  | 'finish_onboarding'
+  | 'finish_and_navigate'
   | null;
 
 /** Pure helper for profile_edit "Ďalej" behavior (unit-tested). */
@@ -11,7 +11,7 @@ export function resolveProfileEditGoNextAction(
   isProfileEditPhase2: boolean,
 ): ProfileEditGoNextAction {
   if (step !== 'profile_edit') return null;
-  return isProfileEditPhase2 ? 'finish_onboarding' : 'advance_to_phase_2';
+  return isProfileEditPhase2 ? 'finish_and_navigate' : 'advance_to_phase_2';
 }
 
 export type ProfileSkillsClickAction =

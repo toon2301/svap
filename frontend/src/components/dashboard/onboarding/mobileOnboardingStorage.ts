@@ -51,8 +51,8 @@ export function normalizeMobileOnboardingState(
 }
 
 /**
- * Keeps the saved step consistent with the screen the user is on.
- * Prevents resuming at step 3 while still on the home feed.
+ * Keeps profile edit-mode-only progress consistent with the current profile scene
+ * without rewinding the persisted tutorial progress back to the beginning.
  */
 export function reconcileOnboardingState(
   state: MobileOnboardingState,
@@ -60,13 +60,6 @@ export function reconcileOnboardingState(
   isProfileEditMode: boolean,
 ): MobileOnboardingState {
   if (state.status !== 'in_progress') return state;
-
-  if (activeModule === 'home') {
-    if (state.step === 'profile_edit' || state.step === 'edit_form') {
-      return { ...state, step: 'home' };
-    }
-    return state;
-  }
 
   if (activeModule === 'profile') {
     if (isProfileEditMode) {
@@ -76,18 +69,13 @@ export function reconcileOnboardingState(
       return state;
     }
 
-    if (state.step === 'edit_form') {
+    if (!isProfileEditMode && state.step === 'edit_form') {
       return { ...state, step: 'profile_edit' };
     }
 
     if (state.step === 'home' || state.step === 'profile_icon') {
       return { ...state, step: 'profile_edit' };
     }
-    return state;
-  }
-
-  if (state.step !== 'home') {
-    return { ...state, step: 'home' };
   }
 
   return state;
@@ -98,11 +86,9 @@ export function getInitialMobileOnboardingState(
   activeModule = 'home',
   isProfileEditMode = false,
 ): MobileOnboardingState {
-  return reconcileOnboardingState(
-    normalizeMobileOnboardingState(state),
-    activeModule,
-    isProfileEditMode,
-  );
+  void activeModule;
+  void isProfileEditMode;
+  return normalizeMobileOnboardingState(state);
 }
 
 export function isMobileOnboardingFinished(status: MobileOnboardingStatus): boolean {
