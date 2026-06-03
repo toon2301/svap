@@ -754,6 +754,7 @@ export default function DashboardContent({
       highlightedSkillId={highlighting.highlightedSkillId}
       onViewUserSkillFromSearch={navigation.handleViewUserSkillFromSearch}
       initialProfileTab={initialProfileTab}
+      onSkillsClick={navigation.handleSkillsClick}
       onSkillsOfferClick={navigation.handleSkillsOfferClick}
       onSkillsSearchClick={navigation.handleSkillsSearchClick}
       onSkillsModeToggle={handleSkillsModeToggle}
@@ -795,6 +796,7 @@ export default function DashboardContent({
         isProfileEditMode={isMobileProfileEditMode}
         onOpenProfile={navigation.handleMobileProfileClick}
         onOpenEditProfile={navigation.handleEditProfileClick}
+        onOpenSkillsOffer={navigation.handleSkillsOfferClick}
         serverState={user?.mobile_onboarding ?? null}
         userId={user?.id ?? null}
       >

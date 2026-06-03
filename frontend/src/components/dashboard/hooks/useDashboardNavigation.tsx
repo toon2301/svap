@@ -11,6 +11,7 @@ export interface DashboardNavigationProps {
   handleEditProfileClick: () => void;
   handleViewUserSkillFromSearch: (userId: number, skillId: number, slug?: string | null) => void;
   handleViewUserProfileFromSearch: (userId: number, slug?: string | null, summary?: SearchUserResult) => void;
+  handleSkillsClick: () => void;
   handleSkillsOfferClick: () => void;
   handleSkillsSearchClick: () => void;
   handleSidebarSearchClick: () => void;
@@ -225,6 +226,10 @@ export function useDashboardNavigation({
   ]);
 
   // Skills navigation handlers
+  const handleSkillsClick = useCallback(() => {
+    handleMainModuleChange('skills');
+  }, [handleMainModuleChange]);
+
   const handleSkillsOfferClick = useCallback(() => {
     handleMainModuleChange('skills-offer');
   }, [handleMainModuleChange]);
@@ -309,6 +314,7 @@ export function useDashboardNavigation({
     handleEditProfileClick,
     handleViewUserSkillFromSearch,
     handleViewUserProfileFromSearch,
+    handleSkillsClick,
     handleSkillsOfferClick,
     handleSkillsSearchClick,
     handleSidebarSearchClick,

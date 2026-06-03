@@ -15,6 +15,10 @@ import {
   reconcileOnboardingState,
   writeMobileOnboardingCachedProgress,
 } from '../mobileOnboardingStorage';
+import {
+  isMobileOnboardingStepSceneReady,
+  shouldResumeMobileOnboardingProfileScene,
+} from '../mobileOnboardingScene';
 
 describe('mobileOnboardingState helpers', () => {
   beforeEach(() => {
@@ -58,14 +62,14 @@ describe('mobileOnboardingState helpers', () => {
     });
   });
 
-  it('rewinds profile_edit to home when user is on home module', () => {
+  it('does not rewind profile_edit to home when user is on home module', () => {
     expect(
       reconcileOnboardingState(
         { version: 1, status: 'in_progress', step: 'profile_edit' },
         'home',
         false,
       ).step,
-    ).toBe('home');
+    ).toBe('profile_edit');
   });
 
   it('rewinds edit_form to profile_edit on profile when not editing', () => {
@@ -78,24 +82,59 @@ describe('mobileOnboardingState helpers', () => {
     ).toBe('profile_edit');
   });
 
-  it('rewinds edit_form to home when user is on home module', () => {
+  it('does not rewind edit_form to home when user is on home module', () => {
     expect(
       reconcileOnboardingState(
         { version: 1, status: 'in_progress', step: 'edit_form' },
         'home',
         false,
       ).step,
-    ).toBe('home');
+    ).toBe('edit_form');
   });
 
-  it('reconciles initial server state for active module', () => {
+  it('keeps initial server progress independent from active module', () => {
     expect(
       getInitialMobileOnboardingState(
         { version: 1, status: 'in_progress', step: 'profile_edit' },
         'home',
         false,
       ).step,
-    ).toBe('home');
+    ).toBe('profile_edit');
+  });
+
+  it('keeps profile scene visible when user opens profile before earlier steps', () => {
+    expect(
+      reconcileOnboardingState(
+        { version: 1, status: 'in_progress', step: 'home' },
+        'profile',
+        false,
+      ).step,
+    ).toBe('profile_edit');
+  });
+
+  it('detects when a tutorial step scene is ready', () => {
+    expect(isMobileOnboardingStepSceneReady('home', 'home', false)).toBe(true);
+    expect(isMobileOnboardingStepSceneReady('profile_icon', 'home', false)).toBe(true);
+    expect(isMobileOnboardingStepSceneReady('profile_edit', 'profile', false)).toBe(true);
+    expect(isMobileOnboardingStepSceneReady('edit_form', 'profile', false)).toBe(true);
+
+    expect(isMobileOnboardingStepSceneReady('profile_edit', 'home', false)).toBe(false);
+    expect(isMobileOnboardingStepSceneReady('profile_edit', 'profile', true)).toBe(false);
+  });
+
+  it('resumes profile-scoped progress from dashboard home only', () => {
+    const state = { version: 1, status: 'in_progress', step: 'profile_edit' } as const;
+
+    expect(shouldResumeMobileOnboardingProfileScene(state, 'home', false)).toBe(true);
+    expect(shouldResumeMobileOnboardingProfileScene(state, 'messages', false)).toBe(false);
+    expect(shouldResumeMobileOnboardingProfileScene(state, 'profile', false)).toBe(false);
+    expect(
+      shouldResumeMobileOnboardingProfileScene(
+        { version: 1, status: 'completed', step: 'edit_form' },
+        'home',
+        false,
+      ),
+    ).toBe(false);
   });
 
   it('treats completed and skipped as finished', () => {

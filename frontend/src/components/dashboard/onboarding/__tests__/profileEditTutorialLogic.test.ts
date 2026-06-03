@@ -9,8 +9,8 @@ describe('profileEditTutorialLogic', () => {
       expect(resolveProfileEditGoNextAction('profile_edit', false)).toBe('advance_to_phase_2');
     });
 
-    it('finishes onboarding from profile_edit phase 2', () => {
-      expect(resolveProfileEditGoNextAction('profile_edit', true)).toBe('finish_onboarding');
+    it('finishes onboarding and navigates from profile_edit phase 2', () => {
+      expect(resolveProfileEditGoNextAction('profile_edit', true)).toBe('finish_and_navigate');
     });
 
     it('returns null for other steps', () => {
