@@ -69,7 +69,7 @@ export function reconcileOnboardingState(
       return state;
     }
 
-    if (!isProfileEditMode && state.step === 'edit_form') {
+    if (state.step === 'edit_form') {
       return { ...state, step: 'profile_edit' };
     }
 

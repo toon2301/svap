@@ -754,7 +754,7 @@ export default function DashboardContent({
       highlightedSkillId={highlighting.highlightedSkillId}
       onViewUserSkillFromSearch={navigation.handleViewUserSkillFromSearch}
       initialProfileTab={initialProfileTab}
-      onSkillsClick={navigation.handleSkillsOfferClick}
+      onSkillsClick={navigation.handleSkillsClick}
       onSkillsOfferClick={navigation.handleSkillsOfferClick}
       onSkillsSearchClick={navigation.handleSkillsSearchClick}
       onSkillsModeToggle={handleSkillsModeToggle}
