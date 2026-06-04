@@ -22,19 +22,31 @@ def _validate_plain_text(value: str, *, allow_blank: bool) -> str:
 
 
 def _build_media_url(request, key: str) -> str:
-    base = getattr(settings, "MEDIA_URL", "/media/")
-    url = f"{base}{key.lstrip('/')}"
+    base = (getattr(settings, "MEDIA_URL", "/media/") or "/media/").rstrip("/") + "/"
+    normalized_key = key.lstrip("/")
+    if base.startswith("/"):
+        local_prefix = base.lstrip("/")
+        if normalized_key.startswith(local_prefix):
+            normalized_key = normalized_key[len(local_prefix) :]
+    url = f"{base}{normalized_key}"
     return request.build_absolute_uri(url) if request else url
 
 
-def _image_url(request, image: PortfolioImage) -> str | None:
-    approved_key = (getattr(image, "approved_key", "") or "").strip()
-    if image.status == PortfolioImage.Status.APPROVED and approved_key:
-        return _build_media_url(request, approved_key)
+def _image_key(image: PortfolioImage, *fields: str) -> str:
+    for field in fields:
+        key = (getattr(image, field, "") or "").strip()
+        if key:
+            return key
+    return ""
+
+
+def _legacy_image_url(request, image: PortfolioImage) -> str | None:
+    if image.status == PortfolioImage.Status.REJECTED:
+        return None
 
     image_field = getattr(image, "image", None)
     image_name = (getattr(image_field, "name", "") or "").strip()
-    if image.status != PortfolioImage.Status.REJECTED and image_name:
+    if image_name:
         try:
             url = image_field.url
         except Exception:
@@ -44,14 +56,46 @@ def _image_url(request, image: PortfolioImage) -> str | None:
     return None
 
 
+def _image_url_for_fields(
+    request,
+    image: PortfolioImage,
+    *fields: str,
+    legacy_fallback: bool = False,
+) -> str | None:
+    if image.status == PortfolioImage.Status.APPROVED:
+        key = _image_key(image, *fields)
+        if key:
+            return _build_media_url(request, key)
+    if legacy_fallback:
+        return _legacy_image_url(request, image)
+    return None
+
+
+def _image_url(request, image: PortfolioImage) -> str | None:
+    return _image_url_for_fields(
+        request,
+        image,
+        "medium_key",
+        "large_key",
+        "approved_key",
+        legacy_fallback=True,
+    )
+
+
 class PortfolioImageSerializer(serializers.ModelSerializer):
     image_url = serializers.SerializerMethodField()
+    thumbnail_url = serializers.SerializerMethodField()
+    medium_url = serializers.SerializerMethodField()
+    large_url = serializers.SerializerMethodField()
 
     class Meta:
         model = PortfolioImage
         fields = [
             "id",
             "image_url",
+            "thumbnail_url",
+            "medium_url",
+            "large_url",
             "order",
             "width",
             "height",
@@ -69,6 +113,29 @@ class PortfolioImageSerializer(serializers.ModelSerializer):
 
     def get_image_url(self, obj):
         return _image_url(self.context.get("request"), obj)
+
+    def get_thumbnail_url(self, obj):
+        return _image_url_for_fields(
+            self.context.get("request"),
+            obj,
+            "thumbnail_key",
+        )
+
+    def get_medium_url(self, obj):
+        return _image_url_for_fields(
+            self.context.get("request"),
+            obj,
+            "medium_key",
+        )
+
+    def get_large_url(self, obj):
+        return _image_url_for_fields(
+            self.context.get("request"),
+            obj,
+            "large_key",
+            "approved_key",
+            legacy_fallback=True,
+        )
 
     def to_representation(self, instance):
         data = super().to_representation(instance)

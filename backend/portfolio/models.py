@@ -157,6 +157,15 @@ class PortfolioImage(models.Model):
     approved_key = models.CharField(
         _("S3 kluc (approved)"), max_length=1024, blank=True, default=""
     )
+    thumbnail_key = models.CharField(
+        _("S3 kluc (thumbnail)"), max_length=1024, blank=True, default=""
+    )
+    medium_key = models.CharField(
+        _("S3 kluc (medium)"), max_length=1024, blank=True, default=""
+    )
+    large_key = models.CharField(
+        _("S3 kluc (large)"), max_length=1024, blank=True, default=""
+    )
     original_filename = models.CharField(
         _("Povodny nazov suboru"), max_length=255, blank=True, default=""
     )

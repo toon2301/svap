@@ -109,9 +109,50 @@ class PortfolioApiTests(APITestCase):
         for image in payload["images"]:
             self.assertNotIn("approved_key", image)
             self.assertNotIn("pending_key", image)
+            self.assertNotIn("thumbnail_key", image)
+            self.assertNotIn("medium_key", image)
+            self.assertNotIn("large_key", image)
             self.assertNotIn("original_filename", image)
 
-    def test_visitor_list_only_returns_public_items_with_approved_cover_and_images(self):
+    def test_owner_list_serializes_variant_urls_without_storage_keys(self):
+        item = self._item()
+        image = self._image(
+            item,
+            approved_key="media/portfolio/large.webp",
+            thumbnail_key="media/portfolio/thumb.webp",
+            medium_key="media/portfolio/medium.webp",
+            large_key="media/portfolio/large.webp",
+        )
+        self._set_cover(item, image)
+
+        self.client.force_authenticate(user=self.owner)
+        response = self.client.get(reverse("accounts:portfolio_list"))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        payload = response.data[0]["images"][0]
+        self.assertEqual(
+            payload["thumbnail_url"],
+            "http://testserver/media/portfolio/thumb.webp",
+        )
+        self.assertEqual(
+            payload["medium_url"],
+            "http://testserver/media/portfolio/medium.webp",
+        )
+        self.assertEqual(
+            payload["large_url"],
+            "http://testserver/media/portfolio/large.webp",
+        )
+        self.assertEqual(
+            payload["image_url"],
+            "http://testserver/media/portfolio/medium.webp",
+        )
+        self.assertNotIn("thumbnail_key", payload)
+        self.assertNotIn("medium_key", payload)
+        self.assertNotIn("large_key", payload)
+
+    def test_visitor_list_only_returns_public_items_with_approved_cover_and_images(
+        self,
+    ):
         first = self._item(title="First", sort_order=0)
         cover = self._image(first, order=0)
         self._image(
