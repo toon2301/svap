@@ -1,6 +1,6 @@
 import type { MobileOnboardingStep } from '@/types';
 
-type MobileOnboardingSceneModule = 'home' | 'profile';
+type MobileOnboardingSceneModule = 'home' | 'profile' | 'search';
 
 type MobileOnboardingUiBlockerInput = {
   activeModule: string;
@@ -26,6 +26,10 @@ export function getMobileOnboardingStepModule(
     return 'home';
   }
 
+  if (step === 'search') {
+    return 'search';
+  }
+
   return 'profile';
 }
 
@@ -38,6 +42,10 @@ export function isMobileOnboardingStepSceneReady(
 
   if (requiredModule === 'home') {
     return activeModule === 'home';
+  }
+
+  if (requiredModule === 'search') {
+    return activeModule === 'search';
   }
 
   return activeModule === 'profile' && !isProfileEditMode;

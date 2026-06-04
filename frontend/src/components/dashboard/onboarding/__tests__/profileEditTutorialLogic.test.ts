@@ -12,13 +12,13 @@ describe('profileEditTutorialLogic', () => {
       );
     });
 
-    it('finishes onboarding and navigates from profile_edit phase 2', () => {
-      expect(resolveProfileEditGoNextAction('profile_edit', true)).toBe('finish_and_navigate');
+    it('advances to search from profile_edit phase 2', () => {
+      expect(resolveProfileEditGoNextAction('profile_edit', true)).toBe('advance_to_search');
     });
 
-    it('finishes and navigates when the rotating highlight is on skills', () => {
+    it('advances to search when the rotating highlight is on skills', () => {
       expect(resolveProfileEditGoNextAction('profile_edit', false, 'skills')).toBe(
-        'finish_and_navigate',
+        'advance_to_search',
       );
     });
 
@@ -37,15 +37,15 @@ describe('profileEditTutorialLogic', () => {
       );
     });
 
-    it('finishes and navigates in profile_edit phase 2', () => {
+    it('advances to search in profile_edit phase 2', () => {
       expect(resolveProfileSkillsClickAction('profile_edit', true, true)).toBe(
-        'finish_and_navigate',
+        'advance_to_search',
       );
     });
 
-    it('finishes and navigates when direct skills click matches the rotating highlight', () => {
+    it('advances to search when direct skills click matches the rotating highlight', () => {
       expect(resolveProfileSkillsClickAction('profile_edit', false, true, 'skills')).toBe(
-        'finish_and_navigate',
+        'advance_to_search',
       );
     });
 

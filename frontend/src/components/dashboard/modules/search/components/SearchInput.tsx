@@ -53,7 +53,7 @@ export function SearchInput({ searchState, onSearch, onKeyDown, onClose, t }: Se
               </button>
             )}
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2" data-onboarding="search-input-filter">
             <div className="relative flex-1">
               <input
                 ref={searchInputRef}

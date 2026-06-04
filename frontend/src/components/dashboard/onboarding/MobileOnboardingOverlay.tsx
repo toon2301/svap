@@ -36,6 +36,7 @@ export default function MobileOnboardingOverlay() {
     skip,
     pause,
     close,
+    complete,
     isProfileEditPhase2,
     syncProfileHighlightTarget,
   } = useMobileOnboarding();
@@ -44,7 +45,12 @@ export default function MobileOnboardingOverlay() {
   const tooltipRef = useRef<HTMLDivElement | null>(null);
   const [tooltipHeight, setTooltipHeight] = useState(180);
 
-  const mainSteps: Array<'home' | 'profile_icon' | 'profile_edit'> = ['home', 'profile_icon', 'profile_edit'];
+  const mainSteps: Array<'home' | 'profile_icon' | 'profile_edit' | 'search'> = [
+    'home',
+    'profile_icon',
+    'profile_edit',
+    'search',
+  ];
   const displayStep: (typeof mainSteps)[number] | null =
     step === 'edit_form'
       ? 'profile_edit'
@@ -113,6 +119,7 @@ export default function MobileOnboardingOverlay() {
 
       return ONBOARDING_TARGETS.profileEditButton;
     }
+    if (displayStep === 'search') return ONBOARDING_TARGETS.searchInputFilter;
     return null;
   }, [displayStep, isOverlayVisible, isProfileEditPhase2, profileHighlightTarget]);
 
@@ -173,6 +180,17 @@ export default function MobileOnboardingOverlay() {
       };
     }
 
+    if (displayStep === 'search') {
+      return {
+        title: t('tutorial.searchStep.title', 'Vyhľadávaj ľudí a príležitosti'),
+        body: t(
+          'tutorial.searchStep.description',
+          'Nájdi používateľov, ponuky a dopyty alebo objav odporúčané ponuky podľa svojich záujmov.',
+        ),
+        placement: 'below' as const,
+      };
+    }
+
     return null;
   }, [displayStep, isProfileEditPhase2, profileHighlightTarget, t]);
   const nextLabel = t('onboarding.mobile.next', 'Ďalej');
@@ -184,6 +202,23 @@ export default function MobileOnboardingOverlay() {
         : undefined,
     );
   };
+
+  useEffect(() => {
+    if (!isOverlayVisible || displayStep !== 'search') return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target;
+      if (target instanceof Node && tooltipRef.current?.contains(target)) {
+        return;
+      }
+      complete();
+    };
+
+    document.addEventListener('pointerdown', handlePointerDown, true);
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown, true);
+    };
+  }, [complete, displayStep, isOverlayVisible]);
 
   useLayoutEffect(() => {
     if (!isOverlayVisible || !config) return;
@@ -264,14 +299,17 @@ export default function MobileOnboardingOverlay() {
       >
         <div className="flex items-center justify-between gap-2 mb-2">
           <div className="flex gap-1.5">
-            {[1, 2, 3].map((i) => (
-              <span
-                key={i}
-                className={`h-1.5 rounded-full transition-all ${
-                  i === stepIndex ? 'w-6 bg-purple-600' : 'w-1.5 bg-gray-300 dark:bg-gray-600'
-                }`}
-              />
-            ))}
+            {mainSteps.map((item, index) => {
+              const i = index + 1;
+              return (
+                <span
+                  key={item}
+                  className={`h-1.5 rounded-full transition-all ${
+                    i === stepIndex ? 'w-6 bg-purple-600' : 'w-1.5 bg-gray-300 dark:bg-gray-600'
+                  }`}
+                />
+              );
+            })}
           </div>
           <button
             type="button"

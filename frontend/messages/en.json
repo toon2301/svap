@@ -199,6 +199,10 @@
     "createCardStep": {
       "title": "Create your first card",
       "description": "You can offer your services or add a request for what you're looking for."
+    },
+    "searchStep": {
+      "title": "Search people and opportunities",
+      "description": "Find users, offers and requests, or discover recommended offers based on your interests."
     }
   },
   "create": {

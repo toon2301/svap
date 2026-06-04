@@ -2,6 +2,11 @@ from rest_framework import serializers
 
 from .models import MobileOnboardingStatus, MobileOnboardingStep
 
+COMPLETED_ONBOARDING_STEPS = {
+    MobileOnboardingStep.EDIT_FORM,
+    MobileOnboardingStep.SEARCH,
+}
+
 
 class MobileOnboardingStateSerializer(serializers.Serializer):
     status = serializers.ChoiceField(choices=MobileOnboardingStatus.choices)
@@ -22,9 +27,9 @@ class MobileOnboardingStateSerializer(serializers.Serializer):
     def validate(self, attrs):
         if (
             attrs.get("status") == MobileOnboardingStatus.COMPLETED
-            and attrs.get("step") != MobileOnboardingStep.EDIT_FORM
+            and attrs.get("step") not in COMPLETED_ONBOARDING_STEPS
         ):
             raise serializers.ValidationError(
-                {"step": "Completed onboarding must end on edit_form."}
+                {"step": "Completed onboarding must end on a terminal step."}
             )
         return attrs

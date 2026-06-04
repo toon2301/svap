@@ -2,7 +2,7 @@ import type { MobileOnboardingStep } from '@/types';
 
 export type ProfileEditGoNextAction =
   | 'advance_to_phase_2'
-  | 'finish_and_navigate'
+  | 'advance_to_search'
   | null;
 
 export type ProfileEditHighlightTarget = 'edit' | 'skills';
@@ -15,12 +15,12 @@ export function resolveProfileEditGoNextAction(
 ): ProfileEditGoNextAction {
   if (step !== 'profile_edit') return null;
   return isProfileEditPhase2 || highlightedTarget === 'skills'
-    ? 'finish_and_navigate'
+    ? 'advance_to_search'
     : 'advance_to_phase_2';
 }
 
 export type ProfileSkillsClickAction =
-  | 'finish_and_navigate'
+  | 'advance_to_search'
   | 'advance_to_phase_2_only'
   | 'default_navigate';
 
@@ -35,6 +35,6 @@ export function resolveProfileSkillsClickAction(
     return 'default_navigate';
   }
   return isProfileEditPhase2 || highlightedTarget === 'skills'
-    ? 'finish_and_navigate'
+    ? 'advance_to_search'
     : 'advance_to_phase_2_only';
 }

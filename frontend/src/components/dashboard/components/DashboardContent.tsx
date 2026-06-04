@@ -293,6 +293,10 @@ export default function DashboardContent({
     }
   }, [activeModule, handleMainModuleChange]);
 
+  const handleOnboardingSearchOpen = useCallback(() => {
+    handleMainModuleChange('search');
+  }, [handleMainModuleChange]);
+
   const handleNotificationsPanelClose = useCallback(() => {
     setIsNotificationsPanelOpen(false);
   }, []);
@@ -806,7 +810,7 @@ export default function DashboardContent({
         isBlockedByUi={isMobileOnboardingBlocked}
         onOpenProfile={navigation.handleMobileProfileClick}
         onOpenEditProfile={navigation.handleEditProfileClick}
-        onOpenSkillsOffer={navigation.handleSkillsOfferClick}
+        onOpenSearch={handleOnboardingSearchOpen}
         serverState={user?.mobile_onboarding ?? null}
         userId={user?.id ?? null}
       >
