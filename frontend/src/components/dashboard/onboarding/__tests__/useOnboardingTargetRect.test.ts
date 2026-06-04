@@ -1,5 +1,9 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
-import { useOnboardingTargetRect } from '../useOnboardingTargetRect';
+import {
+  readCombinedTargetRect,
+  readTargetRect,
+  useOnboardingTargetRect,
+} from '../useOnboardingTargetRect';
 
 function mockRect(top: number, left: number, width: number, height: number): DOMRect {
   return {
@@ -48,6 +52,49 @@ describe('useOnboardingTargetRect', () => {
         width: 120,
         height: 36,
       });
+    });
+  });
+
+  it('ignores hidden duplicate elements and measures the visible one', () => {
+    const hidden = document.createElement('div');
+    hidden.setAttribute('data-onboarding', 'search-input');
+    hidden.getBoundingClientRect = () => mockRect(0, 0, 0, 0);
+    document.body.appendChild(hidden);
+
+    const visible = document.createElement('div');
+    visible.setAttribute('data-onboarding', 'search-input');
+    visible.getBoundingClientRect = () => mockRect(20, 12, 280, 42);
+    document.body.appendChild(visible);
+
+    expect(readTargetRect('[data-onboarding="search-input"]')).toEqual({
+      top: 20,
+      left: 12,
+      width: 280,
+      height: 42,
+    });
+  });
+
+  it('combines bounding boxes for multiple selectors', () => {
+    const input = document.createElement('div');
+    input.setAttribute('data-onboarding', 'search-input');
+    input.getBoundingClientRect = () => mockRect(10, 10, 200, 40);
+    document.body.appendChild(input);
+
+    const filter = document.createElement('button');
+    filter.setAttribute('data-onboarding', 'search-filter');
+    filter.getBoundingClientRect = () => mockRect(10, 220, 42, 42);
+    document.body.appendChild(filter);
+
+    expect(
+      readCombinedTargetRect([
+        '[data-onboarding="search-input"]',
+        '[data-onboarding="search-filter"]',
+      ]),
+    ).toEqual({
+      top: 10,
+      left: 10,
+      width: 252,
+      height: 42,
     });
   });
 

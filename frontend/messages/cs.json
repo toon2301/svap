@@ -199,6 +199,10 @@
     "createCardStep": {
       "title": "Vytvoř svou první kartu",
       "description": "Můžeš nabídnout své služby nebo přidat poptávku na to, co hledáš."
+    },
+    "searchStep": {
+      "title": "Vyhledávej lidi a příležitosti",
+      "description": "Najdi uživatele, nabídky a poptávky nebo objev doporučené nabídky podle svých zájmů."
     }
   },
   "create": {

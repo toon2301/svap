@@ -199,6 +199,10 @@
     "createCardStep": {
       "title": "Hozd létre az első kártyádat",
       "description": "Kínálhatod a szolgáltatásaidat, vagy hozzáadhatsz egy keresést arra, amit keresel."
+    },
+    "searchStep": {
+      "title": "Keress embereket és lehetőségeket",
+      "description": "Találj felhasználókat, ajánlatokat és igényeket, vagy fedezz fel az érdeklődési köreidhez illő ajánlott ajánlatokat."
     }
   },
   "create": {

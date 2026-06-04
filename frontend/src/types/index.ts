@@ -14,7 +14,7 @@ export interface UserEntitlements {
   limits: Record<EntitlementLimitKey, number>;
 }
 
-export type MobileOnboardingStep = 'home' | 'profile_icon' | 'profile_edit' | 'edit_form';
+export type MobileOnboardingStep = 'home' | 'profile_icon' | 'profile_edit' | 'edit_form' | 'search';
 export type MobileOnboardingStatus = 'in_progress' | 'completed' | 'skipped';
 
 export interface MobileOnboardingState {

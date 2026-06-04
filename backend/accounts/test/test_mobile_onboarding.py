@@ -65,6 +65,25 @@ class TestMobileOnboarding(APITestCase):
         assert self.user.mobile_onboarding_status == "in_progress"
         assert self.user.mobile_onboarding_step == "profile_icon"
 
+    def test_update_mobile_onboarding_search_step(self):
+        self.client.force_authenticate(self.user)
+
+        response = self.client.patch(
+            self.url,
+            {"status": "in_progress", "step": "search"},
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data == {
+            "version": 1,
+            "status": "in_progress",
+            "step": "search",
+        }
+        self.user.refresh_from_db()
+        assert self.user.mobile_onboarding_status == "in_progress"
+        assert self.user.mobile_onboarding_step == "search"
+
     def test_update_rejects_unknown_fields(self):
         self.client.force_authenticate(self.user)
 
@@ -88,7 +107,7 @@ class TestMobileOnboarding(APITestCase):
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
-    def test_completed_state_must_end_on_edit_form(self):
+    def test_completed_state_must_end_on_terminal_step(self):
         self.client.force_authenticate(self.user)
 
         response = self.client.patch(
@@ -98,6 +117,44 @@ class TestMobileOnboarding(APITestCase):
         )
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    def test_completed_state_can_end_on_search(self):
+        self.client.force_authenticate(self.user)
+
+        response = self.client.patch(
+            self.url,
+            {"status": "completed", "step": "search"},
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data == {
+            "version": 1,
+            "status": "completed",
+            "step": "search",
+        }
+        self.user.refresh_from_db()
+        assert self.user.mobile_onboarding_status == "completed"
+        assert self.user.mobile_onboarding_step == "search"
+
+    def test_completed_state_can_still_end_on_edit_form(self):
+        self.client.force_authenticate(self.user)
+
+        response = self.client.patch(
+            self.url,
+            {"status": "completed", "step": "edit_form"},
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data == {
+            "version": 1,
+            "status": "completed",
+            "step": "edit_form",
+        }
+        self.user.refresh_from_db()
+        assert self.user.mobile_onboarding_status == "completed"
+        assert self.user.mobile_onboarding_step == "edit_form"
 
     def test_terminal_state_cannot_be_reopened(self):
         self.user.mobile_onboarding_status = "completed"

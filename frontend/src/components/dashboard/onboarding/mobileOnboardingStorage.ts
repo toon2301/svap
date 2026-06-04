@@ -18,7 +18,8 @@ type MobileOnboardingCachedProgress = {
   profileEditPhase2?: boolean;
 };
 
-const VALID_STEPS: MobileOnboardingStep[] = ['home', 'profile_icon', 'profile_edit', 'edit_form'];
+const VALID_STEPS: MobileOnboardingStep[] = ['home', 'profile_icon', 'profile_edit', 'edit_form', 'search'];
+const COMPLETED_STEPS: MobileOnboardingStep[] = ['edit_form', 'search'];
 const TERMINAL_STATUSES: MobileOnboardingStatus[] = ['completed', 'skipped'];
 const MOBILE_ONBOARDING_PROGRESS_KEY_PREFIX = 'svaplyMobileOnboardingStepV1';
 
@@ -46,7 +47,10 @@ export function normalizeMobileOnboardingState(
   return {
     version: 1,
     status: state.status,
-    step: state.status === 'completed' ? 'edit_form' : state.step,
+    step:
+      state.status === 'completed' && !COMPLETED_STEPS.includes(state.step)
+        ? 'edit_form'
+        : state.step,
   };
 }
 

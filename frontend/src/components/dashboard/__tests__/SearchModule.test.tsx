@@ -34,8 +34,17 @@ describe('SearchModule', () => {
   it('renders search header and inputs', () => {
     render(<SearchModule user={mockUser} />);
 
-    expect(screen.getByText('Hľadať')).toBeInTheDocument();
-    expect(screen.getByPlaceholderText('Vyhľadávanie')).toBeInTheDocument();
+    expect(screen.getByText('Vyhľadávanie')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Hľadajte používateľov, zručnosti...')).toBeInTheDocument();
+    expect(
+      screen
+        .getByPlaceholderText('Hľadajte používateľov, zručnosti...')
+        .closest('[data-onboarding="search-input"]'),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /filter/i })).toHaveAttribute(
+      'data-onboarding',
+      'search-filter',
+    );
     expect(screen.getByRole('button', { name: /filter/i })).toBeInTheDocument();
   });
 
@@ -43,7 +52,7 @@ describe('SearchModule', () => {
     render(<SearchModule user={mockUser} />);
 
     const searchInput = screen.getByPlaceholderText(
-      'Vyhľadávanie',
+      'Hľadajte používateľov, zručnosti...',
     );
     fireEvent.change(searchInput, { target: { value: 'React' } });
 
@@ -62,7 +71,7 @@ describe('SearchModule', () => {
     render(<SearchModule user={mockUser} />);
 
     const searchInput = screen.getByPlaceholderText(
-      'Vyhľadávanie',
+      'Hľadajte používateľov, zručnosti...',
     );
     fireEvent.change(searchInput, { target: { value: 'React' } });
 

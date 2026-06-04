@@ -63,6 +63,20 @@ describe('mobileOnboardingState helpers', () => {
     });
   });
 
+  it('preserves completed search as the new terminal step', () => {
+    expect(
+      normalizeMobileOnboardingState({
+        version: 1,
+        status: 'completed',
+        step: 'search',
+      }),
+    ).toEqual({
+      version: 1,
+      status: 'completed',
+      step: 'search',
+    });
+  });
+
   it('does not rewind profile_edit to home when user is on home module', () => {
     expect(
       reconcileOnboardingState(
@@ -118,9 +132,11 @@ describe('mobileOnboardingState helpers', () => {
     expect(isMobileOnboardingStepSceneReady('profile_icon', 'home', false)).toBe(true);
     expect(isMobileOnboardingStepSceneReady('profile_edit', 'profile', false)).toBe(true);
     expect(isMobileOnboardingStepSceneReady('edit_form', 'profile', false)).toBe(true);
+    expect(isMobileOnboardingStepSceneReady('search', 'search', false)).toBe(true);
 
     expect(isMobileOnboardingStepSceneReady('profile_edit', 'home', false)).toBe(false);
     expect(isMobileOnboardingStepSceneReady('profile_edit', 'profile', true)).toBe(false);
+    expect(isMobileOnboardingStepSceneReady('search', 'profile', false)).toBe(false);
   });
 
   it('maps steps to their owning module for scene-gated display', () => {
@@ -128,6 +144,7 @@ describe('mobileOnboardingState helpers', () => {
     expect(getMobileOnboardingStepModule('profile_icon')).toBe('home');
     expect(getMobileOnboardingStepModule('profile_edit')).toBe('profile');
     expect(getMobileOnboardingStepModule('edit_form')).toBe('profile');
+    expect(getMobileOnboardingStepModule('search')).toBe('search');
   });
 
   it('keeps profile-scoped progress hidden until the user opens profile', () => {

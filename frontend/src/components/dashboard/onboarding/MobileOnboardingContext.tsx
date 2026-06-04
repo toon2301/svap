@@ -37,6 +37,9 @@ export const ONBOARDING_TARGETS = {
   profileEditButton: '[data-onboarding="profile-edit-button"]',
   profileSkillsButton: '[data-onboarding="profile-skills-button"]',
   profileEditForm: '[data-onboarding="profile-edit-form"]',
+  searchInput: '[data-onboarding="search-input"]',
+  searchFilter: '[data-onboarding="search-filter"]',
+  searchNavIcon: '[data-onboarding="search-nav-icon"]',
 } as const;
 
 type MobileOnboardingContextValue = {
@@ -73,7 +76,7 @@ type MobileOnboardingProviderProps = {
   isBlockedByUi?: boolean;
   onOpenProfile: () => void;
   onOpenEditProfile: () => void;
-  onOpenSkillsOffer: () => void;
+  onOpenSearch: () => void;
   serverState?: MobileOnboardingState | null;
   userId?: number | null;
 };
@@ -105,7 +108,7 @@ export function MobileOnboardingProvider({
   isBlockedByUi = false,
   onOpenProfile,
   onOpenEditProfile,
-  onOpenSkillsOffer,
+  onOpenSearch,
   serverState,
   userId,
 }: MobileOnboardingProviderProps) {
@@ -299,16 +302,18 @@ export function MobileOnboardingProvider({
     }
   }, [isEligible, isPausedUi, isProfileEditMode, setState, stored.status, stored.step]);
 
-  const finishOnboarding = useCallback(() => {
+  const finishOnboarding = useCallback((completedStep: MobileOnboardingStep = 'search') => {
     clearMobileOnboardingPostponedForSession();
     clearMobileOnboardingResumePhase2();
     setIsPausedUi(false);
     setIsProfileEditPhase2(false);
     profileHighlightTargetRef.current = 'edit';
-    setState({ version: 1, status: 'completed', step: 'edit_form' });
+    setState({ version: 1, status: 'completed', step: completedStep });
   }, [setState]);
 
-  const complete = finishOnboarding;
+  const complete = useCallback(() => {
+    finishOnboarding(stored.step === 'search' ? 'search' : 'edit_form');
+  }, [finishOnboarding, stored.step]);
 
   const skip = useCallback(() => {
     clearMobileOnboardingPostponedForSession();
@@ -339,6 +344,14 @@ export function MobileOnboardingProvider({
     profileHighlightTargetRef.current = target;
   }, []);
 
+  const advanceToSearchStep = useCallback(() => {
+    clearMobileOnboardingResumePhase2();
+    setIsProfileEditPhase2(false);
+    profileHighlightTargetRef.current = 'edit';
+    setState({ version: 1, status: 'in_progress', step: 'search' });
+    onOpenSearch();
+  }, [onOpenSearch, setState]);
+
   const goNext = useCallback((options?: MobileOnboardingGoNextOptions) => {
     if (!isEligible) return;
     setIsPausedUi(false);
@@ -362,9 +375,8 @@ export function MobileOnboardingProvider({
         isProfileEditPhase2,
         highlightedTarget,
       );
-      if (profileEditAction === 'finish_and_navigate') {
-        finishOnboarding();
-        onOpenSkillsOffer();
+      if (profileEditAction === 'advance_to_search') {
+        advanceToSearchStep();
         return;
       }
       if (profileEditAction === 'advance_to_phase_2') {
@@ -374,15 +386,20 @@ export function MobileOnboardingProvider({
     }
 
     if (stored.step === 'edit_form') {
-      finishOnboarding();
+      finishOnboarding('edit_form');
+      return;
+    }
+
+    if (stored.step === 'search') {
+      finishOnboarding('search');
     }
   }, [
     advanceProfileEditToPhase2,
+    advanceToSearchStep,
     finishOnboarding,
     isEligible,
     isProfileEditPhase2,
     onOpenProfile,
-    onOpenSkillsOffer,
     setState,
     stored.step,
   ]);
@@ -419,9 +436,8 @@ export function MobileOnboardingProvider({
     );
 
     if (skillsAction === 'default_navigate') return true;
-    if (skillsAction === 'finish_and_navigate') {
-      finishOnboarding();
-      onOpenSkillsOffer();
+    if (skillsAction === 'advance_to_search') {
+      advanceToSearchStep();
       return false;
     }
 
@@ -429,11 +445,10 @@ export function MobileOnboardingProvider({
     return false;
   }, [
     advanceProfileEditToPhase2,
-    finishOnboarding,
+    advanceToSearchStep,
     isEligible,
     isPausedUi,
     isProfileEditPhase2,
-    onOpenSkillsOffer,
     stored.step,
   ]);
 
