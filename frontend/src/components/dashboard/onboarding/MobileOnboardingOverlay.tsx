@@ -1,30 +1,98 @@
 'use client';
 
-import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { ONBOARDING_TARGETS, useMobileOnboarding } from './MobileOnboardingContext';
 import type { ProfileEditHighlightTarget } from './profileEditTutorialLogic';
-import { useOnboardingTargetRect } from './useOnboardingTargetRect';
+import {
+  type TargetRect,
+  useOnboardingCombinedTargetRect,
+  useOnboardingTargetRect,
+} from './useOnboardingTargetRect';
 
 const SPOTLIGHT_PADDING = 8;
 const OVERLAY_Z = 10000;
 const PROFILE_HIGHLIGHT_ROTATION_MS = 6000;
 
-function SpotlightHole({ rect }: { rect: { top: number; left: number; width: number; height: number } }) {
-  const style: React.CSSProperties = {
-    position: 'fixed',
+const SEARCH_INPUT_AREA_SELECTORS: string[] = [
+  ONBOARDING_TARGETS.searchInput,
+  ONBOARDING_TARGETS.searchFilter,
+];
+
+function paddedSpotlightRect(rect: TargetRect): TargetRect {
+  return {
     top: rect.top - SPOTLIGHT_PADDING,
     left: rect.left - SPOTLIGHT_PADDING,
     width: rect.width + SPOTLIGHT_PADDING * 2,
     height: rect.height + SPOTLIGHT_PADDING * 2,
-    borderRadius: 12,
-    boxShadow: '0 0 0 9999px rgba(15, 23, 42, 0.55)',
-    pointerEvents: 'none',
-    zIndex: OVERLAY_Z,
-    animation: 'mobileOnboardingPulse 2.2s ease-in-out infinite',
   };
+}
 
-  return <div aria-hidden style={style} />;
+function SpotlightOverlay({ rects }: { rects: TargetRect[] }) {
+  const maskId = `onboarding-spotlight-${useId().replace(/[^a-zA-Z0-9-_]/g, '')}`;
+
+  if (!rects.length) {
+    return (
+      <div
+        aria-hidden
+        className="fixed inset-0 pointer-events-none"
+        style={{ zIndex: OVERLAY_Z, background: 'rgba(15, 23, 42, 0.55)' }}
+      />
+    );
+  }
+
+  if (rects.length === 1) {
+    const rect = paddedSpotlightRect(rects[0]);
+    const style: React.CSSProperties = {
+      position: 'fixed',
+      top: rect.top,
+      left: rect.left,
+      width: rect.width,
+      height: rect.height,
+      borderRadius: 12,
+      boxShadow: '0 0 0 9999px rgba(15, 23, 42, 0.55)',
+      pointerEvents: 'none',
+      zIndex: OVERLAY_Z,
+      animation: 'mobileOnboardingPulse 2.2s ease-in-out infinite',
+    };
+
+    return <div aria-hidden style={style} />;
+  }
+
+  const paddedRects = rects.map(paddedSpotlightRect);
+
+  return (
+    <svg
+      aria-hidden
+      className="fixed inset-0 w-full h-full pointer-events-none"
+      style={{ zIndex: OVERLAY_Z }}
+    >
+      <defs>
+        <mask id={maskId}>
+          <rect width="100%" height="100%" fill="white" />
+          {paddedRects.map((rect, index) => (
+            <rect
+              key={index}
+              x={rect.left}
+              y={rect.top}
+              width={rect.width}
+              height={rect.height}
+              rx={12}
+              ry={12}
+              fill="black"
+            />
+          ))}
+        </mask>
+      </defs>
+      <rect
+        width="100%"
+        height="100%"
+        fill="rgba(15, 23, 42, 0.55)"
+        mask={`url(#${maskId})`}
+        className="mobile-onboarding-spotlight-pulse"
+      />
+    </svg>
+  );
 }
 
 export default function MobileOnboardingOverlay() {
@@ -89,6 +157,7 @@ export default function MobileOnboardingOverlay() {
   }, [displayStep, isOverlayVisible, isProfileEditPhase2, syncProfileHighlightTarget]);
 
   const [profileEditMeasurePass, setProfileEditMeasurePass] = useState(0);
+  const [searchMeasurePass, setSearchMeasurePass] = useState(0);
 
   useLayoutEffect(() => {
     if (!isOverlayVisible || displayStep !== 'profile_edit') return;
@@ -97,6 +166,20 @@ export default function MobileOnboardingOverlay() {
 
     const timeoutId = window.setTimeout(() => {
       setProfileEditMeasurePass((pass) => pass + 1);
+    }, 100);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [displayStep, isOverlayVisible]);
+
+  useLayoutEffect(() => {
+    if (!isOverlayVisible || displayStep !== 'search') return;
+
+    setSearchMeasurePass((pass) => pass + 1);
+
+    const timeoutId = window.setTimeout(() => {
+      setSearchMeasurePass((pass) => pass + 1);
     }, 100);
 
     return () => {
@@ -119,15 +202,37 @@ export default function MobileOnboardingOverlay() {
 
       return ONBOARDING_TARGETS.profileEditButton;
     }
-    if (displayStep === 'search') return ONBOARDING_TARGETS.searchInputFilter;
     return null;
   }, [displayStep, isOverlayVisible, isProfileEditPhase2, profileHighlightTarget]);
 
+  const isSearchStep = displayStep === 'search';
   const rect = useOnboardingTargetRect(
-    targetSelector,
-    isOverlayVisible,
+    isSearchStep ? null : targetSelector,
+    isOverlayVisible && !isSearchStep,
     displayStep === 'profile_edit' ? `${profileEditMeasurePass}:${isProfileEditPhase2}` : displayStep ?? undefined,
   );
+  const searchMeasureKey = `search:${searchMeasurePass}`;
+  const searchInputAreaRect = useOnboardingCombinedTargetRect(
+    isSearchStep ? SEARCH_INPUT_AREA_SELECTORS : null,
+    isOverlayVisible && isSearchStep,
+    searchMeasureKey,
+  );
+  const searchNavRect = useOnboardingTargetRect(
+    isSearchStep ? ONBOARDING_TARGETS.searchNavIcon : null,
+    isOverlayVisible && isSearchStep,
+    searchMeasureKey,
+  );
+
+  const tooltipRect = isSearchStep ? searchInputAreaRect ?? searchNavRect : rect;
+  const spotlightRects = useMemo(() => {
+    if (!isOverlayVisible) return [];
+
+    if (isSearchStep) {
+      return [searchInputAreaRect, searchNavRect].filter((item): item is TargetRect => item != null);
+    }
+
+    return rect ? [rect] : [];
+  }, [isOverlayVisible, isSearchStep, rect, searchInputAreaRect, searchNavRect]);
   const stepIndex = displayStep ? mainSteps.indexOf(displayStep) + 1 : 1;
 
   const pauseLabel = t('onboarding.mobile.later', 'Neskôr');
@@ -241,17 +346,17 @@ export default function MobileOnboardingOverlay() {
   const navHeight = nav ? Math.ceil(nav.getBoundingClientRect().height) : 88;
   const bottomReserve = navHeight + 24;
 
-  if (rect && typeof window !== 'undefined') {
+  if (tooltipRect && typeof window !== 'undefined') {
     const viewportPadding = 16;
     const offset = 12;
     const tooltipWidth = Math.min(360, window.innerWidth - viewportPadding * 2);
-    const anchorCenterX = rect.left + rect.width / 2;
+    const anchorCenterX = tooltipRect.left + tooltipRect.width / 2;
     const clampedCenterX = Math.max(
       viewportPadding + tooltipWidth / 2,
       Math.min(anchorCenterX, window.innerWidth - viewportPadding - tooltipWidth / 2),
     );
-    const belowTop = rect.top + rect.height + SPOTLIGHT_PADDING + offset;
-    const aboveTop = rect.top - tooltipHeight - SPOTLIGHT_PADDING - offset;
+    const belowTop = tooltipRect.top + tooltipRect.height + SPOTLIGHT_PADDING + offset;
+    const aboveTop = tooltipRect.top - tooltipHeight - SPOTLIGHT_PADDING - offset;
     const shouldPlaceAbove = belowTop + tooltipHeight > window.innerHeight - viewportPadding;
 
     tooltipStyle.left = clampedCenterX;
@@ -278,14 +383,7 @@ export default function MobileOnboardingOverlay() {
 
   return (
     <>
-      {rect ? <SpotlightHole rect={rect} /> : null}
-      {!rect ? (
-        <div
-          aria-hidden
-          className="fixed inset-0 pointer-events-none"
-          style={{ zIndex: OVERLAY_Z, background: 'rgba(15, 23, 42, 0.55)' }}
-        />
-      ) : null}
+      <SpotlightOverlay rects={spotlightRects} />
       <div
         ref={tooltipRef}
         role="dialog"
@@ -366,6 +464,20 @@ export default function MobileOnboardingOverlay() {
           }
           50% {
             box-shadow: 0 0 0 9999px rgba(15, 23, 42, 0.62);
+          }
+        }
+
+        :global(.mobile-onboarding-spotlight-pulse) {
+          animation: mobileOnboardingSvgPulse 2.2s ease-in-out infinite;
+        }
+
+        @keyframes mobileOnboardingSvgPulse {
+          0%,
+          100% {
+            opacity: 0.94;
+          }
+          50% {
+            opacity: 1;
           }
         }
 

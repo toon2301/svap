@@ -37,8 +37,9 @@ export const ONBOARDING_TARGETS = {
   profileEditButton: '[data-onboarding="profile-edit-button"]',
   profileSkillsButton: '[data-onboarding="profile-skills-button"]',
   profileEditForm: '[data-onboarding="profile-edit-form"]',
-  searchInputFilter: '[data-onboarding="search-input-filter"]',
-  searchNavItem: '[data-onboarding="search-nav-item"]',
+  searchInput: '[data-onboarding="search-input"]',
+  searchFilter: '[data-onboarding="search-filter"]',
+  searchNavIcon: '[data-onboarding="search-nav-icon"]',
 } as const;
 
 type MobileOnboardingContextValue = {
@@ -445,7 +446,6 @@ export function MobileOnboardingProvider({
   }, [
     advanceProfileEditToPhase2,
     advanceToSearchStep,
-    finishOnboarding,
     isEligible,
     isPausedUi,
     isProfileEditPhase2,

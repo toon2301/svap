@@ -53,8 +53,8 @@ export function SearchInput({ searchState, onSearch, onKeyDown, onClose, t }: Se
               </button>
             )}
           </div>
-          <div className="flex items-center gap-2" data-onboarding="search-input-filter">
-            <div className="relative flex-1">
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1" data-onboarding="search-input">
               <input
                 ref={searchInputRef}
                 type="text"
@@ -102,6 +102,7 @@ export function SearchInput({ searchState, onSearch, onKeyDown, onClose, t }: Se
             <button
               type="button"
               onClick={() => setIsFilterOpen(true)}
+              data-onboarding="search-filter"
               className="flex-shrink-0 h-[42px] w-[42px] flex items-center justify-center rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-black text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors"
               aria-label={t('search.filter', 'Filter')}
             >

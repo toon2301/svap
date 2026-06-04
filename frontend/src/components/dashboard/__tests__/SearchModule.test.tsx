@@ -39,8 +39,12 @@ describe('SearchModule', () => {
     expect(
       screen
         .getByPlaceholderText('Hľadajte používateľov, zručnosti...')
-        .closest('[data-onboarding="search-input-filter"]'),
+        .closest('[data-onboarding="search-input"]'),
     ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /filter/i })).toHaveAttribute(
+      'data-onboarding',
+      'search-filter',
+    );
     expect(screen.getByRole('button', { name: /filter/i })).toBeInTheDocument();
   });
 
