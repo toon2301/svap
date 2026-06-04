@@ -1,10 +1,12 @@
 import os
 import uuid
+import logging
 
 import boto3
 from django.conf import settings
 from django.db import transaction
 from django.db.models import Max, Q
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
@@ -18,6 +20,11 @@ from .serializers import PortfolioImageSerializer
 
 MAX_PORTFOLIO_IMAGES = 8
 UPLOAD_EXPIRES_SECONDS = 120
+PROCESSING_ENQUEUE_ERROR = (
+    "Spracovanie fotky sa nepodarilo spustit. Skus fotku nahrat znova."
+)
+
+logger = logging.getLogger(__name__)
 
 
 def _portfolio_item_not_found():
@@ -281,8 +288,28 @@ def portfolio_image_upload_complete_view(request, item_id: int):
                 from swaply.tasks.portfolio_images import process_portfolio_image
 
                 process_portfolio_image.delay(image.id)
-            except Exception:
-                pass
+            except Exception as exc:
+                logger.exception(
+                    "Failed to enqueue portfolio image processing",
+                    extra={
+                        "portfolio_image_id": image.id,
+                        "portfolio_item_id": item_id,
+                        "error": str(exc),
+                    },
+                )
+                processed_at = timezone.now()
+                image.status = PortfolioImage.Status.REJECTED
+                image.rejected_reason = PROCESSING_ENQUEUE_ERROR
+                image.processed_at = processed_at
+                PortfolioImage.objects.filter(
+                    id=image.id,
+                    status=PortfolioImage.Status.PENDING,
+                ).update(
+                    status=image.status,
+                    rejected_reason=image.rejected_reason,
+                    processed_at=processed_at,
+                )
+                delete_storage_keys([key])
 
         transaction.on_commit(enqueue_processing)
 

@@ -130,10 +130,22 @@ class PortfolioApiTests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         payload = response.data[0]["images"][0]
-        self.assertIn("/media/portfolio/thumb.webp", payload["thumbnail_url"])
-        self.assertIn("/media/portfolio/medium.webp", payload["medium_url"])
-        self.assertIn("/media/portfolio/large.webp", payload["large_url"])
-        self.assertIn("/media/portfolio/medium.webp", payload["image_url"])
+        self.assertEqual(
+            payload["thumbnail_url"],
+            "http://testserver/media/portfolio/thumb.webp",
+        )
+        self.assertEqual(
+            payload["medium_url"],
+            "http://testserver/media/portfolio/medium.webp",
+        )
+        self.assertEqual(
+            payload["large_url"],
+            "http://testserver/media/portfolio/large.webp",
+        )
+        self.assertEqual(
+            payload["image_url"],
+            "http://testserver/media/portfolio/medium.webp",
+        )
         self.assertNotIn("thumbnail_key", payload)
         self.assertNotIn("medium_key", payload)
         self.assertNotIn("large_key", payload)

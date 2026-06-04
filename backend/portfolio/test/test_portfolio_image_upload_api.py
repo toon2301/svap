@@ -127,6 +127,43 @@ class PortfolioImageUploadApiTests(APITestCase):
         self.assertEqual(delay_mock.call_count, 1)
         self.assertEqual(delay_mock.call_args.args[0], image.id)
 
+    def test_upload_complete_failure_to_enqueue_marks_image_rejected_and_cleans_upload(
+        self,
+    ):
+        self.client.force_authenticate(user=self.owner)
+        key = f"uploads/portfolio/{self.item.id}/work.jpg"
+        s3 = _s3_mock(
+            head={
+                "ContentLength": 2048,
+                "ContentType": "image/jpeg",
+            }
+        )
+
+        with (
+            patch("portfolio.image_views._get_s3_client", return_value=s3),
+            patch(
+                "swaply.tasks.portfolio_images.process_portfolio_image.delay",
+                side_effect=RuntimeError("queue down"),
+            ),
+            patch("portfolio.image_views.delete_storage_keys") as delete_mock,
+        ):
+            with self.captureOnCommitCallbacks(execute=True):
+                response = self.client.post(
+                    reverse(
+                        "accounts:portfolio_image_upload_complete",
+                        args=[self.item.id],
+                    ),
+                    data={"key": key, "filename": "work.jpg"},
+                    format="json",
+                )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        image = PortfolioImage.objects.get(id=response.data["id"])
+        self.assertEqual(image.status, PortfolioImage.Status.REJECTED)
+        self.assertTrue(image.rejected_reason)
+        self.assertEqual(delete_mock.call_count, 1)
+        self.assertEqual(delete_mock.call_args.args[0], [key])
+
     def test_upload_complete_foreign_item_does_not_head_object(self):
         self.client.force_authenticate(user=self.visitor)
         s3 = _s3_mock()

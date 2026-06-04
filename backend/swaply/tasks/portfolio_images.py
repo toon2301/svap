@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 try:
     from celery import shared_task
 except ModuleNotFoundError:
@@ -8,7 +12,14 @@ except ModuleNotFoundError:
         def decorator(func):
             class FallbackTask:
                 def delay(self, *args, **kwargs):
-                    return None
+                    try:
+                        return self.run(*args, **kwargs)
+                    except Exception as exc:
+                        logger.exception(
+                            "Portfolio image fallback task execution failed",
+                            extra={"error": str(exc)},
+                        )
+                        raise
 
                 def run(self, *args, **kwargs):
                     return func(self, *args, **kwargs)

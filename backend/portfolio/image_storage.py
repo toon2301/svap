@@ -1,6 +1,10 @@
+import logging
+
 from django.core.files.storage import default_storage
 
 from .models import PortfolioImage
+
+logger = logging.getLogger(__name__)
 
 
 def delete_storage_keys(keys) -> None:
@@ -9,8 +13,11 @@ def delete_storage_keys(keys) -> None:
             continue
         try:
             default_storage.delete(key)
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.exception(
+                "Failed to delete portfolio image storage key",
+                extra={"storage_key": key, "error": str(exc)},
+            )
 
 
 def image_storage_keys(image: PortfolioImage) -> list[str]:

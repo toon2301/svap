@@ -22,8 +22,13 @@ def _validate_plain_text(value: str, *, allow_blank: bool) -> str:
 
 
 def _build_media_url(request, key: str) -> str:
-    base = getattr(settings, "MEDIA_URL", "/media/")
-    url = f"{base}{key.lstrip('/')}"
+    base = (getattr(settings, "MEDIA_URL", "/media/") or "/media/").rstrip("/") + "/"
+    normalized_key = key.lstrip("/")
+    if base.startswith("/"):
+        local_prefix = base.lstrip("/")
+        if normalized_key.startswith(local_prefix):
+            normalized_key = normalized_key[len(local_prefix) :]
+    url = f"{base}{normalized_key}"
     return request.build_absolute_uri(url) if request else url
 
 

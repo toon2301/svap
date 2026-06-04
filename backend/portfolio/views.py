@@ -173,20 +173,30 @@ def my_portfolio_list_view(request):
 @api_rate_limit
 def portfolio_item_detail_view(request, item_id: int):
     if request.method in {"PATCH", "DELETE"}:
+        if request.method == "DELETE":
+            with transaction.atomic():
+                try:
+                    item = (
+                        PortfolioItem.objects.select_for_update()
+                        .prefetch_related("images")
+                        .get(id=item_id, owner=request.user)
+                    )
+                except PortfolioItem.DoesNotExist:
+                    return _portfolio_item_not_found()
+
+                storage_keys = []
+                for image in item.images.all():
+                    storage_keys.extend(image_storage_keys(image))
+                item.delete()
+                transaction.on_commit(lambda: delete_storage_keys(storage_keys))
+            return Response(status=status.HTTP_204_NO_CONTENT)
+
         try:
             item = PortfolioItem.objects.select_related(
                 "owner", "related_offer", "cover_image"
             ).get(id=item_id, owner=request.user)
         except PortfolioItem.DoesNotExist:
             return _portfolio_item_not_found()
-
-        if request.method == "DELETE":
-            storage_keys = []
-            for image in item.images.all():
-                storage_keys.extend(image_storage_keys(image))
-            item.delete()
-            transaction.on_commit(lambda: delete_storage_keys(storage_keys))
-            return Response(status=status.HTTP_204_NO_CONTENT)
 
         serializer = PortfolioItemWriteSerializer(
             item,

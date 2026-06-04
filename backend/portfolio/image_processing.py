@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import io
+import logging
 import os
 from datetime import datetime, timezone
 
@@ -12,6 +13,8 @@ from django.db import transaction
 from swaply.image_moderation import check_image_safety
 
 from .models import PortfolioImage, PortfolioItem
+
+logger = logging.getLogger(__name__)
 
 
 def _s3_client():
@@ -250,7 +253,18 @@ def process_portfolio_image_record(portfolio_image_id: int) -> None:
             ]
         )
 
-        item = PortfolioItem.objects.select_for_update().get(id=image.item_id)
+        try:
+            item = PortfolioItem.objects.select_for_update().get(id=image.item_id)
+        except PortfolioItem.DoesNotExist:
+            logger.exception(
+                "Portfolio item disappeared before cover assignment",
+                extra={"portfolio_image_id": image.id, "item_id": image.item_id},
+            )
+            image.delete()
+            for key in uploaded_keys:
+                _delete_s3_key(s3, bucket, key)
+            return
+
         if item.cover_image_id is None:
             item.cover_image = image
             item.save(update_fields=["cover_image", "updated_at"])
