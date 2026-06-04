@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from django.db import transaction
 from django.db.models import Max
 from django.db.models import Prefetch, Q
 from rest_framework import status
@@ -8,6 +9,7 @@ from rest_framework.response import Response
 
 from swaply.rate_limiting import api_rate_limit
 
+from .image_storage import delete_storage_keys, image_storage_keys
 from .models import PortfolioImage, PortfolioItem
 from .serializers import PortfolioItemSerializer, PortfolioItemWriteSerializer
 
@@ -179,7 +181,11 @@ def portfolio_item_detail_view(request, item_id: int):
             return _portfolio_item_not_found()
 
         if request.method == "DELETE":
+            storage_keys = []
+            for image in item.images.all():
+                storage_keys.extend(image_storage_keys(image))
             item.delete()
+            transaction.on_commit(lambda: delete_storage_keys(storage_keys))
             return Response(status=status.HTTP_204_NO_CONTENT)
 
         serializer = PortfolioItemWriteSerializer(

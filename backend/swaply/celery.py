@@ -3,7 +3,9 @@ import os
 from celery import Celery
 
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", os.getenv("DJANGO_SETTINGS_MODULE", "swaply.settings"))
+os.environ.setdefault(
+    "DJANGO_SETTINGS_MODULE", os.getenv("DJANGO_SETTINGS_MODULE", "swaply.settings")
+)
 
 app = Celery("swaply")
 app.config_from_object("django.conf:settings", namespace="CELERY")
@@ -17,8 +19,8 @@ app.conf.imports = tuple(
         getattr(app.conf, "imports", ())
         + (
             "swaply.tasks.offer_images",
+            "swaply.tasks.portfolio_images",
             "swaply.tasks.webpush",
         )
     )
 )
-

@@ -1,5 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.urls import reverse
+from unittest.mock import patch
+
 from rest_framework import status
 from rest_framework.test import APITestCase
 
@@ -363,6 +365,33 @@ class PortfolioCrudApiTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertFalse(PortfolioItem.objects.filter(id=item.id).exists())
         self.assertFalse(PortfolioImage.objects.filter(id=image.id).exists())
+
+    def test_delete_own_portfolio_item_deletes_image_storage_keys(self):
+        item = self._item()
+        image = self._image(
+            item,
+            approved_key="media/portfolio/approved.webp",
+            thumbnail_key="media/portfolio/thumb.webp",
+            medium_key="media/portfolio/medium.webp",
+            large_key="media/portfolio/large.webp",
+            pending_key="uploads/portfolio/pending.jpg",
+        )
+        self.client.force_authenticate(user=self.owner)
+
+        with patch("portfolio.views.delete_storage_keys") as delete_mock:
+            with self.captureOnCommitCallbacks(execute=True):
+                response = self.client.delete(
+                    reverse("accounts:portfolio_detail", args=[item.id])
+                )
+
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(PortfolioImage.objects.filter(id=image.id).exists())
+        keys = delete_mock.call_args.args[0]
+        self.assertIn("uploads/portfolio/pending.jpg", keys)
+        self.assertIn("media/portfolio/thumb.webp", keys)
+        self.assertIn("media/portfolio/medium.webp", keys)
+        self.assertIn("media/portfolio/large.webp", keys)
+        self.assertIn("media/portfolio/approved.webp", keys)
 
     def test_delete_foreign_portfolio_item_returns_not_found(self):
         item = self._item()
