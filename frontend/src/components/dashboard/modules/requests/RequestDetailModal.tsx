@@ -174,7 +174,7 @@ export function RequestDetailModal({
   const canShowReviewButton =
     showReviewButton &&
     variant === 'sent' &&
-    item?.status === 'completed' &&
+    offer?.can_review === true &&
     Number.isInteger(reviewOfferId) &&
     reviewOfferId > 0 &&
     offer?.already_reviewed !== true &&
@@ -543,7 +543,7 @@ export function RequestDetailModal({
             </>
           )}
 
-          {/* Tlačidlo recenzie – len dokončené odoslané výmeny bez existujúcej recenzie. */}
+          {/* Review button: sent exchanges only, controlled by backend can_review. */}
           {canShowReviewButton && (
             <button
               type="button"

@@ -155,6 +155,8 @@ export function RequestsMobile({ routeIntent }: RequestsMobileProps) {
     });
   }, [data, tab, statusTab]);
 
+  const canUseReviewAction = statusTab === 'active' || statusTab === 'completed';
+
   const mutateItem = (updated: SkillRequest) => {
     setData((prev) => {
       const replace = (arr: SkillRequest[]) => arr.map((x) => (x.id === updated.id ? updated : x));
@@ -171,7 +173,7 @@ export function RequestsMobile({ routeIntent }: RequestsMobileProps) {
         return {
           ...x,
           offer_summary: x.offer_summary
-            ? { ...x.offer_summary, already_reviewed: true }
+            ? { ...x.offer_summary, already_reviewed: true, can_review: false }
             : undefined,
         };
       };
@@ -184,7 +186,7 @@ export function RequestsMobile({ routeIntent }: RequestsMobileProps) {
       return {
         ...prev,
         offer_summary: prev.offer_summary
-          ? { ...prev.offer_summary, already_reviewed: true }
+          ? { ...prev.offer_summary, already_reviewed: true, can_review: false }
           : undefined,
       };
     });
@@ -517,8 +519,8 @@ export function RequestsMobile({ routeIntent }: RequestsMobileProps) {
         onRequestCompletion={statusTab === 'active' ? handleRequestCompletion : undefined}
         onConfirmCompletion={statusTab === 'active' ? handleConfirmCompletion : undefined}
         onTerminate={statusTab === 'active' ? handleOpenTerminate : undefined}
-        showReviewButton={statusTab === 'completed'}
-        onOpenReview={statusTab === 'completed' ? handleOpenReview : undefined}
+        showReviewButton={canUseReviewAction}
+        onOpenReview={canUseReviewAction ? handleOpenReview : undefined}
       />
 
       {pendingConfirm &&

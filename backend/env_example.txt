@@ -45,6 +45,10 @@ AUDIT_LOGGING_ENABLED=True
 # SENTRY_ENVIRONMENT=production
 # SENTRY_RELEASE=swaply@your-git-sha
 # SENTRY_TRACES_SAMPLE_RATE=0.1
+# NEXT_PUBLIC_SENTRY_DSN=https://public@example.ingest.sentry.io/project-id
+# NEXT_PUBLIC_SENTRY_ENVIRONMENT=production
+# NEXT_PUBLIC_SENTRY_RELEASE=swaply@your-git-sha
+# NEXT_PUBLIC_SENTRY_TRACES_SAMPLE_RATE=0.05
 
 # SafeSearch (Google Cloud Vision)
 SAFESEARCH_ENABLED=True

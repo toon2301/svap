@@ -563,8 +563,8 @@ class DashboardViewsTestCase(TestCase):
         self.assertEqual(second.data[0]["reviews_count"], 1)
         self.assertEqual(second.data[0]["average_rating"], 4.5)
 
-    def test_skill_detail_can_review_after_completed_request_until_review_exists(self):
-        """Detail ponuky má povoliť recenziu až po dokončenej spolupráci."""
+    def test_skill_detail_can_review_after_accepted_request_until_review_exists(self):
+        """Detail ponuky povoli recenziu po prijati vymeny."""
         self.other_user.is_public = True
         self.other_user.save(update_fields=["is_public"])
         skill = OfferedSkill.objects.create(
@@ -585,8 +585,16 @@ class DashboardViewsTestCase(TestCase):
 
         accepted = self.client.get(url)
         self.assertEqual(accepted.status_code, status.HTTP_200_OK)
-        self.assertFalse(accepted.data["can_review"])
+        self.assertTrue(accepted.data["can_review"])
         self.assertFalse(accepted.data["already_reviewed"])
+
+        skill_request.status = SkillRequestStatus.COMPLETION_REQUESTED
+        skill_request.save(update_fields=["status"])
+
+        completion_requested = self.client.get(url)
+        self.assertEqual(completion_requested.status_code, status.HTTP_200_OK)
+        self.assertTrue(completion_requested.data["can_review"])
+        self.assertFalse(completion_requested.data["already_reviewed"])
 
         skill_request.status = SkillRequestStatus.COMPLETED
         skill_request.save(update_fields=["status"])

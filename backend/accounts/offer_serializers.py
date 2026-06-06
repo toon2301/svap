@@ -8,8 +8,8 @@ from .models import (
     OfferedSkill,
     OfferedSkillLike,
     Review,
+    REVIEWABLE_SKILL_REQUEST_STATUSES,
     SkillRequest,
-    SkillRequestStatus,
 )
 from .district_registry import (
     get_offer_district_label,
@@ -265,7 +265,7 @@ class OfferedSkillSerializer(serializers.ModelSerializer):
         return SkillRequest.objects.filter(
             requester=request.user,
             offer=obj,
-            status=SkillRequestStatus.COMPLETED,
+            status__in=REVIEWABLE_SKILL_REQUEST_STATUSES,
         ).exists()
 
     def get_already_reviewed(self, obj):

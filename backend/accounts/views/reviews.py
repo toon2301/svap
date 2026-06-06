@@ -8,7 +8,7 @@ from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.db.models import Count, Exists, OuterRef
 from django.utils import timezone
 
@@ -19,8 +19,8 @@ from ..models import (
     Review,
     ReviewLike,
     ReviewReport,
+    REVIEWABLE_SKILL_REQUEST_STATUSES,
     SkillRequest,
-    SkillRequestStatus,
 )
 from ..serializers import ReviewSerializer
 from ..services.notifications import (
@@ -28,6 +28,7 @@ from ..services.notifications import (
     create_review_liked_notification,
     create_review_reply_notification,
 )
+from .skill_requests import _skill_requests_cache_invalidate_for_user
 
 logger = logging.getLogger(__name__)
 
@@ -108,15 +109,15 @@ def reviews_list_view(request, offer_id):
                 status=status.HTTP_403_FORBIDDEN,
             )
 
-        # Musí existovať completed SkillRequest: requester == request.user, offer == ponuka, status == completed
-        has_completed_request = SkillRequest.objects.filter(
+        # Review is allowed only after the exchange request is accepted.
+        has_reviewable_request = SkillRequest.objects.filter(
             requester=request.user,
             offer=offer,
-            status=SkillRequestStatus.COMPLETED,
+            status__in=REVIEWABLE_SKILL_REQUEST_STATUSES,
         ).exists()
-        if not has_completed_request:
+        if not has_reviewable_request:
             return Response(
-                {"error": "You can only review offers after a completed collaboration."},
+                {"error": "You can only review offers after an accepted exchange."},
                 status=status.HTTP_403_FORBIDDEN,
             )
 
@@ -137,7 +138,16 @@ def reviews_list_view(request, offer_id):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         # Uloženie recenzie s reviewerom a ponukou
-        review = serializer.save(reviewer=request.user, offer=offer)
+        try:
+            with transaction.atomic():
+                review = serializer.save(reviewer=request.user, offer=offer)
+        except IntegrityError:
+            if Review.objects.filter(reviewer=request.user, offer=offer).exists():
+                return Response(
+                    {"error": "Už si recenzoval túto ponuku."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            raise
 
         def notify_offer_owner_about_review():
             try:
@@ -154,6 +164,9 @@ def reviews_list_view(request, offer_id):
                 )
 
         transaction.on_commit(notify_offer_owner_about_review)
+        transaction.on_commit(
+            lambda: _skill_requests_cache_invalidate_for_user(request.user)
+        )
 
         # Vrátenie vytvorenej recenzie
         response_serializer = ReviewSerializer(review, context={"request": request})
@@ -216,7 +229,9 @@ def review_detail_view(request, review_id):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     elif request.method == "DELETE":
+        reviewer = review.reviewer
         review.delete()
+        transaction.on_commit(lambda: _skill_requests_cache_invalidate_for_user(reviewer))
         return Response(
             {"message": "Recenzia bola odstránená"}, status=status.HTTP_204_NO_CONTENT
         )

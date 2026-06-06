@@ -39,6 +39,7 @@ export type SkillRequestOfferSummary = {
     slug?: string | null;
   } | null;
   already_reviewed?: boolean;
+  can_review?: boolean;
 };
 
 export type SkillRequest = {

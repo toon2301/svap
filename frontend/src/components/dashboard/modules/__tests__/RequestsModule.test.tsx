@@ -126,6 +126,7 @@ const completedSentRequest = {
   offer_summary: {
     ...pendingReceivedRequest.offer_summary,
     already_reviewed: false,
+    can_review: true,
   },
 };
 
@@ -189,6 +190,7 @@ describe('RequestsModule', () => {
       expect(fetchSkillRequests).toHaveBeenCalledWith('accepted,completion_requested');
     });
     expect(await screen.findByText('Provider User')).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /Prida/i })).toBeInTheDocument();
   });
 
   it('redirects to the requester conversation after accepting a received request on desktop', async () => {
@@ -236,7 +238,7 @@ describe('RequestsModule', () => {
     });
   });
 
-  it('shows the review action on completed sent requests until a review exists', () => {
+  it('shows the review action when a sent request is reviewable', () => {
     const onOpenReview = jest.fn();
     const itemWithoutExplicitReviewState = {
       ...completedSentRequest,
@@ -261,7 +263,30 @@ describe('RequestsModule', () => {
     expect(onOpenReview).toHaveBeenCalledWith(77);
   });
 
-  it('hides the review action after a completed sent request has already been reviewed', () => {
+  it('hides the review action when the backend does not mark the request reviewable', () => {
+    render(
+      <RequestSummaryCard
+        item={
+          {
+            ...completedSentRequest,
+            status: 'accepted',
+            offer_summary: {
+              ...completedSentRequest.offer_summary,
+              already_reviewed: false,
+              can_review: false,
+            },
+          } as any
+        }
+        variant="sent"
+        showReviewButton
+        onOpenReview={jest.fn()}
+      />,
+    );
+
+    expect(screen.queryByRole('button', { name: /Prida/i })).not.toBeInTheDocument();
+  });
+
+  it('hides the review action after a sent request has already been reviewed', () => {
     render(
       <RequestSummaryCard
         item={

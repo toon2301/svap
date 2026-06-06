@@ -331,7 +331,7 @@ class TestSkillRequestsAndNotifications(APITestCase):
             requester=self.requester,
             recipient=self.owner,
             offer=self.offer,
-            status=SkillRequestStatus.COMPLETED,
+            status=SkillRequestStatus.ACCEPTED,
         )
 
         self.client.force_authenticate(user=self.requester)
@@ -373,6 +373,37 @@ class TestSkillRequestsAndNotifications(APITestCase):
         self.assertEqual(
             payload["target_url"],
             f"/dashboard/offers/{self.offer.id}/reviews?review_id={response.data['id']}",
+        )
+
+    def test_create_review_before_exchange_acceptance_is_forbidden(self):
+        SkillRequest.objects.create(
+            requester=self.requester,
+            recipient=self.owner,
+            offer=self.offer,
+            status=SkillRequestStatus.PENDING,
+        )
+
+        self.client.force_authenticate(user=self.requester)
+        response = self.client.post(
+            f"{self.base}/skills/{self.offer.id}/reviews/",
+            {
+                "rating": 5,
+                "text": "Predcasna recenzia.",
+                "pros": [],
+                "cons": [],
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertFalse(
+            Review.objects.filter(reviewer=self.requester, offer=self.offer).exists()
+        )
+        self.assertFalse(
+            Notification.objects.filter(
+                user=self.owner,
+                type=NotificationType.REVIEW_CREATED,
+            ).exists()
         )
 
     def test_owner_reply_to_review_notifies_reviewer_once(self):
@@ -654,6 +685,56 @@ class TestSkillRequestsAndNotifications(APITestCase):
         r_req = self.client.get(f"{self.base}/skill-requests/")
         self.assertEqual(r_req.status_code, status.HTTP_200_OK)
         self.assertEqual(len(r_req.data.get("sent", [])), 1)
+
+    def test_list_requests_marks_accepted_sent_offer_reviewable_until_reviewed(self):
+        skill_request = SkillRequest.objects.create(
+            requester=self.requester,
+            recipient=self.owner,
+            offer=self.offer,
+            status=SkillRequestStatus.ACCEPTED,
+        )
+
+        self.client.force_authenticate(user=self.requester)
+        response = self.client.get(
+            f"{self.base}/skill-requests/",
+            {"status": "accepted,completion_requested"},
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        offer_summary = response.data["sent"][0]["offer_summary"]
+        self.assertTrue(offer_summary["can_review"])
+        self.assertFalse(offer_summary["already_reviewed"])
+
+        with self.captureOnCommitCallbacks(execute=True):
+            review_response = self.client.post(
+                f"{self.base}/skills/{self.offer.id}/reviews/",
+                {
+                    "rating": 5,
+                    "text": "Dobra spolupraca.",
+                    "pros": [],
+                    "cons": [],
+                },
+                format="json",
+            )
+        self.assertEqual(review_response.status_code, status.HTTP_201_CREATED)
+
+        reviewed = self.client.get(
+            f"{self.base}/skill-requests/",
+            {"status": "accepted,completion_requested"},
+        )
+        self.assertEqual(reviewed.status_code, status.HTTP_200_OK)
+        reviewed_offer_summary = reviewed.data["sent"][0]["offer_summary"]
+        self.assertFalse(reviewed_offer_summary["can_review"])
+        self.assertTrue(reviewed_offer_summary["already_reviewed"])
+
+        self.client.force_authenticate(user=self.owner)
+        owner_response = self.client.get(
+            f"{self.base}/skill-requests/",
+            {"status": "accepted,completion_requested"},
+        )
+        self.assertEqual(owner_response.status_code, status.HTTP_200_OK)
+        owner_offer_summary = owner_response.data["received"][0]["offer_summary"]
+        self.assertFalse(owner_offer_summary["can_review"])
+        self.assertEqual(skill_request.id, owner_response.data["received"][0]["id"])
 
     def test_offer_summary_omits_currency_for_negotiable_offer(self):
         self.offer.price_negotiable = True
