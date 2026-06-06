@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import logging
+import os
+
 from django.core.cache import cache
 from django.db import transaction
 
@@ -8,6 +11,24 @@ from accounts.realtime import notify_user
 from accounts.serializers import NotificationSerializer
 
 NOTIFICATION_FEED_LIMIT = 15
+_DEFAULT_UNREAD_COUNT_CACHE_TTL_SECONDS = 60
+_raw_unread_count_cache_ttl = (
+    os.getenv(
+        "UNREAD_COUNT_CACHE_TTL_SECONDS",
+        str(_DEFAULT_UNREAD_COUNT_CACHE_TTL_SECONDS),
+    )
+    or str(_DEFAULT_UNREAD_COUNT_CACHE_TTL_SECONDS)
+)
+try:
+    UNREAD_COUNT_CACHE_TTL_SECONDS = int(_raw_unread_count_cache_ttl)
+except ValueError:
+    logging.getLogger(__name__).warning(
+        "Invalid UNREAD_COUNT_CACHE_TTL_SECONDS=%r; using default %s",
+        _raw_unread_count_cache_ttl,
+        _DEFAULT_UNREAD_COUNT_CACHE_TTL_SECONDS,
+    )
+    UNREAD_COUNT_CACHE_TTL_SECONDS = _DEFAULT_UNREAD_COUNT_CACHE_TTL_SECONDS
+GENERAL_NOTIFICATION_UNREAD_TYPE = "all"
 _RETENTION_TYPES = (NotificationType.GROUP_INVITATION,)
 GENERAL_NOTIFICATION_EXCLUDED_TYPES = (NotificationType.SKILL_REQUEST,)
 
@@ -69,12 +90,22 @@ def _dispatch_created_notification(notification_id: int, user_id: int) -> None:
     )
     if notification is None:
         return
+    unread_count = get_unread_count(
+        user_id=user_id,
+        notif_type=GENERAL_NOTIFICATION_UNREAD_TYPE,
+    )
+    cache_unread_count(
+        user_id=user_id,
+        notif_type=GENERAL_NOTIFICATION_UNREAD_TYPE,
+        count=unread_count,
+        ttl_seconds=UNREAD_COUNT_CACHE_TTL_SECONDS,
+    )
     notify_user(
         user_id,
         {
             "type": "notification_created",
             "notification": NotificationSerializer(notification).data,
-            "unread_count": get_unread_count(user_id=user_id),
+            "unread_count": unread_count,
         },
     )
 
