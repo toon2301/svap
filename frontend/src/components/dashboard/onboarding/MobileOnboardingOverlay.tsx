@@ -359,7 +359,18 @@ export default function MobileOnboardingOverlay() {
   const navHeight = nav ? Math.ceil(nav.getBoundingClientRect().height) : 88;
   const bottomReserve = navHeight + 24;
 
-  if (tooltipRect && typeof window !== 'undefined') {
+  if (isHelpRequestStep && typeof window !== 'undefined') {
+    const viewportPadding = 16;
+    const tooltipWidth = Math.min(360, window.innerWidth - viewportPadding * 2);
+    const availableHeight = Math.max(320, window.innerHeight - bottomReserve - viewportPadding * 2);
+
+    tooltipStyle.left = '50%';
+    tooltipStyle.width = tooltipWidth;
+    tooltipStyle.maxHeight = availableHeight;
+    tooltipStyle.overflowY = 'auto';
+    tooltipStyle.transform = 'translateX(-50%)';
+    tooltipStyle.top = viewportPadding;
+  } else if (tooltipRect && typeof window !== 'undefined') {
     const viewportPadding = 16;
     const offset = 12;
     const tooltipWidth = Math.min(360, window.innerWidth - viewportPadding * 2);
@@ -402,7 +413,9 @@ export default function MobileOnboardingOverlay() {
         role="dialog"
         aria-modal="false"
         aria-labelledby="mobile-onboarding-title"
-        className="rounded-2xl border border-purple-200/80 dark:border-purple-800/60 bg-white dark:bg-gray-950 shadow-xl p-4"
+        className={`rounded-2xl border border-purple-200/80 dark:border-purple-800/60 bg-white dark:bg-gray-950 shadow-xl ${
+          isHelpRequestStep ? 'p-3' : 'p-4'
+        }`}
         style={{
           ...tooltipStyle,
           animation: 'mobileOnboardingFadeIn 0.35s ease-out',
@@ -439,19 +452,19 @@ export default function MobileOnboardingOverlay() {
           {config.title}
         </h3>
 
-        <p className="mt-2 text-sm text-gray-600 dark:text-gray-300 leading-relaxed whitespace-pre-line">
+        <p className={`${isHelpRequestStep ? 'mt-1.5' : 'mt-2'} text-sm text-gray-600 dark:text-gray-300 leading-relaxed whitespace-pre-line`}>
           {config.body}
         </p>
 
         {isHelpRequestStep && (
-          <div className="mt-4 overflow-hidden rounded-xl border border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-900">
+          <div className="mt-3 overflow-hidden rounded-xl border border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-900">
             <img
               src="/onboarding/request-offer-demo.gif"
               alt={t(
                 'tutorial.helpRequestStep.gifAlt',
                 'Ukážka požiadania o ponuku na profile používateľa',
               )}
-              className="block aspect-[9/16] max-h-[360px] w-full object-cover"
+              className="block aspect-[9/16] max-h-[40vh] w-full object-contain"
               loading="lazy"
               decoding="async"
             />
@@ -478,7 +491,7 @@ export default function MobileOnboardingOverlay() {
         <button
           type="button"
           onClick={skip}
-          className="mt-3 w-full text-center text-xs text-gray-500 dark:text-gray-400 hover:text-purple-600"
+          className={`${isHelpRequestStep ? 'mt-2' : 'mt-3'} w-full text-center text-xs text-gray-500 dark:text-gray-400 hover:text-purple-600`}
         >
           {skipLabel}
         </button>
