@@ -34,7 +34,9 @@ import { buildMessagesUrl } from '../messages/messagesRouting';
 import { setOfferLikeState, type OfferLikeResponse } from './offerLikesApi';
 import {
   PROFILE_OFFER_LIKED_EVENT,
+  PROFILE_OFFERS_REFRESH_EVENT,
   readProfileOfferLikedEvent,
+  readProfileOffersRefreshEvent,
 } from './profileOfferEvents';
 import { mapApiOfferToProfileOffer, mergeProfileOffer } from './profileOfferMapper';
 import {
@@ -494,6 +496,24 @@ export default function ProfileOffersMobileSection({
       window.removeEventListener(PROFILE_OFFER_LIKED_EVENT, handleOfferLiked);
     };
   }, [refetchOfferById]);
+
+  useEffect(() => {
+    const handleOffersRefresh = (event: Event) => {
+      if (isOtherUserProfile) return;
+      const payload = readProfileOffersRefreshEvent(event);
+      if (!payload) return;
+      if (payload.ownerUserId !== undefined && payload.ownerUserId !== ownerUserId) return;
+
+      invalidateOffersCache(ownerUserId);
+      hasLoadedOffersRef.current = true;
+      void loadOffers(true, false);
+    };
+
+    window.addEventListener(PROFILE_OFFERS_REFRESH_EVENT, handleOffersRefresh);
+    return () => {
+      window.removeEventListener(PROFILE_OFFERS_REFRESH_EVENT, handleOffersRefresh);
+    };
+  }, [isOtherUserProfile, loadOffers, ownerUserId]);
 
   // Po načítaní ponúk a nastavení highlightedSkillId poscrolluj na danú kartu
   // Scroll len ak je highlightedSkillId nastavený (pri prvom zvýraznení)

@@ -10,6 +10,7 @@ import { skillsCategories } from '@/constants/skillsCategories';
 import { api, endpoints } from '../../lib/api';
 import { uploadOfferImage } from '../../lib/offerImageUpload';
 import type { DashboardSkill, UseSkillsModalsResult } from './hooks/useSkillsModals';
+import { dispatchProfileOffersRefresh } from './modules/profile/profileOfferEvents';
 import type { User } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -283,6 +284,7 @@ export default function DashboardModals({
         // Invalidovať cache ponúk, aby sa pri návrate na profil načítali nové dáta
         const { invalidateOffersCache } = await import('./modules/profile/profileOffersCache');
         invalidateOffersCache(user?.id);
+        dispatchProfileOffersRefresh({ ownerUserId: user?.id });
       } catch (cacheError) {
         console.error('Failed to invalidate profile offers cache after skill save:', cacheError);
       }

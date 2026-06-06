@@ -20,7 +20,7 @@ export function resolveProfileEditGoNextAction(
 }
 
 export type ProfileSkillsClickAction =
-  | 'advance_to_search'
+  | 'mark_phase_2_and_navigate'
   | 'advance_to_phase_2_only'
   | 'default_navigate';
 
@@ -35,6 +35,6 @@ export function resolveProfileSkillsClickAction(
     return 'default_navigate';
   }
   return isProfileEditPhase2 || highlightedTarget === 'skills'
-    ? 'advance_to_search'
+    ? 'mark_phase_2_and_navigate'
     : 'advance_to_phase_2_only';
 }

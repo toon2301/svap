@@ -54,7 +54,7 @@ function assignProfilePatchField<K extends ProfilePatchKey>(
   key: K
 ): void {
   const value = source[key];
-  if (value !== undefined && value !== null && value !== '') {
+  if (value !== undefined && value !== null && (value !== '' || key === 'last_name')) {
     target[key] = value;
   }
 }

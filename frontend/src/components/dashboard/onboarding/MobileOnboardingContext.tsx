@@ -77,6 +77,7 @@ type MobileOnboardingProviderProps = {
   onOpenProfile: () => void;
   onOpenEditProfile: () => void;
   onOpenSearch: () => void;
+  onSkillCreatedHandlerSet?: (handler: (() => void) | null) => void;
   serverState?: MobileOnboardingState | null;
   userId?: number | null;
 };
@@ -109,6 +110,7 @@ export function MobileOnboardingProvider({
   onOpenProfile,
   onOpenEditProfile,
   onOpenSearch,
+  onSkillCreatedHandlerSet,
   serverState,
   userId,
 }: MobileOnboardingProviderProps) {
@@ -417,6 +419,19 @@ export function MobileOnboardingProvider({
     }
   }, [advanceProfileEditToPhase2, isEligible, isPausedUi, stored.step]);
 
+  const notifySkillCreated = useCallback(() => {
+    if (!isEligible || isPausedUi) return;
+    if (stored.step !== 'profile_edit' || !isProfileEditPhase2) return;
+    advanceToSearchStep();
+  }, [advanceToSearchStep, isEligible, isPausedUi, isProfileEditPhase2, stored.step]);
+
+  useEffect(() => {
+    onSkillCreatedHandlerSet?.(notifySkillCreated);
+    return () => {
+      onSkillCreatedHandlerSet?.(null);
+    };
+  }, [notifySkillCreated, onSkillCreatedHandlerSet]);
+
   const registerProfileEditClick = useCallback((): boolean => {
     if (!isEligible || isPausedUi) return false;
     if (stored.step !== 'profile_edit') return false;
@@ -436,16 +451,15 @@ export function MobileOnboardingProvider({
     );
 
     if (skillsAction === 'default_navigate') return true;
-    if (skillsAction === 'advance_to_search') {
-      advanceToSearchStep();
-      return false;
+    if (skillsAction === 'mark_phase_2_and_navigate') {
+      advanceProfileEditToPhase2();
+      return true;
     }
 
     advanceProfileEditToPhase2();
     return false;
   }, [
     advanceProfileEditToPhase2,
-    advanceToSearchStep,
     isEligible,
     isPausedUi,
     isProfileEditPhase2,
