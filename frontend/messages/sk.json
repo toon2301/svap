@@ -203,6 +203,11 @@
     "searchStep": {
       "title": "Vyhľadávaj ľudí a príležitosti",
       "description": "Nájdi používateľov, ponuky a dopyty alebo objav odporúčané ponuky podľa svojich záujmov."
+    },
+    "helpRequestStep": {
+      "title": "Potrebuješ pomoc alebo službu?",
+      "description": "O ponuku môžeš požiadať priamo na profile používateľa.",
+      "gifAlt": "Ukážka požiadania o ponuku na profile používateľa"
     }
   },
   "create": {

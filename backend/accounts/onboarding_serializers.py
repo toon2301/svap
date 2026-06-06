@@ -5,6 +5,7 @@ from .models import MobileOnboardingStatus, MobileOnboardingStep
 COMPLETED_ONBOARDING_STEPS = {
     MobileOnboardingStep.EDIT_FORM,
     MobileOnboardingStep.SEARCH,
+    MobileOnboardingStep.HELP_REQUEST,
 }
 
 

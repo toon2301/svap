@@ -69,6 +69,7 @@ class MobileOnboardingStep(models.TextChoices):
     PROFILE_EDIT = "profile_edit", _("Profile edit")
     EDIT_FORM = "edit_form", _("Edit form")
     SEARCH = "search", _("Search")
+    HELP_REQUEST = "help_request", _("Help request")
 
 
 class User(AbstractUser):

@@ -203,6 +203,11 @@
     "searchStep": {
       "title": "Keress embereket és lehetőségeket",
       "description": "Találj felhasználókat, ajánlatokat és igényeket, vagy fedezz fel az érdeklődési köreidhez illő ajánlott ajánlatokat."
+    },
+    "helpRequestStep": {
+      "title": "Segítségre vagy szolgáltatásra van szükséged?",
+      "description": "Ajánlatot közvetlenül a felhasználó profilján kérhetsz.",
+      "gifAlt": "Példa ajánlat kérésére egy felhasználó profilján"
     }
   },
   "create": {

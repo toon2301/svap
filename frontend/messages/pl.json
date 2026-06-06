@@ -203,6 +203,11 @@
     "searchStep": {
       "title": "Szukaj ludzi i możliwości",
       "description": "Znajdź użytkowników, oferty i zapytania albo odkrywaj polecane oferty zgodne z Twoimi zainteresowaniami."
+    },
+    "helpRequestStep": {
+      "title": "Potrzebujesz pomocy albo usługi?",
+      "description": "O ofertę możesz poprosić bezpośrednio na profilu użytkownika.",
+      "gifAlt": "Przykład proszenia o ofertę na profilu użytkownika"
     }
   },
   "create": {

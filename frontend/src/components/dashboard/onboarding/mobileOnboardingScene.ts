@@ -26,7 +26,7 @@ export function getMobileOnboardingStepModule(
     return 'home';
   }
 
-  if (step === 'search') {
+  if (step === 'search' || step === 'help_request') {
     return 'search';
   }
 

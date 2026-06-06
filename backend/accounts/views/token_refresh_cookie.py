@@ -5,7 +5,9 @@ Token refresh endpoint, ktorý podporuje refresh token aj v HttpOnly cookie.
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework import status
+from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.response import Response
+from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 from django.conf import settings
 from django.core.cache import cache
 from django.utils import timezone
@@ -286,8 +288,15 @@ def token_refresh_cookie_view(request):
         if failed_rl is not None:
             return failed_rl
 
-        if getattr(settings, "DEBUG", False):
-            logger.error(f"Token refresh failed: {e}")
+        log_extra = {"reason": reason}
+        expected_auth_failure = isinstance(e, (AuthenticationFailed, InvalidToken, TokenError))
+        if expected_auth_failure:
+            if getattr(settings, "DEBUG", False):
+                logger.warning(f"Token refresh rejected: {e}", extra=log_extra)
+            else:
+                logger.warning("Token refresh rejected", extra=log_extra)
+        elif getattr(settings, "DEBUG", False):
+            logger.error(f"Token refresh failed: {e}", extra=log_extra)
         else:
-            logger.error("Token refresh failed")
+            logger.error("Token refresh failed", extra=log_extra)
         return _invalid_credentials_response()
