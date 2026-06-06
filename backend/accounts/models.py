@@ -727,6 +727,13 @@ class SkillRequestStatus(models.TextChoices):
     TERMINATED = "terminated", _("Predčasne ukončené")
 
 
+REVIEWABLE_SKILL_REQUEST_STATUSES = (
+    SkillRequestStatus.ACCEPTED,
+    SkillRequestStatus.COMPLETION_REQUESTED,
+    SkillRequestStatus.COMPLETED,
+)
+
+
 class SkillRequestTerminationReason(models.TextChoices):
     NO_RESPONSE = "no_response", _("Druhá strana nereaguje")
     NO_TIME = "no_time", _("Nemám čas pokračovať")

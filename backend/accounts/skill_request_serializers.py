@@ -3,6 +3,7 @@ from rest_framework import serializers
 from .models import (
     OfferedSkill,
     Review,
+    REVIEWABLE_SKILL_REQUEST_STATUSES,
     SkillRequest,
     SkillRequestTerminationReason,
     User,
@@ -228,6 +229,7 @@ class SkillRequestSerializer(serializers.ModelSerializer):
         owner = getattr(offer, "user", None)
         request = self.context.get("request")
         already_reviewed = False
+        can_review = False
         if request and request.user.is_authenticated:
             # Prefer bulk precomputed set from view to avoid N+1 queries.
             if "reviewed_offer_ids" in self.context:
@@ -239,6 +241,12 @@ class SkillRequestSerializer(serializers.ModelSerializer):
                 already_reviewed = Review.objects.filter(
                     reviewer=request.user, offer=offer
                 ).exists()
+            can_review = (
+                obj.requester_id == request.user.id
+                and getattr(offer, "user_id", None) != request.user.id
+                and obj.status in REVIEWABLE_SKILL_REQUEST_STATUSES
+                and not already_reviewed
+            )
         price_negotiable = bool(getattr(offer, "price_negotiable", False))
         return {
             "id": offer.id,
@@ -259,6 +267,7 @@ class SkillRequestSerializer(serializers.ModelSerializer):
                 else None
             ),
             "already_reviewed": already_reviewed,
+            "can_review": can_review,
         }
 
     def get_proposed_offer_summary(self, obj):

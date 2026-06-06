@@ -18,8 +18,8 @@ from ..models import (
     OfferedSkillImage,
     OfferedSkillLike,
     Review,
+    REVIEWABLE_SKILL_REQUEST_STATUSES,
     SkillRequest,
-    SkillRequestStatus,
 )
 from ..serializers import OfferedSkillSerializer
 from django.core.exceptions import ValidationError
@@ -54,7 +54,7 @@ def _skills_list_context(request, offer_ids):
         SkillRequest.objects.filter(
             offer_id__in=offer_ids,
             requester=user,
-            status=SkillRequestStatus.COMPLETED,
+            status__in=REVIEWABLE_SKILL_REQUEST_STATUSES,
         ).values_list("offer_id", flat=True)
     )
     request_status_by_offer = dict(

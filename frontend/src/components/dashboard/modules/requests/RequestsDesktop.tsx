@@ -143,6 +143,8 @@ export function RequestsDesktop({ routeIntent }: RequestsDesktopProps) {
     });
   }, [data, tab, statusTab]);
 
+  const canUseReviewAction = statusTab === 'active' || statusTab === 'completed';
+
   const mutateItem = (updated: SkillRequest) => {
     setData((prev) => {
       const replace = (arr: SkillRequest[]) => arr.map((x) => (x.id === updated.id ? updated : x));
@@ -158,7 +160,7 @@ export function RequestsDesktop({ routeIntent }: RequestsDesktopProps) {
         return {
           ...x,
           offer_summary: x.offer_summary
-            ? { ...x.offer_summary, already_reviewed: true }
+            ? { ...x.offer_summary, already_reviewed: true, can_review: false }
             : undefined,
         };
       };
@@ -465,8 +467,8 @@ export function RequestsDesktop({ routeIntent }: RequestsDesktopProps) {
                 onRequestCompletion={statusTab === 'active' ? handleRequestCompletion : undefined}
                 onConfirmCompletion={statusTab === 'active' ? handleConfirmCompletion : undefined}
                 onTerminate={statusTab === 'active' ? handleOpenTerminate : undefined}
-                showReviewButton={statusTab === 'completed'}
-                onOpenReview={statusTab === 'completed' ? handleOpenReview : undefined}
+                showReviewButton={canUseReviewAction}
+                onOpenReview={canUseReviewAction ? handleOpenReview : undefined}
               />
             </React.Fragment>
           ))}
