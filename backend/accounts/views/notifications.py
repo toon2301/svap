@@ -1,8 +1,6 @@
 """
 Notifications API (pre badge + Requests module).
 """
-
-import os
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
@@ -19,15 +17,14 @@ from ..models import Notification, NotificationType
 from ..serializers import NotificationSerializer
 from ..realtime import notify_user
 from ..services.notifications import (
+    GENERAL_NOTIFICATION_UNREAD_TYPE,
     NOTIFICATION_FEED_LIMIT,
+    UNREAD_COUNT_CACHE_TTL_SECONDS,
     cache_unread_count,
     exclude_general_notification_types,
     get_unread_count,
     _unread_cache_key as service_unread_cache_key,
 )
-
-
-UNREAD_COUNT_CACHE_TTL_SECONDS = int(os.getenv("UNREAD_COUNT_CACHE_TTL_SECONDS", "60") or "60")
 
 
 def _unread_cache_key(user_id: int, notif_type: str) -> str:
@@ -90,9 +87,10 @@ def notifications_unread_count_view(request):
         request.query_params.get("type") or NotificationType.SKILL_REQUEST
     ).strip()
     count_all = notif_type == "all"
+    cache_type = GENERAL_NOTIFICATION_UNREAD_TYPE if count_all else notif_type
 
     # Fast-path: Redis cache hit avoids slow DB connect on Railway.
-    cache_key = None if count_all else _unread_cache_key(request.user.id, notif_type)
+    cache_key = _unread_cache_key(request.user.id, cache_type)
     t_cache0 = perf_counter()
     try:
         cached = cache.get(cache_key) if cache_key else None
@@ -142,8 +140,7 @@ def notifications_unread_count_view(request):
     notif_sql_ms = (perf_counter() - t_sql0) * 1000.0
     db_ms = db_connect_ms + notif_sql_ms
     try:
-        if cache_key:
-            cache.set(cache_key, int(count), timeout=UNREAD_COUNT_CACHE_TTL_SECONDS)
+        cache.set(cache_key, int(count), timeout=UNREAD_COUNT_CACHE_TTL_SECONDS)
     except Exception:
         pass
     resp = Response({"count": count}, status=status.HTTP_200_OK)
@@ -184,13 +181,12 @@ def notifications_mark_all_read_view(request):
         pass
 
     # Keep cache in sync (avoid DB hit in unread-count).
-    if not count_all:
-        cache_unread_count(
-            user_id=request.user.id,
-            notif_type=notif_type,
-            count=0,
-            ttl_seconds=UNREAD_COUNT_CACHE_TTL_SECONDS,
-        )
+    cache_unread_count(
+        user_id=request.user.id,
+        notif_type=GENERAL_NOTIFICATION_UNREAD_TYPE if count_all else notif_type,
+        count=0,
+        ttl_seconds=UNREAD_COUNT_CACHE_TTL_SECONDS,
+    )
 
     if count_all:
         notify_user(request.user.id, {"type": "notification_read", "unread_count": 0})
@@ -245,6 +241,12 @@ def notifications_mark_read_view(request, notification_id: int):
     else:
         unread = get_unread_count(user_id=request.user.id, notif_type="all")
         if changed:
+            cache_unread_count(
+                user_id=request.user.id,
+                notif_type=GENERAL_NOTIFICATION_UNREAD_TYPE,
+                count=unread,
+                ttl_seconds=UNREAD_COUNT_CACHE_TTL_SECONDS,
+            )
             notify_user(
                 request.user.id,
                 {"type": "notification_read", "unread_count": unread},

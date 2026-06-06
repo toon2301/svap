@@ -343,6 +343,54 @@ describe('RequestsNotificationsProvider', () => {
     expect(screen.getByTestId('notification-count')).toHaveTextContent('1');
   });
 
+  it('shows newly arrived notifications when refresh count increases after acknowledgment', async () => {
+    let generalNotificationCount = 5;
+    mockApiGet.mockImplementation((url: string, config?: { params?: { type?: string } }) => {
+      if (String(url).includes('/auth/notifications/unread-count/')) {
+        return Promise.resolve({
+          data: { count: config?.params?.type === 'all' ? generalNotificationCount : 4 },
+        });
+      }
+      if (String(url).includes('/auth/messaging/conversations/unread-summary/')) {
+        return Promise.resolve({ data: { count: 3 } });
+      }
+      return Promise.resolve({ data: { count: 0 } });
+    });
+
+    const view = render(
+      <RequestsNotificationsProvider>
+        <NotificationConsumer />
+      </RequestsNotificationsProvider>,
+    );
+    await flushAsyncEffects();
+
+    await waitFor(() => {
+      expect(screen.getByTestId('notification-count')).toHaveTextContent('5');
+    });
+
+    view.rerender(
+      <RequestsNotificationsProvider acknowledgeNotificationsBadge>
+        <NotificationConsumer />
+      </RequestsNotificationsProvider>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('notification-count')).toHaveTextContent('0');
+    });
+
+    generalNotificationCount = 6;
+    const callsBeforeRefresh = mockApiGet.mock.calls.length;
+    act(() => {
+      jest.advanceTimersByTime(16_000);
+      window.dispatchEvent(new Event('focus'));
+    });
+
+    await waitFor(() => {
+      expect(mockApiGet.mock.calls.length).toBeGreaterThan(callsBeforeRefresh);
+      expect(screen.getByTestId('notification-count')).toHaveTextContent('1');
+    });
+  });
+
   it('keeps the notification badge acknowledged during initial notifications route load', async () => {
     render(
       <RequestsNotificationsProvider acknowledgeNotificationsBadge>

@@ -1,6 +1,8 @@
 import pytest
 from unittest.mock import patch
 from django.contrib.auth import get_user_model
+from django.core.cache import cache
+from django.test import override_settings
 from django.utils import timezone
 from rest_framework.test import APITestCase
 from rest_framework import status
@@ -37,6 +39,7 @@ class UserFactory(DjangoModelFactory):
 @pytest.mark.django_db
 class TestSkillRequestsAndNotifications(APITestCase):
     def setUp(self):
+        cache.clear()
         self.base = "/api/auth"
 
         self.owner = UserFactory()
@@ -783,7 +786,16 @@ class TestSkillRequestsAndNotifications(APITestCase):
         )
         self.assertEqual(c.data.get("count"), 0)
 
+    @override_settings(
+        CACHES={
+            "default": {
+                "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+                "LOCATION": "notification-mark-read-test",
+            }
+        }
+    )
     def test_mark_single_notification_read_updates_only_that_notification(self):
+        cache.clear()
         first = Notification.objects.create(
             user=self.owner,
             type=NotificationType.REVIEW_CREATED,
@@ -809,6 +821,13 @@ class TestSkillRequestsAndNotifications(APITestCase):
         self.assertTrue(first.is_read)
         self.assertIsNotNone(first.read_at)
         self.assertFalse(second.is_read)
+
+        cached_count = self.client.get(
+            f"{self.base}/notifications/unread-count/", {"type": "all"}
+        )
+        self.assertEqual(cached_count.status_code, status.HTTP_200_OK)
+        self.assertEqual(cached_count.data.get("count"), 1)
+        self.assertEqual(cached_count["X-Notif-Count-Source"], "cache")
 
     def test_mark_single_notification_read_cannot_update_foreign_notification(self):
         notification = Notification.objects.create(

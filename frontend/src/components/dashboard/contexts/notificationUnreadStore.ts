@@ -90,12 +90,15 @@ export function publishNotificationUnreadCount(
 ): void {
   const store = getNotificationUnreadCountStore();
   const safeCount = toSafeCount(count);
+  const hadKnownRawCount = store.rawUnreadCountKnown;
   if (options?.markFresh !== false) {
     store.lastSuccessfulRefreshAt = Date.now();
   }
 
   if (store.acknowledgeNextRefresh && options?.source === 'refresh') {
-    store.acknowledgedUnreadBaseline = safeCount;
+    if (!hadKnownRawCount || safeCount <= store.acknowledgedUnreadBaseline) {
+      store.acknowledgedUnreadBaseline = safeCount;
+    }
     store.acknowledgeNextRefresh = false;
   } else if (options?.source === 'realtime' && safeCount > store.acknowledgedUnreadBaseline) {
     store.acknowledgeNextRefresh = false;
