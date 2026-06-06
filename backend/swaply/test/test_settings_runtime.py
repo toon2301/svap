@@ -106,6 +106,8 @@ def test_sentry_uses_env_configuration_when_dsn_is_set(monkeypatch):
     assert kwargs["send_default_pii"] is False
     assert kwargs["traces_sample_rate"] == 0.2
     assert callable(kwargs["before_send_transaction"])
+    assert len(kwargs["integrations"]) == 1
+    assert kwargs["integrations"][0].cache_spans is True
 
 
 def test_sentry_release_falls_back_to_railway_commit(monkeypatch):
@@ -158,6 +160,29 @@ def test_sentry_transaction_sanitizer_removes_sensitive_request_data(monkeypatch
                 "op": "db",
                 "description": "SELECT * FROM accounts_user",
             },
+            {
+                "op": "cache.get",
+                "description": "blacklist_sensitive-jti",
+                "data": {
+                    "cache.key": "blacklist_sensitive-jti",
+                    "cache.hit": True,
+                    "network.peer.address": "redis://cache.example.com/1",
+                },
+            },
+            {
+                "op": "db.redis",
+                "description": "GET blacklist_sensitive-jti",
+                "data": {
+                    "db.redis.key": "blacklist_sensitive-jti",
+                    "db.system": "redis",
+                    "redis.command": "GET",
+                    "redis.commands": {
+                        "count": 1,
+                        "first_ten": ["GET blacklist_sensitive-jti"],
+                    },
+                },
+                "tags": {"redis.key": "blacklist_sensitive-jti"},
+            },
         ],
     }
 
@@ -173,6 +198,14 @@ def test_sentry_transaction_sanitizer_removes_sensitive_request_data(monkeypatch
     assert sanitized["request"]["headers"]["User-Agent"] == "pytest"
     assert sanitized["spans"][0]["description"] == "/api/offers/:id/"
     assert sanitized["spans"][1]["description"] == "SELECT * FROM accounts_user"
+    assert sanitized["spans"][2]["description"] == "cache.get"
+    assert "cache.key" not in sanitized["spans"][2]["data"]
+    assert sanitized["spans"][2]["data"]["cache.hit"] is True
+    assert sanitized["spans"][3]["description"] == "redis.get"
+    assert "db.redis.key" not in sanitized["spans"][3]["data"]
+    assert "redis.commands" not in sanitized["spans"][3]["data"]
+    assert "redis.key" not in sanitized["spans"][3]["tags"]
+    assert sanitized["spans"][3]["data"]["redis.command"] == "GET"
 
 
 def test_prod_csrf_and_redis_enforced(monkeypatch):
@@ -200,6 +233,8 @@ def test_prod_csrf_and_redis_enforced(monkeypatch):
     assert mod.CACHES["default"]["OPTIONS"]["SOCKET_TIMEOUT"] == 0.3
     assert mod.CACHES["default"]["OPTIONS"]["SOCKET_CONNECT_TIMEOUT"] == 0.2
     assert mod.CACHES["default"]["OPTIONS"]["IGNORE_EXCEPTIONS"] is True
+    assert "baggage" in mod.CORS_ALLOWED_HEADERS
+    assert "sentry-trace" in mod.CORS_ALLOWED_HEADERS
     assert (
         mod.CACHES["default"]["OPTIONS"]["CONNECTION_POOL_KWARGS"]["retry_on_timeout"]
         is False
