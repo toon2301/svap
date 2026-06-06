@@ -175,7 +175,7 @@ def test_sentry_transaction_sanitizer_removes_sensitive_request_data(monkeypatch
                 "data": {
                     "db.redis.key": "blacklist_sensitive-jti",
                     "db.system": "redis",
-                    "redis.command": "GET",
+                    "redis.command": "GET blacklist_sensitive-jti",
                     "redis.commands": {
                         "count": 1,
                         "first_ten": ["GET blacklist_sensitive-jti"],

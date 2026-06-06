@@ -107,6 +107,21 @@ def _sentry_span_container_value(span: dict, key: str):
     return None
 
 
+def _sentry_redis_command_name(value) -> str:
+    command_parts = str(value or "").strip().split()
+    return command_parts[0] if command_parts else ""
+
+
+def _safe_sentry_redis_command_name(value) -> str:
+    command_name = _sentry_redis_command_name(value).lower()
+    return re.sub(r"[^a-z0-9_.-]+", "", command_name)
+
+
+def _sentry_redis_command_name_for_data(value) -> str:
+    command_name = _sentry_redis_command_name(value)
+    return re.sub(r"[^A-Za-z0-9_.-]+", "", command_name)
+
+
 def _is_sentry_cache_or_redis_span(span: dict) -> bool:
     op = str(span.get("op") or "").lower()
     if op.startswith("cache") or op.startswith("redis") or "redis" in op:
@@ -137,7 +152,7 @@ def _safe_sentry_cache_or_redis_description(span: dict) -> str:
         or _sentry_span_container_value(span, "db.operation.name")
     )
     if command:
-        safe_command = re.sub(r"[^a-z0-9_.-]+", "", str(command).strip().lower())
+        safe_command = _safe_sentry_redis_command_name(command)
         if safe_command:
             return f"redis.{safe_command}"
 
@@ -152,6 +167,14 @@ def _remove_sensitive_sentry_span_data(container):
 
     for key in list(container.keys()):
         normalized = str(key).lower()
+        if normalized == "redis.command":
+            safe_command = _sentry_redis_command_name_for_data(container[key])
+            if safe_command:
+                container[key] = safe_command
+            else:
+                container.pop(key, None)
+            continue
+
         is_sensitive_cache_key = "key" in normalized and (
             "cache" in normalized or "redis" in normalized
         )
