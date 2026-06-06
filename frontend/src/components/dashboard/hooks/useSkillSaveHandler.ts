@@ -233,7 +233,7 @@ export function useSkillSaveHandler({
       });
 
       // Po úspešnom uložení, refresh skills pre aktívnu kategóriu
-      void loadSkills();
+      await loadSkills();
       if (didCreateSkill) {
         onCreatedSkillSaved?.();
       }
