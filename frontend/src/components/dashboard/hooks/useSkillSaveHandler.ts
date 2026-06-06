@@ -4,6 +4,7 @@ import { useCallback } from 'react';
 import { api, endpoints } from '@/lib/api';
 import { uploadOfferImage } from '@/lib/offerImageUpload';
 import { isValidOfferDistrictSelection } from '@/shared/districtRegistry';
+import { dispatchProfileOffersRefresh } from '../modules/profile/profileOfferEvents';
 import type { DashboardSkill } from './useSkillsModals';
 
 type Translator = (key: string, fallback: string) => string;
@@ -17,6 +18,7 @@ type SkillSaveHandlerParams = {
   loadSkills: () => Promise<void> | void;
   t: Translator;
   ownerUserIdForOffersCache?: number;
+  onCreatedSkillSaved?: () => void;
 };
 
 /**
@@ -32,6 +34,7 @@ export function useSkillSaveHandler({
   loadSkills,
   t,
   ownerUserIdForOffersCache,
+  onCreatedSkillSaved,
 }: SkillSaveHandlerParams) {
   return useCallback(async () => {
     if (!selectedSkillsCategory) return;
@@ -165,6 +168,7 @@ export function useSkillSaveHandler({
         const nextImages = [...without, nextImg].sort((a: any, b: any) => (a.order ?? 0) - (b.order ?? 0));
         return { ...base, images: nextImages };
       };
+      let didCreateSkill = false;
 
       if (skill.id) {
         // Update existujúcej karty
@@ -195,6 +199,7 @@ export function useSkillSaveHandler({
         // Vytvorenie novej karty
         const { data } = await api.post(endpoints.skills.list, payload);
         savedSkill = toLocalSkill(data);
+        didCreateSkill = true;
 
         // UI: zobraz novú kartu hneď, upload nech beží potom
         applySkillUpdate(savedSkill);
@@ -222,9 +227,16 @@ export function useSkillSaveHandler({
       // Invalidovať cache ponúk, aby sa pri návrate na profil načítali nové dáta
       const { invalidateOffersCache } = await import('../modules/profile/profileOffersCache');
       invalidateOffersCache(ownerUserIdForOffersCache);
+      dispatchProfileOffersRefresh({
+        ownerUserId: ownerUserIdForOffersCache,
+        offerId: savedSkill.id,
+      });
 
       // Po úspešnom uložení, refresh skills pre aktívnu kategóriu
-      void loadSkills();
+      await loadSkills();
+      if (didCreateSkill) {
+        onCreatedSkillSaved?.();
+      }
     } catch (error: any) {
       // eslint-disable-next-line no-console
       console.error('Chyba pri ukladaní zručnosti:', error);
@@ -262,6 +274,7 @@ export function useSkillSaveHandler({
     loadSkills,
     t,
     ownerUserIdForOffersCache,
+    onCreatedSkillSaved,
   ]);
 }
 

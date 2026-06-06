@@ -34,7 +34,9 @@ import { buildMessagesUrl } from '../messages/messagesRouting';
 import { setOfferLikeState, type OfferLikeResponse } from './offerLikesApi';
 import {
   PROFILE_OFFER_LIKED_EVENT,
+  PROFILE_OFFERS_REFRESH_EVENT,
   readProfileOfferLikedEvent,
+  readProfileOffersRefreshEvent,
 } from './profileOfferEvents';
 import { mapApiOfferToProfileOffer, mergeProfileOffer } from './profileOfferMapper';
 import {
@@ -487,6 +489,29 @@ export default function ProfileOffersSection({
       window.removeEventListener(PROFILE_OFFER_LIKED_EVENT, handleOfferLiked);
     };
   }, [refetchOfferById]);
+
+  useEffect(() => {
+    const handleOffersRefresh = (event: Event) => {
+      if (isOtherUserProfile) return;
+      const payload = readProfileOffersRefreshEvent(event);
+      if (!payload) return;
+      if (payload.ownerUserId !== undefined && payload.ownerUserId !== ownerUserId) return;
+
+      invalidateOffersCache(ownerUserId);
+      if (activeTab !== 'offers') {
+        hasLoadedOffersRef.current = false;
+        return;
+      }
+
+      hasLoadedOffersRef.current = true;
+      void loadOffers(true);
+    };
+
+    window.addEventListener(PROFILE_OFFERS_REFRESH_EVENT, handleOffersRefresh);
+    return () => {
+      window.removeEventListener(PROFILE_OFFERS_REFRESH_EVENT, handleOffersRefresh);
+    };
+  }, [activeTab, isOtherUserProfile, loadOffers, ownerUserId]);
 
   // Close hours popover when clicking outside
   useEffect(() => {

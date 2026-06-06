@@ -117,9 +117,11 @@ export default function LocationSection({
     }
 
     setFilteredDistricts(filtered);
-    setShowDropdown(filtered.length > 0);
+    const inputIsFocused =
+      typeof document !== 'undefined' && document.activeElement === inputRef.current;
+    setShowDropdown(inputIsFocused && filtered.length > 0);
     setSelectedIndex(-1);
-    if (filtered.length > 0) {
+    if (inputIsFocused && filtered.length > 0) {
       updateDropdownPosition();
     }
   }, [districtInput, districtLabels]);

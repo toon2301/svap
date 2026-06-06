@@ -262,7 +262,7 @@ def skill_requests_view(request):
             # Robustné aj keď už v DB existujú duplicity (legacy dáta):
             # nikdy nepoužívaj .get() na requester+offer.
             qs = (
-                SkillRequest.objects.select_for_update()
+                SkillRequest.objects.select_for_update(of=("self",))
                 .select_related("offer", "requester", "recipient", "proposed_offer", "proposed_offer__user")
                 .filter(requester=request.user, offer=offer)
                 .order_by("-updated_at", "-id")
@@ -502,7 +502,7 @@ def skill_request_detail_view(request, request_id: int):
     """
     with transaction.atomic():
         try:
-            obj = SkillRequest.objects.select_for_update().select_related(
+            obj = SkillRequest.objects.select_for_update(of=("self",)).select_related(
                 "offer", "requester", "recipient", "proposed_offer", "proposed_offer__user"
             ).get(id=request_id)
         except SkillRequest.DoesNotExist:
@@ -688,7 +688,7 @@ def skill_request_request_completion_view(request, request_id: int):
     """
     with transaction.atomic():
         try:
-            obj = SkillRequest.objects.select_for_update().select_related(
+            obj = SkillRequest.objects.select_for_update(of=("self",)).select_related(
                 "offer", "requester", "recipient", "proposed_offer", "proposed_offer__user"
             ).get(id=request_id)
         except SkillRequest.DoesNotExist:
@@ -761,7 +761,7 @@ def skill_request_confirm_completion_view(request, request_id: int):
     """
     with transaction.atomic():
         try:
-            obj = SkillRequest.objects.select_for_update().select_related(
+            obj = SkillRequest.objects.select_for_update(of=("self",)).select_related(
                 "offer", "requester", "recipient", "proposed_offer", "proposed_offer__user"
             ).get(id=request_id)
         except SkillRequest.DoesNotExist:

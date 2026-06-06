@@ -103,6 +103,25 @@ describe('LocationSection', () => {
     expect(handleChange).toHaveBeenCalledWith('x'.repeat(25));
   });
 
+  it('does not open district suggestions on mount when an existing district is loaded', async () => {
+    render(
+      <LocationSection
+        value=""
+        onChange={jest.fn()}
+        onBlur={jest.fn()}
+        error=""
+        isSaving={false}
+        district="Bratislava I"
+        onDistrictChange={jest.fn()}
+        isSeeking={false}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(screen.queryByRole('button', { name: 'Bratislava II' })).not.toBeInTheDocument();
+    });
+  });
+
   it('accepts a country-specific district and stores canonical district code in offer mode', async () => {
     const onDistrictChange = jest.fn();
     const onDistrictCodeChange = jest.fn();

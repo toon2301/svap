@@ -39,7 +39,7 @@ def skill_request_terminate_view(request, request_id: int):
     with transaction.atomic():
         try:
             obj = (
-                SkillRequest.objects.select_for_update()
+                SkillRequest.objects.select_for_update(of=("self",))
                 .select_related("offer", "requester", "recipient", "proposed_offer", "proposed_offer__user")
                 .get(id=request_id)
             )

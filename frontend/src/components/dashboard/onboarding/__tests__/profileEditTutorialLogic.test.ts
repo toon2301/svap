@@ -37,15 +37,15 @@ describe('profileEditTutorialLogic', () => {
       );
     });
 
-    it('advances to search in profile_edit phase 2', () => {
+    it('marks phase 2 and uses default navigation in profile_edit phase 2', () => {
       expect(resolveProfileSkillsClickAction('profile_edit', true, true)).toBe(
-        'advance_to_search',
+        'mark_phase_2_and_navigate',
       );
     });
 
-    it('advances to search when direct skills click matches the rotating highlight', () => {
+    it('marks phase 2 and uses default navigation when direct skills click matches the rotating highlight', () => {
       expect(resolveProfileSkillsClickAction('profile_edit', false, true, 'skills')).toBe(
-        'advance_to_search',
+        'mark_phase_2_and_navigate',
       );
     });
 

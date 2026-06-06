@@ -164,6 +164,7 @@ export default function DashboardContent({
     avatarMembers: MessagingUserBrief[];
   } | null>(null);
   const skillsCategoryBackHandlerRef = useRef<(() => void) | null>(null);
+  const onboardingSkillCreatedHandlerRef = useRef<(() => void) | null>(null);
 
   // Custom hooks pre rozdelenie logiky
   const highlighting = useDashboardHighlighting({
@@ -297,6 +298,14 @@ export default function DashboardContent({
     handleMainModuleChange('search');
   }, [handleMainModuleChange]);
 
+  const handleOnboardingSkillCreated = useCallback(() => {
+    onboardingSkillCreatedHandlerRef.current?.();
+  }, []);
+
+  const handleOnboardingSkillCreatedHandlerSet = useCallback((handler: (() => void) | null) => {
+    onboardingSkillCreatedHandlerRef.current = handler;
+  }, []);
+
   const handleNotificationsPanelClose = useCallback(() => {
     setIsNotificationsPanelOpen(false);
   }, []);
@@ -390,6 +399,7 @@ export default function DashboardContent({
     loadSkills,
     t,
     ownerUserIdForOffersCache: initialUser?.id,
+    onCreatedSkillSaved: handleOnboardingSkillCreated,
   });
 
   // Skills category back handler
@@ -811,6 +821,7 @@ export default function DashboardContent({
         onOpenProfile={navigation.handleMobileProfileClick}
         onOpenEditProfile={navigation.handleEditProfileClick}
         onOpenSearch={handleOnboardingSearchOpen}
+        onSkillCreatedHandlerSet={handleOnboardingSkillCreatedHandlerSet}
         serverState={user?.mobile_onboarding ?? null}
         userId={user?.id ?? null}
       >

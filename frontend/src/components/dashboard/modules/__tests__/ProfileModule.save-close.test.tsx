@@ -14,11 +14,17 @@ jest.mock('@/lib/api', () => ({
 
 jest.mock('../profile/ProfileDesktopView', () => ({
   __esModule: true,
-  default: ({ editableUser, isEditMode, onEditSave }: any) =>
+  default: ({ editableUser, isEditMode, onEditSave, onEditableUserUpdate }: any) =>
     isEditMode && editableUser ? (
-      <button type="button" onClick={() => onEditSave?.(editableUser)}>
-        Save
-      </button>
+      <div>
+        <span data-testid="editable-last-name">{editableUser.last_name || 'empty'}</span>
+        <button type="button" onClick={() => onEditableUserUpdate?.({ last_name: '' })}>
+          Clear last name
+        </button>
+        <button type="button" onClick={() => onEditSave?.(editableUser)}>
+          Save
+        </button>
+      </div>
     ) : (
       <div>Desktop profile</div>
     ),
@@ -96,6 +102,46 @@ describe('ProfileModule save close flow', () => {
 
     await waitFor(() => {
       expect(onEditCancel).toHaveBeenCalledWith(savedUser);
+    });
+  });
+
+  it('sends an empty last_name when the user clears their surname', async () => {
+    const onUserUpdate = jest.fn();
+    const onEditCancel = jest.fn();
+    const savedUser: User = {
+      ...baseUser,
+      last_name: '',
+      updated_at: '2024-01-01T00:00:00Z',
+    };
+
+    patchMock.mockResolvedValue({
+      data: {
+        user: savedUser,
+      },
+    });
+
+    render(
+      <ProfileModule
+        user={baseUser}
+        isEditMode
+        onUserUpdate={onUserUpdate}
+        onEditCancel={onEditCancel}
+      />
+    );
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Clear last name' }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('editable-last-name')).toHaveTextContent('empty');
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(() => {
+      expect(patchMock).toHaveBeenCalledWith(
+        '/auth/profile/',
+        expect.objectContaining({ last_name: '' })
+      );
     });
   });
 });
