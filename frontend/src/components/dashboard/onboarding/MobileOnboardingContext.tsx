@@ -304,7 +304,7 @@ export function MobileOnboardingProvider({
     }
   }, [isEligible, isPausedUi, isProfileEditMode, setState, stored.status, stored.step]);
 
-  const finishOnboarding = useCallback((completedStep: MobileOnboardingStep = 'search') => {
+  const finishOnboarding = useCallback((completedStep: MobileOnboardingStep = 'help_request') => {
     clearMobileOnboardingPostponedForSession();
     clearMobileOnboardingResumePhase2();
     setIsPausedUi(false);
@@ -314,7 +314,7 @@ export function MobileOnboardingProvider({
   }, [setState]);
 
   const complete = useCallback(() => {
-    finishOnboarding(stored.step === 'search' ? 'search' : 'edit_form');
+    finishOnboarding(stored.step === 'search' || stored.step === 'help_request' ? stored.step : 'edit_form');
   }, [finishOnboarding, stored.step]);
 
   const skip = useCallback(() => {
@@ -393,7 +393,12 @@ export function MobileOnboardingProvider({
     }
 
     if (stored.step === 'search') {
-      finishOnboarding('search');
+      setState({ version: 1, status: 'in_progress', step: 'help_request' });
+      return;
+    }
+
+    if (stored.step === 'help_request') {
+      finishOnboarding('help_request');
     }
   }, [
     advanceProfileEditToPhase2,

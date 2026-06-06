@@ -76,3 +76,18 @@ class TestAuthEndpoints(APITestCase):
             status.HTTP_401_UNAUTHORIZED,
             status.HTTP_400_BAD_REQUEST,
         )
+
+    @override_settings(RATE_LIMITING_ENABLED=False)
+    @patch("accounts.views.token_refresh_cookie.logger")
+    def test_invalid_refresh_cookie_is_warning_not_error(self, mock_logger):
+        self.client.cookies["refresh_token"] = "not-a-valid-refresh-token"
+
+        r = self.client.post(reverse("token_refresh"), {}, format="json")
+
+        assert r.status_code == status.HTTP_401_UNAUTHORIZED
+        mock_logger.warning.assert_called_once()
+        mock_logger.error.assert_not_called()
+        assert mock_logger.warning.call_args.kwargs["extra"]["reason"] in {
+            "expired_refresh_token",
+            "invalid_refresh_token",
+        }

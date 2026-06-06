@@ -203,6 +203,11 @@
     "searchStep": {
       "title": "Search people and opportunities",
       "description": "Find users, offers and requests, or discover recommended offers based on your interests."
+    },
+    "helpRequestStep": {
+      "title": "Need help or a service?",
+      "description": "You can request an offer directly from a user's profile.",
+      "gifAlt": "Example of requesting an offer from a user's profile"
     }
   },
   "create": {

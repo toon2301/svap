@@ -18,8 +18,15 @@ type MobileOnboardingCachedProgress = {
   profileEditPhase2?: boolean;
 };
 
-const VALID_STEPS: MobileOnboardingStep[] = ['home', 'profile_icon', 'profile_edit', 'edit_form', 'search'];
-const COMPLETED_STEPS: MobileOnboardingStep[] = ['edit_form', 'search'];
+const VALID_STEPS: MobileOnboardingStep[] = [
+  'home',
+  'profile_icon',
+  'profile_edit',
+  'edit_form',
+  'search',
+  'help_request',
+];
+const COMPLETED_STEPS: MobileOnboardingStep[] = ['edit_form', 'search', 'help_request'];
 const TERMINAL_STATUSES: MobileOnboardingStatus[] = ['completed', 'skipped'];
 const MOBILE_ONBOARDING_PROGRESS_KEY_PREFIX = 'svaplyMobileOnboardingStepV1';
 
