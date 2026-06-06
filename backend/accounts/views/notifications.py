@@ -177,16 +177,15 @@ def notifications_mark_all_read_view(request):
         else:
             qs = exclude_general_notification_types(qs)
         qs.update(is_read=True, read_at=now)
+        # Keep cache in sync (avoid DB hit in unread-count).
+        cache_unread_count(
+            user_id=request.user.id,
+            notif_type=GENERAL_NOTIFICATION_UNREAD_TYPE if count_all else notif_type,
+            count=0,
+            ttl_seconds=UNREAD_COUNT_CACHE_TTL_SECONDS,
+        )
     except Exception:
         pass
-
-    # Keep cache in sync (avoid DB hit in unread-count).
-    cache_unread_count(
-        user_id=request.user.id,
-        notif_type=GENERAL_NOTIFICATION_UNREAD_TYPE if count_all else notif_type,
-        count=0,
-        ttl_seconds=UNREAD_COUNT_CACHE_TTL_SECONDS,
-    )
 
     if count_all:
         notify_user(request.user.id, {"type": "notification_read", "unread_count": 0})
