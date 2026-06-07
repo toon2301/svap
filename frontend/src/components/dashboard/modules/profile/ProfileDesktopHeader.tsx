@@ -68,6 +68,11 @@ export function ProfileDesktopHeader({
     ? t('profile.removeFromFavorites', 'Odobrať z obľúbených')
     : t('profile.addToFavorites', '+ Pridať k obľúbeným');
 
+  const actionButtonClass =
+    'flex min-w-0 items-center justify-center overflow-hidden whitespace-nowrap rounded-2xl border border-purple-200 bg-purple-100 px-4 py-2 text-center text-sm text-purple-800 transition-colors hover:bg-purple-200 disabled:cursor-not-allowed disabled:opacity-60';
+  const menuButtonClass =
+    'flex h-10 w-11 shrink-0 items-center justify-center rounded-2xl border border-purple-200 bg-purple-100 text-purple-800 transition-colors hover:bg-purple-200';
+
   return (
     <div className="flex flex-col items-start w-full lg:items-stretch xl:items-start">
       <div className="flex gap-[clamp(1rem,2vw,2rem)] items-start lg:items-center w-full">
@@ -206,7 +211,7 @@ export function ProfileDesktopHeader({
       )}
 
       {/* Tlačidlá pod fotkou – 1024–1190px: celá šírka, rovnako veľké, vycentrované */}
-      <div className="flex gap-[clamp(0.5rem,1vw,0.5rem)] mt-[clamp(0.75rem,1.5vw,0.75rem)] lg:w-full lg:min-w-full lg:self-stretch xl:w-auto xl:min-w-0 xl:self-auto">
+      <div className="mt-[clamp(0.75rem,1.5vw,0.75rem)] grid w-full max-w-[660px] grid-cols-[minmax(0,1fr)_minmax(0,1fr)_2.75rem] gap-2 lg:self-stretch xl:self-auto">
         <button
           type="button"
           onClick={() => {
@@ -218,7 +223,7 @@ export function ProfileDesktopHeader({
             }
           }}
           disabled={isOtherUserProfile && isOpeningConversation}
-          className="flex-1 px-[clamp(4rem,8vw,8rem)] xl:px-16 2xl:px-32 py-2 text-sm bg-purple-100 text-purple-800 border border-purple-200 rounded-2xl transition-colors hover:bg-purple-200 whitespace-nowrap lg:min-w-0 lg:px-5 lg:text-center xl:min-w-auto xl:text-left disabled:opacity-60 disabled:cursor-not-allowed"
+          className={actionButtonClass}
         >
           {primaryActionLabel}
         </button>
@@ -235,13 +240,14 @@ export function ProfileDesktopHeader({
               aria-pressed={isFavorited}
               aria-busy={isFavoritePending}
               disabled={isFavoritePending}
-              className="flex-1 px-[clamp(4rem,8vw,8rem)] xl:px-16 2xl:px-32 py-2 text-sm bg-purple-100 text-purple-800 border border-purple-200 rounded-2xl transition-colors hover:bg-purple-200 whitespace-nowrap lg:min-w-0 lg:px-5 lg:text-center xl:min-w-auto xl:text-left disabled:opacity-60 disabled:cursor-not-allowed"
+              className={actionButtonClass}
             >
               {favoriteActionLabel}
             </button>
             <button
+              type="button"
               onClick={onHamburgerOpen}
-              className="px-3 py-2 bg-purple-100 text-purple-800 border border-purple-200 rounded-2xl transition-colors hover:bg-purple-200 flex items-center justify-center lg:shrink-0 xl:shrink"
+              className={menuButtonClass}
               aria-label="Menu"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -258,13 +264,14 @@ export function ProfileDesktopHeader({
                   onSkillsClick();
                 }
               }}
-              className="flex-1 px-[clamp(4rem,8vw,8rem)] xl:px-16 2xl:px-32 py-2 text-sm bg-purple-100 text-purple-800 border border-purple-200 rounded-2xl transition-colors hover:bg-purple-200 whitespace-nowrap lg:min-w-0 lg:px-5 lg:text-center xl:min-w-auto xl:text-left"
+              className={actionButtonClass}
             >
               {t('profile.skills', 'Ponúkam/Hľadám')}
             </button>
             <button
+              type="button"
               onClick={onHamburgerOpen}
-              className="px-3 py-2 bg-purple-100 text-purple-800 border border-purple-200 rounded-2xl transition-colors hover:bg-purple-200 flex items-center justify-center lg:shrink-0 xl:shrink"
+              className={menuButtonClass}
               aria-label={t('profile.moreActions', 'Viac možností')}
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">

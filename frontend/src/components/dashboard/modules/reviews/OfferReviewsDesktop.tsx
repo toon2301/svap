@@ -34,7 +34,7 @@ export type OfferReviewsDesktopProps = {
   reviewsLoading: boolean;
   isOwnOffer: boolean;
   isBusinessOwner: boolean;
-  /** Z API detailu ponuky – môže pridať recenziu (completed request, ešte nerecenzoval) */
+  /** Z API detailu ponuky – môže pridať recenziu po uzavretej výmene a ešte nerecenzoval. */
   can_review: boolean;
   /** Z API detailu ponuky – už túto ponuku recenzoval */
   already_reviewed: boolean;

@@ -81,7 +81,7 @@ SKILLS_LIST_CACHE_TTL_SECONDS = int(
 
 
 def _skills_list_cache_key(user_id: int) -> str:
-    return f"skills_list_v1:{int(user_id)}"
+    return f"skills_list_v2:{int(user_id)}"
 
 
 def _skills_list_cache_invalidate(user_id: int) -> None:
