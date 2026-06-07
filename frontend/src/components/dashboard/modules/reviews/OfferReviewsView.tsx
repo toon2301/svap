@@ -38,7 +38,7 @@ type OfferDetailLike = Offer & {
   price_per_hour?: number | null;
   city?: string | null;
   opening_hours?: Offer['opening_hours'];
-  /** Z API GET /api/auth/skills/<id>/ – môže používateľ pridať recenziu (má completed request a ešte nerecenzoval) */
+  /** Z API GET /api/auth/skills/<id>/ – môže používateľ pridať recenziu po uzavretej výmene a ešte nerecenzoval. */
   can_review?: boolean;
   /** Z API GET /api/auth/skills/<id>/ – už túto ponuku recenzoval */
   already_reviewed?: boolean;

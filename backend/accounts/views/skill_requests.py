@@ -62,7 +62,7 @@ INACTIVE_SKILL_REQUEST_STATUSES: tuple[str, ...] = (
 
 def _skill_requests_cache_key(user_id: int, status_param: str | None) -> str:
     s = (status_param or "").strip().lower()
-    return f"skill_requests_v1:{int(user_id)}:{s}"
+    return f"skill_requests_v2:{int(user_id)}:{s}"
 
 
 _SKILLREQ_STATUS_KEYS: tuple[str, ...] = (

@@ -563,8 +563,8 @@ class DashboardViewsTestCase(TestCase):
         self.assertEqual(second.data[0]["reviews_count"], 1)
         self.assertEqual(second.data[0]["average_rating"], 4.5)
 
-    def test_skill_detail_can_review_after_accepted_request_until_review_exists(self):
-        """Detail ponuky povoli recenziu po prijati vymeny."""
+    def test_skill_detail_can_review_after_closed_request_until_review_exists(self):
+        """Detail ponuky povoli recenziu az po uzavreti vymeny."""
         self.other_user.is_public = True
         self.other_user.save(update_fields=["is_public"])
         skill = OfferedSkill.objects.create(
@@ -585,7 +585,7 @@ class DashboardViewsTestCase(TestCase):
 
         accepted = self.client.get(url)
         self.assertEqual(accepted.status_code, status.HTTP_200_OK)
-        self.assertTrue(accepted.data["can_review"])
+        self.assertFalse(accepted.data["can_review"])
         self.assertFalse(accepted.data["already_reviewed"])
 
         skill_request.status = SkillRequestStatus.COMPLETION_REQUESTED
@@ -593,7 +593,7 @@ class DashboardViewsTestCase(TestCase):
 
         completion_requested = self.client.get(url)
         self.assertEqual(completion_requested.status_code, status.HTTP_200_OK)
-        self.assertTrue(completion_requested.data["can_review"])
+        self.assertFalse(completion_requested.data["can_review"])
         self.assertFalse(completion_requested.data["already_reviewed"])
 
         skill_request.status = SkillRequestStatus.COMPLETED
@@ -603,6 +603,14 @@ class DashboardViewsTestCase(TestCase):
         self.assertEqual(completed.status_code, status.HTTP_200_OK)
         self.assertTrue(completed.data["can_review"])
         self.assertFalse(completed.data["already_reviewed"])
+
+        skill_request.status = SkillRequestStatus.TERMINATED
+        skill_request.save(update_fields=["status"])
+
+        terminated = self.client.get(url)
+        self.assertEqual(terminated.status_code, status.HTTP_200_OK)
+        self.assertTrue(terminated.data["can_review"])
+        self.assertFalse(terminated.data["already_reviewed"])
 
         Review.objects.create(
             reviewer=self.user,

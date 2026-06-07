@@ -728,9 +728,8 @@ class SkillRequestStatus(models.TextChoices):
 
 
 REVIEWABLE_SKILL_REQUEST_STATUSES = (
-    SkillRequestStatus.ACCEPTED,
-    SkillRequestStatus.COMPLETION_REQUESTED,
     SkillRequestStatus.COMPLETED,
+    SkillRequestStatus.TERMINATED,
 )
 
 

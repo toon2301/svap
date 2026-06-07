@@ -109,7 +109,7 @@ def reviews_list_view(request, offer_id):
                 status=status.HTTP_403_FORBIDDEN,
             )
 
-        # Review is allowed only after the exchange request is accepted.
+        # Review is allowed only after the exchange has been closed.
         has_reviewable_request = SkillRequest.objects.filter(
             requester=request.user,
             offer=offer,
@@ -117,7 +117,12 @@ def reviews_list_view(request, offer_id):
         ).exists()
         if not has_reviewable_request:
             return Response(
-                {"error": "You can only review offers after an accepted exchange."},
+                {
+                    "error": (
+                        "Recenziu môžeš pridať až po dokončení alebo "
+                        "predčasnom ukončení výmeny."
+                    )
+                },
                 status=status.HTTP_403_FORBIDDEN,
             )
 

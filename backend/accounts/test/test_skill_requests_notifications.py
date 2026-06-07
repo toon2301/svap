@@ -329,12 +329,12 @@ class TestSkillRequestsAndNotifications(APITestCase):
             ).exists()
         )
 
-    def test_create_review_notifies_offer_owner_and_counts_in_general_badge(self):
+    def test_create_review_after_completed_exchange_notifies_owner_and_counts_in_general_badge(self):
         SkillRequest.objects.create(
             requester=self.requester,
             recipient=self.owner,
             offer=self.offer,
-            status=SkillRequestStatus.ACCEPTED,
+            status=SkillRequestStatus.COMPLETED,
         )
 
         self.client.force_authenticate(user=self.requester)
@@ -378,8 +378,40 @@ class TestSkillRequestsAndNotifications(APITestCase):
             f"/dashboard/offers/{self.offer.id}/reviews?review_id={response.data['id']}",
         )
 
-    def test_create_review_before_exchange_acceptance_is_forbidden(self):
+    def test_create_review_after_terminated_exchange_is_allowed(self):
         SkillRequest.objects.create(
+            requester=self.requester,
+            recipient=self.owner,
+            offer=self.offer,
+            status=SkillRequestStatus.TERMINATED,
+        )
+
+        self.client.force_authenticate(user=self.requester)
+        with self.captureOnCommitCallbacks(execute=True):
+            response = self.client.post(
+                f"{self.base}/skills/{self.offer.id}/reviews/",
+                {
+                    "rating": 4.5,
+                    "text": "Spolupraca bola ukoncena, ale hodnotenie davam.",
+                    "pros": [],
+                    "cons": [],
+                },
+                format="json",
+            )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(
+            Review.objects.filter(reviewer=self.requester, offer=self.offer).exists()
+        )
+        self.assertTrue(
+            Notification.objects.filter(
+                user=self.owner,
+                type=NotificationType.REVIEW_CREATED,
+            ).exists()
+        )
+
+    def test_create_review_before_exchange_closure_is_forbidden(self):
+        skill_request = SkillRequest.objects.create(
             requester=self.requester,
             recipient=self.owner,
             offer=self.offer,
@@ -387,18 +419,26 @@ class TestSkillRequestsAndNotifications(APITestCase):
         )
 
         self.client.force_authenticate(user=self.requester)
-        response = self.client.post(
-            f"{self.base}/skills/{self.offer.id}/reviews/",
-            {
-                "rating": 5,
-                "text": "Predcasna recenzia.",
-                "pros": [],
-                "cons": [],
-            },
-            format="json",
-        )
+        for blocked_status in (
+            SkillRequestStatus.PENDING,
+            SkillRequestStatus.ACCEPTED,
+            SkillRequestStatus.COMPLETION_REQUESTED,
+        ):
+            with self.subTest(blocked_status=blocked_status):
+                skill_request.status = blocked_status
+                skill_request.save(update_fields=["status"])
+                response = self.client.post(
+                    f"{self.base}/skills/{self.offer.id}/reviews/",
+                    {
+                        "rating": 5,
+                        "text": "Predcasna recenzia.",
+                        "pros": [],
+                        "cons": [],
+                    },
+                    format="json",
+                )
 
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+                self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         self.assertFalse(
             Review.objects.filter(reviewer=self.requester, offer=self.offer).exists()
         )
@@ -689,7 +729,7 @@ class TestSkillRequestsAndNotifications(APITestCase):
         self.assertEqual(r_req.status_code, status.HTTP_200_OK)
         self.assertEqual(len(r_req.data.get("sent", [])), 1)
 
-    def test_list_requests_marks_accepted_sent_offer_reviewable_until_reviewed(self):
+    def test_list_requests_marks_closed_sent_offer_reviewable_until_reviewed(self):
         skill_request = SkillRequest.objects.create(
             requester=self.requester,
             recipient=self.owner,
@@ -704,8 +744,41 @@ class TestSkillRequestsAndNotifications(APITestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         offer_summary = response.data["sent"][0]["offer_summary"]
-        self.assertTrue(offer_summary["can_review"])
+        self.assertFalse(offer_summary["can_review"])
         self.assertFalse(offer_summary["already_reviewed"])
+
+        skill_request.status = SkillRequestStatus.COMPLETION_REQUESTED
+        skill_request.save(update_fields=["status"])
+        completion_requested = self.client.get(
+            f"{self.base}/skill-requests/",
+            {"status": "accepted,completion_requested"},
+        )
+        self.assertEqual(completion_requested.status_code, status.HTTP_200_OK)
+        completion_offer_summary = completion_requested.data["sent"][0]["offer_summary"]
+        self.assertFalse(completion_offer_summary["can_review"])
+        self.assertFalse(completion_offer_summary["already_reviewed"])
+
+        skill_request.status = SkillRequestStatus.COMPLETED
+        skill_request.save(update_fields=["status"])
+        completed = self.client.get(
+            f"{self.base}/skill-requests/",
+            {"status": "completed"},
+        )
+        self.assertEqual(completed.status_code, status.HTTP_200_OK)
+        completed_offer_summary = completed.data["sent"][0]["offer_summary"]
+        self.assertTrue(completed_offer_summary["can_review"])
+        self.assertFalse(completed_offer_summary["already_reviewed"])
+
+        skill_request.status = SkillRequestStatus.TERMINATED
+        skill_request.save(update_fields=["status"])
+        terminated = self.client.get(
+            f"{self.base}/skill-requests/",
+            {"status": "cancelled,rejected,terminated"},
+        )
+        self.assertEqual(terminated.status_code, status.HTTP_200_OK)
+        terminated_offer_summary = terminated.data["sent"][0]["offer_summary"]
+        self.assertTrue(terminated_offer_summary["can_review"])
+        self.assertFalse(terminated_offer_summary["already_reviewed"])
 
         with self.captureOnCommitCallbacks(execute=True):
             review_response = self.client.post(
@@ -722,7 +795,7 @@ class TestSkillRequestsAndNotifications(APITestCase):
 
         reviewed = self.client.get(
             f"{self.base}/skill-requests/",
-            {"status": "accepted,completion_requested"},
+            {"status": "cancelled,rejected,terminated"},
         )
         self.assertEqual(reviewed.status_code, status.HTTP_200_OK)
         reviewed_offer_summary = reviewed.data["sent"][0]["offer_summary"]
@@ -732,7 +805,7 @@ class TestSkillRequestsAndNotifications(APITestCase):
         self.client.force_authenticate(user=self.owner)
         owner_response = self.client.get(
             f"{self.base}/skill-requests/",
-            {"status": "accepted,completion_requested"},
+            {"status": "cancelled,rejected,terminated"},
         )
         self.assertEqual(owner_response.status_code, status.HTTP_200_OK)
         owner_offer_summary = owner_response.data["received"][0]["offer_summary"]
