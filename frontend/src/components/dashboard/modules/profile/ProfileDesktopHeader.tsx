@@ -258,6 +258,7 @@ export function ProfileDesktopHeader({
         ) : (
           <>
             <button
+              type="button"
               onClick={() => {
                 // Desktop: prepnúť na prázdny screen Zručnosti
                 if (typeof onSkillsClick === 'function') {
