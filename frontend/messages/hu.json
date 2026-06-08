@@ -707,6 +707,102 @@
       "button": "Regisztráció"
     }
   },
+  "faq": {
+    "backToHome": "Vissza a kezdőlapra",
+    "hero": {
+      "title": "Gyakran ismételt kérdések",
+      "subtitle": "A Svaply-val kapcsolatos leggyakoribb kérdésekre adott válaszok egy helyen."
+    },
+    "sections": {
+      "whatIsSvaply": {
+        "title": "Mi a Svaply?",
+        "whatIsSvaply": {
+          "question": "Mi a Svaply?",
+          "answer": "A Svaply egy helyi piactér, ahol az emberek bármilyen szolgáltatást kínálnak és keresnek – a kézművességtől és javításoktól a sport és művészeti tevékenységeken át a mindennapi apró segítségekig. Egyszerűen: ha valamire szükséged van, vagy tudsz valamit kínálni, a Svaply a helyed."
+        },
+        "whoIsItFor": {
+          "question": "Kinek szól a Svaply?",
+          "answer": "Mindenkinek. Legyél ügyes kézműves, zene tanár, valaki, akinek virágot kell öntözni, vagy személyi edzőt keresel – a Svaply neked szól."
+        },
+        "countries": {
+          "question": "Mely országokban működik a Svaply?",
+          "answer": "Elsősorban Szlovákiában, Csehországban, Magyarországon, Lengyelországban, Ausztriában és Németországban. A platform angol nyelven is elérhető."
+        }
+      },
+      "howItWorks": {
+        "title": "Hogyan működik?",
+        "gettingStarted": {
+          "question": "Hogyan kezdjek hozzá?",
+          "answer": "Regisztrálj ingyenesen, hozd létre a profilodat, és add hozzá az ajánlatodat vagy kérésedet. Mások felvehetik veled a kapcsolatot, vagy te is megkereshetsz valakit, aki megfelel az igényeidnek."
+        },
+        "offerVsDemand": {
+          "question": "Mi az ajánlat és mi a kérés?",
+          "answer": "Ajánlat = szolgáltatást kínálsz. Például: „Bicikliket javítok Pozsonyban.“\n\nKérés = szolgáltatást keresel. Például: „Keresek valakit, aki minden reggel megöntözi a virágaimat.“"
+        },
+        "localServices": {
+          "question": "A Svaply helyi, személyes szolgáltatásokra is működik?",
+          "answer": "Igen! Személyes szolgáltatásoknál a környékeden lévő embereket látod – nincs értelme az ország másik végéről keresni valakit a virágok öntözésére."
+        },
+        "isFree": {
+          "question": "A Svaply ingyenes?",
+          "answer": "Igen, teljesen ingyenes."
+        },
+        "payment": {
+          "question": "Hogyan történik a fizetés?",
+          "answer": "A fizetés közvetlenül köztetek történik, a platformon kívül megegyezve. A Svaply nem vesz részt a pénzügyi tranzakcióban."
+        },
+        "communication": {
+          "question": "Hogyan kommunikálunk?",
+          "answer": "Az alkalmazásban lévő üzeneteken, e-mailen, telefonon vagy közösségi médián keresztül – ahogy nektek kényelmes."
+        }
+      },
+      "profileOffers": {
+        "title": "Profil és ajánlatok",
+        "anyoneCanAdd": {
+          "question": "Bárki hozzáadhat ajánlatot vagy kérést?",
+          "answer": "Igen, minden regisztrált felhasználó azonnal, jóváhagyás nélkül adhat hozzá ajánlatot vagy kérést."
+        },
+        "whatServices": {
+          "question": "Milyen szolgáltatásokat kínálhatok?",
+          "answer": "Bármit – kézművesség, javítás, főzés, zene, sport, grafika, fordítás, kertészet... ha legális, a Svaply nem zárja ki."
+        },
+        "identityVerification": {
+          "question": "Hogyan igazolhatom a személyazonosságomat?",
+          "answer": "A Svaply személyazonosság-ellenőrzést kínál. Az ellenőrzött felhasználók külön jelzést kapnak a profiljukon, ami növeli a megbízhatóságot."
+        },
+        "reviews": {
+          "question": "Hogyan működnek az értékelések?",
+          "answer": "Az együttműködés után mindkét fél értékelést hagyhat. Az értékelések nyilvánosak, és segítenek másoknak dönteni."
+        }
+      },
+      "securityPrivacy": {
+        "title": "Biztonság és adatvédelem",
+        "dataSafety": {
+          "question": "Biztonságban vannak az adataim?",
+          "answer": "Igen, az adataid a GDPR-nak megfelelően védettek."
+        },
+        "deleteAccount": {
+          "question": "Hogyan törölhetem a fiókomat?",
+          "answer": "A fiókot a profilbeállításokban törölheted."
+        }
+      },
+      "support": {
+        "title": "Problémák és támogatás",
+        "reportUser": {
+          "question": "Mi van, ha problémám van egy másik felhasználóval?",
+          "answer": "Bármely felhasználót vagy ajánlatot közvetlenül az alkalmazásban jelenthetsz. Csapatunk megvizsgálja az ügyet."
+        },
+        "unfulfilledAgreement": {
+          "question": "Mi van, ha a másik fél nem tartja be a megállapodást?",
+          "answer": "Javasoljuk, hogy mindig az alkalmazásban üzenetben kommunikáljatok bizonyítékként, és ellenőrzött, értékelt felhasználókkal dolgozzatok."
+        },
+        "contactSupport": {
+          "question": "Hogyan érem el az ügyfélszolgálatot?",
+          "answer": "Írj nekünk az info@svaply.com címre, vagy használd a „Probléma jelentése” űrlapot az alkalmazásban."
+        }
+      }
+    }
+  },
   "footer": {
     "howItWorks": "Hogyan működik",
     "forIndividuals": "Magánszemélyeknek",
