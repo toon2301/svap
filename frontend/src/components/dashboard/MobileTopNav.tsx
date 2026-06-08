@@ -44,7 +44,13 @@ export default function MobileTopNav({ activeItem, onItemClick }: MobileTopNavPr
             <button
               key={item.id}
               onClick={() => onItemClick(item.id)}
-              data-onboarding={item.id === 'search' ? 'search-nav-icon' : undefined}
+              data-onboarding={
+                item.id === 'search'
+                  ? 'search-nav-icon'
+                  : item.id === 'requests'
+                    ? 'requests-nav-icon'
+                    : undefined
+              }
               className={`
                 relative flex min-h-[44px] min-w-[44px] flex-col items-center justify-start rounded-lg px-2 pt-0.5 pb-0 transition-all overflow-visible
                 ${isActive 

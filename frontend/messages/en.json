@@ -208,6 +208,10 @@
       "title": "Need help or a service?",
       "description": "You can request an offer directly from a user's profile.",
       "gifAlt": "Example of requesting an offer from a user's profile"
+    },
+    "requestsStep": {
+      "title": "Keep track of your requests",
+      "description": "Follow sent and received requests in one place."
     }
   },
   "create": {
@@ -701,6 +705,102 @@
       "title": "Join Svaply",
       "text": "Create your profile, show what you can do or find exactly what you need.",
       "button": "Register"
+    }
+  },
+  "faq": {
+    "backToHome": "Back to home",
+    "hero": {
+      "title": "Frequently asked questions",
+      "subtitle": "Answers to the most common questions about Svaply in one place."
+    },
+    "sections": {
+      "whatIsSvaply": {
+        "title": "What is Svaply?",
+        "whatIsSvaply": {
+          "question": "What is Svaply?",
+          "answer": "Svaply is a local marketplace where people offer and search for all kinds of services — from crafts and repairs to sports and creative activities, down to everyday small favours. Simply put — if you need something or have something to offer, Svaply is the place for you."
+        },
+        "whoIsItFor": {
+          "question": "Who is Svaply for?",
+          "answer": "Absolutely everyone. Whether you're a skilled craftsman, music teacher, someone who needs their plants watered or you're looking for a personal trainer — Svaply is for you."
+        },
+        "countries": {
+          "question": "In which countries does Svaply work?",
+          "answer": "Primarily in Slovakia, the Czech Republic, Hungary, Poland, Austria and Germany. The platform is also available in English."
+        }
+      },
+      "howItWorks": {
+        "title": "How does it work?",
+        "gettingStarted": {
+          "question": "How do I get started?",
+          "answer": "Sign up for free, create a profile and add your offer or request. Others can contact you, or you can reach out to someone who fits what you need."
+        },
+        "offerVsDemand": {
+          "question": "What is an offer and what is a request?",
+          "answer": "Offer = you are offering a service. For example, \"I repair bicycles in Bratislava.\"\n\nRequest = you are looking for a service. For example, \"I'm looking for someone to water my plants every morning.\""
+        },
+        "localServices": {
+          "question": "Does Svaply work for in-person local services too?",
+          "answer": "Yes! For in-person services you see people near you — there's no point looking for someone to water your plants on the other side of the country."
+        },
+        "isFree": {
+          "question": "Is Svaply free?",
+          "answer": "Yes, completely free."
+        },
+        "payment": {
+          "question": "How does payment work?",
+          "answer": "Payment happens directly between you, agreed outside the platform. Svaply is not part of the financial transaction."
+        },
+        "communication": {
+          "question": "How do we communicate?",
+          "answer": "Through in-app messages, email, phone or social media — whatever works for you."
+        }
+      },
+      "profileOffers": {
+        "title": "Profile & Offers",
+        "anyoneCanAdd": {
+          "question": "Can anyone add an offer or request?",
+          "answer": "Yes, every registered user can add an offer or request right away without approval."
+        },
+        "whatServices": {
+          "question": "What services can I offer?",
+          "answer": "Anything — crafts, repairs, cooking, music, sports, design, translations, gardening... if it's legal, Svaply doesn't exclude it."
+        },
+        "identityVerification": {
+          "question": "How can I verify my identity?",
+          "answer": "Svaply offers identity verification. Verified users have a special badge on their profile, which builds trust."
+        },
+        "reviews": {
+          "question": "How do reviews work?",
+          "answer": "After working together, both sides can leave a review. Reviews are public and help others decide."
+        }
+      },
+      "securityPrivacy": {
+        "title": "Security & Privacy",
+        "dataSafety": {
+          "question": "Is my data safe?",
+          "answer": "Yes, your data is protected in line with GDPR."
+        },
+        "deleteAccount": {
+          "question": "How do I delete my account?",
+          "answer": "You can delete your account in your profile settings."
+        }
+      },
+      "support": {
+        "title": "Issues & Support",
+        "reportUser": {
+          "question": "What if I have a problem with another user?",
+          "answer": "You can report any user or offer directly in the app. Our team will look into it."
+        },
+        "unfulfilledAgreement": {
+          "question": "What if the other party doesn't keep their end of the deal?",
+          "answer": "We recommend always communicating through in-app messages as proof and working with verified, reviewed users."
+        },
+        "contactSupport": {
+          "question": "How do I contact support?",
+          "answer": "Write to us at info@svaply.com or use the \"Report issue\" form in the app."
+        }
+      }
     }
   },
   "footer": {

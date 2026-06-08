@@ -298,6 +298,10 @@ export default function DashboardContent({
     handleMainModuleChange('search');
   }, [handleMainModuleChange]);
 
+  const handleOnboardingRequestsOpen = useCallback(() => {
+    handleMainModuleChange('requests');
+  }, [handleMainModuleChange]);
+
   const handleOnboardingSkillCreated = useCallback(() => {
     onboardingSkillCreatedHandlerRef.current?.();
   }, []);
@@ -821,6 +825,7 @@ export default function DashboardContent({
         onOpenProfile={navigation.handleMobileProfileClick}
         onOpenEditProfile={navigation.handleEditProfileClick}
         onOpenSearch={handleOnboardingSearchOpen}
+        onOpenRequests={handleOnboardingRequestsOpen}
         onSkillCreatedHandlerSet={handleOnboardingSkillCreatedHandlerSet}
         serverState={user?.mobile_onboarding ?? null}
         userId={user?.id ?? null}

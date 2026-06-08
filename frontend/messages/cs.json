@@ -208,6 +208,10 @@
       "title": "Potřebuješ pomoc nebo službu?",
       "description": "O nabídku můžeš požádat přímo na profilu uživatele.",
       "gifAlt": "Ukázka požádání o nabídku na profilu uživatele"
+    },
+    "requestsStep": {
+      "title": "Měj přehled o svých žádostech",
+      "description": "Sleduj odeslané i přijaté žádosti na jednom místě."
     }
   },
   "create": {
@@ -701,6 +705,102 @@
       "title": "Přidej se k Svaply",
       "text": "Vytvoř si profil, ukaž, co umíš, nebo najdi přesně to, co právě potřebuješ.",
       "button": "Registrovat se"
+    }
+  },
+  "faq": {
+    "backToHome": "Zpět na úvod",
+    "hero": {
+      "title": "Často kladené otázky",
+      "subtitle": "Odpovědi na nejčastější otázky o Svaply na jednom místě."
+    },
+    "sections": {
+      "whatIsSvaply": {
+        "title": "Co je Svaply?",
+        "whatIsSvaply": {
+          "question": "Co je Svaply?",
+          "answer": "Svaply je lokální marketplace, kde lidé nabízejí a hledají jakékoli služby – od řemesel a oprav přes sportovní a umělecké aktivity až po každodenní drobné výpomoci. Jednoduše – pokud něco potřebuješ nebo umíš něco nabídnout, Svaply je místo pro tebe."
+        },
+        "whoIsItFor": {
+          "question": "Pro koho je Svaply určené?",
+          "answer": "Pro úplně každého. Ať už jsi šikovný řemeslník, učitel hudby, někdo kdo potřebuje zalévat květiny, nebo hledáš osobního trenéra – Svaply je pro tebe."
+        },
+        "countries": {
+          "question": "Ve kterých zemích Svaply funguje?",
+          "answer": "Primárně na Slovensku, v Česku, Maďarsku, Polsku, Rakousku a Německu. Platforma je dostupná i v angličtině."
+        }
+      },
+      "howItWorks": {
+        "title": "Jak to funguje?",
+        "gettingStarted": {
+          "question": "Jak začnu?",
+          "answer": "Zaregistruj se zdarma, vytvoř profil a přidej svou nabídku nebo poptávku. Ostatní tě mohou kontaktovat, nebo ty můžeš oslovit někoho, kdo ti vyhovuje."
+        },
+        "offerVsDemand": {
+          "question": "Co je nabídka a co je poptávka?",
+          "answer": "Nabídka = nabízíš službu. Například „Opravuji kola v Bratislavě.“\n\nPoptávka = hledáš službu. Například „Hledám někoho, kdo mi každé ráno zalévá květiny.“"
+        },
+        "localServices": {
+          "question": "Funguje Svaply i pro fyzické lokální služby?",
+          "answer": "Ano! U fyzických služeb vidíš lidi ve svém okolí – nemá smysl hledat někoho na zalévání květin z druhého konce země."
+        },
+        "isFree": {
+          "question": "Je Svaply zdarma?",
+          "answer": "Ano, úplně zdarma."
+        },
+        "payment": {
+          "question": "Jak probíhá platba?",
+          "answer": "Platba probíhá přímo mezi vámi, dohodou mimo platformu. Svaply nevstupuje do finanční transakce."
+        },
+        "communication": {
+          "question": "Jak spolu komunikujeme?",
+          "answer": "Přes zprávy přímo v aplikaci, e-mailem, telefonicky nebo přes sociální sítě – jak vám to vyhovuje."
+        }
+      },
+      "profileOffers": {
+        "title": "Profil a nabídky",
+        "anyoneCanAdd": {
+          "question": "Může kdokoli přidat nabídku nebo poptávku?",
+          "answer": "Ano, každý registrovaný uživatel může okamžitě přidat nabídku nebo poptávku bez schválení."
+        },
+        "whatServices": {
+          "question": "Jaké služby můžu nabízet?",
+          "answer": "Cokoli – řemesla, opravy, vaření, hudba, sport, grafika, překlady, zahradnictví... pokud je to legální, Svaply to nevylučuje."
+        },
+        "identityVerification": {
+          "question": "Jak si můžu ověřit totožnost?",
+          "answer": "Svaply nabízí ověření totožnosti. Ověření uživatelé mají na profilu speciální označení, což zvyšuje důvěryhodnost."
+        },
+        "reviews": {
+          "question": "Jak fungují hodnocení?",
+          "answer": "Po spolupráci mohou obě strany zanechat hodnocení. Hodnocení jsou veřejná a pomáhají ostatním se rozhodnout."
+        }
+      },
+      "securityPrivacy": {
+        "title": "Bezpečnost a soukromí",
+        "dataSafety": {
+          "question": "Jsou moje údaje v bezpečí?",
+          "answer": "Ano, tvoje údaje jsou chráněny v souladu s GDPR."
+        },
+        "deleteAccount": {
+          "question": "Jak smazat účet?",
+          "answer": "Účet můžeš smazat v nastavení profilu."
+        }
+      },
+      "support": {
+        "title": "Problémy a podpora",
+        "reportUser": {
+          "question": "Co když mám problém s jiným uživatelem?",
+          "answer": "Každého uživatele nebo nabídku můžeš nahlásit přímo v aplikaci. Náš tým případ prověří."
+        },
+        "unfulfilledAgreement": {
+          "question": "Co když druhá strana nesplní dohodu?",
+          "answer": "Doporučujeme vždy komunikovat přes zprávy v aplikaci jako důkaz a spolupracovat s ověřenými a hodnocenými uživateli."
+        },
+        "contactSupport": {
+          "question": "Jak kontaktovat podporu?",
+          "answer": "Napiš nám na info@svaply.com nebo přes formulář „Nahlásit problém“ v aplikaci."
+        }
+      }
     }
   },
   "footer": {

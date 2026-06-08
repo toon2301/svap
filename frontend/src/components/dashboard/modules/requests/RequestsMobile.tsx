@@ -37,6 +37,19 @@ interface RequestsMobileProps {
   routeIntent?: RequestsRouteIntent | null;
 }
 
+type ReviewSubmitError = {
+  response?: {
+    data?: {
+      error?: string;
+      rating?: string[];
+      pros?: string[];
+      cons?: string[];
+      text?: string[];
+    };
+  };
+  message?: string;
+};
+
 function totalActiveCollaborations(res: SkillRequestsResponse): number {
   const sentLen = res.sent.filter((x) => x.status !== 'cancelled').length;
   return res.received.length + sentLen;
@@ -347,108 +360,113 @@ export function RequestsMobile({ routeIntent }: RequestsMobileProps) {
 
   return (
     <div className="space-y-0">
-      {/* 4 taby: Čakajúce, Aktívne, Dokončené, Zrušené */}
-      <div className="-mt-8 -mx-2 w-[calc(100%+1rem)] sm:-mx-4 sm:w-[calc(100%+2rem)]">
-        <div
-          role="tablist"
-          aria-label={t('requests.tabStatusLabel', 'Stav spoluprác')}
-          className="flex w-full items-stretch rounded-none bg-white dark:bg-gray-900 overflow-hidden min-w-0 border-b border-gray-200 dark:border-gray-800"
-        >
-          {(['pending', 'active', 'completed', 'cancelled'] as const).map((key) => (
+      <div
+        data-onboarding="requests-tabs"
+        className="-mt-8 -mx-2 w-[calc(100%+1rem)] sm:-mx-4 sm:w-[calc(100%+2rem)]"
+      >
+        {/* 4 taby: Čakajúce, Aktívne, Dokončené, Zrušené */}
+        <div>
+          <div
+            role="tablist"
+            aria-label={t('requests.tabStatusLabel', 'Stav spoluprác')}
+            className="flex w-full items-stretch rounded-none bg-white dark:bg-gray-900 overflow-hidden min-w-0 border-b border-gray-200 dark:border-gray-800"
+          >
+            {(['pending', 'active', 'completed', 'cancelled'] as const).map((key) => (
+              <button
+                key={key}
+                type="button"
+                role="tab"
+                aria-selected={statusTab === key}
+                onClick={() => setStatusTab(key)}
+                className={[
+                  'relative flex-1 py-2.5 px-1 transition-colors flex items-center justify-center gap-1 min-w-0',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60',
+                  statusTab === key
+                    ? 'bg-purple-50 text-purple-700 dark:bg-purple-900/40 dark:text-purple-200'
+                    : 'bg-white text-gray-600 hover:bg-gray-50 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800',
+                ].join(' ')}
+              >
+                <span className="text-[11px] font-semibold inline-flex items-center justify-center gap-1 max-w-full min-w-0">
+                  {key === 'pending' && <span className="truncate">{t('requests.tabPending', 'Čakajúce')}</span>}
+                  {key === 'active' && <span className="truncate">{t('requests.tabActive', 'Aktívne')}</span>}
+                  {key === 'completed' && <span className="truncate">{t('requests.tabCompleted', 'Dokončené')}</span>}
+                  {key === 'cancelled' && <span className="truncate">{t('requests.tabCancelled', 'Zrušené')}</span>}
+                  {key === 'active' && activeTabTotal != null && activeTabTotal > 0 ? (
+                    <span
+                      className={[
+                        'shrink-0 min-w-6 px-1.5 py-0.5 rounded-full text-[10px] font-bold border tabular-nums',
+                        statusTab === key
+                          ? 'bg-white border-purple-200 text-purple-700 dark:bg-purple-800/50 dark:border-purple-600 dark:text-purple-200'
+                          : 'bg-white border-gray-200 text-gray-700 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200',
+                      ].join(' ')}
+                    >
+                      {activeTabTotal > 99 ? '99+' : activeTabTotal}
+                    </span>
+                  ) : null}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+        {/* Prijaté / Odoslané */}
+        <div>
+          <div
+            role="tablist"
+            aria-label={t('requests.title', 'Spolupráce')}
+            className="flex w-full items-stretch rounded-none bg-white dark:bg-gray-900 overflow-hidden min-w-0"
+          >
             <button
-              key={key}
               type="button"
               role="tab"
-              aria-selected={statusTab === key}
-              onClick={() => setStatusTab(key)}
+              aria-selected={tab === 'received'}
+              onClick={() => setTab('received')}
               className={[
-                'relative flex-1 py-2.5 px-1 transition-colors flex items-center justify-center gap-1 min-w-0',
+                'relative flex-1 py-3 px-3 transition-colors flex items-center justify-center gap-2',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60',
-                statusTab === key
+                tab === 'received'
                   ? 'bg-purple-50 text-purple-700 dark:bg-purple-900/40 dark:text-purple-200'
                   : 'bg-white text-gray-600 hover:bg-gray-50 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800',
               ].join(' ')}
             >
-              <span className="text-[11px] font-semibold inline-flex items-center justify-center gap-1 max-w-full min-w-0">
-                {key === 'pending' && <span className="truncate">{t('requests.tabPending', 'Čakajúce')}</span>}
-                {key === 'active' && <span className="truncate">{t('requests.tabActive', 'Aktívne')}</span>}
-                {key === 'completed' && <span className="truncate">{t('requests.tabCompleted', 'Dokončené')}</span>}
-                {key === 'cancelled' && <span className="truncate">{t('requests.tabCancelled', 'Zrušené')}</span>}
-                {key === 'active' && activeTabTotal != null && activeTabTotal > 0 ? (
-                  <span
-                    className={[
-                      'shrink-0 min-w-6 px-1.5 py-0.5 rounded-full text-[10px] font-bold border tabular-nums',
-                      statusTab === key
-                        ? 'bg-white border-purple-200 text-purple-700 dark:bg-purple-800/50 dark:border-purple-600 dark:text-purple-200'
-                        : 'bg-white border-gray-200 text-gray-700 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200',
-                    ].join(' ')}
-                  >
-                    {activeTabTotal > 99 ? '99+' : activeTabTotal}
-                  </span>
-                ) : null}
+              <span className="text-sm font-semibold">{t('requests.received', 'Prijaté')}</span>
+              <span
+                className={[
+                  'min-w-7 px-2 py-0.5 rounded-full text-[11px] font-bold border',
+                  tab === 'received'
+                    ? 'bg-white border-purple-200 text-purple-700 dark:bg-purple-800/50 dark:border-purple-600 dark:text-purple-200'
+                    : 'bg-white border-gray-200 text-gray-700 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200',
+                ].join(' ')}
+              >
+                {receivedCount}
               </span>
             </button>
-          ))}
-        </div>
-      </div>
-      {/* Prijaté / Odoslané */}
-      <div className="-mx-2 w-[calc(100%+1rem)] sm:-mx-4 sm:w-[calc(100%+2rem)]">
-        <div
-          role="tablist"
-          aria-label={t('requests.title', 'Spolupráce')}
-          className="flex w-full items-stretch rounded-none bg-white dark:bg-gray-900 overflow-hidden min-w-0"
-        >
-          <button
-            type="button"
-            role="tab"
-            aria-selected={tab === 'received'}
-            onClick={() => setTab('received')}
-            className={[
-              'relative flex-1 py-3 px-3 transition-colors flex items-center justify-center gap-2',
-              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60',
-              tab === 'received'
-                ? 'bg-purple-50 text-purple-700 dark:bg-purple-900/40 dark:text-purple-200'
-                : 'bg-white text-gray-600 hover:bg-gray-50 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800',
-            ].join(' ')}
-          >
-            <span className="text-sm font-semibold">{t('requests.received', 'Prijaté')}</span>
-            <span
-              className={[
-                'min-w-7 px-2 py-0.5 rounded-full text-[11px] font-bold border',
-                tab === 'received'
-                  ? 'bg-white border-purple-200 text-purple-700 dark:bg-purple-800/50 dark:border-purple-600 dark:text-purple-200'
-                  : 'bg-white border-gray-200 text-gray-700 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200',
-              ].join(' ')}
-            >
-              {receivedCount}
-            </span>
-          </button>
 
-          <button
-            type="button"
-            role="tab"
-            aria-selected={tab === 'sent'}
-            onClick={() => setTab('sent')}
-            className={[
-              'relative flex-1 py-3 px-3 transition-colors flex items-center justify-center gap-2',
-              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60',
-              tab === 'sent'
-                ? 'bg-purple-50 text-purple-700 dark:bg-purple-900/40 dark:text-purple-200'
-                : 'bg-white text-gray-600 hover:bg-gray-50 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800',
-            ].join(' ')}
-          >
-            <span className="text-sm font-semibold">{t('requests.sent', 'Odoslané')}</span>
-            <span
+            <button
+              type="button"
+              role="tab"
+              aria-selected={tab === 'sent'}
+              onClick={() => setTab('sent')}
               className={[
-                'min-w-7 px-2 py-0.5 rounded-full text-[11px] font-bold border',
+                'relative flex-1 py-3 px-3 transition-colors flex items-center justify-center gap-2',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60',
                 tab === 'sent'
-                  ? 'bg-white border-purple-200 text-purple-700 dark:bg-purple-800/50 dark:border-purple-600 dark:text-purple-200'
-                  : 'bg-white border-gray-200 text-gray-700 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200',
+                  ? 'bg-purple-50 text-purple-700 dark:bg-purple-900/40 dark:text-purple-200'
+                  : 'bg-white text-gray-600 hover:bg-gray-50 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-800',
               ].join(' ')}
             >
-              {sentCount}
-            </span>
-          </button>
+              <span className="text-sm font-semibold">{t('requests.sent', 'Odoslané')}</span>
+              <span
+                className={[
+                  'min-w-7 px-2 py-0.5 rounded-full text-[11px] font-bold border',
+                  tab === 'sent'
+                    ? 'bg-white border-purple-200 text-purple-700 dark:bg-purple-800/50 dark:border-purple-600 dark:text-purple-200'
+                    : 'bg-white border-gray-200 text-gray-700 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200',
+                ].join(' ')}
+              >
+                {sentCount}
+              </span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -626,14 +644,15 @@ export function RequestsMobile({ routeIntent }: RequestsMobileProps) {
             setIsAutoReviewOpen(false);
             setAutoReviewOfferId(null);
             return { success: true };
-          } catch (error: any) {
+          } catch (error) {
+            const apiError = error as ReviewSubmitError;
             const errorMessage =
-              error?.response?.data?.error ||
-              error?.response?.data?.rating?.[0] ||
-              error?.response?.data?.pros?.[0] ||
-              error?.response?.data?.cons?.[0] ||
-              error?.response?.data?.text?.[0] ||
-              error?.message ||
+              apiError.response?.data?.error ||
+              apiError.response?.data?.rating?.[0] ||
+              apiError.response?.data?.pros?.[0] ||
+              apiError.response?.data?.cons?.[0] ||
+              apiError.response?.data?.text?.[0] ||
+              apiError.message ||
               'Nepodarilo sa pridať recenziu. Skús to znova.';
             throw new Error(errorMessage);
           }

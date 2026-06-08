@@ -208,6 +208,10 @@
       "title": "Potrzebujesz pomocy albo usługi?",
       "description": "O ofertę możesz poprosić bezpośrednio na profilu użytkownika.",
       "gifAlt": "Przykład proszenia o ofertę na profilu użytkownika"
+    },
+    "requestsStep": {
+      "title": "Miej przegląd swoich próśb",
+      "description": "Śledź wysłane i otrzymane prośby w jednym miejscu."
     }
   },
   "create": {
@@ -701,6 +705,102 @@
       "title": "Dołącz do Svaply",
       "text": "Utwórz profil, pokaż, co potrafisz, lub znajdź dokładnie to, czego potrzebujesz.",
       "button": "Zarejestruj się"
+    }
+  },
+  "faq": {
+    "backToHome": "Powrót na stronę główną",
+    "hero": {
+      "title": "Najczęściej zadawane pytania",
+      "subtitle": "Odpowiedzi na najczęstsze pytania o Svaply w jednym miejscu."
+    },
+    "sections": {
+      "whatIsSvaply": {
+        "title": "Czym jest Svaply?",
+        "whatIsSvaply": {
+          "question": "Czym jest Svaply?",
+          "answer": "Svaply to lokalny marketplace, na którym ludzie oferują i szukają wszelkich usług – od rzemiosła i napraw, przez sport i aktywności artystyczne, po codzienne drobne przysługi. Prosto mówiąc – jeśli czegoś potrzebujesz lub masz coś do zaoferowania, Svaply jest dla Ciebie."
+        },
+        "whoIsItFor": {
+          "question": "Dla kogo jest Svaply?",
+          "answer": "Dla każdego. Niezależnie od tego, czy jesteś zręcznym rzemieślnikiem, nauczycielem muzyki, kimś kto potrzebuje podlewania kwiatów, czy szukasz trenera personalnego – Svaply jest dla Ciebie."
+        },
+        "countries": {
+          "question": "W jakich krajach działa Svaply?",
+          "answer": "Przede wszystkim na Słowacji, w Czechach, na Węgrzech, w Polsce, Austrii i Niemczech. Platforma jest dostępna także po angielsku."
+        }
+      },
+      "howItWorks": {
+        "title": "Jak to działa?",
+        "gettingStarted": {
+          "question": "Jak zacząć?",
+          "answer": "Zarejestruj się za darmo, utwórz profil i dodaj swoją ofertę lub zapytanie. Inni mogą się z Tobą skontaktować, albo Ty możesz napisać do kogoś, kto Ci odpowiada."
+        },
+        "offerVsDemand": {
+          "question": "Czym jest oferta, a czym zapytanie?",
+          "answer": "Oferta = oferujesz usługę. Na przykład: „Naprawiam rowery w Bratysławie.”\n\nZapytanie = szukasz usługi. Na przykład: „Szukam kogoś, kto codziennie rano podlewa mi kwiaty.”"
+        },
+        "localServices": {
+          "question": "Czy Svaply działa też przy usługach lokalnych na miejscu?",
+          "answer": "Tak! Przy usługach na miejscu widzisz ludzi w swojej okolicy – nie ma sensu szukać kogoś do podlewania kwiatów z drugiego końca kraju."
+        },
+        "isFree": {
+          "question": "Czy Svaply jest darmowe?",
+          "answer": "Tak, całkowicie za darmo."
+        },
+        "payment": {
+          "question": "Jak wygląda płatność?",
+          "answer": "Płatność odbywa się bezpośrednio między Wami, uzgodniona poza platformą. Svaply nie bierze udziału w transakcji finansowej."
+        },
+        "communication": {
+          "question": "Jak się komunikujemy?",
+          "answer": "Przez wiadomości w aplikacji, e-mail, telefon lub media społecznościowe – jak Wam wygodnie."
+        }
+      },
+      "profileOffers": {
+        "title": "Profil i oferty",
+        "anyoneCanAdd": {
+          "question": "Czy każdy może dodać ofertę lub zapytanie?",
+          "answer": "Tak, każdy zarejestrowany użytkownik może od razu dodać ofertę lub zapytanie bez zatwierdzenia."
+        },
+        "whatServices": {
+          "question": "Jakie usługi mogę oferować?",
+          "answer": "Cokolwiek – rzemiosło, naprawy, gotowanie, muzyka, sport, grafika, tłumaczenia, ogrodnictwo... jeśli jest legalne, Svaply tego nie wyklucza."
+        },
+        "identityVerification": {
+          "question": "Jak mogę zweryfikować tożsamość?",
+          "answer": "Svaply oferuje weryfikację tożsamości. Zweryfikowani użytkownicy mają specjalne oznaczenie na profilu, co zwiększa wiarygodność."
+        },
+        "reviews": {
+          "question": "Jak działają opinie?",
+          "answer": "Po współpracy obie strony mogą zostawić opinię. Opinie są publiczne i pomagają innym podjąć decyzję."
+        }
+      },
+      "securityPrivacy": {
+        "title": "Bezpieczeństwo i prywatność",
+        "dataSafety": {
+          "question": "Czy moje dane są bezpieczne?",
+          "answer": "Tak, Twoje dane są chronione zgodnie z RODO."
+        },
+        "deleteAccount": {
+          "question": "Jak usunąć konto?",
+          "answer": "Konto możesz usunąć w ustawieniach profilu."
+        }
+      },
+      "support": {
+        "title": "Problemy i wsparcie",
+        "reportUser": {
+          "question": "Co jeśli mam problem z innym użytkownikiem?",
+          "answer": "Każdego użytkownika lub ofertę możesz zgłosić bezpośrednio w aplikacji. Nasz zespół sprawdzi sprawę."
+        },
+        "unfulfilledAgreement": {
+          "question": "Co jeśli druga strona nie dotrzyma umowy?",
+          "answer": "Zalecamy zawsze komunikować się przez wiadomości w aplikacji jako dowód i współpracować ze zweryfikowanymi, ocenianymi użytkownikami."
+        },
+        "contactSupport": {
+          "question": "Jak skontaktować się z pomocą?",
+          "answer": "Napisz do nas na info@svaply.com lub przez formularz „Zgłoś problem” w aplikacji."
+        }
+      }
     }
   },
   "footer": {
