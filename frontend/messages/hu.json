@@ -208,6 +208,10 @@
       "title": "Segítségre vagy szolgáltatásra van szükséged?",
       "description": "Ajánlatot közvetlenül a felhasználó profilján kérhetsz.",
       "gifAlt": "Példa ajánlat kérésére egy felhasználó profilján"
+    },
+    "requestsStep": {
+      "title": "Tartsd átláthatóan a kéréseidet",
+      "description": "Kövesd az elküldött és fogadott kéréseket egy helyen."
     }
   },
   "create": {

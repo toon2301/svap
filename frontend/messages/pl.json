@@ -208,6 +208,10 @@
       "title": "Potrzebujesz pomocy albo usługi?",
       "description": "O ofertę możesz poprosić bezpośrednio na profilu użytkownika.",
       "gifAlt": "Przykład proszenia o ofertę na profilu użytkownika"
+    },
+    "requestsStep": {
+      "title": "Miej przegląd swoich próśb",
+      "description": "Śledź wysłane i otrzymane prośby w jednym miejscu."
     }
   },
   "create": {

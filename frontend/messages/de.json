@@ -208,6 +208,10 @@
       "title": "Brauchst du Hilfe oder eine Dienstleistung?",
       "description": "Du kannst direkt im Profil eines Nutzers ein Angebot anfragen.",
       "gifAlt": "Beispiel zum Anfragen eines Angebots im Profil eines Nutzers"
+    },
+    "requestsStep": {
+      "title": "Behalte deine Anfragen im Blick",
+      "description": "Verfolge gesendete und empfangene Anfragen an einem Ort."
     }
   },
   "create": {

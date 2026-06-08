@@ -18,6 +18,9 @@ const SEARCH_INPUT_AREA_SELECTORS: string[] = [
   ONBOARDING_TARGETS.searchInput,
   ONBOARDING_TARGETS.searchFilter,
 ];
+const REQUESTS_AREA_SELECTORS: string[] = [
+  ONBOARDING_TARGETS.requestsTabs,
+];
 
 function paddedSpotlightRect(rect: TargetRect): TargetRect {
   return {
@@ -104,7 +107,6 @@ export default function MobileOnboardingOverlay() {
     skip,
     pause,
     close,
-    complete,
     isProfileEditPhase2,
     syncProfileHighlightTarget,
   } = useMobileOnboarding();
@@ -113,12 +115,15 @@ export default function MobileOnboardingOverlay() {
   const tooltipRef = useRef<HTMLDivElement | null>(null);
   const [tooltipHeight, setTooltipHeight] = useState(180);
 
-  const mainSteps: Array<'home' | 'profile_icon' | 'profile_edit' | 'search' | 'help_request'> = [
+  const mainSteps: Array<
+    'home' | 'profile_icon' | 'profile_edit' | 'search' | 'help_request' | 'requests'
+  > = [
     'home',
     'profile_icon',
     'profile_edit',
     'search',
     'help_request',
+    'requests',
   ];
   const displayStep: (typeof mainSteps)[number] | null =
     step === 'edit_form'
@@ -159,6 +164,7 @@ export default function MobileOnboardingOverlay() {
 
   const [profileEditMeasurePass, setProfileEditMeasurePass] = useState(0);
   const [searchMeasurePass, setSearchMeasurePass] = useState(0);
+  const [requestsMeasurePass, setRequestsMeasurePass] = useState(0);
 
   useLayoutEffect(() => {
     if (!isOverlayVisible || displayStep !== 'profile_edit') return;
@@ -188,6 +194,20 @@ export default function MobileOnboardingOverlay() {
     };
   }, [displayStep, isOverlayVisible]);
 
+  useLayoutEffect(() => {
+    if (!isOverlayVisible || displayStep !== 'requests') return;
+
+    setRequestsMeasurePass((pass) => pass + 1);
+
+    const timeoutId = window.setTimeout(() => {
+      setRequestsMeasurePass((pass) => pass + 1);
+    }, 100);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [displayStep, isOverlayVisible]);
+
   const targetSelector = useMemo(() => {
     if (!isOverlayVisible || !displayStep) return null;
     if (displayStep === 'home') return ONBOARDING_TARGETS.home;
@@ -208,9 +228,10 @@ export default function MobileOnboardingOverlay() {
 
   const isSearchStep = displayStep === 'search';
   const isHelpRequestStep = displayStep === 'help_request';
+  const isRequestsStep = displayStep === 'requests';
   const rect = useOnboardingTargetRect(
-    isSearchStep ? null : targetSelector,
-    isOverlayVisible && !isSearchStep,
+    isSearchStep || isRequestsStep ? null : targetSelector,
+    isOverlayVisible && !isSearchStep && !isRequestsStep,
     displayStep === 'profile_edit' ? `${profileEditMeasurePass}:${isProfileEditPhase2}` : displayStep ?? undefined,
   );
   const searchMeasureKey = `search:${searchMeasurePass}`;
@@ -224,8 +245,23 @@ export default function MobileOnboardingOverlay() {
     isOverlayVisible && isSearchStep,
     searchMeasureKey,
   );
+  const requestsMeasureKey = `requests:${requestsMeasurePass}`;
+  const requestsAreaRect = useOnboardingCombinedTargetRect(
+    isRequestsStep ? REQUESTS_AREA_SELECTORS : null,
+    isOverlayVisible && isRequestsStep,
+    requestsMeasureKey,
+  );
+  const requestsNavRect = useOnboardingTargetRect(
+    isRequestsStep ? ONBOARDING_TARGETS.requestsNavIcon : null,
+    isOverlayVisible && isRequestsStep,
+    requestsMeasureKey,
+  );
 
-  const tooltipRect = isSearchStep ? searchInputAreaRect ?? searchNavRect : rect;
+  const tooltipRect = isSearchStep
+    ? searchInputAreaRect ?? searchNavRect
+    : isRequestsStep
+      ? requestsAreaRect ?? requestsNavRect
+      : rect;
   const spotlightRects = useMemo(() => {
     if (!isOverlayVisible) return [];
 
@@ -233,8 +269,21 @@ export default function MobileOnboardingOverlay() {
       return [searchInputAreaRect, searchNavRect].filter((item): item is TargetRect => item != null);
     }
 
+    if (isRequestsStep) {
+      return [requestsAreaRect, requestsNavRect].filter((item): item is TargetRect => item != null);
+    }
+
     return rect ? [rect] : [];
-  }, [isOverlayVisible, isSearchStep, rect, searchInputAreaRect, searchNavRect]);
+  }, [
+    isOverlayVisible,
+    isRequestsStep,
+    isSearchStep,
+    rect,
+    requestsAreaRect,
+    requestsNavRect,
+    searchInputAreaRect,
+    searchNavRect,
+  ]);
   const stepIndex = displayStep ? mainSteps.indexOf(displayStep) + 1 : 1;
 
   const pauseLabel = t('onboarding.mobile.later', 'Neskôr');
@@ -309,6 +358,17 @@ export default function MobileOnboardingOverlay() {
       };
     }
 
+    if (displayStep === 'requests') {
+      return {
+        title: t('tutorial.requestsStep.title', 'Maj prehľad o svojich žiadostiach'),
+        body: t(
+          'tutorial.requestsStep.description',
+          'Sleduj odoslané aj prijaté žiadosti na jednom mieste.',
+        ),
+        placement: 'below' as const,
+      };
+    }
+
     return null;
   }, [displayStep, isProfileEditPhase2, profileHighlightTarget, t]);
   const nextLabel = t('onboarding.mobile.next', 'Ďalej');
@@ -329,14 +389,14 @@ export default function MobileOnboardingOverlay() {
       if (target instanceof Node && tooltipRef.current?.contains(target)) {
         return;
       }
-      complete();
+      goNext();
     };
 
     document.addEventListener('pointerdown', handlePointerDown, true);
     return () => {
       document.removeEventListener('pointerdown', handlePointerDown, true);
     };
-  }, [complete, displayStep, isOverlayVisible]);
+  }, [displayStep, goNext, isOverlayVisible]);
 
   useLayoutEffect(() => {
     if (!isOverlayVisible || !config) return;

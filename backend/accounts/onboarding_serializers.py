@@ -6,6 +6,7 @@ COMPLETED_ONBOARDING_STEPS = {
     MobileOnboardingStep.EDIT_FORM,
     MobileOnboardingStep.SEARCH,
     MobileOnboardingStep.HELP_REQUEST,
+    MobileOnboardingStep.REQUESTS,
 }
 
 

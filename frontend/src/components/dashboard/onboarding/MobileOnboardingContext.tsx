@@ -40,6 +40,8 @@ export const ONBOARDING_TARGETS = {
   searchInput: '[data-onboarding="search-input"]',
   searchFilter: '[data-onboarding="search-filter"]',
   searchNavIcon: '[data-onboarding="search-nav-icon"]',
+  requestsTabs: '[data-onboarding="requests-tabs"]',
+  requestsNavIcon: '[data-onboarding="requests-nav-icon"]',
 } as const;
 
 type MobileOnboardingContextValue = {
@@ -77,6 +79,7 @@ type MobileOnboardingProviderProps = {
   onOpenProfile: () => void;
   onOpenEditProfile: () => void;
   onOpenSearch: () => void;
+  onOpenRequests: () => void;
   onSkillCreatedHandlerSet?: (handler: (() => void) | null) => void;
   serverState?: MobileOnboardingState | null;
   userId?: number | null;
@@ -110,6 +113,7 @@ export function MobileOnboardingProvider({
   onOpenProfile,
   onOpenEditProfile,
   onOpenSearch,
+  onOpenRequests,
   onSkillCreatedHandlerSet,
   serverState,
   userId,
@@ -304,7 +308,7 @@ export function MobileOnboardingProvider({
     }
   }, [isEligible, isPausedUi, isProfileEditMode, setState, stored.status, stored.step]);
 
-  const finishOnboarding = useCallback((completedStep: MobileOnboardingStep = 'help_request') => {
+  const finishOnboarding = useCallback((completedStep: MobileOnboardingStep = 'requests') => {
     clearMobileOnboardingPostponedForSession();
     clearMobileOnboardingResumePhase2();
     setIsPausedUi(false);
@@ -314,7 +318,11 @@ export function MobileOnboardingProvider({
   }, [setState]);
 
   const complete = useCallback(() => {
-    finishOnboarding(stored.step === 'search' || stored.step === 'help_request' ? stored.step : 'edit_form');
+    finishOnboarding(
+      stored.step === 'search' || stored.step === 'help_request' || stored.step === 'requests'
+        ? stored.step
+        : 'edit_form',
+    );
   }, [finishOnboarding, stored.step]);
 
   const skip = useCallback(() => {
@@ -353,6 +361,11 @@ export function MobileOnboardingProvider({
     setState({ version: 1, status: 'in_progress', step: 'search' });
     onOpenSearch();
   }, [onOpenSearch, setState]);
+
+  const advanceToRequestsStep = useCallback(() => {
+    setState({ version: 1, status: 'in_progress', step: 'requests' });
+    onOpenRequests();
+  }, [onOpenRequests, setState]);
 
   const goNext = useCallback((options?: MobileOnboardingGoNextOptions) => {
     if (!isEligible) return;
@@ -398,11 +411,17 @@ export function MobileOnboardingProvider({
     }
 
     if (stored.step === 'help_request') {
-      finishOnboarding('help_request');
+      advanceToRequestsStep();
+      return;
+    }
+
+    if (stored.step === 'requests') {
+      finishOnboarding('requests');
     }
   }, [
     advanceProfileEditToPhase2,
     advanceToSearchStep,
+    advanceToRequestsStep,
     finishOnboarding,
     isEligible,
     isProfileEditPhase2,

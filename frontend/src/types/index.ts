@@ -20,7 +20,8 @@ export type MobileOnboardingStep =
   | 'profile_edit'
   | 'edit_form'
   | 'search'
-  | 'help_request';
+  | 'help_request'
+  | 'requests';
 export type MobileOnboardingStatus = 'in_progress' | 'completed' | 'skipped';
 
 export interface MobileOnboardingState {

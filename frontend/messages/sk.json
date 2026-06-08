@@ -208,6 +208,10 @@
       "title": "Potrebuješ pomoc alebo službu?",
       "description": "O ponuku môžeš požiadať priamo na profile používateľa.",
       "gifAlt": "Ukážka požiadania o ponuku na profile používateľa"
+    },
+    "requestsStep": {
+      "title": "Maj prehľad o svojich žiadostiach",
+      "description": "Sleduj odoslané aj prijaté žiadosti na jednom mieste."
     }
   },
   "create": {

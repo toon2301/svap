@@ -208,6 +208,10 @@
       "title": "Need help or a service?",
       "description": "You can request an offer directly from a user's profile.",
       "gifAlt": "Example of requesting an offer from a user's profile"
+    },
+    "requestsStep": {
+      "title": "Keep track of your requests",
+      "description": "Follow sent and received requests in one place."
     }
   },
   "create": {
