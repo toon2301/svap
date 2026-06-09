@@ -32,8 +32,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
             staleTime: 60 * 1000, // 1 minute
             retry: (failureCount, error: unknown) => {
               const status = getQueryErrorStatus(error);
-              // Don't retry on 4xx errors
-              if (status != null && status >= 400 && status < 500) {
+              // Don't retry client errors, except 429 where retry/backoff is expected.
+              if (status != null && status >= 400 && status < 500 && status !== 429) {
                 return false;
               }
               return failureCount < 3;

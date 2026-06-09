@@ -124,6 +124,59 @@ class TestDesktopOnboarding(APITestCase):
         assert self.user.desktop_onboarding_status == "completed"
         assert self.user.desktop_onboarding_step == "profile_icon"
 
+    def test_terminal_state_cannot_change_step_only(self):
+        self.user.desktop_onboarding_status = "completed"
+        self.user.desktop_onboarding_step = "profile_icon"
+        self.user.save(update_fields=["desktop_onboarding_status", "desktop_onboarding_step"])
+        self.client.force_authenticate(self.user)
+
+        response = self.client.patch(
+            self.url,
+            {"status": "completed", "step": "navigation"},
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        self.user.refresh_from_db()
+        assert self.user.desktop_onboarding_status == "completed"
+        assert self.user.desktop_onboarding_step == "profile_icon"
+
+    def test_skipped_state_can_preserve_current_step(self):
+        self.client.force_authenticate(self.user)
+
+        response = self.client.patch(
+            self.url,
+            {"status": "skipped", "step": "navigation"},
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data == {
+            "version": 1,
+            "status": "skipped",
+            "step": "navigation",
+        }
+        self.user.refresh_from_db()
+        assert self.user.desktop_onboarding_status == "skipped"
+        assert self.user.desktop_onboarding_step == "navigation"
+
+    def test_skipped_state_cannot_change_step_only(self):
+        self.user.desktop_onboarding_status = "skipped"
+        self.user.desktop_onboarding_step = "navigation"
+        self.user.save(update_fields=["desktop_onboarding_status", "desktop_onboarding_step"])
+        self.client.force_authenticate(self.user)
+
+        response = self.client.patch(
+            self.url,
+            {"status": "skipped", "step": "profile_icon"},
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        self.user.refresh_from_db()
+        assert self.user.desktop_onboarding_status == "skipped"
+        assert self.user.desktop_onboarding_step == "navigation"
+
     def test_desktop_onboarding_is_hidden_from_non_owner_profile_serializer(self):
         other = User.objects.create_user(
             username="viewer",

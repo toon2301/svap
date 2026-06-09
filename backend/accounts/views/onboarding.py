@@ -53,7 +53,11 @@ def _update_onboarding_state(request, serializer_class, status_field, step_field
             )
 
         current_status = getattr(user, status_field)
-        if current_status in TERMINAL_STATUSES and next_status != current_status:
+        current_step = getattr(user, step_field)
+        if (
+            current_status in TERMINAL_STATUSES
+            and (next_status != current_status or current_step != next_step)
+        ):
             return Response(
                 {"status": "Completed onboarding cannot be reopened."},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -61,7 +65,7 @@ def _update_onboarding_state(request, serializer_class, status_field, step_field
 
         if (
             current_status != next_status
-            or getattr(user, step_field) != next_step
+            or current_step != next_step
         ):
             setattr(user, status_field, next_status)
             setattr(user, step_field, next_step)

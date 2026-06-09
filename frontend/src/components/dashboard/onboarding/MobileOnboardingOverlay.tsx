@@ -307,7 +307,7 @@ export default function MobileOnboardingOverlay() {
   );
 
   useEffect(() => {
-    if (!isOverlayVisible || !isMessagesStep || messagesAreaRect) return;
+    if (!isOverlayVisible || !isMessagesStep || messagesAreaRect || messagesNavRect) return;
 
     const intervalId = window.setInterval(() => {
       setMessagesMeasurePass((pass) => pass + 1);
@@ -316,7 +316,7 @@ export default function MobileOnboardingOverlay() {
     return () => {
       window.clearInterval(intervalId);
     };
-  }, [isMessagesStep, isOverlayVisible, messagesAreaRect]);
+  }, [isMessagesStep, isOverlayVisible, messagesAreaRect, messagesNavRect]);
 
   const tooltipRect = isSearchStep
     ? searchInputAreaRect ?? searchNavRect
