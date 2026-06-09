@@ -71,6 +71,13 @@ class MobileOnboardingStep(models.TextChoices):
     SEARCH = "search", _("Search")
     HELP_REQUEST = "help_request", _("Help request")
     REQUESTS = "requests", _("Requests")
+    MESSAGES = "messages", _("Messages")
+    DASHBOARD_FINISH = "dashboard_finish", _("Dashboard finish")
+
+
+class DesktopOnboardingStep(models.TextChoices):
+    NAVIGATION = "navigation", _("Navigation")
+    PROFILE_ICON = "profile_icon", _("Profile icon")
 
 
 class User(AbstractUser):
@@ -154,6 +161,18 @@ class User(AbstractUser):
         max_length=20,
         choices=MobileOnboardingStep.choices,
         default=MobileOnboardingStep.HOME,
+    )
+    desktop_onboarding_status = models.CharField(
+        _("Desktop onboarding status"),
+        max_length=20,
+        choices=MobileOnboardingStatus.choices,
+        default=MobileOnboardingStatus.IN_PROGRESS,
+    )
+    desktop_onboarding_step = models.CharField(
+        _("Desktop onboarding step"),
+        max_length=20,
+        choices=DesktopOnboardingStep.choices,
+        default=DesktopOnboardingStep.NAVIGATION,
     )
     # Flag označujúci, že používateľ manuálne upravil meno/priezvisko cez profil
     # Ak je True, OAuth prihlásenie neprepíše meno z Google účtu

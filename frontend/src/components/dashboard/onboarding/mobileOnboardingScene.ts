@@ -1,6 +1,6 @@
 import type { MobileOnboardingStep } from '@/types';
 
-type MobileOnboardingSceneModule = 'home' | 'profile' | 'search' | 'requests';
+type MobileOnboardingSceneModule = 'home' | 'profile' | 'search' | 'requests' | 'messages';
 
 type MobileOnboardingUiBlockerInput = {
   activeModule: string;
@@ -9,6 +9,7 @@ type MobileOnboardingUiBlockerInput = {
   isMobileMenuOpen?: boolean;
   isSearchOpen?: boolean;
   isNotificationsPanelOpen?: boolean;
+  isMessageConversationOpen?: boolean;
 };
 
 const ONBOARDING_BLOCKING_MODULES = new Set([
@@ -22,7 +23,7 @@ const ONBOARDING_BLOCKING_MODULES = new Set([
 export function getMobileOnboardingStepModule(
   step: MobileOnboardingStep,
 ): MobileOnboardingSceneModule {
-  if (step === 'home' || step === 'profile_icon') {
+  if (step === 'home' || step === 'profile_icon' || step === 'dashboard_finish') {
     return 'home';
   }
 
@@ -32,6 +33,10 @@ export function getMobileOnboardingStepModule(
 
   if (step === 'requests') {
     return 'requests';
+  }
+
+  if (step === 'messages') {
+    return 'messages';
   }
 
   return 'profile';
@@ -56,6 +61,10 @@ export function isMobileOnboardingStepSceneReady(
     return activeModule === 'requests';
   }
 
+  if (requiredModule === 'messages') {
+    return activeModule === 'messages';
+  }
+
   return activeModule === 'profile' && !isProfileEditMode;
 }
 
@@ -66,8 +75,9 @@ export function isMobileOnboardingBlockedByUi({
   isMobileMenuOpen = false,
   isSearchOpen = false,
   isNotificationsPanelOpen = false,
+  isMessageConversationOpen = false,
 }: MobileOnboardingUiBlockerInput): boolean {
-  if (isMobileMenuOpen || isSearchOpen || isNotificationsPanelOpen) {
+  if (isMobileMenuOpen || isSearchOpen || isNotificationsPanelOpen || isMessageConversationOpen) {
     return true;
   }
 

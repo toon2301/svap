@@ -298,7 +298,10 @@ export default function Sidebar({
   );
 
   const sidebarContent = (
-    <div className={`flex flex-col ${isMobile ? 'h-dvh min-h-0' : 'h-screen'} bg-white dark:bg-black ${isMobile ? '' : 'border-r border-gray-200 dark:border-gray-800'}`}>
+    <div
+      data-desktop-onboarding={!isMobile ? 'left-navigation' : undefined}
+      className={`flex flex-col ${isMobile ? 'h-dvh min-h-0' : 'h-screen'} bg-white dark:bg-black ${isMobile ? '' : 'border-r border-gray-200 dark:border-gray-800'}`}
+    >
       {/* Logo - Desktop only */}
       {!isMobile && (
         <div className="flex items-center justify-center py-1 border-b border-gray-200 dark:border-gray-800">
@@ -353,6 +356,7 @@ export default function Sidebar({
               <button
                 key={item.id}
                 type="button"
+                data-desktop-onboarding={!isMobile && item.id === 'profile' ? 'profile-icon' : undefined}
                 data-sidebar-nav-item={item.id}
                 onClick={() => handleItemClick(item.id)}
                 className={`w-full flex items-center px-2 py-2 text-sm font-medium rounded-2xl transition-all duration-200 lg:px-2 lg:py-2 xl:px-3 xl:py-2.5 ${

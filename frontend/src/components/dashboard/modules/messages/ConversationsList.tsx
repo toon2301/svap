@@ -122,6 +122,8 @@ export function ConversationsList({
   const isRail = variant === 'rail';
   const isCompact = isSidebar || isRail;
   const showHoverAction = isRail;
+  const messagesTabsOnboardingTarget = isCompact ? undefined : 'messages-tabs';
+  const messagesCreateGroupOnboardingTarget = isCompact ? undefined : 'messages-create-group';
   const shouldUseIntervalPolling = selectedConversationId == null;
   const defaultWrapperClassName = isCompact ? 'space-y-2' : 'max-w-4xl mx-auto space-y-2';
   const wrapperClassName = className || defaultWrapperClassName;
@@ -560,7 +562,10 @@ export function ConversationsList({
         : t('messages.hint', 'When someone sends you a message, it will appear here.');
     return (
       <div className={className || (isCompact ? '' : 'max-w-4xl mx-auto')}>
-        <div className={isMobile && !isCompact ? 'mx-3 mt-4 mb-3' : 'mb-3 px-3'}>
+        <div
+          data-onboarding={messagesTabsOnboardingTarget}
+          className={isMobile && !isCompact ? 'mx-3 mt-4 mb-3' : 'mb-3 px-3'}
+        >
           <MessageConversationTabs
             activeTab={activeTab}
             requestCount={messageRequestBadgeCount}
@@ -589,6 +594,7 @@ export function ConversationsList({
             >
               <button
                 type="button"
+                data-onboarding={messagesCreateGroupOnboardingTarget}
                 onClick={() => setIsCreateGroupOpen(true)}
                 aria-label={t('messages.createGroupAction', 'Vytvoriť skupinu')}
                 className={
@@ -637,7 +643,10 @@ export function ConversationsList({
 
   return (
     <div className={wrapperClassName}>
-      <div className={isMobile && !isCompact ? 'mx-3 mt-4 mb-3' : 'mb-3 px-3'}>
+      <div
+        data-onboarding={messagesTabsOnboardingTarget}
+        className={isMobile && !isCompact ? 'mx-3 mt-4 mb-3' : 'mb-3 px-3'}
+      >
         <MessageConversationTabs
           activeTab={activeTab}
           requestCount={messageRequestBadgeCount}
@@ -655,6 +664,7 @@ export function ConversationsList({
         >
           <button
             type="button"
+            data-onboarding={messagesCreateGroupOnboardingTarget}
             onClick={() => setIsCreateGroupOpen(true)}
             aria-label={t('messages.createGroupAction', 'Vytvoriť skupinu')}
             className={

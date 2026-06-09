@@ -193,6 +193,12 @@
         "title": "Ergänze die wichtigsten Infos über dich",
         "body": "Ein Profil mit Foto und Beschreibung wirkt vertrauenswürdiger."
       }
+    },
+    "desktop": {
+      "navigation": {
+        "title": "Willkommen bei Svaply",
+        "body": "Über die Navigation links erreichst du alle wichtigen Bereiche der App."
+      }
     }
   },
   "tutorial": {
@@ -212,6 +218,15 @@
     "requestsStep": {
       "title": "Behalte deine Anfragen im Blick",
       "description": "Verfolge gesendete und empfangene Anfragen an einem Ort."
+    },
+    "messagesStep": {
+      "title": "Bleib in Kontakt",
+      "description": "Über Nachrichten kannst du einfach mit Nutzern kommunizieren und Angebote, Anfragen oder Zusammenarbeiten besprechen."
+    },
+    "dashboardFinishStep": {
+      "title": "Du bist bereit loszulegen",
+      "description": "Du kennst jetzt die Grundlagen von Svaply. Wir wünschen dir viel Erfolg beim Finden von Möglichkeiten, Teilen deiner Arbeit und Knüpfen neuer Kooperationen.",
+      "cta": "Svaply nutzen"
     }
   },
   "create": {
@@ -559,6 +574,14 @@
     "maxPhotosReached": "Sie haben die maximale Anzahl von 6 Fotos erreicht.",
     "district": "Bezirk",
     "countryTitle": "Land",
+    "offerCountries": {
+      "SK": "Slowakei",
+      "CZ": "Tschechien",
+      "PL": "Polen",
+      "HU": "Ungarn",
+      "AT": "Österreich",
+      "DE": "Deutschland"
+    },
     "addDistrict": "Bezirk hinzufügen",
     "locationTitle": "Ort (optional)",
     "locationPlaceholder": "Geben Sie an, wo Sie Ihre Dienste anbieten",

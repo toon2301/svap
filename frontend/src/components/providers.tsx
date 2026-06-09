@@ -7,17 +7,33 @@ import { useState } from 'react';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { LanguageProvider } from '@/contexts/LanguageContext';
+import { useIsMobileState } from '@/hooks/useIsMobile';
+
+type QueryErrorWithStatus = {
+  response?: {
+    status?: unknown;
+  };
+};
+
+function getQueryErrorStatus(error: unknown): number | null {
+  if (typeof error !== 'object' || error === null) return null;
+  const status = (error as QueryErrorWithStatus).response?.status;
+  return typeof status === 'number' ? status : null;
+}
 
 export function Providers({ children }: { children: React.ReactNode }) {
+  const { isMobile, isResolved } = useIsMobileState();
+  const useMobileToastLayout = isResolved && isMobile;
   const [queryClient] = useState(
     () =>
       new QueryClient({
         defaultOptions: {
           queries: {
             staleTime: 60 * 1000, // 1 minute
-            retry: (failureCount, error: any) => {
-              // Don't retry on 4xx errors
-              if (error?.response?.status >= 400 && error?.response?.status < 500) {
+            retry: (failureCount, error: unknown) => {
+              const status = getQueryErrorStatus(error);
+              // Don't retry client errors, except 429 where retry/backoff is expected.
+              if (status != null && status >= 400 && status < 500 && status !== 429) {
                 return false;
               }
               return failureCount < 3;
@@ -36,8 +52,15 @@ export function Providers({ children }: { children: React.ReactNode }) {
           </ThemeProvider>
         </LanguageProvider>
         <Toaster
-          position="top-right"
+          position={useMobileToastLayout ? 'top-center' : 'top-right'}
           containerClassName="toast-modern"
+          containerStyle={{
+            top: useMobileToastLayout ? 'calc(env(safe-area-inset-top, 0px) + 12px)' : 24,
+            right: useMobileToastLayout ? 12 : 24,
+            left: useMobileToastLayout ? 12 : 24,
+            bottom: 'auto',
+            zIndex: 10050,
+          }}
           gutter={12}
           toastOptions={{
             duration: 4000,
@@ -50,7 +73,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
               border: '1px solid var(--toast-border)',
               fontSize: '14px',
               fontWeight: 500,
-              maxWidth: '380px',
+              maxWidth: useMobileToastLayout ? 'calc(100vw - 24px)' : '380px',
+              width: useMobileToastLayout ? '100%' : undefined,
             },
             success: {
               duration: 3000,
@@ -62,6 +86,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
                 borderRadius: '16px',
                 padding: '16px 20px',
                 boxShadow: 'var(--toast-shadow)',
+                maxWidth: useMobileToastLayout ? 'calc(100vw - 24px)' : '380px',
+                width: useMobileToastLayout ? '100%' : undefined,
               },
               iconTheme: {
                 primary: '#fff',
@@ -78,6 +104,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
                 borderRadius: '16px',
                 padding: '16px 20px',
                 boxShadow: 'var(--toast-shadow)',
+                maxWidth: useMobileToastLayout ? 'calc(100vw - 24px)' : '380px',
+                width: useMobileToastLayout ? '100%' : undefined,
               },
               iconTheme: {
                 primary: '#fff',

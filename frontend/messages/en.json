@@ -193,6 +193,12 @@
         "title": "Add the basics about yourself",
         "body": "A profile with a photo and description feels more trustworthy."
       }
+    },
+    "desktop": {
+      "navigation": {
+        "title": "Welcome to Svaply",
+        "body": "Use the navigation on the left to reach every important part of the app."
+      }
     }
   },
   "tutorial": {
@@ -212,6 +218,15 @@
     "requestsStep": {
       "title": "Keep track of your requests",
       "description": "Follow sent and received requests in one place."
+    },
+    "messagesStep": {
+      "title": "Stay in touch",
+      "description": "Use messages to communicate easily with users and discuss offers, requests, or collaborations."
+    },
+    "dashboardFinishStep": {
+      "title": "You're ready to start",
+      "description": "You now know the basics of Svaply. We wish you lots of success finding opportunities, sharing your work, and building new collaborations.",
+      "cta": "Start using Svaply"
     }
   },
   "create": {
@@ -559,6 +574,14 @@
     "maxPhotosReached": "You have reached the maximum of 6 photos.",
     "district": "District",
     "countryTitle": "Country",
+    "offerCountries": {
+      "SK": "Slovakia",
+      "CZ": "Czechia",
+      "PL": "Poland",
+      "HU": "Hungary",
+      "AT": "Austria",
+      "DE": "Germany"
+    },
     "addDistrict": "Add district",
     "locationTitle": "Location (optional)",
     "locationPlaceholder": "Enter where you offer your services",

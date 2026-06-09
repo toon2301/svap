@@ -47,6 +47,8 @@ export default function MobileTopNav({ activeItem, onItemClick }: MobileTopNavPr
               data-onboarding={
                 item.id === 'search'
                   ? 'search-nav-icon'
+                  : item.id === 'messages'
+                    ? 'messages-nav-icon'
                   : item.id === 'requests'
                     ? 'requests-nav-icon'
                     : undefined

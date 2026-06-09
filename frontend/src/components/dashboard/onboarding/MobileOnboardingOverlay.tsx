@@ -21,6 +21,10 @@ const SEARCH_INPUT_AREA_SELECTORS: string[] = [
 const REQUESTS_AREA_SELECTORS: string[] = [
   ONBOARDING_TARGETS.requestsTabs,
 ];
+const MESSAGES_AREA_SELECTORS: string[] = [
+  ONBOARDING_TARGETS.messagesTabs,
+  ONBOARDING_TARGETS.messagesCreateGroup,
+];
 
 function paddedSpotlightRect(rect: TargetRect): TargetRect {
   return {
@@ -116,7 +120,14 @@ export default function MobileOnboardingOverlay() {
   const [tooltipHeight, setTooltipHeight] = useState(180);
 
   const mainSteps: Array<
-    'home' | 'profile_icon' | 'profile_edit' | 'search' | 'help_request' | 'requests'
+    | 'home'
+    | 'profile_icon'
+    | 'profile_edit'
+    | 'search'
+    | 'help_request'
+    | 'requests'
+    | 'messages'
+    | 'dashboard_finish'
   > = [
     'home',
     'profile_icon',
@@ -124,6 +135,8 @@ export default function MobileOnboardingOverlay() {
     'search',
     'help_request',
     'requests',
+    'messages',
+    'dashboard_finish',
   ];
   const displayStep: (typeof mainSteps)[number] | null =
     step === 'edit_form'
@@ -165,6 +178,7 @@ export default function MobileOnboardingOverlay() {
   const [profileEditMeasurePass, setProfileEditMeasurePass] = useState(0);
   const [searchMeasurePass, setSearchMeasurePass] = useState(0);
   const [requestsMeasurePass, setRequestsMeasurePass] = useState(0);
+  const [messagesMeasurePass, setMessagesMeasurePass] = useState(0);
 
   useLayoutEffect(() => {
     if (!isOverlayVisible || displayStep !== 'profile_edit') return;
@@ -208,6 +222,22 @@ export default function MobileOnboardingOverlay() {
     };
   }, [displayStep, isOverlayVisible]);
 
+  useLayoutEffect(() => {
+    if (!isOverlayVisible || displayStep !== 'messages') return;
+
+    setMessagesMeasurePass((pass) => pass + 1);
+
+    const timeoutIds = [100, 350, 1000].map((delay) =>
+      window.setTimeout(() => {
+        setMessagesMeasurePass((pass) => pass + 1);
+      }, delay),
+    );
+
+    return () => {
+      timeoutIds.forEach((timeoutId) => window.clearTimeout(timeoutId));
+    };
+  }, [displayStep, isOverlayVisible]);
+
   const targetSelector = useMemo(() => {
     if (!isOverlayVisible || !displayStep) return null;
     if (displayStep === 'home') return ONBOARDING_TARGETS.home;
@@ -229,9 +259,17 @@ export default function MobileOnboardingOverlay() {
   const isSearchStep = displayStep === 'search';
   const isHelpRequestStep = displayStep === 'help_request';
   const isRequestsStep = displayStep === 'requests';
+  const isMessagesStep = displayStep === 'messages';
+  const isDashboardFinishStep = displayStep === 'dashboard_finish';
   const rect = useOnboardingTargetRect(
-    isSearchStep || isRequestsStep ? null : targetSelector,
-    isOverlayVisible && !isSearchStep && !isRequestsStep,
+    isSearchStep || isRequestsStep || isMessagesStep || isDashboardFinishStep
+      ? null
+      : targetSelector,
+    isOverlayVisible &&
+      !isSearchStep &&
+      !isRequestsStep &&
+      !isMessagesStep &&
+      !isDashboardFinishStep,
     displayStep === 'profile_edit' ? `${profileEditMeasurePass}:${isProfileEditPhase2}` : displayStep ?? undefined,
   );
   const searchMeasureKey = `search:${searchMeasurePass}`;
@@ -256,14 +294,45 @@ export default function MobileOnboardingOverlay() {
     isOverlayVisible && isRequestsStep,
     requestsMeasureKey,
   );
+  const messagesMeasureKey = `messages:${messagesMeasurePass}`;
+  const messagesAreaRect = useOnboardingCombinedTargetRect(
+    isMessagesStep ? MESSAGES_AREA_SELECTORS : null,
+    isOverlayVisible && isMessagesStep,
+    messagesMeasureKey,
+  );
+  const messagesNavRect = useOnboardingTargetRect(
+    isMessagesStep ? ONBOARDING_TARGETS.messagesNavIcon : null,
+    isOverlayVisible && isMessagesStep,
+    messagesMeasureKey,
+  );
+
+  useEffect(() => {
+    if (!isOverlayVisible || !isMessagesStep || messagesAreaRect || messagesNavRect) return;
+
+    const intervalId = window.setInterval(() => {
+      setMessagesMeasurePass((pass) => pass + 1);
+    }, 500);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [isMessagesStep, isOverlayVisible, messagesAreaRect, messagesNavRect]);
 
   const tooltipRect = isSearchStep
     ? searchInputAreaRect ?? searchNavRect
     : isRequestsStep
       ? requestsAreaRect ?? requestsNavRect
-      : rect;
+      : isMessagesStep
+        ? messagesAreaRect ?? messagesNavRect
+        : isDashboardFinishStep
+          ? null
+          : rect;
   const spotlightRects = useMemo(() => {
     if (!isOverlayVisible) return [];
+
+    if (isDashboardFinishStep) {
+      return [];
+    }
 
     if (isSearchStep) {
       return [searchInputAreaRect, searchNavRect].filter((item): item is TargetRect => item != null);
@@ -273,11 +342,19 @@ export default function MobileOnboardingOverlay() {
       return [requestsAreaRect, requestsNavRect].filter((item): item is TargetRect => item != null);
     }
 
+    if (isMessagesStep) {
+      return [messagesAreaRect, messagesNavRect].filter((item): item is TargetRect => item != null);
+    }
+
     return rect ? [rect] : [];
   }, [
     isOverlayVisible,
+    isDashboardFinishStep,
+    isMessagesStep,
     isRequestsStep,
     isSearchStep,
+    messagesAreaRect,
+    messagesNavRect,
     rect,
     requestsAreaRect,
     requestsNavRect,
@@ -291,6 +368,17 @@ export default function MobileOnboardingOverlay() {
 
   const config = useMemo(() => {
     if (!displayStep) return null;
+
+    if (displayStep === 'dashboard_finish') {
+      return {
+        title: t('tutorial.dashboardFinishStep.title', 'Si pripravený začať'),
+        body: t(
+          'tutorial.dashboardFinishStep.description',
+          'Teraz už poznáš základy Svaply. Prajeme ti veľa úspechov pri hľadaní príležitostí, zdieľaní svojej práce a nadväzovaní nových spoluprác.',
+        ),
+        placement: 'below' as const,
+      };
+    }
 
     if (displayStep === 'home') {
       return {
@@ -369,9 +457,25 @@ export default function MobileOnboardingOverlay() {
       };
     }
 
+    if (displayStep === 'messages') {
+      return {
+        title: t('tutorial.messagesStep.title', 'Zostaňte v kontakte'),
+        body: t(
+          'tutorial.messagesStep.description',
+          'Cez správy môžeš jednoducho komunikovať s používateľmi a riešiť ponuky, dopyty či spolupráce.',
+        ),
+        placement: 'below' as const,
+      };
+    }
+
     return null;
   }, [displayStep, isProfileEditPhase2, profileHighlightTarget, t]);
   const nextLabel = t('onboarding.mobile.next', 'Ďalej');
+
+  const finishCtaLabel = t(
+    'tutorial.dashboardFinishStep.cta',
+    'Začať používať Svaply',
+  );
 
   const handleNext = () => {
     goNext(
@@ -398,12 +502,38 @@ export default function MobileOnboardingOverlay() {
     };
   }, [displayStep, goNext, isOverlayVisible]);
 
+  useEffect(() => {
+    if (!isOverlayVisible || displayStep !== 'dashboard_finish') return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target;
+      if (target instanceof Node && tooltipRef.current?.contains(target)) {
+        return;
+      }
+      goNext();
+    };
+
+    document.addEventListener('pointerdown', handlePointerDown, true);
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown, true);
+    };
+  }, [displayStep, goNext, isOverlayVisible]);
+
   useLayoutEffect(() => {
     if (!isOverlayVisible || !config) return;
     const nextHeight = tooltipRef.current?.getBoundingClientRect().height;
     if (!nextHeight) return;
     setTooltipHeight((prev) => (Math.abs(prev - nextHeight) > 1 ? nextHeight : prev));
-  }, [config, isOverlayVisible, nextLabel, pauseLabel, profileHighlightTarget, skipLabel, stepIndex]);
+  }, [
+    config,
+    finishCtaLabel,
+    isOverlayVisible,
+    nextLabel,
+    pauseLabel,
+    profileHighlightTarget,
+    skipLabel,
+    stepIndex,
+  ]);
 
   if (!isOverlayVisible || !config) return null;
 
@@ -419,7 +549,15 @@ export default function MobileOnboardingOverlay() {
   const navHeight = nav ? Math.ceil(nav.getBoundingClientRect().height) : 88;
   const bottomReserve = navHeight + 24;
 
-  if (isHelpRequestStep && typeof window !== 'undefined') {
+  if (isDashboardFinishStep && typeof window !== 'undefined') {
+    const viewportPadding = 16;
+    const tooltipWidth = Math.min(360, window.innerWidth - viewportPadding * 2);
+
+    tooltipStyle.left = '50%';
+    tooltipStyle.top = '50%';
+    tooltipStyle.width = tooltipWidth;
+    tooltipStyle.transform = 'translate(-50%, -50%)';
+  } else if (isHelpRequestStep && typeof window !== 'undefined') {
     const viewportPadding = 16;
     const tooltipWidth = Math.min(360, window.innerWidth - viewportPadding * 2);
     const availableHeight = Math.max(320, window.innerHeight - bottomReserve - viewportPadding * 2);
@@ -474,36 +612,46 @@ export default function MobileOnboardingOverlay() {
         aria-modal="false"
         aria-labelledby="mobile-onboarding-title"
         className={`rounded-2xl border border-purple-200/80 dark:border-purple-800/60 bg-white dark:bg-gray-950 shadow-xl ${
-          isHelpRequestStep ? 'p-3' : 'p-4'
+          isDashboardFinishStep
+            ? 'p-5 text-center'
+            : isHelpRequestStep
+              ? 'p-3'
+              : 'p-4'
         }`}
         style={{
           ...tooltipStyle,
-          animation: 'mobileOnboardingFadeIn 0.35s ease-out',
+          animation: isDashboardFinishStep
+            ? undefined
+            : 'mobileOnboardingFadeIn 0.35s ease-out',
         }}
       >
-        <div className="flex items-center justify-between gap-2 mb-2">
-          <div className="flex gap-1.5">
-            {mainSteps.map((item, index) => {
-              const i = index + 1;
-              return (
-                <span
-                  key={item}
-                  className={`h-1.5 rounded-full transition-all ${
-                    i === stepIndex ? 'w-6 bg-purple-600' : 'w-1.5 bg-gray-300 dark:bg-gray-600'
-                  }`}
-                />
-              );
-            })}
+        {!isDashboardFinishStep && (
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <div className="flex gap-1.5">
+              {mainSteps.map((item, index) => {
+                const i = index + 1;
+                return (
+                  <span
+                    key={item}
+                    className={`h-1.5 rounded-full transition-all ${
+                      i === stepIndex
+                        ? 'w-6 bg-purple-600'
+                        : 'w-1.5 bg-gray-300 dark:bg-gray-600'
+                    }`}
+                  />
+                );
+              })}
+            </div>
+            <button
+              type="button"
+              onClick={close}
+              className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+              aria-label={t('common.close', 'Zavrieť')}
+            >
+              ×
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={close}
-            className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
-            aria-label={t('common.close', 'Zavrieť')}
-          >
-            ×
-          </button>
-        </div>
+        )}
 
         <h3
           id="mobile-onboarding-title"
@@ -531,30 +679,42 @@ export default function MobileOnboardingOverlay() {
           </div>
         )}
 
-        <div className="mt-4 flex gap-2">
+        {isDashboardFinishStep ? (
           <button
             type="button"
             onClick={handleNext}
-            className="flex-1 rounded-xl bg-purple-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-purple-700 transition-colors"
+            className="mt-5 w-full rounded-xl bg-purple-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-purple-700 transition-colors"
           >
-            {nextLabel}
+            {finishCtaLabel}
           </button>
-          <button
-            type="button"
-            onClick={pause}
-            className="shrink-0 rounded-xl border border-gray-200 dark:border-gray-700 px-3 py-2.5 text-sm text-gray-700 dark:text-gray-200"
-          >
-            {pauseLabel}
-          </button>
-        </div>
+        ) : (
+          <>
+            <div className="mt-4 flex gap-2">
+              <button
+                type="button"
+                onClick={handleNext}
+                className="flex-1 rounded-xl bg-purple-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-purple-700 transition-colors"
+              >
+                {nextLabel}
+              </button>
+              <button
+                type="button"
+                onClick={pause}
+                className="shrink-0 rounded-xl border border-gray-200 dark:border-gray-700 px-3 py-2.5 text-sm text-gray-700 dark:text-gray-200"
+              >
+                {pauseLabel}
+              </button>
+            </div>
 
-        <button
-          type="button"
-          onClick={skip}
-          className={`${isHelpRequestStep ? 'mt-2' : 'mt-3'} w-full text-center text-xs text-gray-500 dark:text-gray-400 hover:text-purple-600`}
-        >
-          {skipLabel}
-        </button>
+            <button
+              type="button"
+              onClick={skip}
+              className={`${isHelpRequestStep ? 'mt-2' : 'mt-3'} w-full text-center text-xs text-gray-500 dark:text-gray-400 hover:text-purple-600`}
+            >
+              {skipLabel}
+            </button>
+          </>
+        )}
       </div>
 
       <style jsx global>{`

@@ -105,6 +105,34 @@ describe('mobileOnboardingState helpers', () => {
     });
   });
 
+  it('preserves completed messages as the final terminal step', () => {
+    expect(
+      normalizeMobileOnboardingState({
+        version: 1,
+        status: 'completed',
+        step: 'messages',
+      }),
+    ).toEqual({
+      version: 1,
+      status: 'completed',
+      step: 'messages',
+    });
+  });
+
+  it('preserves completed dashboard_finish as the final terminal step', () => {
+    expect(
+      normalizeMobileOnboardingState({
+        version: 1,
+        status: 'completed',
+        step: 'dashboard_finish',
+      }),
+    ).toEqual({
+      version: 1,
+      status: 'completed',
+      step: 'dashboard_finish',
+    });
+  });
+
   it('does not rewind profile_edit to home when user is on home module', () => {
     expect(
       reconcileOnboardingState(
@@ -163,12 +191,16 @@ describe('mobileOnboardingState helpers', () => {
     expect(isMobileOnboardingStepSceneReady('search', 'search', false)).toBe(true);
     expect(isMobileOnboardingStepSceneReady('help_request', 'search', false)).toBe(true);
     expect(isMobileOnboardingStepSceneReady('requests', 'requests', false)).toBe(true);
+    expect(isMobileOnboardingStepSceneReady('messages', 'messages', false)).toBe(true);
+    expect(isMobileOnboardingStepSceneReady('dashboard_finish', 'home', false)).toBe(true);
 
     expect(isMobileOnboardingStepSceneReady('profile_edit', 'home', false)).toBe(false);
     expect(isMobileOnboardingStepSceneReady('profile_edit', 'profile', true)).toBe(false);
     expect(isMobileOnboardingStepSceneReady('search', 'profile', false)).toBe(false);
     expect(isMobileOnboardingStepSceneReady('help_request', 'profile', false)).toBe(false);
     expect(isMobileOnboardingStepSceneReady('requests', 'search', false)).toBe(false);
+    expect(isMobileOnboardingStepSceneReady('messages', 'requests', false)).toBe(false);
+    expect(isMobileOnboardingStepSceneReady('dashboard_finish', 'messages', false)).toBe(false);
   });
 
   it('maps steps to their owning module for scene-gated display', () => {
@@ -179,6 +211,8 @@ describe('mobileOnboardingState helpers', () => {
     expect(getMobileOnboardingStepModule('search')).toBe('search');
     expect(getMobileOnboardingStepModule('help_request')).toBe('search');
     expect(getMobileOnboardingStepModule('requests')).toBe('requests');
+    expect(getMobileOnboardingStepModule('messages')).toBe('messages');
+    expect(getMobileOnboardingStepModule('dashboard_finish')).toBe('home');
   });
 
   it('keeps profile-scoped progress hidden until the user opens profile', () => {
@@ -195,6 +229,10 @@ describe('mobileOnboardingState helpers', () => {
     expect(isMobileOnboardingBlockedByUi({
       activeModule: 'profile',
       isNotificationsPanelOpen: true,
+    })).toBe(true);
+    expect(isMobileOnboardingBlockedByUi({
+      activeModule: 'messages',
+      isMessageConversationOpen: true,
     })).toBe(true);
   });
 
