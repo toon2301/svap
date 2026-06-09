@@ -42,6 +42,9 @@ export const ONBOARDING_TARGETS = {
   searchNavIcon: '[data-onboarding="search-nav-icon"]',
   requestsTabs: '[data-onboarding="requests-tabs"]',
   requestsNavIcon: '[data-onboarding="requests-nav-icon"]',
+  messagesTabs: '[data-onboarding="messages-tabs"]',
+  messagesCreateGroup: '[data-onboarding="messages-create-group"]',
+  messagesNavIcon: '[data-onboarding="messages-nav-icon"]',
 } as const;
 
 type MobileOnboardingContextValue = {
@@ -76,10 +79,12 @@ type MobileOnboardingProviderProps = {
   activeModule: string;
   isProfileEditMode: boolean;
   isBlockedByUi?: boolean;
+  onOpenHome: () => void;
   onOpenProfile: () => void;
   onOpenEditProfile: () => void;
   onOpenSearch: () => void;
   onOpenRequests: () => void;
+  onOpenMessages: () => void;
   onSkillCreatedHandlerSet?: (handler: (() => void) | null) => void;
   serverState?: MobileOnboardingState | null;
   userId?: number | null;
@@ -110,10 +115,12 @@ export function MobileOnboardingProvider({
   activeModule,
   isProfileEditMode,
   isBlockedByUi = false,
+  onOpenHome,
   onOpenProfile,
   onOpenEditProfile,
   onOpenSearch,
   onOpenRequests,
+  onOpenMessages,
   onSkillCreatedHandlerSet,
   serverState,
   userId,
@@ -308,18 +315,25 @@ export function MobileOnboardingProvider({
     }
   }, [isEligible, isPausedUi, isProfileEditMode, setState, stored.status, stored.step]);
 
-  const finishOnboarding = useCallback((completedStep: MobileOnboardingStep = 'requests') => {
-    clearMobileOnboardingPostponedForSession();
-    clearMobileOnboardingResumePhase2();
-    setIsPausedUi(false);
-    setIsProfileEditPhase2(false);
-    profileHighlightTargetRef.current = 'edit';
-    setState({ version: 1, status: 'completed', step: completedStep });
-  }, [setState]);
+  const finishOnboarding = useCallback(
+    (completedStep: MobileOnboardingStep = 'dashboard_finish') => {
+      clearMobileOnboardingPostponedForSession();
+      clearMobileOnboardingResumePhase2();
+      setIsPausedUi(false);
+      setIsProfileEditPhase2(false);
+      profileHighlightTargetRef.current = 'edit';
+      setState({ version: 1, status: 'completed', step: completedStep });
+    },
+    [setState],
+  );
 
   const complete = useCallback(() => {
     finishOnboarding(
-      stored.step === 'search' || stored.step === 'help_request' || stored.step === 'requests'
+      stored.step === 'search' ||
+        stored.step === 'help_request' ||
+        stored.step === 'requests' ||
+        stored.step === 'messages' ||
+        stored.step === 'dashboard_finish'
         ? stored.step
         : 'edit_form',
     );
@@ -366,6 +380,16 @@ export function MobileOnboardingProvider({
     setState({ version: 1, status: 'in_progress', step: 'requests' });
     onOpenRequests();
   }, [onOpenRequests, setState]);
+
+  const advanceToMessagesStep = useCallback(() => {
+    setState({ version: 1, status: 'in_progress', step: 'messages' });
+    onOpenMessages();
+  }, [onOpenMessages, setState]);
+
+  const advanceToDashboardFinishStep = useCallback(() => {
+    setState({ version: 1, status: 'in_progress', step: 'dashboard_finish' });
+    onOpenHome();
+  }, [onOpenHome, setState]);
 
   const goNext = useCallback((options?: MobileOnboardingGoNextOptions) => {
     if (!isEligible) return;
@@ -416,10 +440,22 @@ export function MobileOnboardingProvider({
     }
 
     if (stored.step === 'requests') {
-      finishOnboarding('requests');
+      advanceToMessagesStep();
+      return;
+    }
+
+    if (stored.step === 'messages') {
+      advanceToDashboardFinishStep();
+      return;
+    }
+
+    if (stored.step === 'dashboard_finish') {
+      finishOnboarding('dashboard_finish');
     }
   }, [
     advanceProfileEditToPhase2,
+    advanceToDashboardFinishStep,
+    advanceToMessagesStep,
     advanceToSearchStep,
     advanceToRequestsStep,
     finishOnboarding,

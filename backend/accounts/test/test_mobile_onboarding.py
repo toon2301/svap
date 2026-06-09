@@ -122,6 +122,44 @@ class TestMobileOnboarding(APITestCase):
         assert self.user.mobile_onboarding_status == "in_progress"
         assert self.user.mobile_onboarding_step == "requests"
 
+    def test_update_mobile_onboarding_messages_step(self):
+        self.client.force_authenticate(self.user)
+
+        response = self.client.patch(
+            self.url,
+            {"status": "in_progress", "step": "messages"},
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data == {
+            "version": 1,
+            "status": "in_progress",
+            "step": "messages",
+        }
+        self.user.refresh_from_db()
+        assert self.user.mobile_onboarding_status == "in_progress"
+        assert self.user.mobile_onboarding_step == "messages"
+
+    def test_update_mobile_onboarding_dashboard_finish_step(self):
+        self.client.force_authenticate(self.user)
+
+        response = self.client.patch(
+            self.url,
+            {"status": "in_progress", "step": "dashboard_finish"},
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data == {
+            "version": 1,
+            "status": "in_progress",
+            "step": "dashboard_finish",
+        }
+        self.user.refresh_from_db()
+        assert self.user.mobile_onboarding_status == "in_progress"
+        assert self.user.mobile_onboarding_step == "dashboard_finish"
+
     def test_update_rejects_unknown_fields(self):
         self.client.force_authenticate(self.user)
 
@@ -212,6 +250,44 @@ class TestMobileOnboarding(APITestCase):
         self.user.refresh_from_db()
         assert self.user.mobile_onboarding_status == "completed"
         assert self.user.mobile_onboarding_step == "requests"
+
+    def test_completed_state_can_end_on_messages(self):
+        self.client.force_authenticate(self.user)
+
+        response = self.client.patch(
+            self.url,
+            {"status": "completed", "step": "messages"},
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data == {
+            "version": 1,
+            "status": "completed",
+            "step": "messages",
+        }
+        self.user.refresh_from_db()
+        assert self.user.mobile_onboarding_status == "completed"
+        assert self.user.mobile_onboarding_step == "messages"
+
+    def test_completed_state_can_end_on_dashboard_finish(self):
+        self.client.force_authenticate(self.user)
+
+        response = self.client.patch(
+            self.url,
+            {"status": "completed", "step": "dashboard_finish"},
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data == {
+            "version": 1,
+            "status": "completed",
+            "step": "dashboard_finish",
+        }
+        self.user.refresh_from_db()
+        assert self.user.mobile_onboarding_status == "completed"
+        assert self.user.mobile_onboarding_step == "dashboard_finish"
 
     def test_completed_state_can_still_end_on_edit_form(self):
         self.client.force_authenticate(self.user)

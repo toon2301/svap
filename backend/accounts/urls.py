@@ -12,6 +12,7 @@ urlpatterns = [
     path("logout/", views.logout_view, name="logout"),
     path("me/", views.me_view, name="me"),
     path("onboarding/mobile/", views.mobile_onboarding_view, name="mobile_onboarding"),
+    path("onboarding/desktop/", views.desktop_onboarding_view, name="desktop_onboarding"),
     path("ping/", views.ping_view, name="ping"),
     path("verify-email/", views.verify_email_view, name="verify_email"),
     path(

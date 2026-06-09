@@ -40,6 +40,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
     is_favorited = serializers.SerializerMethodField()
     entitlements = serializers.SerializerMethodField()
     mobile_onboarding = serializers.SerializerMethodField()
+    desktop_onboarding = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -85,6 +86,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
             "is_favorited",
             "entitlements",
             "mobile_onboarding",
+            "desktop_onboarding",
         ]
         read_only_fields = [
             "id",
@@ -101,6 +103,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
             "is_favorited",
             "entitlements",
             "mobile_onboarding",
+            "desktop_onboarding",
         ]
 
     def _record_me_serializer_timing(self, name, started_at):
@@ -149,6 +152,13 @@ class UserProfileSerializer(serializers.ModelSerializer):
             "version": 1,
             "status": getattr(obj, "mobile_onboarding_status", "in_progress"),
             "step": getattr(obj, "mobile_onboarding_step", "home"),
+        }
+
+    def get_desktop_onboarding(self, obj):
+        return {
+            "version": 1,
+            "status": getattr(obj, "desktop_onboarding_status", "in_progress"),
+            "step": getattr(obj, "desktop_onboarding_step", "navigation"),
         }
 
     def get_avatar_url(self, obj):
@@ -225,6 +235,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
         ret.pop("subscription_tier", None)
         ret.pop("entitlements", None)
         ret.pop("mobile_onboarding", None)
+        ret.pop("desktop_onboarding", None)
 
         # Conditional fields
         if not getattr(instance, "phone_visible", False):

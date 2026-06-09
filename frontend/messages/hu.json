@@ -193,6 +193,12 @@
         "title": "Add meg az alapvető információkat magadról",
         "body": "Egy fotóval és leírással ellátott profil megbízhatóbbnak hat."
       }
+    },
+    "desktop": {
+      "navigation": {
+        "title": "Üdv a Svaplyban",
+        "body": "A bal oldali navigációval eléred az alkalmazás minden fontos részét."
+      }
     }
   },
   "tutorial": {
@@ -212,6 +218,15 @@
     "requestsStep": {
       "title": "Tartsd átláthatóan a kéréseidet",
       "description": "Kövesd az elküldött és fogadott kéréseket egy helyen."
+    },
+    "messagesStep": {
+      "title": "Maradj kapcsolatban",
+      "description": "Az üzenetekben egyszerűen kommunikálhatsz a felhasználókkal, és egyeztethetsz ajánlatokról, kérésekről vagy együttműködésekről."
+    },
+    "dashboardFinishStep": {
+      "title": "Készen állsz a kezdésre",
+      "description": "Most már ismered a Svaply alapjait. Sok sikert kívánunk a lehetőségek megtalálásához, a munkád megosztásához és új együttműködések kialakításához.",
+      "cta": "Svaply használatának kezdése"
     }
   },
   "create": {
@@ -643,7 +658,15 @@
     "likes": "Tetszik",
     "message": "Üzenet",
     "ratings": "Értékelések",
-    "countryTitle": "Orszag",
+    "countryTitle": "Ország",
+    "offerCountries": {
+      "SK": "Szlovákia",
+      "CZ": "Csehország",
+      "PL": "Lengyelország",
+      "HU": "Magyarország",
+      "AT": "Ausztria",
+      "DE": "Németország"
+    },
     "savingOffer": "Ajanlat mentese...",
     "savingOfferLong": "Az ajanlat mentese eltarthat egy ideig. Kerjuk, varjon.",
     "saveFailed": "Az ajanlat mentese nem sikerult. Probald ujra.",

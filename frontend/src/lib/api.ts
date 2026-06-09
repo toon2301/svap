@@ -737,6 +737,7 @@ export const endpoints = {
     logout: '/auth/logout/',
     me: '/auth/me/',
     mobileOnboarding: '/auth/onboarding/mobile/',
+    desktopOnboarding: '/auth/onboarding/desktop/',
     verifyEmail: '/auth/verify-email/',
     resendVerification: '/auth/resend-verification/',
     oauthCallback: '/oauth/callback/',

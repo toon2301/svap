@@ -26,8 +26,17 @@ const VALID_STEPS: MobileOnboardingStep[] = [
   'search',
   'help_request',
   'requests',
+  'messages',
+  'dashboard_finish',
 ];
-const COMPLETED_STEPS: MobileOnboardingStep[] = ['edit_form', 'search', 'help_request', 'requests'];
+const COMPLETED_STEPS: MobileOnboardingStep[] = [
+  'edit_form',
+  'search',
+  'help_request',
+  'requests',
+  'messages',
+  'dashboard_finish',
+];
 const TERMINAL_STATUSES: MobileOnboardingStatus[] = ['completed', 'skipped'];
 const MOBILE_ONBOARDING_PROGRESS_KEY_PREFIX = 'svaplyMobileOnboardingStepV1';
 

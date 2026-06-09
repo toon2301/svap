@@ -193,6 +193,12 @@
         "title": "Doplň o sebe základné informácie",
         "body": "Profil s fotkou a popisom pôsobí dôveryhodnejšie."
       }
+    },
+    "desktop": {
+      "navigation": {
+        "title": "Vitaj na Svaply",
+        "body": "Pomocou navigácie vľavo sa dostaneš ku všetkým dôležitým častiam aplikácie."
+      }
     }
   },
   "tutorial": {
@@ -212,6 +218,15 @@
     "requestsStep": {
       "title": "Maj prehľad o svojich žiadostiach",
       "description": "Sleduj odoslané aj prijaté žiadosti na jednom mieste."
+    },
+    "messagesStep": {
+      "title": "Zostaňte v kontakte",
+      "description": "Cez správy môžeš jednoducho komunikovať s používateľmi a riešiť ponuky, dopyty či spolupráce."
+    },
+    "dashboardFinishStep": {
+      "title": "Si pripravený začať",
+      "description": "Teraz už poznáš základy Svaply. Prajeme ti veľa úspechov pri hľadaní príležitostí, zdieľaní svojej práce a nadväzovaní nových spoluprác.",
+      "cta": "Začať používať Svaply"
     }
   },
   "create": {
@@ -559,6 +574,14 @@
     "maxPhotosReached": "Dosiahol si maximálny počet 6 fotiek.",
     "district": "Okres",
     "countryTitle": "Krajina",
+    "offerCountries": {
+      "SK": "Slovensko",
+      "CZ": "Česko",
+      "PL": "Poľsko",
+      "HU": "Maďarsko",
+      "AT": "Rakúsko",
+      "DE": "Nemecko"
+    },
     "addDistrict": "Pridať okres",
     "locationTitle": "Mesto/obec (voliteľné)",
     "locationPlaceholder": "Zadaj, kde ponúkaš svoje služby",

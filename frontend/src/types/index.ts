@@ -21,13 +21,24 @@ export type MobileOnboardingStep =
   | 'edit_form'
   | 'search'
   | 'help_request'
-  | 'requests';
+  | 'requests'
+  | 'messages'
+  | 'dashboard_finish';
 export type MobileOnboardingStatus = 'in_progress' | 'completed' | 'skipped';
 
 export interface MobileOnboardingState {
   version: 1;
   status: MobileOnboardingStatus;
   step: MobileOnboardingStep;
+}
+
+export type DesktopOnboardingStep = 'navigation' | 'profile_icon';
+export type DesktopOnboardingStatus = 'in_progress' | 'completed' | 'skipped';
+
+export interface DesktopOnboardingState {
+  version: 1;
+  status: DesktopOnboardingStatus;
+  step: DesktopOnboardingStep;
 }
 
 export interface User {
@@ -68,6 +79,7 @@ export interface User {
   completed_cooperations_count?: number;
   unread_skill_request_count?: number;
   mobile_onboarding?: MobileOnboardingState;
+  desktop_onboarding?: DesktopOnboardingState;
   created_at: string;
   updated_at: string;
   profile_completeness: number;

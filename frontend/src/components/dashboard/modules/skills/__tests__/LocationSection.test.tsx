@@ -182,7 +182,10 @@ describe('LocationSection', () => {
       />,
     );
 
-    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'CZ' } });
+    expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Krajina ponuky' }));
+    fireEvent.click(screen.getByRole('option', { name: 'Česko' }));
 
     expect(onCountryCodeChange).toHaveBeenCalledWith('CZ');
     expect(onDistrictChange).toHaveBeenLastCalledWith('');

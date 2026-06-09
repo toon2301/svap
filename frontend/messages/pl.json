@@ -193,6 +193,12 @@
         "title": "Dodaj podstawowe informacje o sobie",
         "body": "Profil ze zdjęciem i opisem budzi większe zaufanie."
       }
+    },
+    "desktop": {
+      "navigation": {
+        "title": "Witaj w Svaply",
+        "body": "Za pomocą nawigacji po lewej przejdziesz do wszystkich ważnych części aplikacji."
+      }
     }
   },
   "tutorial": {
@@ -212,6 +218,15 @@
     "requestsStep": {
       "title": "Miej przegląd swoich próśb",
       "description": "Śledź wysłane i otrzymane prośby w jednym miejscu."
+    },
+    "messagesStep": {
+      "title": "Pozostań w kontakcie",
+      "description": "W wiadomościach możesz łatwo komunikować się z użytkownikami i omawiać oferty, prośby lub współprace."
+    },
+    "dashboardFinishStep": {
+      "title": "Możesz zaczynać",
+      "description": "Znasz już podstawy Svaply. Życzymy Ci wielu sukcesów w znajdowaniu okazji, dzieleniu się swoją pracą i nawiązywaniu nowych współprac.",
+      "cta": "Zacznij korzystać ze Svaply"
     }
   },
   "create": {
@@ -644,6 +659,14 @@
     "message": "Správa",
     "ratings": "Hodnotenia",
     "countryTitle": "Kraj",
+    "offerCountries": {
+      "SK": "Słowacja",
+      "CZ": "Czechy",
+      "PL": "Polska",
+      "HU": "Węgry",
+      "AT": "Austria",
+      "DE": "Niemcy"
+    },
     "savingOffer": "Zapisywanie oferty...",
     "savingOfferLong": "Zapisywanie oferty moze chwile potrwac. Prosze czekac.",
     "saveFailed": "Nie udalo sie zapisac oferty. Sprobuj ponownie.",

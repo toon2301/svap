@@ -193,6 +193,12 @@
         "title": "Doplň o sobě základní informace",
         "body": "Profil s fotkou a popisem působí důvěryhodněji."
       }
+    },
+    "desktop": {
+      "navigation": {
+        "title": "Vítej na Svaply",
+        "body": "Pomocí navigace vlevo se dostaneš ke všem důležitým částem aplikace."
+      }
     }
   },
   "tutorial": {
@@ -212,6 +218,15 @@
     "requestsStep": {
       "title": "Měj přehled o svých žádostech",
       "description": "Sleduj odeslané i přijaté žádosti na jednom místě."
+    },
+    "messagesStep": {
+      "title": "Zůstaňte v kontaktu",
+      "description": "Přes zprávy můžeš jednoduše komunikovat s uživateli a řešit nabídky, poptávky či spolupráce."
+    },
+    "dashboardFinishStep": {
+      "title": "Jsi připravený začít",
+      "description": "Teď už znáš základy Svaply. Přejeme ti hodně úspěchů při hledání příležitostí, sdílení své práce a navazování nových spoluprací.",
+      "cta": "Začít používat Svaply"
     }
   },
   "create": {
@@ -643,7 +658,15 @@
     "likes": "Páči sa mi to",
     "message": "Správa",
     "ratings": "Hodnotenia",
-    "countryTitle": "Zeme",
+    "countryTitle": "Země",
+    "offerCountries": {
+      "SK": "Slovensko",
+      "CZ": "Česko",
+      "PL": "Polsko",
+      "HU": "Maďarsko",
+      "AT": "Rakousko",
+      "DE": "Německo"
+    },
     "savingOffer": "Ukladam nabidku...",
     "savingOfferLong": "Ulozeni nabidky muze chvili trvat. Prosim cekejte.",
     "saveFailed": "Nabidku se nepodarilo ulozit. Zkuste to znovu.",
