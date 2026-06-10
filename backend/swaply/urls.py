@@ -23,6 +23,7 @@ from django.http import JsonResponse
 import os
 from .migrate_api import run_migrations_view
 from accounts.views import update_profile_view, google_oauth_simple, get_csrf_token_view
+from accounts.views.contact import contact_form_view
 from accounts.views.token_refresh_cookie import token_refresh_cookie_view
 from django.urls import path
 
@@ -79,6 +80,7 @@ urlpatterns = [
     # Root môže vracať jednoduchý JSON/info, frontend bude žiť na inej doméne
     path("", api_root, name="root"),
     path("api/csrf-token/", get_csrf_token_view, name="api_csrf_token_alias"),
+    path("api/contact/", contact_form_view, name="contact"),
     # Django allauth URLs - DOČASNE VYPNUTÉ
     # path('accounts/', include('allauth.urls')),
 ]

@@ -826,6 +826,39 @@
       }
     }
   },
+  "contact": {
+    "backToHome": "Zurück zur Startseite",
+    "hero": {
+      "title": "Kontakt",
+      "subtitle": "Hast du eine Frage oder brauchst du Hilfe?\nSchreib uns – wir helfen dir gerne."
+    },
+    "responseTime": "Wir melden uns in der Regel innerhalb von 24 Stunden",
+    "faqPrefix": "Antworten findest du auch in den",
+    "faqLink": "häufig gestellten Fragen",
+    "form": {
+      "email": "E-Mail",
+      "message": "Nachricht",
+      "messagePlaceholder": "Schreib uns, wobei wir dir helfen können...",
+      "submit": "Senden",
+      "submitting": "Wird gesendet..."
+    },
+    "success": {
+      "title": "Nachricht gesendet",
+      "message": "Danke für deine Nachricht. Wir melden uns innerhalb von 24 Stunden bei dir.",
+      "backToHome": "Zurück zur Startseite"
+    },
+    "errors": {
+      "messageRequired": "Bitte gib eine Nachricht ein",
+      "messageTooLong": "Die Nachricht darf höchstens 2000 Zeichen lang sein",
+      "general": "Die Nachricht konnte nicht gesendet werden. Bitte versuche es später erneut.",
+      "rateLimited": "Zu viele Versuche. Bitte versuche es in Kürze erneut."
+    },
+    "social": {
+      "instagram": "Instagram",
+      "facebook": "Facebook"
+    },
+    "privacyNote": "Wir verwenden deine Angaben nur, um auf deine Nachricht zu antworten."
+  },
   "footer": {
     "howItWorks": "Wie es funktioniert",
     "forIndividuals": "Für Privatpersonen",

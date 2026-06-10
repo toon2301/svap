@@ -826,6 +826,39 @@
       }
     }
   },
+  "contact": {
+    "backToHome": "Back to home",
+    "hero": {
+      "title": "Contact",
+      "subtitle": "Got a question or need help?\nSend us a message — we're happy to help."
+    },
+    "responseTime": "We usually reply within 24 hours",
+    "faqPrefix": "You might also find answers in our",
+    "faqLink": "FAQ",
+    "form": {
+      "email": "Email",
+      "message": "Message",
+      "messagePlaceholder": "Tell us how we can help...",
+      "submit": "Send",
+      "submitting": "Sending..."
+    },
+    "success": {
+      "title": "Message sent",
+      "message": "Thanks for reaching out. We'll get back to you within 24 hours.",
+      "backToHome": "Back to home"
+    },
+    "errors": {
+      "messageRequired": "Please enter a message",
+      "messageTooLong": "Your message can be at most 2000 characters",
+      "general": "We couldn't send your message. Please try again later.",
+      "rateLimited": "Too many attempts. Please try again in a little while."
+    },
+    "social": {
+      "instagram": "Instagram",
+      "facebook": "Facebook"
+    },
+    "privacyNote": "We only use your details to respond to your message."
+  },
   "footer": {
     "howItWorks": "How it works",
     "forIndividuals": "For individuals",

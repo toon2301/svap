@@ -73,6 +73,11 @@ const nextConfig = {
   async redirects() {
     return [
       {
+        source: '/kontakt',
+        destination: '/contact',
+        permanent: false,
+      },
+      {
         source: '/dashboard/messages/:conversationId',
         destination: '/dashboard/messages?conversationId=:conversationId',
         permanent: false,

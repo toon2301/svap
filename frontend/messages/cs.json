@@ -826,6 +826,39 @@
       }
     }
   },
+  "contact": {
+    "backToHome": "Zpět na úvod",
+    "hero": {
+      "title": "Kontakt",
+      "subtitle": "Máš otázku nebo potřebuješ pomoc?\nNapiš nám – rádi ti pomůžeme."
+    },
+    "responseTime": "Odpovíme do 24 hodin",
+    "faqPrefix": "Podívej se také na",
+    "faqLink": "často kladené otázky",
+    "form": {
+      "email": "E-mail",
+      "message": "Zpráva",
+      "messagePlaceholder": "Napiš, s čím ti můžeme pomoct...",
+      "submit": "Odeslat",
+      "submitting": "Odesílám..."
+    },
+    "success": {
+      "title": "Zpráva odeslána",
+      "message": "Díky za zprávu. Ozveme se ti do 24 hodin.",
+      "backToHome": "Zpět na úvod"
+    },
+    "errors": {
+      "messageRequired": "Zpráva je povinná",
+      "messageTooLong": "Zpráva může mít maximálně 2000 znaků",
+      "general": "Zprávu se nepodařilo odeslat. Zkus to prosím později.",
+      "rateLimited": "Příliš mnoho pokusů. Zkus to prosím později."
+    },
+    "social": {
+      "instagram": "Instagram",
+      "facebook": "Facebook"
+    },
+    "privacyNote": "Údaje používáme jen k zodpovězení tvé zprávy."
+  },
   "footer": {
     "howItWorks": "Jak to funguje",
     "forIndividuals": "Pro jednotlivce",

@@ -90,6 +90,7 @@ jobs:
               "EMAIL_HOST_PASSWORD": os.getenv("DEPLOY_EMAIL_HOST_PASSWORD"),
               "EMAIL_USE_TLS": os.getenv("DEPLOY_EMAIL_USE_TLS"),
               "DEFAULT_FROM_EMAIL": os.getenv("DEPLOY_DEFAULT_FROM_EMAIL"),
+              "SUPPORT_EMAIL": "info@svaply.com",
           }
           for key, value in email_env.items():
               if value:

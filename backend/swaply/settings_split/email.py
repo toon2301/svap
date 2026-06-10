@@ -10,8 +10,15 @@ def _require_env(name: str) -> str:
 
 
 if DEBUG:
-    # Dev/test: console backend je povolený (prípadne explicitný override cez env).
-    EMAIL_BACKEND = os.getenv("EMAIL_BACKEND") or "django.core.mail.backends.console.EmailBackend"
+    # Dev/test: SMTP ak sú k dispozícii creds, inak console backend.
+    _smtp_user = os.getenv("EMAIL_HOST_USER", "").strip()
+    _smtp_password = os.getenv("EMAIL_HOST_PASSWORD", "").strip()
+    _default_backend = (
+        "django.core.mail.backends.smtp.EmailBackend"
+        if _smtp_user and _smtp_password
+        else "django.core.mail.backends.console.EmailBackend"
+    )
+    EMAIL_BACKEND = os.getenv("EMAIL_BACKEND") or _default_backend
 else:
     # Production: nikdy console backend, vždy SMTP backend (bez fallbackov).
     EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
@@ -37,6 +44,16 @@ if EMAIL_BACKEND.endswith("smtp.EmailBackend"):
         EMAIL_HOST_PASSWORD = _require_env("EMAIL_HOST_PASSWORD")
         EMAIL_USE_TLS = env_bool("EMAIL_USE_TLS", True)
         DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL") or EMAIL_HOST_USER
+else:
+    _from_env = os.getenv("DEFAULT_FROM_EMAIL", "").strip()
+    _user_env = os.getenv("EMAIL_HOST_USER", "").strip()
+    if _from_env:
+        DEFAULT_FROM_EMAIL = _from_env
+    elif _user_env:
+        DEFAULT_FROM_EMAIL = _user_env
 
 # Limit SMTP connection/response time (seconds)
 EMAIL_TIMEOUT = int(os.getenv("EMAIL_TIMEOUT", "10"))
+
+# Kontaktný formulár – cieľová adresa podpory
+SUPPORT_EMAIL = os.getenv("SUPPORT_EMAIL", "info@svaply.com")
