@@ -12,9 +12,31 @@ export const DEFAULT_DESKTOP_ONBOARDING_STATE: DesktopOnboardingState = {
   step: 'navigation',
 };
 
-const VALID_STEPS: DesktopOnboardingStep[] = ['navigation', 'profile_icon'];
-const COMPLETED_STEPS: DesktopOnboardingStep[] = ['profile_icon'];
+const VALID_STEPS: DesktopOnboardingStep[] = [
+  'navigation',
+  'profile_icon',
+  'profile_edit',
+  'edit_form',
+  'search',
+  'help_request',
+  'requests',
+  'messages',
+  'dashboard_finish',
+];
+const COMPLETED_STEPS: DesktopOnboardingStep[] = [
+  'profile_icon',
+  'edit_form',
+  'search',
+  'help_request',
+  'requests',
+  'messages',
+  'dashboard_finish',
+];
 const TERMINAL_STATUSES: DesktopOnboardingStatus[] = ['completed', 'skipped'];
+
+function getDesktopOnboardingStepRank(step: DesktopOnboardingStep): number {
+  return VALID_STEPS.indexOf(step);
+}
 
 export function normalizeDesktopOnboardingState(
   state?: DesktopOnboardingState | null,
@@ -42,6 +64,20 @@ export function getInitialDesktopOnboardingState(
   state: DesktopOnboardingState | null | undefined,
 ): DesktopOnboardingState {
   return normalizeDesktopOnboardingState(state);
+}
+
+export function isDesktopOnboardingServerStateBehind(
+  localState: DesktopOnboardingState,
+  serverState: DesktopOnboardingState,
+): boolean {
+  if (localState.status !== 'in_progress' || serverState.status !== 'in_progress') {
+    return false;
+  }
+
+  return (
+    getDesktopOnboardingStepRank(serverState.step) <
+    getDesktopOnboardingStepRank(localState.step)
+  );
 }
 
 export function isDesktopOnboardingFinished(status: DesktopOnboardingStatus): boolean {

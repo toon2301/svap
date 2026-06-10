@@ -40,6 +40,12 @@ class MobileOnboardingStateSerializer(serializers.Serializer):
 
 
 COMPLETED_DESKTOP_ONBOARDING_STEPS = {
+    DesktopOnboardingStep.EDIT_FORM,
+    DesktopOnboardingStep.SEARCH,
+    DesktopOnboardingStep.HELP_REQUEST,
+    DesktopOnboardingStep.REQUESTS,
+    DesktopOnboardingStep.MESSAGES,
+    DesktopOnboardingStep.DASHBOARD_FINISH,
     DesktopOnboardingStep.PROFILE_ICON,
 }
 

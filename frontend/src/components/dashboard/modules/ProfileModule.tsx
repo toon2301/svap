@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { User } from '../../../types';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useIsMobile } from '@/hooks';
+import { useOptionalDesktopOnboarding } from '../onboarding/DesktopOnboardingContext';
 import { useOptionalMobileOnboarding } from '../onboarding/MobileOnboardingContext';
 import { api } from '../../../lib/api';
 import ProfileMobileView from './profile/ProfileMobileView';
@@ -126,7 +127,9 @@ export default function ProfileModule({
 }: ProfileModuleProps) {
   const { t } = useLanguage();
   const isMobile = useIsMobile();
-  const onboarding = useOptionalMobileOnboarding();
+  const mobileOnboarding = useOptionalMobileOnboarding();
+  const desktopOnboarding = useOptionalDesktopOnboarding();
+  const onboarding = isMobile ? mobileOnboarding : desktopOnboarding;
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string>('');
   const [uploadSuccess, setUploadSuccess] = useState(false);

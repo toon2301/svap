@@ -78,6 +78,13 @@ class MobileOnboardingStep(models.TextChoices):
 class DesktopOnboardingStep(models.TextChoices):
     NAVIGATION = "navigation", _("Navigation")
     PROFILE_ICON = "profile_icon", _("Profile icon")
+    PROFILE_EDIT = "profile_edit", _("Profile edit")
+    EDIT_FORM = "edit_form", _("Edit form")
+    SEARCH = "search", _("Search")
+    HELP_REQUEST = "help_request", _("Help request")
+    REQUESTS = "requests", _("Requests")
+    MESSAGES = "messages", _("Messages")
+    DASHBOARD_FINISH = "dashboard_finish", _("Dashboard finish")
 
 
 class User(AbstractUser):

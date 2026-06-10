@@ -122,7 +122,7 @@ export function ConversationsList({
   const isRail = variant === 'rail';
   const isCompact = isSidebar || isRail;
   const showHoverAction = isRail;
-  const messagesTabsOnboardingTarget = isCompact ? undefined : 'messages-tabs';
+  const messagesTabsOnboardingTarget = isSidebar ? undefined : 'messages-tabs';
   const messagesCreateGroupOnboardingTarget = isCompact ? undefined : 'messages-create-group';
   const shouldUseIntervalPolling = selectedConversationId == null;
   const defaultWrapperClassName = isCompact ? 'space-y-2' : 'max-w-4xl mx-auto space-y-2';

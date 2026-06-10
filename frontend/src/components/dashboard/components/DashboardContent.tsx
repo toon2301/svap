@@ -13,7 +13,6 @@ import { DesktopOnboardingProvider } from '../onboarding/DesktopOnboardingContex
 import DesktopOnboardingOverlay from '../onboarding/DesktopOnboardingOverlay';
 import { MobileOnboardingProvider } from '../onboarding/MobileOnboardingContext';
 import MobileOnboardingOverlay from '../onboarding/MobileOnboardingOverlay';
-import { isDesktopOnboardingBlockedByUi } from '../onboarding/desktopOnboardingScene';
 import { isMobileOnboardingBlockedByUi } from '../onboarding/mobileOnboardingScene';
 import SearchModule from '../modules/SearchModule';
 import { MessagesDesktopRail } from '../modules/messages/MessagesDesktopRail';
@@ -167,7 +166,8 @@ export default function DashboardContent({
     avatarMembers: MessagingUserBrief[];
   } | null>(null);
   const skillsCategoryBackHandlerRef = useRef<(() => void) | null>(null);
-  const onboardingSkillCreatedHandlerRef = useRef<(() => void) | null>(null);
+  const mobileOnboardingSkillCreatedHandlerRef = useRef<(() => void) | null>(null);
+  const desktopOnboardingSkillCreatedHandlerRef = useRef<(() => void) | null>(null);
 
   // Custom hooks pre rozdelenie logiky
   const highlighting = useDashboardHighlighting({
@@ -301,7 +301,24 @@ export default function DashboardContent({
     handleMainModuleChange('search');
   }, [handleMainModuleChange]);
 
+  const handleDesktopOnboardingSearchOpen = useCallback(() => {
+    setIsNotificationsPanelOpen(false);
+    if (activeModule === 'search') {
+      handleMainModuleChange('home');
+    }
+    setIsSearchOpen(true);
+  }, [activeModule, handleMainModuleChange]);
+
+  const handleDesktopOnboardingSearchClose = useCallback(() => {
+    setIsSearchOpen(false);
+  }, []);
+
   const handleOnboardingRequestsOpen = useCallback(() => {
+    handleMainModuleChange('requests');
+  }, [handleMainModuleChange]);
+
+  const handleDesktopOnboardingRequestsOpen = useCallback(() => {
+    setIsSearchOpen(false);
     handleMainModuleChange('requests');
   }, [handleMainModuleChange]);
 
@@ -314,11 +331,16 @@ export default function DashboardContent({
   }, [handleMainModuleChange]);
 
   const handleOnboardingSkillCreated = useCallback(() => {
-    onboardingSkillCreatedHandlerRef.current?.();
+    mobileOnboardingSkillCreatedHandlerRef.current?.();
+    desktopOnboardingSkillCreatedHandlerRef.current?.();
   }, []);
 
-  const handleOnboardingSkillCreatedHandlerSet = useCallback((handler: (() => void) | null) => {
-    onboardingSkillCreatedHandlerRef.current = handler;
+  const handleMobileOnboardingSkillCreatedHandlerSet = useCallback((handler: (() => void) | null) => {
+    mobileOnboardingSkillCreatedHandlerRef.current = handler;
+  }, []);
+
+  const handleDesktopOnboardingSkillCreatedHandlerSet = useCallback((handler: (() => void) | null) => {
+    desktopOnboardingSkillCreatedHandlerRef.current = handler;
   }, []);
 
   const handleNotificationsPanelClose = useCallback(() => {
@@ -816,6 +838,10 @@ export default function DashboardContent({
     activeModule === 'profile' &&
     activeRightItem === 'edit-profile' &&
     isRightSidebarOpen;
+  const isDesktopProfileEditMode =
+    activeModule === 'profile' &&
+    activeRightItem === 'edit-profile' &&
+    isRightSidebarOpen;
   const isMobileMessageConversationOpen = Boolean(
     activeModule === 'messages' &&
       (selectedConversationId != null || targetUserIdFromMessagesQuery != null),
@@ -829,22 +855,25 @@ export default function DashboardContent({
     isNotificationsPanelOpen,
     isMessageConversationOpen: isMobileMessageConversationOpen,
   });
-  const isDesktopOnboardingBlocked = isDesktopOnboardingBlockedByUi({
-    activeModule,
-    isRightSidebarOpen,
-    isSearchOpen,
-    isNotificationsPanelOpen,
-    isMobileMenuOpen,
-  });
-
   return (
     <RequestsNotificationsProvider
       acknowledgeNotificationsBadge={activeModule === 'notifications' || isNotificationsPanelOpen}
     >
       <DesktopOnboardingProvider
         activeModule={activeModule}
-        isBlockedByUi={isDesktopOnboardingBlocked}
+        isSearchOpen={isSearchOpen}
+        isProfileEditMode={isDesktopProfileEditMode}
+        isRightSidebarOpen={isRightSidebarOpen}
+        isNotificationsPanelOpen={isNotificationsPanelOpen}
+        isMobileMenuOpen={isMobileMenuOpen}
         onOpenHome={handleOnboardingHomeOpen}
+        onOpenProfile={navigation.handleMobileProfileClick}
+        onOpenEditProfile={navigation.handleEditProfileClick}
+        onOpenSearch={handleDesktopOnboardingSearchOpen}
+        onCloseSearch={handleDesktopOnboardingSearchClose}
+        onOpenRequests={handleDesktopOnboardingRequestsOpen}
+        onOpenMessages={handleOnboardingMessagesOpen}
+        onSkillCreatedHandlerSet={handleDesktopOnboardingSkillCreatedHandlerSet}
         serverState={user?.desktop_onboarding ?? null}
       >
         <MobileOnboardingProvider
@@ -857,7 +886,7 @@ export default function DashboardContent({
           onOpenSearch={handleOnboardingSearchOpen}
           onOpenRequests={handleOnboardingRequestsOpen}
           onOpenMessages={handleOnboardingMessagesOpen}
-          onSkillCreatedHandlerSet={handleOnboardingSkillCreatedHandlerSet}
+          onSkillCreatedHandlerSet={handleMobileOnboardingSkillCreatedHandlerSet}
           serverState={user?.mobile_onboarding ?? null}
           userId={user?.id ?? null}
         >
@@ -886,13 +915,16 @@ export default function DashboardContent({
             onNotificationsPanelClose={handleNotificationsPanelClose}
             searchOverlay={
               user ? (
-                <SearchModule
-                  user={user}
-                  onUserClick={navigation.handleViewUserProfileFromSearch}
-                  onSkillClick={navigation.handleViewUserSkillFromSearch}
-                  isOverlay
-                  isActive={isSearchOpen}
-                />
+                <div className="h-full" data-desktop-onboarding="search-panel">
+                  <SearchModule
+                    user={user}
+                    onUserClick={navigation.handleViewUserProfileFromSearch}
+                    onSkillClick={navigation.handleViewUserSkillFromSearch}
+                    isOverlay
+                    isActive={isSearchOpen}
+                    onClose={navigation.handleSearchClose}
+                  />
+                </div>
               ) : null
             }
             notificationsOverlay={
@@ -968,6 +1000,7 @@ export default function DashboardContent({
         }}
         activeModule={activeModule}
         t={t}
+        onCreatedSkillSaved={handleOnboardingSkillCreated}
       />
     </RequestsNotificationsProvider>
   );

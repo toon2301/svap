@@ -351,12 +351,22 @@ export default function Sidebar({
           {sidebarItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeItem === item.id;
+            const desktopOnboardingTarget =
+              item.id === 'profile'
+                ? 'profile-icon'
+                : item.id === 'search'
+                  ? 'search-nav-icon'
+                  : item.id === 'requests'
+                    ? 'requests-nav-icon'
+                    : item.id === 'messages'
+                      ? 'messages-nav-icon'
+                      : undefined;
             
             return (
               <button
                 key={item.id}
                 type="button"
-                data-desktop-onboarding={!isMobile && item.id === 'profile' ? 'profile-icon' : undefined}
+                data-desktop-onboarding={!isMobile ? desktopOnboardingTarget : undefined}
                 data-sidebar-nav-item={item.id}
                 onClick={() => handleItemClick(item.id)}
                 className={`w-full flex items-center px-2 py-2 text-sm font-medium rounded-2xl transition-all duration-200 lg:px-2 lg:py-2 xl:px-3 xl:py-2.5 ${

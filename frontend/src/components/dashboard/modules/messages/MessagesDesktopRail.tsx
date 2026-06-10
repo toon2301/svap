@@ -26,6 +26,7 @@ export function MessagesDesktopRail({
         </h2>
         <button
           type="button"
+          data-onboarding="messages-create-group"
           onClick={() => window.dispatchEvent(new Event(MESSAGING_CREATE_GROUP_OPEN_EVENT))}
           title={createGroupTooltip}
           className="inline-flex h-9 items-center justify-center gap-0.5 rounded-full px-2.5 text-gray-500 transition-colors hover:bg-gray-100 hover:text-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-400/50 dark:text-gray-400 dark:hover:bg-gray-900 dark:hover:text-purple-200"

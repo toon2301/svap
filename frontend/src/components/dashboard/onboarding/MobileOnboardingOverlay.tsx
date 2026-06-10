@@ -108,7 +108,8 @@ export default function MobileOnboardingOverlay() {
     isOverlayVisible,
     step,
     goNext,
-    skip,
+    goBack,
+    canGoBack,
     pause,
     close,
     isProfileEditPhase2,
@@ -363,8 +364,8 @@ export default function MobileOnboardingOverlay() {
   ]);
   const stepIndex = displayStep ? mainSteps.indexOf(displayStep) + 1 : 1;
 
+  const backLabel = t('common.back', 'Späť');
   const pauseLabel = t('onboarding.mobile.later', 'Neskôr');
-  const skipLabel = t('onboarding.mobile.skip', 'Ukončiť');
 
   const config = useMemo(() => {
     if (!displayStep) return null;
@@ -528,10 +529,11 @@ export default function MobileOnboardingOverlay() {
     config,
     finishCtaLabel,
     isOverlayVisible,
+    backLabel,
+    canGoBack,
     nextLabel,
     pauseLabel,
     profileHighlightTarget,
-    skipLabel,
     stepIndex,
   ]);
 
@@ -697,21 +699,23 @@ export default function MobileOnboardingOverlay() {
               >
                 {nextLabel}
               </button>
-              <button
-                type="button"
-                onClick={pause}
-                className="shrink-0 rounded-xl border border-gray-200 dark:border-gray-700 px-3 py-2.5 text-sm text-gray-700 dark:text-gray-200"
-              >
-                {pauseLabel}
-              </button>
+              {canGoBack && (
+                <button
+                  type="button"
+                  onClick={goBack}
+                  className="shrink-0 rounded-xl border border-gray-200 dark:border-gray-700 px-3 py-2.5 text-sm text-gray-700 dark:text-gray-200"
+                >
+                  {backLabel}
+                </button>
+              )}
             </div>
 
             <button
               type="button"
-              onClick={skip}
+              onClick={pause}
               className={`${isHelpRequestStep ? 'mt-2' : 'mt-3'} w-full text-center text-xs text-gray-500 dark:text-gray-400 hover:text-purple-600`}
             >
-              {skipLabel}
+              {pauseLabel}
             </button>
           </>
         )}
