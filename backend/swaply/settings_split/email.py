@@ -7,7 +7,7 @@ from .security import DEBUG
 def _require_env(name: str) -> str:
     v = os.getenv(name)
     if v is None or not str(v).strip():
-        raise ValueError(f"{name} must be set when DEBUG is False")
+        raise ValueError(f"{name} must be set")
     return str(v).strip()
 
 
@@ -23,13 +23,8 @@ else:
     EMAIL_BACKEND = os.getenv("EMAIL_BACKEND") or "anymail.backends.resend.EmailBackend"
 
 if EMAIL_BACKEND.endswith("resend.EmailBackend"):
-    if DEBUG:
-        _resend_api_key = os.getenv("RESEND_API_KEY", "").strip()
-        ANYMAIL = {"RESEND_API_KEY": _resend_api_key} if _resend_api_key else {}
-        DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "no-reply@localhost")
-    else:
-        ANYMAIL = {"RESEND_API_KEY": _require_env("RESEND_API_KEY")}
-        DEFAULT_FROM_EMAIL = _require_env("DEFAULT_FROM_EMAIL")
+    ANYMAIL = {"RESEND_API_KEY": _require_env("RESEND_API_KEY")}
+    DEFAULT_FROM_EMAIL = _require_env("DEFAULT_FROM_EMAIL")
 elif EMAIL_BACKEND.endswith("console.EmailBackend"):
     DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "no-reply@localhost")
 else:

@@ -29,6 +29,9 @@ class Command(BaseCommand):
 
         _send_contact_email(
             user_email="test-contact-form@svaply.local",
-            message="Svaply contact form SMTP test. You can ignore this message.",
+            message=(
+                "Svaply contact form email backend test (Resend). "
+                "You can ignore this message."
+            ),
         )
         self.stdout.write(self.style.SUCCESS(f"Testovací email odoslaný na {recipient}."))
