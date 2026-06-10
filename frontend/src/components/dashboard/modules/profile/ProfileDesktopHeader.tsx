@@ -213,6 +213,7 @@ export function ProfileDesktopHeader({
       {/* Tlačidlá pod fotkou – 1024–1190px: celá šírka, rovnako veľké, vycentrované */}
       <div className="mt-[clamp(0.75rem,1.5vw,0.75rem)] grid w-full max-w-[660px] grid-cols-[minmax(0,1fr)_minmax(0,1fr)_2.75rem] gap-2 lg:self-stretch xl:self-auto">
         <button
+          data-onboarding={!isOtherUserProfile ? 'profile-edit-button' : undefined}
           type="button"
           onClick={() => {
             if (isOtherUserProfile && isOpeningConversation) return;
@@ -258,6 +259,7 @@ export function ProfileDesktopHeader({
         ) : (
           <>
             <button
+              data-onboarding="profile-skills-button"
               type="button"
               onClick={() => {
                 // Desktop: prepnúť na prázdny screen Zručnosti

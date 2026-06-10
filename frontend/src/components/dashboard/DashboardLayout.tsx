@@ -134,6 +134,10 @@ export default function DashboardLayout({
         return;
       }
 
+      if (target instanceof Element && target.closest('[data-desktop-onboarding-overlay]')) {
+        return;
+      }
+
       // Ak klikneme na vyhľadávací panel alebo jeho obsah, nič nerob
       if (auxiliaryPanelRef.current && auxiliaryPanelRef.current.contains(target)) {
         return;

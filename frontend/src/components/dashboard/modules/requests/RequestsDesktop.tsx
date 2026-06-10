@@ -329,8 +329,9 @@ export function RequestsDesktop({ routeIntent }: RequestsDesktopProps) {
           </div>
         </div>
 
-        {/* 4 taby: Čakajúce, Aktívne, Dokončené, Zrušené */}
-        <div className="px-4 pt-2 pb-2">
+        <div data-onboarding="requests-tabs">
+          {/* 4 taby: Čakajúce, Aktívne, Dokončené, Zrušené */}
+          <div className="px-4 pt-2 pb-2">
           <div
             role="tablist"
             aria-label={t('requests.tabStatusLabel', 'Stav spoluprác')}
@@ -374,7 +375,7 @@ export function RequestsDesktop({ routeIntent }: RequestsDesktopProps) {
           </div>
         </div>
 
-        <div className="px-4 pb-4">
+          <div className="px-4 pb-4">
           <div
             role="tablist"
             aria-label={t('requests.title', 'Spolupráce')}
@@ -430,6 +431,7 @@ export function RequestsDesktop({ routeIntent }: RequestsDesktopProps) {
                 {sentCount}
               </span>
             </button>
+          </div>
           </div>
         </div>
       </div>
@@ -568,14 +570,27 @@ export function RequestsDesktop({ routeIntent }: RequestsDesktopProps) {
             setIsAutoReviewOpen(false);
             setAutoReviewOfferId(null);
             return { success: true };
-          } catch (error: any) {
+          } catch (error: unknown) {
+            const apiError = error as {
+              response?: {
+                data?: {
+                  error?: string;
+                  rating?: string[];
+                  pros?: string[];
+                  cons?: string[];
+                  text?: string[];
+                };
+              };
+              message?: string;
+            };
+            const errorData = apiError.response?.data;
             const errorMessage =
-              error?.response?.data?.error ||
-              error?.response?.data?.rating?.[0] ||
-              error?.response?.data?.pros?.[0] ||
-              error?.response?.data?.cons?.[0] ||
-              error?.response?.data?.text?.[0] ||
-              error?.message ||
+              errorData?.error ||
+              errorData?.rating?.[0] ||
+              errorData?.pros?.[0] ||
+              errorData?.cons?.[0] ||
+              errorData?.text?.[0] ||
+              apiError.message ||
               'Nepodarilo sa pridať recenziu. Skús to znova.';
             throw new Error(errorMessage);
           }

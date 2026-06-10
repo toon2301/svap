@@ -28,6 +28,7 @@ interface DashboardModalsProps {
   t: Translator;
   user: User | null;
   onUserUpdate?: (updatedUser: User) => void;
+  onCreatedSkillSaved?: () => void;
 }
 
 export default function DashboardModals({
@@ -42,6 +43,7 @@ export default function DashboardModals({
   t,
   user,
   onUserUpdate,
+  onCreatedSkillSaved,
 }: DashboardModalsProps) {
   const { refreshUser } = useAuth();
   const {
@@ -167,6 +169,7 @@ export default function DashboardModals({
     };
 
     const imageFiles = Array.isArray(images) ? images : [];
+    let didCreateSkill = false;
 
     try {
       if (editingCustomCategoryIndex !== null) {
@@ -207,6 +210,7 @@ export default function DashboardModals({
             await uploadImagesIfNeeded(data.id, imageFiles);
             created = await fetchSkillDetail(data.id);
           }
+          didCreateSkill = true;
           setCustomCategories((prev) => {
             const updated = [...prev];
             updated[editingCustomCategoryIndex] = created;
@@ -225,6 +229,7 @@ export default function DashboardModals({
             await uploadImagesIfNeeded(data.id, imageFiles);
             created = await fetchSkillDetail(data.id);
           }
+          didCreateSkill = true;
           setCustomCategories((prev) => [created, ...prev]);
           setSelectedSkillsCategory(null);
         } else {
@@ -237,6 +242,7 @@ export default function DashboardModals({
               await uploadImagesIfNeeded(data.id, imageFiles);
               created = await fetchSkillDetail(data.id);
             }
+            didCreateSkill = true;
             setStandardCategories((prev) => [created, ...prev]);
             setSelectedSkillsCategory(null);
           } else {
@@ -290,6 +296,9 @@ export default function DashboardModals({
       }
 
       setIsSkillDescriptionModalOpen(false);
+      if (didCreateSkill) {
+        onCreatedSkillSaved?.();
+      }
     } catch (e: any) {
       const msg = e?.response?.data?.error || e?.response?.data?.detail || 'Ukladanie zručnosti zlyhalo';
       alert(msg);

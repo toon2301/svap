@@ -65,6 +65,25 @@ class TestDesktopOnboarding(APITestCase):
         assert self.user.desktop_onboarding_status == "in_progress"
         assert self.user.desktop_onboarding_step == "profile_icon"
 
+    def test_update_desktop_onboarding_later_step(self):
+        self.client.force_authenticate(self.user)
+
+        response = self.client.patch(
+            self.url,
+            {"status": "in_progress", "step": "messages"},
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data == {
+            "version": 1,
+            "status": "in_progress",
+            "step": "messages",
+        }
+        self.user.refresh_from_db()
+        assert self.user.desktop_onboarding_status == "in_progress"
+        assert self.user.desktop_onboarding_step == "messages"
+
     def test_update_rejects_unknown_fields(self):
         self.client.force_authenticate(self.user)
 
@@ -106,6 +125,25 @@ class TestDesktopOnboarding(APITestCase):
         self.user.refresh_from_db()
         assert self.user.desktop_onboarding_status == "completed"
         assert self.user.desktop_onboarding_step == "profile_icon"
+
+    def test_completed_state_can_end_on_dashboard_finish(self):
+        self.client.force_authenticate(self.user)
+
+        response = self.client.patch(
+            self.url,
+            {"status": "completed", "step": "dashboard_finish"},
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data == {
+            "version": 1,
+            "status": "completed",
+            "step": "dashboard_finish",
+        }
+        self.user.refresh_from_db()
+        assert self.user.desktop_onboarding_status == "completed"
+        assert self.user.desktop_onboarding_step == "dashboard_finish"
 
     def test_terminal_state_cannot_be_reopened(self):
         self.user.desktop_onboarding_status = "completed"

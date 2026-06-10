@@ -26,6 +26,11 @@ import {
 } from './mobileOnboardingStorage';
 import { isMobileOnboardingStepSceneReady } from './mobileOnboardingScene';
 import {
+  canGoBackMobileOnboarding,
+  resolveMobileOnboardingBackTarget,
+  type MobileOnboardingBackModule,
+} from './onboardingBackNavigation';
+import {
   type ProfileEditHighlightTarget,
   resolveProfileEditGoNextAction,
   resolveProfileSkillsClickAction,
@@ -55,6 +60,8 @@ type MobileOnboardingContextValue = {
   isProfileEditPhase2: boolean;
   step: MobileOnboardingStep;
   goNext: (options?: MobileOnboardingGoNextOptions) => void;
+  goBack: () => void;
+  canGoBack: boolean;
   skip: () => void;
   pause: () => void;
   close: () => void;
@@ -206,10 +213,14 @@ export function MobileOnboardingProvider({
     hasAutoStartedRef.current = false;
   }, [serverOnboardingStatus, serverOnboardingStep, userId]);
 
-  const persistState = useCallback((next: MobileOnboardingState, previous: MobileOnboardingState) => {
+  const persistState = useCallback((
+    next: MobileOnboardingState,
+    previous: MobileOnboardingState,
+    profileEditPhase2Override = isProfileEditPhase2,
+  ) => {
     void updateMobileOnboardingState(next)
       .then((serverNext) => {
-        cacheStateForUser(serverNext);
+        cacheStateForUser(serverNext, profileEditPhase2Override);
         updateUser({ mobile_onboarding: serverNext });
         setStored((current) => {
           const isSameRequestState =
@@ -231,7 +242,7 @@ export function MobileOnboardingProvider({
         });
         logClientError('Mobile onboarding state update failed', error);
       });
-  }, [cacheStateForUser, updateUser]);
+  }, [cacheStateForUser, isProfileEditPhase2, updateUser]);
 
   const isFinished = isMobileOnboardingFinished(stored.status);
   const isEligible = isStorageReady && isResolved && isMobile && !isFinished;
@@ -241,13 +252,13 @@ export function MobileOnboardingProvider({
   }, [activeModule, isProfileEditMode, stored.step]);
 
   const setState = useCallback(
-    (next: MobileOnboardingState) => {
+    (next: MobileOnboardingState, profileEditPhase2Override = isProfileEditPhase2) => {
       const previous = stored;
       setStored(next);
-      cacheStateForUser(next);
-      persistState(next, previous);
+      cacheStateForUser(next, profileEditPhase2Override);
+      persistState(next, previous, profileEditPhase2Override);
     },
-    [cacheStateForUser, persistState, stored],
+    [cacheStateForUser, isProfileEditPhase2, persistState, stored],
   );
 
   // Keep profile-only tutorial steps visible on the profile scene without
@@ -356,6 +367,59 @@ export function MobileOnboardingProvider({
 
   // X closes the tutorial permanently in the same way as the skip action.
   const close = skip;
+
+  const openBackTargetModule = useCallback(
+    (module?: MobileOnboardingBackModule) => {
+      if (module === 'home') {
+        onOpenHome();
+      } else if (module === 'profile') {
+        onOpenProfile();
+      } else if (module === 'search') {
+        onOpenSearch();
+      } else if (module === 'requests') {
+        onOpenRequests();
+      }
+    },
+    [onOpenHome, onOpenProfile, onOpenRequests, onOpenSearch],
+  );
+
+  const canGoBack = canGoBackMobileOnboarding(stored.step, isProfileEditPhase2);
+
+  const goBack = useCallback(() => {
+    if (!isEligible) return;
+
+    const target = resolveMobileOnboardingBackTarget(stored.step, isProfileEditPhase2);
+    if (!target) return;
+
+    setIsPausedUi(false);
+
+    if (target.profileEditPhase2) {
+      setMobileOnboardingResumePhase2();
+    } else {
+      clearMobileOnboardingResumePhase2();
+    }
+    setIsProfileEditPhase2(target.profileEditPhase2);
+    profileHighlightTargetRef.current = target.profileEditPhase2 ? 'skills' : 'edit';
+
+    if (target.step === stored.step) {
+      cacheStateForUser(stored, target.profileEditPhase2);
+      openBackTargetModule(target.openModule);
+      return;
+    }
+
+    setState(
+      { version: 1, status: 'in_progress', step: target.step },
+      target.profileEditPhase2,
+    );
+    openBackTargetModule(target.openModule);
+  }, [
+    cacheStateForUser,
+    isEligible,
+    isProfileEditPhase2,
+    openBackTargetModule,
+    setState,
+    stored,
+  ]);
 
   const advanceProfileEditToPhase2 = useCallback(() => {
     setMobileOnboardingResumePhase2();
@@ -547,6 +611,8 @@ export function MobileOnboardingProvider({
       isProfileEditPhase2,
       step: stored.step,
       goNext,
+      goBack,
+      canGoBack,
       skip,
       pause,
       close,
@@ -560,6 +626,8 @@ export function MobileOnboardingProvider({
     [
       close,
       complete,
+      canGoBack,
+      goBack,
       goNext,
       isEligible,
       isOverlayVisible,

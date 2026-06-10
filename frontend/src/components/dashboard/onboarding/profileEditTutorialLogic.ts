@@ -1,4 +1,6 @@
-import type { MobileOnboardingStep } from '@/types';
+import type { DesktopOnboardingStep, MobileOnboardingStep } from '@/types';
+
+type ProfileOnboardingStep = DesktopOnboardingStep | MobileOnboardingStep;
 
 export type ProfileEditGoNextAction =
   | 'advance_to_phase_2'
@@ -9,7 +11,7 @@ export type ProfileEditHighlightTarget = 'edit' | 'skills';
 
 /** Pure helper for profile_edit "Ďalej" behavior (unit-tested). */
 export function resolveProfileEditGoNextAction(
-  step: MobileOnboardingStep,
+  step: ProfileOnboardingStep,
   isProfileEditPhase2: boolean,
   highlightedTarget?: ProfileEditHighlightTarget,
 ): ProfileEditGoNextAction {
@@ -26,7 +28,7 @@ export type ProfileSkillsClickAction =
 
 /** Pure helper for profile_edit skills button during onboarding. */
 export function resolveProfileSkillsClickAction(
-  step: MobileOnboardingStep,
+  step: ProfileOnboardingStep,
   isProfileEditPhase2: boolean,
   isOnboardingActive: boolean,
   highlightedTarget?: ProfileEditHighlightTarget,

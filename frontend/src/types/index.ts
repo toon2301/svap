@@ -32,7 +32,16 @@ export interface MobileOnboardingState {
   step: MobileOnboardingStep;
 }
 
-export type DesktopOnboardingStep = 'navigation' | 'profile_icon';
+export type DesktopOnboardingStep =
+  | 'navigation'
+  | 'profile_icon'
+  | 'profile_edit'
+  | 'edit_form'
+  | 'search'
+  | 'help_request'
+  | 'requests'
+  | 'messages'
+  | 'dashboard_finish';
 export type DesktopOnboardingStatus = 'in_progress' | 'completed' | 'skipped';
 
 export interface DesktopOnboardingState {
