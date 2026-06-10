@@ -10,7 +10,7 @@ from accounts.views.contact import _send_contact_email
 
 
 class Command(BaseCommand):
-    help = "Odošle testovací kontaktný email na SUPPORT_EMAIL (overenie SMTP)."
+    help = "Odošle testovací kontaktný email na SUPPORT_EMAIL (overenie email backendu)."
 
     def handle(self, *args, **options):
         recipient = getattr(settings, "SUPPORT_EMAIL", "info@svaply.com")

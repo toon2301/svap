@@ -221,7 +221,7 @@ CORS_ALLOWED_ORIGINS = os.getenv("CORS_ALLOWED_ORIGINS", "").split(",")
 if not CORS_ALLOWED_ORIGINS or CORS_ALLOWED_ORIGINS == [""]:
     CORS_ALLOWED_ORIGINS = ["https://antonchudjak.pythonanywhere.com"]
 
-# Email settings (production) - strict, no fallbacks
+# Email settings (production) - Resend HTTP API via django-anymail
 def _require_env(name: str) -> str:
     v = os.getenv(name)
     if v is None or not str(v).strip():
@@ -229,17 +229,9 @@ def _require_env(name: str) -> str:
     return str(v).strip()
 
 
-EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
-EMAIL_HOST = _require_env("EMAIL_HOST")
-try:
-    EMAIL_PORT = int(_require_env("EMAIL_PORT"))
-except Exception:
-    raise ValueError("EMAIL_PORT must be an integer in production")
-EMAIL_HOST_USER = _require_env("EMAIL_HOST_USER")
-EMAIL_HOST_PASSWORD = _require_env("EMAIL_HOST_PASSWORD")
-# TLS je bezpečný default; dá sa override cez env, ale production nepadá na tomto nastavení.
-EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "1").lower() not in ("0", "false", "no")
-DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL") or EMAIL_HOST_USER
+EMAIL_BACKEND = "anymail.backends.resend.EmailBackend"
+ANYMAIL = {"RESEND_API_KEY": _require_env("RESEND_API_KEY")}
+DEFAULT_FROM_EMAIL = _require_env("DEFAULT_FROM_EMAIL")
 
 # Google OAuth credentials
 GOOGLE_OAUTH2_CLIENT_ID = os.getenv("GOOGLE_OAUTH2_CLIENT_ID")

@@ -15,6 +15,7 @@ INSTALLED_APPS = [
     "django_filters",
     "storages",
     "channels",
+    "anymail",
     # Django allauth (len pre Google OAuth) - DOČASNE VYPNUTÉ
     # 'allauth',
     # 'allauth.account',

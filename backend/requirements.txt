@@ -29,3 +29,4 @@ celery>=5.4,<6
 cryptography>=42.0.0
 pywebpush>=2.0,<3
 sentry-sdk[django]
+django-anymail[resend]>=10.3,<16
