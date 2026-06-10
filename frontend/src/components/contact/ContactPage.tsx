@@ -151,12 +151,17 @@ export default function ContactPage() {
       return;
     }
 
+    const websiteField = e.currentTarget.elements.namedItem('website') as
+      | HTMLInputElement
+      | null;
+    const website = websiteField?.value?.trim() ?? '';
+
     try {
       await api.post('/contact/', {
         email: formData.email.trim(),
         message: formData.message.trim(),
         captcha_token: captchaToken || undefined,
-        website: '',
+        ...(website ? { website } : {}),
       });
       setIsSuccess(true);
     } catch (error: unknown) {

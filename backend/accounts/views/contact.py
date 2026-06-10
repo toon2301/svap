@@ -8,6 +8,8 @@ import time
 
 from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
+from django.utils.translation import gettext as _
+from django.utils.translation import gettext_lazy as _lazy
 from rest_framework import status
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.permissions import AllowAny
@@ -25,22 +27,25 @@ def _support_email() -> str:
 
 
 def _send_contact_email(*, user_email: str, message: str) -> None:
-    subject = "[Svaply] Kontaktná správa"
+    subject = _lazy("[Svaply] Kontaktná správa")
     recipient = _support_email()
     safe_email = html.escape(user_email)
     safe_message = html.escape(message)
+    sender_label = _lazy("Email odosielateľa")
+    message_label = _lazy("Správa")
     text_message = (
-        f"Nová správa z kontaktného formulára.\n\n"
-        f"Email odosielateľa: {user_email}\n\n"
-        f"Správa:\n{message}\n"
+        f"{_lazy('Nová správa z kontaktného formulára.')}\n\n"
+        f"{sender_label}: {user_email}\n\n"
+        f"{message_label}:\n{message}\n"
     )
+    html_title = _lazy("Kontaktná správa – Svaply")
     html_message = f"""
     <html>
     <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
         <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-            <h2 style="color: #7C3AED;">Kontaktná správa – Svaply</h2>
-            <p><strong>Email odosielateľa:</strong> {safe_email}</p>
-            <p><strong>Správa:</strong></p>
+            <h2 style="color: #7C3AED;">{html_title}</h2>
+            <p><strong>{sender_label}:</strong> {safe_email}</p>
+            <p><strong>{message_label}:</strong></p>
             <p style="white-space: pre-wrap;">{safe_message}</p>
         </div>
     </body>
@@ -67,22 +72,22 @@ def _send_contact_email(*, user_email: str, message: str) -> None:
             "CONTACT_EMAIL_CONSOLE_PREVIEW to=%s reply_to=%s subject=%s",
             recipient,
             user_email,
-            subject,
+            str(subject),
         )
         logger.info(
             "CONTACT_EMAIL_CONSOLE_BODY_PREVIEW: %s",
-            text_message[:500],
+            str(text_message)[:500],
         )
         return
 
     msg = EmailMultiAlternatives(
-        subject=subject,
-        body=text_message,
+        subject=str(subject),
+        body=str(text_message),
         from_email=settings.DEFAULT_FROM_EMAIL,
         to=[recipient],
         reply_to=[user_email],
     )
-    msg.attach_alternative(html_message, "text/html")
+    msg.attach_alternative(str(html_message), "text/html")
     sent_count = msg.send(fail_silently=False)
 
     logger.info(
@@ -107,7 +112,7 @@ def contact_form_view(request):
 
     if serializer.validated_data.get("_honeypot"):
         return Response(
-            {"message": "Ďakujeme. Vaša správa bola odoslaná."},
+            {"message": _("Ďakujeme. Vaša správa bola odoslaná.")},
             status=status.HTTP_200_OK,
         )
 
@@ -125,11 +130,11 @@ def contact_form_view(request):
             },
         )
         return Response(
-            {"error": "Chyba pri odosielaní správy. Skúste to neskôr."},
+            {"error": _("Chyba pri odosielaní správy. Skúste to neskôr.")},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
     return Response(
-        {"message": "Ďakujeme. Vaša správa bola odoslaná."},
+        {"message": _("Ďakujeme. Vaša správa bola odoslaná.")},
         status=status.HTTP_200_OK,
     )

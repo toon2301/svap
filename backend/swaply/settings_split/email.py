@@ -51,6 +51,8 @@ else:
         DEFAULT_FROM_EMAIL = _from_env
     elif _user_env:
         DEFAULT_FROM_EMAIL = _user_env
+    else:
+        DEFAULT_FROM_EMAIL = "webmaster@localhost"
 
 # Limit SMTP connection/response time (seconds)
 EMAIL_TIMEOUT = int(os.getenv("EMAIL_TIMEOUT", "10"))

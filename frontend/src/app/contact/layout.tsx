@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import ReCaptchaProvider from '@/components/ReCaptchaProvider';
 
 export const metadata: Metadata = {
   title: 'Kontakt | Svaply',
@@ -7,5 +8,5 @@ export const metadata: Metadata = {
 };
 
 export default function ContactLayout({ children }: { children: React.ReactNode }) {
-  return <>{children}</>;
+  return <ReCaptchaProvider>{children}</ReCaptchaProvider>;
 }

@@ -3,6 +3,7 @@ Serializers pre kontaktný formulár.
 """
 
 from django.conf import settings
+from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
 from swaply.validators import CAPTCHAValidator, EmailValidator, SecurityValidator
@@ -36,9 +37,11 @@ class ContactFormSerializer(serializers.Serializer):
     def validate_message(self, value):
         value = value.strip() if isinstance(value, str) else ""
         if not value:
-            raise serializers.ValidationError("Správa je povinná.")
+            raise serializers.ValidationError(_("Správa je povinná."))
         if len(value) > 2000:
-            raise serializers.ValidationError("Správa môže mať maximálne 2000 znakov.")
+            raise serializers.ValidationError(
+                _("Správa môže mať maximálne 2000 znakov.")
+            )
         SecurityValidator.validate_input_safety(value)
         return bleach.clean(value, tags=[], strip=True)
 
@@ -53,7 +56,7 @@ class ContactFormSerializer(serializers.Serializer):
             CAPTCHAValidator.validate_captcha(captcha_token)
         elif self.fields["captcha_token"].required:
             raise serializers.ValidationError(
-                {"captcha_token": ["CAPTCHA je povinná."]}
+                {"captcha_token": [_("CAPTCHA je povinná.")]}
             )
 
         return attrs
