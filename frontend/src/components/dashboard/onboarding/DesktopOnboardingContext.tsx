@@ -206,6 +206,7 @@ export function DesktopOnboardingProvider({
   }, [isProfileEditPhase2, serverOnboardingStatus, serverOnboardingStep]);
 
   const runPersistQueue = useCallback(() => {
+    // Single-flight: only one persist request runs at a time.
     if (persistInFlightRef.current || !queuedPersistRef.current) return;
 
     const request = queuedPersistRef.current;
@@ -220,6 +221,8 @@ export function DesktopOnboardingProvider({
           currentBeforeApply,
           request.next,
         );
+        // Apply server snapshot when onboarding finished, or when no newer optimistic
+        // update was queued while this request was in flight.
         const shouldApplyServerState =
           isDesktopOnboardingFinished(serverNext.status) ||
           (isCurrentRequestState && !hasQueuedState);
@@ -231,6 +234,7 @@ export function DesktopOnboardingProvider({
         setStored((current) => {
           const isSameRequestState =
             current.status === request.next.status && current.step === request.next.step;
+          // Normal path: React state still matches the persisted request.
           if (shouldApplyServerState && isSameRequestState) {
             if (isSameDesktopOnboardingState(pendingStateRef.current, request.next)) {
               pendingStateRef.current = null;
@@ -239,12 +243,14 @@ export function DesktopOnboardingProvider({
             return serverNext;
           }
 
+          // Terminal server status can still win even if local step diverged mid-flight.
           if (isDesktopOnboardingFinished(serverNext.status) && shouldApplyServerState) {
             pendingStateRef.current = null;
             storedRef.current = serverNext;
             return serverNext;
           }
 
+          // Keep newer optimistic local state when user advanced during persist.
           storedRef.current = current;
           return current;
         });
@@ -254,6 +260,7 @@ export function DesktopOnboardingProvider({
           const hasQueuedState = queuedPersistRef.current != null;
           const isFailedOptimisticState =
             current.status === request.next.status && current.step === request.next.step;
+          // Roll back only the failed optimistic update; never overwrite a newer queued step.
           const shouldRollback =
             isFailedOptimisticState &&
             !hasQueuedState &&
@@ -269,6 +276,7 @@ export function DesktopOnboardingProvider({
       })
       .finally(() => {
         persistInFlightRef.current = false;
+        // Drain any state queued while this request was in flight.
         runPersistQueue();
       });
   }, [updateUser]);
@@ -294,7 +302,6 @@ export function DesktopOnboardingProvider({
   const isBlockedByUi = useMemo(
     () =>
       isDesktopOnboardingBlockedByUi({
-        activeModule,
         isRightSidebarOpen,
         isSearchOpen,
         isNotificationsPanelOpen,
@@ -302,7 +309,6 @@ export function DesktopOnboardingProvider({
         onboardingStep: stored.step,
       }),
     [
-      activeModule,
       isMobileMenuOpen,
       isNotificationsPanelOpen,
       isRightSidebarOpen,
@@ -494,7 +500,7 @@ export function DesktopOnboardingProvider({
     }
 
     if (stored.step === 'edit_form') {
-      finishOnboarding('edit_form');
+      advanceProfileEditToPhase2();
       return;
     }
 

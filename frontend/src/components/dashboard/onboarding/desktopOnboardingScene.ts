@@ -8,7 +8,6 @@ const DESKTOP_SEARCH_ONBOARDING_STEPS = new Set<DesktopOnboardingStep>([
 ]);
 
 type DesktopOnboardingUiBlockerInput = {
-  activeModule: string;
   isRightSidebarOpen?: boolean;
   isSearchOpen?: boolean;
   isNotificationsPanelOpen?: boolean;

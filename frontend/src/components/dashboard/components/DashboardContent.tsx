@@ -834,11 +834,7 @@ export default function DashboardContent({
     (typeof mobileMessagePeer?.id === 'number' ? String(mobileMessagePeer.id) : null);
   const mobileMessageTitle = mobileMessageGroup?.name || (mobileMessagePeer?.display_name || '').trim() || undefined;
   const mobileMessageAvatarUrl = mobileMessageGroup ? null : mobileMessagePeer?.avatar_url ?? null;
-  const isMobileProfileEditMode =
-    activeModule === 'profile' &&
-    activeRightItem === 'edit-profile' &&
-    isRightSidebarOpen;
-  const isDesktopProfileEditMode =
+  const isProfileEditMode =
     activeModule === 'profile' &&
     activeRightItem === 'edit-profile' &&
     isRightSidebarOpen;
@@ -862,7 +858,7 @@ export default function DashboardContent({
       <DesktopOnboardingProvider
         activeModule={activeModule}
         isSearchOpen={isSearchOpen}
-        isProfileEditMode={isDesktopProfileEditMode}
+        isProfileEditMode={isProfileEditMode}
         isRightSidebarOpen={isRightSidebarOpen}
         isNotificationsPanelOpen={isNotificationsPanelOpen}
         isMobileMenuOpen={isMobileMenuOpen}
@@ -878,7 +874,7 @@ export default function DashboardContent({
       >
         <MobileOnboardingProvider
           activeModule={activeModule}
-          isProfileEditMode={isMobileProfileEditMode}
+          isProfileEditMode={isProfileEditMode}
           isBlockedByUi={isMobileOnboardingBlocked}
           onOpenHome={handleOnboardingHomeOpen}
           onOpenProfile={navigation.handleMobileProfileClick}

@@ -34,8 +34,9 @@ const COMPLETED_STEPS: DesktopOnboardingStep[] = [
 ];
 const TERMINAL_STATUSES: DesktopOnboardingStatus[] = ['completed', 'skipped'];
 
-function getDesktopOnboardingStepRank(step: DesktopOnboardingStep): number {
-  return VALID_STEPS.indexOf(step);
+function getDesktopOnboardingStepRank(step: DesktopOnboardingStep): number | null {
+  const rank = VALID_STEPS.indexOf(step);
+  return rank === -1 ? null : rank;
 }
 
 export function normalizeDesktopOnboardingState(
@@ -74,10 +75,13 @@ export function isDesktopOnboardingServerStateBehind(
     return false;
   }
 
-  return (
-    getDesktopOnboardingStepRank(serverState.step) <
-    getDesktopOnboardingStepRank(localState.step)
-  );
+  const localRank = getDesktopOnboardingStepRank(localState.step);
+  const serverRank = getDesktopOnboardingStepRank(serverState.step);
+  if (localRank == null || serverRank == null) {
+    return false;
+  }
+
+  return serverRank < localRank;
 }
 
 export function isDesktopOnboardingFinished(status: DesktopOnboardingStatus): boolean {

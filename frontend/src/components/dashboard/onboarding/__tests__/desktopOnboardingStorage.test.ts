@@ -78,29 +78,23 @@ describe('desktopOnboardingState helpers', () => {
   });
 
   it('blocks desktop onboarding while temporary desktop UI is open', () => {
-    expect(isDesktopOnboardingBlockedByUi({ activeModule: 'home' })).toBe(false);
-    expect(isDesktopOnboardingBlockedByUi({ activeModule: 'home', isSearchOpen: true }))
-      .toBe(true);
+    expect(isDesktopOnboardingBlockedByUi({})).toBe(false);
+    expect(isDesktopOnboardingBlockedByUi({ isSearchOpen: true })).toBe(true);
     expect(
       isDesktopOnboardingBlockedByUi({
-        activeModule: 'home',
         isSearchOpen: true,
         onboardingStep: 'search',
       }),
     ).toBe(false);
     expect(
       isDesktopOnboardingBlockedByUi({
-        activeModule: 'home',
         isSearchOpen: true,
         onboardingStep: 'help_request',
       }),
     ).toBe(false);
-    expect(isDesktopOnboardingBlockedByUi({ activeModule: 'home', isRightSidebarOpen: true }))
-      .toBe(true);
-    expect(isDesktopOnboardingBlockedByUi({ activeModule: 'home', isNotificationsPanelOpen: true }))
-      .toBe(true);
-    expect(isDesktopOnboardingBlockedByUi({ activeModule: 'home', isMobileMenuOpen: true }))
-      .toBe(true);
+    expect(isDesktopOnboardingBlockedByUi({ isRightSidebarOpen: true })).toBe(true);
+    expect(isDesktopOnboardingBlockedByUi({ isNotificationsPanelOpen: true })).toBe(true);
+    expect(isDesktopOnboardingBlockedByUi({ isMobileMenuOpen: true })).toBe(true);
   });
 
   it('treats completed and skipped as finished', () => {
