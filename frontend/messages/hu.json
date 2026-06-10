@@ -826,6 +826,39 @@
       }
     }
   },
+  "contact": {
+    "backToHome": "Vissza a kezdőlapra",
+    "hero": {
+      "title": "Kapcsolat",
+      "subtitle": "Kérdésed van, vagy segítségre van szükséged?\nÍrj nekünk – szívesen segítünk."
+    },
+    "responseTime": "Általában 24 órán belül válaszolunk",
+    "faqPrefix": "Válaszokat itt is találsz:",
+    "faqLink": "gyakran ismételt kérdések",
+    "form": {
+      "email": "E-mail",
+      "message": "Üzenet",
+      "messagePlaceholder": "Írd le, miben segíthetünk...",
+      "submit": "Küldés",
+      "submitting": "Küldés folyamatban..."
+    },
+    "success": {
+      "title": "Üzenet elküldve",
+      "message": "Köszönjük az üzeneted. 24 órán belül jelentkezünk.",
+      "backToHome": "Vissza a kezdőlapra"
+    },
+    "errors": {
+      "messageRequired": "Az üzenet megadása kötelező",
+      "messageTooLong": "Az üzenet legfeljebb 2000 karakter hosszú lehet",
+      "general": "Az üzenetet nem sikerült elküldeni. Próbáld újra később.",
+      "rateLimited": "Túl sok próbálkozás. Próbáld újra egy kicsit később."
+    },
+    "social": {
+      "instagram": "Instagram",
+      "facebook": "Facebook"
+    },
+    "privacyNote": "Az adataidat kizárólag az üzeneted megválaszolásához használjuk."
+  },
   "footer": {
     "howItWorks": "Hogyan működik",
     "forIndividuals": "Magánszemélyeknek",

@@ -315,6 +315,13 @@ api_rate_limit = rate_limit(
 email_check_rate_limit = rate_limit(
     max_attempts=30, window_minutes=10, block_minutes=30, action="email_check"
 )
+contact_form_rate_limit = rate_limit(
+    max_attempts=5,
+    window_minutes=60,
+    block_minutes=60,
+    action="contact_form",
+    message="Príliš veľa pokusov. Skúste to neskôr.",
+)
 messaging_open_rate_limit = rate_limit(
     max_attempts=30,
     window_minutes=5,
