@@ -140,6 +140,7 @@ export default function ContactPage() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    const form = e.currentTarget;
     if (!validateForm()) return;
 
     setIsLoading(true);
@@ -151,7 +152,7 @@ export default function ContactPage() {
       return;
     }
 
-    const websiteField = e.currentTarget.elements.namedItem('website') as
+    const websiteField = form.elements.namedItem('website') as
       | HTMLInputElement
       | null;
     const website = websiteField?.value?.trim() ?? '';
