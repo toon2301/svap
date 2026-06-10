@@ -52,17 +52,13 @@ jobs:
     - name: Deploy to PythonAnywhere
       uses: appleboy/ssh-action@029f5b4aeeeb58fdfe1410a5d17f967dacf36262
       env:
-        DEPLOY_EMAIL_HOST: ${{ secrets.EMAIL_HOST }}
-        DEPLOY_EMAIL_PORT: ${{ secrets.EMAIL_PORT }}
-        DEPLOY_EMAIL_HOST_USER: ${{ secrets.EMAIL_HOST_USER }}
-        DEPLOY_EMAIL_HOST_PASSWORD: ${{ secrets.EMAIL_HOST_PASSWORD }}
-        DEPLOY_EMAIL_USE_TLS: ${{ secrets.EMAIL_USE_TLS }}
+        DEPLOY_RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
         DEPLOY_DEFAULT_FROM_EMAIL: ${{ secrets.DEFAULT_FROM_EMAIL }}
       with:
         host: ${{ secrets.PYTHONANYWHERE_HOST }}
         username: ${{ secrets.PYTHONANYWHERE_USERNAME }}
         key: ${{ secrets.PYTHONANYWHERE_SSH_KEY }}
-        envs: DEPLOY_EMAIL_HOST,DEPLOY_EMAIL_PORT,DEPLOY_EMAIL_HOST_USER,DEPLOY_EMAIL_HOST_PASSWORD,DEPLOY_EMAIL_USE_TLS,DEPLOY_DEFAULT_FROM_EMAIL
+        envs: DEPLOY_RESEND_API_KEY,DEPLOY_DEFAULT_FROM_EMAIL
         script: |
           set -e
           cd /home/${{ secrets.PYTHONANYWHERE_USERNAME }}/svap
@@ -70,11 +66,7 @@ jobs:
           cd backend
           source venv/bin/activate
           export ALLOWED_HOSTS="${{ env.PRODUCTION_ALLOWED_HOSTS }}"
-          [ -n "${DEPLOY_EMAIL_HOST:-}" ] && export EMAIL_HOST="$DEPLOY_EMAIL_HOST"
-          [ -n "${DEPLOY_EMAIL_PORT:-}" ] && export EMAIL_PORT="$DEPLOY_EMAIL_PORT"
-          [ -n "${DEPLOY_EMAIL_HOST_USER:-}" ] && export EMAIL_HOST_USER="$DEPLOY_EMAIL_HOST_USER"
-          [ -n "${DEPLOY_EMAIL_HOST_PASSWORD:-}" ] && export EMAIL_HOST_PASSWORD="$DEPLOY_EMAIL_HOST_PASSWORD"
-          [ -n "${DEPLOY_EMAIL_USE_TLS:-}" ] && export EMAIL_USE_TLS="$DEPLOY_EMAIL_USE_TLS"
+          [ -n "${DEPLOY_RESEND_API_KEY:-}" ] && export RESEND_API_KEY="$DEPLOY_RESEND_API_KEY"
           [ -n "${DEPLOY_DEFAULT_FROM_EMAIL:-}" ] && export DEFAULT_FROM_EMAIL="$DEPLOY_DEFAULT_FROM_EMAIL"
           python - <<'PY'
           import os
@@ -84,11 +76,7 @@ jobs:
           env_path = Path(".env")
           env_path.touch(exist_ok=True)
           email_env = {
-              "EMAIL_HOST": os.getenv("DEPLOY_EMAIL_HOST"),
-              "EMAIL_PORT": os.getenv("DEPLOY_EMAIL_PORT"),
-              "EMAIL_HOST_USER": os.getenv("DEPLOY_EMAIL_HOST_USER"),
-              "EMAIL_HOST_PASSWORD": os.getenv("DEPLOY_EMAIL_HOST_PASSWORD"),
-              "EMAIL_USE_TLS": os.getenv("DEPLOY_EMAIL_USE_TLS"),
+              "RESEND_API_KEY": os.getenv("DEPLOY_RESEND_API_KEY"),
               "DEFAULT_FROM_EMAIL": os.getenv("DEPLOY_DEFAULT_FROM_EMAIL"),
               "SUPPORT_EMAIL": "info@svaply.com",
           }
@@ -97,9 +85,7 @@ jobs:
                   set_key(str(env_path), key, value, quote_mode="always")
           PY
           # Production settings are only invoked on the server, where backend/.env
-          # or server env must provide EMAIL_HOST, EMAIL_PORT, EMAIL_HOST_USER,
-          # and EMAIL_HOST_PASSWORD. EMAIL_USE_TLS defaults to true, and
-          # DEFAULT_FROM_EMAIL defaults to EMAIL_HOST_USER.
+          # or server env must provide RESEND_API_KEY and DEFAULT_FROM_EMAIL.
           python manage.py migrate --settings=swaply.settings_production
           python manage.py collectstatic --noinput --settings=swaply.settings_production
           # Copy frontend build to frontend directory

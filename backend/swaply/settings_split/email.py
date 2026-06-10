@@ -1,61 +1,34 @@
-from .env import os, sys, env_bool
+from .env import os
 from .security import DEBUG
 
-# Email settings
+# Email settings (Resend HTTP API via django-anymail in production)
+
+
 def _require_env(name: str) -> str:
     v = os.getenv(name)
     if v is None or not str(v).strip():
-        raise ValueError(f"{name} must be set when DEBUG is False")
+        raise ValueError(f"{name} must be set")
     return str(v).strip()
 
 
 if DEBUG:
-    # Dev/test: SMTP ak sú k dispozícii creds, inak console backend.
-    _smtp_user = os.getenv("EMAIL_HOST_USER", "").strip()
-    _smtp_password = os.getenv("EMAIL_HOST_PASSWORD", "").strip()
+    _resend_key = os.getenv("RESEND_API_KEY", "").strip()
     _default_backend = (
-        "django.core.mail.backends.smtp.EmailBackend"
-        if _smtp_user and _smtp_password
+        "anymail.backends.resend.EmailBackend"
+        if _resend_key
         else "django.core.mail.backends.console.EmailBackend"
     )
     EMAIL_BACKEND = os.getenv("EMAIL_BACKEND") or _default_backend
 else:
-    # Production: nikdy console backend, vždy SMTP backend (bez fallbackov).
-    EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+    EMAIL_BACKEND = os.getenv("EMAIL_BACKEND") or "anymail.backends.resend.EmailBackend"
 
-# SMTP defaults if SMTP backend selected
-if EMAIL_BACKEND.endswith("smtp.EmailBackend"):
-    if DEBUG:
-        EMAIL_HOST = os.getenv("EMAIL_HOST", "smtp.gmail.com")
-        EMAIL_PORT = int(os.getenv("EMAIL_PORT", "587"))
-        EMAIL_USE_TLS = env_bool("EMAIL_USE_TLS", True)
-        EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
-        EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
-        DEFAULT_FROM_EMAIL = os.getenv(
-            "DEFAULT_FROM_EMAIL", EMAIL_HOST_USER or "no-reply@localhost"
-        )
-    else:
-        EMAIL_HOST = _require_env("EMAIL_HOST")
-        try:
-            EMAIL_PORT = int(_require_env("EMAIL_PORT"))
-        except Exception:
-            raise ValueError("EMAIL_PORT must be an integer when DEBUG is False")
-        EMAIL_HOST_USER = _require_env("EMAIL_HOST_USER")
-        EMAIL_HOST_PASSWORD = _require_env("EMAIL_HOST_PASSWORD")
-        EMAIL_USE_TLS = env_bool("EMAIL_USE_TLS", True)
-        DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL") or EMAIL_HOST_USER
+if EMAIL_BACKEND.endswith("resend.EmailBackend"):
+    ANYMAIL = {"RESEND_API_KEY": _require_env("RESEND_API_KEY")}
+    DEFAULT_FROM_EMAIL = _require_env("DEFAULT_FROM_EMAIL")
+elif EMAIL_BACKEND.endswith("console.EmailBackend"):
+    DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "no-reply@localhost")
 else:
-    _from_env = os.getenv("DEFAULT_FROM_EMAIL", "").strip()
-    _user_env = os.getenv("EMAIL_HOST_USER", "").strip()
-    if _from_env:
-        DEFAULT_FROM_EMAIL = _from_env
-    elif _user_env:
-        DEFAULT_FROM_EMAIL = _user_env
-    else:
-        DEFAULT_FROM_EMAIL = "webmaster@localhost"
-
-# Limit SMTP connection/response time (seconds)
-EMAIL_TIMEOUT = int(os.getenv("EMAIL_TIMEOUT", "10"))
+    DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "webmaster@localhost")
 
 # Kontaktný formulár – cieľová adresa podpory
 SUPPORT_EMAIL = os.getenv("SUPPORT_EMAIL", "info@svaply.com")
