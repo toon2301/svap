@@ -121,12 +121,13 @@ def contact_form_view(request):
 
     try:
         _send_contact_email(user_email=user_email, message=message)
-    except Exception as exc:
-        logger.error(
+    except Exception:
+        logger.exception(
             "Contact form email delivery failed",
             extra={
-                "error_type": type(exc).__name__,
                 "backend": getattr(settings, "EMAIL_BACKEND", None),
+                "email_host": getattr(settings, "EMAIL_HOST", None),
+                "email_port": getattr(settings, "EMAIL_PORT", None),
             },
         )
         return Response(
