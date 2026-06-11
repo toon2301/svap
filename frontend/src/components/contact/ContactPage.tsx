@@ -292,9 +292,6 @@ export default function ContactPage() {
             className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-black p-6 lg:p-8 shadow-sm text-center space-y-4"
           >
             <p className="text-lg font-medium text-gray-900 dark:text-white">{SUPPORT_EMAIL}</p>
-            <p className="text-gray-600 dark:text-gray-300">
-              {t('contact.responseTime', 'Odpovieme do 24 hodín')}
-            </p>
             <p className="text-sm text-gray-600 dark:text-gray-300">
               {t('contact.faqPrefix', 'Pozri si aj')}{' '}
               <Link
@@ -323,7 +320,7 @@ export default function ContactPage() {
                   htmlFor="contact-email"
                   className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-2"
                 >
-                  {t('contact.form.email', 'Email')}
+                  {t('contact.form.email', 'Váš email')}
                 </label>
                 <input
                   id="contact-email"
@@ -378,7 +375,7 @@ export default function ContactPage() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full sm:w-auto inline-flex items-center justify-center rounded-2xl bg-purple-600 hover:bg-purple-700 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold px-8 py-3 transition-colors"
+                className="w-full inline-flex items-center justify-center rounded-2xl bg-purple-600 hover:bg-purple-700 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold px-8 py-3 transition-colors"
               >
                 {isLoading
                   ? t('contact.form.submitting', 'Odosielam...')

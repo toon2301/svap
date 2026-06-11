@@ -758,6 +758,12 @@ export const endpoints = {
     userSkillsBySlug: (slug: string) => `/auth/dashboard/users/slug/${slug}/skills/`,
     settings: '/auth/dashboard/settings/',
   },
+  // Portfolio
+  portfolio: {
+    list: '/auth/portfolio/',
+    userList: (id: number) => `/auth/dashboard/users/${id}/portfolio/`,
+    userListBySlug: (slug: string) => `/auth/dashboard/users/slug/${encodeURIComponent(slug)}/portfolio/`,
+  },
   // Skills
   skills: {
     list: '/auth/skills/',

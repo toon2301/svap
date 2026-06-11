@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useLanguage } from '@/contexts/LanguageContext';
 import type { ProfileTab } from './profileTypes';
 
 type Props = {
@@ -10,6 +11,9 @@ type Props = {
 };
 
 export function ProfileDesktopTabs({ activeTab, onChangeTab, onTabsKeyDown }: Props) {
+  const { t } = useLanguage();
+  const offersTabLabel = t('profile.skills', 'Ponúkam/Hľadám').replace('/', ' / ');
+
   return (
     <div className="mt-[clamp(0.75rem,2vw,1.5rem)] w-full lg:pb-[clamp(0.5rem,1.5vw,1rem)]">
       <div role="tablist" aria-label="Sekcie profilu" className="w-full" tabIndex={0} onKeyDown={onTabsKeyDown}>
@@ -20,8 +24,8 @@ export function ProfileDesktopTabs({ activeTab, onChangeTab, onTabsKeyDown }: Pr
             role="tab"
             aria-selected={activeTab === 'offers'}
             onClick={() => onChangeTab('offers')}
-            aria-label="Ponúkam / Hľadám"
-            title="Ponúkam / Hľadám"
+            aria-label={offersTabLabel}
+            title={offersTabLabel}
             className={[
               'relative group flex-1 py-[clamp(0.5rem,1vw,0.75rem)] transition-all flex items-center justify-center min-w-[clamp(60px,8vw,72px)]',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60',
@@ -46,7 +50,7 @@ export function ProfileDesktopTabs({ activeTab, onChangeTab, onTabsKeyDown }: Pr
               />
             </svg>
             <div className="pointer-events-none absolute -bottom-8 left-1/2 -translate-x-1/2 whitespace-nowrap rounded bg-gray-800 px-2 py-1 text-[10px] text-white opacity-0 transition-opacity group-hover:opacity-100">
-              Ponúkam / Hľadám
+              {offersTabLabel}
             </div>
           </button>
 

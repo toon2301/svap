@@ -836,7 +836,7 @@
     "faqPrefix": "Pozri si aj",
     "faqLink": "často kladené otázky",
     "form": {
-      "email": "Email",
+      "email": "Váš email",
       "message": "Správa",
       "messagePlaceholder": "Napíš svoju správu...",
       "submit": "Odoslať",
@@ -4015,7 +4015,17 @@
     "coverImage": "Titulná fotka",
     "relatedOffer": "Súvisiaca ponuka",
     "itemNotFound": "Položka portfólia nebola nájdená.",
-    "profileNotFound": "Používateľ nebol nájdený."
+    "profileNotFound": "Používateľ nebol nájdený.",
+    "featured": "Vybrané",
+    "moreWork": "Ďalšie práce",
+    "emptyOwnerTitle": "Portfólio je zatiaľ prázdne",
+    "emptyOwnerBody": "Ukážky práce budeš môcť pridať neskôr.",
+    "emptyVisitorTitle": "Portfólio zatiaľ nie je dostupné",
+    "emptyVisitorBody": "Používateľ ešte nepridal verejné ukážky práce.",
+    "loadErrorTitle": "Portfólio sa nepodarilo načítať",
+    "loadErrorBody": "Skús to obnoviť o chvíľu.",
+    "retry": "Skúsiť znova",
+    "noCoverImage": "Bez titulnej fotky"
   },
   "reviews": {
     "addReview": "Pridať recenziu",

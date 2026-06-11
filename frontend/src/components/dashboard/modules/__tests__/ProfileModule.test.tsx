@@ -2,9 +2,25 @@ import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import ProfileModule from '../ProfileModule';
 import { User } from '../../../../types';
+import { api } from '@/lib/api';
 
 jest.mock('@/contexts/AuthContext', () => ({
   useAuth: () => ({ user: { id: 1 }, isAuthenticated: true }),
+}));
+
+jest.mock('@/lib/api', () => ({
+  __esModule: true,
+  api: {
+    get: jest.fn(),
+    patch: jest.fn(),
+  },
+  endpoints: {
+    portfolio: {
+      list: '/auth/portfolio/',
+      userList: (id: number) => `/auth/dashboard/users/${id}/portfolio/`,
+      userListBySlug: (slug: string) => `/auth/dashboard/users/slug/${encodeURIComponent(slug)}/portfolio/`,
+    },
+  },
 }));
 
 const mockUser: User = {
@@ -26,6 +42,11 @@ const mockUser: User = {
 };
 
 describe('ProfileModule', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    (api.get as jest.Mock).mockResolvedValue({ data: [] });
+  });
+
   it('renders without crashing', () => {
     render(<ProfileModule user={mockUser} />);
     // There are two avatars (mobile+desktop), so use getAllByText
@@ -74,6 +95,15 @@ describe('ProfileModule', () => {
     rerender(<ProfileModule user={mockUser} highlightedSkillId={12} />);
 
     expect(screen.getAllByRole('tab', { name: /Pon/i })[0]).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+  });
+
+  it('can initialize the portfolio tab for the own profile', () => {
+    render(<ProfileModule user={mockUser} initialTab="portfolio" />);
+
+    expect(screen.getAllByRole('tab', { name: /Portf/i })[0]).toHaveAttribute(
       'aria-selected',
       'true',
     );
