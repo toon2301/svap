@@ -836,7 +836,7 @@
     "faqPrefix": "Podívej se také na",
     "faqLink": "často kladené otázky",
     "form": {
-      "email": "E-mail",
+      "email": "Váš e-mail",
       "message": "Zpráva",
       "messagePlaceholder": "Napiš, s čím ti můžeme pomoct...",
       "submit": "Odeslat",
@@ -1037,7 +1037,7 @@
   "profile": {
     "editProfile": "Upravit profil",
     "verifyProfile": "Ověření profilu",
-    "skills": "Dovednosti",
+    "skills": "Nabízím/Hledám",
     "changePhoto": "Změnit fotku",
     "removePhoto": "Odstranit fotku",
     "cancel": "Zrušit",
@@ -4015,7 +4015,17 @@
     "coverImage": "Titulní fotka",
     "relatedOffer": "Související nabídka",
     "itemNotFound": "Položka portfolia nebyla nalezena.",
-    "profileNotFound": "Uživatel nebyl nalezen."
+    "profileNotFound": "Uživatel nebyl nalezen.",
+    "featured": "Vybrané",
+    "moreWork": "Další práce",
+    "emptyOwnerTitle": "Portfolio je zatím prázdné",
+    "emptyOwnerBody": "Ukázky práce budeš moct přidat později.",
+    "emptyVisitorTitle": "Portfolio zatím není dostupné",
+    "emptyVisitorBody": "Uživatel zatím nepřidal veřejné ukázky práce.",
+    "loadErrorTitle": "Portfolio se nepodařilo načíst",
+    "loadErrorBody": "Zkus to obnovit za chvíli.",
+    "retry": "Zkusit znovu",
+    "noCoverImage": "Bez titulní fotky"
   },
   "reviews": {
     "addReview": "Pridať recenziu",

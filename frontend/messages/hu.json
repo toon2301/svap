@@ -836,7 +836,7 @@
     "faqPrefix": "Válaszokat itt is találsz:",
     "faqLink": "gyakran ismételt kérdések",
     "form": {
-      "email": "E-mail",
+      "email": "Az e-mailed",
       "message": "Üzenet",
       "messagePlaceholder": "Írd le, miben segíthetünk...",
       "submit": "Küldés",
@@ -1037,7 +1037,7 @@
   "profile": {
     "editProfile": "Profil szerkesztése",
     "verifyProfile": "Profil ellenőrzés",
-    "skills": "Készségek",
+    "skills": "Kínálok/Keresek",
     "changePhoto": "Fotó módosítása",
     "removePhoto": "Fotó eltávolítása",
     "cancel": "Mégse",
@@ -4015,7 +4015,17 @@
     "coverImage": "Borítókép",
     "relatedOffer": "Kapcsolódó ajánlat",
     "itemNotFound": "A portfólióelem nem található.",
-    "profileNotFound": "A felhasználó nem található."
+    "profileNotFound": "A felhasználó nem található.",
+    "featured": "Kiemelt",
+    "moreWork": "További munkák",
+    "emptyOwnerTitle": "A portfólió még üres",
+    "emptyOwnerBody": "Munkamintákat később lehet majd hozzáadni.",
+    "emptyVisitorTitle": "A portfólió még nem érhető el",
+    "emptyVisitorBody": "A felhasználó még nem adott hozzá nyilvános munkamintákat.",
+    "loadErrorTitle": "A portfólió betöltése sikertelen",
+    "loadErrorBody": "Próbáld frissíteni egy kicsit később.",
+    "retry": "Újrapróbálás",
+    "noCoverImage": "Nincs borítókép"
   },
   "reviews": {
     "addReview": "Értékelés hozzáadása",

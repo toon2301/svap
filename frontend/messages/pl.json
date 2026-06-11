@@ -836,7 +836,7 @@
     "faqPrefix": "Odpowiedzi znajdziesz też w",
     "faqLink": "najczęściej zadawanych pytaniach",
     "form": {
-      "email": "E-mail",
+      "email": "Twój e-mail",
       "message": "Wiadomość",
       "messagePlaceholder": "Napisz, w czym możemy pomóc...",
       "submit": "Wyślij",
@@ -1037,7 +1037,7 @@
   "profile": {
     "editProfile": "Edytuj profil",
     "verifyProfile": "Weryfikacja profilu",
-    "skills": "Umiejętności",
+    "skills": "Oferuję/Szukam",
     "changePhoto": "Zmień zdjęcie",
     "removePhoto": "Usuń zdjęcie",
     "cancel": "Anuluj",
@@ -4015,7 +4015,17 @@
     "coverImage": "Zdjęcie główne",
     "relatedOffer": "Powiązana oferta",
     "itemNotFound": "Element portfolio nie został znaleziony.",
-    "profileNotFound": "Użytkownik nie został znaleziony."
+    "profileNotFound": "Użytkownik nie został znaleziony.",
+    "featured": "Wyróżnione",
+    "moreWork": "Więcej prac",
+    "emptyOwnerTitle": "Portfolio jest jeszcze puste",
+    "emptyOwnerBody": "Przykłady pracy będzie można dodać później.",
+    "emptyVisitorTitle": "Portfolio nie jest jeszcze dostępne",
+    "emptyVisitorBody": "Użytkownik nie dodał jeszcze publicznych przykładów pracy.",
+    "loadErrorTitle": "Nie udało się wczytać portfolio",
+    "loadErrorBody": "Spróbuj odświeżyć za chwilę.",
+    "retry": "Spróbuj ponownie",
+    "noCoverImage": "Bez zdjęcia głównego"
   },
   "reviews": {
     "addReview": "Dodaj opinię",

@@ -1,0 +1,142 @@
+'use client';
+
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useLanguage } from '@/contexts/LanguageContext';
+import type { ProfileTab } from './profileTypes';
+import { listProfilePortfolio } from './portfolioApi';
+import type { PortfolioItem } from './portfolioTypes';
+import { PortfolioEmptyState } from './PortfolioEmptyState';
+import { PortfolioFeaturedCard } from './PortfolioFeaturedCard';
+import { PortfolioGrid } from './PortfolioGrid';
+import { PortfolioSectionSkeleton } from './PortfolioSectionSkeleton';
+
+type ProfilePortfolioSectionProps = {
+  activeTab: ProfileTab;
+  ownerUserId?: number;
+  ownerSlug?: string | null;
+  isOtherUserProfile?: boolean;
+};
+
+function humanizeCategory(category: string): string {
+  return category
+    .split('-')
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
+}
+
+function targetKey(isOwner: boolean, ownerUserId?: number, ownerSlug?: string | null): string {
+  if (isOwner) return 'owner';
+  const slug = String(ownerSlug || '').trim();
+  if (slug) return `slug:${slug}`;
+  return `user:${ownerUserId ?? 'unknown'}`;
+}
+
+export default function ProfilePortfolioSection({
+  activeTab,
+  ownerUserId,
+  ownerSlug,
+  isOtherUserProfile = false,
+}: ProfilePortfolioSectionProps) {
+  const { t } = useLanguage();
+  const isOwner = !isOtherUserProfile;
+  const [items, setItems] = useState<PortfolioItem[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [loadError, setLoadError] = useState(false);
+  const loadedKeyRef = useRef<string | null>(null);
+  const requestSeqRef = useRef(0);
+  const currentTargetKey = useMemo(
+    () => targetKey(isOwner, ownerUserId, ownerSlug),
+    [isOwner, ownerSlug, ownerUserId],
+  );
+
+  const getCategoryLabel = useCallback(
+    (category: string) => {
+      const key = `skillsCatalog.categories.${category}`;
+      const translated = t(key);
+      return translated === key ? humanizeCategory(category) : translated;
+    },
+    [t],
+  );
+
+  const loadPortfolio = useCallback(async () => {
+    const seq = requestSeqRef.current + 1;
+    requestSeqRef.current = seq;
+    setIsLoading(true);
+    setLoadError(false);
+
+    try {
+      const data = await listProfilePortfolio({
+        isOwner,
+        ownerUserId,
+        ownerSlug,
+      });
+      if (requestSeqRef.current !== seq) return;
+      setItems(data);
+      loadedKeyRef.current = currentTargetKey;
+    } catch {
+      if (requestSeqRef.current !== seq) return;
+      setLoadError(true);
+    } finally {
+      if (requestSeqRef.current === seq) {
+        setIsLoading(false);
+      }
+    }
+  }, [currentTargetKey, isOwner, ownerSlug, ownerUserId]);
+
+  useEffect(() => {
+    setItems([]);
+    setLoadError(false);
+    setIsLoading(false);
+    loadedKeyRef.current = null;
+  }, [currentTargetKey]);
+
+  useEffect(() => {
+    if (activeTab !== 'portfolio') return;
+    if (!isOwner && ownerUserId == null && !ownerSlug) return;
+    if (loadedKeyRef.current === currentTargetKey) return;
+    void loadPortfolio();
+  }, [activeTab, currentTargetKey, isOwner, loadPortfolio, ownerSlug, ownerUserId]);
+
+  if (activeTab !== 'portfolio') return null;
+
+  if (isLoading && items.length === 0) {
+    return <PortfolioSectionSkeleton />;
+  }
+
+  if (loadError && items.length === 0) {
+    return (
+      <div className="mt-4 rounded-2xl border border-red-200 bg-red-50/70 px-5 py-6 text-center dark:border-red-900/60 dark:bg-red-950/20">
+        <h3 className="text-sm font-semibold text-red-700 dark:text-red-300">
+          {t('portfolio.loadErrorTitle')}
+        </h3>
+        <p className="mt-2 text-sm text-red-700/80 dark:text-red-300/80">
+          {t('portfolio.loadErrorBody')}
+        </p>
+        <button
+          type="button"
+          onClick={() => void loadPortfolio()}
+          className="mt-4 rounded-full border border-red-300 px-4 py-2 text-xs font-semibold text-red-700 transition hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-400/60 dark:border-red-800 dark:text-red-200 dark:hover:bg-red-950"
+        >
+          {t('portfolio.retry')}
+        </button>
+      </div>
+    );
+  }
+
+  if (items.length === 0) {
+    return <PortfolioEmptyState isOwner={isOwner} />;
+  }
+
+  const [featured, ...rest] = items;
+
+  return (
+    <div className="mt-4 space-y-5">
+      <PortfolioFeaturedCard
+        item={featured}
+        categoryLabel={getCategoryLabel(featured.category)}
+      />
+      <PortfolioGrid items={rest} getCategoryLabel={getCategoryLabel} />
+    </div>
+  );
+}

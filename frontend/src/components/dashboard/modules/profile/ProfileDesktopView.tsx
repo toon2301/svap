@@ -5,6 +5,7 @@ import type { User } from '../../../../types';
 import { getProfileDisplayName } from '@/lib/profileDisplayName';
 import ProfileEditFormDesktop from '../ProfileEditFormDesktop';
 import ProfileOffersSection from './ProfileOffersSection';
+import ProfilePortfolioSection from './ProfilePortfolioSection';
 import type { ProfileTab } from './profileTypes';
 import UserInfo from './UserInfo';
 import { ProfileDesktopHeader } from './ProfileDesktopHeader';
@@ -36,6 +37,7 @@ interface ProfileDesktopViewProps {
   onTabsKeyDown: (event: React.KeyboardEvent<HTMLDivElement>) => void;
   onOpenAllWebsitesModal: () => void;
   offersOwnerId?: number;
+  ownerSlug?: string | null;
   isOtherUserProfile?: boolean;
   onSendMessage?: () => void;
   isOpeningConversation?: boolean;
@@ -66,6 +68,7 @@ export default function ProfileDesktopView({
   onTabsKeyDown,
   onOpenAllWebsitesModal,
   offersOwnerId,
+  ownerSlug,
   isOtherUserProfile = false,
   onSendMessage,
   isOpeningConversation = false,
@@ -135,6 +138,13 @@ export default function ProfileDesktopView({
                 ownerDisplayName={getProfileDisplayName(displayUser, accountType)}
                 ownerProfileIdentifier={getProfileShareIdentifier(displayUser)}
                 highlightedSkillId={highlightedSkillId ?? null}
+                isOtherUserProfile={isOtherUserProfile}
+              />
+
+              <ProfilePortfolioSection
+                activeTab={activeTab}
+                ownerUserId={offersOwnerId ?? displayUser.id}
+                ownerSlug={ownerSlug ?? displayUser.slug}
                 isOtherUserProfile={isOtherUserProfile}
               />
 

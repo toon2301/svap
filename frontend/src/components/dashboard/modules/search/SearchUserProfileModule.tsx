@@ -282,6 +282,7 @@ export function SearchUserProfileModule({
             onTabsKeyDown={handleTabsKeyDown}
             onOpenAllWebsitesModal={() => setIsAllWebsitesModalOpen(true)}
             offersOwnerId={profileUser.id}
+            ownerSlug={profileUser.slug}
             isOtherUserProfile={true}
             highlightedSkillId={highlightedSkillId}
             onSendMessage={handleSendMessage}
@@ -307,6 +308,7 @@ export function SearchUserProfileModule({
             onTabsKeyDown={handleTabsKeyDown}
             onOpenAllWebsitesModal={() => setIsAllWebsitesModalOpen(true)}
             offersOwnerId={profileUser.id}
+            ownerSlug={profileUser.slug}
             isOtherUserProfile={true}
             highlightedSkillId={highlightedSkillId}
             onSendMessage={handleSendMessage}

@@ -210,6 +210,7 @@ export default function ModuleRouter({
           isEditMode={isRightSidebarOpen && activeRightItem === 'edit-profile'}
           accountType={accountType}
           highlightedSkillId={highlightedSkillId ?? null}
+          initialTab={initialProfileTab}
         />
       );
     case 'search':

@@ -836,7 +836,7 @@
     "faqPrefix": "Antworten findest du auch in den",
     "faqLink": "häufig gestellten Fragen",
     "form": {
-      "email": "E-Mail",
+      "email": "Deine E-Mail",
       "message": "Nachricht",
       "messagePlaceholder": "Schreib uns, wobei wir dir helfen können...",
       "submit": "Senden",
@@ -1037,7 +1037,7 @@
   "profile": {
     "editProfile": "Profil bearbeiten",
     "verifyProfile": "Profilverifizierung",
-    "skills": "Fähigkeiten",
+    "skills": "Anbieten/Suche",
     "changePhoto": "Foto ändern",
     "removePhoto": "Foto entfernen",
     "cancel": "Abbrechen",
@@ -4015,7 +4015,17 @@
     "coverImage": "Titelbild",
     "relatedOffer": "Zugehöriges Angebot",
     "itemNotFound": "Portfolioelement wurde nicht gefunden.",
-    "profileNotFound": "Benutzer wurde nicht gefunden."
+    "profileNotFound": "Benutzer wurde nicht gefunden.",
+    "featured": "Hervorgehoben",
+    "moreWork": "Weitere Arbeiten",
+    "emptyOwnerTitle": "Das Portfolio ist noch leer",
+    "emptyOwnerBody": "Du kannst Arbeitsbeispiele später hinzufügen.",
+    "emptyVisitorTitle": "Portfolio ist noch nicht verfügbar",
+    "emptyVisitorBody": "Dieser Nutzer hat noch keine öffentlichen Arbeitsbeispiele hinzugefügt.",
+    "loadErrorTitle": "Portfolio konnte nicht geladen werden",
+    "loadErrorBody": "Versuche es gleich erneut.",
+    "retry": "Erneut versuchen",
+    "noCoverImage": "Kein Titelbild"
   },
   "reviews": {
     "addReview": "Bewertung hinzufügen",

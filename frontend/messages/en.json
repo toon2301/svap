@@ -836,7 +836,7 @@
     "faqPrefix": "You might also find answers in our",
     "faqLink": "FAQ",
     "form": {
-      "email": "Email",
+      "email": "Your email",
       "message": "Message",
       "messagePlaceholder": "Tell us how we can help...",
       "submit": "Send",
@@ -1037,7 +1037,7 @@
   "profile": {
     "editProfile": "Edit profile",
     "verifyProfile": "Profile verification",
-    "skills": "Skills",
+    "skills": "Offer/Looking for",
     "changePhoto": "Change photo",
     "removePhoto": "Remove photo",
     "cancel": "Cancel",
@@ -4015,7 +4015,17 @@
     "coverImage": "Cover photo",
     "relatedOffer": "Related offer",
     "itemNotFound": "Portfolio item was not found.",
-    "profileNotFound": "User was not found."
+    "profileNotFound": "User was not found.",
+    "featured": "Featured",
+    "moreWork": "More work",
+    "emptyOwnerTitle": "Portfolio is empty",
+    "emptyOwnerBody": "You will be able to add work samples later.",
+    "emptyVisitorTitle": "Portfolio is not available yet",
+    "emptyVisitorBody": "This user has not added public work samples yet.",
+    "loadErrorTitle": "Could not load portfolio",
+    "loadErrorBody": "Try refreshing in a moment.",
+    "retry": "Try again",
+    "noCoverImage": "No cover photo"
   },
   "reviews": {
     "addReview": "Add review",

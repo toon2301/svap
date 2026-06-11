@@ -8,6 +8,7 @@ import UserAvatar from './UserAvatar';
 import UserInfo from './UserInfo';
 import ProfileEditFormMobile from '../ProfileEditFormMobile';
 import ProfileOffersMobileSection from './ProfileOffersMobileSection';
+import ProfilePortfolioSection from './ProfilePortfolioSection';
 import type { ProfileTab } from './profileTypes';
 import ProfileMobileSocialLinks from './ProfileMobileSocialLinks';
 import ProfileMobileHamburgerModal from './ProfileMobileHamburgerModal';
@@ -40,6 +41,7 @@ interface ProfileMobileViewProps {
   onTabsKeyDown: (event: React.KeyboardEvent<HTMLDivElement>) => void;
   onOpenAllWebsitesModal: () => void;
   offersOwnerId?: number;
+  ownerSlug?: string | null;
   isOtherUserProfile?: boolean;
   onSendMessage?: () => void;
   isOpeningConversation?: boolean;
@@ -73,6 +75,7 @@ export default function ProfileMobileView({
   onTabsKeyDown,
   onOpenAllWebsitesModal,
   offersOwnerId,
+  ownerSlug,
   isOtherUserProfile = false,
   onSendMessage,
   isOpeningConversation = false,
@@ -83,6 +86,7 @@ export default function ProfileMobileView({
 }: ProfileMobileViewProps) {
   const displayUser = displayUserProp ?? user;
   const { t } = useLanguage();
+  const offersTabLabel = t('profile.skills', 'Ponúkam/Hľadám').replace('/', ' / ');
   const [isHamburgerModalOpen, setIsHamburgerModalOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [reportModalOpen, setReportModalOpen] = useState(false);
@@ -424,8 +428,8 @@ export default function ProfileMobileView({
                     role="tab"
                     aria-selected={activeTab === 'offers'}
                     onClick={() => onChangeTab('offers')}
-                    aria-label="Ponúkam / Hľadám"
-                    title="Ponúkam / Hľadám"
+                    aria-label={offersTabLabel}
+                    title={offersTabLabel}
                     className={[
                       'relative group flex-1 py-1 transition-all flex items-center justify-center min-w-[56px]',
                       'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60',
@@ -559,6 +563,13 @@ export default function ProfileMobileView({
           )}
 
           {/* Základné info o používateľovi */}
+          <ProfilePortfolioSection
+            activeTab={activeTab}
+            ownerUserId={offersOwnerId ?? displayUser.id}
+            ownerSlug={ownerSlug ?? displayUser.slug}
+            isOtherUserProfile={isOtherUserProfile}
+          />
+
           <UserInfo user={displayUser} />
         </>
       )}

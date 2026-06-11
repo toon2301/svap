@@ -113,6 +113,7 @@ interface ProfileModuleProps {
   isEditMode?: boolean;
   accountType?: 'personal' | 'business';
   highlightedSkillId?: number | null;
+  initialTab?: ProfileTab;
 }
 
 export default function ProfileModule({
@@ -124,6 +125,7 @@ export default function ProfileModule({
   isEditMode = false,
   accountType = 'personal',
   highlightedSkillId = null,
+  initialTab = 'offers',
 }: ProfileModuleProps) {
   const { t } = useLanguage();
   const isMobile = useIsMobile();
@@ -136,7 +138,11 @@ export default function ProfileModule({
   const [isActionsOpen, setIsActionsOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [isAllWebsitesModalOpen, setIsAllWebsitesModalOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<ProfileTab>('offers');
+  const [activeTab, setActiveTab] = useState<ProfileTab>(initialTab);
+
+  useEffect(() => {
+    setActiveTab(initialTab);
+  }, [initialTab]);
 
   useEffect(() => {
     if (highlightedSkillId != null) {
@@ -474,6 +480,7 @@ export default function ProfileModule({
             onTabsKeyDown={handleTabsKeyDown}
             onOpenAllWebsitesModal={() => setIsAllWebsitesModalOpen(true)}
             offersOwnerId={user.id}
+            ownerSlug={user.slug}
             highlightedSkillId={highlightedSkillId}
           />
         ) : (
@@ -497,6 +504,7 @@ export default function ProfileModule({
             onTabsKeyDown={handleTabsKeyDown}
             onOpenAllWebsitesModal={() => setIsAllWebsitesModalOpen(true)}
             offersOwnerId={user.id}
+            ownerSlug={user.slug}
             highlightedSkillId={highlightedSkillId}
           />
         )}
