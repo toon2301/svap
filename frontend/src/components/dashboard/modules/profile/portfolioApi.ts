@@ -32,5 +32,11 @@ export async function listProfilePortfolio(params: ListPortfolioParams): Promise
   if (!endpoint) return [];
 
   const { data } = await api.get<PortfolioItem[]>(endpoint);
-  return Array.isArray(data) ? data : [];
+  if (!Array.isArray(data)) {
+    if (process.env.NODE_ENV !== 'production') {
+      console.warn('Unexpected portfolio list response shape.', { endpoint, data });
+    }
+    return [];
+  }
+  return data;
 }

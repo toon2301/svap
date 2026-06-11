@@ -5,15 +5,9 @@ import type { PortfolioItem } from './portfolioTypes';
 
 jest.mock('@/lib/api', () => ({
   __esModule: true,
+  ...jest.requireActual('@/lib/api'),
   api: {
     get: jest.fn(),
-  },
-  endpoints: {
-    portfolio: {
-      list: '/auth/portfolio/',
-      userList: (id: number) => `/auth/dashboard/users/${id}/portfolio/`,
-      userListBySlug: (slug: string) => `/auth/dashboard/users/slug/${encodeURIComponent(slug)}/portfolio/`,
-    },
   },
 }));
 

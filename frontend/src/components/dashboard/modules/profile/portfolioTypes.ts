@@ -1,3 +1,5 @@
+export type PortfolioImageStatus = 'pending' | 'approved' | 'rejected';
+
 export type PortfolioImage = {
   id: number;
   image_url?: string | null;
@@ -7,7 +9,7 @@ export type PortfolioImage = {
   order?: number | null;
   width?: number | null;
   height?: number | null;
-  status?: string;
+  status?: PortfolioImageStatus;
   rejected_reason?: string | null;
 };
 
