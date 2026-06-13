@@ -17,9 +17,9 @@ export default function UserPortfolioDetailDashboardPage({
     <Dashboard
       initialRoute="portfolio-detail"
       initialViewedUserId={/^\d+$/.test(identifier) ? Number(identifier) : null}
-      initialProfileSlug={identifier}
+      initialProfileSlug={/^\d+$/.test(identifier) ? null : identifier}
       initialProfileTab="portfolio"
-      initialPortfolioItemId={Number.isFinite(portfolioId) ? portfolioId : null}
+      initialPortfolioItemId={Number.isInteger(portfolioId) && portfolioId > 0 ? portfolioId : null}
     />
   );
 }

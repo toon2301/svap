@@ -14,7 +14,9 @@ export function PortfolioRelatedOfferCard({ offer }: PortfolioRelatedOfferCardPr
   if (!offer) return null;
 
   const category = String(offer.subcategory || offer.category || '').trim();
-  const label = category ? getPortfolioCategoryLabel(t, category) : t('portfolio.relatedOffer');
+  if (!category) return null;
+
+  const label = getPortfolioCategoryLabel(t, category);
 
   return (
     <section className="space-y-3" aria-label={t('portfolio.relatedOffer')}>

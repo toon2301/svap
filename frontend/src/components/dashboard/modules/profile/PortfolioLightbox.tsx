@@ -21,6 +21,9 @@ type PortfolioLightboxProps = {
   onClose: () => void;
 };
 
+const SWIPE_MIN_DISTANCE = 50;
+const SWIPE_HORIZONTAL_DOMINANCE_RATIO = 1.25;
+
 function clampIndex(index: number, length: number): number {
   if (length <= 0) return 0;
   return Math.min(Math.max(index, 0), length - 1);
@@ -173,7 +176,12 @@ export function PortfolioLightbox({
           if (!start || !touch || !hasMultipleImages) return;
           const deltaX = touch.clientX - start.x;
           const deltaY = touch.clientY - start.y;
-          if (Math.abs(deltaX) < 50 || Math.abs(deltaX) < Math.abs(deltaY) * 1.25) return;
+          if (
+            Math.abs(deltaX) < SWIPE_MIN_DISTANCE ||
+            Math.abs(deltaX) < Math.abs(deltaY) * SWIPE_HORIZONTAL_DOMINANCE_RATIO
+          ) {
+            return;
+          }
           if (deltaX < 0) {
             goToNext();
           } else {

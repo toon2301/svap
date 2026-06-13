@@ -51,7 +51,10 @@ export default function PortfolioDetailModule({
     try {
       const data = await getPortfolioItem(itemId);
       setItem(data);
-    } catch {
+    } catch (error) {
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Portfolio detail load failed.', error);
+      }
       setItem(null);
       setLoadError(true);
     } finally {
@@ -77,6 +80,10 @@ export default function PortfolioDetailModule({
 
   const openLightbox = useCallback((index: number) => {
     setLightboxIndex(index);
+  }, []);
+
+  const closeLightbox = useCallback(() => {
+    setLightboxIndex(null);
   }, []);
 
   const handleBack = useCallback(() => {
@@ -121,7 +128,7 @@ export default function PortfolioDetailModule({
           images={images}
           initialIndex={lightboxIndex ?? 0}
           alt={item.title}
-          onClose={() => setLightboxIndex(null)}
+          onClose={closeLightbox}
         />
       )}
     </div>

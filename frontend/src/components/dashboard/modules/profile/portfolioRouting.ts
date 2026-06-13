@@ -4,7 +4,7 @@ export function getPortfolioOwnerIdentifier(
 ): string | null {
   const slug = String(ownerSlug || '').trim();
   if (slug) return slug;
-  if (typeof ownerUserId === 'number' && Number.isFinite(ownerUserId)) {
+  if (typeof ownerUserId === 'number' && Number.isInteger(ownerUserId) && ownerUserId > 0) {
     return String(ownerUserId);
   }
   return null;

@@ -259,4 +259,22 @@ describe('PortfolioDetailModule', () => {
 
     expect(await screen.findByText('Súvisiaca ponuka')).toBeInTheDocument();
   });
+
+  it('does not render related offer when it has no category label', async () => {
+    (api.get as jest.Mock).mockResolvedValue({
+      data: portfolioItem({
+        related_offer: {
+          id: 12,
+          category: '',
+          subcategory: '  ',
+          is_seeking: false,
+        },
+      }),
+    });
+
+    render(<PortfolioDetailModule itemId={7} ownerIdentifier="jane-doe" />);
+
+    await screen.findByText('Portfolio Detail');
+    expect(screen.queryByText('Súvisiaca ponuka')).not.toBeInTheDocument();
+  });
 });
