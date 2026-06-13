@@ -7,9 +7,10 @@ import type { PortfolioItem } from './portfolioTypes';
 type PortfolioFeaturedCardProps = {
   item: PortfolioItem;
   categoryLabel: string;
+  onOpenItem?: (item: PortfolioItem) => void;
 };
 
-export function PortfolioFeaturedCard({ item, categoryLabel }: PortfolioFeaturedCardProps) {
+export function PortfolioFeaturedCard({ item, categoryLabel, onOpenItem }: PortfolioFeaturedCardProps) {
   const { t } = useLanguage();
 
   return (
@@ -19,7 +20,13 @@ export function PortfolioFeaturedCard({ item, categoryLabel }: PortfolioFeatured
           {t('portfolio.featured')}
         </h3>
       </div>
-      <PortfolioCard item={item} categoryLabel={categoryLabel} featured loading="eager" />
+      <PortfolioCard
+        item={item}
+        categoryLabel={categoryLabel}
+        featured
+        loading="eager"
+        onClick={onOpenItem ? () => onOpenItem(item) : undefined}
+      />
     </section>
   );
 }

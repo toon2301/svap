@@ -22,6 +22,7 @@ import type { DashboardSkill } from './hooks/useSkillsModals';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { SearchUserProfileModule } from './modules/search/SearchUserProfileModule';
 import OfferReviewsView from './modules/reviews/OfferReviewsView';
+import PortfolioDetailModule from './modules/profile/PortfolioDetailModule';
 
 interface ModuleRouterProps {
   user: User;
@@ -64,6 +65,8 @@ interface ModuleRouterProps {
   onSkillsModeToggle?: () => void;
   /** ID karty (ponuky) pre view recenzií. */
   offerIdForReviews?: number | null;
+  portfolioItemIdForDetail?: number | null;
+  portfolioOwnerIdentifier?: string | null;
   /** Conversation ID for messages detail view (from URL). */
   conversationIdForMessages?: number | null;
   /** Target user ID for draft compose flow (from URL). */
@@ -111,6 +114,8 @@ export default function ModuleRouter({
   onSkillsSearchClick,
   onSkillsModeToggle,
   offerIdForReviews,
+  portfolioItemIdForDetail,
+  portfolioOwnerIdentifier,
   conversationIdForMessages,
   targetUserIdForMessages,
   onNotificationNavigate,
@@ -144,6 +149,13 @@ export default function ModuleRouter({
   switch (activeModule) {
     case 'offer-reviews':
       return <OfferReviewsView offerId={offerIdForReviews ?? null} accountType={accountType} user={user} />;
+    case 'portfolio-detail':
+      return (
+        <PortfolioDetailModule
+          itemId={portfolioItemIdForDetail ?? null}
+          ownerIdentifier={portfolioOwnerIdentifier}
+        />
+      );
     case 'home':
       return (
         <div className="text-center py-20" data-onboarding="home-content">

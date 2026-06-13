@@ -4025,7 +4025,14 @@
     "loadErrorTitle": "A portfólió betöltése sikertelen",
     "loadErrorBody": "Próbáld frissíteni egy kicsit később.",
     "retry": "Újrapróbálás",
-    "noCoverImage": "Nincs borítókép"
+    "noCoverImage": "Nincs borítókép",
+    "detailLoadErrorTitle": "A portfólió betöltése sikertelen",
+    "back": "Vissza",
+    "gallery": "Galéria",
+    "photoCounter": "{current}. fotó / {total}",
+    "closeLightbox": "Bezárás",
+    "previousPhoto": "Előző fotó",
+    "nextPhoto": "Következő fotó"
   },
   "reviews": {
     "addReview": "Értékelés hozzáadása",

@@ -4025,7 +4025,14 @@
     "loadErrorTitle": "Could not load portfolio",
     "loadErrorBody": "Try refreshing in a moment.",
     "retry": "Try again",
-    "noCoverImage": "No cover photo"
+    "noCoverImage": "No cover photo",
+    "detailLoadErrorTitle": "Could not load portfolio",
+    "back": "Back",
+    "gallery": "Gallery",
+    "photoCounter": "Photo {current} of {total}",
+    "closeLightbox": "Close",
+    "previousPhoto": "Previous photo",
+    "nextPhoto": "Next photo"
   },
   "reviews": {
     "addReview": "Add review",

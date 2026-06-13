@@ -40,3 +40,18 @@ export async function listProfilePortfolio(params: ListPortfolioParams): Promise
   }
   return data;
 }
+
+export function getPortfolioDetailEndpoint(itemId: number): string | null {
+  if (!Number.isInteger(itemId) || itemId < 1) return null;
+  return endpoints.portfolio.detail(itemId);
+}
+
+export async function getPortfolioItem(itemId: number): Promise<PortfolioItem> {
+  const endpoint = getPortfolioDetailEndpoint(itemId);
+  if (!endpoint) {
+    throw new Error('Invalid portfolio item id.');
+  }
+
+  const { data } = await api.get<PortfolioItem>(endpoint);
+  return data;
+}

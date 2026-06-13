@@ -761,6 +761,7 @@ export const endpoints = {
   // Portfolio
   portfolio: {
     list: '/auth/portfolio/',
+    detail: (id: number) => `/auth/portfolio/${id}/`,
     userList: (id: number) => `/auth/dashboard/users/${id}/portfolio/`,
     userListBySlug: (slug: string) => `/auth/dashboard/users/slug/${encodeURIComponent(slug)}/portfolio/`,
   },

@@ -4025,7 +4025,14 @@
     "loadErrorTitle": "Portfolio konnte nicht geladen werden",
     "loadErrorBody": "Versuche es gleich erneut.",
     "retry": "Erneut versuchen",
-    "noCoverImage": "Kein Titelbild"
+    "noCoverImage": "Kein Titelbild",
+    "detailLoadErrorTitle": "Portfolio konnte nicht geladen werden",
+    "back": "Zurück",
+    "gallery": "Galerie",
+    "photoCounter": "Foto {current} von {total}",
+    "closeLightbox": "Schließen",
+    "previousPhoto": "Vorheriges Foto",
+    "nextPhoto": "Nächstes Foto"
   },
   "reviews": {
     "addReview": "Bewertung hinzufügen",

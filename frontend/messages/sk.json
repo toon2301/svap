@@ -4025,7 +4025,14 @@
     "loadErrorTitle": "Portfólio sa nepodarilo načítať",
     "loadErrorBody": "Skús to obnoviť o chvíľu.",
     "retry": "Skúsiť znova",
-    "noCoverImage": "Bez titulnej fotky"
+    "noCoverImage": "Bez titulnej fotky",
+    "detailLoadErrorTitle": "Portfólio sa nepodarilo načítať",
+    "back": "Späť",
+    "gallery": "Galéria",
+    "photoCounter": "Fotka {current} z {total}",
+    "closeLightbox": "Zavrieť",
+    "previousPhoto": "Predchádzajúca fotka",
+    "nextPhoto": "Ďalšia fotka"
   },
   "reviews": {
     "addReview": "Pridať recenziu",

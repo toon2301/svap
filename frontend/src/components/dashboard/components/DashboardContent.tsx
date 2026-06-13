@@ -48,6 +48,7 @@ interface DashboardContentProps {
   initialRightItem?: string | null;
   /** ID karty (ponuky) pre view recenziÃ­ (/dashboard/offers/[offerId]/reviews). */
   initialOfferId?: number | null;
+  initialPortfolioItemId?: number | null;
 }
 
 function getDashboardModuleFromTarget(targetUrl: string): string | null {
@@ -73,6 +74,8 @@ function getDashboardModuleFromTarget(targetUrl: string): string | null {
     if (/^\/dashboard\/skills\/search\/?$/.test(path)) return 'skills-search';
     if (/^\/dashboard\/skills\/?$/.test(path)) return 'skills';
     if (/^\/dashboard\/profile\/?$/.test(path)) return 'profile';
+    if (/^\/dashboard\/users\/[^/]+\/portfolio\/\d+\/?$/.test(path)) return 'portfolio-detail';
+    if (/^\/dashboard\/users\/[^/]+\/portfolio\/?$/.test(path)) return 'user-profile';
     if (/^\/dashboard\/users\/[^/]+\/?$/.test(path)) return 'user-profile';
   } catch {
     return null;
@@ -84,7 +87,7 @@ function getDashboardModuleFromTarget(targetUrl: string): string | null {
 function getDashboardUserIdentifierFromTarget(targetUrl: string): string | null {
   try {
     const path = new URL(targetUrl, 'https://swaply.local').pathname;
-    const match = path.match(/^\/dashboard\/users\/([^/]+)\/?$/);
+    const match = path.match(/^\/dashboard\/users\/([^/]+)(?:\/portfolio(?:\/\d+)?)?\/?$/);
     return match?.[1] ? decodeURIComponent(match[1]) : null;
   } catch {
     return null;
@@ -123,6 +126,7 @@ export default function DashboardContent({
   initialProfileSlug,
   initialRightItem,
   initialOfferId,
+  initialPortfolioItemId,
 }: DashboardContentProps) {
   const router = useRouter();
   const { t } = useLanguage();
@@ -139,6 +143,21 @@ export default function DashboardContent({
     const m = pathname?.match(/^\/dashboard\/messages\/(\d+)\/?$/);
     return m ? Number(m[1]) : null;
   }, [pathname]);
+
+  const portfolioDetailMatch = React.useMemo(
+    () => pathname?.match(/^\/dashboard\/users\/([^/]+)\/portfolio\/(\d+)\/?$/) ?? null,
+    [pathname],
+  );
+
+  const portfolioOwnerIdentifierFromPath = React.useMemo(
+    () => (portfolioDetailMatch?.[1] ? decodeURIComponent(portfolioDetailMatch[1]) : null),
+    [portfolioDetailMatch],
+  );
+
+  const portfolioItemIdFromPath = React.useMemo(
+    () => (portfolioDetailMatch?.[2] ? Number(portfolioDetailMatch[2]) : null),
+    [portfolioDetailMatch],
+  );
 
   const conversationIdFromMessagesQuery = React.useMemo(
     () => parseConversationId(searchParams?.get('conversationId')),
@@ -375,7 +394,7 @@ export default function DashboardContent({
         setRequestsRouteIntent(null);
       }
 
-      if (moduleId === 'user-profile') {
+      if (moduleId === 'user-profile' || moduleId === 'portfolio-detail') {
         const identifier = getDashboardUserIdentifierFromTarget(targetUrl);
         setViewedUserSummary(null);
         if (identifier && /^\d+$/.test(identifier)) {
@@ -457,11 +476,23 @@ export default function DashboardContent({
 
   // Sync modulu a offerId pri URL /dashboard/offers/[id]/reviews (client-side navigÃ¡cia bez reloadu)
   const effectiveOfferIdForReviews = initialOfferId ?? offerIdFromReviewsPath ?? null;
+  const effectivePortfolioItemId =
+    initialPortfolioItemId ?? portfolioItemIdFromPath ?? null;
+  const effectivePortfolioOwnerIdentifier =
+    portfolioOwnerIdentifierFromPath ??
+    initialProfileSlug ??
+    (typeof initialViewedUserId === 'number' ? String(initialViewedUserId) : null);
   useEffect(() => {
     if (offerIdFromReviewsPath != null) {
       setActiveModule('offer-reviews');
     }
   }, [offerIdFromReviewsPath, setActiveModule]);
+
+  useEffect(() => {
+    if (portfolioItemIdFromPath != null && Number.isFinite(portfolioItemIdFromPath)) {
+      setActiveModule('portfolio-detail');
+    }
+  }, [portfolioItemIdFromPath, setActiveModule]);
 
   // Po stlaÄenÃ­ spÃ¤Å¥ z cudzieho profilu (user-profile) URL skoÄÃ­ sprÃ¡vne, ale activeModule ostÃ¡va
   // user-profile â€“ synchronizujeme modul podÄ¾a aktuÃ¡lnej URL pri popstate
@@ -563,6 +594,10 @@ export default function DashboardContent({
         moduleId = 'home';
       } else if (p.match(/^\/dashboard\/profile\/?$/)) {
         moduleId = 'profile';
+      } else if (p.match(/^\/dashboard\/users\/[^/]+\/portfolio\/\d+\/?$/)) {
+        moduleId = 'portfolio-detail';
+      } else if (p.match(/^\/dashboard\/users\/[^/]+\/portfolio\/?$/)) {
+        moduleId = 'user-profile';
       } else if (p.match(/^\/dashboard\/users\/[^/]+\/?$/)) {
         moduleId = 'user-profile';
       }
@@ -573,7 +608,17 @@ export default function DashboardContent({
         } catch {
           // ignore
         }
-        if (moduleId !== 'user-profile') {
+        if (moduleId === 'user-profile' || moduleId === 'portfolio-detail') {
+          const identifier = getDashboardUserIdentifierFromTarget(p);
+          setViewedUserSummary(null);
+          if (identifier && /^\d+$/.test(identifier)) {
+            setViewedUserId(Number(identifier));
+            setViewedUserSlug(null);
+          } else if (identifier) {
+            setViewedUserId(null);
+            setViewedUserSlug(identifier);
+          }
+        } else {
           setViewedUserId(null);
           setViewedUserSlug(null);
           setViewedUserSummary(null);
@@ -811,6 +856,12 @@ export default function DashboardContent({
       onSkillsSearchClick={navigation.handleSkillsSearchClick}
       onSkillsModeToggle={handleSkillsModeToggle}
       offerIdForReviews={effectiveOfferIdForReviews}
+      portfolioItemIdForDetail={
+        effectivePortfolioItemId != null && Number.isFinite(effectivePortfolioItemId)
+          ? effectivePortfolioItemId
+          : null
+      }
+      portfolioOwnerIdentifier={effectivePortfolioOwnerIdentifier}
       conversationIdForMessages={
         selectedConversationId != null && Number.isFinite(selectedConversationId) ? selectedConversationId : null
       }

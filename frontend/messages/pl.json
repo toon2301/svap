@@ -4025,7 +4025,14 @@
     "loadErrorTitle": "Nie udało się wczytać portfolio",
     "loadErrorBody": "Spróbuj odświeżyć za chwilę.",
     "retry": "Spróbuj ponownie",
-    "noCoverImage": "Bez zdjęcia głównego"
+    "noCoverImage": "Bez zdjęcia głównego",
+    "detailLoadErrorTitle": "Nie udało się wczytać portfolio",
+    "back": "Wstecz",
+    "gallery": "Galeria",
+    "photoCounter": "Zdjęcie {current} z {total}",
+    "closeLightbox": "Zamknij",
+    "previousPhoto": "Poprzednie zdjęcie",
+    "nextPhoto": "Następne zdjęcie"
   },
   "reviews": {
     "addReview": "Dodaj opinię",

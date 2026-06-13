@@ -3,6 +3,14 @@ import ProfilePortfolioSection from './ProfilePortfolioSection';
 import { api } from '@/lib/api';
 import type { PortfolioItem } from './portfolioTypes';
 
+const mockPush = jest.fn();
+
+jest.mock('next/navigation', () => ({
+  useRouter: () => ({
+    push: mockPush,
+  }),
+}));
+
 jest.mock('@/lib/api', () => ({
   __esModule: true,
   ...jest.requireActual('@/lib/api'),
@@ -42,6 +50,7 @@ function deferred<T>() {
 describe('ProfilePortfolioSection', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockPush.mockClear();
   });
 
   it('fetches portfolio only when the portfolio tab is active', async () => {
@@ -141,5 +150,37 @@ describe('ProfilePortfolioSection', () => {
     const image = await screen.findByRole('img', { name: 'Featured Work' });
     expect(image).toHaveAttribute('src', '/media/thumb.webp');
     expect(image).not.toHaveAttribute('src', '/media/large.webp');
+  });
+
+  it('opens the correct detail route when the featured card is clicked', async () => {
+    (api.get as jest.Mock).mockResolvedValue({ data: [portfolioItem({ id: 7 })] });
+
+    render(
+      <ProfilePortfolioSection
+        activeTab="portfolio"
+        isOtherUserProfile
+        ownerUserId={7}
+        ownerSlug="jane-doe"
+      />,
+    );
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Featured Work' }));
+
+    expect(mockPush).toHaveBeenCalledWith('/dashboard/users/jane-doe/portfolio/7');
+  });
+
+  it('opens the correct detail route when a grid card is clicked', async () => {
+    (api.get as jest.Mock).mockResolvedValue({
+      data: [
+        portfolioItem({ id: 1, title: 'First Work' }),
+        portfolioItem({ id: 2, title: 'Second Work', cover_image: null }),
+      ],
+    });
+
+    render(<ProfilePortfolioSection activeTab="portfolio" isOtherUserProfile ownerUserId={42} />);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Second Work' }));
+
+    expect(mockPush).toHaveBeenCalledWith('/dashboard/users/42/portfolio/2');
   });
 });
