@@ -10,6 +10,7 @@ type PortfolioCardProps = {
   categoryLabel: string;
   featured?: boolean;
   loading?: React.ImgHTMLAttributes<HTMLImageElement>['loading'];
+  onClick?: () => void;
 };
 
 function PortfolioImageSlot({
@@ -46,12 +47,16 @@ export function PortfolioCard({
   categoryLabel,
   featured = false,
   loading = 'lazy',
+  onClick,
 }: PortfolioCardProps) {
-  return (
-    <article
-      data-testid={featured ? 'portfolio-featured-card' : 'portfolio-grid-card'}
-      className="group overflow-hidden rounded-2xl border border-gray-200 bg-white/75 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-gray-800 dark:bg-[#0f0f10]"
-    >
+  const className = [
+    'group w-full overflow-hidden rounded-2xl border border-gray-200 bg-white/75 text-left shadow-sm transition',
+    onClick ? 'cursor-pointer hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-purple-400/60' : 'hover:-translate-y-0.5 hover:shadow-md',
+    'dark:border-gray-800 dark:bg-[#0f0f10]',
+  ].join(' ');
+
+  const content = (
+    <>
       <PortfolioImageSlot item={item} featured={featured} loading={loading} />
       <div className={featured ? 'p-5' : 'p-4'}>
         <p className="text-xs font-medium uppercase tracking-wide text-purple-700 dark:text-purple-300">
@@ -61,6 +66,29 @@ export function PortfolioCard({
           {item.title}
         </h3>
       </div>
+    </>
+  );
+
+  if (onClick) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        aria-label={item.title}
+        data-testid={featured ? 'portfolio-featured-card' : 'portfolio-grid-card'}
+        className={className}
+      >
+        {content}
+      </button>
+    );
+  }
+
+  return (
+    <article
+      data-testid={featured ? 'portfolio-featured-card' : 'portfolio-grid-card'}
+      className={className}
+    >
+      {content}
     </article>
   );
 }

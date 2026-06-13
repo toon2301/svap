@@ -7,9 +7,10 @@ import type { PortfolioItem } from './portfolioTypes';
 type PortfolioGridProps = {
   items: PortfolioItem[];
   getCategoryLabel: (category: string) => string;
+  onOpenItem?: (item: PortfolioItem) => void;
 };
 
-export function PortfolioGrid({ items, getCategoryLabel }: PortfolioGridProps) {
+export function PortfolioGrid({ items, getCategoryLabel, onOpenItem }: PortfolioGridProps) {
   const { t } = useLanguage();
 
   if (items.length === 0) return null;
@@ -28,6 +29,7 @@ export function PortfolioGrid({ items, getCategoryLabel }: PortfolioGridProps) {
             key={item.id}
             item={item}
             categoryLabel={getCategoryLabel(item.category)}
+            onClick={onOpenItem ? () => onOpenItem(item) : undefined}
           />
         ))}
       </div>

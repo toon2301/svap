@@ -4025,7 +4025,14 @@
     "loadErrorTitle": "Portfolio se nepodařilo načíst",
     "loadErrorBody": "Zkus to obnovit za chvíli.",
     "retry": "Zkusit znovu",
-    "noCoverImage": "Bez titulní fotky"
+    "noCoverImage": "Bez titulní fotky",
+    "detailLoadErrorTitle": "Portfolio se nepodařilo načíst",
+    "back": "Zpět",
+    "gallery": "Galerie",
+    "photoCounter": "Fotka {current} z {total}",
+    "closeLightbox": "Zavřít",
+    "previousPhoto": "Předchozí fotka",
+    "nextPhoto": "Další fotka"
   },
   "reviews": {
     "addReview": "Pridať recenziu",

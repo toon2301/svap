@@ -17,6 +17,7 @@ export interface DashboardProps {
   initialRightItem?: string | null;
   /** ID karty (ponuky) pre view recenzií (/dashboard/offers/[offerId]/reviews). */
   initialOfferId?: number | null;
+  initialPortfolioItemId?: number | null;
 }
 
 // Hlavný komponent - wrapped v Suspense pre useSearchParams()

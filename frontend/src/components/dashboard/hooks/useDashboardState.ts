@@ -214,6 +214,7 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
         'home',
         'profile',
         'user-profile',
+        'portfolio-detail',
         'search',
         'favorites',
         'settings',

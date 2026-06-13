@@ -1,14 +1,17 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { ProfileTab } from './profileTypes';
 import { listProfilePortfolio } from './portfolioApi';
 import type { PortfolioItem } from './portfolioTypes';
+import { getPortfolioCategoryLabel } from './portfolioDisplay';
 import { PortfolioEmptyState } from './PortfolioEmptyState';
 import { PortfolioFeaturedCard } from './PortfolioFeaturedCard';
 import { PortfolioGrid } from './PortfolioGrid';
 import { PortfolioSectionSkeleton } from './PortfolioSectionSkeleton';
+import { buildPortfolioDetailPath, getPortfolioOwnerIdentifier } from './portfolioRouting';
 
 type ProfilePortfolioSectionProps = {
   activeTab: ProfileTab;
@@ -16,14 +19,6 @@ type ProfilePortfolioSectionProps = {
   ownerSlug?: string | null;
   isOtherUserProfile?: boolean;
 };
-
-function humanizeCategory(category: string): string {
-  return category
-    .split('-')
-    .filter(Boolean)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(' ');
-}
 
 function targetKey(isOwner: boolean, ownerUserId?: number, ownerSlug?: string | null): string {
   if (isOwner) return 'owner';
@@ -38,6 +33,7 @@ export default function ProfilePortfolioSection({
   ownerSlug,
   isOtherUserProfile = false,
 }: ProfilePortfolioSectionProps) {
+  const router = useRouter();
   const { t } = useLanguage();
   const isOwner = !isOtherUserProfile;
   const [items, setItems] = useState<PortfolioItem[]>([]);
@@ -51,12 +47,21 @@ export default function ProfilePortfolioSection({
   );
 
   const getCategoryLabel = useCallback(
-    (category: string) => {
-      const key = `skillsCatalog.categories.${category}`;
-      const translated = t(key);
-      return translated === key ? humanizeCategory(category) : translated;
-    },
+    (category: string) => getPortfolioCategoryLabel(t, category),
     [t],
+  );
+
+  const ownerIdentifier = useMemo(
+    () => getPortfolioOwnerIdentifier(ownerUserId, ownerSlug),
+    [ownerSlug, ownerUserId],
+  );
+
+  const handleOpenItem = useCallback(
+    (item: PortfolioItem) => {
+      if (!ownerIdentifier) return;
+      router.push(buildPortfolioDetailPath(ownerIdentifier, item.id));
+    },
+    [ownerIdentifier, router],
   );
 
   const loadPortfolio = useCallback(async () => {
@@ -135,8 +140,13 @@ export default function ProfilePortfolioSection({
       <PortfolioFeaturedCard
         item={featured}
         categoryLabel={getCategoryLabel(featured.category)}
+        onOpenItem={handleOpenItem}
       />
-      <PortfolioGrid items={rest} getCategoryLabel={getCategoryLabel} />
+      <PortfolioGrid
+        items={rest}
+        getCategoryLabel={getCategoryLabel}
+        onOpenItem={handleOpenItem}
+      />
     </div>
   );
 }
