@@ -26,8 +26,13 @@ import {
   parseRequestsTargetUrl,
   type RequestsRouteIntent,
 } from '../modules/requests/requestsRouting';
+import { getSafeDashboardReturnTo } from '../modules/reviews/offerReviewsRouting';
 import { listConversations, listMessageRequests, openConversation } from '../modules/messages/messagingApi';
 import type { MessagingUserBrief } from '../modules/messages/types';
+import {
+  PROFILE_OFFER_DETAIL_CLOSE_EVENT,
+  PROFILE_OFFER_DETAIL_OPEN_EVENT,
+} from '../modules/profile/profileOfferDetailEvents';
 import { useDashboardState } from '../hooks/useDashboardState';
 import { useSkillsModals } from '../hooks/useSkillsModals';
 import { useDashboardNavigation } from '../hooks/useDashboardNavigation';
@@ -184,6 +189,7 @@ export default function DashboardContent({
     name: string;
     avatarMembers: MessagingUserBrief[];
   } | null>(null);
+  const [isMobileOfferDetailOpen, setIsMobileOfferDetailOpen] = useState(false);
   const skillsCategoryBackHandlerRef = useRef<(() => void) | null>(null);
   const mobileOnboardingSkillCreatedHandlerRef = useRef<(() => void) | null>(null);
   const desktopOnboardingSkillCreatedHandlerRef = useRef<(() => void) | null>(null);
@@ -349,6 +355,42 @@ export default function DashboardContent({
     handleMainModuleChange('home');
   }, [handleMainModuleChange]);
 
+  const handleDesktopOnboardingProfileOpen = useCallback(() => {
+    setActiveModule('profile');
+    setIsRightSidebarOpen(false);
+    setActiveRightItem('');
+    setIsMobileMenuOpen(false);
+    setIsSearchOpen(false);
+    setIsNotificationsPanelOpen(false);
+    setViewedUserId(null);
+    setViewedUserSlug(null);
+    setViewedUserSummary(null);
+    highlighting.setHighlightedSkillId(null);
+
+    try {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('activeModule', 'profile');
+      }
+    } catch {
+      // Navigation state is already updated; ignore storage failures.
+    }
+
+    if (typeof window !== 'undefined') {
+      window.history.pushState(null, '', '/dashboard/profile');
+    }
+  }, [
+    highlighting,
+    setActiveModule,
+    setActiveRightItem,
+    setIsMobileMenuOpen,
+    setIsNotificationsPanelOpen,
+    setIsRightSidebarOpen,
+    setIsSearchOpen,
+    setViewedUserId,
+    setViewedUserSlug,
+    setViewedUserSummary,
+  ]);
+
   const handleOnboardingSkillCreated = useCallback(() => {
     mobileOnboardingSkillCreatedHandlerRef.current?.();
     desktopOnboardingSkillCreatedHandlerRef.current?.();
@@ -445,6 +487,20 @@ export default function DashboardContent({
     ],
   );
 
+  const offerReviewsReturnTo = React.useMemo(
+    () => getSafeDashboardReturnTo(searchParams?.get('returnTo') ?? null),
+    [searchParams],
+  );
+
+  const handleOfferReviewsBack = useCallback(() => {
+    if (offerReviewsReturnTo) {
+      handleNotificationNavigate(offerReviewsReturnTo);
+      return;
+    }
+
+    handleMobileBack();
+  }, [handleMobileBack, handleNotificationNavigate, offerReviewsReturnTo]);
+
   // Funkcia na uloÅ¾enie karty (presunutÃ¡ do samostatnÃ©ho hooku pre prehÄ¾adnosÅ¥)
   const handleSkillSave = useSkillSaveHandler({
     selectedSkillsCategory,
@@ -454,7 +510,7 @@ export default function DashboardContent({
     applySkillUpdate,
     loadSkills,
     t,
-    ownerUserIdForOffersCache: initialUser?.id,
+    ownerUserIdForOffersCache: user?.id,
     onCreatedSkillSaved: handleOnboardingSkillCreated,
   });
 
@@ -792,6 +848,18 @@ export default function DashboardContent({
     navigateMessagesUrl();
   }, [setActiveModule, setActiveRightItem, setIsMobileMenuOpen, setIsRightSidebarOpen]);
 
+  useEffect(() => {
+    const onOpen = () => setIsMobileOfferDetailOpen(true);
+    const onClose = () => setIsMobileOfferDetailOpen(false);
+
+    window.addEventListener(PROFILE_OFFER_DETAIL_OPEN_EVENT, onOpen);
+    window.addEventListener(PROFILE_OFFER_DETAIL_CLOSE_EVENT, onClose);
+    return () => {
+      window.removeEventListener(PROFILE_OFFER_DETAIL_OPEN_EVENT, onOpen);
+      window.removeEventListener(PROFILE_OFFER_DETAIL_CLOSE_EVENT, onClose);
+    };
+  }, []);
+
   const dashboardLoadingScreen = (
     <div className="min-h-screen flex items-center justify-center bg-[var(--background)]">
       <div className="text-center" role="status" aria-live="polite">
@@ -893,6 +961,9 @@ export default function DashboardContent({
     activeModule === 'messages' &&
       (selectedConversationId != null || targetUserIdFromMessagesQuery != null),
   );
+  const showMobileOfferDetailTopBar =
+    isMobileOfferDetailOpen &&
+    (activeModule === 'profile' || activeModule === 'user-profile');
   const isMobileOnboardingBlocked = isMobileOnboardingBlockedByUi({
     activeModule,
     activeRightItem,
@@ -914,7 +985,7 @@ export default function DashboardContent({
         isNotificationsPanelOpen={isNotificationsPanelOpen}
         isMobileMenuOpen={isMobileMenuOpen}
         onOpenHome={handleOnboardingHomeOpen}
-        onOpenProfile={navigation.handleMobileProfileClick}
+        onOpenProfile={handleDesktopOnboardingProfileOpen}
         onOpenEditProfile={navigation.handleEditProfileClick}
         onOpenSearch={handleDesktopOnboardingSearchOpen}
         onCloseSearch={handleDesktopOnboardingSearchClose}
@@ -948,7 +1019,13 @@ export default function DashboardContent({
             onRightItemClick={handleRightItemClick}
             onMobileMenuOpen={() => setIsMobileMenuOpen(true)}
             onMobileMenuClose={() => setIsMobileMenuOpen(false)}
-            onMobileBack={activeModule === 'skills-select-category' ? handleSkillsCategoryBack : handleMobileBack}
+            onMobileBack={
+              activeModule === 'skills-select-category'
+                ? handleSkillsCategoryBack
+                : activeModule === 'offer-reviews'
+                  ? handleOfferReviewsBack
+                  : handleMobileBack
+            }
             onMobileProfileClick={navigation.handleMobileProfileClick}
             onSkillsModeToggle={handleSkillsModeToggle}
             onSidebarLanguageClick={navigation.handleSidebarLanguageClick}
@@ -1002,6 +1079,7 @@ export default function DashboardContent({
             mobileMessagePeerIdentifier={mobileMessageGroup ? null : mobileMessagePeerIdentifier}
             isMobileMessageConversationOpen={isMobileMessageConversationOpen}
             onMobileMessagesBack={handleMobileMessagesBack}
+            isMobileOfferDetailOpen={showMobileOfferDetailTopBar}
             currentUser={user}
           >
             {moduleContent}

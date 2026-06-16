@@ -7,6 +7,7 @@ import OfferImageCarousel from '../shared/OfferImageCarousel';
 import OfferImageGalleryLightbox from '../shared/OfferImageGalleryLightbox';
 import type { Offer } from './profileOffersTypes';
 import { slugifyLabel } from './profileOffersTypes';
+import { MobileCardFlipHint } from './MobileCardFlipHint';
 
 interface ProfileOfferCardMobileProps {
   offer: Offer;
@@ -15,8 +16,7 @@ interface ProfileOfferCardMobileProps {
   onCardClick: () => void;
   isHighlighted?: boolean;
   isOtherUserProfile?: boolean;
-  /** Meno/názov majiteľa profilu (kvôli recenziám v URL). */
-  ownerDisplayName?: string;
+  reviewsHref?: string | null;
   onRequestClick?: (offerId: number) => void;
   onMessageClick?: (offerId: number) => void;
   onShareClick?: (offer: Offer) => void;
@@ -28,6 +28,7 @@ interface ProfileOfferCardMobileProps {
   messageLabel?: string;
   isMessageDisabled?: boolean;
   enableImageGallery?: boolean;
+  showFlipHint?: boolean;
 }
 
 export function ProfileOfferCardMobile({
@@ -37,7 +38,7 @@ export function ProfileOfferCardMobile({
   onCardClick,
   isHighlighted = false,
   isOtherUserProfile = false,
-  ownerDisplayName,
+  reviewsHref,
   onRequestClick,
   onMessageClick,
   onShareClick,
@@ -48,6 +49,7 @@ export function ProfileOfferCardMobile({
   messageLabel,
   isMessageDisabled = false,
   enableImageGallery = false,
+  showFlipHint = false,
 }: ProfileOfferCardMobileProps) {
   const { t } = useLanguage();
   const router = useRouter();
@@ -104,7 +106,7 @@ export function ProfileOfferCardMobile({
       key={offer.id}
       role="button"
       tabIndex={0}
-      className={`relative w-full text-left rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-[#0f0f10] shadow-sm active:scale-[0.99] transition-transform ${
+      className={`relative isolate w-full text-left rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-800 bg-white/80 dark:bg-[#0f0f10] shadow-sm active:scale-[0.99] transition-transform ${
         isHighlighted ? 'highlight-offer-card' : ''
       } ${isHidden ? 'opacity-60' : ''}`}
       onClick={onCardClick}
@@ -117,7 +119,7 @@ export function ProfileOfferCardMobile({
     >
       {/* Veľký text "Ponúkam" alebo "Hľadám" cez celú kartu – mobilná verzia, skryje sa pri prvom kliknutí */}
       {!isTapped && (
-        <div className="absolute left-0 right-0 top-[52.5%] -translate-y-1/2 z-30 pointer-events-none transition-all duration-300">
+        <div className="absolute left-0 right-0 top-[52.5%] z-30 -translate-y-1/2 pointer-events-none transition-all duration-300">
           <div className="w-full py-1 border border-transparent rounded-none bg-white/80 dark:bg-[#0f0f10]/80 backdrop-blur-sm shadow-lg">
             <p className="text-xl font-black text-gray-900 dark:text-gray-50 uppercase tracking-[0.2em] leading-tight text-center">
               {offer.is_seeking ? t('skills.search', 'Hľadám') : t('skills.offering', 'Ponúkam')}
@@ -147,12 +149,15 @@ export function ProfileOfferCardMobile({
       )}
       <div className="relative aspect-[4/3] bg-gray-100 dark:bg-[#0e0e0f] overflow-hidden">
         <OfferImageCarousel images={offer.images} alt={imageAlt} variant="contain-blur" />
+        {showFlipHint && (
+          <MobileCardFlipHint label={t('profile.cardFlipHint', 'Otoč kartu pre detail')} />
+        )}
         {accountType === 'business' && (
-          <span className="absolute top-2 left-2 px-1.5 py-0.5 text-[10px] font-semibold bg-black/80 text-white rounded">
+          <span className="absolute top-2 left-2 z-30 px-1.5 py-0.5 text-[10px] font-semibold bg-black/80 text-white rounded">
             PRO
           </span>
         )}
-        <div className="absolute top-2 right-2 flex flex-col gap-1 z-10">
+        <div className="absolute top-2 right-2 z-30 flex flex-col gap-1">
           <button
             type="button"
             aria-label={likeLabel}
@@ -226,9 +231,9 @@ export function ProfileOfferCardMobile({
               onClick={(e) => {
                 e.stopPropagation();
                 if (typeof offer.id !== 'number') return;
-                const base = `/dashboard/offers/${offer.id}/reviews`;
-                const name = (ownerDisplayName || '').trim();
-                router.push(name ? `${base}?ownerName=${encodeURIComponent(name)}` : base);
+                if (reviewsHref) {
+                  router.push(reviewsHref);
+                }
               }}
             >
               <svg
@@ -259,7 +264,7 @@ export function ProfileOfferCardMobile({
             onKeyDown={(event) => event.stopPropagation()}
             aria-label={t('skills.photos', 'Fotky')}
             title={t('skills.photos', 'Fotky')}
-            className="absolute bottom-2 right-2 px-2 py-1 rounded-full bg-black/40 backdrop-blur-sm text-white/90 text-[10px] font-medium flex items-center gap-1 transition-colors hover:bg-black/55 focus:outline-none focus:ring-2 focus:ring-white/60"
+            className="absolute bottom-2 right-2 z-30 px-2 py-1 rounded-full bg-black/40 backdrop-blur-sm text-white/90 text-[10px] font-medium flex items-center gap-1 transition-colors hover:bg-black/55 focus:outline-none focus:ring-2 focus:ring-white/60"
           >
             <svg
               className="w-3 h-3 opacity-80"
@@ -275,7 +280,7 @@ export function ProfileOfferCardMobile({
             <span>{imageCount}</span>
           </button>
         ) : hasMultipleImages ? (
-          <div className="absolute bottom-2 right-2 px-2 py-1 rounded-full bg-black/40 backdrop-blur-sm text-white/90 text-[10px] font-medium flex items-center gap-1">
+          <div className="absolute bottom-2 right-2 z-30 px-2 py-1 rounded-full bg-black/40 backdrop-blur-sm text-white/90 text-[10px] font-medium flex items-center gap-1">
             <svg
               className="w-3 h-3 opacity-80"
               viewBox="0 0 24 24"

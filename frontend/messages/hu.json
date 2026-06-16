@@ -1038,6 +1038,8 @@
     "editProfile": "Profil szerkesztése",
     "verifyProfile": "Profil ellenőrzés",
     "skills": "Kínálok/Keresek",
+    "cardFlipHint": "Fordítsd meg a kártyát a részletekért",
+    "offerDetailSwipeToClose": "Húzd lefelé a bezáráshoz",
     "changePhoto": "Fotó módosítása",
     "removePhoto": "Fotó eltávolítása",
     "cancel": "Mégse",

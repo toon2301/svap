@@ -18,8 +18,8 @@ interface ProfileOfferCardProps {
   onOpenHoursClick?: (event: React.MouseEvent<HTMLButtonElement>) => void;
   isHighlighted?: boolean;
   isOtherUserProfile?: boolean;
-  /** Meno/názov majiteľa profilu (kvôli recenziám v URL). */
   ownerDisplayName?: string;
+  reviewsHref?: string | null;
   onRequestClick?: (offerId: number) => void;
   onMessageClick?: (offerId: number) => void;
   onShareClick?: (offer: Offer) => void;
@@ -32,6 +32,7 @@ interface ProfileOfferCardProps {
   /** Keď true, karta nemá zaoblený horný okraj ani horný border – pre použitie pod SearchOfferCardAuthorHeader. */
   compactTop?: boolean;
   enableImageGallery?: boolean;
+  showFlipHint?: boolean;
 }
 
 export default function ProfileOfferCard({
@@ -43,7 +44,7 @@ export default function ProfileOfferCard({
   onOpenHoursClick,
   isHighlighted = false,
   isOtherUserProfile = false,
-  ownerDisplayName,
+  reviewsHref,
   onRequestClick,
   onMessageClick,
   onShareClick,
@@ -55,6 +56,7 @@ export default function ProfileOfferCard({
   isMessageDisabled = false,
   compactTop = false,
   enableImageGallery = false,
+  showFlipHint = false,
 }: ProfileOfferCardProps) {
   const [localLikeState, setLocalLikeState] = useState(() => ({
     isLiked: offer.is_liked_by_me === true,
@@ -214,7 +216,7 @@ export default function ProfileOfferCard({
         hasImages={hasImages}
         imageCount={imageCount}
         isOtherUserProfile={isOtherUserProfile}
-        ownerDisplayName={ownerDisplayName}
+        reviewsHref={reviewsHref}
         onRequestClick={onRequestClick}
         onMessageClick={onMessageClick}
         onShareClick={onShareClick}
@@ -225,6 +227,7 @@ export default function ProfileOfferCard({
         messageLabel={messageLabel}
         isMessageDisabled={isMessageDisabled}
         compactTop={compactTop}
+        showFlipHint={showFlipHint}
         onOpenImageGallery={
           canOpenImageGallery ? () => setIsImageGalleryOpen(true) : undefined
         }
@@ -237,7 +240,7 @@ export default function ProfileOfferCard({
         onToggleFlip={onToggleFlip}
         onOpenHoursClick={onOpenHoursClick}
         isFlipped={isFlipped}
-        ownerDisplayName={ownerDisplayName}
+        reviewsHref={reviewsHref}
         compactTop={compactTop}
       />
 

@@ -54,7 +54,6 @@ export default function ProfileDesktopView({
   isEditMode,
   accountType = 'personal',
   isUploading,
-  onUserUpdate,
   onEditableUserUpdate,
   onEditProfileClick,
   onEditCancel,
@@ -135,7 +134,6 @@ export default function ProfileDesktopView({
                 activeTab={activeTab}
                 accountType={accountType}
                 ownerUserId={offersOwnerId ?? displayUser.id}
-                ownerDisplayName={getProfileDisplayName(displayUser, accountType)}
                 ownerProfileIdentifier={getProfileShareIdentifier(displayUser)}
                 highlightedSkillId={highlightedSkillId ?? null}
                 isOtherUserProfile={isOtherUserProfile}

@@ -1038,6 +1038,8 @@
     "editProfile": "Edit profile",
     "verifyProfile": "Profile verification",
     "skills": "Offers / Looking for",
+    "cardFlipHint": "Flip the card for details",
+    "offerDetailSwipeToClose": "Swipe down to close",
     "changePhoto": "Change photo",
     "removePhoto": "Remove photo",
     "cancel": "Cancel",

@@ -1,4 +1,35 @@
+from pathlib import Path
+
 from .env import os, urlparse, BASE_DIR, env_bool
+
+
+def _sqlite_database_name_from_url(parsed):
+    raw_path = parsed.path or ""
+    if not raw_path:
+        return BASE_DIR / "db.sqlite3"
+
+    if raw_path == "/:memory:":
+        return ":memory:"
+
+    # urlparse("sqlite:///C:/path/db.sqlite3").path is "/C:/path/db.sqlite3".
+    # SQLite on Windows expects "C:/path/db.sqlite3" without the leading slash.
+    if len(raw_path) >= 4 and raw_path[0] == "/" and raw_path[1].isalpha() and raw_path[2] == ":":
+        raw_path = raw_path[1:]
+
+    return raw_path
+
+
+def _ensure_sqlite_parent_dir(name):
+    if name == ":memory:":
+        return
+    try:
+        path = Path(name)
+        parent = path.parent
+        if parent and str(parent) not in ("", "."):
+            parent.mkdir(parents=True, exist_ok=True)
+    except (OSError, TypeError, ValueError):
+        pass
+
 
 # Database
 # Prefer DATABASE_URL if provided; fallback to sqlite3
@@ -20,7 +51,7 @@ if db_url:
         DATABASES = {
             "default": {
                 "ENGINE": "django.db.backends.sqlite3",
-                "NAME": parsed.path if parsed.path else BASE_DIR / "db.sqlite3",
+                "NAME": _sqlite_database_name_from_url(parsed),
             }
         }
     else:
@@ -38,6 +69,9 @@ else:
             "NAME": BASE_DIR / "db.sqlite3",
         }
     }
+
+if DATABASES.get("default", {}).get("ENGINE") == "django.db.backends.sqlite3":
+    _ensure_sqlite_parent_dir(DATABASES["default"].get("NAME"))
 
 # Prod-friendly defaults for Postgres connection reuse.
 # Keeps DB connections open to reduce per-request latency.

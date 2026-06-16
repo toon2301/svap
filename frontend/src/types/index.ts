@@ -50,6 +50,15 @@ export interface DesktopOnboardingState {
   step: DesktopOnboardingStep;
 }
 
+export interface CardFlipHintState {
+  version: 1;
+  own_completed: boolean;
+  foreign_completed: boolean;
+}
+
+export type MobileCardFlipHintState = CardFlipHintState;
+export type DesktopCardFlipHintState = CardFlipHintState;
+
 export interface User {
   id: number;
   username: string;
@@ -89,6 +98,8 @@ export interface User {
   unread_skill_request_count?: number;
   mobile_onboarding?: MobileOnboardingState;
   desktop_onboarding?: DesktopOnboardingState;
+  mobile_card_flip_hint?: MobileCardFlipHintState;
+  desktop_card_flip_hint?: DesktopCardFlipHintState;
   created_at: string;
   updated_at: string;
   profile_completeness: number;

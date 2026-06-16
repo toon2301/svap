@@ -25,8 +25,7 @@ export type OfferCardFrontProps = {
   imageCount: number;
 
   isOtherUserProfile?: boolean;
-  /** Meno/názov majiteľa profilu (kvôli recenziám v URL). */
-  ownerDisplayName?: string;
+  reviewsHref?: string | null;
   onRequestClick?: (offerId: number) => void;
   onMessageClick?: (offerId: number) => void;
   onShareClick?: (offer: Offer) => void;
@@ -38,6 +37,7 @@ export type OfferCardFrontProps = {
   isMessageDisabled?: boolean;
   compactTop?: boolean;
   onOpenImageGallery?: () => void;
+  showFlipHint?: boolean;
 };
 
 export function OfferCardFront({
@@ -55,7 +55,7 @@ export function OfferCardFront({
   hasImages,
   imageCount,
   isOtherUserProfile = false,
-  ownerDisplayName,
+  reviewsHref,
   onRequestClick,
   onMessageClick,
   onShareClick,
@@ -67,6 +67,7 @@ export function OfferCardFront({
   isMessageDisabled = false,
   compactTop = false,
   onOpenImageGallery,
+  showFlipHint = false,
 }: OfferCardFrontProps) {
   const showFront = !isFlipped;
   const router = useRouter();
@@ -161,9 +162,9 @@ export function OfferCardFront({
               title="Pridať recenziu"
               onClick={(e) => {
                 e.stopPropagation();
-                const base = `/dashboard/offers/${offer.id}/reviews`;
-                const name = (ownerDisplayName || '').trim();
-                router.push(name ? `${base}?ownerName=${encodeURIComponent(name)}` : base);
+                if (reviewsHref) {
+                  router.push(reviewsHref);
+                }
               }}
               className="p-1 rounded-full inline-flex items-center justify-center leading-none bg-purple-50 dark:bg-purple-900/80 dark:backdrop-blur-sm border border-purple-200 dark:border-purple-800/60 text-purple-700 dark:text-white hover:bg-purple-100 dark:hover:bg-purple-900/90 transition-colors"
             >
@@ -188,7 +189,7 @@ export function OfferCardFront({
       </div>
 
       <div className="relative p-3 flex flex-col h-52 border-t border-gray-200 dark:border-gray-700/50">
-        <FlipButton onToggle={onToggleFlip} />
+        <FlipButton onToggle={onToggleFlip} showHint={showFlipHint} />
         {/* Scrollovateľná časť: nadpis a opis */}
         <div
           className="flex-1 overflow-y-auto subtle-scrollbar pr-1"

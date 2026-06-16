@@ -181,6 +181,22 @@ class User(AbstractUser):
         choices=DesktopOnboardingStep.choices,
         default=DesktopOnboardingStep.NAVIGATION,
     )
+    mobile_card_flip_hint_own_completed = models.BooleanField(
+        _("Mobile card flip hint own completed"),
+        default=False,
+    )
+    mobile_card_flip_hint_foreign_completed = models.BooleanField(
+        _("Mobile card flip hint foreign completed"),
+        default=False,
+    )
+    desktop_card_flip_hint_own_completed = models.BooleanField(
+        _("Desktop card flip hint own completed"),
+        default=False,
+    )
+    desktop_card_flip_hint_foreign_completed = models.BooleanField(
+        _("Desktop card flip hint foreign completed"),
+        default=False,
+    )
     # Flag označujúci, že používateľ manuálne upravil meno/priezvisko cez profil
     # Ak je True, OAuth prihlásenie neprepíše meno z Google účtu
     name_modified_by_user = models.BooleanField(
