@@ -46,6 +46,7 @@ interface DashboardLayoutProps {
   mobileMessagePeerIdentifier?: string | null;
   isMobileMessageConversationOpen?: boolean;
   onMobileMessagesBack?: () => void;
+  isMobileOfferDetailOpen?: boolean;
   currentUser?: User | null;
   children: React.ReactNode;
 }
@@ -86,6 +87,7 @@ export default function DashboardLayout({
   mobileMessagePeerIdentifier,
   isMobileMessageConversationOpen,
   onMobileMessagesBack,
+  isMobileOfferDetailOpen = false,
   currentUser = null,
   children,
 }: DashboardLayoutProps) {
@@ -207,7 +209,7 @@ export default function DashboardLayout({
       style={mobileMessagesViewportStyle}
     >
       {/* Mobile Top Bar - skryť pre search modul */}
-      {activeModule !== 'search' && (
+      {activeModule !== 'search' && !isMobileOfferDetailOpen && (
         <MobileTopBar
           onMenuClick={onMobileMenuOpen}
           isEditMode={isMobileEditMode}
@@ -234,7 +236,8 @@ export default function DashboardLayout({
       {!(isRightSidebarOpen && activeModule === 'profile') &&
         activeModule !== 'skills-describe' &&
         activeModule !== 'user-profile' &&
-        !(activeModule === 'messages' && isMobileMessageConversationOpen) && (
+        !(activeModule === 'messages' && isMobileMessageConversationOpen) &&
+        !isMobileOfferDetailOpen && (
         <MobileTopNav activeItem={activeModule} onItemClick={onModuleChange} />
       )}
 

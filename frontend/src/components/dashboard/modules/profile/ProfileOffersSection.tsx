@@ -16,6 +16,7 @@ import { OfferShareModal } from './OfferShareModal';
 import { HelpRequestModal } from './HelpRequestModal';
 import ProfileOfferCard from './ProfileOfferCard';
 import { ProfileOfferCardSkeleton } from './ProfileOfferCardSkeleton';
+import { completeDesktopCardFlipHint, type DesktopCardFlipHintContext } from './desktopCardFlipHintApi';
 import {
   getOffersFromCache,
   makeOffersCacheKey,
@@ -44,6 +45,10 @@ import {
   getOfferOwnerIdentifier,
 } from './offerShareUrl';
 import {
+  buildOfferReviewsPath,
+  buildOfferReviewsReturnTo,
+} from '../reviews/offerReviewsRouting';
+import {
   getOfferShareImageUrl,
   getOfferShareLocation,
   getOfferShareTitle,
@@ -53,8 +58,6 @@ interface ProfileOffersSectionProps {
   activeTab: ProfileTab;
   accountType?: 'personal' | 'business';
   ownerUserId?: number;
-  /** Meno/názov majiteľa profilu (kvôli recenziám v URL). */
-  ownerDisplayName?: string;
   ownerProfileIdentifier?: string;
   highlightedSkillId?: number | null;
   isOtherUserProfile?: boolean;
@@ -64,7 +67,6 @@ export default function ProfileOffersSection({
   activeTab,
   accountType = 'personal',
   ownerUserId,
-  ownerDisplayName,
   ownerProfileIdentifier,
   highlightedSkillId,
   isOtherUserProfile = false,
@@ -72,7 +74,7 @@ export default function ProfileOffersSection({
   const { t } = useLanguage();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const shouldOpenHighlightedOfferBack = searchParams?.get('side') === 'back';
   const hasAuthenticatedUser = Boolean(user);
   const [offers, setOffers] = useState<Offer[]>([]);
@@ -103,6 +105,24 @@ export default function ProfileOffersSection({
   const offersRef = useRef<Offer[]>([]);
   const offerRefetchInFlightRef = useRef<Set<number>>(new Set());
   const offerRefetchQueuedRef = useRef<Set<number>>(new Set());
+  const [dismissedCardFlipHintContexts, setDismissedCardFlipHintContexts] = useState<
+    Set<DesktopCardFlipHintContext>
+  >(() => new Set());
+  const cardFlipHintCompletionInFlightRef = useRef<Set<DesktopCardFlipHintContext>>(new Set());
+
+  const cardFlipHintContext: DesktopCardFlipHintContext = isOtherUserProfile ? 'foreign' : 'own';
+  const cardFlipHintState = user?.desktop_card_flip_hint;
+  const isCardFlipHintCompleted =
+    cardFlipHintContext === 'foreign'
+      ? cardFlipHintState?.foreign_completed === true
+      : cardFlipHintState?.own_completed === true;
+  const isCardFlipHintDismissed = dismissedCardFlipHintContexts.has(cardFlipHintContext);
+  const shouldShowCardFlipHint =
+    hasAuthenticatedUser && !isCardFlipHintCompleted && !isCardFlipHintDismissed;
+
+  useEffect(() => {
+    setDismissedCardFlipHintContexts(new Set());
+  }, [user?.id]);
 
   const isOfferStillAvailable = useCallback(
     async (offerId: number) => {
@@ -682,6 +702,32 @@ export default function ProfileOffersSection({
     };
   }, [activeTab, isOtherUserProfile, hasAuthenticatedUser, offers]);
 
+  const completeCardFlipHint = useCallback(() => {
+    if (!hasAuthenticatedUser || isCardFlipHintCompleted) return;
+
+    setDismissedCardFlipHintContexts((prev) => {
+      if (prev.has(cardFlipHintContext)) return prev;
+      const next = new Set(prev);
+      next.add(cardFlipHintContext);
+      return next;
+    });
+
+    const inFlight = cardFlipHintCompletionInFlightRef.current;
+    if (inFlight.has(cardFlipHintContext)) return;
+
+    inFlight.add(cardFlipHintContext);
+    void completeDesktopCardFlipHint(cardFlipHintContext)
+      .then((nextState) => {
+        updateUser({ desktop_card_flip_hint: nextState });
+      })
+      .catch(() => {
+        // Best-effort UX hint; backend remains the source of truth.
+      })
+      .finally(() => {
+        inFlight.delete(cardFlipHintContext);
+      });
+  }, [cardFlipHintContext, hasAuthenticatedUser, isCardFlipHintCompleted, updateUser]);
+
   if (activeTab !== 'offers') {
     return null;
   }
@@ -709,13 +755,14 @@ export default function ProfileOffersSection({
         </p>
       ) : (
         <div className="svap-profile-offers-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-[clamp(1rem,2vw,1.5rem)]">
-          {offers.map((offer) => {
+          {offers.map((offer, index) => {
             const cardId =
               offer.id ??
               `${offer.category || 'cat'}-${offer.subcategory || 'sub'}-${offer.description || 'desc'}`;
             const isFlipped = flippedCards.has(cardId);
 
             const handleToggleFlip = () => {
+              const willFlipToBack = !isFlipped;
               setFlippedCards((prev) => {
                 const next = new Set(prev);
                 if (next.has(cardId)) {
@@ -725,6 +772,9 @@ export default function ProfileOffersSection({
                 }
                 return next;
               });
+              if (willFlipToBack) {
+                completeCardFlipHint();
+              }
             };
 
             const handleOpenHoursClick = (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -782,6 +832,17 @@ export default function ProfileOffersSection({
             };
 
             const isHighlighted = highlightedSkillId != null && offer.id === highlightedSkillId;
+            const ownerIdentifier = getOfferOwnerIdentifier(
+              offer,
+              ownerProfileIdentifier ?? ownerUserId,
+            );
+            const reviewsHref = buildOfferReviewsPath(offer.id, {
+              returnTo: buildOfferReviewsReturnTo({
+                offerId: offer.id,
+                ownerIdentifier,
+                isOwnProfile: !isOtherUserProfile,
+              }),
+            });
 
             return (
               <div
@@ -802,7 +863,7 @@ export default function ProfileOffersSection({
                   onOpenHoursClick={accountType === 'business' ? handleOpenHoursClick : undefined}
                   isHighlighted={isHighlighted}
                   isOtherUserProfile={isOtherUserProfile}
-                  ownerDisplayName={ownerDisplayName}
+                  reviewsHref={reviewsHref}
                   onRequestClick={handleRequestClick}
                   onMessageClick={handleMessageClick}
                   onShareClick={handleShareOffer}
@@ -841,6 +902,7 @@ export default function ProfileOffersSection({
                   })()}
                   isMessageDisabled={proposedRequestStatusByOfferId[offer.id] === 'pending' || busyMessageOfferId === offer.id}
                   enableImageGallery={isOtherUserProfile}
+                  showFlipHint={shouldShowCardFlipHint && index === 0 && !isFlipped}
                 />
               </div>
             );

@@ -738,6 +738,8 @@ export const endpoints = {
     me: '/auth/me/',
     mobileOnboarding: '/auth/onboarding/mobile/',
     desktopOnboarding: '/auth/onboarding/desktop/',
+    mobileCardFlipHint: '/auth/hints/mobile-card-flip/',
+    desktopCardFlipHint: '/auth/hints/desktop-card-flip/',
     verifyEmail: '/auth/verify-email/',
     resendVerification: '/auth/resend-verification/',
     oauthCallback: '/oauth/callback/',

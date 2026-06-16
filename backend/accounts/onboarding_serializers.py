@@ -75,3 +75,27 @@ class DesktopOnboardingStateSerializer(serializers.Serializer):
                 {"step": "Completed onboarding must end on a terminal step."}
             )
         return attrs
+
+
+class CardFlipHintSerializer(serializers.Serializer):
+    context = serializers.ChoiceField(choices=("own", "foreign"))
+
+    def to_internal_value(self, data):
+        if not isinstance(data, dict):
+            raise serializers.ValidationError("Expected an object.")
+
+        unknown_fields = set(data) - {"context"}
+        if unknown_fields:
+            raise serializers.ValidationError(
+                {field: "Unknown field." for field in sorted(unknown_fields)}
+            )
+
+        return super().to_internal_value(data)
+
+
+class MobileCardFlipHintSerializer(CardFlipHintSerializer):
+    pass
+
+
+class DesktopCardFlipHintSerializer(CardFlipHintSerializer):
+    pass

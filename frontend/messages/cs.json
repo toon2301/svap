@@ -1038,6 +1038,8 @@
     "editProfile": "Upravit profil",
     "verifyProfile": "Ověření profilu",
     "skills": "Nabízím/Hledám",
+    "cardFlipHint": "Otoč kartu pro detail",
+    "offerDetailSwipeToClose": "Potáhni dolů pro zavření",
     "changePhoto": "Změnit fotku",
     "removePhoto": "Odstranit fotku",
     "cancel": "Zrušit",

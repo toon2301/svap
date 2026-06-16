@@ -16,6 +16,7 @@ import { ProfileOfferDetailMobile } from './ProfileOfferDetailMobile';
 import { ProfileOpeningHoursMobileModal } from './ProfileOpeningHoursMobileModal';
 import { ProfileOfferCardMobile } from './ProfileOfferCardMobile';
 import { ProfileOfferCardSkeleton } from './ProfileOfferCardSkeleton';
+import { completeMobileCardFlipHint, type MobileCardFlipHintContext } from './mobileCardFlipHintApi';
 import {
   getOffersFromCache,
   makeOffersCacheKey,
@@ -38,11 +39,19 @@ import {
   readProfileOfferLikedEvent,
   readProfileOffersRefreshEvent,
 } from './profileOfferEvents';
+import {
+  dispatchProfileOfferDetailClose,
+  dispatchProfileOfferDetailOpen,
+} from './profileOfferDetailEvents';
 import { mapApiOfferToProfileOffer, mergeProfileOffer } from './profileOfferMapper';
 import {
   buildOfferShareUrl,
   getOfferOwnerIdentifier,
 } from './offerShareUrl';
+import {
+  buildOfferReviewsPath,
+  buildOfferReviewsReturnTo,
+} from '../reviews/offerReviewsRouting';
 import {
   getOfferShareImageUrl,
   getOfferShareLocation,
@@ -52,8 +61,6 @@ import {
 interface ProfileOffersMobileSectionProps {
   accountType?: 'personal' | 'business';
   ownerUserId?: number;
-  /** Meno/názov majiteľa profilu (kvôli recenziám v URL). */
-  ownerDisplayName?: string;
   ownerProfileIdentifier?: string;
   highlightedSkillId?: number | null;
   isOtherUserProfile?: boolean;
@@ -62,7 +69,6 @@ interface ProfileOffersMobileSectionProps {
 export default function ProfileOffersMobileSection({
   accountType = 'personal',
   ownerUserId,
-  ownerDisplayName,
   ownerProfileIdentifier,
   highlightedSkillId,
   isOtherUserProfile = false,
@@ -70,7 +76,7 @@ export default function ProfileOffersMobileSection({
   const { t } = useLanguage();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const shouldOpenHighlightedOfferBack = searchParams?.get('side') === 'back';
   const hasAuthenticatedUser = Boolean(user);
   const [offers, setOffers] = useState<Offer[]>([]);
@@ -99,7 +105,15 @@ export default function ProfileOffersMobileSection({
   const offerRefetchQueuedRef = useRef<Set<number>>(new Set());
   const hasLoadedOffersRef = useRef(false);
   const openedBackSideOfferRef = useRef<number | null>(null);
+  const cardFlipHintCompletionInFlightRef = useRef<Set<MobileCardFlipHintContext>>(new Set());
 
+  const cardFlipHintContext: MobileCardFlipHintContext = isOtherUserProfile ? 'foreign' : 'own';
+  const cardFlipHintState = user?.mobile_card_flip_hint;
+  const isCardFlipHintCompleted =
+    cardFlipHintContext === 'foreign'
+      ? cardFlipHintState?.foreign_completed === true
+      : cardFlipHintState?.own_completed === true;
+  const shouldShowCardFlipHint = hasAuthenticatedUser && !isCardFlipHintCompleted;
   const isOfferStillAvailable = useCallback(
     async (offerId: number) => {
       if (!isOtherUserProfile || !ownerUserId) return true;
@@ -662,6 +676,25 @@ export default function ProfileOffersMobileSection({
     };
   }, [isOtherUserProfile, hasAuthenticatedUser, offers]);
 
+  const completeCardFlipHint = useCallback(() => {
+    if (!hasAuthenticatedUser || isCardFlipHintCompleted) return;
+
+    const inFlight = cardFlipHintCompletionInFlightRef.current;
+    if (inFlight.has(cardFlipHintContext)) return;
+
+    inFlight.add(cardFlipHintContext);
+    void completeMobileCardFlipHint(cardFlipHintContext)
+      .then((nextState) => {
+        updateUser({ mobile_card_flip_hint: nextState });
+      })
+      .catch(() => {
+        // Best-effort UX hint; backend remains the source of truth.
+      })
+      .finally(() => {
+        inFlight.delete(cardFlipHintContext);
+      });
+  }, [cardFlipHintContext, hasAuthenticatedUser, isCardFlipHintCompleted, updateUser]);
+
   const handleCardClick = (offer: Offer) => {
     const cardId = offer.id ?? `${offer.category || 'cat'}-${offer.subcategory || 'sub'}-${offer.description || 'desc'}`;
     const isTapped = tappedCards.has(cardId);
@@ -675,16 +708,31 @@ export default function ProfileOffersMobileSection({
       });
     } else {
       // Ak je text už skrytý, otvor detail modal a resetuj tappedCards
+      completeCardFlipHint();
       setSelectedOffer(offer);
       setTappedCards(new Set()); // Resetuj všetky tapped karty
     }
   };
 
-  const handleDetailClose = () => {
+  const handleDetailClose = useCallback(() => {
     setSelectedOffer(null);
     setHoursModal(null);
-    setTappedCards(new Set()); // Resetuj všetky tapped karty
-  };
+    setTappedCards(new Set());
+  }, []);
+
+  useEffect(() => {
+    if (selectedOffer) {
+      dispatchProfileOfferDetailOpen();
+      return;
+    }
+    dispatchProfileOfferDetailClose();
+  }, [selectedOffer]);
+
+  useEffect(() => {
+    return () => {
+      dispatchProfileOfferDetailClose();
+    };
+  }, []);
 
   if (isLoading && offers.length === 0) {
     return (
@@ -718,10 +766,21 @@ export default function ProfileOffersMobileSection({
   return (
     <>
       <div className="mt-3 space-y-3">
-        {offers.map((offer) => {
+        {offers.map((offer, index) => {
           const cardId = offer.id ?? `${offer.category || 'cat'}-${offer.subcategory || 'sub'}-${offer.description || 'desc'}`;
           const isTapped = tappedCards.has(cardId);
           const isHighlighted = highlightedSkillId != null && offer.id === highlightedSkillId;
+          const ownerIdentifier = getOfferOwnerIdentifier(
+            offer,
+            ownerProfileIdentifier ?? ownerUserId,
+          );
+          const reviewsHref = buildOfferReviewsPath(offer.id, {
+            returnTo: buildOfferReviewsReturnTo({
+              offerId: offer.id,
+              ownerIdentifier,
+              isOwnProfile: !isOtherUserProfile,
+            }),
+          });
 
           return (
             <div
@@ -739,7 +798,7 @@ export default function ProfileOffersMobileSection({
                 isHighlighted={isHighlighted}
                 onCardClick={() => handleCardClick(offer)}
                 isOtherUserProfile={isOtherUserProfile}
-                ownerDisplayName={ownerDisplayName}
+                reviewsHref={reviewsHref}
                 onRequestClick={handleRequestClick}
                 onMessageClick={handleMessageClick}
                 onShareClick={handleShareOffer}
@@ -778,6 +837,7 @@ export default function ProfileOffersMobileSection({
                 })()}
                 isMessageDisabled={proposedRequestStatusByOfferId[offer.id] === 'pending' || busyMessageOfferId === offer.id}
                 enableImageGallery={isOtherUserProfile}
+                showFlipHint={shouldShowCardFlipHint && index === 0}
               />
             </div>
           );

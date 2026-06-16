@@ -555,7 +555,6 @@ export default function ProfileMobileView({
             <ProfileOffersMobileSection
               accountType={accountType}
               ownerUserId={offersOwnerId ?? displayUser.id}
-              ownerDisplayName={getProfileDisplayName(displayUser, accountType)}
               ownerProfileIdentifier={getProfileShareIdentifier(displayUser)}
               highlightedSkillId={highlightedSkillId ?? null}
               isOtherUserProfile={isOtherUserProfile}

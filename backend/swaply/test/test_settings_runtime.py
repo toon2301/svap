@@ -343,6 +343,7 @@ def test_database_url_sqlite_branch(monkeypatch):
         },
     )
     assert mod.DATABASES["default"]["ENGINE"] == "django.db.backends.sqlite3"
+    assert mod.DATABASES["default"]["NAME"] == "C:/tmp/app.sqlite3"
 
 
 def test_allowed_hosts_from_backend_origin(monkeypatch):

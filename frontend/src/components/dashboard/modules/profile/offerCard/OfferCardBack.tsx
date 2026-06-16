@@ -12,8 +12,7 @@ export type OfferCardBackProps = {
   onToggleFlip: () => void;
   onOpenHoursClick?: (event: React.MouseEvent<HTMLButtonElement>) => void;
   isFlipped: boolean;
-  /** Meno/názov majiteľa profilu (kvôli recenziám v URL). */
-  ownerDisplayName?: string;
+  reviewsHref?: string | null;
   compactTop?: boolean;
 };
 
@@ -24,7 +23,7 @@ export function OfferCardBack({
   onToggleFlip,
   onOpenHoursClick,
   isFlipped,
-  ownerDisplayName,
+  reviewsHref,
   compactTop = false,
 }: OfferCardBackProps) {
   const likesCount = Math.max(0, Number(offer.likes_count ?? 0));
@@ -119,13 +118,9 @@ export function OfferCardBack({
                 </button>
               )}
 
-              {typeof offer.id === 'number' && (
+              {reviewsHref && (
                 <Link
-                  href={(() => {
-                    const base = `/dashboard/offers/${offer.id}/reviews`;
-                    const name = (ownerDisplayName || '').trim();
-                    return name ? `${base}?ownerName=${encodeURIComponent(name)}` : base;
-                  })()}
+                  href={reviewsHref}
                   onClick={(e) => e.stopPropagation()}
                   className="mt-0 xl:mt-0.5 flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 transition-colors cursor-pointer"
                 >

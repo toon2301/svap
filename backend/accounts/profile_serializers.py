@@ -41,6 +41,8 @@ class UserProfileSerializer(serializers.ModelSerializer):
     entitlements = serializers.SerializerMethodField()
     mobile_onboarding = serializers.SerializerMethodField()
     desktop_onboarding = serializers.SerializerMethodField()
+    mobile_card_flip_hint = serializers.SerializerMethodField()
+    desktop_card_flip_hint = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -87,6 +89,8 @@ class UserProfileSerializer(serializers.ModelSerializer):
             "entitlements",
             "mobile_onboarding",
             "desktop_onboarding",
+            "mobile_card_flip_hint",
+            "desktop_card_flip_hint",
         ]
         read_only_fields = [
             "id",
@@ -104,6 +108,8 @@ class UserProfileSerializer(serializers.ModelSerializer):
             "entitlements",
             "mobile_onboarding",
             "desktop_onboarding",
+            "mobile_card_flip_hint",
+            "desktop_card_flip_hint",
         ]
 
     def _record_me_serializer_timing(self, name, started_at):
@@ -159,6 +165,28 @@ class UserProfileSerializer(serializers.ModelSerializer):
             "version": 1,
             "status": getattr(obj, "desktop_onboarding_status", "in_progress"),
             "step": getattr(obj, "desktop_onboarding_step", "navigation"),
+        }
+
+    def get_mobile_card_flip_hint(self, obj):
+        return {
+            "version": 1,
+            "own_completed": bool(
+                getattr(obj, "mobile_card_flip_hint_own_completed", False)
+            ),
+            "foreign_completed": bool(
+                getattr(obj, "mobile_card_flip_hint_foreign_completed", False)
+            ),
+        }
+
+    def get_desktop_card_flip_hint(self, obj):
+        return {
+            "version": 1,
+            "own_completed": bool(
+                getattr(obj, "desktop_card_flip_hint_own_completed", False)
+            ),
+            "foreign_completed": bool(
+                getattr(obj, "desktop_card_flip_hint_foreign_completed", False)
+            ),
         }
 
     def get_avatar_url(self, obj):
@@ -236,6 +264,8 @@ class UserProfileSerializer(serializers.ModelSerializer):
         ret.pop("entitlements", None)
         ret.pop("mobile_onboarding", None)
         ret.pop("desktop_onboarding", None)
+        ret.pop("mobile_card_flip_hint", None)
+        ret.pop("desktop_card_flip_hint", None)
 
         # Conditional fields
         if not getattr(instance, "phone_visible", False):
