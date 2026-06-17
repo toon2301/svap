@@ -11,6 +11,7 @@ import ProfileMobileView from './profile/ProfileMobileView';
 import ProfileDesktopView from './profile/ProfileDesktopView';
 import ProfileAvatarActionsModal from './profile/ProfileAvatarActionsModal';
 import ProfileWebsitesModal from './profile/ProfileWebsitesModal';
+import type { Offer } from './profile/profileOffersTypes';
 import type { ProfileTab } from './profile/profileTypes';
 
 /** Hlboká kópia user objektu (1 level, arrays cez spread). */
@@ -114,6 +115,8 @@ interface ProfileModuleProps {
   accountType?: 'personal' | 'business';
   highlightedSkillId?: number | null;
   initialTab?: ProfileTab;
+  onEditOffer?: (offer: Offer) => void;
+  onDeleteOffer?: (offer: Offer) => void;
 }
 
 export default function ProfileModule({
@@ -126,6 +129,8 @@ export default function ProfileModule({
   accountType = 'personal',
   highlightedSkillId = null,
   initialTab = 'offers',
+  onEditOffer,
+  onDeleteOffer,
 }: ProfileModuleProps) {
   const { t } = useLanguage();
   const isMobile = useIsMobile();
@@ -482,6 +487,8 @@ export default function ProfileModule({
             offersOwnerId={user.id}
             ownerSlug={user.slug}
             highlightedSkillId={highlightedSkillId}
+            onEditOffer={onEditOffer}
+            onDeleteOffer={onDeleteOffer}
           />
         ) : (
           <ProfileDesktopView
@@ -506,6 +513,8 @@ export default function ProfileModule({
             offersOwnerId={user.id}
             ownerSlug={user.slug}
             highlightedSkillId={highlightedSkillId}
+            onEditOffer={onEditOffer}
+            onDeleteOffer={onDeleteOffer}
           />
         )}
 

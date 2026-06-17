@@ -5,21 +5,48 @@ import { api, endpoints } from '@/lib/api';
 import { uploadOfferImage } from '@/lib/offerImageUpload';
 import { isValidOfferDistrictSelection } from '@/shared/districtRegistry';
 import { dispatchProfileOffersRefresh } from '../modules/profile/profileOfferEvents';
+import {
+  clearSkillsDescribeReturnModule,
+  getSkillsDescribeReturnModule,
+} from '../modules/skills/skillsDescribeReturnSession';
 import type { DashboardSkill } from './useSkillsModals';
 
 type Translator = (key: string, fallback: string) => string;
 
 type SkillSaveHandlerParams = {
-  selectedSkillsCategory: any | null;
+  selectedSkillsCategory: DashboardSkill | null;
   activeModule: string;
   setActiveModule: (m: string) => void;
-  toLocalSkill: (apiSkill: any) => DashboardSkill;
+  toLocalSkill: (apiSkill: unknown) => DashboardSkill;
   applySkillUpdate: (skill: DashboardSkill) => void;
   loadSkills: () => Promise<void> | void;
   t: Translator;
   ownerUserIdForOffersCache?: number;
   onCreatedSkillSaved?: () => void;
 };
+
+type ApiErrorLike = {
+  response?: {
+    data?: {
+      error?: unknown;
+      detail?: unknown;
+    };
+  };
+  message?: unknown;
+};
+
+type SkillSavePayload = Record<string, unknown>;
+type DashboardSkillImage = NonNullable<DashboardSkill['images']>[number];
+type UploadedOfferImage = Partial<DashboardSkillImage>;
+
+function getApiErrorMessage(error: unknown, fallback: string): string {
+  const apiError = error as ApiErrorLike;
+  const rawMessage =
+    apiError.response?.data?.error ?? apiError.response?.data?.detail ?? apiError.message;
+  return typeof rawMessage === 'string' && rawMessage.trim() !== ''
+    ? rawMessage
+    : fallback;
+}
 
 /**
  * Vráti handler na uloženie karty (create/update + upload images) bez zmeny existujúcej logiky.
@@ -56,6 +83,8 @@ export function useSkillSaveHandler({
     }
 
     const targetModule = isSeeking ? 'skills-search' : 'skills-offer';
+    const returnModule = getSkillsDescribeReturnModule(selectedSkillsCategory.id);
+    const nextModule = returnModule || targetModule;
     const draftSkill = selectedSkillsCategory;
     const trimmedDistrict = (draftSkill.district || '').trim();
     const trimmedLocation = (draftSkill.location || '').trim();
@@ -88,13 +117,17 @@ export function useSkillSaveHandler({
 
     // UX: hneď po kliknutí na fajku presmeruj späť na obrazovku s výberom/pridaním kategórie.
     // Ukladanie prebehne na pozadí – po dokončení sa len aktualizuje zoznam kariet.
-    setActiveModule(targetModule);
+    setActiveModule(nextModule);
     try {
       if (typeof window !== 'undefined') {
-        localStorage.setItem('activeModule', targetModule);
+        localStorage.setItem('activeModule', nextModule);
       }
     } catch {
       // ignore storage errors
+    } finally {
+      if (returnModule) {
+        clearSkillsDescribeReturnModule();
+      }
     }
 
     try {
@@ -103,7 +136,7 @@ export function useSkillSaveHandler({
       // Pripraviť payload
       const detailedText = (skill.detailed_description || '').trim();
 
-      const payload: any = {
+      const payload: SkillSavePayload = {
         category: skill.category,
         subcategory: skill.subcategory,
         description: skill.description || '',
@@ -150,12 +183,15 @@ export function useSkillSaveHandler({
       }
 
       let savedSkill: DashboardSkill;
-      const newImages = (skill as any)._newImages || [];
-      const mergeUploadedImage = (base: DashboardSkill, uploaded: any): DashboardSkill => {
-        if (!uploaded || !uploaded.id) return base;
+      const newImages = Array.isArray(skill._newImages) ? skill._newImages : [];
+      const mergeUploadedImage = (
+        base: DashboardSkill,
+        uploaded: UploadedOfferImage,
+      ): DashboardSkill => {
+        if (!uploaded || typeof uploaded.id !== 'number') return base;
         const src = uploaded.image_url ?? uploaded.image ?? null;
         const status = uploaded.status ?? (src ? 'approved' : 'pending');
-        const nextImg: any = {
+        const nextImg: DashboardSkillImage = {
           id: uploaded.id,
           image_url: src,
           image: uploaded.image ?? null,
@@ -164,8 +200,10 @@ export function useSkillSaveHandler({
           rejected_reason: uploaded.rejected_reason ?? null,
         };
         const prevImages = Array.isArray(base.images) ? base.images : [];
-        const without = prevImages.filter((im: any) => im?.id !== nextImg.id);
-        const nextImages = [...without, nextImg].sort((a: any, b: any) => (a.order ?? 0) - (b.order ?? 0));
+        const without = prevImages.filter((im) => im.id !== nextImg.id);
+        const nextImages = [...without, nextImg].sort(
+          (a, b) => (a.order ?? 0) - (b.order ?? 0),
+        );
         return { ...base, images: nextImages };
       };
       let didCreateSkill = false;
@@ -186,11 +224,8 @@ export function useSkillSaveHandler({
               const uploaded = await uploadOfferImage(skill.id, file);
               savedSkill = mergeUploadedImage(savedSkill, uploaded);
               applySkillUpdate(savedSkill);
-            } catch (imgError: any) {
-              const imgMsg =
-                imgError?.response?.data?.error ||
-                imgError?.response?.data?.detail ||
-                'Nahrávanie obrázka zlyhalo';
+            } catch (imgError: unknown) {
+              const imgMsg = getApiErrorMessage(imgError, 'Nahrávanie obrázka zlyhalo');
               alert(`Chyba pri nahrávaní obrázka ${i + 1}: ${imgMsg}`);
             }
           }
@@ -213,11 +248,8 @@ export function useSkillSaveHandler({
               const uploaded = await uploadOfferImage(savedSkillId, file);
               savedSkill = mergeUploadedImage(savedSkill, uploaded);
               applySkillUpdate(savedSkill);
-            } catch (imgError: any) {
-              const imgMsg =
-                imgError?.response?.data?.error ||
-                imgError?.response?.data?.detail ||
-                'Nahrávanie obrázka zlyhalo';
+            } catch (imgError: unknown) {
+              const imgMsg = getApiErrorMessage(imgError, 'Nahrávanie obrázka zlyhalo');
               alert(`Chyba pri nahrávaní obrázka ${i + 1}: ${imgMsg}`);
             }
           }
@@ -237,13 +269,11 @@ export function useSkillSaveHandler({
       if (didCreateSkill) {
         onCreatedSkillSaved?.();
       }
-    } catch (error: any) {
-      // eslint-disable-next-line no-console
-      console.error('Chyba pri ukladaní zručnosti:', error);
-      const message =
-        error?.response?.data?.error ||
-        error?.response?.data?.detail ||
-        t('dashboard.skillSaveError', 'Nepodarilo sa uložiť zručnosť');
+    } catch (error: unknown) {
+      const message = getApiErrorMessage(
+        error,
+        t('dashboard.skillSaveError', 'Nepodarilo sa uložiť zručnosť'),
+      );
       alert(message);
       try {
         if (typeof window !== 'undefined') {

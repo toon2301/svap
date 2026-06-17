@@ -15,6 +15,23 @@ import type { User } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 
 type Translator = (key: string, fallback: string) => string;
+type ApiErrorLike = {
+  response?: {
+    data?: {
+      error?: unknown;
+      detail?: unknown;
+    };
+  };
+};
+
+function getApiErrorMessage(error: unknown, fallback: string): string {
+  const data = (error as ApiErrorLike)?.response?.data;
+  if (typeof data?.error === 'string' && data.error.trim()) return data.error;
+  if (typeof data?.detail === 'string' && data.detail.trim()) return data.detail;
+  const message = (error as { message?: unknown })?.message;
+  if (typeof message === 'string' && message.trim()) return message;
+  return fallback;
+}
 
 interface DashboardModalsProps {
   accountType: 'personal' | 'business';
@@ -49,7 +66,6 @@ export default function DashboardModals({
   const {
     selectedSkillsCategory,
     setSelectedSkillsCategory,
-    standardCategories,
     setStandardCategories,
     customCategories,
     setCustomCategories,
@@ -61,7 +77,6 @@ export default function DashboardModals({
     setIsAddCustomCategoryModalOpen,
     editingCustomCategoryIndex,
     setEditingCustomCategoryIndex,
-    editingStandardCategoryIndex,
     setEditingStandardCategoryIndex,
     toLocalSkill,
     applySkillUpdate,
@@ -69,6 +84,9 @@ export default function DashboardModals({
     fetchSkillDetail,
     handleRemoveSkillImage,
   } = skillsState;
+  const isSelectedSkillSeeking = selectedSkillsCategory?.id
+    ? selectedSkillsCategory.is_seeking === true
+    : activeModule === 'skills-search';
 
   const handleSkillLocationSave = async (location: string) => {
     if (!selectedSkillsCategory?.id) return;
@@ -80,9 +98,10 @@ export default function DashboardModals({
       const updated = toLocalSkill(data);
       applySkillUpdate(updated);
       setSelectedSkillsCategory(updated);
-    } catch (err: any) {
-      const msg = err?.response?.data?.error || err?.response?.data?.detail;
-      throw new Error(msg || t('skills.locationSaveError', 'Miesto sa nepodarilo uložiť. Skús to znova.'));
+    } catch (err: unknown) {
+      throw new Error(
+        getApiErrorMessage(err, t('skills.locationSaveError', 'Miesto sa nepodarilo uložiť. Skús to znova.')),
+      );
     }
   };
 
@@ -92,8 +111,8 @@ export default function DashboardModals({
       const file = images[i];
       try {
         await uploadOfferImage(skillId, file);
-      } catch (imgError: any) {
-        const imgMsg = imgError?.response?.data?.error || imgError?.response?.data?.detail || 'Nahrávanie obrázka zlyhalo';
+      } catch (imgError: unknown) {
+        const imgMsg = getApiErrorMessage(imgError, 'Nahrávanie obrázka zlyhalo');
         alert(`Chyba pri nahrávaní obrázka ${i + 1}: ${imgMsg}`);
         throw imgError;
       }
@@ -132,14 +151,13 @@ export default function DashboardModals({
           ? { price_from: priceFrom, price_currency: priceCurrency || '€', price_negotiable: false }
           : { price_from: null, price_currency: '', price_negotiable: false };
     const buildPayload = () => {
-      const isSeeking = activeModule === 'skills-search';
-      const payload: any = {
+      const payload: Record<string, unknown> = {
         category: selectedSkillsCategory?.category,
         subcategory: selectedSkillsCategory?.subcategory,
         description: description || '',
         detailed_description: detailedText,
         tags: Array.isArray(tags) ? tags : [],
-        is_seeking: isSeeking,
+        is_seeking: isSelectedSkillSeeking,
         // Ak príde hodnota z modalu, použijeme ju; inak fallback na uloženú hodnotu alebo default
         urgency: urgency || selectedSkillsCategory?.urgency || 'low',
         duration_type:
@@ -220,7 +238,34 @@ export default function DashboardModals({
         setEditingCustomCategoryIndex(null);
         setSelectedSkillsCategory(null);
       } else if (selectedSkillsCategory) {
-        if (selectedSkillsCategory.category === selectedSkillsCategory.subcategory) {
+        if (selectedSkillsCategory.id) {
+          const { data } = await api.patch(endpoints.skills.detail(selectedSkillsCategory.id), {
+            description: description || '',
+            detailed_description: detailedText,
+            tags: Array.isArray(tags) ? tags : [],
+            ...(experience && typeof experience.value === 'number' && experience.unit
+              ? { experience_value: experience.value, experience_unit: experience.unit }
+              : { experience_value: null, experience_unit: '' }),
+            ...pricePayload,
+            country_code: trimmedCountryCode,
+            district_code: trimmedDistrictCode,
+            district: trimmedDistrict,
+            location: trimmedLocation,
+            opening_hours: openingHours && Object.keys(openingHours).length > 0 ? openingHours : null,
+            urgency: urgency || selectedSkillsCategory?.urgency || 'low',
+            duration_type: durationType !== undefined ? durationType : selectedSkillsCategory?.duration_type || null,
+            is_hidden: isHidden !== undefined ? isHidden : (selectedSkillsCategory?.is_hidden || false),
+          });
+          let updated = toLocalSkill(data);
+          if (imageFiles.length && data?.id) {
+            await uploadImagesIfNeeded(data.id, imageFiles);
+            updated = await fetchSkillDetail(data.id);
+          }
+          applySkillUpdate(updated);
+          setEditingCustomCategoryIndex(null);
+          setEditingStandardCategoryIndex(null);
+          setSelectedSkillsCategory(null);
+        } else if (selectedSkillsCategory.category === selectedSkillsCategory.subcategory) {
           // Vytvorenie novej vlastnej karty – limit kontroluje backend podľa is_seeking
           const payload = buildPayload();
           const { data } = await api.post(endpoints.skills.list, payload);
@@ -233,50 +278,17 @@ export default function DashboardModals({
           setCustomCategories((prev) => [created, ...prev]);
           setSelectedSkillsCategory(null);
         } else {
-          if (!selectedSkillsCategory.id) {
-            // Vytvorenie novej štandardnej karty – limit kontroluje backend podľa is_seeking
-            const payload = buildPayload();
-            const { data } = await api.post(endpoints.skills.list, payload);
-            let created = toLocalSkill(data);
-            if (imageFiles.length && data?.id) {
-              await uploadImagesIfNeeded(data.id, imageFiles);
-              created = await fetchSkillDetail(data.id);
-            }
-            didCreateSkill = true;
-            setStandardCategories((prev) => [created, ...prev]);
-            setSelectedSkillsCategory(null);
-          } else {
-            const { data } = await api.patch(endpoints.skills.detail(selectedSkillsCategory.id), {
-              description: description || '',
-              detailed_description: detailedText,
-              tags: Array.isArray(tags) ? tags : [],
-              ...(experience && typeof experience.value === 'number' && experience.unit
-                ? { experience_value: experience.value, experience_unit: experience.unit }
-                : { experience_value: null, experience_unit: '' }),
-              ...pricePayload,
-              country_code: trimmedCountryCode,
-              district_code: trimmedDistrictCode,
-              district: trimmedDistrict,
-              location: trimmedLocation,
-              opening_hours: openingHours && Object.keys(openingHours).length > 0 ? openingHours : null,
-              urgency: urgency || selectedSkillsCategory?.urgency || 'low',
-              duration_type: durationType !== undefined ? durationType : selectedSkillsCategory?.duration_type || null,
-              is_hidden: isHidden !== undefined ? isHidden : (selectedSkillsCategory?.is_hidden || false),
-            });
-            let updated = toLocalSkill(data);
-            if (imageFiles.length && data?.id) {
-              await uploadImagesIfNeeded(data.id, imageFiles);
-              updated = await fetchSkillDetail(data.id);
-            }
-            setStandardCategories((prev) => {
-              const idx = prev.findIndex((p) => p.id === updated.id);
-              if (idx === -1) return prev;
-              const next = [...prev];
-              next[idx] = updated;
-              return next;
-            });
-            setSelectedSkillsCategory(null);
+          // Vytvorenie novej štandardnej karty – limit kontroluje backend podľa is_seeking
+          const payload = buildPayload();
+          const { data } = await api.post(endpoints.skills.list, payload);
+          let created = toLocalSkill(data);
+          if (imageFiles.length && data?.id) {
+            await uploadImagesIfNeeded(data.id, imageFiles);
+            created = await fetchSkillDetail(data.id);
           }
+          didCreateSkill = true;
+          setStandardCategories((prev) => [created, ...prev]);
+          setSelectedSkillsCategory(null);
         }
       }
 
@@ -299,8 +311,8 @@ export default function DashboardModals({
       if (didCreateSkill) {
         onCreatedSkillSaved?.();
       }
-    } catch (e: any) {
-      const msg = e?.response?.data?.error || e?.response?.data?.detail || 'Ukladanie zručnosti zlyhalo';
+    } catch (e: unknown) {
+      const msg = getApiErrorMessage(e, 'Ukladanie zručnosti zlyhalo');
       alert(msg);
       return;
     }
@@ -321,9 +333,9 @@ export default function DashboardModals({
             await refreshUser({ force: true });
             // Best-effort immediate UI sync
             setAccountType('business');
-          } catch (error: any) {
+          } catch (error: unknown) {
             console.error('Error changing account type to business:', error);
-            alert(error?.response?.data?.error || error?.response?.data?.detail || 'Nepodarilo sa zmeniť typ účtu. Skús to znova.');
+            alert(getApiErrorMessage(error, 'Nepodarilo sa zmeniť typ účtu. Skús to znova.'));
           }
         }}
       />
@@ -341,9 +353,9 @@ export default function DashboardModals({
             await refreshUser({ force: true });
             // Best-effort immediate UI sync
             setAccountType('personal');
-          } catch (error: any) {
+          } catch (error: unknown) {
             console.error('Error changing account type to personal:', error);
-            alert(error?.response?.data?.error || error?.response?.data?.detail || 'Nepodarilo sa zmeniť typ účtu. Skús to znova.');
+            alert(getApiErrorMessage(error, 'Nepodarilo sa zmeniť typ účtu. Skús to znova.'));
           }
         }}
       />
@@ -397,7 +409,7 @@ export default function DashboardModals({
           initialDetailedDescription={selectedSkillsCategory.detailed_description || ''}
           initialOpeningHours={selectedSkillsCategory.opening_hours}
           accountType={accountType}
-          isSeeking={activeModule === 'skills-search'}
+          isSeeking={isSelectedSkillSeeking}
           initialUrgency={selectedSkillsCategory.urgency || 'low'}
           initialDurationType={selectedSkillsCategory.duration_type || null}
           initialIsHidden={selectedSkillsCategory.is_hidden || false}

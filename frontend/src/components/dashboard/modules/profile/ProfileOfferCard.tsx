@@ -23,6 +23,8 @@ interface ProfileOfferCardProps {
   onRequestClick?: (offerId: number) => void;
   onMessageClick?: (offerId: number) => void;
   onShareClick?: (offer: Offer) => void;
+  onEditOffer?: (offer: Offer) => void;
+  onDeleteOffer?: (offer: Offer) => void;
   onToggleLike?: (offerId: number) => void;
   isLikePending?: boolean;
   requestLabel?: string;
@@ -48,6 +50,8 @@ export default function ProfileOfferCard({
   onRequestClick,
   onMessageClick,
   onShareClick,
+  onEditOffer,
+  onDeleteOffer,
   onToggleLike,
   isLikePending = false,
   requestLabel,
@@ -220,6 +224,8 @@ export default function ProfileOfferCard({
         onRequestClick={onRequestClick}
         onMessageClick={onMessageClick}
         onShareClick={onShareClick}
+        onEditOffer={onEditOffer}
+        onDeleteOffer={onDeleteOffer}
         onToggleLike={handleInternalToggleLike}
         isLikePending={effectiveIsLikePending}
         requestLabel={requestLabel}

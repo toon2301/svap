@@ -6,20 +6,16 @@ import type { User } from '../../../types';
 import { clearAuthState } from '../../../utils/auth';
 import { setUserProfileToCache } from '../modules/profile/profileUserCache';
 import { invalidateSearchCacheForUser } from '../modules/SearchModule';
+import {
+  clearSkillsDescribeReturnModule,
+  getSkillsDescribeReturnModule,
+} from '../modules/skills/skillsDescribeReturnSession';
 import { useAuth } from '@/contexts/AuthContext';
 
 type AccountType = 'personal' | 'business';
 
 const accountTypeFromUser = (u: User | null | undefined): AccountType =>
   u?.user_type === 'company' ? 'business' : 'personal';
-
-const getInitialModule = (): string => {
-  if (typeof window !== 'undefined') {
-    if (sessionStorage.getItem('forceHome') === '1') return 'home';
-    return localStorage.getItem('activeModule') || 'home';
-  }
-  return 'home';
-};
 
 export interface UseDashboardStateResult {
   user: User | null;
@@ -46,7 +42,7 @@ export interface UseDashboardStateResult {
   handleRightItemClick: (itemId: string) => void;
   handleUserUpdate: (updatedUserOrUpdater: User | ((prev: User | null) => User | null)) => void;
   handleLogout: () => Promise<void>;
-  handleMobileBack: (isInSubcategories?: boolean) => void;
+  handleMobileBack: (isInSubcategories?: boolean, skillsDescribeSkillId?: number | null) => void;
 }
 
 export function useDashboardState(initialUser?: User, initialModule?: string): UseDashboardStateResult {
@@ -421,7 +417,7 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
     return mode === 'search' ? 'skills-search' : mode === 'offer' ? 'skills-offer' : null;
   };
 
-  const handleMobileBack = useCallback((isInSubcategories: boolean = false) => {
+  const handleMobileBack = useCallback((isInSubcategories: boolean = false, skillsDescribeSkillId?: number | null) => {
     // Ak sme v edit profile móde, vráť sa na normálny profile view
     if (activeModule === 'profile' && activeRightItem === 'edit-profile') {
       closeOwnProfileEdit();
@@ -440,13 +436,17 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
 
     const modeModule = getDescribeMode();
     if (activeModule === 'skills-describe') {
-      const target = modeModule || 'skills-offer';
+      const returnModule = getSkillsDescribeReturnModule(skillsDescribeSkillId);
+      const target = returnModule || modeModule || 'skills-offer';
       setActiveModule(target);
       if (typeof window !== 'undefined') {
         try {
           localStorage.setItem('activeModule', target);
         } catch {
           // ignore
+        }
+        if (returnModule) {
+          clearSkillsDescribeReturnModule();
         }
       }
       setIsRightSidebarOpen(false);

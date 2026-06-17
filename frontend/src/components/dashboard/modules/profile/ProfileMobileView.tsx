@@ -9,6 +9,7 @@ import UserInfo from './UserInfo';
 import ProfileEditFormMobile from '../ProfileEditFormMobile';
 import ProfileOffersMobileSection from './ProfileOffersMobileSection';
 import ProfilePortfolioSection from './ProfilePortfolioSection';
+import type { Offer } from './profileOffersTypes';
 import type { ProfileTab } from './profileTypes';
 import ProfileMobileSocialLinks from './ProfileMobileSocialLinks';
 import ProfileMobileHamburgerModal from './ProfileMobileHamburgerModal';
@@ -48,7 +49,9 @@ interface ProfileMobileViewProps {
   onToggleFavorite?: () => void;
   isFavorited?: boolean;
   isFavoritePending?: boolean;
-   highlightedSkillId?: number | null;
+  highlightedSkillId?: number | null;
+  onEditOffer?: (offer: Offer) => void;
+  onDeleteOffer?: (offer: Offer) => void;
 }
 
 type UserProfileModalWindow = Window & {
@@ -83,6 +86,8 @@ export default function ProfileMobileView({
   isFavorited = false,
   isFavoritePending = false,
   highlightedSkillId,
+  onEditOffer,
+  onDeleteOffer,
 }: ProfileMobileViewProps) {
   const displayUser = displayUserProp ?? user;
   const { t } = useLanguage();
@@ -558,6 +563,8 @@ export default function ProfileMobileView({
               ownerProfileIdentifier={getProfileShareIdentifier(displayUser)}
               highlightedSkillId={highlightedSkillId ?? null}
               isOtherUserProfile={isOtherUserProfile}
+              onEditOffer={onEditOffer}
+              onDeleteOffer={onDeleteOffer}
             />
           )}
 
