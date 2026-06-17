@@ -580,10 +580,10 @@ export default function DashboardContent({
           setIsNotificationsPanelOpen(false);
           try {
             localStorage.setItem('activeModule', 'skills-describe');
-            setSkillsDescribeProfileReturn(offerId);
           } catch {
-            // Navigation state is already updated; ignore storage failures.
+            // ignore storage failures
           }
+          setSkillsDescribeProfileReturn(offerId);
           return;
         }
 

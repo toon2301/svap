@@ -381,11 +381,11 @@ export default function SkillsModuleRouter({
             setActiveModule(target);
             try {
               localStorage.setItem('activeModule', target);
-              if (returnModule) {
-                clearSkillsDescribeReturnModule();
-              }
             } catch {
               // ignore
+            }
+            if (returnModule) {
+              clearSkillsDescribeReturnModule();
             }
           }}
           initialDescription={selectedSkillsCategory.description}

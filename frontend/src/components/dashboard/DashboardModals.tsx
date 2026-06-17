@@ -28,6 +28,8 @@ function getApiErrorMessage(error: unknown, fallback: string): string {
   const data = (error as ApiErrorLike)?.response?.data;
   if (typeof data?.error === 'string' && data.error.trim()) return data.error;
   if (typeof data?.detail === 'string' && data.detail.trim()) return data.detail;
+  const message = (error as { message?: unknown })?.message;
+  if (typeof message === 'string' && message.trim()) return message;
   return fallback;
 }
 

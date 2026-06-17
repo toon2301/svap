@@ -442,11 +442,11 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
       if (typeof window !== 'undefined') {
         try {
           localStorage.setItem('activeModule', target);
-          if (returnModule) {
-            clearSkillsDescribeReturnModule();
-          }
         } catch {
           // ignore
+        }
+        if (returnModule) {
+          clearSkillsDescribeReturnModule();
         }
       }
       setIsRightSidebarOpen(false);

@@ -121,12 +121,13 @@ export function useSkillSaveHandler({
     try {
       if (typeof window !== 'undefined') {
         localStorage.setItem('activeModule', nextModule);
-        if (returnModule) {
-          clearSkillsDescribeReturnModule();
-        }
       }
     } catch {
       // ignore storage errors
+    } finally {
+      if (returnModule) {
+        clearSkillsDescribeReturnModule();
+      }
     }
 
     try {
