@@ -16,6 +16,7 @@ jest.mock('@/lib/api', () => ({
   ...jest.requireActual('@/lib/api'),
   api: {
     get: jest.fn(),
+    post: jest.fn(),
   },
 }));
 
@@ -51,6 +52,7 @@ describe('ProfilePortfolioSection', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockPush.mockClear();
+    (api.post as jest.Mock).mockReset();
   });
 
   it('fetches portfolio only when the portfolio tab is active', async () => {
@@ -83,14 +85,15 @@ describe('ProfilePortfolioSection', () => {
     });
   });
 
-  it('shows owner empty state without a disabled add button', async () => {
+  it('shows owner empty state with a working create action', async () => {
     (api.get as jest.Mock).mockResolvedValue({ data: [] });
 
     render(<ProfilePortfolioSection activeTab="portfolio" isOtherUserProfile={false} ownerUserId={1} />);
 
     expect(await screen.findByText('Portfólio je zatiaľ prázdne')).toBeInTheDocument();
-    expect(screen.getByText('Ukážky práce budeš môcť pridať neskôr.')).toBeInTheDocument();
-    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+    expect(screen.getByText('Pridaj prvú ukážku práce a ukáž, čo vieš.')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Vytvoriť portfólio' }));
+    expect(screen.getByTestId('portfolio-create-form')).toBeInTheDocument();
   });
 
   it('shows visitor empty state and uses the slug portfolio endpoint when available', async () => {
@@ -109,6 +112,67 @@ describe('ProfilePortfolioSection', () => {
       expect(api.get).toHaveBeenCalledWith('/auth/dashboard/users/slug/jane-doe/portfolio/');
     });
     expect(await screen.findByText('Portfólio zatiaľ nie je dostupné')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Vytvoriť portfólio' })).not.toBeInTheDocument();
+  });
+
+  it('validates required fields before creating portfolio', async () => {
+    (api.get as jest.Mock).mockResolvedValue({ data: [] });
+
+    render(<ProfilePortfolioSection activeTab="portfolio" isOtherUserProfile={false} ownerUserId={1} />);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Vytvoriť portfólio' }));
+    fireEvent.submit(screen.getByTestId('portfolio-create-form'));
+
+    expect(await screen.findByText('Názov je povinný')).toBeInTheDocument();
+    expect(screen.getByText('Kategória je povinná')).toBeInTheDocument();
+    expect(api.post).not.toHaveBeenCalled();
+  });
+
+  it('creates a portfolio item and navigates to its detail', async () => {
+    (api.get as jest.Mock).mockResolvedValue({ data: [] });
+    (api.post as jest.Mock).mockResolvedValue({
+      data: portfolioItem({
+        id: 9,
+        title: 'New Work',
+        category: 'it-a-technologie',
+        description: 'New description',
+        sort_order: 2,
+      }),
+    });
+
+    render(<ProfilePortfolioSection activeTab="portfolio" isOtherUserProfile={false} ownerUserId={1} />);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Vytvoriť portfólio' }));
+    fireEvent.change(screen.getByLabelText('Názov'), { target: { value: ' New Work ' } });
+    fireEvent.change(screen.getByLabelText('Kategória'), { target: { value: 'it-a-technologie' } });
+    fireEvent.change(screen.getByLabelText(/Popis/), { target: { value: ' New description ' } });
+    fireEvent.submit(screen.getByTestId('portfolio-create-form'));
+
+    await waitFor(() => {
+      expect(api.post).toHaveBeenCalledWith('/auth/portfolio/', {
+        title: 'New Work',
+        category: 'it-a-technologie',
+        description: 'New description',
+      });
+    });
+    expect(mockPush).toHaveBeenCalledWith('/dashboard/users/1/portfolio/9');
+  });
+
+  it('shows a safe create error when the backend rejects the request', async () => {
+    (api.get as jest.Mock).mockResolvedValue({ data: [] });
+    (api.post as jest.Mock).mockRejectedValue({
+      response: { status: 403, data: { detail: 'Forbidden' } },
+    });
+
+    render(<ProfilePortfolioSection activeTab="portfolio" isOtherUserProfile={false} ownerUserId={1} />);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Vytvoriť portfólio' }));
+    fireEvent.change(screen.getByLabelText('Názov'), { target: { value: 'New Work' } });
+    fireEvent.change(screen.getByLabelText('Kategória'), { target: { value: 'it-a-technologie' } });
+    fireEvent.submit(screen.getByTestId('portfolio-create-form'));
+
+    expect(await screen.findByText('Forbidden')).toBeInTheDocument();
+    expect(mockPush).not.toHaveBeenCalled();
   });
 
   it('shows an error state with retry', async () => {

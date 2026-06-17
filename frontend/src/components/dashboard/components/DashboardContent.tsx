@@ -695,6 +695,13 @@ export default function DashboardContent({
     portfolioOwnerIdentifierFromPath ??
     initialProfileSlug ??
     (typeof initialViewedUserId === 'number' ? String(initialViewedUserId) : null);
+  const effectivePortfolioDetailIsOwner = React.useMemo(() => {
+    const identifier = String(effectivePortfolioOwnerIdentifier || '').trim();
+    if (!identifier || !user) return false;
+    const currentUserId = String(user.id);
+    const currentUserSlug = String(user.slug || '').trim();
+    return identifier === currentUserId || (Boolean(currentUserSlug) && identifier === currentUserSlug);
+  }, [effectivePortfolioOwnerIdentifier, user]);
   useEffect(() => {
     if (offerIdFromReviewsPath != null) {
       setActiveModule('offer-reviews');
@@ -1087,6 +1094,7 @@ export default function DashboardContent({
           : null
       }
       portfolioOwnerIdentifier={effectivePortfolioOwnerIdentifier}
+      portfolioDetailIsOwner={effectivePortfolioDetailIsOwner}
       conversationIdForMessages={
         selectedConversationId != null && Number.isFinite(selectedConversationId) ? selectedConversationId : null
       }
