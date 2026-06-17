@@ -13,6 +13,10 @@ import DashboardLayout from '../DashboardLayout';
 import ModuleRouter from '../ModuleRouter';
 import DashboardModals from '../DashboardModals';
 import { DeleteSkillConfirmModal } from '../modules/skills/DeleteSkillConfirmModal';
+import {
+  clearSkillsDescribeReturnModule,
+  setSkillsDescribeProfileReturn,
+} from '../modules/skills/skillsDescribeReturnSession';
 import { DesktopOnboardingProvider } from '../onboarding/DesktopOnboardingContext';
 import DesktopOnboardingOverlay from '../onboarding/DesktopOnboardingOverlay';
 import { MobileOnboardingProvider } from '../onboarding/MobileOnboardingContext';
@@ -315,6 +319,12 @@ export default function DashboardContent({
     }
   }, [activeModule, requestsRouteIntent]);
 
+  useEffect(() => {
+    if (activeModule !== 'skills-describe') {
+      clearSkillsDescribeReturnModule();
+    }
+  }, [activeModule]);
+
   const handleSidebarSearchClick = useCallback(() => {
     setIsNotificationsPanelOpen(false);
     navigation.handleSidebarSearchClick();
@@ -517,6 +527,10 @@ export default function DashboardContent({
     handleMobileBack();
   }, [handleMobileBack, handleNotificationNavigate, offerReviewsReturnTo]);
 
+  const handleSkillsDescribeMobileBack = useCallback(() => {
+    handleMobileBack(false, selectedSkillsCategory?.id ?? null);
+  }, [handleMobileBack, selectedSkillsCategory?.id]);
+
   // Funkcia na uloÅ¾enie karty (presunutÃ¡ do samostatnÃ©ho hooku pre prehÄ¾adnosÅ¥)
   const handleSkillSave = useSkillSaveHandler({
     selectedSkillsCategory,
@@ -566,7 +580,7 @@ export default function DashboardContent({
           setIsNotificationsPanelOpen(false);
           try {
             localStorage.setItem('activeModule', 'skills-describe');
-            sessionStorage.setItem('skillsDescribeReturnModule', 'profile');
+            setSkillsDescribeProfileReturn(offerId);
           } catch {
             // Navigation state is already updated; ignore storage failures.
           }
@@ -1167,9 +1181,11 @@ export default function DashboardContent({
             onMobileBack={
               activeModule === 'skills-select-category'
                 ? handleSkillsCategoryBack
-                : activeModule === 'offer-reviews'
-                  ? handleOfferReviewsBack
-                  : handleMobileBack
+                : activeModule === 'skills-describe'
+                  ? handleSkillsDescribeMobileBack
+                  : activeModule === 'offer-reviews'
+                    ? handleOfferReviewsBack
+                    : handleMobileBack
             }
             onMobileProfileClick={navigation.handleMobileProfileClick}
             onSkillsModeToggle={handleSkillsModeToggle}

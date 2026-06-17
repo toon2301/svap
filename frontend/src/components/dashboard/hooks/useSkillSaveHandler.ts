@@ -5,6 +5,10 @@ import { api, endpoints } from '@/lib/api';
 import { uploadOfferImage } from '@/lib/offerImageUpload';
 import { isValidOfferDistrictSelection } from '@/shared/districtRegistry';
 import { dispatchProfileOffersRefresh } from '../modules/profile/profileOfferEvents';
+import {
+  clearSkillsDescribeReturnModule,
+  getSkillsDescribeReturnModule,
+} from '../modules/skills/skillsDescribeReturnSession';
 import type { DashboardSkill } from './useSkillsModals';
 
 type Translator = (key: string, fallback: string) => string;
@@ -44,11 +48,6 @@ function getApiErrorMessage(error: unknown, fallback: string): string {
     : fallback;
 }
 
-function getSkillsDescribeReturnModule(): 'profile' | null {
-  if (typeof window === 'undefined') return null;
-  return sessionStorage.getItem('skillsDescribeReturnModule') === 'profile' ? 'profile' : null;
-}
-
 /**
  * Vráti handler na uloženie karty (create/update + upload images) bez zmeny existujúcej logiky.
  * Zámer: držať DashboardContent kratší a prehľadnejší.
@@ -84,7 +83,7 @@ export function useSkillSaveHandler({
     }
 
     const targetModule = isSeeking ? 'skills-search' : 'skills-offer';
-    const returnModule = getSkillsDescribeReturnModule();
+    const returnModule = getSkillsDescribeReturnModule(selectedSkillsCategory.id);
     const nextModule = returnModule || targetModule;
     const draftSkill = selectedSkillsCategory;
     const trimmedDistrict = (draftSkill.district || '').trim();
@@ -123,7 +122,7 @@ export function useSkillSaveHandler({
       if (typeof window !== 'undefined') {
         localStorage.setItem('activeModule', nextModule);
         if (returnModule) {
-          sessionStorage.removeItem('skillsDescribeReturnModule');
+          clearSkillsDescribeReturnModule();
         }
       }
     } catch {

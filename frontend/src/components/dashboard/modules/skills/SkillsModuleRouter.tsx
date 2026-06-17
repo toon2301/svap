@@ -9,6 +9,10 @@ import SkillsScreen from './SkillsScreen';
 import SkillsCategoryScreen from './SkillsCategoryScreen';
 import SkillsDescriptionScreen from './SkillsDescriptionScreen';
 import AddCustomCategoryScreen from './AddCustomCategoryScreen';
+import {
+  clearSkillsDescribeReturnModule,
+  getSkillsDescribeReturnModule,
+} from './skillsDescribeReturnSession';
 import type { DashboardSkill } from '../../hooks/useSkillsModals';
 import type { OpeningHours } from './skillDescriptionModal/types';
 
@@ -23,11 +27,6 @@ type ApiErrorLike = {
   };
   message?: unknown;
 };
-
-function getSkillsDescribeReturnModule(): 'profile' | null {
-  if (typeof window === 'undefined') return null;
-  return sessionStorage.getItem('skillsDescribeReturnModule') === 'profile' ? 'profile' : null;
-}
 
 function getApiErrorMessage(error: unknown, fallback: string): string {
   const apiError = error as ApiErrorLike;
@@ -357,6 +356,7 @@ export default function SkillsModuleRouter({
     }
     case 'skills-describe': {
       if (!selectedSkillsCategory) {
+        clearSkillsDescribeReturnModule();
         setActiveModule('skills-offer');
         return null;
       }
@@ -372,7 +372,7 @@ export default function SkillsModuleRouter({
           subcategory={selectedSkillsCategory.subcategory}
           isSeeking={derivedIsSeeking}
           onBack={() => {
-            const returnModule = getSkillsDescribeReturnModule();
+            const returnModule = getSkillsDescribeReturnModule(selectedSkillsCategory.id);
             const mode =
               typeof window !== 'undefined'
                 ? localStorage.getItem('skillsDescribeMode')
@@ -382,7 +382,7 @@ export default function SkillsModuleRouter({
             try {
               localStorage.setItem('activeModule', target);
               if (returnModule) {
-                sessionStorage.removeItem('skillsDescribeReturnModule');
+                clearSkillsDescribeReturnModule();
               }
             } catch {
               // ignore
