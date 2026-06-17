@@ -14,6 +14,30 @@ import type { OpeningHours } from './skillDescriptionModal/types';
 
 const MAX_SKILLS_PER_TYPE = 3;
 
+type ApiErrorLike = {
+  response?: {
+    data?: {
+      error?: unknown;
+      detail?: unknown;
+    };
+  };
+  message?: unknown;
+};
+
+function getSkillsDescribeReturnModule(): 'profile' | null {
+  if (typeof window === 'undefined') return null;
+  return sessionStorage.getItem('skillsDescribeReturnModule') === 'profile' ? 'profile' : null;
+}
+
+function getApiErrorMessage(error: unknown, fallback: string): string {
+  const apiError = error as ApiErrorLike;
+  const rawMessage =
+    apiError.response?.data?.error ?? apiError.response?.data?.detail ?? apiError.message;
+  return typeof rawMessage === 'string' && rawMessage.trim() !== ''
+    ? rawMessage
+    : fallback;
+}
+
 interface SkillsModuleRouterProps {
   activeModule: string;
   accountType: 'personal' | 'business';
@@ -348,14 +372,18 @@ export default function SkillsModuleRouter({
           subcategory={selectedSkillsCategory.subcategory}
           isSeeking={derivedIsSeeking}
           onBack={() => {
+            const returnModule = getSkillsDescribeReturnModule();
             const mode =
               typeof window !== 'undefined'
                 ? localStorage.getItem('skillsDescribeMode')
                 : null;
-            const target = mode === 'search' ? 'skills-search' : 'skills-offer';
+            const target = returnModule || (mode === 'search' ? 'skills-search' : 'skills-offer');
             setActiveModule(target);
             try {
               localStorage.setItem('activeModule', target);
+              if (returnModule) {
+                sessionStorage.removeItem('skillsDescribeReturnModule');
+              }
             } catch {
               // ignore
             }
@@ -447,11 +475,8 @@ export default function SkillsModuleRouter({
                       endpoints.skills.imageDetail(selectedSkillsCategory.id!, imageId),
                     );
                     return data?.images || [];
-                  } catch (error: any) {
-                    const msg =
-                      error?.response?.data?.error ||
-                      error?.message ||
-                      'Odstránenie obrázka zlyhalo';
+                  } catch (error: unknown) {
+                    const msg = getApiErrorMessage(error, 'Odstránenie obrázka zlyhalo');
                     throw new Error(msg);
                   }
                 }

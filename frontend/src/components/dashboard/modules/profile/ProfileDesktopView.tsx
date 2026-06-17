@@ -6,6 +6,7 @@ import { getProfileDisplayName } from '@/lib/profileDisplayName';
 import ProfileEditFormDesktop from '../ProfileEditFormDesktop';
 import ProfileOffersSection from './ProfileOffersSection';
 import ProfilePortfolioSection from './ProfilePortfolioSection';
+import type { Offer } from './profileOffersTypes';
 import type { ProfileTab } from './profileTypes';
 import UserInfo from './UserInfo';
 import { ProfileDesktopHeader } from './ProfileDesktopHeader';
@@ -45,6 +46,8 @@ interface ProfileDesktopViewProps {
   isFavorited?: boolean;
   isFavoritePending?: boolean;
   highlightedSkillId?: number | null;
+  onEditOffer?: (offer: Offer) => void;
+  onDeleteOffer?: (offer: Offer) => void;
 }
 
 export default function ProfileDesktopView({
@@ -75,6 +78,8 @@ export default function ProfileDesktopView({
   isFavorited = false,
   isFavoritePending = false,
   highlightedSkillId,
+  onEditOffer,
+  onDeleteOffer,
 }: ProfileDesktopViewProps) {
   const displayUser = displayUserProp ?? user;
   const [isHamburgerModalOpen, setIsHamburgerModalOpen] = useState(false);
@@ -137,6 +142,8 @@ export default function ProfileDesktopView({
                 ownerProfileIdentifier={getProfileShareIdentifier(displayUser)}
                 highlightedSkillId={highlightedSkillId ?? null}
                 isOtherUserProfile={isOtherUserProfile}
+                onEditOffer={onEditOffer}
+                onDeleteOffer={onDeleteOffer}
               />
 
               <ProfilePortfolioSection

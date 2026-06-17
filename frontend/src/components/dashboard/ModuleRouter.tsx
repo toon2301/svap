@@ -19,6 +19,7 @@ import RequestsModule from './modules/RequestsModule';
 import AccountTypeSection from './modules/accountType/AccountTypeSection';
 import type { RequestsRouteIntent } from './modules/requests/requestsRouting';
 import type { DashboardSkill } from './hooks/useSkillsModals';
+import type { Offer } from './modules/profile/profileOffersTypes';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { SearchUserProfileModule } from './modules/search/SearchUserProfileModule';
 import OfferReviewsView from './modules/reviews/OfferReviewsView';
@@ -73,6 +74,8 @@ interface ModuleRouterProps {
   targetUserIdForMessages?: number | null;
   onNotificationNavigate?: (targetUrl: string) => void;
   requestsRouteIntent?: RequestsRouteIntent | null;
+  onEditOwnProfileOffer?: (offer: Offer) => void;
+  onDeleteOwnProfileOffer?: (offer: Offer) => void;
 }
 
 export default function ModuleRouter({
@@ -120,6 +123,8 @@ export default function ModuleRouter({
   targetUserIdForMessages,
   onNotificationNavigate,
   requestsRouteIntent,
+  onEditOwnProfileOffer,
+  onDeleteOwnProfileOffer,
 }: ModuleRouterProps) {
   const { t } = useLanguage();
 
@@ -223,6 +228,8 @@ export default function ModuleRouter({
           accountType={accountType}
           highlightedSkillId={highlightedSkillId ?? null}
           initialTab={initialProfileTab}
+          onEditOffer={onEditOwnProfileOffer}
+          onDeleteOffer={onDeleteOwnProfileOffer}
         />
       );
     case 'search':

@@ -3,6 +3,7 @@
 import React from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useRouter } from 'next/navigation';
+import { PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 import OfferImageCarousel from '../shared/OfferImageCarousel';
 import OfferImageGalleryLightbox from '../shared/OfferImageGalleryLightbox';
 import type { Offer } from './profileOffersTypes';
@@ -20,6 +21,8 @@ interface ProfileOfferCardMobileProps {
   onRequestClick?: (offerId: number) => void;
   onMessageClick?: (offerId: number) => void;
   onShareClick?: (offer: Offer) => void;
+  onEditOffer?: (offer: Offer) => void;
+  onDeleteOffer?: (offer: Offer) => void;
   onToggleLike?: (offerId: number) => void;
   isLikePending?: boolean;
   /** Rovnako ako desktop: text CTA podľa aktuálneho stavu záujmu. */
@@ -42,6 +45,8 @@ export function ProfileOfferCardMobile({
   onRequestClick,
   onMessageClick,
   onShareClick,
+  onEditOffer,
+  onDeleteOffer,
   onToggleLike,
   isLikePending = false,
   requestLabel: requestLabelProp,
@@ -61,6 +66,9 @@ export function ProfileOfferCardMobile({
   const isReviewIconFilled = isOtherUserProfile ? offer.already_reviewed === true : (offer.reviews_count ?? 0) > 0;
   const isLiked = offer.is_liked_by_me === true;
   const likeLabel = t('skills.likes', 'Páči sa mi to');
+  const canManageOffer = !isOtherUserProfile && typeof offer.id === 'number';
+  const editOfferLabel = t('skills.editOffer', 'Upraviť kartu');
+  const deleteOfferLabel = t('skills.deleteOffer', 'Vymazať kartu');
 
   const catSlug = offer.category ? slugifyLabel(offer.category) : '';
   const subSlug = offer.subcategory ? slugifyLabel(offer.subcategory) : '';
@@ -251,6 +259,36 @@ export function ProfileOfferCardMobile({
                   fill={isReviewIconFilled ? 'currentColor' : 'none'}
                 />
               </svg>
+            </button>
+          )}
+          {canManageOffer && onEditOffer && (
+            <button
+              type="button"
+              aria-label={editOfferLabel}
+              title={editOfferLabel}
+              className="p-1.5 rounded-full inline-flex items-center justify-center leading-none bg-purple-50 dark:bg-purple-900/80 dark:backdrop-blur-sm border border-purple-200 dark:border-purple-800/60 text-purple-700 dark:text-white hover:bg-purple-100 dark:hover:bg-purple-900/90 transition-colors active:scale-95"
+              onClick={(e) => {
+                e.stopPropagation();
+                onEditOffer(offer);
+              }}
+              onKeyDown={(e) => e.stopPropagation()}
+            >
+              <PencilIcon className="w-4 h-4" />
+            </button>
+          )}
+          {canManageOffer && onDeleteOffer && (
+            <button
+              type="button"
+              aria-label={deleteOfferLabel}
+              title={deleteOfferLabel}
+              className="p-1.5 rounded-full inline-flex items-center justify-center leading-none bg-purple-50 dark:bg-purple-900/80 dark:backdrop-blur-sm border border-purple-200 dark:border-purple-800/60 text-purple-700 dark:text-white hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/30 dark:hover:text-red-300 transition-colors active:scale-95"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDeleteOffer(offer);
+              }}
+              onKeyDown={(e) => e.stopPropagation()}
+            >
+              <TrashIcon className="w-4 h-4" />
             </button>
           )}
         </div>

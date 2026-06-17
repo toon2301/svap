@@ -13,14 +13,6 @@ type AccountType = 'personal' | 'business';
 const accountTypeFromUser = (u: User | null | undefined): AccountType =>
   u?.user_type === 'company' ? 'business' : 'personal';
 
-const getInitialModule = (): string => {
-  if (typeof window !== 'undefined') {
-    if (sessionStorage.getItem('forceHome') === '1') return 'home';
-    return localStorage.getItem('activeModule') || 'home';
-  }
-  return 'home';
-};
-
 export interface UseDashboardStateResult {
   user: User | null;
   setUser: React.Dispatch<React.SetStateAction<User | null>>;
@@ -421,6 +413,12 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
     return mode === 'search' ? 'skills-search' : mode === 'offer' ? 'skills-offer' : null;
   };
 
+  const getDescribeReturnModule = () => {
+    if (typeof window === 'undefined') return null;
+    const target = sessionStorage.getItem('skillsDescribeReturnModule');
+    return target === 'profile' ? 'profile' : null;
+  };
+
   const handleMobileBack = useCallback((isInSubcategories: boolean = false) => {
     // Ak sme v edit profile móde, vráť sa na normálny profile view
     if (activeModule === 'profile' && activeRightItem === 'edit-profile') {
@@ -440,11 +438,15 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
 
     const modeModule = getDescribeMode();
     if (activeModule === 'skills-describe') {
-      const target = modeModule || 'skills-offer';
+      const returnModule = getDescribeReturnModule();
+      const target = returnModule || modeModule || 'skills-offer';
       setActiveModule(target);
       if (typeof window !== 'undefined') {
         try {
           localStorage.setItem('activeModule', target);
+          if (returnModule) {
+            sessionStorage.removeItem('skillsDescribeReturnModule');
+          }
         } catch {
           // ignore
         }

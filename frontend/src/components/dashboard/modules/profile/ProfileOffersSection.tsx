@@ -61,6 +61,8 @@ interface ProfileOffersSectionProps {
   ownerProfileIdentifier?: string;
   highlightedSkillId?: number | null;
   isOtherUserProfile?: boolean;
+  onEditOffer?: (offer: Offer) => void;
+  onDeleteOffer?: (offer: Offer) => void;
 }
 
 export default function ProfileOffersSection({
@@ -70,6 +72,8 @@ export default function ProfileOffersSection({
   ownerProfileIdentifier,
   highlightedSkillId,
   isOtherUserProfile = false,
+  onEditOffer,
+  onDeleteOffer,
 }: ProfileOffersSectionProps) {
   const { t } = useLanguage();
   const router = useRouter();
@@ -867,6 +871,8 @@ export default function ProfileOffersSection({
                   onRequestClick={handleRequestClick}
                   onMessageClick={handleMessageClick}
                   onShareClick={handleShareOffer}
+                  onEditOffer={isOtherUserProfile ? undefined : onEditOffer}
+                  onDeleteOffer={isOtherUserProfile ? undefined : onDeleteOffer}
                   onToggleLike={handleToggleOfferLike}
                   isLikePending={pendingOfferLikeIds.has(offer.id)}
                   messageLabel={busyMessageOfferId === offer.id ? t('messages.opening', 'Otváram…') : undefined}

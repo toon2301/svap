@@ -63,4 +63,37 @@ describe('ProfileOfferCardMobile', () => {
 
     expect(screen.queryByText('Otoč kartu pre detail')).not.toBeInTheDocument();
   });
+
+  it('shows manage buttons on own profile cards', () => {
+    render(
+      <ProfileOfferCardMobile
+        offer={offer}
+        accountType="personal"
+        isTapped={false}
+        onCardClick={jest.fn()}
+        onEditOffer={jest.fn()}
+        onDeleteOffer={jest.fn()}
+      />,
+    );
+
+    expect(screen.getByLabelText('Upraviť kartu')).toBeInTheDocument();
+    expect(screen.getByLabelText('Vymazať kartu')).toBeInTheDocument();
+  });
+
+  it('hides manage buttons on other user profile cards', () => {
+    render(
+      <ProfileOfferCardMobile
+        offer={offer}
+        accountType="personal"
+        isTapped={false}
+        onCardClick={jest.fn()}
+        isOtherUserProfile
+        onEditOffer={jest.fn()}
+        onDeleteOffer={jest.fn()}
+      />,
+    );
+
+    expect(screen.queryByLabelText('Upraviť kartu')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Vymazať kartu')).not.toBeInTheDocument();
+  });
 });

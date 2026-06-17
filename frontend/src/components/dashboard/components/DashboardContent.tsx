@@ -2,13 +2,17 @@
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
+import toast from 'react-hot-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useIsMobile } from '@/hooks';
 import type { User } from '@/types';
 import { api, endpoints } from '@/lib/api';
 import type { ProfileTab } from '../modules/profile/profileTypes';
+import type { Offer } from '../modules/profile/profileOffersTypes';
 import DashboardLayout from '../DashboardLayout';
 import ModuleRouter from '../ModuleRouter';
 import DashboardModals from '../DashboardModals';
+import { DeleteSkillConfirmModal } from '../modules/skills/DeleteSkillConfirmModal';
 import { DesktopOnboardingProvider } from '../onboarding/DesktopOnboardingContext';
 import DesktopOnboardingOverlay from '../onboarding/DesktopOnboardingOverlay';
 import { MobileOnboardingProvider } from '../onboarding/MobileOnboardingContext';
@@ -33,6 +37,8 @@ import {
   PROFILE_OFFER_DETAIL_CLOSE_EVENT,
   PROFILE_OFFER_DETAIL_OPEN_EVENT,
 } from '../modules/profile/profileOfferDetailEvents';
+import { dispatchProfileOffersRefresh } from '../modules/profile/profileOfferEvents';
+import { invalidateOffersCache } from '../modules/profile/profileOffersCache';
 import { useDashboardState } from '../hooks/useDashboardState';
 import { useSkillsModals } from '../hooks/useSkillsModals';
 import { useDashboardNavigation } from '../hooks/useDashboardNavigation';
@@ -119,6 +125,13 @@ function getDashboardHighlightIdFromTarget(targetUrl: string): number | null {
   }
 }
 
+function getSkillActionErrorMessage(error: unknown, fallback: string): string {
+  const data = (error as { response?: { data?: { error?: unknown; detail?: unknown } } })?.response?.data;
+  if (typeof data?.error === 'string' && data.error.trim()) return data.error;
+  if (typeof data?.detail === 'string' && data.detail.trim()) return data.detail;
+  return fallback;
+}
+
 /**
  * HlavnÃ½ obsah Dashboard komponenta s vÅ¡etkou logikou
  */
@@ -135,6 +148,7 @@ export default function DashboardContent({
 }: DashboardContentProps) {
   const router = useRouter();
   const { t } = useLanguage();
+  const isMobile = useIsMobile();
   const searchParams = useSearchParams();
   const pathname = usePathname();
 
@@ -190,6 +204,8 @@ export default function DashboardContent({
     avatarMembers: MessagingUserBrief[];
   } | null>(null);
   const [isMobileOfferDetailOpen, setIsMobileOfferDetailOpen] = useState(false);
+  const [pendingDeleteOffer, setPendingDeleteOffer] = useState<Offer | null>(null);
+  const [isDeletingOwnProfileOffer, setIsDeletingOwnProfileOffer] = useState(false);
   const skillsCategoryBackHandlerRef = useRef<(() => void) | null>(null);
   const mobileOnboardingSkillCreatedHandlerRef = useRef<(() => void) | null>(null);
   const desktopOnboardingSkillCreatedHandlerRef = useRef<(() => void) | null>(null);
@@ -513,6 +529,133 @@ export default function DashboardContent({
     ownerUserIdForOffersCache: user?.id,
     onCreatedSkillSaved: handleOnboardingSkillCreated,
   });
+
+  const handleEditOwnProfileOffer = useCallback(
+    async (offer: Offer) => {
+      const offerId = Number.isSafeInteger(offer.id) && offer.id >= 1 ? offer.id : null;
+      if (offerId === null) {
+        toast.error(t('skills.cardEditFailed', 'Kartu sa nepodarilo otvoriť na úpravu. Skúste to znova.'));
+        return;
+      }
+
+      try {
+        const skill = await fetchSkillDetail(offerId);
+        const describeMode = skill.is_seeking ? 'search' : 'offer';
+        setEditingCustomCategoryIndex(null);
+        setEditingStandardCategoryIndex(null);
+        setSelectedSkillsCategory(skill);
+
+        try {
+          localStorage.setItem('skillsDescribeMode', describeMode);
+        } catch {
+          // ignore storage errors
+        }
+
+        const shouldUseMobileEdit =
+          isMobile ||
+          (typeof window !== 'undefined' &&
+            window.matchMedia('(max-width: 1023px)').matches);
+
+        if (shouldUseMobileEdit) {
+          setIsSkillDescriptionModalOpen(false);
+          setActiveModule('skills-describe');
+          setIsRightSidebarOpen(false);
+          setActiveRightItem('');
+          setIsMobileMenuOpen(false);
+          setIsSearchOpen(false);
+          setIsNotificationsPanelOpen(false);
+          try {
+            localStorage.setItem('activeModule', 'skills-describe');
+            sessionStorage.setItem('skillsDescribeReturnModule', 'profile');
+          } catch {
+            // Navigation state is already updated; ignore storage failures.
+          }
+          return;
+        }
+
+        setIsSkillDescriptionModalOpen(true);
+      } catch (error) {
+        toast.error(
+          getSkillActionErrorMessage(
+            error,
+            t('skills.cardEditFailed', 'Kartu sa nepodarilo otvoriť na úpravu. Skúste to znova.'),
+          ),
+        );
+      }
+    },
+    [
+      fetchSkillDetail,
+      isMobile,
+      setActiveModule,
+      setActiveRightItem,
+      setEditingCustomCategoryIndex,
+      setEditingStandardCategoryIndex,
+      setIsSkillDescriptionModalOpen,
+      setIsMobileMenuOpen,
+      setIsNotificationsPanelOpen,
+      setIsRightSidebarOpen,
+      setIsSearchOpen,
+      setSelectedSkillsCategory,
+      t,
+    ],
+  );
+
+  const handleDeleteOwnProfileOffer = useCallback((offer: Offer) => {
+    if (!Number.isSafeInteger(offer.id) || offer.id < 1) {
+      toast.error(t('skills.cardDeleteFailed', 'Kartu sa nepodarilo odstrániť. Skúste to znova.'));
+      return;
+    }
+    setPendingDeleteOffer(offer);
+  }, [t]);
+
+  const handleConfirmDeleteOwnProfileOffer = useCallback(async () => {
+    if (!pendingDeleteOffer || isDeletingOwnProfileOffer) return;
+
+    const offerId = Number.isSafeInteger(pendingDeleteOffer.id) && pendingDeleteOffer.id >= 1
+      ? pendingDeleteOffer.id
+      : null;
+    if (offerId === null) {
+      setPendingDeleteOffer(null);
+      toast.error(t('skills.cardDeleteFailed', 'Kartu sa nepodarilo odstrániť. Skúste to znova.'));
+      return;
+    }
+
+    setIsDeletingOwnProfileOffer(true);
+    try {
+      await api.delete(endpoints.skills.detail(offerId));
+      setStandardCategories((prev) => prev.filter((skill) => skill.id !== offerId));
+      setCustomCategories((prev) => prev.filter((skill) => skill.id !== offerId));
+      if (selectedSkillsCategory?.id === offerId) {
+        setSelectedSkillsCategory(null);
+        setIsSkillDescriptionModalOpen(false);
+      }
+      invalidateOffersCache(user?.id);
+      dispatchProfileOffersRefresh({ ownerUserId: user?.id, offerId });
+      setPendingDeleteOffer(null);
+      toast.success(t('skills.cardDeleteSuccess', 'Karta bola vymazaná.'));
+      void loadSkills();
+    } catch (error) {
+      toast.error(
+        getSkillActionErrorMessage(
+          error,
+          t('skills.cardDeleteFailed', 'Kartu sa nepodarilo odstrániť. Skúste to znova.'),
+        ),
+      );
+    } finally {
+      setIsDeletingOwnProfileOffer(false);
+    }
+  }, [
+    isDeletingOwnProfileOffer,
+    loadSkills,
+    pendingDeleteOffer,
+    selectedSkillsCategory?.id,
+    setCustomCategories,
+    setIsSkillDescriptionModalOpen,
+    setSelectedSkillsCategory,
+    setStandardCategories,
+    t,
+    user?.id,
+  ]);
 
   // Skills category back handler
   const handleSkillsCategoryBack = useCallback(() => {
@@ -940,6 +1083,8 @@ export default function DashboardContent({
       }
       onNotificationNavigate={handleNotificationNavigate}
       requestsRouteIntent={requestsRouteIntent}
+      onEditOwnProfileOffer={handleEditOwnProfileOffer}
+      onDeleteOwnProfileOffer={handleDeleteOwnProfileOffer}
     />
   );
 
@@ -1126,6 +1271,16 @@ export default function DashboardContent({
         activeModule={activeModule}
         t={t}
         onCreatedSkillSaved={handleOnboardingSkillCreated}
+      />
+      <DeleteSkillConfirmModal
+        open={Boolean(pendingDeleteOffer)}
+        onClose={() => {
+          if (!isDeletingOwnProfileOffer) {
+            setPendingDeleteOffer(null);
+          }
+        }}
+        onConfirm={handleConfirmDeleteOwnProfileOffer}
+        isDeleting={isDeletingOwnProfileOffer}
       />
     </RequestsNotificationsProvider>
   );
