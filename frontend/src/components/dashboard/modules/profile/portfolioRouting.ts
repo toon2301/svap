@@ -20,3 +20,7 @@ export function buildPortfolioDetailPath(
 ): string {
   return `${buildPortfolioListPath(ownerIdentifier)}/${portfolioItemId}`;
 }
+
+export function buildPortfolioCreatePath(ownerIdentifier: string): string {
+  return `${buildPortfolioListPath(ownerIdentifier)}/create`;
+}

@@ -117,6 +117,7 @@ interface ProfileModuleProps {
   initialTab?: ProfileTab;
   onEditOffer?: (offer: Offer) => void;
   onDeleteOffer?: (offer: Offer) => void;
+  onCreatePortfolio?: () => void;
 }
 
 export default function ProfileModule({
@@ -131,6 +132,7 @@ export default function ProfileModule({
   initialTab = 'offers',
   onEditOffer,
   onDeleteOffer,
+  onCreatePortfolio,
 }: ProfileModuleProps) {
   const { t } = useLanguage();
   const isMobile = useIsMobile();
@@ -489,6 +491,7 @@ export default function ProfileModule({
             highlightedSkillId={highlightedSkillId}
             onEditOffer={onEditOffer}
             onDeleteOffer={onDeleteOffer}
+            onCreatePortfolio={onCreatePortfolio}
           />
         ) : (
           <ProfileDesktopView

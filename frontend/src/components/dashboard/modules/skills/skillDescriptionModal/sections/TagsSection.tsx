@@ -5,14 +5,14 @@ import { useLanguage } from '@/contexts/LanguageContext';
 
 // Hook na detekciu mobilnej verzie
 const useIsMobile = () => {
-  const [isMobile, setIsMobile] = useState(false);
+  const [isMobile, setIsMobile] = useState(
+    () => typeof window !== 'undefined' && window.innerWidth < 1024,
+  );
 
   useEffect(() => {
     const checkMobile = () => {
       setIsMobile(typeof window !== 'undefined' && window.innerWidth < 1024);
     };
-    
-    checkMobile();
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
@@ -38,45 +38,42 @@ const TagsSection = forwardRef<TagsSectionRef, TagsSectionProps>(
   const isMobile = useIsMobile();
   const [tagInput, setTagInput] = useState('');
   const [tagError, setTagError] = useState('');
-  const [canAdd, setCanAdd] = useState(false);
+  // Lokálna kópia tagov pre okamžité UI aktualizácie bez čakania na prop update od rodiča
+  const [localTags, setLocalTags] = useState<string[]>(tags);
 
   useEffect(() => {
     if (isOpen) {
       setTagInput('');
       setTagError('');
-      setCanAdd(false);
     }
   }, [isOpen]);
 
-  useEffect(() => {
-    const trimmed = tagInput.trim();
-    const canAddTag = !!trimmed && 
-                      !tagError && 
-                      trimmed.length <= 15 && 
-                      !tags.some((t) => t.toLowerCase() === trimmed.toLowerCase()) &&
-                      tags.length < 5;
-    setCanAdd(canAddTag);
-  }, [tagInput, tagError, tags]);
+  const normalizeTag = (raw: string): string => raw.trim().replace(/,+$/g, '');
+  const candidate = normalizeTag(tagInput);
+  const canAdd =
+    !!candidate &&
+    !tagError &&
+    candidate.length <= 15 &&
+    !localTags.some((tag) => tag.toLowerCase() === candidate.toLowerCase()) &&
+    localTags.length < 5;
 
   const addTag = (): string[] | null => {
-    const raw = tagInput.trim();
-    if (!raw) return tags;
-    const candidate = raw.replace(/,+$/g, '');
-    if (!candidate) return tags;
-    if (candidate.length > 15) {
+    const c = normalizeTag(tagInput);
+    if (!c) return localTags;
+    if (c.length > 15) {
       setTagError(t('skills.tagTooLong', 'Tag môže mať maximálne 15 znakov'));
       return null;
     }
-    const lower = candidate.toLowerCase();
-    if (tags.some((t) => t.toLowerCase() === lower)) {
+    if (localTags.some((tag) => tag.toLowerCase() === c.toLowerCase())) {
       setTagError(t('skills.tagDuplicateError', 'Tento tag už máš pridaný'));
       return null;
     }
-    if (tags.length >= 5) {
+    if (localTags.length >= 5) {
       alert(t('skills.maxTagsAlert', 'Môžeš pridať maximálne 5 tagov.'));
       return null;
     }
-    const nextTags = [...tags, candidate];
+    const nextTags = [...localTags, c];
+    setLocalTags(nextTags);
     onTagsChange(nextTags);
     setTagInput('');
     setTagError('');
@@ -84,7 +81,9 @@ const TagsSection = forwardRef<TagsSectionRef, TagsSectionProps>(
   };
 
   const removeTag = (tag: string) => {
-    onTagsChange(tags.filter((t) => t !== tag));
+    const nextTags = localTags.filter((t) => t !== tag);
+    setLocalTags(nextTags);
+    onTagsChange(nextTags);
   };
 
   useImperativeHandle(ref, () => ({
@@ -121,9 +120,9 @@ const TagsSection = forwardRef<TagsSectionRef, TagsSectionProps>(
         </div>
       </label>
 
-      {tags.length > 0 && (
+      {localTags.length > 0 && (
         <div className="mb-4 flex flex-wrap gap-x-2 gap-y-1 skill-modal-tags leading-snug">
-          {tags.map((tag, idx) => (
+          {localTags.map((tag, idx) => (
             <span key={`${tag}-${idx}`} className="text-xs text-purple-700 dark:text-purple-300 leading-snug">
               #{tag}
               <button

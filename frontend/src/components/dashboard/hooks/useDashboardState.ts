@@ -211,6 +211,7 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
         'profile',
         'user-profile',
         'portfolio-detail',
+        'portfolio-create',
         'search',
         'favorites',
         'settings',
@@ -427,6 +428,15 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
 
     // Ak sme na cudzom profile, vráť sa na predchádzajúcu stránku (Žiadosti, Vyhľadávanie, …)
     if (activeModule === 'user-profile') {
+      router.back();
+      setIsRightSidebarOpen(false);
+      setActiveRightItem('');
+      setIsMobileMenuOpen(false);
+      return;
+    }
+
+    // Vytváranie portfólia – vráť sa na predchádzajúcu stránku (vlastný profil, portfólio tab)
+    if (activeModule === 'portfolio-create') {
       router.back();
       setIsRightSidebarOpen(false);
       setActiveRightItem('');
