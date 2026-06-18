@@ -70,7 +70,7 @@ export default function WebsiteModal({ isOpen, website, additionalWebsites, orig
             onChange={(e) => setWebsite(e.target.value)}
             maxLength={255}
             className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-1 focus:ring-purple-300 focus:border-transparent"
-            placeholder="https://example.com"
+            placeholder="example.com"
           />
           <button
             onClick={() => {
@@ -92,7 +92,8 @@ export default function WebsiteModal({ isOpen, website, additionalWebsites, orig
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Web {index + 2}</label>
           <div className="flex items-center gap-2">
             <input
-              type="url"
+              type="text"
+              inputMode="url"
               value={additionalWebsite}
               onChange={(e) => {
                 const newWebsites = [...safeAdditionalWebsites];
@@ -101,7 +102,7 @@ export default function WebsiteModal({ isOpen, website, additionalWebsites, orig
               }}
               maxLength={255}
               className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-1 focus:ring-purple-300 focus:border-transparent"
-              placeholder="https://example.com"
+              placeholder="example.com"
             />
             <button
               onClick={() => {

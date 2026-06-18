@@ -257,6 +257,20 @@ def portfolio_image_upload_complete_view(request, item_id: int):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
+    # Preflight SafeSearch moderation — before creating any DB record
+    if getattr(settings, "SAFESEARCH_ENABLED", False):
+        try:
+            from swaply.staged_image_moderation import (
+                ModerationRejectedError,
+                moderate_staged_s3_image,
+            )
+            moderate_staged_s3_image(bucket, key)
+        except ModerationRejectedError as e:
+            return Response(
+                {"error": e.user_message, "code": e.code},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
     content_type = str(head.get("ContentType") or "")
     with transaction.atomic():
         try:

@@ -8,6 +8,7 @@ import requests
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 from django.conf import settings
+from django.core.validators import URLValidator as _DjangoURLValidator
 import bleach
 
 logger = logging.getLogger("swaply")
@@ -131,6 +132,43 @@ class PhoneValidator:
 
 class URLValidator:
     """Validátor pre URL adresy"""
+
+    _BLOCKED_SCHEMES = (
+        "javascript", "data", "ftp", "ftps", "mailto",
+        "vbscript", "file", "blob",
+    )
+
+    @classmethod
+    def normalize_url(cls, value, field_name="URL"):
+        """Normalizuje URL: doplní https:// ak chýba schéma, odmietne nebezpečné schémy."""
+        if not value:
+            return None
+
+        url = value.strip()
+        if not url:
+            return None
+
+        lower = url.lower()
+        for scheme in cls._BLOCKED_SCHEMES:
+            if lower.startswith(f"{scheme}:"):
+                raise ValidationError(_(f"{field_name} obsahuje nepodporovanú schému"))
+
+        if "://" not in url:
+            url = "https://" + url
+
+        scheme = url.split("://")[0].lower()
+        if scheme not in ("http", "https"):
+            raise ValidationError(_(f"{field_name} musí začínať s http:// alebo https://"))
+
+        if len(url) > 200:
+            raise ValidationError(_(f"{field_name} je príliš dlhá (max. 200 znakov)"))
+
+        try:
+            _DjangoURLValidator()(url)
+        except Exception:
+            raise ValidationError(_(f"{field_name} nie je platná URL adresa"))
+
+        return url
 
     @classmethod
     def validate_url(cls, url, field_name="URL"):

@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export type ImageStatus = 'pending' | 'approved' | 'rejected' | string | null | undefined;
 
@@ -21,6 +22,7 @@ export default function ImageWithStatusOverlay({
   className = '',
   imgClassName = 'object-cover',
 }: Props) {
+  const { t } = useLanguage();
   const isPending = status === 'pending';
   const isRejected = status === 'rejected';
   const showOverlay = isPending || isRejected;
@@ -36,15 +38,15 @@ export default function ImageWithStatusOverlay({
               <svg className="w-5 h-5 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 12a8 8 0 018-8" />
               </svg>
-              <span>Spracúva sa…</span>
+              <span>{t('skills.imageProcessing', 'Spracúva sa…')}</span>
             </>
           ) : isRejected ? (
             <>
               <span className="font-bold text-red-600 dark:text-red-300">!</span>
-              <span>Fotka zamietnutá</span>
+              <span>{t('skills.imageRejected', 'Fotka zamietnutá')}</span>
             </>
           ) : (
-            <span>Fotka</span>
+            <span>{t('skills.photo', 'Fotka')}</span>
           )}
         </div>
       )}
@@ -59,11 +61,11 @@ export default function ImageWithStatusOverlay({
             <svg className="w-5 h-5 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 12a8 8 0 018-8" />
             </svg>
-            <span>Spracúva sa…</span>
+            <span>{t('skills.imageProcessing', 'Spracúva sa…')}</span>
           </>
         ) : isRejected ? (
           <>
-            <span>Fotka zamietnutá</span>
+            <span>{t('skills.imageRejected', 'Fotka zamietnutá')}</span>
             {rejected_reason ? (
               <span className="max-w-[90%] text-xs text-center opacity-90">{rejected_reason}</span>
             ) : null}
@@ -73,4 +75,3 @@ export default function ImageWithStatusOverlay({
     </div>
   );
 }
-

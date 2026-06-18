@@ -53,7 +53,8 @@ export default function WebsitesField({
       <div className="relative mb-2">
         <input
           id="website"
-          type="url"
+          type="text"
+          inputMode="url"
           value={website}
           onChange={(e) => setWebsite(e.target.value)}
           onBlur={handleWebsiteBlur}
@@ -62,7 +63,7 @@ export default function WebsitesField({
           }}
           maxLength={255}
           className="w-full px-3 py-2 pr-12 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-1 focus:ring-purple-300 focus:border-transparent"
-          placeholder="https://example.com"
+          placeholder="example.com"
         />
         <button
           type="button"
@@ -83,7 +84,8 @@ export default function WebsitesField({
       {additionalWebsites.map((additionalWebsite, index) => (
         <div key={index} className="relative mb-2">
           <input
-            type="url"
+            type="text"
+          inputMode="url"
             value={additionalWebsite}
             onChange={(e) => {
               const newWebsites = [...additionalWebsites];
@@ -96,7 +98,7 @@ export default function WebsitesField({
             }}
             maxLength={255}
             className="w-full px-3 py-2 pr-12 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white focus:ring-1 focus:ring-purple-300 focus:border-transparent"
-            placeholder="https://example.com"
+            placeholder="example.com"
           />
           <button
             type="button"

@@ -229,7 +229,10 @@ def check_image_safety(file_obj) -> None:
         offending = _violates_thresholds(result, thresholds)
         if offending:
             logger.info(f"Image rejected by SafeSearch: {offending}")
-            raise ValidationError("Obrázok bol zamietnutý kvôli nevhodnému obsahu.")
+            raise ValidationError(
+                "Obrázok bol zamietnutý kvôli nevhodnému obsahu.",
+                code="image_moderation_rejected",
+            )
     except ValidationError:
         # Re-raise ValidationError for content violations (always block)
         raise

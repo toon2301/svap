@@ -521,6 +521,10 @@ export default function ProfileOffersSection({
       if (!payload) return;
       if (payload.ownerUserId !== undefined && payload.ownerUserId !== ownerUserId) return;
 
+      if (payload.deletedOfferId !== undefined) {
+        setOffers((prev) => prev.filter((o) => o.id !== payload.deletedOfferId));
+      }
+
       invalidateOffersCache(ownerUserId);
       if (activeTab !== 'offers') {
         hasLoadedOffersRef.current = false;

@@ -522,6 +522,11 @@ export default function ProfileOffersMobileSection({
       if (!payload) return;
       if (payload.ownerUserId !== undefined && payload.ownerUserId !== ownerUserId) return;
 
+      if (payload.deletedOfferId !== undefined) {
+        setOffers((prev) => prev.filter((o) => o.id !== payload.deletedOfferId));
+        setSelectedOffer((prev) => (prev?.id === payload.deletedOfferId ? null : prev));
+      }
+
       invalidateOffersCache(ownerUserId);
       hasLoadedOffersRef.current = true;
       void loadOffers(true, false);

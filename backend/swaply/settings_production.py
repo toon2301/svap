@@ -32,13 +32,22 @@ if CAPTCHA_ENABLED:
 if not os.getenv("MFA_ENCRYPTION_KEY"):
     raise ValueError("MFA_ENCRYPTION_KEY must be set in production")
 
-SAFESEARCH_ENABLED = os.getenv("SAFESEARCH_ENABLED", "true").strip().lower() in {
-    "1",
-    "true",
-    "yes",
-    "on",
-}
+def _env_bool_prod(name: str, default: bool) -> bool:
+    v = os.getenv(name)
+    if v is None:
+        return default
+    return v.strip().lower() in {"1", "true", "yes", "on"}
+
+
+SAFESEARCH_ENABLED = _env_bool_prod("SAFESEARCH_ENABLED", True)
 SAFESEARCH_FAIL_OPEN = False
+SAFESEARCH_BLOCK_ON_RACY_WITHOUT_ADULT = _env_bool_prod(
+    "SAFESEARCH_BLOCK_ON_RACY_WITHOUT_ADULT", True
+)
+SAFESEARCH_MIN_ADULT = os.getenv("SAFESEARCH_MIN_ADULT", "POSSIBLE")
+SAFESEARCH_MIN_RACY = os.getenv("SAFESEARCH_MIN_RACY", "LIKELY")
+SAFESEARCH_MIN_VIOLENCE = os.getenv("SAFESEARCH_MIN_VIOLENCE", "LIKELY")
+
 if SAFESEARCH_ENABLED and not (
     os.getenv("GCP_VISION_SERVICE_ACCOUNT_JSON")
     or os.getenv("GOOGLE_APPLICATION_CREDENTIALS")

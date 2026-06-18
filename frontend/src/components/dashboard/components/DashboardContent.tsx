@@ -539,6 +539,7 @@ export default function DashboardContent({
     toLocalSkill,
     applySkillUpdate,
     loadSkills,
+    fetchSkillDetail,
     t,
     ownerUserIdForOffersCache: user?.id,
     onCreatedSkillSaved: handleOnboardingSkillCreated,
@@ -644,7 +645,7 @@ export default function DashboardContent({
         setIsSkillDescriptionModalOpen(false);
       }
       invalidateOffersCache(user?.id);
-      dispatchProfileOffersRefresh({ ownerUserId: user?.id, offerId });
+      dispatchProfileOffersRefresh({ ownerUserId: user?.id, deletedOfferId: offerId });
       setPendingDeleteOffer(null);
       toast.success(t('skills.cardDeleteSuccess', 'Karta bola vymazaná.'));
       void loadSkills();

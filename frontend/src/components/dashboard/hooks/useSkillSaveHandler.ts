@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback } from 'react';
+import toast from 'react-hot-toast';
 import { api, endpoints } from '@/lib/api';
 import { uploadOfferImage } from '@/lib/offerImageUpload';
 import { isValidOfferDistrictSelection } from '@/shared/districtRegistry';
@@ -10,6 +11,7 @@ import {
   getSkillsDescribeReturnModule,
 } from '../modules/skills/skillsDescribeReturnSession';
 import type { DashboardSkill } from './useSkillsModals';
+import { startBoundedImageRefresh } from './offerImageRefresh';
 
 type Translator = (key: string, fallback: string) => string;
 
@@ -20,6 +22,7 @@ type SkillSaveHandlerParams = {
   toLocalSkill: (apiSkill: unknown) => DashboardSkill;
   applySkillUpdate: (skill: DashboardSkill) => void;
   loadSkills: () => Promise<void> | void;
+  fetchSkillDetail: (id: number) => Promise<DashboardSkill>;
   t: Translator;
   ownerUserIdForOffersCache?: number;
   onCreatedSkillSaved?: () => void;
@@ -36,8 +39,6 @@ type ApiErrorLike = {
 };
 
 type SkillSavePayload = Record<string, unknown>;
-type DashboardSkillImage = NonNullable<DashboardSkill['images']>[number];
-type UploadedOfferImage = Partial<DashboardSkillImage>;
 
 function getApiErrorMessage(error: unknown, fallback: string): string {
   const apiError = error as ApiErrorLike;
@@ -46,6 +47,11 @@ function getApiErrorMessage(error: unknown, fallback: string): string {
   return typeof rawMessage === 'string' && rawMessage.trim() !== ''
     ? rawMessage
     : fallback;
+}
+
+function isModerationRejection(error: unknown): boolean {
+  return (error as ApiErrorLike & { response?: { data?: { code?: unknown } } })
+    ?.response?.data?.code === 'image_moderation_rejected';
 }
 
 /**
@@ -59,6 +65,7 @@ export function useSkillSaveHandler({
   toLocalSkill,
   applySkillUpdate,
   loadSkills,
+  fetchSkillDetail,
   t,
   ownerUserIdForOffersCache,
   onCreatedSkillSaved,
@@ -184,28 +191,6 @@ export function useSkillSaveHandler({
 
       let savedSkill: DashboardSkill;
       const newImages = Array.isArray(skill._newImages) ? skill._newImages : [];
-      const mergeUploadedImage = (
-        base: DashboardSkill,
-        uploaded: UploadedOfferImage,
-      ): DashboardSkill => {
-        if (!uploaded || typeof uploaded.id !== 'number') return base;
-        const src = uploaded.image_url ?? uploaded.image ?? null;
-        const status = uploaded.status ?? (src ? 'approved' : 'pending');
-        const nextImg: DashboardSkillImage = {
-          id: uploaded.id,
-          image_url: src,
-          image: uploaded.image ?? null,
-          order: typeof uploaded.order === 'number' ? uploaded.order : undefined,
-          status,
-          rejected_reason: uploaded.rejected_reason ?? null,
-        };
-        const prevImages = Array.isArray(base.images) ? base.images : [];
-        const without = prevImages.filter((im) => im.id !== nextImg.id);
-        const nextImages = [...without, nextImg].sort(
-          (a, b) => (a.order ?? 0) - (b.order ?? 0),
-        );
-        return { ...base, images: nextImages };
-      };
       let didCreateSkill = false;
 
       if (skill.id) {
@@ -216,18 +201,26 @@ export function useSkillSaveHandler({
         // UI: zobraz zmenu hneď, upload nech beží potom
         applySkillUpdate(savedSkill);
 
-        // Nahrať nové obrázky
+        // Nahrať nové obrázky; po každom uploade načítaj aktuálny stav z backendu
         if (newImages.length > 0) {
           for (let i = 0; i < newImages.length; i++) {
             const file = newImages[i];
             try {
-              const uploaded = await uploadOfferImage(skill.id, file);
-              savedSkill = mergeUploadedImage(savedSkill, uploaded);
+              await uploadOfferImage(skill.id, file);
+              savedSkill = await fetchSkillDetail(skill.id);
               applySkillUpdate(savedSkill);
             } catch (imgError: unknown) {
-              const imgMsg = getApiErrorMessage(imgError, 'Nahrávanie obrázka zlyhalo');
-              alert(`Chyba pri nahrávaní obrázka ${i + 1}: ${imgMsg}`);
+              if (isModerationRejection(imgError)) {
+                toast.error(t('skills.uploadModerationRejected', 'Fotka nebola prijatá kvôli nevhodnému obsahu.'));
+              } else {
+                const imgMsg = getApiErrorMessage(imgError, t('skills.imageUploadFailed', 'Nahrávanie obrázka zlyhalo'));
+                toast.error(`${t('skills.imageUploadError', 'Chyba pri nahrávaní obrázka')} ${i + 1}: ${imgMsg}`);
+              }
             }
+          }
+          const hasPending = (savedSkill.images ?? []).some((img) => img.status === 'pending');
+          if (hasPending) {
+            startBoundedImageRefresh(skill.id, fetchSkillDetail, applySkillUpdate);
           }
         }
       } else {
@@ -239,19 +232,27 @@ export function useSkillSaveHandler({
         // UI: zobraz novú kartu hneď, upload nech beží potom
         applySkillUpdate(savedSkill);
 
-        // Nahrať nové obrázky
+        // Nahrať nové obrázky; po každom uploade načítaj aktuálny stav z backendu
         const savedSkillId = savedSkill.id;
         if (newImages.length > 0 && savedSkillId) {
           for (let i = 0; i < newImages.length; i++) {
             const file = newImages[i];
             try {
-              const uploaded = await uploadOfferImage(savedSkillId, file);
-              savedSkill = mergeUploadedImage(savedSkill, uploaded);
+              await uploadOfferImage(savedSkillId, file);
+              savedSkill = await fetchSkillDetail(savedSkillId);
               applySkillUpdate(savedSkill);
             } catch (imgError: unknown) {
-              const imgMsg = getApiErrorMessage(imgError, 'Nahrávanie obrázka zlyhalo');
-              alert(`Chyba pri nahrávaní obrázka ${i + 1}: ${imgMsg}`);
+              if (isModerationRejection(imgError)) {
+                toast.error(t('skills.uploadModerationRejected', 'Fotka nebola prijatá kvôli nevhodnému obsahu.'));
+              } else {
+                const imgMsg = getApiErrorMessage(imgError, t('skills.imageUploadFailed', 'Nahrávanie obrázka zlyhalo'));
+                toast.error(`${t('skills.imageUploadError', 'Chyba pri nahrávaní obrázka')} ${i + 1}: ${imgMsg}`);
+              }
             }
+          }
+          const hasPending = (savedSkill.images ?? []).some((img) => img.status === 'pending');
+          if (hasPending) {
+            startBoundedImageRefresh(savedSkillId, fetchSkillDetail, applySkillUpdate);
           }
         }
       }
@@ -302,6 +303,7 @@ export function useSkillSaveHandler({
     toLocalSkill,
     applySkillUpdate,
     loadSkills,
+    fetchSkillDetail,
     t,
     ownerUserIdForOffersCache,
     onCreatedSkillSaved,

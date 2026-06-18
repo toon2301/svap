@@ -10,6 +10,7 @@ import { skillsCategories } from '@/constants/skillsCategories';
 import { api, endpoints } from '../../lib/api';
 import { uploadOfferImage } from '../../lib/offerImageUpload';
 import type { DashboardSkill, UseSkillsModalsResult } from './hooks/useSkillsModals';
+import { startBoundedImageRefresh } from './hooks/offerImageRefresh';
 import { dispatchProfileOffersRefresh } from './modules/profile/profileOfferEvents';
 import type { User } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
@@ -214,6 +215,9 @@ export default function DashboardModals({
           if (imageFiles.length && data?.id) {
             await uploadImagesIfNeeded(data.id, imageFiles);
             updatedLocal = await fetchSkillDetail(data.id);
+            if ((updatedLocal.images ?? []).some((img) => img.status === 'pending')) {
+              startBoundedImageRefresh(data.id, fetchSkillDetail, applySkillUpdate);
+            }
           }
           setCustomCategories((prev) => {
             const updated = [...prev];
@@ -227,6 +231,9 @@ export default function DashboardModals({
           if (imageFiles.length && data?.id) {
             await uploadImagesIfNeeded(data.id, imageFiles);
             created = await fetchSkillDetail(data.id);
+            if ((created.images ?? []).some((img) => img.status === 'pending')) {
+              startBoundedImageRefresh(data.id, fetchSkillDetail, applySkillUpdate);
+            }
           }
           didCreateSkill = true;
           setCustomCategories((prev) => {
@@ -260,6 +267,9 @@ export default function DashboardModals({
           if (imageFiles.length && data?.id) {
             await uploadImagesIfNeeded(data.id, imageFiles);
             updated = await fetchSkillDetail(data.id);
+            if ((updated.images ?? []).some((img) => img.status === 'pending')) {
+              startBoundedImageRefresh(data.id, fetchSkillDetail, applySkillUpdate);
+            }
           }
           applySkillUpdate(updated);
           setEditingCustomCategoryIndex(null);
@@ -273,6 +283,9 @@ export default function DashboardModals({
           if (imageFiles.length && data?.id) {
             await uploadImagesIfNeeded(data.id, imageFiles);
             created = await fetchSkillDetail(data.id);
+            if ((created.images ?? []).some((img) => img.status === 'pending')) {
+              startBoundedImageRefresh(data.id, fetchSkillDetail, applySkillUpdate);
+            }
           }
           didCreateSkill = true;
           setCustomCategories((prev) => [created, ...prev]);
@@ -285,6 +298,9 @@ export default function DashboardModals({
           if (imageFiles.length && data?.id) {
             await uploadImagesIfNeeded(data.id, imageFiles);
             created = await fetchSkillDetail(data.id);
+            if ((created.images ?? []).some((img) => img.status === 'pending')) {
+              startBoundedImageRefresh(data.id, fetchSkillDetail, applySkillUpdate);
+            }
           }
           didCreateSkill = true;
           setStandardCategories((prev) => [created, ...prev]);
