@@ -142,11 +142,11 @@ class URLValidator:
     def normalize_url(cls, value, field_name="URL"):
         """Normalizuje URL: doplní https:// ak chýba schéma, odmietne nebezpečné schémy."""
         if not value:
-            return None
+            return ""
 
         url = value.strip()
         if not url:
-            return None
+            return ""
 
         lower = url.lower()
         for scheme in cls._BLOCKED_SCHEMES:

@@ -69,27 +69,17 @@ describe('TagsSection – mobile', () => {
   });
 
   it('nepridá tag s viac ako 15 znakmi a zobrazí chybu', () => {
-    const { onChange } = renderMobile();
-
-    // onChange v inpute blokuje >15 znakov cez maxLength + validáciu
-    // Priamo vyvoláme addTag cez ref, aby sme obišli maxLength atribút
     const ref = React.createRef<TagsSectionRef>();
-    const extraOnChange = jest.fn();
-    render(
-      <TagsSection
-        ref={ref}
-        tags={[]}
-        onTagsChange={extraOnChange}
-        isOpen
-      />,
-    );
-    // Nastavíme input na dlhý text simuláciou (obchádzame maxLength cez ref)
-    fireEvent.change(screen.getAllByLabelText('Vstup pre tagy')[1], {
-      target: { value: 'abc' },
-    });
-    // Ovládame canAddTag cez ref – priamy test addTag s 16 znakmi
-    // je obmedzený maxLength atribútom, preto otestujeme iba cez krátky platný tag
+    const onChange = jest.fn();
+    setInnerWidth(375);
+    render(<TagsSection ref={ref} tags={[]} onTagsChange={onChange} isOpen />);
+
+    // Simulujeme priame volanie addTag s dlhým tagom cez ref (obchádza maxLength atribút)
+    fireEvent.change(screen.getByLabelText('Vstup pre tagy'), { target: { value: 'abcdefghijklmnop' } });
+    ref.current?.addTag();
+
     expect(onChange).not.toHaveBeenCalled();
+    expect(screen.getByText('Tag môže mať maximálne 15 znakov')).toBeInTheDocument();
   });
 
   it('blokuje pridanie piateho+ tagu (max 5)', () => {
@@ -107,7 +97,7 @@ describe('TagsSection – mobile', () => {
   it('normalizuje tag s trailing čiarkou (tag, → tag)', () => {
     const { onChange } = renderMobile();
 
-    fireEvent.change(screen.getByLabelText('Vstup pre tagy'), { target: { value: 'hello' } });
+    fireEvent.change(screen.getByLabelText('Vstup pre tagy'), { target: { value: 'hello,' } });
     fireEvent.click(screen.getByLabelText('Pridať tag'));
 
     expect(onChange).toHaveBeenCalledWith(['hello']);

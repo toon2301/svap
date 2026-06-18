@@ -13,6 +13,7 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 
 from accounts.models import OfferedSkillImage
 from swaply.image_moderation import check_image_safety
+from swaply.staged_image_moderation import IMAGE_MODERATION_REJECTED_CODE
 
 
 def _s3_client():
@@ -118,7 +119,7 @@ def process_offered_skill_image(self, offered_skill_image_id: int) -> None:
     try:
         check_image_safety(io.BytesIO(processed_bytes))
     except DjangoValidationError as e:
-        if getattr(e, "code", None) == "image_moderation_rejected":
+        if getattr(e, "code", None) == IMAGE_MODERATION_REJECTED_CODE:
             with transaction.atomic():
                 img = OfferedSkillImage.objects.select_for_update().get(
                     id=offered_skill_image_id

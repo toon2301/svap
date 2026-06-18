@@ -569,6 +569,10 @@ def skill_images_upload_complete_view(request, skill_id):
     size_bytes = int(head.get("ContentLength") or 0)
     content_type = str(head.get("ContentType") or "")
 
+    max_bytes = getattr(settings, "SKILL_IMAGE_MAX_BYTES", 10 * 1024 * 1024)
+    if size_bytes > max_bytes:
+        return Response({"error": "Súbor je príliš veľký."}, status=status.HTTP_400_BAD_REQUEST)
+
     # Preflight SafeSearch moderation — before creating any DB record
     if getattr(settings, "SAFESEARCH_ENABLED", False):
         try:

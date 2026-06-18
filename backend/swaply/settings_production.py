@@ -36,7 +36,14 @@ def _env_bool_prod(name: str, default: bool) -> bool:
     v = os.getenv(name)
     if v is None:
         return default
-    return v.strip().lower() in {"1", "true", "yes", "on"}
+    normalized = v.strip().lower()
+    if normalized in {"1", "true", "yes", "on"}:
+        return True
+    if normalized in {"0", "false", "no", "off"}:
+        return False
+    raise ValueError(
+        f"Unrecognized value for {name}: {v!r}. Expected: 1/true/yes/on or 0/false/no/off"
+    )
 
 
 SAFESEARCH_ENABLED = _env_bool_prod("SAFESEARCH_ENABLED", True)

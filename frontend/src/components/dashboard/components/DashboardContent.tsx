@@ -43,6 +43,7 @@ import {
 } from '../modules/profile/profileOfferDetailEvents';
 import { dispatchProfileOffersRefresh } from '../modules/profile/profileOfferEvents';
 import { invalidateOffersCache } from '../modules/profile/profileOffersCache';
+import { buildPortfolioCreatePath } from '../modules/profile/portfolioRouting';
 import { useDashboardState } from '../hooks/useDashboardState';
 import { useSkillsModals } from '../hooks/useSkillsModals';
 import { useDashboardNavigation } from '../hooks/useDashboardNavigation';
@@ -718,7 +719,7 @@ export default function DashboardContent({
       // ignore
     }
     if (identifier && typeof window !== 'undefined') {
-      window.history.pushState(null, '', `/dashboard/users/${encodeURIComponent(identifier)}/portfolio/create`);
+      window.history.pushState(null, '', buildPortfolioCreatePath(identifier));
     }
   }, [user, setActiveModule]);
   useEffect(() => {

@@ -65,7 +65,8 @@ export default function WebsiteModal({ isOpen, website, additionalWebsites, orig
         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('profile.website', 'Web')}</label>
         <div className="flex items-center gap-2">
           <input
-            type="url"
+            type="text"
+            inputMode="url"
             value={website}
             onChange={(e) => setWebsite(e.target.value)}
             maxLength={255}

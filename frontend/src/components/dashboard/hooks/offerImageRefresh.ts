@@ -25,7 +25,8 @@ export function startBoundedImageRefresh(
         setTimeout(poll, REFRESH_DELAY_MS);
       }
     } catch {
-      // silent — background polling failure should not disrupt the UI
+      // reschedule on temporary error so a single network hiccup doesn't stop the refresh cycle
+      setTimeout(poll, REFRESH_DELAY_MS);
     }
   };
   setTimeout(poll, REFRESH_DELAY_MS);
