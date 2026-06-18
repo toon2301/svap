@@ -236,6 +236,7 @@ export default function DashboardLayout({
       {!(isRightSidebarOpen && activeModule === 'profile') &&
         activeModule !== 'skills-describe' &&
         activeModule !== 'user-profile' &&
+        activeModule !== 'portfolio-create' &&
         !(activeModule === 'messages' && isMobileMessageConversationOpen) &&
         !isMobileOfferDetailOpen && (
         <MobileTopNav activeItem={activeModule} onItemClick={onModuleChange} />

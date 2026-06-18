@@ -379,7 +379,7 @@ export function RequestsMobile({ routeIntent }: RequestsMobileProps) {
                 aria-selected={statusTab === key}
                 onClick={() => setStatusTab(key)}
                 className={[
-                  'relative flex-1 py-2.5 px-1 transition-colors flex items-center justify-center gap-1 min-w-0',
+                  'relative flex-1 min-h-[44px] py-3 px-1 transition-colors flex items-center justify-center gap-1 min-w-0',
                   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60',
                   statusTab === key
                     ? 'bg-purple-50 text-purple-700 dark:bg-purple-900/40 dark:text-purple-200'

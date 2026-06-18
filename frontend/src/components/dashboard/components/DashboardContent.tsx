@@ -43,6 +43,7 @@ import {
 } from '../modules/profile/profileOfferDetailEvents';
 import { dispatchProfileOffersRefresh } from '../modules/profile/profileOfferEvents';
 import { invalidateOffersCache } from '../modules/profile/profileOffersCache';
+import { buildPortfolioCreatePath } from '../modules/profile/portfolioRouting';
 import { useDashboardState } from '../hooks/useDashboardState';
 import { useSkillsModals } from '../hooks/useSkillsModals';
 import { useDashboardNavigation } from '../hooks/useDashboardNavigation';
@@ -90,6 +91,7 @@ function getDashboardModuleFromTarget(targetUrl: string): string | null {
     if (/^\/dashboard\/skills\/?$/.test(path)) return 'skills';
     if (/^\/dashboard\/profile\/?$/.test(path)) return 'profile';
     if (/^\/dashboard\/users\/[^/]+\/portfolio\/\d+\/?$/.test(path)) return 'portfolio-detail';
+    if (/^\/dashboard\/users\/[^/]+\/portfolio\/create\/?$/.test(path)) return 'portfolio-create';
     if (/^\/dashboard\/users\/[^/]+\/portfolio\/?$/.test(path)) return 'user-profile';
     if (/^\/dashboard\/users\/[^/]+\/?$/.test(path)) return 'user-profile';
   } catch {
@@ -102,7 +104,7 @@ function getDashboardModuleFromTarget(targetUrl: string): string | null {
 function getDashboardUserIdentifierFromTarget(targetUrl: string): string | null {
   try {
     const path = new URL(targetUrl, 'https://swaply.local').pathname;
-    const match = path.match(/^\/dashboard\/users\/([^/]+)(?:\/portfolio(?:\/\d+)?)?\/?$/);
+    const match = path.match(/^\/dashboard\/users\/([^/]+)(?:\/portfolio(?:\/(?:\d+|create))?)?\/?$/);
     return match?.[1] ? decodeURIComponent(match[1]) : null;
   } catch {
     return null;
@@ -180,6 +182,16 @@ export default function DashboardContent({
   const portfolioItemIdFromPath = React.useMemo(
     () => (portfolioDetailMatch?.[2] ? Number(portfolioDetailMatch[2]) : null),
     [portfolioDetailMatch],
+  );
+
+  const portfolioCreateMatch = React.useMemo(
+    () => pathname?.match(/^\/dashboard\/users\/([^/]+)\/portfolio\/create\/?$/) ?? null,
+    [pathname],
+  );
+
+  const portfolioCreateOwnerIdentifierFromPath = React.useMemo(
+    () => (portfolioCreateMatch?.[1] ? decodeURIComponent(portfolioCreateMatch[1]) : null),
+    [portfolioCreateMatch],
   );
 
   const conversationIdFromMessagesQuery = React.useMemo(
@@ -539,6 +551,7 @@ export default function DashboardContent({
     toLocalSkill,
     applySkillUpdate,
     loadSkills,
+    fetchSkillDetail,
     t,
     ownerUserIdForOffersCache: user?.id,
     onCreatedSkillSaved: handleOnboardingSkillCreated,
@@ -644,7 +657,7 @@ export default function DashboardContent({
         setIsSkillDescriptionModalOpen(false);
       }
       invalidateOffersCache(user?.id);
-      dispatchProfileOffersRefresh({ ownerUserId: user?.id, offerId });
+      dispatchProfileOffersRefresh({ ownerUserId: user?.id, deletedOfferId: offerId });
       setPendingDeleteOffer(null);
       toast.success(t('skills.cardDeleteSuccess', 'Karta bola vymazaná.'));
       void loadSkills();
@@ -695,6 +708,20 @@ export default function DashboardContent({
     portfolioOwnerIdentifierFromPath ??
     initialProfileSlug ??
     (typeof initialViewedUserId === 'number' ? String(initialViewedUserId) : null);
+  const effectivePortfolioCreateOwnerIdentifier = portfolioCreateOwnerIdentifierFromPath ?? null;
+
+  const handleCreatePortfolio = useCallback(() => {
+    const identifier = user?.slug || (user?.id ? String(user.id) : null);
+    setActiveModule('portfolio-create');
+    try {
+      localStorage.setItem('activeModule', 'portfolio-create');
+    } catch {
+      // ignore
+    }
+    if (identifier && typeof window !== 'undefined') {
+      window.history.pushState(null, '', buildPortfolioCreatePath(identifier));
+    }
+  }, [user, setActiveModule]);
   useEffect(() => {
     if (offerIdFromReviewsPath != null) {
       setActiveModule('offer-reviews');
@@ -706,6 +733,12 @@ export default function DashboardContent({
       setActiveModule('portfolio-detail');
     }
   }, [portfolioItemIdFromPath, setActiveModule]);
+
+  useEffect(() => {
+    if (portfolioCreateMatch) {
+      setActiveModule('portfolio-create');
+    }
+  }, [portfolioCreateMatch, setActiveModule]);
 
   // Po stlaÄenÃ­ spÃ¤Å¥ z cudzieho profilu (user-profile) URL skoÄÃ­ sprÃ¡vne, ale activeModule ostÃ¡va
   // user-profile â€“ synchronizujeme modul podÄ¾a aktuÃ¡lnej URL pri popstate
@@ -809,6 +842,8 @@ export default function DashboardContent({
         moduleId = 'profile';
       } else if (p.match(/^\/dashboard\/users\/[^/]+\/portfolio\/\d+\/?$/)) {
         moduleId = 'portfolio-detail';
+      } else if (p.match(/^\/dashboard\/users\/[^/]+\/portfolio\/create\/?$/)) {
+        moduleId = 'portfolio-create';
       } else if (p.match(/^\/dashboard\/users\/[^/]+\/portfolio\/?$/)) {
         moduleId = 'user-profile';
       } else if (p.match(/^\/dashboard\/users\/[^/]+\/?$/)) {
@@ -1087,6 +1122,8 @@ export default function DashboardContent({
           : null
       }
       portfolioOwnerIdentifier={effectivePortfolioOwnerIdentifier}
+      portfolioCreateOwnerIdentifier={effectivePortfolioCreateOwnerIdentifier}
+      onCreatePortfolio={handleCreatePortfolio}
       conversationIdForMessages={
         selectedConversationId != null && Number.isFinite(selectedConversationId) ? selectedConversationId : null
       }

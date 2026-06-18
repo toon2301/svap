@@ -94,7 +94,10 @@ export function useSkillsDescriptionScreenState({
   const [existingImages, setExistingImages] = useState<SkillImage[]>(initialImages);
 
   useEffect(() => {
-    setExistingImages(initialImages);
+    setExistingImages(prev => {
+      if (prev.length === initialImages.length && prev.every((img, i) => img === initialImages[i])) return prev;
+      return initialImages;
+    });
   }, [initialImages]);
 
   const validExistingImages = useMemo(() => {
@@ -116,8 +119,10 @@ export function useSkillsDescriptionScreenState({
 
   // Synchronizácia pri zmene initial hodnôt z rodiča
   useEffect(() => {
-    setTags(initialTags);
-    setOriginalTags(initialTags);
+    const isSame = (prev: string[]) =>
+      prev.length === initialTags.length && prev.every((t, i) => t === initialTags[i]);
+    setTags(prev => (isSame(prev) ? prev : initialTags));
+    setOriginalTags(prev => (isSame(prev) ? prev : initialTags));
   }, [initialTags]);
 
   useEffect(() => {

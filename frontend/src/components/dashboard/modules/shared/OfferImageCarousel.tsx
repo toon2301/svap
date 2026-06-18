@@ -11,6 +11,8 @@ interface OfferImage {
   image_url?: string | null;
   image?: string | null;
   order?: number | null;
+  status?: string | null;
+  rejected_reason?: string | null;
 }
 
 interface OfferImageCarouselProps {
@@ -53,6 +55,16 @@ const OfferImageCarousel: React.FC<OfferImageCarouselProps> = ({
       .sort((a, b) => a.order - b.order);
   }, [images]);
 
+  const hasPendingImage = useMemo(() => {
+    if (!Array.isArray(images)) return false;
+    return images.some((img) => img.status === 'pending' && !img.image_url && !img.image);
+  }, [images]);
+
+  const hasRejectedImage = useMemo(() => {
+    if (!Array.isArray(images)) return false;
+    return images.some((img) => img.status === 'rejected' && !img.image_url && !img.image);
+  }, [images]);
+
   const [activeIndex, setActiveIndex] = useState(0);
 
   useEffect(() => {
@@ -70,6 +82,48 @@ const OfferImageCarousel: React.FC<OfferImageCarouselProps> = ({
   }, [preparedImages, intervalMs]);
 
   if (preparedImages.length === 0) {
+    if (hasPendingImage) {
+      return (
+        <div className="absolute inset-0 bg-gradient-to-br from-gray-100 via-gray-50 to-gray-200 dark:from-[#141415] dark:via-[#0f0f10] dark:to-[#0a0a0b] flex items-center justify-center">
+          <div className="flex flex-col items-center text-gray-400 dark:text-gray-500">
+            <svg
+              className="w-8 h-8 mb-1.5 opacity-70 animate-spin"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 12a8 8 0 018-8" />
+            </svg>
+            <span className="text-[11px] uppercase tracking-wide opacity-70">
+              {t('skills.imageProcessing', 'Spracúva sa…')}
+            </span>
+          </div>
+        </div>
+      );
+    }
+
+    if (hasRejectedImage) {
+      return (
+        <div className="absolute inset-0 bg-gradient-to-br from-red-50 via-gray-50 to-gray-100 dark:from-[#1a0f0f] dark:via-[#0f0f10] dark:to-[#0a0a0b] flex items-center justify-center">
+          <div className="flex flex-col items-center text-red-400 dark:text-red-500">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              className="w-8 h-8 mb-1.5 opacity-70"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+            </svg>
+            <span className="text-[11px] uppercase tracking-wide opacity-70">
+              {t('skills.imageRejected', 'Fotka zamietnutá')}
+            </span>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="absolute inset-0 bg-gradient-to-br from-gray-100 via-gray-50 to-gray-200 dark:from-[#141415] dark:via-[#0f0f10] dark:to-[#0a0a0b] flex items-center justify-center">
         <div className="flex flex-col items-center text-gray-400 dark:text-gray-500">

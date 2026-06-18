@@ -24,6 +24,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { SearchUserProfileModule } from './modules/search/SearchUserProfileModule';
 import OfferReviewsView from './modules/reviews/OfferReviewsView';
 import PortfolioDetailModule from './modules/profile/PortfolioDetailModule';
+import { PortfolioCreateScreen } from './modules/profile/PortfolioCreateScreen';
 
 interface ModuleRouterProps {
   user: User;
@@ -68,6 +69,8 @@ interface ModuleRouterProps {
   offerIdForReviews?: number | null;
   portfolioItemIdForDetail?: number | null;
   portfolioOwnerIdentifier?: string | null;
+  portfolioCreateOwnerIdentifier?: string | null;
+  onCreatePortfolio?: () => void;
   /** Conversation ID for messages detail view (from URL). */
   conversationIdForMessages?: number | null;
   /** Target user ID for draft compose flow (from URL). */
@@ -119,6 +122,8 @@ export default function ModuleRouter({
   offerIdForReviews,
   portfolioItemIdForDetail,
   portfolioOwnerIdentifier,
+  portfolioCreateOwnerIdentifier,
+  onCreatePortfolio,
   conversationIdForMessages,
   targetUserIdForMessages,
   onNotificationNavigate,
@@ -159,6 +164,13 @@ export default function ModuleRouter({
         <PortfolioDetailModule
           itemId={portfolioItemIdForDetail ?? null}
           ownerIdentifier={portfolioOwnerIdentifier}
+        />
+      );
+    case 'portfolio-create':
+      return (
+        <PortfolioCreateScreen
+          user={user}
+          ownerIdentifier={portfolioCreateOwnerIdentifier ?? null}
         />
       );
     case 'home':
@@ -230,6 +242,7 @@ export default function ModuleRouter({
           initialTab={initialProfileTab}
           onEditOffer={onEditOwnProfileOffer}
           onDeleteOffer={onDeleteOwnProfileOffer}
+          onCreatePortfolio={onCreatePortfolio}
         />
       );
     case 'search':

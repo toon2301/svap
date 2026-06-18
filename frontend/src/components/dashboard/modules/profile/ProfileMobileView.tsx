@@ -52,6 +52,7 @@ interface ProfileMobileViewProps {
   highlightedSkillId?: number | null;
   onEditOffer?: (offer: Offer) => void;
   onDeleteOffer?: (offer: Offer) => void;
+  onCreatePortfolio?: () => void;
 }
 
 type UserProfileModalWindow = Window & {
@@ -88,6 +89,7 @@ export default function ProfileMobileView({
   highlightedSkillId,
   onEditOffer,
   onDeleteOffer,
+  onCreatePortfolio,
 }: ProfileMobileViewProps) {
   const displayUser = displayUserProp ?? user;
   const { t } = useLanguage();
@@ -574,6 +576,7 @@ export default function ProfileMobileView({
             ownerUserId={offersOwnerId ?? displayUser.id}
             ownerSlug={ownerSlug ?? displayUser.slug}
             isOtherUserProfile={isOtherUserProfile}
+            onCreatePortfolio={!isOtherUserProfile ? onCreatePortfolio : undefined}
           />
 
           <UserInfo user={displayUser} />

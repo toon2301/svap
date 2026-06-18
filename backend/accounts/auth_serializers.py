@@ -5,7 +5,7 @@ from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 
-from swaply.validators import CAPTCHAValidator, EmailValidator, SecurityValidator
+from swaply.validators import CAPTCHAValidator, EmailValidator, SecurityValidator, URLValidator
 
 from .models import (
     EmailVerification,
@@ -26,6 +26,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
     birth_month = serializers.CharField(write_only=True, required=False)
     birth_year = serializers.CharField(write_only=True, required=False)
     captcha_token = serializers.CharField(write_only=True, required=True)
+    website = serializers.CharField(required=False, allow_blank=True, max_length=200)
 
     class Meta:
         model = User
@@ -146,6 +147,13 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         if User.objects.filter(username=value).exists():
             raise serializers.ValidationError("Používateľské meno je už obsadené.")
 
+        return value
+
+    def validate_website(self, value):
+        """Normalizácia webu pri registrácii (doplní https:// ak chýba schéma)"""
+        if value:
+            value = SecurityValidator.validate_input_safety(value)
+            return URLValidator.normalize_url(value, "Webová stránka")
         return value
 
     def create(self, validated_data):

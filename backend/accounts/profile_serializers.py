@@ -32,6 +32,14 @@ from .services.entitlements import get_entitlements_for_user
 class UserProfileSerializer(serializers.ModelSerializer):
     """Serializátor pre profil používateľa"""
 
+    # Explicitne CharField, aby DRF URLField neodmietol vstup bez schémy pred normalizáciou
+    website = serializers.CharField(required=False, allow_blank=True, max_length=200)
+    additional_websites = serializers.ListField(
+        child=serializers.CharField(allow_blank=True, max_length=200),
+        required=False,
+        allow_empty=True,
+    )
+
     # avatar ostáva zapisovateľné (ImageField na modeli)
     # avatar_url poskytuje plnú URL pre klienta
     avatar_url = serializers.SerializerMethodField()
@@ -422,11 +430,25 @@ class UserProfileSerializer(serializers.ModelSerializer):
         return value
 
     def validate_website(self, value):
-        """Validácia webovej stránky"""
+        """Validácia a normalizácia webovej stránky (doplní https:// ak chýba schéma)"""
         if value:
             value = SecurityValidator.validate_input_safety(value)
-            return URLValidator.validate_url(value, "Webová stránka")
+            return URLValidator.normalize_url(value, "Webová stránka")
         return value
+
+    def validate_additional_websites(self, value):
+        """Validácia a normalizácia dodatočných webov"""
+        if not value:
+            return value
+        normalized = []
+        for i, url in enumerate(value):
+            url = (url or "").strip()
+            if not url:
+                continue
+            url = SecurityValidator.validate_input_safety(url)
+            url = URLValidator.normalize_url(url, f"Web {i + 2}")
+            normalized.append(url)
+        return normalized
 
     def validate_linkedin(self, value):
         """Validácia LinkedIn URL"""

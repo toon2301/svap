@@ -132,7 +132,7 @@ export default function MobileTopBar({
             <h1 className="text-base font-semibold text-gray-900 dark:text-white truncate">
               {t('requests.title', 'Spolupráce')}
             </h1>
-          ) : (isEditMode || activeRightItem === 'language' || activeRightItem === 'account-type' || activeRightItem === 'privacy' || activeModule === 'account-type' || activeModule === 'privacy' || activeModule === 'notification-settings' || activeModule === 'skills' || activeModule === 'skills-offer' || activeModule === 'skills-search' || activeModule === 'skills-select-category' || activeModule === 'user-profile' || activeModule === 'offer-reviews' || activeModule === 'favorites') ? (
+          ) : (isEditMode || activeRightItem === 'language' || activeRightItem === 'account-type' || activeRightItem === 'privacy' || activeModule === 'account-type' || activeModule === 'privacy' || activeModule === 'notification-settings' || activeModule === 'skills' || activeModule === 'skills-offer' || activeModule === 'skills-search' || activeModule === 'skills-select-category' || activeModule === 'user-profile' || activeModule === 'offer-reviews' || activeModule === 'favorites' || activeModule === 'portfolio-create') ? (
             <button
               onClick={onBackClick}
               className="p-2 -ml-2"
@@ -243,6 +243,11 @@ export default function MobileTopBar({
           {activeModule === 'favorites' && (
             <h1 className="text-lg font-semibold text-gray-900 dark:text-white">
               {t('navigation.favorites', 'Obľúbené')}
+            </h1>
+          )}
+          {activeModule === 'portfolio-create' && (
+            <h1 className="text-base font-semibold text-gray-900 dark:text-white">
+              {t('portfolio.createAction', 'Pridať do portfólia')}
             </h1>
           )}
         </div>

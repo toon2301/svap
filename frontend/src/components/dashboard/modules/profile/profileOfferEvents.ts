@@ -10,6 +10,7 @@ export type ProfileOfferLikedPayload = {
 export type ProfileOffersRefreshPayload = {
   ownerUserId?: number;
   offerId?: number;
+  deletedOfferId?: number;
 };
 
 function parsePositiveInteger(value: unknown): number | null {
@@ -45,13 +46,15 @@ export function dispatchProfileOffersRefresh(payload: ProfileOffersRefreshPayloa
 
   const ownerUserId = payload.ownerUserId === undefined ? undefined : parsePositiveInteger(payload.ownerUserId);
   const offerId = payload.offerId === undefined ? undefined : parsePositiveInteger(payload.offerId);
-  if (ownerUserId === null || offerId === null) return;
+  const deletedOfferId = payload.deletedOfferId === undefined ? undefined : parsePositiveInteger(payload.deletedOfferId);
+  if (ownerUserId === null || offerId === null || deletedOfferId === null) return;
 
   window.dispatchEvent(
     new CustomEvent<ProfileOffersRefreshPayload>(PROFILE_OFFERS_REFRESH_EVENT, {
       detail: {
         ...(ownerUserId !== undefined ? { ownerUserId } : {}),
         ...(offerId !== undefined ? { offerId } : {}),
+        ...(deletedOfferId !== undefined ? { deletedOfferId } : {}),
       },
     }),
   );
@@ -61,9 +64,11 @@ export function readProfileOffersRefreshEvent(event: Event): ProfileOffersRefres
   const detail = (event as CustomEvent<Partial<ProfileOffersRefreshPayload>>).detail;
   const ownerUserId = detail?.ownerUserId === undefined ? undefined : parsePositiveInteger(detail.ownerUserId);
   const offerId = detail?.offerId === undefined ? undefined : parsePositiveInteger(detail.offerId);
-  if (ownerUserId === null || offerId === null) return null;
+  const deletedOfferId = detail?.deletedOfferId === undefined ? undefined : parsePositiveInteger(detail.deletedOfferId);
+  if (ownerUserId === null || offerId === null || deletedOfferId === null) return null;
   return {
     ...(ownerUserId !== undefined ? { ownerUserId } : {}),
     ...(offerId !== undefined ? { offerId } : {}),
+    ...(deletedOfferId !== undefined ? { deletedOfferId } : {}),
   };
 }

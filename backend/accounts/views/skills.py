@@ -285,9 +285,7 @@ def skills_detail_view(request, skill_id):
     elif request.method == "DELETE":
         skill.delete()
         _skills_list_cache_invalidate(request.user.id)
-        return Response(
-            {"message": "Zručnosť bola odstránená"}, status=status.HTTP_204_NO_CONTENT
-        )
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 @api_view(["GET", "POST"])
@@ -570,6 +568,24 @@ def skill_images_upload_complete_view(request, skill_id):
 
     size_bytes = int(head.get("ContentLength") or 0)
     content_type = str(head.get("ContentType") or "")
+
+    max_bytes = getattr(settings, "SKILL_IMAGE_MAX_BYTES", 10 * 1024 * 1024)
+    if size_bytes > max_bytes:
+        return Response({"error": "Súbor je príliš veľký."}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Preflight SafeSearch moderation — before creating any DB record
+    if getattr(settings, "SAFESEARCH_ENABLED", False):
+        try:
+            from swaply.staged_image_moderation import (
+                ModerationRejectedError,
+                moderate_staged_s3_image,
+            )
+            moderate_staged_s3_image(bucket, key)
+        except ModerationRejectedError as e:
+            return Response(
+                {"error": e.user_message, "code": e.code},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
     order = skill.images.count()
     img = OfferedSkillImage.objects.create(

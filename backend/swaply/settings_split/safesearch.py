@@ -13,15 +13,15 @@ SAFESEARCH_DEBUG_LOG = env_bool("SAFESEARCH_DEBUG_LOG", DEBUG)
 SAFESEARCH_TIMING_LOG = env_bool("SAFESEARCH_TIMING_LOG", False)
 
 # Policy: ako vyhodnocovať racy vs adult
-# Ak False: racy samotné nikdy neblokuje (iba adult/violence). To umožní plavky,
-# ale stále zablokuje nahotu (adult=VERY_LIKELY).
+# True: racy samotné blokuje upload aj bez adult/violence (prísnejší režim).
+# False: racy blokuje iba v kombinácii s adult alebo violence.
 SAFESEARCH_BLOCK_ON_RACY_WITHOUT_ADULT = env_bool(
-    "SAFESEARCH_BLOCK_ON_RACY_WITHOUT_ADULT", False
+    "SAFESEARCH_BLOCK_ON_RACY_WITHOUT_ADULT", True
 )
 
 # Thresholds: POSSIBLE < LIKELY < VERY_LIKELY
-# Default sprísnený pre ADULT, aby zachytil nahotu aj pri LIKELY
-SAFESEARCH_MIN_ADULT = os.getenv("SAFESEARCH_MIN_ADULT", "LIKELY")
+# ADULT nastavený na POSSIBLE, aby zachytil obsah pri najnižšej istote.
+SAFESEARCH_MIN_ADULT = os.getenv("SAFESEARCH_MIN_ADULT", "POSSIBLE")
 SAFESEARCH_MIN_VIOLENCE = os.getenv("SAFESEARCH_MIN_VIOLENCE", "LIKELY")
 SAFESEARCH_MIN_RACY = os.getenv("SAFESEARCH_MIN_RACY", "LIKELY")
 

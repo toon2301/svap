@@ -9,8 +9,11 @@ from celery import shared_task
 from django.conf import settings
 from django.db import transaction
 
+from django.core.exceptions import ValidationError as DjangoValidationError
+
 from accounts.models import OfferedSkillImage
 from swaply.image_moderation import check_image_safety
+from swaply.staged_image_moderation import IMAGE_MODERATION_REJECTED_CODE
 
 
 def _s3_client():
@@ -110,8 +113,27 @@ def process_offered_skill_image(self, offered_skill_image_id: int) -> None:
     pil.save(out, format="WEBP", quality=quality, method=6)
     processed_bytes = out.getvalue()
 
-    # SafeSearch on processed bytes (avoids format incompatibilities)
-    check_image_safety(io.BytesIO(processed_bytes))
+    # SafeSearch on processed bytes (avoids format incompatibilities).
+    # ValidationError with code='image_moderation_rejected' = content violation → REJECTED, no retry.
+    # Other ValidationError (technical fail-closed) re-raises so Celery autoretry handles it.
+    try:
+        check_image_safety(io.BytesIO(processed_bytes))
+    except DjangoValidationError as e:
+        if getattr(e, "code", None) == IMAGE_MODERATION_REJECTED_CODE:
+            with transaction.atomic():
+                img = OfferedSkillImage.objects.select_for_update().get(
+                    id=offered_skill_image_id
+                )
+                img.status = OfferedSkillImage.Status.REJECTED
+                img.rejected_reason = "Image rejected by content moderation."
+                img.processed_at = _now()
+                img.save(update_fields=["status", "rejected_reason", "processed_at"])
+            try:
+                s3.delete_object(Bucket=bucket, Key=pending_key)
+            except Exception:
+                pass
+            return  # Clean exit — no retry
+        raise  # Technical failure → Celery autoretry
 
     # Upload to media/
     key_base = f"media/offers/{img.skill_id}/{os.urandom(16).hex()}.webp"

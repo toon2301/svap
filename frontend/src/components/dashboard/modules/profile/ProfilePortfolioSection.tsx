@@ -20,6 +20,7 @@ type ProfilePortfolioSectionProps = {
   ownerUserId?: number;
   ownerSlug?: string | null;
   isOtherUserProfile?: boolean;
+  onCreatePortfolio?: () => void;
 };
 
 function targetKey(isOwner: boolean, ownerUserId?: number, ownerSlug?: string | null): string {
@@ -34,6 +35,7 @@ export default function ProfilePortfolioSection({
   ownerUserId,
   ownerSlug,
   isOtherUserProfile = false,
+  onCreatePortfolio,
 }: ProfilePortfolioSectionProps) {
   const router = useRouter();
   const { t } = useLanguage();
@@ -163,14 +165,22 @@ export default function ProfilePortfolioSection({
     );
   }
 
+  const handleCreateClick = () => {
+    if (onCreatePortfolio) {
+      onCreatePortfolio();
+    } else {
+      setIsCreateOpen((current) => !current);
+    }
+  };
+
   if (items.length === 0) {
     return (
       <div className="space-y-4">
         <PortfolioEmptyState
           isOwner={isOwner}
-          onCreate={isOwner ? () => setIsCreateOpen(true) : undefined}
+          onCreate={isOwner ? handleCreateClick : undefined}
         />
-        {isOwner && isCreateOpen && (
+        {isOwner && isCreateOpen && !onCreatePortfolio && (
           <PortfolioCreateForm
             onCancel={() => setIsCreateOpen(false)}
             onCreated={handleCreated}
@@ -188,14 +198,14 @@ export default function ProfilePortfolioSection({
         <div className="flex justify-end">
           <button
             type="button"
-            onClick={() => setIsCreateOpen((current) => !current)}
+            onClick={handleCreateClick}
             className="rounded-full bg-purple-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-400/50"
           >
             {t('portfolio.createAction')}
           </button>
         </div>
       )}
-      {isOwner && isCreateOpen && (
+      {isOwner && isCreateOpen && !onCreatePortfolio && (
         <PortfolioCreateForm
           onCancel={() => setIsCreateOpen(false)}
           onCreated={handleCreated}

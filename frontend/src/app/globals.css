@@ -1086,7 +1086,8 @@ button:focus-visible {
 }
 
 /* Toast – modern container */
-.toast-modern {
+[data-rht-toaster].toast-modern {
+  position: fixed !important;
   z-index: 10050;
 }
 
