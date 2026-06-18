@@ -86,8 +86,7 @@ export default function PortfolioDetailModule({
         setLoadError(true);
       }
     } finally {
-      if (requestSeqRef.current !== requestSeq) return;
-      if (!preserveCurrent) {
+      if (requestSeqRef.current === requestSeq && !preserveCurrent) {
         setIsLoading(false);
       }
     }
