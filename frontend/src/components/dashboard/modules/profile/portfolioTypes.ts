@@ -27,6 +27,7 @@ export type PortfolioItem = {
   description?: string | null;
   sort_order: number;
   is_featured?: boolean;
+  can_manage?: boolean;
   related_offer?: PortfolioRelatedOffer | null;
   cover_image?: PortfolioImage | null;
   images?: PortfolioImage[];

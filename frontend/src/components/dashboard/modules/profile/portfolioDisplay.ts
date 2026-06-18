@@ -53,6 +53,7 @@ export function preparePortfolioDisplayImages(item: PortfolioItem): PortfolioDis
 
   sourceImages.forEach((image, index) => {
     if (!image) return;
+    if (image.status && image.status !== 'approved') return;
     const mediumSrc = getMediumSrc(image);
     const largeSrc = getLargeSrc(image);
     if (!mediumSrc && !largeSrc) return;

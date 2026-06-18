@@ -766,6 +766,8 @@ export const endpoints = {
     detail: (id: number) => `/auth/portfolio/${id}/`,
     userList: (id: number) => `/auth/dashboard/users/${id}/portfolio/`,
     userListBySlug: (slug: string) => `/auth/dashboard/users/slug/${encodeURIComponent(slug)}/portfolio/`,
+    imageUploadInit: (itemId: number) => `/auth/portfolio/${itemId}/images/upload-init/`,
+    imageUploadComplete: (itemId: number) => `/auth/portfolio/${itemId}/images/upload-complete/`,
   },
   // Skills
   skills: {
