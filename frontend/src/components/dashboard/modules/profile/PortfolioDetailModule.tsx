@@ -25,7 +25,6 @@ import { dispatchProfilePortfolioRefresh } from './portfolioEvents';
 type PortfolioDetailModuleProps = {
   itemId: number | null;
   ownerIdentifier?: string | null;
-  isOwner?: boolean;
 };
 
 const PENDING_IMAGE_POLL_INTERVAL_MS = 2500;
@@ -39,7 +38,6 @@ function hasPendingPortfolioImages(item: PortfolioItem): boolean {
 export default function PortfolioDetailModule({
   itemId,
   ownerIdentifier,
-  isOwner = false,
 }: PortfolioDetailModuleProps) {
   const router = useRouter();
   const { t } = useLanguage();
@@ -52,6 +50,7 @@ export default function PortfolioDetailModule({
   const [isDeleting, setIsDeleting] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const pendingPollStartedAtRef = useRef<number | null>(null);
+  const requestSeqRef = useRef(0);
 
   const backPath = useMemo(() => {
     const identifier = String(ownerIdentifier || '').trim();
@@ -60,6 +59,8 @@ export default function PortfolioDetailModule({
 
   const loadItem = useCallback(async (options?: { preserveCurrent?: boolean }) => {
     const preserveCurrent = options?.preserveCurrent === true;
+    const requestSeq = requestSeqRef.current + 1;
+    requestSeqRef.current = requestSeq;
     if (!itemId || !Number.isFinite(itemId)) {
       setItem(null);
       setLoadError(true);
@@ -72,9 +73,11 @@ export default function PortfolioDetailModule({
     }
     try {
       const data = await getPortfolioItem(itemId);
+      if (requestSeqRef.current !== requestSeq) return;
       setItem(data);
       setLoadError(false);
     } catch (error) {
+      if (requestSeqRef.current !== requestSeq) return;
       if (process.env.NODE_ENV === 'development') {
         console.error('Portfolio detail load failed.', error);
       }
@@ -83,6 +86,7 @@ export default function PortfolioDetailModule({
         setLoadError(true);
       }
     } finally {
+      if (requestSeqRef.current !== requestSeq) return;
       if (!preserveCurrent) {
         setIsLoading(false);
       }
@@ -112,9 +116,10 @@ export default function PortfolioDetailModule({
     () => (item ? hasPendingPortfolioImages(item) : false),
     [item],
   );
+  const canManage = item?.can_manage === true;
 
   useEffect(() => {
-    if (!isOwner || !item || !hasPendingImages) {
+    if (!canManage || !item || !hasPendingImages) {
       pendingPollStartedAtRef.current = null;
       return;
     }
@@ -136,7 +141,7 @@ export default function PortfolioDetailModule({
     return () => {
       window.clearInterval(intervalId);
     };
-  }, [hasPendingImages, isOwner, item, loadItem]);
+  }, [canManage, hasPendingImages, item, loadItem]);
 
   const openLightbox = useCallback((index: number) => {
     setLightboxIndex(index);
@@ -151,6 +156,7 @@ export default function PortfolioDetailModule({
   }, [backPath, router]);
 
   const handleSaved = useCallback((savedItem: PortfolioItem) => {
+    requestSeqRef.current += 1;
     setItem(savedItem);
     setIsEditing(false);
     setActionError(null);
@@ -190,7 +196,7 @@ export default function PortfolioDetailModule({
         <PortfolioDetailErrorState onRetry={() => void loadItem()} />
       ) : item ? (
         <div className="space-y-7">
-          {isOwner && (
+          {canManage && (
             <div className="flex flex-wrap justify-end gap-2">
               <button
                 type="button"
@@ -238,7 +244,7 @@ export default function PortfolioDetailModule({
               onOpenImage={() => openLightbox(0)}
             />
           )}
-          {isOwner && (
+          {canManage && (
             <PortfolioImageUploadSection
               item={item}
               onRefresh={() => loadItem({ preserveCurrent: true })}

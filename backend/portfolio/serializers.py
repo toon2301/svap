@@ -209,6 +209,7 @@ class PortfolioItemWriteSerializer(serializers.ModelSerializer):
 
 class PortfolioItemSerializer(serializers.ModelSerializer):
     is_featured = serializers.SerializerMethodField()
+    can_manage = serializers.SerializerMethodField()
     related_offer = serializers.SerializerMethodField()
     cover_image = serializers.SerializerMethodField()
     images = serializers.SerializerMethodField()
@@ -222,6 +223,7 @@ class PortfolioItemSerializer(serializers.ModelSerializer):
             "description",
             "sort_order",
             "is_featured",
+            "can_manage",
             "related_offer",
             "cover_image",
             "images",
@@ -240,6 +242,9 @@ class PortfolioItemSerializer(serializers.ModelSerializer):
 
     def get_is_featured(self, obj):
         return obj.id == self.context.get("featured_item_id")
+
+    def get_can_manage(self, obj):
+        return bool(self.context.get("is_owner", False))
 
     def get_related_offer(self, obj):
         offer = getattr(obj, "related_offer", None)

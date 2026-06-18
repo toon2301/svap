@@ -38,6 +38,8 @@ export function PortfolioCreateForm({ onCancel, onCreated }: PortfolioCreateForm
   const handleSubmit = useCallback(
     async (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault();
+      if (isSubmitting) return;
+
       const nextErrors = validatePortfolioFormValues(values, t);
       if (Object.keys(nextErrors).length > 0) {
         setErrors(nextErrors);
@@ -57,7 +59,7 @@ export function PortfolioCreateForm({ onCancel, onCreated }: PortfolioCreateForm
         setIsSubmitting(false);
       }
     },
-    [onCreated, t, values],
+    [isSubmitting, onCreated, t, values],
   );
 
   return (

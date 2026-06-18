@@ -125,7 +125,43 @@ describe('ProfilePortfolioSection', () => {
 
     expect(await screen.findByText('Názov je povinný')).toBeInTheDocument();
     expect(screen.getByText('Kategória je povinná')).toBeInTheDocument();
+    const titleInput = screen.getByLabelText('Názov');
+    const titleErrorId = titleInput.getAttribute('aria-describedby');
+    expect(titleErrorId).toBeTruthy();
+    expect(document.getElementById(titleErrorId as string)).toHaveTextContent('Názov je povinný');
+    const categoryInput = screen.getByLabelText('Kategória');
+    const categoryErrorId = categoryInput.getAttribute('aria-describedby');
+    expect(categoryErrorId).toBeTruthy();
+    expect(document.getElementById(categoryErrorId as string)).toHaveTextContent('Kategória je povinná');
     expect(api.post).not.toHaveBeenCalled();
+  });
+
+  it('prevents duplicate create submissions while the request is pending', async () => {
+    const pendingCreate = deferred<{ data: PortfolioItem }>();
+    (api.get as jest.Mock).mockResolvedValue({ data: [] });
+    (api.post as jest.Mock).mockReturnValue(pendingCreate.promise);
+
+    render(<ProfilePortfolioSection activeTab="portfolio" isOtherUserProfile={false} ownerUserId={1} />);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Vytvoriť portfólio' }));
+    fireEvent.change(screen.getByLabelText('Názov'), { target: { value: 'New Work' } });
+    fireEvent.change(screen.getByLabelText('Kategória'), { target: { value: 'it-a-technologie' } });
+    const form = screen.getByTestId('portfolio-create-form');
+    fireEvent.submit(form);
+    fireEvent.submit(form);
+
+    expect(api.post).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      pendingCreate.resolve({
+        data: portfolioItem({
+          id: 9,
+          title: 'New Work',
+          category: 'it-a-technologie',
+          sort_order: 2,
+        }),
+      });
+    });
   });
 
   it('creates a portfolio item and navigates to its detail', async () => {

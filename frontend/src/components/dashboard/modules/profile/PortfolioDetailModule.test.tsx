@@ -43,6 +43,7 @@ function portfolioItem(overrides: Partial<PortfolioItem> = {}): PortfolioItem {
     category: 'it-a-technologie',
     description: 'Detail description',
     sort_order: 1,
+    can_manage: false,
     related_offer: null,
     cover_image: {
       id: 1,
@@ -72,6 +73,10 @@ function portfolioItem(overrides: Partial<PortfolioItem> = {}): PortfolioItem {
     ],
     ...overrides,
   };
+}
+
+function manageablePortfolioItem(overrides: Partial<PortfolioItem> = {}): PortfolioItem {
+  return portfolioItem({ can_manage: true, ...overrides });
 }
 
 /** Creates a promise whose resolve/reject can be controlled by the test. */
@@ -176,6 +181,29 @@ describe('PortfolioDetailModule', () => {
     expect(api.get).toHaveBeenCalledTimes(2);
   });
 
+  it('keeps the latest detail response when requests resolve out of order', async () => {
+    const slowFirstRequest = deferred<{ data: PortfolioItem }>();
+    const fastSecondRequest = deferred<{ data: PortfolioItem }>();
+    (api.get as jest.Mock)
+      .mockReturnValueOnce(slowFirstRequest.promise)
+      .mockReturnValueOnce(fastSecondRequest.promise);
+
+    const { rerender } = render(<PortfolioDetailModule itemId={7} ownerIdentifier="jane-doe" />);
+    rerender(<PortfolioDetailModule itemId={8} ownerIdentifier="jane-doe" />);
+
+    await act(async () => {
+      fastSecondRequest.resolve({ data: portfolioItem({ id: 8, title: 'Newest Portfolio' }) });
+    });
+    expect(await screen.findByText('Newest Portfolio')).toBeInTheDocument();
+
+    await act(async () => {
+      slowFirstRequest.resolve({ data: portfolioItem({ id: 7, title: 'Stale Portfolio' }) });
+    });
+
+    expect(screen.getByText('Newest Portfolio')).toBeInTheDocument();
+    expect(screen.queryByText('Stale Portfolio')).not.toBeInTheDocument();
+  });
+
   it('always navigates back to the owner portfolio list', async () => {
     (api.get as jest.Mock).mockResolvedValue({ data: portfolioItem() });
 
@@ -197,9 +225,9 @@ describe('PortfolioDetailModule', () => {
   });
 
   it('shows owner edit and delete actions in detail', async () => {
-    (api.get as jest.Mock).mockResolvedValue({ data: portfolioItem() });
+    (api.get as jest.Mock).mockResolvedValue({ data: manageablePortfolioItem() });
 
-    render(<PortfolioDetailModule itemId={7} ownerIdentifier="jane-doe" isOwner />);
+    render(<PortfolioDetailModule itemId={7} ownerIdentifier="jane-doe" />);
 
     expect(await screen.findByRole('button', { name: 'Upraviť' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Vymazať' })).toBeInTheDocument();
@@ -208,34 +236,37 @@ describe('PortfolioDetailModule', () => {
   it('shows upload UI only to the portfolio owner', async () => {
     (api.get as jest.Mock).mockResolvedValue({ data: portfolioItem() });
 
-    const { rerender } = render(<PortfolioDetailModule itemId={7} ownerIdentifier="jane-doe" />);
+    const { unmount } = render(<PortfolioDetailModule itemId={7} ownerIdentifier="jane-doe" />);
 
     expect(await screen.findByText('Portfolio Detail')).toBeInTheDocument();
     expect(screen.queryByTestId('portfolio-upload-section')).not.toBeInTheDocument();
 
-    rerender(<PortfolioDetailModule itemId={7} ownerIdentifier="jane-doe" isOwner />);
+    unmount();
+    jest.clearAllMocks();
+    (api.get as jest.Mock).mockResolvedValue({ data: manageablePortfolioItem() });
+    render(<PortfolioDetailModule itemId={7} ownerIdentifier="jane-doe" />);
 
     expect(await screen.findByTestId('portfolio-upload-section')).toBeInTheDocument();
   });
 
   it('disables new photo selection when the portfolio already has 8 active images', async () => {
     (api.get as jest.Mock).mockResolvedValue({
-      data: portfolioItem({
+      data: manageablePortfolioItem({
         cover_image: null,
         images: Array.from({ length: 8 }, (_, index) => portfolioImage(index + 1, 'approved')),
       }),
     });
 
-    render(<PortfolioDetailModule itemId={7} ownerIdentifier="jane-doe" isOwner />);
+    render(<PortfolioDetailModule itemId={7} ownerIdentifier="jane-doe" />);
 
     expect(await screen.findByTestId('portfolio-upload-button')).toBeDisabled();
     expect(screen.getByText('Môžeš pridať maximálne 8 fotiek')).toBeInTheDocument();
   });
 
   it('shows validation errors for too large and invalid image files', async () => {
-    (api.get as jest.Mock).mockResolvedValue({ data: portfolioItem({ cover_image: null, images: [] }) });
+    (api.get as jest.Mock).mockResolvedValue({ data: manageablePortfolioItem({ cover_image: null, images: [] }) });
 
-    render(<PortfolioDetailModule itemId={7} ownerIdentifier="jane-doe" isOwner />);
+    render(<PortfolioDetailModule itemId={7} ownerIdentifier="jane-doe" />);
 
     const input = await screen.findByTestId('portfolio-upload-input');
     fireEvent.change(input, {
@@ -254,14 +285,14 @@ describe('PortfolioDetailModule', () => {
 
   it('uploads a selected image with progress and completes the upload', async () => {
     const storageUpload = deferred<{ status: number }>();
-    (api.get as jest.Mock).mockResolvedValue({ data: portfolioItem({ cover_image: null, images: [] }) });
+    (api.get as jest.Mock).mockResolvedValue({ data: manageablePortfolioItem({ cover_image: null, images: [] }) });
     mockSuccessfulUpload(55);
     (axios.post as jest.Mock).mockImplementation((_url, _formData, config) => {
       config.onUploadProgress?.({ loaded: 50, total: 100 });
       return storageUpload.promise;
     });
 
-    render(<PortfolioDetailModule itemId={7} ownerIdentifier="jane-doe" isOwner />);
+    render(<PortfolioDetailModule itemId={7} ownerIdentifier="jane-doe" />);
 
     const input = await screen.findByTestId('portfolio-upload-input');
     fireEvent.change(input, { target: { files: [imageFile()] } });
@@ -288,7 +319,7 @@ describe('PortfolioDetailModule', () => {
   });
 
   it('keeps uploading other files when one image fails', async () => {
-    (api.get as jest.Mock).mockResolvedValue({ data: portfolioItem({ cover_image: null, images: [] }) });
+    (api.get as jest.Mock).mockResolvedValue({ data: manageablePortfolioItem({ cover_image: null, images: [] }) });
     (api.post as jest.Mock)
       .mockRejectedValueOnce(new Error('init failed'))
       .mockResolvedValueOnce({
@@ -301,7 +332,7 @@ describe('PortfolioDetailModule', () => {
       .mockResolvedValueOnce({ data: { id: 56, status: 'pending', order: 1 } });
     (axios.post as jest.Mock).mockResolvedValue({ status: 204 });
 
-    render(<PortfolioDetailModule itemId={7} ownerIdentifier="jane-doe" isOwner />);
+    render(<PortfolioDetailModule itemId={7} ownerIdentifier="jane-doe" />);
 
     fireEvent.change(await screen.findByTestId('portfolio-upload-input'), {
       target: { files: [imageFile('first.jpg'), imageFile('second.jpg')] },
@@ -317,13 +348,13 @@ describe('PortfolioDetailModule', () => {
   });
 
   it('retries a failed image upload', async () => {
-    (api.get as jest.Mock).mockResolvedValue({ data: portfolioItem({ cover_image: null, images: [] }) });
+    (api.get as jest.Mock).mockResolvedValue({ data: manageablePortfolioItem({ cover_image: null, images: [] }) });
     mockSuccessfulUpload(57);
     (axios.post as jest.Mock)
       .mockRejectedValueOnce(new Error('storage failed'))
       .mockResolvedValueOnce({ status: 204 });
 
-    render(<PortfolioDetailModule itemId={7} ownerIdentifier="jane-doe" isOwner />);
+    render(<PortfolioDetailModule itemId={7} ownerIdentifier="jane-doe" />);
 
     fireEvent.change(await screen.findByTestId('portfolio-upload-input'), {
       target: { files: [imageFile()] },
@@ -341,7 +372,7 @@ describe('PortfolioDetailModule', () => {
 
   it('shows owner image statuses including rejected reasons', async () => {
     (api.get as jest.Mock).mockResolvedValue({
-      data: portfolioItem({
+      data: manageablePortfolioItem({
         cover_image: null,
         images: [
           portfolioImage(1, 'pending'),
@@ -351,7 +382,7 @@ describe('PortfolioDetailModule', () => {
       }),
     });
 
-    render(<PortfolioDetailModule itemId={7} ownerIdentifier="jane-doe" isOwner />);
+    render(<PortfolioDetailModule itemId={7} ownerIdentifier="jane-doe" />);
 
     expect(await screen.findByText('Fotka čaká na kontrolu')).toBeInTheDocument();
     expect(screen.getByText('Fotka bola zamietnutá')).toBeInTheDocument();
@@ -389,16 +420,25 @@ describe('PortfolioDetailModule', () => {
       }),
     });
 
-    render(<PortfolioDetailModule itemId={7} ownerIdentifier="jane-doe" isOwner />);
+    render(<PortfolioDetailModule itemId={7} ownerIdentifier="jane-doe" />);
 
     expect(await screen.findByTestId('portfolio-detail-gallery')).toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: /Portfolio Detail Fotka/ })).toHaveLength(1);
+
+    const heroImage = screen.getByRole('img', { name: 'Portfolio Detail' });
+    fireEvent.click(heroImage.closest('button') as HTMLElement);
+    const dialog = await screen.findByRole('dialog', { name: 'Galéria' });
+    expect(within(dialog).getByRole('img', { name: 'Portfolio Detail' })).toHaveAttribute(
+      'src',
+      '/media/large-1.webp',
+    );
+    expect(within(dialog).queryByRole('button', { name: 'Ďalšia fotka' })).not.toBeInTheDocument();
   });
 
   it('revokes local preview object URLs on unmount', async () => {
-    (api.get as jest.Mock).mockResolvedValue({ data: portfolioItem({ cover_image: null, images: [] }) });
+    (api.get as jest.Mock).mockResolvedValue({ data: manageablePortfolioItem({ cover_image: null, images: [] }) });
 
-    const { unmount } = render(<PortfolioDetailModule itemId={7} ownerIdentifier="jane-doe" isOwner />);
+    const { unmount } = render(<PortfolioDetailModule itemId={7} ownerIdentifier="jane-doe" />);
 
     fireEvent.change(await screen.findByTestId('portfolio-upload-input'), {
       target: { files: [imageFile('large.jpg', 'image/jpeg', 5 * 1024 * 1024 + 1)] },
@@ -414,13 +454,13 @@ describe('PortfolioDetailModule', () => {
     jest.useFakeTimers();
     try {
       (api.get as jest.Mock).mockResolvedValue({
-        data: portfolioItem({
+        data: manageablePortfolioItem({
           cover_image: null,
           images: [portfolioImage(1, 'pending')],
         }),
       });
 
-      render(<PortfolioDetailModule itemId={7} ownerIdentifier="jane-doe" isOwner />);
+      render(<PortfolioDetailModule itemId={7} ownerIdentifier="jane-doe" />);
 
       expect(await screen.findByText('Fotka čaká na kontrolu')).toBeInTheDocument();
       expect(api.get).toHaveBeenCalledTimes(1);
@@ -448,10 +488,47 @@ describe('PortfolioDetailModule', () => {
     }
   });
 
-  it('prefills edit mode and discards changes on cancel', async () => {
-    (api.get as jest.Mock).mockResolvedValue({ data: portfolioItem() });
+  it('does not reset an unsaved edit draft when pending photo polling refreshes the same item', async () => {
+    jest.useFakeTimers();
+    try {
+      (api.get as jest.Mock)
+        .mockResolvedValueOnce({
+          data: manageablePortfolioItem({
+            cover_image: null,
+            images: [portfolioImage(1, 'pending')],
+          }),
+        })
+        .mockResolvedValueOnce({
+          data: manageablePortfolioItem({
+            title: 'Server refreshed title',
+            cover_image: null,
+            images: [portfolioImage(1, 'pending')],
+          }),
+        });
 
-    render(<PortfolioDetailModule itemId={7} ownerIdentifier="jane-doe" isOwner />);
+      render(<PortfolioDetailModule itemId={7} ownerIdentifier="jane-doe" />);
+
+      fireEvent.click(await screen.findByRole('button', { name: 'Upraviť' }));
+      fireEvent.change(screen.getByLabelText('Názov'), { target: { value: 'Draft title' } });
+
+      await act(async () => {
+        jest.advanceTimersByTime(2500);
+      });
+
+      await waitFor(() => {
+        expect(api.get).toHaveBeenCalledTimes(2);
+      });
+      expect(screen.getByDisplayValue('Draft title')).toBeInTheDocument();
+      expect(screen.queryByDisplayValue('Server refreshed title')).not.toBeInTheDocument();
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('prefills edit mode and discards changes on cancel', async () => {
+    (api.get as jest.Mock).mockResolvedValue({ data: manageablePortfolioItem() });
+
+    render(<PortfolioDetailModule itemId={7} ownerIdentifier="jane-doe" />);
 
     fireEvent.click(await screen.findByRole('button', { name: 'Upraviť' }));
     expect(screen.getByDisplayValue('Portfolio Detail')).toBeInTheDocument();
@@ -466,16 +543,16 @@ describe('PortfolioDetailModule', () => {
   });
 
   it('saves edited portfolio fields with PATCH and updates the detail', async () => {
-    (api.get as jest.Mock).mockResolvedValue({ data: portfolioItem() });
+    (api.get as jest.Mock).mockResolvedValue({ data: manageablePortfolioItem() });
     (api.patch as jest.Mock).mockResolvedValue({
-      data: portfolioItem({
+      data: manageablePortfolioItem({
         title: 'Updated Portfolio',
         category: 'it-a-technologie',
         description: 'Updated description',
       }),
     });
 
-    render(<PortfolioDetailModule itemId={7} ownerIdentifier="jane-doe" isOwner />);
+    render(<PortfolioDetailModule itemId={7} ownerIdentifier="jane-doe" />);
 
     fireEvent.click(await screen.findByRole('button', { name: 'Upraviť' }));
     fireEvent.change(screen.getByLabelText('Názov'), { target: { value: ' Updated Portfolio ' } });
@@ -495,12 +572,12 @@ describe('PortfolioDetailModule', () => {
   });
 
   it('shows a safe edit error when the backend rejects the update', async () => {
-    (api.get as jest.Mock).mockResolvedValue({ data: portfolioItem() });
+    (api.get as jest.Mock).mockResolvedValue({ data: manageablePortfolioItem() });
     (api.patch as jest.Mock).mockRejectedValue({
       response: { status: 404, data: { detail: 'Not found' } },
     });
 
-    render(<PortfolioDetailModule itemId={7} ownerIdentifier="jane-doe" isOwner />);
+    render(<PortfolioDetailModule itemId={7} ownerIdentifier="jane-doe" />);
 
     fireEvent.click(await screen.findByRole('button', { name: 'Upraviť' }));
     fireEvent.change(screen.getByLabelText('Názov'), { target: { value: 'Updated Portfolio' } });
@@ -510,20 +587,36 @@ describe('PortfolioDetailModule', () => {
   });
 
   it('opens delete confirmation and deletes the portfolio item', async () => {
-    (api.get as jest.Mock).mockResolvedValue({ data: portfolioItem() });
+    (api.get as jest.Mock).mockResolvedValue({ data: manageablePortfolioItem() });
     (api.delete as jest.Mock).mockResolvedValue({});
 
-    render(<PortfolioDetailModule itemId={7} ownerIdentifier="jane-doe" isOwner />);
+    render(<PortfolioDetailModule itemId={7} ownerIdentifier="jane-doe" />);
 
     fireEvent.click(await screen.findByRole('button', { name: 'Vymazať' }));
     expect(await screen.findByRole('alertdialog')).toBeInTheDocument();
-    const deleteButtons = screen.getAllByRole('button', { name: 'Vymazať' });
-    fireEvent.click(deleteButtons[deleteButtons.length - 1]);
+    const dialog = await screen.findByRole('alertdialog');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Vymazať' }));
 
     await waitFor(() => {
       expect(api.delete).toHaveBeenCalledWith('/auth/portfolio/7/');
     });
     expect(mockPush).toHaveBeenCalledWith('/dashboard/users/jane-doe/portfolio');
+  });
+
+  it('focuses the delete dialog cancel button and closes the dialog with Escape', async () => {
+    (api.get as jest.Mock).mockResolvedValue({ data: manageablePortfolioItem() });
+
+    render(<PortfolioDetailModule itemId={7} ownerIdentifier="jane-doe" />);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Vymazať' }));
+    const dialog = await screen.findByRole('alertdialog');
+    expect(within(dialog).getByRole('button', { name: 'Zrušiť' })).toHaveFocus();
+
+    fireEvent.keyDown(window, { key: 'Escape' });
+
+    await waitFor(() => {
+      expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    });
   });
 
   it('uses medium URLs for the hero and gallery images', async () => {

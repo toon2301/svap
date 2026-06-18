@@ -68,7 +68,6 @@ interface ModuleRouterProps {
   offerIdForReviews?: number | null;
   portfolioItemIdForDetail?: number | null;
   portfolioOwnerIdentifier?: string | null;
-  portfolioDetailIsOwner?: boolean;
   /** Conversation ID for messages detail view (from URL). */
   conversationIdForMessages?: number | null;
   /** Target user ID for draft compose flow (from URL). */
@@ -120,7 +119,6 @@ export default function ModuleRouter({
   offerIdForReviews,
   portfolioItemIdForDetail,
   portfolioOwnerIdentifier,
-  portfolioDetailIsOwner = false,
   conversationIdForMessages,
   targetUserIdForMessages,
   onNotificationNavigate,
@@ -161,7 +159,6 @@ export default function ModuleRouter({
         <PortfolioDetailModule
           itemId={portfolioItemIdForDetail ?? null}
           ownerIdentifier={portfolioOwnerIdentifier}
-          isOwner={portfolioDetailIsOwner}
         />
       );
     case 'home':

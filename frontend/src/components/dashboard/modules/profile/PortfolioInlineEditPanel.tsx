@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { updatePortfolioItem } from './portfolioApi';
@@ -40,8 +40,11 @@ export function PortfolioInlineEditPanel({
   const [errors, setErrors] = useState<PortfolioFormErrors>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const initializedItemIdRef = useRef(item.id);
 
   useEffect(() => {
+    if (initializedItemIdRef.current === item.id) return;
+    initializedItemIdRef.current = item.id;
     setValues(valuesFromItem(item));
     setErrors({});
     setSubmitError(null);
@@ -56,6 +59,8 @@ export function PortfolioInlineEditPanel({
   const handleSubmit = useCallback(
     async (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault();
+      if (isSubmitting) return;
+
       const nextErrors = validatePortfolioFormValues(values, t);
       if (Object.keys(nextErrors).length > 0) {
         setErrors(nextErrors);
@@ -75,7 +80,7 @@ export function PortfolioInlineEditPanel({
         setIsSubmitting(false);
       }
     },
-    [item.id, onSaved, t, values],
+    [isSubmitting, item.id, onSaved, t, values],
   );
 
   return (

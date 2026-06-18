@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { MouseEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { ExclamationTriangleIcon } from '@heroicons/react/24/outline';
@@ -21,8 +21,24 @@ export function PortfolioDeleteConfirmDialog({
 }: PortfolioDeleteConfirmDialogProps) {
   const { t } = useLanguage();
   const [mounted, setMounted] = useState(false);
+  const cancelButtonRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => setMounted(true), []);
+
+  useEffect(() => {
+    if (!open) return;
+    cancelButtonRef.current?.focus();
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !isDeleting) {
+        event.preventDefault();
+        onClose();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isDeleting, onClose, open]);
 
   const handleBackdropClick = (event: MouseEvent<HTMLDivElement>) => {
     if (event.target === event.currentTarget && !isDeleting) {
@@ -68,6 +84,7 @@ export function PortfolioDeleteConfirmDialog({
 
           <div className="mt-6 flex justify-end gap-3">
             <button
+              ref={cancelButtonRef}
               type="button"
               onClick={onClose}
               disabled={isDeleting}
