@@ -7,6 +7,8 @@ import type { ProfileTab } from './profileTypes';
 import { listProfilePortfolio } from './portfolioApi';
 import type { PortfolioItem } from './portfolioTypes';
 import { getPortfolioCategoryLabel } from './portfolioDisplay';
+import { PROFILE_PORTFOLIO_REFRESH_EVENT } from './portfolioEvents';
+import { PortfolioCreateForm } from './PortfolioCreateForm';
 import { PortfolioEmptyState } from './PortfolioEmptyState';
 import { PortfolioFeaturedCard } from './PortfolioFeaturedCard';
 import { PortfolioGrid } from './PortfolioGrid';
@@ -39,6 +41,7 @@ export default function ProfilePortfolioSection({
   const [items, setItems] = useState<PortfolioItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [loadError, setLoadError] = useState(false);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
   const loadedKeyRef = useRef<string | null>(null);
   const requestSeqRef = useRef(0);
   const currentTargetKey = useMemo(
@@ -60,6 +63,24 @@ export default function ProfilePortfolioSection({
     (item: PortfolioItem) => {
       if (!ownerIdentifier) return;
       router.push(buildPortfolioDetailPath(ownerIdentifier, item.id));
+    },
+    [ownerIdentifier, router],
+  );
+
+  const handleCreated = useCallback(
+    (createdItem: PortfolioItem) => {
+      setItems((current) => {
+        const withoutCreated = current.filter((item) => item.id !== createdItem.id);
+        return [...withoutCreated, createdItem].sort((left, right) => {
+          const leftOrder = typeof left.sort_order === 'number' ? left.sort_order : Number.MAX_SAFE_INTEGER;
+          const rightOrder = typeof right.sort_order === 'number' ? right.sort_order : Number.MAX_SAFE_INTEGER;
+          return leftOrder - rightOrder;
+        });
+      });
+      setIsCreateOpen(false);
+      if (ownerIdentifier) {
+        router.push(buildPortfolioDetailPath(ownerIdentifier, createdItem.id));
+      }
     },
     [ownerIdentifier, router],
   );
@@ -93,8 +114,21 @@ export default function ProfilePortfolioSection({
     setItems([]);
     setLoadError(false);
     setIsLoading(false);
+    setIsCreateOpen(false);
     loadedKeyRef.current = null;
   }, [currentTargetKey]);
+
+  useEffect(() => {
+    const handleRefresh = () => {
+      loadedKeyRef.current = null;
+      if (activeTab === 'portfolio' && (isOwner || ownerUserId != null || ownerSlug)) {
+        void loadPortfolio();
+      }
+    };
+
+    window.addEventListener(PROFILE_PORTFOLIO_REFRESH_EVENT, handleRefresh);
+    return () => window.removeEventListener(PROFILE_PORTFOLIO_REFRESH_EVENT, handleRefresh);
+  }, [activeTab, isOwner, loadPortfolio, ownerSlug, ownerUserId]);
 
   useEffect(() => {
     if (activeTab !== 'portfolio') return;
@@ -130,13 +164,43 @@ export default function ProfilePortfolioSection({
   }
 
   if (items.length === 0) {
-    return <PortfolioEmptyState isOwner={isOwner} />;
+    return (
+      <div className="space-y-4">
+        <PortfolioEmptyState
+          isOwner={isOwner}
+          onCreate={isOwner ? () => setIsCreateOpen(true) : undefined}
+        />
+        {isOwner && isCreateOpen && (
+          <PortfolioCreateForm
+            onCancel={() => setIsCreateOpen(false)}
+            onCreated={handleCreated}
+          />
+        )}
+      </div>
+    );
   }
 
   const [featured, ...rest] = items;
 
   return (
     <div className="mt-4 space-y-5">
+      {isOwner && (
+        <div className="flex justify-end">
+          <button
+            type="button"
+            onClick={() => setIsCreateOpen((current) => !current)}
+            className="rounded-full bg-purple-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-400/50"
+          >
+            {t('portfolio.createAction')}
+          </button>
+        </div>
+      )}
+      {isOwner && isCreateOpen && (
+        <PortfolioCreateForm
+          onCancel={() => setIsCreateOpen(false)}
+          onCreated={handleCreated}
+        />
+      )}
       <PortfolioFeaturedCard
         item={featured}
         categoryLabel={getCategoryLabel(featured.category)}
