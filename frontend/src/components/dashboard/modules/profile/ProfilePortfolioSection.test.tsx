@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import ProfilePortfolioSection from './ProfilePortfolioSection';
 import { api } from '@/lib/api';
 import type { PortfolioItem } from './portfolioTypes';
@@ -48,11 +48,31 @@ function deferred<T>() {
   return { promise, resolve, reject };
 }
 
+function selectFirstPortfolioCategory() {
+  fireEvent.click(screen.getByLabelText('Kategória'));
+  const listbox = screen.getByRole('listbox', { name: 'Kategória' });
+  fireEvent.click(within(listbox).getAllByRole('option')[0]);
+}
+
+function setPortfolioDescription(value: string) {
+  fireEvent.click(screen.getByRole('button', { name: /Popis/ }));
+  fireEvent.change(screen.getByLabelText('Popis'), { target: { value } });
+  fireEvent.click(screen.getByLabelText('Uložiť'));
+}
+
 describe('ProfilePortfolioSection', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockPush.mockClear();
     (api.post as jest.Mock).mockReset();
+    Object.defineProperty(URL, 'createObjectURL', {
+      writable: true,
+      value: jest.fn((file: File) => `blob:${file.name}`),
+    });
+    Object.defineProperty(URL, 'revokeObjectURL', {
+      writable: true,
+      value: jest.fn(),
+    });
   });
 
   it('fetches portfolio only when the portfolio tab is active', async () => {
@@ -145,7 +165,7 @@ describe('ProfilePortfolioSection', () => {
 
     fireEvent.click(await screen.findByRole('button', { name: 'Vytvoriť portfólio' }));
     fireEvent.change(screen.getByLabelText('Názov'), { target: { value: 'New Work' } });
-    fireEvent.change(screen.getByLabelText('Kategória'), { target: { value: 'it-a-technologie' } });
+    selectFirstPortfolioCategory();
     const form = screen.getByTestId('portfolio-create-form');
     fireEvent.submit(form);
     fireEvent.submit(form);
@@ -180,8 +200,8 @@ describe('ProfilePortfolioSection', () => {
 
     fireEvent.click(await screen.findByRole('button', { name: 'Vytvoriť portfólio' }));
     fireEvent.change(screen.getByLabelText('Názov'), { target: { value: ' New Work ' } });
-    fireEvent.change(screen.getByLabelText('Kategória'), { target: { value: 'it-a-technologie' } });
-    fireEvent.change(screen.getByLabelText(/Popis/), { target: { value: ' New description ' } });
+    selectFirstPortfolioCategory();
+    setPortfolioDescription(' New description ');
     fireEvent.submit(screen.getByTestId('portfolio-create-form'));
 
     await waitFor(() => {
@@ -204,11 +224,50 @@ describe('ProfilePortfolioSection', () => {
 
     fireEvent.click(await screen.findByRole('button', { name: 'Vytvoriť portfólio' }));
     fireEvent.change(screen.getByLabelText('Názov'), { target: { value: 'New Work' } });
-    fireEvent.change(screen.getByLabelText('Kategória'), { target: { value: 'it-a-technologie' } });
+    selectFirstPortfolioCategory();
     fireEvent.submit(screen.getByTestId('portfolio-create-form'));
 
     expect(await screen.findByText('Forbidden')).toBeInTheDocument();
     expect(mockPush).not.toHaveBeenCalled();
+  });
+
+  it('shows local photo previews before creating portfolio', async () => {
+    (api.get as jest.Mock).mockResolvedValue({ data: [] });
+
+    render(<ProfilePortfolioSection activeTab="portfolio" isOtherUserProfile={false} ownerUserId={1} />);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Vytvoriť portfólio' }));
+    const input = screen.getByTestId('portfolio-create-photo-input');
+    const file = new File(['image-bytes'], 'work.jpg', { type: 'image/jpeg' });
+
+    fireEvent.change(input, { target: { files: [file] } });
+
+    expect(screen.getByRole('img', { name: /Náhľad fotky 1/ })).toHaveAttribute(
+      'src',
+      'blob:work.jpg',
+    );
+  });
+
+  it('rejects unsupported create photos before portfolio submission', async () => {
+    (api.get as jest.Mock).mockResolvedValue({ data: [] });
+
+    render(<ProfilePortfolioSection activeTab="portfolio" isOtherUserProfile={false} ownerUserId={1} />);
+
+    fireEvent.click(await screen.findByRole('button', { name: /Vytvori/ }));
+    const input = screen.getByTestId('portfolio-create-photo-input');
+    const file = new File(['<svg></svg>'], 'work.svg', { type: 'image/svg+xml' });
+
+    expect(input).toHaveAttribute('accept', '.jpg,.jpeg,.png,.gif,.webp,.heic,.heif');
+
+    fireEvent.change(input, { target: { files: [file] } });
+
+    expect(
+      screen.getByText((content, element) => (
+        element?.tagName.toLowerCase() === 'p' && content.startsWith('Vyber')
+      )),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('img')).not.toBeInTheDocument();
+    expect(api.post).not.toHaveBeenCalled();
   });
 
   it('shows an error state with retry', async () => {

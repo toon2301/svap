@@ -4,7 +4,7 @@ Integračné testy pre API komunikáciu
 
 import pytest
 import json
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
 from django.urls import reverse
@@ -48,6 +48,7 @@ class TestAPIIntegration(APITestCase):
         self.user.district = "Bratislava I"
         self.user.save()
 
+    @override_settings(EMAIL_VERIFICATION_REQUIRED=True)
     def test_registration_flow(self):
         """Test kompletného registračného toku"""
         url = f"{self.base_url}/auth/register/"

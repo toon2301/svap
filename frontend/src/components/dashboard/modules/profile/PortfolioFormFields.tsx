@@ -2,9 +2,8 @@
 
 import { useId } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { getPortfolioCategoryLabel } from './portfolioDisplay';
+import { PortfolioCategoryPicker } from './PortfolioCategoryPicker';
 import {
-  PORTFOLIO_CATEGORY_OPTIONS,
   PORTFOLIO_DESCRIPTION_MAX_LENGTH,
   PORTFOLIO_TITLE_MAX_LENGTH,
   type PortfolioFormErrors,
@@ -31,6 +30,7 @@ export function PortfolioFormFields({
   const titleInputId = `${fieldId}-portfolio-title`;
   const categoryInputId = `${fieldId}-portfolio-category`;
   const descriptionInputId = `${fieldId}-portfolio-description`;
+  const categoryLabelId = `${fieldId}-portfolio-category-label`;
   const titleErrorId = `${fieldId}-portfolio-title-error`;
   const categoryErrorId = `${fieldId}-portfolio-category-error`;
   const descriptionErrorId = `${fieldId}-portfolio-description-error`;
@@ -70,27 +70,30 @@ export function PortfolioFormFields({
       </div>
 
       <div className="block">
-        <label htmlFor={categoryInputId}>
+        <label id={categoryLabelId} htmlFor={categoryInputId}>
           <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
             {t('portfolio.categoryLabel')}
           </span>
         </label>
-        <select
-          id={categoryInputId}
+        <div className="mt-1">
+          <PortfolioCategoryPicker
+            buttonId={categoryInputId}
+            value={values.category}
+            disabled={disabled}
+            invalid={Boolean(errors.category)}
+            describedBy={errors.category ? categoryErrorId : undefined}
+            label={t('portfolio.categoryLabel')}
+            placeholder={t('portfolio.categoryPlaceholder')}
+            onChange={(value) => onChange('category', value)}
+          />
+        </div>
+        <input
+          type="hidden"
+          name="category"
           value={values.category}
-          disabled={disabled}
-          aria-invalid={Boolean(errors.category)}
-          aria-describedby={errors.category ? categoryErrorId : undefined}
-          onChange={(event) => onChange('category', event.target.value)}
-          className="mt-1 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition focus:border-purple-400 focus:ring-2 focus:ring-purple-400/30 disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:bg-[#101011] dark:text-white"
-        >
-          <option value="">{t('portfolio.categoryPlaceholder')}</option>
-          {PORTFOLIO_CATEGORY_OPTIONS.map((category) => (
-            <option key={category} value={category}>
-              {getPortfolioCategoryLabel(t, category)}
-            </option>
-          ))}
-        </select>
+          readOnly
+          aria-hidden="true"
+        />
         {errors.category && (
           <span
             id={categoryErrorId}

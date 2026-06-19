@@ -2,6 +2,7 @@
 Regression tests: production API exceptions must reach Sentry with stack traces.
 """
 
+import json
 from unittest.mock import patch
 
 from django.test import RequestFactory, TestCase, override_settings
@@ -49,7 +50,7 @@ class TestUnhandledApiExceptionSentryReporting(TestCase):
         mock_logger.error.assert_not_called()
         mock_logger.info.assert_called_once()
         self.assertEqual(response.status_code, 500)
-        payload = response.json()
+        payload = json.loads(response.content)
         self.assertEqual(payload["code"], "INTERNAL_ERROR")
         self.assertNotIn("secrets.json", response.content.decode("utf-8"))
 

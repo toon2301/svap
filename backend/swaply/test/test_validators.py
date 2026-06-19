@@ -99,10 +99,13 @@ class TestBioValidator:
     def test_valid(self):
         assert BioValidator.validate_bio("Toto je moje bio, ktoré je dostatočne dlhé.")
 
-    @pytest.mark.parametrize("bio", ["short", "x" * 501])
-    def test_invalid(self, bio):
+    def test_short_is_allowed(self):
+        # Bio nemá minimálnu dĺžku – krátky text je platný.
+        assert BioValidator.validate_bio("short") == "short"
+
+    def test_over_max_length_rejected(self):
         with pytest.raises(ValidationError):
-            BioValidator.validate_bio(bio)
+            BioValidator.validate_bio("x" * 151)
 
 
 class TestHtmlSanitizer:

@@ -2,7 +2,7 @@ from django.conf import settings
 from django.db.models import Avg, Count
 from rest_framework import serializers
 
-from swaply.validators import SecurityValidator
+from swaply.validators import HtmlSanitizer
 
 from .models import (
     OfferedSkill,
@@ -301,7 +301,7 @@ class OfferedSkillSerializer(serializers.ModelSerializer):
     def validate_description(self, value):
         """Validácia popisu"""
         if value:
-            value = SecurityValidator.validate_input_safety(value)
+            value = HtmlSanitizer.sanitize_html(value)
             if len(value) > 100:
                 raise serializers.ValidationError("Popis môže mať maximálne 100 znakov")
         return value
@@ -309,7 +309,7 @@ class OfferedSkillSerializer(serializers.ModelSerializer):
     def validate_detailed_description(self, value):
         """Validácia podrobného popisu"""
         if value:
-            value = SecurityValidator.validate_input_safety(value)
+            value = HtmlSanitizer.sanitize_html(value)
             if len(value) > 1000:
                 raise serializers.ValidationError(
                     "Podrobný popis môže mať maximálne 1000 znakov"
@@ -327,7 +327,7 @@ class OfferedSkillSerializer(serializers.ModelSerializer):
         for tag in value:
             if not isinstance(tag, str):
                 continue
-            tag = tag.strip()
+            tag = HtmlSanitizer.sanitize_html(tag).strip()
             if tag:
                 if len(tag) > 15:
                     raise serializers.ValidationError(
@@ -435,7 +435,7 @@ class OfferedSkillSerializer(serializers.ModelSerializer):
     def validate_location(self, value):
         """Validácia lokality"""
         if value:
-            value = SecurityValidator.validate_input_safety(value)
+            value = HtmlSanitizer.sanitize_html(value)
             value = value.strip()
             if len(value) > 35:
                 raise serializers.ValidationError("Miesto môže mať maximálne 35 znakov")
