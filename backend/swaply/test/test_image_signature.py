@@ -72,4 +72,7 @@ def test_validate_accepts_real_heic_signature():
 @override_settings(SAFESEARCH_ENABLED=False)
 def test_validate_accepts_real_webp_and_keeps_pointer():
     f = SimpleUploadedFile("ok.webp", WEBP, content_type="image/webp")
+    f.seek(4)
+    initial_position = f.tell()
     assert validate_image_file(f) is f
+    assert f.tell() == initial_position

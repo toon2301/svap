@@ -4081,7 +4081,8 @@
     "photoTooLarge": "A fotó túl nagy",
     "maxPhotosLimit": "Legfeljebb 8 fotót adhatsz hozzá",
     "photoUploadFailed": "Nem sikerült feltölteni a fotót",
-    "photosRemaining": "Hátralévő fotók: {count}",
+    "photosRemaining_one": "{count} fotó maradt",
+    "photosRemaining_other": "{count} fotó maradt",
     "invalidPhotoType": "Válassz képfájlt"
   },
   "reviews": {

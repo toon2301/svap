@@ -1,5 +1,8 @@
+from unittest.mock import call, patch
+
 import pytest
 from django.contrib.auth import get_user_model
+from django.db import transaction
 
 from accounts.models import (
     UserType,
@@ -92,3 +95,49 @@ class TestModelsSlugAndNotifications:
         assert str(skill)
         img = OfferedSkillImage(skill=skill, image=None)
         assert str(img)
+
+
+@pytest.mark.django_db(transaction=True)
+def test_offer_image_storage_delete_waits_for_transaction_commit():
+    user = User.objects.create_user(
+        username="storage-delete",
+        email="storage-delete@example.com",
+        password="StrongPass123",
+        is_verified=True,
+    )
+    skill = OfferedSkill.objects.create(
+        user=user,
+        category="KategĂłria",
+        subcategory="PodkategĂłria",
+        description="",
+        detailed_description="",
+        is_seeking=False,
+    )
+    image = OfferedSkillImage.objects.create(
+        skill=skill,
+        image="offers/original.jpg",
+        pending_key="uploads/pending.jpg",
+        approved_key="media/approved.jpg",
+    )
+    image_id = image.pk
+
+    with patch("accounts.signals.default_storage.delete") as delete_mock:
+        with pytest.raises(RuntimeError):
+            with transaction.atomic():
+                image.delete()
+                assert delete_mock.call_count == 0
+                raise RuntimeError("rollback")
+
+        assert delete_mock.call_count == 0
+        assert OfferedSkillImage.objects.filter(pk=image_id).exists()
+
+        image = OfferedSkillImage.objects.get(pk=image_id)
+        with transaction.atomic():
+            image.delete()
+            assert delete_mock.call_count == 0
+
+        assert delete_mock.call_args_list == [
+            call("offers/original.jpg"),
+            call("uploads/pending.jpg"),
+            call("media/approved.jpg"),
+        ]

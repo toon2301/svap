@@ -8,8 +8,10 @@ import { CameraIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { useLanguage } from '@/contexts/LanguageContext';
 import {
   PORTFOLIO_ALLOWED_IMAGE_EXTENSIONS,
+  PORTFOLIO_IMAGE_ACCEPT,
   PORTFOLIO_IMAGE_MAX_BYTES,
   PORTFOLIO_IMAGE_MAX_COUNT,
+  portfolioPhotosRemainingText,
 } from './portfolioFormUtils';
 
 type PortfolioCreatePhotoPickerProps = {
@@ -32,7 +34,6 @@ function fileExtension(file: File): string {
 }
 
 function isSupportedImage(file: File): boolean {
-  if (String(file.type || '').toLowerCase().startsWith('image/')) return true;
   return allowedExtensions.has(fileExtension(file));
 }
 
@@ -159,7 +160,7 @@ export function PortfolioCreatePhotoPicker({
         data-testid="portfolio-create-photo-input"
         type="file"
         multiple
-        accept="image/*,.heic,.heif"
+        accept={PORTFOLIO_IMAGE_ACCEPT}
         className="hidden"
         onChange={handleFileChange}
       />
@@ -170,10 +171,7 @@ export function PortfolioCreatePhotoPicker({
         </p>
       )}
       <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-        {t('portfolio.photosRemaining').replace(
-          '{count}',
-          String(Math.max(0, PORTFOLIO_IMAGE_MAX_COUNT - files.length)),
-        )}
+        {portfolioPhotosRemainingText(t, Math.max(0, PORTFOLIO_IMAGE_MAX_COUNT - files.length))}
       </p>
     </div>
   );

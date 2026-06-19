@@ -248,6 +248,28 @@ describe('ProfilePortfolioSection', () => {
     );
   });
 
+  it('rejects unsupported create photos before portfolio submission', async () => {
+    (api.get as jest.Mock).mockResolvedValue({ data: [] });
+
+    render(<ProfilePortfolioSection activeTab="portfolio" isOtherUserProfile={false} ownerUserId={1} />);
+
+    fireEvent.click(await screen.findByRole('button', { name: /Vytvori/ }));
+    const input = screen.getByTestId('portfolio-create-photo-input');
+    const file = new File(['<svg></svg>'], 'work.svg', { type: 'image/svg+xml' });
+
+    expect(input).toHaveAttribute('accept', '.jpg,.jpeg,.png,.gif,.webp,.heic,.heif');
+
+    fireEvent.change(input, { target: { files: [file] } });
+
+    expect(
+      screen.getByText((content, element) => (
+        element?.tagName.toLowerCase() === 'p' && content.startsWith('Vyber')
+      )),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('img')).not.toBeInTheDocument();
+    expect(api.post).not.toHaveBeenCalled();
+  });
+
   it('shows an error state with retry', async () => {
     (api.get as jest.Mock)
       .mockRejectedValueOnce(new Error('network failed'))

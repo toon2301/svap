@@ -14,6 +14,9 @@ export const PORTFOLIO_ALLOWED_IMAGE_EXTENSIONS = [
   'heic',
   'heif',
 ] as const;
+export const PORTFOLIO_IMAGE_ACCEPT = PORTFOLIO_ALLOWED_IMAGE_EXTENSIONS.map(
+  (extension) => `.${extension}`,
+).join(',');
 
 export const PORTFOLIO_CATEGORY_OPTIONS = [
   'it-a-technologie',
@@ -107,6 +110,14 @@ export function portfolioPayloadFromValues(values: PortfolioFormValues): Portfol
     category: normalized.category,
     description: normalized.description,
   };
+}
+
+export function portfolioPhotosRemainingText(t: Translator, count: number): string {
+  const template =
+    count === 1
+      ? t('portfolio.photosRemaining_one')
+      : t('portfolio.photosRemaining_other');
+  return template.replace('{count}', String(count));
 }
 
 function firstErrorMessage(value: unknown): string | null {

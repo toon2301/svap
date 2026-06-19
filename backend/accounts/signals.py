@@ -1,6 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.core.files.storage import default_storage
-from django.db import DatabaseError
+from django.db import DatabaseError, transaction
 from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
 
@@ -208,7 +208,7 @@ def _delete_offer_image_storage(instance):
 
 @receiver(post_delete, sender=OfferedSkillImage)
 def delete_offer_image_files_after_delete(sender, instance, **kwargs):
-    _delete_offer_image_storage(instance)
+    transaction.on_commit(lambda instance=instance: _delete_offer_image_storage(instance))
 
 
 @receiver(post_save, sender=Review)
