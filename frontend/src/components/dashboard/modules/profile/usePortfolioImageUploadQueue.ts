@@ -30,7 +30,19 @@ type UsePortfolioImageUploadQueueOptions = {
 
 const MAX_PORTFOLIO_IMAGES = 8;
 const MAX_PORTFOLIO_IMAGE_BYTES = 5 * 1024 * 1024;
-const ALLOWED_EXTENSIONS = new Set(['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'heif']);
+export const PORTFOLIO_ALLOWED_IMAGE_EXTENSIONS = [
+  'jpg',
+  'jpeg',
+  'png',
+  'gif',
+  'webp',
+  'heic',
+  'heif',
+] as const;
+export const PORTFOLIO_IMAGE_ACCEPT = PORTFOLIO_ALLOWED_IMAGE_EXTENSIONS
+  .map((extension) => `.${extension}`)
+  .join(',');
+const ALLOWED_EXTENSIONS = new Set<string>(PORTFOLIO_ALLOWED_IMAGE_EXTENSIONS);
 
 function createQueueId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -43,7 +55,6 @@ function fileExtension(file: File): string {
 }
 
 function isSupportedImageFile(file: File): boolean {
-  if (String(file.type || '').toLowerCase().startsWith('image/')) return true;
   return ALLOWED_EXTENSIONS.has(fileExtension(file));
 }
 

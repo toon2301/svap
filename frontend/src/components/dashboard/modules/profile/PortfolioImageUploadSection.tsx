@@ -7,7 +7,10 @@ import { CloudArrowUpIcon } from '@heroicons/react/24/outline';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { PortfolioImage, PortfolioItem } from './portfolioTypes';
 import { PortfolioImageUploadQueue } from './PortfolioImageUploadQueue';
-import { usePortfolioImageUploadQueue } from './usePortfolioImageUploadQueue';
+import {
+  PORTFOLIO_IMAGE_ACCEPT,
+  usePortfolioImageUploadQueue,
+} from './usePortfolioImageUploadQueue';
 
 type PortfolioImageUploadSectionProps = {
   item: PortfolioItem;
@@ -53,6 +56,14 @@ function imagePreviewSrc(image: PortfolioImage): string {
 
 function formatRemaining(template: string, count: number): string {
   return template.replace('{count}', String(count));
+}
+
+function photosRemainingLabel(
+  t: (key: string, fallback?: string) => string,
+  count: number,
+): string {
+  const key = count === 1 ? 'portfolio.photosRemaining_one' : 'portfolio.photosRemaining_other';
+  return formatRemaining(t(key), count);
 }
 
 function statusLabel(
@@ -104,7 +115,7 @@ export function PortfolioImageUploadSection({ item, onRefresh }: PortfolioImageU
             {t('portfolio.uploadPhotos')}
           </h2>
           <p className="mt-1 text-xs font-medium text-gray-500 dark:text-gray-400">
-            {formatRemaining(t('portfolio.photosRemaining'), remainingSlots)}
+            {photosRemainingLabel(t, remainingSlots)}
           </p>
         </div>
 
@@ -113,7 +124,7 @@ export function PortfolioImageUploadSection({ item, onRefresh }: PortfolioImageU
             ref={inputRef}
             type="file"
             multiple
-            accept="image/*,.heic,.heif"
+            accept={PORTFOLIO_IMAGE_ACCEPT}
             className="hidden"
             data-testid="portfolio-upload-input"
             onChange={(event) => {

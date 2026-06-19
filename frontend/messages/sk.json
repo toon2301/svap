@@ -4070,7 +4070,8 @@
     "photoTooLarge": "Fotka je príliš veľká",
     "maxPhotosLimit": "Môžeš pridať maximálne 8 fotiek",
     "photoUploadFailed": "Nepodarilo sa nahrať fotku",
-    "photosRemaining": "Zostáva {count} fotiek",
+    "photosRemaining_one": "Zostáva 1 fotka",
+    "photosRemaining_other": "Zostáva {count} fotiek",
     "invalidPhotoType": "Vyber súbor obrázka"
   },
   "reviews": {

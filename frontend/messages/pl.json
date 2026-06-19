@@ -4070,7 +4070,8 @@
     "photoTooLarge": "Zdjęcie jest zbyt duże",
     "maxPhotosLimit": "Możesz dodać maksymalnie 8 zdjęć",
     "photoUploadFailed": "Nie udało się przesłać zdjęcia",
-    "photosRemaining": "Pozostało zdjęć: {count}",
+    "photosRemaining_one": "Pozostało 1 zdjęcie",
+    "photosRemaining_other": "Pozostało {count} zdjęć",
     "invalidPhotoType": "Wybierz plik obrazu"
   },
   "reviews": {
