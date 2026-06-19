@@ -7,6 +7,11 @@ import {
   uploadPortfolioImageInit,
   uploadPortfolioImageToStorage,
 } from './portfolioApi';
+import {
+  PORTFOLIO_ALLOWED_IMAGE_EXTENSIONS,
+  PORTFOLIO_IMAGE_MAX_BYTES,
+  PORTFOLIO_IMAGE_MAX_COUNT,
+} from './portfolioFormUtils';
 import type { PortfolioImage } from './portfolioTypes';
 
 export type PortfolioUploadStatus = 'queued' | 'uploading' | 'completing' | 'pending' | 'failed';
@@ -28,9 +33,7 @@ type UsePortfolioImageUploadQueueOptions = {
   onRefresh: () => Promise<void> | void;
 };
 
-const MAX_PORTFOLIO_IMAGES = 8;
-const MAX_PORTFOLIO_IMAGE_BYTES = 5 * 1024 * 1024;
-const ALLOWED_EXTENSIONS = new Set(['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'heif']);
+const ALLOWED_EXTENSIONS = new Set<string>(PORTFOLIO_ALLOWED_IMAGE_EXTENSIONS);
 
 function createQueueId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -126,13 +129,14 @@ export function usePortfolioImageUploadQueue({
   }, []);
 
   useEffect(() => {
+    const previewUrls = previewUrlsRef.current;
     return () => {
-      previewUrlsRef.current.forEach((url) => {
+      previewUrls.forEach((url) => {
         if (url && typeof URL !== 'undefined' && typeof URL.revokeObjectURL === 'function') {
           URL.revokeObjectURL(url);
         }
       });
-      previewUrlsRef.current.clear();
+      previewUrls.clear();
     };
   }, []);
 
@@ -157,7 +161,7 @@ export function usePortfolioImageUploadQueue({
     () =>
       Math.max(
         0,
-        MAX_PORTFOLIO_IMAGES -
+        PORTFOLIO_IMAGE_MAX_COUNT -
           adjustedActiveServerCount(activeImageCount, serverImages, items) -
           activeLocalCount(items),
       ),
@@ -229,7 +233,7 @@ export function usePortfolioImageUploadQueue({
       );
       let slotsLeft = Math.max(
         0,
-        MAX_PORTFOLIO_IMAGES - adjustedActiveCount - activeLocalCount(currentItems),
+        PORTFOLIO_IMAGE_MAX_COUNT - adjustedActiveCount - activeLocalCount(currentItems),
       );
       const uploadable: PortfolioUploadQueueItem[] = [];
       const nextItems: PortfolioUploadQueueItem[] = [];
@@ -251,7 +255,7 @@ export function usePortfolioImageUploadQueue({
           return;
         }
 
-        if (file.size > MAX_PORTFOLIO_IMAGE_BYTES) {
+        if (file.size > PORTFOLIO_IMAGE_MAX_BYTES) {
           nextItems.push({
             id,
             file,
@@ -308,7 +312,7 @@ export function usePortfolioImageUploadQueue({
         serverImages,
         itemsRef.current,
       );
-      if (adjustedActiveCount + reservedByOtherItems >= MAX_PORTFOLIO_IMAGES) {
+      if (adjustedActiveCount + reservedByOtherItems >= PORTFOLIO_IMAGE_MAX_COUNT) {
         updateQueueItem(id, { error: t('portfolio.maxPhotosLimit') });
         return;
       }
@@ -336,7 +340,7 @@ export function usePortfolioImageUploadQueue({
   return {
     items,
     remainingSlots,
-    maxImages: MAX_PORTFOLIO_IMAGES,
+    maxImages: PORTFOLIO_IMAGE_MAX_COUNT,
     selectionError,
     pendingImageIds,
     uploadFiles,

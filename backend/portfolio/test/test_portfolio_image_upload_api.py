@@ -15,6 +15,10 @@ User = get_user_model()
     AWS_STORAGE_BUCKET_NAME="test-bucket",
     IMAGE_MAX_SIZE_MB=5,
     ALLOWED_IMAGE_EXTENSIONS=[".jpg", ".jpeg", ".png", ".webp"],
+    # Tieto testy overujú vytvorenie PENDING záznamu a zaradenie spracovania,
+    # nie SafeSearch moderáciu (tá má vlastné testy). Bez vypnutia by complete
+    # view volal reálnu S3 moderáciu → NoCredentialsError.
+    SAFESEARCH_ENABLED=False,
 )
 class PortfolioImageUploadApiTests(APITestCase):
     def setUp(self):

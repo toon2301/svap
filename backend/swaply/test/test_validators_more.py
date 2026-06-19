@@ -77,11 +77,11 @@ def test_url_validator():
 
 def test_bio_validator():
     assert BioValidator.validate_bio(None) is None
+    # Bio je voliteľné a nemá minimálnu dĺžku – krátky text je platný.
+    assert BioValidator.validate_bio("Dev") == "Dev"
+    # Nad limit 150 znakov sa odmietne.
     with pytest.raises(ValidationError):
-        BioValidator.validate_bio("too short")
-    long_bio = "x" * 501
-    with pytest.raises(ValidationError):
-        BioValidator.validate_bio(long_bio)
+        BioValidator.validate_bio("x" * 151)
     assert BioValidator.validate_bio("Toto je platné bio s dostatočnou dĺžkou.")
 
 

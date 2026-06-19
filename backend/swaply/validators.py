@@ -407,6 +407,17 @@ def validate_image_file(value):
         allowed_list = ", ".join(allowed_extensions)
         raise ValidationError(f"Neplatný typ súboru. Povolené sú: {allowed_list}.")
 
+    # Overenie reálneho obsahu (magic bytes) – nestačí prípona ani Content-Type,
+    # ktoré sa dajú sfalšovať (napr. spustiteľný súbor premenovaný na .jpg).
+    # Ak sa hlavička nedá prečítať, kontrola sa preskočí (nezhadzuje validáciu).
+    from .image_signature import read_file_header, sniff_image_format
+
+    header = read_file_header(value)
+    if header is not None and sniff_image_format(header) is None:
+        raise ValidationError(
+            _("Súbor nie je platný obrázok (neznámy alebo poškodený formát).")
+        )
+
     # SafeSearch kontrola – len ak je povolená
     try:
         if getattr(settings, "SAFESEARCH_ENABLED", True):

@@ -124,6 +124,12 @@ function mockSuccessfulUpload(imageId = 55) {
   });
 }
 
+function selectFirstPortfolioCategory() {
+  fireEvent.click(screen.getByLabelText('Kategória'));
+  const listbox = screen.getByRole('listbox', { name: 'Kategória' });
+  fireEvent.click(within(listbox).getAllByRole('option')[0]);
+}
+
 describe('PortfolioDetailModule', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -556,7 +562,7 @@ describe('PortfolioDetailModule', () => {
 
     fireEvent.click(await screen.findByRole('button', { name: 'Upraviť' }));
     fireEvent.change(screen.getByLabelText('Názov'), { target: { value: ' Updated Portfolio ' } });
-    fireEvent.change(screen.getByLabelText('Kategória'), { target: { value: 'it-a-technologie' } });
+    selectFirstPortfolioCategory();
     fireEvent.change(screen.getByLabelText(/Popis/), { target: { value: ' Updated description ' } });
     fireEvent.submit(screen.getByTestId('portfolio-inline-edit-panel'));
 

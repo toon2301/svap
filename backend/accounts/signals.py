@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from django.core.files.storage import default_storage
 from django.db import DatabaseError
 from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
@@ -179,6 +180,35 @@ def invalidate_skills_cache_after_skill_image_change(sender, instance, **kwargs)
     user_id = _owner_id_for_skill_image(instance)
     _invalidate_skills_list_cache_for_user(user_id)
     _invalidate_dashboard_user_skills_cache_for_user(user_id)
+
+
+def _delete_offer_image_storage(instance):
+    """Best-effort zmazanie všetkých storage kľúčov patriacich k obrázku ponuky.
+
+    Pokrýva ImageField súbor (legacy/dev) aj S3 kľúče z asynchrónneho
+    spracovania (pending_key v uploads/, approved_key v media/). Spúšťa sa
+    pri zmazaní jednej fotky, celej karty (CASCADE) aj účtu (CASCADE),
+    aby v storage nezostávali "orphaned" súbory (náklady + GDPR).
+    """
+    image_name = getattr(getattr(instance, "image", None), "name", "") or ""
+    keys = [
+        image_name,
+        getattr(instance, "pending_key", "") or "",
+        getattr(instance, "approved_key", "") or "",
+    ]
+    for key in dict.fromkeys(k.strip() for k in keys):
+        if not key:
+            continue
+        try:
+            default_storage.delete(key)
+        except Exception:
+            # Radšej osamotený súbor než spadnuté mazanie karty/účtu.
+            pass
+
+
+@receiver(post_delete, sender=OfferedSkillImage)
+def delete_offer_image_files_after_delete(sender, instance, **kwargs):
+    _delete_offer_image_storage(instance)
 
 
 @receiver(post_save, sender=Review)

@@ -2,6 +2,18 @@ import type { PortfolioItemPayload } from './portfolioApi';
 
 export const PORTFOLIO_TITLE_MAX_LENGTH = 120;
 export const PORTFOLIO_DESCRIPTION_MAX_LENGTH = 1000;
+export const PORTFOLIO_IMAGE_MAX_COUNT = 8;
+export const PORTFOLIO_IMAGE_MAX_SIZE_MB = 5;
+export const PORTFOLIO_IMAGE_MAX_BYTES = PORTFOLIO_IMAGE_MAX_SIZE_MB * 1024 * 1024;
+export const PORTFOLIO_ALLOWED_IMAGE_EXTENSIONS = [
+  'jpg',
+  'jpeg',
+  'png',
+  'gif',
+  'webp',
+  'heic',
+  'heif',
+] as const;
 
 export const PORTFOLIO_CATEGORY_OPTIONS = [
   'it-a-technologie',

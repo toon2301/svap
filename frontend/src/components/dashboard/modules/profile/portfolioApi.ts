@@ -167,3 +167,20 @@ export async function uploadPortfolioImageComplete(
   );
   return data;
 }
+
+export async function uploadPortfolioImageFile(
+  itemId: number,
+  file: File,
+  onProgress?: (progress: number) => void,
+): Promise<PortfolioImageUploadCompleteResponse> {
+  const upload = await uploadPortfolioImageInit(itemId, {
+    filename: file.name,
+    content_type: file.type || 'application/octet-stream',
+    size_bytes: file.size,
+  });
+  await uploadPortfolioImageToStorage(upload, file, onProgress);
+  return uploadPortfolioImageComplete(itemId, {
+    key: upload.key,
+    filename: file.name,
+  });
+}
