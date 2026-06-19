@@ -19,6 +19,17 @@
       "ports": ["$PORT"]
     },
     {
+      "name": "worker",
+      "rootDirectory": "backend",
+      "buildCommand": "pip install -r requirements.txt",
+      "startCommand": "celery -A swaply worker -l info --concurrency=2",
+      "env": {
+        "DJANGO_SETTINGS_MODULE": "swaply.settings_production",
+        "REDIS_URL": "redis://redis:6379",
+        "RUN_STARTUP_TASKS": "0"
+      }
+    },
+    {
       "name": "frontend",
       "rootDirectory": "frontend",
       "buildCommand": "npm install",
