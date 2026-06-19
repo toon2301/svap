@@ -1,5 +1,6 @@
 import os
 import pytest
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import override_settings
 from unittest.mock import patch
 
@@ -33,3 +34,13 @@ class TestValidateImageFileExtras:
             with patch("swaply.image_moderation.check_image_safety") as check:
                 assert validate_image_file(f) is f
                 check.assert_not_called()
+
+    @override_settings(SAFESEARCH_ENABLED=False)
+    def test_validate_accepts_real_webp_and_keeps_pointer(self):
+        content = b"RIFF\x1a\x00\x00\x00WEBPVP8 " + b"0" * 24
+        f = SimpleUploadedFile("ok.webp", content, content_type="image/webp")
+        f.seek(8)
+        initial_position = f.tell()
+
+        assert validate_image_file(f) is f
+        assert f.tell() == initial_position

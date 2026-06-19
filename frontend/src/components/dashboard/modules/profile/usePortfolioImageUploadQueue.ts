@@ -46,7 +46,6 @@ function fileExtension(file: File): string {
 }
 
 function isSupportedImageFile(file: File): boolean {
-  if (String(file.type || '').toLowerCase().startsWith('image/')) return true;
   return ALLOWED_EXTENSIONS.has(fileExtension(file));
 }
 

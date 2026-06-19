@@ -4081,7 +4081,7 @@
     "photoTooLarge": "Photo is too large",
     "maxPhotosLimit": "You can add up to 8 photos",
     "photoUploadFailed": "Could not upload photo",
-    "photosRemaining_one": "{count} photo remaining",
+    "photosRemaining_one": "1 photo remaining",
     "photosRemaining_other": "{count} photos remaining",
     "invalidPhotoType": "Select an image file"
   },

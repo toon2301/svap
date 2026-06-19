@@ -275,6 +275,7 @@ describe('PortfolioDetailModule', () => {
     render(<PortfolioDetailModule itemId={7} ownerIdentifier="jane-doe" />);
 
     const input = await screen.findByTestId('portfolio-upload-input');
+    expect(input).toHaveAttribute('accept', '.jpg,.jpeg,.png,.gif,.webp,.heic,.heif');
     fireEvent.change(input, {
       target: { files: [imageFile('large.jpg', 'image/jpeg', 5 * 1024 * 1024 + 1)] },
     });
@@ -282,7 +283,7 @@ describe('PortfolioDetailModule', () => {
     expect(await screen.findByText('Fotka je príliš veľká')).toBeInTheDocument();
 
     fireEvent.change(input, {
-      target: { files: [imageFile('notes.txt', 'text/plain')] },
+      target: { files: [imageFile('vector.svg', 'image/svg+xml')] },
     });
 
     expect(await screen.findByText('Vyber súbor obrázka')).toBeInTheDocument();
