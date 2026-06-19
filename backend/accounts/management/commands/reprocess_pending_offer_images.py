@@ -1,6 +1,18 @@
+import argparse
+
 from django.core.management.base import BaseCommand
 
 from accounts.models import OfferedSkillImage
+
+
+def _non_negative_int(value):
+    try:
+        ivalue = int(value)
+    except (TypeError, ValueError):
+        raise argparse.ArgumentTypeError(f"--limit musí byť celé číslo (dostal som {value!r}).")
+    if ivalue < 0:
+        raise argparse.ArgumentTypeError(f"--limit nesmie byť záporné (dostal som {ivalue}).")
+    return ivalue
 
 
 class Command(BaseCommand):
@@ -18,7 +30,7 @@ class Command(BaseCommand):
         )
         parser.add_argument(
             "--limit",
-            type=int,
+            type=_non_negative_int,
             default=0,
             help="Maximálny počet obrázkov na spracovanie (0 = bez limitu).",
         )
@@ -28,13 +40,16 @@ class Command(BaseCommand):
 
         qs = (
             OfferedSkillImage.objects.filter(status=OfferedSkillImage.Status.PENDING)
+            .exclude(pending_key__isnull=True)
             .exclude(pending_key="")
             .order_by("id")
+            .values_list("id", "pending_key")
         )
+        # Whitespace-only kľúče vyfiltrujeme v Pythone (portabilné naprieč Postgres aj sqlite),
+        # aby sme nezadávali úlohy, ktoré task zaručene odmietne s "pending_key missing".
+        ids = [img_id for img_id, pending_key in qs if (pending_key or "").strip()]
         if options["limit"]:
-            qs = qs[: options["limit"]]
-
-        ids = list(qs.values_list("id", flat=True))
+            ids = ids[: options["limit"]]
         self.stdout.write(f"Našiel som {len(ids)} PENDING obrázkov ponúk.")
         if not ids:
             return
@@ -53,11 +68,16 @@ class Command(BaseCommand):
                     failed += 1
                     self.stderr.write(f"  ✗ zlyhalo {img_id}: {result.result!r}")
             else:
-                process_offered_skill_image.delay(img_id)
-                ok += 1
-                self.stdout.write(f"  → zaradené do fronty {img_id}")
+                try:
+                    process_offered_skill_image.delay(img_id)
+                    ok += 1
+                    self.stdout.write(f"  → zaradené do fronty {img_id}")
+                except Exception as exc:
+                    # Napr. nedostupný Celery broker / Redis — nezhadzuj celú dávku.
+                    failed += 1
+                    self.stderr.write(f"  ✗ nepodarilo sa zaradiť {img_id}: {exc!r}")
 
         summary = f"Hotovo. OK={ok}"
-        if sync:
+        if failed:
             summary += f" zlyhalo={failed}"
         self.stdout.write(self.style.SUCCESS(summary))
