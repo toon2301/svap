@@ -297,6 +297,19 @@ class SecurityHeadersMiddleware(MiddlewareMixin):
         return response
 
 
+def _csrf_validation_target(*args, **kwargs):
+    """
+    Zámerne NON-exempt callback pre CsrfViewMiddleware.process_view.
+
+    DRF `@api_view` views sú označené `csrf_exempt=True`, takže keby sme do
+    CsrfViewMiddleware.process_view odovzdali reálny view, validácia by sa
+    PRESKOČILA (kontrolovala by sa len prítomnosť tokenu, nie jeho zhoda).
+    Tento prázdny, ne-exempt callback zabezpečí, že Django CSRF token reálne
+    overí (double-submit: hlavička/forma vs. secret v cookie + Origin check).
+    """
+    return None
+
+
 class EnforceCSRFMiddleware(MiddlewareMixin):
     """
     Middleware, ktorý vynúti CSRF aj pre API volania, ak sú konfigurované tak, aby CSRF vyžadovali.
@@ -337,7 +350,10 @@ class EnforceCSRFMiddleware(MiddlewareMixin):
             if not header_token and not cookie_token:
                 return HttpResponseForbidden("CSRF token missing")
 
+            # DÔLEŽITÉ: odovzdávame _csrf_validation_target (non-exempt), NIE pôvodný
+            # `callback` – ten je u DRF views csrf_exempt a CsrfViewMiddleware by
+            # validáciu preskočil. Takto sa token reálne overí (zhoda + Origin).
             return self._csrf_mw.process_view(
-                request, callback, callback_args, callback_kwargs
+                request, _csrf_validation_target, (), {}
             )
         return None

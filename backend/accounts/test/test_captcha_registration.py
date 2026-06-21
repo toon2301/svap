@@ -29,10 +29,6 @@ class TestCAPTCHARegistration:
             "password": "TestPassword123",
             "password_confirm": "TestPassword123",
             "user_type": "individual",
-            "birth_day": "15",
-            "birth_month": "6",
-            "birth_year": "1990",
-            "gender": "male",
             "captcha_token": "valid_captcha_token",
         }
 
@@ -291,10 +287,6 @@ class TestRegistrationFlow:
             "password": "TestPassword123",
             "password_confirm": "TestPassword123",
             "user_type": "individual",
-            "birth_day": "15",
-            "birth_month": "6",
-            "birth_year": "1990",
-            "gender": "male",
             "captcha_token": "valid_captcha_token",
         }
 

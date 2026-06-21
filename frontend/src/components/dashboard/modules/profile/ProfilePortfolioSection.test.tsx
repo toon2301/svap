@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import ProfilePortfolioSection from './ProfilePortfolioSection';
 import { api } from '@/lib/api';
+import toast from 'react-hot-toast';
 import type { PortfolioItem } from './portfolioTypes';
 
 const mockPush = jest.fn();
@@ -11,12 +12,20 @@ jest.mock('next/navigation', () => ({
   }),
 }));
 
+jest.mock('react-hot-toast', () => ({
+  __esModule: true,
+  default: {
+    error: jest.fn(),
+  },
+}));
+
 jest.mock('@/lib/api', () => ({
   __esModule: true,
   ...jest.requireActual('@/lib/api'),
   api: {
     get: jest.fn(),
     post: jest.fn(),
+    patch: jest.fn(),
   },
 }));
 
@@ -48,6 +57,19 @@ function deferred<T>() {
   return { promise, resolve, reject };
 }
 
+function mockViewport(isMobile: boolean) {
+  (window.matchMedia as jest.Mock).mockImplementation((query: string) => ({
+    matches: query === '(max-width: 1023px)' ? isMobile : false,
+    media: query,
+    onchange: null,
+    addListener: jest.fn(),
+    removeListener: jest.fn(),
+    addEventListener: jest.fn(),
+    removeEventListener: jest.fn(),
+    dispatchEvent: jest.fn(),
+  }));
+}
+
 function selectFirstPortfolioCategory() {
   fireEvent.click(screen.getByLabelText('Kategória'));
   const listbox = screen.getByRole('listbox', { name: 'Kategória' });
@@ -63,8 +85,11 @@ function setPortfolioDescription(value: string) {
 describe('ProfilePortfolioSection', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockViewport(false);
     mockPush.mockClear();
     (api.post as jest.Mock).mockReset();
+    (api.patch as jest.Mock).mockReset();
+    (toast.error as jest.Mock).mockReset();
     Object.defineProperty(URL, 'createObjectURL', {
       writable: true,
       value: jest.fn((file: File) => `blob:${file.name}`),
@@ -154,6 +179,8 @@ describe('ProfilePortfolioSection', () => {
     expect(categoryErrorId).toBeTruthy();
     expect(document.getElementById(categoryErrorId as string)).toHaveTextContent('Kategória je povinná');
     expect(api.post).not.toHaveBeenCalled();
+    expect(toast.error).toHaveBeenCalledWith('Názov je povinný');
+    expect(toast.error).toHaveBeenCalledWith('Kategória je povinná');
   });
 
   it('prevents duplicate create submissions while the request is pending', async () => {
@@ -228,6 +255,7 @@ describe('ProfilePortfolioSection', () => {
     fireEvent.submit(screen.getByTestId('portfolio-create-form'));
 
     expect(await screen.findByText('Forbidden')).toBeInTheDocument();
+    expect(toast.error).toHaveBeenCalledWith('Forbidden');
     expect(mockPush).not.toHaveBeenCalled();
   });
 
@@ -266,6 +294,7 @@ describe('ProfilePortfolioSection', () => {
         element?.tagName.toLowerCase() === 'p' && content.startsWith('Vyber')
       )),
     ).toBeInTheDocument();
+    expect(toast.error).toHaveBeenCalledWith('Vyber súbor obrázka');
     expect(screen.queryByRole('img')).not.toBeInTheDocument();
     expect(api.post).not.toHaveBeenCalled();
   });
@@ -285,7 +314,7 @@ describe('ProfilePortfolioSection', () => {
     expect(api.get).toHaveBeenCalledTimes(2);
   });
 
-  it('renders the first item as featured and the remaining items in the grid', async () => {
+  it('renders the first item as featured and the next two items beside it', async () => {
     (api.get as jest.Mock).mockResolvedValue({
       data: [
         portfolioItem({ id: 1, title: 'First Work' }),
@@ -297,8 +326,73 @@ describe('ProfilePortfolioSection', () => {
     render(<ProfilePortfolioSection activeTab="portfolio" isOtherUserProfile={false} ownerUserId={1} />);
 
     expect(await screen.findByTestId('portfolio-featured-card')).toHaveTextContent('First Work');
-    expect(screen.getByTestId('portfolio-grid')).toBeInTheDocument();
+    expect(screen.getByTestId('portfolio-highlight-side-grid')).toBeInTheDocument();
     expect(screen.getAllByTestId('portfolio-grid-card')).toHaveLength(2);
+  });
+
+  it('reorders portfolio items inline while dragging and keeps the first item featured', async () => {
+    const first = portfolioItem({ id: 1, title: 'First Work', sort_order: 0 });
+    const second = portfolioItem({ id: 2, title: 'Second Work', sort_order: 1, cover_image: null });
+    (api.get as jest.Mock).mockResolvedValue({ data: [first, second] });
+    (api.patch as jest.Mock).mockResolvedValue({
+      data: [
+        { ...second, sort_order: 0, is_featured: true },
+        { ...first, sort_order: 1, is_featured: false },
+      ],
+    });
+
+    render(<ProfilePortfolioSection activeTab="portfolio" isOtherUserProfile={false} ownerUserId={1} />);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Poradie portfólia' }));
+    expect(screen.queryByTestId('portfolio-order-panel')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Uložiť poradie' })).toBeInTheDocument();
+
+    const dataTransfer = {
+      effectAllowed: '',
+      dropEffect: '',
+      setData: jest.fn(),
+      getData: jest.fn(),
+    };
+    fireEvent.dragStart(screen.getByTestId('portfolio-reorder-card-2'), { dataTransfer });
+    fireEvent.dragOver(screen.getByTestId('portfolio-reorder-card-1'), { dataTransfer });
+
+    expect(screen.getByTestId('portfolio-featured-card')).toHaveTextContent('Second Work');
+    fireEvent.dragEnd(screen.getByTestId('portfolio-reorder-card-2'));
+
+    await waitFor(() => {
+      expect(api.patch).toHaveBeenCalledWith('/auth/portfolio/reorder/', {
+        item_ids: [2, 1],
+      });
+    });
+    await waitFor(() => {
+      expect(screen.getByTestId('portfolio-featured-card')).toHaveTextContent('Second Work');
+    });
+  });
+
+  it('keeps the button-based order panel on mobile', async () => {
+    mockViewport(true);
+    (api.get as jest.Mock).mockResolvedValue({
+      data: [
+        portfolioItem({ id: 1, title: 'First Work', sort_order: 0 }),
+        portfolioItem({ id: 2, title: 'Second Work', sort_order: 1, cover_image: null }),
+      ],
+    });
+
+    render(<ProfilePortfolioSection activeTab="portfolio" isOtherUserProfile={false} ownerUserId={1} />);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Poradie portfólia' }));
+
+    expect(await screen.findByTestId('portfolio-order-panel')).toBeInTheDocument();
+    expect(screen.queryByTestId('portfolio-reorder-card-1')).not.toBeInTheDocument();
+  });
+
+  it('does not show portfolio ordering controls to visitors', async () => {
+    (api.get as jest.Mock).mockResolvedValue({ data: [portfolioItem()] });
+
+    render(<ProfilePortfolioSection activeTab="portfolio" isOtherUserProfile ownerUserId={42} />);
+
+    expect(await screen.findByTestId('portfolio-featured-card')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Poradie portfólia' })).not.toBeInTheDocument();
   });
 
   it('uses thumbnail URLs in profile cards instead of large image URLs', async () => {

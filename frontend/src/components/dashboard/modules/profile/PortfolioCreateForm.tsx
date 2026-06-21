@@ -2,6 +2,7 @@
 
 import { useCallback, useId, useState } from 'react';
 import type { FormEvent } from 'react';
+import toast from 'react-hot-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { createPortfolioItem, uploadPortfolioImageFile } from './portfolioApi';
 import type { PortfolioItem } from './portfolioTypes';
@@ -38,6 +39,22 @@ function fieldSummary(value: string, fallback: string): string {
   return trimmed || fallback;
 }
 
+function uniqueMessages(messages: Array<string | undefined>): string[] {
+  const seen = new Set<string>();
+  const unique: string[] = [];
+  messages.forEach((message) => {
+    const trimmed = String(message || '').trim();
+    if (!trimmed || seen.has(trimmed)) return;
+    seen.add(trimmed);
+    unique.push(trimmed);
+  });
+  return unique;
+}
+
+function showPortfolioCreateErrors(messages: Array<string | undefined>): void {
+  uniqueMessages(messages).forEach((message) => toast.error(message));
+}
+
 export function PortfolioCreateForm({ onCancel, onCreated }: PortfolioCreateFormProps) {
   const { t } = useLanguage();
   const fieldId = useId();
@@ -69,6 +86,7 @@ export function PortfolioCreateForm({ onCancel, onCreated }: PortfolioCreateForm
       if (Object.keys(nextErrors).length > 0) {
         setErrors(nextErrors);
         setSubmitError(null);
+        showPortfolioCreateErrors(Object.values(nextErrors));
         return;
       }
 
@@ -85,17 +103,20 @@ export function PortfolioCreateForm({ onCancel, onCreated }: PortfolioCreateForm
         onCreated(created);
       } catch (error) {
         if (created) {
-          setCreatedWithUploadIssue(created);
-          setSubmitError(
-            portfolioErrorMessageFromApi(
-              error,
-              t('portfolio.photoUploadAfterCreateFailed'),
-            ),
+          const message = portfolioErrorMessageFromApi(
+            error,
+            t('portfolio.photoUploadAfterCreateFailed'),
           );
+          setCreatedWithUploadIssue(created);
+          setSubmitError(message);
+          toast.error(message);
           return;
         }
-        setErrors(portfolioFormErrorsFromApi(error));
-        setSubmitError(portfolioErrorMessageFromApi(error, t('portfolio.createFailed')));
+        const fieldErrors = portfolioFormErrorsFromApi(error);
+        const message = portfolioErrorMessageFromApi(error, t('portfolio.createFailed'));
+        setErrors(fieldErrors);
+        setSubmitError(message);
+        showPortfolioCreateErrors([...Object.values(fieldErrors), message]);
       } finally {
         setIsSubmitting(false);
       }
@@ -116,28 +137,25 @@ export function PortfolioCreateForm({ onCancel, onCreated }: PortfolioCreateForm
       >
         <div className="border-t border-gray-200 dark:border-gray-800">
           <div className="border-b border-gray-100 py-4 dark:border-gray-800">
-            <div className="flex items-center">
+            <div className="px-2">
               <label
                 htmlFor={titleInputId}
-                className="w-36 shrink-0 pl-2 pr-3 text-base font-medium text-gray-900 dark:text-white sm:w-40"
+                className="block text-center text-base font-medium text-gray-900 dark:text-white"
               >
                 {t('portfolio.titleLabel')}
               </label>
-              <div className="flex min-w-0 flex-1 items-center pr-2">
-                <div className="mr-3 h-5 w-px shrink-0 bg-gray-300 dark:bg-gray-700" />
-                <input
-                  id={titleInputId}
-                  type="text"
-                  value={values.title}
-                  disabled={isSubmitting || Boolean(createdWithUploadIssue)}
-                  maxLength={PORTFOLIO_TITLE_MAX_LENGTH}
-                  aria-invalid={Boolean(errors.title)}
-                  aria-describedby={errors.title ? titleErrorId : undefined}
-                  placeholder={t('portfolio.titlePlaceholder')}
-                  onChange={(event) => handleChange('title', event.target.value)}
-                  className="min-h-[44px] w-full rounded-xl border border-transparent bg-transparent px-2 text-sm text-gray-900 outline-none transition placeholder:text-gray-500 focus:border-purple-300 focus:bg-white focus:ring-2 focus:ring-purple-400/20 disabled:cursor-not-allowed disabled:opacity-60 dark:text-white dark:placeholder:text-gray-400 dark:focus:border-purple-800 dark:focus:bg-[#101011]"
-                />
-              </div>
+              <input
+                id={titleInputId}
+                type="text"
+                value={values.title}
+                disabled={isSubmitting || Boolean(createdWithUploadIssue)}
+                maxLength={PORTFOLIO_TITLE_MAX_LENGTH}
+                aria-invalid={Boolean(errors.title)}
+                aria-describedby={errors.title ? titleErrorId : undefined}
+                placeholder={t('portfolio.titlePlaceholder')}
+                onChange={(event) => handleChange('title', event.target.value)}
+                className="mt-2 min-h-[44px] w-full rounded-xl border border-gray-300 bg-white px-3 text-sm text-gray-900 outline-none transition placeholder:text-gray-500 focus:border-purple-300 focus:ring-2 focus:ring-purple-400/20 disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:bg-[#101011] dark:text-white dark:placeholder:text-gray-400 dark:focus:border-purple-800"
+              />
             </div>
             {errors.title && (
               <p id={titleErrorId} className="mt-2 pl-2 text-xs font-medium text-red-600 dark:text-red-300">
@@ -147,15 +165,14 @@ export function PortfolioCreateForm({ onCancel, onCreated }: PortfolioCreateForm
           </div>
 
           <div className="border-b border-gray-100 py-4 dark:border-gray-800">
-            <div className="flex items-start">
+            <div className="px-2">
               <label
                 htmlFor={categoryInputId}
-                className="w-36 shrink-0 pl-2 pr-3 pt-3 text-base font-medium text-gray-900 dark:text-white sm:w-40"
+                className="block text-center text-base font-medium text-gray-900 dark:text-white"
               >
                 {t('portfolio.categoryLabel')}
               </label>
-              <div className="flex min-w-0 flex-1 items-start pr-2">
-                <div className="mr-3 mt-3 h-5 w-px shrink-0 bg-gray-300 dark:bg-gray-700" />
+              <div className="mt-2">
                 <PortfolioCategoryPicker
                   buttonId={categoryInputId}
                   value={values.category}
@@ -165,7 +182,6 @@ export function PortfolioCreateForm({ onCancel, onCreated }: PortfolioCreateForm
                   label={t('portfolio.categoryLabel')}
                   placeholder={t('portfolio.categoryPlaceholder')}
                   onChange={(value) => handleChange('category', value)}
-                  buttonClassName="flex min-h-[44px] w-full items-center justify-between gap-3 rounded-xl px-2 text-left text-sm outline-none transition hover:bg-gray-50 focus:ring-2 focus:ring-purple-400/30 disabled:cursor-not-allowed disabled:opacity-60 dark:hover:bg-[#171719]"
                 />
               </div>
             </div>
@@ -194,23 +210,15 @@ export function PortfolioCreateForm({ onCancel, onCreated }: PortfolioCreateForm
           </button>
 
           <div className="border-b border-gray-100 py-4 dark:border-gray-800">
-            <div className="flex items-start">
-              <span className="w-36 shrink-0 pl-2 pr-3 pt-7 text-base font-medium text-gray-900 dark:text-white sm:w-40">
-                {t('portfolio.photosLabel')}
-              </span>
-              <div className="flex min-w-0 flex-1 items-start pr-2">
-                <div className="mr-3 mt-7 h-5 w-px shrink-0 bg-gray-300 dark:bg-gray-700" />
-                <PortfolioCreatePhotoPicker
-                  files={photoFiles}
-                  disabled={isSubmitting || Boolean(createdWithUploadIssue)}
-                  onChange={(files) => {
-                    setPhotoFiles(files);
-                    setSubmitError(null);
-                    setCreatedWithUploadIssue(null);
-                  }}
-                />
-              </div>
-            </div>
+            <PortfolioCreatePhotoPicker
+              files={photoFiles}
+              disabled={isSubmitting || Boolean(createdWithUploadIssue)}
+              onChange={(files) => {
+                setPhotoFiles(files);
+                setSubmitError(null);
+                setCreatedWithUploadIssue(null);
+              }}
+            />
           </div>
         </div>
 

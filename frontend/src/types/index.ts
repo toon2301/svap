@@ -90,9 +90,10 @@ export interface User {
   facebook?: string;
   instagram?: string;
   youtube?: string;
-  gender?: string;
   is_verified: boolean;
   is_public: boolean;
+  /** Či má účet použiteľné heslo (false = OAuth účet bez hesla). */
+  has_password?: boolean;
   is_favorited?: boolean;
   completed_cooperations_count?: number;
   unread_skill_request_count?: number;

@@ -5,54 +5,21 @@ import { StarIcon } from '@heroicons/react/24/outline';
 import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { Review } from './ReviewCard';
+import { resolveReviewsSummary, type ReviewsStats } from './reviewsSummary';
 
 export type ReviewSummaryProps = {
   reviews: Review[];
+  /** Agregát hodnotení z backendu (správny aj pri stránkovaní). */
+  stats?: ReviewsStats | null;
 };
 
-export default function ReviewSummary({ reviews }: ReviewSummaryProps) {
+export default function ReviewSummary({ reviews, stats }: ReviewSummaryProps) {
   const { t } = useLanguage();
 
-  const summary = useMemo(() => {
-    if (reviews.length === 0) {
-      return {
-        averageRating: 0,
-        percentage: 0,
-        breakdown: {
-          5: 0,
-          4: 0,
-          3: 0,
-          2: 0,
-          1: 0,
-        },
-        total: 0,
-      };
-    }
-
-    const breakdown = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
-    let totalRating = 0;
-
-    reviews.forEach((review) => {
-      const rating = Math.round(review.rating * 2) / 2; // Zaokrúhliť na najbližšiu 0.5
-      const rounded = Math.round(rating); // Pre breakdown zaokrúhliť na celé číslo
-      if (rounded >= 5) breakdown[5]++;
-      else if (rounded >= 4) breakdown[4]++;
-      else if (rounded >= 3) breakdown[3]++;
-      else if (rounded >= 2) breakdown[2]++;
-      else breakdown[1]++;
-      totalRating += rating;
-    });
-
-    const averageRating = totalRating / reviews.length;
-    const percentage = Math.round((averageRating / 5) * 100);
-
-    return {
-      averageRating,
-      percentage,
-      breakdown,
-      total: reviews.length,
-    };
-  }, [reviews]);
+  const summary = useMemo(
+    () => resolveReviewsSummary(stats, reviews),
+    [stats, reviews],
+  );
 
   const renderStars = (rating: number) => {
     const stars = [];

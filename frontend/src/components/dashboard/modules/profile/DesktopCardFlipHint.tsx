@@ -4,7 +4,7 @@ export function DesktopCardFlipHint() {
   return (
     <span
       aria-hidden="true"
-      className="desktop-card-flip-hint pointer-events-none absolute left-1/2 top-1/2 z-50 text-white"
+      className="desktop-card-flip-hint pointer-events-none absolute left-1/2 top-1/2 z-50 text-slate-950 drop-shadow-[0_2px_8px_rgba(255,255,255,0.9)] dark:text-white dark:drop-shadow-[0_2px_8px_rgba(0,0,0,0.85)]"
     >
       <svg
         className="desktop-card-flip-hint__icon h-16 w-16"

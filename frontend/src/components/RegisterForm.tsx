@@ -7,8 +7,6 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import AccountTypeSelect from './register/AccountTypeSelect';
 import CredentialsSection from './register/CredentialsSection';
 import PasswordSection from './register/PasswordSection';
-import BirthGenderSection from './register/BirthGenderSection';
-import CompanySection from './register/CompanySection';
 import { useRegisterForm } from './register/useRegisterForm';
 // import { logMobileDebugInfo, checkNetworkConnectivity } from '@/utils/mobileDebug';
 
@@ -19,7 +17,6 @@ export default function RegisterForm() {
   const { t } = useLanguage();
   const {
     formData,
-    setFormData,
     errors,
     isLoading,
     showPassword,
@@ -151,30 +148,6 @@ export default function RegisterForm() {
                 onChange={handleInputChange as any}
                 onKeyDown={handleKeyDown as any}
               />
-
-              {/* Dátum narodenia a pohlavie - len pre jednotlivcov */}
-              {formData.user_type === 'individual' && (
-              <BirthGenderSection
-                t={t}
-                birthDay={formData.birth_day}
-                birthMonth={formData.birth_month}
-                birthYear={formData.birth_year}
-                gender={formData.gender}
-                errors={errors}
-                onDateChange={(e) => {
-                    const dateValue = e.target.value;
-                    if (dateValue) {
-                      const [year, month, day] = dateValue.split('-');
-                    setFormData(prev => ({ ...prev, birth_year: year, birth_month: month, birth_day: day }));
-                    } else {
-                    setFormData(prev => ({ ...prev, birth_year: '', birth_month: '', birth_day: '' }));
-                  }
-                }}
-                onKeyDown={handleKeyDown as any}
-                onGenderChange={handleInputChange as any}
-                bindSelectHandlers={{ onTouchStart: handleTouchStart as any, onTouchEnd: handleTouchEnd as any, onFocus: handleSelectFocus, onBlur: handleSelectBlur }}
-                />
-              )}
 
               {/* Submit button */}
               <motion.button

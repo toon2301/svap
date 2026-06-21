@@ -15,7 +15,41 @@ import { ProfileOpeningHoursMobileModal } from '../profile/ProfileOpeningHoursMo
 import { OfferReviewsDesktop } from './OfferReviewsDesktop';
 import { OfferReviewsMobile } from './OfferReviewsMobile';
 import type { Review } from './ReviewCard';
+import type { ReviewsStats } from './reviewsSummary';
 import { invalidateOffersCache } from '../profile/profileOffersCache';
+
+const REVIEWS_PAGE_SIZE = 10;
+
+type ReviewsApiResponse = {
+  results?: Review[];
+  total?: number;
+  page?: number;
+  page_size?: number;
+  total_pages?: number;
+  stats?: { average?: number; breakdown?: Record<string, number> };
+};
+
+async function fetchReviewsPage(offerId: number, page: number): Promise<ReviewsApiResponse> {
+  const { data } = await api.get<ReviewsApiResponse>(endpoints.reviews.list(offerId), {
+    params: { page, page_size: REVIEWS_PAGE_SIZE },
+  });
+  return data;
+}
+
+function normalizeReviewsStats(data: ReviewsApiResponse): ReviewsStats {
+  const b = data.stats?.breakdown ?? {};
+  return {
+    total: Number(data.total) || 0,
+    average: Number(data.stats?.average) || 0,
+    breakdown: {
+      1: Number(b['1'] ?? 0),
+      2: Number(b['2'] ?? 0),
+      3: Number(b['3'] ?? 0),
+      4: Number(b['4'] ?? 0),
+      5: Number(b['5'] ?? 0),
+    },
+  };
+}
 
 type OfferOwnerLike = {
   id?: number;
@@ -109,6 +143,10 @@ export default function OfferReviewsView({
   const [loading, setLoading] = useState(false);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState(false);
+  const [reviewsStats, setReviewsStats] = useState<ReviewsStats | null>(null);
+  const [reviewsPage, setReviewsPage] = useState(1);
+  const [reviewsTotalPages, setReviewsTotalPages] = useState(1);
+  const [loadingMoreReviews, setLoadingMoreReviews] = useState(false);
   const [isAddReviewModalOpen, setIsAddReviewModalOpen] = useState(false);
   const [isHoursModalOpen, setIsHoursModalOpen] = useState(false);
   const [reviewToEdit, setReviewToEdit] = useState<Review | null>(null);
@@ -144,17 +182,27 @@ export default function OfferReviewsView({
   useEffect(() => {
     if (offerId == null) {
       setReviews([]);
+      setReviewsStats(null);
+      setReviewsPage(1);
+      setReviewsTotalPages(1);
       return;
     }
     let cancelled = false;
     setReviewsLoading(true);
-    api
-      .get<Review[]>(endpoints.reviews.list(offerId))
-      .then(({ data }) => {
-        if (!cancelled) setReviews(data);
+    fetchReviewsPage(offerId, 1)
+      .then((data) => {
+        if (cancelled) return;
+        setReviews(Array.isArray(data.results) ? data.results : []);
+        setReviewsStats(normalizeReviewsStats(data));
+        setReviewsPage(data.page || 1);
+        setReviewsTotalPages(data.total_pages || 1);
       })
       .catch(() => {
-        if (!cancelled) setReviews([]);
+        if (cancelled) return;
+        setReviews([]);
+        setReviewsStats(null);
+        setReviewsPage(1);
+        setReviewsTotalPages(1);
       })
       .finally(() => {
         if (!cancelled) setReviewsLoading(false);
@@ -163,6 +211,44 @@ export default function OfferReviewsView({
       cancelled = true;
     };
   }, [offerId]);
+
+  const hasMoreReviews = reviewsPage < reviewsTotalPages;
+
+  // Donačítanie ďalšej strany – NOVÉ recenzie sa pripoja k existujúcim.
+  const handleLoadMoreReviews = async () => {
+    if (offerId == null || loadingMoreReviews || !hasMoreReviews) return;
+    const nextPage = reviewsPage + 1;
+    setLoadingMoreReviews(true);
+    try {
+      const data = await fetchReviewsPage(offerId, nextPage);
+      const incoming = Array.isArray(data.results) ? data.results : [];
+      setReviews((prev) => {
+        const seen = new Set(prev.map((r) => r.id));
+        return [...prev, ...incoming.filter((r) => !seen.has(r.id))];
+      });
+      setReviewsStats(normalizeReviewsStats(data));
+      setReviewsPage(data.page || nextPage);
+      setReviewsTotalPages(data.total_pages || reviewsTotalPages);
+    } catch (error: any) {
+      alert(
+        error?.response?.data?.error ||
+          error?.message ||
+          t('reviews.loadMoreError', 'Nepodarilo sa načítať ďalšie recenzie.'),
+      );
+    } finally {
+      setLoadingMoreReviews(false);
+    }
+  };
+
+  // Po pridaní/úprave/zmazaní recenzie načítaj zoznam odznova od 1. strany.
+  const reloadReviews = async () => {
+    if (offerId == null) return;
+    const data = await fetchReviewsPage(offerId, 1);
+    setReviews(Array.isArray(data.results) ? data.results : []);
+    setReviewsStats(normalizeReviewsStats(data));
+    setReviewsPage(data.page || 1);
+    setReviewsTotalPages(data.total_pages || 1);
+  };
 
   const isBusinessOwner = useMemo(() => {
     if (!offer || !user) return false;
@@ -307,6 +393,10 @@ export default function OfferReviewsView({
           loading={loading}
           reviews={reviews}
           reviewsLoading={reviewsLoading}
+          reviewsStats={reviewsStats}
+          hasMoreReviews={hasMoreReviews}
+          loadingMoreReviews={loadingMoreReviews}
+          onLoadMoreReviews={handleLoadMoreReviews}
           isOwnOffer={isOwnOffer}
           isBusinessOwner={isBusinessOwner}
           can_review={can_review}
@@ -351,6 +441,10 @@ export default function OfferReviewsView({
           loading={loading}
           reviews={reviews}
           reviewsLoading={reviewsLoading}
+          reviewsStats={reviewsStats}
+          hasMoreReviews={hasMoreReviews}
+          loadingMoreReviews={loadingMoreReviews}
+          onLoadMoreReviews={handleLoadMoreReviews}
           isOwnOffer={isOwnOffer}
           isBusinessOwner={isBusinessOwner}
           can_review={can_review}
@@ -398,8 +492,7 @@ export default function OfferReviewsView({
           setIsDeletingReview(true);
           try {
             await api.delete(endpoints.reviews.detail(reviewIdToDelete));
-            const { data } = await api.get<Review[]>(endpoints.reviews.list(offerId));
-            setReviews(data);
+            await reloadReviews();
             setOffer((prev) =>
               prev ? { ...prev, already_reviewed: false, can_review: true } : prev,
             );
@@ -458,9 +551,8 @@ export default function OfferReviewsView({
               });
             }
             
-            // Obnoviť zoznam recenzií
-            const { data } = await api.get<Review[]>(endpoints.reviews.list(offerId));
-            setReviews(data);
+            // Obnoviť zoznam recenzií (od 1. strany)
+            await reloadReviews();
             if (!reviewToEdit) {
               setOffer((prev) =>
                 prev ? { ...prev, already_reviewed: true, can_review: false } : prev,

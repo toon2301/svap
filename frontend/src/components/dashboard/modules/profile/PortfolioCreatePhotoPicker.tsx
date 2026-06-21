@@ -5,6 +5,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { ChangeEvent } from 'react';
 import { CameraIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import toast from 'react-hot-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
 import {
   PORTFOLIO_ALLOWED_IMAGE_EXTENSIONS,
@@ -103,6 +104,9 @@ export function PortfolioCreatePhotoPicker({
       onChange([...files, ...accepted]);
     }
     setSelectionError(nextError);
+    if (nextError) {
+      toast.error(nextError);
+    }
   };
 
   const removeFileAt = (index: number) => {
@@ -114,46 +118,59 @@ export function PortfolioCreatePhotoPicker({
 
   return (
     <div className="w-full">
-      <div className="flex flex-wrap gap-3">
-        {!isLimitReached && (
-          <button
-            type="button"
-            disabled={disabled}
-            onClick={() => inputRef.current?.click()}
-            className="flex h-20 w-20 items-center justify-center rounded-lg border border-dashed border-gray-300 text-gray-500 transition hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-400/50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-900/40"
-            aria-label={t('portfolio.selectPhotos')}
-          >
-            <CameraIcon className="h-7 w-7" aria-hidden="true" />
-          </button>
-        )}
-        {previews.map((preview, index) => (
-          <div
-            key={`${preview.file.name}-${preview.file.size}-${index}`}
-            className="relative h-20 w-20 overflow-hidden rounded-lg border border-gray-300 bg-gray-100 dark:border-gray-700 dark:bg-[#101011]"
-          >
-            {preview.url ? (
-              <img
-                src={preview.url}
-                alt={`${t('portfolio.photoPreview')} ${index + 1}`}
-                className="h-full w-full object-cover"
-              />
-            ) : (
-              <div className="flex h-full w-full items-center justify-center px-2 text-center text-xs text-gray-500 dark:text-gray-400">
-                {preview.file.name}
-              </div>
+      <div className="flex items-start">
+        <span className="w-36 shrink-0 pl-2 pr-3 pt-7 text-base font-medium text-gray-900 dark:text-white sm:w-40">
+          {t('portfolio.photosLabel')}
+        </span>
+        <div className="flex min-w-0 flex-1 items-start pr-2">
+          <div className="mr-3 mt-7 h-5 w-px shrink-0 bg-gray-300 dark:bg-gray-700" />
+          <div className="w-full">
+            {!isLimitReached && (
+              <button
+                type="button"
+                disabled={disabled}
+                onClick={() => inputRef.current?.click()}
+                className="flex h-20 w-20 items-center justify-center rounded-lg border border-dashed border-gray-300 text-gray-500 transition hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-400/50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-900/40"
+                aria-label={t('portfolio.selectPhotos')}
+              >
+                <CameraIcon className="h-7 w-7" aria-hidden="true" />
+              </button>
             )}
-            <button
-              type="button"
-              disabled={disabled}
-              onClick={() => removeFileAt(index)}
-              className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/65 text-white transition hover:bg-black/80 disabled:cursor-not-allowed disabled:opacity-60"
-              aria-label={t('portfolio.removePhoto')}
-            >
-              <XMarkIcon className="h-3.5 w-3.5" aria-hidden="true" />
-            </button>
           </div>
-        ))}
+        </div>
       </div>
+
+      {previews.length > 0 && (
+        <div className="mt-3 flex flex-wrap gap-3 px-2">
+          {previews.map((preview, index) => (
+            <div
+              key={`${preview.file.name}-${preview.file.size}-${index}`}
+              className="relative h-20 w-20 overflow-hidden rounded-lg border border-gray-300 bg-gray-100 dark:border-gray-700 dark:bg-[#101011]"
+            >
+              {preview.url ? (
+                <img
+                  src={preview.url}
+                  alt={`${t('portfolio.photoPreview')} ${index + 1}`}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center px-2 text-center text-xs text-gray-500 dark:text-gray-400">
+                  {preview.file.name}
+                </div>
+              )}
+              <button
+                type="button"
+                disabled={disabled}
+                onClick={() => removeFileAt(index)}
+                className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/65 text-white transition hover:bg-black/80 disabled:cursor-not-allowed disabled:opacity-60"
+                aria-label={t('portfolio.removePhoto')}
+              >
+                <XMarkIcon className="h-3.5 w-3.5" aria-hidden="true" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
 
       <input
         ref={inputRef}
@@ -166,11 +183,11 @@ export function PortfolioCreatePhotoPicker({
       />
 
       {selectionError && (
-        <p className="mt-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/20 dark:text-amber-200">
+        <p className="mx-2 mt-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/20 dark:text-amber-200">
           {selectionError}
         </p>
       )}
-      <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+      <p className="mt-2 px-2 text-xs text-gray-500 dark:text-gray-400">
         {portfolioPhotosRemainingText(t, Math.max(0, PORTFOLIO_IMAGE_MAX_COUNT - files.length))}
       </p>
     </div>

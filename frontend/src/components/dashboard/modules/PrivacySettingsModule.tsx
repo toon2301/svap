@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import type { User } from '../../../types';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { api } from '../../../lib/api';
+import DeleteAccountSection from './settings/DeleteAccountSection';
 
 interface PrivacySettingsModuleProps {
   user: User;
@@ -162,6 +163,9 @@ export default function PrivacySettingsModule({ user, onUserUpdate }: PrivacySet
               </div>
             </div>
           </div>
+
+          {/* GDPR – Danger zone: zmazanie účtu */}
+          <DeleteAccountSection user={user} />
         </div>
       </div>
 

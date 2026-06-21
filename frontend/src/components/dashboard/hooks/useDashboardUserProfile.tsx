@@ -18,6 +18,7 @@ export interface DashboardUserProfileProps {
   setViewedUserSlug: (slug: string | null) => void;
   viewedUserSummary: SearchUserResult | null;
   setViewedUserSummary: (summary: SearchUserResult | null) => void;
+  viewedUserNotFound: boolean;
   initialRightItemAppliedRef: React.MutableRefObject<boolean>;
 }
 
@@ -48,6 +49,8 @@ export function useDashboardUserProfile({
   const [viewedUserId, setViewedUserId] = useState<number | null>(null);
   const [viewedUserSlug, setViewedUserSlug] = useState<string | null>(null);
   const [viewedUserSummary, setViewedUserSummary] = useState<SearchUserResult | null>(null);
+  // True ak slug profil neexistuje (404 – napr. zmazaný/anonymizovaný účet).
+  const [viewedUserNotFound, setViewedUserNotFound] = useState(false);
   const initialRightItemAppliedRef = useRef(false);
 
   const {
@@ -60,6 +63,8 @@ export function useDashboardUserProfile({
 
   // Inicializácia profilu podľa slug alebo ID
   useEffect(() => {
+    // Nová navigácia → vyresetuj "not found" stav.
+    setViewedUserNotFound(false);
     // Priorita: ak máme initialViewedUserId, použiť ho
     if (initialViewedUserId) {
       setViewedUserId(initialViewedUserId);
@@ -100,8 +105,10 @@ export function useDashboardUserProfile({
         // Ak je 404, slug neexistuje (používateľ zmenil meno alebo slug sa nezmenil)
         // Tichá chyba - downstream komponenty zobrazia user-friendly hlášku
         if (error?.response?.status === 404) {
-          // Slug neexistuje - môže to byť starý slug po zmene mena
-          // Nezobrazovať chybu v konzole, len ticho ignorovať
+          // Slug neexistuje (starý slug po zmene mena, alebo zmazaný/anonymizovaný
+          // účet). Označ "not found", nech UI ukáže hlášku namiesto nekonečného
+          // "Načítavam profil...".
+          if (!cancelled) setViewedUserNotFound(true);
           console.debug(`User with slug "${initialProfileSlug}" not found`);
         }
         // Iné chyby riešia downstream komponenty (napr. jemná hláška v UI)
@@ -356,6 +363,7 @@ export function useDashboardUserProfile({
     setViewedUserSlug,
     viewedUserSummary,
     setViewedUserSummary,
+    viewedUserNotFound,
     initialRightItemAppliedRef,
   };
 }

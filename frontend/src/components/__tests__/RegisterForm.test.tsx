@@ -47,7 +47,7 @@ describe('RegisterForm', () => {
   });
 
   it('renders registration form correctly', () => {
-    const { container } = render(<RegisterForm />);
+    render(<RegisterForm />);
     
     expect(screen.getByText('Registrácia')).toBeInTheDocument();
     expect(screen.getByLabelText('Používateľské meno *')).toBeInTheDocument();
@@ -112,25 +112,6 @@ describe('RegisterForm', () => {
     await waitFor(() => {
       expect(screen.getByText('Heslá sa nezhodujú')).toBeInTheDocument();
     });
-  });
-
-  it('validates birth date', async () => {
-    const { container } = render(<RegisterForm />);
-    const submitButton = screen.getByRole('button', { name: 'Registrovať sa' });
-    const birth = container.querySelector('#birth_date') as HTMLInputElement;
-    // Neplatný deň – nastav 1990-06-32 (pre input sa zapíše ako string, validátor si to rozloží)
-    fireEvent.change(birth, { target: { value: '1990-06-32' } });
-    fireEvent.click(submitButton);
-    expect(mockApiPost).not.toHaveBeenCalled();
-  });
-
-  it('validates age requirement', async () => {
-    const { container } = render(<RegisterForm />);
-    const submitButton = screen.getByRole('button', { name: 'Registrovať sa' });
-    const birth = container.querySelector('#birth_date') as HTMLInputElement;
-    fireEvent.change(birth, { target: { value: '2020-06-15' } }); // Príliš mladý
-    fireEvent.click(submitButton);
-    expect(mockApiPost).not.toHaveBeenCalled();
   });
 
   it('shows company fields when company type is selected', async () => {

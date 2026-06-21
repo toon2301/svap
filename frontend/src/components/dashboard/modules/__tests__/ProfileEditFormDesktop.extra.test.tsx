@@ -29,18 +29,21 @@ const baseUser: User = {
   phone_visible: false,
   job_title: '',
   job_title_visible: false,
-  gender: '',
 };
 
 describe('ProfileEditFormDesktop extra coverage', () => {
   beforeEach(() => jest.clearAllMocks());
 
   it('saves location and phone, toggles visibility and website', async () => {
-    const { api } = require('@/lib/api');
-    (api.patch as jest.Mock).mockResolvedValue({ data: { user: baseUser } });
-    const onUserUpdate = jest.fn();
+    const onEditableUserUpdate = jest.fn();
 
-    render(<ProfileEditFormDesktop user={baseUser} onUserUpdate={onUserUpdate} />);
+    render(
+      <ProfileEditFormDesktop
+        user={baseUser}
+        editableUser={baseUser}
+        onEditableUserUpdate={onEditableUserUpdate}
+      />,
+    );
 
     // Najprv okres
     const districtInput = screen.getByPlaceholderText('Zadaj okres') as HTMLInputElement;
@@ -60,16 +63,15 @@ describe('ProfileEditFormDesktop extra coverage', () => {
     const contactToggle = contactSection.querySelector('button.relative.inline-flex') as HTMLButtonElement;
     fireEvent.click(contactToggle);
 
-    const websiteInput = screen.getByPlaceholderText('https://example.com') as HTMLInputElement;
+    const websiteInput = screen.getByPlaceholderText('example.com') as HTMLInputElement;
     fireEvent.change(websiteInput, { target: { value: 'https://a.example' } });
     fireEvent.keyDown(websiteInput, { key: 'Enter' });
 
     await waitFor(() => {
-      expect(api.patch).toHaveBeenCalledWith('/auth/profile/', { location: 'Bratislava', district: 'Nitra' });
-      expect(api.patch).toHaveBeenCalledWith('/auth/profile/', { phone: '+421900000000' });
-      expect(api.patch).toHaveBeenCalledWith('/auth/profile/', { phone_visible: true });
-      expect(api.patch).toHaveBeenCalledWith('/auth/profile/', { website: 'https://a.example' });
-      expect(onUserUpdate).toHaveBeenCalled();
+      expect(onEditableUserUpdate).toHaveBeenCalledWith({ location: 'Bratislava', district: 'Nitra' });
+      expect(onEditableUserUpdate).toHaveBeenCalledWith({ phone: '+421900000000' });
+      expect(onEditableUserUpdate).toHaveBeenCalledWith({ phone_visible: true });
+      expect(onEditableUserUpdate).toHaveBeenCalledWith({ website: 'https://a.example' });
     });
   });
 });

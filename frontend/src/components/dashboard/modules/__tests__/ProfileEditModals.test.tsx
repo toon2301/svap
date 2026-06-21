@@ -37,7 +37,6 @@ function renderModals(partial: Partial<React.ComponentProps<typeof ProfileEditMo
     isInstagramModalOpen: false,
     isFacebookModalOpen: false,
     isLinkedinModalOpen: false,
-    isGenderModalOpen: false,
     firstName: '',
     lastName: '',
     bio: '',
@@ -51,7 +50,6 @@ function renderModals(partial: Partial<React.ComponentProps<typeof ProfileEditMo
     instagram: '',
     facebook: '',
     linkedin: '',
-    gender: '',
     originalFirstName: '',
     originalLastName: '',
     originalBio: '',
@@ -65,7 +63,6 @@ function renderModals(partial: Partial<React.ComponentProps<typeof ProfileEditMo
     originalInstagram: '',
     originalFacebook: '',
     originalLinkedin: '',
-    originalGender: '',
     setFirstName: jest.fn(),
     setLastName: jest.fn(),
     setBio: jest.fn(),
@@ -79,7 +76,6 @@ function renderModals(partial: Partial<React.ComponentProps<typeof ProfileEditMo
     setInstagram: jest.fn(),
     setFacebook: jest.fn(),
     setLinkedin: jest.fn(),
-    setGender: jest.fn(),
     setOriginalFirstName: jest.fn(),
     setOriginalLastName: jest.fn(),
     setOriginalBio: jest.fn(),
@@ -93,7 +89,6 @@ function renderModals(partial: Partial<React.ComponentProps<typeof ProfileEditMo
     setOriginalInstagram: jest.fn(),
     setOriginalFacebook: jest.fn(),
     setOriginalLinkedin: jest.fn(),
-    setOriginalGender: jest.fn(),
     setIsNameModalOpen: jest.fn(),
     setIsBioModalOpen: jest.fn(),
     setIsLocationModalOpen: jest.fn(),
@@ -103,7 +98,6 @@ function renderModals(partial: Partial<React.ComponentProps<typeof ProfileEditMo
     setIsInstagramModalOpen: jest.fn(),
     setIsFacebookModalOpen: jest.fn(),
     setIsLinkedinModalOpen: jest.fn(),
-    setIsGenderModalOpen: jest.fn(),
   } as any;
   return render(<ProfileEditModals {...defaults} {...partial} />);
 }
@@ -132,7 +126,11 @@ describe('ProfileEditModals', () => {
     fireEvent.click(buttons[buttons.length - 1]);
 
     await waitFor(() => {
-      expect(api.patch).toHaveBeenCalledWith('/auth/profile/', { first_name: 'A', last_name: 'B' });
+      expect(api.patch).toHaveBeenCalledWith('/auth/profile/', {
+        first_name: 'A',
+        last_name: 'B',
+        company_name: '',
+      });
       expect(setOriginalFirstName).toHaveBeenCalledWith('A');
       expect(setOriginalLastName).toHaveBeenCalledWith('B');
       expect(setIsNameModalOpen).toHaveBeenCalledWith(false);

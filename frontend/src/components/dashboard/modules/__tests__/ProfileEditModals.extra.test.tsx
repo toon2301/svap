@@ -37,7 +37,6 @@ function defaults() {
     isInstagramModalOpen: false,
     isFacebookModalOpen: false,
     isLinkedinModalOpen: false,
-    isGenderModalOpen: false,
     firstName: '',
     lastName: '',
     bio: '',
@@ -50,7 +49,6 @@ function defaults() {
     instagram: '',
     facebook: '',
     linkedin: '',
-    gender: '',
     originalFirstName: '',
     originalLastName: '',
     originalBio: '',
@@ -63,7 +61,6 @@ function defaults() {
     originalInstagram: '',
     originalFacebook: '',
     originalLinkedin: '',
-    originalGender: '',
     setFirstName: jest.fn(),
     setLastName: jest.fn(),
     setBio: jest.fn(),
@@ -76,7 +73,6 @@ function defaults() {
     setInstagram: jest.fn(),
     setFacebook: jest.fn(),
     setLinkedin: jest.fn(),
-    setGender: jest.fn(),
     setOriginalFirstName: jest.fn(),
     setOriginalLastName: jest.fn(),
     setOriginalBio: jest.fn(),
@@ -89,7 +85,6 @@ function defaults() {
     setOriginalInstagram: jest.fn(),
     setOriginalFacebook: jest.fn(),
     setOriginalLinkedin: jest.fn(),
-    setOriginalGender: jest.fn(),
     setIsNameModalOpen: jest.fn(),
     setIsBioModalOpen: jest.fn(),
     setIsLocationModalOpen: jest.fn(),
@@ -99,7 +94,6 @@ function defaults() {
     setIsInstagramModalOpen: jest.fn(),
     setIsFacebookModalOpen: jest.fn(),
     setIsLinkedinModalOpen: jest.fn(),
-    setIsGenderModalOpen: jest.fn(),
   } as any;
 }
 

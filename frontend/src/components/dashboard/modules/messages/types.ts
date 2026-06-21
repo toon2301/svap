@@ -4,6 +4,8 @@ export type MessagingUserBrief = {
   slug?: string | null;
   user_type?: string | null;
   avatar_url?: string | null;
+  /** Účet bol anonymizovaný (zmazaný) – zobraz "Zmazaný používateľ". */
+  is_deleted?: boolean;
 };
 
 export type GroupMemberCandidate = MessagingUserBrief & {

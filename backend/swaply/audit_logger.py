@@ -18,8 +18,6 @@ _PII_DETAIL_KEYS = {
     "phone",
     "contact_email",
     "ico",
-    "birth_date",
-    "gender",
     "access",
     "refresh",
     "access_token",

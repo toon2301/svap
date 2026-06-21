@@ -180,7 +180,6 @@ describe('NotificationSettingsModule', () => {
             : false,
       },
     }));
-    api.delete.mockResolvedValue({ data: { ok: true, deleted: true } });
 
     setupPushBrowser();
   });
@@ -313,19 +312,22 @@ describe('NotificationSettingsModule', () => {
       expect(api.patch).toHaveBeenCalledWith('/auth/push/preferences/', {
         push_notifications: false,
       });
-      expect(api.delete).toHaveBeenCalledWith(
+      // POST (nie DELETE): telo nesie subscription endpoint URL, DELETE s telom
+      // je v prehliadačoch nespoľahlivé.
+      expect(api.post).toHaveBeenCalledWith(
         '/auth/push/subscriptions/current/',
         {
-          data: {
-            endpoint: 'https://push.example.com/subscription/current',
-          },
+          endpoint: 'https://push.example.com/subscription/current',
         },
       );
       expect(existingSubscription.unsubscribe).toHaveBeenCalledTimes(1);
     });
 
+    const unsubscribeCallIndex = api.post.mock.calls.findIndex(
+      (call: unknown[]) => call[0] === '/auth/push/subscriptions/current/',
+    );
     expect(api.patch.mock.invocationCallOrder[0]).toBeLessThan(
-      api.delete.mock.invocationCallOrder[0],
+      api.post.mock.invocationCallOrder[unsubscribeCallIndex],
     );
   });
 });

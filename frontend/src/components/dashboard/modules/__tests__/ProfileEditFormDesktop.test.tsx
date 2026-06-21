@@ -30,11 +30,15 @@ describe('ProfileEditFormDesktop', () => {
   beforeEach(() => jest.clearAllMocks());
 
   it('renders heading and saves full name on Enter', async () => {
-    const { api } = require('@/lib/api');
-    const onUserUpdate = jest.fn();
-    (api.patch as jest.Mock).mockResolvedValue({ data: { user: { ...baseUser, first_name: 'Nové', last_name: 'Meno' } } });
+    const onEditableUserUpdate = jest.fn();
 
-    render(<ProfileEditFormDesktop user={baseUser} onUserUpdate={onUserUpdate} />);
+    render(
+      <ProfileEditFormDesktop
+        user={baseUser}
+        editableUser={baseUser}
+        onEditableUserUpdate={onEditableUserUpdate}
+      />,
+    );
 
     expect(screen.getByText('Upraviť profil')).toBeInTheDocument();
 
@@ -43,33 +47,42 @@ describe('ProfileEditFormDesktop', () => {
     fireEvent.keyDown(fullName, { key: 'Enter' });
 
     await waitFor(() => {
-      expect(api.patch).toHaveBeenCalledWith('/auth/profile/', { first_name: 'Nové', last_name: 'Meno' });
-      expect(onUserUpdate).toHaveBeenCalled();
+      expect(onEditableUserUpdate).toHaveBeenCalledWith({
+        first_name: 'Nové',
+        last_name: 'Meno',
+        company_name: '',
+      });
     });
   });
 
-  it('saves bio on blur and gender on change', async () => {
-    const { api } = require('@/lib/api');
-    const onUserUpdate = jest.fn();
-    (api.patch as jest.Mock).mockResolvedValue({ data: { user: { ...baseUser, bio: 'Ahoj', gender: 'male' } } });
+  it('saves bio on blur', async () => {
+    const onEditableUserUpdate = jest.fn();
 
-    render(<ProfileEditFormDesktop user={baseUser} onUserUpdate={onUserUpdate} />);
+    render(
+      <ProfileEditFormDesktop
+        user={baseUser}
+        editableUser={baseUser}
+        onEditableUserUpdate={onEditableUserUpdate}
+      />,
+    );
 
     const bio = screen.getByPlaceholderText('Napíšte niečo o sebe...') as HTMLTextAreaElement;
     fireEvent.change(bio, { target: { value: 'Ahoj' } });
     fireEvent.blur(bio);
 
-    const gender = screen.getByDisplayValue('Vyberte pohlavie') as HTMLSelectElement;
-    fireEvent.change(gender, { target: { value: 'male' } });
-
     await waitFor(() => {
-      expect(api.patch).toHaveBeenCalledWith('/auth/profile/', { bio: 'Ahoj' });
-      expect(api.patch).toHaveBeenCalledWith('/auth/profile/', { gender: 'male' });
+      expect(onEditableUserUpdate).toHaveBeenCalledWith({ bio: 'Ahoj' });
     });
   });
 
   it('opens and closes avatar actions modal', () => {
-    render(<ProfileEditFormDesktop user={baseUser} />);
+    render(
+      <ProfileEditFormDesktop
+        user={baseUser}
+        editableUser={baseUser}
+        onEditableUserUpdate={jest.fn()}
+      />,
+    );
 
     fireEvent.click(screen.getByText('Zmeniť fotku'));
     expect(screen.getAllByText('Zmeniť fotku').length).toBeGreaterThan(1);

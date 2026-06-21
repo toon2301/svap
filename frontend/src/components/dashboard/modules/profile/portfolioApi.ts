@@ -1,6 +1,6 @@
 import axios, { type AxiosProgressEvent } from 'axios';
 import { api, endpoints } from '@/lib/api';
-import type { PortfolioImageStatus, PortfolioItem } from './portfolioTypes';
+import type { PortfolioImage, PortfolioImageStatus, PortfolioItem } from './portfolioTypes';
 
 export type PortfolioItemPayload = {
   title: string;
@@ -31,6 +31,10 @@ export type PortfolioImageUploadCompleteResponse = {
   id: number;
   status: PortfolioImageStatus;
   order?: number | null;
+};
+
+export type PortfolioImageReorderResponse = {
+  images: PortfolioImage[];
 };
 
 type ListPortfolioParams = {
@@ -121,6 +125,23 @@ function requirePortfolioItemId(itemId: number): void {
   }
 }
 
+function requirePortfolioImageId(imageId: number): void {
+  if (!Number.isInteger(imageId) || imageId < 1) {
+    throw new Error('Invalid portfolio image id.');
+  }
+}
+
+function requirePositiveIdList(ids: number[], label: string): void {
+  if (!Array.isArray(ids) || ids.length === 0) {
+    throw new Error(`Invalid ${label}.`);
+  }
+  ids.forEach((id) => {
+    if (!Number.isInteger(id) || id < 1) {
+      throw new Error(`Invalid ${label}.`);
+    }
+  });
+}
+
 export async function uploadPortfolioImageInit(
   itemId: number,
   payload: PortfolioImageUploadInitPayload,
@@ -166,6 +187,47 @@ export async function uploadPortfolioImageComplete(
     payload,
   );
   return data;
+}
+
+export async function deletePortfolioImage(itemId: number, imageId: number): Promise<void> {
+  requirePortfolioItemId(itemId);
+  requirePortfolioImageId(imageId);
+  await api.delete(endpoints.portfolio.imageDetail(itemId, imageId));
+}
+
+export async function setPortfolioCoverImage(
+  itemId: number,
+  imageId: number,
+): Promise<PortfolioImage | null> {
+  requirePortfolioItemId(itemId);
+  requirePortfolioImageId(imageId);
+  const { data } = await api.patch<{ cover_image?: PortfolioImage | null }>(
+    endpoints.portfolio.imageCover(itemId, imageId),
+    {},
+  );
+  return data.cover_image ?? null;
+}
+
+export async function reorderPortfolioImages(
+  itemId: number,
+  imageIds: number[],
+): Promise<PortfolioImage[]> {
+  requirePortfolioItemId(itemId);
+  requirePositiveIdList(imageIds, 'portfolio image ids');
+  const { data } = await api.patch<PortfolioImageReorderResponse>(
+    endpoints.portfolio.imageReorder(itemId),
+    { image_ids: imageIds },
+  );
+  return Array.isArray(data.images) ? data.images : [];
+}
+
+export async function reorderPortfolioItems(itemIds: number[]): Promise<PortfolioItem[]> {
+  requirePositiveIdList(itemIds, 'portfolio item ids');
+  const { data } = await api.patch<PortfolioItem[]>(
+    endpoints.portfolio.reorder,
+    { item_ids: itemIds },
+  );
+  return Array.isArray(data) ? data : [];
 }
 
 export async function uploadPortfolioImageFile(

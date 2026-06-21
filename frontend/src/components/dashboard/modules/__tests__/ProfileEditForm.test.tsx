@@ -36,7 +36,6 @@ describe('ProfileEditForm', () => {
     expect(screen.getByLabelText('Meno')).toBeInTheDocument();
     expect(screen.getByLabelText('Bio')).toBeInTheDocument();
     expect(screen.getByLabelText('Web')).toBeInTheDocument();
-    expect(screen.getByText('Pohlavie')).toBeInTheDocument();
   });
 
   it('auto-saves first name on blur', async () => {
@@ -52,21 +51,6 @@ describe('ProfileEditForm', () => {
 
     await waitFor(() => {
       expect(api.patch).toHaveBeenCalledWith('/auth/profile/', { first_name: 'Nové' });
-      expect(onUserUpdate).toHaveBeenCalled();
-    });
-  });
-
-  it('auto-saves gender on change', async () => {
-    const { api } = require('@/lib/api');
-    api.patch.mockResolvedValue({ data: { user: { ...mockUser, gender: 'male' } } });
-    const onUserUpdate = jest.fn();
-
-    render(<ProfileEditForm user={mockUser} onUserUpdate={onUserUpdate} />);
-    const select = screen.getByDisplayValue('Vyberte pohlavie');
-    fireEvent.change(select, { target: { value: 'male' } });
-
-    await waitFor(() => {
-      expect(api.patch).toHaveBeenCalledWith('/auth/profile/', { gender: 'male' });
       expect(onUserUpdate).toHaveBeenCalled();
     });
   });
@@ -108,18 +92,6 @@ describe('ProfileEditForm', () => {
     await waitFor(() => {
       expect(api.patch).toHaveBeenCalledWith('/auth/profile/', { website: 'https://a.b' });
       expect(onUserUpdate).toHaveBeenCalled();
-    });
-  });
-
-  it('reverts gender on API error', async () => {
-    const { api } = require('@/lib/api');
-    api.patch.mockRejectedValueOnce(new Error('net'));
-    render(<ProfileEditForm user={mockUser} />);
-    const select = screen.getByDisplayValue('Vyberte pohlavie');
-    fireEvent.change(select, { target: { value: 'female' } });
-    await waitFor(() => {
-      // Should revert back to '' value
-      expect((select as HTMLSelectElement).value).toBe('');
     });
   });
 

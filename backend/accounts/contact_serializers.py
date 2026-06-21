@@ -6,7 +6,7 @@ from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
-from swaply.validators import CAPTCHAValidator, EmailValidator, SecurityValidator
+from swaply.validators import CAPTCHAValidator, EmailValidator
 import bleach
 
 
@@ -42,7 +42,10 @@ class ContactFormSerializer(serializers.Serializer):
             raise serializers.ValidationError(
                 _("Správa môže mať maximálne 2000 znakov.")
             )
-        SecurityValidator.validate_input_safety(value)
+        # Sanitizácia HTML/XSS cez bleach (tags=[] odstráni všetky tagy vrátane
+        # <script>). Neblokujeme legitímny text s bežnými slovami ako
+        # "update"/"select" – SQL injekcia nehrozí, ORM používa parametrizované
+        # dotazy.
         return bleach.clean(value, tags=[], strip=True)
 
     def validate(self, attrs):

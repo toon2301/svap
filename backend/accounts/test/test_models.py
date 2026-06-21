@@ -8,7 +8,6 @@ from django.core.exceptions import ValidationError
 from django.contrib.auth import get_user_model
 from factory import Faker, SubFactory
 from factory.django import DjangoModelFactory
-from datetime import date, timedelta
 
 from accounts.models import User, UserProfile, UserType
 
@@ -144,16 +143,6 @@ class TestUserProfileModel(TestCase):
 @pytest.mark.django_db
 class TestUserValidation(TestCase):
     """Testy validácie User modelu"""
-
-    def test_age_validation(self):
-        """Test validácie veku"""
-        # Test príliš mladého používateľa
-        young_birth_date = date.today() - timedelta(days=365 * 12)  # 12 rokov
-        user = UserFactory(birth_date=young_birth_date)
-
-        # V reálnom kóde by sme mali validáciu veku v serializátore
-        # Tu len testujeme, že model akceptuje dátum
-        self.assertEqual(user.birth_date, young_birth_date)
 
     def test_company_required_fields(self):
         """Test povinných polí pre firmy"""

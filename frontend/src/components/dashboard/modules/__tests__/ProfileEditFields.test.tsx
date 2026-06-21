@@ -38,7 +38,6 @@ describe('ProfileEditFields', () => {
       setIsInstagramModalOpen: jest.fn(),
       setIsFacebookModalOpen: jest.fn(),
       setIsLinkedinModalOpen: jest.fn(),
-      setIsGenderModalOpen: jest.fn(),
     } as any;
 
     render(
@@ -87,7 +86,6 @@ describe('ProfileEditFields', () => {
       setIsInstagramModalOpen: jest.fn(),
       setIsFacebookModalOpen: jest.fn(),
       setIsLinkedinModalOpen: jest.fn(),
-      setIsGenderModalOpen: jest.fn(),
     } as any;
 
     render(

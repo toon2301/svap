@@ -338,6 +338,7 @@ def _conversation_annotated_queryset_for_user(user):
             other_user_slug=Subquery(other_participant_qs.values("user__slug")[:1]),
             other_user_type=Subquery(other_participant_qs.values("user__user_type")[:1]),
             other_user_avatar_name=Subquery(other_participant_qs.values("user__avatar")[:1]),
+            other_user_is_active=Subquery(other_participant_qs.values("user__is_active")[:1]),
         )
         .annotate(
             has_requestable_offers=Exists(

@@ -14,7 +14,7 @@ export function PortfolioFeaturedCard({ item, categoryLabel, onOpenItem }: Portf
   const { t } = useLanguage();
 
   return (
-    <section aria-label={t('portfolio.featured')} className="space-y-2">
+    <section aria-label={t('portfolio.featured')} className="space-y-2 lg:w-1/2">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
           {t('portfolio.featured')}

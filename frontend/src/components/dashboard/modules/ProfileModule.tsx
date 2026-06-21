@@ -6,6 +6,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useIsMobile } from '@/hooks';
 import { useOptionalDesktopOnboarding } from '../onboarding/DesktopOnboardingContext';
 import { useOptionalMobileOnboarding } from '../onboarding/MobileOnboardingContext';
+import toast from 'react-hot-toast';
 import { api } from '../../../lib/api';
 import ProfileMobileView from './profile/ProfileMobileView';
 import ProfileDesktopView from './profile/ProfileDesktopView';
@@ -141,7 +142,6 @@ export default function ProfileModule({
   const onboarding = isMobile ? mobileOnboarding : desktopOnboarding;
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string>('');
-  const [uploadSuccess, setUploadSuccess] = useState(false);
   const [isActionsOpen, setIsActionsOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [isAllWebsitesModalOpen, setIsAllWebsitesModalOpen] = useState(false);
@@ -346,8 +346,6 @@ export default function ProfileModule({
       handleEditableUserUpdate({ avatar_url: previewUrl } as Partial<User>);
     }
 
-    setUploadSuccess(false);
-
     try {
       const formData = new FormData();
       formData.append('avatar', file);
@@ -371,8 +369,7 @@ export default function ProfileModule({
         URL.revokeObjectURL(previewUrlForThisAction);
         avatarPreviewUrlRef.current = null;
       }
-      setUploadSuccess(true);
-      setTimeout(() => setUploadSuccess(false), 3000);
+      toast.success(t('profile.photoUploaded', 'Fotka bola úspešne nahraná!'));
     } catch (error: unknown) {
       if (activeActionIdRef.current !== actionId) return;
       // Deterministic rollback: restore exact snapshot from before the action.
@@ -389,7 +386,7 @@ export default function ProfileModule({
         data?.message ||
         data?.error ||
         'Nepodarilo sa nahrať fotku. Skús to znova.';
-      setUploadError(message);
+      toast.error(message);
     } finally {
       endAction(actionId);
     }
@@ -446,7 +443,7 @@ export default function ProfileModule({
         data?.message ||
         data?.error ||
         'Nepodarilo sa odstrániť fotku. Skúste znova.';
-      setUploadError(message);
+      toast.error(message);
     } finally {
       endAction(actionId);
     }
@@ -519,13 +516,6 @@ export default function ProfileModule({
             onEditOffer={onEditOffer}
             onDeleteOffer={onDeleteOffer}
           />
-        )}
-
-        {/* Success message */}
-        {uploadSuccess && (
-          <div className="mt-4 success-alert-modern">
-            ✓ {t('profile.photoUploaded', 'Fotka bola úspešne nahraná!')}
-          </div>
         )}
 
         {/* Error message */}

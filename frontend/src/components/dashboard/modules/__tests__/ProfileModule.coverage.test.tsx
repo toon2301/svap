@@ -4,9 +4,21 @@ import '@testing-library/jest-dom';
 import ProfileModule from '../ProfileModule';
 import { User } from '@/types';
 
+jest.mock('@/contexts/AuthContext', () => ({
+  useAuth: () => ({ user: { id: 1 }, isAuthenticated: true }),
+}));
+
 jest.mock('@/lib/api', () => ({
   api: {
     patch: jest.fn(),
+  },
+}));
+
+jest.mock('react-hot-toast', () => ({
+  __esModule: true,
+  default: {
+    error: jest.fn(),
+    success: jest.fn(),
   },
 }));
 
@@ -25,6 +37,12 @@ const baseUser: User = {
 };
 
 describe('ProfileModule coverage', () => {
+  // jsdom neimplementuje URL.createObjectURL (optimistický avatar preview ho používa).
+  beforeAll(() => {
+    global.URL.createObjectURL = jest.fn(() => 'blob:mock');
+    global.URL.revokeObjectURL = jest.fn();
+  });
+
   beforeEach(() => {
     jest.clearAllMocks();
   });
@@ -48,9 +66,10 @@ describe('ProfileModule coverage', () => {
     await waitFor(() => expect(api.patch).toHaveBeenCalled());
     expect(onUserUpdate).toHaveBeenCalled();
 
-    // Success message appears then auto hides
+    // Success je oznámené cez globálny toast (rovnako ako ostatné notifikácie v appke)
+    const toast = require('react-hot-toast').default;
     await waitFor(() => {
-      expect(screen.getByText('✓ Fotka bola úspešne nahraná!')).toBeInTheDocument();
+      expect(toast.success).toHaveBeenCalledWith('Fotka bola úspešne nahraná!');
     });
   });
 
@@ -58,15 +77,16 @@ describe('ProfileModule coverage', () => {
     const { api } = require('@/lib/api');
     api.patch.mockRejectedValue({ response: { data: { error: 'Chyba uploadu' } } });
 
-    render(<ProfileModule user={baseUser} />);
+    render(<ProfileModule user={baseUser} onUserUpdate={jest.fn()} />);
     const addBtns = screen.getAllByTitle('Pridať fotku');
     fireEvent.click(addBtns[0]);
     const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
     const file = new File(['x'], 'a.png', { type: 'image/png' });
     fireEvent.change(fileInput, { target: { files: [file] } });
 
+    const toast = require('react-hot-toast').default;
     await waitFor(() => {
-      expect(screen.getByText('Chyba uploadu')).toBeInTheDocument();
+      expect(toast.error).toHaveBeenCalledWith('Chyba uploadu');
     });
   });
 
@@ -75,7 +95,7 @@ describe('ProfileModule coverage', () => {
     const { api } = require('@/lib/api');
     api.patch.mockResolvedValue({ data: { user: { ...userWithAvatar, avatar_url: null } } });
 
-    render(<ProfileModule user={userWithAvatar} />);
+    render(<ProfileModule user={userWithAvatar} onUserUpdate={jest.fn()} />);
 
     // Click avatar image (desktop section hidden by lg, but mobile image exists)
     const imgs = screen.getAllByAltText('Test User');

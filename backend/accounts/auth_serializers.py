@@ -1,11 +1,9 @@
-from datetime import date
-
 from django.conf import settings
 from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 
-from swaply.validators import CAPTCHAValidator, EmailValidator, SecurityValidator, URLValidator
+from swaply.validators import CAPTCHAValidator, EmailValidator, URLValidator
 
 from .models import (
     EmailVerification,
@@ -22,9 +20,6 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
 
     password = serializers.CharField(write_only=True, validators=[validate_password])
     password_confirm = serializers.CharField(write_only=True)
-    birth_day = serializers.CharField(write_only=True, required=False)
-    birth_month = serializers.CharField(write_only=True, required=False)
-    birth_year = serializers.CharField(write_only=True, required=False)
     captcha_token = serializers.CharField(write_only=True, required=True)
     website = serializers.CharField(required=False, allow_blank=True, max_length=200)
 
@@ -41,10 +36,6 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             "phone",
             "company_name",
             "website",
-            "birth_day",
-            "birth_month",
-            "birth_year",
-            "gender",
             "captcha_token",
         ]
         extra_kwargs = {
@@ -88,27 +79,6 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             if not attrs.get("company_name"):
                 raise serializers.ValidationError("Názov firmy je povinný.")
 
-        # Validácia dátumu narodenia
-        birth_day = attrs.get("birth_day")
-        birth_month = attrs.get("birth_month")
-        birth_year = attrs.get("birth_year")
-
-        if birth_day and birth_month and birth_year:
-            try:
-                birth_date = date(int(birth_year), int(birth_month), int(birth_day))
-                # Kontrola veku (aspoň 13 rokov)
-                today = date.today()
-                age = (
-                    today.year
-                    - birth_date.year
-                    - ((today.month, today.day) < (birth_date.month, birth_date.day))
-                )
-                if age < 13:
-                    raise serializers.ValidationError("Musíte mať aspoň 13 rokov.")
-                attrs["birth_date"] = birth_date
-            except ValueError:
-                raise serializers.ValidationError("Neplatný dátum narodenia.")
-
         normalized_names = normalize_profile_name_fields(
             user_type=attrs.get("user_type", UserType.INDIVIDUAL),
             first_name=attrs.get("first_name", ""),
@@ -121,10 +91,9 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
 
     def validate_email(self, value):
         """Validácia emailu"""
-        # Bezpečnostná validácia
-        value = SecurityValidator.validate_input_safety(value)
-
-        # Formátová validácia
+        # Formátová validácia (EmailValidator = allowlist regex + dĺžka) je skutočný
+        # guard. Neblokujeme legitímne emaily s bežnými slovami (napr. update@x.sk) –
+        # SQL injekcia nehrozí, ORM používa parametrizované dotazy.
         value = EmailValidator.validate_email(value)
 
         # Unikátnosť
@@ -134,8 +103,10 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
 
     def validate_username(self, value):
         """Validácia username - povolené medzery, limit 35 znakov"""
-        # Bezpečnostná validácia
-        value = SecurityValidator.validate_input_safety(value)
+        # Pozn.: username zámerne nemá znakový allowlist (povoľujeme medzery aj
+        # diakritiku). Neblokujeme bežné slová ani apostrofy (napr. "O'Brien") –
+        # SQL injekcia nehrozí (parametrizované dotazy) a zobrazenie escapuje
+        # frontend. Skutočné guardy sú dĺžka a unikátnosť nižšie.
 
         # Limit 35 znakov (vrátane medzier)
         if len(value) > 35:
@@ -152,7 +123,8 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
     def validate_website(self, value):
         """Normalizácia webu pri registrácii (doplní https:// ak chýba schéma)"""
         if value:
-            value = SecurityValidator.validate_input_safety(value)
+            # URLValidator (povolené schémy + platná http(s) URL) je skutočný guard;
+            # neblokujeme URL s bežným slovom v ceste (napr. /update).
             return URLValidator.normalize_url(value, "Webová stránka")
         return value
 
@@ -160,10 +132,6 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         """Vytvorenie nového používateľa"""
         validated_data.pop("password_confirm", None)
         validated_data.pop("captcha_token", None)  # Odstráň CAPTCHA token ak existuje
-        # Odstránenie polí pre dátum narodenia (už sú konvertované na birth_date)
-        validated_data.pop("birth_day", None)
-        validated_data.pop("birth_month", None)
-        validated_data.pop("birth_year", None)
 
         password = validated_data.pop("password")
         email_verification_required = getattr(
@@ -296,10 +264,8 @@ class ResendVerificationSerializer(serializers.Serializer):
 
     def validate_email(self, value):
         """Validácia emailu"""
-        # Bezpečnostná validácia
-        value = SecurityValidator.validate_input_safety(value)
-
-        # Formátová validácia
+        # Formátová validácia (EmailValidator = allowlist regex + dĺžka) je skutočný
+        # guard; neblokujeme legitímne emaily s bežnými slovami.
         value = EmailValidator.validate_email(value)
 
         # Kontrola, či používateľ existuje

@@ -82,7 +82,11 @@ def push_subscriptions_view(request):
     )
 
 
-@api_view(["DELETE"])
+# POZN.: POST (nie DELETE) zámerne. Endpoint identifikuje subscription cez
+# `endpoint` URL v tele requestu – DELETE s telom je v reálnych prehliadačoch
+# nespoľahlivé (request "visí" do timeoutu), POST s telom funguje spoľahlivo
+# (rovnaký vzor ako pri zmazaní účtu).
+@api_view(["POST"])
 @permission_classes([IsAuthenticated])
 @api_rate_limit
 def push_subscription_current_view(request):

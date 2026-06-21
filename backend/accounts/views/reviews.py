@@ -3,13 +3,15 @@ Reviews views pre Swaply
 """
 
 import logging
+from decimal import Decimal
 
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db import IntegrityError, transaction
-from django.db.models import Count, Exists, OuterRef
+from django.db.models import Avg, Count, Exists, OuterRef, Q
 from django.utils import timezone
 
 from swaply.rate_limiting import api_rate_limit
@@ -31,6 +33,62 @@ from ..services.notifications import (
 from .skill_requests import _skill_requests_cache_invalidate_for_user
 
 logger = logging.getLogger(__name__)
+
+# Stránkovanie zoznamu recenzií (rovnaký vzor ako /search/).
+REVIEWS_DEFAULT_PAGE_SIZE = 10
+REVIEWS_MAX_PAGE_SIZE = 50
+
+
+def _reviews_rating_stats(offer) -> dict:
+    """Agregát hodnotení ponuky – priemer + rozdelenie podľa hviezd.
+
+    Počíta sa cez VŠETKY recenzie (nezávisí od práve načítanej stránky), aby
+    súhrn na frontende ostal správny aj pri stránkovaní. Rozsahy zodpovedajú
+    zaokrúhleniu na celé hviezdy (krok hodnotenia je 0.5): <1.5→1, …, ≥4.5→5.
+    """
+    agg = Review.objects.filter(offer=offer).aggregate(
+        average=Avg("rating"),
+        b1=Count("id", filter=Q(rating__lt=Decimal("1.5"))),
+        b2=Count("id", filter=Q(rating__gte=Decimal("1.5"), rating__lt=Decimal("2.5"))),
+        b3=Count("id", filter=Q(rating__gte=Decimal("2.5"), rating__lt=Decimal("3.5"))),
+        b4=Count("id", filter=Q(rating__gte=Decimal("3.5"), rating__lt=Decimal("4.5"))),
+        b5=Count("id", filter=Q(rating__gte=Decimal("4.5"))),
+    )
+    average = agg["average"]
+    return {
+        "average": round(float(average), 2) if average is not None else 0.0,
+        "breakdown": {
+            "1": agg["b1"],
+            "2": agg["b2"],
+            "3": agg["b3"],
+            "4": agg["b4"],
+            "5": agg["b5"],
+        },
+    }
+
+
+def _parse_reviews_page_params(request):
+    """Spracuje ?page a ?page_size s rovnakými limitmi ako ostatné zoznamy."""
+    try:
+        page = int(str(request.query_params.get("page", "1")).strip())
+    except (TypeError, ValueError):
+        page = 1
+    if page < 1:
+        page = 1
+
+    page_size = REVIEWS_DEFAULT_PAGE_SIZE
+    raw_page_size = request.query_params.get("page_size")
+    if raw_page_size is not None:
+        try:
+            page_size = int(str(raw_page_size).strip())
+        except (TypeError, ValueError):
+            page_size = REVIEWS_DEFAULT_PAGE_SIZE
+    if page_size <= 0:
+        page_size = REVIEWS_DEFAULT_PAGE_SIZE
+    if page_size > REVIEWS_MAX_PAGE_SIZE:
+        page_size = REVIEWS_MAX_PAGE_SIZE
+
+    return page, page_size
 
 
 def _reviews_with_like_state(queryset, user):
@@ -90,16 +148,38 @@ def reviews_list_view(request, offer_id):
             )
 
     if request.method == "GET":
-        # Zoznam všetkých recenzií pre túto ponuku
-        reviews = (
-            _reviews_with_like_state(
-                Review.objects.filter(offer=offer).select_related("reviewer"),
-                request.user,
-            )
-            .order_by("-created_at")
+        # Stránkovaný zoznam recenzií pre túto ponuku (najnovšie prvé).
+        reviews = _reviews_with_like_state(
+            Review.objects.filter(offer=offer).select_related("reviewer"),
+            request.user,
+        ).order_by("-created_at", "-id")
+
+        page, page_size = _parse_reviews_page_params(request)
+        paginator = Paginator(reviews, page_size)
+        try:
+            page_obj = paginator.page(page)
+        except PageNotAnInteger:
+            page = 1
+            page_obj = paginator.page(page)
+        except EmptyPage:
+            page = paginator.num_pages if paginator.num_pages > 0 else 1
+            page_obj = paginator.page(page) if paginator.num_pages > 0 else []
+
+        items = list(page_obj) if page_obj else []
+        serializer = ReviewSerializer(items, many=True, context={"request": request})
+        return Response(
+            {
+                "results": serializer.data,
+                "total": paginator.count,
+                "page": page,
+                "page_size": page_size,
+                "total_pages": paginator.num_pages,
+                # Súhrn hodnotení cez všetky recenzie (pre korektný priemer/breakdown
+                # nezávisle od stránky).
+                "stats": _reviews_rating_stats(offer),
+            },
+            status=status.HTTP_200_OK,
         )
-        serializer = ReviewSerializer(reviews, many=True, context={"request": request})
-        return Response(serializer.data, status=status.HTTP_200_OK)
 
     elif request.method == "POST":
         # Bezpečnostná kontrola: používateľ nemôže recenzovať vlastnú ponuku

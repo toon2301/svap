@@ -1,6 +1,6 @@
 from django.urls import include, path
 from . import views
-from .views import profile, password_reset, google_oauth_simple
+from .views import profile, password_reset, google_oauth_simple, account_deletion
 
 app_name = "accounts"
 
@@ -11,6 +11,18 @@ urlpatterns = [
     path("login/", views.login_view, name="login"),
     path("logout/", views.logout_view, name="logout"),
     path("me/", views.me_view, name="me"),
+    # GDPR – zmazanie účtu (anonymizácia)
+    path("account/", account_deletion.delete_account_view, name="delete_account"),
+    path(
+        "account/request-deletion/",
+        account_deletion.request_account_deletion_view,
+        name="request_account_deletion",
+    ),
+    path(
+        "account/confirm-deletion/",
+        account_deletion.confirm_account_deletion_view,
+        name="confirm_account_deletion",
+    ),
     path("onboarding/mobile/", views.mobile_onboarding_view, name="mobile_onboarding"),
     path("onboarding/desktop/", views.desktop_onboarding_view, name="desktop_onboarding"),
     path(
@@ -88,6 +100,11 @@ urlpatterns = [
         "dashboard/favorites/",
         views.dashboard_favorites_view,
         name="dashboard_favorites",
+    ),
+    path(
+        "dashboard/favorites/<int:user_id>/",
+        views.dashboard_favorite_user_detail_view,
+        name="dashboard_favorite_user_detail",
     ),
     path("dashboard/profile/", views.dashboard_profile_view, name="dashboard_profile"),
     path(

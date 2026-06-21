@@ -26,17 +26,15 @@ export async function setFavoriteUserState(userId: number, isFavorited: boolean)
     throw new Error('Invalid favorite user id.');
   }
 
-  const payload = {
-    type: FAVORITE_USER_TYPE,
-    id: userId,
-  };
-
   if (isFavorited) {
-    await api.post(endpoints.dashboard.favorites, payload);
+    await api.post(endpoints.dashboard.favorites, {
+      type: FAVORITE_USER_TYPE,
+      id: userId,
+    });
     return;
   }
 
-  await api.delete(endpoints.dashboard.favorites, {
-    data: payload,
-  });
+  // Čisté DELETE bez tela – položku identifikuje user_id v URL.
+  // (DELETE s JSON telom je v prehliadačoch nespoľahlivé – visí do timeoutu.)
+  await api.delete(endpoints.dashboard.favoriteUser(userId));
 }

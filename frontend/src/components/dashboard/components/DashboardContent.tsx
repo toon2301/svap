@@ -37,6 +37,7 @@ import {
 import { getSafeDashboardReturnTo } from '../modules/reviews/offerReviewsRouting';
 import { listConversations, listMessageRequests, openConversation } from '../modules/messages/messagingApi';
 import type { MessagingUserBrief } from '../modules/messages/types';
+import { messagingUserName } from '../modules/messages/messagingUserName';
 import {
   PROFILE_OFFER_DETAIL_CLOSE_EVENT,
   PROFILE_OFFER_DETAIL_OPEN_EVENT,
@@ -1105,6 +1106,7 @@ export default function DashboardContent({
       }}
       viewedUserId={userProfile.viewedUserId}
       viewedUserSlug={userProfile.viewedUserSlug}
+      viewedUserNotFound={userProfile.viewedUserNotFound}
       viewedUserSummary={userProfile.viewedUserSummary}
       onEditProfileClick={navigation.handleEditProfileClick}
       onViewUserProfile={navigation.handleViewUserProfileFromSearch}
@@ -1144,10 +1146,14 @@ export default function DashboardContent({
     (user?.company_name || '').trim() ||
     (user?.username || '').trim() ||
     t('navigation.profile', 'Profil');
-  const mobileMessagePeerIdentifier =
-    (mobileMessagePeer?.slug || '').trim() ||
-    (typeof mobileMessagePeer?.id === 'number' ? String(mobileMessagePeer.id) : null);
-  const mobileMessageTitle = mobileMessageGroup?.name || (mobileMessagePeer?.display_name || '').trim() || undefined;
+  // Anonymizovaný/zmazaný peer nemá profil → žiadny identifier (klik nikam nevedie).
+  const mobileMessagePeerIdentifier = mobileMessagePeer?.is_deleted
+    ? null
+    : (mobileMessagePeer?.slug || '').trim() ||
+      (typeof mobileMessagePeer?.id === 'number' ? String(mobileMessagePeer.id) : null);
+  const mobileMessageTitle =
+    mobileMessageGroup?.name ||
+    (mobileMessagePeer ? messagingUserName(mobileMessagePeer, t) : undefined);
   const mobileMessageAvatarUrl = mobileMessageGroup ? null : mobileMessagePeer?.avatar_url ?? null;
   const isProfileEditMode =
     activeModule === 'profile' &&

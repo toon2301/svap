@@ -128,6 +128,23 @@ def _next_sort_order(user) -> int:
     return 0 if current_max is None else current_max + 1
 
 
+def _parse_id_list(value):
+    if not isinstance(value, list):
+        return None
+    parsed = []
+    for raw_id in value:
+        if isinstance(raw_id, bool):
+            return None
+        try:
+            item_id = int(raw_id)
+        except (TypeError, ValueError):
+            return None
+        if item_id < 1:
+            return None
+        parsed.append(item_id)
+    return parsed
+
+
 def _portfolio_list_response(request, user):
     owner_view = _is_owner(request, user)
     queryset = _portfolio_queryset(user, is_owner=owner_view)
@@ -138,6 +155,48 @@ def _portfolio_list_response(request, user):
             request,
             items,
             is_owner=owner_view,
+            featured_item_id=featured_item_id,
+        ),
+        status=status.HTTP_200_OK,
+    )
+
+
+@api_view(["PATCH"])
+@permission_classes([IsAuthenticated])
+@api_rate_limit
+def portfolio_items_reorder_view(request):
+    item_ids = _parse_id_list(request.data.get("item_ids"))
+    if item_ids is None or len(item_ids) != len(set(item_ids)):
+        return Response(
+            {"error": "Neplatne poradie portfolia."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    with transaction.atomic():
+        items = list(
+            PortfolioItem.objects.select_for_update()
+            .filter(owner=request.user)
+            .order_by("sort_order", "id")
+        )
+        current_ids = [item.id for item in items]
+        if len(item_ids) != len(current_ids) or set(item_ids) != set(current_ids):
+            return Response(
+                {"error": "Neplatne poradie portfolia."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        item_by_id = {item.id: item for item in items}
+        for index, item_id in enumerate(item_ids):
+            item_by_id[item_id].sort_order = index
+        PortfolioItem.objects.bulk_update(items, ["sort_order"])
+
+    ordered_items = list(_portfolio_queryset(request.user, is_owner=True))
+    featured_item_id = ordered_items[0].id if ordered_items else None
+    return Response(
+        _serialize_items(
+            request,
+            ordered_items,
+            is_owner=True,
             featured_item_id=featured_item_id,
         ),
         status=status.HTTP_200_OK,

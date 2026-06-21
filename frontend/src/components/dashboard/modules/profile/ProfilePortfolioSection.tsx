@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useIsMobile } from '@/hooks';
 import type { ProfileTab } from './profileTypes';
 import { listProfilePortfolio } from './portfolioApi';
 import type { PortfolioItem } from './portfolioTypes';
@@ -10,8 +11,8 @@ import { getPortfolioCategoryLabel } from './portfolioDisplay';
 import { PROFILE_PORTFOLIO_REFRESH_EVENT } from './portfolioEvents';
 import { PortfolioCreateForm } from './PortfolioCreateForm';
 import { PortfolioEmptyState } from './PortfolioEmptyState';
-import { PortfolioFeaturedCard } from './PortfolioFeaturedCard';
-import { PortfolioGrid } from './PortfolioGrid';
+import { PortfolioOrderPanel } from './PortfolioOrderPanel';
+import { PortfolioReorderableLayout } from './PortfolioReorderableLayout';
 import { PortfolioSectionSkeleton } from './PortfolioSectionSkeleton';
 import { buildPortfolioDetailPath, getPortfolioOwnerIdentifier } from './portfolioRouting';
 
@@ -39,11 +40,13 @@ export default function ProfilePortfolioSection({
 }: ProfilePortfolioSectionProps) {
   const router = useRouter();
   const { t } = useLanguage();
+  const isMobile = useIsMobile();
   const isOwner = !isOtherUserProfile;
   const [items, setItems] = useState<PortfolioItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [loadError, setLoadError] = useState(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isOrderOpen, setIsOrderOpen] = useState(false);
   const loadedKeyRef = useRef<string | null>(null);
   const requestSeqRef = useRef(0);
   const currentTargetKey = useMemo(
@@ -80,6 +83,7 @@ export default function ProfilePortfolioSection({
         });
       });
       setIsCreateOpen(false);
+      setIsOrderOpen(false);
       if (ownerIdentifier) {
         router.push(buildPortfolioDetailPath(ownerIdentifier, createdItem.id));
       }
@@ -117,6 +121,7 @@ export default function ProfilePortfolioSection({
     setLoadError(false);
     setIsLoading(false);
     setIsCreateOpen(false);
+    setIsOrderOpen(false);
     loadedKeyRef.current = null;
   }, [currentTargetKey]);
 
@@ -166,11 +171,17 @@ export default function ProfilePortfolioSection({
   }
 
   const handleCreateClick = () => {
+    setIsOrderOpen(false);
     if (onCreatePortfolio) {
       onCreatePortfolio();
     } else {
       setIsCreateOpen((current) => !current);
     }
+  };
+
+  const handleReordered = (orderedItems: PortfolioItem[]) => {
+    setItems(orderedItems);
+    loadedKeyRef.current = currentTargetKey;
   };
 
   if (items.length === 0) {
@@ -190,12 +201,22 @@ export default function ProfilePortfolioSection({
     );
   }
 
-  const [featured, ...rest] = items;
+  const useInlineReorder = isOwner && isOrderOpen && !isMobile;
 
   return (
     <div className="mt-4 space-y-5">
       {isOwner && (
-        <div className="flex justify-end">
+        <div className="flex flex-wrap justify-end gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              setIsCreateOpen(false);
+              setIsOrderOpen((current) => !current);
+            }}
+            className="rounded-full border border-gray-200 bg-white/80 px-4 py-2 text-sm font-semibold text-gray-800 shadow-sm transition hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-400/50 dark:border-gray-800 dark:bg-[#101011] dark:text-gray-100 dark:hover:bg-[#171719]"
+          >
+            {useInlineReorder ? t('portfolio.saveOrder') : t('portfolio.portfolioOrder')}
+          </button>
           <button
             type="button"
             onClick={handleCreateClick}
@@ -211,15 +232,20 @@ export default function ProfilePortfolioSection({
           onCreated={handleCreated}
         />
       )}
-      <PortfolioFeaturedCard
-        item={featured}
-        categoryLabel={getCategoryLabel(featured.category)}
-        onOpenItem={handleOpenItem}
-      />
-      <PortfolioGrid
-        items={rest}
+      {isOwner && isOrderOpen && isMobile && (
+        <PortfolioOrderPanel
+          items={items}
+          getCategoryLabel={getCategoryLabel}
+          onReordered={handleReordered}
+        />
+      )}
+      <PortfolioReorderableLayout
+        items={items}
+        isReorderMode={useInlineReorder}
         getCategoryLabel={getCategoryLabel}
         onOpenItem={handleOpenItem}
+        onPreviewOrder={setItems}
+        onReordered={handleReordered}
       />
     </div>
   );

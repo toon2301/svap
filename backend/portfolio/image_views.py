@@ -1,6 +1,7 @@
 import os
 import uuid
 import logging
+import mimetypes
 
 import boto3
 from django.conf import settings
@@ -15,11 +16,17 @@ from rest_framework.response import Response
 from swaply.rate_limiting import api_rate_limit
 
 from .image_storage import delete_storage_keys, image_storage_keys
+from .local_upload import (
+    LOCAL_UPLOAD_EXPIRES_SECONDS,
+    local_portfolio_upload_enabled,
+    local_upload_url,
+    make_local_upload_fields,
+)
 from .models import PortfolioImage, PortfolioItem
 from .serializers import PortfolioImageSerializer
+from .upload_constraints import allowed_image_extensions, max_image_bytes
 
 MAX_PORTFOLIO_IMAGES = 8
-UPLOAD_EXPIRES_SECONDS = 120
 PROCESSING_ENQUEUE_ERROR = (
     "Spracovanie fotky sa nepodarilo spustit. Skus fotku nahrat znova."
 )
@@ -41,25 +48,6 @@ def _get_s3_client():
         aws_secret_access_key=getattr(settings, "AWS_SECRET_ACCESS_KEY", None),
         region_name=getattr(settings, "AWS_S3_REGION_NAME", None),
     )
-
-
-def _allowed_extensions():
-    return [
-        ext.strip().lower()
-        for ext in getattr(
-            settings,
-            "ALLOWED_IMAGE_EXTENSIONS",
-            [".jpg", ".jpeg", ".png", ".gif", ".webp", ".heic", ".heif"],
-        )
-    ]
-
-
-def _max_image_bytes() -> int:
-    try:
-        max_mb = int(getattr(settings, "IMAGE_MAX_SIZE_MB", 5))
-    except Exception:
-        max_mb = 5
-    return max_mb * 1024 * 1024
 
 
 def _active_images_q():
@@ -85,6 +73,23 @@ def _next_image_order(item: PortfolioItem) -> int:
     return 0 if current_max is None else current_max + 1
 
 
+def _parse_id_list(value):
+    if not isinstance(value, list):
+        return None
+    parsed = []
+    for raw_id in value:
+        if isinstance(raw_id, bool):
+            return None
+        try:
+            image_id = int(raw_id)
+        except (TypeError, ValueError):
+            return None
+        if image_id < 1:
+            return None
+        parsed.append(image_id)
+    return parsed
+
+
 def _validate_upload_metadata(request):
     filename = str(request.data.get("filename") or "").strip()
     content_type = str(request.data.get("content_type") or "").strip()
@@ -104,7 +109,7 @@ def _validate_upload_metadata(request):
             ),
         )
 
-    max_bytes = _max_image_bytes()
+    max_bytes = max_image_bytes()
     if size_bytes > max_bytes:
         return (
             None,
@@ -122,7 +127,7 @@ def _validate_upload_metadata(request):
         )
 
     ext = os.path.splitext(filename)[1].lower()
-    if ext not in _allowed_extensions():
+    if ext not in allowed_image_extensions():
         return (
             None,
             None,
@@ -161,29 +166,44 @@ def portfolio_image_upload_init_view(request, item_id: int):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    filename, content_type, _size_bytes, error_response = _validate_upload_metadata(
+    filename, content_type, size_bytes, error_response = _validate_upload_metadata(
         request
     )
     if error_response is not None:
         return error_response
 
+    ext = os.path.splitext(filename)[1].lower()
+    key = f"uploads/portfolio/{item_id}/{uuid.uuid4().hex}{ext}"
     bucket = getattr(settings, "AWS_STORAGE_BUCKET_NAME", None)
     if not bucket:
+        if local_portfolio_upload_enabled():
+            return Response(
+                {
+                    "url": local_upload_url(request),
+                    "fields": make_local_upload_fields(
+                        item_id=item_id,
+                        key=key,
+                        size_bytes=size_bytes,
+                    ),
+                    "key": key,
+                    "expires_in": LOCAL_UPLOAD_EXPIRES_SECONDS,
+                    "content_type": content_type or None,
+                },
+                status=status.HTTP_200_OK,
+            )
         return Response(
             {"error": "Storage nie je nakonfigurovane."},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
-    ext = os.path.splitext(filename)[1].lower()
-    key = f"uploads/portfolio/{item_id}/{uuid.uuid4().hex}{ext}"
     try:
         presigned = _get_s3_client().generate_presigned_post(
             Bucket=bucket,
             Key=key,
             Conditions=[
-                ["content-length-range", 1, _max_image_bytes()],
+                ["content-length-range", 1, max_image_bytes()],
             ],
-            ExpiresIn=UPLOAD_EXPIRES_SECONDS,
+            ExpiresIn=LOCAL_UPLOAD_EXPIRES_SECONDS,
         )
     except Exception:
         return Response(
@@ -196,7 +216,7 @@ def portfolio_image_upload_init_view(request, item_id: int):
             "url": presigned.get("url"),
             "fields": presigned.get("fields", {}),
             "key": key,
-            "expires_in": UPLOAD_EXPIRES_SECONDS,
+            "expires_in": LOCAL_UPLOAD_EXPIRES_SECONDS,
             "content_type": content_type or None,
         },
         status=status.HTTP_200_OK,
@@ -228,37 +248,48 @@ def portfolio_image_upload_complete_view(request, item_id: int):
         )
 
     ext = os.path.splitext(key)[1].lower()
-    if ext not in _allowed_extensions():
+    if ext not in allowed_image_extensions():
         return Response(
             {"error": "Neplatny typ suboru."},
             status=status.HTTP_400_BAD_REQUEST,
         )
 
     bucket = getattr(settings, "AWS_STORAGE_BUCKET_NAME", None)
-    if not bucket:
+    if bucket:
+        try:
+            head = _get_s3_client().head_object(Bucket=bucket, Key=key)
+        except Exception:
+            return Response(
+                {"error": "Upload nebol najdeny."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        size_bytes = int(head.get("ContentLength") or 0)
+        content_type = str(head.get("ContentType") or "")
+    elif local_portfolio_upload_enabled():
+        from django.core.files.storage import default_storage
+
+        if not default_storage.exists(key):
+            return Response(
+                {"error": "Upload nebol najdeny."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        size_bytes = int(default_storage.size(key) or 0)
+        content_type = mimetypes.guess_type(filename or key)[0] or ""
+    else:
         return Response(
             {"error": "Storage nie je nakonfigurovane."},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
-    try:
-        head = _get_s3_client().head_object(Bucket=bucket, Key=key)
-    except Exception:
-        return Response(
-            {"error": "Upload nebol najdeny."},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
-
-    size_bytes = int(head.get("ContentLength") or 0)
-    if size_bytes <= 0 or size_bytes > _max_image_bytes():
+    if size_bytes <= 0 or size_bytes > max_image_bytes():
         delete_storage_keys([key])
         return Response(
             {"error": "Neplatny subor."},
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    # Preflight SafeSearch moderation — before creating any DB record
-    if getattr(settings, "SAFESEARCH_ENABLED", False):
+    # Preflight SafeSearch moderation before creating any DB record.
+    if bucket and getattr(settings, "SAFESEARCH_ENABLED", False):
         try:
             from swaply.staged_image_moderation import (
                 ModerationRejectedError,
@@ -271,7 +302,6 @@ def portfolio_image_upload_complete_view(request, item_id: int):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-    content_type = str(head.get("ContentType") or "")
     with transaction.atomic():
         try:
             item = PortfolioItem.objects.select_for_update().get(
@@ -299,9 +329,14 @@ def portfolio_image_upload_complete_view(request, item_id: int):
 
         def enqueue_processing():
             try:
-                from swaply.tasks.portfolio_images import process_portfolio_image
+                if local_portfolio_upload_enabled():
+                    from portfolio.image_processing import process_portfolio_image_record
 
-                process_portfolio_image.delay(image.id)
+                    process_portfolio_image_record(image.id)
+                else:
+                    from swaply.tasks.portfolio_images import process_portfolio_image
+
+                    process_portfolio_image.delay(image.id)
             except Exception as exc:
                 logger.exception(
                     "Failed to enqueue portfolio image processing",
@@ -327,6 +362,7 @@ def portfolio_image_upload_complete_view(request, item_id: int):
 
         transaction.on_commit(enqueue_processing)
 
+    image.refresh_from_db()
     return Response(
         {
             "id": image.id,
@@ -334,6 +370,52 @@ def portfolio_image_upload_complete_view(request, item_id: int):
             "order": image.order,
         },
         status=status.HTTP_201_CREATED,
+    )
+
+
+@api_view(["PATCH"])
+@permission_classes([IsAuthenticated])
+@api_rate_limit
+def portfolio_images_reorder_view(request, item_id: int):
+    image_ids = _parse_id_list(request.data.get("image_ids"))
+    if image_ids is None or len(image_ids) != len(set(image_ids)):
+        return Response(
+            {"error": "Neplatne poradie fotiek."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    with transaction.atomic():
+        try:
+            item = PortfolioItem.objects.select_for_update().get(
+                id=item_id,
+                owner=request.user,
+            )
+        except PortfolioItem.DoesNotExist:
+            return _portfolio_item_not_found()
+
+        images = list(item.images.select_for_update().order_by("order", "id"))
+        current_ids = [image.id for image in images]
+        if len(image_ids) != len(current_ids) or set(image_ids) != set(current_ids):
+            return Response(
+                {"error": "Neplatne poradie fotiek."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        image_by_id = {image.id: image for image in images}
+        for index, image_id in enumerate(image_ids):
+            image_by_id[image_id].order = index
+        PortfolioImage.objects.bulk_update(images, ["order"])
+
+    ordered_images = PortfolioImage.objects.filter(item_id=item_id).order_by("order", "id")
+    return Response(
+        {
+            "images": PortfolioImageSerializer(
+                ordered_images,
+                many=True,
+                context={"request": request, "is_owner": True},
+            ).data
+        },
+        status=status.HTTP_200_OK,
     )
 
 
