@@ -257,10 +257,6 @@ class TestRegistrationWithEmailVerification(APITestCase):
             "password": "newpass123",
             "password_confirm": "newpass123",
             "user_type": "individual",
-            "birth_day": "15",
-            "birth_month": "06",
-            "birth_year": "1990",
-            "gender": "male",
             "captcha_token": "test_captcha_token",
         }
 
@@ -308,10 +304,6 @@ class TestRegistrationWithEmailVerification(APITestCase):
             "password": "newpass123",
             "password_confirm": "newpass123",
             "user_type": "individual",
-            "birth_day": "15",
-            "birth_month": "06",
-            "birth_year": "1990",
-            "gender": "male",
             "captcha_token": "test_captcha_token",
         }
 

@@ -92,7 +92,7 @@ describe('useAuthGuard', () => {
     expect(mockPush).toHaveBeenCalledWith('/verify-email');
   });
 
-  it('presmeruje na profile/edit keď nemá kompletný profil', async () => {
+  it('presmeruje na dashboard profile keď nemá kompletný profil', async () => {
     mockUseAuth.mockReturnValue({
       user: mockIncompleteUser,
       isLoading: false
@@ -104,7 +104,7 @@ describe('useAuthGuard', () => {
       await new Promise(resolve => setTimeout(resolve, 0));
     });
 
-    expect(mockPush).toHaveBeenCalledWith('/profile/edit');
+    expect(mockPush).toHaveBeenCalledWith('/dashboard/profile');
   });
 
   it('používa vlastný redirectTo', async () => {

@@ -6,6 +6,7 @@ import { HeartIcon as HeartIconSolid, StarIcon as StarIconSolid } from '@heroico
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { Offer } from '../profile/profileOffersTypes';
 import type { Review } from './ReviewCard';
+import { resolveReviewsSummary, type ReviewsStats } from './reviewsSummary';
 import { OwnerResponseModal } from './OwnerResponseModal';
 import { useTargetReviewScroll } from './useTargetReviewScroll';
 import { useTargetOwnerResponseModal } from './useTargetOwnerResponseModal';
@@ -69,6 +70,13 @@ export type OfferReviewsMobileProps = {
   loading: boolean;
   reviews: Review[];
   reviewsLoading: boolean;
+  /** Agregát hodnotení z backendu (priemer/breakdown/total – správny aj pri stránkovaní). */
+  reviewsStats?: ReviewsStats | null;
+  /** Existuje ďalšia strana recenzií na donačítanie. */
+  hasMoreReviews?: boolean;
+  /** Práve prebieha donačítavanie ďalšej strany. */
+  loadingMoreReviews?: boolean;
+  onLoadMoreReviews?: () => void;
   isOwnOffer: boolean;
   isBusinessOwner: boolean;
   /** Z API detailu ponuky – môže pridať recenziu po uzavretej výmene a ešte nerecenzoval. */
@@ -101,6 +109,10 @@ export function OfferReviewsMobile({
   loading,
   reviews,
   reviewsLoading,
+  reviewsStats,
+  hasMoreReviews,
+  loadingMoreReviews,
+  onLoadMoreReviews,
   isOwnOffer,
   isBusinessOwner,
   can_review,
@@ -141,46 +153,10 @@ export function OfferReviewsMobile({
     onTargetVisible: openTargetOwnerResponse,
   });
 
-  const summary = useMemo(() => {
-    if (reviews.length === 0) {
-      return {
-        averageRating: 0,
-        percentage: 0,
-        breakdown: {
-          5: 0,
-          4: 0,
-          3: 0,
-          2: 0,
-          1: 0,
-        },
-        total: 0,
-      };
-    }
-
-    const breakdown = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
-    let totalRating = 0;
-
-    reviews.forEach((review) => {
-      const rating = Math.round(review.rating * 2) / 2;
-      const rounded = Math.round(rating);
-      if (rounded >= 5) breakdown[5]++;
-      else if (rounded >= 4) breakdown[4]++;
-      else if (rounded >= 3) breakdown[3]++;
-      else if (rounded >= 2) breakdown[2]++;
-      else breakdown[1]++;
-      totalRating += rating;
-    });
-
-    const averageRating = totalRating / reviews.length;
-    const percentage = Math.round((averageRating / 5) * 100);
-
-    return {
-      averageRating,
-      percentage,
-      breakdown,
-      total: reviews.length,
-    };
-  }, [reviews]);
+  const summary = useMemo(
+    () => resolveReviewsSummary(reviewsStats, reviews),
+    [reviewsStats, reviews],
+  );
 
   const renderStars = (rating: number) => {
     const stars = [];
@@ -516,6 +492,21 @@ export function OfferReviewsMobile({
                   })()}
                 </div>
               ))}
+            </div>
+          )}
+
+          {!reviewsLoading && hasMoreReviews && (
+            <div className="mt-4 flex justify-center">
+              <button
+                type="button"
+                onClick={onLoadMoreReviews}
+                disabled={loadingMoreReviews}
+                className="px-5 py-2.5 text-sm font-semibold rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800/50 disabled:opacity-60 disabled:cursor-wait transition-colors"
+              >
+                {loadingMoreReviews
+                  ? t('common.loading', 'Načítavam…')
+                  : t('reviews.loadMore', 'Zobraziť ďalšie')}
+              </button>
             </div>
           )}
       </div>

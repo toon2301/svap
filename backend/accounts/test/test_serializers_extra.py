@@ -46,23 +46,6 @@ class TestUserRegistrationSerializer:
         assert s.is_valid() is False
         assert "Názov firmy je povinný" in str(s.errors)
 
-    def test_underage_rejected(self):
-        s = UserRegistrationSerializer(
-            data={
-                "username": "u3",
-                "email": "u3@example.com",
-                "password": "StrongPass123",
-                "password_confirm": "StrongPass123",
-                "user_type": "individual",
-                "birth_day": "01",
-                "birth_month": "01",
-                "birth_year": "2020",
-                "captcha_token": "test_captcha_token",
-            }
-        )
-        assert s.is_valid() is False
-        assert "aspoň 13 rokov" in str(s.errors)
-
     def test_unique_email_username(self):
         User.objects.create_user(
             username="taken",
@@ -146,6 +129,64 @@ class TestUserProfileSerializerValidators:
 
 
 @pytest.mark.django_db
+class TestProfileTextFieldsAllowSqlKeywords:
+    """Legitímny text s bežnými slovami (update/select/…) nesmie byť blokovaný,
+    ale skutočná XSS/SQL-injekcia musí byť stále sanitizovaná alebo odmietnutá.
+    """
+
+    def setup_method(self):
+        self.user = User.objects.create_user(
+            username="sqlkw",
+            email="sqlkw@example.com",
+            password="StrongPass123",
+            is_verified=True,
+        )
+
+    def _serializer(self, data):
+        return UserProfileSerializer(instance=self.user, data=data, partial=True)
+
+    def test_bio_allows_legit_sql_keywords(self):
+        bio = "Pracoval som na update webstránky a select dát pre klienta."
+        s = self._serializer({"bio": bio})
+        assert s.is_valid() is True, s.errors
+        assert s.validated_data["bio"] == bio
+
+    def test_bio_strips_script_but_keeps_text(self):
+        s = self._serializer({"bio": "<script>alert('xss')</script>Ahoj"})
+        assert s.is_valid() is True, s.errors
+        assert "<script>" not in s.validated_data["bio"]
+        assert "Ahoj" in s.validated_data["bio"]
+
+    def test_location_allows_legit_sql_keyword(self):
+        s = self._serializer({"location": "Update Park"})
+        assert s.is_valid() is True, s.errors
+        assert s.validated_data["location"] == "Update Park"
+
+    def test_district_allows_legit_sql_keyword(self):
+        s = self._serializer({"district": "Okres Select-Delete"})
+        assert s.is_valid() is True, s.errors
+        assert s.validated_data["district"] == "Okres Select-Delete"
+
+    def test_website_allows_keyword_in_path(self):
+        url = "https://example.com/blog/how-to-update-django"
+        s = self._serializer({"website": url})
+        assert s.is_valid() is True, s.errors
+        assert s.validated_data["website"] == url
+
+    def test_website_rejects_sql_injection_string(self):
+        # Nie je to platná URL -> URLValidator ju odmietne (nezmení sa na uloženú hodnotu).
+        s = self._serializer({"website": "'; DROP TABLE users; --"})
+        assert s.is_valid() is False
+        assert "website" in s.errors
+
+    def test_first_name_rejects_injection_characters(self):
+        # NameValidator (allowlist) odmietne znaky pre SQL/HTML injekciu.
+        s = self._serializer({"first_name": "Robert'); DROP TABLE users;--"})
+        assert s.is_valid() is False
+        assert "first_name" in s.errors
+
+
+@pytest.mark.django_db
 class TestBioAnd2FAFlows(APITestCase):
     def test_bio_sanitization_filters_script(self):
         user = User.objects.create_user(
@@ -161,6 +202,21 @@ class TestBioAnd2FAFlows(APITestCase):
         assert r.status_code == status.HTTP_200_OK
         assert "Clean" in r.data["user"]["bio"]
         assert "<script>" not in r.data["user"]["bio"]
+
+    def test_bio_with_sql_keywords_is_accepted_end_to_end(self):
+        # Reportovaný bug: legitímne bio s bežnými slovami (update/select) bolo 400.
+        user = User.objects.create_user(
+            username="biokw",
+            email="biokw@example.com",
+            password="StrongPass123",
+            is_verified=True,
+        )
+        self.client.force_authenticate(user=user)
+        url = reverse("accounts:update_profile")
+        bio = "Pracoval som na update webstránky a select dát pre klienta."
+        r = self.client.patch(url, {"bio": bio}, format="json")
+        assert r.status_code == status.HTTP_200_OK
+        assert r.data["user"]["bio"] == bio
 
     def test_login_requires_totp_when_enabled(self):
         from accounts.models import UserProfile

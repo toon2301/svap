@@ -25,6 +25,9 @@ jest.mock('@/lib/api', () => ({
       detail: (id: number) => `/auth/portfolio/${id}/`,
       imageUploadInit: (id: number) => `/auth/portfolio/${id}/images/upload-init/`,
       imageUploadComplete: (id: number) => `/auth/portfolio/${id}/images/upload-complete/`,
+      imageReorder: (itemId: number) => `/auth/portfolio/${itemId}/images/reorder/`,
+      imageDetail: (itemId: number, imageId: number) => `/auth/portfolio/${itemId}/images/${imageId}/`,
+      imageCover: (itemId: number, imageId: number) => `/auth/portfolio/${itemId}/images/${imageId}/cover/`,
     },
   },
 }));
@@ -246,6 +249,7 @@ describe('PortfolioDetailModule', () => {
 
     expect(await screen.findByText('Portfolio Detail')).toBeInTheDocument();
     expect(screen.queryByTestId('portfolio-upload-section')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('portfolio-image-management-section')).not.toBeInTheDocument();
 
     unmount();
     jest.clearAllMocks();
@@ -253,6 +257,7 @@ describe('PortfolioDetailModule', () => {
     render(<PortfolioDetailModule itemId={7} ownerIdentifier="jane-doe" />);
 
     expect(await screen.findByTestId('portfolio-upload-section')).toBeInTheDocument();
+    expect(screen.getByTestId('portfolio-image-management-section')).toBeInTheDocument();
   });
 
   it('disables new photo selection when the portfolio already has 8 active images', async () => {
@@ -391,10 +396,68 @@ describe('PortfolioDetailModule', () => {
 
     render(<PortfolioDetailModule itemId={7} ownerIdentifier="jane-doe" />);
 
-    expect(await screen.findByText('Fotka čaká na kontrolu')).toBeInTheDocument();
-    expect(screen.getByText('Fotka bola zamietnutá')).toBeInTheDocument();
+    expect(await screen.findAllByText('Fotka čaká na kontrolu')).toHaveLength(2);
+    expect(screen.getAllByText('Fotka bola zamietnutá')).toHaveLength(2);
     expect(screen.getByText('Unsafe content')).toBeInTheDocument();
-    expect(screen.getByText('Fotka je schválená')).toBeInTheDocument();
+    expect(screen.getAllByText('Fotka je schválená')).toHaveLength(2);
+  });
+
+  it('sets a portfolio image as cover through the owner endpoint', async () => {
+    (api.get as jest.Mock).mockResolvedValue({
+      data: manageablePortfolioItem({
+        cover_image: portfolioImage(1, 'approved'),
+        images: [portfolioImage(1, 'approved'), portfolioImage(2, 'approved')],
+      }),
+    });
+    (api.patch as jest.Mock).mockResolvedValue({
+      data: { cover_image: portfolioImage(2, 'approved') },
+    });
+
+    render(<PortfolioDetailModule itemId={7} ownerIdentifier="jane-doe" />);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Nastaviť ako titulnú' }));
+
+    await waitFor(() => {
+      expect(api.patch).toHaveBeenCalledWith('/auth/portfolio/7/images/2/cover/', {});
+    });
+    expect(api.get).toHaveBeenCalledTimes(2);
+  });
+
+  it('opens confirm dialog and deletes a portfolio image', async () => {
+    (api.get as jest.Mock).mockResolvedValue({ data: manageablePortfolioItem() });
+    (api.delete as jest.Mock).mockResolvedValue({});
+
+    render(<PortfolioDetailModule itemId={7} ownerIdentifier="jane-doe" />);
+
+    const management = await screen.findByTestId('portfolio-image-management-section');
+    fireEvent.click(within(management).getAllByRole('button', { name: 'Vymazať fotku' })[0]);
+
+    const dialog = await screen.findByRole('alertdialog');
+    expect(within(dialog).getByText('Naozaj chceš vymazať túto fotku?')).toBeInTheDocument();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Vymazať fotku' }));
+
+    await waitFor(() => {
+      expect(api.delete).toHaveBeenCalledWith('/auth/portfolio/7/images/1/');
+    });
+    expect(api.get).toHaveBeenCalledTimes(2);
+  });
+
+  it('reorders portfolio images with up and down buttons', async () => {
+    (api.get as jest.Mock).mockResolvedValue({ data: manageablePortfolioItem() });
+    (api.patch as jest.Mock).mockResolvedValue({
+      data: { images: [portfolioImage(2, 'approved'), portfolioImage(1, 'approved')] },
+    });
+
+    render(<PortfolioDetailModule itemId={7} ownerIdentifier="jane-doe" />);
+
+    const management = await screen.findByTestId('portfolio-image-management-section');
+    fireEvent.click(within(management).getAllByRole('button', { name: 'Presunúť hore' })[1]);
+
+    await waitFor(() => {
+      expect(api.patch).toHaveBeenCalledWith('/auth/portfolio/7/images/reorder/', {
+        image_ids: [2, 1],
+      });
+    });
   });
 
   it('does not show owner image statuses or rejected reasons to visitors', async () => {
@@ -469,7 +532,7 @@ describe('PortfolioDetailModule', () => {
 
       render(<PortfolioDetailModule itemId={7} ownerIdentifier="jane-doe" />);
 
-      expect(await screen.findByText('Fotka čaká na kontrolu')).toBeInTheDocument();
+      expect(await screen.findAllByText('Fotka čaká na kontrolu')).toHaveLength(2);
       expect(api.get).toHaveBeenCalledTimes(1);
 
       await act(async () => {

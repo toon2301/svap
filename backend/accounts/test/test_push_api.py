@@ -31,7 +31,7 @@ class WebPushApiTests(APITestCase):
         )
         self.client.force_authenticate(user=self.user)
         self.subscribe_url = reverse("accounts:push_subscriptions")
-        self.delete_url = reverse("accounts:push_subscription_current")
+        self.unsubscribe_url = reverse("accounts:push_subscription_current")
         self.public_key_url = reverse("accounts:push_vapid_public_key")
         self.subscription = {
             "endpoint": "https://push.example.test/subscriptions/device-1",
@@ -138,8 +138,8 @@ class WebPushApiTests(APITestCase):
             format="json",
         )
 
-        response = self.client.delete(
-            self.delete_url,
+        response = self.client.post(
+            self.unsubscribe_url,
             {"endpoint": self.subscription["endpoint"]},
             format="json",
         )
@@ -148,6 +148,16 @@ class WebPushApiTests(APITestCase):
         self.assertEqual(response.data, {"ok": True, "deleted": True})
         self.assertEqual(WebPushSubscription.objects.count(), 1)
         self.assertEqual(WebPushSubscription.objects.get().user, self.other_user)
+
+    def test_unsubscribe_nonexistent_is_idempotent(self):
+        # Odhlásenie neexistujúcej subscription (aj dvojklik) → 200, deleted=False.
+        response = self.client.post(
+            self.unsubscribe_url,
+            {"endpoint": self.subscription["endpoint"]},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data, {"ok": True, "deleted": False})
 
     @override_settings(
         WEB_PUSH_VAPID_PUBLIC_KEY="test-public-key",

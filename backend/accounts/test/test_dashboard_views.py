@@ -796,6 +796,52 @@ class DashboardViewsTestCase(TestCase):
             ).exists()
         )
 
+    def test_dashboard_favorite_user_detail_delete_success(self):
+        """Čisté DELETE bez tela – položku identifikuje user_id z URL."""
+        FavoriteUser.objects.create(user=self.user, favorite_user=self.other_user)
+        url = reverse(
+            "accounts:dashboard_favorite_user_detail",
+            kwargs={"user_id": self.other_user.id},
+        )
+        response = self.client.delete(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(response.data["is_favorited"])
+        self.assertEqual(response.data["id"], self.other_user.id)
+        self.assertFalse(
+            FavoriteUser.objects.filter(
+                user=self.user, favorite_user=self.other_user
+            ).exists()
+        )
+
+    def test_dashboard_favorite_user_detail_delete_is_idempotent(self):
+        """Odobranie neexistujúcej obľúbenej položky (aj dvojklik) → 200, bez chyby."""
+        url = reverse(
+            "accounts:dashboard_favorite_user_detail",
+            kwargs={"user_id": self.other_user.id},
+        )
+        # Nie je v obľúbených → prvý DELETE.
+        first = self.client.delete(url)
+        self.assertEqual(first.status_code, status.HTTP_200_OK)
+        # Druhý DELETE (dvojklik) → stále 200.
+        second = self.client.delete(url)
+        self.assertEqual(second.status_code, status.HTTP_200_OK)
+
+    def test_dashboard_favorite_user_detail_delete_only_affects_own(self):
+        """Nedá sa odobrať cudzia obľúbená položka."""
+        FavoriteUser.objects.create(user=self.other_user, favorite_user=self.user)
+        url = reverse(
+            "accounts:dashboard_favorite_user_detail",
+            kwargs={"user_id": self.user.id},
+        )
+        # request.user = self.user; maže len svoje obľúbené, nie other_user-ove.
+        self.client.delete(url)
+        self.assertTrue(
+            FavoriteUser.objects.filter(
+                user=self.other_user, favorite_user=self.user
+            ).exists()
+        )
+
     def test_dashboard_profile_get_success(self):
         """Test získania profilu"""
         url = reverse("accounts:dashboard_profile")

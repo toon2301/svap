@@ -1,9 +1,14 @@
 from django.urls import path
 
-from . import image_views, views
+from . import image_views, local_upload_views, views
 
 urlpatterns = [
     path("portfolio/", views.my_portfolio_list_view, name="portfolio_list"),
+    path(
+        "portfolio/reorder/",
+        views.portfolio_items_reorder_view,
+        name="portfolio_reorder",
+    ),
     path(
         "portfolio/<int:item_id>/",
         views.portfolio_item_detail_view,
@@ -18,6 +23,16 @@ urlpatterns = [
         "portfolio/<int:item_id>/images/upload-complete/",
         image_views.portfolio_image_upload_complete_view,
         name="portfolio_image_upload_complete",
+    ),
+    path(
+        "portfolio/images/local-upload/",
+        local_upload_views.portfolio_image_local_upload_view,
+        name="portfolio_image_local_upload",
+    ),
+    path(
+        "portfolio/<int:item_id>/images/reorder/",
+        image_views.portfolio_images_reorder_view,
+        name="portfolio_images_reorder",
     ),
     path(
         "portfolio/<int:item_id>/images/<int:image_id>/",

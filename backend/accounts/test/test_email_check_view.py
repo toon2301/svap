@@ -36,6 +36,20 @@ class TestEmailCheckView(APITestCase):
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert "available" in response.data
 
+    def test_email_with_sql_keyword_local_part_is_accepted(self):
+        # Bug: email s bežným slovom (update/select) v local-parte bol 400.
+        url = reverse("accounts:check_email", kwargs={"email": "update@example.com"})
+        response = self.client.get(url)
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["available"] is True
+
+    def test_invalid_format_still_rejected_by_email_validator(self):
+        # Skutočná ochrana ostáva: neplatný formát odmietne EmailValidator (nie SQL filter).
+        url = reverse("accounts:check_email", kwargs={"email": "not-an-email"})
+        response = self.client.get(url)
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert response.data["available"] is False
+
     def test_rate_limit_exceeded_returns_429(self):
         """Rate limiting: po prekročení limitu vráti 429"""
         url = reverse("accounts:check_email", kwargs={"email": "free2@example.com"})

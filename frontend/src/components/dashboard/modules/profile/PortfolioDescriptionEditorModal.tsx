@@ -65,6 +65,9 @@ export function PortfolioDescriptionEditorModal({
           {draft.length}/{PORTFOLIO_DESCRIPTION_MAX_LENGTH}
         </span>
       </div>
+      <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+        {t('portfolio.descriptionHelp')}
+      </p>
       {error && (
         <p className="mt-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700 dark:border-red-900/60 dark:bg-red-950/20 dark:text-red-300">
           {error}

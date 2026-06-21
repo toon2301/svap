@@ -153,9 +153,9 @@ export async function unsubscribeCurrentBrowserFromPush(): Promise<string | null
   const endpoint = currentSubscription.endpoint;
 
   try {
-    await api.delete(endpoints.push.subscriptionCurrent, {
-      data: { endpoint },
-    });
+    // POST (nie DELETE) – telo nesie subscription endpoint URL a DELETE s telom
+    // je v prehliadačoch nespoľahlivé (visí do timeoutu).
+    await api.post(endpoints.push.subscriptionCurrent, { endpoint });
   } finally {
     try {
       await currentSubscription.unsubscribe();

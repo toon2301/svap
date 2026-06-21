@@ -404,6 +404,71 @@ class PortfolioCrudApiTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.assertTrue(PortfolioItem.objects.filter(id=item.id).exists())
 
+    def test_reorder_portfolio_items_updates_sort_order_and_featured(self):
+        first = self._item(title="First", sort_order=0)
+        second = self._item(title="Second", sort_order=1)
+        third = self._item(title="Third", sort_order=2)
+        self.client.force_authenticate(user=self.owner)
+
+        response = self.client.patch(
+            reverse("accounts:portfolio_reorder"),
+            data={"item_ids": [third.id, first.id, second.id]},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            list(
+                PortfolioItem.objects.filter(owner=self.owner)
+                .order_by("sort_order")
+                .values_list("id", flat=True)
+            ),
+            [third.id, first.id, second.id],
+        )
+        self.assertEqual([item["id"] for item in response.data], [third.id, first.id, second.id])
+        self.assertTrue(response.data[0]["is_featured"])
+        self.assertFalse(response.data[1]["is_featured"])
+
+    def test_reorder_portfolio_items_rejects_bad_duplicate_and_foreign_ids(self):
+        first = self._item(title="First", sort_order=0)
+        second = self._item(title="Second", sort_order=1)
+        foreign = PortfolioItem.objects.create(
+            owner=self.visitor,
+            title="Foreign",
+            category="other",
+            description="",
+            sort_order=0,
+        )
+        self.client.force_authenticate(user=self.owner)
+
+        missing_response = self.client.patch(
+            reverse("accounts:portfolio_reorder"),
+            data={"item_ids": [second.id]},
+            format="json",
+        )
+        duplicate_response = self.client.patch(
+            reverse("accounts:portfolio_reorder"),
+            data={"item_ids": [first.id, first.id]},
+            format="json",
+        )
+        foreign_response = self.client.patch(
+            reverse("accounts:portfolio_reorder"),
+            data={"item_ids": [first.id, foreign.id]},
+            format="json",
+        )
+
+        self.assertEqual(missing_response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(duplicate_response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(foreign_response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            list(
+                PortfolioItem.objects.filter(owner=self.owner)
+                .order_by("sort_order")
+                .values_list("id", flat=True)
+            ),
+            [first.id, second.id],
+        )
+
     def test_owner_list_includes_portfolio_item_without_images(self):
         self._item(title="No photos yet")
 

@@ -23,3 +23,7 @@ ALLOW_UNVERIFIED_LOGIN = env_bool(
     "ALLOW_UNVERIFIED_LOGIN",
     not EMAIL_VERIFICATION_REQUIRED,
 )
+
+# Platnosť odkazu na reset hesla (Django default je 3 dni). Zosúladené s textom
+# v reset emaile, ktorý používateľovi komunikuje 24 hodín.
+PASSWORD_RESET_TIMEOUT = int(os.getenv("PASSWORD_RESET_TIMEOUT", str(24 * 60 * 60)))

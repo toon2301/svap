@@ -55,6 +55,7 @@ interface ModuleRouterProps {
   onSkillsCategoryBackHandlerSet?: (handler: () => void) => void;
   viewedUserId?: number | null;
   viewedUserSlug?: string | null;
+  viewedUserNotFound?: boolean;
   viewedUserSummary?: SearchUserResult | null;
   onEditProfileClick?: () => void;
   onViewUserProfile?: (userId: number, slug?: string | null, summary?: SearchUserResult) => void;
@@ -109,6 +110,7 @@ export default function ModuleRouter({
   onSkillsCategoryBackHandlerSet,
   viewedUserId,
   viewedUserSlug,
+  viewedUserNotFound,
   viewedUserSummary,
   onEditProfileClick,
   onViewUserProfile,
@@ -186,9 +188,11 @@ export default function ModuleRouter({
       );
     case 'user-profile':
       if (!viewedUserId) {
+        // Zmazaný/neexistujúci profil (404) → hláška namiesto nekonečného loadingu.
+        const showLoading = Boolean(viewedUserSlug) && !viewedUserNotFound;
         return (
           <div className="text-center py-20 text-gray-500 dark:text-gray-400">
-            {viewedUserSlug
+            {showLoading
               ? t('search.loadingUserProfile', 'Načítavam profil...')
               : t('search.userProfileNotFound', 'Profil používateľa sa nepodarilo načítať.')}
           </div>

@@ -28,7 +28,6 @@ const baseUser: User = {
   phone_visible: false,
   job_title: '',
   job_title_visible: false,
-  gender: '',
 };
 
 describe('ProfileEditForm extra coverage', () => {

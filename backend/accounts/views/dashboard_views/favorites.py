@@ -153,3 +153,26 @@ def dashboard_favorites_view(request):
         },
         status=status.HTTP_200_OK,
     )
+
+
+@api_view(["DELETE"])
+@permission_classes([IsAuthenticated])
+@api_rate_limit
+def dashboard_favorite_user_detail_view(request, user_id: int):
+    """
+    Odstránenie používateľa z obľúbených – položku identifikuje user_id z URL,
+    teda čisté DELETE bez tela (DELETE s telom je v prehliadačoch nespoľahlivé).
+    Idempotentné: odobranie neexistujúcej obľúbenej položky vráti tiež 200.
+    """
+    FavoriteUser.objects.filter(
+        user=request.user, favorite_user_id=user_id
+    ).delete()
+    return Response(
+        {
+            "message": "Používateľ bol odstránený z obľúbených.",
+            "type": "user",
+            "id": user_id,
+            "is_favorited": False,
+        },
+        status=status.HTTP_200_OK,
+    )

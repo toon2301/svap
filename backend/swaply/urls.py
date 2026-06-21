@@ -21,7 +21,6 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.http import JsonResponse
 import os
-from .migrate_api import run_migrations_view
 from accounts.views import update_profile_view, google_oauth_simple, get_csrf_token_view
 from accounts.views.contact import contact_form_view
 from accounts.views.token_refresh_cookie import token_refresh_cookie_view
@@ -73,8 +72,6 @@ urlpatterns = [
     ),
     # Priama route pre profil (vyžadované testami)
     path("api/profile/", update_profile_view, name="api_profile"),
-    # One-off DB init endpoint (guarded by MIGRATE_SECRET). Remove after first use.
-    path("api/admin/init-db/", run_migrations_view, name="run_migrations"),
     # Admin
     path("admin/", admin.site.urls),
     # Root môže vracať jednoduchý JSON/info, frontend bude žiť na inej doméne

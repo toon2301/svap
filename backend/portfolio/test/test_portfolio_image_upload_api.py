@@ -197,22 +197,31 @@ class PortfolioImageUploadApiTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_set_cover_requires_approved_image(self):
-        pending = self._image(
-            status=PortfolioImage.Status.PENDING,
-            approved_key="",
-            large_key="",
-            pending_key=f"uploads/portfolio/{self.item.id}/pending.jpg",
-        )
         self.client.force_authenticate(user=self.owner)
 
-        response = self.client.patch(
-            reverse("accounts:portfolio_image_cover", args=[self.item.id, pending.id]),
-            format="json",
-        )
+        for image_status in (
+            PortfolioImage.Status.PENDING,
+            PortfolioImage.Status.REJECTED,
+        ):
+            with self.subTest(image_status=image_status):
+                image = self._image(
+                    status=image_status,
+                    approved_key="",
+                    large_key="",
+                    pending_key=f"uploads/portfolio/{self.item.id}/{image_status}.jpg",
+                )
 
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.item.refresh_from_db()
-        self.assertIsNone(self.item.cover_image)
+                response = self.client.patch(
+                    reverse(
+                        "accounts:portfolio_image_cover",
+                        args=[self.item.id, image.id],
+                    ),
+                    format="json",
+                )
+
+                self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+                self.item.refresh_from_db()
+                self.assertIsNone(self.item.cover_image)
 
     def test_set_cover_updates_cover_image_for_owner(self):
         image = self._image()
@@ -227,6 +236,30 @@ class PortfolioImageUploadApiTests(APITestCase):
         self.item.refresh_from_db()
         self.assertEqual(self.item.cover_image_id, image.id)
         self.assertEqual(response.data["cover_image"]["id"], image.id)
+
+    def test_set_cover_foreign_user_returns_not_found(self):
+        image = self._image()
+        self.client.force_authenticate(user=self.visitor)
+
+        response = self.client.patch(
+            reverse("accounts:portfolio_image_cover", args=[self.item.id, image.id]),
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.item.refresh_from_db()
+        self.assertIsNone(self.item.cover_image)
+
+    def test_delete_foreign_user_returns_not_found(self):
+        image = self._image()
+        self.client.force_authenticate(user=self.visitor)
+
+        response = self.client.delete(
+            reverse("accounts:portfolio_image_detail", args=[self.item.id, image.id])
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertTrue(PortfolioImage.objects.filter(id=image.id).exists())
 
     def test_delete_cover_image_sets_next_approved_cover_and_deletes_storage(self):
         first = self._image(order=0, large_key="media/portfolio/first.webp")
@@ -249,6 +282,92 @@ class PortfolioImageUploadApiTests(APITestCase):
         self.assertEqual(self.item.cover_image_id, second.id)
         self.assertEqual(delete_mock.call_count, 1)
         self.assertIn("media/portfolio/first.webp", delete_mock.call_args.args[0])
+
+    def test_delete_last_cover_image_sets_cover_null(self):
+        image = self._image(order=0, large_key="media/portfolio/only.webp")
+        self.item.cover_image = image
+        self.item.save(update_fields=["cover_image", "updated_at"])
+        self.client.force_authenticate(user=self.owner)
+
+        with patch("portfolio.image_views.delete_storage_keys") as delete_mock:
+            with self.captureOnCommitCallbacks(execute=True):
+                response = self.client.delete(
+                    reverse(
+                        "accounts:portfolio_image_detail", args=[self.item.id, image.id]
+                    )
+                )
+
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.item.refresh_from_db()
+        self.assertIsNone(self.item.cover_image)
+        # Storage kľúče zmazaného obrázka sa naozaj odstránia (mock bol zavolaný).
+        delete_mock.assert_called_once()
+        self.assertIn("media/portfolio/only.webp", delete_mock.call_args.args[0])
+
+    def test_reorder_images_updates_order(self):
+        first = self._image(order=0, large_key="media/portfolio/first.webp")
+        second = self._image(order=1, large_key="media/portfolio/second.webp")
+        third = self._image(order=2, large_key="media/portfolio/third.webp")
+        self.client.force_authenticate(user=self.owner)
+
+        response = self.client.patch(
+            reverse("accounts:portfolio_images_reorder", args=[self.item.id]),
+            data={"image_ids": [third.id, first.id, second.id]},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            list(
+                PortfolioImage.objects.filter(item=self.item)
+                .order_by("order")
+                .values_list("id", flat=True)
+            ),
+            [third.id, first.id, second.id],
+        )
+        self.assertEqual(
+            [image["id"] for image in response.data["images"]],
+            [third.id, first.id, second.id],
+        )
+
+    def test_reorder_images_rejects_duplicate_and_foreign_ids(self):
+        first = self._image(order=0, large_key="media/portfolio/first.webp")
+        second = self._image(order=1, large_key="media/portfolio/second.webp")
+        foreign_item = PortfolioItem.objects.create(
+            owner=self.visitor,
+            title="Foreign",
+            category="other",
+            description="",
+        )
+        foreign_image = PortfolioImage.objects.create(
+            item=foreign_item,
+            order=0,
+            status=PortfolioImage.Status.APPROVED,
+            large_key="media/portfolio/foreign.webp",
+        )
+        self.client.force_authenticate(user=self.owner)
+
+        duplicate_response = self.client.patch(
+            reverse("accounts:portfolio_images_reorder", args=[self.item.id]),
+            data={"image_ids": [first.id, first.id]},
+            format="json",
+        )
+        foreign_response = self.client.patch(
+            reverse("accounts:portfolio_images_reorder", args=[self.item.id]),
+            data={"image_ids": [first.id, foreign_image.id]},
+            format="json",
+        )
+
+        self.assertEqual(duplicate_response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(foreign_response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            list(
+                PortfolioImage.objects.filter(item=self.item)
+                .order_by("order")
+                .values_list("id", flat=True)
+            ),
+            [first.id, second.id],
+        )
 
 
 def _s3_mock(*, head=None):

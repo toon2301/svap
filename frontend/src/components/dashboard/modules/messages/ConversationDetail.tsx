@@ -7,6 +7,7 @@ import { useIsMobile } from '@/hooks';
 import { ReportUserModal } from '../profile/ReportUserModal';
 import { ConversationComposerSection } from './ConversationComposerSection';
 import { ConversationDetailHeader } from './ConversationDetailHeader';
+import { messagingUserName } from './messagingUserName';
 import { ConversationDetailOverlays } from './ConversationDetailOverlays';
 import { ConversationMessagesPane } from './ConversationMessagesPane';
 import { GroupSettingsModal } from './GroupSettingsModal';
@@ -105,20 +106,16 @@ export function ConversationDetail({
   const isGroupConversation = Boolean(thread.otherConversation?.is_group);
   const targetUserId = isGroupConversation ? null : thread.otherConversation?.other_user?.id ?? null;
   const targetUserSlug = isGroupConversation ? null : thread.otherConversation?.other_user?.slug ?? null;
-  const targetUserName =
-    (
-      (isGroupConversation
-        ? thread.otherConversation?.name
-        : thread.otherConversation?.other_user?.display_name) || ''
-    ).trim() ||
-    t(
-      isGroupConversation ? 'messages.unknownGroup' : 'messages.unknownUser',
-      isGroupConversation ? 'Skupina' : 'Používateľ',
-    );
+  const targetUserName = isGroupConversation
+    ? (thread.otherConversation?.name || '').trim() ||
+      t('messages.unknownGroup', 'Skupina')
+    : messagingUserName(thread.otherConversation?.other_user, t);
   const targetUserAvatarUrl = isGroupConversation
     ? null
     : thread.otherConversation?.other_user?.avatar_url ?? null;
   const targetUserType = isGroupConversation ? null : thread.otherConversation?.other_user?.user_type ?? null;
+  const isTargetDeleted =
+    !isGroupConversation && thread.otherConversation?.other_user?.is_deleted === true;
   const canCreateRequestFromOffer =
     targetUserId !== null && thread.otherConversation?.has_requestable_offers === true;
 
@@ -183,6 +180,8 @@ export function ConversationDetail({
       setIsGroupSettingsOpen(true);
       return;
     }
+    // Anonymizovaný/zmazaný účet nemá profil – nikam nenavigujeme.
+    if (isTargetDeleted) return;
     const identifier =
       (targetUserSlug || '').trim() ||
       (typeof targetUserId === 'number' ? String(targetUserId) : '');
@@ -193,7 +192,7 @@ export function ConversationDetail({
         detail: { identifier },
       }),
     );
-  }, [isGroupConversation, targetUserId, targetUserSlug]);
+  }, [isGroupConversation, isTargetDeleted, targetUserId, targetUserSlug]);
 
   useEffect(() => {
     if (!isMobile || !composer.isComposerFocused || thread.loading) return;
@@ -334,6 +333,7 @@ export function ConversationDetail({
           targetUserId={targetUserId}
           targetUserSlug={targetUserSlug}
           isGroup={isGroupConversation}
+          isTargetDeleted={isTargetDeleted}
           avatarMembers={thread.otherConversation?.avatar_members ?? []}
           openPeerProfileLabel={openPeerProfileLabel}
           openConversationActionsLabel={openConversationActionsLabel}

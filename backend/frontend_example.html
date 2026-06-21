@@ -96,30 +96,6 @@
                 </select>
             </div>
 
-            <div class="form-group">
-                <label for="birth_day">Deň narodenia:</label>
-                <input type="number" id="birth_day" name="birth_day" min="1" max="31" required>
-            </div>
-
-            <div class="form-group">
-                <label for="birth_month">Mesiac narodenia:</label>
-                <input type="number" id="birth_month" name="birth_month" min="1" max="12" required>
-            </div>
-
-            <div class="form-group">
-                <label for="birth_year">Rok narodenia:</label>
-                <input type="number" id="birth_year" name="birth_year" min="1900" max="2010" required>
-            </div>
-
-            <div class="form-group">
-                <label for="gender">Pohlavie:</label>
-                <select id="gender" name="gender" required>
-                    <option value="male">Muž</option>
-                    <option value="female">Žena</option>
-                    <option value="other">Iné</option>
-                </select>
-            </div>
-
             <!-- CAPTCHA -->
             <div class="g-recaptcha" data-sitekey="YOUR_SITE_KEY_HERE"></div>
 
@@ -154,10 +130,6 @@
                 password: document.getElementById('password').value,
                 password_confirm: document.getElementById('password_confirm').value,
                 user_type: document.getElementById('user_type').value,
-                birth_day: document.getElementById('birth_day').value,
-                birth_month: document.getElementById('birth_month').value,
-                birth_year: document.getElementById('birth_year').value,
-                gender: document.getElementById('gender').value,
                 captcha_token: captchaResponse
             };
             

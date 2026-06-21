@@ -37,7 +37,7 @@ export function useAuthGuard(options: UseAuthGuardOptions = {}) {
 
     // Ak je potrebný kompletný profil
     if (requireProfile && (!user.first_name || !user.last_name)) {
-      router.push('/profile/edit');
+      router.push('/dashboard/profile');
       return;
     }
   }, [user, isLoading, router, redirectTo, requireVerification, requireProfile]);

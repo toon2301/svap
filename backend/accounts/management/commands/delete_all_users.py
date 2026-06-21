@@ -3,7 +3,8 @@ Management command na vymazanie všetkých používateľov z databázy
 POUŽÍVAJTE OPATRNE - TOTO VYMAŽE VŠETKY ÚČTY!
 """
 
-from django.core.management.base import BaseCommand
+from django.conf import settings
+from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 from django.db.models.deletion import ProtectedError
 
@@ -96,6 +97,15 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
+        # Bezpečnostný guard: nezvratné zmazanie VŠETKÝCH účtov nikdy nesmie
+        # bežať v produkcii (DEBUG=False). --confirm flag nižšie ostáva ako
+        # dodatočná vrstva ochrany.
+        if not settings.DEBUG:
+            raise CommandError(
+                "delete_all_users je dostupný len v DEBUG režime (dev/test). "
+                "V produkcii (DEBUG=False) je zakázaný – nezvratne maže všetky účty."
+            )
+
         if not options["confirm"]:
             self.stdout.write(
                 self.style.ERROR(

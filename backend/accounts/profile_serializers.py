@@ -5,12 +5,11 @@ from rest_framework import serializers
 
 from swaply.validators import (
     BioValidator,
+    HtmlSanitizer,
     NameValidator,
     PhoneValidator,
-    SecurityValidator,
     URLValidator,
 )
-from swaply.validators import HtmlSanitizer
 
 from .models import (
     FavoriteUser,
@@ -51,6 +50,8 @@ class UserProfileSerializer(serializers.ModelSerializer):
     desktop_onboarding = serializers.SerializerMethodField()
     mobile_card_flip_hint = serializers.SerializerMethodField()
     desktop_card_flip_hint = serializers.SerializerMethodField()
+    # Či má účet použiteľné heslo (vs. OAuth bez hesla) – pre UI zmazania účtu.
+    has_password = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -87,8 +88,6 @@ class UserProfileSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
             "profile_completeness",
-            "birth_date",
-            "gender",
             "slug",
             "name_modified_by_user",
             "completed_cooperations_count",
@@ -99,10 +98,12 @@ class UserProfileSerializer(serializers.ModelSerializer):
             "desktop_onboarding",
             "mobile_card_flip_hint",
             "desktop_card_flip_hint",
+            "has_password",
         ]
         read_only_fields = [
             "id",
             "email",
+            "has_password",
             "subscription_tier",
             "is_verified",
             "created_at",
@@ -160,6 +161,13 @@ class UserProfileSerializer(serializers.ModelSerializer):
 
     def get_entitlements(self, obj):
         return get_entitlements_for_user(obj)
+
+    def get_has_password(self, obj):
+        """True ak má účet použiteľné heslo (False pre OAuth účty bez hesla)."""
+        try:
+            return bool(obj.has_usable_password())
+        except Exception:
+            return True
 
     def get_mobile_onboarding(self, obj):
         return {
@@ -242,7 +250,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
         Object-aware privacy filter:
         - Owner vidí všetko.
         - Ne-owner:
-          - nikdy nevracaj: email, birth_date, gender
+          - nikdy nevracaj: email
           - phone len ak phone_visible=True
           - ico len ak ico_visible=True
           - contact_email len ak contact_email_visible=True (ak flag existuje), inak nikdy
@@ -265,8 +273,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
 
         # Never return these fields for non-owners
         ret.pop("email", None)
-        ret.pop("birth_date", None)
-        ret.pop("gender", None)
+        ret.pop("has_password", None)
         ret.pop("unread_skill_request_count", None)
         ret.pop("subscription_tier", None)
         ret.pop("entitlements", None)
@@ -282,6 +289,9 @@ class UserProfileSerializer(serializers.ModelSerializer):
         if not getattr(instance, "ico_visible", False):
             ret.pop("ico", None)
 
+        if not getattr(instance, "job_title_visible", False):
+            ret.pop("job_title", None)
+
         if hasattr(instance, "contact_email_visible"):
             if not getattr(instance, "contact_email_visible", False):
                 ret.pop("contact_email", None)
@@ -295,14 +305,15 @@ class UserProfileSerializer(serializers.ModelSerializer):
     def validate_first_name(self, value):
         """Validácia mena"""
         if value:
-            value = SecurityValidator.validate_input_safety(value)
+            # NameValidator je allowlist (len písmená/čísla/medzery/pomlčky) –
+            # nebezpečné znaky pre HTML/SQL injekciu sám odmietne. Neblokujeme
+            # legitímne mená kvôli zhode s SQL kľúčovým slovom.
             return NameValidator.validate_name(value, "Meno")
         return value
 
     def validate_last_name(self, value):
         """Validácia priezviska"""
         if value:
-            value = SecurityValidator.validate_input_safety(value)
             return NameValidator.validate_name(value, "Priezvisko")
         return value
 
@@ -425,14 +436,16 @@ class UserProfileSerializer(serializers.ModelSerializer):
     def validate_phone(self, value):
         """Validácia telefónu"""
         if value:
-            value = SecurityValidator.validate_input_safety(value)
+            # PhoneValidator povolí len číslice/+/-/()/medzery – iné znaky odmietne.
             return PhoneValidator.validate_phone(value)
         return value
 
     def validate_website(self, value):
         """Validácia a normalizácia webovej stránky (doplní https:// ak chýba schéma)"""
         if value:
-            value = SecurityValidator.validate_input_safety(value)
+            # URLValidator je skutočný guard: blokuje nebezpečné schémy
+            # (javascript:, data:, …) a vyžaduje platnú http(s) URL. Legitímnu URL
+            # s bežným slovom v ceste (napr. /update) už neblokujeme.
             return URLValidator.normalize_url(value, "Webová stránka")
         return value
 
@@ -445,7 +458,6 @@ class UserProfileSerializer(serializers.ModelSerializer):
             url = (url or "").strip()
             if not url:
                 continue
-            url = SecurityValidator.validate_input_safety(url)
             url = URLValidator.normalize_url(url, f"Web {i + 2}")
             normalized.append(url)
         return normalized
@@ -453,45 +465,42 @@ class UserProfileSerializer(serializers.ModelSerializer):
     def validate_linkedin(self, value):
         """Validácia LinkedIn URL"""
         if value:
-            value = SecurityValidator.validate_input_safety(value)
             return URLValidator.validate_url(value, "LinkedIn")
         return value
 
     def validate_facebook(self, value):
         """Validácia Facebook URL"""
         if value:
-            value = SecurityValidator.validate_input_safety(value)
             return URLValidator.validate_url(value, "Facebook")
         return value
 
     def validate_instagram(self, value):
         """Validácia Instagram URL"""
         if value:
-            value = SecurityValidator.validate_input_safety(value)
             return URLValidator.validate_url(value, "Instagram")
         return value
 
     def validate_youtube(self, value):
         """Validácia YouTube URL"""
         if value:
-            value = SecurityValidator.validate_input_safety(value)
             return URLValidator.validate_url(value, "YouTube")
         return value
 
     def validate_bio(self, value):
         """Validácia bio textu"""
         if value:
-            # Najprv sanitizácia HTML
+            # Sanitizácia HTML/XSS cez bleach (odstráni <script>, nebezpečné tagy).
+            # Neblokujeme legitímny text s bežnými slovami ako "update"/"select" –
+            # SQL injekcia nehrozí, ORM používa parametrizované dotazy.
             sanitized = HtmlSanitizer.sanitize_html(value)
-            # Potom bezpečnostná validácia na sanitizovanom texte
-            sanitized = SecurityValidator.validate_input_safety(sanitized)
             return BioValidator.validate_bio(sanitized)
         return value
 
     def validate_location(self, value):
         """Validácia lokácie"""
         if value:
-            value = SecurityValidator.validate_input_safety(value)
+            # Sanitizácia HTML/XSS namiesto blokovania bežných slov (viď validate_bio).
+            value = HtmlSanitizer.sanitize_html(value)
             if len(value.strip()) > 25:
                 raise serializers.ValidationError(
                     "Lokácia môže mať maximálne 25 znakov"
@@ -502,7 +511,8 @@ class UserProfileSerializer(serializers.ModelSerializer):
     def validate_district(self, value):
         """Validácia okresu v profile používateľa"""
         if value:
-            value = SecurityValidator.validate_input_safety(value)
+            # Sanitizácia HTML/XSS namiesto blokovania bežných slov (viď validate_bio).
+            value = HtmlSanitizer.sanitize_html(value)
             # Okres je voľné textové pole, ale obmedzíme dĺžku kvôli UI / DB
             if len(value.strip()) > 100:
                 raise serializers.ValidationError("Okres môže mať maximálne 100 znakov")
@@ -521,7 +531,6 @@ class UserProfileSerializer(serializers.ModelSerializer):
     def validate_ico(self, value):
         """Validácia IČO"""
         if value:
-            value = SecurityValidator.validate_input_safety(value)
             # Odstránenie medzier a čiarky
             value = value.replace(" ", "").replace(",", "").strip()
             # Dĺžka: povolené 8 až 14 číslic

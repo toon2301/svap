@@ -17,10 +17,6 @@ interface FormData {
   user_type: 'individual' | 'company';
   company_name: string;
   website: string;
-  birth_day: string;
-  birth_month: string;
-  birth_year: string;
-  gender: string;
 }
 
 interface FormErrors {
@@ -29,6 +25,19 @@ interface FormErrors {
 
 interface UseRegisterFormParams {
   t: (key: string, defaultValue?: string) => string;
+}
+
+function sanitizeRegistrationDraft(draft: Partial<FormData> | null): Partial<FormData> | null {
+  if (!draft || typeof draft !== 'object') return null;
+  return {
+    username: typeof draft.username === 'string' ? draft.username : '',
+    email: typeof draft.email === 'string' ? draft.email : '',
+    first_name: typeof draft.first_name === 'string' ? draft.first_name : '',
+    last_name: typeof draft.last_name === 'string' ? draft.last_name : '',
+    user_type: draft.user_type === 'company' ? 'company' : 'individual',
+    company_name: typeof draft.company_name === 'string' ? draft.company_name : '',
+    website: typeof draft.website === 'string' ? draft.website : '',
+  };
 }
 
 export function useRegisterForm({ t }: UseRegisterFormParams) {
@@ -44,10 +53,6 @@ export function useRegisterForm({ t }: UseRegisterFormParams) {
     user_type: 'individual',
     company_name: '',
     website: '',
-    birth_day: '',
-    birth_month: '',
-    birth_year: '',
-    gender: '',
   });
 
   const [errors, setErrors] = useState<FormErrors>({});
@@ -78,10 +83,11 @@ export function useRegisterForm({ t }: UseRegisterFormParams) {
   useEffect(() => {
     // Načítanie draftu pri inicializácii - pridáno bez narušenia existujúcich funkcií (ticho v pozadí)
     const savedDraft = loadDraft();
-    if (savedDraft) {
+    const sanitizedDraft = sanitizeRegistrationDraft(savedDraft);
+    if (sanitizedDraft) {
       setFormData((current) => ({
         ...current,
-        ...savedDraft,
+        ...sanitizedDraft,
         password: '',
         password_confirm: '',
       }));
@@ -188,8 +194,6 @@ export function useRegisterForm({ t }: UseRegisterFormParams) {
         'password',
         'password_confirm',
         'user_type',
-        'birth_date',
-        'gender',
         'company_name',
         'website',
       ];
@@ -266,14 +270,6 @@ export function useRegisterForm({ t }: UseRegisterFormParams) {
       newErrors.password_confirm = t('auth.passwordsDoNotMatch');
     }
 
-    // Dátum narodenia a pohlavie - len pre jednotlivcov
-    if (formData.user_type === 'individual') {
-      if (!formData.birth_day) newErrors.birth_day = t('auth.birthDateRequired');
-      if (!formData.birth_month) newErrors.birth_month = t('auth.birthDateRequired');
-      if (!formData.birth_year) newErrors.birth_year = t('auth.birthDateRequired');
-      if (!formData.gender) newErrors.gender = t('auth.genderRequired');
-    }
-
     // Validácia emailu
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (formData.email && !emailRegex.test(formData.email)) {
@@ -283,36 +279,6 @@ export function useRegisterForm({ t }: UseRegisterFormParams) {
     // Validácia hesiel
     if (formData.password && formData.password.length < 8) {
       newErrors.password = t('auth.passwordMinLength');
-    }
-
-    // Validácia dátumu narodenia - len pre jednotlivcov
-    if (formData.user_type === 'individual' && formData.birth_day && formData.birth_month && formData.birth_year) {
-      const day = parseInt(formData.birth_day);
-      const month = parseInt(formData.birth_month);
-      const year = parseInt(formData.birth_year);
-      const currentYear = new Date().getFullYear();
-
-      if (year < 1900 || year > currentYear) {
-        newErrors.birth_year = t('auth.invalidBirthYear');
-      }
-      if (month < 1 || month > 12) {
-        newErrors.birth_month = t('auth.invalidMonth');
-      }
-      if (day < 1 || day > 31) {
-        newErrors.birth_day = t('auth.invalidDay');
-      }
-
-      // Kontrola počtu dní v mesiaci
-      const daysInMonth = new Date(year, month, 0).getDate();
-      if (day > daysInMonth) {
-        newErrors.birth_day = t('auth.invalidDayForMonth');
-      }
-
-      // Kontrola veku (aspoň 13 rokov)
-      const age = currentYear - year;
-      if (age < 13) {
-        newErrors.birth_year = t('auth.ageRequirement');
-      }
     }
 
     // Validácia pre firmy - company_name sa ukladá z username poľa
@@ -391,8 +357,6 @@ export function useRegisterForm({ t }: UseRegisterFormParams) {
             'password',
             'password_confirm',
             'user_type',
-            // Dátum narodenia a pohlavie len pre jednotlivcov
-            ...(formData.user_type === 'individual' ? ['birth_day', 'birth_month', 'birth_year', 'gender'] : []),
           ];
           if (requiredFields.includes(key)) {
             return true;

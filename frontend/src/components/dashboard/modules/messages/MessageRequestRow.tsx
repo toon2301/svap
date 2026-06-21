@@ -3,6 +3,7 @@
 import React from 'react';
 import { CheckIcon, TrashIcon } from '@heroicons/react/24/outline';
 import type { ConversationListItem } from './types';
+import { messagingUserName } from './messagingUserName';
 
 export function MessageRequestRow({
   conversation,
@@ -22,7 +23,7 @@ export function MessageRequestRow({
   t: (key: string, fallback: string) => string;
 }) {
   const other = conversation.other_user;
-  const title = other?.display_name || t('messages.unknownUser', 'Používateľ');
+  const title = messagingUserName(other, t);
   const imageOnlyPreview = t('messages.imageOnlyPreview', 'Obrázok');
   const preview =
     conversation.last_message_preview ||

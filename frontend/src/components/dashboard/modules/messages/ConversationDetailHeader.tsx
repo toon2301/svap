@@ -11,6 +11,8 @@ type ConversationDetailHeaderProps = {
   targetUserId: number | null;
   targetUserSlug: string | null;
   isGroup?: boolean;
+  /** Anonymizovaný/zmazaný používateľ – profil neexistuje, klik znemožniť. */
+  isTargetDeleted?: boolean;
   avatarMembers?: MessagingUserBrief[];
   openPeerProfileLabel: string;
   openConversationActionsLabel: string;
@@ -24,6 +26,7 @@ export function ConversationDetailHeader({
   targetUserId,
   targetUserSlug,
   isGroup = false,
+  isTargetDeleted = false,
   avatarMembers = [],
   openPeerProfileLabel,
   openConversationActionsLabel,
@@ -38,7 +41,9 @@ export function ConversationDetailHeader({
             type="button"
             data-testid="conversation-header-trigger"
             onClick={onOpenTargetUserProfile}
-            disabled={!isGroup && targetUserId === null && !targetUserSlug}
+            disabled={
+              isTargetDeleted || (!isGroup && targetUserId === null && !targetUserSlug)
+            }
             className="flex items-center gap-3 rounded-xl px-2 py-1 transition-colors hover:bg-black/[0.04] focus:outline-none focus:ring-2 focus:ring-brand/30 disabled:cursor-default disabled:hover:bg-transparent dark:hover:bg-white/[0.06]"
             aria-label={openPeerProfileLabel}
           >

@@ -16,6 +16,7 @@ import { PortfolioDetailHero } from './PortfolioDetailHero';
 import { PortfolioDetailSkeleton } from './PortfolioDetailSkeleton';
 import { PortfolioDeleteConfirmDialog } from './PortfolioDeleteConfirmDialog';
 import { PortfolioImageGallery } from './PortfolioImageGallery';
+import { PortfolioImageManagementSection } from './PortfolioImageManagementSection';
 import { PortfolioImageUploadSection } from './PortfolioImageUploadSection';
 import { PortfolioInlineEditPanel } from './PortfolioInlineEditPanel';
 import { PortfolioLightbox } from './PortfolioLightbox';
@@ -245,6 +246,12 @@ export default function PortfolioDetailModule({
           )}
           {canManage && (
             <PortfolioImageUploadSection
+              item={item}
+              onRefresh={() => loadItem({ preserveCurrent: true })}
+            />
+          )}
+          {canManage && (
+            <PortfolioImageManagementSection
               item={item}
               onRefresh={() => loadItem({ preserveCurrent: true })}
             />

@@ -7,6 +7,7 @@ import type { Offer } from '../profile/profileOffersTypes';
 import OfferImageCarousel from '../shared/OfferImageCarousel';
 import ReviewCard, { type Review } from './ReviewCard';
 import ReviewSummary from './ReviewSummary';
+import type { ReviewsStats } from './reviewsSummary';
 import { OwnerResponseModal } from './OwnerResponseModal';
 import { useTargetReviewScroll } from './useTargetReviewScroll';
 import { useTargetOwnerResponseModal } from './useTargetOwnerResponseModal';
@@ -32,6 +33,13 @@ export type OfferReviewsDesktopProps = {
   loading: boolean;
   reviews: Review[];
   reviewsLoading: boolean;
+  /** Agregát hodnotení z backendu (priemer/breakdown/total – správny aj pri stránkovaní). */
+  reviewsStats?: ReviewsStats | null;
+  /** Existuje ďalšia strana recenzií na donačítanie. */
+  hasMoreReviews?: boolean;
+  /** Práve prebieha donačítavanie ďalšej strany. */
+  loadingMoreReviews?: boolean;
+  onLoadMoreReviews?: () => void;
   isOwnOffer: boolean;
   isBusinessOwner: boolean;
   /** Z API detailu ponuky – môže pridať recenziu po uzavretej výmene a ešte nerecenzoval. */
@@ -64,6 +72,10 @@ export function OfferReviewsDesktop({
   loading,
   reviews,
   reviewsLoading,
+  reviewsStats,
+  hasMoreReviews,
+  loadingMoreReviews,
+  onLoadMoreReviews,
   isOwnOffer,
   isBusinessOwner,
   can_review,
@@ -213,14 +225,14 @@ export function OfferReviewsDesktop({
 
         {/* Rating Summary - pridá sa do voľného priestoru napravo */}
         <div className="w-full sm:col-span-2 2xl:col-span-1 2xl:col-start-4">
-          <ReviewSummary reviews={reviews} />
+          <ReviewSummary reviews={reviews} stats={reviewsStats} />
         </div>
       </div>
 
       {/* Zoznam recenzií */}
       <div className="mt-8 pr-6">
         <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-          {t('reviews.reviews', 'Recenzie')} ({reviews.length})
+          {t('reviews.reviews', 'Recenzie')} ({reviewsStats?.total ?? reviews.length})
         </h2>
         {reviewsLoading ? (
           <div className="flex justify-center py-8">
@@ -258,6 +270,21 @@ export function OfferReviewsDesktop({
                 />
               </div>
             ))}
+          </div>
+        )}
+
+        {!reviewsLoading && hasMoreReviews && (
+          <div className="mt-6 flex justify-center">
+            <button
+              type="button"
+              onClick={onLoadMoreReviews}
+              disabled={loadingMoreReviews}
+              className="px-5 py-2 text-sm font-semibold rounded-lg border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-900 disabled:opacity-60 disabled:cursor-wait transition-colors"
+            >
+              {loadingMoreReviews
+                ? t('common.loading', 'Načítavam…')
+                : t('reviews.loadMore', 'Zobraziť ďalšie')}
+            </button>
           </div>
         )}
       </div>

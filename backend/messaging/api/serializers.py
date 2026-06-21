@@ -93,19 +93,24 @@ class GroupInviteSerializer(serializers.Serializer):
 
 class UserBriefSerializer(serializers.Serializer):
     id = serializers.IntegerField()
-    display_name = serializers.CharField()
+    display_name = serializers.CharField(allow_blank=True)
     slug = serializers.CharField(allow_null=True, required=False)
     user_type = serializers.CharField(allow_null=True, required=False)
     avatar_url = serializers.CharField(allow_null=True, required=False)
+    is_deleted = serializers.BooleanField(required=False)
 
 
 def serialize_user_brief(user, request=None):
+    # Anonymizovaný/zmazaný účet (is_active=False): nevracaj meno/slug/avatar
+    # (sú anonymizované). Frontend zobrazí preložené "Zmazaný používateľ".
+    is_deleted = not getattr(user, "is_active", True)
     return {
         "id": user.id,
-        "display_name": getattr(user, "display_name", "") or "",
-        "slug": getattr(user, "slug", None),
+        "display_name": "" if is_deleted else (getattr(user, "display_name", "") or ""),
+        "slug": None if is_deleted else getattr(user, "slug", None),
         "user_type": getattr(user, "user_type", None),
-        "avatar_url": _avatar_url(request, user),
+        "avatar_url": None if is_deleted else _avatar_url(request, user),
+        "is_deleted": is_deleted,
     }
 
 
@@ -210,6 +215,18 @@ class ConversationListItemSerializer(serializers.ModelSerializer):
         request = self.context.get("request")
         annotated_other_user_id = getattr(obj, "other_user_id", None)
         if annotated_other_user_id:
+            # Anonymizovaný/zmazaný účet (is_active=False): nevracaj meno/slug/avatar.
+            # Frontend zobrazí preložené "Zmazaný používateľ" (rovnako ako pri liste).
+            is_deleted = getattr(obj, "other_user_is_active", True) is False
+            if is_deleted:
+                return {
+                    "id": annotated_other_user_id,
+                    "display_name": "",
+                    "slug": None,
+                    "user_type": getattr(obj, "other_user_type", None),
+                    "avatar_url": None,
+                    "is_deleted": True,
+                }
             return {
                 "id": annotated_other_user_id,
                 "display_name": get_canonical_display_name(
@@ -224,6 +241,7 @@ class ConversationListItemSerializer(serializers.ModelSerializer):
                 "avatar_url": _avatar_name_url(
                     request, getattr(obj, "other_user_avatar_name", None)
                 ),
+                "is_deleted": False,
             }
 
         me = request.user if request else None
@@ -446,14 +464,10 @@ class MessageSerializer(serializers.ModelSerializer):
 
     def get_sender(self, obj: Message):
         request = self.context.get("request")
-        u = obj.sender
-        return {
-            "id": u.id,
-            "display_name": getattr(u, "display_name", "") or "",
-            "slug": getattr(u, "slug", None),
-            "user_type": getattr(u, "user_type", None),
-            "avatar_url": _avatar_url(request, u),
-        }
+        # serialize_user_brief anonymizovaného odosielateľa (is_active=False) vráti
+        # is_deleted=True + prázdne meno/slug/avatar, takže neukáže ani nealtuje
+        # surové "deleted-user-<uuid>".
+        return serialize_user_brief(obj.sender, request)
 
     def get_text(self, obj: Message):
         if obj.is_deleted:

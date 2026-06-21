@@ -591,7 +591,9 @@ class TestSkillRequestsAndNotifications(APITestCase):
 
         list_response = self.client.get(f"{self.base}/skills/{self.offer.id}/reviews/")
         self.assertEqual(list_response.status_code, status.HTTP_200_OK)
-        listed_review = next(item for item in list_response.data if item["id"] == review.id)
+        listed_review = next(
+            item for item in list_response.data["results"] if item["id"] == review.id
+        )
         self.assertEqual(listed_review["likes_count"], 1)
         self.assertTrue(listed_review["is_liked_by_me"])
 

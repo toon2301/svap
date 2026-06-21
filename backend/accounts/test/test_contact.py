@@ -116,3 +116,64 @@ class TestContactForm(APITestCase):
         )
         assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
         assert "error" in response.data
+
+    @override_settings(
+        CAPTCHA_ENABLED=False,
+        RATE_LIMITING_ENABLED=False,
+        EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+        SUPPORT_EMAIL="info@svaply.com",
+    )
+    def test_contact_message_with_sql_keywords_accepted(self):
+        # Bug: legitímny text s bežnými slovami (update/select/delete) bol 400.
+        message = (
+            "Chcel by som update svojej objednávky, prosím select správneho "
+            "produktu a delete toho starého."
+        )
+        response = self.client.post(
+            self.url,
+            {"email": "user@example.com", "message": message},
+            format="json",
+        )
+        assert response.status_code == status.HTTP_200_OK
+        assert len(mail.outbox) == 1
+        assert message in mail.outbox[0].body
+
+    @override_settings(
+        CAPTCHA_ENABLED=False,
+        RATE_LIMITING_ENABLED=False,
+        EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+        SUPPORT_EMAIL="info@svaply.com",
+    )
+    def test_contact_message_script_is_sanitized_not_blocked(self):
+        # XSS pokus nesmie byť blokovaný 400, ale sanitizovaný (bleach odstráni <script>).
+        response = self.client.post(
+            self.url,
+            {
+                "email": "user@example.com",
+                "message": "<script>alert('xss')</script>Ahoj",
+            },
+            format="json",
+        )
+        assert response.status_code == status.HTTP_200_OK
+        assert len(mail.outbox) == 1
+        body = mail.outbox[0].body
+        assert "<script>" not in body
+        assert "Ahoj" in body
+
+    @override_settings(
+        CAPTCHA_ENABLED=False,
+        RATE_LIMITING_ENABLED=False,
+        EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+    )
+    def test_contact_message_only_html_tags_rejected_after_sanitization(self):
+        # BOD 4: vstup zložený len z tagov sa po sanitizácii vyprázdni → 400,
+        # nesmie sa odoslať prázdny email.
+        for empty_after in ("<script></script>", "<div></div>", "   <br>  "):
+            response = self.client.post(
+                self.url,
+                {"email": "user@example.com", "message": empty_after},
+                format="json",
+            )
+            assert response.status_code == status.HTTP_400_BAD_REQUEST, empty_after
+            assert "message" in response.data
+        assert len(mail.outbox) == 0

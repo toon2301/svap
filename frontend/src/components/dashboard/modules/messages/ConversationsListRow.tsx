@@ -5,6 +5,7 @@ import { Bars3Icon } from '@heroicons/react/24/outline';
 import type { ConversationListItem } from './types';
 import { GroupConversationAvatar } from './GroupConversationAvatar';
 import { MessagePinIcon } from './MessagePinIcon';
+import { messagingUserName } from './messagingUserName';
 
 export function ConversationsListRow({
   conversation,
@@ -31,7 +32,7 @@ export function ConversationsListRow({
   const isGroup = Boolean(conversation.is_group);
   const title = isGroup
     ? (conversation.name || t('messages.unknownGroup', 'Skupina'))
-    : other?.display_name || t('messages.unknownUser', 'User');
+    : messagingUserName(other, t);
   const isMine =
     typeof conversation.last_message_sender_id === 'number' &&
     conversation.last_message_sender_id === currentUserId;

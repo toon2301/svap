@@ -8,10 +8,13 @@ from datetime import datetime, timezone
 import boto3
 from django.conf import settings
 from django.core.exceptions import ValidationError
+from django.core.files.base import ContentFile
+from django.core.files.storage import default_storage
 from django.db import transaction
 
 from swaply.image_moderation import check_image_safety
 
+from .local_upload import local_portfolio_upload_enabled
 from .models import PortfolioImage, PortfolioItem
 
 logger = logging.getLogger(__name__)
@@ -88,14 +91,34 @@ def _delete_s3_key(s3, bucket: str, key: str) -> None:
         pass
 
 
+def _delete_local_key(key: str) -> None:
+    if not key:
+        return
+    try:
+        default_storage.delete(key)
+    except Exception:
+        pass
+
+
+def _read_local_key(key: str) -> bytes:
+    with default_storage.open(key, "rb") as stored_file:
+        return stored_file.read()
+
+
+def _upload_local_variant(key: str, payload: bytes) -> None:
+    if default_storage.exists(key):
+        default_storage.delete(key)
+    default_storage.save(key, ContentFile(payload))
+
+
 def _reject_image(
-    image_id: int, *, reason: str, pending_key: str, s3, bucket: str
+    image_id: int, *, reason: str, pending_key: str, delete_key
 ) -> None:
     with transaction.atomic():
         try:
             image = PortfolioImage.objects.select_for_update().get(id=image_id)
         except PortfolioImage.DoesNotExist:
-            _delete_s3_key(s3, bucket, pending_key)
+            delete_key(pending_key)
             return
 
         if image.status == PortfolioImage.Status.APPROVED:
@@ -105,7 +128,7 @@ def _reject_image(
         image.processed_at = _now()
         image.save(update_fields=["status", "rejected_reason", "processed_at"])
 
-    _delete_s3_key(s3, bucket, pending_key)
+    delete_key(pending_key)
 
 
 def _upload_variant(s3, bucket: str, key: str, payload: bytes) -> None:
@@ -119,7 +142,8 @@ def _upload_variant(s3, bucket: str, key: str, payload: bytes) -> None:
 
 def process_portfolio_image_record(portfolio_image_id: int) -> None:
     bucket = getattr(settings, "AWS_STORAGE_BUCKET_NAME", None)
-    if not bucket:
+    use_local_storage = local_portfolio_upload_enabled()
+    if not bucket and not use_local_storage:
         raise RuntimeError("AWS_STORAGE_BUCKET_NAME not configured")
 
     with transaction.atomic():
@@ -143,8 +167,17 @@ def process_portfolio_image_record(portfolio_image_id: int) -> None:
         if not pending_key:
             raise RuntimeError("pending_key missing")
 
-    s3 = _s3_client()
-    raw_bytes = s3.get_object(Bucket=bucket, Key=pending_key)["Body"].read()
+    if use_local_storage:
+        raw_bytes = _read_local_key(pending_key)
+        delete_key = _delete_local_key
+    else:
+        s3 = _s3_client()
+        raw_bytes = s3.get_object(Bucket=bucket, Key=pending_key)["Body"].read()
+
+        # Pomenovaná funkcia (nie lambda) kvôli čitateľnosti a debugovaniu
+        # (zmysluplný názov v stack trace). Viaže s3 klient + bucket z tejto vetvy.
+        def delete_key(key):
+            return _delete_s3_key(s3, bucket, key)
 
     try:
         decoded = _decode_image(raw_bytes)
@@ -153,8 +186,7 @@ def process_portfolio_image_record(portfolio_image_id: int) -> None:
             portfolio_image_id,
             reason="Neplatny alebo nepodporovany format obrazka.",
             pending_key=pending_key,
-            s3=s3,
-            bucket=bucket,
+            delete_key=delete_key,
         )
         return
 
@@ -182,12 +214,12 @@ def process_portfolio_image_record(portfolio_image_id: int) -> None:
             portfolio_image_id,
             reason="Obrazok bol zamietnuty kvoli nevhodnemu obsahu.",
             pending_key=pending_key,
-            s3=s3,
-            bucket=bucket,
+            delete_key=delete_key,
         )
         return
 
-    key_prefix = f"media/portfolio/{item_id}/{os.urandom(16).hex()}"
+    storage_prefix = "portfolio" if use_local_storage else "media/portfolio"
+    key_prefix = f"{storage_prefix}/{item_id}/{os.urandom(16).hex()}"
     thumbnail_key = f"{key_prefix}-thumbnail.webp"
     medium_key = f"{key_prefix}-medium.webp"
     large_key = f"{key_prefix}-large.webp"
@@ -199,14 +231,17 @@ def process_portfolio_image_record(portfolio_image_id: int) -> None:
             (medium_key, medium_bytes),
             (large_key, large_bytes),
         ):
-            _upload_variant(s3, bucket, key, payload)
+            if use_local_storage:
+                _upload_local_variant(key, payload)
+            else:
+                _upload_variant(s3, bucket, key, payload)
             uploaded_keys.append(key)
     except Exception:
         for key in uploaded_keys:
-            _delete_s3_key(s3, bucket, key)
+            delete_key(key)
         raise
 
-    _delete_s3_key(s3, bucket, pending_key)
+    delete_key(pending_key)
 
     with transaction.atomic():
         try:
@@ -215,7 +250,7 @@ def process_portfolio_image_record(portfolio_image_id: int) -> None:
             )
         except PortfolioImage.DoesNotExist:
             for key in uploaded_keys:
-                _delete_s3_key(s3, bucket, key)
+                delete_key(key)
             return
 
         if image.status in (
@@ -223,7 +258,7 @@ def process_portfolio_image_record(portfolio_image_id: int) -> None:
             PortfolioImage.Status.REJECTED,
         ):
             for key in uploaded_keys:
-                _delete_s3_key(s3, bucket, key)
+                delete_key(key)
             return
 
         image.status = PortfolioImage.Status.APPROVED
@@ -262,7 +297,7 @@ def process_portfolio_image_record(portfolio_image_id: int) -> None:
             )
             image.delete()
             for key in uploaded_keys:
-                _delete_s3_key(s3, bucket, key)
+                delete_key(key)
             return
 
         if item.cover_image_id is None:

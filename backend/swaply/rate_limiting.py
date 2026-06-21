@@ -312,6 +312,10 @@ resend_verification_rate_limit = rate_limit(
 api_rate_limit = rate_limit(
     max_attempts=1000, window_minutes=60, block_minutes=60, action="api"
 )
+# Zmazanie účtu / žiadosť o zmazanie: citlivá akcia – prísny limit per IP.
+account_deletion_rate_limit = rate_limit(
+    max_attempts=5, window_minutes=60, block_minutes=60, action="account_deletion"
+)
 email_check_rate_limit = rate_limit(
     max_attempts=30, window_minutes=10, block_minutes=30, action="email_check"
 )

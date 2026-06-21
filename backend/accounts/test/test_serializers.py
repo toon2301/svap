@@ -10,7 +10,6 @@ from rest_framework.test import APITestCase
 from rest_framework import status
 from factory import Faker, SubFactory
 from factory.django import DjangoModelFactory
-from datetime import date
 
 from accounts.serializers import (
     UserRegistrationSerializer,
@@ -47,10 +46,6 @@ class TestUserRegistrationSerializer(TestCase):
             "password": "testpass123",
             "password_confirm": "testpass123",
             "user_type": "individual",
-            "birth_day": "15",
-            "birth_month": "06",
-            "birth_year": "1990",
-            "gender": "male",
             "captcha_token": "test_captcha_token",
         }
 
@@ -107,24 +102,6 @@ class TestUserRegistrationSerializer(TestCase):
         data = self.valid_data.copy()
         data["user_type"] = "company"
         # company_name chýba
-
-        serializer = UserRegistrationSerializer(data=data)
-        self.assertFalse(serializer.is_valid())
-        self.assertIn("non_field_errors", serializer.errors)
-
-    def test_age_validation(self):
-        """Test validácie veku"""
-        data = self.valid_data.copy()
-        data["birth_year"] = "2015"  # Príliš mladý (menej ako 13 rokov)
-
-        serializer = UserRegistrationSerializer(data=data)
-        self.assertFalse(serializer.is_valid())
-        self.assertIn("non_field_errors", serializer.errors)
-
-    def test_invalid_birth_date(self):
-        """Test neplatného dátumu narodenia"""
-        data = self.valid_data.copy()
-        data["birth_day"] = "32"  # Neplatný deň
 
         serializer = UserRegistrationSerializer(data=data)
         self.assertFalse(serializer.is_valid())
@@ -226,8 +203,6 @@ class TestUserProfileSerializer(TestCase):
         data = serializer.data
 
         assert "email" not in data
-        assert "birth_date" not in data
-        assert "gender" not in data
         assert "subscription_tier" not in data
         assert "entitlements" not in data
         assert data["is_favorited"] is True

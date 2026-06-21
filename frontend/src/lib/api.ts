@@ -742,6 +742,9 @@ export const endpoints = {
     desktopCardFlipHint: '/auth/hints/desktop-card-flip/',
     verifyEmail: '/auth/verify-email/',
     resendVerification: '/auth/resend-verification/',
+    deleteAccount: '/auth/account/',
+    requestAccountDeletion: '/auth/account/request-deletion/',
+    confirmAccountDeletion: '/auth/account/confirm-deletion/',
     oauthCallback: '/oauth/callback/',
     googleLoginUrl: '/oauth/google/login-url/',
     csrfToken: '/auth/csrf-token/',
@@ -752,6 +755,7 @@ export const endpoints = {
     search: '/auth/dashboard/search/',
     searchRecommendations: '/auth/dashboard/search/recommendations/',
     favorites: '/auth/dashboard/favorites/',
+    favoriteUser: (id: number) => `/auth/dashboard/favorites/${id}/`,
     profile: '/auth/dashboard/profile/',
     userProfile: (id: number) => `/auth/dashboard/users/${id}/profile/`,
     userSkills: (id: number) => `/auth/dashboard/users/${id}/skills/`,
@@ -763,11 +767,15 @@ export const endpoints = {
   // Portfolio
   portfolio: {
     list: '/auth/portfolio/',
+    reorder: '/auth/portfolio/reorder/',
     detail: (id: number) => `/auth/portfolio/${id}/`,
     userList: (id: number) => `/auth/dashboard/users/${id}/portfolio/`,
     userListBySlug: (slug: string) => `/auth/dashboard/users/slug/${encodeURIComponent(slug)}/portfolio/`,
     imageUploadInit: (itemId: number) => `/auth/portfolio/${itemId}/images/upload-init/`,
     imageUploadComplete: (itemId: number) => `/auth/portfolio/${itemId}/images/upload-complete/`,
+    imageReorder: (itemId: number) => `/auth/portfolio/${itemId}/images/reorder/`,
+    imageDetail: (itemId: number, imageId: number) => `/auth/portfolio/${itemId}/images/${imageId}/`,
+    imageCover: (itemId: number, imageId: number) => `/auth/portfolio/${itemId}/images/${imageId}/cover/`,
   },
   // Skills
   skills: {

@@ -127,19 +127,6 @@ class User(AbstractUser):
         _("Zobraziť profesiu verejne"), default=True
     )
 
-    # Dátum narodenia a pohlavie
-    birth_date = models.DateField(_("Dátum narodenia"), blank=True, null=True)
-    gender = models.CharField(
-        _("Pohlavie"),
-        max_length=20,
-        choices=[
-            ("male", _("Muž")),
-            ("female", _("Žena")),
-            ("other", _("Iné")),
-        ],
-        blank=True,
-    )
-
     # Pre firmy
     company_name = models.CharField(_("Názov firmy"), max_length=100, blank=True)
     website = models.URLField(_("Webstránka"), blank=True)
@@ -540,6 +527,77 @@ Tím Swaply
         self.user.save()
 
         return True
+
+
+class AccountDeletionRequest(models.Model):
+    """
+    Jednorazový token na potvrdenie NEZVRATNÉHO zmazania účtu cez email.
+
+    Používa sa pre účty bez hesla (OAuth/Google), ktoré nevedia potvrdiť zmazanie
+    zadaním hesla. Vzor (token/expirácia 48h) je zhodný s EmailVerification.
+    """
+
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="deletion_requests"
+    )
+    token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    used_at = models.DateTimeField(null=True, blank=True)
+    is_used = models.BooleanField(default=False)
+
+    class Meta:
+        verbose_name = _("Žiadosť o zmazanie účtu")
+        verbose_name_plural = _("Žiadosti o zmazanie účtu")
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        # Nikdy neuvádzaj email (PII) v reprezentácii.
+        return f"Žiadosť o zmazanie pre user_id={self.user_id}"
+
+    def is_expired(self):
+        """Token platí 48 hodín (rovnako ako email verifikácia)."""
+        return timezone.now() > self.created_at + timezone.timedelta(hours=48)
+
+    def get_confirm_url(self):
+        base_url = getattr(settings, "FRONTEND_URL", "http://localhost:3000")
+        return f"{base_url}/delete-account/confirm?token={self.token}"
+
+    def send_deletion_email(self):
+        """Pošle email s jednorazovým odkazom na potvrdenie zmazania účtu."""
+        import logging
+
+        logger = logging.getLogger(__name__)
+        confirm_url = self.get_confirm_url()
+        subject = "Potvrdenie zmazania účtu - Swaply"
+        message = f"""
+Ahoj {self.user.display_name},
+
+Dostali sme požiadavku na ZMAZANIE tvojho účtu na Swaply.
+
+POZOR: Toto je NEZVRATNÁ operácia. Po potvrdení budú tvoje osobné údaje
+anonymizované a tvoje ponuky, portfólio a hodnotenia odstránené.
+
+Ak chceš účet naozaj zmazať, klikni na nasledujúci odkaz (platí 48 hodín):
+{confirm_url}
+
+Ak si o zmazanie nepožiadal ty, tento email ignoruj – s účtom sa nič nestane.
+
+S pozdravom,
+Tím Swaply
+        """
+        try:
+            send_mail(
+                subject=subject,
+                message=message,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[self.user.email],
+                fail_silently=False,
+            )
+            logger.info("Account deletion email sent")
+            return True
+        except Exception:
+            logger.error("Account deletion email failed")
+            return False
 
 
 class OfferedSkill(models.Model):
