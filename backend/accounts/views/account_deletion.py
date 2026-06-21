@@ -10,6 +10,7 @@ Dva flow zdieľajú jednu anonymizačnú funkciu (accounts.account_deletion):
 import logging
 
 from django.core.exceptions import ValidationError
+from django.db import transaction
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.decorators import (
@@ -103,28 +104,41 @@ def confirm_account_deletion_view(request):
             {"error": "Chýba token."}, status=status.HTTP_400_BAD_REQUEST
         )
 
+    # Celá operácia (lock tokenu → anonymizácia → označenie tokenu) je v JEDNEJ
+    # transakcii: buď oboje uspeje, alebo sa oboje rollbackne. select_for_update
+    # zamkne riadok proti súbežnému použitiu toho istého tokenu (dvojklik/race).
     try:
-        deletion_request = AccountDeletionRequest.objects.select_related("user").get(
-            token=token
-        )
-    except (AccountDeletionRequest.DoesNotExist, ValueError, ValidationError):
+        with transaction.atomic():
+            try:
+                deletion_request = (
+                    AccountDeletionRequest.objects.select_for_update()
+                    .select_related("user")
+                    .get(token=token)
+                )
+            except (AccountDeletionRequest.DoesNotExist, ValueError, ValidationError):
+                return Response(
+                    {"error": "Neplatný alebo expirovaný odkaz."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            if deletion_request.is_used or deletion_request.is_expired():
+                return Response(
+                    {"error": "Odkaz expiroval alebo už bol použitý."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            anonymize_user(deletion_request.user)
+
+            # Token "spáľ" až po úspešnej anonymizácii (v tej istej transakcii).
+            deletion_request.is_used = True
+            deletion_request.used_at = timezone.now()
+            deletion_request.save(update_fields=["is_used", "used_at"])
+    except Exception:
+        logger.error("Account deletion confirm failed")
         return Response(
-            {"error": "Neplatný alebo expirovaný odkaz."},
-            status=status.HTTP_400_BAD_REQUEST,
+            {"error": "Zmazanie účtu zlyhalo. Skúste to znova neskôr."},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
-
-    if deletion_request.is_used or deletion_request.is_expired():
-        return Response(
-            {"error": "Odkaz expiroval alebo už bol použitý."},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
-
-    user = deletion_request.user
-    deletion_request.is_used = True
-    deletion_request.used_at = timezone.now()
-    deletion_request.save(update_fields=["is_used", "used_at"])
-
-    anonymize_user(user)
 
     return Response(
         {"message": "Účet bol zmazaný."}, status=status.HTTP_200_OK

@@ -344,7 +344,9 @@ describe('ProfilePortfolioSection', () => {
     render(<ProfilePortfolioSection activeTab="portfolio" isOtherUserProfile={false} ownerUserId={1} />);
 
     fireEvent.click(await screen.findByRole('button', { name: 'Poradie portfólia' }));
-    expect(screen.queryByTestId('portfolio-order-panel')).not.toBeInTheDocument();
+    // BOD 10b: tlačidlový reorder panel je teraz dostupný aj na desktope
+    // (prístupnosť pre klávesnicu) – popri inline drag layoute.
+    expect(screen.getByTestId('portfolio-order-panel')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Uložiť poradie' })).toBeInTheDocument();
 
     const dataTransfer = {

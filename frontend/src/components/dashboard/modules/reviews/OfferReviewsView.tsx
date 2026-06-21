@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { api, endpoints } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
@@ -147,6 +147,10 @@ export default function OfferReviewsView({
   const [reviewsPage, setReviewsPage] = useState(1);
   const [reviewsTotalPages, setReviewsTotalPages] = useState(1);
   const [loadingMoreReviews, setLoadingMoreReviews] = useState(false);
+  // Vždy drží aktuálne offerId – po await-e fetchu vie zistiť, či používateľ
+  // medzitým neprešiel na inú ponuku (ochrana proti race condition).
+  const offerIdRef = useRef(offerId);
+  offerIdRef.current = offerId;
   const [isAddReviewModalOpen, setIsAddReviewModalOpen] = useState(false);
   const [isHoursModalOpen, setIsHoursModalOpen] = useState(false);
   const [reviewToEdit, setReviewToEdit] = useState<Review | null>(null);
@@ -180,6 +184,7 @@ export default function OfferReviewsView({
   }, [offerId]);
 
   useEffect(() => {
+    setLoadingMoreReviews(false);
     if (offerId == null) {
       setReviews([]);
       setReviewsStats(null);
@@ -217,10 +222,13 @@ export default function OfferReviewsView({
   // Donačítanie ďalšej strany – NOVÉ recenzie sa pripoja k existujúcim.
   const handleLoadMoreReviews = async () => {
     if (offerId == null || loadingMoreReviews || !hasMoreReviews) return;
+    const requestedOfferId = offerId; // zachyť pred requestom
     const nextPage = reviewsPage + 1;
     setLoadingMoreReviews(true);
     try {
-      const data = await fetchReviewsPage(offerId, nextPage);
+      const data = await fetchReviewsPage(requestedOfferId, nextPage);
+      // Medzitým sa prepla ponuka → zahoď výsledok, neprepisuj cudzí stav.
+      if (offerIdRef.current !== requestedOfferId) return;
       const incoming = Array.isArray(data.results) ? data.results : [];
       setReviews((prev) => {
         const seen = new Set(prev.map((r) => r.id));
@@ -230,20 +238,24 @@ export default function OfferReviewsView({
       setReviewsPage(data.page || nextPage);
       setReviewsTotalPages(data.total_pages || reviewsTotalPages);
     } catch (error: any) {
+      if (offerIdRef.current !== requestedOfferId) return;
       alert(
         error?.response?.data?.error ||
           error?.message ||
           t('reviews.loadMoreError', 'Nepodarilo sa načítať ďalšie recenzie.'),
       );
     } finally {
-      setLoadingMoreReviews(false);
+      if (offerIdRef.current === requestedOfferId) setLoadingMoreReviews(false);
     }
   };
 
   // Po pridaní/úprave/zmazaní recenzie načítaj zoznam odznova od 1. strany.
   const reloadReviews = async () => {
     if (offerId == null) return;
-    const data = await fetchReviewsPage(offerId, 1);
+    const requestedOfferId = offerId; // zachyť pred requestom
+    const data = await fetchReviewsPage(requestedOfferId, 1);
+    // Medzitým sa prepla ponuka → zahoď výsledok, neprepisuj cudzí stav.
+    if (offerIdRef.current !== requestedOfferId) return;
     setReviews(Array.isArray(data.results) ? data.results : []);
     setReviewsStats(normalizeReviewsStats(data));
     setReviewsPage(data.page || 1);

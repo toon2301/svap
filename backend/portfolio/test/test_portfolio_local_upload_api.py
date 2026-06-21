@@ -5,7 +5,7 @@ from unittest.mock import patch
 from django.contrib.auth import get_user_model
 from django.core.files.storage import default_storage
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import override_settings
+from django.test import RequestFactory, override_settings
 from django.urls import reverse
 from PIL import Image
 from rest_framework import status
@@ -55,6 +55,16 @@ class PortfolioLocalUploadApiTests(APITestCase):
             response.data["key"].startswith(f"uploads/portfolio/{self.item.id}/")
         )
         self.assertIn("token", response.data["fields"])
+
+    def test_local_upload_url_resolves_with_accounts_namespace(self):
+        # REGRESIA (BOD 3 z review): portfolio.urls je includnutý v accounts/urls.py
+        # (app_name="accounts") BEZ vlastného namespace → správny názov je
+        # "accounts:portfolio_image_local_upload", NIE bare názov. Tento test bráni
+        # chybnej "oprave" reverse() na bare názov (tá by spôsobila NoReverseMatch).
+        from portfolio.local_upload import local_upload_url
+
+        url = local_upload_url(RequestFactory().get("/"))  # nesmie hodiť NoReverseMatch
+        self.assertTrue(url.endswith("/api/auth/portfolio/images/local-upload/"))
 
     def test_upload_init_keeps_storage_error_outside_debug_without_bucket(self):
         self.client.force_authenticate(user=self.owner)

@@ -133,11 +133,16 @@ def _parse_id_list(value):
         return None
     parsed = []
     for raw_id in value:
+        # bool je subclass int – odmietni ho explicitne.
         if isinstance(raw_id, bool):
             return None
-        try:
+        # Prijmi LEN skutočný int alebo string zložený výhradne z číslic (bez
+        # desatinnej bodky) – `int(1.9)` by inak ticho skrátil na 1.
+        if isinstance(raw_id, int):
+            item_id = raw_id
+        elif isinstance(raw_id, str) and raw_id.isascii() and raw_id.isdigit():
             item_id = int(raw_id)
-        except (TypeError, ValueError):
+        else:
             return None
         if item_id < 1:
             return None

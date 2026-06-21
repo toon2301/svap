@@ -46,7 +46,13 @@ class ContactFormSerializer(serializers.Serializer):
         # <script>). Neblokujeme legitímny text s bežnými slovami ako
         # "update"/"select" – SQL injekcia nehrozí, ORM používa parametrizované
         # dotazy.
-        return bleach.clean(value, tags=[], strip=True)
+        cleaned = bleach.clean(value, tags=[], strip=True).strip()
+        # Po sanitizácii nesmie ostať prázdny text – vstup zložený len z tagov
+        # (napr. "<script></script>" alebo "<div></div>") sa odstráni celý a
+        # nepredstavuje platnú správu.
+        if not cleaned:
+            raise serializers.ValidationError(_("Správa je povinná."))
+        return cleaned
 
     def validate(self, attrs):
         website = (attrs.get("website") or "").strip()

@@ -34,14 +34,15 @@ export function summaryFromReviews(reviews: Review[]): ReviewsSummary {
   let totalRating = 0;
 
   reviews.forEach((review) => {
-    const rating = Math.round(review.rating * 2) / 2; // najbližšia 0.5
-    const rounded = Math.round(rating); // breakdown po celých hviezdach
+    // Zaokrúhlenú hodnotu použijeme LEN pre breakdown (rozdelenie po hviezdach).
+    const rounded = Math.round(Math.round(review.rating * 2) / 2);
     if (rounded >= 5) breakdown[5]++;
     else if (rounded >= 4) breakdown[4]++;
     else if (rounded >= 3) breakdown[3]++;
     else if (rounded >= 2) breakdown[2]++;
     else breakdown[1]++;
-    totalRating += rating;
+    // Priemer počítame z PRESNEJ hodnoty (nie zaokrúhlenej), aby nevznikala chyba.
+    totalRating += review.rating;
   });
 
   const averageRating = totalRating / reviews.length;

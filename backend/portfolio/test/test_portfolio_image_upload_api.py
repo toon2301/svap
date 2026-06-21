@@ -289,7 +289,7 @@ class PortfolioImageUploadApiTests(APITestCase):
         self.item.save(update_fields=["cover_image", "updated_at"])
         self.client.force_authenticate(user=self.owner)
 
-        with patch("portfolio.image_views.delete_storage_keys"):
+        with patch("portfolio.image_views.delete_storage_keys") as delete_mock:
             with self.captureOnCommitCallbacks(execute=True):
                 response = self.client.delete(
                     reverse(
@@ -300,6 +300,9 @@ class PortfolioImageUploadApiTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.item.refresh_from_db()
         self.assertIsNone(self.item.cover_image)
+        # Storage kľúče zmazaného obrázka sa naozaj odstránia (mock bol zavolaný).
+        delete_mock.assert_called_once()
+        self.assertIn("media/portfolio/only.webp", delete_mock.call_args.args[0])
 
     def test_reorder_images_updates_order(self):
         first = self._image(order=0, large_key="media/portfolio/first.webp")

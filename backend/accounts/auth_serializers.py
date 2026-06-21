@@ -106,7 +106,12 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         # Pozn.: username zámerne nemá znakový allowlist (povoľujeme medzery aj
         # diakritiku). Neblokujeme bežné slová ani apostrofy (napr. "O'Brien") –
         # SQL injekcia nehrozí (parametrizované dotazy) a zobrazenie escapuje
-        # frontend. Skutočné guardy sú dĺžka a unikátnosť nižšie.
+        # frontend. Skutočné guardy sú prázdnosť, dĺžka a unikátnosť nižšie.
+        value = value.strip() if isinstance(value, str) else ""
+
+        # Nesmie byť prázdne ani len biele znaky (povolené medzery vnútri).
+        if not value:
+            raise serializers.ValidationError("Používateľské meno je povinné.")
 
         # Limit 35 znakov (vrátane medzier)
         if len(value) > 35:

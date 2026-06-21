@@ -3,7 +3,8 @@ Management príkaz na vymazanie všetkých recenzií (Review) z databázy.
 Používajte pri testovaní – vymaže všetky recenzie ponúk.
 """
 
-from django.core.management.base import BaseCommand
+from django.conf import settings
+from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 
 from accounts.models import Review
@@ -20,6 +21,15 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
+        # Bezpečnostný guard: nezvratné zmazanie VŠETKÝCH recenzií nikdy nesmie
+        # bežať v produkcii (DEBUG=False). --confirm flag nižšie ostáva ako
+        # dodatočná vrstva ochrany.
+        if not settings.DEBUG:
+            raise CommandError(
+                "delete_all_reviews je dostupný len v DEBUG režime (dev/test). "
+                "V produkcii (DEBUG=False) je zakázaný – nezvratne maže všetky recenzie."
+            )
+
         if not options["confirm"]:
             self.stdout.write(
                 self.style.WARNING(

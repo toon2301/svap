@@ -130,6 +130,22 @@ class TestRegistrationFieldKeywordFalsePositive(APITestCase):
         # EmailValidator odmietne neplatný formát (chyba je vnorená pod "details").
         assert "email" in r.data.get("details", r.data)
 
+    def test_register_whitespace_only_username_rejected(self):
+        # BOD 5: username len z medzier musí byť odmietnutý (nie uložený).
+        url = reverse("accounts:register")
+        payload = {
+            "username": "   ",
+            "email": "wsuser@example.com",
+            "password": "StrongPass123",
+            "password_confirm": "StrongPass123",
+            "user_type": "individual",
+            "captcha_token": "test_captcha_token",
+        }
+        r = self.client.post(url, payload, format="json")
+        assert r.status_code == status.HTTP_400_BAD_REQUEST
+        assert "username" in r.data.get("details", r.data)
+        assert not User.objects.filter(email="wsuser@example.com").exists()
+
     def test_register_invalid_website_scheme_still_rejected(self):
         url = reverse("accounts:register")
         payload = {

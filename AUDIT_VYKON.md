@@ -85,7 +85,7 @@ Prešiel som hlavné modely a porovnal polia použité vo `filter()`/`exclude()`
 
 **Záver B:** **žiadne jednoduché chýbajúce indexy.** Pridávať špekulatívne indexy
 by len zvýšilo write overhead bez prínosu (porušilo by „nevytváraj zbytočnú
-komplexitu"). **Nevytvorené žiadne migrácie.**
+komplexitu“). **Nevytvorené žiadne migrácie.**
 
 ### B-pozn. (čaká na potvrdenie) — fulltext vyhľadávanie
 `search.py`, `search_global.py`, `dashboard search` filtrujú cez

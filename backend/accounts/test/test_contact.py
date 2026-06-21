@@ -159,3 +159,21 @@ class TestContactForm(APITestCase):
         body = mail.outbox[0].body
         assert "<script>" not in body
         assert "Ahoj" in body
+
+    @override_settings(
+        CAPTCHA_ENABLED=False,
+        RATE_LIMITING_ENABLED=False,
+        EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+    )
+    def test_contact_message_only_html_tags_rejected_after_sanitization(self):
+        # BOD 4: vstup zložený len z tagov sa po sanitizácii vyprázdni → 400,
+        # nesmie sa odoslať prázdny email.
+        for empty_after in ("<script></script>", "<div></div>", "   <br>  "):
+            response = self.client.post(
+                self.url,
+                {"email": "user@example.com", "message": empty_after},
+                format="json",
+            )
+            assert response.status_code == status.HTTP_400_BAD_REQUEST, empty_after
+            assert "message" in response.data
+        assert len(mail.outbox) == 0

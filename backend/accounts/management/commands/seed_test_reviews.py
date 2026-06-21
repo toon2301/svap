@@ -4,6 +4,7 @@ Management príkaz na vytvorenie testovacích recenzií pre ponuku (dev/test).
 
 from decimal import Decimal
 
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
@@ -133,6 +134,15 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
+        # Bezpečnostný guard: tento príkaz vytvára testovacie účty s predvídateľným
+        # heslom a falošné recenzie – nikdy nesmie bežať v produkcii (DEBUG=False).
+        if not settings.DEBUG:
+            raise CommandError(
+                "seed_test_reviews je dostupný len v DEBUG režime (dev/test). "
+                "V produkcii (DEBUG=False) je zakázaný – vytvára testovacie účty "
+                "s predvídateľným heslom a falošné recenzie."
+            )
+
         offer = self._resolve_offer(options)
         count = min(max(options["count"], 1), len(DEFAULT_REVIEWS))
         templates = DEFAULT_REVIEWS[:count]

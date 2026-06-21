@@ -140,6 +140,10 @@ function requirePositiveIdList(ids: number[], label: string): void {
       throw new Error(`Invalid ${label}.`);
     }
   });
+  // Duplicitné ID by spôsobili nesprávne mapovanie poradia a zbytočný server request.
+  if (new Set(ids).size !== ids.length) {
+    throw new Error(`Duplicate ${label}.`);
+  }
 }
 
 export async function uploadPortfolioImageInit(

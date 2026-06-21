@@ -8,7 +8,7 @@
     "passwordLabel": "A megerősítéshez add meg a jelszavad",
     "passwordRequired": "Add meg a jelszavad.",
     "wrongPassword": "Hibás jelszó. Próbáld újra.",
-    "oauthInfo": "A fiókod Google-fiókhoz kapcsolódik (jelszó nélkül). A „Fiók törlése“ gombra kattintva megerősítő e-mailt küldünk.",
+    "oauthInfo": "A fiókod Google-fiókhoz kapcsolódik (jelszó nélkül). A „Fiók törlése” gombra kattintva megerősítő e-mailt küldünk.",
     "confirmButton": "Igen, töröld a fiókot",
     "sendEmailButton": "Fiók törlése",
     "cancel": "Mégse",

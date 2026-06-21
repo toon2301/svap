@@ -22,6 +22,7 @@ export function PortfolioImageDeleteConfirmDialog({
   const { t } = useLanguage();
   const [mounted, setMounted] = useState(false);
   const cancelButtonRef = useRef<HTMLButtonElement | null>(null);
+  const dialogRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => setMounted(true), []);
 
@@ -33,6 +34,31 @@ export function PortfolioImageDeleteConfirmDialog({
       if (event.key === 'Escape' && !isDeleting) {
         event.preventDefault();
         onClose();
+        return;
+      }
+
+      // Focus trap: Tab/Shift+Tab cyklí len medzi prvkami v dialógu (neunikne von).
+      if (event.key === 'Tab') {
+        const container = dialogRef.current;
+        if (!container) return;
+        const focusable = Array.from(
+          container.querySelectorAll<HTMLElement>(
+            'button:not([disabled]), [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+          ),
+        );
+        if (focusable.length === 0) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        const active = document.activeElement;
+        if (event.shiftKey) {
+          if (active === first || !container.contains(active)) {
+            event.preventDefault();
+            last.focus();
+          }
+        } else if (active === last || !container.contains(active)) {
+          event.preventDefault();
+          first.focus();
+        }
       }
     };
 
@@ -58,6 +84,7 @@ export function PortfolioImageDeleteConfirmDialog({
       onClick={handleBackdropClick}
     >
       <div
+        ref={dialogRef}
         className="relative w-full max-w-md overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl dark:border-gray-800 dark:bg-[#0f0f10]"
         onClick={(event) => event.stopPropagation()}
       >

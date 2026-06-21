@@ -22,9 +22,13 @@ logger = logging.getLogger("swaply")
 User = get_user_model()
 
 
-def _delete_avatar_file(user) -> None:
-    """Best-effort zmazanie avatara zo storage (S3/lokál)."""
-    name = getattr(getattr(user, "avatar", None), "name", "") or ""
+def _avatar_storage_name(user) -> str:
+    """Názov avatar súboru v storage (prázdny reťazec, ak avatar nie je)."""
+    return getattr(getattr(user, "avatar", None), "name", "") or ""
+
+
+def _delete_storage_file(name: str) -> None:
+    """Best-effort zmazanie súboru zo storage (S3/lokál)."""
     if not name:
         return
     try:
@@ -137,8 +141,17 @@ def anonymize_user(user) -> None:
     # Lock riadku, aby súbežné požiadavky (dvojklik) nebežali paralelne.
     locked = User.objects.select_for_update().get(pk=user.pk)
 
+    # Názov avatara zachyť PRED scrubom – ten nastaví avatar=None.
+    avatar_name = _avatar_storage_name(locked)
+
     _delete_owned_content(locked)
-    _delete_avatar_file(locked)
+
+    # Súbor avatara (nenávratná operácia mimo DB) zmaž AŽ PO úspešnom commite.
+    # transaction.on_commit sa pri rollbacku zahodí, takže ak niektorá z DB
+    # operácií nižšie zlyhá, súbor sa NEodstráni a stav ostane konzistentný.
+    if avatar_name:
+        transaction.on_commit(lambda: _delete_storage_file(avatar_name))
+
     _scrub_user_pii(locked)
     _scrub_user_profile(locked)
     _blacklist_user_tokens(locked)

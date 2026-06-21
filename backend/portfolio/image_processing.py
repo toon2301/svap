@@ -173,7 +173,11 @@ def process_portfolio_image_record(portfolio_image_id: int) -> None:
     else:
         s3 = _s3_client()
         raw_bytes = s3.get_object(Bucket=bucket, Key=pending_key)["Body"].read()
-        delete_key = lambda key: _delete_s3_key(s3, bucket, key)
+
+        # Pomenovaná funkcia (nie lambda) kvôli čitateľnosti a debugovaniu
+        # (zmysluplný názov v stack trace). Viaže s3 klient + bucket z tejto vetvy.
+        def delete_key(key):
+            return _delete_s3_key(s3, bucket, key)
 
     try:
         decoded = _decode_image(raw_bytes)

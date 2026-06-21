@@ -49,25 +49,64 @@ class TestAnonymizeUser(APITestCase):
         # Vlastný obsah zmazaný.
         assert OfferedSkill.objects.filter(user=u).count() == 0
 
+    def test_avatar_deleted_after_successful_commit(self):
+        # BOD 1: avatar súbor sa zmaže AŽ po úspešnom commite (cez on_commit).
+        user = _make_user(username="ava", email="ava@example.com")
+        user.avatar = "avatars/test.jpg"
+        user.save(update_fields=["avatar"])
+
+        with patch("accounts.account_deletion.default_storage") as mock_storage:
+            with self.captureOnCommitCallbacks(execute=True):
+                anonymize_user(user)
+            mock_storage.delete.assert_called_once_with("avatars/test.jpg")
+
+        user.refresh_from_db()
+        assert user.is_active is False
+
+    def test_avatar_not_deleted_when_db_op_fails(self):
+        # BOD 1: ak DB operácia po naplánovaní zmazania zlyhá, transakcia sa
+        # rollbackne a súbor sa NEzmaže (on_commit sa pri rollbacku zahodí).
+        user = _make_user(username="ava2", email="ava2@example.com")
+        user.avatar = "avatars/test2.jpg"
+        user.save(update_fields=["avatar"])
+
+        with patch("accounts.account_deletion.default_storage") as mock_storage, patch(
+            "accounts.account_deletion._scrub_user_profile",
+            side_effect=RuntimeError("boom"),
+        ):
+            with pytest.raises(RuntimeError):
+                anonymize_user(user)
+
+        mock_storage.delete.assert_not_called()  # súbor zostal
+        # Stav konzistentný: user NEanonymizovaný (všetko vrátené späť).
+        user.refresh_from_db()
+        assert user.is_active is True
+        assert user.email == "ava2@example.com"
+
     def test_tokens_blacklisted(self):
         from rest_framework_simplejwt.tokens import RefreshToken
 
         user = _make_user(username="bob", email="bob@example.com")
         RefreshToken.for_user(user)  # vytvorí OutstandingToken
+
+        # Len samotný IMPORT blacklist modelov chytáme – ak appka nie je
+        # nainštalovaná, over aspoň, že anonymizácia nespadne. Assercie sú MIMO
+        # try, aby zlyhanie asercie correctne zhodilo test (nebolo zamaskované).
         try:
             from rest_framework_simplejwt.token_blacklist.models import (
                 BlacklistedToken,
                 OutstandingToken,
             )
-
-            assert OutstandingToken.objects.filter(user=user).exists()
-            anonymize_user(user)
-            outstanding = OutstandingToken.objects.filter(user=user)
-            assert outstanding.exists()
-            for ot in outstanding:
-                assert BlacklistedToken.objects.filter(token=ot).exists()
-        except Exception:
+        except ImportError:
             anonymize_user(user)  # bez blacklist appky aspoň nesmie spadnúť
+            return
+
+        assert OutstandingToken.objects.filter(user=user).exists()
+        anonymize_user(user)
+        outstanding = OutstandingToken.objects.filter(user=user)
+        assert outstanding.exists()
+        for ot in outstanding:
+            assert BlacklistedToken.objects.filter(token=ot).exists()
 
 
 @pytest.mark.django_db
@@ -155,3 +194,35 @@ class TestDeleteAccountOAuthFlow(APITestCase):
             self.confirm_url, {"token": str(dr.token)}, format="json"
         )
         assert resp.status_code == status.HTTP_400_BAD_REQUEST
+
+    def test_confirm_anonymize_failure_does_not_burn_token(self):
+        # BOD 2: ak anonymizácia zlyhá, token NESMIE ostať "spálený" a používateľ
+        # NESMIE ostať v polovičnom stave – operáciu možno zopakovať.
+        dr = AccountDeletionRequest.objects.create(user=self.user)
+        with patch(
+            "accounts.views.account_deletion.anonymize_user",
+            side_effect=RuntimeError("boom"),
+        ):
+            resp = self.client.post(
+                self.confirm_url, {"token": str(dr.token)}, format="json"
+            )
+        assert resp.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
+        dr.refresh_from_db()
+        assert dr.is_used is False  # token nespálený
+        self.user.refresh_from_db()
+        assert self.user.is_active is True  # neanonymizovaný
+
+    def test_confirm_token_cannot_be_reused(self):
+        # BOD 2: po úspešnom použití sa ten istý token nedá použiť druhýkrát
+        # (ochrana proti dvojitému spracovaniu – sekvenčný variant race-u).
+        dr = AccountDeletionRequest.objects.create(user=self.user)
+        first = self.client.post(
+            self.confirm_url, {"token": str(dr.token)}, format="json"
+        )
+        assert first.status_code == status.HTTP_200_OK
+        second = self.client.post(
+            self.confirm_url, {"token": str(dr.token)}, format="json"
+        )
+        assert second.status_code == status.HTTP_400_BAD_REQUEST
+        dr.refresh_from_db()
+        assert dr.is_used is True

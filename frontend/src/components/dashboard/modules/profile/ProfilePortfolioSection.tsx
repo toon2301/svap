@@ -232,7 +232,9 @@ export default function ProfilePortfolioSection({
           onCreated={handleCreated}
         />
       )}
-      {isOwner && isOrderOpen && isMobile && (
+      {/* Tlačidlový reorder panel je dostupný aj na desktope (prístupné pre
+          klávesnicu – drag-and-drop nie je keyboard-friendly). */}
+      {isOwner && isOrderOpen && (
         <PortfolioOrderPanel
           items={items}
           getCategoryLabel={getCategoryLabel}

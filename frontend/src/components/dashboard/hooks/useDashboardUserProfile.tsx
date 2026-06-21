@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { type User } from '@/types';
 import { type SearchUserResult } from '../modules/search/types';
 import { api, endpoints } from '@/lib/api';
@@ -61,6 +61,24 @@ export function useDashboardUserProfile({
     activeRightItem,
   } = dashboardState;
 
+  // Centralizovaný profil-fetch s konzistentným 404 handlingom: nech profil
+  // načíta ktorákoľvek cesta (slug aj ID), pri 404 sa vždy nastaví
+  // `viewedUserNotFound` (UI ukáže chybu namiesto nekonečného "Načítavam...").
+  const fetchProfileWithNotFound = useCallback(
+    async (url: string, isCancelled: () => boolean): Promise<User | null> => {
+      try {
+        const { data } = await api.get<User>(url);
+        return isCancelled() ? null : data;
+      } catch (error: any) {
+        if (!isCancelled() && error?.response?.status === 404) {
+          setViewedUserNotFound(true);
+        }
+        return null;
+      }
+    },
+    [],
+  );
+
   // Inicializácia profilu podľa slug alebo ID
   useEffect(() => {
     // Nová navigácia → vyresetuj "not found" stav.
@@ -93,26 +111,13 @@ export function useDashboardUserProfile({
     let cancelled = false;
 
     const loadBySlug = async () => {
-      try {
-        const { data } = await api.get<User>(
-          endpoints.dashboard.userProfileBySlug(initialProfileSlug),
-        );
-        if (cancelled) return;
-
-        setViewedUserId(data.id);
-        setUserProfileToCache(data.id, data);
-      } catch (error: any) {
-        // Ak je 404, slug neexistuje (používateľ zmenil meno alebo slug sa nezmenil)
-        // Tichá chyba - downstream komponenty zobrazia user-friendly hlášku
-        if (error?.response?.status === 404) {
-          // Slug neexistuje (starý slug po zmene mena, alebo zmazaný/anonymizovaný
-          // účet). Označ "not found", nech UI ukáže hlášku namiesto nekonečného
-          // "Načítavam profil...".
-          if (!cancelled) setViewedUserNotFound(true);
-          console.debug(`User with slug "${initialProfileSlug}" not found`);
-        }
-        // Iné chyby riešia downstream komponenty (napr. jemná hláška v UI)
-      }
+      const data = await fetchProfileWithNotFound(
+        endpoints.dashboard.userProfileBySlug(initialProfileSlug),
+        () => cancelled,
+      );
+      if (!data) return; // 404 (not-found nastavený v helperi) alebo zrušené
+      setViewedUserId(data.id);
+      setUserProfileToCache(data.id, data);
     };
 
     void loadBySlug();
@@ -328,22 +333,19 @@ export function useDashboardUserProfile({
         let cancelled = false;
 
         const loadProfileFromApi = async () => {
-          try {
-            const { data } = await api.get<User>(endpoints.dashboard.userProfile(viewedUserId));
-            
-            if (cancelled) return;
+          const data = await fetchProfileWithNotFound(
+            endpoints.dashboard.userProfile(viewedUserId),
+            () => cancelled,
+          );
+          if (!data) return; // 404 (not-found nastavený v helperi) alebo zrušené
 
-            // Uložiť do cache
-            setUserProfileToCache(data.id, data);
+          // Uložiť do cache
+          setUserProfileToCache(data.id, data);
 
-            // Ak má používateľ slug, aktualizovať URL a viewedUserSlug
-            if (data.slug) {
-              setViewedUserSlug(data.slug);
-              updateUrlWithSlug(data.slug);
-            }
-          } catch (error: any) {
-            if (cancelled) return;
-            // Ticho ignorovať chyby - downstream komponenty zobrazia user-friendly hlášku
+          // Ak má používateľ slug, aktualizovať URL a viewedUserSlug
+          if (data.slug) {
+            setViewedUserSlug(data.slug);
+            updateUrlWithSlug(data.slug);
           }
         };
 
@@ -354,7 +356,7 @@ export function useDashboardUserProfile({
         };
       }
     }
-  }, [viewedUserId, user, activeModule, viewedUserSlug, viewedUserSummary]);
+  }, [viewedUserId, user, activeModule, viewedUserSlug, viewedUserSummary, fetchProfileWithNotFound]);
 
   return {
     viewedUserId,
