@@ -1,6 +1,13 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState, type DragEvent } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type DragEvent,
+  type ReactNode,
+} from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { reorderPortfolioItems } from './portfolioApi';
 import { PortfolioCard } from './PortfolioCard';
@@ -13,6 +20,7 @@ type PortfolioReorderableLayoutProps = {
   onOpenItem?: (item: PortfolioItem) => void;
   onPreviewOrder: (items: PortfolioItem[]) => void;
   onReordered: (items: PortfolioItem[]) => void;
+  headerActions?: ReactNode;
 };
 
 function moveItem(items: PortfolioItem[], fromIndex: number, toIndex: number): PortfolioItem[] {
@@ -36,6 +44,7 @@ export function PortfolioReorderableLayout({
   onOpenItem,
   onPreviewOrder,
   onReordered,
+  headerActions,
 }: PortfolioReorderableLayoutProps) {
   const { t } = useLanguage();
   const [draggedItemId, setDraggedItemId] = useState<number | null>(null);
@@ -157,11 +166,27 @@ export function PortfolioReorderableLayout({
       aria-label={t('portfolio.featured')}
       className={isReorderMode ? 'portfolio-reorder-mode space-y-2' : 'space-y-2'}
     >
-      <div className="flex items-center justify-between">
+      {headerActions ? (
+        <div className="flex min-w-0 items-center gap-4 py-1">
+          <div className="flex shrink-0 items-baseline gap-2">
+            <h3 className="text-xs font-bold uppercase text-gray-900 dark:text-white">
+              {t('portfolio.featured')}
+            </h3>
+            <span className="text-xs font-medium tabular-nums text-gray-400 dark:text-gray-500">
+              {String(items.length).padStart(2, '0')}
+            </span>
+          </div>
+          <div
+            aria-hidden="true"
+            className="h-px min-w-6 flex-1 bg-gradient-to-r from-gray-300 via-gray-200 to-transparent dark:from-gray-700 dark:via-gray-800"
+          />
+          {headerActions}
+        </div>
+      ) : (
         <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
           {t('portfolio.featured')}
         </h3>
-      </div>
+      )}
       {actionError && (
         <p className="rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/20 dark:text-amber-200">
           {actionError}
@@ -181,13 +206,18 @@ export function PortfolioReorderableLayout({
         )}
       </div>
       {remainingItems.length > 0 && (
-        <div
-          data-testid="portfolio-grid"
-          className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3"
-        >
-          {remainingItems.map((item) => (
-            <div key={item.id}>{renderCard(item)}</div>
-          ))}
+        <div className="space-y-3 pt-3">
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
+            {t('portfolio.morePortfolios')}
+          </h3>
+          <div
+            data-testid="portfolio-grid"
+            className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3"
+          >
+            {remainingItems.map((item) => (
+              <div key={item.id}>{renderCard(item)}</div>
+            ))}
+          </div>
         </div>
       )}
       <style jsx global>{`

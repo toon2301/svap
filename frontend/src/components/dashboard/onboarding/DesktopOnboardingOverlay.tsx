@@ -475,6 +475,7 @@ export default function DesktopOnboardingOverlay() {
       <DesktopOnboardingSpotlight rects={spotlightRects} />
       <div
         ref={tooltipRef}
+        data-onboarding-overlay
         data-desktop-onboarding-overlay
         role="dialog"
         aria-modal="false"

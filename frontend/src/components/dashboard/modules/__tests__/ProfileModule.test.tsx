@@ -108,4 +108,41 @@ describe('ProfileModule', () => {
       'true',
     );
   });
+
+  it('reports profile tab changes so the dashboard can restore the selected tab', () => {
+    const onTabChange = jest.fn();
+    render(<ProfileModule user={mockUser} onTabChange={onTabChange} />);
+
+    fireEvent.click(screen.getAllByRole('tab', { name: /Portf/i })[0]);
+
+    expect(onTabChange).toHaveBeenCalledWith('portfolio');
+  });
+
+  it('restores a dashboard-owned tab after the profile module remounts', () => {
+    function ProfileFlowHarness() {
+      const [tab, setTab] = React.useState<'offers' | 'portfolio'>('offers');
+      const [isProfileMounted, setIsProfileMounted] = React.useState(true);
+
+      return (
+        <>
+          <button type="button" onClick={() => setIsProfileMounted(false)}>
+            Leave profile
+          </button>
+          <button type="button" onClick={() => setIsProfileMounted(true)}>
+            Return to profile
+          </button>
+          {isProfileMounted && (
+            <ProfileModule user={mockUser} initialTab={tab} onTabChange={setTab} />
+          )}
+        </>
+      );
+    }
+
+    render(<ProfileFlowHarness />);
+    fireEvent.click(screen.getAllByRole('tab', { name: /Portf/i })[0]);
+    fireEvent.click(screen.getByRole('button', { name: 'Leave profile' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Return to profile' }));
+
+    expect(screen.getAllByRole('tab', { name: /Portf/i })[0]).toHaveAttribute('aria-selected', 'true');
+  });
 });
