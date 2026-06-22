@@ -21,6 +21,7 @@ import { DesktopOnboardingProvider } from '../onboarding/DesktopOnboardingContex
 import DesktopOnboardingOverlay from '../onboarding/DesktopOnboardingOverlay';
 import { MobileOnboardingProvider } from '../onboarding/MobileOnboardingContext';
 import MobileOnboardingOverlay from '../onboarding/MobileOnboardingOverlay';
+import OnboardingScrollLock from '../onboarding/OnboardingScrollLock';
 import { isMobileOnboardingBlockedByUi } from '../onboarding/mobileOnboardingScene';
 import SearchModule from '../modules/SearchModule';
 import { MessagesDesktopRail } from '../modules/messages/MessagesDesktopRail';
@@ -139,6 +140,34 @@ function getSkillActionErrorMessage(error: unknown, fallback: string): string {
   return fallback;
 }
 
+function resolveInitialOwnProfileTab(
+  initialRoute: string | undefined,
+  initialProfileTab: ProfileTab | undefined,
+  user: User | null | undefined,
+  initialProfileSlug: string | null | undefined,
+  initialViewedUserId: number | null | undefined,
+): ProfileTab {
+  if (
+    initialRoute === 'profile' ||
+    initialRoute === 'portfolio-create' ||
+    initialRoute === 'portfolio-detail'
+  ) {
+    return initialProfileTab ?? 'offers';
+  }
+
+  if (initialRoute === 'user-profile' && initialProfileTab) {
+    const slug = String(initialProfileSlug ?? '').trim();
+    const isSelfSlug = Boolean(user?.slug && slug && user.slug === slug);
+    const isSelfId =
+      initialViewedUserId != null && user?.id != null && initialViewedUserId === user.id;
+    if (isSelfSlug || isSelfId) {
+      return initialProfileTab;
+    }
+  }
+
+  return 'offers';
+}
+
 /**
  * HlavnÃ½ obsah Dashboard komponenta s vÅ¡etkou logikou
  */
@@ -223,6 +252,15 @@ export default function DashboardContent({
   const [isMobileOfferDetailOpen, setIsMobileOfferDetailOpen] = useState(false);
   const [pendingDeleteOffer, setPendingDeleteOffer] = useState<Offer | null>(null);
   const [isDeletingOwnProfileOffer, setIsDeletingOwnProfileOffer] = useState(false);
+  const [ownProfileTab, setOwnProfileTab] = useState<ProfileTab>(() =>
+    resolveInitialOwnProfileTab(
+      initialRoute,
+      initialProfileTab,
+      dashboardState.user,
+      initialProfileSlug,
+      initialViewedUserId,
+    ),
+  );
   const skillsCategoryBackHandlerRef = useRef<(() => void) | null>(null);
   const mobileOnboardingSkillCreatedHandlerRef = useRef<(() => void) | null>(null);
   const desktopOnboardingSkillCreatedHandlerRef = useRef<(() => void) | null>(null);
@@ -243,6 +281,26 @@ export default function DashboardContent({
     initialRightItem,
     setHighlightedSkillId: highlighting.setHighlightedSkillId,
   });
+
+  useEffect(() => {
+    if (!dashboardState.user || !initialProfileTab || initialRoute !== 'user-profile') return;
+
+    const slug = String(initialProfileSlug ?? '').trim();
+    const isSelfSlug = Boolean(
+      dashboardState.user.slug && slug && dashboardState.user.slug === slug,
+    );
+    const isSelfId =
+      initialViewedUserId != null && dashboardState.user.id === initialViewedUserId;
+    if (!isSelfSlug && !isSelfId) return;
+
+    setOwnProfileTab(initialProfileTab);
+  }, [
+    dashboardState.user,
+    initialProfileSlug,
+    initialProfileTab,
+    initialRoute,
+    initialViewedUserId,
+  ]);
   const setViewedUserId = userProfile.setViewedUserId;
   const setViewedUserSlug = userProfile.setViewedUserSlug;
   const setViewedUserSummary = userProfile.setViewedUserSummary;
@@ -321,10 +379,23 @@ export default function DashboardContent({
     (moduleId: string) => {
       setRequestsRouteIntent(null);
       setIsNotificationsPanelOpen(false);
+      if (moduleId === 'profile' || activeModule === 'profile') {
+        setOwnProfileTab('offers');
+      }
       navigation.handleMainModuleChange(moduleId);
     },
-    [navigation],
+    [activeModule, navigation],
   );
+
+  const handleMobileProfileOpen = useCallback(() => {
+    setOwnProfileTab('offers');
+    navigation.handleMobileProfileClick();
+  }, [navigation]);
+
+  const handleProfileSkillsClick = useCallback(() => {
+    setOwnProfileTab('offers');
+    navigation.handleSkillsClick();
+  }, [navigation]);
 
   useEffect(() => {
     if (activeModule !== 'requests' && requestsRouteIntent) {
@@ -395,6 +466,7 @@ export default function DashboardContent({
   }, [handleMainModuleChange]);
 
   const handleDesktopOnboardingProfileOpen = useCallback(() => {
+    setOwnProfileTab('offers');
     setActiveModule('profile');
     setIsRightSidebarOpen(false);
     setActiveRightItem('');
@@ -566,6 +638,8 @@ export default function DashboardContent({
         return;
       }
 
+      setOwnProfileTab('offers');
+
       try {
         const skill = await fetchSkillDetail(offerId);
         const describeMode = skill.is_seeking ? 'search' : 'offer';
@@ -713,6 +787,7 @@ export default function DashboardContent({
 
   const handleCreatePortfolio = useCallback(() => {
     const identifier = user?.slug || (user?.id ? String(user.id) : null);
+    setOwnProfileTab('portfolio');
     setActiveModule('portfolio-create');
     try {
       localStorage.setItem('activeModule', 'portfolio-create');
@@ -1113,7 +1188,9 @@ export default function DashboardContent({
       highlightedSkillId={highlighting.highlightedSkillId}
       onViewUserSkillFromSearch={navigation.handleViewUserSkillFromSearch}
       initialProfileTab={initialProfileTab}
-      onSkillsClick={navigation.handleSkillsClick}
+      ownProfileTab={ownProfileTab}
+      onOwnProfileTabChange={setOwnProfileTab}
+      onSkillsClick={handleProfileSkillsClick}
       onSkillsOfferClick={navigation.handleSkillsOfferClick}
       onSkillsSearchClick={navigation.handleSkillsSearchClick}
       onSkillsModeToggle={handleSkillsModeToggle}
@@ -1201,7 +1278,7 @@ export default function DashboardContent({
           isProfileEditMode={isProfileEditMode}
           isBlockedByUi={isMobileOnboardingBlocked}
           onOpenHome={handleOnboardingHomeOpen}
-          onOpenProfile={navigation.handleMobileProfileClick}
+          onOpenProfile={handleMobileProfileOpen}
           onOpenEditProfile={navigation.handleEditProfileClick}
           onOpenSearch={handleOnboardingSearchOpen}
           onOpenRequests={handleOnboardingRequestsOpen}
@@ -1230,7 +1307,7 @@ export default function DashboardContent({
                     ? handleOfferReviewsBack
                     : handleMobileBack
             }
-            onMobileProfileClick={navigation.handleMobileProfileClick}
+            onMobileProfileClick={handleMobileProfileOpen}
             onSkillsModeToggle={handleSkillsModeToggle}
             onSidebarLanguageClick={navigation.handleSidebarLanguageClick}
             onSidebarAccountTypeClick={navigation.handleSidebarAccountTypeClick}
@@ -1288,6 +1365,7 @@ export default function DashboardContent({
           >
             {moduleContent}
           </DashboardLayout>
+          <OnboardingScrollLock />
           <MobileOnboardingOverlay />
           <DesktopOnboardingOverlay />
         </MobileOnboardingProvider>

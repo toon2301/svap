@@ -16,6 +16,7 @@ export default function UserPortfolioCreateDashboardPage({
       initialRoute="portfolio-create"
       initialViewedUserId={/^\d+$/.test(identifier) ? Number(identifier) : null}
       initialProfileSlug={/^\d+$/.test(identifier) ? null : identifier}
+      initialProfileTab="portfolio"
     />
   );
 }

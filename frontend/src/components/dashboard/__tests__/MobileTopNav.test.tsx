@@ -84,7 +84,14 @@ describe('MobileTopNav', () => {
     render(<MobileTopNav {...defaultProps} activeItem="search" />);
     
     const searchButton = screen.getByLabelText('Hľadať');
-    expect(searchButton).toHaveClass('text-purple-600');
+    expect(searchButton).toHaveClass('bg-gray-900', 'text-white');
+  });
+
+  it('uses a responsive glass surface for the floating navigation', () => {
+    const { container } = render(<MobileTopNav {...defaultProps} />);
+
+    const navigation = container.querySelector('nav');
+    expect(navigation).toHaveClass('bg-white/70', 'backdrop-blur-xl', 'dark:bg-gray-950/70');
   });
 
   // Create button bol nahradený requests; coverage ponecháme na existujúcich testoch.

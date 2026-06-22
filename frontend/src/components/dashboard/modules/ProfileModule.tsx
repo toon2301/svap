@@ -116,6 +116,7 @@ interface ProfileModuleProps {
   accountType?: 'personal' | 'business';
   highlightedSkillId?: number | null;
   initialTab?: ProfileTab;
+  onTabChange?: (tab: ProfileTab) => void;
   onEditOffer?: (offer: Offer) => void;
   onDeleteOffer?: (offer: Offer) => void;
   onCreatePortfolio?: () => void;
@@ -131,6 +132,7 @@ export default function ProfileModule({
   accountType = 'personal',
   highlightedSkillId = null,
   initialTab = 'offers',
+  onTabChange,
   onEditOffer,
   onDeleteOffer,
   onCreatePortfolio,
@@ -147,15 +149,23 @@ export default function ProfileModule({
   const [isAllWebsitesModalOpen, setIsAllWebsitesModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<ProfileTab>(initialTab);
 
+  const handleTabChange = useCallback(
+    (tab: ProfileTab) => {
+      setActiveTab(tab);
+      onTabChange?.(tab);
+    },
+    [onTabChange],
+  );
+
   useEffect(() => {
     setActiveTab(initialTab);
   }, [initialTab]);
 
   useEffect(() => {
     if (highlightedSkillId != null) {
-      setActiveTab('offers');
+      handleTabChange('offers');
     }
-  }, [highlightedSkillId]);
+  }, [handleTabChange, highlightedSkillId]);
 
   // Keep latest user snapshot for deterministic rollback and to avoid stale closures.
   const latestUserRef = useRef<User>(user);
@@ -319,11 +329,11 @@ export default function ProfileModule({
     if (event.key === 'ArrowRight') {
       event.preventDefault();
       const next = (currentIndex + 1) % order.length;
-      setActiveTab(order[next]);
+      handleTabChange(order[next]);
     } else if (event.key === 'ArrowLeft') {
       event.preventDefault();
       const prev = (currentIndex - 1 + order.length) % order.length;
-      setActiveTab(order[prev]);
+      handleTabChange(order[prev]);
     }
   };
 
@@ -480,7 +490,7 @@ export default function ProfileModule({
             onAvatarClick={handleAvatarClick}
             onSkillsClick={handleSkillsClick}
             activeTab={activeTab}
-            onChangeTab={setActiveTab}
+            onChangeTab={handleTabChange}
             onTabsKeyDown={handleTabsKeyDown}
             onOpenAllWebsitesModal={() => setIsAllWebsitesModalOpen(true)}
             offersOwnerId={user.id}
@@ -507,7 +517,7 @@ export default function ProfileModule({
             onAvatarClick={handleAvatarClick}
             onSkillsClick={handleSkillsClick}
             activeTab={activeTab}
-            onChangeTab={setActiveTab}
+            onChangeTab={handleTabChange}
             onTabsKeyDown={handleTabsKeyDown}
             onOpenAllWebsitesModal={() => setIsAllWebsitesModalOpen(true)}
             offersOwnerId={user.id}

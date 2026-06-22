@@ -104,6 +104,13 @@ DEFAULT_REVIEWS = [
         "cons": [],
         "display_name": "Jozef T.",
     },
+    {
+        "rating": "4.0",
+        "text": "Férová cena a slušný výsledok, bez výrazných výhrad.",
+        "pros": ["Dobrý pomer cena/kvalita"],
+        "cons": [],
+        "display_name": "Monika F.",
+    },
 ]
 
 

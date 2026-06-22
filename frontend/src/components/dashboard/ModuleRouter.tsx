@@ -62,6 +62,8 @@ interface ModuleRouterProps {
   highlightedSkillId?: number | null;
   onViewUserSkillFromSearch?: (userId: number, skillId: number, slug?: string | null) => void;
   initialProfileTab?: import('./modules/profile/profileTypes').ProfileTab;
+  ownProfileTab?: import('./modules/profile/profileTypes').ProfileTab;
+  onOwnProfileTabChange?: (tab: import('./modules/profile/profileTypes').ProfileTab) => void;
   onSkillsClick?: () => void;
   onSkillsOfferClick?: () => void;
   onSkillsSearchClick?: () => void;
@@ -117,6 +119,8 @@ export default function ModuleRouter({
   highlightedSkillId,
   onViewUserSkillFromSearch,
   initialProfileTab,
+  ownProfileTab,
+  onOwnProfileTabChange,
   onSkillsClick,
   onSkillsOfferClick,
   onSkillsSearchClick,
@@ -243,7 +247,8 @@ export default function ModuleRouter({
           isEditMode={isRightSidebarOpen && activeRightItem === 'edit-profile'}
           accountType={accountType}
           highlightedSkillId={highlightedSkillId ?? null}
-          initialTab={initialProfileTab}
+          initialTab={ownProfileTab ?? initialProfileTab}
+          onTabChange={onOwnProfileTabChange}
           onEditOffer={onEditOwnProfileOffer}
           onDeleteOffer={onDeleteOwnProfileOffer}
           onCreatePortfolio={onCreatePortfolio}

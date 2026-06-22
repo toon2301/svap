@@ -610,6 +610,7 @@ export default function MobileOnboardingOverlay() {
       <SpotlightOverlay rects={spotlightRects} />
       <div
         ref={tooltipRef}
+        data-onboarding-overlay
         role="dialog"
         aria-modal="false"
         aria-labelledby="mobile-onboarding-title"

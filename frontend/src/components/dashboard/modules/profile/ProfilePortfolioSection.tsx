@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ArrowsUpDownIcon, CheckIcon, PlusIcon } from '@heroicons/react/24/outline';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useIsMobile } from '@/hooks';
@@ -205,7 +206,7 @@ export default function ProfilePortfolioSection({
 
   return (
     <div className="mt-4 space-y-5">
-      {isOwner && (
+      {isOwner && isMobile && (
         <div className="flex flex-wrap justify-end gap-2">
           <button
             type="button"
@@ -232,8 +233,6 @@ export default function ProfilePortfolioSection({
           onCreated={handleCreated}
         />
       )}
-      {/* Tlačidlový reorder panel je dostupný aj na desktope (prístupné pre
-          klávesnicu – drag-and-drop nie je keyboard-friendly). */}
       {isOwner && isOrderOpen && (
         <PortfolioOrderPanel
           items={items}
@@ -248,6 +247,41 @@ export default function ProfilePortfolioSection({
         onOpenItem={handleOpenItem}
         onPreviewOrder={setItems}
         onReordered={handleReordered}
+        headerActions={
+          isOwner && !isMobile ? (
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                aria-label={useInlineReorder ? t('portfolio.done') : t('portfolio.reorderAction')}
+                title={useInlineReorder ? t('portfolio.done') : t('portfolio.reorderAction')}
+                onClick={() => {
+                  setIsCreateOpen(false);
+                  setIsOrderOpen((current) => !current);
+                }}
+                className={`inline-flex h-10 w-10 items-center justify-center rounded-lg border transition focus:outline-none focus:ring-2 focus:ring-purple-400/50 ${
+                  useInlineReorder
+                    ? 'border-purple-300 bg-purple-50 text-purple-700 hover:bg-purple-100 dark:border-purple-700 dark:bg-purple-950/40 dark:text-purple-200'
+                    : 'border-transparent bg-transparent text-gray-500 hover:border-gray-200 hover:bg-white hover:text-gray-900 dark:text-gray-400 dark:hover:border-gray-800 dark:hover:bg-[#101011] dark:hover:text-white'
+                }`}
+              >
+                {useInlineReorder ? (
+                  <CheckIcon className="h-5 w-5" aria-hidden="true" />
+                ) : (
+                  <ArrowsUpDownIcon className="h-5 w-5" aria-hidden="true" />
+                )}
+              </button>
+              <button
+                type="button"
+                aria-label={t('portfolio.createAction')}
+                title={t('portfolio.createAction')}
+                onClick={handleCreateClick}
+                className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-purple-200 bg-purple-100 text-purple-600 transition hover:-translate-y-0.5 hover:bg-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-400/50"
+              >
+                <PlusIcon className="h-5 w-5" aria-hidden="true" />
+              </button>
+            </div>
+          ) : undefined
+        }
       />
     </div>
   );

@@ -328,6 +328,23 @@ describe('ProfilePortfolioSection', () => {
     expect(await screen.findByTestId('portfolio-featured-card')).toHaveTextContent('First Work');
     expect(screen.getByTestId('portfolio-highlight-side-grid')).toBeInTheDocument();
     expect(screen.getAllByTestId('portfolio-grid-card')).toHaveLength(2);
+    expect(screen.queryByText('Ďalšie portfóliá')).not.toBeInTheDocument();
+  });
+
+  it('shows a heading above portfolio items after the first three', async () => {
+    (api.get as jest.Mock).mockResolvedValue({
+      data: [
+        portfolioItem({ id: 1, title: 'First Work' }),
+        portfolioItem({ id: 2, title: 'Second Work', cover_image: null }),
+        portfolioItem({ id: 3, title: 'Third Work', cover_image: null }),
+        portfolioItem({ id: 4, title: 'Fourth Work', cover_image: null }),
+      ],
+    });
+
+    render(<ProfilePortfolioSection activeTab="portfolio" isOtherUserProfile={false} ownerUserId={1} />);
+
+    expect(await screen.findByText('Ďalšie portfóliá')).toBeInTheDocument();
+    expect(screen.getByTestId('portfolio-grid')).toHaveTextContent('Fourth Work');
   });
 
   it('reorders portfolio items inline while dragging and keeps the first item featured', async () => {
@@ -343,11 +360,11 @@ describe('ProfilePortfolioSection', () => {
 
     render(<ProfilePortfolioSection activeTab="portfolio" isOtherUserProfile={false} ownerUserId={1} />);
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Poradie portfólia' }));
-    // BOD 10b: tlačidlový reorder panel je teraz dostupný aj na desktope
-    // (prístupnosť pre klávesnicu) – popri inline drag layoute.
+    const featuredSection = await screen.findByRole('region', { name: 'Vybrané' });
+    expect(within(featuredSection).getByRole('button', { name: 'Vytvoriť portfólio' })).toBeInTheDocument();
+    fireEvent.click(within(featuredSection).getByRole('button', { name: 'Usporiadať' }));
     expect(screen.getByTestId('portfolio-order-panel')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Uložiť poradie' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Hotovo' })).toBeInTheDocument();
 
     const dataTransfer = {
       effectAllowed: '',
