@@ -140,6 +140,34 @@ function getSkillActionErrorMessage(error: unknown, fallback: string): string {
   return fallback;
 }
 
+function resolveInitialOwnProfileTab(
+  initialRoute: string | undefined,
+  initialProfileTab: ProfileTab | undefined,
+  user: User | null | undefined,
+  initialProfileSlug: string | null | undefined,
+  initialViewedUserId: number | null | undefined,
+): ProfileTab {
+  if (
+    initialRoute === 'profile' ||
+    initialRoute === 'portfolio-create' ||
+    initialRoute === 'portfolio-detail'
+  ) {
+    return initialProfileTab ?? 'offers';
+  }
+
+  if (initialRoute === 'user-profile' && initialProfileTab) {
+    const slug = String(initialProfileSlug ?? '').trim();
+    const isSelfSlug = Boolean(user?.slug && slug && user.slug === slug);
+    const isSelfId =
+      initialViewedUserId != null && user?.id != null && initialViewedUserId === user.id;
+    if (isSelfSlug || isSelfId) {
+      return initialProfileTab;
+    }
+  }
+
+  return 'offers';
+}
+
 /**
  * HlavnÃ½ obsah Dashboard komponenta s vÅ¡etkou logikou
  */
@@ -224,12 +252,14 @@ export default function DashboardContent({
   const [isMobileOfferDetailOpen, setIsMobileOfferDetailOpen] = useState(false);
   const [pendingDeleteOffer, setPendingDeleteOffer] = useState<Offer | null>(null);
   const [isDeletingOwnProfileOffer, setIsDeletingOwnProfileOffer] = useState(false);
-  const [ownProfileTab, setOwnProfileTab] = useState<ProfileTab>(
-    initialRoute === 'profile' ||
-      initialRoute === 'portfolio-create' ||
-      initialRoute === 'portfolio-detail'
-      ? initialProfileTab ?? 'offers'
-      : 'offers',
+  const [ownProfileTab, setOwnProfileTab] = useState<ProfileTab>(() =>
+    resolveInitialOwnProfileTab(
+      initialRoute,
+      initialProfileTab,
+      dashboardState.user,
+      initialProfileSlug,
+      initialViewedUserId,
+    ),
   );
   const skillsCategoryBackHandlerRef = useRef<(() => void) | null>(null);
   const mobileOnboardingSkillCreatedHandlerRef = useRef<(() => void) | null>(null);
@@ -251,6 +281,26 @@ export default function DashboardContent({
     initialRightItem,
     setHighlightedSkillId: highlighting.setHighlightedSkillId,
   });
+
+  useEffect(() => {
+    if (!dashboardState.user || !initialProfileTab || initialRoute !== 'user-profile') return;
+
+    const slug = String(initialProfileSlug ?? '').trim();
+    const isSelfSlug = Boolean(
+      dashboardState.user.slug && slug && dashboardState.user.slug === slug,
+    );
+    const isSelfId =
+      initialViewedUserId != null && dashboardState.user.id === initialViewedUserId;
+    if (!isSelfSlug && !isSelfId) return;
+
+    setOwnProfileTab(initialProfileTab);
+  }, [
+    dashboardState.user,
+    initialProfileSlug,
+    initialProfileTab,
+    initialRoute,
+    initialViewedUserId,
+  ]);
   const setViewedUserId = userProfile.setViewedUserId;
   const setViewedUserSlug = userProfile.setViewedUserSlug;
   const setViewedUserSummary = userProfile.setViewedUserSummary;

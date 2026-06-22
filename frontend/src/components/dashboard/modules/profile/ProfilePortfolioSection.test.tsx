@@ -363,7 +363,7 @@ describe('ProfilePortfolioSection', () => {
     const featuredSection = await screen.findByRole('region', { name: 'Vybrané' });
     expect(within(featuredSection).getByRole('button', { name: 'Vytvoriť portfólio' })).toBeInTheDocument();
     fireEvent.click(within(featuredSection).getByRole('button', { name: 'Usporiadať' }));
-    expect(screen.queryByTestId('portfolio-order-panel')).not.toBeInTheDocument();
+    expect(screen.getByTestId('portfolio-order-panel')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Hotovo' })).toBeInTheDocument();
 
     const dataTransfer = {

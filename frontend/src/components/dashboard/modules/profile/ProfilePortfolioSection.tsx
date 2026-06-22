@@ -233,7 +233,7 @@ export default function ProfilePortfolioSection({
           onCreated={handleCreated}
         />
       )}
-      {isOwner && isOrderOpen && isMobile && (
+      {isOwner && isOrderOpen && (
         <PortfolioOrderPanel
           items={items}
           getCategoryLabel={getCategoryLabel}
