@@ -347,6 +347,14 @@ messaging_mark_read_rate_limit = rate_limit(
     action="messaging_mark_read",
     message="Prilis vela poziadaviek na oznacenie sprav ako precitanych. Skuste to prosim znova neskor.",
 )
+# Prijatie/odmietnutie ziadosti o spravu – akcne operacie, limit zhodny s open.
+messaging_request_action_rate_limit = rate_limit(
+    max_attempts=30,
+    window_minutes=5,
+    block_minutes=15,
+    action="messaging_request_action",
+    message="Prilis vela pokusov o spravu ziadosti. Skuste to prosim znova neskor.",
+)
 
 
 def get_client_ip(request):

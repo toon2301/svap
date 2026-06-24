@@ -64,7 +64,7 @@ class TestMessagingProfileShareApi(APITestCase):
     def test_send_profile_share_to_multiple_recipients(self):
         self.client.force_authenticate(user=self.sender)
 
-        with patch("messaging.api.profile_share_views.notify_user") as notify_user_mock:
+        with patch("messaging.api.notification_dispatch.notify_user") as notify_user_mock:
             response = self.client.post(
                 self._url(),
                 {

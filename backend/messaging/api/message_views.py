@@ -7,6 +7,7 @@ from django.http import FileResponse
 from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
 from rest_framework import status
+from rest_framework.exceptions import NotFound
 from rest_framework.generics import ListAPIView
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated
@@ -29,7 +30,7 @@ from ..services.messages import (
     send_message,
 )
 from ..services.pins import InvalidPinnedMessage, set_conversation_pinned_message
-from .notification_dispatch import notify_user
+from . import notification_dispatch
 from .serializers import (
     MessageSerializer,
     PinMessageSerializer,
@@ -105,7 +106,9 @@ class MessageListView(ListAPIView):
                 group_invitation__invited_user_id=self.request.user.id,
             )
         if hidden_at is not None:
-            qs = qs.filter(created_at__gt=hidden_at)
+            # >= aby správa doručená presne v takte skrytia (created_at == hidden_at)
+            # ostala viditeľná – konzistentné s viditeľnosťou konverzácie v sidebar.
+            qs = qs.filter(created_at__gte=hidden_at)
         return qs.select_related(
             "sender",
             "group_invitation",
@@ -234,7 +237,7 @@ class SendMessageView(APIView):
             "created_at": result.message.created_at.isoformat(),
         }
         for participant_id in result.recipient_user_ids:
-            notify_user(
+            notification_dispatch.notify_user(
                 participant_id,
                 {
                     **event,
@@ -283,7 +286,7 @@ class DeleteMessageView(APIView):
                 "deleted_by_id": request.user.id,
             }
             for participant_id in result.participant_user_ids:
-                notify_user(
+                notification_dispatch.notify_user(
                     participant_id,
                     {
                         **event,
@@ -349,7 +352,7 @@ class PinMessageView(APIView):
                 "actor_id": request.user.id,
             }
             for participant_id in result.participant_user_ids:
-                notify_user(participant_id, event)
+                notification_dispatch.notify_user(participant_id, event)
 
         return Response(
             {
@@ -371,7 +374,9 @@ class StartDirectMessageView(APIView):
         target_user_id = serializer.validated_data["target_user_id"]
         target = get_object_or_404(User, id=target_user_id, is_active=True)
         if not _can_open_direct_target(actor=request.user, target=target):
-            return Response(status=status.HTTP_404_NOT_FOUND)
+            # Rovnaká 404 odpoveď ako pri neexistujúcom používateľovi, aby sa cez
+            # tento endpoint nedala zistiť existencia (private/staff) účtu.
+            raise NotFound()
 
         try:
             result = send_direct_message(
@@ -396,7 +401,7 @@ class StartDirectMessageView(APIView):
             "created_at": result.message.created_at.isoformat(),
         }
         for participant_id in result.recipient_user_ids:
-            notify_user(
+            notification_dispatch.notify_user(
                 participant_id,
                 {
                     **event,

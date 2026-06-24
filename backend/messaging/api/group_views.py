@@ -26,7 +26,7 @@ from ..services.groups import (
     respond_to_group_invitation,
     update_group_conversation,
 )
-from .notification_dispatch import notify_user
+from . import notification_dispatch
 from .serializers import (
     GroupConversationCreateSerializer,
     GroupConversationUpdateSerializer,
@@ -97,7 +97,7 @@ class GroupConversationCreateView(APIView):
         ).values_list("user_id", flat=True)
         for participant_id in notify_ids:
             if participant_id != request.user.id:
-                notify_user(
+                notification_dispatch.notify_user(
                     int(participant_id),
                     {
                         "type": "messaging_group_updated",
@@ -130,7 +130,7 @@ class GroupConversationDetailView(APIView):
                 "conversation_id": result.conversation.id,
             }
             for participant_id in result.participant_user_ids:
-                notify_user(participant_id, event)
+                notification_dispatch.notify_user(participant_id, event)
 
         data = _serialize_conversation_for_user(request=request, conversation_id=conversation_id)
         return Response(data, status=status.HTTP_200_OK)
@@ -148,7 +148,7 @@ class GroupConversationDetailView(APIView):
             "conversation_id": conversation_id,
         }
         for participant_id in result.participant_user_ids:
-            notify_user(participant_id, event)
+            notification_dispatch.notify_user(participant_id, event)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -186,7 +186,7 @@ class GroupInviteView(APIView):
             "created_at": result.message.created_at.isoformat() if result.message else "",
         }
         for participant_id in result.participant_user_ids:
-            notify_user(
+            notification_dispatch.notify_user(
                 participant_id,
                 {
                     **event,
@@ -230,7 +230,7 @@ class GroupInvitationResponseView(APIView):
             "accepted": action == "accept",
         }
         for participant_id in result.participant_user_ids:
-            notify_user(participant_id, event)
+            notification_dispatch.notify_user(participant_id, event)
         return Response(
             _serialize_conversation_for_user(
                 request=request,
@@ -260,7 +260,7 @@ class GroupMemberDetailView(APIView):
             "conversation_id": conversation_id,
         }
         for participant_id in result.participant_user_ids + (user_id,):
-            notify_user(participant_id, event)
+            notification_dispatch.notify_user(participant_id, event)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -280,5 +280,5 @@ class GroupLeaveView(APIView):
             "conversation_id": conversation_id,
         }
         for participant_id in result.participant_user_ids + (request.user.id,):
-            notify_user(participant_id, event)
+            notification_dispatch.notify_user(participant_id, event)
         return Response(status=status.HTTP_200_OK)

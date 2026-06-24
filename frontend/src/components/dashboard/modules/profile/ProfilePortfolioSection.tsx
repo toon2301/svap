@@ -10,6 +10,7 @@ import { listProfilePortfolio } from './portfolioApi';
 import type { PortfolioItem } from './portfolioTypes';
 import { getPortfolioCategoryLabel } from './portfolioDisplay';
 import { PROFILE_PORTFOLIO_REFRESH_EVENT } from './portfolioEvents';
+import { PortfolioCreateDesktopModal } from './PortfolioCreateDesktopModal';
 import { PortfolioCreateForm } from './PortfolioCreateForm';
 import { PortfolioEmptyState } from './PortfolioEmptyState';
 import { PortfolioOrderPanel } from './PortfolioOrderPanel';
@@ -193,10 +194,17 @@ export default function ProfilePortfolioSection({
           onCreate={isOwner ? handleCreateClick : undefined}
         />
         {isOwner && isCreateOpen && !onCreatePortfolio && (
-          <PortfolioCreateForm
-            onCancel={() => setIsCreateOpen(false)}
-            onCreated={handleCreated}
-          />
+          isMobile ? (
+            <PortfolioCreateForm
+              onCancel={() => setIsCreateOpen(false)}
+              onCreated={handleCreated}
+            />
+          ) : (
+            <PortfolioCreateDesktopModal
+              onCancel={() => setIsCreateOpen(false)}
+              onCreated={handleCreated}
+            />
+          )
         )}
       </div>
     );
@@ -228,12 +236,19 @@ export default function ProfilePortfolioSection({
         </div>
       )}
       {isOwner && isCreateOpen && !onCreatePortfolio && (
-        <PortfolioCreateForm
-          onCancel={() => setIsCreateOpen(false)}
-          onCreated={handleCreated}
-        />
+        isMobile ? (
+          <PortfolioCreateForm
+            onCancel={() => setIsCreateOpen(false)}
+            onCreated={handleCreated}
+          />
+        ) : (
+          <PortfolioCreateDesktopModal
+            onCancel={() => setIsCreateOpen(false)}
+            onCreated={handleCreated}
+          />
+        )
       )}
-      {isOwner && isOrderOpen && (
+      {isOwner && isOrderOpen && isMobile && (
         <PortfolioOrderPanel
           items={items}
           getCategoryLabel={getCategoryLabel}

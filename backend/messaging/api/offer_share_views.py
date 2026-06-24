@@ -14,7 +14,7 @@ from ..services.offer_shares import (
     normalize_offer_share_recipient_ids,
     send_offer_share_to_recipients,
 )
-from .notification_dispatch import notify_user
+from . import notification_dispatch
 from .serializers import MessageSerializer
 from .view_helpers import (
     _conversation_unread_messages_count_for_user,
@@ -81,7 +81,7 @@ class OfferShareSendView(APIView):
                 "created_at": delivery.message.created_at.isoformat(),
             }
             for participant_id in delivery.recipient_user_ids:
-                notify_user(
+                notification_dispatch.notify_user(
                     participant_id,
                     {
                         **event,

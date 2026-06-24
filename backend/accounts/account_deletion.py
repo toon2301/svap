@@ -90,6 +90,50 @@ def _delete_owned_content(user) -> None:
     EmailVerification.objects.filter(user=user).delete()
 
 
+def _scrub_user_messages(user) -> None:
+    """
+    GDPR: anonymizuje OBSAH správ odoslaných používateľom (text + obrázky).
+
+    Sender FK zámerne ponechávame (UI zobrazí „Zmazaný používateľ"), aby
+    história konverzácie protistrany ostala neporušená (PROTECT dizajn).
+    Výsledný stav je rovnaký ako pri delete_message_for_all:
+    is_deleted=True, prázdny text aj obrázky, súbory zmazané zo storage.
+
+    Používa bulk_update (jeden DB zápis) namiesto save() v slučke, aby
+    operácia škálovala aj pri veľkom počte správ.
+    """
+    from messaging.models import Message
+
+    messages = list(
+        Message.objects.filter(sender=user, is_deleted=False).only(
+            "id", "image", "image_thumbnail"
+        )
+    )
+    if not messages:
+        return
+
+    storage_names: list[str] = []
+    for message in messages:
+        image_name = getattr(message.image, "name", "") or ""
+        thumbnail_name = getattr(message.image_thumbnail, "name", "") or ""
+        if image_name:
+            storage_names.append(image_name)
+        if thumbnail_name:
+            storage_names.append(thumbnail_name)
+        message.is_deleted = True
+        message.text = ""
+        message.image = ""
+        message.image_thumbnail = ""
+
+    Message.objects.bulk_update(
+        messages, ["is_deleted", "text", "image", "image_thumbnail"]
+    )
+
+    # Súbory zmaž až po úspešnom commite (pri rollbacku sa on_commit zahodí).
+    for name in storage_names:
+        transaction.on_commit(lambda name=name: _delete_storage_file(name))
+
+
 def _scrub_user_pii(user) -> None:
     """Prepíše všetky osobné údaje na User neutrálnymi/anonymnými hodnotami."""
     anon = uuid.uuid4().hex
@@ -145,6 +189,9 @@ def anonymize_user(user) -> None:
     avatar_name = _avatar_storage_name(locked)
 
     _delete_owned_content(locked)
+    # Obsah odoslaných správ anonymizujeme (text + obrázky); riadky a sender FK
+    # ostávajú, aby história protistrany bola neporušená (PROTECT dizajn).
+    _scrub_user_messages(locked)
 
     # Súbor avatara (nenávratná operácia mimo DB) zmaž AŽ PO úspešnom commite.
     # transaction.on_commit sa pri rollbacku zahodí, takže ak niektorá z DB

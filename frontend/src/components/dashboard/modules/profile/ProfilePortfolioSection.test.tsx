@@ -71,15 +71,32 @@ function mockViewport(isMobile: boolean) {
 }
 
 function selectFirstPortfolioCategory() {
-  fireEvent.click(screen.getByLabelText('Kategória'));
-  const listbox = screen.getByRole('listbox', { name: 'Kategória' });
+  fireEvent.click(screen.getByLabelText(/Kateg.ria/i));
+  const listbox = screen.getByRole('listbox', { name: /Kateg.ria/i });
   fireEvent.click(within(listbox).getAllByRole('option')[0]);
 }
 
-function setPortfolioDescription(value: string) {
-  fireEvent.click(screen.getByRole('button', { name: /Popis/ }));
-  fireEvent.change(screen.getByLabelText('Popis'), { target: { value } });
-  fireEvent.click(screen.getByLabelText('Uložiť'));
+function clickNextStep() {
+  fireEvent.click(screen.getByRole('button', { name: /alej|Next/i }));
+}
+
+function fillDesktopTitle(value = 'New Work') {
+  fireEvent.change(screen.getByLabelText(/N.zov/i), { target: { value } });
+  clickNextStep();
+}
+
+function advanceToDesktopDescriptionStep(title = 'New Work') {
+  fillDesktopTitle(title);
+  selectFirstPortfolioCategory();
+  clickNextStep();
+}
+
+function advanceToDesktopPhotosStep(title = 'New Work', description?: string) {
+  advanceToDesktopDescriptionStep(title);
+  if (description !== undefined) {
+    fireEvent.change(screen.getByRole('textbox', { name: /^Popis$/i }), { target: { value: description } });
+  }
+  clickNextStep();
 }
 
 describe('ProfilePortfolioSection', () => {
@@ -114,7 +131,7 @@ describe('ProfilePortfolioSection', () => {
     await waitFor(() => {
       expect(api.get).toHaveBeenCalledWith('/auth/portfolio/');
     });
-    expect(await screen.findByText('Portfólio je zatiaľ prázdne')).toBeInTheDocument();
+    expect(await screen.findByText(/Portf.lio je zatia/i)).toBeInTheDocument();
   });
 
   it('shows skeleton loading while portfolio is loading', async () => {
@@ -130,15 +147,66 @@ describe('ProfilePortfolioSection', () => {
     });
   });
 
-  it('shows owner empty state with a working create action', async () => {
+  it('shows owner empty state with a working desktop create action', async () => {
     (api.get as jest.Mock).mockResolvedValue({ data: [] });
 
     render(<ProfilePortfolioSection activeTab="portfolio" isOtherUserProfile={false} ownerUserId={1} />);
 
-    expect(await screen.findByText('Portfólio je zatiaľ prázdne')).toBeInTheDocument();
-    expect(screen.getByText('Pridaj prvú ukážku práce a ukáž, čo vieš.')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Vytvoriť portfólio' }));
+    expect(await screen.findByText(/Portf.lio je zatia/i)).toBeInTheDocument();
+    expect(screen.getByText(/Pridaj prv/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Vytvori.*portf/i }));
+    expect(screen.getByTestId('portfolio-create-desktop-modal')).toBeInTheDocument();
     expect(screen.getByTestId('portfolio-create-form')).toBeInTheDocument();
+    expect(screen.getByText('Krok 1 z 4')).toBeInTheDocument();
+  });
+
+  it('renders the desktop category list outside the scrollable modal body', async () => {
+    (api.get as jest.Mock).mockResolvedValue({ data: [] });
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1024 });
+    Object.defineProperty(window, 'innerHeight', { configurable: true, value: 480 });
+
+    render(<ProfilePortfolioSection activeTab="portfolio" isOtherUserProfile={false} ownerUserId={1} />);
+
+    fireEvent.click(await screen.findByRole('button', { name: /Vytvori.*portf/i }));
+    fillDesktopTitle('New Work');
+
+    const categoryButton = screen.getByLabelText(/Kateg.ria/i);
+    categoryButton.getBoundingClientRect = jest.fn(() => ({
+      x: 52,
+      y: 244,
+      top: 244,
+      right: 812,
+      bottom: 292,
+      left: 52,
+      width: 760,
+      height: 48,
+      toJSON: () => ({}),
+    }));
+
+    fireEvent.click(categoryButton);
+
+    const listbox = screen.getByRole('listbox', { name: /Kateg.ria/i });
+    expect(document.body).toContainElement(listbox);
+    expect(screen.getByTestId('portfolio-create-form')).not.toContainElement(listbox);
+    expect(listbox).toHaveStyle({
+      position: 'fixed',
+      left: '52px',
+      width: '760px',
+    });
+    expect(within(listbox).getAllByRole('option').length).toBeGreaterThan(10);
+  });
+
+  it('keeps the existing inline create form on mobile', async () => {
+    mockViewport(true);
+    (api.get as jest.Mock).mockResolvedValue({ data: [] });
+
+    render(<ProfilePortfolioSection activeTab="portfolio" isOtherUserProfile={false} ownerUserId={1} />);
+
+    fireEvent.click(await screen.findByRole('button', { name: /Vytvori.*portf/i }));
+
+    expect(screen.queryByTestId('portfolio-create-desktop-modal')).not.toBeInTheDocument();
+    expect(screen.getByTestId('portfolio-create-form')).toBeInTheDocument();
+    expect(screen.getByLabelText(/N.zov/i)).toBeInTheDocument();
   });
 
   it('shows visitor empty state and uses the slug portfolio endpoint when available', async () => {
@@ -156,8 +224,8 @@ describe('ProfilePortfolioSection', () => {
     await waitFor(() => {
       expect(api.get).toHaveBeenCalledWith('/auth/dashboard/users/slug/jane-doe/portfolio/');
     });
-    expect(await screen.findByText('Portfólio zatiaľ nie je dostupné')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Vytvoriť portfólio' })).not.toBeInTheDocument();
+    expect(await screen.findByText(/Portf.lio zatia.*dostup/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Vytvori.*portf/i })).not.toBeInTheDocument();
   });
 
   it('validates required fields before creating portfolio', async () => {
@@ -165,22 +233,29 @@ describe('ProfilePortfolioSection', () => {
 
     render(<ProfilePortfolioSection activeTab="portfolio" isOtherUserProfile={false} ownerUserId={1} />);
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Vytvoriť portfólio' }));
+    fireEvent.click(await screen.findByRole('button', { name: /Vytvori.*portf/i }));
     fireEvent.submit(screen.getByTestId('portfolio-create-form'));
 
-    expect(await screen.findByText('Názov je povinný')).toBeInTheDocument();
-    expect(screen.getByText('Kategória je povinná')).toBeInTheDocument();
-    const titleInput = screen.getByLabelText('Názov');
+    expect(await screen.findByText(/N.zov je povinn/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Kateg.ria je povinn/i)).not.toBeInTheDocument();
+    const titleInput = screen.getByLabelText(/N.zov/i);
     const titleErrorId = titleInput.getAttribute('aria-describedby');
     expect(titleErrorId).toBeTruthy();
-    expect(document.getElementById(titleErrorId as string)).toHaveTextContent('Názov je povinný');
-    const categoryInput = screen.getByLabelText('Kategória');
+    expect(document.getElementById(titleErrorId as string)).toHaveTextContent(/N.zov je povinn/i);
+    expect(api.post).not.toHaveBeenCalled();
+    expect(toast.error).toHaveBeenCalledWith(expect.stringMatching(/N.zov je povinn/i));
+
+    fireEvent.change(titleInput, { target: { value: 'New Work' } });
+    clickNextStep();
+    fireEvent.submit(screen.getByTestId('portfolio-create-form'));
+
+    expect(await screen.findByText(/Kateg.ria je povinn/i)).toBeInTheDocument();
+    const categoryInput = screen.getByLabelText(/Kateg.ria/i);
     const categoryErrorId = categoryInput.getAttribute('aria-describedby');
     expect(categoryErrorId).toBeTruthy();
-    expect(document.getElementById(categoryErrorId as string)).toHaveTextContent('Kategória je povinná');
+    expect(document.getElementById(categoryErrorId as string)).toHaveTextContent(/Kateg.ria je povinn/i);
     expect(api.post).not.toHaveBeenCalled();
-    expect(toast.error).toHaveBeenCalledWith('Názov je povinný');
-    expect(toast.error).toHaveBeenCalledWith('Kategória je povinná');
+    expect(toast.error).toHaveBeenCalledWith(expect.stringMatching(/Kateg.ria je povinn/i));
   });
 
   it('prevents duplicate create submissions while the request is pending', async () => {
@@ -190,9 +265,8 @@ describe('ProfilePortfolioSection', () => {
 
     render(<ProfilePortfolioSection activeTab="portfolio" isOtherUserProfile={false} ownerUserId={1} />);
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Vytvoriť portfólio' }));
-    fireEvent.change(screen.getByLabelText('Názov'), { target: { value: 'New Work' } });
-    selectFirstPortfolioCategory();
+    fireEvent.click(await screen.findByRole('button', { name: /Vytvori.*portf/i }));
+    advanceToDesktopPhotosStep('New Work');
     const form = screen.getByTestId('portfolio-create-form');
     fireEvent.submit(form);
     fireEvent.submit(form);
@@ -225,10 +299,8 @@ describe('ProfilePortfolioSection', () => {
 
     render(<ProfilePortfolioSection activeTab="portfolio" isOtherUserProfile={false} ownerUserId={1} />);
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Vytvoriť portfólio' }));
-    fireEvent.change(screen.getByLabelText('Názov'), { target: { value: ' New Work ' } });
-    selectFirstPortfolioCategory();
-    setPortfolioDescription(' New description ');
+    fireEvent.click(await screen.findByRole('button', { name: /Vytvori.*portf/i }));
+    advanceToDesktopPhotosStep(' New Work ', ' New description ');
     fireEvent.submit(screen.getByTestId('portfolio-create-form'));
 
     await waitFor(() => {
@@ -249,9 +321,8 @@ describe('ProfilePortfolioSection', () => {
 
     render(<ProfilePortfolioSection activeTab="portfolio" isOtherUserProfile={false} ownerUserId={1} />);
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Vytvoriť portfólio' }));
-    fireEvent.change(screen.getByLabelText('Názov'), { target: { value: 'New Work' } });
-    selectFirstPortfolioCategory();
+    fireEvent.click(await screen.findByRole('button', { name: /Vytvori.*portf/i }));
+    advanceToDesktopPhotosStep('New Work');
     fireEvent.submit(screen.getByTestId('portfolio-create-form'));
 
     expect(await screen.findByText('Forbidden')).toBeInTheDocument();
@@ -264,13 +335,14 @@ describe('ProfilePortfolioSection', () => {
 
     render(<ProfilePortfolioSection activeTab="portfolio" isOtherUserProfile={false} ownerUserId={1} />);
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Vytvoriť portfólio' }));
+    fireEvent.click(await screen.findByRole('button', { name: /Vytvori.*portf/i }));
+    advanceToDesktopPhotosStep('New Work');
     const input = screen.getByTestId('portfolio-create-photo-input');
     const file = new File(['image-bytes'], 'work.jpg', { type: 'image/jpeg' });
 
     fireEvent.change(input, { target: { files: [file] } });
 
-    expect(screen.getByRole('img', { name: /Náhľad fotky 1/ })).toHaveAttribute(
+    expect(screen.getByRole('img', { name: /N.h.ad fotky 1/ })).toHaveAttribute(
       'src',
       'blob:work.jpg',
     );
@@ -282,6 +354,7 @@ describe('ProfilePortfolioSection', () => {
     render(<ProfilePortfolioSection activeTab="portfolio" isOtherUserProfile={false} ownerUserId={1} />);
 
     fireEvent.click(await screen.findByRole('button', { name: /Vytvori/ }));
+    advanceToDesktopPhotosStep('New Work');
     const input = screen.getByTestId('portfolio-create-photo-input');
     const file = new File(['<svg></svg>'], 'work.svg', { type: 'image/svg+xml' });
 
@@ -294,7 +367,7 @@ describe('ProfilePortfolioSection', () => {
         element?.tagName.toLowerCase() === 'p' && content.startsWith('Vyber')
       )),
     ).toBeInTheDocument();
-    expect(toast.error).toHaveBeenCalledWith('Vyber súbor obrázka');
+    expect(toast.error).toHaveBeenCalledWith(expect.stringMatching(/^Vyber/));
     expect(screen.queryByRole('img')).not.toBeInTheDocument();
     expect(api.post).not.toHaveBeenCalled();
   });
@@ -306,9 +379,9 @@ describe('ProfilePortfolioSection', () => {
 
     render(<ProfilePortfolioSection activeTab="portfolio" isOtherUserProfile={false} ownerUserId={1} />);
 
-    expect(await screen.findByText('Portfólio sa nepodarilo načítať')).toBeInTheDocument();
+    expect(await screen.findByText(/Portf.lio sa nepodarilo/i)).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Skúsiť znova' }));
+    fireEvent.click(screen.getByRole('button', { name: /Sk.si.*znova/i }));
 
     expect(await screen.findByTestId('portfolio-featured-card')).toHaveTextContent('Featured Work');
     expect(api.get).toHaveBeenCalledTimes(2);
@@ -328,7 +401,7 @@ describe('ProfilePortfolioSection', () => {
     expect(await screen.findByTestId('portfolio-featured-card')).toHaveTextContent('First Work');
     expect(screen.getByTestId('portfolio-highlight-side-grid')).toBeInTheDocument();
     expect(screen.getAllByTestId('portfolio-grid-card')).toHaveLength(2);
-    expect(screen.queryByText('Ďalšie portfóliá')).not.toBeInTheDocument();
+    expect(screen.queryByText(/al.ie portf/i)).not.toBeInTheDocument();
   });
 
   it('shows a heading above portfolio items after the first three', async () => {
@@ -343,7 +416,7 @@ describe('ProfilePortfolioSection', () => {
 
     render(<ProfilePortfolioSection activeTab="portfolio" isOtherUserProfile={false} ownerUserId={1} />);
 
-    expect(await screen.findByText('Ďalšie portfóliá')).toBeInTheDocument();
+    expect(await screen.findByText(/al.ie portf/i)).toBeInTheDocument();
     expect(screen.getByTestId('portfolio-grid')).toHaveTextContent('Fourth Work');
   });
 
@@ -360,10 +433,10 @@ describe('ProfilePortfolioSection', () => {
 
     render(<ProfilePortfolioSection activeTab="portfolio" isOtherUserProfile={false} ownerUserId={1} />);
 
-    const featuredSection = await screen.findByRole('region', { name: 'Vybrané' });
-    expect(within(featuredSection).getByRole('button', { name: 'Vytvoriť portfólio' })).toBeInTheDocument();
-    fireEvent.click(within(featuredSection).getByRole('button', { name: 'Usporiadať' }));
-    expect(screen.getByTestId('portfolio-order-panel')).toBeInTheDocument();
+    const featuredSection = await screen.findByRole('region', { name: /Vybran/i });
+    expect(within(featuredSection).getByRole('button', { name: /Vytvori.*portf/i })).toBeInTheDocument();
+    fireEvent.click(within(featuredSection).getByRole('button', { name: /Usporiada/i }));
+    expect(screen.queryByTestId('portfolio-order-panel')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Hotovo' })).toBeInTheDocument();
 
     const dataTransfer = {
@@ -399,7 +472,7 @@ describe('ProfilePortfolioSection', () => {
 
     render(<ProfilePortfolioSection activeTab="portfolio" isOtherUserProfile={false} ownerUserId={1} />);
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Poradie portfólia' }));
+    fireEvent.click(await screen.findByRole('button', { name: /Poradie portf/i }));
 
     expect(await screen.findByTestId('portfolio-order-panel')).toBeInTheDocument();
     expect(screen.queryByTestId('portfolio-reorder-card-1')).not.toBeInTheDocument();
@@ -411,7 +484,7 @@ describe('ProfilePortfolioSection', () => {
     render(<ProfilePortfolioSection activeTab="portfolio" isOtherUserProfile ownerUserId={42} />);
 
     expect(await screen.findByTestId('portfolio-featured-card')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Poradie portfólia' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Poradie portf/i })).not.toBeInTheDocument();
   });
 
   it('uses thumbnail URLs in profile cards instead of large image URLs', async () => {

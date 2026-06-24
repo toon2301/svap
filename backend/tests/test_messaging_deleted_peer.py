@@ -74,7 +74,8 @@ class TestDeletedPeerSerialization(APITestCase):
         assert other["display_name"] == "Peter Pan"
 
     def test_message_sender_marked_deleted(self):
-        self._send(self.peer, "sprava od peera")
+        send_resp = self._send(self.peer, "sprava od peera")
+        message_id = send_resp.data["id"]
         anonymize_user(self.peer)
 
         self.client.force_authenticate(user=self.me)
@@ -84,6 +85,10 @@ class TestDeletedPeerSerialization(APITestCase):
         )
         resp = self.client.get(url)
         messages = self._results(resp)
-        peer_msg = next(m for m in messages if m["text"] == "sprava od peera")
+        peer_msg = next(m for m in messages if m["id"] == message_id)
+        # GDPR (Možnosť B): po anonymizácii je obsah správy odstránený ...
+        assert peer_msg["is_deleted"] is True
+        assert peer_msg["text"] is None
+        # ... a odosielateľ je označený ako zmazaný.
         assert peer_msg["sender"]["is_deleted"] is True
         assert peer_msg["sender"]["display_name"] == ""

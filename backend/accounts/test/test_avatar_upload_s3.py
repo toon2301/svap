@@ -30,6 +30,23 @@ def generate_image_file(
     return SimpleUploadedFile(name, buffer.getvalue(), content_type=content_type)
 
 
+def generate_jpeg_with_gps_exif(name: str = "gps_avatar.jpg") -> SimpleUploadedFile:
+    """JPEG s EXIF metadátami vrátane GPS lokácie (na test stripovania)."""
+    image = Image.new("RGB", (32, 32), (10, 20, 30))
+    exif = image.getexif()
+    exif[0x010F] = "EvilCam"  # Make
+    exif[0x0110] = "ModelX"  # Model
+    gps_ifd = exif.get_ifd(0x8825)  # GPSInfo
+    gps_ifd[1] = "N"
+    gps_ifd[2] = ((48, 1), (8, 1), (0, 1))
+    gps_ifd[3] = "E"
+    gps_ifd[4] = ((17, 1), (7, 1), (0, 1))
+    buffer = BytesIO()
+    image.save(buffer, "JPEG", exif=exif)
+    buffer.seek(0)
+    return SimpleUploadedFile(name, buffer.getvalue(), content_type="image/jpeg")
+
+
 @pytest.fixture(autouse=True)
 def tmp_media(settings, tmp_path):
     media_root = tmp_path / "media"
@@ -118,6 +135,28 @@ class TestAvatarUploadIntegration(APITestCase):
             except AttributeError:
                 payload = json.loads(r.content.decode("utf-8"))
             assert "error" in payload
+
+    def test_avatar_upload_strips_exif_gps_metadata(self):
+        upload = generate_jpeg_with_gps_exif()
+
+        # Precondition: nahraný avatar skutočne nesie EXIF metadáta.
+        with Image.open(BytesIO(upload.read())) as src:
+            assert len(src.getexif()) > 0
+        upload.seek(0)
+
+        with override_settings(SAFESEARCH_ENABLED=False):
+            r = self.client.patch(self.url, {"avatar": upload}, format="multipart")
+        assert r.status_code == status.HTTP_200_OK
+
+        self.user.refresh_from_db()
+        assert self.user.avatar
+        with Image.open(self.user.avatar.path) as stored:
+            stored_exif = stored.getexif()
+            gps_ifd = stored_exif.get_ifd(0x8825)
+
+        # Po uložení nesmú ostať žiadne EXIF metadáta ani GPS lokácia.
+        assert len(stored_exif) == 0
+        assert not gps_ifd
 
     def test_replaces_old_avatar_and_deletes_file(self):
         first = generate_image_file("JPEG", "first.jpg", color=(0, 255, 0))

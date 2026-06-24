@@ -15,7 +15,7 @@ from ..services.forwarding import (
     forward_message_to_recipients,
     normalize_forward_recipient_ids,
 )
-from .notification_dispatch import notify_user
+from . import notification_dispatch
 from .serializers import MessageSerializer
 from .view_helpers import (
     _conversation_for_user_or_404,
@@ -78,7 +78,7 @@ class ForwardMessageView(APIView):
                 "created_at": delivery.message.created_at.isoformat(),
             }
             for participant_id in delivery.recipient_user_ids:
-                notify_user(
+                notification_dispatch.notify_user(
                     participant_id,
                     {
                         **event,

@@ -46,7 +46,7 @@ def _conversation_for_user_or_404(*, conversation_id: int, user) -> Conversation
         )
         .filter(
             Q(participant_hidden_at__isnull=True)
-            | Q(last_message_at__gt=F("participant_hidden_at"))
+            | Q(last_message_at__gte=F("participant_hidden_at"))
         )
         .filter(Q(is_group=True) | ~Q(request_status=Conversation.RequestStatus.DELETED))
         .distinct(),
@@ -401,7 +401,7 @@ def _conversation_annotated_queryset_for_user(user):
 def _conversation_accessible_queryset_for_user(user, *, only_incoming_requests: bool = False):
     qs = _conversation_annotated_queryset_for_user(user).filter(
         Q(participant_hidden_at__isnull=True)
-        | Q(last_message_at__gt=F("participant_hidden_at"))
+        | Q(last_message_at__gte=F("participant_hidden_at"))
     )
     if only_incoming_requests:
         return qs.filter(

@@ -1,128 +1,38 @@
-from __future__ import annotations
+"""Skupinové konverzácie – životný cyklus (vytvorenie, úprava, členstvo, zmazanie).
 
-from dataclasses import dataclass
+Pozvánky: group_invitations.py. Zdieľané typy/helpery: group_common.py.
+Tento modul re-exportuje verejné API (messaging.services.groups) pre spätnú kompatibilitu.
+"""
+from __future__ import annotations
 
 from django.contrib.auth import get_user_model
 from django.db import transaction
 from django.utils import timezone
 
-from accounts.services.notifications import create_group_invitation_notification
-
-from ..models import Conversation, ConversationParticipant, GroupInvitation, Message
-from .push_enqueue import schedule_message_push_delivery
+from ..models import Conversation, ConversationParticipant, GroupInvitation
+from .group_common import (  # noqa: F401  (re-export verejného API)
+    MAX_GROUP_PARTICIPANTS,
+    CannotInviteSelf,
+    ConversationNotGroup,
+    GroupInvitationResult,
+    GroupLimitExceeded,
+    GroupMutationResult,
+    GroupNameRequired,
+    GroupServiceError,
+    InvitationNotPending,
+    NotActiveGroupMember,
+    NotGroupOwner,
+    _active_participant_user_ids,
+    _create_system_message,
+    ensure_active_group_member,
+    ensure_group_owner,
+)
+from .group_invitations import (  # noqa: F401  (re-export)
+    invite_user_to_group,
+    respond_to_group_invitation,
+)
 
 User = get_user_model()
-
-MAX_GROUP_PARTICIPANTS = 50
-
-
-class GroupServiceError(Exception):
-    pass
-
-
-class ConversationNotGroup(GroupServiceError):
-    pass
-
-
-class GroupNameRequired(GroupServiceError):
-    pass
-
-
-class GroupLimitExceeded(GroupServiceError):
-    pass
-
-
-class NotGroupOwner(GroupServiceError):
-    pass
-
-
-class NotActiveGroupMember(GroupServiceError):
-    pass
-
-
-class InvitationNotPending(GroupServiceError):
-    pass
-
-
-class CannotInviteSelf(GroupServiceError):
-    pass
-
-
-@dataclass(frozen=True)
-class GroupMutationResult:
-    conversation: Conversation
-    participant_user_ids: tuple[int, ...]
-    changed: bool = True
-
-
-@dataclass(frozen=True)
-class GroupInvitationResult:
-    invitation: GroupInvitation
-    message: Message | None
-    participant_user_ids: tuple[int, ...]
-    created: bool = True
-
-
-def _active_or_invited_count(*, conversation: Conversation) -> int:
-    return ConversationParticipant.objects.filter(
-        conversation=conversation,
-        status__in=[
-            ConversationParticipant.Status.ACTIVE,
-            ConversationParticipant.Status.INVITED,
-        ],
-    ).count()
-
-
-def _active_participant_user_ids(*, conversation: Conversation) -> tuple[int, ...]:
-    return tuple(
-        ConversationParticipant.objects.filter(
-            conversation=conversation,
-            status=ConversationParticipant.Status.ACTIVE,
-        ).values_list("user_id", flat=True)
-    )
-
-
-def _ensure_group(conversation: Conversation) -> None:
-    if not conversation.is_group:
-        raise ConversationNotGroup("Conversation is not a group.")
-
-
-def ensure_active_group_member(*, conversation: Conversation, user_id: int) -> ConversationParticipant:
-    _ensure_group(conversation)
-    participant = (
-        ConversationParticipant.objects.select_for_update()
-        .filter(
-            conversation=conversation,
-            user_id=user_id,
-            status=ConversationParticipant.Status.ACTIVE,
-        )
-        .first()
-    )
-    if participant is None:
-        raise NotActiveGroupMember("User is not an active group member.")
-    return participant
-
-
-def ensure_group_owner(*, conversation: Conversation, user_id: int) -> ConversationParticipant:
-    participant = ensure_active_group_member(conversation=conversation, user_id=user_id)
-    if participant.role != ConversationParticipant.Role.OWNER:
-        raise NotGroupOwner("Only the group owner can perform this action.")
-    return participant
-
-
-def _create_system_message(*, conversation: Conversation, actor, text: str, metadata=None) -> Message:
-    now = timezone.now()
-    message = Message.objects.create(
-        conversation=conversation,
-        sender=actor,
-        text=text,
-        message_type=Message.Type.SYSTEM,
-        metadata=metadata or {},
-        created_at=now,
-    )
-    conversation.last_message_at = now
-    conversation.save(update_fields=["last_message_at", "updated_at"])
-    return message
 
 
 def create_group_conversation(
@@ -188,180 +98,6 @@ def create_group_conversation(
         return GroupMutationResult(
             conversation=conversation,
             participant_user_ids=_active_participant_user_ids(conversation=conversation),
-        )
-
-
-def invite_user_to_group(
-    *,
-    conversation: Conversation,
-    actor,
-    invited_user,
-    already_locked: bool = False,
-) -> GroupInvitationResult:
-    if int(actor.id) == int(invited_user.id):
-        raise CannotInviteSelf("Cannot invite yourself.")
-
-    def _perform() -> GroupInvitationResult:
-        _ensure_group(conversation)
-        ensure_active_group_member(conversation=conversation, user_id=actor.id)
-
-        existing_participant = (
-            ConversationParticipant.objects.select_for_update()
-            .filter(conversation=conversation, user=invited_user)
-            .first()
-        )
-        if existing_participant and existing_participant.status in (
-            ConversationParticipant.Status.ACTIVE,
-            ConversationParticipant.Status.INVITED,
-        ):
-            existing_invitation = (
-                GroupInvitation.objects.select_for_update()
-                .filter(
-                    conversation=conversation,
-                    invited_user=invited_user,
-                    status=GroupInvitation.Status.PENDING,
-                )
-                .select_related("message")
-                .first()
-            )
-            if existing_invitation:
-                return GroupInvitationResult(
-                    invitation=existing_invitation,
-                    message=existing_invitation.message,
-                    participant_user_ids=_active_participant_user_ids(conversation=conversation)
-                    + (invited_user.id,),
-                    created=False,
-                )
-            raise InvitationNotPending("User is already in the group.")
-
-        if _active_or_invited_count(conversation=conversation) >= MAX_GROUP_PARTICIPANTS:
-            raise GroupLimitExceeded("Group cannot have more than 50 participants.")
-
-        participant_defaults = {
-            "role": ConversationParticipant.Role.MEMBER,
-            "status": ConversationParticipant.Status.INVITED,
-            "left_at": None,
-        }
-        if existing_participant:
-            for field, value in participant_defaults.items():
-                setattr(existing_participant, field, value)
-            existing_participant.save(update_fields=["role", "status", "left_at"])
-        else:
-            ConversationParticipant.objects.create(
-                conversation=conversation,
-                user=invited_user,
-                **participant_defaults,
-            )
-
-        now = timezone.now()
-        invitation = GroupInvitation.objects.create(
-            conversation=conversation,
-            invited_user=invited_user,
-            invited_by=actor,
-            status=GroupInvitation.Status.PENDING,
-        )
-        message = Message.objects.create(
-            conversation=conversation,
-            sender=actor,
-            text="",
-            message_type=Message.Type.GROUP_INVITATION,
-            metadata={
-                "invitation_id": invitation.id,
-                "invited_user_id": invited_user.id,
-                "invited_by_id": actor.id,
-            },
-            created_at=now,
-        )
-        invitation.message = message
-        invitation.save(update_fields=["message", "updated_at"])
-        conversation.last_message_at = now
-        conversation.save(update_fields=["last_message_at", "updated_at"])
-
-        recipient_user_ids = tuple(
-            sorted(set(_active_participant_user_ids(conversation=conversation) + (invited_user.id,)))
-        )
-        create_group_invitation_notification(invitation=invitation, actor=actor)
-        schedule_message_push_delivery(message_id=message.id, recipient_user_ids=recipient_user_ids)
-        return GroupInvitationResult(
-            invitation=invitation,
-            message=message,
-            participant_user_ids=recipient_user_ids,
-        )
-
-    if already_locked:
-        return _perform()
-    with transaction.atomic():
-        conversation = (
-            Conversation.objects.select_for_update()
-            .filter(id=conversation.id)
-            .first()
-        )
-        if conversation is None:
-            raise ValueError("Conversation not found.")
-        return _perform()
-
-
-def respond_to_group_invitation(*, invitation: GroupInvitation, actor, accept: bool) -> GroupMutationResult:
-    with transaction.atomic():
-        invitation = (
-            GroupInvitation.objects.select_for_update()
-            .select_related("conversation", "invited_user", "invited_by")
-            .filter(id=invitation.id)
-            .first()
-        )
-        if invitation is None:
-            raise ValueError("Invitation not found.")
-        if invitation.invited_user_id != actor.id:
-            raise NotActiveGroupMember("Only the invited user can respond.")
-        if invitation.status != GroupInvitation.Status.PENDING:
-            raise InvitationNotPending("Invitation is not pending.")
-
-        conversation = (
-            Conversation.objects.select_for_update()
-            .filter(id=invitation.conversation_id)
-            .first()
-        )
-        if conversation is None:
-            raise ValueError("Conversation not found.")
-        _ensure_group(conversation)
-
-        participant = (
-            ConversationParticipant.objects.select_for_update()
-            .filter(conversation=conversation, user=actor)
-            .first()
-        )
-        if participant is None:
-            raise NotActiveGroupMember("Invitation participant is missing.")
-
-        now = timezone.now()
-        invitation.status = (
-            GroupInvitation.Status.ACCEPTED if accept else GroupInvitation.Status.DECLINED
-        )
-        invitation.responded_at = now
-        invitation.save(update_fields=["status", "responded_at", "updated_at"])
-
-        participant.status = (
-            ConversationParticipant.Status.ACTIVE if accept else ConversationParticipant.Status.REMOVED
-        )
-        participant.left_at = None if accept else now
-        participant.save(update_fields=["status", "left_at"])
-
-        text = (
-            f"{actor.display_name or actor.username} prijal/a pozvánku do skupiny."
-            if accept
-            else f"{actor.display_name or actor.username} odmietol/a pozvánku do skupiny."
-        )
-        message = _create_system_message(
-            conversation=conversation,
-            actor=actor,
-            text=text,
-            metadata={"event": "group_invitation_accepted" if accept else "group_invitation_declined"},
-        )
-        recipient_user_ids = _active_participant_user_ids(conversation=conversation)
-        schedule_message_push_delivery(message_id=message.id, recipient_user_ids=recipient_user_ids)
-        return GroupMutationResult(
-            conversation=conversation,
-            participant_user_ids=recipient_user_ids,
         )
 
 

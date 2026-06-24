@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useId, useMemo, useRef, useState } from 'react';
-import type { KeyboardEvent } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
+import type { CSSProperties, KeyboardEvent } from 'react';
+import { createPortal } from 'react-dom';
 import { CheckIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { getPortfolioCategoryLabel } from './portfolioDisplay';
@@ -24,7 +25,44 @@ const defaultButtonClassName =
   'flex min-h-[44px] w-full items-center justify-between gap-3 rounded-xl border border-gray-300 bg-white px-3 py-2 text-left text-sm text-gray-900 outline-none transition hover:bg-gray-50 focus:border-purple-400 focus:ring-2 focus:ring-purple-400/30 disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:bg-[#101011] dark:text-white dark:hover:bg-[#171719]';
 
 const defaultListClassName =
-  'absolute left-0 right-0 z-20 mt-2 max-h-72 overflow-y-auto rounded-2xl border border-gray-200 bg-white p-1 shadow-xl dark:border-gray-800 dark:bg-[#101011]';
+  'z-[10050] overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl dark:border-gray-800 dark:bg-[#101011]';
+
+const LIST_MAX_HEIGHT_PX = 288;
+const LIST_VIEWPORT_PADDING_PX = 16;
+const LIST_GAP_PX = 8;
+
+function computeListPosition(button: HTMLElement): CSSProperties {
+  const rect = button.getBoundingClientRect();
+  const viewportWidth = window.innerWidth;
+  const viewportHeight = window.innerHeight;
+  const safeWidth = Math.min(rect.width, viewportWidth - LIST_VIEWPORT_PADDING_PX * 2);
+  const left = Math.min(
+    Math.max(rect.left, LIST_VIEWPORT_PADDING_PX),
+    viewportWidth - safeWidth - LIST_VIEWPORT_PADDING_PX,
+  );
+  const spaceBelow = viewportHeight - rect.bottom - LIST_GAP_PX - LIST_VIEWPORT_PADDING_PX;
+  const spaceAbove = rect.top - LIST_GAP_PX - LIST_VIEWPORT_PADDING_PX;
+  const openBelow = spaceBelow >= spaceAbove;
+
+  if (openBelow) {
+    return {
+      position: 'fixed',
+      top: rect.bottom + LIST_GAP_PX,
+      left,
+      width: safeWidth,
+      maxHeight: Math.min(LIST_MAX_HEIGHT_PX, Math.max(spaceBelow, 120)),
+    };
+  }
+
+  const maxHeight = Math.min(LIST_MAX_HEIGHT_PX, Math.max(spaceAbove, 120));
+  return {
+    position: 'fixed',
+    top: Math.max(LIST_VIEWPORT_PADDING_PX, rect.top - LIST_GAP_PX - maxHeight),
+    left,
+    width: safeWidth,
+    maxHeight,
+  };
+}
 
 export function PortfolioCategoryPicker({
   value,
@@ -42,8 +80,33 @@ export function PortfolioCategoryPicker({
   const generatedButtonId = useId();
   const listboxId = useId();
   const rootRef = useRef<HTMLDivElement | null>(null);
+  const buttonRef = useRef<HTMLButtonElement | null>(null);
+  const listRef = useRef<HTMLDivElement | null>(null);
   const [isOpen, setIsOpen] = useState(false);
+  const [listPosition, setListPosition] = useState<CSSProperties>({});
   const effectiveButtonId = buttonId || generatedButtonId;
+
+  const updateListPosition = useCallback(() => {
+    const button = buttonRef.current;
+    if (!button) return;
+    setListPosition(computeListPosition(button));
+  }, []);
+
+  const openList = useCallback(() => {
+    const button = buttonRef.current;
+    if (button) {
+      setListPosition(computeListPosition(button));
+    }
+    setIsOpen(true);
+  }, []);
+
+  const toggleList = useCallback(() => {
+    if (isOpen) {
+      setIsOpen(false);
+      return;
+    }
+    openList();
+  }, [isOpen, openList]);
 
   const selectedLabel = useMemo(() => {
     const category = String(value || '').trim();
@@ -53,15 +116,27 @@ export function PortfolioCategoryPicker({
   useEffect(() => {
     if (!isOpen) return;
 
+    updateListPosition();
+
     const handlePointerDown = (event: MouseEvent) => {
-      if (!rootRef.current?.contains(event.target as Node)) {
-        setIsOpen(false);
+      const target = event.target as Node;
+      if (rootRef.current?.contains(target) || listRef.current?.contains(target)) {
+        return;
       }
+      setIsOpen(false);
     };
 
+    const handleReposition = () => updateListPosition();
+
     document.addEventListener('mousedown', handlePointerDown);
-    return () => document.removeEventListener('mousedown', handlePointerDown);
-  }, [isOpen]);
+    window.addEventListener('resize', handleReposition);
+    window.addEventListener('scroll', handleReposition, true);
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      window.removeEventListener('resize', handleReposition);
+      window.removeEventListener('scroll', handleReposition, true);
+    };
+  }, [isOpen, updateListPosition]);
 
   const handleSelect = (category: string) => {
     onChange(category);
@@ -75,13 +150,14 @@ export function PortfolioCategoryPicker({
     }
     if (event.key === 'ArrowDown' || event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
-      setIsOpen((current) => !current);
+      toggleList();
     }
   };
 
   return (
     <div ref={rootRef} className="relative w-full">
       <button
+        ref={buttonRef}
         id={effectiveButtonId}
         type="button"
         aria-haspopup="listbox"
@@ -90,7 +166,7 @@ export function PortfolioCategoryPicker({
         aria-describedby={describedBy}
         data-invalid={invalid ? 'true' : undefined}
         disabled={disabled}
-        onClick={() => setIsOpen((current) => !current)}
+        onClick={toggleList}
         onKeyDown={handleKeyDown}
         className={`${buttonClassName} ${
           invalid
@@ -115,39 +191,52 @@ export function PortfolioCategoryPicker({
         />
       </button>
 
-      {isOpen && (
-        <div
-          id={listboxId}
-          role="listbox"
-          aria-label={label}
-          className={listClassName}
-        >
-          {PORTFOLIO_CATEGORY_OPTIONS.map((category) => {
-            const isSelected = category === value;
-            return (
-              <button
-                key={category}
-                type="button"
-                role="option"
-                aria-selected={isSelected}
-                onClick={() => handleSelect(category)}
-                className={`flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2 text-left text-sm transition ${
-                  isSelected
-                    ? 'bg-purple-50 font-semibold text-purple-700 dark:bg-purple-950/40 dark:text-purple-200'
-                    : 'text-gray-800 hover:bg-gray-50 dark:text-gray-100 dark:hover:bg-[#171719]'
-                }`}
-              >
-                <span className="min-w-0 truncate">
-                  {getPortfolioCategoryLabel(t, category)}
-                </span>
-                {isSelected && (
-                  <CheckIcon className="h-4 w-4 shrink-0" aria-hidden="true" />
-                )}
-              </button>
-            );
-          })}
-        </div>
-      )}
+      {isOpen &&
+        typeof document !== 'undefined' &&
+        createPortal(
+          <div
+            ref={listRef}
+            id={listboxId}
+            role="listbox"
+            aria-label={label}
+            className={listClassName}
+            style={listPosition}
+          >
+            <div
+              className="subtle-scrollbar overflow-y-auto p-1"
+              style={{
+                maxHeight: listPosition.maxHeight,
+                scrollbarGutter: 'stable',
+              }}
+            >
+              {PORTFOLIO_CATEGORY_OPTIONS.map((category) => {
+                const isSelected = category === value;
+                return (
+                  <button
+                    key={category}
+                    type="button"
+                    role="option"
+                    aria-selected={isSelected}
+                    onClick={() => handleSelect(category)}
+                    className={`flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2 text-left text-sm transition ${
+                      isSelected
+                        ? 'bg-purple-50 font-semibold text-purple-700 dark:bg-purple-950/40 dark:text-purple-200'
+                        : 'text-gray-800 hover:bg-gray-50 dark:text-gray-100 dark:hover:bg-[#171719]'
+                    }`}
+                  >
+                    <span className="min-w-0 truncate">
+                      {getPortfolioCategoryLabel(t, category)}
+                    </span>
+                    {isSelected && (
+                      <CheckIcon className="h-4 w-4 shrink-0" aria-hidden="true" />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }

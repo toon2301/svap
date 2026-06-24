@@ -18,6 +18,7 @@ from rest_framework.utils.urls import remove_query_param, replace_query_param
 from swaply.rate_limiting import (
     messaging_mark_read_rate_limit,
     messaging_open_rate_limit,
+    messaging_request_action_rate_limit,
 )
 from ..models import ConversationParticipant
 from ..services.conversations import SelfConversationNotAllowed, find_direct_conversation
@@ -36,7 +37,7 @@ from ..services.messages import (
     set_conversation_pinned_state_for_user,
 )
 from .conversation_search import apply_conversation_list_search
-from .notification_dispatch import notify_user
+from . import notification_dispatch
 from .serializers import (
     ConversationListItemSerializer,
     ConversationListQuerySerializer,
@@ -211,7 +212,9 @@ class OpenConversationView(APIView):
         target_user_id = serializer.validated_data["target_user_id"]
         target = get_object_or_404(User, id=target_user_id, is_active=True)
         if not _can_open_direct_target(actor=request.user, target=target):
-            return Response(status=status.HTTP_404_NOT_FOUND)
+            # Rovnaká 404 odpoveď ako pri neexistujúcom používateľovi, aby sa cez
+            # tento endpoint nedala zistiť existencia (private/staff) účtu.
+            raise NotFound()
         try:
             existing = find_direct_conversation(
                 actor=request.user,
@@ -408,7 +411,7 @@ class MarkConversationReadView(APIView):
             return Response(status=status.HTTP_404_NOT_FOUND)
 
         total_unread_count = _total_unread_messages_count_for_user(request.user)
-        notify_user(
+        notification_dispatch.notify_user(
             request.user.id,
             {
                 "type": "messaging_read",
@@ -437,7 +440,7 @@ class MarkConversationReadView(APIView):
                 .values_list("user_id", flat=True)
             )
             for participant_id in recipient_ids:
-                notify_user(int(participant_id), peer_read_event)
+                notification_dispatch.notify_user(int(participant_id), peer_read_event)
 
         return Response(
             {
@@ -453,6 +456,7 @@ class MarkConversationReadView(APIView):
 class AcceptMessageRequestView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @method_decorator(messaging_request_action_rate_limit)
     def post(self, request, conversation_id: int):
         convo = _conversation_for_user_or_404(conversation_id=conversation_id, user=request.user)
         try:
@@ -472,6 +476,7 @@ class AcceptMessageRequestView(APIView):
 class DeleteMessageRequestView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @method_decorator(messaging_request_action_rate_limit)
     def post(self, request, conversation_id: int):
         convo = _conversation_for_user_or_404(conversation_id=conversation_id, user=request.user)
         try:

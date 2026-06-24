@@ -57,7 +57,7 @@ class TestMessagingOfferShareApi(APITestCase):
     def test_send_offer_share_to_recipient(self):
         self.client.force_authenticate(user=self.sender)
 
-        with patch("messaging.api.offer_share_views.notify_user") as notify_user_mock:
+        with patch("messaging.api.notification_dispatch.notify_user") as notify_user_mock:
             response = self.client.post(
                 self._url(),
                 {
@@ -94,7 +94,7 @@ class TestMessagingOfferShareApi(APITestCase):
         unavailable_recipient_id = self.sender.id
         self.client.force_authenticate(user=self.sender)
 
-        with patch("messaging.api.offer_share_views.notify_user") as notify_user_mock:
+        with patch("messaging.api.notification_dispatch.notify_user") as notify_user_mock:
             response = self.client.post(
                 self._url(),
                 {

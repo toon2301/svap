@@ -21,16 +21,28 @@ django_asgi_app = get_asgi_application()
 
 try:
     from channels.routing import ProtocolTypeRouter, URLRouter
+    from channels.security.websocket import OriginValidator
     from swaply.routing import websocket_urlpatterns
     from swaply.ws_auth import JwtAuthMiddleware
+    from swaply.ws_origins import get_websocket_allowed_origins
 
     logger.info("✅ Channels loaded successfully - WebSocket support enabled")
     logger.info(f"📡 WebSocket routes: {len(websocket_urlpatterns)} pattern(s)")
 
+    # CSWSH ochrana: over Origin hlavičku PRED autentifikáciou. Povolené originy
+    # vychádzajú z CORS_ALLOWED_ORIGINS / FRONTEND_ORIGIN (frontend domény), nie
+    # z ALLOWED_HOSTS – inak by sa cross-site FE spojenie odmietlo.
+    allowed_ws_origins = get_websocket_allowed_origins()
+    logger.info(f"🔒 WebSocket allowed origins: {allowed_ws_origins}")
+    websocket_application = OriginValidator(
+        JwtAuthMiddleware(URLRouter(websocket_urlpatterns)),
+        allowed_ws_origins,
+    )
+
     application = ProtocolTypeRouter(
         {
             "http": django_asgi_app,
-            "websocket": JwtAuthMiddleware(URLRouter(websocket_urlpatterns)),
+            "websocket": websocket_application,
         }
     )
     logger.info("🚀 ASGI application initialized with HTTP + WebSocket support")

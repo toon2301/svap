@@ -94,7 +94,7 @@ class TestMessagingForwardApi(APITestCase):
         source_response = self._send_source_message(source_convo, {"text": "Ahoj dalej"})
         assert source_response.status_code == status.HTTP_201_CREATED
 
-        with patch("messaging.api.forward_views.notify_user") as notify_user_mock:
+        with patch("messaging.api.notification_dispatch.notify_user") as notify_user_mock:
             forward_response = self.client.post(
                 self._forward_url(source_convo, source_response.data["id"]),
                 {"recipient_user_ids": [self.u2.id, self.u3.id]},

@@ -7,6 +7,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from ..models import Conversation, ConversationParticipant, Message
+from .image_processing import strip_image_metadata
 from .image_thumbnails import attach_message_thumbnail
 from .message_requests import prepare_pending_request_for_message
 from .push_enqueue import schedule_message_push_delivery
@@ -68,6 +69,50 @@ def _ensure_participant(*, conversation: Conversation, user_id: int) -> Conversa
     return participant
 
 
+def _persist_message(
+    *,
+    conversation: Conversation,
+    sender,
+    now,
+    recipient_user_ids: tuple[int, ...],
+    text: str = "",
+    image=None,
+    message_type: str = Message.Type.USER,
+    metadata: dict | None = None,
+) -> Message:
+    """
+    Spoločný finalizačný blok pri vytváraní správy (zdieľaný medzi send_message
+    a send_direct_message): odstránenie EXIF z obrázka, vytvorenie Message,
+    thumbnail, posun conversation.last_message_at a naplánovanie push doručenia.
+
+    Volajúci musí byť v rámci transakcie a poskytnúť už vypočítané
+    `recipient_user_ids` (líši sa medzi 1:1 a existujúcou konverzáciou).
+    """
+    if image:
+        # GDPR: odstráň EXIF/GPS metadáta z originálu pred uložením.
+        stripped = strip_image_metadata(image)
+        if stripped is not None:
+            image = stripped
+
+    message = Message.objects.create(
+        conversation=conversation,
+        sender=sender,
+        text=text,
+        image=image,
+        message_type=message_type,
+        metadata=dict(metadata or {}),
+        created_at=now,
+    )
+    attach_message_thumbnail(message)
+    conversation.last_message_at = now
+    conversation.save(update_fields=["last_message_at", "updated_at"])
+    schedule_message_push_delivery(
+        message_id=message.id,
+        recipient_user_ids=recipient_user_ids,
+    )
+    return message
+
+
 def send_message(
     *,
     conversation: Conversation,
@@ -102,25 +147,19 @@ def send_message(
             now=now,
         )
 
-        msg = Message.objects.create(
-            conversation=convo,
-            sender=sender,
-            text=clean,
-            image=image,
-            created_at=now,
-        )
-        attach_message_thumbnail(msg)
         recipient_user_ids = tuple(
             ConversationParticipant.objects.filter(conversation=convo)
             .filter(status=ConversationParticipant.Status.ACTIVE)
             .exclude(user_id=sender.id)
             .values_list("user_id", flat=True)
         )
-        convo.last_message_at = now
-        convo.save(update_fields=["last_message_at", "updated_at"])
-        schedule_message_push_delivery(
-            message_id=msg.id,
+        msg = _persist_message(
+            conversation=convo,
+            sender=sender,
+            now=now,
             recipient_user_ids=recipient_user_ids,
+            text=clean,
+            image=image,
         )
         return SendMessageResult(
             message=msg,

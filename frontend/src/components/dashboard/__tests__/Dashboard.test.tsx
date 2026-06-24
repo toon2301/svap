@@ -1,7 +1,9 @@
+import type { ReactElement } from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import Dashboard from '../Dashboard';
 import { ThemeProvider } from '@/contexts/ThemeContext';
+import { AuthProvider, __resetAuthBootstrapSnapshotForTests } from '@/contexts/AuthContext';
 import { User } from '@/types';
 
 // Mock framer-motion
@@ -14,9 +16,11 @@ jest.mock('framer-motion', () => ({
 
 // Mock next/navigation s zdieľaným pushMock
 const pushMock = jest.fn();
+const replaceMock = jest.fn();
 jest.mock('next/navigation', () => ({
   useRouter: () => ({
     push: pushMock,
+    replace: replaceMock,
   }),
   useSearchParams: () => ({
     get: jest.fn(),
@@ -30,7 +34,7 @@ jest.mock('@/utils/auth', () => ({
   clearAuthState: jest.fn(),
 }));
 
-// Mock API
+// Mock API – vrátane pomocníkov, ktoré používa reálny AuthProvider.
 jest.mock('@/lib/api', () => ({
   api: {
     get: jest.fn(),
@@ -40,8 +44,19 @@ jest.mock('@/lib/api', () => ({
     auth: {
       me: '/auth/me/',
       logout: '/auth/logout/',
+      login: '/auth/login/',
+      register: '/auth/register/',
     },
   },
+  invalidateSession: jest.fn(),
+  isTransientAuthFailureError: jest.fn(() => false),
+  setMayHaveRefreshCookie: jest.fn(),
+}));
+
+// CSRF helpers používané pri logout flow v AuthProvideri.
+jest.mock('@/utils/csrf', () => ({
+  fetchCsrfToken: jest.fn(),
+  hasCsrfToken: jest.fn(() => true),
 }));
 
 const mockUser: User = {
@@ -58,16 +73,22 @@ const mockUser: User = {
   profile_completeness: 75,
 };
 
+// Reálny AuthProvider – testy spoliehajú na jeho bootstrap (/me), redirect aj
+// logout logiku. Snapshot resetujeme medzi testami, aby každý začal z čistého
+// auth stavu (inak by sa /me bootstrap preskočil z predošlého testu).
+const renderDashboard = (ui: ReactElement) => render(<AuthProvider>{ui}</AuthProvider>);
+
 describe('Dashboard', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    __resetAuthBootstrapSnapshotForTests();
   });
 
   it('renders loading state initially', () => {
     const { isAuthenticated } = require('@/utils/auth');
     isAuthenticated.mockReturnValue(true);
     
-    render(<ThemeProvider><Dashboard /></ThemeProvider>);
+    renderDashboard(<ThemeProvider><Dashboard /></ThemeProvider>);
     
     expect(screen.getByText('Načítavam dashboard...')).toBeInTheDocument();
   });
@@ -77,10 +98,11 @@ describe('Dashboard', () => {
     const { api } = require('@/lib/api');
     
     isAuthenticated.mockReturnValue(true);
-    api.get.mockResolvedValue({ data: mockUser });
-    
-    render(<ThemeProvider><Dashboard /></ThemeProvider>);
-    
+    // /auth/me/ reálne vracia status 200 – AuthProvider ho vyžaduje na nastavenie usera.
+    api.get.mockResolvedValue({ status: 200, data: mockUser });
+
+    renderDashboard(<ThemeProvider><Dashboard /></ThemeProvider>);
+
     await waitFor(() => {
       expect(screen.getByText('Vitaj v Swaply!')).toBeInTheDocument();
     });
@@ -91,7 +113,7 @@ describe('Dashboard', () => {
     const api = require('@/lib/api').api;
     jest.spyOn(api, 'get').mockResolvedValue({ data: mockUser });
     
-    render(<ThemeProvider><Dashboard initialUser={mockUser} /></ThemeProvider>);
+    renderDashboard(<ThemeProvider><Dashboard initialUser={mockUser} /></ThemeProvider>);
     
     // Počkaj na dokončenie useEffect a renderovanie obsahu
     await waitFor(() => {
@@ -102,7 +124,7 @@ describe('Dashboard', () => {
   it('redirects to home when not authenticated', async () => {
     const { isAuthenticated } = require('@/utils/auth');
     isAuthenticated.mockReturnValue(false);
-    render(<ThemeProvider><Dashboard /></ThemeProvider>);
+    renderDashboard(<ThemeProvider><Dashboard /></ThemeProvider>);
 
     await waitFor(() => {
       expect(pushMock).toHaveBeenCalledWith('/');
@@ -113,20 +135,22 @@ describe('Dashboard', () => {
     const { isAuthenticated } = require('@/utils/auth');
     isAuthenticated.mockReturnValue(true);
     
-    render(<ThemeProvider><Dashboard initialUser={mockUser} /></ThemeProvider>);
-    
-    expect(screen.getByText('Nástenka')).toBeInTheDocument();
-    expect(screen.getByText('Vyhľadávanie')).toBeInTheDocument();
-    expect(screen.getByText('Obľúbené')).toBeInTheDocument();
-    expect(screen.getByText('Profil')).toBeInTheDocument();
-    expect(screen.getByText('Nastavenia')).toBeInTheDocument();
+    renderDashboard(<ThemeProvider><Dashboard initialUser={mockUser} /></ThemeProvider>);
+
+    // Položky sa môžu vyskytovať aj v obsahu home modulu, preto getAllByText
+    // (rovnaký vzor ako test prepínania modulov nižšie).
+    expect(screen.getAllByText('Nástenka').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Vyhľadávanie').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Obľúbené').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Profil').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Nastavenia').length).toBeGreaterThan(0);
   });
 
   it('switches to Favorites/Profile/Settings modules', async () => {
     const { isAuthenticated } = require('@/utils/auth');
     isAuthenticated.mockReturnValue(true);
 
-    render(<ThemeProvider><Dashboard initialUser={mockUser} /></ThemeProvider>);
+    renderDashboard(<ThemeProvider><Dashboard initialUser={mockUser} /></ThemeProvider>);
 
     fireEvent.click(screen.getByText('Obľúbené'));
     await waitFor(() => {
@@ -149,19 +173,21 @@ describe('Dashboard', () => {
     const { api } = require('@/lib/api');
     isAuthenticated.mockReturnValue(true);
     api.get.mockRejectedValue(new Error('network'));
-    render(<Dashboard />);
+    renderDashboard(<Dashboard />);
 
+    // AuthProvider pri sieťovej chybe /me skúša bootstrap viackrát (retry s
+    // backoffom), takže redirect prichádza neskôr – necháme dlhší timeout.
     await waitFor(() => {
       expect(clearAuthState).toHaveBeenCalled();
       expect(pushMock).toHaveBeenCalledWith('/');
-    });
+    }, { timeout: 3000 });
   });
 
   it('shows home module by default', () => {
     const { isAuthenticated } = require('@/utils/auth');
     isAuthenticated.mockReturnValue(true);
     
-    render(<ThemeProvider><Dashboard initialUser={mockUser} /></ThemeProvider>);
+    renderDashboard(<ThemeProvider><Dashboard initialUser={mockUser} /></ThemeProvider>);
     // Home module welcome exists (fallback v t() zaručí text)
     expect(screen.getByText('Vyber si sekciu z navigácie pre pokračovanie.')).toBeInTheDocument();
   });
@@ -177,7 +203,7 @@ describe('Dashboard', () => {
       value: 768,
     });
     
-    render(<ThemeProvider><Dashboard initialUser={mockUser} /></ThemeProvider>);
+    renderDashboard(<ThemeProvider><Dashboard initialUser={mockUser} /></ThemeProvider>);
     
     // Check for mobile menu button (hamburger icon)
     const mobileMenuButton = document.querySelector('button svg');
@@ -188,7 +214,7 @@ describe('Dashboard', () => {
     const { isAuthenticated } = require('@/utils/auth');
     isAuthenticated.mockReturnValue(true);
     
-    render(<ThemeProvider><Dashboard initialUser={mockUser} /></ThemeProvider>);
+    renderDashboard(<ThemeProvider><Dashboard initialUser={mockUser} /></ThemeProvider>);
     
     const mobileMenuButton = document.querySelector('button svg');
     fireEvent.click(mobileMenuButton!.closest('button')!);
@@ -202,7 +228,7 @@ describe('Dashboard', () => {
     const { isAuthenticated } = require('@/utils/auth');
     isAuthenticated.mockReturnValue(true);
     
-    render(<ThemeProvider><Dashboard initialUser={mockUser} /></ThemeProvider>);
+    renderDashboard(<ThemeProvider><Dashboard initialUser={mockUser} /></ThemeProvider>);
     
     expect(screen.getByText('Odhlásiť sa')).toBeInTheDocument();
   });
@@ -215,7 +241,7 @@ describe('Dashboard', () => {
     isAuthenticated.mockReturnValue(true);
     api.post.mockResolvedValue({});
     
-    render(<ThemeProvider><Dashboard initialUser={mockUser} /></ThemeProvider>);
+    renderDashboard(<ThemeProvider><Dashboard initialUser={mockUser} /></ThemeProvider>);
     
     const logoutButton = screen.getByText('Odhlásiť sa');
     fireEvent.click(logoutButton);
@@ -230,7 +256,7 @@ describe('Dashboard', () => {
     const { isAuthenticated } = require('@/utils/auth');
     isAuthenticated.mockReturnValue(true);
     
-    render(<ThemeProvider><Dashboard initialUser={mockUser} /></ThemeProvider>);
+    renderDashboard(<ThemeProvider><Dashboard initialUser={mockUser} /></ThemeProvider>);
     
     expect(screen.getAllByText('Vitaj v Swaply!').length).toBeGreaterThan(0);
   });
