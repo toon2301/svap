@@ -78,7 +78,7 @@ export default function LocationModal({
       onClose();
     } catch (e: any) {
       const data = e?.response?.data;
-      const details = data?.details;
+      const details = data?.validation_errors ?? data?.details;
       const errorMessage = details?.location?.[0] || details?.district?.[0] ||
         getApiErrorMessage(e, t('profile.locationSaveFailed', 'Lokalitu sa nepodarilo uložiť.'));
       toast.error(typeof errorMessage === 'string' ? errorMessage : t('profile.locationSaveFailed', 'Lokalitu sa nepodarilo uložiť.'));

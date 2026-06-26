@@ -397,9 +397,9 @@ export function useRegisterForm({ t }: UseRegisterFormParams) {
       let errorMessage = t('auth.registrationError');
 
       if (error.response?.data) {
-        if (error.response.data.details) {
+        if (error.response.data.validation_errors ?? error.response.data.details) {
           // Ak sú detaily, zobrazíme ich
-          setErrors(error.response.data.details);
+          setErrors(error.response.data.validation_errors ?? error.response.data.details);
           return;
         }
         if (error.response.data.error) {

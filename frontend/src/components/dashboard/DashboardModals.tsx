@@ -14,25 +14,9 @@ import { startBoundedImageRefresh } from './hooks/offerImageRefresh';
 import { dispatchProfileOffersRefresh } from './modules/profile/profileOfferEvents';
 import type { User } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
+import { getApiErrorMessage } from '@/lib/apiError';
 
 type Translator = (key: string, fallback: string) => string;
-type ApiErrorLike = {
-  response?: {
-    data?: {
-      error?: unknown;
-      detail?: unknown;
-    };
-  };
-};
-
-function getApiErrorMessage(error: unknown, fallback: string): string {
-  const data = (error as ApiErrorLike)?.response?.data;
-  if (typeof data?.error === 'string' && data.error.trim()) return data.error;
-  if (typeof data?.detail === 'string' && data.detail.trim()) return data.detail;
-  const message = (error as { message?: unknown })?.message;
-  if (typeof message === 'string' && message.trim()) return message;
-  return fallback;
-}
 
 interface DashboardModalsProps {
   accountType: 'personal' | 'business';

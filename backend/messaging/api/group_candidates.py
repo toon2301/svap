@@ -12,12 +12,13 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from accounts.models import FavoriteUser
-from messaging.models import Conversation, ConversationParticipant
-from messaging.services.presence import (
+from swaply.rate_limiting import api_rate_limit
+
+from ..models import Conversation, ConversationParticipant
+from ..services.presence import (
     MESSAGE_PRESENCE_FRESH_SECONDS,
     get_message_presence_for_users,
 )
-from swaply.rate_limiting import api_rate_limit
 
 from .serializers import serialize_user_brief
 

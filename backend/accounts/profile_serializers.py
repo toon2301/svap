@@ -3,6 +3,7 @@ from time import perf_counter
 from django.db.models import Q
 from rest_framework import serializers
 
+from swaply.image_metadata import strip_image_metadata
 from swaply.validators import (
     BioValidator,
     HtmlSanitizer,
@@ -432,6 +433,17 @@ class UserProfileSerializer(serializers.ModelSerializer):
         update_fields.add("updated_at")
         instance.save(update_fields=list(update_fields))
         return instance
+
+    def validate_avatar(self, value):
+        """GDPR: odstráň EXIF/GPS metadáta z avatara pred uložením do storage.
+
+        Beží až po štandardnej validácii obrázka (veľkosť/typ/SafeSearch);
+        pri neúspechu stripu ponecháme originál (fail-open, nerozbije upload).
+        """
+        if not value:
+            return value
+        stripped = strip_image_metadata(value)
+        return stripped if stripped is not None else value
 
     def validate_phone(self, value):
         """Validácia telefónu"""

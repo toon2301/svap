@@ -26,7 +26,7 @@ from ..services.groups import (
     respond_to_group_invitation,
     update_group_conversation,
 )
-from .notification_dispatch import notify_user
+from . import notification_dispatch
 from .serializers import (
     GroupConversationCreateSerializer,
     GroupConversationUpdateSerializer,
@@ -35,9 +35,8 @@ from .serializers import (
 )
 from .view_helpers import (
     _conversation_for_user_or_404,
-    _conversation_unread_messages_count_for_user,
     _serialize_conversation_for_user,
-    _total_unread_messages_count_for_user_id,
+    unread_payload_for_recipients,
 )
 
 User = get_user_model()
@@ -97,7 +96,7 @@ class GroupConversationCreateView(APIView):
         ).values_list("user_id", flat=True)
         for participant_id in notify_ids:
             if participant_id != request.user.id:
-                notify_user(
+                notification_dispatch.notify_user(
                     int(participant_id),
                     {
                         "type": "messaging_group_updated",
@@ -130,7 +129,7 @@ class GroupConversationDetailView(APIView):
                 "conversation_id": result.conversation.id,
             }
             for participant_id in result.participant_user_ids:
-                notify_user(participant_id, event)
+                notification_dispatch.notify_user(participant_id, event)
 
         data = _serialize_conversation_for_user(request=request, conversation_id=conversation_id)
         return Response(data, status=status.HTTP_200_OK)
@@ -148,7 +147,7 @@ class GroupConversationDetailView(APIView):
             "conversation_id": conversation_id,
         }
         for participant_id in result.participant_user_ids:
-            notify_user(participant_id, event)
+            notification_dispatch.notify_user(participant_id, event)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -185,17 +184,13 @@ class GroupInviteView(APIView):
             "sender_id": request.user.id,
             "created_at": result.message.created_at.isoformat() if result.message else "",
         }
+        unread_by_user = unread_payload_for_recipients(
+            conversation_id=convo.id, recipient_user_ids=result.participant_user_ids
+        )
         for participant_id in result.participant_user_ids:
-            notify_user(
+            notification_dispatch.notify_user(
                 participant_id,
-                {
-                    **event,
-                    "total_unread_count": _total_unread_messages_count_for_user_id(participant_id),
-                    "conversation_unread_count": _conversation_unread_messages_count_for_user(
-                        conversation_id=convo.id,
-                        user_id=participant_id,
-                    ),
-                },
+                {**event, **unread_by_user[participant_id]},
             )
 
         return Response(
@@ -230,7 +225,7 @@ class GroupInvitationResponseView(APIView):
             "accepted": action == "accept",
         }
         for participant_id in result.participant_user_ids:
-            notify_user(participant_id, event)
+            notification_dispatch.notify_user(participant_id, event)
         return Response(
             _serialize_conversation_for_user(
                 request=request,
@@ -260,7 +255,7 @@ class GroupMemberDetailView(APIView):
             "conversation_id": conversation_id,
         }
         for participant_id in result.participant_user_ids + (user_id,):
-            notify_user(participant_id, event)
+            notification_dispatch.notify_user(participant_id, event)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -280,5 +275,5 @@ class GroupLeaveView(APIView):
             "conversation_id": conversation_id,
         }
         for participant_id in result.participant_user_ids + (request.user.id,):
-            notify_user(participant_id, event)
+            notification_dispatch.notify_user(participant_id, event)
         return Response(status=status.HTTP_200_OK)

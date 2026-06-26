@@ -9,6 +9,7 @@ import {
   MESSAGING_REALTIME_MESSAGE_EVENT,
   MESSAGING_REALTIME_PINNED_MESSAGE_EVENT,
   MESSAGING_REALTIME_READ_EVENT,
+  MESSAGING_REALTIME_RECONNECTED_EVENT,
   isPassiveMessagingRefreshSuppressed,
   type MessagingRealtimeDeletedPayload,
   type MessagingRealtimeGroupPayload,
@@ -208,11 +209,15 @@ export function useConversationRealtimeSync({
 
     window.addEventListener('focus', refreshIfVisible);
     document.addEventListener('visibilitychange', refreshIfVisible);
+    // Po WS reconnecte sa mohli stratiť realtime eventy počas výpadku —
+    // dotiahni otvorenú konverzáciu rovnako ako pri návrate fokusu.
+    window.addEventListener(MESSAGING_REALTIME_RECONNECTED_EVENT, refreshIfVisible);
 
     return () => {
       stopPolling();
       window.removeEventListener('focus', refreshIfVisible);
       document.removeEventListener('visibilitychange', refreshIfVisible);
+      window.removeEventListener(MESSAGING_REALTIME_RECONNECTED_EVENT, refreshIfVisible);
     };
   }, [isRealtimeConnected, requestCoalescedRefresh]);
 

@@ -309,8 +309,8 @@ export default function ProfileModule({
       if (activeActionIdRef.current !== actionId) return;
       // Deterministic rollback: restore exact snapshot from before the action.
       onUserUpdate(() => previousUser);
-      const err = e as { response?: { data?: { details?: Record<string, string[]> } } };
-      const details = err?.response?.data?.details;
+      const err = e as { response?: { data?: { validation_errors?: Record<string, string[]>; details?: Record<string, string[]> } } };
+      const details = err?.response?.data?.validation_errors ?? err?.response?.data?.details;
       const firstMsg = details && Object.values(details).flat().find((m): m is string => typeof m === 'string');
       setUploadError(firstMsg || 'Nepodarilo sa uložiť.');
     } finally {
@@ -389,7 +389,7 @@ export default function ProfileModule({
         avatarPreviewUrlRef.current = null;
       }
       const data = (error as ProfileApiError)?.response?.data;
-      const details = data?.details || data?.validation_errors;
+      const details = data?.validation_errors ?? data?.details;
       const avatarErrors: string[] | undefined = details?.avatar;
       const message =
         avatarErrors?.[0] ||
@@ -446,7 +446,7 @@ export default function ProfileModule({
       // Deterministic rollback: restore exact snapshot from before the action.
       onUserUpdate(() => previousUser);
       const data = (e as ProfileApiError)?.response?.data;
-      const details = data?.details || data?.validation_errors;
+      const details = data?.validation_errors ?? data?.details;
       const avatarErrors: string[] | undefined = details?.avatar;
       const message =
         avatarErrors?.[0] ||

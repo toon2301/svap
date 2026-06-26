@@ -62,7 +62,7 @@ def dashboard_profile_view(request):
         )
 
     return Response(
-        {"error": "Neplatne udaje", "details": serializer.errors},
+        {"error": "Neplatne udaje", "details": serializer.errors, "validation_errors": serializer.errors},
         status=status.HTTP_400_BAD_REQUEST,
     )
 

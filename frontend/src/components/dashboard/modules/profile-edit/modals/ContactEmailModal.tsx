@@ -57,8 +57,8 @@ export default function ContactEmailModal({
       setOriginalContactEmailVisible && setOriginalContactEmailVisible(contactEmailVisible);
       onClose();
     } catch (e: unknown) {
-      const err = e as { response?: { data?: { details?: { contact_email?: string[] } } } };
-      const msg = err?.response?.data?.details?.contact_email?.[0];
+      const err = e as { response?: { data?: { validation_errors?: { contact_email?: string[] }; details?: { contact_email?: string[] } } } };
+      const msg = (err?.response?.data?.validation_errors ?? err?.response?.data?.details)?.contact_email?.[0];
       const message = typeof msg === 'string' ? msg : getApiErrorMessage(e, t('profile.contactEmailSaveFailed', 'Kontaktný email sa nepodarilo uložiť.'));
       toast.error(message);
     }
@@ -100,8 +100,9 @@ export default function ContactEmailModal({
               if (onUserUpdate && response?.data?.user) onUserUpdate(response.data.user);
               setOriginalContactEmailVisible?.(newVal);
             } catch (e: unknown) {
-              const err = e as { response?: { data?: { details?: Record<string, string[]> } } };
-              const msg = err?.response?.data?.details?.contact_email_visible?.[0] ?? err?.response?.data?.details?.contact_email?.[0];
+              const err = e as { response?: { data?: { validation_errors?: Record<string, string[]>; details?: Record<string, string[]> } } };
+              const fields = err?.response?.data?.validation_errors ?? err?.response?.data?.details;
+              const msg = fields?.contact_email_visible?.[0] ?? fields?.contact_email?.[0];
               toast.error(typeof msg === 'string' ? msg : getApiErrorMessage(e, t('profile.contactEmailSaveFailed', 'Kontaktný email sa nepodarilo uložiť.')));
               setContactEmailVisible(contactEmailVisible);
             }

@@ -10,6 +10,7 @@ import {
   dispatchMessagingRealtimePinnedMessage,
   dispatchMessagingRealtimeRead,
   dispatchMessagingRealtimeMessage,
+  dispatchMessagingRealtimeReconnected,
   requestConversationsRefresh,
 } from '@/components/dashboard/modules/messages/messagesEvents';
 import type { MessageItem } from '@/components/dashboard/modules/messages/types';
@@ -94,9 +95,10 @@ type WsStore = {
   retryCount: number;
   refreshPromise: Promise<boolean> | null;
   listeners: Set<WsListener>;
-  openListeners: Set<() => void>;
+  openListeners: Set<(isReconnect: boolean) => void>;
   statusListeners: Set<WsStatusListener>;
   isOpen: boolean;
+  hasOpenedBefore: boolean;
   origin: string | null;
 };
 
@@ -127,6 +129,7 @@ function getWsStore(): WsStore {
       openListeners: new Set(),
       statusListeners: new Set(),
       isOpen: false,
+      hasOpenedBefore: false,
       origin: null,
     };
   }
@@ -271,12 +274,17 @@ async function connectWs(store: WsStore): Promise<void> {
   ws.onopen = () => {
     if (store.ws !== ws) return;
 
+    // Rozlíš reconnect po výpadku od úplne prvého spojenia po načítaní stránky.
+    // Pri prvom spojení si UI naťahuje vlastné iniciálne dáta, takže netreba
+    // extra refresh; pri reconnecte ho naopak chceme spustiť.
+    const isReconnect = store.hasOpenedBefore;
+    store.hasOpenedBefore = true;
     store.retryCount = 0;
     notifyWsStatus(store, true);
 
     store.openListeners.forEach((listener) => {
       try {
-        listener();
+        listener(isReconnect);
       } catch {
         // ignore listener failures
       }
@@ -342,6 +350,7 @@ function scheduleWsRelease(store: WsStore): void {
     }
 
     store.retryCount = 0;
+    store.hasOpenedBefore = false;
     store.origin = null;
 
     if (store.ws) {
@@ -841,7 +850,7 @@ export function RequestsNotificationsProvider({
       }
     };
 
-    const onOpen = () => {
+    const onOpen = (isReconnect: boolean) => {
       if (isLoading) return;
       if (!isUnreadCountFresh()) {
         void refreshUnreadCount();
@@ -851,6 +860,14 @@ export function RequestsNotificationsProvider({
       }
       if (!isMessageUnreadCountFreshEnough()) {
         void refreshMessageUnreadCount();
+      }
+
+      // Po reconnecte (nie pri prvom spojení) sa mohli stratiť realtime eventy
+      // počas výpadku. Okamžite zosynchronizuj zoznam konverzácií aj otvorenú
+      // konverzáciu — rovnaký vzor ako focus/visibilitychange refresh.
+      if (isReconnect) {
+        requestConversationsRefresh();
+        dispatchMessagingRealtimeReconnected();
       }
     };
 

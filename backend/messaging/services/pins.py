@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from django.db import transaction
 
 from ..models import Conversation, ConversationParticipant, Message
-from .messages import MessageNotFound, NotParticipant, _ensure_participant
+from .messages import MessageNotFound, _ensure_participant
 
 
 class InvalidPinnedMessage(Exception):

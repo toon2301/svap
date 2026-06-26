@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { useIsMobile } from '@/hooks';
 import type { User } from '@/types';
 import { api, endpoints } from '@/lib/api';
@@ -237,6 +238,11 @@ export default function DashboardContent({
 
   // Core Dashboard State
   const dashboardState = useDashboardState(initialUser, initialRoute);
+  // Prihlásený používateľ priamo z AuthContextu (kanonický zdroj pravdy).
+  // dashboardState.user je len jeho mirror; pre zobrazenie mena (napr. v hlavičke
+  // mobilného messagingu) čítame z authUser, aby sa po zmene mena vždy prejavila
+  // aktuálna hodnota – rovnako ako inde v appke.
+  const { user: authUser } = useAuth();
   const skillsState = useSkillsModals();
   
   // Local component state
@@ -1218,10 +1224,14 @@ export default function DashboardContent({
     />
   );
 
+  // Meno čítame z AuthContextu (authUser) – kanonického zdroja pravdy, ktorý sa
+  // aktualizuje po zmene mena aj po refreshi. Fallback na dashboardState.user
+  // počas krátkeho auth bootstrapu.
+  const accountNameUser = authUser ?? user;
   const mobileAccountName =
-    [user?.first_name, user?.last_name].filter(Boolean).join(' ').trim() ||
-    (user?.company_name || '').trim() ||
-    (user?.username || '').trim() ||
+    [accountNameUser?.first_name, accountNameUser?.last_name].filter(Boolean).join(' ').trim() ||
+    (accountNameUser?.company_name || '').trim() ||
+    (accountNameUser?.username || '').trim() ||
     t('navigation.profile', 'Profil');
   // Anonymizovaný/zmazaný peer nemá profil → žiadny identifier (klik nikam nevedie).
   const mobileMessagePeerIdentifier = mobileMessagePeer?.is_deleted

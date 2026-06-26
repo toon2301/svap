@@ -8,6 +8,8 @@ from django.db import models
 
 from swaply.validators import validate_image_file
 
+from .storage import get_message_image_storage
+
 
 def message_image_upload_to(instance: "Message", filename: str) -> str:
     suffix = Path(filename or "").suffix.lower()
@@ -167,12 +169,14 @@ class Message(models.Model):
     text = models.TextField(blank=True, default="")
     image = models.ImageField(
         upload_to=message_image_upload_to,
+        storage=get_message_image_storage,
         blank=True,
         null=True,
         validators=[validate_image_file],
     )
     image_thumbnail = models.ImageField(
         upload_to=message_thumbnail_upload_to,
+        storage=get_message_image_storage,
         blank=True,
         null=True,
     )

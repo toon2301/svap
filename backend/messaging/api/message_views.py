@@ -3,10 +3,12 @@ from __future__ import annotations
 import mimetypes
 
 from django.contrib.auth import get_user_model
+from django.core.cache import cache
 from django.http import FileResponse
 from django.shortcuts import get_object_or_404
 from django.utils.decorators import method_decorator
 from rest_framework import status
+from rest_framework.exceptions import NotFound
 from rest_framework.generics import ListAPIView
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated
@@ -29,7 +31,7 @@ from ..services.messages import (
     send_message,
 )
 from ..services.pins import InvalidPinnedMessage, set_conversation_pinned_message
-from .notification_dispatch import notify_user
+from . import notification_dispatch
 from .serializers import (
     MessageSerializer,
     PinMessageSerializer,
@@ -46,7 +48,7 @@ from .view_helpers import (
     _serialize_conversation_for_user,
     _serialize_pinned_message,
     _total_unread_messages_count_for_user,
-    _total_unread_messages_count_for_user_id,
+    unread_payload_for_recipients,
 )
 
 User = get_user_model()
@@ -105,7 +107,9 @@ class MessageListView(ListAPIView):
                 group_invitation__invited_user_id=self.request.user.id,
             )
         if hidden_at is not None:
-            qs = qs.filter(created_at__gt=hidden_at)
+            # >= aby správa doručená presne v takte skrytia (created_at == hidden_at)
+            # ostala viditeľná – konzistentné s viditeľnosťou konverzácie v sidebar.
+            qs = qs.filter(created_at__gte=hidden_at)
         return qs.select_related(
             "sender",
             "group_invitation",
@@ -161,12 +165,33 @@ class MessageListView(ListAPIView):
         )
 
 
+_IMAGE_MEMBERSHIP_CACHE_TTL = 60
+
+
+def _ensure_conversation_image_access(request, conversation_id: int) -> None:
+    """
+    Overí, že požadujúci smie čítať obrázky tejto konverzácie (členstvo).
+
+    Pri scrollovaní histórie s obrázkami sa MessageImageView volá N-krát pre tú
+    istú konverzáciu, preto pozitívny výsledok krátko cachujeme (60s) podľa
+    (user_id, conversation_id) – ušetríme membership dotaz na každý obrázok.
+    Cachujeme len pozitívny výsledok: nový člen tak dostane prístup okamžite a
+    odobratému členovi prístup expiruje do 60s (členstvo sa mení zriedka).
+    """
+    cache_key = f"msg_img_access:{request.user.id}:{int(conversation_id)}"
+    if cache.get(cache_key):
+        return
+    # Cache-miss: plný membership/visibility check (vyhodí 404 ak nemá prístup).
+    _conversation_for_user_or_404(conversation_id=conversation_id, user=request.user)
+    cache.set(cache_key, True, timeout=_IMAGE_MEMBERSHIP_CACHE_TTL)
+
+
 def _message_image_response(request, conversation_id: int, message_id: int, field_name: str):
     """Serve a protected message image field after verifying conversation membership."""
-    convo = _conversation_for_user_or_404(conversation_id=conversation_id, user=request.user)
+    _ensure_conversation_image_access(request, conversation_id)
     message = get_object_or_404(
         Message.objects.filter(
-            conversation_id=convo.id,
+            conversation_id=conversation_id,
             id=message_id,
             is_deleted=False,
         )
@@ -233,19 +258,13 @@ class SendMessageView(APIView):
             "sender_id": request.user.id,
             "created_at": result.message.created_at.isoformat(),
         }
+        unread_by_user = unread_payload_for_recipients(
+            conversation_id=convo.id, recipient_user_ids=result.recipient_user_ids
+        )
         for participant_id in result.recipient_user_ids:
-            notify_user(
+            notification_dispatch.notify_user(
                 participant_id,
-                {
-                    **event,
-                    "total_unread_count": _total_unread_messages_count_for_user_id(
-                        participant_id
-                    ),
-                    "conversation_unread_count": _conversation_unread_messages_count_for_user(
-                        conversation_id=convo.id,
-                        user_id=participant_id,
-                    ),
-                },
+                {**event, **unread_by_user[participant_id]},
             )
 
         return Response(
@@ -282,19 +301,13 @@ class DeleteMessageView(APIView):
                 "message_id": result.message.id,
                 "deleted_by_id": request.user.id,
             }
+            unread_by_user = unread_payload_for_recipients(
+                conversation_id=convo.id, recipient_user_ids=result.participant_user_ids
+            )
             for participant_id in result.participant_user_ids:
-                notify_user(
+                notification_dispatch.notify_user(
                     participant_id,
-                    {
-                        **event,
-                        "total_unread_count": _total_unread_messages_count_for_user_id(
-                            participant_id
-                        ),
-                        "conversation_unread_count": _conversation_unread_messages_count_for_user(
-                            conversation_id=convo.id,
-                            user_id=participant_id,
-                        ),
-                    },
+                    {**event, **unread_by_user[participant_id]},
                 )
 
         return Response(
@@ -349,7 +362,7 @@ class PinMessageView(APIView):
                 "actor_id": request.user.id,
             }
             for participant_id in result.participant_user_ids:
-                notify_user(participant_id, event)
+                notification_dispatch.notify_user(participant_id, event)
 
         return Response(
             {
@@ -371,7 +384,9 @@ class StartDirectMessageView(APIView):
         target_user_id = serializer.validated_data["target_user_id"]
         target = get_object_or_404(User, id=target_user_id, is_active=True)
         if not _can_open_direct_target(actor=request.user, target=target):
-            return Response(status=status.HTTP_404_NOT_FOUND)
+            # Rovnaká 404 odpoveď ako pri neexistujúcom používateľovi, aby sa cez
+            # tento endpoint nedala zistiť existencia (private/staff) účtu.
+            raise NotFound()
 
         try:
             result = send_direct_message(
@@ -395,19 +410,14 @@ class StartDirectMessageView(APIView):
             "sender_id": request.user.id,
             "created_at": result.message.created_at.isoformat(),
         }
+        unread_by_user = unread_payload_for_recipients(
+            conversation_id=result.conversation.id,
+            recipient_user_ids=result.recipient_user_ids,
+        )
         for participant_id in result.recipient_user_ids:
-            notify_user(
+            notification_dispatch.notify_user(
                 participant_id,
-                {
-                    **event,
-                    "total_unread_count": _total_unread_messages_count_for_user_id(
-                        participant_id
-                    ),
-                    "conversation_unread_count": _conversation_unread_messages_count_for_user(
-                        conversation_id=result.conversation.id,
-                        user_id=participant_id,
-                    ),
-                },
+                {**event, **unread_by_user[participant_id]},
             )
 
         return Response(

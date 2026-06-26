@@ -27,14 +27,21 @@ def _avatar_storage_name(user) -> str:
     return getattr(getattr(user, "avatar", None), "name", "") or ""
 
 
-def _delete_storage_file(name: str) -> None:
-    """Best-effort zmazanie súboru zo storage (S3/lokál)."""
+def _delete_storage_file(name: str, storage=None) -> None:
+    """Best-effort zmazanie súboru z danej storage (default_storage ak nie je daná).
+
+    Súbory môžu byť na rôznych backendoch: avatar je na default_storage (verejné),
+    obrázky správ na privátnom PrivateMessageStorage. Volajúci preto pri správach
+    odovzdá storage konkrétneho poľa, inak by default_storage súbor v S3 nenašiel
+    a ostal by ako orphan.
+    """
     if not name:
         return
+    target = storage or default_storage
     try:
-        default_storage.delete(name)
+        target.delete(name)
     except Exception as exc:  # pragma: no cover - best effort
-        logger.warning("Account deletion: avatar delete failed: %s", exc)
+        logger.warning("Account deletion: storage delete failed: %s", exc)
 
 
 def _blacklist_user_tokens(user) -> None:
@@ -90,6 +97,57 @@ def _delete_owned_content(user) -> None:
     EmailVerification.objects.filter(user=user).delete()
 
 
+def _scrub_user_messages(user) -> None:
+    """
+    GDPR: anonymizuje OBSAH správ odoslaných používateľom (text + obrázky).
+
+    Sender FK zámerne ponechávame (UI zobrazí „Zmazaný používateľ"), aby
+    história konverzácie protistrany ostala neporušená (PROTECT dizajn).
+    Výsledný stav je rovnaký ako pri delete_message_for_all:
+    is_deleted=True, prázdny text aj obrázky, súbory zmazané zo storage.
+
+    Používa bulk_update (jeden DB zápis) namiesto save() v slučke, aby
+    operácia škálovala aj pri veľkom počte správ.
+    """
+    from messaging.models import Message
+
+    messages = list(
+        Message.objects.filter(sender=user, is_deleted=False).only(
+            "id", "image", "image_thumbnail"
+        )
+    )
+    if not messages:
+        return
+
+    # (storage, name) páry zachyť PRED vyprázdnením polí. Storage berieme z
+    # konkrétneho FieldFile (image.storage / image_thumbnail.storage), lebo obrázky
+    # správ môžu byť na privátnom S3 (PrivateMessageStorage), nie na default_storage.
+    storage_refs: list[tuple] = []
+    for message in messages:
+        image_file = message.image
+        thumbnail_file = message.image_thumbnail
+        image_name = getattr(image_file, "name", "") or ""
+        thumbnail_name = getattr(thumbnail_file, "name", "") or ""
+        if image_name:
+            storage_refs.append((getattr(image_file, "storage", None), image_name))
+        if thumbnail_name:
+            storage_refs.append((getattr(thumbnail_file, "storage", None), thumbnail_name))
+        message.is_deleted = True
+        message.text = ""
+        message.image = ""
+        message.image_thumbnail = ""
+
+    Message.objects.bulk_update(
+        messages, ["is_deleted", "text", "image", "image_thumbnail"]
+    )
+
+    # Súbory zmaž až po úspešnom commite (pri rollbacku sa on_commit zahodí).
+    for storage, name in storage_refs:
+        transaction.on_commit(
+            lambda storage=storage, name=name: _delete_storage_file(name, storage)
+        )
+
+
 def _scrub_user_pii(user) -> None:
     """Prepíše všetky osobné údaje na User neutrálnymi/anonymnými hodnotami."""
     anon = uuid.uuid4().hex
@@ -141,10 +199,14 @@ def anonymize_user(user) -> None:
     # Lock riadku, aby súbežné požiadavky (dvojklik) nebežali paralelne.
     locked = User.objects.select_for_update().get(pk=user.pk)
 
-    # Názov avatara zachyť PRED scrubom – ten nastaví avatar=None.
+    # Názov avatara zachyť PRED scrubom – ten nastaví avatar=None. Avatar je na
+    # default_storage (nemá vlastný storage=), takže ho mažeme cez default.
     avatar_name = _avatar_storage_name(locked)
 
     _delete_owned_content(locked)
+    # Obsah odoslaných správ anonymizujeme (text + obrázky); riadky a sender FK
+    # ostávajú, aby história protistrany bola neporušená (PROTECT dizajn).
+    _scrub_user_messages(locked)
 
     # Súbor avatara (nenávratná operácia mimo DB) zmaž AŽ PO úspešnom commite.
     # transaction.on_commit sa pri rollbacku zahodí, takže ak niektorá z DB

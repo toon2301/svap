@@ -318,8 +318,8 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
       }
       
       // Ak máme details, spracuj ich
-      if (error.response?.data?.details) {
-        const details = error.response.data.details;
+      if (error.response?.data?.validation_errors ?? error.response?.data?.details) {
+        const details = error.response.data.validation_errors ?? error.response.data.details;
         
         // Skontroluj non_field_errors
         if (details.non_field_errors && Array.isArray(details.non_field_errors) && details.non_field_errors.length > 0) {

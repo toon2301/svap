@@ -4,11 +4,12 @@ import { useCallback, useId, useState } from 'react';
 import type { FormEvent } from 'react';
 import toast from 'react-hot-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { createPortfolioItem, uploadPortfolioImageFile } from './portfolioApi';
+import { createPortfolioItem } from './portfolioApi';
 import type { PortfolioItem } from './portfolioTypes';
 import { PortfolioCategoryPicker } from './PortfolioCategoryPicker';
 import { PortfolioCreatePhotoPicker } from './PortfolioCreatePhotoPicker';
 import { PortfolioDescriptionEditorModal } from './PortfolioDescriptionEditorModal';
+import { showPortfolioCreateErrors, uploadPortfolioFiles } from './portfolioCreateSubmit';
 import {
   PORTFOLIO_TITLE_MAX_LENGTH,
   emptyPortfolioFormValues,
@@ -26,33 +27,9 @@ type PortfolioCreateFormProps = {
   onCreated: (item: PortfolioItem) => void;
 };
 
-async function uploadPortfolioFiles(itemId: number, files: File[]): Promise<void> {
-  for (const file of files) {
-    // Sequential uploads keep storage and API pressure predictable for mobile users.
-    // eslint-disable-next-line no-await-in-loop
-    await uploadPortfolioImageFile(itemId, file);
-  }
-}
-
 function fieldSummary(value: string, fallback: string): string {
   const trimmed = value.trim();
   return trimmed || fallback;
-}
-
-function uniqueMessages(messages: Array<string | undefined>): string[] {
-  const seen = new Set<string>();
-  const unique: string[] = [];
-  messages.forEach((message) => {
-    const trimmed = String(message || '').trim();
-    if (!trimmed || seen.has(trimmed)) return;
-    seen.add(trimmed);
-    unique.push(trimmed);
-  });
-  return unique;
-}
-
-function showPortfolioCreateErrors(messages: Array<string | undefined>): void {
-  uniqueMessages(messages).forEach((message) => toast.error(message));
 }
 
 export function PortfolioCreateForm({ onCancel, onCreated }: PortfolioCreateFormProps) {

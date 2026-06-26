@@ -4,6 +4,10 @@ import '@testing-library/jest-dom';
 import ProfileModule from '../ProfileModule';
 import { User } from '@/types';
 
+jest.mock('@/contexts/AuthContext', () => ({
+  useAuth: () => ({ user: { id: 1 }, isAuthenticated: true }),
+}));
+
 jest.mock('@/lib/api', () => ({
   api: {
     patch: jest.fn(),

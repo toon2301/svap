@@ -8,6 +8,7 @@ export const MESSAGING_REALTIME_READ_EVENT = 'messaging:realtime:read';
 export const MESSAGING_REALTIME_DELETED_EVENT = 'messaging:realtime:deleted';
 export const MESSAGING_REALTIME_PINNED_MESSAGE_EVENT = 'messaging:realtime:pinned-message';
 export const MESSAGING_REALTIME_GROUP_EVENT = 'messaging:realtime:group';
+export const MESSAGING_REALTIME_RECONNECTED_EVENT = 'messaging:realtime:reconnected';
 export const MESSAGING_OPEN_CONVERSATION_ACTIONS_EVENT = 'messaging:conversation:actions:open';
 export const MESSAGING_CONVERSATION_UNAVAILABLE_EVENT = 'messaging:conversation:unavailable';
 
@@ -140,4 +141,14 @@ export function dispatchMessagingRealtimeGroup(payload: MessagingRealtimeGroupPa
 export function requestOpenConversationActions(): void {
   if (typeof window === 'undefined') return;
   window.dispatchEvent(new Event(MESSAGING_OPEN_CONVERSATION_ACTIONS_EVENT));
+}
+
+/**
+ * Signalizuje úspešný reconnect WS po výpadku. Otvorená konverzácia naň
+ * reaguje okamžitým refreshom (rovnako ako pri focus/visibilitychange), aby sa
+ * zachytili správy doručené tesne pred reconnectom (mimo posledného poll cyklu).
+ */
+export function dispatchMessagingRealtimeReconnected(): void {
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(new Event(MESSAGING_REALTIME_RECONNECTED_EVENT));
 }

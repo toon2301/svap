@@ -1,7 +1,9 @@
 from io import BytesIO
+import itertools
 import pytest
 import shutil
 import tempfile
+from datetime import timedelta
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -9,6 +11,7 @@ from django.test import override_settings
 from django.urls import reverse
 from django.utils import timezone
 from PIL import Image
+from PIL.TiffImagePlugin import IFDRational
 from rest_framework import status
 from rest_framework.test import APITestCase
 from unittest.mock import patch
@@ -20,6 +23,23 @@ from messaging.services.presence import store_message_presence
 
 
 User = get_user_model()
+
+
+def _strictly_increasing_now_patch():
+    """
+    Patch `timezone.now()` na striktne rastúce hodnoty (každé volanie +1s).
+
+    Eliminuje flakinu hidden_at/last_message_at testov: pod záťažou suite môžu
+    dve volania now() vrátiť rovnaký čas → hranica `last_message_at >= hidden_at`
+    sa správa nedeterministicky. Striktne rastúci čas zaručí jednoznačné poradie
+    (správa < skrytie < nová správa). Scope je na konkrétny test (start/stop).
+    """
+    base = timezone.now()
+    counter = itertools.count(1)
+    return patch(
+        "django.utils.timezone.now",
+        side_effect=lambda: base + timedelta(seconds=next(counter)),
+    )
 
 
 @pytest.mark.django_db
@@ -73,6 +93,26 @@ class TestMessagingApi(APITestCase):
         buffer = BytesIO()
         Image.new("RGB", (2, 2), (255, 0, 0)).save(buffer, format="PNG")
         return SimpleUploadedFile(name, buffer.getvalue(), content_type="image/png")
+
+    def _jpeg_with_gps_exif(self, name: str = "gps.jpg") -> SimpleUploadedFile:
+        """JPEG s EXIF metadátami vrátane GPS lokácie (na test stripovania)."""
+        image = Image.new("RGB", (8, 8), (0, 128, 255))
+        exif = image.getexif()
+        exif[0x010F] = "EvilCam"  # Make
+        exif[0x0110] = "ModelX"  # Model
+        exif[0x0132] = "2021:01:01 12:00:00"  # DateTime
+        gps_ifd = exif.get_ifd(0x8825)  # GPSInfo
+        gps_ifd[1] = "N"
+        gps_ifd[2] = (IFDRational(48, 1), IFDRational(8, 1), IFDRational(0, 1))
+        gps_ifd[3] = "E"
+        gps_ifd[4] = (IFDRational(17, 1), IFDRational(7, 1), IFDRational(0, 1))
+        # GPS sub-IFD treba pripojiť späť na hlavný EXIF objekt, inak ho Pillow
+        # pri save() neserializuje (cache z get_ifd sa do súboru nezapíše) a JPEG
+        # by reálne GPS neobsahoval – test stripovania by falošne prešiel.
+        exif[0x8825] = gps_ifd
+        buffer = BytesIO()
+        image.save(buffer, format="JPEG", exif=exif)
+        return SimpleUploadedFile(name, buffer.getvalue(), content_type="image/jpeg")
 
     def _results(self, response):
         return response.data.get("results", response.data)
@@ -145,6 +185,9 @@ class TestMessagingApi(APITestCase):
         assert open_response.data["created"] is False
 
     def test_open_conversation_returns_draft_when_started_conversation_is_hidden_for_user(self):
+        now_patcher = _strictly_increasing_now_patch()
+        now_patcher.start()
+        self.addCleanup(now_patcher.stop)
         convo = self._create_direct_conversation(actor=self.u1, target=self.u2)
 
         self.client.force_authenticate(user=self.u2)
@@ -171,7 +214,7 @@ class TestMessagingApi(APITestCase):
         self.client.force_authenticate(user=self.u1)
         url = reverse("accounts:messaging_send_direct_message")
 
-        with patch("messaging.api.views.notify_user") as notify_user_mock:
+        with patch("messaging.api.notification_dispatch.notify_user") as notify_user_mock:
             with self.captureOnCommitCallbacks(execute=True):
                 response = self.client.post(
                     url,
@@ -296,7 +339,7 @@ class TestMessagingApi(APITestCase):
             "accounts:messaging_send_message",
             kwargs={"conversation_id": conversation_id},
         )
-        with patch("messaging.api.message_views.notify_user") as notify_user_mock:
+        with patch("messaging.api.notification_dispatch.notify_user") as notify_user_mock:
             reply = self.client.post(send_url, {"text": "Jasne, odpovedam"}, format="json")
 
         assert reply.status_code == status.HTTP_201_CREATED
@@ -333,7 +376,7 @@ class TestMessagingApi(APITestCase):
             "accounts:messaging_delete_message_request",
             kwargs={"conversation_id": conversation_id},
         )
-        with patch("messaging.api.conversation_views.notify_user") as notify_user_mock:
+        with patch("messaging.api.notification_dispatch.notify_user") as notify_user_mock:
             deleted = self.client.post(delete_url, {}, format="json")
 
         assert deleted.status_code == status.HTTP_200_OK
@@ -359,7 +402,7 @@ class TestMessagingApi(APITestCase):
         assert messages_response.data["peer_last_read_at"] is None
 
         read_url = reverse("accounts:messaging_mark_read", kwargs={"conversation_id": conversation_id})
-        with patch("messaging.api.conversation_views.notify_user") as notify_user_mock:
+        with patch("messaging.api.notification_dispatch.notify_user") as notify_user_mock:
             read_response = self.client.post(read_url, {}, format="json")
 
         assert read_response.status_code == status.HTTP_200_OK
@@ -434,6 +477,82 @@ class TestMessagingApi(APITestCase):
         message = Message.objects.get(id=response.data["id"])
         assert bool(message.image) is True
         assert bool(message.image_thumbnail) is True
+
+    def test_send_message_strips_exif_gps_metadata(self):
+        upload = self._jpeg_with_gps_exif()
+
+        # Precondition: nahraný obrázok skutočne nesie EXIF metadáta vrátane GPS
+        # (inak by test overoval stripovanie niečoho, čo tam ani nebolo).
+        with Image.open(BytesIO(upload.read())) as src:
+            source_exif = src.getexif()
+            source_gps = src.getexif().get_ifd(0x8825)
+        upload.seek(0)
+        assert len(source_exif) > 0
+        assert source_exif.get(0x010F) == "EvilCam"
+        assert source_gps, "fixture musí obsahovať reálne GPS metadáta"
+
+        convo = self._create_direct_conversation(actor=self.u1, target=self.u2)
+        self.client.force_authenticate(user=self.u1)
+        send_url = reverse(
+            "accounts:messaging_send_message",
+            kwargs={"conversation_id": convo.id},
+        )
+
+        with self.captureOnCommitCallbacks(execute=True):
+            response = self.client.post(
+                send_url, {"image": upload}, format="multipart"
+            )
+
+        assert response.status_code == status.HTTP_201_CREATED
+        message = Message.objects.get(id=response.data["id"])
+        assert bool(message.image) is True
+
+        message.image.open("rb")
+        try:
+            with Image.open(message.image.file) as stored:
+                stored_exif = stored.getexif()
+                gps_ifd = stored_exif.get_ifd(0x8825)
+        finally:
+            message.image.close()
+
+        # Po uložení nesmú ostať žiadne EXIF metadáta ani GPS lokácia.
+        assert len(stored_exif) == 0
+        assert not gps_ifd
+
+    def test_open_conversation_hides_private_user_existence(self):
+        private_user = User.objects.create_user(
+            username="private_user",
+            email="private@example.com",
+            password="StrongPass123",
+            is_verified=True,
+            is_active=True,
+        )
+        private_user.is_public = False
+        private_user.save(update_fields=["is_public"])
+
+        self.client.force_authenticate(user=self.u1)
+        url = reverse("accounts:messaging_open")
+
+        resp_private = self.client.post(
+            url, {"target_user_id": private_user.id}, format="json"
+        )
+        resp_missing = self.client.post(
+            url, {"target_user_id": 99_999_999}, format="json"
+        )
+
+        assert resp_private.status_code == status.HTTP_404_NOT_FOUND
+        assert resp_missing.status_code == status.HTTP_404_NOT_FOUND
+
+        def _without_timestamp(data):
+            payload = dict(data or {})
+            payload.pop("timestamp", None)
+            return payload
+
+        # Telo odpovede musí byť identické (okrem časovej pečiatky), aby sa
+        # nedala odlíšiť existencia private/staff účtu od neexistujúceho.
+        assert _without_timestamp(resp_private.data) == _without_timestamp(
+            resp_missing.data
+        )
 
     def test_send_direct_message_supports_text_and_image(self):
         self.client.force_authenticate(user=self.u1)
@@ -554,7 +673,7 @@ class TestMessagingApi(APITestCase):
 
         self.client.force_authenticate(user=self.u1)
         read_url = reverse("accounts:messaging_mark_read", kwargs={"conversation_id": convo.id})
-        with patch("messaging.api.views.notify_user") as notify_user_mock:
+        with patch("messaging.api.notification_dispatch.notify_user") as notify_user_mock:
             read_response = self.client.post(read_url, {}, format="json")
 
         assert read_response.status_code == status.HTTP_200_OK
@@ -592,7 +711,7 @@ class TestMessagingApi(APITestCase):
 
         self.client.force_authenticate(user=self.u1)
         read_url = reverse("accounts:messaging_mark_read", kwargs={"conversation_id": convo.id})
-        with patch("messaging.api.views.notify_user") as notify_user_mock:
+        with patch("messaging.api.notification_dispatch.notify_user") as notify_user_mock:
             first = self.client.post(read_url, {}, format="json")
             second = self.client.post(read_url, {}, format="json")
 
@@ -617,7 +736,7 @@ class TestMessagingApi(APITestCase):
         )
         convo.refresh_from_db()
         last_message_at_before_delete = convo.last_message_at
-        with patch("messaging.api.views.notify_user") as notify_user_mock:
+        with patch("messaging.api.notification_dispatch.notify_user") as notify_user_mock:
             delete_response = self.client.post(delete_url, {}, format="json")
 
         assert delete_response.status_code == status.HTTP_200_OK
@@ -738,7 +857,7 @@ class TestMessagingApi(APITestCase):
             "accounts:messaging_delete_message",
             kwargs={"conversation_id": convo.id, "message_id": message_id},
         )
-        with patch("messaging.api.views.notify_user") as notify_user_mock:
+        with patch("messaging.api.notification_dispatch.notify_user") as notify_user_mock:
             first = self.client.post(delete_url, {}, format="json")
             second = self.client.post(delete_url, {}, format="json")
 
@@ -777,7 +896,7 @@ class TestMessagingApi(APITestCase):
 
         self.client.force_authenticate(user=self.u2)
         pin_url = reverse("accounts:messaging_pin_message", kwargs={"conversation_id": convo.id})
-        with patch("messaging.api.views.notify_user") as notify_user_mock:
+        with patch("messaging.api.notification_dispatch.notify_user") as notify_user_mock:
             pin_response = self.client.post(pin_url, {"message_id": message_id}, format="json")
 
         assert pin_response.status_code == status.HTTP_200_OK
@@ -795,7 +914,7 @@ class TestMessagingApi(APITestCase):
             assert event["actor_id"] == self.u2.id
             assert event["pinned_message"]["id"] == message_id
 
-        with patch("messaging.api.views.notify_user") as notify_user_mock:
+        with patch("messaging.api.notification_dispatch.notify_user") as notify_user_mock:
             unpin_response = self.client.post(pin_url, {"message_id": None}, format="json")
 
         assert unpin_response.status_code == status.HTTP_200_OK
@@ -922,6 +1041,9 @@ class TestMessagingApi(APITestCase):
         assert len(list_response.data["results"]) == 1
 
     def test_hide_conversation_hides_it_only_for_the_actor(self):
+        now_patcher = _strictly_increasing_now_patch()
+        now_patcher.start()
+        self.addCleanup(now_patcher.stop)
         convo = self._create_direct_conversation(actor=self.u1, target=self.u2)
 
         self.client.force_authenticate(user=self.u2)
@@ -959,6 +1081,9 @@ class TestMessagingApi(APITestCase):
         assert [item["id"] for item in other_list_response.data.get("results", [])] == [convo.id]
 
     def test_hidden_conversation_reappears_after_new_message_and_shows_only_new_history(self):
+        now_patcher = _strictly_increasing_now_patch()
+        now_patcher.start()
+        self.addCleanup(now_patcher.stop)
         convo = self._create_direct_conversation(actor=self.u1, target=self.u2)
 
         self.client.force_authenticate(user=self.u2)

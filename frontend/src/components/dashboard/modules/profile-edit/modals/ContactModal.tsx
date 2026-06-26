@@ -41,9 +41,9 @@ export default function ContactModal({ isOpen, phone, phoneVisible, originalPhon
       setOriginalPhoneVisible && setOriginalPhoneVisible(phoneVisible);
       onClose();
     } catch (e: unknown) {
-      const err = e as { response?: { data?: { details?: { phone?: string[] } } } };
+      const err = e as { response?: { data?: { validation_errors?: { phone?: string[] }; details?: { phone?: string[] } } } };
       const data = err?.response?.data;
-      const details = data?.details;
+      const details = data?.validation_errors ?? data?.details;
       const phoneMsg = typeof details?.phone?.[0] === 'string' ? details.phone[0] : null;
       const message = phoneMsg ?? getApiErrorMessage(e, t('profile.phoneSaveFailed', 'Telefón sa nepodarilo uložiť.'));
       toast.error(message);

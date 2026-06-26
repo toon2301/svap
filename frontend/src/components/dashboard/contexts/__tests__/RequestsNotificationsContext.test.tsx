@@ -13,6 +13,7 @@ import {
   MESSAGING_REALTIME_MESSAGE_EVENT,
   MESSAGING_REALTIME_PINNED_MESSAGE_EVENT,
   MESSAGING_REALTIME_READ_EVENT,
+  MESSAGING_REALTIME_RECONNECTED_EVENT,
 } from '@/components/dashboard/modules/messages/messagesEvents';
 import {
   PROFILE_OFFER_LIKED_EVENT,
@@ -472,6 +473,81 @@ describe('RequestsNotificationsProvider', () => {
     });
 
     expect(mockApiGet).toHaveBeenCalledTimes(3);
+  });
+
+  it('does not trigger conversation/messages refresh on the first websocket open', async () => {
+    const conversationsRefreshSpy = jest.fn();
+    const reconnectedSpy = jest.fn();
+    window.addEventListener(MESSAGING_CONVERSATIONS_REFRESH_EVENT, conversationsRefreshSpy);
+    window.addEventListener(MESSAGING_REALTIME_RECONNECTED_EVENT, reconnectedSpy);
+
+    try {
+      render(
+        <RequestsNotificationsProvider>
+          <Consumer />
+        </RequestsNotificationsProvider>,
+      );
+      await flushAsyncEffects();
+
+      expect(MockWebSocket.instances).toHaveLength(1);
+
+      act(() => {
+        MockWebSocket.instances[0].emitOpen();
+      });
+
+      expect(conversationsRefreshSpy).not.toHaveBeenCalled();
+      expect(reconnectedSpy).not.toHaveBeenCalled();
+    } finally {
+      window.removeEventListener(MESSAGING_CONVERSATIONS_REFRESH_EVENT, conversationsRefreshSpy);
+      window.removeEventListener(MESSAGING_REALTIME_RECONNECTED_EVENT, reconnectedSpy);
+    }
+  });
+
+  it('refreshes the conversation list and active conversation after a websocket reconnect', async () => {
+    const conversationsRefreshSpy = jest.fn();
+    const reconnectedSpy = jest.fn();
+    window.addEventListener(MESSAGING_CONVERSATIONS_REFRESH_EVENT, conversationsRefreshSpy);
+    window.addEventListener(MESSAGING_REALTIME_RECONNECTED_EVENT, reconnectedSpy);
+
+    try {
+      render(
+        <RequestsNotificationsProvider>
+          <Consumer />
+        </RequestsNotificationsProvider>,
+      );
+      await flushAsyncEffects();
+
+      expect(MockWebSocket.instances).toHaveLength(1);
+
+      // First connect — no refresh expected.
+      act(() => {
+        MockWebSocket.instances[0].emitOpen();
+      });
+      expect(conversationsRefreshSpy).not.toHaveBeenCalled();
+      expect(reconnectedSpy).not.toHaveBeenCalled();
+
+      // Outage: close drops the socket and schedules an exponential-backoff reconnect.
+      act(() => {
+        MockWebSocket.instances[0].emitClose(1006);
+      });
+      await act(async () => {
+        jest.advanceTimersByTime(2000);
+        await Promise.resolve();
+      });
+
+      expect(MockWebSocket.instances).toHaveLength(2);
+
+      // Successful reconnect — both refreshes must fire exactly once.
+      act(() => {
+        MockWebSocket.instances[1].emitOpen();
+      });
+
+      expect(conversationsRefreshSpy).toHaveBeenCalledTimes(1);
+      expect(reconnectedSpy).toHaveBeenCalledTimes(1);
+    } finally {
+      window.removeEventListener(MESSAGING_CONVERSATIONS_REFRESH_EVENT, conversationsRefreshSpy);
+      window.removeEventListener(MESSAGING_REALTIME_RECONNECTED_EVENT, reconnectedSpy);
+    }
   });
 
   it('keeps websocket same-origin when api uses relative proxy paths', async () => {

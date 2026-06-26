@@ -36,7 +36,7 @@ export default function BioModal({ isOpen, bio, originalBio, setBio, setOriginal
       onClose();
     } catch (e: any) {
       const data = e?.response?.data;
-      const details = data?.details;
+      const details = data?.validation_errors ?? data?.details;
       const bioMsg = typeof details?.bio?.[0] === 'string' ? details.bio[0] : null;
       const message = bioMsg ?? getApiErrorMessage(e, t('profile.bioSaveFailed', 'Bio sa nepodarilo uložiť.'));
       toast.error(message);

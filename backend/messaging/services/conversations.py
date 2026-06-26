@@ -8,9 +8,8 @@ from django.db.models import Count
 from django.utils import timezone
 
 from ..models import Conversation, ConversationParticipant, Message
-from .image_thumbnails import attach_message_thumbnail
 from .message_requests import prepare_pending_request_for_message
-from .push_enqueue import schedule_message_push_delivery
+from .messages import _persist_message
 
 User = get_user_model()
 
@@ -187,22 +186,16 @@ def send_direct_message(
             now=now,
         )
 
-        msg = Message.objects.create(
+        recipient_user_ids = (int(target.id),)
+        msg = _persist_message(
             conversation=convo,
             sender=actor,
+            now=now,
+            recipient_user_ids=recipient_user_ids,
             text=clean,
             image=image,
             message_type=message_type,
-            metadata=dict(metadata or {}),
-            created_at=now,
-        )
-        attach_message_thumbnail(msg)
-        convo.last_message_at = now
-        convo.save(update_fields=["last_message_at", "updated_at"])
-        recipient_user_ids = (int(target.id),)
-        schedule_message_push_delivery(
-            message_id=msg.id,
-            recipient_user_ids=recipient_user_ids,
+            metadata=metadata,
         )
 
         return StartDirectMessageResult(

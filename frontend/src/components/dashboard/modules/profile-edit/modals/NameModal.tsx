@@ -121,7 +121,7 @@ export default function NameModal({ isOpen, firstName, lastName, originalFirstNa
       }
     } catch (e: any) {
       const data = e?.response?.data;
-      const details = data?.details;
+      const details = data?.validation_errors ?? data?.details;
       const firstMsg = [details?.first_name?.[0], details?.last_name?.[0], details?.company_name?.[0]].find(
         (m): m is string => typeof m === 'string'
       );

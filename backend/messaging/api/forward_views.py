@@ -15,12 +15,11 @@ from ..services.forwarding import (
     forward_message_to_recipients,
     normalize_forward_recipient_ids,
 )
-from .notification_dispatch import notify_user
+from . import notification_dispatch
 from .serializers import MessageSerializer
 from .view_helpers import (
     _conversation_for_user_or_404,
-    _conversation_unread_messages_count_for_user,
-    _total_unread_messages_count_for_user_id,
+    unread_payload_for_recipients,
 )
 
 
@@ -77,19 +76,14 @@ class ForwardMessageView(APIView):
                 "sender_id": request.user.id,
                 "created_at": delivery.message.created_at.isoformat(),
             }
+            unread_by_user = unread_payload_for_recipients(
+                conversation_id=delivery.conversation_id,
+                recipient_user_ids=delivery.recipient_user_ids,
+            )
             for participant_id in delivery.recipient_user_ids:
-                notify_user(
+                notification_dispatch.notify_user(
                     participant_id,
-                    {
-                        **event,
-                        "total_unread_count": _total_unread_messages_count_for_user_id(
-                            participant_id
-                        ),
-                        "conversation_unread_count": _conversation_unread_messages_count_for_user(
-                            conversation_id=delivery.conversation_id,
-                            user_id=participant_id,
-                        ),
-                    },
+                    {**event, **unread_by_user[participant_id]},
                 )
 
             sent.append(
