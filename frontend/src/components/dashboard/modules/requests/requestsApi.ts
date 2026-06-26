@@ -1,4 +1,6 @@
 import { api, endpoints } from '@/lib/api';
+// Zdieľaný error helper; re-export kvôli spätnej kompatibilite s existujúcimi importérmi.
+export { getApiErrorMessage } from '@/lib/apiError';
 import type { SkillRequestTerminationReason, SkillRequestsResponse } from './types';
 
 export type SkillRequestCreatePayload = {
@@ -20,15 +22,6 @@ function toPositiveInt(value: unknown): number | null {
   return i;
 }
 
-export function getApiErrorMessage(err: unknown, fallback: string): string {
-  const e = err as any;
-  return (
-    (typeof e?.response?.data?.error === 'string' && e.response.data.error) ||
-    (typeof e?.response?.data?.detail === 'string' && e.response.data.detail) ||
-    (typeof e?.message === 'string' && e.message) ||
-    fallback
-  );
-}
 
 export async function fetchSkillRequests(statusQuery?: string): Promise<SkillRequestsResponse> {
   const url = statusQuery

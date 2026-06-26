@@ -4,6 +4,11 @@ import Cookies from 'js-cookie';
 
 jest.mock('axios');
 jest.mock('js-cookie');
+// fetchCsrfToken loguje chyby cez logClientError (ten je v test/prod prostredí
+// no-op, takže console.error sa nevolá – overujeme priamo delegáciu na logger).
+jest.mock('@/utils/clientLogging', () => ({
+  logClientError: jest.fn(),
+}));
 
 describe('CSRF utilities', () => {
   beforeEach(() => {
@@ -20,13 +25,13 @@ describe('CSRF utilities', () => {
     });
 
     it('handles error gracefully', async () => {
-      const consoleError = jest.spyOn(console, 'error').mockImplementation();
+      const { logClientError } = require('@/utils/clientLogging');
       (axios.get as jest.Mock).mockRejectedValue(new Error('Network error'));
-      
-      await fetchCsrfToken();
-      
-      expect(consoleError).toHaveBeenCalled();
-      consoleError.mockRestore();
+
+      // Nesmie thrownúť – chyba sa pohltí a deleguje na logClientError.
+      await expect(fetchCsrfToken()).resolves.toBeUndefined();
+
+      expect(logClientError).toHaveBeenCalled();
     });
   });
 

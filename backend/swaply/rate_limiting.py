@@ -244,7 +244,8 @@ def rate_limit(
 
                 return JsonResponse(
                     {
-                        "error": True,
+                        # Shape V+: "error" je ľudský string; "message" alias.
+                        "error": message,
                         "message": message,
                         "code": "RATE_LIMITED",
                         "remaining_attempts": remaining,

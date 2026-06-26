@@ -148,7 +148,7 @@ export default function ProfileEditFields({
                   }
                 } catch (error: any) {
                   const data = error?.response?.data;
-                  const details = data?.details;
+                  const details = data?.validation_errors ?? data?.details;
                   const raw = details?.ico_visible ?? details?.ico;
                   const msg = Array.isArray(raw) ? raw[0] : typeof raw === 'string' ? raw : null;
                   const message = (typeof msg === 'string' ? msg : null) ?? getApiErrorMessage(error, t('profile.icoSaveFailed', 'IČO sa nepodarilo uložiť.'));
@@ -233,7 +233,7 @@ export default function ProfileEditFields({
                   }
                 } catch (error: any) {
                   const data = error?.response?.data;
-                  const details = data?.details;
+                  const details = data?.validation_errors ?? data?.details;
                   const msg = details?.contact_email_visible?.[0] ?? details?.contact_email?.[0];
                   const message = typeof msg === 'string' ? msg : getApiErrorMessage(error, t('profile.contactEmailSaveFailed', 'Kontaktný email sa nepodarilo uložiť.'));
                   toast.error(message);

@@ -15,27 +15,9 @@ import {
 } from './skillsDescribeReturnSession';
 import type { DashboardSkill } from '../../hooks/useSkillsModals';
 import type { OpeningHours } from './skillDescriptionModal/types';
+import { getApiErrorMessage } from '@/lib/apiError';
 
 const MAX_SKILLS_PER_TYPE = 3;
-
-type ApiErrorLike = {
-  response?: {
-    data?: {
-      error?: unknown;
-      detail?: unknown;
-    };
-  };
-  message?: unknown;
-};
-
-function getApiErrorMessage(error: unknown, fallback: string): string {
-  const apiError = error as ApiErrorLike;
-  const rawMessage =
-    apiError.response?.data?.error ?? apiError.response?.data?.detail ?? apiError.message;
-  return typeof rawMessage === 'string' && rawMessage.trim() !== ''
-    ? rawMessage
-    : fallback;
-}
 
 interface SkillsModuleRouterProps {
   activeModule: string;

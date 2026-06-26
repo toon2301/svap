@@ -52,7 +52,7 @@ def push_subscriptions_view(request):
     serializer = WebPushSubscriptionCreateSerializer(data=request.data)
     if not serializer.is_valid():
         return Response(
-            {"error": "Neplatné údaje", "details": serializer.errors},
+            {"error": "Neplatné údaje", "details": serializer.errors, "validation_errors": serializer.errors},
             status=status.HTTP_400_BAD_REQUEST,
         )
 
@@ -93,7 +93,7 @@ def push_subscription_current_view(request):
     serializer = WebPushSubscriptionDeleteSerializer(data=request.data)
     if not serializer.is_valid():
         return Response(
-            {"error": "Neplatné údaje", "details": serializer.errors},
+            {"error": "Neplatné údaje", "details": serializer.errors, "validation_errors": serializer.errors},
             status=status.HTTP_400_BAD_REQUEST,
         )
 
@@ -104,7 +104,7 @@ def push_subscription_current_view(request):
         )
     except ValueError:
         return Response(
-            {"error": "Neplatné údaje", "details": serializer.errors},
+            {"error": "Neplatné údaje", "details": serializer.errors, "validation_errors": serializer.errors},
             status=status.HTTP_400_BAD_REQUEST,
         )
 
@@ -127,7 +127,7 @@ def push_preferences_view(request):
     serializer = PushPreferencesSerializer(data=request.data, partial=True)
     if not serializer.is_valid():
         return Response(
-            {"error": "Neplatné údaje", "details": serializer.errors},
+            {"error": "Neplatné údaje", "details": serializer.errors, "validation_errors": serializer.errors},
             status=status.HTTP_400_BAD_REQUEST,
         )
 

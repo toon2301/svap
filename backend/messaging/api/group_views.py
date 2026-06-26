@@ -35,9 +35,8 @@ from .serializers import (
 )
 from .view_helpers import (
     _conversation_for_user_or_404,
-    _conversation_unread_messages_count_for_user,
     _serialize_conversation_for_user,
-    _total_unread_messages_count_for_user_id,
+    unread_payload_for_recipients,
 )
 
 User = get_user_model()
@@ -185,17 +184,13 @@ class GroupInviteView(APIView):
             "sender_id": request.user.id,
             "created_at": result.message.created_at.isoformat() if result.message else "",
         }
+        unread_by_user = unread_payload_for_recipients(
+            conversation_id=convo.id, recipient_user_ids=result.participant_user_ids
+        )
         for participant_id in result.participant_user_ids:
             notification_dispatch.notify_user(
                 participant_id,
-                {
-                    **event,
-                    "total_unread_count": _total_unread_messages_count_for_user_id(participant_id),
-                    "conversation_unread_count": _conversation_unread_messages_count_for_user(
-                        conversation_id=convo.id,
-                        user_id=participant_id,
-                    ),
-                },
+                {**event, **unread_by_user[participant_id]},
             )
 
         return Response(

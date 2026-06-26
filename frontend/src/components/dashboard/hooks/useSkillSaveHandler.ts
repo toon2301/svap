@@ -12,6 +12,7 @@ import {
 } from '../modules/skills/skillsDescribeReturnSession';
 import type { DashboardSkill } from './useSkillsModals';
 import { startBoundedImageRefresh } from './offerImageRefresh';
+import { getApiErrorMessage } from '@/lib/apiError';
 
 type Translator = (key: string, fallback: string) => string;
 
@@ -39,15 +40,6 @@ type ApiErrorLike = {
 };
 
 type SkillSavePayload = Record<string, unknown>;
-
-function getApiErrorMessage(error: unknown, fallback: string): string {
-  const apiError = error as ApiErrorLike;
-  const rawMessage =
-    apiError.response?.data?.error ?? apiError.response?.data?.detail ?? apiError.message;
-  return typeof rawMessage === 'string' && rawMessage.trim() !== ''
-    ? rawMessage
-    : fallback;
-}
 
 function isModerationRejection(error: unknown): boolean {
   return (error as ApiErrorLike & { response?: { data?: { code?: unknown } } })

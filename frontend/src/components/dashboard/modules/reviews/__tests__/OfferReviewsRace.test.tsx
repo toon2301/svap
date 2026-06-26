@@ -98,13 +98,18 @@ describe('OfferReviewsView – race condition pri prepnutí ponuky (BOD 8)', () 
     // Spusti load-more pre ponuku 1 (page 2 ostane pending).
     fireEvent.click(screen.getByTestId('loadmore'));
 
+    // Over, že load-more request pre page 2 sa naozaj odoslal a resolver je
+    // nastavený. Bez tejto kontroly by optional chaining nižšie ticho preskočilo
+    // volanie a test by falošne prešiel aj keby sa request vôbec neodoslal.
+    await waitFor(() => expect(resolveStalePage2).not.toBeNull());
+
     // Používateľ medzitým prejde na ponuku 2.
     rerender(<OfferReviewsView offerId={2} />);
     await waitFor(() => expect(screen.getByTestId('ids')).toHaveTextContent('101,102'));
 
     // Až teraz dobehne starý request pre ponuku 1 – musí byť zahodený.
     await act(async () => {
-      resolveStalePage2?.(reviewsResponse([3, 4], 2, 3));
+      resolveStalePage2!(reviewsResponse([3, 4], 2, 3));
       await Promise.resolve();
     });
 

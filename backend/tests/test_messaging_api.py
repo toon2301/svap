@@ -1,7 +1,9 @@
 from io import BytesIO
+import itertools
 import pytest
 import shutil
 import tempfile
+from datetime import timedelta
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -20,6 +22,23 @@ from messaging.services.presence import store_message_presence
 
 
 User = get_user_model()
+
+
+def _strictly_increasing_now_patch():
+    """
+    Patch `timezone.now()` na striktne rastúce hodnoty (každé volanie +1s).
+
+    Eliminuje flakinu hidden_at/last_message_at testov: pod záťažou suite môžu
+    dve volania now() vrátiť rovnaký čas → hranica `last_message_at >= hidden_at`
+    sa správa nedeterministicky. Striktne rastúci čas zaručí jednoznačné poradie
+    (správa < skrytie < nová správa). Scope je na konkrétny test (start/stop).
+    """
+    base = timezone.now()
+    counter = itertools.count(1)
+    return patch(
+        "django.utils.timezone.now",
+        side_effect=lambda: base + timedelta(seconds=next(counter)),
+    )
 
 
 @pytest.mark.django_db
@@ -161,6 +180,9 @@ class TestMessagingApi(APITestCase):
         assert open_response.data["created"] is False
 
     def test_open_conversation_returns_draft_when_started_conversation_is_hidden_for_user(self):
+        now_patcher = _strictly_increasing_now_patch()
+        now_patcher.start()
+        self.addCleanup(now_patcher.stop)
         convo = self._create_direct_conversation(actor=self.u1, target=self.u2)
 
         self.client.force_authenticate(user=self.u2)
@@ -1011,6 +1033,9 @@ class TestMessagingApi(APITestCase):
         assert len(list_response.data["results"]) == 1
 
     def test_hide_conversation_hides_it_only_for_the_actor(self):
+        now_patcher = _strictly_increasing_now_patch()
+        now_patcher.start()
+        self.addCleanup(now_patcher.stop)
         convo = self._create_direct_conversation(actor=self.u1, target=self.u2)
 
         self.client.force_authenticate(user=self.u2)
@@ -1048,6 +1073,9 @@ class TestMessagingApi(APITestCase):
         assert [item["id"] for item in other_list_response.data.get("results", [])] == [convo.id]
 
     def test_hidden_conversation_reappears_after_new_message_and_shows_only_new_history(self):
+        now_patcher = _strictly_increasing_now_patch()
+        now_patcher.start()
+        self.addCleanup(now_patcher.stop)
         convo = self._create_direct_conversation(actor=self.u1, target=self.u2)
 
         self.client.force_authenticate(user=self.u2)

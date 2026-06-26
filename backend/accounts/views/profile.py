@@ -114,7 +114,7 @@ def update_profile_view(request):
         )
 
     return Response(
-        {"error": "Neplatné údaje", "details": serializer.errors},
+        {"error": "Neplatné údaje", "details": serializer.errors, "validation_errors": serializer.errors},
         status=status.HTTP_400_BAD_REQUEST,
     )
 

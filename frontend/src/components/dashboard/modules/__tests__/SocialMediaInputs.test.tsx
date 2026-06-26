@@ -30,12 +30,15 @@ describe('SocialMediaInputs', () => {
     jest.clearAllMocks();
   });
 
-  it('toggles Instagram input and saves on blur', async () => {
-    const onUserUpdate = jest.fn();
-    const { api } = require('@/lib/api');
-    api.patch.mockResolvedValue({ data: { user: { ...baseUser, instagram: 'https://instagram.com/test' } } });
+  it('toggles Instagram input and lifts change up on blur', async () => {
+    const onEditableUserUpdate = jest.fn();
 
-    render(<SocialMediaInputs user={{ ...baseUser, instagram: '' }} onUserUpdate={onUserUpdate} />);
+    render(
+      <SocialMediaInputs
+        editableUser={{ ...baseUser, instagram: '' }}
+        onEditableUserUpdate={onEditableUserUpdate}
+      />,
+    );
 
     const buttons = screen.getAllByRole('button');
     fireEvent.click(buttons[0]); // Instagram icon button
@@ -45,17 +48,19 @@ describe('SocialMediaInputs', () => {
     fireEvent.blur(input);
 
     await waitFor(() => {
-      expect(api.patch).toHaveBeenCalledWith('/auth/profile/', { instagram: 'https://instagram.com/test' });
-      expect(onUserUpdate).toHaveBeenCalled();
+      expect(onEditableUserUpdate).toHaveBeenCalledWith({ instagram: 'https://instagram.com/test' });
     });
   });
 
-  it('toggles LinkedIn input and saves on Enter', async () => {
-    const onUserUpdate = jest.fn();
-    const { api } = require('@/lib/api');
-    api.patch.mockResolvedValue({ data: { user: { ...baseUser, linkedin: 'https://linkedin.com/in/test' } } });
+  it('toggles LinkedIn input and lifts change up on Enter', async () => {
+    const onEditableUserUpdate = jest.fn();
 
-    render(<SocialMediaInputs user={{ ...baseUser, linkedin: '' }} onUserUpdate={onUserUpdate} />);
+    render(
+      <SocialMediaInputs
+        editableUser={{ ...baseUser, linkedin: '' }}
+        onEditableUserUpdate={onEditableUserUpdate}
+      />,
+    );
 
     const buttons = screen.getAllByRole('button');
     fireEvent.click(buttons[2]); // LinkedIn icon button (third)
@@ -65,16 +70,19 @@ describe('SocialMediaInputs', () => {
     fireEvent.keyDown(input, { key: 'Enter' });
 
     await waitFor(() => {
-      expect(api.patch).toHaveBeenCalledWith('/auth/profile/', { linkedin: 'https://linkedin.com/in/test' });
-      expect(onUserUpdate).toHaveBeenCalled();
+      expect(onEditableUserUpdate).toHaveBeenCalledWith({ linkedin: 'https://linkedin.com/in/test' });
     });
   });
 
-  it('toggles Facebook input and hides on blur without change (no request)', async () => {
-    const { api } = require('@/lib/api');
-    api.patch.mockResolvedValue({ data: { user: baseUser } });
+  it('toggles Facebook input and hides on blur without change (no update)', async () => {
+    const onEditableUserUpdate = jest.fn();
 
-    render(<SocialMediaInputs user={{ ...baseUser, facebook: '' }} />);
+    render(
+      <SocialMediaInputs
+        editableUser={{ ...baseUser, facebook: '' }}
+        onEditableUserUpdate={onEditableUserUpdate}
+      />,
+    );
 
     const buttons = screen.getAllByRole('button');
     fireEvent.click(buttons[1]); // Facebook icon button (second)
@@ -84,7 +92,7 @@ describe('SocialMediaInputs', () => {
 
     // Give time for any async handlers
     await new Promise((r) => setTimeout(r, 10));
-    expect(api.patch).not.toHaveBeenCalled();
+    expect(onEditableUserUpdate).not.toHaveBeenCalled();
   });
 });
 

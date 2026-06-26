@@ -46,8 +46,8 @@ export default function IcoModal({ isOpen, ico, icoVisible, originalIco, origina
       setOriginalIcoVisible && setOriginalIcoVisible(icoVisible);
       onClose();
     } catch (e: unknown) {
-      const err = e as { response?: { data?: { details?: Record<string, unknown> } } };
-      const raw = err?.response?.data?.details?.ico;
+      const err = e as { response?: { data?: { validation_errors?: Record<string, unknown>; details?: Record<string, unknown> } } };
+      const raw = (err?.response?.data?.validation_errors ?? err?.response?.data?.details)?.ico;
       const msg = Array.isArray(raw) ? raw[0] : typeof raw === 'string' ? raw : null;
       const message = (typeof msg === 'string' ? msg : null) ?? getApiErrorMessage(e, t('profile.icoSaveFailed', 'IČO sa nepodarilo uložiť.'));
       toast.error(message);

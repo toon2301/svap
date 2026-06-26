@@ -162,6 +162,105 @@ def _total_unread_messages_count_for_user_id(user_id: int) -> int:
     return int(total)
 
 
+def _total_unread_counts_for_users(user_ids) -> dict[int, int]:
+    """
+    Dávkový ekvivalent _total_unread_messages_count_for_user_id pre viacero
+    používateľov naraz – jeden GROUP BY user_id dotaz namiesto N samostatných.
+    Vracia {user_id: total_unread_count}. Filter musí byť IDENTICKÝ s per-user
+    verziou (rozdiel: sender porovnávame s F("user_id") namiesto literálu).
+    """
+    ids = [int(uid) for uid in user_ids]
+    if not ids:
+        return {}
+    rows = (
+        ConversationParticipant.objects.filter(
+            user_id__in=ids,
+            status__in=[
+                ConversationParticipant.Status.ACTIVE,
+                ConversationParticipant.Status.INVITED,
+            ],
+            conversation__last_message_at__isnull=False,
+        )
+        .filter(
+            Q(conversation__is_group=True)
+            | ~Q(conversation__request_status=Conversation.RequestStatus.DELETED)
+        )
+        .values("user_id")
+        .annotate(
+            total=Count(
+                "conversation__messages",
+                filter=Q(conversation__messages__is_deleted=False)
+                & ~Q(conversation__messages__sender_id=F("user_id"))
+                & (
+                    Q(last_read_at__isnull=True)
+                    | Q(conversation__messages__created_at__gt=F("last_read_at"))
+                ),
+                distinct=True,
+                output_field=IntegerField(),
+            )
+        )
+    )
+    return {int(row["user_id"]): int(row["total"] or 0) for row in rows}
+
+
+def _conversation_unread_counts_for_users(*, conversation_id: int, user_ids) -> dict[int, int]:
+    """
+    Dávkový ekvivalent _conversation_unread_messages_count_for_user pre viacero
+    používateľov v rovnakej konverzácii – jeden GROUP BY user_id dotaz.
+    Vracia {user_id: conversation_unread_count}.
+    """
+    ids = [int(uid) for uid in user_ids]
+    if not ids:
+        return {}
+    rows = (
+        ConversationParticipant.objects.filter(
+            conversation_id=conversation_id,
+            user_id__in=ids,
+            status__in=[
+                ConversationParticipant.Status.ACTIVE,
+                ConversationParticipant.Status.INVITED,
+            ],
+        )
+        .values("user_id")
+        .annotate(
+            unread=Count(
+                "conversation__messages",
+                filter=Q(conversation__messages__is_deleted=False)
+                & ~Q(conversation__messages__sender_id=F("user_id"))
+                & (
+                    Q(last_read_at__isnull=True)
+                    | Q(conversation__messages__created_at__gt=F("last_read_at"))
+                ),
+                distinct=True,
+                output_field=IntegerField(),
+            )
+        )
+    )
+    return {int(row["user_id"]): int(row["unread"] or 0) for row in rows}
+
+
+def unread_payload_for_recipients(*, conversation_id: int, recipient_user_ids) -> dict[int, dict]:
+    """
+    Pripraví per-recipient WS payload časť (total + conversation unread count)
+    pre všetkých príjemcov **dvomi** dotazmi namiesto ~3×N. Formát payloadu je
+    nezmenený – len interný výpočet je dávkový.
+    """
+    recipient_ids = [int(uid) for uid in recipient_user_ids]
+    if not recipient_ids:
+        return {}
+    totals = _total_unread_counts_for_users(recipient_ids)
+    conversation_counts = _conversation_unread_counts_for_users(
+        conversation_id=conversation_id, user_ids=recipient_ids
+    )
+    return {
+        uid: {
+            "total_unread_count": totals.get(uid, 0),
+            "conversation_unread_count": conversation_counts.get(uid, 0),
+        }
+        for uid in recipient_ids
+    }
+
+
 def _peer_last_read_at_for_conversation(*, conversation_id: int, user_id: int):
     return (
         ConversationParticipant.objects.filter(conversation_id=conversation_id)

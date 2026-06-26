@@ -558,7 +558,7 @@ def register_view(request):
     if getattr(settings, "DEBUG", False):
         logger.error(f"📝 DEBUG REGISTRATION: Serializer invalid - {serializer.errors}")
     return Response(
-        {"error": "Neplatné údaje", "details": serializer.errors},
+        {"error": "Neplatné údaje", "details": serializer.errors, "validation_errors": serializer.errors},
         status=status.HTTP_400_BAD_REQUEST,
     )
 
@@ -670,7 +670,7 @@ def login_view(request):
             )
 
     return Response(
-        {"error": "Neplatné prihlasovacie údaje", "details": serializer.errors},
+        {"error": "Neplatné prihlasovacie údaje", "details": serializer.errors, "validation_errors": serializer.errors},
         status=status.HTTP_400_BAD_REQUEST,
     )
 
@@ -872,7 +872,7 @@ def verify_email_view(request):
             )
 
     return Response(
-        {"error": "Neplatné údaje", "details": serializer.errors},
+        {"error": "Neplatné údaje", "details": serializer.errors, "validation_errors": serializer.errors},
         status=status.HTTP_400_BAD_REQUEST,
     )
 
@@ -937,7 +937,7 @@ def resend_verification_view(request):
             )
 
     return Response(
-        {"error": "Neplatné údaje", "details": serializer.errors},
+        {"error": "Neplatné údaje", "details": serializer.errors, "validation_errors": serializer.errors},
         status=status.HTTP_400_BAD_REQUEST,
     )
 

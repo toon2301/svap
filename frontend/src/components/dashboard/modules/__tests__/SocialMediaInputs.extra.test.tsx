@@ -27,12 +27,10 @@ const user: User = {
 describe('SocialMediaInputs extra coverage', () => {
   beforeEach(() => jest.clearAllMocks());
 
-  it('saves instagram and facebook on Enter/blur and hides input on toggle', async () => {
-    const { api } = require('@/lib/api');
-    (api.patch as jest.Mock).mockResolvedValue({ data: { user } });
-    const onUserUpdate = jest.fn();
+  it('lifts instagram and facebook changes up on Enter/blur', async () => {
+    const onEditableUserUpdate = jest.fn();
 
-    render(<SocialMediaInputs user={user} onUserUpdate={onUserUpdate} />);
+    render(<SocialMediaInputs editableUser={user} onEditableUserUpdate={onEditableUserUpdate} />);
 
     // open instagram input
     fireEvent.click(screen.getAllByRole('button')[0]);
@@ -47,18 +45,16 @@ describe('SocialMediaInputs extra coverage', () => {
     fireEvent.blur(fb);
 
     await waitFor(() => {
-      expect(api.patch).toHaveBeenCalledWith('/auth/profile/', { instagram: 'https://ig/me' });
-      expect(api.patch).toHaveBeenCalledWith('/auth/profile/', { facebook: 'https://fb/me' });
-      expect(onUserUpdate).toHaveBeenCalled();
+      expect(onEditableUserUpdate).toHaveBeenCalledWith({ instagram: 'https://ig/me' });
+      expect(onEditableUserUpdate).toHaveBeenCalledWith({ facebook: 'https://fb/me' });
     });
   });
 
-  it('does not call API when unchanged and reverts on error', async () => {
-    const { api } = require('@/lib/api');
-    (api.patch as jest.Mock).mockRejectedValue(new Error('fail'));
+  it('does not lift update when unchanged and lifts exactly once on change', async () => {
+    const onEditableUserUpdate = jest.fn();
 
     const withIg: User = { ...user, instagram: 'https://ig/old' } as any;
-    render(<SocialMediaInputs user={withIg} />);
+    render(<SocialMediaInputs editableUser={withIg} onEditableUserUpdate={onEditableUserUpdate} />);
 
     fireEvent.click(screen.getAllByRole('button')[0]);
     const ig = screen.getByPlaceholderText('https://instagram.com/username') as HTMLInputElement;
@@ -67,15 +63,16 @@ describe('SocialMediaInputs extra coverage', () => {
     fireEvent.change(ig, { target: { value: 'https://ig/old' } });
     fireEvent.keyDown(ig, { key: 'Enter' });
 
-    // input is hidden after first save attempt; reopen and change to trigger error and revert
+    // input is hidden after first save; reopen and change -> single update lifted up
     fireEvent.click(screen.getAllByRole('button')[0]);
     const ig2 = screen.getByPlaceholderText('https://instagram.com/username') as HTMLInputElement;
     fireEvent.change(ig2, { target: { value: 'https://ig/new' } });
     fireEvent.keyDown(ig2, { key: 'Enter' });
 
     await waitFor(() => {
-      expect(api.patch).toHaveBeenCalledTimes(1);
+      expect(onEditableUserUpdate).toHaveBeenCalledTimes(1);
     });
+    expect(onEditableUserUpdate).toHaveBeenCalledWith({ instagram: 'https://ig/new' });
   });
 });
 

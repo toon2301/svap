@@ -233,20 +233,24 @@ def custom_exception_handler(exc, context):
                 },
             )
 
-        # Vytvor konzistentnú error response
+        # Jednotný error tvar (Shape V+): "error" je VŽDY ľudský string.
+        # "message" ponechávame ako alias pre spätnú kompatibilitu (FE číta oboje).
+        # "validation_errors" sa plní vždy pri 400 (nie len v DEBUG), aby na ňom
+        # frontend vedel zobraziť chyby polí aj v produkcii; "details" len v DEBUG.
+        message = "Došlo k chybe pri spracovaní požiadavky"
+        if response.status_code == 400:
+            message = "Neplatné údaje"
+
         custom_response_data = {
-            "error": True,
-            "message": "Došlo k chybe pri spracovaní požiadavky",
+            "error": message,
+            "message": message,
             "code": get_error_code(response.status_code),
             "details": response.data if settings.DEBUG else None,
             "timestamp": str(timezone.now()),
         }
 
-        # Ak je to validačná chyba, uprav message
-        if response.status_code == 400:
-            custom_response_data["message"] = "Neplatné údaje"
-            if isinstance(response.data, dict):
-                custom_response_data["validation_errors"] = response.data
+        if response.status_code == 400 and isinstance(response.data, dict):
+            custom_response_data["validation_errors"] = response.data
 
         return Response(custom_response_data, status=response.status_code)
 

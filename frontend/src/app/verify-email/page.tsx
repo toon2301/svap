@@ -72,8 +72,8 @@ function VerifyEmailContent() {
         
         if (error.response?.data?.error) {
           errorMessage = error.response.data.error;
-        } else if (error.response?.data?.details?.token) {
-          errorMessage = error.response.data.details.token[0];
+        } else if ((error.response?.data?.validation_errors ?? error.response?.data?.details)?.token) {
+          errorMessage = (error.response.data.validation_errors ?? error.response.data.details).token[0];
         }
 
         setVerificationStatus({
