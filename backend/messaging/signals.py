@@ -21,16 +21,22 @@ from .models import Message
 
 
 def _delete_message_image_storage(instance: Message) -> None:
-    """Best-effort zmazanie obrázkových súborov správy zo storage."""
-    names = [
-        getattr(getattr(instance, "image", None), "name", "") or "",
-        getattr(getattr(instance, "image_thumbnail", None), "name", "") or "",
-    ]
-    for name in dict.fromkeys(n.strip() for n in names):
-        if not name:
+    """Best-effort zmazanie obrázkových súborov správy z ich VLASTNEJ storage.
+
+    Message.image / image_thumbnail môžu byť na privátnom S3 (PrivateMessageStorage),
+    nie na default_storage. Mazať preto treba cez storage konkrétneho poľa (FieldFile
+    .storage), inak by default_storage súbor v S3 nenašiel a ostal by tam ako orphan.
+    """
+    seen: set[str] = set()
+    for field_name in ("image", "image_thumbnail"):
+        file_field = getattr(instance, field_name, None)
+        name = (getattr(file_field, "name", "") or "").strip()
+        if not name or name in seen:
             continue
+        seen.add(name)
+        storage = getattr(file_field, "storage", None) or default_storage
         try:
-            default_storage.delete(name)
+            storage.delete(name)
         except Exception:
             # Radšej osamotený súbor než spadnuté mazanie (CASCADE/skupina/účet).
             pass

@@ -82,6 +82,7 @@ export function PortfolioCategoryPicker({
   const rootRef = useRef<HTMLDivElement | null>(null);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
   const listRef = useRef<HTMLDivElement | null>(null);
+  const optionRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [listPosition, setListPosition] = useState<CSSProperties>({});
   const effectiveButtonId = buttonId || generatedButtonId;
@@ -126,7 +127,18 @@ export function PortfolioCategoryPicker({
       setIsOpen(false);
     };
 
-    const handleReposition = () => updateListPosition();
+    const handleReposition = (event?: Event) => {
+      // Scroll vnútri samotného dropdownu nemení pozíciu buttonu – ignoruj ho,
+      // aby sme zbytočne neprepočítavali pozíciu. Scroll stránky prepočítava.
+      if (
+        event?.type === 'scroll' &&
+        event.target instanceof Node &&
+        listRef.current?.contains(event.target)
+      ) {
+        return;
+      }
+      updateListPosition();
+    };
 
     document.addEventListener('mousedown', handlePointerDown);
     window.addEventListener('resize', handleReposition);
@@ -138,9 +150,26 @@ export function PortfolioCategoryPicker({
     };
   }, [isOpen, updateListPosition]);
 
+  // Po otvorení presuň fokus na zvolenú (inak prvú) možnosť, aby klávesnicoví
+  // používatelia mohli hneď navigovať šípkami (roving focus v listboxe).
+  useEffect(() => {
+    if (!isOpen) return;
+    const selectedIndex = PORTFOLIO_CATEGORY_OPTIONS.findIndex(
+      (category) => category === value,
+    );
+    optionRefs.current[selectedIndex >= 0 ? selectedIndex : 0]?.focus();
+  }, [isOpen, value]);
+
   const handleSelect = (category: string) => {
     onChange(category);
     setIsOpen(false);
+    buttonRef.current?.focus();
+  };
+
+  const focusOptionAt = (index: number) => {
+    const count = PORTFOLIO_CATEGORY_OPTIONS.length;
+    const normalized = ((index % count) + count) % count; // wrap-around
+    optionRefs.current[normalized]?.focus();
   };
 
   const handleKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
@@ -148,9 +177,46 @@ export function PortfolioCategoryPicker({
       setIsOpen(false);
       return;
     }
-    if (event.key === 'ArrowDown' || event.key === 'Enter' || event.key === ' ') {
+    if (
+      event.key === 'ArrowDown' ||
+      event.key === 'ArrowUp' ||
+      event.key === 'Enter' ||
+      event.key === ' '
+    ) {
       event.preventDefault();
       toggleList();
+    }
+  };
+
+  const handleListKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    const count = PORTFOLIO_CATEGORY_OPTIONS.length;
+    const currentIndex = optionRefs.current.findIndex(
+      (el) => el === document.activeElement,
+    );
+    switch (event.key) {
+      case 'ArrowDown':
+        event.preventDefault();
+        focusOptionAt(currentIndex < 0 ? 0 : currentIndex + 1);
+        break;
+      case 'ArrowUp':
+        event.preventDefault();
+        focusOptionAt(currentIndex < 0 ? count - 1 : currentIndex - 1);
+        break;
+      case 'Home':
+        event.preventDefault();
+        focusOptionAt(0);
+        break;
+      case 'End':
+        event.preventDefault();
+        focusOptionAt(count - 1);
+        break;
+      case 'Escape':
+        event.preventDefault();
+        setIsOpen(false);
+        buttonRef.current?.focus();
+        break;
+      default:
+        break;
     }
   };
 
@@ -201,6 +267,7 @@ export function PortfolioCategoryPicker({
             aria-label={label}
             className={listClassName}
             style={listPosition}
+            onKeyDown={handleListKeyDown}
           >
             <div
               className="subtle-scrollbar overflow-y-auto p-1"
@@ -209,14 +276,18 @@ export function PortfolioCategoryPicker({
                 scrollbarGutter: 'stable',
               }}
             >
-              {PORTFOLIO_CATEGORY_OPTIONS.map((category) => {
+              {PORTFOLIO_CATEGORY_OPTIONS.map((category, index) => {
                 const isSelected = category === value;
                 return (
                   <button
                     key={category}
+                    ref={(el) => {
+                      optionRefs.current[index] = el;
+                    }}
                     type="button"
                     role="option"
                     aria-selected={isSelected}
+                    tabIndex={-1}
                     onClick={() => handleSelect(category)}
                     className={`flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2 text-left text-sm transition ${
                       isSelected

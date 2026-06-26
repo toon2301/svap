@@ -126,7 +126,13 @@ class ConversationListItemSerializer(serializers.ModelSerializer):
 
     def get_avatar_url(self, obj: Conversation):
         # Group avatars are always composed from member avatars on the client.
-        return None
+        if getattr(obj, "is_group", False):
+            return None
+        # Pre priame (1:1) konverzácie vráť avatar protistrany. Čerpáme z rovnakého
+        # zdroja ako other_user (anotácia / serialize_user_brief), takže sa korektne
+        # ošetria aj anonymizované účty (avatar_url=None) bez duplikovania logiky.
+        other_user = self.get_other_user(obj)
+        return other_user.get("avatar_url") if other_user else None
 
     def get_avatar_members(self, obj: Conversation):
         if not getattr(obj, "is_group", False):

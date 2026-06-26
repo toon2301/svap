@@ -19,7 +19,7 @@ from .group_common import (
     _active_participant_user_ids,
     _create_system_message,
     _ensure_group,
-    ensure_active_group_member,
+    ensure_group_owner,
 )
 from .push_enqueue import schedule_message_push_delivery
 
@@ -36,7 +36,9 @@ def invite_user_to_group(
 
     def _perform() -> GroupInvitationResult:
         _ensure_group(conversation)
-        ensure_active_group_member(conversation=conversation, user_id=actor.id)
+        # Len owner skupiny smie pozývať. Vynucujeme to aj na service vrstve
+        # (nielen na API), aby permission check neobišiel žiadny vstupný bod.
+        ensure_group_owner(conversation=conversation, user_id=actor.id)
 
         existing_participant = (
             ConversationParticipant.objects.select_for_update()

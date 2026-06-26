@@ -173,7 +173,7 @@ describe('Dashboard', () => {
     const { api } = require('@/lib/api');
     isAuthenticated.mockReturnValue(true);
     api.get.mockRejectedValue(new Error('network'));
-    renderDashboard(<Dashboard />);
+    renderDashboard(<ThemeProvider><Dashboard /></ThemeProvider>);
 
     // AuthProvider pri sieťovej chybe /me skúša bootstrap viackrát (retry s
     // backoffom), takže redirect prichádza neskôr – necháme dlhší timeout.

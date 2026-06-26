@@ -11,6 +11,7 @@ from django.test import override_settings
 from django.urls import reverse
 from django.utils import timezone
 from PIL import Image
+from PIL.TiffImagePlugin import IFDRational
 from rest_framework import status
 from rest_framework.test import APITestCase
 from unittest.mock import patch
@@ -102,9 +103,13 @@ class TestMessagingApi(APITestCase):
         exif[0x0132] = "2021:01:01 12:00:00"  # DateTime
         gps_ifd = exif.get_ifd(0x8825)  # GPSInfo
         gps_ifd[1] = "N"
-        gps_ifd[2] = ((48, 1), (8, 1), (0, 1))
+        gps_ifd[2] = (IFDRational(48, 1), IFDRational(8, 1), IFDRational(0, 1))
         gps_ifd[3] = "E"
-        gps_ifd[4] = ((17, 1), (7, 1), (0, 1))
+        gps_ifd[4] = (IFDRational(17, 1), IFDRational(7, 1), IFDRational(0, 1))
+        # GPS sub-IFD treba pripojiť späť na hlavný EXIF objekt, inak ho Pillow
+        # pri save() neserializuje (cache z get_ifd sa do súboru nezapíše) a JPEG
+        # by reálne GPS neobsahoval – test stripovania by falošne prešiel.
+        exif[0x8825] = gps_ifd
         buffer = BytesIO()
         image.save(buffer, format="JPEG", exif=exif)
         return SimpleUploadedFile(name, buffer.getvalue(), content_type="image/jpeg")
@@ -476,12 +481,15 @@ class TestMessagingApi(APITestCase):
     def test_send_message_strips_exif_gps_metadata(self):
         upload = self._jpeg_with_gps_exif()
 
-        # Precondition: nahraný obrázok skutočne nesie EXIF metadáta.
+        # Precondition: nahraný obrázok skutočne nesie EXIF metadáta vrátane GPS
+        # (inak by test overoval stripovanie niečoho, čo tam ani nebolo).
         with Image.open(BytesIO(upload.read())) as src:
             source_exif = src.getexif()
+            source_gps = src.getexif().get_ifd(0x8825)
         upload.seek(0)
         assert len(source_exif) > 0
         assert source_exif.get(0x010F) == "EvilCam"
+        assert source_gps, "fixture musí obsahovať reálne GPS metadáta"
 
         convo = self._create_direct_conversation(actor=self.u1, target=self.u2)
         self.client.force_authenticate(user=self.u1)

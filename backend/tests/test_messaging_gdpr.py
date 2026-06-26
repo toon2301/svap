@@ -123,6 +123,42 @@ class TestMessagingGdpr(APITestCase):
         self.sender.refresh_from_db()
         assert self.sender.is_active is False
 
+    def test_scrub_messages_deletes_via_field_specific_storage(self):
+        """Scrub musí mazať obrázky cez storage KONKRÉTNEHO poľa, nie default.
+
+        Obrázky správ môžu byť na privátnom S3 (PrivateMessageStorage); pri mazaní
+        cez default_storage by v produkcii ostali ako orphan súbory. Overujeme, že
+        sa deletu explicitne odovzdá storage daného poľa (s bugom by bola None).
+        """
+        convo = open_or_create_direct_conversation(
+            actor=self.sender, target=self.other
+        ).conversation
+        with self.captureOnCommitCallbacks(execute=True):
+            send_message(
+                conversation=convo, sender=self.sender, image=self._image_upload()
+            )
+
+        recorded: list[tuple] = []
+
+        def _record(name, storage=None):
+            recorded.append((name, storage))
+
+        with patch(
+            "accounts.account_deletion._delete_storage_file", side_effect=_record
+        ):
+            with self.captureOnCommitCallbacks(execute=True):
+                anonymize_user(self.sender)
+
+        image_field_storage = Message._meta.get_field("image").storage
+        thumb_field_storage = Message._meta.get_field("image_thumbnail").storage
+
+        assert recorded, "očakávali sme naplánované mazanie obrázkov správ"
+        for name, storage in recorded:
+            assert name
+            # Fix: storage sa explicitne odovzdáva a je to storage daného poľa.
+            assert storage is not None
+            assert storage in (image_field_storage, thumb_field_storage)
+
     # ------------------------------------------------------------------ #
     # BOD 2 – orphan S3 cleanup pri tvrdom zmazaní Message
     # ------------------------------------------------------------------ #

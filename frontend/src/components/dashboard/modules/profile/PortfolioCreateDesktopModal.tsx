@@ -10,6 +10,7 @@ import { createPortfolioItem } from './portfolioApi';
 import { PortfolioCategoryPicker } from './PortfolioCategoryPicker';
 import { PortfolioCreateDiscardConfirm } from './PortfolioCreateDiscardConfirm';
 import { PortfolioCreatePhotoPicker } from './PortfolioCreatePhotoPicker';
+import { useModalFocusTrap } from './useModalFocusTrap';
 import { showPortfolioCreateErrors, uploadPortfolioFiles } from './portfolioCreateSubmit';
 import {
   PORTFOLIO_CATEGORY_OPTIONS,
@@ -88,6 +89,7 @@ export function PortfolioCreateDesktopModal({
   const { t } = useLanguage();
   const fieldId = useId();
   const titleInputRef = useRef<HTMLInputElement | null>(null);
+  const modalRef = useRef<HTMLDivElement | null>(null);
   const [mounted, setMounted] = useState(false);
   const [step, setStep] = useState<CreateStep>('title');
   const [values, setValues] = useState<PortfolioFormValues>(() => emptyPortfolioFormValues());
@@ -158,17 +160,25 @@ export function PortfolioCreateDesktopModal({
     onCancel();
   }, [createdWithUploadIssue, draftIsDirty, isSubmitting, onCancel, onCreated]);
 
+  // Focus trap + uloženie/obnovenie fokusu (a11y) je vyčlenené do hooku.
+  useModalFocusTrap(mounted, modalRef);
+
   useEffect(() => {
     if (!mounted) return;
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        event.preventDefault();
+      if (event.key !== 'Escape') return;
+      event.preventDefault();
+      // Ak je otvorený discard confirm, Escape zatvorí len jeho (nie celý modal)
+      // – inak by requestClose len znova otvoril ten istý dialóg.
+      if (showDiscardConfirm) {
+        setShowDiscardConfirm(false);
+      } else {
         requestClose();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [mounted, requestClose]);
+  }, [mounted, requestClose, showDiscardConfirm]);
 
   useEffect(() => {
     if (step === 'title') {
@@ -289,6 +299,7 @@ export function PortfolioCreateDesktopModal({
       onClick={handleBackdropClick}
     >
       <div
+        ref={modalRef}
         data-testid="portfolio-create-desktop-modal"
         className="flex max-h-[86vh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-2xl dark:border-gray-800 dark:bg-[#0f0f10]"
         onClick={(event) => event.stopPropagation()}

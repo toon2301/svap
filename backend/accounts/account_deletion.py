@@ -27,14 +27,21 @@ def _avatar_storage_name(user) -> str:
     return getattr(getattr(user, "avatar", None), "name", "") or ""
 
 
-def _delete_storage_file(name: str) -> None:
-    """Best-effort zmazanie súboru zo storage (S3/lokál)."""
+def _delete_storage_file(name: str, storage=None) -> None:
+    """Best-effort zmazanie súboru z danej storage (default_storage ak nie je daná).
+
+    Súbory môžu byť na rôznych backendoch: avatar je na default_storage (verejné),
+    obrázky správ na privátnom PrivateMessageStorage. Volajúci preto pri správach
+    odovzdá storage konkrétneho poľa, inak by default_storage súbor v S3 nenašiel
+    a ostal by ako orphan.
+    """
     if not name:
         return
+    target = storage or default_storage
     try:
-        default_storage.delete(name)
+        target.delete(name)
     except Exception as exc:  # pragma: no cover - best effort
-        logger.warning("Account deletion: avatar delete failed: %s", exc)
+        logger.warning("Account deletion: storage delete failed: %s", exc)
 
 
 def _blacklist_user_tokens(user) -> None:
@@ -112,14 +119,19 @@ def _scrub_user_messages(user) -> None:
     if not messages:
         return
 
-    storage_names: list[str] = []
+    # (storage, name) páry zachyť PRED vyprázdnením polí. Storage berieme z
+    # konkrétneho FieldFile (image.storage / image_thumbnail.storage), lebo obrázky
+    # správ môžu byť na privátnom S3 (PrivateMessageStorage), nie na default_storage.
+    storage_refs: list[tuple] = []
     for message in messages:
-        image_name = getattr(message.image, "name", "") or ""
-        thumbnail_name = getattr(message.image_thumbnail, "name", "") or ""
+        image_file = message.image
+        thumbnail_file = message.image_thumbnail
+        image_name = getattr(image_file, "name", "") or ""
+        thumbnail_name = getattr(thumbnail_file, "name", "") or ""
         if image_name:
-            storage_names.append(image_name)
+            storage_refs.append((getattr(image_file, "storage", None), image_name))
         if thumbnail_name:
-            storage_names.append(thumbnail_name)
+            storage_refs.append((getattr(thumbnail_file, "storage", None), thumbnail_name))
         message.is_deleted = True
         message.text = ""
         message.image = ""
@@ -130,8 +142,10 @@ def _scrub_user_messages(user) -> None:
     )
 
     # Súbory zmaž až po úspešnom commite (pri rollbacku sa on_commit zahodí).
-    for name in storage_names:
-        transaction.on_commit(lambda name=name: _delete_storage_file(name))
+    for storage, name in storage_refs:
+        transaction.on_commit(
+            lambda storage=storage, name=name: _delete_storage_file(name, storage)
+        )
 
 
 def _scrub_user_pii(user) -> None:
@@ -185,7 +199,8 @@ def anonymize_user(user) -> None:
     # Lock riadku, aby súbežné požiadavky (dvojklik) nebežali paralelne.
     locked = User.objects.select_for_update().get(pk=user.pk)
 
-    # Názov avatara zachyť PRED scrubom – ten nastaví avatar=None.
+    # Názov avatara zachyť PRED scrubom – ten nastaví avatar=None. Avatar je na
+    # default_storage (nemá vlastný storage=), takže ho mažeme cez default.
     avatar_name = _avatar_storage_name(locked)
 
     _delete_owned_content(locked)

@@ -70,6 +70,13 @@ def strip_image_metadata(image, *, filename: str | None = None):
             # Zapeč orientáciu z EXIF do pixelov, potom EXIF zahodíme.
             oriented = ImageOps.exif_transpose(source)
 
+            # exif_transpose zapečie LEN orientáciu; zvyšok EXIF (vrátane GPS) aj
+            # XMP ostáva v oriented.info. PNG (eXIf chunk) aj WebP (exif/xmp) by ho
+            # pri save() zapísali späť do súboru, preto tieto PII-nesúce metadáta
+            # odstránime. JPEG ich pri save() bez exif= aj tak ignoruje.
+            oriented.info.pop("exif", None)
+            oriented.info.pop("xmp", None)
+
             output = io.BytesIO()
             if source_format in _JPEG_SOURCE_FORMATS or source_format in _HEIF_SOURCE_FORMATS:
                 _normalize_for_jpeg(oriented).save(
