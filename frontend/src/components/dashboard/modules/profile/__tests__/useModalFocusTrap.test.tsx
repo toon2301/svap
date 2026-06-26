@@ -44,6 +44,49 @@ describe('useModalFocusTrap (BOD 10A)', () => {
     expect(document.activeElement).toBe(screen.getByTestId('mid'));
   });
 
+  it('does not trap focus that lives in a portal popup owned by the modal (aria-controls)', () => {
+    function HarnessWithPopup() {
+      const ref = useRef<HTMLDivElement>(null);
+      useModalFocusTrap(true, ref);
+      return (
+        <div>
+          <button data-testid="unrelated">unrelated</button>
+          <div ref={ref} data-testid="modal">
+            <button data-testid="first">first</button>
+            <button aria-controls="owned-popup" data-testid="trigger">
+              trigger
+            </button>
+            <button data-testid="last">last</button>
+          </div>
+          {/* "Portal" popup mimo modal rootu, ale vlastnený cez aria-controls. */}
+          <div id="owned-popup" role="listbox">
+            <button data-testid="option" tabIndex={-1}>
+              option
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    render(<HarnessWithPopup />);
+    const option = screen.getByTestId('option');
+    option.focus();
+    expect(document.activeElement).toBe(option);
+
+    fireEvent.keyDown(window, { key: 'Tab' });
+    // Fokus ostáva v listboxe – trap ho NEvráti na hranicu modalu.
+    expect(document.activeElement).toBe(option);
+
+    fireEvent.keyDown(window, { key: 'Tab', shiftKey: true });
+    expect(document.activeElement).toBe(option);
+
+    // Kontrola, že exempcia je úzka: nesúvisiaci prvok mimo modalu sa stále
+    // považuje za „uniknutý" a trap ho vráti na prvý prvok modalu.
+    screen.getByTestId('unrelated').focus();
+    fireEvent.keyDown(window, { key: 'Tab' });
+    expect(document.activeElement).toBe(screen.getByTestId('first'));
+  });
+
   it('restores focus to the previously focused element on deactivate', () => {
     const { rerender } = render(<Harness active={false} />);
     const outside = screen.getByTestId('outside');
