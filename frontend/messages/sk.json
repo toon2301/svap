@@ -485,6 +485,7 @@
     "ratingLabel": "Hodnotenie",
     "emptyNoResults": "Žiadne výsledky pre \"{{q}}\"",
     "emptyEnterQuery": "Zadajte výraz do vyhľadávacieho poľa.",
+    "minTwoChars": "Zadajte aspoň 2 znaky alebo vyberte filter.",
     "emptyTry": "Skús:",
     "emptyTryRemoveFilters": "odstrániť filtre",
     "emptyTryShorterQuery": "použiť kratší výraz",

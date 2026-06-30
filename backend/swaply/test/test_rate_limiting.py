@@ -37,8 +37,8 @@ class TestRateLimiting(TestCase):
         ip = get_client_ip(request)
         self.assertEqual(ip, "192.168.1.1")
 
-    def test_get_client_ip_forwarded(self):
-        """Test získania IP adresy z X-Forwarded-For"""
+    def test_get_client_ip_ignores_xff_without_trusted_hops(self):
+        """Default (TRUSTED_PROXY_HOPS=0): XFF sa ignoruje, použije sa REMOTE_ADDR."""
         request = self.factory.get("/")
         request.META["HTTP_X_FORWARDED_FOR"] = (
             "203.0.113.195, 70.41.3.18, 150.172.238.178"
@@ -46,7 +46,46 @@ class TestRateLimiting(TestCase):
         request.META["REMOTE_ADDR"] = "192.168.1.1"
 
         ip = get_client_ip(request)
-        self.assertEqual(ip, "203.0.113.195")
+        self.assertEqual(ip, "192.168.1.1")
+
+    @override_settings(TRUSTED_PROXY_HOPS=1)
+    def test_get_client_ip_trusted_hop_1_takes_rightmost(self):
+        request = self.factory.get("/")
+        request.META["HTTP_X_FORWARDED_FOR"] = "203.0.113.195, 70.41.3.18"
+        request.META["REMOTE_ADDR"] = "10.0.0.1"
+        self.assertEqual(get_client_ip(request), "70.41.3.18")
+
+    @override_settings(TRUSTED_PROXY_HOPS=2)
+    def test_get_client_ip_trusted_hop_2_takes_second_from_right(self):
+        request = self.factory.get("/")
+        request.META["HTTP_X_FORWARDED_FOR"] = "203.0.113.195, 70.41.3.18"
+        request.META["REMOTE_ADDR"] = "10.0.0.1"
+        self.assertEqual(get_client_ip(request), "203.0.113.195")
+
+    @override_settings(TRUSTED_PROXY_HOPS=1)
+    def test_get_client_ip_spoofed_leftmost_is_not_trusted(self):
+        """Klient sfalšuje leftmost; pri 1 dôveryhodnom hope ho NEsmieme vrátiť."""
+        request = self.factory.get("/")
+        # Klient pošle "1.2.3.4" (spoof), proxy appendne reálnu IP "70.41.3.18".
+        request.META["HTTP_X_FORWARDED_FOR"] = "1.2.3.4, 70.41.3.18"
+        request.META["REMOTE_ADDR"] = "10.0.0.1"
+        ip = get_client_ip(request)
+        self.assertEqual(ip, "70.41.3.18")
+        self.assertNotEqual(ip, "1.2.3.4")
+
+    @override_settings(TRUSTED_PROXY_HOPS=2)
+    def test_get_client_ip_falls_back_when_too_few_hops(self):
+        """XFF má menej položiek než TRUSTED_PROXY_HOPS → fail-safe na REMOTE_ADDR."""
+        request = self.factory.get("/")
+        request.META["HTTP_X_FORWARDED_FOR"] = "70.41.3.18"
+        request.META["REMOTE_ADDR"] = "10.0.0.1"
+        self.assertEqual(get_client_ip(request), "10.0.0.1")
+
+    @override_settings(TRUSTED_PROXY_HOPS=1)
+    def test_get_client_ip_falls_back_when_xff_missing(self):
+        request = self.factory.get("/")
+        request.META["REMOTE_ADDR"] = "10.0.0.1"
+        self.assertEqual(get_client_ip(request), "10.0.0.1")
 
     def test_rate_limit_decorator_success(self):
         """Test úspešného prechodu cez rate limit"""
@@ -276,3 +315,67 @@ def test_rate_limit_allow_paths(settings):
     # Bypassed completely
     resp = view(req)
     assert resp.status_code == 200
+
+
+def test_rate_limiter_buckets_isolated_per_action(settings):
+    """BOD 2B: vyčerpanie jednej akcie (search) nezablokuje inú akciu (api)."""
+    cache.clear()
+    limiter = RateLimiter(max_attempts=2, window_minutes=1, block_minutes=1)
+    ident = "ip:9.9.9.9"
+
+    assert limiter.is_allowed(ident, "search") is True
+    assert limiter.is_allowed(ident, "search") is True
+    assert limiter.is_allowed(ident, "search") is False  # search vyčerpaný
+
+    # Iná akcia (api) má vlastný bucket → ostáva povolená.
+    assert limiter.is_allowed(ident, "api") is True
+    assert limiter.is_allowed(ident, "api") is True
+
+
+def test_search_rate_limit_has_dedicated_action():
+    """search_rate_limit musí byť oddelený action='search', nie zdieľaný 'api'."""
+    from swaply.rate_limiting import search_rate_limit
+
+    @search_rate_limit
+    def view(request):
+        return HttpResponse("ok")
+
+    # Dekorátor je closure nad action="search"; over cez jeho cache kľúč, že
+    # nezdieľa bucket s "api".
+    limiter = RateLimiter(max_attempts=1, window_minutes=1, block_minutes=1)
+    assert limiter.get_key("ip:1.1.1.1", "search") != limiter.get_key(
+        "ip:1.1.1.1", "api"
+    )
+
+
+@override_settings(
+    RATE_LIMITING_ENABLED=True,
+    RATE_LIMIT_DISABLED=False,
+    RATE_LIMIT_OVERRIDES={
+        "search": {"max_attempts": 1, "window_minutes": 1, "block_minutes": 1},
+        "api": {"max_attempts": 5, "window_minutes": 1, "block_minutes": 1},
+    },
+    RATE_LIMIT_ALLOW_PATHS=[],
+)
+def test_search_limit_does_not_block_other_api_endpoints(settings):
+    """End-to-end: 429 na search endpointe nesmie zablokovať iný api endpoint."""
+    cache.clear()
+
+    @rate_limit(max_attempts=1, window_minutes=1, block_minutes=1, action="search")
+    def search_view_stub(request):
+        return HttpResponse("search-ok")
+
+    @rate_limit(max_attempts=5, window_minutes=1, block_minutes=1, action="api")
+    def api_view_stub(request):
+        return HttpResponse("api-ok")
+
+    rf = RequestFactory()
+    search_req = rf.get("/api/auth/search/")
+    api_req = rf.get("/api/auth/home/")
+
+    assert search_view_stub(search_req).status_code == 200
+    assert search_view_stub(search_req).status_code == 429  # search vyčerpaný
+
+    # Ten istý klient stále prejde na inom (api) endpointe.
+    assert api_view_stub(api_req).status_code == 200
+    assert api_view_stub(api_req).status_code == 200

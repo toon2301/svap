@@ -485,6 +485,7 @@
     "ratingLabel": "Bewertung",
     "emptyNoResults": "Keine Ergebnisse für \"{{q}}\"",
     "emptyEnterQuery": "Suchbegriff eingeben.",
+    "minTwoChars": "Gib mindestens 2 Zeichen ein oder wähle einen Filter.",
     "emptyTry": "Versuchen Sie:",
     "emptyTryRemoveFilters": "Filter entfernen",
     "emptyTryShorterQuery": "kürzeren Suchbegriff verwenden",

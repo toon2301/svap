@@ -13,9 +13,10 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
-from swaply.rate_limiting import api_rate_limit
+from swaply.rate_limiting import search_rate_limit
 
 from ..models import OfferedSkill
+from ..search_visibility import searchable_user_q
 from ..serializers import OfferedSkillSearchSerializer
 from .dashboard_views.utils import _build_accent_insensitive_pattern, _sanitize_search_term
 
@@ -82,7 +83,7 @@ def _parse_page_size(val: str | None, default: int, max_val: int) -> int:
 
 @api_view(["GET"])
 @permission_classes([AllowAny])
-@api_rate_limit
+@search_rate_limit
 def global_search_view(request):
     """
     GET /api/auth/search/global/?q=...&users_page=1&users_page_size=24&offers_page=1&offers_page_size=8
@@ -123,11 +124,7 @@ def global_search_view(request):
     # =========================
     # Users search (public + active only)
     # =========================
-    users_qs = (
-        User.objects.filter(is_active=True, is_public=True)
-        .exclude(is_staff=True)
-        .exclude(is_superuser=True)
-    )
+    users_qs = User.objects.filter(searchable_user_q())
     if terms:
         uq = Q()
         for term in terms:
@@ -180,7 +177,8 @@ def global_search_view(request):
             MAX_OFFERS_PAGE_SIZE,
         )
         offers_qs = (
-            OfferedSkill.objects.filter(is_hidden=False, user__is_active=True, user__is_public=True)
+            OfferedSkill.objects.filter(is_hidden=False)
+            .filter(searchable_user_q("user__"))
             .select_related("user")
             .prefetch_related("images")
         )

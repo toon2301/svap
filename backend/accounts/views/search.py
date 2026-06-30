@@ -13,9 +13,10 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from ..models import OfferedSkill
+from ..search_visibility import searchable_user_q
 from ..serializers import OfferedSkillSearchSerializer
 from .dashboard_views.utils import _build_accent_insensitive_pattern, _sanitize_search_term
-from swaply.rate_limiting import api_rate_limit
+from swaply.rate_limiting import search_rate_limit
 
 
 def _parse_decimal(value: str | None) -> Decimal | None:
@@ -39,19 +40,14 @@ def _invalid_param():
 
 @api_view(["GET"])
 @permission_classes([AllowAny])
-@api_rate_limit
+@search_rate_limit
 def search_view(request):
     """
     GET /api/auth/search/
     """
     qs = (
-        OfferedSkill.objects.filter(
-            is_hidden=False,
-            user__is_active=True,
-            user__is_public=True,
-            user__is_staff=False,
-            user__is_superuser=False,
-        )
+        OfferedSkill.objects.filter(is_hidden=False)
+        .filter(searchable_user_q("user__"))
         .select_related("user")
         .prefetch_related("images")
         .annotate(
@@ -70,6 +66,34 @@ def search_view(request):
             {"error": "Parameter q môže mať maximálne 100 znakov."},
             status=status.HTTP_400_BAD_REQUEST,
         )
+
+    # Anti-scraping: prázdny/krátky dotaz bez žiadneho zužujúceho filtra by inak
+    # vrátil VŠETKY verejné ponuky. Vyžadujeme aspoň 2 znaky v q ALEBO aspoň jeden
+    # aktívny filter (type/user_type/price/min_rating). Inak vrátime prázdny
+    # výsledok (rovnaký tvar, status 200) – nie chybu. Pozn.: district sa v tomto
+    # endpointe používa len na zoradenie (locality_priority), nie ako filter, preto
+    # sám osebe scraping neumožní a do podmienky ho nezahŕňame.
+    type_param_raw = (request.query_params.get("type") or "").strip().lower()
+    user_type_raw = (request.query_params.get("user_type") or "").strip().lower()
+    has_active_filter = (
+        type_param_raw in ("offer", "seeking")
+        or user_type_raw in ("business", "individual")
+        or bool((request.query_params.get("price_min") or "").strip())
+        or bool((request.query_params.get("price_max") or "").strip())
+        or bool((request.query_params.get("min_rating") or "").strip())
+    )
+    if len(q) < 2 and not has_active_filter:
+        return Response(
+            {
+                "results": [],
+                "total": 0,
+                "page": 1,
+                "page_size": 12,
+                "total_pages": 0,
+            },
+            status=status.HTTP_200_OK,
+        )
+
     q_pattern = None
     if q:
         q_pattern = _build_accent_insensitive_pattern(_sanitize_search_term(q))

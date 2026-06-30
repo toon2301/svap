@@ -735,6 +735,9 @@ class DashboardSkillSearchProjection(models.Model):
     user_district = models.CharField(_("Okres pouÅ¾Ã­vateÄ¾a"), max_length=100, blank=True)
     user_is_public = models.BooleanField(_("VerejnÃ½ profil"), default=True)
     user_is_verified = models.BooleanField(_("OverenÃ½ profil"), default=False)
+    user_is_active = models.BooleanField(_("Aktívny používateľ"), default=True)
+    user_is_staff = models.BooleanField(_("Staff používateľ"), default=False)
+    user_is_superuser = models.BooleanField(_("Superuser"), default=False)
     is_hidden = models.BooleanField(_("SkrytÃ¡ zruÄnosÅ¥"), default=False)
     is_seeking = models.BooleanField(_("HÄ¾adÃ¡m"), default=False)
     price_from = models.DecimalField(

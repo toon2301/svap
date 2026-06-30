@@ -205,11 +205,13 @@ def rate_limit(
                 local_window_minutes = window_minutes
                 local_block_minutes = block_minutes
 
-            # Získaj identifikátor (IP adresa alebo user ID)
+            # Získaj identifikátor (IP adresa alebo user ID).
+            # Pre anonymných použijeme spoofing-odolnú klientovu IP (trusted-hop
+            # XFF), nie surový REMOTE_ADDR (za proxy = IP proxy pre všetkých).
             if hasattr(request, "user") and request.user.is_authenticated:
                 identifier = f"user:{request.user.id}"
             else:
-                identifier = f"ip:{request.META.get('REMOTE_ADDR', 'unknown')}"
+                identifier = f"ip:{get_client_ip(request)}"
 
             limiter = RateLimiter(
                 local_max_attempts, local_window_minutes, local_block_minutes
@@ -313,6 +315,17 @@ resend_verification_rate_limit = rate_limit(
 api_rate_limit = rate_limit(
     max_attempts=1000, window_minutes=60, block_minutes=60, action="api"
 )
+# Vyhľadávanie je drahšie na DB než bežné endpointy. Vlastný bucket (action="search")
+# oddelený od zdieľaného "api": vyčerpanie searchu nezablokuje ostatné endpointy a
+# naopak. Limit sa týka anonymných (prihlásené GET-y rate_limit aj tak preskakuje),
+# preto je prísnejší než zdieľaný api=1000/h, no stále pohodlný pre bežné prehliadanie.
+search_rate_limit = rate_limit(
+    max_attempts=300,
+    window_minutes=60,
+    block_minutes=60,
+    action="search",
+    message="Príliš veľa vyhľadávaní. Skúste to prosím o chvíľu.",
+)
 # Zmazanie účtu / žiadosť o zmazanie: citlivá akcia – prísny limit per IP.
 account_deletion_rate_limit = rate_limit(
     max_attempts=5, window_minutes=60, block_minutes=60, action="account_deletion"
@@ -359,10 +372,27 @@ messaging_request_action_rate_limit = rate_limit(
 
 
 def get_client_ip(request):
-    """Získanie IP adresy klienta"""
-    x_forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
-    if x_forwarded_for:
-        ip = x_forwarded_for.split(",")[0]
-    else:
-        ip = request.META.get("REMOTE_ADDR")
-    return ip
+    """
+    Vráti klientovu IP adresu odolnú voči X-Forwarded-For spoofingu.
+
+    X-Forwarded-For má tvar ``klient, proxy1, proxy2, ...``. Ľavé položky vie
+    klient ľubovoľne sfalšovať (pošle vlastnú hlavičku), preto NEberieme leftmost.
+    Berieme položku na pozícii podľa počtu dôveryhodných proxy
+    (``settings.TRUSTED_PROXY_HOPS``) sprava – tie pridáva výhradne naša
+    infraštruktúra (Railway edge / interný proxy), takže ich klient neovplyvní.
+
+    Fail-safe: ak je TRUSTED_PROXY_HOPS=0, XFF chýba alebo nemá dostatok položiek,
+    spadneme na REMOTE_ADDR (nie na spoofovateľnú hodnotu).
+    """
+    remote_addr = (request.META.get("REMOTE_ADDR") or "").strip()
+
+    hops = getattr(settings, "TRUSTED_PROXY_HOPS", 0) or 0
+    if hops > 0:
+        forwarded = request.META.get("HTTP_X_FORWARDED_FOR") or ""
+        parts = [part.strip() for part in forwarded.split(",") if part.strip()]
+        if len(parts) >= hops:
+            candidate = parts[-hops]
+            if candidate:
+                return candidate
+
+    return remote_addr or "unknown"

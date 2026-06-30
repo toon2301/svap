@@ -14,6 +14,7 @@ from rest_framework.response import Response
 from swaply.rate_limiting import api_rate_limit
 
 from ...models import DashboardSkillSearchProjection, OfferedSkill
+from ...search_visibility import searchable_projection_filters
 from ...viewer_location_cache import get_viewer_location_snapshot
 from .search import SMART_KEYWORD_INDEX, _serialize_search_skills_page
 from .utils import _build_accent_insensitive_pattern, _sanitize_search_term
@@ -406,8 +407,8 @@ def dashboard_recommendations_view(request):
         personalization_queries = _build_personalization_queries(viewer_skills)
 
         base_qs = DashboardSkillSearchProjection.objects.filter(
-            user_is_public=True,
             is_hidden=False,
+            **searchable_projection_filters(),
         ).exclude(user_id=request.user.pk)
 
         ranked_qs = _ranked_recommendations_queryset(
