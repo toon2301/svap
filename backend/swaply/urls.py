@@ -39,6 +39,27 @@ def api_root(request):
     )
 
 
+# ============================================================================
+# TEMPORARY DEBUG - REMOVE AFTER USE
+# Diagnostika reálneho X-Forwarded-For reťazca na Railway pre správne nastavenie
+# TRUSTED_PROXY_HOPS. Plain Django view => prirodzene verejný (AllowAny), GET
+# nepodlieha CSRF. Vracia VÝHRADNE 4 polia o IP/proxy – žiadna DB, žiadne
+# cookies/tokeny/ostatné hlavičky.
+def debug_headers_view(request):
+    xff = request.META.get("HTTP_X_FORWARDED_FOR")
+    xff_count = len([part for part in xff.split(",") if part.strip()]) if xff else 0
+    return JsonResponse(
+        {
+            "remote_addr": request.META.get("REMOTE_ADDR"),
+            "x_forwarded_for": xff,
+            "x_real_ip": request.META.get("HTTP_X_REAL_IP"),
+            "xff_count": xff_count,
+        }
+    )
+# END TEMPORARY DEBUG
+# ============================================================================
+
+
 """
 Pre Railway a oddelený frontend už Django neservuje frontendové HTML.
 """
@@ -78,6 +99,8 @@ urlpatterns = [
     path("", api_root, name="root"),
     path("api/csrf-token/", get_csrf_token_view, name="api_csrf_token_alias"),
     path("api/contact/", contact_form_view, name="contact"),
+    # TEMPORARY DEBUG - REMOVE AFTER USE
+    path("api/debug/headers/", debug_headers_view, name="debug_headers"),
     # Django allauth URLs - DOČASNE VYPNUTÉ
     # path('accounts/', include('allauth.urls')),
 ]
