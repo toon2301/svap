@@ -485,6 +485,7 @@
     "ratingLabel": "Értékelés",
     "emptyNoResults": "Nincs találat a \"{{q}}\" keresésre.",
     "emptyEnterQuery": "Adja meg a keresési kifejezést.",
+    "minTwoChars": "Írj be legalább 2 karaktert, vagy válassz szűrőt.",
     "emptyTry": "Próbálja:",
     "emptyTryRemoveFilters": "szűrők eltávolítása",
     "emptyTryShorterQuery": "rövidebb kifejezés használata",

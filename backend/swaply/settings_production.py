@@ -63,6 +63,17 @@ if SAFESEARCH_ENABLED and not (
 
 RATE_LIMIT_FAIL_OPEN = False
 
+# Počet dôveryhodných proxy pred Djangom v produkcii (Railway edge + prípadne
+# Next.js rewrite proxy). Default 1 = bezpečné minimum (Railway vždy terminuje
+# pred backendom aspoň 1 proxy → nikdy nie spoofovateľné). Po runtime overení
+# skutočného XFF reťazca možno hodnotu cez env TRUSTED_PROXY_HOPS zvýšiť, NIKDY
+# nie nad reálny počet hopov (vyššia hodnota by sprístupnila klientom
+# sfalšovateľné položky XFF).
+try:
+    TRUSTED_PROXY_HOPS = max(0, int(os.getenv("TRUSTED_PROXY_HOPS", "1")))
+except (TypeError, ValueError):
+    TRUSTED_PROXY_HOPS = 1
+
 # ALLOWED_HOSTS - nastavte v .env súbore pre produkciu (presne tieto hodnoty, žiadne wildcardy)
 _PROD_ALLOWED_HOSTS = {
     "svaply.com",

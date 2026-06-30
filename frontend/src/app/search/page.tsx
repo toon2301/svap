@@ -320,6 +320,10 @@ function SearchResultsContent() {
   const headerCountText = (() => {
     if (!trimmedQ) return t('search.emptyEnterQuery', 'Zadajte výraz do vyhľadávacieho poľa.');
     if (tab === 'offers') {
+      // Backend (search_view) vyžaduje aspoň 2 znaky alebo aktívny filter.
+      if (trimmedQ.length === 1 && !hasActiveFilters) {
+        return t('search.minTwoChars', 'Zadajte aspoň 2 znaky alebo vyberte filter.');
+      }
       return loading
         ? t('search.loading', 'Načítavam…')
         : t('search.resultsCount', '{{count}} výsledkov').replace('{{count}}', String(total));

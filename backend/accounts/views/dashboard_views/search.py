@@ -10,9 +10,10 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from swaply.rate_limiting import api_rate_limit
+from swaply.rate_limiting import search_rate_limit
 
 from ...models import DashboardSkillSearchProjection, OfferedSkill
+from ...search_visibility import searchable_projection_filters, searchable_user_q
 from ...serializers import OfferedSkillSerializer
 from ...viewer_location_cache import get_viewer_location_snapshot
 from .smart_search import SMART_KEYWORD_GROUPS
@@ -234,7 +235,9 @@ def _build_projection_skills_page_qs(
     projection_skill_loc_q,
     only_my_location,
 ):
-    skills_qs = DashboardSkillSearchProjection.objects.filter(user_is_public=True)
+    skills_qs = DashboardSkillSearchProjection.objects.filter(
+        **searchable_projection_filters()
+    )
     skills_qs = skills_qs.exclude(user_id=viewer_user_id)
     skills_qs = skills_qs.filter(is_hidden=False)
 
@@ -288,7 +291,9 @@ def _build_legacy_skills_page_qs(
     skill_loc_q,
     only_my_location,
 ):
-    skills_qs = OfferedSkill.objects.select_related("user").filter(user__is_public=True)
+    skills_qs = OfferedSkill.objects.select_related("user").filter(
+        searchable_user_q("user__")
+    )
     skills_qs = skills_qs.exclude(user=viewer_user)
     skills_qs = skills_qs.filter(is_hidden=False)
 
@@ -326,7 +331,7 @@ def _build_legacy_skills_page_qs(
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
-@api_rate_limit
+@search_rate_limit
 def dashboard_search_view(request):
     """Dashboard search - vyhladavanie zrucnosti a pouzivatelov."""
     t_view0 = perf_counter()
@@ -478,8 +483,11 @@ def dashboard_search_view(request):
     # =========================
     # Users search
     # =========================
+    # Vlastný profil je vždy viditeľný (aj neverejný / staff); ostatní musia byť
+    # verejní a nie administrátorské účty – zhodne s verejným/global searchom.
     users_qs = User.objects.filter(is_active=True).filter(
-        Q(is_public=True) | Q(pk=request.user.pk)
+        Q(pk=request.user.pk)
+        | Q(is_public=True, is_staff=False, is_superuser=False)
     )
 
     if user_terms:

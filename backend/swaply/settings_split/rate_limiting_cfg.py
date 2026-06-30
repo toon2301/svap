@@ -1,5 +1,17 @@
+import os
+
 from .env import sys, env_bool
 from .security import DEBUG
+
+# Počet DÔVERYHODNÝCH reverzných proxy medzi klientom a Djangom.
+# Klientovu IP berieme z X-Forwarded-For na pozícii (TRUSTED_PROXY_HOPS) sprava –
+# tieto položky pridáva výhradne naša infraštruktúra, takže ich klient nevie
+# sfalšovať (leftmost položky áno). 0 = ignoruj XFF a použi REMOTE_ADDR
+# (bezpečný default pre lokál/testy bez proxy). Produkcia hodnotu prepisuje.
+try:
+    TRUSTED_PROXY_HOPS = max(0, int(os.getenv("TRUSTED_PROXY_HOPS", "0")))
+except (TypeError, ValueError):
+    TRUSTED_PROXY_HOPS = 0
 
 # Rate limiting toggles
 # V testoch vypneme rate limiting
