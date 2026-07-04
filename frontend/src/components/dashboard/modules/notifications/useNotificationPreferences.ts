@@ -5,19 +5,19 @@ import { useEffect, useState } from 'react';
 import { api, endpoints } from '@/lib/api';
 
 export interface NotificationPreferencesState {
-  emailNotifications: boolean;
+  inAppNotifications: boolean;
   pushNotifications: boolean;
 }
 
 type NotificationPreferenceKey = keyof NotificationPreferencesState;
 
 interface NotificationPreferencesApiPayload {
-  email_notifications?: boolean;
+  in_app_notifications?: boolean;
   push_notifications?: boolean;
 }
 
 const DEFAULT_PREFERENCES: NotificationPreferencesState = {
-  emailNotifications: true,
+  inAppNotifications: true,
   pushNotifications: false,
 };
 
@@ -25,10 +25,10 @@ function mapApiPayloadToState(
   payload?: NotificationPreferencesApiPayload | null,
 ): NotificationPreferencesState {
   return {
-    emailNotifications:
-      typeof payload?.email_notifications === 'boolean'
-        ? payload.email_notifications
-        : DEFAULT_PREFERENCES.emailNotifications,
+    inAppNotifications:
+      typeof payload?.in_app_notifications === 'boolean'
+        ? payload.in_app_notifications
+        : DEFAULT_PREFERENCES.inAppNotifications,
     pushNotifications:
       typeof payload?.push_notifications === 'boolean'
         ? payload.push_notifications
@@ -40,8 +40,8 @@ function mapStatePatchToApiPatch(
   key: NotificationPreferenceKey,
   value: boolean,
 ): NotificationPreferencesApiPayload {
-  if (key === 'emailNotifications') {
-    return { email_notifications: value };
+  if (key === 'inAppNotifications') {
+    return { in_app_notifications: value };
   }
   return { push_notifications: value };
 }

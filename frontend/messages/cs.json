@@ -477,6 +477,7 @@
     "priceMax": "Do",
     "onlyMyLocation": "Pouze v mé lokalitě (podle profilu)",
     "resultsCount": "{{count}} výsledků",
+    "resultsCountCapped": "{{count}}+ výsledků",
     "loading": "Načítávám…",
     "sortNewest": "Nejnovější",
     "sortRatingDesc": "Nejlépe hodnocené",
@@ -1198,6 +1199,10 @@
     "phoneSaveFailed": "Telefonni cislo se nepodarilo ulozit."
   },
   "notifications": {
+    "loadMore": "Zobrazit další",
+    "loadingMore": "Načítám…",
+    "settingsInApp": "Oznámení v aplikaci",
+    "settingsInAppDesc": "Zobrazovat oznámení ve zvonku a v seznamu oznámení",
     "title": "Upozornění",
     "turnOffAll": "Vypnout vše",
     "likes": "Líbí se mi to",

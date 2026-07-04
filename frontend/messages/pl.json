@@ -477,6 +477,7 @@
     "priceMax": "Do",
     "onlyMyLocation": "Tylko w mojej lokalizacji (według profilu)",
     "resultsCount": "{{count}} wyników",
+    "resultsCountCapped": "{{count}}+ wyników",
     "loading": "Ładowanie…",
     "sortNewest": "Najnowsze",
     "sortRatingDesc": "Najlepiej oceniane",
@@ -1198,6 +1199,10 @@
     "phoneSaveFailed": "Nie udalo sie zapisac numeru telefonu."
   },
   "notifications": {
+    "loadMore": "Pokaż więcej",
+    "loadingMore": "Ładowanie…",
+    "settingsInApp": "Powiadomienia w aplikacji",
+    "settingsInAppDesc": "Pokazuj powiadomienia w dzwonku i na liście powiadomień",
     "title": "Powiadomienia",
     "turnOffAll": "Wyłącz wszystko",
     "likes": "Polubienia",

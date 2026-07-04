@@ -477,6 +477,7 @@
     "priceMax": "Ig",
     "onlyMyLocation": "Csak a profilom szerinti helyen",
     "resultsCount": "{{count}} találat",
+    "resultsCountCapped": "{{count}}+ találat",
     "loading": "Betöltés…",
     "sortNewest": "Legújabb",
     "sortRatingDesc": "Legjobban értékelt",
@@ -1198,6 +1199,10 @@
     "phoneSaveFailed": "A telefonszam mentese sikertelen."
   },
   "notifications": {
+    "loadMore": "Továbbiak megjelenítése",
+    "loadingMore": "Betöltés…",
+    "settingsInApp": "Alkalmazáson belüli értesítések",
+    "settingsInAppDesc": "Értesítések megjelenítése a csengőben és az értesítési listában",
     "title": "Értesítések",
     "turnOffAll": "Összes kikapcsolása",
     "likes": "Kedvelések",

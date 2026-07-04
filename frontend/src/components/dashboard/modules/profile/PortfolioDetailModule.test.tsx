@@ -25,7 +25,6 @@ jest.mock('@/lib/api', () => ({
       detail: (id: number) => `/auth/portfolio/${id}/`,
       imageUploadInit: (id: number) => `/auth/portfolio/${id}/images/upload-init/`,
       imageUploadComplete: (id: number) => `/auth/portfolio/${id}/images/upload-complete/`,
-      imageReorder: (itemId: number) => `/auth/portfolio/${itemId}/images/reorder/`,
       imageDetail: (itemId: number, imageId: number) => `/auth/portfolio/${itemId}/images/${imageId}/`,
       imageCover: (itemId: number, imageId: number) => `/auth/portfolio/${itemId}/images/${imageId}/cover/`,
     },
@@ -133,6 +132,19 @@ function selectFirstPortfolioCategory() {
   fireEvent.click(within(listbox).getAllByRole('option')[0]);
 }
 
+async function clickPortfolioDetailEdit() {
+  const [editButton] = await screen.findAllByRole('button', { name: /Upravi/ });
+  fireEvent.click(editButton);
+}
+
+function galleryImageOrder(): string[] {
+  return Array.from(
+    screen
+      .getByTestId('portfolio-detail-gallery')
+      .querySelectorAll<HTMLElement>('[data-testid^="portfolio-gallery-image-"]'),
+  ).map((element) => element.getAttribute('data-testid') || '');
+}
+
 describe('PortfolioDetailModule', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -229,8 +241,9 @@ describe('PortfolioDetailModule', () => {
     render(<PortfolioDetailModule itemId={7} ownerIdentifier="jane-doe" />);
 
     expect(await screen.findByText('Portfolio Detail')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Upraviť' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Vymazať' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Upravi/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Viac/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('menuitem', { name: /Vyma/ })).not.toBeInTheDocument();
   });
 
   it('shows owner edit and delete actions in detail', async () => {
@@ -238,10 +251,10 @@ describe('PortfolioDetailModule', () => {
 
     render(<PortfolioDetailModule itemId={7} ownerIdentifier="jane-doe" />);
 
-    expect(await screen.findByRole('button', { name: 'Upraviť' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Vymazať' })).toBeInTheDocument();
+    expect((await screen.findAllByRole('button', { name: /Upravi/ })).length).toBeGreaterThan(0);
+    fireEvent.click(screen.getByRole('button', { name: /Viac/ }));
+    expect(screen.getByRole('menuitem', { name: /Vyma/ })).toBeInTheDocument();
   });
-
   it('shows upload UI only to the portfolio owner', async () => {
     (api.get as jest.Mock).mockResolvedValue({ data: portfolioItem() });
 
@@ -249,6 +262,8 @@ describe('PortfolioDetailModule', () => {
 
     expect(await screen.findByText('Portfolio Detail')).toBeInTheDocument();
     expect(screen.queryByTestId('portfolio-upload-section')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('portfolio-gallery-upload-controls')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('portfolio-gallery-edit-button')).not.toBeInTheDocument();
     expect(screen.queryByTestId('portfolio-image-management-section')).not.toBeInTheDocument();
 
     unmount();
@@ -256,10 +271,91 @@ describe('PortfolioDetailModule', () => {
     (api.get as jest.Mock).mockResolvedValue({ data: manageablePortfolioItem() });
     render(<PortfolioDetailModule itemId={7} ownerIdentifier="jane-doe" />);
 
-    expect(await screen.findByTestId('portfolio-upload-section')).toBeInTheDocument();
-    expect(screen.getByTestId('portfolio-image-management-section')).toBeInTheDocument();
+    expect(await screen.findByTestId('portfolio-gallery-upload-controls')).toBeInTheDocument();
+    expect(screen.getByTestId('portfolio-gallery-edit-button')).toBeInTheDocument();
+    expect(screen.queryByTestId('portfolio-upload-section')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('portfolio-image-management-section')).not.toBeInTheDocument();
   });
 
+  it('toggles desktop gallery image management controls for the owner', async () => {
+    (api.get as jest.Mock).mockResolvedValue({ data: manageablePortfolioItem() });
+
+    render(<PortfolioDetailModule itemId={7} ownerIdentifier="jane-doe" />);
+
+    const editButton = await screen.findByTestId('portfolio-gallery-edit-button');
+    expect(editButton).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.queryByTestId('portfolio-gallery-delete-button-1')).not.toBeInTheDocument();
+
+    fireEvent.click(editButton);
+
+    expect(editButton).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByTestId('portfolio-gallery-cover-button-1')).toBeDisabled();
+    expect(screen.getByTestId('portfolio-gallery-cover-button-2')).toBeEnabled();
+    expect(screen.getByTestId('portfolio-gallery-delete-button-1')).toBeInTheDocument();
+
+    fireEvent.click(editButton);
+
+    expect(editButton).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.queryByTestId('portfolio-gallery-delete-button-1')).not.toBeInTheDocument();
+  });
+
+  it('sets a cover photo from the desktop gallery edit controls without moving it', async () => {
+    const first = portfolioImage(1, 'approved');
+    const second = portfolioImage(2, 'approved');
+    (api.get as jest.Mock)
+      .mockResolvedValueOnce({
+        data: manageablePortfolioItem({ cover_image: first, images: [first, second] }),
+      })
+      .mockResolvedValueOnce({
+        data: manageablePortfolioItem({ cover_image: second, images: [first, second] }),
+      });
+    (api.patch as jest.Mock).mockResolvedValue({
+      data: { cover_image: second },
+    });
+
+    render(<PortfolioDetailModule itemId={7} ownerIdentifier="jane-doe" />);
+
+    fireEvent.click(await screen.findByTestId('portfolio-gallery-edit-button'));
+    expect(galleryImageOrder()).toEqual([
+      'portfolio-gallery-image-1',
+      'portfolio-gallery-image-2',
+    ]);
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('portfolio-gallery-cover-button-2'));
+    });
+
+    await waitFor(() => {
+      expect(api.patch).toHaveBeenCalledWith('/auth/portfolio/7/images/2/cover/', {});
+    });
+    await waitFor(() => {
+      expect(screen.getByTestId('portfolio-gallery-cover-button-2')).toBeDisabled();
+    });
+    expect(galleryImageOrder()).toEqual([
+      'portfolio-gallery-image-1',
+      'portfolio-gallery-image-2',
+    ]);
+    expect(screen.queryByRole('dialog', { name: /Gal/ })).not.toBeInTheDocument();
+    expect(api.get).toHaveBeenCalledTimes(2);
+  });
+
+  it('deletes a photo from the desktop gallery edit controls without confirmation', async () => {
+    (api.get as jest.Mock).mockResolvedValue({ data: manageablePortfolioItem() });
+    (api.delete as jest.Mock).mockResolvedValue({});
+
+    render(<PortfolioDetailModule itemId={7} ownerIdentifier="jane-doe" />);
+
+    fireEvent.click(await screen.findByTestId('portfolio-gallery-edit-button'));
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('portfolio-gallery-delete-button-2'));
+    });
+
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(api.delete).toHaveBeenCalledWith('/auth/portfolio/7/images/2/');
+    });
+    expect(api.get).toHaveBeenCalledTimes(2);
+  });
   it('disables new photo selection when the portfolio already has 8 active images', async () => {
     (api.get as jest.Mock).mockResolvedValue({
       data: manageablePortfolioItem({
@@ -271,7 +367,7 @@ describe('PortfolioDetailModule', () => {
     render(<PortfolioDetailModule itemId={7} ownerIdentifier="jane-doe" />);
 
     expect(await screen.findByTestId('portfolio-upload-button')).toBeDisabled();
-    expect(screen.getByText('Môžeš pridať maximálne 8 fotiek')).toBeInTheDocument();
+    expect(screen.queryByText('Môžeš pridať maximálne 8 fotiek')).not.toBeInTheDocument();
   });
 
   it('shows validation errors for too large and invalid image files', async () => {
@@ -382,83 +478,9 @@ describe('PortfolioDetailModule', () => {
     });
   });
 
-  it('shows owner image statuses including rejected reasons', async () => {
-    (api.get as jest.Mock).mockResolvedValue({
-      data: manageablePortfolioItem({
-        cover_image: null,
-        images: [
-          portfolioImage(1, 'pending'),
-          { ...portfolioImage(2, 'rejected'), rejected_reason: 'Unsafe content' },
-          portfolioImage(3, 'approved'),
-        ],
-      }),
-    });
 
-    render(<PortfolioDetailModule itemId={7} ownerIdentifier="jane-doe" />);
 
-    expect(await screen.findAllByText('Fotka čaká na kontrolu')).toHaveLength(2);
-    expect(screen.getAllByText('Fotka bola zamietnutá')).toHaveLength(2);
-    expect(screen.getByText('Unsafe content')).toBeInTheDocument();
-    expect(screen.getAllByText('Fotka je schválená')).toHaveLength(2);
-  });
 
-  it('sets a portfolio image as cover through the owner endpoint', async () => {
-    (api.get as jest.Mock).mockResolvedValue({
-      data: manageablePortfolioItem({
-        cover_image: portfolioImage(1, 'approved'),
-        images: [portfolioImage(1, 'approved'), portfolioImage(2, 'approved')],
-      }),
-    });
-    (api.patch as jest.Mock).mockResolvedValue({
-      data: { cover_image: portfolioImage(2, 'approved') },
-    });
-
-    render(<PortfolioDetailModule itemId={7} ownerIdentifier="jane-doe" />);
-
-    fireEvent.click(await screen.findByRole('button', { name: 'Nastaviť ako titulnú' }));
-
-    await waitFor(() => {
-      expect(api.patch).toHaveBeenCalledWith('/auth/portfolio/7/images/2/cover/', {});
-    });
-    expect(api.get).toHaveBeenCalledTimes(2);
-  });
-
-  it('opens confirm dialog and deletes a portfolio image', async () => {
-    (api.get as jest.Mock).mockResolvedValue({ data: manageablePortfolioItem() });
-    (api.delete as jest.Mock).mockResolvedValue({});
-
-    render(<PortfolioDetailModule itemId={7} ownerIdentifier="jane-doe" />);
-
-    const management = await screen.findByTestId('portfolio-image-management-section');
-    fireEvent.click(within(management).getAllByRole('button', { name: 'Vymazať fotku' })[0]);
-
-    const dialog = await screen.findByRole('alertdialog');
-    expect(within(dialog).getByText('Naozaj chceš vymazať túto fotku?')).toBeInTheDocument();
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Vymazať fotku' }));
-
-    await waitFor(() => {
-      expect(api.delete).toHaveBeenCalledWith('/auth/portfolio/7/images/1/');
-    });
-    expect(api.get).toHaveBeenCalledTimes(2);
-  });
-
-  it('reorders portfolio images with up and down buttons', async () => {
-    (api.get as jest.Mock).mockResolvedValue({ data: manageablePortfolioItem() });
-    (api.patch as jest.Mock).mockResolvedValue({
-      data: { images: [portfolioImage(2, 'approved'), portfolioImage(1, 'approved')] },
-    });
-
-    render(<PortfolioDetailModule itemId={7} ownerIdentifier="jane-doe" />);
-
-    const management = await screen.findByTestId('portfolio-image-management-section');
-    fireEvent.click(within(management).getAllByRole('button', { name: 'Presunúť hore' })[1]);
-
-    await waitFor(() => {
-      expect(api.patch).toHaveBeenCalledWith('/auth/portfolio/7/images/reorder/', {
-        image_ids: [2, 1],
-      });
-    });
-  });
 
   it('does not show owner image statuses or rejected reasons to visitors', async () => {
     (api.get as jest.Mock).mockResolvedValue({
@@ -532,7 +554,7 @@ describe('PortfolioDetailModule', () => {
 
       render(<PortfolioDetailModule itemId={7} ownerIdentifier="jane-doe" />);
 
-      expect(await screen.findAllByText('Fotka čaká na kontrolu')).toHaveLength(2);
+      expect(await screen.findByText('Portfolio Detail')).toBeInTheDocument();
       expect(api.get).toHaveBeenCalledTimes(1);
 
       await act(async () => {
@@ -578,7 +600,7 @@ describe('PortfolioDetailModule', () => {
 
       render(<PortfolioDetailModule itemId={7} ownerIdentifier="jane-doe" />);
 
-      fireEvent.click(await screen.findByRole('button', { name: 'Upraviť' }));
+      await clickPortfolioDetailEdit();
       fireEvent.change(screen.getByLabelText('Názov'), { target: { value: 'Draft title' } });
 
       await act(async () => {
@@ -600,7 +622,7 @@ describe('PortfolioDetailModule', () => {
 
     render(<PortfolioDetailModule itemId={7} ownerIdentifier="jane-doe" />);
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Upraviť' }));
+    await clickPortfolioDetailEdit();
     expect(screen.getByDisplayValue('Portfolio Detail')).toBeInTheDocument();
     expect(screen.getByDisplayValue('Detail description')).toBeInTheDocument();
 
@@ -624,7 +646,7 @@ describe('PortfolioDetailModule', () => {
 
     render(<PortfolioDetailModule itemId={7} ownerIdentifier="jane-doe" />);
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Upraviť' }));
+    await clickPortfolioDetailEdit();
     fireEvent.change(screen.getByLabelText('Názov'), { target: { value: ' Updated Portfolio ' } });
     selectFirstPortfolioCategory();
     fireEvent.change(screen.getByLabelText(/Popis/), { target: { value: ' Updated description ' } });
@@ -649,7 +671,7 @@ describe('PortfolioDetailModule', () => {
 
     render(<PortfolioDetailModule itemId={7} ownerIdentifier="jane-doe" />);
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Upraviť' }));
+    await clickPortfolioDetailEdit();
     fireEvent.change(screen.getByLabelText('Názov'), { target: { value: 'Updated Portfolio' } });
     fireEvent.submit(screen.getByTestId('portfolio-inline-edit-panel'));
 
@@ -662,7 +684,8 @@ describe('PortfolioDetailModule', () => {
 
     render(<PortfolioDetailModule itemId={7} ownerIdentifier="jane-doe" />);
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Vymazať' }));
+    fireEvent.click(await screen.findByRole('button', { name: /Viac/ }));
+    fireEvent.click(screen.getByRole('menuitem', { name: /Vyma/ }));
     expect(await screen.findByRole('alertdialog')).toBeInTheDocument();
     const dialog = await screen.findByRole('alertdialog');
     fireEvent.click(within(dialog).getByRole('button', { name: 'Vymazať' }));
@@ -678,7 +701,8 @@ describe('PortfolioDetailModule', () => {
 
     render(<PortfolioDetailModule itemId={7} ownerIdentifier="jane-doe" />);
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Vymazať' }));
+    fireEvent.click(await screen.findByRole('button', { name: /Viac/ }));
+    fireEvent.click(screen.getByRole('menuitem', { name: /Vyma/ }));
     const dialog = await screen.findByRole('alertdialog');
     expect(within(dialog).getByRole('button', { name: 'Zrušiť' })).toHaveFocus();
 
@@ -709,6 +733,24 @@ describe('PortfolioDetailModule', () => {
     expect(screen.getAllByRole('button', { name: /Portfolio Detail Fotka/ })).toHaveLength(2);
   });
 
+  it('opens the correct lightbox photo when gallery order differs from cover order', async () => {
+    const first = portfolioImage(1, 'approved');
+    const second = portfolioImage(2, 'approved');
+    (api.get as jest.Mock).mockResolvedValue({
+      data: manageablePortfolioItem({ cover_image: second, images: [first, second] }),
+    });
+
+    render(<PortfolioDetailModule itemId={7} ownerIdentifier="jane-doe" />);
+
+    const gallery = await screen.findByTestId('portfolio-detail-gallery');
+    fireEvent.click(within(gallery).getByRole('button', { name: /Fotka 1 z 2/ }));
+
+    const dialog = await screen.findByRole('dialog', { name: 'Galéria' });
+    expect(within(dialog).getByRole('img', { name: 'Portfolio Detail' })).toHaveAttribute(
+      'src',
+      '/media/large-1.webp',
+    );
+  });
   it('opens the lightbox with the large URL and closes with X', async () => {
     (api.get as jest.Mock).mockResolvedValue({ data: portfolioItem() });
 

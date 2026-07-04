@@ -3,13 +3,13 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { User } from '../../../types';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { useNotificationPreferences } from './settings/useNotificationPreferences';
-import { 
+import {
   Cog6ToothIcon,
   BellIcon,
   ShieldCheckIcon,
   EyeIcon,
-  GlobeAltIcon,
   KeyIcon,
   TrashIcon
 } from '@heroicons/react/24/outline';
@@ -18,8 +18,11 @@ interface SettingsModuleProps {
   user: User;
 }
 
+type SettingsTab = 'general' | 'privacy' | 'notifications' | 'security' | 'account';
+
 export default function SettingsModule({ user }: SettingsModuleProps) {
-  const [activeTab, setActiveTab] = useState<'general' | 'privacy' | 'notifications' | 'security' | 'account'>('general');
+  const [activeTab, setActiveTab] = useState<SettingsTab>('general');
+  const { t } = useLanguage();
   const {
     preferences,
     loading: loadingNotificationPreferences,
@@ -34,11 +37,13 @@ export default function SettingsModule({ user }: SettingsModuleProps) {
     twoFactorAuth: false,
   });
 
-  const handleSettingChange = (key: string, value: any) => {
-    setSettings(prev => ({ ...prev, [key]: value }));
+  const handleSettingChange = (key: keyof typeof settings, value: string | boolean) => {
+    // key je vždy platný kľúč a value zodpovedá danému poľu (viď onChange volania);
+    // cast premostí rozšírenie typu pri computed-key zápise.
+    setSettings((prev) => ({ ...prev, [key]: value }) as typeof settings);
   };
 
-  const tabs = [
+  const tabs: Array<{ id: SettingsTab; label: string; icon: typeof Cog6ToothIcon }> = [
     { id: 'general', label: 'Všeobecné', icon: Cog6ToothIcon },
     { id: 'privacy', label: 'Súkromie', icon: EyeIcon },
     { id: 'notifications', label: 'Upozornenia', icon: BellIcon },
@@ -66,7 +71,7 @@ export default function SettingsModule({ user }: SettingsModuleProps) {
             return (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
+                onClick={() => setActiveTab(tab.id)}
                 className={`flex items-center px-4 py-2 text-sm font-medium rounded-md transition-colors whitespace-nowrap ${
                   activeTab === tab.id
                     ? 'bg-white text-purple-700 shadow-sm'
@@ -206,18 +211,21 @@ export default function SettingsModule({ user }: SettingsModuleProps) {
               <div className="flex items-center justify-between">
                 <div>
                   <label className="text-sm font-medium text-gray-700">
-                    Email upozornenia
+                    {t('notifications.settingsInApp', 'Upozornenia v aplikácii')}
                   </label>
                   <p className="text-xs text-gray-500">
-                    Dostávať upozornenia na email
+                    {t(
+                      'notifications.settingsInAppDesc',
+                      'Zobrazovať upozornenia v zvončeku a zozname upozornení',
+                    )}
                   </p>
                 </div>
                 <input
                   type="checkbox"
-                  checked={preferences.emailNotifications}
-                  disabled={loadingNotificationPreferences || savingKey === 'emailNotifications'}
+                  checked={preferences.inAppNotifications}
+                  disabled={loadingNotificationPreferences || savingKey === 'inAppNotifications'}
                   onChange={(e) => {
-                    void updatePreference('emailNotifications', e.target.checked);
+                    void updatePreference('inAppNotifications', e.target.checked);
                   }}
                   className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
                 />

@@ -90,11 +90,48 @@ def _delete_owned_content(user) -> None:
     FavoriteUser.objects.filter(user=user).delete()
     FavoriteUser.objects.filter(favorite_user=user).delete()
 
-    # Vlastné notifikácie (notifikácie iných, kde je actor, riešia SET_NULL).
+    # Vlastné notifikácie (kde je user príjemca). Notifikácie iných, kde je
+    # user aktérom, sa nemažú (patria iným) – ich PII scrubuje
+    # _scrub_actor_notifications (actor FK je navyše SET_NULL).
     Notification.objects.filter(user=user).delete()
 
     # Verifikačné aj deletion tokeny.
     EmailVerification.objects.filter(user=user).delete()
+
+
+def _scrub_actor_notifications(user, *, previous_display_name: str) -> None:
+    """
+    GDPR: anonymizuje PII zmazaného používateľa v notifikáciách INÝCH používateľov,
+    kde vystupuje ako aktér.
+
+    actor FK je SET_NULL (rieši sa samo), ale display_name aktéra je denormalizované
+    v title/body pri vytvorení notifikácie – to string-replace prepíšeme na neutrálnu
+    hodnotu. data JSONField obsahuje len pseudonymné ID a enum kódy (napr.
+    termination_reason je choices, nie voľný text; voľnotextový popis ukončenia sa do
+    notifikácie neukladá), preto ho netreba scrubovať.
+    """
+    from .models import Notification
+
+    name = (previous_display_name or "").strip()
+    # Bez mena (napr. actor nemal display_name) je v body generický fallback
+    # ("Používateľ") – žiadne PII na scrub.
+    if not name:
+        return
+
+    replacement = "Zmazaný používateľ"
+    to_update = []
+    for notification in Notification.objects.filter(actor=user).only(
+        "id", "title", "body"
+    ):
+        new_title = notification.title.replace(name, replacement)
+        new_body = notification.body.replace(name, replacement)
+        if new_title != notification.title or new_body != notification.body:
+            notification.title = new_title
+            notification.body = new_body
+            to_update.append(notification)
+
+    if to_update:
+        Notification.objects.bulk_update(to_update, ["title", "body"])
 
 
 def _scrub_user_messages(user) -> None:
@@ -202,8 +239,13 @@ def anonymize_user(user) -> None:
     # Názov avatara zachyť PRED scrubom – ten nastaví avatar=None. Avatar je na
     # default_storage (nemá vlastný storage=), takže ho mažeme cez default.
     avatar_name = _avatar_storage_name(locked)
+    # display_name zachyť PRED _scrub_user_pii (ten vynuluje mená) – potrebujeme ho
+    # na scrub denormalizovaného mena v notifikáciách iných používateľov.
+    previous_display_name = locked.display_name
 
     _delete_owned_content(locked)
+    # PII zmazaného usera v notifikáciách iných (kde je aktér) – title/body scrub.
+    _scrub_actor_notifications(locked, previous_display_name=previous_display_name)
     # Obsah odoslaných správ anonymizujeme (text + obrázky); riadky a sender FK
     # ostávajú, aby história protistrany bola neporušená (PROTECT dizajn).
     _scrub_user_messages(locked)

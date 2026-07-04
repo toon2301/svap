@@ -3,6 +3,7 @@ Produkčné nastavenia pre Swaply
 """
 
 import os
+import sys
 from pathlib import Path
 from datetime import timedelta
 from .settings import *
@@ -183,6 +184,24 @@ try:
             "keepalives_interval": int(os.getenv("DB_KEEPALIVES_INTERVAL", "10")),
             "keepalives_count": int(os.getenv("DB_KEEPALIVES_COUNT", "5")),
         }
+        # statement_timeout (ms): žiadny dotaz nesmie bežať neobmedzene (napr. zaseknutý
+        # legacy search fallback). Po prekročení PG vráti OperationalError → existujúci
+        # process_exception middleware → generický 500 (žiadny únik detailov).
+        # Migrácie a testy vynímame – CREATE INDEX CONCURRENTLY a pod. môžu trvať dlhšie
+        # než limit a nesmú byť predčasne zabité. Vypnutie: DB_STATEMENT_TIMEOUT_MS=0.
+        _stmt_timeout_ms = int(os.getenv("DB_STATEMENT_TIMEOUT_MS", "5000") or "5000")
+        _subcommand = sys.argv[1] if len(sys.argv) > 1 else ""
+        _skip_stmt_timeout = _subcommand in {
+            "migrate",
+            "makemigrations",
+            "sqlmigrate",
+            "showmigrations",
+            "test",
+        }
+        if _stmt_timeout_ms > 0 and not _skip_stmt_timeout:
+            DATABASES["default"]["OPTIONS"]["options"] = (
+                f"-c statement_timeout={_stmt_timeout_ms}"
+            )
 except Exception:
     pass
 # Static files storage - bez manifest pre Railway

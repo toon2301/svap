@@ -134,7 +134,7 @@ class TestUserProfileModel(TestCase):
     def test_default_values(self):
         """Test predvolených hodnôt"""
         self.assertEqual(self.profile.preferred_communication, "both")
-        self.assertTrue(self.profile.email_notifications)
+        self.assertTrue(self.profile.in_app_notifications)
         self.assertTrue(self.profile.push_notifications)
         self.assertFalse(self.profile.show_email)
         self.assertFalse(self.profile.show_phone)

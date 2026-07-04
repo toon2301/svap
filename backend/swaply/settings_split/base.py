@@ -3,6 +3,8 @@ Split settings base: imports settings chunks in the same order as the original s
 to preserve behavior.
 """
 
+import os
+
 from .env import *  # noqa
 from .security import *  # noqa
 from .apps import *  # noqa

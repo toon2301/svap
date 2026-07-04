@@ -1,3 +1,4 @@
+import logging
 from decimal import Decimal, InvalidOperation
 from time import perf_counter
 
@@ -12,39 +13,31 @@ from rest_framework.response import Response
 
 from swaply.rate_limiting import search_rate_limit
 
-from ...models import DashboardSkillSearchProjection, OfferedSkill
-from ...search_visibility import searchable_projection_filters, searchable_user_q
+from ...models import OfferedSkill
 from ...serializers import OfferedSkillSerializer
 from ...viewer_location_cache import get_viewer_location_snapshot
-from .smart_search import SMART_KEYWORD_GROUPS
+from ..search_query_builders import (
+    COUNTRY_LOCATION_MAPPING,
+    SMART_KEYWORD_INDEX,
+    _build_legacy_skills_page_qs,
+    _build_only_my_location_filters,
+    _build_projection_only_my_location_filters,
+    _build_projection_skills_page_qs,
+    _slice_page_ids,
+)
 from .utils import (
     _build_accent_insensitive_pattern,
-    _remove_diacritics,
     _sanitize_search_term,
+    accent_insensitive_contains_q,
 )
 
 User = get_user_model()
 
+logger = logging.getLogger("swaply")
 
-# Index pre smart search - presunute z dashboard.py bez zmeny spravania
-SMART_KEYWORD_INDEX = {}
-for group in SMART_KEYWORD_GROUPS:
-    lowered = [w.lower() for w in group]
-    for word in lowered:
-        # Mapuj aj diakriticke aj bezdiakriticke verzie na tu istu skupinu.
-        SMART_KEYWORD_INDEX[word] = lowered
-        no_accents = _remove_diacritics(word)
-        SMART_KEYWORD_INDEX[no_accents] = lowered
-
-
-COUNTRY_LOCATION_MAPPING = {
-    "SK": ["slovakia", "slovensko", "slovak"],
-    "CZ": ["czech", "\u010desko", "\u010desk\u00e1", "cesko", "ceska"],
-    "PL": ["poland", "po\u013esko", "polsko", "polish"],
-    "HU": ["hungary", "ma\u010farsko", "madarsko", "hungarian"],
-    "DE": ["germany", "nemecko", "deutschland", "german"],
-    "AT": ["austria", "rak\u00fasko", "rakusko", "\u00f6sterreich", "osterreich"],
-}
+# Horná hranica čísla stránky (ochrana pred obrovským OFFSET pri manuálnom/škodlivom
+# requeste). Pri per_page≤50 to je max ~50k offset – dosť veľkorysé pre reálne stránkovanie.
+MAX_DASHBOARD_SEARCH_PAGE = 1000
 
 
 def _serialize_search_skills_page(request, page_skill_ids):
@@ -109,226 +102,6 @@ def _record_dashboard_search_timing(request, **entries) -> None:
         pass
 
 
-def _build_only_my_location_filters(location_snapshot):
-    user_loc_q = Q()
-    skill_loc_q = Q()
-
-    if location_snapshot[0]:
-        user_loc_q |= Q(location__icontains=location_snapshot[0])
-        skill_loc_q |= Q(location__icontains=location_snapshot[0]) | Q(
-            user__location__icontains=location_snapshot[0]
-        )
-    if location_snapshot[1]:
-        user_loc_q |= Q(district__icontains=location_snapshot[1])
-        skill_loc_q |= Q(district__icontains=location_snapshot[1]) | Q(
-            user__district__icontains=location_snapshot[1]
-        )
-
-    return user_loc_q, skill_loc_q
-
-
-def _build_projection_only_my_location_filters(location_snapshot):
-    skill_loc_q = Q()
-
-    if location_snapshot[0]:
-        skill_loc_q |= Q(skill_location__icontains=location_snapshot[0]) | Q(
-            user_location__icontains=location_snapshot[0]
-        )
-    if location_snapshot[1]:
-        skill_loc_q |= Q(skill_district__icontains=location_snapshot[1]) | Q(
-            user_district__icontains=location_snapshot[1]
-        )
-
-    return skill_loc_q
-
-
-def _build_skill_search_query(skill_terms, *, projection=False):
-    skill_query = Q()
-    for term in skill_terms:
-        pattern = _build_accent_insensitive_pattern(_sanitize_search_term(term))
-        if projection:
-            skill_query |= (
-                Q(category__iregex=pattern)
-                | Q(subcategory__iregex=pattern)
-                | Q(tags_text__icontains=term)
-                | Q(skill_location__iregex=pattern)
-                | Q(skill_district__iregex=pattern)
-                | Q(user_location__iregex=pattern)
-                | Q(user_district__iregex=pattern)
-            )
-        else:
-            skill_query |= (
-                Q(category__iregex=pattern)
-                | Q(subcategory__iregex=pattern)
-                | Q(tags__icontains=term)
-                | Q(location__iregex=pattern)
-                | Q(district__iregex=pattern)
-                | Q(user__location__iregex=pattern)
-                | Q(user__district__iregex=pattern)
-            )
-    return skill_query
-
-
-def _apply_skill_country_filter(qs, country_filter, *, projection=False):
-    country_terms = COUNTRY_LOCATION_MAPPING.get(country_filter)
-    if not country_terms:
-        return qs
-
-    country_query = Q()
-    for term in country_terms:
-        if projection:
-            country_query |= Q(user_location__icontains=term) | Q(
-                user_district__icontains=term
-            )
-        else:
-            country_query |= Q(user__location__icontains=term) | Q(
-                user__district__icontains=term
-            )
-
-    test_qs = qs.filter(country_query)
-    if test_qs.exists():
-        return qs.filter(country_query)
-    return qs
-
-
-def _apply_skill_search_scalar_filters(qs, *, offer_type, price_min, price_max):
-    if offer_type == "offer":
-        qs = qs.filter(is_seeking=False)
-    elif offer_type == "seeking":
-        qs = qs.filter(is_seeking=True)
-
-    if price_min is not None:
-        qs = qs.filter(price_from__gte=price_min)
-    if price_max is not None:
-        qs = qs.filter(price_from__lte=price_max)
-
-    return qs
-
-
-def _slice_page_ids(qs, *, page: int, per_page: int, id_field: str = "id"):
-    """
-    Slice one page plus one sentinel row to determine whether a next page exists.
-
-    This avoids exact COUNT(*) on the skills branch, which is the main source of
-    production latency for dashboard search.
-    """
-
-    safe_page = max(int(page or 1), 1)
-    safe_per_page = max(int(per_page or 1), 1)
-    offset = (safe_page - 1) * safe_per_page
-    raw_ids = list(
-        qs.values_list(id_field, flat=True)[offset : offset + safe_per_page + 1]
-    )
-    has_next = len(raw_ids) > safe_per_page
-    return raw_ids[:safe_per_page], has_next
-
-
-def _build_projection_skills_page_qs(
-    *,
-    viewer_user_id,
-    raw_query,
-    skill_terms,
-    country_filter,
-    offer_type,
-    price_min,
-    price_max,
-    projection_skill_loc_q,
-    only_my_location,
-):
-    skills_qs = DashboardSkillSearchProjection.objects.filter(
-        **searchable_projection_filters()
-    )
-    skills_qs = skills_qs.exclude(user_id=viewer_user_id)
-    skills_qs = skills_qs.filter(is_hidden=False)
-
-    if skill_terms:
-        skills_qs = skills_qs.filter(
-            _build_skill_search_query(skill_terms, projection=True)
-        )
-
-    if country_filter:
-        skills_qs = _apply_skill_country_filter(
-            skills_qs,
-            country_filter,
-            projection=True,
-        )
-
-    skills_qs = _apply_skill_search_scalar_filters(
-        skills_qs,
-        offer_type=offer_type,
-        price_min=price_min,
-        price_max=price_max,
-    )
-
-    if only_my_location and projection_skill_loc_q:
-        skills_qs = skills_qs.filter(projection_skill_loc_q)
-
-    if raw_query:
-        return skills_qs.annotate(
-            relevance=Case(
-                When(category__icontains=raw_query, then=3),
-                When(subcategory__icontains=raw_query, then=3),
-                When(tags_text__icontains=raw_query, then=2),
-                When(skill_location__icontains=raw_query, then=1),
-                When(skill_district__icontains=raw_query, then=1),
-                default=0,
-                output_field=IntegerField(),
-            )
-        ).order_by("-relevance", "-user_is_verified", "-created_at")
-
-    return skills_qs.order_by("-user_is_verified", "-created_at")
-
-
-def _build_legacy_skills_page_qs(
-    *,
-    viewer_user,
-    raw_query,
-    skill_terms,
-    country_filter,
-    offer_type,
-    price_min,
-    price_max,
-    skill_loc_q,
-    only_my_location,
-):
-    skills_qs = OfferedSkill.objects.select_related("user").filter(
-        searchable_user_q("user__")
-    )
-    skills_qs = skills_qs.exclude(user=viewer_user)
-    skills_qs = skills_qs.filter(is_hidden=False)
-
-    if skill_terms:
-        skills_qs = skills_qs.filter(_build_skill_search_query(skill_terms))
-
-    if country_filter:
-        skills_qs = _apply_skill_country_filter(skills_qs, country_filter)
-
-    skills_qs = _apply_skill_search_scalar_filters(
-        skills_qs,
-        offer_type=offer_type,
-        price_min=price_min,
-        price_max=price_max,
-    )
-
-    if only_my_location and skill_loc_q:
-        skills_qs = skills_qs.filter(skill_loc_q)
-
-    if raw_query:
-        return skills_qs.annotate(
-            relevance=Case(
-                When(category__icontains=raw_query, then=3),
-                When(subcategory__icontains=raw_query, then=3),
-                When(tags__icontains=raw_query, then=2),
-                When(location__icontains=raw_query, then=1),
-                When(district__icontains=raw_query, then=1),
-                default=0,
-                output_field=IntegerField(),
-            )
-        ).order_by("-relevance", "-user__is_verified", "-created_at")
-
-    return skills_qs.order_by("-user__is_verified", "-created_at")
-
-
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 @search_rate_limit
@@ -337,8 +110,10 @@ def dashboard_search_view(request):
     t_view0 = perf_counter()
     raw_query = (request.GET.get("q") or "").strip()
     raw_query = raw_query[:100]
-    raw_location = (request.GET.get("location") or "").strip()
-    raw_district = (request.GET.get("district") or "").strip()
+    # location/district idú (rovnako ako q) do regex/ILIKE search termov – ohranič
+    # ich dĺžku, aby extrémne dlhý vstup nespôsobil pomalý pattern matching.
+    raw_location = (request.GET.get("location") or "").strip()[:100]
+    raw_district = (request.GET.get("district") or "").strip()[:100]
 
     offer_type = ((request.GET.get("offer_type") or "").strip().lower())
     only_my_location = (request.GET.get("only_my_location") or "").strip().lower() in (
@@ -374,6 +149,10 @@ def dashboard_search_view(request):
         page = int(request.GET.get("page", 1))
     except (TypeError, ValueError):
         page = 1
+    # Ohranič page zdola aj zhora: extrémne vysoký page by inak spôsobil obrovský
+    # OFFSET na skills vetve (zbytočný sken). Frontend stránkuje cez has_next (+1),
+    # takže reálne stránkovanie tým neobmedzíme. (search_view klampuje analogicky.)
+    page = max(1, min(page, MAX_DASHBOARD_SEARCH_PAGE))
 
     try:
         per_page = int(request.GET.get("per_page", 20))
@@ -456,6 +235,15 @@ def dashboard_search_view(request):
             id_field="skill_id",
         )
     except DatabaseError:
+        # Denormalizovaná projekcia zlyhala (napr. chýbajúca/poškodená tabuľka,
+        # zámok, migrácia v behu). Aby search fungoval, prepneme na pomalší legacy
+        # OfferedSkill dotaz – ale zalogujeme WARNING, nech tichý prepad na pomalšiu
+        # cestu nezostane do budúcna neviditeľný (monitoring/alerty).
+        logger.warning(
+            "dashboard_search: projekcia DashboardSkillSearchProjection zlyhala "
+            "(DatabaseError) – prepínam na legacy OfferedSkill dotaz.",
+            exc_info=True,
+        )
         legacy_skills_page_qs = _build_legacy_skills_page_qs(
             viewer_user=request.user,
             raw_query=raw_query,
@@ -495,35 +283,26 @@ def dashboard_search_view(request):
         for term in user_terms:
             pattern = _build_accent_insensitive_pattern(_sanitize_search_term(term))
             user_query |= (
-                Q(first_name__iregex=pattern)
-                | Q(last_name__iregex=pattern)
-                | Q(username__iregex=pattern)
+                accent_insensitive_contains_q("first_name", term)
+                | accent_insensitive_contains_q("last_name", term)
+                | accent_insensitive_contains_q("username", term)
                 | Q(location__iregex=pattern)
                 | Q(district__iregex=pattern)
             )
         users_qs = users_qs.filter(user_query)
 
-    if country_filter:
-        country_location_mapping = {
-            "SK": ["slovakia", "slovensko", "slovak"],
-            "CZ": ["czech", "\u010desko", "\u010desk\u00e1", "cesko", "ceska"],
-            "PL": ["poland", "po\u013esko", "polsko", "polish"],
-            "HU": ["hungary", "ma\u010farsko", "madarsko", "hungarian"],
-            "DE": ["germany", "nemecko", "deutschland", "german"],
-            "AT": ["austria", "rak\u00fasko", "rakusko", "\u00f6sterreich", "osterreich"],
-        }
+    if country_filter and country_filter in COUNTRY_LOCATION_MAPPING:
+        # Rovnak\u00e9 mapovanie ako pre skills (modulov\u00e1 kon\u0161tanta) \u2013 \u017eiadny duplik\u00e1t.
+        country_terms = COUNTRY_LOCATION_MAPPING[country_filter]
+        user_country_query = Q()
+        for term in country_terms:
+            user_country_query |= Q(location__icontains=term) | Q(
+                district__icontains=term
+            )
 
-        if country_filter in country_location_mapping:
-            country_terms = country_location_mapping[country_filter]
-            user_country_query = Q()
-            for term in country_terms:
-                user_country_query |= Q(location__icontains=term) | Q(
-                    district__icontains=term
-                )
-
-            test_qs = users_qs.filter(user_country_query)
-            if test_qs.exists():
-                users_qs = users_qs.filter(user_country_query)
+        test_qs = users_qs.filter(user_country_query)
+        if test_qs.exists():
+            users_qs = users_qs.filter(user_country_query)
 
     if only_my_location and user_loc_q:
         users_qs = users_qs.filter(user_loc_q)

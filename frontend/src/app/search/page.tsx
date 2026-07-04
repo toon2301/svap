@@ -74,6 +74,7 @@ function SearchResultsContent() {
   const [offerType, setOfferType] = useState<'all' | 'offer' | 'seeking'>(parsedOfferType);
   const [results, setResults] = useState<Offer[]>([]);
   const [total, setTotal] = useState(0);
+  const [isCapped, setIsCapped] = useState(false);
   const [page, setPage] = useState(parsedPage);
   const [totalPages, setTotalPages] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -85,6 +86,8 @@ function SearchResultsContent() {
   const [globalOffers, setGlobalOffers] = useState<Offer[]>([]);
   const [globalUsersCount, setGlobalUsersCount] = useState(0);
   const [globalOffersCount, setGlobalOffersCount] = useState(0);
+  const [globalUsersCapped, setGlobalUsersCapped] = useState(false);
+  const [globalOffersCapped, setGlobalOffersCapped] = useState(false);
   const [globalUsersTotalPages, setGlobalUsersTotalPages] = useState(0);
   const [globalLoading, setGlobalLoading] = useState(false);
   const [globalError, setGlobalError] = useState<string | null>(null);
@@ -164,6 +167,7 @@ function SearchResultsContent() {
     if (!trimmed) {
       setResults([]);
       setTotal(0);
+      setIsCapped(false);
       setPage(1);
       setTotalPages(0);
       return;
@@ -195,11 +199,13 @@ function SearchResultsContent() {
         : mapped;
       setResults(filtered);
       setTotal(Number(data?.total) ?? 0);
+      setIsCapped(Boolean(data?.is_capped));
       setPage(Number(data?.page) ?? 1);
       setTotalPages(Number(data?.total_pages) ?? 0);
     } catch (err: unknown) {
       setResults([]);
       setTotal(0);
+      setIsCapped(false);
       setPage(1);
       setTotalPages(0);
       const msg = err && typeof err === 'object' && 'response' in err
@@ -215,17 +221,6 @@ function SearchResultsContent() {
     if (tab !== 'offers') return;
     void fetchSearch();
   }, [tab, fetchSearch]);
-
-  const handleSortChange = useCallback(
-    (e: React.ChangeEvent<HTMLSelectElement>) => {
-      const newSort = e.target.value;
-      if (!VALID_SORTS.has(newSort)) return;
-      setSort(newSort);
-      setPage(1);
-      replaceSearchParams({ sort: newSort, page: '1' });
-    },
-    [replaceSearchParams],
-  );
 
   const handleToggleFlip = useCallback((cardId: string) => {
     setFlippedCards((prev) => {
@@ -262,6 +257,8 @@ function SearchResultsContent() {
       setGlobalOffers([]);
       setGlobalUsersCount(0);
       setGlobalOffersCount(0);
+      setGlobalUsersCapped(false);
+      setGlobalOffersCapped(false);
       setGlobalUsersTotalPages(0);
       setGlobalError(null);
       setGlobalLoading(false);
@@ -294,12 +291,16 @@ function SearchResultsContent() {
       setGlobalOffers(offersFiltered);
       setGlobalUsersCount(Number(data?.users_count) ?? users.length);
       setGlobalOffersCount(Number(data?.offers_count) ?? offersFiltered.length);
+      setGlobalUsersCapped(Boolean(data?.users_is_capped));
+      setGlobalOffersCapped(Boolean(data?.offers_is_capped));
       setGlobalUsersTotalPages(Number(data?.users_total_pages) ?? 0);
     } catch (err: unknown) {
       setGlobalUsers([]);
       setGlobalOffers([]);
       setGlobalUsersCount(0);
       setGlobalOffersCount(0);
+      setGlobalUsersCapped(false);
+      setGlobalOffersCapped(false);
       setGlobalUsersTotalPages(0);
       const msg = err && typeof err === 'object' && 'response' in err
         ? (err as { response?: { data?: { error?: string } } }).response?.data?.error
@@ -317,6 +318,11 @@ function SearchResultsContent() {
 
   const trimmedQ = q.trim();
   const displayQ = trimmedQ || '';
+  // Capped count: nad hranicou backendu zobrazíme "N+" (napr. "500+ výsledkov").
+  const formatCount = (count: number, capped: boolean) =>
+    capped
+      ? t('search.resultsCountCapped', '{{count}}+ výsledkov').replace('{{count}}', String(count))
+      : t('search.resultsCount', '{{count}} výsledkov').replace('{{count}}', String(count));
   const headerCountText = (() => {
     if (!trimmedQ) return t('search.emptyEnterQuery', 'Zadajte výraz do vyhľadávacieho poľa.');
     if (tab === 'offers') {
@@ -326,11 +332,14 @@ function SearchResultsContent() {
       }
       return loading
         ? t('search.loading', 'Načítavam…')
-        : t('search.resultsCount', '{{count}} výsledkov').replace('{{count}}', String(total));
+        : formatCount(total, isCapped);
     }
     if (globalLoading) return t('search.loading', 'Načítavam…');
-    if (tab === 'users') return `${globalUsersCount} výsledkov`;
-    return `${globalUsersCount + globalOffersCount} výsledkov`;
+    if (tab === 'users') return formatCount(globalUsersCount, globalUsersCapped);
+    return formatCount(
+      globalUsersCount + globalOffersCount,
+      globalUsersCapped || globalOffersCapped,
+    );
   })();
 
   return (
@@ -541,7 +550,7 @@ function SearchResultsContent() {
                   <div className="flex items-end justify-between gap-3 mb-3">
                     <div>
                       <h2 className="text-sm font-semibold text-gray-900 dark:text-white">Ponuky</h2>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">{globalOffersCount} výsledkov</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{formatCount(globalOffersCount, globalOffersCapped)}</p>
                     </div>
                   </div>
 

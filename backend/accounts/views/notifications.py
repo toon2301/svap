@@ -8,6 +8,7 @@ from rest_framework.response import Response
 
 from django.utils import timezone
 from time import perf_counter
+from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db import connections
 from django.core.cache import cache
 
@@ -42,6 +43,33 @@ def _send_unread_count(user_id: int) -> None:
     notify_user(user_id, {"type": "skill_request", "unread_count": unread})
 
 
+NOTIFICATION_FEED_MAX_PAGE_SIZE = 50
+
+
+def _parse_notifications_page_params(request):
+    """Spracuje ?page a ?page_size (rovnaké limity ako ostatné zoznamy)."""
+    try:
+        page = int(str(request.query_params.get("page", "1")).strip())
+    except (TypeError, ValueError):
+        page = 1
+    if page < 1:
+        page = 1
+
+    page_size = NOTIFICATION_FEED_LIMIT
+    raw_page_size = request.query_params.get("page_size")
+    if raw_page_size is not None:
+        try:
+            page_size = int(str(raw_page_size).strip())
+        except (TypeError, ValueError):
+            page_size = NOTIFICATION_FEED_LIMIT
+    if page_size <= 0:
+        page_size = NOTIFICATION_FEED_LIMIT
+    if page_size > NOTIFICATION_FEED_MAX_PAGE_SIZE:
+        page_size = NOTIFICATION_FEED_MAX_PAGE_SIZE
+
+    return page, page_size
+
+
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 @api_rate_limit
@@ -62,12 +90,39 @@ def notifications_list_view(request):
     if unread_only in {"1", "true", "yes"}:
         qs = qs.filter(is_read=False)
 
-    # jednoduché stránkovanie: limit
+    # Opt-in stránkovanie cez ?page (offset/page-based, rovnaký vzor ako recenzie).
+    # Umožňuje prístup k celej histórii, nielen k posledným N.
+    if request.query_params.get("page") is not None:
+        page, page_size = _parse_notifications_page_params(request)
+        paginator = Paginator(qs, page_size)
+        try:
+            page_obj = paginator.page(page)
+        except PageNotAnInteger:
+            page = 1
+            page_obj = paginator.page(page)
+        except EmptyPage:
+            page = paginator.num_pages if paginator.num_pages > 0 else 1
+            page_obj = paginator.page(page) if paginator.num_pages > 0 else []
+        items = list(page_obj) if page_obj else []
+        return Response(
+            {
+                "results": NotificationSerializer(
+                    items, many=True, context={"request": request}
+                ).data,
+                "total": paginator.count,
+                "page": page,
+                "page_size": page_size,
+                "total_pages": paginator.num_pages,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    # Spätná kompatibilita: bez ?page vraciame pôvodné ploché pole (limit-based).
     try:
         limit = int(request.query_params.get("limit") or NOTIFICATION_FEED_LIMIT)
     except Exception:
         limit = NOTIFICATION_FEED_LIMIT
-    limit = max(1, min(limit, 50))
+    limit = max(1, min(limit, NOTIFICATION_FEED_MAX_PAGE_SIZE))
 
     return Response(
         NotificationSerializer(

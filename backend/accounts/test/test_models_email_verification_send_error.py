@@ -17,6 +17,6 @@ def test_send_verification_email_error_path():
     )
     ev = EmailVerification.objects.create(user=user)
 
-    with patch("accounts.models.send_mail", side_effect=Exception("smtp error")):
+    with patch("accounts.models.verification.send_mail", side_effect=Exception("smtp error")):
         ok = ev.send_verification_email()
         assert ok is False

@@ -69,8 +69,9 @@ export function useDashboardUserProfile({
       try {
         const { data } = await api.get<User>(url);
         return isCancelled() ? null : data;
-      } catch (error: any) {
-        if (!isCancelled() && error?.response?.status === 404) {
+      } catch (error: unknown) {
+        const status = (error as { response?: { status?: number } })?.response?.status;
+        if (!isCancelled() && status === 404) {
           setViewedUserNotFound(true);
         }
         return null;
@@ -128,9 +129,11 @@ export function useDashboardUserProfile({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialProfileSlug, initialViewedUserId, initialHighlightedSkillId, setHighlightedSkillId]);
 
-  // Ak aktuálny route slug patrí prihlásenému používateľovi, zobraz jeho profil (ProfileModule)
+  // Vlastny slug prepina na ProfileModule iba pre bezny profil route.
+  // Portfolio detail/create si musia zachovat vlastny aktivny modul aj po reloade.
   useEffect(() => {
     if (!user || !initialProfileSlug) return;
+    if (activeModule !== 'user-profile') return;
     if (user.slug && user.slug === initialProfileSlug) {
       setActiveModule('profile');
       try {
@@ -141,7 +144,7 @@ export function useDashboardUserProfile({
         // ignore
       }
     }
-  }, [user, initialProfileSlug, setActiveModule]);
+  }, [activeModule, user, initialProfileSlug, setActiveModule]);
 
   // Aplikuj počiatočný stav pravého sidebaru pre vlastný profil na základe URL (edit, account, privacy, language)
   useEffect(() => {
@@ -268,7 +271,17 @@ export function useDashboardUserProfile({
         window.history.replaceState(null, '', expectedPathForCurrentMode);
       }
     }
-  }, [user?.slug, user?.id, activeModule, viewedUserId, isRightSidebarOpen, activeRightItem]);
+  }, [
+    user?.slug,
+    user?.id,
+    activeModule,
+    viewedUserId,
+    isRightSidebarOpen,
+    activeRightItem,
+    setActiveModule,
+    setIsRightSidebarOpen,
+    setActiveRightItem,
+  ]);
 
   // Aktualizácia URL na slug, keď sa načíta profil cudzieho používateľa
   useEffect(() => {

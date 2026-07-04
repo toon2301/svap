@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import logging
 import os
+from datetime import timedelta
 
 from django.core.cache import cache
 from django.db import transaction
+from django.utils import timezone
 
 from accounts.models import Notification, NotificationType
 from accounts.realtime import notify_user
@@ -110,6 +112,24 @@ def _dispatch_created_notification(notification_id: int, user_id: int) -> None:
     )
 
 
+def _in_app_notifications_enabled(user) -> bool:
+    """
+    Rešpektuje používateľovu preferenciu in-app notifikácií.
+
+    Pri vypnutí sa notifikácia VÔBEC neuloží (GDPR minimalizácia dát). Push
+    notifikácie riadi samostatný push_notifications toggle a tento gate ich
+    neovplyvňuje. Fail-open (default True), ak profil chýba alebo nastane chyba –
+    nechceme ticho stratiť notifikáciu kvôli chybe čítania preferencie.
+    """
+    try:
+        profile = getattr(user, "profile", None)
+        if profile is None:
+            return True
+        return bool(profile.in_app_notifications)
+    except Exception:
+        return True
+
+
 def create_notification(
     *,
     user,
@@ -121,7 +141,10 @@ def create_notification(
     conversation=None,
     group_invitation=None,
     data: dict | None = None,
-) -> Notification:
+) -> Notification | None:
+    if not _in_app_notifications_enabled(user):
+        return None
+
     notification = Notification.objects.create(
         user=user,
         type=notif_type,
@@ -140,279 +163,72 @@ def create_notification(
     return notification
 
 
-def create_group_invitation_notification(*, invitation, actor) -> Notification:
-    conversation = invitation.conversation
-    return create_notification(
-        user=invitation.invited_user,
-        notif_type=NotificationType.GROUP_INVITATION,
-        title="Pozvánka do skupiny",
-        body="Dostali ste pozvánku do skupinového chatu.",
-        actor=actor,
-        conversation=conversation,
-        group_invitation=invitation,
-        data={
-            "conversation_id": conversation.id,
-            "group_invitation_id": invitation.id,
-            "from_user_id": actor.id,
-        },
-    )
+# Retenčná politika (dni) podľa typu. Purge maže notifikácie staršie než limit
+# (anchor = created_at, bez ohľadu na read stav – GDPR minimalizácia dát).
+# Typy, ktoré tu NIE sú uvedené, sa NEmažú (bezpečný default pre neznáme typy).
+NOTIFICATION_RETENTION_DAYS: dict[str, int] = {
+    # Informačné / sociálne
+    NotificationType.OFFER_LIKED: 30,
+    NotificationType.REVIEW_LIKED: 30,
+    # Dôležité (status výmeny / recenzie)
+    NotificationType.REVIEW_CREATED: 60,
+    NotificationType.REVIEW_REPLY_CREATED: 60,
+    NotificationType.SKILL_REQUEST_ACCEPTED: 60,
+    NotificationType.SKILL_REQUEST_REJECTED: 60,
+    NotificationType.SKILL_REQUEST_CANCELLED: 60,
+    NotificationType.SKILL_REQUEST_COMPLETED: 60,
+    NotificationType.SKILL_REQUEST_TERMINATED: 60,
+    # Transakčné (niekto čaká na akciu)
+    NotificationType.SKILL_REQUEST: 90,
+    NotificationType.SKILL_REQUEST_COMPLETION_REQUESTED: 90,
+    NotificationType.GROUP_INVITATION: 90,
+}
+
+_PURGE_BATCH_SIZE = 1000
 
 
-def _skill_request_kind(skill_request) -> str:
-    offer = getattr(skill_request, "offer", None)
-    if (
-        getattr(skill_request, "proposal_description", "")
-        or getattr(skill_request, "proposed_offer_id", None)
-        or bool(getattr(offer, "is_seeking", False))
-    ):
-        return "help_offer"
-    return "skill_request"
+def purge_old_notifications(*, dry_run: bool = True) -> dict[str, int]:
+    """
+    Zmaže notifikácie staršie než retenčný limit ich typu (anchor = created_at).
+
+    Vracia počet (z)mazaných riadkov per typ. Pri dry_run len spočíta (nič nemaže).
+    Reálne mazanie beží v dávkach (scale-safe pri miliónoch riadkov). Bezpečné:
+    Notification nemá žiadne child FK (je čistý leaf), takže žiadny cascade.
+    """
+    now = timezone.now()
+    summary: dict[str, int] = {}
+
+    for notif_type, days in NOTIFICATION_RETENTION_DAYS.items():
+        cutoff = now - timedelta(days=days)
+        base_qs = Notification.objects.filter(type=notif_type, created_at__lt=cutoff)
+
+        if dry_run:
+            summary[notif_type] = base_qs.count()
+            continue
+
+        deleted_total = 0
+        while True:
+            batch_ids = list(base_qs.values_list("id", flat=True)[:_PURGE_BATCH_SIZE])
+            if not batch_ids:
+                break
+            deleted_total += Notification.objects.filter(id__in=batch_ids).delete()[0]
+        summary[notif_type] = deleted_total
+
+    return summary
 
 
-def create_skill_request_accepted_notification(*, skill_request, actor) -> Notification:
-    actor_name = (getattr(actor, "display_name", "") or "").strip() or "Používateľ"
-    request_kind = _skill_request_kind(skill_request)
-    is_help_offer = request_kind == "help_offer"
-    return create_notification(
-        user=skill_request.requester,
-        notif_type=NotificationType.SKILL_REQUEST_ACCEPTED,
-        title="Tvoja ponuka bola prijatá" if is_help_offer else "Žiadosť prijatá",
-        body=(
-            f"{actor_name} prijal tvoju ponuku pomoci."
-            if is_help_offer
-            else f"{actor_name} prijal tvoju žiadosť."
-        ),
-        actor=actor,
-        skill_request=skill_request,
-        data={
-            "skill_request_id": skill_request.id,
-            "offer_id": skill_request.offer_id,
-            "accepted_by_user_id": actor.id,
-            "request_kind": request_kind,
-        },
-    )
-
-
-def create_skill_request_rejected_notification(*, skill_request, actor) -> Notification:
-    actor_name = (getattr(actor, "display_name", "") or "").strip() or "Používateľ"
-    request_kind = _skill_request_kind(skill_request)
-    is_help_offer = request_kind == "help_offer"
-    return create_notification(
-        user=skill_request.requester,
-        notif_type=NotificationType.SKILL_REQUEST_REJECTED,
-        title="Tvoja ponuka bola odmietnutá" if is_help_offer else "Žiadosť odmietnutá",
-        body=(
-            f"{actor_name} odmietol tvoju ponuku pomoci."
-            if is_help_offer
-            else f"{actor_name} odmietol tvoju žiadosť."
-        ),
-        actor=actor,
-        skill_request=skill_request,
-        data={
-            "skill_request_id": skill_request.id,
-            "offer_id": skill_request.offer_id,
-            "rejected_by_user_id": actor.id,
-            "request_kind": request_kind,
-        },
-    )
-
-
-def create_skill_request_completion_requested_notification(
-    *, skill_request, actor
-) -> Notification:
-    existing = (
-        Notification.objects.filter(
-            user=skill_request.requester,
-            type=NotificationType.SKILL_REQUEST_COMPLETION_REQUESTED,
-            skill_request=skill_request,
-        )
-        .order_by("-created_at", "-id")
-        .first()
-    )
-    if existing is not None:
-        return existing
-
-    actor_name = (getattr(actor, "display_name", "") or "").strip() or "Používateľ"
-    return create_notification(
-        user=skill_request.requester,
-        notif_type=NotificationType.SKILL_REQUEST_COMPLETION_REQUESTED,
-        title="Výmena označená ako dokončená",
-        body=f"{actor_name} označil výmenu ako dokončenú.",
-        actor=actor,
-        skill_request=skill_request,
-        data={
-            "skill_request_id": skill_request.id,
-            "offer_id": skill_request.offer_id,
-            "completed_by_user_id": actor.id,
-        },
-    )
-
-
-def create_skill_request_completed_notification(*, skill_request, actor) -> Notification:
-    existing = (
-        Notification.objects.filter(
-            user=skill_request.recipient,
-            type=NotificationType.SKILL_REQUEST_COMPLETED,
-            skill_request=skill_request,
-        )
-        .order_by("-created_at", "-id")
-        .first()
-    )
-    if existing is not None:
-        return existing
-
-    actor_name = (getattr(actor, "display_name", "") or "").strip() or "Používateľ"
-    return create_notification(
-        user=skill_request.recipient,
-        notif_type=NotificationType.SKILL_REQUEST_COMPLETED,
-        title="Dokončenie výmeny potvrdené",
-        body=f"{actor_name} potvrdil dokončenie výmeny.",
-        actor=actor,
-        skill_request=skill_request,
-        data={
-            "skill_request_id": skill_request.id,
-            "offer_id": skill_request.offer_id,
-            "confirmed_by_user_id": actor.id,
-        },
-    )
-
-
-def create_skill_request_terminated_notification(
-    *, skill_request, termination, actor
-) -> Notification:
-    recipient = (
-        skill_request.recipient
-        if getattr(actor, "id", None) == skill_request.requester_id
-        else skill_request.requester
-    )
-    actor_name = (getattr(actor, "display_name", "") or "").strip() or "Používateľ"
-    return create_notification(
-        user=recipient,
-        notif_type=NotificationType.SKILL_REQUEST_TERMINATED,
-        title="Výmena skončila",
-        body=f"{actor_name} skončil výmenu.",
-        actor=actor,
-        skill_request=skill_request,
-        data={
-            "skill_request_id": skill_request.id,
-            "offer_id": skill_request.offer_id,
-            "terminated_by_user_id": actor.id,
-            "termination_reason": termination.reason,
-        },
-    )
-
-
-def create_review_created_notification(*, review, actor) -> Notification | None:
-    offer = getattr(review, "offer", None)
-    owner = getattr(offer, "user", None)
-    if owner is None or getattr(owner, "id", None) == getattr(actor, "id", None):
-        return None
-
-    actor_name = (getattr(actor, "display_name", "") or "").strip() or "Používateľ"
-    return create_notification(
-        user=owner,
-        notif_type=NotificationType.REVIEW_CREATED,
-        title="Nová recenzia",
-        body=f"{actor_name} napísal recenziu na tvoju kartu.",
-        actor=actor,
-        data={
-            "review_id": review.id,
-            "offer_id": review.offer_id,
-            "from_user_id": actor.id,
-        },
-    )
-
-
-def create_review_reply_notification(*, review, actor) -> Notification | None:
-    reviewer = getattr(review, "reviewer", None)
-    if reviewer is None or getattr(reviewer, "id", None) == getattr(actor, "id", None):
-        return None
-
-    existing = (
-        Notification.objects.filter(
-            user=reviewer,
-            type=NotificationType.REVIEW_REPLY_CREATED,
-            data__review_id=review.id,
-        )
-        .order_by("-created_at", "-id")
-        .first()
-    )
-    if existing is not None:
-        return existing
-
-    actor_name = (getattr(actor, "display_name", "") or "").strip() or "Používateľ"
-    return create_notification(
-        user=reviewer,
-        notif_type=NotificationType.REVIEW_REPLY_CREATED,
-        title="Odpoveď na recenziu",
-        body=f"{actor_name} odpovedal na tvoju recenziu.",
-        actor=actor,
-        data={
-            "review_id": review.id,
-            "offer_id": review.offer_id,
-            "from_user_id": actor.id,
-        },
-    )
-
-
-def create_review_liked_notification(*, review, actor) -> Notification | None:
-    reviewer = getattr(review, "reviewer", None)
-    if reviewer is None or getattr(reviewer, "id", None) == getattr(actor, "id", None):
-        return None
-
-    existing = (
-        Notification.objects.filter(
-            user=reviewer,
-            type=NotificationType.REVIEW_LIKED,
-            data__review_id=review.id,
-            data__from_user_id=actor.id,
-        )
-        .order_by("-created_at", "-id")
-        .first()
-    )
-    if existing is not None:
-        return existing
-
-    actor_name = (getattr(actor, "display_name", "") or "").strip() or "Používateľ"
-    return create_notification(
-        user=reviewer,
-        notif_type=NotificationType.REVIEW_LIKED,
-        title="Páči sa mi tvoja recenzia",
-        body=f"{actor_name} označil tvoju recenziu ako páči sa mi.",
-        actor=actor,
-        data={
-            "review_id": review.id,
-            "offer_id": review.offer_id,
-            "from_user_id": actor.id,
-        },
-    )
-
-
-def create_offer_liked_notification(*, offer, actor) -> Notification | None:
-    owner = getattr(offer, "user", None)
-    if owner is None or getattr(owner, "id", None) == getattr(actor, "id", None):
-        return None
-
-    existing = (
-        Notification.objects.filter(
-            user=owner,
-            type=NotificationType.OFFER_LIKED,
-            data__offer_id=offer.id,
-            actor=actor,
-        )
-        .order_by("-created_at", "-id")
-        .first()
-    )
-    if existing is not None:
-        return existing
-
-    return create_notification(
-        user=owner,
-        notif_type=NotificationType.OFFER_LIKED,
-        title="Páči sa mi tvoja ponuka",
-        body="",
-        actor=actor,
-        data={
-            "offer_id": offer.id,
-        },
-    )
+# Doménové create_*_notification funkcie sú vyčlenené do notification_events
+# (dĺžka súboru). Re-export zachováva spätnú kompatibilitu importov.
+from .notification_events import (  # noqa: E402, F401
+    create_group_invitation_notification,
+    create_offer_liked_notification,
+    create_review_created_notification,
+    create_review_liked_notification,
+    create_review_reply_notification,
+    create_skill_request_accepted_notification,
+    create_skill_request_completed_notification,
+    create_skill_request_completion_requested_notification,
+    create_skill_request_notification,
+    create_skill_request_rejected_notification,
+    create_skill_request_terminated_notification,
+)

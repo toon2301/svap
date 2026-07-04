@@ -8,6 +8,10 @@ export type PortfolioDisplayImage = {
   order: number;
 };
 
+type PreparePortfolioDisplayImagesOptions = {
+  preferCoverFirst?: boolean;
+};
+
 function cleanUrl(value?: string | null): string {
   return String(value || '').trim();
 }
@@ -39,15 +43,19 @@ function imageIdentity(image: PortfolioImage, mediumSrc: string, largeSrc: strin
   return `src:${largeSrc || mediumSrc}`;
 }
 
-export function preparePortfolioDisplayImages(item: PortfolioItem): PortfolioDisplayImage[] {
-  const sourceImages = [
-    item.cover_image ?? null,
-    ...(item.images || []).slice().sort((left, right) => {
-      const leftOrder = typeof left.order === 'number' ? left.order : Number.MAX_SAFE_INTEGER;
-      const rightOrder = typeof right.order === 'number' ? right.order : Number.MAX_SAFE_INTEGER;
-      return leftOrder - rightOrder;
-    }),
-  ];
+export function preparePortfolioDisplayImages(
+  item: PortfolioItem,
+  options: PreparePortfolioDisplayImagesOptions = {},
+): PortfolioDisplayImage[] {
+  const orderedImages = (item.images || []).slice().sort((left, right) => {
+    const leftOrder = typeof left.order === 'number' ? left.order : Number.MAX_SAFE_INTEGER;
+    const rightOrder = typeof right.order === 'number' ? right.order : Number.MAX_SAFE_INTEGER;
+    return leftOrder - rightOrder;
+  });
+  const sourceImages =
+    options.preferCoverFirst === false
+      ? orderedImages
+      : [item.cover_image ?? null, ...orderedImages];
   const seen = new Set<string>();
   const displayImages: PortfolioDisplayImage[] = [];
 

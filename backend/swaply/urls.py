@@ -24,7 +24,6 @@ import os
 from accounts.views import update_profile_view, google_oauth_simple, get_csrf_token_view
 from accounts.views.contact import contact_form_view
 from accounts.views.token_refresh_cookie import token_refresh_cookie_view
-from django.urls import path
 
 # Testovacia funkcia, ktorá nasimuluje pád
 

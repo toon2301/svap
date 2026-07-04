@@ -773,7 +773,6 @@ export const endpoints = {
     userListBySlug: (slug: string) => `/auth/dashboard/users/slug/${encodeURIComponent(slug)}/portfolio/`,
     imageUploadInit: (itemId: number) => `/auth/portfolio/${itemId}/images/upload-init/`,
     imageUploadComplete: (itemId: number) => `/auth/portfolio/${itemId}/images/upload-complete/`,
-    imageReorder: (itemId: number) => `/auth/portfolio/${itemId}/images/reorder/`,
     imageDetail: (itemId: number, imageId: number) => `/auth/portfolio/${itemId}/images/${imageId}/`,
     imageCover: (itemId: number, imageId: number) => `/auth/portfolio/${itemId}/images/${imageId}/cover/`,
   },

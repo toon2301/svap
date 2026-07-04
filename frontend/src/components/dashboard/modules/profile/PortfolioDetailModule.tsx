@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeftIcon, PencilSquareIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { ArrowLeftIcon, EllipsisHorizontalIcon, PencilSquareIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useIsMobile } from '@/hooks';
 import { deletePortfolioItem, getPortfolioItem } from './portfolioApi';
 import type { PortfolioItem } from './portfolioTypes';
 import {
@@ -16,7 +17,6 @@ import { PortfolioDetailHero } from './PortfolioDetailHero';
 import { PortfolioDetailSkeleton } from './PortfolioDetailSkeleton';
 import { PortfolioDeleteConfirmDialog } from './PortfolioDeleteConfirmDialog';
 import { PortfolioImageGallery } from './PortfolioImageGallery';
-import { PortfolioImageManagementSection } from './PortfolioImageManagementSection';
 import { PortfolioImageUploadSection } from './PortfolioImageUploadSection';
 import { PortfolioInlineEditPanel } from './PortfolioInlineEditPanel';
 import { PortfolioLightbox } from './PortfolioLightbox';
@@ -42,6 +42,7 @@ export default function PortfolioDetailModule({
 }: PortfolioDetailModuleProps) {
   const router = useRouter();
   const { t } = useLanguage();
+  const isMobile = useIsMobile();
   const [item, setItem] = useState<PortfolioItem | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [loadError, setLoadError] = useState(false);
@@ -50,7 +51,9 @@ export default function PortfolioDetailModule({
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [isActionsOpen, setIsActionsOpen] = useState(false);
   const pendingPollStartedAtRef = useRef<number | null>(null);
+  const actionsMenuRef = useRef<HTMLDivElement | null>(null);
   const requestSeqRef = useRef(0);
 
   const backPath = useMemo(() => {
@@ -98,9 +101,34 @@ export default function PortfolioDetailModule({
     setLightboxIndex(null);
     setIsEditing(false);
     setIsDeleteOpen(false);
+    setIsActionsOpen(false);
     setActionError(null);
     void loadItem();
   }, [loadItem]);
+
+  useEffect(() => {
+    if (!isActionsOpen) return;
+
+    const handlePointerDown = (event: MouseEvent | TouchEvent) => {
+      const target = event.target;
+      if (target instanceof Node && actionsMenuRef.current?.contains(target)) return;
+      setIsActionsOpen(false);
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setIsActionsOpen(false);
+    };
+
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('touchstart', handlePointerDown);
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('touchstart', handlePointerDown);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isActionsOpen]);
 
   const images = useMemo(
     () => (item ? preparePortfolioDisplayImages(item) : []),
@@ -155,6 +183,18 @@ export default function PortfolioDetailModule({
     router.push(backPath);
   }, [backPath, router]);
 
+  const handleEditClick = useCallback(() => {
+    setIsEditing(true);
+    setActionError(null);
+    setIsActionsOpen(false);
+  }, []);
+
+  const handleRequestDelete = useCallback(() => {
+    setIsDeleteOpen(true);
+    setActionError(null);
+    setIsActionsOpen(false);
+  }, []);
+
   const handleSaved = useCallback((savedItem: PortfolioItem) => {
     requestSeqRef.current += 1;
     setItem(savedItem);
@@ -166,6 +206,7 @@ export default function PortfolioDetailModule({
     if (!item) return;
     setIsDeleting(true);
     setActionError(null);
+    setIsActionsOpen(false);
     try {
       await deletePortfolioItem(item.id);
       dispatchProfilePortfolioRefresh();
@@ -181,14 +222,68 @@ export default function PortfolioDetailModule({
 
   return (
     <div className="mx-auto w-full max-w-5xl px-4 py-4 sm:px-6 lg:px-0">
-      <button
-        type="button"
-        onClick={handleBack}
-        className="mb-5 inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white/80 px-4 py-2 text-sm font-semibold text-gray-800 shadow-sm transition hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-400/60 dark:border-gray-800 dark:bg-[#101011] dark:text-gray-100 dark:hover:bg-[#171719]"
-      >
-        <ArrowLeftIcon className="h-4 w-4" />
-        {t('portfolio.back')}
-      </button>
+      <div className="mb-6 flex items-center justify-between gap-3">
+        <button
+          type="button"
+          onClick={handleBack}
+          className={
+            isMobile
+              ? 'inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white/80 px-4 py-2 text-sm font-semibold text-gray-800 shadow-sm transition hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-400/60 dark:border-gray-800 dark:bg-[#101011] dark:text-gray-100 dark:hover:bg-[#171719]'
+              : 'group inline-flex items-center gap-3 rounded-full py-1.5 pr-3 text-sm font-semibold text-gray-700 transition hover:text-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-400/60 dark:text-gray-200 dark:hover:text-purple-300'
+          }
+        >
+          <span
+            className={
+              isMobile
+                ? ''
+                : 'inline-flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 bg-white/85 shadow-sm transition group-hover:border-purple-200 group-hover:bg-purple-50 dark:border-gray-800 dark:bg-[#101011] dark:group-hover:border-purple-800/70 dark:group-hover:bg-purple-950/30'
+            }
+          >
+            <ArrowLeftIcon className="h-4 w-4" />
+          </span>
+          {t('portfolio.back')}
+        </button>
+
+        {!isMobile && item && canManage && (
+          <div ref={actionsMenuRef} className="relative flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleEditClick}
+              className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white/90 px-4 py-2 text-sm font-semibold text-gray-800 shadow-sm transition hover:-translate-y-0.5 hover:border-purple-200 hover:bg-purple-50 hover:text-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-400/60 dark:border-gray-800 dark:bg-[#101011] dark:text-gray-100 dark:hover:border-purple-800/70 dark:hover:bg-purple-950/30 dark:hover:text-purple-200"
+            >
+              <PencilSquareIcon className="h-4 w-4" />
+              {t('portfolio.editAction')}
+            </button>
+            <button
+              type="button"
+              aria-haspopup="menu"
+              aria-expanded={isActionsOpen}
+              aria-label={t('profile.moreActions', 'Viac možností')}
+              title={t('profile.moreActions', 'Viac možností')}
+              onClick={() => setIsActionsOpen((current) => !current)}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-white/90 text-gray-700 shadow-sm transition hover:-translate-y-0.5 hover:border-purple-200 hover:bg-purple-50 hover:text-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-400/60 dark:border-gray-800 dark:bg-[#101011] dark:text-gray-200 dark:hover:border-purple-800/70 dark:hover:bg-purple-950/30 dark:hover:text-purple-200"
+            >
+              <EllipsisHorizontalIcon className="h-5 w-5" />
+            </button>
+            {isActionsOpen && (
+              <div
+                role="menu"
+                className="absolute right-0 top-12 z-30 w-56 overflow-hidden rounded-2xl border border-gray-200 bg-white/95 p-1.5 shadow-xl ring-1 ring-black/5 backdrop-blur dark:border-gray-800 dark:bg-[#101011]/95 dark:ring-white/10"
+              >
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={handleRequestDelete}
+                  className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-semibold text-red-700 transition hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-300/70 dark:text-red-300 dark:hover:bg-red-950/30"
+                >
+                  <TrashIcon className="h-4 w-4" />
+                  {t('portfolio.deleteAction')}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
       {isLoading && !item ? (
         <PortfolioDetailSkeleton />
@@ -196,14 +291,11 @@ export default function PortfolioDetailModule({
         <PortfolioDetailErrorState onRetry={() => void loadItem()} />
       ) : item ? (
         <div className="space-y-7">
-          {canManage && (
+          {canManage && isMobile && (
             <div className="flex flex-wrap justify-end gap-2">
               <button
                 type="button"
-                onClick={() => {
-                  setIsEditing(true);
-                  setActionError(null);
-                }}
+                onClick={handleEditClick}
                 className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white/80 px-4 py-2 text-sm font-semibold text-gray-800 shadow-sm transition hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-400/60 dark:border-gray-800 dark:bg-[#101011] dark:text-gray-100 dark:hover:bg-[#171719]"
               >
                 <PencilSquareIcon className="h-4 w-4" />
@@ -211,10 +303,7 @@ export default function PortfolioDetailModule({
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  setIsDeleteOpen(true);
-                  setActionError(null);
-                }}
+                onClick={handleRequestDelete}
                 className="inline-flex items-center gap-2 rounded-full border border-red-200 bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 shadow-sm transition hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-400/60 dark:border-red-900/60 dark:bg-red-950/20 dark:text-red-300 dark:hover:bg-red-950/40"
               >
                 <TrashIcon className="h-4 w-4" />
@@ -244,22 +333,18 @@ export default function PortfolioDetailModule({
               onOpenImage={() => openLightbox(0)}
             />
           )}
-          {canManage && (
+          {canManage && isMobile && (
             <PortfolioImageUploadSection
-              item={item}
-              onRefresh={() => loadItem({ preserveCurrent: true })}
-            />
-          )}
-          {canManage && (
-            <PortfolioImageManagementSection
               item={item}
               onRefresh={() => loadItem({ preserveCurrent: true })}
             />
           )}
           <PortfolioImageGallery
             images={images}
-            itemTitle={item.title}
+            item={item}
+            canUpload={canManage && !isMobile}
             onOpenImage={openLightbox}
+            onUploadRefresh={() => loadItem({ preserveCurrent: true })}
           />
           <PortfolioRelatedOfferCard offer={item.related_offer} />
         </div>

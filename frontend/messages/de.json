@@ -477,6 +477,7 @@
     "priceMax": "Bis",
     "onlyMyLocation": "Nur in meiner Region (laut Profil)",
     "resultsCount": "{{count}} Ergebnisse",
+    "resultsCountCapped": "{{count}}+ Ergebnisse",
     "loading": "Laden…",
     "sortNewest": "Neueste",
     "sortRatingDesc": "Bestbewertet",
@@ -1198,6 +1199,10 @@
     "youtubeDescription": "Geben Sie die URL Ihrer YouTube-Seite oder Ihres Kanals ein."
   },
   "notifications": {
+    "loadMore": "Mehr anzeigen",
+    "loadingMore": "Wird geladen…",
+    "settingsInApp": "In-App-Benachrichtigungen",
+    "settingsInAppDesc": "Benachrichtigungen in der Glocke und in der Benachrichtigungsliste anzeigen",
     "title": "Benachrichtigungen",
     "turnOffAll": "Alle ausschalten",
     "messagesPush": "Nachrichten",

@@ -8,49 +8,18 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import type { PortfolioImage, PortfolioItem } from './portfolioTypes';
 import { PortfolioImageUploadQueue } from './PortfolioImageUploadQueue';
 import { PORTFOLIO_IMAGE_ACCEPT, portfolioPhotosRemainingText } from './portfolioFormUtils';
+import {
+  isActivePortfolioImage,
+  portfolioImageKey,
+  portfolioImagePreviewSrc,
+  uniquePortfolioImages,
+} from './portfolioImageUtils';
 import { usePortfolioImageUploadQueue } from './usePortfolioImageUploadQueue';
 
 type PortfolioImageUploadSectionProps = {
   item: PortfolioItem;
   onRefresh: () => Promise<void> | void;
 };
-
-function imageKey(image: PortfolioImage, index: number): string {
-  if (typeof image.id === 'number') return `id:${image.id}`;
-  return `index:${index}`;
-}
-
-function uniquePortfolioImages(item: PortfolioItem): PortfolioImage[] {
-  const images = [item.cover_image ?? null, ...(item.images || [])];
-  const seen = new Set<string>();
-  const unique: PortfolioImage[] = [];
-
-  images.forEach((image, index) => {
-    if (!image) return;
-    const key = imageKey(image, index);
-    if (seen.has(key)) return;
-    seen.add(key);
-    unique.push(image);
-  });
-
-  return unique.sort((left, right) => {
-    const leftOrder = typeof left.order === 'number' ? left.order : Number.MAX_SAFE_INTEGER;
-    const rightOrder = typeof right.order === 'number' ? right.order : Number.MAX_SAFE_INTEGER;
-    return leftOrder - rightOrder;
-  });
-}
-
-function isActivePortfolioImage(image: PortfolioImage): boolean {
-  return image.status === 'pending' || image.status === 'approved' || image.status == null;
-}
-
-function imagePreviewSrc(image: PortfolioImage): string {
-  return (
-    String(image.thumbnail_url || '').trim() ||
-    String(image.medium_url || '').trim() ||
-    String(image.image_url || '').trim()
-  );
-}
 
 function statusLabel(
   image: PortfolioImage,
@@ -149,11 +118,11 @@ export function PortfolioImageUploadSection({ item, onRefresh }: PortfolioImageU
       {hasServerStatuses && (
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {visibleServerImages.map((image, index) => {
-            const src = imagePreviewSrc(image);
+            const src = portfolioImagePreviewSrc(image);
             const rejectedReason = String(image.rejected_reason || '').trim();
             return (
               <div
-                key={imageKey(image, index)}
+                key={portfolioImageKey(image, index)}
                 data-testid={`portfolio-image-status-${image.status || 'approved'}`}
                 className="flex gap-3 rounded-2xl border border-gray-200 bg-gray-50/80 p-3 dark:border-gray-800 dark:bg-[#0e0e0f]"
               >

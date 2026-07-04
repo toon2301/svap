@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 
 import { __resetAuthBootstrapSnapshotForTests, AuthProvider, useAuth } from '../AuthContext';
@@ -211,6 +211,57 @@ describe('AuthContext', () => {
     expect(screen.getByText('Loading: no')).toBeInTheDocument();
     expect(screen.getByText('Authenticated: no')).toBeInTheDocument();
     expect(mockApiGet).toHaveBeenCalledTimes(1);
+  });
+
+  it('clears the search history on real session invalidation (auth:session-invalid)', async () => {
+    mockApiGet.mockResolvedValueOnce({ status: 200, data: resolvedUser } as any);
+    const historyKey = `searchRecentResults_${resolvedUser.id}`;
+    localStorage.setItem(
+      historyKey,
+      JSON.stringify([{ skills: [], users: [{ id: 99, display_name: 'Iný používateľ' }] }]),
+    );
+
+    render(
+      <AuthProvider>
+        <TestConsumer />
+      </AuthProvider>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Authenticated: yes')).toBeInTheDocument();
+    });
+
+    // Skutočná invalidácia session (zlyhaný refresh) – axios interceptor dispatchne tento event.
+    act(() => {
+      window.dispatchEvent(new Event('auth:session-invalid'));
+    });
+
+    await waitFor(() => {
+      expect(localStorage.getItem(historyKey)).toBeNull();
+      expect(screen.getByText('Authenticated: no')).toBeInTheDocument();
+    });
+  });
+
+  it('clears the search history on explicit logout', async () => {
+    mockApiGet.mockResolvedValueOnce({ status: 200, data: resolvedUser } as any);
+    const historyKey = `searchRecentResults_${resolvedUser.id}`;
+    localStorage.setItem(historyKey, JSON.stringify([{ skills: [], users: [] }]));
+
+    render(
+      <AuthProvider>
+        <TestConsumer />
+      </AuthProvider>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Authenticated: yes')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Logout' }));
+
+    await waitFor(() => {
+      expect(localStorage.getItem(historyKey)).toBeNull();
+    });
   });
 
   it('throws error when useAuth is used outside provider', () => {

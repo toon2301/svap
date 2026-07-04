@@ -477,6 +477,7 @@
     "priceMax": "Do",
     "onlyMyLocation": "Len v mojej lokalite (podľa profilu)",
     "resultsCount": "{{count}} výsledkov",
+    "resultsCountCapped": "{{count}}+ výsledkov",
     "loading": "Načítavam…",
     "sortNewest": "Najnovšie",
     "sortRatingDesc": "Najlepšie hodnotené",
@@ -1198,6 +1199,10 @@
     "youtubeDescription": "Zadajte URL vašej YouTube stránky alebo kanálu."
   },
   "notifications": {
+    "loadMore": "Zobraziť ďalšie",
+    "loadingMore": "Načítavam…",
+    "settingsInApp": "Upozornenia v aplikácii",
+    "settingsInAppDesc": "Zobrazovať upozornenia v zvončeku a zozname upozornení",
     "title": "Upozornenia",
     "turnOffAll": "Vypnúť všetko",
     "messagesPush": "Správy",
