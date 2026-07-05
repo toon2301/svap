@@ -91,6 +91,7 @@ def search_view(request):
             {
                 "results": [],
                 "total": 0,
+                "is_capped": False,
                 "page": 1,
                 "page_size": 12,
                 "total_pages": 0,

@@ -236,8 +236,11 @@ def _set_auth_cookies(response, *, access: str, refresh: str) -> None:
     state_kwargs = _auth_state_cookie_kwargs()
     # Defensive: clear any legacy-path cookies first to prevent stale token precedence.
     _clear_auth_cookies(response)
-    # Access token – kratšia životnosť
-    response.set_cookie("access_token", access, max_age=15 * 60, **kwargs)
+    # Access token – životnosť odvodená z JWT konfigurácie (jeden zdroj pravdy),
+    # aby cookie neexpirovala skôr/neskôr ako samotný token.
+    response.set_cookie(
+        "access_token", access, max_age=_access_token_lifetime_seconds(), **kwargs
+    )
     # Refresh token – dlhšia životnosť
     # Cross-site (Railway): SameSite=None. Produkcia (svaply.com): Strict.
     refresh_kwargs = dict(kwargs)
@@ -269,10 +272,13 @@ def _clear_auth_cookies(response) -> None:
 
 
 def _lock_keys_for_email(email: str):
+    # Email nikdy nedávame do cache kľúča priamo (PII v Redis). Použijeme stabilný
+    # SHA-256 hash – rovnaké mapovanie email->kľúč, ale bez expozície PII.
     safe_email = (email or "").lower().strip()
+    email_hash = hashlib.sha256(safe_email.encode("utf-8")).hexdigest()
     return (
-        f"login_failures:{safe_email}",
-        f"login_locked:{safe_email}",
+        f"login_failures:{email_hash}",
+        f"login_locked:{email_hash}",
     )
 
 
@@ -307,26 +313,25 @@ def register_login_failure(email: str) -> bool:
     except Exception:
         return False
     fail_key, lock_key = _lock_keys_for_email(email)
+    window_seconds = LOGIN_FAILURE_WINDOW_MINUTES * 60
     try:
-        data = cache.get(fail_key, {"attempts": 0})
+        # Atomicita: cache.add inicializuje počítadlo len ak kľúč neexistuje
+        # (nereštartuje bežiace okno), cache.incr je atomický na strane backendu.
+        # Tým sa vyhneme stratenému inkrementu pri súbežných pokusoch (get+set race).
+        cache.add(fail_key, 0, timeout=window_seconds)
+        attempts = cache.incr(fail_key)
+    except ValueError:
+        # Kľúč expiroval medzi add a incr – reinicializuj (window začína odznova).
+        try:
+            cache.add(fail_key, 0, timeout=window_seconds)
+            attempts = cache.incr(fail_key)
+        except Exception:
+            attempts = 1
     except Exception as e:
         if getattr(settings, "DEBUG", False):
-            logger.warning(f"Lockout cache.get failed for {fail_key}: {e}")
+            logger.warning(f"Lockout cache incr failed for {fail_key}: {e}")
         else:
-            logger.warning("Lockout cache.get failed")
-        return False
-    attempts = int(data.get("attempts", 0)) + 1
-    try:
-        cache.set(
-            fail_key,
-            {"attempts": attempts},
-            timeout=LOGIN_FAILURE_WINDOW_MINUTES * 60,
-        )
-    except Exception as e:
-        if getattr(settings, "DEBUG", False):
-            logger.warning(f"Lockout cache.set failed for {fail_key}: {e}")
-        else:
-            logger.warning("Lockout cache.set failed")
+            logger.warning("Lockout cache incr failed")
         return False
     if attempts >= LOGIN_FAILURE_MAX_ATTEMPTS:
         try:

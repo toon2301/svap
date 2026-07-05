@@ -1,7 +1,8 @@
 """
 Doménové create_*_notification funkcie (vyčlenené z services/notifications.py
 kvôli dĺžke <500 r.). Jadro (create_notification, dispatch, unread count, cache,
-in_app gate) žije v services/notifications a tieto funkcie ho volajú.
+in_app gate) žije v notification_core (leaf) a tieto funkcie ho volajú – tým sa
+vyhýbame circular importu s notifications hubom.
 
 Re-export cez services/notifications zachováva spätnú kompatibilitu importov
 `from accounts.services.notifications import create_*_notification` v ostatnom kóde.
@@ -15,7 +16,7 @@ from accounts.models import Notification, NotificationType
 from accounts.realtime import notify_user
 from accounts.serializers import NotificationSerializer
 
-from .notifications import (
+from .notification_core import (
     UNREAD_COUNT_CACHE_TTL_SECONDS,
     cache_unread_count,
     create_notification,
@@ -23,7 +24,7 @@ from .notifications import (
 )
 
 
-def create_group_invitation_notification(*, invitation, actor) -> Notification:
+def create_group_invitation_notification(*, invitation, actor) -> Notification | None:
     conversation = invitation.conversation
     return create_notification(
         user=invitation.invited_user,
@@ -131,7 +132,9 @@ def create_skill_request_notification(
     return notification
 
 
-def create_skill_request_accepted_notification(*, skill_request, actor) -> Notification:
+def create_skill_request_accepted_notification(
+    *, skill_request, actor
+) -> Notification | None:
     actor_name = (getattr(actor, "display_name", "") or "").strip() or "Používateľ"
     request_kind = _skill_request_kind(skill_request)
     is_help_offer = request_kind == "help_offer"
@@ -155,7 +158,9 @@ def create_skill_request_accepted_notification(*, skill_request, actor) -> Notif
     )
 
 
-def create_skill_request_rejected_notification(*, skill_request, actor) -> Notification:
+def create_skill_request_rejected_notification(
+    *, skill_request, actor
+) -> Notification | None:
     actor_name = (getattr(actor, "display_name", "") or "").strip() or "Používateľ"
     request_kind = _skill_request_kind(skill_request)
     is_help_offer = request_kind == "help_offer"
@@ -181,7 +186,7 @@ def create_skill_request_rejected_notification(*, skill_request, actor) -> Notif
 
 def create_skill_request_completion_requested_notification(
     *, skill_request, actor
-) -> Notification:
+) -> Notification | None:
     existing = (
         Notification.objects.filter(
             user=skill_request.requester,
@@ -210,7 +215,9 @@ def create_skill_request_completion_requested_notification(
     )
 
 
-def create_skill_request_completed_notification(*, skill_request, actor) -> Notification:
+def create_skill_request_completed_notification(
+    *, skill_request, actor
+) -> Notification | None:
     existing = (
         Notification.objects.filter(
             user=skill_request.recipient,
@@ -241,7 +248,7 @@ def create_skill_request_completed_notification(*, skill_request, actor) -> Noti
 
 def create_skill_request_terminated_notification(
     *, skill_request, termination, actor
-) -> Notification:
+) -> Notification | None:
     recipient = (
         skill_request.recipient
         if getattr(actor, "id", None) == skill_request.requester_id

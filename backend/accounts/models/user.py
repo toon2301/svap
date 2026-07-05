@@ -6,7 +6,7 @@ import uuid
 
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser
-from django.db import models
+from django.db import IntegrityError, models, transaction
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
@@ -286,7 +286,39 @@ class User(AbstractUser):
         if update_fields_set is not None and slug_changed:
             kwargs["update_fields"] = list(update_fields_set | {"slug"})
 
-        super().save(*args, **kwargs)
+        self._save_with_slug_retry(args, kwargs)
+
+    def _save_with_slug_retry(self, args, kwargs, attempts: int = 3):
+        """
+        Uloží objekt s retry pri slug UniqueConstraint kolízii (race medzi súbežnými
+        registráciami, ktoré vygenerujú rovnaký slug kandidát).
+
+        Každý pokus beží vo vlastnom savepointe (transaction.atomic), aby
+        IntegrityError neabortoval prípadnú vonkajšiu transakciu. Iné integrity
+        chyby (email/username) sa nepovažujú za slug kolíziu a propagujú sa hneď.
+        """
+        for attempt in range(attempts):
+            try:
+                with transaction.atomic():
+                    super().save(*args, **kwargs)
+                return
+            except IntegrityError:
+                is_last = attempt == attempts - 1
+                slug_taken = (
+                    type(self)
+                    .objects.filter(slug=self.slug)
+                    .exclude(pk=self.pk)
+                    .exists()
+                )
+                if is_last or not slug_taken:
+                    raise
+                # Regeneruj slug s náhodným suffixom – rozbi deterministickú kolíziu
+                # (ensure_slug by pri súbežnosti mohol vygenerovať ten istý base-N).
+                self.slug = f"{self._generate_base_slug()}-{uuid.uuid4().hex[:6]}"
+                if kwargs.get("update_fields") is not None:
+                    kwargs["update_fields"] = list(
+                        set(kwargs["update_fields"]) | {"slug"}
+                    )
 
 
 class UserProfile(models.Model):

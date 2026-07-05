@@ -33,7 +33,7 @@
       "name": "beat",
       "rootDirectory": "backend",
       "buildCommand": "pip install -r requirements.txt",
-      "startCommand": "celery -A swaply beat -l info --schedule /tmp/celerybeat-schedule",
+      "startCommand": "celery -A swaply beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler",
       "env": {
         "DJANGO_SETTINGS_MODULE": "swaply.settings_production",
         "REDIS_URL": "redis://redis:6379",

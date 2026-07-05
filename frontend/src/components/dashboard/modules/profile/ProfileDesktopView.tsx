@@ -144,6 +144,7 @@ export default function ProfileDesktopView({
                 isOtherUserProfile={isOtherUserProfile}
                 onEditOffer={onEditOffer}
                 onDeleteOffer={onDeleteOffer}
+                onCreateOffer={!isOtherUserProfile ? onSkillsClick : undefined}
               />
 
               <ProfilePortfolioSection

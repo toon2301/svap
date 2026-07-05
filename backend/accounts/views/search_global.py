@@ -109,6 +109,8 @@ def global_search_view(request):
                 "offers": [],
                 "users_count": 0,
                 "offers_count": 0,
+                "users_is_capped": False,
+                "offers_is_capped": False,
                 "users_total_pages": 0,
                 "users_page": 1,
             },

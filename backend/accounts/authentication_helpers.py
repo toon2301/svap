@@ -18,6 +18,30 @@ from django.core.cache import cache
 logger = logging.getLogger(__name__)
 
 
+def _env_int(name: str, default: int) -> int:
+    """int() z env s fallbackom – nečíselná hodnota nesmie zhodiť import (Railway)."""
+    raw = os.getenv(name)
+    if raw is None or str(raw).strip() == "":
+        return default
+    try:
+        return int(str(raw).strip())
+    except ValueError:
+        logger.warning("Invalid %s=%r; using default %s", name, raw, default)
+        return default
+
+
+def _env_float(name: str, default: float) -> float:
+    """float() z env s fallbackom – rovnaký dôvod ako _env_int."""
+    raw = os.getenv(name)
+    if raw is None or str(raw).strip() == "":
+        return default
+    try:
+        return float(str(raw).strip())
+    except ValueError:
+        logger.warning("Invalid %s=%r; using default %s", name, raw, default)
+        return default
+
+
 # Per-process user cache is intentionally disabled. A worker-local cached User
 # object cannot be invalidated reliably across workers and caused stale profile
 # data after profile updates, refreshes, and re-logins.
@@ -26,11 +50,9 @@ _USER_CACHE_MAX = 0
 
 # Cross-process cache TTL (Redis via Django cache). We keep only auth metadata
 # here, never profile fields or unnecessary PII.
-_USER_REDIS_TTL_SECONDS = int(
-    os.getenv("AUTH_USER_REDIS_CACHE_TTL_SECONDS", "86400") or "86400"
-)
-_AUTH_USER_CACHE_SLOW_GET_SKIP_SET_MS = float(
-    os.getenv("AUTH_USER_CACHE_SLOW_GET_SKIP_SET_MS", "250") or "250"
+_USER_REDIS_TTL_SECONDS = _env_int("AUTH_USER_REDIS_CACHE_TTL_SECONDS", 86400)
+_AUTH_USER_CACHE_SLOW_GET_SKIP_SET_MS = _env_float(
+    "AUTH_USER_CACHE_SLOW_GET_SKIP_SET_MS", 250.0
 )
 _AUTH_LAZY_USER_ENABLED = (
     (os.getenv("AUTH_LAZY_USER_ENABLED") or "1").strip().lower()
@@ -40,12 +62,8 @@ _AUTH_CACHE_FIELD_NAMES = ("id", "is_active", "is_staff", "is_superuser")
 _USER_CACHE_LOCK = threading.Lock()
 _USER_CACHE: "OrderedDict[int, tuple[float, object]]" = OrderedDict()
 
-_BLACKLIST_CACHE_TTL_SECONDS = int(
-    os.getenv("AUTH_BLACKLIST_CACHE_TTL_SECONDS", "60") or "60"
-)
-_BLACKLIST_CACHE_MAX = int(
-    os.getenv("AUTH_BLACKLIST_CACHE_MAX", "20000") or "20000"
-)
+_BLACKLIST_CACHE_TTL_SECONDS = _env_int("AUTH_BLACKLIST_CACHE_TTL_SECONDS", 60)
+_BLACKLIST_CACHE_MAX = _env_int("AUTH_BLACKLIST_CACHE_MAX", 20000)
 _BLACKLIST_CACHE_LOCK = threading.Lock()
 _BLACKLIST_CACHE: "OrderedDict[str, tuple[float, bool]]" = OrderedDict()
 

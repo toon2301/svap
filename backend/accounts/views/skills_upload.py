@@ -195,6 +195,13 @@ def skill_images_upload_complete_view(request, skill_id):
             )
             moderate_staged_s3_image(bucket, key)
         except ModerationRejectedError as e:
+            # Orphan cleanup: zmaž odmietnutý staging objekt (uploads/ prefix) zo S3,
+            # nech neostane navždy (best-effort, rovnaký vzor ako
+            # process_offered_skill_image pri rejecte).
+            try:
+                s3.delete_object(Bucket=bucket, Key=key)
+            except Exception:
+                pass
             return Response(
                 {"error": e.user_message, "code": e.code},
                 status=status.HTTP_400_BAD_REQUEST,

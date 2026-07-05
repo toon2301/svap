@@ -71,7 +71,14 @@ def _total_unread_messages_count_for_user(user) -> int:
         .filter(
             Q(conversation__is_group=True)
             | ~Q(conversation__request_status=Conversation.RequestStatus.DELETED)
-        ).aggregate(
+        )
+        .filter(
+            # Vylúč skryté konverzácie (rovnaká podmienka ako sidebar): skrytá ostáva
+            # skrytá, kým nepríde novšia správa (last_message_at >= hidden_at).
+            Q(hidden_at__isnull=True)
+            | Q(conversation__last_message_at__gte=F("hidden_at"))
+        )
+        .aggregate(
             total=Count(
                 "conversation__messages",
                 filter=Q(conversation__messages__is_deleted=False)
@@ -102,7 +109,14 @@ def _total_unread_messages_count_for_user_id(user_id: int) -> int:
         .filter(
             Q(conversation__is_group=True)
             | ~Q(conversation__request_status=Conversation.RequestStatus.DELETED)
-        ).aggregate(
+        )
+        .filter(
+            # Vylúč skryté konverzácie (rovnaká podmienka ako sidebar): skrytá ostáva
+            # skrytá, kým nepríde novšia správa (last_message_at >= hidden_at).
+            Q(hidden_at__isnull=True)
+            | Q(conversation__last_message_at__gte=F("hidden_at"))
+        )
+        .aggregate(
             total=Count(
                 "conversation__messages",
                 filter=Q(conversation__messages__is_deleted=False)
@@ -142,6 +156,12 @@ def _total_unread_counts_for_users(user_ids) -> dict[int, int]:
         .filter(
             Q(conversation__is_group=True)
             | ~Q(conversation__request_status=Conversation.RequestStatus.DELETED)
+        )
+        .filter(
+            # Vylúč skryté konverzácie – IDENTICKÝ filter ako per-user varianty
+            # (inak by WS total_unread_count nesedel s badge cez REST).
+            Q(hidden_at__isnull=True)
+            | Q(conversation__last_message_at__gte=F("hidden_at"))
         )
         .values("user_id")
         .annotate(

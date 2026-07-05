@@ -31,6 +31,7 @@ def register_search_lookups() -> None:
     for field_cls in (CharField, TextField):
         try:
             field_cls.register_lookup(UnaccentLower)
-        except Exception:
-            # Už zaregistrované (opätovný import) – bezpečne ignoruj.
+        except (AttributeError, LookupError):
+            # Duplicitná registrácia (opätovný import) – bezpečne ignoruj.
+            # Iné (neočakávané) výnimky nechaj propagovať, nech nezostanú tiché.
             pass

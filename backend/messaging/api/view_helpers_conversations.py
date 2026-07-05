@@ -13,6 +13,7 @@ from django.db.models import (
     Count,
     Exists,
     F,
+    IntegerField,
     OuterRef,
     Prefetch,
     Q,
@@ -183,6 +184,21 @@ def _conversation_annotated_queryset_for_user(user):
         status=ConversationParticipant.Status.ACTIVE,
     ).exclude(user_id=user.id)
 
+    # Počet aktívnych účastníkov cez samostatný korelovaný Subquery. Nesmie sa
+    # počítať cez `Count("participants", ...)` na tom istom join-e, ktorý je vo
+    # .filter(participants__user=user) zúžený na aktuálneho používateľa (dávalo 1).
+    active_participant_count_sq = Subquery(
+        ConversationParticipant.objects.filter(
+            conversation_id=OuterRef("pk"),
+            status=ConversationParticipant.Status.ACTIVE,
+        )
+        .order_by()
+        .values("conversation_id")
+        .annotate(c=Count("id"))
+        .values("c")[:1],
+        output_field=IntegerField(),
+    )
+
     qs = (
         Conversation.objects.filter(
             participants__user=user,
@@ -197,10 +213,10 @@ def _conversation_annotated_queryset_for_user(user):
             participant_pinned_at=Subquery(participant_qs.values("pinned_at")[:1]),
             current_user_role=Subquery(participant_qs.values("role")[:1]),
             current_user_status=Subquery(participant_qs.values("status")[:1]),
-            participant_count=Count(
-                "participants",
-                filter=Q(participants__status=ConversationParticipant.Status.ACTIVE),
-                distinct=True,
+            participant_count=Coalesce(
+                active_participant_count_sq,
+                Value(0),
+                output_field=IntegerField(),
             ),
             last_message_preview=Subquery(last_msg_qs.values("text")[:1]),
             last_message_sender_id=Subquery(last_msg_qs.values("sender_id")[:1]),

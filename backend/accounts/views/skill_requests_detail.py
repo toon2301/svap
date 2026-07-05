@@ -89,6 +89,18 @@ def skill_request_detail_view(request, request_id: int):
             )
         # Hide môže urobiť len účastník žiadosti (už overené) a len na svojej strane
 
+        def _invalidate_participants_cache():
+            # Cez transaction.on_commit – cache sa vyčistí AŽ PO úspešnom DB commite,
+            # aby súbežný request nemohol medzitým znova naplniť cache starým stavom.
+            def _do():
+                try:
+                    _skill_requests_cache_invalidate_for_user(obj.requester)
+                    _skill_requests_cache_invalidate_for_user(obj.recipient)
+                except Exception:
+                    pass
+
+            transaction.on_commit(_do)
+
         if action == "hide":
             # Bezpečnosť: dovoľ len pre odmietnuté alebo zrušené.
             if obj.status not in (
@@ -111,11 +123,7 @@ def skill_request_detail_view(request, request_id: int):
                 if not obj.hidden_by_recipient:
                     obj.hidden_by_recipient = True
                     obj.save(update_fields=["hidden_by_recipient", "updated_at"])
-            try:
-                _skill_requests_cache_invalidate_for_user(obj.requester)
-                _skill_requests_cache_invalidate_for_user(obj.recipient)
-            except Exception:
-                pass
+            _invalidate_participants_cache()
             return Response(
                 SkillRequestSerializer(obj, context={"request": request}).data,
                 status=status.HTTP_200_OK,
@@ -143,6 +151,18 @@ def skill_request_detail_view(request, request_id: int):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        # Cancel iba na pending žiadosti – konzistentne s accept/reject vyššie.
+        if action == "cancel" and obj.status != SkillRequestStatus.PENDING:
+            if obj.status == SkillRequestStatus.CANCELLED:
+                return Response(
+                    {"error": "Žiadosť už bola zrušená."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            return Response(
+                {"error": "Zrušiť môžeš len čakajúcu žiadosť."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         # Stavové prechody
         accepted_notification = False
         rejected_notification = False
@@ -159,11 +179,7 @@ def skill_request_detail_view(request, request_id: int):
             obj.status = SkillRequestStatus.CANCELLED
             obj.save(update_fields=["status", "updated_at"])
 
-        try:
-            _skill_requests_cache_invalidate_for_user(obj.requester)
-            _skill_requests_cache_invalidate_for_user(obj.recipient)
-        except Exception:
-            pass
+        _invalidate_participants_cache()
 
         if accepted_notification:
 
@@ -255,11 +271,19 @@ def skill_request_request_completion_view(request, request_id: int):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        try:
-            _skill_requests_cache_invalidate_for_user(obj.requester)
-            _skill_requests_cache_invalidate_for_user(obj.recipient)
-        except Exception:
-            pass
+        def _invalidate_participants_cache():
+            # Cez transaction.on_commit – cache sa vyčistí AŽ PO úspešnom DB commite,
+            # aby súbežný request medzitým nenaplnil cache starým stavom (BOD 6).
+            def _do():
+                try:
+                    _skill_requests_cache_invalidate_for_user(obj.requester)
+                    _skill_requests_cache_invalidate_for_user(obj.recipient)
+                except Exception:
+                    pass
+
+            transaction.on_commit(_do)
+
+        _invalidate_participants_cache()
 
         def notify_requester_about_completion_request():
             try:
@@ -322,11 +346,19 @@ def skill_request_confirm_completion_view(request, request_id: int):
         obj.status = SkillRequestStatus.COMPLETED
         obj.save(update_fields=["status", "updated_at"])
 
-        try:
-            _skill_requests_cache_invalidate_for_user(obj.requester)
-            _skill_requests_cache_invalidate_for_user(obj.recipient)
-        except Exception:
-            pass
+        def _invalidate_participants_cache():
+            # Cez transaction.on_commit – cache sa vyčistí AŽ PO úspešnom DB commite,
+            # aby súbežný request medzitým nenaplnil cache starým stavom (BOD 6).
+            def _do():
+                try:
+                    _skill_requests_cache_invalidate_for_user(obj.requester)
+                    _skill_requests_cache_invalidate_for_user(obj.recipient)
+                except Exception:
+                    pass
+
+            transaction.on_commit(_do)
+
+        _invalidate_participants_cache()
 
         def notify_recipient_about_confirmed_completion():
             try:

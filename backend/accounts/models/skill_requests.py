@@ -74,7 +74,7 @@ class SkillRequest(models.Model):
         blank=True,
         verbose_name=_("Navrhovaná karta"),
     )
-    proposal_description = models.TextField(
+    proposal_description = models.CharField(
         _("Opis pomoci"), max_length=200, blank=True, default=""
     )
     proposal_price_from = models.DecimalField(
@@ -163,7 +163,7 @@ class SkillRequestTermination(models.Model):
         max_length=40,
         choices=SkillRequestTerminationReason.choices,
     )
-    description = models.TextField(_("Popis"), blank=True, max_length=1000)
+    description = models.CharField(_("Popis"), blank=True, max_length=1000)
     created_at = models.DateTimeField(_("Vytvorené"), auto_now_add=True)
 
     class Meta:

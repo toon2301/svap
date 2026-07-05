@@ -91,6 +91,8 @@ class Notification(models.Model):
             models.Index(fields=["user", "is_read", "created_at"]),
             models.Index(fields=["user", "type", "is_read"]),
             models.Index(fields=["user", "created_at"]),
+            # Pre purge_old_notifications: filter (type, created_at) naprieč usermi.
+            models.Index(fields=["type", "created_at"]),
         ]
 
     def mark_read(self):

@@ -58,16 +58,20 @@ class TestPurgeOldNotifications:
         assert old_review.id in remaining
 
     def test_unmapped_type_is_never_purged(self):
-        # Typ mimo NOTIFICATION_RETENTION_DAYS sa nikdy nemaže. Použijeme čerstvý
-        # aj starý group_invitation (mapped 90d) na overenie mapovaného správania,
-        # a potvrdíme, že summary obsahuje len mapované typy.
+        # Typ MIMO NOTIFICATION_RETENTION_DAYS sa nikdy nemaže (bezpečný default).
+        # Použijeme raw type string, ktorý v mape nie je (choices sa na DB úrovni
+        # nevynucujú, takže simulujeme legacy/neznámy typ).
         u = User.objects.create_user("u5", "u5@e.com", "StrongPass123")
-        self._notif(u, NotificationType.GROUP_INVITATION, 100)  # >90 -> zmaž
+        unmapped_type = "legacy_unknown_type"
+        assert unmapped_type not in NOTIFICATION_RETENTION_DAYS
+        old = self._notif(u, unmapped_type, 3650)  # 10 rokov starý
 
         summary = purge_old_notifications(dry_run=False)
 
-        assert summary[NotificationType.GROUP_INVITATION] == 1
-        # summary kľúče = len mapované typy (žiadny neznámy typ).
+        # Neznámy typ nie je v summary a NEbol zmazaný.
+        assert unmapped_type not in summary
+        assert Notification.objects.filter(id=old.id).exists()
+        # Summary obsahuje len mapované typy.
         assert set(summary.keys()) == set(NOTIFICATION_RETENTION_DAYS.keys())
 
     def test_command_default_is_dry_run(self):

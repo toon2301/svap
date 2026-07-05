@@ -13,7 +13,7 @@ import { PROFILE_PORTFOLIO_REFRESH_EVENT } from './portfolioEvents';
 import { PortfolioCreateDesktopModal } from './PortfolioCreateDesktopModal';
 import { PortfolioCreateForm } from './PortfolioCreateForm';
 import { PortfolioEmptyState } from './PortfolioEmptyState';
-import { PortfolioOrderPanel } from './PortfolioOrderPanel';
+import { MobilePortfolioOrderView } from './MobilePortfolioOrderView';
 import { PortfolioReorderableLayout } from './PortfolioReorderableLayout';
 import { PortfolioSectionSkeleton } from './PortfolioSectionSkeleton';
 import { buildPortfolioDetailPath, getPortfolioOwnerIdentifier } from './portfolioRouting';
@@ -215,23 +215,31 @@ export default function ProfilePortfolioSection({
   return (
     <div className="mt-4 space-y-5">
       {isOwner && isMobile && (
-        <div className="flex flex-wrap justify-end gap-2">
+        <div className="flex w-full items-center gap-3 px-1">
           <button
             type="button"
+            aria-label={t('portfolio.portfolioOrder')}
+            title={t('portfolio.portfolioOrder')}
             onClick={() => {
               setIsCreateOpen(false);
-              setIsOrderOpen((current) => !current);
+              setIsOrderOpen(true);
             }}
-            className="rounded-full border border-gray-200 bg-white/80 px-4 py-2 text-sm font-semibold text-gray-800 shadow-sm transition hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-400/50 dark:border-gray-800 dark:bg-[#101011] dark:text-gray-100 dark:hover:bg-[#171719]"
+            className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-purple-100 bg-white/90 text-purple-600 shadow-sm transition hover:-translate-y-0.5 hover:border-purple-200 hover:bg-purple-50 focus:outline-none focus:ring-2 focus:ring-purple-400/50 dark:border-purple-900/50 dark:bg-[#101011] dark:text-purple-200 dark:hover:bg-purple-950/20"
           >
-            {useInlineReorder ? t('portfolio.saveOrder') : t('portfolio.portfolioOrder')}
+            <ArrowsUpDownIcon className="h-5 w-5" aria-hidden="true" />
           </button>
+          <div
+            aria-hidden="true"
+            className="h-px flex-1 bg-gradient-to-r from-transparent via-purple-200/80 to-transparent dark:via-purple-900/70"
+          />
           <button
             type="button"
+            aria-label={t('portfolio.createAction')}
+            title={t('portfolio.createAction')}
             onClick={handleCreateClick}
-            className="rounded-full bg-purple-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-400/50"
+            className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-purple-100 bg-white/90 text-purple-600 shadow-sm transition hover:-translate-y-0.5 hover:border-purple-200 hover:bg-purple-50 focus:outline-none focus:ring-2 focus:ring-purple-400/50 dark:border-purple-900/50 dark:bg-[#101011] dark:text-purple-200 dark:hover:bg-purple-950/20"
           >
-            {t('portfolio.createAction')}
+            <PlusIcon className="h-5 w-5" aria-hidden="true" />
           </button>
         </div>
       )}
@@ -249,10 +257,12 @@ export default function ProfilePortfolioSection({
         )
       )}
       {isOwner && isOrderOpen && isMobile && (
-        <PortfolioOrderPanel
+        <MobilePortfolioOrderView
           items={items}
-          getCategoryLabel={getCategoryLabel}
-          onReordered={handleReordered}
+          onSaved={(orderedItems) => {
+            handleReordered(orderedItems);
+            setIsOrderOpen(false);
+          }}
         />
       )}
       <PortfolioReorderableLayout

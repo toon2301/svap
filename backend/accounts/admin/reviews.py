@@ -18,12 +18,21 @@ class ReviewAdmin(admin.ModelAdmin):
         "text",
     ]
     ordering = ["-created_at"]
-    readonly_fields = ["created_at", "updated_at"]
+    readonly_fields = [
+        "created_at",
+        "updated_at",
+        "owner_response",
+        "owner_responded_at",
+    ]
 
     fieldsets = (
         (_("Recenzent a ponuka"), {"fields": ("reviewer", "offer")}),
         (_("Hodnotenie"), {"fields": ("rating",)}),
         (_("Obsah recenzie"), {"fields": ("text", "pros", "cons")}),
+        (
+            _("Odpoveď vlastníka"),
+            {"fields": ("owner_response", "owner_responded_at")},
+        ),
         (
             _("Dolezite datumy"),
             {"fields": ("created_at", "updated_at"), "classes": ("collapse",)},

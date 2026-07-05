@@ -49,6 +49,14 @@ def skills_list_view(request):
     POST: Vytvorenie novej zručnosti
     """
     if request.method == "GET":
+        # Cache môže byť zdieľaná medzi doménami (napr. staging+prod na jednom Redis).
+        # Payload obsahuje absolútne URL (host-specifické), preto host ukladáme do
+        # hodnoty a pri čítaní akceptujeme len zhodu (kľúč aj invalidácia ostávajú
+        # host-agnostické – invalidácia beží aj zo signálov bez requestu).
+        try:
+            host = request.get_host()
+        except Exception:
+            host = ""
         t_cache0 = perf_counter()
         cached = None
         try:
@@ -56,14 +64,18 @@ def skills_list_view(request):
         except Exception:
             cached = None
         cache_ms = (perf_counter() - t_cache0) * 1000.0
-        if isinstance(cached, list):
+        if (
+            isinstance(cached, dict)
+            and cached.get("host") == host
+            and isinstance(cached.get("data"), list)
+        ):
             _record_skills_timing(
                 request,
                 skills_cache=cache_ms,
                 skills_cache_get=cache_ms,
                 skills_cache_set=0.0,
             )
-            return Response(cached, status=status.HTTP_200_OK)
+            return Response(cached["data"], status=status.HTTP_200_OK)
 
         t_db0 = perf_counter()
         base = OfferedSkill.objects.filter(user=request.user)
@@ -79,7 +91,11 @@ def skills_list_view(request):
         t_ser1 = perf_counter()
         t_cache_set0 = perf_counter()
         try:
-            cache.set(_skills_list_cache_key(request.user.id), data, timeout=SKILLS_LIST_CACHE_TTL_SECONDS)
+            cache.set(
+                _skills_list_cache_key(request.user.id),
+                {"host": host, "data": data},
+                timeout=SKILLS_LIST_CACHE_TTL_SECONDS,
+            )
         except Exception:
             pass
         cache_set_ms = (perf_counter() - t_cache_set0) * 1000.0

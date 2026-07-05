@@ -71,8 +71,10 @@ class AccentInsensitiveSearchResultsTests(APITestCase):
         self.assertIn(self.offer.id, ids)
 
     def test_global_search_finds_accented_user_with_unaccented_query(self):
-        # "kader" musí nájsť používateľa "Kaderník".
-        resp = self.client.get(reverse("accounts:search_global"), {"q": "kader"})
+        # "kadernik" (bez diakritiky) musí nájsť "Kaderník" – prejde LEN ak
+        # accent-normalizácia (unaccent na PG / accent-regex na sqlite) skutočne
+        # funguje: raw "kadernik" sa nerovná "Kaderník" (í != i).
+        resp = self.client.get(reverse("accounts:search_global"), {"q": "kadernik"})
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         user_ids = [u["id"] for u in resp.data["users"]]
         self.assertIn(self.owner.id, user_ids)

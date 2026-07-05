@@ -567,6 +567,7 @@ export default function ProfileMobileView({
               isOtherUserProfile={isOtherUserProfile}
               onEditOffer={onEditOffer}
               onDeleteOffer={onDeleteOffer}
+              onCreateOffer={!isOtherUserProfile ? onSkillsClick : undefined}
             />
           )}
 

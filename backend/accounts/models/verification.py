@@ -71,16 +71,13 @@ Tím Swaply
                 },
             )
             if getattr(settings, "DEBUG", False):
+                # Bez PII/citlivých údajov: token (verification_url), to_email ani
+                # email_host_user nikdy nelogujeme (aj DEBUG logy končia v Railway).
                 logger.info(
                     "📧 DEBUG EMAIL: Sending verification email",
                     extra={
-                        "to_email": self.user.email,
+                        "user_id": self.user_id,
                         "email_backend": getattr(settings, "EMAIL_BACKEND", None),
-                        "email_host": getattr(settings, "EMAIL_HOST", None),
-                        "email_port": getattr(settings, "EMAIL_PORT", None),
-                        "email_use_tls": getattr(settings, "EMAIL_USE_TLS", None),
-                        "email_host_user": getattr(settings, "EMAIL_HOST_USER", None),
-                        "verification_url": verification_url,
                         "subject": subject,
                     },
                 )
