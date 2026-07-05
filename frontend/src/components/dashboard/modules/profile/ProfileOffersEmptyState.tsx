@@ -25,13 +25,19 @@ export function ProfileOffersEmptyState({
     <div className={rootClassName}>
       <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
         {isOwner
-          ? t('profile.offersEmptyOwnerTitle')
-          : t('profile.offersEmptyVisitorTitle')}
+          ? t('profile.offersEmptyOwnerTitle', 'Zatiaľ nemáš žiadne karty')
+          : t('profile.offersEmptyVisitorTitle', 'Zatiaľ žiadne karty')}
       </h3>
       <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-gray-600 dark:text-gray-400">
         {isOwner
-          ? t('profile.offersEmptyOwnerBody')
-          : t('profile.offersEmptyVisitorBody')}
+          ? t(
+              'profile.offersEmptyOwnerBody',
+              'Vytvor si prvú ponuku alebo dopyt, aby ostatní videli, čo ponúkaš alebo hľadáš.',
+            )
+          : t(
+              'profile.offersEmptyVisitorBody',
+              'Tento používateľ zatiaľ nemá zverejnené žiadne ponuky ani dopyty.',
+            )}
       </p>
       {isOwner && onCreate && (
         <button
@@ -39,7 +45,7 @@ export function ProfileOffersEmptyState({
           onClick={onCreate}
           className="mt-5 rounded-full bg-purple-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-400/50"
         >
-          {t('profile.skills')}
+          {t('profile.skills', 'Ponúkam/Hľadám')}
         </button>
       )}
     </div>

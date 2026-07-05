@@ -151,6 +151,7 @@ class User(AbstractUser):
 
     @property
     def display_name(self):
+        """Vráti zobrazovací názov používateľa."""
         return get_canonical_display_name(
             user_type=self.user_type,
             first_name=self.first_name,
@@ -158,15 +159,6 @@ class User(AbstractUser):
             company_name=self.company_name,
             username=self.username,
         )
-        """Vráti zobrazovací názov používateľa"""
-        if self.user_type == UserType.INDIVIDUAL:
-            name = f"{self.first_name} {self.last_name}".strip()
-            return name if name else self.username
-        # Pre firemný účet: ak je company_name, použij ho, inak použij first_name + last_name
-        if self.company_name:
-            return self.company_name
-        name = f"{self.first_name} {self.last_name}".strip()
-        return name if name else self.username
 
     @property
     def profile_completeness(self):

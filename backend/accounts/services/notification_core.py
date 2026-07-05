@@ -162,7 +162,10 @@ def create_notification(
         conversation=conversation,
         group_invitation=group_invitation,
     )
-    _trim_managed_notifications(user_id=user.id)
+    # Trim len pre spravované typy (napr. group_invitation) – vyhneme sa
+    # zbytočnému DB dotazu na hot path pri bežných notifikáciách (lajk, recenzia).
+    if notif_type in _RETENTION_TYPES:
+        _trim_managed_notifications(user_id=user.id)
     transaction.on_commit(
         lambda: _dispatch_created_notification(notification.id, int(user.id))
     )

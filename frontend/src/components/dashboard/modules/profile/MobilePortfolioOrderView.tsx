@@ -11,7 +11,7 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from 'react';
 import { createPortal } from 'react-dom';
-import { Bars3Icon, CheckIcon, PhotoIcon } from '@heroicons/react/24/outline';
+import { Bars3Icon, CheckIcon, PhotoIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { reorderPortfolioItems } from './portfolioApi';
 import type { PortfolioItem } from './portfolioTypes';
@@ -203,6 +203,24 @@ export function MobilePortfolioOrderView({ items, onSaved }: MobilePortfolioOrde
     }
   }, [draftItems, isSaving, items, onSaved, t]);
 
+  const handleClose = useCallback(() => {
+    if (isSaving) return;
+    // Zavretie bez uloženia: vráť pôvodné poradie (draft sa zahodí). Rovnaký close
+    // mechanizmus ako po uložení (onSaved) – handleReordered je len setItems, takže
+    // žiadny persist reorderu.
+    onSaved(items);
+  }, [isSaving, items, onSaved]);
+
+  useEffect(() => {
+    const handleWindowKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      event.preventDefault();
+      handleClose();
+    };
+    window.addEventListener('keydown', handleWindowKeyDown);
+    return () => window.removeEventListener('keydown', handleWindowKeyDown);
+  }, [handleClose]);
+
   if (!portalNode) return null;
 
   return createPortal(
@@ -226,7 +244,15 @@ export function MobilePortfolioOrderView({ items, onSaved }: MobilePortfolioOrde
         <h1 className="truncate text-center text-base font-semibold">
           {t('portfolio.orderShort')}
         </h1>
-        <div aria-hidden="true" />
+        <button
+          type="button"
+          aria-label={t('portfolio.cancelOrder', 'Zavrieť')}
+          disabled={isSaving}
+          onClick={handleClose}
+          className="inline-flex h-10 w-10 items-center justify-center justify-self-end rounded-full text-gray-500 transition hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-400/50 disabled:opacity-60 dark:text-gray-300 dark:hover:bg-gray-900"
+        >
+          <XMarkIcon className="h-6 w-6" aria-hidden="true" />
+        </button>
       </header>
 
       {actionError && (

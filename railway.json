@@ -21,7 +21,7 @@
     {
       "name": "worker",
       "rootDirectory": "backend",
-      "buildCommand": "pip install -r requirements.txt",
+      "buildCommand": "pip install -r requirements.txt && python manage.py migrate --noinput",
       "startCommand": "celery -A swaply worker -l info --concurrency=2",
       "env": {
         "DJANGO_SETTINGS_MODULE": "swaply.settings_production",
@@ -32,7 +32,7 @@
     {
       "name": "beat",
       "rootDirectory": "backend",
-      "buildCommand": "pip install -r requirements.txt",
+      "buildCommand": "pip install -r requirements.txt && python manage.py migrate --noinput",
       "startCommand": "celery -A swaply beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler",
       "env": {
         "DJANGO_SETTINGS_MODULE": "swaply.settings_production",
