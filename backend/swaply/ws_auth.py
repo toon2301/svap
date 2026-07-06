@@ -1,5 +1,3 @@
-from urllib.parse import parse_qs
-
 from channels.middleware import BaseMiddleware
 from channels.db import database_sync_to_async
 from django.contrib.auth.models import AnonymousUser
@@ -48,10 +46,6 @@ class JwtAuthMiddleware(BaseMiddleware):
         auth_error = None
 
         try:
-            qs = parse_qs(
-                (scope.get("query_string") or b"").decode("utf-8", errors="ignore")
-            )
-            token = None
             token = _get_cookie(scope.get("headers") or [], "access_token")
 
             if token:

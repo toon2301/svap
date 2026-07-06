@@ -11,7 +11,7 @@ def get_or_create_user_profile(user):
 def get_notification_preferences(user) -> dict[str, bool]:
     profile = get_or_create_user_profile(user)
     return {
-        "email_notifications": bool(profile.email_notifications),
+        "in_app_notifications": bool(profile.in_app_notifications),
         "push_notifications": bool(profile.push_notifications),
     }
 
@@ -19,15 +19,15 @@ def get_notification_preferences(user) -> dict[str, bool]:
 def update_notification_preferences(
     user,
     *,
-    email_notifications: bool | None = None,
+    in_app_notifications: bool | None = None,
     push_notifications: bool | None = None,
 ) -> dict[str, bool]:
     profile = get_or_create_user_profile(user)
     update_fields: list[str] = []
 
-    if email_notifications is not None:
-        profile.email_notifications = bool(email_notifications)
-        update_fields.append("email_notifications")
+    if in_app_notifications is not None:
+        profile.in_app_notifications = bool(in_app_notifications)
+        update_fields.append("in_app_notifications")
     if push_notifications is not None:
         profile.push_notifications = bool(push_notifications)
         update_fields.append("push_notifications")
@@ -41,7 +41,7 @@ def update_notification_preferences(
 def build_dashboard_settings_payload(user) -> dict[str, Any]:
     profile = get_or_create_user_profile(user)
     notifications = {
-        "email_notifications": bool(profile.email_notifications),
+        "in_app_notifications": bool(profile.in_app_notifications),
         "push_notifications": bool(profile.push_notifications),
     }
     return {
@@ -70,9 +70,9 @@ def apply_dashboard_settings_patch(user, payload: dict[str, Any]) -> dict[str, A
 
     notifications = normalized_payload.get("notifications")
     if isinstance(notifications, dict):
-        if "email_notifications" in notifications:
-            profile.email_notifications = bool(notifications["email_notifications"])
-            profile_update_fields.append("email_notifications")
+        if "in_app_notifications" in notifications:
+            profile.in_app_notifications = bool(notifications["in_app_notifications"])
+            profile_update_fields.append("in_app_notifications")
         if "push_notifications" in notifications:
             profile.push_notifications = bool(notifications["push_notifications"])
             profile_update_fields.append("push_notifications")

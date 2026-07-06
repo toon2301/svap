@@ -19,7 +19,7 @@ class TestAuthEndpoints(APITestCase):
         assert r.status_code == status.HTTP_200_OK
         assert "required_fields" in r.data
 
-    @patch("accounts.models.send_mail")
+    @patch("accounts.models.verification.send_mail")
     @override_settings(EMAIL_VERIFICATION_REQUIRED=True, ALLOW_UNVERIFIED_LOGIN=True)
     def test_register_post_success(self, mock_send_mail):
         mock_send_mail.return_value = True
@@ -95,7 +95,7 @@ class TestRegistrationFieldKeywordFalsePositive(APITestCase):
     neplatný formát musí zostať odmietnutý cez štruktúrované validátory.
     """
 
-    @patch("accounts.models.send_mail")
+    @patch("accounts.models.verification.send_mail")
     @override_settings(EMAIL_VERIFICATION_REQUIRED=False)
     def test_register_with_keyword_username_email_website_succeeds(self, mock_send_mail):
         mock_send_mail.return_value = True

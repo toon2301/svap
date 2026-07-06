@@ -73,23 +73,6 @@ def _next_image_order(item: PortfolioItem) -> int:
     return 0 if current_max is None else current_max + 1
 
 
-def _parse_id_list(value):
-    if not isinstance(value, list):
-        return None
-    parsed = []
-    for raw_id in value:
-        if isinstance(raw_id, bool):
-            return None
-        try:
-            image_id = int(raw_id)
-        except (TypeError, ValueError):
-            return None
-        if image_id < 1:
-            return None
-        parsed.append(image_id)
-    return parsed
-
-
 def _validate_upload_metadata(request):
     filename = str(request.data.get("filename") or "").strip()
     content_type = str(request.data.get("content_type") or "").strip()
@@ -370,52 +353,6 @@ def portfolio_image_upload_complete_view(request, item_id: int):
             "order": image.order,
         },
         status=status.HTTP_201_CREATED,
-    )
-
-
-@api_view(["PATCH"])
-@permission_classes([IsAuthenticated])
-@api_rate_limit
-def portfolio_images_reorder_view(request, item_id: int):
-    image_ids = _parse_id_list(request.data.get("image_ids"))
-    if image_ids is None or len(image_ids) != len(set(image_ids)):
-        return Response(
-            {"error": "Neplatne poradie fotiek."},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
-
-    with transaction.atomic():
-        try:
-            item = PortfolioItem.objects.select_for_update().get(
-                id=item_id,
-                owner=request.user,
-            )
-        except PortfolioItem.DoesNotExist:
-            return _portfolio_item_not_found()
-
-        images = list(item.images.select_for_update().order_by("order", "id"))
-        current_ids = [image.id for image in images]
-        if len(image_ids) != len(current_ids) or set(image_ids) != set(current_ids):
-            return Response(
-                {"error": "Neplatne poradie fotiek."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        image_by_id = {image.id: image for image in images}
-        for index, image_id in enumerate(image_ids):
-            image_by_id[image_id].order = index
-        PortfolioImage.objects.bulk_update(images, ["order"])
-
-    ordered_images = PortfolioImage.objects.filter(item_id=item_id).order_by("order", "id")
-    return Response(
-        {
-            "images": PortfolioImageSerializer(
-                ordered_images,
-                many=True,
-                context={"request": request, "is_owner": True},
-            ).data
-        },
-        status=status.HTTP_200_OK,
     )
 
 

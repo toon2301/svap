@@ -13,6 +13,33 @@ from .search_projection import (
 
 User = get_user_model()
 
+# Polia User, ktoré sú denormalizované do DashboardSkillSearchProjection. Len ich
+# zmena vyžaduje re-sync projekcie pre všetky skills používateľa. Pri save s
+# `update_fields`, ktoré sa s touto množinou neprekrýva (napr. last_login, heslo,
+# onboarding flagy), je re-sync zbytočný a preskočíme ho.
+_PROJECTION_RELEVANT_USER_FIELDS = frozenset(
+    {
+        "location",
+        "district",
+        "is_public",
+        "is_verified",
+        "is_active",
+        "is_staff",
+        "is_superuser",
+    }
+)
+
+
+def _user_save_touches_projection(update_fields) -> bool:
+    """True ak save mohol zmeniť pole denormalizované v projekcii.
+
+    `update_fields=None` (bežný plný save) => konzervatívne True (nevieme, čo sa
+    zmenilo). Inak re-sync len ak sa update_fields prekrýva s relevantnými poliami.
+    """
+    if update_fields is None:
+        return True
+    return bool(_PROJECTION_RELEVANT_USER_FIELDS.intersection(update_fields))
+
 
 def _sync_dashboard_search_projection_for_user_safely(user_id):
     if not user_id:
@@ -45,7 +72,11 @@ def invalidate_auth_cache_after_user_save(sender, instance, **kwargs):
     _invalidate_dashboard_user_skills_cache_for_user(getattr(instance, "pk", None))
     _invalidate_viewer_location_snapshot_cache_for_user(getattr(instance, "pk", None))
     _invalidate_dashboard_recommendations_cache_for_user(getattr(instance, "pk", None))
-    _sync_dashboard_search_projection_for_user_safely(getattr(instance, "pk", None))
+    # Projekciu re-syncujeme len ak save mohol zmeniť niektoré z denormalizovaných
+    # User polí – inak (napr. update_fields=["last_login"] pri každom prihlásení)
+    # by sme zbytočne iterovali a prepisovali projekcie všetkých skills používateľa.
+    if _user_save_touches_projection(kwargs.get("update_fields")):
+        _sync_dashboard_search_projection_for_user_safely(getattr(instance, "pk", None))
 
 
 @receiver(post_delete, sender=User)

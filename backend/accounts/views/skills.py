@@ -24,83 +24,20 @@ from ..models import (
 from ..serializers import OfferedSkillSerializer
 from django.core.exceptions import ValidationError
 
-
-def _skills_list_queryset(base_qs):
-    """Optimalizovaný queryset: select_related, prefetch_related, annotate – zníženie N+1."""
-    return (
-        base_qs.select_related("user")
-        .prefetch_related("images")
-        .annotate(
-            _avg_rating=Avg("reviews__rating"),
-            _reviews_count=Count("reviews", distinct=True),
-            _likes_count=Count("offer_likes", distinct=True),
-        )
-    )
-
-
-def _skills_list_context(request, offer_ids):
-    """Bulk dotazy pre can_review, already_reviewed a request_status – namiesto N+1."""
-    if not offer_ids:
-        return {}
-    user = getattr(request, "user", None)
-    if user is None or not getattr(user, "is_authenticated", False):
-        return {"liked_offer_ids": set()}
-    reviewed = set(
-        Review.objects.filter(offer_id__in=offer_ids, reviewer=user).values_list(
-            "offer_id", flat=True
-        )
-    )
-    can_review = set(
-        SkillRequest.objects.filter(
-            offer_id__in=offer_ids,
-            requester=user,
-            status__in=REVIEWABLE_SKILL_REQUEST_STATUSES,
-        ).values_list("offer_id", flat=True)
-    )
-    request_status_by_offer = dict(
-        SkillRequest.objects.filter(
-            requester=user, offer_id__in=offer_ids
-        ).values_list("offer_id", "status")
-    )
-    liked_offer_ids = set(
-        OfferedSkillLike.objects.filter(
-            offer_id__in=offer_ids,
-            user=user,
-        ).values_list("offer_id", flat=True)
-    )
-    return {
-        "reviewed_offer_ids": reviewed,
-        "can_review_offer_ids": can_review,
-        "request_status_by_offer_id": request_status_by_offer,
-        "liked_offer_ids": liked_offer_ids,
-    }
-
-SKILLS_LIST_CACHE_TTL_SECONDS = int(
-    os.getenv("SKILLS_LIST_CACHE_TTL_SECONDS", "60") or "60"
+from .skill_helpers import (
+    SKILLS_LIST_CACHE_TTL_SECONDS,
+    _record_skills_timing,
+    _skills_list_cache_invalidate,
+    _skills_list_cache_key,
+    _skills_list_context,
+    _skills_list_queryset,
 )
-
-
-def _skills_list_cache_key(user_id: int) -> str:
-    return f"skills_list_v2:{int(user_id)}"
-
-
-def _skills_list_cache_invalidate(user_id: int) -> None:
-    try:
-        cache.delete(_skills_list_cache_key(user_id))
-    except Exception:
-        pass
-
-
-def _record_skills_timing(request, **entries) -> None:
-    try:
-        base_req = getattr(request, "_request", request)
-        st = getattr(base_req, "_server_timing", None)
-        if not isinstance(st, dict):
-            st = {}
-        st.update(entries)
-        base_req._server_timing = st
-    except Exception:
-        pass
+# Re-export image upload views (presunuté do skills_upload) pre spätnú kompatibilitu
+# (views/__init__ ich importuje z .skills).
+from .skills_upload import (  # noqa: F401
+    skill_images_upload_complete_view,
+    skill_images_upload_init_view,
+)
 
 
 @api_view(["GET", "POST"])
@@ -112,6 +49,14 @@ def skills_list_view(request):
     POST: Vytvorenie novej zručnosti
     """
     if request.method == "GET":
+        # Cache môže byť zdieľaná medzi doménami (napr. staging+prod na jednom Redis).
+        # Payload obsahuje absolútne URL (host-specifické), preto host ukladáme do
+        # hodnoty a pri čítaní akceptujeme len zhodu (kľúč aj invalidácia ostávajú
+        # host-agnostické – invalidácia beží aj zo signálov bez requestu).
+        try:
+            host = request.get_host()
+        except Exception:
+            host = ""
         t_cache0 = perf_counter()
         cached = None
         try:
@@ -119,14 +64,18 @@ def skills_list_view(request):
         except Exception:
             cached = None
         cache_ms = (perf_counter() - t_cache0) * 1000.0
-        if isinstance(cached, list):
+        if (
+            isinstance(cached, dict)
+            and cached.get("host") == host
+            and isinstance(cached.get("data"), list)
+        ):
             _record_skills_timing(
                 request,
                 skills_cache=cache_ms,
                 skills_cache_get=cache_ms,
                 skills_cache_set=0.0,
             )
-            return Response(cached, status=status.HTTP_200_OK)
+            return Response(cached["data"], status=status.HTTP_200_OK)
 
         t_db0 = perf_counter()
         base = OfferedSkill.objects.filter(user=request.user)
@@ -142,7 +91,11 @@ def skills_list_view(request):
         t_ser1 = perf_counter()
         t_cache_set0 = perf_counter()
         try:
-            cache.set(_skills_list_cache_key(request.user.id), data, timeout=SKILLS_LIST_CACHE_TTL_SECONDS)
+            cache.set(
+                _skills_list_cache_key(request.user.id),
+                {"host": host, "data": data},
+                timeout=SKILLS_LIST_CACHE_TTL_SECONDS,
+            )
         except Exception:
             pass
         cache_set_ms = (perf_counter() - t_cache_set0) * 1000.0
@@ -403,220 +356,6 @@ def skill_images_view(request, skill_id):
     )
 
 
-def _get_s3_client():
-    import boto3
-    from django.conf import settings
-
-    return boto3.client(
-        "s3",
-        aws_access_key_id=getattr(settings, "AWS_ACCESS_KEY_ID", None),
-        aws_secret_access_key=getattr(settings, "AWS_SECRET_ACCESS_KEY", None),
-        region_name=getattr(settings, "AWS_S3_REGION_NAME", None),
-    )
-
-
-@api_view(["POST"])
-@permission_classes([IsAuthenticated])
-@api_rate_limit
-def skill_images_upload_init_view(request, skill_id):
-    """
-    Init direct-to-S3 upload for offer images.
-
-    Returns a presigned POST payload:
-      { url, fields, key, expires_in }
-    Client uploads to S3 under `uploads/` prefix, then calls complete endpoint.
-    """
-    from django.conf import settings
-    import os
-    import uuid
-
-    try:
-        skill = OfferedSkill.objects.get(id=skill_id, user=request.user)
-    except OfferedSkill.DoesNotExist:
-        return Response({"error": "Zručnosť nebola nájdená"}, status=status.HTTP_404_NOT_FOUND)
-
-    if skill.images.count() >= 6:
-        return Response(
-            {"error": "Maximálny počet obrázkov je 6"},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
-
-    filename = str(request.data.get("filename") or "").strip()
-    content_type = str(request.data.get("content_type") or "").strip()
-    try:
-        size_bytes = int(request.data.get("size_bytes") or 0)
-    except Exception:
-        size_bytes = 0
-
-    if not filename or size_bytes <= 0:
-        return Response({"error": "Neplatný súbor."}, status=status.HTTP_400_BAD_REQUEST)
-
-    # Enforce max size (reuse same limit as validator)
-    try:
-        max_mb = int(getattr(settings, "IMAGE_MAX_SIZE_MB", 5))
-    except Exception:
-        max_mb = 5
-    if size_bytes > max_mb * 1024 * 1024:
-        return Response(
-            {"error": f"Obrázok je príliš veľký. Maximálna veľkosť je {max_mb}MB."},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
-
-    ext = os.path.splitext(filename)[1].lower()
-    allowed_extensions = [
-        e.strip().lower()
-        for e in getattr(
-            settings,
-            "ALLOWED_IMAGE_EXTENSIONS",
-            [".jpg", ".jpeg", ".png", ".gif", ".webp", ".heic", ".heif"],
-        )
-    ]
-    if ext not in allowed_extensions:
-        return Response(
-            {"error": "Neplatný typ súboru."},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
-
-    bucket = getattr(settings, "AWS_STORAGE_BUCKET_NAME", None)
-    if not bucket:
-        return Response({"error": "Storage nie je nakonfigurované."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-    # Randomized key under uploads/; include skill_id for easy server-side validation
-    key = f"uploads/offers/{skill_id}/{uuid.uuid4().hex}{ext}"
-
-    expires_in = 120
-    try:
-        s3 = _get_s3_client()
-        presigned = s3.generate_presigned_post(
-            Bucket=bucket,
-            Key=key,
-            Conditions=[
-                ["content-length-range", 1, max_mb * 1024 * 1024],
-            ],
-            ExpiresIn=expires_in,
-        )
-    except Exception as e:
-        return Response(
-            {"error": "Nepodarilo sa pripraviť upload."},
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        )
-
-    return Response(
-        {
-            "url": presigned.get("url"),
-            "fields": presigned.get("fields", {}),
-            "key": key,
-            "expires_in": expires_in,
-            "content_type": content_type or None,
-        },
-        status=status.HTTP_200_OK,
-    )
-
-
-@api_view(["POST"])
-@permission_classes([IsAuthenticated])
-@api_rate_limit
-def skill_images_upload_complete_view(request, skill_id):
-    """
-    Confirm a direct-to-S3 upload and create DB record as PENDING.
-    Enqueues background processing (HEIC decode, resize, SafeSearch, move to media/).
-    """
-    from django.conf import settings
-    import os
-
-    try:
-        skill = OfferedSkill.objects.get(id=skill_id, user=request.user)
-    except OfferedSkill.DoesNotExist:
-        return Response({"error": "Zručnosť nebola nájdená"}, status=status.HTTP_404_NOT_FOUND)
-
-    if skill.images.count() >= 6:
-        return Response(
-            {"error": "Maximálny počet obrázkov je 6"},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
-
-    key = str(request.data.get("key") or "").strip()
-    if not key:
-        return Response({"error": "Chýba key."}, status=status.HTTP_400_BAD_REQUEST)
-
-    expected_prefix = f"uploads/offers/{skill_id}/"
-    if not key.startswith(expected_prefix):
-        return Response({"error": "Neplatný key."}, status=status.HTTP_400_BAD_REQUEST)
-
-    ext = os.path.splitext(key)[1].lower()
-    allowed_extensions = [
-        e.strip().lower()
-        for e in getattr(
-            settings,
-            "ALLOWED_IMAGE_EXTENSIONS",
-            [".jpg", ".jpeg", ".png", ".gif", ".webp", ".heic", ".heif"],
-        )
-    ]
-    if ext not in allowed_extensions:
-        return Response({"error": "Neplatný typ súboru."}, status=status.HTTP_400_BAD_REQUEST)
-
-    bucket = getattr(settings, "AWS_STORAGE_BUCKET_NAME", None)
-    if not bucket:
-        return Response({"error": "Storage nie je nakonfigurované."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-    # Verify object exists in S3 and capture metadata
-    try:
-        s3 = _get_s3_client()
-        head = s3.head_object(Bucket=bucket, Key=key)
-    except Exception:
-        return Response({"error": "Upload nebol nájdený."}, status=status.HTTP_400_BAD_REQUEST)
-
-    size_bytes = int(head.get("ContentLength") or 0)
-    content_type = str(head.get("ContentType") or "")
-
-    max_bytes = getattr(settings, "SKILL_IMAGE_MAX_BYTES", 10 * 1024 * 1024)
-    if size_bytes > max_bytes:
-        return Response({"error": "Súbor je príliš veľký."}, status=status.HTTP_400_BAD_REQUEST)
-
-    # Preflight SafeSearch moderation — before creating any DB record
-    if getattr(settings, "SAFESEARCH_ENABLED", False):
-        try:
-            from swaply.staged_image_moderation import (
-                ModerationRejectedError,
-                moderate_staged_s3_image,
-            )
-            moderate_staged_s3_image(bucket, key)
-        except ModerationRejectedError as e:
-            return Response(
-                {"error": e.user_message, "code": e.code},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-    order = skill.images.count()
-    img = OfferedSkillImage.objects.create(
-        skill=skill,
-        order=order,
-        status=OfferedSkillImage.Status.PENDING,
-        pending_key=key,
-        approved_key="",
-        original_filename=str(request.data.get("filename") or ""),
-        content_type=content_type,
-        size_bytes=size_bytes or None,
-    )
-    _skills_list_cache_invalidate(request.user.id)
-
-    # Enqueue background job (lazy import to avoid hard dependency if worker not deployed yet)
-    try:
-        from swaply.tasks.offer_images import process_offered_skill_image
-
-        process_offered_skill_image.delay(img.id)
-    except Exception:
-        # Fail-open: record stays pending; can be retried manually by admin/command later
-        pass
-
-    return Response(
-        {
-            "id": img.id,
-            "status": img.status,
-            "order": img.order,
-        },
-        status=status.HTTP_201_CREATED,
-    )
 
 @api_view(["DELETE"])
 @permission_classes([IsAuthenticated])

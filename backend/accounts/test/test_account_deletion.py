@@ -49,6 +49,39 @@ class TestAnonymizeUser(APITestCase):
         # Vlastný obsah zmazaný.
         assert OfferedSkill.objects.filter(user=u).count() == 0
 
+    def test_actor_notifications_pii_scrubbed(self):
+        # BOD 1 (GDPR): notifikácie INÝCH používateľov, kde je zmazaný user aktér,
+        # majú jeho denormalizované meno v title/body prepísané na neutrálnu hodnotu.
+        # POZN.: anonymize_user user riadok NEmaže (PROTECT dizajn), takže actor FK
+        # (SET_NULL) sa NEnuluje – ukazuje na anonymizovaný riadok (bez PII). Práve
+        # preto je scrub denormalizovaného mena v title/body kľúčový.
+        # Vlastná (recipientova) notifikácia sa NEmaže – patrí inému používateľovi.
+        from accounts.models import Notification, NotificationType
+
+        actor = _make_user(username="actor", email="actor@example.com")
+        recipient = _make_user(username="bob", email="bob@example.com")
+        actor_name = actor.display_name
+        assert actor_name  # fixture má first/last name -> neprázdny display_name
+
+        notif = Notification.objects.create(
+            user=recipient,
+            actor=actor,
+            type=NotificationType.SKILL_REQUEST_ACCEPTED,
+            title="Žiadosť prijatá",
+            body=f"{actor_name} prijal tvoju žiadosť.",
+            data={"from_user_id": actor.id, "offer_id": 1},
+        )
+
+        anonymize_user(actor)
+
+        notif.refresh_from_db()
+        assert actor_name not in notif.body
+        assert "Zmazaný používateľ" in notif.body
+        assert Notification.objects.filter(id=notif.id).exists()
+        # Cieľ actor FK je anonymizovaný (žiadne PII neuniká cez FK).
+        actor.refresh_from_db()
+        assert actor.first_name == "" and actor.last_name == ""
+
     def test_avatar_deleted_after_successful_commit(self):
         # BOD 1: avatar súbor sa zmaže AŽ po úspešnom commite (cez on_commit).
         user = _make_user(username="ava", email="ava@example.com")

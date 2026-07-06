@@ -37,7 +37,7 @@ class WebPushSubscriptionDeleteSerializer(serializers.Serializer):
 
 
 class PushPreferencesSerializer(serializers.Serializer):
-    email_notifications = serializers.BooleanField(required=False)
+    in_app_notifications = serializers.BooleanField(required=False)
     push_notifications = serializers.BooleanField(required=False)
 
     def validate(self, attrs):

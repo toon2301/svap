@@ -8,6 +8,11 @@ class AccountsConfig(AppConfig):
     def ready(self):
         from . import signals  # noqa: F401
 
+        # Custom search lookup (unaccent_lower) pre accent-insensitive ILIKE na PG.
+        from .search_lookups import register_search_lookups
+
+        register_search_lookups()
+
         # Startup kontrola: upozorni ak produkcia beží na InMemoryChannelLayer
         # (WS notifikácie by sa pri split HTTP/WS deploymente nedoručili).
         try:

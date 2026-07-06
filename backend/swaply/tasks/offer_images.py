@@ -85,7 +85,7 @@ def process_offered_skill_image(self, offered_skill_image_id: int) -> None:
         except Exception:
             # If EXIF is missing or Pillow can't transpose, keep original.
             pass
-    except Exception as e:
+    except Exception:
         with transaction.atomic():
             img = OfferedSkillImage.objects.select_for_update().get(id=offered_skill_image_id)
             img.status = OfferedSkillImage.Status.REJECTED

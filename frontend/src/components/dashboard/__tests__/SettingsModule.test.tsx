@@ -50,15 +50,15 @@ describe('SettingsModule', () => {
     const { api } = require('@/lib/api');
     api.get.mockResolvedValue({
       data: {
-        email_notifications: true,
+        in_app_notifications: true,
         push_notifications: false,
       },
     });
     api.patch.mockImplementation(async (_url: string, payload: any) => ({
       data: {
-        email_notifications:
-          typeof payload?.email_notifications === 'boolean'
-            ? payload.email_notifications
+        in_app_notifications:
+          typeof payload?.in_app_notifications === 'boolean'
+            ? payload.in_app_notifications
             : true,
         push_notifications:
           typeof payload?.push_notifications === 'boolean'
@@ -127,7 +127,7 @@ describe('SettingsModule', () => {
     fireEvent.click(screen.getByText('Upozornenia'));
 
     expect(screen.getByRole('heading', { name: 'Upozornenia' })).toBeInTheDocument();
-    expect(screen.getByText('Email upozornenia')).toBeInTheDocument();
+    expect(screen.getByText('Upozornenia v aplikácii')).toBeInTheDocument();
     expect(screen.getByText('Push upozornenia')).toBeInTheDocument();
   });
 
@@ -188,7 +188,7 @@ describe('SettingsModule', () => {
     const { api } = require('@/lib/api');
     api.get.mockResolvedValueOnce({
       data: {
-        email_notifications: false,
+        in_app_notifications: false,
         push_notifications: true,
       },
     });

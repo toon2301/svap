@@ -16,6 +16,7 @@ import { OfferShareModal } from './OfferShareModal';
 import { HelpRequestModal } from './HelpRequestModal';
 import ProfileOfferCard from './ProfileOfferCard';
 import { ProfileOfferCardSkeleton } from './ProfileOfferCardSkeleton';
+import { ProfileOffersEmptyState } from './ProfileOffersEmptyState';
 import { completeDesktopCardFlipHint, type DesktopCardFlipHintContext } from './desktopCardFlipHintApi';
 import {
   getOffersFromCache,
@@ -63,6 +64,7 @@ interface ProfileOffersSectionProps {
   isOtherUserProfile?: boolean;
   onEditOffer?: (offer: Offer) => void;
   onDeleteOffer?: (offer: Offer) => void;
+  onCreateOffer?: () => void;
 }
 
 export default function ProfileOffersSection({
@@ -74,6 +76,7 @@ export default function ProfileOffersSection({
   isOtherUserProfile = false,
   onEditOffer,
   onDeleteOffer,
+  onCreateOffer,
 }: ProfileOffersSectionProps) {
   const { t } = useLanguage();
   const router = useRouter();
@@ -755,12 +758,15 @@ export default function ProfileOffersSection({
   return (
     <div className="mt-4">
       {offers.length === 0 ? (
-        <p className="text-sm text-gray-600 dark:text-gray-400">
-          {loadError ?? (isOtherUserProfile 
-            ? t('profile.noOffersOther', 'Zatiaľ nemá žiadne ponuky.')
-            : t('profile.noOffers', 'Zatiaľ nemáš žiadne ponuky.')
-          )}
-        </p>
+        loadError ? (
+          <p className="text-sm text-gray-600 dark:text-gray-400">{loadError}</p>
+        ) : (
+          <ProfileOffersEmptyState
+            isOwner={!isOtherUserProfile}
+            onCreate={!isOtherUserProfile ? onCreateOffer : undefined}
+            className="mt-0"
+          />
+        )
       ) : (
         <div className="svap-profile-offers-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-[clamp(1rem,2vw,1.5rem)]">
           {offers.map((offer, index) => {

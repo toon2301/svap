@@ -16,6 +16,7 @@ import { ProfileOfferDetailMobile } from './ProfileOfferDetailMobile';
 import { ProfileOpeningHoursMobileModal } from './ProfileOpeningHoursMobileModal';
 import { ProfileOfferCardMobile } from './ProfileOfferCardMobile';
 import { ProfileOfferCardSkeleton } from './ProfileOfferCardSkeleton';
+import { ProfileOffersEmptyState } from './ProfileOffersEmptyState';
 import { completeMobileCardFlipHint, type MobileCardFlipHintContext } from './mobileCardFlipHintApi';
 import {
   getOffersFromCache,
@@ -66,6 +67,7 @@ interface ProfileOffersMobileSectionProps {
   isOtherUserProfile?: boolean;
   onEditOffer?: (offer: Offer) => void;
   onDeleteOffer?: (offer: Offer) => void;
+  onCreateOffer?: () => void;
 }
 
 export default function ProfileOffersMobileSection({
@@ -76,6 +78,7 @@ export default function ProfileOffersMobileSection({
   isOtherUserProfile = false,
   onEditOffer,
   onDeleteOffer,
+  onCreateOffer,
 }: ProfileOffersMobileSectionProps) {
   const { t } = useLanguage();
   const router = useRouter();
@@ -763,12 +766,11 @@ export default function ProfileOffersMobileSection({
 
   if (offers.length === 0) {
     return (
-      <div className="mt-3 text-sm text-gray-600 dark:text-gray-400">
-        {isOtherUserProfile 
-          ? t('profile.noOffersOther', 'Zatiaľ nemá žiadne ponuky.')
-          : t('profile.noOffers', 'Zatiaľ nemáš žiadne ponuky.')
-        }
-      </div>
+      <ProfileOffersEmptyState
+        isOwner={!isOtherUserProfile}
+        onCreate={!isOtherUserProfile ? onCreateOffer : undefined}
+        className="mt-3"
+      />
     );
   }
 

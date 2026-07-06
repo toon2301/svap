@@ -26,6 +26,7 @@ pytest-cov==4.1.0
 whitenoise==6.6.0
 google-cloud-vision==3.4.5
 celery>=5.4,<6
+django-celery-beat==2.9.0
 cryptography>=42.0.0
 pywebpush>=2.0,<3
 sentry-sdk[django]

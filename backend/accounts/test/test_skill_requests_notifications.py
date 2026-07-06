@@ -84,6 +84,80 @@ class TestSkillRequestsAndNotifications(APITestCase):
         self.assertEqual(c.status_code, status.HTTP_200_OK)
         self.assertEqual(c.data.get("count"), 1)
 
+    def test_skill_request_badge_works_when_in_app_notifications_disabled(self):
+        # BOD 2 (end-to-end): owner vypne in_app_notifications; skill_request badge
+        # musí stále fungovať – je to transakčná notifikácia (niekto čaká na odpoveď).
+        from accounts.models import UserProfile
+
+        profile, _ = UserProfile.objects.get_or_create(user=self.owner)
+        profile.in_app_notifications = False
+        profile.save(update_fields=["in_app_notifications", "updated_at"])
+
+        self.client.force_authenticate(user=self.requester)
+        r = self.client.post(
+            f"{self.base}/skill-requests/", {"offer_id": self.offer.id}, format="json"
+        )
+        self.assertEqual(r.status_code, status.HTTP_201_CREATED)
+
+        # Notifikácia SKILL_REQUEST sa vytvorila napriek vypnutému toggle.
+        self.assertTrue(
+            Notification.objects.filter(
+                user=self.owner, type=NotificationType.SKILL_REQUEST
+            ).exists()
+        )
+
+        # Badge (unread count) funguje.
+        self.client.force_authenticate(user=self.owner)
+        c = self.client.get(
+            f"{self.base}/notifications/unread-count/", {"type": "skill_request"}
+        )
+        self.assertEqual(c.status_code, status.HTTP_200_OK)
+        self.assertEqual(c.data.get("count"), 1)
+
+    def test_notifications_feed_pagination_and_backward_compat(self):
+        # BOD 3: opt-in stránkovanie cez ?page (dict odpoveď); bez ?page ostáva
+        # spätne kompatibilné ploché pole.
+        for i in range(5):
+            Notification.objects.create(
+                user=self.owner,
+                type=NotificationType.REVIEW_CREATED,
+                title=f"n{i}",
+                body="x",
+            )
+        self.client.force_authenticate(user=self.owner)
+
+        # Stránka 1 (page_size=2)
+        r1 = self.client.get(
+            f"{self.base}/notifications/",
+            {"type": "all", "page": 1, "page_size": 2},
+        )
+        self.assertEqual(r1.status_code, status.HTTP_200_OK)
+        self.assertEqual(r1.data["total"], 5)
+        self.assertEqual(r1.data["page"], 1)
+        self.assertEqual(r1.data["page_size"], 2)
+        self.assertEqual(r1.data["total_pages"], 3)
+        self.assertEqual(len(r1.data["results"]), 2)
+
+        # Posledná stránka (1 položka)
+        r3 = self.client.get(
+            f"{self.base}/notifications/",
+            {"type": "all", "page": 3, "page_size": 2},
+        )
+        self.assertEqual(len(r3.data["results"]), 1)
+
+        # Out-of-range stránka nespadne (vráti poslednú stranu).
+        r_oob = self.client.get(
+            f"{self.base}/notifications/",
+            {"type": "all", "page": 99, "page_size": 2},
+        )
+        self.assertEqual(r_oob.status_code, status.HTTP_200_OK)
+        self.assertEqual(r_oob.data["page"], 3)
+
+        # Spätná kompatibilita: bez ?page -> ploché pole.
+        r_legacy = self.client.get(f"{self.base}/notifications/", {"type": "all"})
+        self.assertIsInstance(r_legacy.data, list)
+        self.assertEqual(len(r_legacy.data), 5)
+
     def test_create_help_request_stores_proposal_for_seeking_card(self):
         seeking_offer = OfferedSkill.objects.create(
             user=self.owner,
@@ -1268,9 +1342,12 @@ class TestSkillRequestsAndNotifications(APITestCase):
     def test_create_request_logs_notification_failure_but_preserves_request(self):
         self.client.force_authenticate(user=self.requester)
 
-        with patch("accounts.views.skill_requests.Notification.objects.create", side_effect=RuntimeError("boom")), patch(
-            "accounts.views.skill_requests.logger.exception"
-        ) as mocked_log:
+        # Vytváranie skill_request notifikácie bolo presunuté do service vrstvy;
+        # simulujeme jej zlyhanie tam a overujeme fail-open vo view.
+        with patch(
+            "accounts.services.notifications.Notification.objects.create",
+            side_effect=RuntimeError("boom"),
+        ), patch("accounts.views.skill_requests.logger.exception") as mocked_log:
             response = self.client.post(
                 f"{self.base}/skill-requests/", {"offer_id": self.offer.id}, format="json"
             )

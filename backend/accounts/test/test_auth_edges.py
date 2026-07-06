@@ -31,7 +31,9 @@ class TestAuthEdges(APITestCase):
             def verify(self):
                 raise Exception("verify failed")
 
-        import accounts.views.auth as auth_views
+        # verify_email_view bol vyčlenený do auth_registration_views (split auth.py);
+        # serializer patchujeme v module, kde ho view reálne vyhľadáva.
+        import accounts.views.auth_registration_views as auth_views
         from unittest.mock import patch
 
         with patch.object(auth_views, "EmailVerificationSerializer", DummySerializer):

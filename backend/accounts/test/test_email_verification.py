@@ -95,7 +95,7 @@ class TestEmailVerificationModel(TestCase):
 
         self.assertFalse(result)
 
-    @patch("accounts.models.send_mail")
+    @patch("accounts.models.verification.send_mail")
     def test_send_verification_email(self, mock_send_mail):
         """Test odosielania verifikačného emailu"""
         mock_send_mail.return_value = True
@@ -231,7 +231,7 @@ class TestEmailVerificationAPI(APITestCase):
 class TestRegistrationWithEmailVerification(APITestCase):
     """Testy pre registráciu s email verifikáciou"""
 
-    @patch("accounts.models.send_mail")
+    @patch("accounts.models.verification.send_mail")
     @patch("threading.Thread")
     @override_settings(EMAIL_VERIFICATION_REQUIRED=True, ALLOW_UNVERIFIED_LOGIN=False)
     def test_registration_creates_verification(self, mock_thread_class, mock_send_mail):

@@ -17,7 +17,7 @@ class DashboardSettingsPreferencesTests(APITestCase):
             is_public=False,
         )
         self.profile, _ = UserProfile.objects.get_or_create(user=self.user)
-        self.profile.email_notifications = False
+        self.profile.in_app_notifications = False
         self.profile.push_notifications = True
         self.profile.show_email = True
         self.profile.show_phone = False
@@ -34,7 +34,7 @@ class DashboardSettingsPreferencesTests(APITestCase):
         self.assertEqual(
             response.data,
             {
-                "email_notifications": False,
+                "in_app_notifications": False,
                 "push_notifications": True,
             },
         )
@@ -50,14 +50,14 @@ class DashboardSettingsPreferencesTests(APITestCase):
         self.assertEqual(
             response.data,
             {
-                "email_notifications": False,
+                "in_app_notifications": False,
                 "push_notifications": False,
             },
         )
 
         self.profile.refresh_from_db()
         self.assertFalse(self.profile.push_notifications)
-        self.assertFalse(self.profile.email_notifications)
+        self.assertFalse(self.profile.in_app_notifications)
 
     def test_dashboard_settings_get_returns_real_notification_values(self):
         response = self.client.get(self.dashboard_settings_url)
@@ -66,7 +66,7 @@ class DashboardSettingsPreferencesTests(APITestCase):
         self.assertEqual(
             response.data["notifications"],
             {
-                "email_notifications": False,
+                "in_app_notifications": False,
                 "push_notifications": True,
             },
         )
@@ -79,7 +79,7 @@ class DashboardSettingsPreferencesTests(APITestCase):
             self.dashboard_settings_url,
             {
                 "notifications": {
-                    "email_notifications": True,
+                    "in_app_notifications": True,
                     "push_notifications": False,
                 }
             },
@@ -90,11 +90,11 @@ class DashboardSettingsPreferencesTests(APITestCase):
         self.assertEqual(
             response.data["settings"]["notifications"],
             {
-                "email_notifications": True,
+                "in_app_notifications": True,
                 "push_notifications": False,
             },
         )
 
         self.profile.refresh_from_db()
-        self.assertTrue(self.profile.email_notifications)
+        self.assertTrue(self.profile.in_app_notifications)
         self.assertFalse(self.profile.push_notifications)

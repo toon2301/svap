@@ -304,62 +304,18 @@ class PortfolioImageUploadApiTests(APITestCase):
         delete_mock.assert_called_once()
         self.assertIn("media/portfolio/only.webp", delete_mock.call_args.args[0])
 
-    def test_reorder_images_updates_order(self):
+    def test_reorder_images_endpoint_is_not_available(self):
         first = self._image(order=0, large_key="media/portfolio/first.webp")
         second = self._image(order=1, large_key="media/portfolio/second.webp")
-        third = self._image(order=2, large_key="media/portfolio/third.webp")
         self.client.force_authenticate(user=self.owner)
 
         response = self.client.patch(
-            reverse("accounts:portfolio_images_reorder", args=[self.item.id]),
-            data={"image_ids": [third.id, first.id, second.id]},
+            f"/api/auth/portfolio/{self.item.id}/images/reorder/",
+            data={"image_ids": [second.id, first.id]},
             format="json",
         )
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(
-            list(
-                PortfolioImage.objects.filter(item=self.item)
-                .order_by("order")
-                .values_list("id", flat=True)
-            ),
-            [third.id, first.id, second.id],
-        )
-        self.assertEqual(
-            [image["id"] for image in response.data["images"]],
-            [third.id, first.id, second.id],
-        )
-
-    def test_reorder_images_rejects_duplicate_and_foreign_ids(self):
-        first = self._image(order=0, large_key="media/portfolio/first.webp")
-        second = self._image(order=1, large_key="media/portfolio/second.webp")
-        foreign_item = PortfolioItem.objects.create(
-            owner=self.visitor,
-            title="Foreign",
-            category="other",
-            description="",
-        )
-        foreign_image = PortfolioImage.objects.create(
-            item=foreign_item,
-            order=0,
-            status=PortfolioImage.Status.APPROVED,
-            large_key="media/portfolio/foreign.webp",
-        )
-        self.client.force_authenticate(user=self.owner)
-
-        duplicate_response = self.client.patch(
-            reverse("accounts:portfolio_images_reorder", args=[self.item.id]),
-            data={"image_ids": [first.id, first.id]},
-            format="json",
-        )
-        foreign_response = self.client.patch(
-            reverse("accounts:portfolio_images_reorder", args=[self.item.id]),
-            data={"image_ids": [first.id, foreign_image.id]},
-            format="json",
-        )
-
-        self.assertEqual(duplicate_response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(foreign_response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.assertEqual(
             list(
                 PortfolioImage.objects.filter(item=self.item)
@@ -368,7 +324,6 @@ class PortfolioImageUploadApiTests(APITestCase):
             ),
             [first.id, second.id],
         )
-
 
 def _s3_mock(*, head=None):
     from unittest.mock import Mock

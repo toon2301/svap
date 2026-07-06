@@ -461,12 +461,16 @@ describe('ProfilePortfolioSection', () => {
     });
   });
 
-  it('keeps the button-based order panel on mobile', async () => {
+  it('opens the mobile drag order view, starts dragging by thumbnail, and saves a new top order', async () => {
     mockViewport(true);
-    (api.get as jest.Mock).mockResolvedValue({
+    const longTitle = 'Toto je velmi dlhy nazov portfolia ktory sa ma skratit bodkami';
+    const first = portfolioItem({ id: 1, title: longTitle, sort_order: 0 });
+    const second = portfolioItem({ id: 2, title: 'Second Work', sort_order: 1 });
+    (api.get as jest.Mock).mockResolvedValue({ data: [first, second] });
+    (api.patch as jest.Mock).mockResolvedValue({
       data: [
-        portfolioItem({ id: 1, title: 'First Work', sort_order: 0 }),
-        portfolioItem({ id: 2, title: 'Second Work', sort_order: 1, cover_image: null }),
+        { ...second, sort_order: 0, is_featured: true },
+        { ...first, sort_order: 1, is_featured: false },
       ],
     });
 
@@ -474,8 +478,63 @@ describe('ProfilePortfolioSection', () => {
 
     fireEvent.click(await screen.findByRole('button', { name: /Poradie portf/i }));
 
-    expect(await screen.findByTestId('portfolio-order-panel')).toBeInTheDocument();
+    const orderView = await screen.findByTestId('mobile-portfolio-order-view');
+    expect(orderView.parentElement).toBe(document.body);
+    expect(orderView).toHaveClass('z-[9999]');
+    expect(within(orderView).getByRole('heading', { name: 'Poradie' })).toBeInTheDocument();
+    expect(within(orderView).getByRole('button', { name: /poradie/i })).toHaveClass('justify-self-start');
+    expect(screen.queryByTestId('portfolio-order-panel')).not.toBeInTheDocument();
     expect(screen.queryByTestId('portfolio-reorder-card-1')).not.toBeInTheDocument();
+    expect(screen.getByTestId('mobile-portfolio-order-title-1')).toHaveClass('truncate');
+
+    const firstRow = screen.getByTestId('mobile-portfolio-order-row-1');
+    const secondRow = screen.getByTestId('mobile-portfolio-order-row-2');
+    firstRow.getBoundingClientRect = jest.fn(() => ({
+      x: 0,
+      y: 80,
+      top: 80,
+      right: 320,
+      bottom: 144,
+      left: 0,
+      width: 320,
+      height: 64,
+      toJSON: jest.fn(),
+    }));
+    secondRow.getBoundingClientRect = jest.fn(() => ({
+      x: 0,
+      y: 152,
+      top: 152,
+      right: 320,
+      bottom: 216,
+      left: 0,
+      width: 320,
+      height: 64,
+      toJSON: jest.fn(),
+    }));
+
+    const secondThumbnail = secondRow.querySelector('img');
+    expect(secondThumbnail).not.toBeNull();
+    fireEvent.pointerDown(secondThumbnail as HTMLImageElement, { pointerId: 1, clientY: 184 });
+    await waitFor(() => {
+      expect(secondRow).toHaveClass('ring-2');
+    });
+    fireEvent.pointerUp(secondRow, { pointerId: 1, clientY: 184 });
+
+    fireEvent.keyDown(screen.getByTestId('mobile-portfolio-order-drag-2'), { key: 'ArrowUp' });
+    await waitFor(() => {
+      const rows = Array.from(orderView.querySelectorAll('[data-testid^="mobile-portfolio-order-row-"]'));
+      expect(rows[0]).toHaveAttribute('data-testid', 'mobile-portfolio-order-row-2');
+    });
+    fireEvent.click(within(orderView).getByRole('button', { name: /poradie/i }));
+
+    await waitFor(() => {
+      expect(api.patch).toHaveBeenCalledWith('/auth/portfolio/reorder/', {
+        item_ids: [2, 1],
+      });
+    });
+    await waitFor(() => {
+      expect(screen.queryByTestId('mobile-portfolio-order-view')).not.toBeInTheDocument();
+    });
   });
 
   it('does not show portfolio ordering controls to visitors', async () => {

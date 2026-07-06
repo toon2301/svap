@@ -29,7 +29,7 @@ except ModuleNotFoundError:
         return decorator
 
 
-from portfolio.image_processing import process_portfolio_image_record
+from portfolio.image_processing import process_portfolio_image_record  # noqa: E402
 
 
 @shared_task(

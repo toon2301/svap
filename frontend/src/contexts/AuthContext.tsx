@@ -177,6 +177,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
   useEffect(() => {
     const handler = () => {
       if (logoutInProgressRef.current) return;
+
+      // Skutočná invalidácia session (až po zlyhanom refreshi – nie prechodný
+      // 401). Vyčisti search históriu aktuálneho používateľa rovnako ako pri
+      // explicitnom logoute, aby PII iných používateľov neprežila expiráciu
+      // session (napr. na zdieľanom zariadení). userRef čítame PRED
+      // applyResolvedUser(null), ktorý ho nuluje.
+      const invalidatedUserId = userRef.current?.id;
+      if (typeof window !== 'undefined' && invalidatedUserId) {
+        try {
+          localStorage.removeItem(`searchRecentResults_${invalidatedUserId}`);
+        } catch {
+          // best effort – nesmie zhodiť invalidačný flow
+        }
+      }
+
       // Abort any in-flight /me request and deterministically clear identity
       try {
         meAbortControllerRef.current?.abort();

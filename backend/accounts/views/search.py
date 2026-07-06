@@ -4,7 +4,6 @@ Isolated public search endpoint (no coupling to existing search views).
 
 from decimal import Decimal, InvalidOperation
 
-from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db.models import Avg, Case, Count, ExpressionWrapper, FloatField, IntegerField, Q, Value, When
 from django.db.models.functions import Coalesce
 from rest_framework import status
@@ -15,7 +14,12 @@ from rest_framework.response import Response
 from ..models import OfferedSkill
 from ..search_visibility import searchable_user_q
 from ..serializers import OfferedSkillSearchSerializer
-from .dashboard_views.utils import _build_accent_insensitive_pattern, _sanitize_search_term
+from .dashboard_views.utils import (
+    _build_accent_insensitive_pattern,
+    _sanitize_search_term,
+    accent_insensitive_contains_q,
+)
+from .search_query_builders import capped_count
 from swaply.rate_limiting import search_rate_limit
 
 
@@ -87,6 +91,7 @@ def search_view(request):
             {
                 "results": [],
                 "total": 0,
+                "is_capped": False,
                 "page": 1,
                 "page_size": 12,
                 "total_pages": 0,
@@ -98,10 +103,12 @@ def search_view(request):
     if q:
         q_pattern = _build_accent_insensitive_pattern(_sanitize_search_term(q))
     if q:
+        # Accent-insensitive contains na indexovaných poliach (unaccent_lower na PG,
+        # regex fallback na sqlite); detailed_description/tags ostávajú nezmenené.
         qs = qs.filter(
-            Q(category__iregex=q_pattern)
-            | Q(subcategory__iregex=q_pattern)
-            | Q(description__iregex=q_pattern)
+            accent_insensitive_contains_q("category", q)
+            | accent_insensitive_contains_q("subcategory", q)
+            | accent_insensitive_contains_q("description", q)
             | Q(detailed_description__iregex=q_pattern)
             | Q(tags__icontains=q)
         )
@@ -172,6 +179,10 @@ def search_view(request):
     raw_min_rating = request.query_params.get("min_rating")
     min_rating = _parse_decimal(raw_min_rating)
     if raw_min_rating is not None and min_rating is None:
+        return _invalid_param()
+    # Hodnotenie je v rozsahu 0–5; mimo rozsahu je nezmyselný vstup → 400
+    # (konzistentné s ostatnými neplatnými parametrami, žiadny tichý no-op filter).
+    if min_rating is not None and (min_rating < 0 or min_rating > 5):
         return _invalid_param()
 
     # district + locality_priority
@@ -245,17 +256,15 @@ def search_view(request):
     if page_size > 50:
         page_size = 50
 
-    paginator = Paginator(qs, page_size)
-    try:
-        page_obj = paginator.page(page)
-    except PageNotAnInteger:
-        page = 1
-        page_obj = paginator.page(page)
-    except EmptyPage:
-        page = paginator.num_pages if paginator.num_pages > 0 else 1
-        page_obj = paginator.page(page) if paginator.num_pages > 0 else []
+    # Capped count: presné do SEARCH_COUNT_CAP, nad ňou is_capped=True a total=CAP
+    # ("500+" na frontende). Vyhne sa drahému plnému COUNT(*).
+    total, is_capped = capped_count(qs)
+    total_pages = (total + page_size - 1) // page_size if total else 0
+    if total_pages and page > total_pages:
+        page = total_pages
 
-    items = list(page_obj) if page_obj else []
+    offset = (page - 1) * page_size
+    items = list(qs[offset : offset + page_size])
     offer_ids = [item.id for item in items]
     from .skills import _skills_list_context
 
@@ -268,10 +277,11 @@ def search_view(request):
     return Response(
         {
             "results": serializer.data,
-            "total": paginator.count,
+            "total": total,
+            "is_capped": is_capped,
             "page": page,
             "page_size": page_size,
-            "total_pages": paginator.num_pages,
+            "total_pages": total_pages,
         },
         status=status.HTTP_200_OK,
     )

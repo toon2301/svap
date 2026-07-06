@@ -18,7 +18,12 @@ from swaply.rate_limiting import search_rate_limit
 from ..models import OfferedSkill
 from ..search_visibility import searchable_user_q
 from ..serializers import OfferedSkillSearchSerializer
-from .dashboard_views.utils import _build_accent_insensitive_pattern, _sanitize_search_term
+from .search_query_builders import capped_count
+from .dashboard_views.utils import (
+    _build_accent_insensitive_pattern,
+    _sanitize_search_term,
+    accent_insensitive_contains_q,
+)
 
 User = get_user_model()
 
@@ -104,6 +109,8 @@ def global_search_view(request):
                 "offers": [],
                 "users_count": 0,
                 "offers_count": 0,
+                "users_is_capped": False,
+                "offers_is_capped": False,
                 "users_total_pages": 0,
                 "users_page": 1,
             },
@@ -130,11 +137,11 @@ def global_search_view(request):
         for term in terms:
             term_pattern = _build_accent_insensitive_pattern(_sanitize_search_term(term))
             uq |= (
-                Q(first_name__iregex=term_pattern)
-                | Q(last_name__iregex=term_pattern)
-                | Q(username__iregex=term_pattern)
-                | Q(company_name__iregex=term_pattern)
-                | Q(slug__iregex=term_pattern)
+                accent_insensitive_contains_q("first_name", term)
+                | accent_insensitive_contains_q("last_name", term)
+                | accent_insensitive_contains_q("username", term)
+                | accent_insensitive_contains_q("company_name", term)
+                | accent_insensitive_contains_q("slug", term)
                 | Q(location__iregex=term_pattern)
                 | Q(district__iregex=term_pattern)
             )
@@ -154,7 +161,7 @@ def global_search_view(request):
         )
     ).order_by("-relevance", "-is_verified", "-updated_at")
 
-    users_count = users_qs.count()
+    users_count, users_is_capped = capped_count(users_qs)
     users_total_pages = max(1, (users_count + users_page_size - 1) // users_page_size)
     page = min(users_page, users_total_pages)
     offset = (page - 1) * users_page_size
@@ -168,6 +175,7 @@ def global_search_view(request):
     # =========================
     offers_data = []
     offers_count = 0
+    offers_is_capped = False
 
     if include_offers:
         offers_page = _parse_page_param(request.query_params.get("offers_page"), 1)
@@ -184,9 +192,9 @@ def global_search_view(request):
         )
         if q:
             offers_qs = offers_qs.filter(
-                Q(category__iregex=q_pattern)
-                | Q(subcategory__iregex=q_pattern)
-                | Q(description__iregex=q_pattern)
+                accent_insensitive_contains_q("category", q)
+                | accent_insensitive_contains_q("subcategory", q)
+                | accent_insensitive_contains_q("description", q)
                 | Q(detailed_description__iregex=q_pattern)
                 | Q(tags__icontains=q)
             )
@@ -216,7 +224,7 @@ def global_search_view(request):
         ).order_by("-relevance_score", "-created_at")
         if request.user and request.user.is_authenticated:
             offers_qs = offers_qs.exclude(user_id=request.user.id)
-        offers_count = offers_qs.count()
+        offers_count, offers_is_capped = capped_count(offers_qs)
         offers_total_pages = max(1, (offers_count + offers_page_size - 1) // offers_page_size)
         op = min(offers_page, offers_total_pages)
         ooffset = (op - 1) * offers_page_size
@@ -236,6 +244,8 @@ def global_search_view(request):
             "offers": offers_data,
             "users_count": users_count,
             "offers_count": offers_count,
+            "users_is_capped": users_is_capped,
+            "offers_is_capped": offers_is_capped,
             "users_total_pages": users_total_pages,
             "users_page": page,
         },

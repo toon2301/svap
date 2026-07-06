@@ -25,8 +25,11 @@ export default function NotificationsFeed({
     loading,
     refreshing,
     markingRead,
+    loadingMore,
+    hasMore,
     error,
     refresh,
+    loadMore,
     markAllRead,
     markItemRead,
   } = useNotificationsFeed();
@@ -134,6 +137,20 @@ export default function NotificationsFeed({
                 onMarkRead={markItemRead}
               />
             ))}
+            {hasMore ? (
+              <div className="mt-4 flex justify-center">
+                <button
+                  type="button"
+                  onClick={() => void loadMore()}
+                  disabled={loadingMore}
+                  className="inline-flex items-center justify-center rounded-2xl border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-600 transition-colors hover:bg-gray-100 hover:text-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-400/50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:bg-black dark:text-gray-300 dark:hover:bg-gray-900 dark:hover:text-purple-200"
+                >
+                  {loadingMore
+                    ? t('notifications.loadingMore', 'Načítavam…')
+                    : t('notifications.loadMore', 'Zobraziť ďalšie')}
+                </button>
+              </div>
+            ) : null}
           </div>
         )}
         </div>

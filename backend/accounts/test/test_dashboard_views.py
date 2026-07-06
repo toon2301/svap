@@ -899,7 +899,7 @@ class DashboardViewsTestCase(TestCase):
         """Test aktualizácie nastavení"""
         url = reverse("accounts:dashboard_settings")
         data = {
-            "notifications": {"email_notifications": True, "push_notifications": False},
+            "notifications": {"in_app_notifications": True, "push_notifications": False},
             "privacy": {"profile_visibility": "private"},
         }
         response = self.client.put(url, data, format="json")
@@ -911,7 +911,7 @@ class DashboardViewsTestCase(TestCase):
     def test_dashboard_settings_patch_success(self):
         """Test čiastočnej aktualizácie nastavení"""
         url = reverse("accounts:dashboard_settings")
-        data = {"notifications": {"email_notifications": False}}
+        data = {"notifications": {"in_app_notifications": False}}
         response = self.client.patch(url, data, format="json")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)

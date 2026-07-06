@@ -30,11 +30,6 @@ urlpatterns = [
         name="portfolio_image_local_upload",
     ),
     path(
-        "portfolio/<int:item_id>/images/reorder/",
-        image_views.portfolio_images_reorder_view,
-        name="portfolio_images_reorder",
-    ),
-    path(
         "portfolio/<int:item_id>/images/<int:image_id>/",
         image_views.portfolio_image_detail_view,
         name="portfolio_image_detail",

@@ -1,6 +1,9 @@
 import unicodedata
 import re
 
+from django.db import connection
+from django.db.models import Q
+
 
 def _remove_diacritics(value: str) -> str:
     """Odstráni diakritiku z reťazca pre účely vyhľadávania."""
@@ -60,3 +63,27 @@ def _build_accent_insensitive_pattern(term: str) -> str:
     if not parts:
         return ".*"
     return "".join(parts)
+
+
+def accent_insensitive_contains_q(field: str, term: str) -> Q:
+    """Accent- a case-insensitive „obsahuje" filter pre textové pole.
+
+    PostgreSQL: ``immutable_unaccent(lower(field)) LIKE %unaccent(lower(term))%`` –
+    výraz zodpovedá expression GIN trigram indexu (migrácia 0086), takže ho plánovač
+    môže využiť namiesto sekvenčného skenu. Diakritiku z termu odstránime v Pythone
+    (`_remove_diacritics`), čo zodpovedá PG `unaccent` pre bežné latinkové znaky.
+
+    Sqlite/iné (dev/testy): fallback na accent-regex (`_build_accent_insensitive_pattern`)
+    – produkuje rovnaké accent-insensitive výsledky, len bez index akcelerácie (unaccent
+    ani expression indexy tam nie sú dostupné).
+
+    ReDoS ochrana: PG vetva používa ``__contains`` (Django escapuje % a _ v hodnote,
+    žiadny regex), sqlite vetva ponecháva `_sanitize_search_term` (re.escape) keďže ide
+    o regex.
+    """
+    if connection.vendor == "postgresql":
+        normalized = _remove_diacritics(term).lower()
+        return Q(**{f"{field}__unaccent_lower__contains": normalized})
+
+    pattern = _build_accent_insensitive_pattern(_sanitize_search_term(term))
+    return Q(**{f"{field}__iregex": pattern})

@@ -7,7 +7,7 @@ export function PortfolioDetailSkeleton() {
       className="mx-auto w-full max-w-5xl animate-pulse space-y-6 px-4 py-4 sm:px-6 lg:px-0"
     >
       <div className="h-9 w-24 rounded-full bg-gray-200 dark:bg-gray-800" />
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(280px,0.65fr)]">
+      <div className="grid gap-6 lg:grid-cols-2">
         <div className="aspect-[16/9] rounded-3xl bg-gray-200 dark:bg-gray-800" />
         <div className="space-y-4">
           <div className="h-4 w-32 rounded bg-gray-200 dark:bg-gray-800" />

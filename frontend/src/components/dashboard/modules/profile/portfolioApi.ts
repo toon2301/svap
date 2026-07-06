@@ -33,10 +33,6 @@ export type PortfolioImageUploadCompleteResponse = {
   order?: number | null;
 };
 
-export type PortfolioImageReorderResponse = {
-  images: PortfolioImage[];
-};
-
 type ListPortfolioParams = {
   isOwner: boolean;
   ownerUserId?: number;
@@ -210,19 +206,6 @@ export async function setPortfolioCoverImage(
     {},
   );
   return data.cover_image ?? null;
-}
-
-export async function reorderPortfolioImages(
-  itemId: number,
-  imageIds: number[],
-): Promise<PortfolioImage[]> {
-  requirePortfolioItemId(itemId);
-  requirePositiveIdList(imageIds, 'portfolio image ids');
-  const { data } = await api.patch<PortfolioImageReorderResponse>(
-    endpoints.portfolio.imageReorder(itemId),
-    { image_ids: imageIds },
-  );
-  return Array.isArray(data.images) ? data.images : [];
 }
 
 export async function reorderPortfolioItems(itemIds: number[]): Promise<PortfolioItem[]> {

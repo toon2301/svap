@@ -128,8 +128,11 @@ class TestJWTAuthExtras:
                 )
 
     def test_should_skip_auth_user_cache_set_when_cache_get_is_too_slow(self, monkeypatch):
+        # _should_skip_auth_user_cache_set bol vyčlenený do authentication_helpers
+        # a číta konštantu zo svojho modulu – patchujeme ju tam.
         monkeypatch.setattr(
-            auth_module, "_AUTH_USER_CACHE_SLOW_GET_SKIP_SET_MS", 250.0
+            "accounts.authentication_helpers._AUTH_USER_CACHE_SLOW_GET_SKIP_SET_MS",
+            250.0,
         )
         assert _should_skip_auth_user_cache_set(250.0) is True
         assert _should_skip_auth_user_cache_set(500.0) is True

@@ -133,7 +133,7 @@ def push_preferences_view(request):
 
     preferences = update_notification_preferences(
         request.user,
-        email_notifications=serializer.validated_data.get("email_notifications"),
+        in_app_notifications=serializer.validated_data.get("in_app_notifications"),
         push_notifications=serializer.validated_data.get("push_notifications"),
     )
     return Response(preferences, status=status.HTTP_200_OK)

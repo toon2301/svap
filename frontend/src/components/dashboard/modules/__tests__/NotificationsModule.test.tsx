@@ -117,7 +117,7 @@ function setupPushBrowser({
 function createPreferencesResponse(pushNotifications: boolean) {
   return {
     data: {
-      email_notifications: true,
+      in_app_notifications: true,
       push_notifications: pushNotifications,
     },
   };
@@ -173,7 +173,7 @@ describe('NotificationSettingsModule', () => {
     api.post.mockResolvedValue({ data: { ok: true, created: true } });
     api.patch.mockImplementation(async (_url: string, payload: any) => ({
       data: {
-        email_notifications: true,
+        in_app_notifications: true,
         push_notifications:
           typeof payload?.push_notifications === 'boolean'
             ? payload.push_notifications
