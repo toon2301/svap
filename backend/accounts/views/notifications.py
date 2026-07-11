@@ -45,6 +45,11 @@ def _send_unread_count(user_id: int) -> None:
 
 NOTIFICATION_FEED_MAX_PAGE_SIZE = 50
 
+# Povolené hodnoty ?type= pre unread-count (enum typy + agregát "all").
+_VALID_UNREAD_TYPES = frozenset(NotificationType.values) | {
+    GENERAL_NOTIFICATION_UNREAD_TYPE
+}
+
 
 def _parse_notifications_page_params(request):
     """Spracuje ?page a ?page_size (rovnaké limity ako ostatné zoznamy)."""
@@ -143,6 +148,11 @@ def notifications_unread_count_view(request):
     ).strip()
     count_all = notif_type == "all"
     cache_type = GENERAL_NOTIFICATION_UNREAD_TYPE if count_all else notif_type
+
+    # Neznámy typ: graceful 0 bez DB/cache (validácia vstupu + zabránenie
+    # cache pollution junk kľúčmi na často-pollovanom badge endpointe).
+    if notif_type not in _VALID_UNREAD_TYPES:
+        return Response({"count": 0}, status=status.HTTP_200_OK)
 
     # Fast-path: Redis cache hit avoids slow DB connect on Railway.
     cache_key = _unread_cache_key(request.user.id, cache_type)

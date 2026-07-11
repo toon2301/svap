@@ -184,6 +184,13 @@ describe('RequestsNotificationsProvider', () => {
     delete (globalThis as typeof globalThis & { __SWAPLY_MSG_AUDIO_BUFFER__?: unknown }).__SWAPLY_MSG_AUDIO_BUFFER__;
     delete (globalThis as typeof globalThis & { __SWAPLY_MSG_AUDIO_BUFFER_PROMISE__?: unknown }).__SWAPLY_MSG_AUDIO_BUFFER_PROMISE__;
     delete (globalThis as typeof globalThis & { __SWAPLY_MSG_AUDIO_PRIMER_INSTALLED__?: unknown }).__SWAPLY_MSG_AUDIO_PRIMER_INSTALLED__;
+    // Nav-badge „seen" baseline sa persistuje do localStorage – vyčisti medzi
+    // testami, inak baseline z predošlého testu potlačí počítadlo v ďalšom.
+    try {
+      window.localStorage.clear();
+    } catch {
+      // ignore
+    }
     mockApiGet.mockImplementation((url: string, config?: { params?: { type?: string } }) => {
       if (String(url).includes('/auth/notifications/unread-count/')) {
         return Promise.resolve({ data: { count: config?.params?.type === 'all' ? 5 : 4 } });

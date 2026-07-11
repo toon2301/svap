@@ -53,5 +53,10 @@ LOGGING = {
 # Vypnúť email sending pre testy
 EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
 
+# Legacy správanie testov: registrácia/login bez povinnej verifikácie.
+# Nové verifikačné testy si nastavujú override_settings explicitne.
+EMAIL_VERIFICATION_REQUIRED = False
+ALLOW_UNVERIFIED_LOGIN = True
+
 # Debug mode pre testy
 DEBUG = True

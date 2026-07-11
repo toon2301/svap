@@ -13,15 +13,8 @@ from __future__ import annotations
 from django.db import transaction
 
 from accounts.models import Notification, NotificationType
-from accounts.realtime import notify_user
-from accounts.serializers import NotificationSerializer
 
-from .notification_core import (
-    UNREAD_COUNT_CACHE_TTL_SECONDS,
-    cache_unread_count,
-    create_notification,
-    get_unread_count,
-)
+from .notification_core import create_notification, dispatch_unread_badge
 
 
 def create_group_invitation_notification(*, invitation, actor) -> Notification | None:
@@ -67,23 +60,13 @@ def _dispatch_skill_request_notification(notification_id: int, user_id: int) -> 
         .filter(id=notification_id, user_id=user_id)
         .first()
     )
-    unread_count = get_unread_count(
+    dispatch_unread_badge(
         user_id=user_id,
-        notif_type=NotificationType.SKILL_REQUEST,
+        count_type=NotificationType.SKILL_REQUEST,
+        cache_type=NotificationType.SKILL_REQUEST,
+        ws_type="skill_request",
+        notification=notification,
     )
-    cache_unread_count(
-        user_id=user_id,
-        notif_type=NotificationType.SKILL_REQUEST,
-        count=unread_count,
-        ttl_seconds=UNREAD_COUNT_CACHE_TTL_SECONDS,
-    )
-    event = {"type": "skill_request", "unread_count": unread_count}
-    if notification is not None:
-        try:
-            event["notification"] = NotificationSerializer(notification).data
-        except Exception:
-            pass
-    notify_user(user_id, event)
 
 
 def create_skill_request_notification(
@@ -383,5 +366,65 @@ def create_offer_liked_notification(*, offer, actor) -> Notification | None:
         actor=actor,
         data={
             "offer_id": offer.id,
+        },
+    )
+
+
+def create_portfolio_liked_notification(*, item, actor) -> Notification | None:
+    owner = getattr(item, "owner", None)
+    if owner is None or getattr(owner, "id", None) == getattr(actor, "id", None):
+        return None
+
+    existing = (
+        Notification.objects.filter(
+            user=owner,
+            type=NotificationType.PORTFOLIO_LIKED,
+            data__portfolio_item_id=item.id,
+            actor=actor,
+        )
+        .order_by("-created_at", "-id")
+        .first()
+    )
+    if existing is not None:
+        return existing
+
+    return create_notification(
+        user=owner,
+        notif_type=NotificationType.PORTFOLIO_LIKED,
+        title="Páči sa mi tvoje portfólio",
+        body="",
+        actor=actor,
+        data={
+            "portfolio_item_id": item.id,
+        },
+    )
+
+
+def create_profile_liked_notification(*, profile_user, actor) -> Notification | None:
+    if profile_user is None or getattr(profile_user, "id", None) == getattr(actor, "id", None):
+        return None
+
+    existing = (
+        Notification.objects.filter(
+            user=profile_user,
+            type=NotificationType.PROFILE_LIKED,
+            data__profile_user_id=profile_user.id,
+            actor=actor,
+        )
+        .order_by("-created_at", "-id")
+        .first()
+    )
+    if existing is not None:
+        return existing
+
+    return create_notification(
+        user=profile_user,
+        notif_type=NotificationType.PROFILE_LIKED,
+        title="Paci sa mi tvoj profil",
+        body="",
+        actor=actor,
+        data={
+            "profile_user_id": profile_user.id,
+            "from_user_id": actor.id,
         },
     )

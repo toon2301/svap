@@ -3,13 +3,19 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowsUpDownIcon, CheckIcon, PlusIcon } from '@heroicons/react/24/outline';
 import { useRouter } from 'next/navigation';
+import toast from 'react-hot-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useIsMobile } from '@/hooks';
 import type { ProfileTab } from './profileTypes';
 import { listProfilePortfolio } from './portfolioApi';
+import { setPortfolioLikeState, type PortfolioLikeResponse } from './portfolioLikesApi';
 import type { PortfolioItem } from './portfolioTypes';
 import { getPortfolioCategoryLabel } from './portfolioDisplay';
-import { PROFILE_PORTFOLIO_REFRESH_EVENT } from './portfolioEvents';
+import {
+  PROFILE_PORTFOLIO_LIKED_EVENT,
+  PROFILE_PORTFOLIO_REFRESH_EVENT,
+  readProfilePortfolioLikedEvent,
+} from './portfolioEvents';
 import { PortfolioCreateDesktopModal } from './PortfolioCreateDesktopModal';
 import { PortfolioCreateForm } from './PortfolioCreateForm';
 import { PortfolioEmptyState } from './PortfolioEmptyState';
@@ -49,6 +55,7 @@ export default function ProfilePortfolioSection({
   const [loadError, setLoadError] = useState(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isOrderOpen, setIsOrderOpen] = useState(false);
+  const [pendingPortfolioLikeIds, setPendingPortfolioLikeIds] = useState<Set<number>>(() => new Set());
   const loadedKeyRef = useRef<string | null>(null);
   const requestSeqRef = useRef(0);
   const currentTargetKey = useMemo(
@@ -93,6 +100,57 @@ export default function ProfilePortfolioSection({
     [ownerIdentifier, router],
   );
 
+  const updatePortfolioLikeInState = useCallback(
+    (itemId: number, isLiked: boolean, likesCount: number) => {
+      const safeLikesCount = Math.max(0, Number.isFinite(likesCount) ? Math.trunc(likesCount) : 0);
+      setItems((current) =>
+        current.map((item) =>
+          item.id === itemId
+            ? { ...item, is_liked_by_me: isLiked, likes_count: safeLikesCount }
+            : item,
+        ),
+      );
+    },
+    [],
+  );
+
+  const handleTogglePortfolioLike = useCallback(
+    async (item: PortfolioItem) => {
+      if (pendingPortfolioLikeIds.has(item.id)) return;
+
+      const previousLiked = item.is_liked_by_me === true;
+      const previousLikesCount = Math.max(0, Number(item.likes_count ?? 0));
+      const nextLiked = !previousLiked;
+      const optimisticLikesCount = Math.max(0, previousLikesCount + (nextLiked ? 1 : -1));
+
+      setPendingPortfolioLikeIds((current) => {
+        const next = new Set(current);
+        next.add(item.id);
+        return next;
+      });
+      updatePortfolioLikeInState(item.id, nextLiked, optimisticLikesCount);
+
+      try {
+        const data: PortfolioLikeResponse = await setPortfolioLikeState(item.id, nextLiked);
+        updatePortfolioLikeInState(
+          data.portfolio_item_id,
+          data.is_liked_by_me === true,
+          Number(data.likes_count ?? optimisticLikesCount),
+        );
+      } catch {
+        updatePortfolioLikeInState(item.id, previousLiked, previousLikesCount);
+        toast.error(t('portfolio.likeUpdateFailed'));
+      } finally {
+        setPendingPortfolioLikeIds((current) => {
+          const next = new Set(current);
+          next.delete(item.id);
+          return next;
+        });
+      }
+    },
+    [pendingPortfolioLikeIds, t, updatePortfolioLikeInState],
+  );
+
   const loadPortfolio = useCallback(async () => {
     const seq = requestSeqRef.current + 1;
     requestSeqRef.current = seq;
@@ -126,6 +184,18 @@ export default function ProfilePortfolioSection({
     setIsOrderOpen(false);
     loadedKeyRef.current = null;
   }, [currentTargetKey]);
+
+  useEffect(() => {
+    const handlePortfolioLiked = (event: Event) => {
+      const payload = readProfilePortfolioLikedEvent(event);
+      if (!payload) return;
+      if (!items.some((item) => item.id === payload.portfolioItemId)) return;
+      void loadPortfolio();
+    };
+
+    window.addEventListener(PROFILE_PORTFOLIO_LIKED_EVENT, handlePortfolioLiked);
+    return () => window.removeEventListener(PROFILE_PORTFOLIO_LIKED_EVENT, handlePortfolioLiked);
+  }, [items, loadPortfolio]);
 
   useEffect(() => {
     const handleRefresh = () => {
@@ -272,6 +342,8 @@ export default function ProfilePortfolioSection({
         onOpenItem={handleOpenItem}
         onPreviewOrder={setItems}
         onReordered={handleReordered}
+        onToggleLike={handleTogglePortfolioLike}
+        pendingLikeIds={pendingPortfolioLikeIds}
         headerActions={
           isOwner && !isMobile ? (
             <div className="flex items-center gap-2">
@@ -300,7 +372,7 @@ export default function ProfilePortfolioSection({
                 aria-label={t('portfolio.createAction')}
                 title={t('portfolio.createAction')}
                 onClick={handleCreateClick}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-purple-200 bg-purple-100 text-purple-600 transition hover:-translate-y-0.5 hover:bg-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-400/50"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-purple-200 bg-purple-100 text-purple-600 transition hover:-translate-y-0.5 hover:bg-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-400/50 dark:border-purple-900/50 dark:bg-[#101011] dark:text-purple-200 dark:hover:border-purple-800/70 dark:hover:bg-purple-950/20"
               >
                 <PlusIcon className="h-5 w-5" aria-hidden="true" />
               </button>

@@ -30,6 +30,8 @@ class UserProfileSerializer(
     completed_cooperations_count = serializers.SerializerMethodField()
     unread_skill_request_count = serializers.SerializerMethodField()
     is_favorited = serializers.SerializerMethodField()
+    profile_likes_count = serializers.SerializerMethodField()
+    is_profile_liked_by_me = serializers.SerializerMethodField()
     entitlements = serializers.SerializerMethodField()
     mobile_onboarding = serializers.SerializerMethodField()
     desktop_onboarding = serializers.SerializerMethodField()
@@ -78,6 +80,8 @@ class UserProfileSerializer(
             "completed_cooperations_count",
             "unread_skill_request_count",
             "is_favorited",
+            "profile_likes_count",
+            "is_profile_liked_by_me",
             "entitlements",
             "mobile_onboarding",
             "desktop_onboarding",
@@ -99,6 +103,8 @@ class UserProfileSerializer(
             "completed_cooperations_count",
             "unread_skill_request_count",
             "is_favorited",
+            "profile_likes_count",
+            "is_profile_liked_by_me",
             "entitlements",
             "mobile_onboarding",
             "desktop_onboarding",

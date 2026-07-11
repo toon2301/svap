@@ -30,6 +30,7 @@ describe('Sidebar extra coverage', () => {
   const onClose = jest.fn();
   const onLanguageClick = jest.fn();
   const onAccountTypeClick = jest.fn();
+  const onAccountSettingsClick = jest.fn();
   const onLogout = jest.fn();
 
   const baseProps = {
@@ -92,10 +93,30 @@ describe('Sidebar extra coverage', () => {
       </ThemeProvider>
     );
 
-    const accRow = screen.getByText('Účet').closest('button')!;
+    const accRow = screen.getByText('Typ účtu').closest('button')!;
     fireEvent.click(accRow);
 
     expect(onAccountTypeClick).toHaveBeenCalled();
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it('mobile: account settings row triggers onAccountSettingsClick and closes', () => {
+    render(
+      <ThemeProvider>
+        <Sidebar
+          {...baseProps}
+          isMobile
+          isOpen
+          onClose={onClose}
+          onAccountSettingsClick={onAccountSettingsClick}
+        />
+      </ThemeProvider>
+    );
+
+    const accRow = screen.getByText('Účet').closest('button')!;
+    fireEvent.click(accRow);
+
+    expect(onAccountSettingsClick).toHaveBeenCalled();
     expect(onClose).toHaveBeenCalled();
   });
 

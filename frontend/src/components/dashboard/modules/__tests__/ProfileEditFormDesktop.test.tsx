@@ -55,6 +55,23 @@ describe('ProfileEditFormDesktop', () => {
     });
   });
 
+  it('returns from desktop edit mode from the heading back button', () => {
+    const onEditCancel = jest.fn();
+
+    render(
+      <ProfileEditFormDesktop
+        user={baseUser}
+        editableUser={baseUser}
+        onEditableUserUpdate={jest.fn()}
+        onEditCancel={onEditCancel}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /Sp/ }));
+
+    expect(onEditCancel).toHaveBeenCalledTimes(1);
+  });
+
   it('saves bio on blur', async () => {
     const onEditableUserUpdate = jest.fn();
 

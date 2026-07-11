@@ -16,8 +16,7 @@ def _baseline_prod_env() -> dict:
         "SAFESEARCH_ENABLED": "False",
         "ALLOWED_HOSTS": (
             "svaply.com,www.svaply.com,api.svaply.com,"
-            "stunning-inspiration-svap.up.railway.app,"
-            "exemplary-tranquility-svap.up.railway.app"
+            "stunning-inspiration-svap.up.railway.app"
         ),
         "DATABASE_URL": "postgres://user:pass@localhost:5432/swaply",
         "RESEND_API_KEY": "test-resend-key",

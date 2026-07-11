@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { Bars3Icon } from '@heroicons/react/24/outline';
+import VerifiedBadge from '@/components/shared/VerifiedBadge';
 import type { ConversationListItem } from './types';
 import { GroupConversationAvatar } from './GroupConversationAvatar';
 import { MessagePinIcon } from './MessagePinIcon';
@@ -88,38 +89,43 @@ export function ConversationsListRow({
         onClick={() => onOpenConversation(conversation.id)}
         className="flex min-w-0 flex-1 items-center gap-3 text-left"
       >
-        <div
-          className={`flex flex-shrink-0 items-center justify-center overflow-hidden rounded-full ${
-            isCompact ? 'h-9 w-9' : 'h-11 w-11'
-          } ${
-            isSelected
-              ? 'bg-purple-200 dark:bg-purple-800/70'
-              : 'bg-purple-100 dark:bg-purple-900/40'
-          }`}
-        >
-          {isGroup ? (
-            <GroupConversationAvatar
-              name={title}
-              members={conversation.avatar_members}
-              size={isCompact ? 'sm' : 'lg'}
-            />
-          ) : other?.avatar_url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={other.avatar_url} alt={title} className="h-full w-full object-cover" />
-          ) : (
-            <span
-              className={`font-bold ${
-                isCompact ? 'text-[11px]' : 'text-sm'
-              } ${
-                isSelected
-                  ? 'text-purple-800 dark:text-purple-100'
-                  : 'text-purple-700 dark:text-purple-300'
-              }`}
-            >
-              {(title || 'U').slice(0, 1).toUpperCase()}
-            </span>
-          )}
-        </div>
+        <span className="relative flex-shrink-0">
+          <div
+            className={`flex items-center justify-center overflow-hidden rounded-full ${
+              isCompact ? 'h-9 w-9' : 'h-11 w-11'
+            } ${
+              isSelected
+                ? 'bg-purple-200 dark:bg-purple-800/70'
+                : 'bg-purple-100 dark:bg-purple-900/40'
+            }`}
+          >
+            {isGroup ? (
+              <GroupConversationAvatar
+                name={title}
+                members={conversation.avatar_members}
+                size={isCompact ? 'sm' : 'lg'}
+              />
+            ) : other?.avatar_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={other.avatar_url} alt={title} className="h-full w-full object-cover" />
+            ) : (
+              <span
+                className={`font-bold ${
+                  isCompact ? 'text-[11px]' : 'text-sm'
+                } ${
+                  isSelected
+                    ? 'text-purple-800 dark:text-purple-100'
+                    : 'text-purple-700 dark:text-purple-300'
+                }`}
+              >
+                {(title || 'U').slice(0, 1).toUpperCase()}
+              </span>
+            )}
+          </div>
+          {!isGroup && !other?.is_deleted && other?.is_verified ? (
+            <VerifiedBadge size="sm" />
+          ) : null}
+        </span>
 
         <div
           className={`min-w-0 flex-1 transition-[padding-right] duration-150 ${

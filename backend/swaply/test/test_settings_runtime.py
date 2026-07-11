@@ -210,7 +210,7 @@ def test_prod_csrf_and_redis_enforced(monkeypatch):
         {
             "DEBUG": "False",
             "SECRET_KEY": "prod-secret",
-            "ALLOWED_HOSTS": "svaply.com,www.svaply.com,api.svaply.com,stunning-inspiration-svap.up.railway.app,exemplary-tranquility-svap.up.railway.app",
+            "ALLOWED_HOSTS": "svaply.com,www.svaply.com,api.svaply.com,stunning-inspiration-svap.up.railway.app",
             "RESEND_API_KEY": "re_test_key",
             "DEFAULT_FROM_EMAIL": "info@svaply.com",
             "REDIS_URL": "redis://localhost:6379/0",
@@ -241,7 +241,7 @@ def test_cache_redis_url_takes_precedence_and_applies_cache_options(monkeypatch)
         {
             "DEBUG": "False",
             "SECRET_KEY": "prod-secret",
-            "ALLOWED_HOSTS": "svaply.com,www.svaply.com,api.svaply.com,stunning-inspiration-svap.up.railway.app,exemplary-tranquility-svap.up.railway.app",
+            "ALLOWED_HOSTS": "svaply.com,www.svaply.com,api.svaply.com,stunning-inspiration-svap.up.railway.app",
             "RESEND_API_KEY": "re_test_key",
             "DEFAULT_FROM_EMAIL": "info@svaply.com",
             "REDIS_URL": "redis://shared.example.com:6379/0",
@@ -276,7 +276,7 @@ def test_postgres_can_disable_server_side_cursors_for_transaction_pooling(monkey
         {
             "DEBUG": "False",
             "SECRET_KEY": "prod-secret",
-            "ALLOWED_HOSTS": "svaply.com,www.svaply.com,api.svaply.com,stunning-inspiration-svap.up.railway.app,exemplary-tranquility-svap.up.railway.app",
+            "ALLOWED_HOSTS": "svaply.com,www.svaply.com,api.svaply.com,stunning-inspiration-svap.up.railway.app",
             "RESEND_API_KEY": "re_test_key",
             "DEFAULT_FROM_EMAIL": "info@svaply.com",
             "DATABASE_URL": "postgresql://user:pass@pgbouncer.railway.internal:6432/railway",
@@ -364,7 +364,7 @@ def test_logging_stdout_mode(monkeypatch):
         {
             "DEBUG": "False",
             "SECRET_KEY": "prod",
-            "ALLOWED_HOSTS": "svaply.com,www.svaply.com,api.svaply.com,stunning-inspiration-svap.up.railway.app,exemplary-tranquility-svap.up.railway.app",
+            "ALLOWED_HOSTS": "svaply.com,www.svaply.com,api.svaply.com,stunning-inspiration-svap.up.railway.app",
             "RESEND_API_KEY": "re_test_key",
             "DEFAULT_FROM_EMAIL": "info@svaply.com",
             "LOG_TO_STDOUT": "1",
@@ -380,7 +380,7 @@ def test_prod_adds_runtime_railway_public_domain_to_allowed_hosts(monkeypatch):
         {
             "DEBUG": "False",
             "SECRET_KEY": "prod-secret",
-            "ALLOWED_HOSTS": "svaply.com,www.svaply.com,api.svaply.com,stunning-inspiration-svap.up.railway.app,exemplary-tranquility-svap.up.railway.app",
+            "ALLOWED_HOSTS": "svaply.com,www.svaply.com,api.svaply.com,stunning-inspiration-svap.up.railway.app",
             "RAILWAY_PUBLIC_DOMAIN": "backend-http-svap.up.railway.app",
             "RESEND_API_KEY": "re_test_key",
             "DEFAULT_FROM_EMAIL": "info@svaply.com",
@@ -420,7 +420,7 @@ def test_missing_email_envs_raises_in_prod(monkeypatch):
             {
                 "DEBUG": "False",
                 "SECRET_KEY": "prod",
-                "ALLOWED_HOSTS": "svaply.com,www.svaply.com,api.svaply.com,stunning-inspiration-svap.up.railway.app,exemplary-tranquility-svap.up.railway.app",
+                "ALLOWED_HOSTS": "svaply.com,www.svaply.com,api.svaply.com,stunning-inspiration-svap.up.railway.app",
                 "RESEND_API_KEY": "",
                 "DEFAULT_FROM_EMAIL": "",
             },

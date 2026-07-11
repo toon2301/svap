@@ -8,6 +8,7 @@ import RightSidebar from './RightSidebar';
 import MobileTopNav from './MobileTopNav';
 import MobileTopBar from './MobileTopBar';
 import type { MessagingUserBrief } from './modules/messages/types';
+import type { AccountSettingsMobileView } from './modules/AccountSettingsModule';
 import type { User } from '@/types';
 
 interface DashboardLayoutProps {
@@ -26,6 +27,7 @@ interface DashboardLayoutProps {
   onSkillsModeToggle?: () => void;
   onSidebarLanguageClick: () => void;
   onSidebarAccountTypeClick: () => void;
+  onSidebarAccountSettingsClick: () => void;
   onSidebarPrivacyClick?: () => void;
   isSearchOpen?: boolean;
   isNotificationsPanelOpen?: boolean;
@@ -48,6 +50,7 @@ interface DashboardLayoutProps {
   onMobileMessagesBack?: () => void;
   isMobileOfferDetailOpen?: boolean;
   currentUser?: User | null;
+  mobileAccountSettingsView?: AccountSettingsMobileView;
   children: React.ReactNode;
 }
 
@@ -67,6 +70,7 @@ export default function DashboardLayout({
   onSkillsModeToggle,
   onSidebarLanguageClick,
   onSidebarAccountTypeClick,
+  onSidebarAccountSettingsClick,
   onSidebarPrivacyClick,
   isSearchOpen,
   isNotificationsPanelOpen,
@@ -89,6 +93,7 @@ export default function DashboardLayout({
   onMobileMessagesBack,
   isMobileOfferDetailOpen = false,
   currentUser = null,
+  mobileAccountSettingsView,
   children,
 }: DashboardLayoutProps) {
   const isProfileEditMode =
@@ -98,12 +103,24 @@ export default function DashboardLayout({
     activeModule === 'skills-offer' || activeModule === 'skills-search';
 
   const isMobileEditMode = isProfileEditMode;
+  const isMobileSettingsDetailOpen =
+    activeModule === 'notification-settings' ||
+    activeModule === 'language' ||
+    activeModule === 'account-type' ||
+    activeModule === 'privacy' ||
+    activeModule === 'account-settings' ||
+    activeRightItem === 'notifications' ||
+    activeRightItem === 'language' ||
+    activeRightItem === 'account-type' ||
+    activeRightItem === 'privacy' ||
+    activeRightItem === 'account-settings';
 
   const isAuxiliaryPanelOpen = Boolean(isSearchOpen || isNotificationsPanelOpen);
   const activeSidebarItem = isNotificationsPanelOpen ? 'notifications' : isSearchOpen ? 'search' : activeModule;
   const auxiliaryPanelRef = useRef<HTMLDivElement>(null);
   const hasAuxiliaryRightRail = !isRightSidebarOpen && Boolean(desktopRightRail);
   const hasDesktopRightColumn = isRightSidebarOpen || hasAuxiliaryRightRail;
+  const shouldShowDesktopRightColumn = hasDesktopRightColumn && !isAuxiliaryPanelOpen;
   const isOpenMobileMessagesConversation =
     activeModule === 'messages' && Boolean(isMobileMessageConversationOpen);
   const isMobile = useIsMobile();
@@ -195,7 +212,7 @@ export default function DashboardLayout({
 
   // Desktop grid: search column always exists in DOM.
   // When closed, its width is 0px; to avoid visual shift of main content, we apply a matching left padding to <main>.
-  const gridColsClassName = hasDesktopRightColumn
+  const gridColsClassName = shouldShowDesktopRightColumn
     ? isAuxiliaryPanelOpen
       ? 'lg:grid-cols-[240px_240px_1fr_240px] xl:grid-cols-[280px_280px_1fr_280px] 2xl:grid-cols-[384px_384px_1fr_384px]'
       : 'lg:grid-cols-[240px_0px_1fr_240px] xl:grid-cols-[280px_0px_1fr_280px] 2xl:grid-cols-[384px_0px_1fr_384px]'
@@ -229,11 +246,14 @@ export default function DashboardLayout({
           messagePeerIdentifier={mobileMessagePeerIdentifier}
           isMessageConversationOpen={isMobileMessageConversationOpen}
           onMessagesBackClick={onMobileMessagesBack}
+          accountSettingsView={mobileAccountSettingsView}
         />
       )}
 
       {/* Mobile Bottom Nav */}
-      {!(isRightSidebarOpen && activeModule === 'profile') &&
+      {!isMobileMenuOpen &&
+        !isMobileSettingsDetailOpen &&
+        !(isRightSidebarOpen && activeModule === 'profile') &&
         activeModule !== 'skills-describe' &&
         activeModule !== 'user-profile' &&
         activeModule !== 'portfolio-create' &&
@@ -252,6 +272,7 @@ export default function DashboardLayout({
         onClose={onMobileMenuClose}
         onLanguageClick={onSidebarLanguageClick}
         onAccountTypeClick={onSidebarAccountTypeClick}
+        onAccountSettingsClick={onSidebarAccountSettingsClick}
         onPrivacyClick={onSidebarPrivacyClick}
         onSearchClick={onSidebarSearchClick}
         onNotificationsClick={onSidebarNotificationsClick}
@@ -262,7 +283,7 @@ export default function DashboardLayout({
       <div
         className={`h-full grid grid-cols-1 ${gridColsClassName}`}
         data-search-open={isSearchOpen ? 'true' : 'false'}
-        data-right-sidebar-open={isRightSidebarOpen ? 'true' : 'false'}
+        data-right-sidebar-open={shouldShowDesktopRightColumn ? 'true' : 'false'}
         data-profile-edit={isProfileEditMode ? 'true' : 'false'}
       >
         {/* Left Sidebar - Desktop only */}
@@ -366,7 +387,7 @@ export default function DashboardLayout({
         </main>
 
         {/* Right rail - Desktop only, shows in grid when open */}
-        {hasDesktopRightColumn && (
+        {shouldShowDesktopRightColumn && (
           <div className="svap-right-sidebar-col hidden lg:block h-screen overflow-hidden">
             {isRightSidebarOpen ? (
               <RightSidebar

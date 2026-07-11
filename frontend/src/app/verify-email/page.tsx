@@ -2,10 +2,11 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useEffect, useState, Suspense } from 'react';
+import { useEffect, useRef, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { api, endpoints } from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface VerificationStatus {
   status: 'loading' | 'success' | 'error';
@@ -16,14 +17,22 @@ interface VerificationStatus {
 function VerifyEmailContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { refreshUser } = useAuth();
+  const verifyStartedRef = useRef(false);
   const [verificationStatus, setVerificationStatus] = useState<VerificationStatus>({
     status: 'loading',
     message: 'Overujem email...'
   });
 
   useEffect(() => {
+    // Jednorazový token: React StrictMode spúšťa efekt v deve 2× – druhý request
+    // by token „spotreboval" a zobrazil chybu napriek úspešnému overeniu.
+    if (verifyStartedRef.current) return;
+    verifyStartedRef.current = true;
+
     const verifyEmail = async () => {
-      const token = searchParams?.get('token') ?? null;
+      // Trim: email klienty vedia pri zalomení linku pridať do tokenu whitespace.
+      const token = (searchParams?.get('token') ?? '').trim() || null;
       
       if (!token) {
         setVerificationStatus({
@@ -41,6 +50,10 @@ function VerifyEmailContent() {
         });
 
         if (response.data.verified) {
+          // Obnov user dáta v AuthContexte, aby sa verifikačný badge zobrazil
+          // hneď (bez manuálneho refreshu) – užívateľ môže byť už prihlásený.
+          void refreshUser({ force: true }).catch(() => undefined);
+
           // Automatické prihlásenie po úspešnej verifikácii
           if (response.data.tokens) {
             setVerificationStatus({
@@ -65,15 +78,29 @@ function VerifyEmailContent() {
             error: response.data.error || 'Nepodarilo sa overiť email'
           });
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error('Verification error:', error);
-        
+
         let errorMessage = 'Nepodarilo sa overiť email';
-        
-        if (error.response?.data?.error) {
-          errorMessage = error.response.data.error;
-        } else if ((error.response?.data?.validation_errors ?? error.response?.data?.details)?.token) {
-          errorMessage = (error.response.data.validation_errors ?? error.response.data.details).token[0];
+
+        // Preferuj špecifickú token chybu („Token expiroval." a pod.) pred
+        // generickým obalom „Neplatné údaje" z BE validácie.
+        const data = (
+          error as {
+            response?: {
+              data?: {
+                error?: string;
+                validation_errors?: Record<string, string[]>;
+                details?: Record<string, string[]>;
+              };
+            };
+          }
+        )?.response?.data;
+        const tokenErrors = (data?.validation_errors ?? data?.details)?.token;
+        if (Array.isArray(tokenErrors) && tokenErrors[0]) {
+          errorMessage = tokenErrors[0];
+        } else if (data?.error) {
+          errorMessage = data.error;
         }
 
         setVerificationStatus({
@@ -85,7 +112,7 @@ function VerifyEmailContent() {
     };
 
     verifyEmail();
-  }, [searchParams]);
+  }, [searchParams, refreshUser]);
 
   const getStatusIcon = () => {
     switch (verificationStatus.status) {

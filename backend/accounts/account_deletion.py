@@ -65,7 +65,7 @@ def _delete_owned_content(user) -> None:
     OfferedSkill/PortfolioItem mažú svoje obrázky cez CASCADE + post_delete
     signály (S3 cleanup). Review napísané používateľom sa mažú (rozhodnutie B).
     """
-    from portfolio.models import PortfolioItem
+    from portfolio.models import PortfolioItem, PortfolioItemLike
 
     from .models import (
         EmailVerification,
@@ -73,6 +73,7 @@ def _delete_owned_content(user) -> None:
         Notification,
         OfferedSkill,
         OfferedSkillLike,
+        ProfileLike,
         Review,
         ReviewLike,
     )
@@ -87,6 +88,9 @@ def _delete_owned_content(user) -> None:
     # Lajky, obľúbení (aj keď si tohto usera obľúbili iní – stráca zmysel).
     ReviewLike.objects.filter(user=user).delete()
     OfferedSkillLike.objects.filter(user=user).delete()
+    PortfolioItemLike.objects.filter(user=user).delete()
+    ProfileLike.objects.filter(user=user).delete()
+    ProfileLike.objects.filter(profile_user=user).delete()
     FavoriteUser.objects.filter(user=user).delete()
     FavoriteUser.objects.filter(favorite_user=user).delete()
 

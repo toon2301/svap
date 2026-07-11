@@ -18,7 +18,7 @@ class PortfolioItem(models.Model):
     )
     title = models.CharField(_("Nazov"), max_length=120)
     category = models.CharField(_("Kategoria"), max_length=100)
-    description = models.TextField(_("Popis"), max_length=1000, blank=True, default="")
+    description = models.TextField(_("Popis"), max_length=500, blank=True, default="")
     related_offer = models.ForeignKey(
         OfferedSkill,
         on_delete=models.SET_NULL,
@@ -194,3 +194,45 @@ class PortfolioImage(models.Model):
 
     def __str__(self):
         return f"Obrazok #{self.id} pre portfolio item #{self.item_id}"
+
+
+class PortfolioItemLike(models.Model):
+    """User like for a portfolio item."""
+
+    item = models.ForeignKey(
+        PortfolioItem,
+        on_delete=models.CASCADE,
+        related_name="portfolio_likes",
+        verbose_name=_("Polozka portfolia"),
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="portfolio_item_likes",
+        verbose_name=_("Pouzivatel"),
+    )
+    created_at = models.DateTimeField(_("Vytvorene"), auto_now_add=True)
+
+    class Meta:
+        verbose_name = _("Paci sa mi portfolio")
+        verbose_name_plural = _("Paci sa mi portfolia")
+        ordering = ["-created_at", "-id"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["item", "user"],
+                name="unique_portfolio_item_like_per_user",
+            )
+        ]
+        indexes = [
+            models.Index(
+                fields=["item", "created_at"],
+                name="port_like_item_created_idx",
+            ),
+            models.Index(
+                fields=["user", "created_at"],
+                name="port_like_user_created_idx",
+            ),
+        ]
+
+    def __str__(self):
+        return f"Like portfolia #{self.item_id} od pouzivatela {self.user_id}"

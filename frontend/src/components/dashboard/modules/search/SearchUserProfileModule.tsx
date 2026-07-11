@@ -17,10 +17,22 @@ import {
 import ProfileMobileView from "../profile/ProfileMobileView";
 import ProfileDesktopView from "../profile/ProfileDesktopView";
 import ProfileWebsitesModal from "../profile/ProfileWebsitesModal";
+import { setProfileLikeState, type ProfileLikeResponse } from "../profile/profileLikesApi";
 import OfferImageGalleryLightbox from "../shared/OfferImageGalleryLightbox";
 import type { ProfileTab } from "../profile/profileTypes";
 import { getMessagingErrorMessage } from "../messages/messagingApi";
 import { buildMessagesUrl } from "../messages/messagesRouting";
+
+type SearchProfileApiError = {
+  response?: {
+    status?: number;
+    data?: {
+      error?: string;
+      detail?: string;
+    };
+  };
+  message?: string;
+};
 
 interface SearchUserProfileModuleProps {
   userId: number;
@@ -47,9 +59,7 @@ function getProfileAvatarUrl(user: User): string | null {
 export function SearchUserProfileModule({
   userId,
   onBack,
-  onSendMessage,
   highlightedSkillId = null,
-  initialSummary,
   initialTab,
 }: SearchUserProfileModuleProps) {
   const router = useRouter();
@@ -63,6 +73,7 @@ export function SearchUserProfileModule({
   const [isAvatarLightboxOpen, setIsAvatarLightboxOpen] = useState(false);
   const [isOpeningConversation, setIsOpeningConversation] = useState(false);
   const [isFavoritePending, setIsFavoritePending] = useState(false);
+  const [isProfileLikePending, setIsProfileLikePending] = useState(false);
 
   const handleTabsKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
     const order: ProfileTab[] = ["offers", "portfolio", "posts", "tagged"];
@@ -128,18 +139,19 @@ export function SearchUserProfileModule({
             }
           }
         }
-      } catch (e: any) {
+      } catch (error: unknown) {
         if (cancelled) return;
-        const status = e?.response?.status;
+        const apiError = error as SearchProfileApiError;
+        const status = apiError.response?.status;
         const msg =
           status === 429
             ? t(
                 "search.userProfileRateLimited",
                 "Príliš veľa požiadaviek pri načítavaní profilu, skúste to o chvíľu.",
               )
-            : e?.response?.data?.error ||
-              e?.response?.data?.detail ||
-              e?.message ||
+            : apiError.response?.data?.error ||
+              apiError.response?.data?.detail ||
+              apiError.message ||
               t("search.userProfileLoadError", "Nepodarilo sa načítať profil používateľa.");
         setError(msg);
       } finally {
@@ -206,17 +218,89 @@ export function SearchUserProfileModule({
       patchUserProfileInCache(profileUser.id, {
         is_favorited: nextIsFavorited,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const apiError = error as SearchProfileApiError;
       const message =
-        error?.response?.data?.error ||
-        error?.response?.data?.detail ||
-        error?.message ||
+        apiError.response?.data?.error ||
+        apiError.response?.data?.detail ||
+        apiError.message ||
         (nextIsFavorited
           ? t('search.addToFavoritesError', 'Nepodarilo sa pridať k obľúbeným.')
           : t('search.removeFromFavoritesError', 'Nepodarilo sa odobrať z obľúbených.'));
       toast.error(message);
     } finally {
       setIsFavoritePending(false);
+    }
+  };
+
+
+  const applyProfileLikeState = (data: ProfileLikeResponse) => {
+    const nextLiked = data.is_profile_liked_by_me === true;
+    const nextCount = Math.max(0, Number(data.profile_likes_count ?? 0));
+    setProfileUser((current) => {
+      if (!current) return current;
+      return {
+        ...current,
+        is_profile_liked_by_me: nextLiked,
+        profile_likes_count: nextCount,
+      };
+    });
+    patchUserProfileInCache(data.profile_user_id, {
+      is_profile_liked_by_me: nextLiked,
+      profile_likes_count: nextCount,
+    });
+  };
+
+  const handleToggleProfileLike = async () => {
+    if (!profileUser || isProfileLikePending) return;
+    if (!Number.isInteger(profileUser.id) || profileUser.id <= 0) return;
+
+    const previousLiked = profileUser.is_profile_liked_by_me === true;
+    const previousCount = Math.max(0, Number(profileUser.profile_likes_count ?? 0));
+    const nextLiked = !previousLiked;
+    const optimisticCount = nextLiked ? previousCount + 1 : Math.max(0, previousCount - 1);
+
+    setIsProfileLikePending(true);
+    setProfileUser((current) =>
+      current
+        ? {
+            ...current,
+            is_profile_liked_by_me: nextLiked,
+            profile_likes_count: optimisticCount,
+          }
+        : current,
+    );
+    patchUserProfileInCache(profileUser.id, {
+      is_profile_liked_by_me: nextLiked,
+      profile_likes_count: optimisticCount,
+    });
+
+    try {
+      const data = await setProfileLikeState(profileUser.id, nextLiked);
+      applyProfileLikeState(data);
+    } catch (error: unknown) {
+      const apiError = error as SearchProfileApiError;
+      setProfileUser((current) =>
+        current
+          ? {
+              ...current,
+              is_profile_liked_by_me: previousLiked,
+              profile_likes_count: previousCount,
+            }
+          : current,
+      );
+      patchUserProfileInCache(profileUser.id, {
+        is_profile_liked_by_me: previousLiked,
+        profile_likes_count: previousCount,
+      });
+      const message =
+        apiError.response?.data?.error ||
+        apiError.response?.data?.detail ||
+        apiError.message ||
+        t('profile.profileLikeUpdateFailed', 'Nepodarilo sa aktualizovat paci sa mi.');
+      toast.error(message);
+    } finally {
+      setIsProfileLikePending(false);
     }
   };
 
@@ -290,6 +374,8 @@ export function SearchUserProfileModule({
             onToggleFavorite={handleToggleFavorite}
             isFavorited={Boolean(profileUser.is_favorited)}
             isFavoritePending={isFavoritePending}
+            onToggleProfileLike={handleToggleProfileLike}
+            isProfileLikePending={isProfileLikePending}
           />
         ) : (
           <ProfileDesktopView
@@ -316,6 +402,8 @@ export function SearchUserProfileModule({
             onToggleFavorite={handleToggleFavorite}
             isFavorited={Boolean(profileUser.is_favorited)}
             isFavoritePending={isFavoritePending}
+            onToggleProfileLike={handleToggleProfileLike}
+            isProfileLikePending={isProfileLikePending}
           />
         )}
       </div>

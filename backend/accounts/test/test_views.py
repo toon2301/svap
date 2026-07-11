@@ -344,7 +344,9 @@ class TestAuthViews(APITestCase):
         self.assertNotIn('LEFT OUTER JOIN "accounts_skillrequest"', sql)
         self.assertNotIn('_completed_cooperations_count', sql)
         self.assertIn('"accounts_notification"', sql)
-        self.assertEqual(sql.count('SELECT COUNT('), 3)
+        # 4 subqueries: completed_sent, completed_received, profile_likes,
+        # unread_skill_request (profile_likes pribudol do _me_user_queryset).
+        self.assertEqual(sql.count('SELECT COUNT('), 4)
 
     def test_me_view_unauthenticated(self):
         """Test získania informácií o neprihlásenom používateľovi"""

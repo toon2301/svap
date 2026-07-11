@@ -1,12 +1,13 @@
 import re
 
-from django.conf import settings
+from django.urls import reverse
 from rest_framework import serializers
 
 from accounts.models import OfferedSkill
 
 from .constants import PORTFOLIO_CATEGORY_CHOICES, normalize_portfolio_category
-from .models import PortfolioImage, PortfolioItem
+from .image_storage import variant_storage_key
+from .models import PortfolioImage, PortfolioItem, PortfolioItemLike
 
 HTML_TAG_RE = re.compile(r"<[^>]+>")
 PORTFOLIO_WRITE_FIELDS = {"title", "category", "description", "related_offer"}
@@ -21,65 +22,41 @@ def _validate_plain_text(value: str, *, allow_blank: bool) -> str:
     return value
 
 
-def _build_media_url(request, key: str) -> str:
-    base = (getattr(settings, "MEDIA_URL", "/media/") or "/media/").rstrip("/") + "/"
-    normalized_key = key.lstrip("/")
-    if base.startswith("/"):
-        local_prefix = base.lstrip("/")
-        if normalized_key.startswith(local_prefix):
-            normalized_key = normalized_key[len(local_prefix) :]
-    url = f"{base}{normalized_key}"
+def _proxy_image_url(request, image: PortfolioImage, variant: str) -> str:
+    """Absolútna URL na privátny proxy endpoint – nie priama S3 URL.
+
+    Servírovanie aj autorizáciu rieši PortfolioImageFileView (stream cez
+    FileResponse, rovnaký vzor ako MessageImageView). Serializer tu len skladá
+    URL pre daný variant, takže obrázky nie sú verejne dostupné priamou S3 URL.
+    """
+    path = reverse("accounts:portfolio_image_file", args=[image.item_id, image.id])
+    url = f"{path}?variant={variant}"
     return request.build_absolute_uri(url) if request else url
 
 
-def _image_key(image: PortfolioImage, *fields: str) -> str:
-    for field in fields:
-        key = (getattr(image, field, "") or "").strip()
-        if key:
-            return key
-    return ""
+def _approved_variant_url(
+    request, image: PortfolioImage, variant: str
+) -> str | None:
+    """Proxy URL pre variant – len ak je obrázok APPROVED a jeho S3 kľúč existuje.
+
+    Ktoré polia tvoria variant, určuje zdieľané mapovanie v image_storage
+    (PORTFOLIO_VARIANT_KEY_FIELDS) – rovnaké, podľa ktorého proxy view vyberá
+    kľúč na servírovanie.
+    """
+    if image.status != PortfolioImage.Status.APPROVED:
+        return None
+    if not variant_storage_key(image, variant):
+        return None
+    return _proxy_image_url(request, image, variant)
 
 
-def _legacy_image_url(request, image: PortfolioImage) -> str | None:
+def _legacy_original_url(request, image: PortfolioImage) -> str | None:
+    """Fallback pre staré obrázky uložené v ImageField (bez WebP variantov)."""
     if image.status == PortfolioImage.Status.REJECTED:
         return None
-
-    image_field = getattr(image, "image", None)
-    image_name = (getattr(image_field, "name", "") or "").strip()
-    if image_name:
-        try:
-            url = image_field.url
-        except Exception:
-            return None
-        return request.build_absolute_uri(url) if request else url
-
-    return None
-
-
-def _image_url_for_fields(
-    request,
-    image: PortfolioImage,
-    *fields: str,
-    legacy_fallback: bool = False,
-) -> str | None:
-    if image.status == PortfolioImage.Status.APPROVED:
-        key = _image_key(image, *fields)
-        if key:
-            return _build_media_url(request, key)
-    if legacy_fallback:
-        return _legacy_image_url(request, image)
-    return None
-
-
-def _image_url(request, image: PortfolioImage) -> str | None:
-    return _image_url_for_fields(
-        request,
-        image,
-        "medium_key",
-        "large_key",
-        "approved_key",
-        legacy_fallback=True,
-    )
+    if not variant_storage_key(image, "original"):
+        return None
+    return _proxy_image_url(request, image, "original")
 
 
 class PortfolioImageSerializer(serializers.ModelSerializer):
@@ -112,29 +89,23 @@ class PortfolioImageSerializer(serializers.ModelSerializer):
         ]
 
     def get_image_url(self, obj):
-        return _image_url(self.context.get("request"), obj)
+        request = self.context.get("request")
+        return (
+            _approved_variant_url(request, obj, "medium")
+            or _approved_variant_url(request, obj, "large")
+            or _legacy_original_url(request, obj)
+        )
 
     def get_thumbnail_url(self, obj):
-        return _image_url_for_fields(
-            self.context.get("request"),
-            obj,
-            "thumbnail_key",
-        )
+        return _approved_variant_url(self.context.get("request"), obj, "thumbnail")
 
     def get_medium_url(self, obj):
-        return _image_url_for_fields(
-            self.context.get("request"),
-            obj,
-            "medium_key",
-        )
+        return _approved_variant_url(self.context.get("request"), obj, "medium")
 
     def get_large_url(self, obj):
-        return _image_url_for_fields(
-            self.context.get("request"),
-            obj,
-            "large_key",
-            "approved_key",
-            legacy_fallback=True,
+        request = self.context.get("request")
+        return _approved_variant_url(request, obj, "large") or _legacy_original_url(
+            request, obj
         )
 
     def to_representation(self, instance):
@@ -213,6 +184,8 @@ class PortfolioItemSerializer(serializers.ModelSerializer):
     related_offer = serializers.SerializerMethodField()
     cover_image = serializers.SerializerMethodField()
     images = serializers.SerializerMethodField()
+    likes_count = serializers.SerializerMethodField()
+    is_liked_by_me = serializers.SerializerMethodField()
 
     class Meta:
         model = PortfolioItem
@@ -227,6 +200,8 @@ class PortfolioItemSerializer(serializers.ModelSerializer):
             "related_offer",
             "cover_image",
             "images",
+            "likes_count",
+            "is_liked_by_me",
             "created_at",
             "updated_at",
         ]
@@ -236,6 +211,8 @@ class PortfolioItemSerializer(serializers.ModelSerializer):
             "category",
             "description",
             "sort_order",
+            "likes_count",
+            "is_liked_by_me",
             "created_at",
             "updated_at",
         ]
@@ -272,3 +249,20 @@ class PortfolioItemSerializer(serializers.ModelSerializer):
         if images is None:
             images = obj.images.all()
         return PortfolioImageSerializer(images, many=True, context=self.context).data
+
+    def get_likes_count(self, obj):
+        annotated_count = getattr(obj, "_likes_count", None)
+        if annotated_count is not None:
+            return int(annotated_count)
+        return obj.portfolio_likes.count()
+
+    def get_is_liked_by_me(self, obj):
+        liked_item_ids = self.context.get("liked_portfolio_item_ids")
+        if liked_item_ids is not None:
+            return obj.id in liked_item_ids
+
+        request = self.context.get("request")
+        user = getattr(request, "user", None)
+        if user is None or not getattr(user, "is_authenticated", False):
+            return False
+        return PortfolioItemLike.objects.filter(item=obj, user=user).exists()

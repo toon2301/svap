@@ -60,7 +60,8 @@
     "remove": "Odstrániť",
     "saving": "Ukladám...",
     "sending": "Odosielam...",
-    "submit": "Odoslať"
+    "submit": "Odoslať",
+    "verifiedAccount": "Overený účet"
   },
   "requests": {
     "title": "Spolupráce",
@@ -188,7 +189,7 @@
   },
   "homepage": {
     "welcome": "Víta ťa",
-    "description": "Miesto, kde sa stretávajú ľudia s túžbou rásť – jedni učia, druhí sa učia, všetci spolu tvoria silnejšiu komunitu.",
+    "description": "Svaply je miesto, kde ľudia zdieľajú, čo ponúkajú, hľadajú, čo potrebujú, a objavujú služby, zručnosti či pomoc vo svojom okolí.\n\nNa nástenke môžeš ukázať svoju prácu, reagovať na dopyty, budovať si meno, komunikovať, zbierať recenzie a mať všetko prehľadne na jednom mieste.",
     "redirectingToDashboard": "Presmerovávam na dashboard..."
   },
   "dashboard": {
@@ -1029,6 +1030,7 @@
     "language": "Jazyk",
     "accountType": "Typ účtu",
     "account": "Účet",
+    "accountSettings": "Nastavenia účtu",
     "privacy": "Nastavenia súkromia",
     "privacyShort": "Súkromie",
     "close": "Zatvoriť"
@@ -1136,6 +1138,11 @@
     "linkedinDescription": "Zadajte URL svojho LinkedIn profilu",
     "addToFavorites": "+ Pridať k obľúbeným",
     "removeFromFavorites": "Odobrať z obľúbených",
+    "likeProfile": "Páči sa mi profil",
+    "unlikeProfile": "Odobrať like z profilu",
+    "profileLikes": "Páči sa mi",
+    "thumbsUp": "Palec hore",
+    "profileLikeUpdateFailed": "Nepodarilo sa aktualizovať páči sa mi.",
     "block": "Zablokovať",
     "enterWhatsAppNumber": "+421 912 345 678 alebo https://wa.me/421912345678",
     "enterYouTubeUrl": "https://youtube.com/@username alebo https://youtube.com/channel/...",
@@ -1200,7 +1207,14 @@
     "whatsapp": "WhatsApp",
     "whatsappDescription": "Zadajte WhatsApp číslo alebo link.",
     "youtube": "YouTube",
-    "youtubeDescription": "Zadajte URL vašej YouTube stránky alebo kanálu."
+    "youtubeDescription": "Zadajte URL vašej YouTube stránky alebo kanálu.",
+    "verifyEmailTitle": "Over svoj email",
+    "verifyEmailDescription": "Overením emailu získaš verifikačný odznak pri svojom profile.",
+    "verifyEmailButton": "Overiť email",
+    "verifyEmailSent": "Skontroluj svoj email a klikni na verifikačný odkaz.",
+    "verifyEmailError": "Verifikačný email sa nepodarilo odoslať. Skúste to znova.",
+    "verifyEmailResend": "Odoslať znova",
+    "verifyEmailResendIn": "Odoslať znova za {seconds} s"
   },
   "notifications": {
     "loadMore": "Zobraziť ďalšie",
@@ -1260,6 +1274,10 @@
     "reviewLikedBody": "{name} označil tvoju recenziu ako páči sa mi.",
     "offerLikedTitle": "Páči sa mi tvoja ponuka",
     "offerLikedBody": "{name} označil tvoju ponuku ako páči sa mi.",
+    "portfolioLikedTitle": "Páči sa mi tvoje portfólio",
+    "portfolioLikedBody": "{name} označil tvoje portfólio ako páči sa mi.",
+    "profileLikedTitle": "Páči sa mi tvoj profil",
+    "profileLikedBody": "{name} označil tvoj profil ako páči sa mi.",
     "genericTitle": "Nové upozornenie",
     "genericBody": "Otvorte upozornenie pre viac detailov.",
     "reasonUnknown": "neuvedený",
@@ -4086,6 +4104,8 @@
     "keepEditing": "Pokračovať v úprave",
     "discardCreate": "Zahodiť",
     "editAction": "Upraviť",
+    "editPortfolioTitle": "Upraviť portfólio",
+    "editPortfolioChooseField": "Vyber, čo chceš upraviť.",
     "deleteAction": "Vymazať",
     "deleteConfirmTitle": "Vymazať položku portfólia?",
     "deleteConfirmBody": "Táto položka aj jej fotky sa natrvalo odstránia. Túto akciu nemožno vrátiť späť.",
@@ -4132,6 +4152,7 @@
     "portfolioOrder": "Poradie portfólia",
     "orderShort": "Poradie",
     "dragPortfolio": "Presunúť portfólio",
+    "cancelOrder": "Zavrieť",
     "reorderAction": "Usporiadať",
     "done": "Hotovo",
     "featuredPortfolio": "Vybrané portfólio",
@@ -4139,7 +4160,9 @@
     "saveOrder": "Uložiť poradie",
     "orderSaveFailed": "Poradie sa nepodarilo uložiť",
     "photoDeleteFailed": "Fotku sa nepodarilo vymazať",
-    "coverSetFailed": "Titulnú fotku sa nepodarilo nastaviť"
+    "coverSetFailed": "Titulnú fotku sa nepodarilo nastaviť",
+    "likeAction": "Páči sa mi to",
+    "likeUpdateFailed": "Nepodarilo sa aktualizovať páči sa mi."
   },
   "reviews": {
     "addReview": "Pridať recenziu",

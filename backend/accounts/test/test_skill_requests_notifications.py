@@ -158,6 +158,21 @@ class TestSkillRequestsAndNotifications(APITestCase):
         self.assertIsInstance(r_legacy.data, list)
         self.assertEqual(len(r_legacy.data), 5)
 
+    def test_unread_count_invalid_type_is_graceful_and_uncached(self):
+        # BOD 5.1: neznámy ?type= -> graceful count 0, žiadny crash, žiadny junk
+        # cache kľúč (validácia vstupu na badge endpointe).
+        from accounts.services.notifications import _unread_cache_key
+
+        self.client.force_authenticate(user=self.owner)
+        r = self.client.get(
+            f"{self.base}/notifications/unread-count/", {"type": "totally_unknown"}
+        )
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        self.assertEqual(r.data["count"], 0)
+        self.assertIsNone(
+            cache.get(_unread_cache_key(self.owner.id, "totally_unknown"))
+        )
+
     def test_create_help_request_stores_proposal_for_seeking_card(self):
         seeking_offer = OfferedSkill.objects.create(
             user=self.owner,

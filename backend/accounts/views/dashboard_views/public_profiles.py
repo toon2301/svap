@@ -3,6 +3,7 @@ from time import perf_counter, time_ns
 
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
+from django.db.models import Count, Exists, OuterRef
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
@@ -10,7 +11,7 @@ from rest_framework.response import Response
 
 from swaply.rate_limiting import api_rate_limit
 
-from ...models import OfferedSkill
+from ...models import OfferedSkill, ProfileLike
 
 User = get_user_model()
 
@@ -87,6 +88,19 @@ def invalidate_dashboard_user_skills_cache(target_user_id: int | None) -> None:
     except Exception:
         pass
 
+
+
+
+def _profile_detail_queryset(request):
+    viewer_id = int(getattr(getattr(request, "user", None), "id", 0) or 0)
+    liked_by_viewer = ProfileLike.objects.filter(
+        profile_user_id=OuterRef("pk"),
+        user_id=viewer_id,
+    )
+    return User.objects.annotate(
+        _profile_likes_count=Count("profile_likes_received", distinct=True),
+        _is_profile_liked_by_me=Exists(liked_by_viewer),
+    )
 
 def _dashboard_target_user_by_id(request, user_id: int):
     current_user = getattr(request, "user", None)
@@ -173,7 +187,7 @@ def dashboard_user_profile_detail_view(request, user_id: int):
     Read-only profile detail for another user in dashboard/search.
     """
     try:
-        user = User.objects.get(id=user_id, is_active=True)
+        user = _profile_detail_queryset(request).get(id=user_id, is_active=True)
     except User.DoesNotExist:
         return _not_found()
 
@@ -195,7 +209,7 @@ def dashboard_user_profile_detail_by_slug_view(request, slug: str):
     Read-only profile detail by slug.
     """
     try:
-        user = User.objects.get(slug=slug, is_active=True)
+        user = _profile_detail_queryset(request).get(slug=slug, is_active=True)
     except User.DoesNotExist:
         return _not_found()
 

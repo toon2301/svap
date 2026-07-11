@@ -19,7 +19,7 @@ from django.db.models.functions import Coalesce
 from django.utils import timezone
 from rest_framework.response import Response
 
-from ..models import Notification, NotificationType, SkillRequest, SkillRequestStatus
+from ..models import Notification, NotificationType, ProfileLike, SkillRequest, SkillRequestStatus
 
 User = get_user_model()
 logger = logging.getLogger(__name__)
@@ -68,6 +68,13 @@ def _me_user_queryset():
         .values("total")[:1],
         output_field=IntegerField(),
     )
+    profile_likes_count = Subquery(
+        ProfileLike.objects.filter(profile_user_id=OuterRef("pk"))
+        .values("profile_user_id")
+        .annotate(total=Count("pk"))
+        .values("total")[:1],
+        output_field=IntegerField(),
+    )
     unread_skill_request_count = Subquery(
         Notification.objects.filter(
             user_id=OuterRef("pk"),
@@ -88,6 +95,11 @@ def _me_user_queryset():
         ),
         _completed_received_count=Coalesce(
             completed_received_count,
+            Value(0),
+            output_field=IntegerField(),
+        ),
+        _profile_likes_count=Coalesce(
+            profile_likes_count,
             Value(0),
             output_field=IntegerField(),
         ),

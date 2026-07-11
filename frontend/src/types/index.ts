@@ -95,6 +95,8 @@ export interface User {
   /** Či má účet použiteľné heslo (false = OAuth účet bez hesla). */
   has_password?: boolean;
   is_favorited?: boolean;
+  profile_likes_count?: number;
+  is_profile_liked_by_me?: boolean;
   completed_cooperations_count?: number;
   unread_skill_request_count?: number;
   mobile_onboarding?: MobileOnboardingState;

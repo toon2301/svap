@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { User } from '../../../../types';
+import VerifiedBadge from '@/components/shared/VerifiedBadge';
 import PhotoUpload from './PhotoUpload';
 
 interface UserAvatarProps {
@@ -42,6 +43,7 @@ export default function UserAvatar({ user, size = 'large', onPhotoUpload, isUplo
 
   const initials = getInitials(user.first_name, user.last_name);
   const sizeClass = sizeClasses[size];
+  const verifiedBadgeSize = size === 'large' ? 'lg' : size === 'medium' ? 'md' : 'sm';
   
   // Preferuj plnú URL z backendu; fallback na relative path
   const rawUrl: string | undefined = (user.avatar_url as string | undefined) || (user.avatar as string | undefined);
@@ -81,6 +83,8 @@ export default function UserAvatar({ user, size = 'large', onPhotoUpload, isUplo
         </div>
       )}
       
+      {user.is_verified && <VerifiedBadge size={verifiedBadgeSize} />}
+
       {/* Show upload icon only when user has no avatar */}
       {!hasAvatar && onPhotoUpload && (
         <div className="absolute bottom-0 right-0 z-10">

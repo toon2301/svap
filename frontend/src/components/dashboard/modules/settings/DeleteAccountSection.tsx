@@ -11,6 +11,8 @@ import { api, endpoints } from '../../../../lib/api';
 
 interface DeleteAccountSectionProps {
   user: User;
+  variant?: 'danger' | 'neutral';
+  hideTitle?: boolean;
 }
 
 /**
@@ -19,8 +21,13 @@ interface DeleteAccountSectionProps {
  * - OAuth účet (bez hesla): dialóg s informáciou → request-deletion → "skontroluj email".
  * Backend je zdroj pravdy (overuje heslo aj typ účtu); FE iba prispôsobuje UI.
  */
-export default function DeleteAccountSection({ user }: DeleteAccountSectionProps) {
+export default function DeleteAccountSection({
+  user,
+  variant = 'danger',
+  hideTitle = false,
+}: DeleteAccountSectionProps) {
   const { t } = useLanguage();
+  const isNeutral = variant === 'neutral';
   const { logout } = useAuth();
 
   // Default true → bezpečnejšie (pýta heslo); backend aj tak rozhodne.
@@ -84,15 +91,31 @@ export default function DeleteAccountSection({ user }: DeleteAccountSectionProps
     }
   };
 
+  const sectionClassName = isNeutral
+    ? 'w-full mt-[clamp(1rem,3vw,2rem)] rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-[#101011]'
+    : 'w-full mt-[clamp(1rem,3vw,2rem)] rounded-lg border-2 border-red-300 dark:border-red-900/60 bg-red-50/60 dark:bg-red-950/20 p-6';
+  const iconClassName = isNeutral
+    ? 'w-6 h-6 text-gray-500 dark:text-gray-400 shrink-0 mt-0.5'
+    : 'w-6 h-6 text-red-600 dark:text-red-400 shrink-0 mt-0.5';
+  const titleClassName = isNeutral
+    ? 'font-semibold text-lg text-gray-900 dark:text-white mb-2'
+    : 'font-semibold text-lg text-red-700 dark:text-red-300 mb-2';
+  const actionButtonClassName = isNeutral
+    ? 'inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-800 transition hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-300 dark:border-gray-700 dark:bg-[#151517] dark:text-gray-100 dark:hover:bg-[#1d1d20] dark:focus:ring-gray-700'
+    : 'inline-flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-400';
+  const actionIconClassName = isNeutral ? 'w-4 h-4 text-gray-500 dark:text-gray-400' : 'w-4 h-4';
+
   return (
     <>
-      <div className="w-full mt-[clamp(1rem,3vw,2rem)] rounded-lg border-2 border-red-300 dark:border-red-900/60 bg-red-50/60 dark:bg-red-950/20 p-6">
+      <div className={sectionClassName}>
         <div className="flex items-start gap-3">
-          <TrashIcon className="w-6 h-6 text-red-600 dark:text-red-400 shrink-0 mt-0.5" />
+          <TrashIcon className={iconClassName} />
           <div className="flex-1 text-left">
-            <h3 className="font-semibold text-lg text-red-700 dark:text-red-300 mb-2">
+            {!hideTitle && (
+              <h3 className={titleClassName}>
               {t('deleteAccount.sectionTitle', 'Zmazať účet')}
-            </h3>
+              </h3>
+            )}
             <p className="text-sm leading-relaxed text-gray-600 dark:text-gray-400 mb-4">
               {t(
                 'deleteAccount.sectionDescription',
@@ -102,9 +125,9 @@ export default function DeleteAccountSection({ user }: DeleteAccountSectionProps
             <button
               type="button"
               onClick={openDialog}
-              className="inline-flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-400"
+              className={actionButtonClassName}
             >
-              <TrashIcon className="w-4 h-4" />
+              <TrashIcon className={actionIconClassName} />
               {t('deleteAccount.button', 'Zmazať účet')}
             </button>
           </div>

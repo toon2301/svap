@@ -3,6 +3,7 @@
 import React, { useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/contexts/LanguageContext';
+import VerifiedBadge from '@/components/shared/VerifiedBadge';
 
 export type GlobalSearchUser = {
   id: number;
@@ -156,16 +157,19 @@ export function SearchUsersResults({
                 className="w-full text-left flex items-center justify-between gap-3 rounded-2xl border border-gray-200 dark:border-gray-800 bg-white/60 dark:bg-[#0f0f10] hover:bg-white/80 dark:hover:bg-[#141416] transition-colors px-4 py-3 cursor-pointer"
               >
                 <div className="flex items-center gap-3 min-w-0 flex-1">
-                  <div className="w-10 h-10 rounded-full overflow-hidden bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center flex-shrink-0">
-                    {avatar ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={avatar} alt={displayName} className="w-full h-full object-cover" />
-                    ) : (
-                      <span className="text-xs font-bold text-purple-700 dark:text-purple-300">
-                        {initials}
-                      </span>
-                    )}
-                  </div>
+                  <span className="relative flex-shrink-0">
+                    <div className="w-10 h-10 rounded-full overflow-hidden bg-purple-100 dark:bg-purple-900/40 flex items-center justify-center">
+                      {avatar ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={avatar} alt={displayName} className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="text-xs font-bold text-purple-700 dark:text-purple-300">
+                          {initials}
+                        </span>
+                      )}
+                    </div>
+                    {u.is_verified ? <VerifiedBadge size="sm" /> : null}
+                  </span>
 
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 min-w-0">
@@ -177,11 +181,6 @@ export function SearchUsersResults({
                           {badge}
                         </span>
                       )}
-                      {u.is_verified ? (
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 flex-shrink-0">
-                          Overený
-                        </span>
-                      ) : null}
                     </div>
                     {(locality || badge) && (
                       <div className="mt-0.5 flex items-center gap-2 min-w-0">

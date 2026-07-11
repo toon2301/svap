@@ -140,4 +140,48 @@ describe('MobileTopBar', () => {
     );
     expect(screen.queryByRole('button', { name: 'Profil' })).not.toBeInTheDocument();
   });
+
+  it('shows account settings title and back action on the mobile account settings view', () => {
+    const onBackClick = jest.fn();
+
+    render(
+      <MobileTopBar
+        onMenuClick={jest.fn()}
+        activeModule="profile"
+        activeRightItem="account-settings"
+        onBackClick={onBackClick}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Späť' }));
+
+    expect(screen.getByText('Účet')).toBeInTheDocument();
+    expect(onBackClick).toHaveBeenCalledTimes(1);
+  });
+
+
+  it('uses the selected mobile account settings detail title', () => {
+    const { rerender } = render(
+      <MobileTopBar
+        onMenuClick={jest.fn()}
+        activeModule="account-settings"
+        accountSettingsView="verify-email"
+        onBackClick={jest.fn()}
+      />,
+    );
+
+    expect(screen.getByText(/Overi/i)).toBeInTheDocument();
+
+    rerender(
+      <MobileTopBar
+        onMenuClick={jest.fn()}
+        activeModule="account-settings"
+        accountSettingsView="delete-account"
+        onBackClick={jest.fn()}
+      />,
+    );
+
+    expect(screen.getByText(/Zmaza/i)).toBeInTheDocument();
+  });
+
 });

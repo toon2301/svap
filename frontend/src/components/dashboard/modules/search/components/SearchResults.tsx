@@ -3,6 +3,7 @@
 import React from 'react';
 import { useRouter } from 'next/navigation';
 import { type User } from '@/types';
+import VerifiedBadge from '@/components/shared/VerifiedBadge';
 import { type SearchResults, type SearchSkill, type SearchUserResult } from '../types';
 import { getUserInitials } from '../utils';
 import { ScrollableText } from '../ScrollableText';
@@ -195,28 +196,26 @@ export function SearchResults({
         onClick={handleUserCardClick}
         className="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900 flex items-center gap-3"
       >
-        {u.avatar_url ? (
-          <img
-            src={u.avatar_url}
-            alt={displayName}
-            className="h-8 w-8 rounded-full object-cover"
-          />
-        ) : (
-          <div className="h-8 w-8 flex items-center justify-center rounded-full bg-gradient-to-br from-purple-500 to-blue-500 text-white text-xs font-semibold">
-            {initials}
-          </div>
-        )}
+        <span className="relative flex-shrink-0">
+          {u.avatar_url ? (
+            <img
+              src={u.avatar_url}
+              alt={displayName}
+              className="h-8 w-8 rounded-full object-cover"
+            />
+          ) : (
+            <div className="h-8 w-8 flex items-center justify-center rounded-full bg-gradient-to-br from-purple-500 to-blue-500 text-white text-xs font-semibold">
+              {initials}
+            </div>
+          )}
+          {u.is_verified && <VerifiedBadge size="sm" />}
+        </span>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
             {displayName}
           </p>
           {/* Lokalitu pri používateľoch zatiaľ nezobrazujeme podľa zadania */}
         </div>
-        {u.is_verified && (
-          <span className="px-2 py-0.5 text-[10px] rounded-full bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 font-semibold">
-            {t('search.verified', 'Overený')}
-          </span>
-        )}
       </button>
     );
   };

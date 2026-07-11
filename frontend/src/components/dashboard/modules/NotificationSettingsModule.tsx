@@ -8,7 +8,11 @@ import Desktop from './notifications/Desktop';
 import Mobile from './notifications/Mobile';
 import { usePushMessagesPreference } from './notifications/usePushMessagesPreference';
 
-export default function NotificationSettingsModule() {
+type NotificationSettingsModuleProps = {
+  onBack?: () => void;
+};
+
+export default function NotificationSettingsModule({ onBack }: NotificationSettingsModuleProps = {}) {
   const { t } = useLanguage();
   const pushMessages = usePushMessagesPreference();
 
@@ -53,6 +57,7 @@ export default function NotificationSettingsModule() {
 
   const labels = {
     title: t('notifications.title', 'Upozornenia'),
+    back: t('common.back', 'Späť'),
     turnOffAll: t('notifications.turnOffAll', 'Vypnut vsetko'),
     turnOffAllDesc: t(
       'notifications.turnOffAllDesc',
@@ -131,6 +136,7 @@ export default function NotificationSettingsModule() {
         state={state}
         setState={setState}
         pushMessages={pushMessages}
+        onBack={onBack}
       />
       <Mobile
         labels={labels}

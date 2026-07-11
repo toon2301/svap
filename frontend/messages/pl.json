@@ -60,7 +60,8 @@
     "remove": "Usuń",
     "saving": "Zapisywanie...",
     "sending": "Wysyłanie...",
-    "submit": "Wyślij"
+    "submit": "Wyślij",
+    "verifiedAccount": "Zweryfikowane konto"
   },
   "requests": {
     "title": "Prośby",
@@ -188,7 +189,7 @@
   },
   "homepage": {
     "welcome": "Witaj w",
-    "description": "Miejsce, gdzie spotykają się ludzie z chęcią rozwoju – jedni uczą, drudzy się uczą, wszyscy razem tworzą silniejszą społeczność.",
+    "description": "Svaply to miejsce, w którym ludzie dzielą się tym, co oferują, szukają tego, czego potrzebują, i odkrywają usługi, umiejętności lub pomoc w swojej okolicy.\n\nNa tablicy możesz pokazać swoją pracę, odpowiadać na zapytania, budować swoją rozpoznawalność, komunikować się, zbierać recenzje i mieć wszystko przejrzyście w jednym miejscu.",
     "redirectingToDashboard": "Przekierowuję do panelu..."
   },
   "dashboard": {
@@ -1029,6 +1030,7 @@
     "language": "Język",
     "accountType": "Typ konta",
     "account": "Konto",
+    "accountSettings": "Ustawienia konta",
     "privacy": "Ustawienia prywatności",
     "privacyShort": "Prywatność",
     "close": "Zamknij"
@@ -1132,6 +1134,11 @@
     "linkedinDescription": "Wpisz adres URL swojego profilu na LinkedIn",
     "addToFavorites": "+ Dodaj do ulubionych",
     "removeFromFavorites": "Usuń z ulubionych",
+    "likeProfile": "Polub profil",
+    "unlikeProfile": "Usuń polubienie profilu",
+    "profileLikes": "Polubienia profilu",
+    "thumbsUp": "Kciuk w górę",
+    "profileLikeUpdateFailed": "Nie udało się zaktualizować polubienia profilu.",
     "block": "Zablokovať",
     "enterWhatsAppNumber": "+421 912 345 678 alebo https://wa.me/421912345678",
     "enterYouTubeUrl": "https://youtube.com/@username alebo https://youtube.com/channel/...",
@@ -1200,7 +1207,14 @@
     "nameSaveFailed": "Nie udalo sie zapisac imienia i nazwiska.",
     "bioSaveFailed": "Nie udalo sie zapisac bio.",
     "locationSaveFailed": "Nie udalo sie zapisac lokalizacji.",
-    "phoneSaveFailed": "Nie udalo sie zapisac numeru telefonu."
+    "phoneSaveFailed": "Nie udalo sie zapisac numeru telefonu.",
+    "verifyEmailTitle": "Zweryfikuj swój e-mail",
+    "verifyEmailDescription": "Zweryfikuj e-mail, aby otrzymać odznakę weryfikacji przy swoim profilu.",
+    "verifyEmailButton": "Zweryfikuj e-mail",
+    "verifyEmailSent": "Sprawdź swój e-mail i kliknij link weryfikacyjny.",
+    "verifyEmailError": "Nie udało się wysłać e-maila weryfikacyjnego. Spróbuj ponownie.",
+    "verifyEmailResend": "Wyślij ponownie",
+    "verifyEmailResendIn": "Wyślij ponownie za {seconds} s"
   },
   "notifications": {
     "loadMore": "Pokaż więcej",
@@ -1260,6 +1274,10 @@
     "reviewLikedBody": "{name} polubił(a) Twoją recenzję.",
     "offerLikedTitle": "Ktoś polubił Twoją ofertę",
     "offerLikedBody": "{name} polubił(a) Twoją ofertę.",
+    "portfolioLikedTitle": "Ktoś polubił Twoje portfolio",
+    "portfolioLikedBody": "{name} polubił(a) Twoje portfolio.",
+    "profileLikedTitle": "Ktoś polubił Twój profil",
+    "profileLikedBody": "{name} polubił(a) Twój profil.",
     "genericTitle": "Nowe powiadomienie",
     "genericBody": "Otwórz powiadomienie, aby zobaczyć szczegóły.",
     "reasonUnknown": "nie podano",
@@ -4086,6 +4104,8 @@
     "keepEditing": "Kontynuuj edycję",
     "discardCreate": "Odrzuć",
     "editAction": "Edytuj",
+    "editPortfolioTitle": "Edytuj portfolio",
+    "editPortfolioChooseField": "Wybierz, co chcesz edytować.",
     "deleteAction": "Usuń",
     "deleteConfirmTitle": "Usunąć element portfolio?",
     "deleteConfirmBody": "Ten element i jego zdjęcia zostaną trwale usunięte. Tej akcji nie można cofnąć.",
@@ -4132,6 +4152,7 @@
     "portfolioOrder": "Kolejność portfolio",
     "orderShort": "Kolejność",
     "dragPortfolio": "Przenieś portfolio",
+    "cancelOrder": "Zamknij",
     "reorderAction": "Uporządkuj",
     "done": "Gotowe",
     "featuredPortfolio": "Wyróżnione portfolio",
@@ -4139,7 +4160,9 @@
     "saveOrder": "Zapisz kolejność",
     "orderSaveFailed": "Nie udało się zapisać kolejności",
     "photoDeleteFailed": "Nie udało się usunąć zdjęcia",
-    "coverSetFailed": "Nie udało się ustawić zdjęcia tytułowego"
+    "coverSetFailed": "Nie udało się ustawić zdjęcia tytułowego",
+    "likeAction": "Lubię to",
+    "likeUpdateFailed": "Nie udało się zaktualizować polubienia."
   },
   "reviews": {
     "addReview": "Dodaj opinię",

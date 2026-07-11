@@ -2,11 +2,13 @@
 
 import React from 'react';
 
+import SettingsDetailHeader from '../settings/SettingsDetailHeader';
 import MasterToggle from './MasterToggle';
 import Section from './Section';
 
 interface NotificationsLabels {
   title: string;
+  back: string;
   turnOffAll: string;
   loadingPreferences: string;
   messagesPush: string;
@@ -58,6 +60,7 @@ interface DesktopProps {
     on: string;
   };
   pushMessages: PushMessagesProps;
+  onBack?: () => void;
 }
 
 function Divider() {
@@ -74,6 +77,7 @@ export default function Desktop({
   setState,
   labelsCommon,
   pushMessages,
+  onBack,
 }: DesktopProps) {
   const sectionCards = [
     {
@@ -207,9 +211,11 @@ export default function Desktop({
     <div className="hidden lg:flex items-start justify-center text-[var(--foreground)]">
       <div className="flex flex-col items-start w-full profile-edit-column pt-4 pb-8">
         <div className="w-full">
-          <h2 className="text-2xl font-semibold text-gray-800 dark:text-white mb-6">
-            {labels.title}
-          </h2>
+          <SettingsDetailHeader
+            title={labels.title}
+            backLabel={labels.back}
+            onBack={onBack}
+          />
         </div>
 
         <div className="w-full mt-[clamp(1rem,2vw,1.5rem)]">

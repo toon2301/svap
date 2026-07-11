@@ -196,17 +196,53 @@ describe('ProfilePortfolioSection', () => {
     expect(within(listbox).getAllByRole('option').length).toBeGreaterThan(10);
   });
 
-  it('keeps the existing inline create form on mobile', async () => {
+  it('shows a stepped mobile create form and creates without optional fields', async () => {
     mockViewport(true);
     (api.get as jest.Mock).mockResolvedValue({ data: [] });
+    (api.post as jest.Mock).mockResolvedValue({
+      data: portfolioItem({
+        id: 9,
+        title: 'Mobile Work',
+        category: 'it-a-technologie',
+        description: '',
+        sort_order: 2,
+      }),
+    });
 
     render(<ProfilePortfolioSection activeTab="portfolio" isOtherUserProfile={false} ownerUserId={1} />);
 
     fireEvent.click(await screen.findByRole('button', { name: /Vytvori.*portf/i }));
 
     expect(screen.queryByTestId('portfolio-create-desktop-modal')).not.toBeInTheDocument();
-    expect(screen.getByTestId('portfolio-create-form')).toBeInTheDocument();
-    expect(screen.getByLabelText(/N.zov/i)).toBeInTheDocument();
+    expect(screen.getByTestId('portfolio-create-step-title')).toBeInTheDocument();
+    expect(screen.getByLabelText(/N.zov \*/i)).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText(/N.zov/i), { target: { value: 'Mobile Work' } });
+    clickNextStep();
+
+    expect(screen.getByTestId('portfolio-create-step-category')).toBeInTheDocument();
+    expect(screen.getByLabelText(/Kateg.ria \*/i)).toBeInTheDocument();
+    selectFirstPortfolioCategory();
+    clickNextStep();
+
+    expect(screen.getByTestId('portfolio-create-step-description')).toBeInTheDocument();
+    clickNextStep();
+
+    expect(screen.getByTestId('portfolio-create-step-photos')).toBeInTheDocument();
+    fireEvent.click(
+      within(screen.getByTestId('portfolio-create-form')).getByRole('button', {
+        name: /Vytvori.*portf/i,
+      }),
+    );
+
+    await waitFor(() => {
+      expect(api.post).toHaveBeenCalledWith('/auth/portfolio/', {
+        title: 'Mobile Work',
+        category: 'it-a-technologie',
+        description: '',
+      });
+    });
+    expect(mockPush).toHaveBeenCalledWith('/dashboard/users/1/portfolio/9');
   });
 
   it('shows visitor empty state and uses the slug portfolio endpoint when available', async () => {

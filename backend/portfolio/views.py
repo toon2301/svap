@@ -1,6 +1,8 @@
+import logging
+
 from django.contrib.auth import get_user_model
 from django.db import transaction
-from django.db.models import Max
+from django.db.models import Count, Max
 from django.db.models import Prefetch, Q
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
@@ -9,25 +11,20 @@ from rest_framework.response import Response
 
 from swaply.rate_limiting import api_rate_limit
 
+from .api_responses import portfolio_item_not_found as _portfolio_item_not_found
+from .api_responses import user_not_found as _not_found
 from .image_storage import delete_storage_keys, image_storage_keys
-from .models import PortfolioImage, PortfolioItem
+from .models import PortfolioImage, PortfolioItem, PortfolioItemLike
 from .serializers import PortfolioItemSerializer, PortfolioItemWriteSerializer
+from accounts.services.notifications import create_portfolio_liked_notification
 
+logger = logging.getLogger(__name__)
 User = get_user_model()
 
-
-def _not_found():
-    return Response(
-        {"error": "Pouzivatel nebol najdeny"},
-        status=status.HTTP_404_NOT_FOUND,
-    )
-
-
-def _portfolio_item_not_found():
-    return Response(
-        {"error": "Polozka portfolia nebola najdena"},
-        status=status.HTTP_404_NOT_FOUND,
-    )
+# Strop počtu položiek portfólia na používateľa (rovnaká filozofia ako
+# MAX_PORTFOLIO_IMAGES=8) – bráni neobmedzenému rastu listu/payloadu pri 100k+
+# používateľoch. Vynucuje sa pri vytváraní, backend je zdroj pravdy.
+MAX_PORTFOLIO_ITEMS = 15
 
 
 def _is_owner(request, user) -> bool:
@@ -73,6 +70,7 @@ def _portfolio_queryset(user, *, is_owner: bool):
         PortfolioItem.objects.filter(owner_id=user.id)
         .select_related("owner", "related_offer", "cover_image")
         .prefetch_related(_prefetch_images(is_owner))
+        .annotate(_likes_count=Count("portfolio_likes", distinct=True))
         .order_by("sort_order", "id")
     )
     if not is_owner:
@@ -90,7 +88,23 @@ def _target_user_by_id(request, user_id: int):
     )
 
 
+def _liked_portfolio_item_ids(request, item_ids) -> set[int]:
+    user = getattr(request, "user", None)
+    if user is None or not getattr(user, "is_authenticated", False):
+        return set()
+    ids = [item_id for item_id in item_ids if isinstance(item_id, int)]
+    if not ids:
+        return set()
+    return set(
+        PortfolioItemLike.objects.filter(item_id__in=ids, user=user).values_list(
+            "item_id",
+            flat=True,
+        )
+    )
+
+
 def _serialize_items(request, items, *, is_owner: bool, featured_item_id: int | None):
+    item_ids = [item.id for item in items]
     return PortfolioItemSerializer(
         items,
         many=True,
@@ -98,6 +112,7 @@ def _serialize_items(request, items, *, is_owner: bool, featured_item_id: int | 
             "request": request,
             "is_owner": is_owner,
             "featured_item_id": featured_item_id,
+            "liked_portfolio_item_ids": _liked_portfolio_item_ids(request, item_ids),
         },
     ).data
 
@@ -117,6 +132,7 @@ def _serialize_item(request, item, *, is_owner: bool):
             "request": request,
             "is_owner": is_owner,
             "featured_item_id": _featured_item_id(item.owner, is_owner=is_owner),
+            "liked_portfolio_item_ids": _liked_portfolio_item_ids(request, [item.id]),
         },
     ).data
 
@@ -126,6 +142,57 @@ def _next_sort_order(user) -> int:
         value=Max("sort_order")
     )["value"]
     return 0 if current_max is None else current_max + 1
+
+
+def _compact_sort_order(user) -> None:
+    """Prečísluje položky vlastníka na súvislé 0..n-1 (bez dier po delete).
+
+    Volať v transaction.atomic – rovnaký lock+bulk_update vzor ako reorder,
+    aby súbežný reorder/delete nevideli medzistav. Updatuje len riadky,
+    ktorým sa poradie reálne mení (žiadne zbytočné zápisy).
+    """
+    items = list(
+        PortfolioItem.objects.select_for_update()
+        .filter(owner=user)
+        .order_by("sort_order", "id")
+    )
+    changed = []
+    for index, entry in enumerate(items):
+        if entry.sort_order != index:
+            entry.sort_order = index
+            changed.append(entry)
+    if changed:
+        PortfolioItem.objects.bulk_update(changed, ["sort_order"])
+
+
+def _portfolio_like_payload(*, item_id: int, user_id: int) -> dict:
+    return {
+        "portfolio_item_id": item_id,
+        "is_liked_by_me": PortfolioItemLike.objects.filter(
+            item_id=item_id,
+            user_id=user_id,
+        ).exists(),
+        "likes_count": PortfolioItemLike.objects.filter(item_id=item_id).count(),
+    }
+
+
+def _get_likeable_portfolio_item(request, item_id: int):
+    try:
+        item = PortfolioItem.objects.select_related("owner").get(id=item_id)
+    except PortfolioItem.DoesNotExist:
+        return None
+
+    owner = item.owner
+    owner_view = _is_owner(request, owner)
+    if not owner_view and not getattr(owner, "is_active", True):
+        return None
+    if not owner_view and not getattr(owner, "is_public", True):
+        return None
+    if not owner_view and not PortfolioItem.objects.filter(id=item.id).filter(
+        _visible_cover_q()
+    ).exists():
+        return None
+    return item
 
 
 def _parse_id_list(value):
@@ -208,11 +275,73 @@ def portfolio_items_reorder_view(request):
     )
 
 
+@api_view(["POST", "DELETE"])
+@permission_classes([IsAuthenticated])
+@api_rate_limit
+def portfolio_item_like_view(request, item_id: int):
+    """
+    POST enables a portfolio like, DELETE removes it.
+
+    The endpoint is idempotent and follows portfolio visibility rules. Owners may
+    like their own portfolio, but self-likes do not create self-notifications.
+    """
+    item = _get_likeable_portfolio_item(request, item_id)
+    if item is None:
+        return _portfolio_item_not_found()
+
+    if request.method == "POST":
+
+        def notify_owner_about_like():
+            try:
+                create_portfolio_liked_notification(item=item, actor=request.user)
+            except Exception:
+                logger.exception(
+                    "Portfolio like notification dispatch failed",
+                    extra={
+                        "portfolio_item_id": getattr(item, "id", None),
+                        "owner_id": getattr(item, "owner_id", None),
+                        "actor_id": getattr(request.user, "id", None),
+                    },
+                )
+
+        with transaction.atomic():
+            _, created = PortfolioItemLike.objects.get_or_create(
+                item=item,
+                user=request.user,
+            )
+            if created:
+                transaction.on_commit(notify_owner_about_like)
+
+        payload = _portfolio_like_payload(item_id=item.id, user_id=request.user.id)
+        return Response(
+            payload,
+            status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
+        )
+
+    PortfolioItemLike.objects.filter(item=item, user=request.user).delete()
+    payload = _portfolio_like_payload(item_id=item.id, user_id=request.user.id)
+    return Response(payload, status=status.HTTP_200_OK)
+
+
 @api_view(["GET", "POST"])
 @permission_classes([IsAuthenticated])
 @api_rate_limit
 def my_portfolio_list_view(request):
     if request.method == "POST":
+        if (
+            PortfolioItem.objects.filter(owner=request.user).count()
+            >= MAX_PORTFOLIO_ITEMS
+        ):
+            return Response(
+                {
+                    "error": (
+                        "Dosiahol si maximalny pocet poloziek portfolia "
+                        f"({MAX_PORTFOLIO_ITEMS})."
+                    )
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         serializer = PortfolioItemWriteSerializer(
             data=request.data,
             context={"request": request},
@@ -252,6 +381,7 @@ def portfolio_item_detail_view(request, item_id: int):
                 for image in item.images.all():
                     storage_keys.extend(image_storage_keys(image))
                 item.delete()
+                _compact_sort_order(request.user)
                 transaction.on_commit(lambda: delete_storage_keys(storage_keys))
             return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -306,6 +436,7 @@ def portfolio_item_detail_view(request, item_id: int):
                 "request": request,
                 "is_owner": owner_view,
                 "featured_item_id": featured_item_id,
+                "liked_portfolio_item_ids": _liked_portfolio_item_ids(request, [item.id]),
             },
         ).data,
         status=status.HTTP_200_OK,

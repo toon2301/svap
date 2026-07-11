@@ -13,7 +13,6 @@ import { PortfolioCreatePhotoPicker } from './PortfolioCreatePhotoPicker';
 import { useModalFocusTrap } from './useModalFocusTrap';
 import { showPortfolioCreateErrors, uploadPortfolioFiles } from './portfolioCreateSubmit';
 import {
-  PORTFOLIO_CATEGORY_OPTIONS,
   PORTFOLIO_DESCRIPTION_MAX_LENGTH,
   PORTFOLIO_TITLE_MAX_LENGTH,
   emptyPortfolioFormValues,
@@ -25,6 +24,17 @@ import {
   type PortfolioFormField,
   type PortfolioFormValues,
 } from './portfolioFormUtils';
+import {
+  PORTFOLIO_CREATE_STEPS,
+  hasPortfolioCreateDraft,
+  portfolioCreateCategoryError,
+  portfolioCreateDescriptionError,
+  portfolioCreateErrorStep,
+  portfolioCreateProgressText,
+  portfolioCreateTitleError,
+  requiredPortfolioLabel,
+  type PortfolioCreateStep,
+} from './portfolioCreateFlow';
 import type { PortfolioItem } from './portfolioTypes';
 
 type PortfolioCreateDesktopModalProps = {
@@ -32,54 +42,13 @@ type PortfolioCreateDesktopModalProps = {
   onCreated: (item: PortfolioItem) => void;
 };
 
-const CREATE_STEPS = ['title', 'category', 'description', 'photos'] as const;
-type CreateStep = typeof CREATE_STEPS[number];
-
-type Translator = (key: string, fallback?: string) => string;
-
-function progressText(t: Translator, current: number, total: number): string {
-  return t('portfolio.createStepProgress', 'Step {current} of {total}')
-    .replace('{current}', String(current))
-    .replace('{total}', String(total));
-}
-
-function hasDraft(values: PortfolioFormValues, photoFiles: File[]): boolean {
-  return Boolean(
-    values.title.trim() ||
-      values.category.trim() ||
-      values.description.trim() ||
-      photoFiles.length > 0,
+function LoadingSpinner() {
+  return (
+    <span
+      className="h-4 w-4 animate-spin rounded-full border-2 border-white/70 border-t-transparent"
+      aria-hidden="true"
+    />
   );
-}
-
-function titleError(values: PortfolioFormValues, t: Translator): string | undefined {
-  const title = values.title.trim();
-  if (!title) return t('portfolio.titleRequired');
-  if (title.length > PORTFOLIO_TITLE_MAX_LENGTH) return t('portfolio.titleTooLong');
-  return undefined;
-}
-
-function categoryError(values: PortfolioFormValues, t: Translator): string | undefined {
-  const category = values.category.trim();
-  if (!category) return t('portfolio.categoryRequired');
-  if (!PORTFOLIO_CATEGORY_OPTIONS.includes(category as typeof PORTFOLIO_CATEGORY_OPTIONS[number])) {
-    return t('portfolio.categoryRequired');
-  }
-  return undefined;
-}
-
-function descriptionError(values: PortfolioFormValues, t: Translator): string | undefined {
-  if (values.description.trim().length > PORTFOLIO_DESCRIPTION_MAX_LENGTH) {
-    return t('portfolio.descriptionTooLong');
-  }
-  return undefined;
-}
-
-function errorStep(errors: PortfolioFormErrors): CreateStep {
-  if (errors.title) return 'title';
-  if (errors.category) return 'category';
-  if (errors.description) return 'description';
-  return 'photos';
 }
 
 export function PortfolioCreateDesktopModal({
@@ -91,7 +60,7 @@ export function PortfolioCreateDesktopModal({
   const titleInputRef = useRef<HTMLInputElement | null>(null);
   const modalRef = useRef<HTMLDivElement | null>(null);
   const [mounted, setMounted] = useState(false);
-  const [step, setStep] = useState<CreateStep>('title');
+  const [step, setStep] = useState<PortfolioCreateStep>('title');
   const [values, setValues] = useState<PortfolioFormValues>(() => emptyPortfolioFormValues());
   const [errors, setErrors] = useState<PortfolioFormErrors>({});
   const [photoFiles, setPhotoFiles] = useState<File[]>([]);
@@ -107,9 +76,9 @@ export function PortfolioCreateDesktopModal({
   const categoryErrorId = `${fieldId}-portfolio-desktop-category-error`;
   const descriptionErrorId = `${fieldId}-portfolio-desktop-description-error`;
   const descriptionHelpId = `${fieldId}-portfolio-desktop-description-help`;
-  const stepIndex = CREATE_STEPS.indexOf(step);
+  const stepIndex = PORTFOLIO_CREATE_STEPS.indexOf(step);
   const isLastStep = step === 'photos';
-  const draftIsDirty = hasDraft(values, photoFiles);
+  const draftIsDirty = hasPortfolioCreateDraft(values, photoFiles);
 
   const stepCopy = useMemo(() => {
     if (step === 'title') {
@@ -199,9 +168,9 @@ export function PortfolioCreateDesktopModal({
 
   const validateCurrentStep = (): boolean => {
     const nextErrors: PortfolioFormErrors = {};
-    if (step === 'title') nextErrors.title = titleError(values, t);
-    if (step === 'category') nextErrors.category = categoryError(values, t);
-    if (step === 'description') nextErrors.description = descriptionError(values, t);
+    if (step === 'title') nextErrors.title = portfolioCreateTitleError(values, t);
+    if (step === 'category') nextErrors.category = portfolioCreateCategoryError(values, t);
+    if (step === 'description') nextErrors.description = portfolioCreateDescriptionError(values, t);
 
     const messages = Object.values(nextErrors).filter(Boolean);
     setErrors((current) => ({ ...current, ...nextErrors }));
@@ -215,13 +184,13 @@ export function PortfolioCreateDesktopModal({
   const goNext = () => {
     if (!validateCurrentStep()) return;
     setSubmitError(null);
-    setStep(CREATE_STEPS[Math.min(stepIndex + 1, CREATE_STEPS.length - 1)]);
+    setStep(PORTFOLIO_CREATE_STEPS[Math.min(stepIndex + 1, PORTFOLIO_CREATE_STEPS.length - 1)]);
   };
 
   const goBack = () => {
     setSubmitError(null);
     setShowDiscardConfirm(false);
-    setStep(CREATE_STEPS[Math.max(stepIndex - 1, 0)]);
+    setStep(PORTFOLIO_CREATE_STEPS[Math.max(stepIndex - 1, 0)]);
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -240,7 +209,7 @@ export function PortfolioCreateDesktopModal({
     if (Object.keys(nextErrors).length > 0) {
       setErrors(nextErrors);
       setSubmitError(null);
-      setStep(errorStep(nextErrors));
+      setStep(portfolioCreateErrorStep(nextErrors));
       showPortfolioCreateErrors(Object.values(nextErrors));
       return;
     }
@@ -271,7 +240,7 @@ export function PortfolioCreateDesktopModal({
       const message = portfolioErrorMessageFromApi(error, t('portfolio.createFailed'));
       setErrors(fieldErrors);
       setSubmitError(message);
-      if (Object.keys(fieldErrors).length > 0) setStep(errorStep(fieldErrors));
+      if (Object.keys(fieldErrors).length > 0) setStep(portfolioCreateErrorStep(fieldErrors));
       showPortfolioCreateErrors([...Object.values(fieldErrors), message]);
     } finally {
       setIsSubmitting(false);
@@ -315,7 +284,7 @@ export function PortfolioCreateDesktopModal({
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-purple-600 dark:text-purple-300">
-                    {progressText(t, stepIndex + 1, CREATE_STEPS.length)}
+                    {portfolioCreateProgressText(t, stepIndex + 1, PORTFOLIO_CREATE_STEPS.length)}
                   </p>
                   <h2
                     id="portfolio-create-desktop-title"
@@ -338,7 +307,7 @@ export function PortfolioCreateDesktopModal({
                 </button>
               </div>
               <div className="mt-5 grid grid-cols-4 gap-2" aria-hidden="true">
-                {CREATE_STEPS.map((currentStep, index) => (
+                {PORTFOLIO_CREATE_STEPS.map((currentStep, index) => (
                   <div
                     key={currentStep}
                     className={`h-1.5 rounded-full transition ${
@@ -361,7 +330,7 @@ export function PortfolioCreateDesktopModal({
                       htmlFor={titleInputId}
                       className="block text-sm font-semibold text-gray-900 dark:text-white"
                     >
-                      {t('portfolio.titleLabel')}
+                      {requiredPortfolioLabel(t('portfolio.titleLabel'))}
                     </label>
                     <input
                       ref={titleInputRef}
@@ -390,7 +359,7 @@ export function PortfolioCreateDesktopModal({
                       htmlFor={categoryInputId}
                       className="block text-sm font-semibold text-gray-900 dark:text-white"
                     >
-                      {t('portfolio.categoryLabel')}
+                      {requiredPortfolioLabel(t('portfolio.categoryLabel'))}
                     </label>
                     <div className="mt-2">
                       <PortfolioCategoryPicker
@@ -399,7 +368,7 @@ export function PortfolioCreateDesktopModal({
                         disabled={isSubmitting || Boolean(createdWithUploadIssue)}
                         invalid={Boolean(errors.category)}
                         describedBy={errors.category ? categoryErrorId : undefined}
-                        label={t('portfolio.categoryLabel')}
+                        label={requiredPortfolioLabel(t('portfolio.categoryLabel'))}
                         placeholder={t('portfolio.categoryPlaceholder')}
                         onChange={(value) => handleChange('category', value)}
                       />
@@ -452,6 +421,7 @@ export function PortfolioCreateDesktopModal({
                   <PortfolioCreatePhotoPicker
                     files={photoFiles}
                     disabled={isSubmitting || Boolean(createdWithUploadIssue)}
+                    variant="panel"
                     onChange={(files) => {
                       setPhotoFiles(files);
                       setSubmitError(null);
@@ -481,8 +451,9 @@ export function PortfolioCreateDesktopModal({
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="rounded-xl bg-purple-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-400/50 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex min-w-[120px] items-center justify-center gap-2 rounded-xl bg-purple-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-400/50 disabled:cursor-not-allowed disabled:opacity-60"
                 >
+                  {isSubmitting && <LoadingSpinner />}
                   {primaryLabel}
                 </button>
               </div>

@@ -39,6 +39,8 @@ from .notification_core import (  # noqa: F401
 NOTIFICATION_RETENTION_DAYS: dict[str, int] = {
     # Informačné / sociálne
     NotificationType.OFFER_LIKED: 30,
+    NotificationType.PORTFOLIO_LIKED: 30,
+    NotificationType.PROFILE_LIKED: 30,
     NotificationType.REVIEW_LIKED: 30,
     # Dôležité (status výmeny / recenzie)
     NotificationType.REVIEW_CREATED: 60,
@@ -92,6 +94,8 @@ def purge_old_notifications(*, dry_run: bool = True) -> dict[str, int]:
 from .notification_events import (  # noqa: E402, F401
     create_group_invitation_notification,
     create_offer_liked_notification,
+    create_portfolio_liked_notification,
+    create_profile_liked_notification,
     create_review_created_notification,
     create_review_liked_notification,
     create_review_reply_notification,

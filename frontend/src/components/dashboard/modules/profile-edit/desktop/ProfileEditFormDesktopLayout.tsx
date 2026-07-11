@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import type { User } from '@/types';
 import type { UseProfileEditFormDesktopReturn } from '../../profile/useProfileEditFormDesktop';
 
@@ -36,9 +37,22 @@ export function ProfileEditFormDesktopLayout({
   return (
     <>
       <div className="pt-4 pb-8 pl-0 text-[var(--foreground)] profile-edit-column">
-        <h2 className="text-2xl font-semibold text-gray-800 dark:text-white mb-6">
-          {t('profile.editProfile', 'Upraviť profil')}
-        </h2>
+        <div className="mb-6 flex items-center gap-3">
+          {form.onEditCancel ? (
+            <button
+              type="button"
+              onClick={form.onEditCancel}
+              aria-label={t('common.back', 'Spat')}
+              title={t('common.back', 'Spat')}
+              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-700 shadow-sm transition hover:-translate-y-0.5 hover:border-purple-200 hover:bg-purple-50 hover:text-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-400/50 dark:border-gray-800 dark:bg-[#101011] dark:text-gray-200 dark:hover:border-purple-900/60 dark:hover:bg-purple-950/20 dark:hover:text-purple-200"
+            >
+              <ArrowLeftIcon className="h-5 w-5" aria-hidden="true" />
+            </button>
+          ) : null}
+          <h2 className="text-2xl font-semibold text-gray-800 dark:text-white">
+            {t('profile.editProfile', 'Upravit profil')}
+          </h2>
+        </div>
 
         {/* Fotka, meno, email a tlačidlo v bielom paneli */}
         <HeaderCard

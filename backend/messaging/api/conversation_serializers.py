@@ -89,6 +89,7 @@ class ConversationListItemSerializer(serializers.ModelSerializer):
                     "slug": None,
                     "user_type": getattr(obj, "other_user_type", None),
                     "avatar_url": None,
+                    "is_verified": False,
                     "is_deleted": True,
                 }
             return {
@@ -105,6 +106,7 @@ class ConversationListItemSerializer(serializers.ModelSerializer):
                 "avatar_url": _avatar_name_url(
                     request, getattr(obj, "other_user_avatar_name", None)
                 ),
+                "is_verified": bool(getattr(obj, "other_user_is_verified", False)),
                 "is_deleted": False,
             }
 

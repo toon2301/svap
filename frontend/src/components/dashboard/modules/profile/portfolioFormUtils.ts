@@ -1,7 +1,8 @@
 import type { PortfolioItemPayload } from './portfolioApi';
 
 export const PORTFOLIO_TITLE_MAX_LENGTH = 120;
-export const PORTFOLIO_DESCRIPTION_MAX_LENGTH = 1000;
+// Musí sedieť s backendom: PortfolioItem.description max_length=500.
+export const PORTFOLIO_DESCRIPTION_MAX_LENGTH = 500;
 export const PORTFOLIO_IMAGE_MAX_COUNT = 8;
 export const PORTFOLIO_IMAGE_MAX_SIZE_MB = 5;
 export const PORTFOLIO_IMAGE_MAX_BYTES = PORTFOLIO_IMAGE_MAX_SIZE_MB * 1024 * 1024;

@@ -168,6 +168,67 @@ class PortfolioImageUploadApiTests(APITestCase):
         self.assertEqual(delete_mock.call_count, 1)
         self.assertEqual(delete_mock.call_args.args[0], [key])
 
+    def test_upload_complete_enforces_image_limit_and_cleans_staged_upload(self):
+        # Race ochrana: limit sa vyhodnocuje v transaction.atomic pod
+        # select_for_update na iteme – súbežné complete requesty sa serializujú,
+        # takže 9. fotka neprejde ani pri paralelných uploadoch.
+        for index in range(8):
+            self._image(order=index)
+        self.client.force_authenticate(user=self.owner)
+        key = f"uploads/portfolio/{self.item.id}/over-limit.jpg"
+        s3 = _s3_mock(head={"ContentLength": 2048, "ContentType": "image/jpeg"})
+
+        with (
+            patch("portfolio.image_views._get_s3_client", return_value=s3),
+            patch("portfolio.image_views.delete_storage_keys") as delete_mock,
+        ):
+            with self.captureOnCommitCallbacks(execute=True):
+                response = self.client.post(
+                    reverse(
+                        "accounts:portfolio_image_upload_complete",
+                        args=[self.item.id],
+                    ),
+                    data={"key": key, "filename": "over-limit.jpg"},
+                    format="json",
+                )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        # Deviata fotka nevznikla a staged upload sa uprace.
+        self.assertEqual(self.item.images.count(), 8)
+        delete_mock.assert_called_once_with([key])
+
+    @override_settings(SAFESEARCH_ENABLED=True)
+    def test_upload_complete_rejected_by_moderation_cleans_staged_upload(self):
+        from swaply.staged_image_moderation import ModerationRejectedError
+
+        self.client.force_authenticate(user=self.owner)
+        key = f"uploads/portfolio/{self.item.id}/work.jpg"
+        s3 = _s3_mock(head={"ContentLength": 2048, "ContentType": "image/jpeg"})
+
+        with (
+            patch("portfolio.image_views._get_s3_client", return_value=s3),
+            patch(
+                "swaply.staged_image_moderation.moderate_staged_s3_image",
+                side_effect=ModerationRejectedError("Nevhodny obsah."),
+            ),
+            patch("portfolio.image_views.delete_storage_keys") as delete_mock,
+        ):
+            response = self.client.post(
+                reverse(
+                    "accounts:portfolio_image_upload_complete",
+                    args=[self.item.id],
+                ),
+                data={"key": key, "filename": "work.jpg"},
+                format="json",
+            )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data["code"], "image_moderation_rejected")
+        # Žiadny DB záznam sa nevytvoril (post_delete signál by sa nespustil)...
+        self.assertFalse(PortfolioImage.objects.filter(item=self.item).exists())
+        # ...preto view musí staged upload upratať sám.
+        delete_mock.assert_called_once_with([key])
+
     def test_upload_complete_foreign_item_does_not_head_object(self):
         self.client.force_authenticate(user=self.visitor)
         s3 = _s3_mock()

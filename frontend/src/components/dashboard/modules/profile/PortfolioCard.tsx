@@ -4,6 +4,7 @@ import type React from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import BlurredContainImage from '../shared/BlurredContainImage';
 import type { PortfolioItem } from './portfolioTypes';
+import { PortfolioLikeButton } from './PortfolioLikeButton';
 
 type PortfolioCardProps = {
   item: PortfolioItem;
@@ -11,6 +12,8 @@ type PortfolioCardProps = {
   featured?: boolean;
   loading?: React.ImgHTMLAttributes<HTMLImageElement>['loading'];
   onClick?: () => void;
+  onToggleLike?: (item: PortfolioItem) => void;
+  isLikePending?: boolean;
 };
 
 function PortfolioImageSlot({
@@ -48,7 +51,10 @@ export function PortfolioCard({
   featured = false,
   loading = 'lazy',
   onClick,
+  onToggleLike,
+  isLikePending = false,
 }: PortfolioCardProps) {
+  const { t } = useLanguage();
   const className = [
     'group w-full overflow-hidden rounded-2xl border border-gray-200 bg-white/75 text-left shadow-sm transition',
     onClick ? 'cursor-pointer hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-purple-400/60' : 'hover:-translate-y-0.5 hover:shadow-md',
@@ -69,26 +75,44 @@ export function PortfolioCard({
     </>
   );
 
+  const likeButton = onToggleLike ? (
+    <PortfolioLikeButton
+      isLiked={item.is_liked_by_me === true}
+      likesCount={Math.max(0, Number(item.likes_count ?? 0))}
+      label={t('portfolio.likeAction')}
+      isPending={isLikePending}
+      compact
+      onToggle={() => onToggleLike(item)}
+      className="absolute right-3 top-3 z-10 backdrop-blur"
+    />
+  ) : null;
+
   if (onClick) {
     return (
-      <button
-        type="button"
-        onClick={onClick}
-        aria-label={item.title}
+      <article
         data-testid={featured ? 'portfolio-featured-card' : 'portfolio-grid-card'}
-        className={className}
+        className={`relative ${className}`}
       >
-        {content}
-      </button>
+        <button
+          type="button"
+          onClick={onClick}
+          aria-label={item.title}
+          className="block w-full text-left focus:outline-none focus:ring-2 focus:ring-purple-400/60"
+        >
+          {content}
+        </button>
+        {likeButton}
+      </article>
     );
   }
 
   return (
     <article
       data-testid={featured ? 'portfolio-featured-card' : 'portfolio-grid-card'}
-      className={className}
+      className={`relative ${className}`}
     >
       {content}
+      {likeButton}
     </article>
   );
 }

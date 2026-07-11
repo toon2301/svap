@@ -60,7 +60,8 @@
     "remove": "Eltávolítás",
     "saving": "Mentés...",
     "sending": "Küldés...",
-    "submit": "Küldés"
+    "submit": "Küldés",
+    "verifiedAccount": "Ellenőrzött fiók"
   },
   "requests": {
     "title": "Kérések",
@@ -188,7 +189,7 @@
   },
   "homepage": {
     "welcome": "Üdvözöljük a",
-    "description": "Egy hely, ahol a fejlődni vágyó emberek találkoznak – egyesek tanítanak, mások tanulnak, mindenki együtt alkot egy erősebb közösséget.",
+    "description": "A Svaply egy hely, ahol az emberek megosztják, mit kínálnak, keresik, amire szükségük van, és szolgáltatásokat, készségeket vagy segítséget fedeznek fel a környékükön.\n\nAz üzenőfalon megmutathatod a munkádat, reagálhatsz a kérésekre, építheted a nevedet, kommunikálhatsz, értékeléseket gyűjthetsz, és mindent áttekinthetően egy helyen kezelhetsz.",
     "redirectingToDashboard": "Átirányítás az irányítópultra..."
   },
   "dashboard": {
@@ -1029,6 +1030,7 @@
     "language": "Nyelv",
     "accountType": "Fiók típusa",
     "account": "Fiók",
+    "accountSettings": "Fiókbeállítások",
     "privacy": "Adatvédelmi beállítások",
     "privacyShort": "Adatvédelem",
     "close": "Bezárás"
@@ -1132,6 +1134,11 @@
     "linkedinDescription": "Adja meg LinkedIn profiljának URL-jét",
     "addToFavorites": "+ Kedvencekhez adás",
     "removeFromFavorites": "Eltávolítás a kedvencek közül",
+    "likeProfile": "Profil kedvelése",
+    "unlikeProfile": "Profilkedvelés eltávolítása",
+    "profileLikes": "Profilkedvelések",
+    "thumbsUp": "Tetszik",
+    "profileLikeUpdateFailed": "Nem sikerült frissíteni a profil kedvelését.",
     "block": "Letiltás",
     "enterWhatsAppNumber": "+36 30 123 4567 vagy https://wa.me/36301234567",
     "enterYouTubeUrl": "https://youtube.com/@username vagy https://youtube.com/channel/...",
@@ -1200,7 +1207,14 @@
     "nameSaveFailed": "A nev mentese sikertelen.",
     "bioSaveFailed": "A bio mentese sikertelen.",
     "locationSaveFailed": "A helyszin mentese sikertelen.",
-    "phoneSaveFailed": "A telefonszam mentese sikertelen."
+    "phoneSaveFailed": "A telefonszam mentese sikertelen.",
+    "verifyEmailTitle": "Erősítsd meg az e-mail-címed",
+    "verifyEmailDescription": "Erősítsd meg az e-mail-címed, hogy ellenőrzési jelvényt kapj a profilodhoz.",
+    "verifyEmailButton": "E-mail megerősítése",
+    "verifyEmailSent": "Ellenőrizd az e-mail-fiókod, és kattints a megerősítő linkre.",
+    "verifyEmailError": "A megerősítő e-mailt nem sikerült elküldeni. Próbáld újra.",
+    "verifyEmailResend": "Újraküldés",
+    "verifyEmailResendIn": "Újraküldés {seconds} mp múlva"
   },
   "notifications": {
     "loadMore": "Továbbiak megjelenítése",
@@ -1260,6 +1274,10 @@
     "reviewLikedBody": "{name} kedvelte az értékelésedet.",
     "offerLikedTitle": "Valakinek tetszik az ajánlatod",
     "offerLikedBody": "{name} kedvelte az ajánlatodat.",
+    "portfolioLikedTitle": "Valakinek tetszik a portfóliód",
+    "portfolioLikedBody": "{name} kedvelte a portfóliódat.",
+    "profileLikedTitle": "Valakinek tetszik a profilod",
+    "profileLikedBody": "{name} kedvelte a profilodat.",
     "genericTitle": "Új értesítés",
     "genericBody": "Nyissa meg az értesítést a részletekért.",
     "reasonUnknown": "nincs megadva",
@@ -4086,6 +4104,8 @@
     "keepEditing": "Szerkesztés folytatása",
     "discardCreate": "Eldobás",
     "editAction": "Szerkesztés",
+    "editPortfolioTitle": "Portfólió szerkesztése",
+    "editPortfolioChooseField": "Válaszd ki, mit szeretnél szerkeszteni.",
     "deleteAction": "Törlés",
     "deleteConfirmTitle": "Törli a portfólióelemet?",
     "deleteConfirmBody": "Ez az elem és a fotói végleg törlődnek. A művelet nem vonható vissza.",
@@ -4132,6 +4152,7 @@
     "portfolioOrder": "Portfólió sorrendje",
     "orderShort": "Sorrend",
     "dragPortfolio": "Portfólió mozgatása",
+    "cancelOrder": "Bezárás",
     "reorderAction": "Rendezés",
     "done": "Kész",
     "featuredPortfolio": "Kiemelt portfólió",
@@ -4139,7 +4160,9 @@
     "saveOrder": "Sorrend mentése",
     "orderSaveFailed": "A sorrendet nem sikerült menteni",
     "photoDeleteFailed": "A fotót nem sikerült törölni",
-    "coverSetFailed": "A borítóképet nem sikerült beállítani"
+    "coverSetFailed": "A borítóképet nem sikerült beállítani",
+    "likeAction": "Tetszik",
+    "likeUpdateFailed": "Nem sikerült frissíteni a kedvelést."
   },
   "reviews": {
     "addReview": "Értékelés hozzáadása",

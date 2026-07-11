@@ -5,7 +5,6 @@ import logging
 import os
 from datetime import datetime, timezone
 
-import boto3
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
@@ -14,19 +13,42 @@ from django.db import transaction
 
 from swaply.image_moderation import check_image_safety
 
+from .image_storage import delete_storage_keys
+from .image_storage import get_s3_client as _s3_client
 from .local_upload import local_portfolio_upload_enabled
 from .models import PortfolioImage, PortfolioItem
 
 logger = logging.getLogger(__name__)
 
+PROCESSING_FAILED_REASON = "Spracovanie fotky zlyhalo. Skus fotku nahrat znova."
 
-def _s3_client():
-    return boto3.client(
-        "s3",
-        aws_access_key_id=getattr(settings, "AWS_ACCESS_KEY_ID", None),
-        aws_secret_access_key=getattr(settings, "AWS_SECRET_ACCESS_KEY", None),
-        region_name=getattr(settings, "AWS_S3_REGION_NAME", None),
-    )
+
+def mark_processing_failed(portfolio_image_id: int) -> None:
+    """Final-failure cleanup po vyčerpaní Celery retries.
+
+    Bez toho by obrázok ostal navždy PENDING (blokuje slot v limite fotiek)
+    a staging súbor v uploads/ ako orphan (náklady + GDPR). Rovnaký výsledný
+    stav ako pri zlyhaní enqueue v upload-complete: REJECTED + zmazaný staging.
+    Idempotentné – spracuje len obrázok, ktorý je stále PENDING.
+    """
+    pending_key = ""
+    with transaction.atomic():
+        try:
+            image = PortfolioImage.objects.select_for_update().get(
+                id=portfolio_image_id
+            )
+        except PortfolioImage.DoesNotExist:
+            return
+        if image.status != PortfolioImage.Status.PENDING:
+            return
+        pending_key = (image.pending_key or "").strip()
+        image.status = PortfolioImage.Status.REJECTED
+        image.rejected_reason = PROCESSING_FAILED_REASON
+        image.processed_at = _now()
+        image.save(update_fields=["status", "rejected_reason", "processed_at"])
+
+    if pending_key:
+        delete_storage_keys([pending_key])
 
 
 def _now():
@@ -67,6 +89,13 @@ def _variant_bytes(
     image = source.copy()
     image.thumbnail((max_side, max_side))
     image = _normalize_image_mode(image)
+
+    # GDPR: explicitne zahoď EXIF/XMP (vrátane GPS) z info dictu pred uložením.
+    # Orientácia je už "zapečená" v pixeloch cez exif_transpose v _decode_image.
+    # Save bez exif= síce metadáta nateraz nezapisuje (Pillow 10), ale novšie
+    # verzie ich vedia prevziať z im.info – tento pop to poistí naprieč verziami.
+    image.info.pop("exif", None)
+    image.info.pop("xmp", None)
 
     output = io.BytesIO()
     image.save(output, format="WEBP", quality=quality, method=6)

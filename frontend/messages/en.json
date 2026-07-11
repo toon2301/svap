@@ -60,7 +60,8 @@
     "remove": "Remove",
     "saving": "Saving...",
     "sending": "Sending...",
-    "submit": "Submit"
+    "submit": "Submit",
+    "verifiedAccount": "Verified account"
   },
   "requests": {
     "title": "Requests",
@@ -188,7 +189,7 @@
   },
   "homepage": {
     "welcome": "Welcome to",
-    "description": "A place where people with a desire to grow meet – some teach, others learn, everyone together creates a stronger community.",
+    "description": "Svaply is a place where people share what they offer, look for what they need, and discover services, skills, or help in their area.\n\nOn the board, you can showcase your work, respond to requests, build your name, communicate, collect reviews, and keep everything clearly in one place.",
     "redirectingToDashboard": "Redirecting to dashboard..."
   },
   "dashboard": {
@@ -1029,6 +1030,7 @@
     "language": "Language",
     "accountType": "Account type",
     "account": "Account",
+    "accountSettings": "Account settings",
     "privacy": "Privacy settings",
     "privacyShort": "Privacy",
     "close": "Close"
@@ -1136,6 +1138,11 @@
     "linkedinDescription": "Enter the URL of your LinkedIn profile",
     "addToFavorites": "+ Add to favorites",
     "removeFromFavorites": "Remove from favorites",
+    "likeProfile": "Like profile",
+    "unlikeProfile": "Remove profile like",
+    "profileLikes": "Profile likes",
+    "thumbsUp": "Thumbs up",
+    "profileLikeUpdateFailed": "Could not update the profile like.",
     "block": "Block",
     "enterWhatsAppNumber": "+421 912 345 678 alebo https://wa.me/421912345678",
     "enterYouTubeUrl": "https://youtube.com/@username alebo https://youtube.com/channel/...",
@@ -1200,7 +1207,14 @@
     "whatsapp": "WhatsApp",
     "whatsappDescription": "Enter WhatsApp number or link.",
     "youtube": "YouTube",
-    "youtubeDescription": "Enter your YouTube page or channel URL."
+    "youtubeDescription": "Enter your YouTube page or channel URL.",
+    "verifyEmailTitle": "Verify your email",
+    "verifyEmailDescription": "Verify your email to get a verification badge on your profile.",
+    "verifyEmailButton": "Verify email",
+    "verifyEmailSent": "Check your email and click the verification link.",
+    "verifyEmailError": "Failed to send the verification email. Please try again.",
+    "verifyEmailResend": "Resend",
+    "verifyEmailResendIn": "Resend in {seconds}s"
   },
   "notifications": {
     "loadMore": "Show more",
@@ -1260,6 +1274,10 @@
     "reviewLikedBody": "{name} liked your review.",
     "offerLikedTitle": "Someone liked your offer",
     "offerLikedBody": "{name} liked your offer.",
+    "portfolioLikedTitle": "Someone liked your portfolio",
+    "portfolioLikedBody": "{name} liked your portfolio.",
+    "profileLikedTitle": "Someone liked your profile",
+    "profileLikedBody": "{name} liked your profile.",
     "genericTitle": "New notification",
     "genericBody": "Open the notification for more details.",
     "reasonUnknown": "not provided",
@@ -4086,6 +4104,8 @@
     "keepEditing": "Keep editing",
     "discardCreate": "Discard",
     "editAction": "Edit",
+    "editPortfolioTitle": "Edit portfolio",
+    "editPortfolioChooseField": "Choose what you want to edit.",
     "deleteAction": "Delete",
     "deleteConfirmTitle": "Delete portfolio item?",
     "deleteConfirmBody": "This item and its photos will be permanently deleted. This action cannot be undone.",
@@ -4132,6 +4152,7 @@
     "portfolioOrder": "Portfolio order",
     "orderShort": "Order",
     "dragPortfolio": "Move portfolio",
+    "cancelOrder": "Close",
     "reorderAction": "Reorder",
     "done": "Done",
     "featuredPortfolio": "Featured portfolio",
@@ -4139,7 +4160,9 @@
     "saveOrder": "Save order",
     "orderSaveFailed": "Could not save the order",
     "photoDeleteFailed": "Could not delete the photo",
-    "coverSetFailed": "Could not set the cover photo"
+    "coverSetFailed": "Could not set the cover photo",
+    "likeAction": "Like",
+    "likeUpdateFailed": "Could not update the like."
   },
   "reviews": {
     "addReview": "Add review",

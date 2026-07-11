@@ -2,6 +2,7 @@
 
 import { useLanguage } from '@/contexts/LanguageContext';
 import BlurredContainImage from '../shared/BlurredContainImage';
+import { PortfolioLikeButton } from './PortfolioLikeButton';
 import type { PortfolioItem } from './portfolioTypes';
 import type { PortfolioDisplayImage } from './portfolioDisplay';
 
@@ -10,6 +11,8 @@ type PortfolioDetailHeroProps = {
   categoryLabel: string;
   heroImage?: PortfolioDisplayImage;
   onOpenImage: () => void;
+  onToggleLike?: () => void;
+  isLikePending?: boolean;
 };
 
 export function PortfolioDetailHero({
@@ -17,6 +20,8 @@ export function PortfolioDetailHero({
   categoryLabel,
   heroImage,
   onOpenImage,
+  onToggleLike,
+  isLikePending = false,
 }: PortfolioDetailHeroProps) {
   const { t } = useLanguage();
   const description = String(item.description || '').trim();
@@ -42,9 +47,21 @@ export function PortfolioDetailHero({
         </div>
       )}
 
-      <h1 className="order-3 text-2xl font-semibold leading-tight text-gray-950 dark:text-white sm:text-3xl lg:col-span-2 lg:row-start-1 lg:max-w-3xl lg:text-xl">
-        {item.title}
-      </h1>
+      <div className="order-3 flex min-w-0 items-start justify-between gap-3 lg:col-span-2 lg:row-start-1 lg:max-w-5xl">
+        <h1 className="min-w-0 text-xl font-semibold leading-tight text-gray-950 dark:text-white sm:text-2xl lg:text-xl">
+          {item.title}
+        </h1>
+        {onToggleLike && (
+          <PortfolioLikeButton
+            isLiked={item.is_liked_by_me === true}
+            likesCount={Math.max(0, Number(item.likes_count ?? 0))}
+            label={t('portfolio.likeAction')}
+            isPending={isLikePending}
+            onToggle={onToggleLike}
+            className="shrink-0"
+          />
+        )}
+      </div>
       <div className="contents lg:col-start-2 lg:row-start-2 lg:block lg:space-y-4">
         <p className="order-2 text-xs font-semibold uppercase tracking-wide text-purple-700 dark:text-purple-300">
           {categoryLabel}

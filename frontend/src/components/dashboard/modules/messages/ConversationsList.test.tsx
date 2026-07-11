@@ -131,12 +131,15 @@ describe('ConversationsList', () => {
       expect(screen.getByText('Nova sprava')).toBeInTheDocument();
     });
 
-    expect(syncMessageUnreadCountFromConversations).toHaveBeenCalledWith([
-      expect.objectContaining({
-        id: 9,
-        unread_count: 2,
-      }),
-    ]);
+    expect(syncMessageUnreadCountFromConversations).toHaveBeenCalledWith(
+      [
+        expect.objectContaining({
+          id: 9,
+          unread_count: 2,
+        }),
+      ],
+      { snapshotAt: expect.any(Number) },
+    );
   });
 
   it('renders skeleton placeholders while the conversations list is loading', async () => {

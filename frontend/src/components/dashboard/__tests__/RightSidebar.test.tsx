@@ -16,8 +16,14 @@ describe('RightSidebar', () => {
       />
     );
     expect(screen.getByText('Nastavenia')).toBeInTheDocument();
+    expect(screen.getByText('Nastavenia účtu')).toBeInTheDocument();
+    expect(screen.getByText('Účet')).toBeInTheDocument();
+
     fireEvent.click(screen.getByText('Upraviť profil'));
     expect(onItemClick).toHaveBeenCalledWith('edit-profile');
+
+    fireEvent.click(screen.getByText('Účet'));
+    expect(onItemClick).toHaveBeenCalledWith('account-settings');
   });
 
   it('closes on overlay click in mobile mode', () => {
@@ -32,6 +38,8 @@ describe('RightSidebar', () => {
         isMobile
       />
     );
+    expect(screen.queryByText('Nastavenia účtu')).not.toBeInTheDocument();
+    expect(screen.queryByText('Účet')).not.toBeInTheDocument();
     // overlay exists
     const overlay = document.querySelector('.fixed.inset-0.bg-black');
     expect(overlay).toBeTruthy();

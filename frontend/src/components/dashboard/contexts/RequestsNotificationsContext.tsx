@@ -21,6 +21,11 @@ import {
   parsePositiveOfferId,
 } from '@/components/dashboard/modules/profile/profileOfferEvents';
 import {
+  dispatchProfilePortfolioLiked,
+  parsePositivePortfolioItemId,
+} from '@/components/dashboard/modules/profile/portfolioEvents';
+import {
+  acknowledgeMessageUnreadCount,
   applyIncomingMessageUnreadEvent,
   bindMessageUnreadCountStoreToUser,
   getMessageUnreadCountStore,
@@ -374,9 +379,11 @@ function scheduleWsRelease(store: WsStore): void {
 export function RequestsNotificationsProvider({
   children,
   acknowledgeNotificationsBadge = false,
+  acknowledgeMessagesBadge = false,
 }: {
   children: React.ReactNode;
   acknowledgeNotificationsBadge?: boolean;
+  acknowledgeMessagesBadge?: boolean;
 }) {
   const { isLoading, user } = useAuth();
   const [unreadCount, setUnreadCount] = useState(() => {
@@ -581,6 +588,14 @@ export function RequestsNotificationsProvider({
     }
   }, [acknowledgeNotificationsBadge]);
 
+  useEffect(() => {
+    // Vstup do sekcie Správy = „videl som neprečítané" → badge zhasne trvalo
+    // (nevráti sa pri navigácii ani po refreshi). Nová správa cez WS ho vráti.
+    if (acknowledgeMessagesBadge) {
+      acknowledgeMessageUnreadCount();
+    }
+  }, [acknowledgeMessagesBadge]);
+
   const markAllRead = useCallback(async () => {
     try {
       await api.post(endpoints.notifications.markAllRead, { type: 'skill_request' });
@@ -736,6 +751,18 @@ export function RequestsNotificationsProvider({
           const offerId = parsePositiveOfferId(payload.notification.data?.offer_id);
           if (offerId !== null) {
             dispatchProfileOfferLiked({ offerId });
+          }
+        }
+
+        if (
+          payload.type === 'notification_created' &&
+          payload.notification?.type === 'portfolio_liked'
+        ) {
+          const portfolioItemId = parsePositivePortfolioItemId(
+            payload.notification.data?.portfolio_item_id,
+          );
+          if (portfolioItemId !== null) {
+            dispatchProfilePortfolioLiked({ portfolioItemId });
           }
         }
 

@@ -123,6 +123,11 @@ urlpatterns = [
         name="dashboard_user_profile_detail",
     ),
     path(
+        "dashboard/users/<int:user_id>/profile/like/",
+        views.profile_like_view,
+        name="dashboard_user_profile_like",
+    ),
+    path(
         "dashboard/users/<int:user_id>/skills/",
         views.dashboard_user_skills_view,
         name="dashboard_user_skills",

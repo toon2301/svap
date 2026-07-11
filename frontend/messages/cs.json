@@ -60,7 +60,8 @@
     "remove": "Odstrániť",
     "saving": "Ukladám...",
     "sending": "Odosielam...",
-    "submit": "Odoslať"
+    "submit": "Odoslať",
+    "verifiedAccount": "Ověřený účet"
   },
   "requests": {
     "title": "Žádosti",
@@ -188,7 +189,7 @@
   },
   "homepage": {
     "welcome": "Vítejte na",
-    "description": "Místo, kde se setkávají lidé s touhou růst – jedni učí, druzí se učí, všichni spolu tvoří silnější komunitu.",
+    "description": "Svaply je místo, kde lidé sdílejí, co nabízejí, hledají, co potřebují, a objevují služby, dovednosti či pomoc ve svém okolí.\n\nNa nástěnce můžeš ukázat svou práci, reagovat na poptávky, budovat si jméno, komunikovat, sbírat recenze a mít vše přehledně na jednom místě.",
     "redirectingToDashboard": "Přesměrovávám na nástěnku..."
   },
   "dashboard": {
@@ -1029,6 +1030,7 @@
     "language": "Jazyk",
     "accountType": "Typ účtu",
     "account": "Účet",
+    "accountSettings": "Nastavení účtu",
     "privacy": "Nastavení soukromí",
     "privacyShort": "Soukromí",
     "close": "Zavřít"
@@ -1132,6 +1134,11 @@
     "linkedinDescription": "Zadejte URL svého LinkedIn profilu",
     "addToFavorites": "+ Přidat do oblíbených",
     "removeFromFavorites": "Odebrat z oblíbených",
+    "likeProfile": "Líbí se mi profil",
+    "unlikeProfile": "Odebrat like z profilu",
+    "profileLikes": "Líbí se mi",
+    "thumbsUp": "Palec nahoru",
+    "profileLikeUpdateFailed": "Nepodařilo se aktualizovat líbí se mi.",
     "block": "Zablokovať",
     "enterWhatsAppNumber": "+421 912 345 678 alebo https://wa.me/421912345678",
     "enterYouTubeUrl": "https://youtube.com/@username alebo https://youtube.com/channel/...",
@@ -1200,7 +1207,14 @@
     "nameSaveFailed": "Jmeno se nepodarilo ulozit.",
     "bioSaveFailed": "Bio se nepodarilo ulozit.",
     "locationSaveFailed": "Lokalitu se nepodarilo ulozit.",
-    "phoneSaveFailed": "Telefonni cislo se nepodarilo ulozit."
+    "phoneSaveFailed": "Telefonni cislo se nepodarilo ulozit.",
+    "verifyEmailTitle": "Ověř svůj e-mail",
+    "verifyEmailDescription": "Ověřením e-mailu získáš ověřovací odznak u svého profilu.",
+    "verifyEmailButton": "Ověřit e-mail",
+    "verifyEmailSent": "Zkontroluj svůj e-mail a klikni na ověřovací odkaz.",
+    "verifyEmailError": "Ověřovací e-mail se nepodařilo odeslat. Zkuste to znovu.",
+    "verifyEmailResend": "Odeslat znovu",
+    "verifyEmailResendIn": "Odeslat znovu za {seconds} s"
   },
   "notifications": {
     "loadMore": "Zobrazit další",
@@ -1260,6 +1274,10 @@
     "reviewLikedBody": "{name} označil(a), že se mu líbí tvoje recenze.",
     "offerLikedTitle": "Někomu se líbí tvoje nabídka",
     "offerLikedBody": "{name} označil(a), že se mu líbí tvoje nabídka.",
+    "portfolioLikedTitle": "Někomu se líbí tvoje portfolio",
+    "portfolioLikedBody": "{name} označil(a), že se mu líbí tvoje portfolio.",
+    "profileLikedTitle": "Někomu se líbí tvůj profil",
+    "profileLikedBody": "{name} označil(a), že se mu líbí tvůj profil.",
     "genericTitle": "Nové upozornění",
     "genericBody": "Otevřete upozornění pro více detailů.",
     "reasonUnknown": "neuvedený",
@@ -4086,6 +4104,8 @@
     "keepEditing": "Pokračovat v úpravě",
     "discardCreate": "Zahodit",
     "editAction": "Upravit",
+    "editPortfolioTitle": "Upravit portfolio",
+    "editPortfolioChooseField": "Vyber, co chceš upravit.",
     "deleteAction": "Smazat",
     "deleteConfirmTitle": "Smazat položku portfolia?",
     "deleteConfirmBody": "Tato položka i její fotky se trvale odstraní. Tuto akci nelze vrátit zpět.",
@@ -4132,6 +4152,7 @@
     "portfolioOrder": "Pořadí portfolia",
     "orderShort": "Pořadí",
     "dragPortfolio": "Přesunout portfolio",
+    "cancelOrder": "Zavřít",
     "reorderAction": "Uspořádat",
     "done": "Hotovo",
     "featuredPortfolio": "Vybrané portfolio",
@@ -4139,7 +4160,9 @@
     "saveOrder": "Uložit pořadí",
     "orderSaveFailed": "Pořadí se nepodařilo uložit",
     "photoDeleteFailed": "Fotku se nepodařilo smazat",
-    "coverSetFailed": "Titulní fotku se nepodařilo nastavit"
+    "coverSetFailed": "Titulní fotku se nepodařilo nastavit",
+    "likeAction": "Líbí se mi",
+    "likeUpdateFailed": "Nepodařilo se aktualizovat líbí se mi."
   },
   "reviews": {
     "addReview": "Pridať recenziu",

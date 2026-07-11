@@ -11,6 +11,7 @@ class UserBriefSerializer(serializers.Serializer):
     slug = serializers.CharField(allow_null=True, required=False)
     user_type = serializers.CharField(allow_null=True, required=False)
     avatar_url = serializers.CharField(allow_null=True, required=False)
+    is_verified = serializers.BooleanField(required=False)
     is_deleted = serializers.BooleanField(required=False)
 
 
@@ -24,6 +25,8 @@ def serialize_user_brief(user, request=None):
         "slug": None if is_deleted else getattr(user, "slug", None),
         "user_type": getattr(user, "user_type", None),
         "avatar_url": None if is_deleted else _avatar_url(request, user),
+        # Verejný trust badge (overený email) – pre zmazané účty vždy False.
+        "is_verified": False if is_deleted else bool(getattr(user, "is_verified", False)),
         "is_deleted": is_deleted,
     }
 

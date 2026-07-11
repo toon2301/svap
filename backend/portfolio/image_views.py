@@ -3,7 +3,6 @@ import uuid
 import logging
 import mimetypes
 
-import boto3
 from django.conf import settings
 from django.db import transaction
 from django.db.models import Max, Q
@@ -15,7 +14,9 @@ from rest_framework.response import Response
 
 from swaply.rate_limiting import api_rate_limit
 
+from .api_responses import portfolio_item_not_found as _portfolio_item_not_found
 from .image_storage import delete_storage_keys, image_storage_keys
+from .image_storage import get_s3_client as _get_s3_client
 from .local_upload import (
     LOCAL_UPLOAD_EXPIRES_SECONDS,
     local_portfolio_upload_enabled,
@@ -32,22 +33,6 @@ PROCESSING_ENQUEUE_ERROR = (
 )
 
 logger = logging.getLogger(__name__)
-
-
-def _portfolio_item_not_found():
-    return Response(
-        {"error": "Polozka portfolia nebola najdena"},
-        status=status.HTTP_404_NOT_FOUND,
-    )
-
-
-def _get_s3_client():
-    return boto3.client(
-        "s3",
-        aws_access_key_id=getattr(settings, "AWS_ACCESS_KEY_ID", None),
-        aws_secret_access_key=getattr(settings, "AWS_SECRET_ACCESS_KEY", None),
-        region_name=getattr(settings, "AWS_S3_REGION_NAME", None),
-    )
 
 
 def _active_images_q():
@@ -280,6 +265,11 @@ def portfolio_image_upload_complete_view(request, item_id: int):
             )
             moderate_staged_s3_image(bucket, key)
         except ModerationRejectedError as e:
+            # Defense-in-depth orphan cleanup (rovnaký vzor ako skills_upload):
+            # moderate_staged_s3_image staging objekt už best-effort maže, no ak
+            # by ten delete zlyhal, DB záznam ešte neexistuje (post_delete signál
+            # sa nespustí), takže by staging upload ostal navždy (náklady + GDPR).
+            delete_storage_keys([key])
             return Response(
                 {"error": e.user_message, "code": e.code},
                 status=status.HTTP_400_BAD_REQUEST,

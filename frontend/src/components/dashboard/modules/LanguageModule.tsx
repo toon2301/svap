@@ -1,9 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import SettingsDetailHeader from './settings/SettingsDetailHeader';
 
-export default function LanguageModule() {
+type LanguageModuleProps = {
+  onBack?: () => void;
+};
+
+export default function LanguageModule({ onBack }: LanguageModuleProps = {}) {
   const { locale, setLocale, t, setCountry } = useLanguage();
   const [selectedLanguage, setSelectedLanguage] = useState(
     locale === 'en' ? 'angličtina' : locale === 'pl' ? 'poľština' : locale === 'cs' ? 'čeština' : locale === 'de' ? 'nemčina' : locale === 'hu' ? 'maďarčina' : 'slovenčina'
@@ -38,9 +43,11 @@ export default function LanguageModule() {
         <div className="hidden lg:flex items-start justify-center">
           <div className="flex flex-col items-start w-full profile-edit-column pt-4 pb-8">
             <div className="w-full">
-              <h2 className="text-2xl font-semibold text-gray-800 dark:text-white mb-6">
-                {t('language.title', 'Jazyk')}
-              </h2>
+              <SettingsDetailHeader
+                title={t('language.title', 'Jazyk')}
+                backLabel={t('common.back', 'Späť')}
+                onBack={onBack}
+              />
               <p className="text-gray-800 dark:text-white mb-2 text-lg font-semibold">
                 {t('language.languageSelection', 'Výber jazyka')}
               </p>

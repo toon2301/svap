@@ -29,7 +29,18 @@ def _now():
     return datetime.now(timezone.utc)
 
 
-@shared_task(bind=True, autoretry_for=(Exception,), retry_backoff=True, retry_kwargs={"max_retries": 5})
+@shared_task(
+    bind=True,
+    autoretry_for=(Exception,),
+    retry_backoff=True,
+    retry_kwargs={"max_retries": 5},
+    # Timeout bráni tomu, aby zaseknuté spracovanie (obrovský obrázok, pomalé S3,
+    # visiaci moderation call) držalo workera donekonečna – rovnaký vzor ako
+    # process_portfolio_image. soft_time_limit vyhodí SoftTimeLimitExceeded (spadá
+    # pod autoretry → retry s backoffom), hard time_limit workera dorazí.
+    soft_time_limit=120,
+    time_limit=150,
+)
 def process_offered_skill_image(self, offered_skill_image_id: int) -> None:
     """
     Background pipeline:

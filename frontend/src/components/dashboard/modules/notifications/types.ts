@@ -9,6 +9,8 @@ export type NotificationType =
   | 'review_reply_created'
   | 'review_liked'
   | 'offer_liked'
+  | 'portfolio_liked'
+  | 'profile_liked'
   | 'group_invitation'
   | string;
 

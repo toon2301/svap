@@ -192,7 +192,6 @@ describe('profile edit navigation flow', () => {
       useDashboardNavigation({
         user: baseUser,
         dashboardState,
-        isSearchOpen: false,
         setIsSearchOpen,
         setViewedUserId,
         setViewedUserSlug,

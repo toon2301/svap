@@ -105,6 +105,123 @@ class PortfolioCrudApiTests(APITestCase):
         self.assertIsNone(response.data["cover_image"])
         self.assertEqual(response.data["images"], [])
 
+    def test_create_portfolio_item_enforces_max_items_cap(self):
+        self.client.force_authenticate(user=self.owner)
+        # Strop znížime cez patch, aby test nemusel vytvárať 15 položiek.
+        with patch("portfolio.views.MAX_PORTFOLIO_ITEMS", 2):
+            for _ in range(2):
+                ok = self.client.post(
+                    reverse("accounts:portfolio_list"),
+                    data=self._payload(),
+                    format="json",
+                )
+                self.assertEqual(ok.status_code, status.HTTP_201_CREATED)
+
+            over = self.client.post(
+                reverse("accounts:portfolio_list"),
+                data=self._payload(),
+                format="json",
+            )
+
+        self.assertEqual(over.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("error", over.data)
+        # Cudzí používateľ má vlastný strop (počet sa počíta per owner).
+        self.assertEqual(PortfolioItem.objects.filter(owner=self.owner).count(), 2)
+
+    def test_create_portfolio_item_cap_is_per_user(self):
+        self.client.force_authenticate(user=self.owner)
+        with patch("portfolio.views.MAX_PORTFOLIO_ITEMS", 1):
+            first = self.client.post(
+                reverse("accounts:portfolio_list"),
+                data=self._payload(),
+                format="json",
+            )
+            self.assertEqual(first.status_code, status.HTTP_201_CREATED)
+
+            self.client.force_authenticate(user=self.visitor)
+            # Iný používateľ nie je ovplyvnený stropom vlastníka.
+            other = self.client.post(
+                reverse("accounts:portfolio_list"),
+                data=self._payload(),
+                format="json",
+            )
+            self.assertEqual(other.status_code, status.HTTP_201_CREATED)
+
+    def test_create_portfolio_item_rejects_description_over_500_chars(self):
+        self.client.force_authenticate(user=self.owner)
+
+        response = self.client.post(
+            reverse("accounts:portfolio_list"),
+            data=self._payload(description="x" * 501),
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("description", response.data)
+
+    def test_create_portfolio_item_accepts_description_at_500_chars(self):
+        self.client.force_authenticate(user=self.owner)
+
+        response = self.client.post(
+            reverse("accounts:portfolio_list"),
+            data=self._payload(description="x" * 500),
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        item = PortfolioItem.objects.get(id=response.data["id"])
+        self.assertEqual(len(item.description), 500)
+
+    def test_delete_item_compacts_sort_order_of_remaining_items(self):
+        first = self._item(title="First", sort_order=0)
+        second = self._item(title="Second", sort_order=1)
+        third = self._item(title="Third", sort_order=2)
+        fourth = self._item(title="Fourth", sort_order=3)
+        self.client.force_authenticate(user=self.owner)
+
+        response = self.client.delete(
+            reverse("accounts:portfolio_detail", args=[second.id])
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        remaining = list(
+            PortfolioItem.objects.filter(owner=self.owner)
+            .order_by("sort_order", "id")
+            .values_list("id", "sort_order")
+        )
+        # Žiadne diery: poradie sa prečísluje na 0..n-1 so zachovaným poradím.
+        self.assertEqual(
+            remaining,
+            [(first.id, 0), (third.id, 1), (fourth.id, 2)],
+        )
+
+    def test_reorder_works_after_delete_renumbering(self):
+        first = self._item(title="First", sort_order=0)
+        second = self._item(title="Second", sort_order=1)
+        third = self._item(title="Third", sort_order=2)
+        self.client.force_authenticate(user=self.owner)
+
+        delete_response = self.client.delete(
+            reverse("accounts:portfolio_detail", args=[second.id])
+        )
+        self.assertEqual(delete_response.status_code, status.HTTP_204_NO_CONTENT)
+
+        reorder_response = self.client.patch(
+            reverse("accounts:portfolio_reorder"),
+            data={"item_ids": [third.id, first.id]},
+            format="json",
+        )
+
+        self.assertEqual(reorder_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            list(
+                PortfolioItem.objects.filter(owner=self.owner)
+                .order_by("sort_order", "id")
+                .values_list("id", flat=True)
+            ),
+            [third.id, first.id],
+        )
+
     def test_create_portfolio_item_sets_sort_order_server_side(self):
         self._item(sort_order=3)
         self.client.force_authenticate(user=self.owner)
