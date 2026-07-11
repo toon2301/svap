@@ -12,6 +12,7 @@ import type { ProfileTab } from '../modules/profile/profileTypes';
 import type { Offer } from '../modules/profile/profileOffersTypes';
 import DashboardLayout from '../DashboardLayout';
 import ModuleRouter from '../ModuleRouter';
+import type { AccountSettingsMobileView } from '../modules/AccountSettingsModule';
 import DashboardModals from '../DashboardModals';
 import { DeleteSkillConfirmModal } from '../modules/skills/DeleteSkillConfirmModal';
 import {
@@ -46,7 +47,7 @@ import {
 } from '../modules/profile/profileOfferDetailEvents';
 import { dispatchProfileOffersRefresh } from '../modules/profile/profileOfferEvents';
 import { invalidateOffersCache } from '../modules/profile/profileOffersCache';
-import { buildPortfolioCreatePath } from '../modules/profile/portfolioRouting';
+import { buildPortfolioCreatePath, buildPortfolioListPath } from '../modules/profile/portfolioRouting';
 import { useDashboardState } from '../hooks/useDashboardState';
 import { useSkillsModals } from '../hooks/useSkillsModals';
 import { useDashboardNavigation } from '../hooks/useDashboardNavigation';
@@ -82,6 +83,7 @@ function getDashboardModuleFromTarget(targetUrl: string): string | null {
     if (/^\/dashboard\/messages(?:\/\d+)?\/?$/.test(path)) return 'messages';
     if (/^\/dashboard\/offers\/\d+\/reviews\/?$/.test(path)) return 'offer-reviews';
     if (/^\/dashboard\/settings\/notifications\/?$/.test(path)) return 'notification-settings';
+    if (/^\/dashboard\/settings\/account\/?$/.test(path)) return 'account-settings';
     if (/^\/dashboard\/notifications\/?$/.test(path)) return 'notifications';
     if (/^\/dashboard\/favorites\/?$/.test(path)) return 'favorites';
     if (/^\/dashboard\/search\/?$/.test(path)) return 'search';
@@ -256,6 +258,8 @@ export default function DashboardContent({
     avatarMembers: MessagingUserBrief[];
   } | null>(null);
   const [isMobileOfferDetailOpen, setIsMobileOfferDetailOpen] = useState(false);
+  const [mobileAccountSettingsView, setMobileAccountSettingsView] =
+    useState<AccountSettingsMobileView>('overview');
   const [pendingDeleteOffer, setPendingDeleteOffer] = useState<Offer | null>(null);
   const [isDeletingOwnProfileOffer, setIsDeletingOwnProfileOffer] = useState(false);
   const [ownProfileTab, setOwnProfileTab] = useState<ProfileTab>(() =>
@@ -268,6 +272,7 @@ export default function DashboardContent({
     ),
   );
   const skillsCategoryBackHandlerRef = useRef<(() => void) | null>(null);
+  const mobileSettingsReturnRef = useRef<{ moduleId: string; url: string } | null>(null);
   const mobileOnboardingSkillCreatedHandlerRef = useRef<(() => void) | null>(null);
   const desktopOnboardingSkillCreatedHandlerRef = useRef<(() => void) | null>(null);
 
@@ -314,7 +319,6 @@ export default function DashboardContent({
   const navigation = useDashboardNavigation({
     user: dashboardState.user,
     dashboardState,
-    isSearchOpen,
     setIsSearchOpen,
     setViewedUserId: userProfile.setViewedUserId,
     setViewedUserSlug: userProfile.setViewedUserSlug,
@@ -355,6 +359,21 @@ export default function DashboardContent({
     setIsPersonalAccountModalOpen,
   } = dashboardState;
 
+  useEffect(() => {
+    if (activeModule !== 'account-settings' && activeRightItem !== 'account-settings') {
+      setMobileAccountSettingsView('overview');
+    }
+  }, [activeModule, activeRightItem]);
+
+  const handleAccountSettingsMobileBack = useCallback(() => {
+    if (mobileAccountSettingsView !== 'overview') {
+      setMobileAccountSettingsView('overview');
+      return;
+    }
+
+    handleMobileBack();
+  }, [handleMobileBack, mobileAccountSettingsView]);
+
   const {
     selectedSkillsCategory,
     setSelectedSkillsCategory,
@@ -392,6 +411,54 @@ export default function DashboardContent({
     },
     [activeModule, navigation],
   );
+
+  const rememberMobileSettingsReturn = useCallback(() => {
+    if (!isMobile || !isMobileMenuOpen) return;
+    if (activeModule === 'notification-settings' || activeModule === 'privacy') return;
+
+    const currentUrl =
+      typeof window !== 'undefined'
+        ? `${window.location.pathname}${window.location.search}`
+        : '/dashboard/profile';
+
+    mobileSettingsReturnRef.current = {
+      moduleId: activeModule || 'profile',
+      url: currentUrl,
+    };
+  }, [activeModule, isMobile, isMobileMenuOpen]);
+
+  const handleMobileSettingsDetailBack = useCallback(() => {
+    const returnTarget = mobileSettingsReturnRef.current ?? { moduleId: 'profile', url: '/dashboard/profile' };
+
+    setActiveModule(returnTarget.moduleId);
+    setIsRightSidebarOpen(false);
+    setActiveRightItem('');
+    setIsMobileMenuOpen(true);
+
+    if (typeof window !== 'undefined') {
+      window.history.pushState(null, '', returnTarget.url);
+      try {
+        localStorage.setItem('activeModule', returnTarget.moduleId);
+      } catch {
+        // Navigation state is already restored; ignore storage failures.
+      }
+    }
+  }, [setActiveModule, setActiveRightItem, setIsMobileMenuOpen, setIsRightSidebarOpen]);
+
+  const handleDashboardModuleChange = useCallback(
+    (moduleId: string) => {
+      if (moduleId === 'notification-settings' || moduleId === 'privacy') {
+        rememberMobileSettingsReturn();
+      }
+      handleMainModuleChange(moduleId);
+    },
+    [handleMainModuleChange, rememberMobileSettingsReturn],
+  );
+
+  const handleSidebarPrivacyClick = useCallback(() => {
+    rememberMobileSettingsReturn();
+    navigation.handleSidebarPrivacyClick();
+  }, [navigation, rememberMobileSettingsReturn]);
 
   const handleMobileProfileOpen = useCallback(() => {
     setOwnProfileTab('offers');
@@ -791,6 +858,55 @@ export default function DashboardContent({
     (typeof initialViewedUserId === 'number' ? String(initialViewedUserId) : null);
   const effectivePortfolioCreateOwnerIdentifier = portfolioCreateOwnerIdentifierFromPath ?? null;
 
+  const handlePortfolioDetailBack = useCallback(() => {
+    const identifier = String(effectivePortfolioOwnerIdentifier || '').trim();
+    const target = identifier ? buildPortfolioListPath(identifier) : '/dashboard/profile';
+    const targetModule = identifier ? 'user-profile' : 'profile';
+
+    setActiveModule(targetModule);
+    setIsRightSidebarOpen(false);
+    setActiveRightItem('');
+    setIsMobileMenuOpen(false);
+    setIsSearchOpen(false);
+    setIsNotificationsPanelOpen(false);
+    setViewedUserSummary(null);
+
+    if (identifier) {
+      if (/^\d+$/.test(identifier)) {
+        setViewedUserId(Number(identifier));
+        setViewedUserSlug(null);
+      } else {
+        setViewedUserId(null);
+        setViewedUserSlug(identifier);
+      }
+    } else {
+      setViewedUserId(null);
+      setViewedUserSlug(null);
+      setOwnProfileTab('portfolio');
+    }
+
+    try {
+      localStorage.setItem('activeModule', targetModule);
+    } catch {
+      // ignore
+    }
+
+    router.push(target);
+  }, [
+    effectivePortfolioOwnerIdentifier,
+    router,
+    setActiveModule,
+    setActiveRightItem,
+    setIsMobileMenuOpen,
+    setIsNotificationsPanelOpen,
+    setIsRightSidebarOpen,
+    setIsSearchOpen,
+    setOwnProfileTab,
+    setViewedUserId,
+    setViewedUserSlug,
+    setViewedUserSummary,
+  ]);
+
   const handleCreatePortfolio = useCallback(() => {
     const identifier = user?.slug || (user?.id ? String(user.id) : null);
     setOwnProfileTab('portfolio');
@@ -918,6 +1034,8 @@ export default function DashboardContent({
         moduleId = 'messages';
       } else if (p.match(/^\/dashboard\/settings\/notifications\/?$/)) {
         moduleId = 'notification-settings';
+      } else if (p.match(/^\/dashboard\/settings\/account\/?$/)) {
+        moduleId = 'account-settings';
       } else if (p === '/dashboard' || p === '/dashboard/') {
         moduleId = 'home';
       } else if (p.match(/^\/dashboard\/profile\/?$/)) {
@@ -1221,6 +1339,8 @@ export default function DashboardContent({
       requestsRouteIntent={requestsRouteIntent}
       onEditOwnProfileOffer={handleEditOwnProfileOffer}
       onDeleteOwnProfileOffer={handleDeleteOwnProfileOffer}
+      mobileAccountSettingsView={mobileAccountSettingsView}
+      onMobileAccountSettingsViewChange={setMobileAccountSettingsView}
     />
   );
 
@@ -1258,13 +1378,13 @@ export default function DashboardContent({
     activeRightItem,
     isRightSidebarOpen,
     isMobileMenuOpen,
-    isSearchOpen,
     isNotificationsPanelOpen,
     isMessageConversationOpen: isMobileMessageConversationOpen,
   });
   return (
     <RequestsNotificationsProvider
       acknowledgeNotificationsBadge={activeModule === 'notifications' || isNotificationsPanelOpen}
+      acknowledgeMessagesBadge={activeModule === 'messages'}
     >
       <DesktopOnboardingProvider
         activeModule={activeModule}
@@ -1302,7 +1422,7 @@ export default function DashboardContent({
             activeRightItem={activeRightItem}
             isRightSidebarOpen={isRightSidebarOpen}
             isMobileMenuOpen={isMobileMenuOpen}
-            onModuleChange={handleMainModuleChange}
+            onModuleChange={handleDashboardModuleChange}
             onLogout={handleLogout}
             onRightSidebarClose={navigation.handleRightSidebarClose}
             onRightItemClick={handleRightItemClick}
@@ -1315,13 +1435,20 @@ export default function DashboardContent({
                   ? handleSkillsDescribeMobileBack
                   : activeModule === 'offer-reviews'
                     ? handleOfferReviewsBack
-                    : handleMobileBack
+                    : activeModule === 'portfolio-detail'
+                      ? handlePortfolioDetailBack
+                      : activeModule === 'notification-settings' || activeModule === 'privacy'
+                        ? handleMobileSettingsDetailBack
+                        : activeModule === 'account-settings' || activeRightItem === 'account-settings'
+                        ? handleAccountSettingsMobileBack
+                        : handleMobileBack
             }
             onMobileProfileClick={handleMobileProfileOpen}
             onSkillsModeToggle={handleSkillsModeToggle}
             onSidebarLanguageClick={navigation.handleSidebarLanguageClick}
             onSidebarAccountTypeClick={navigation.handleSidebarAccountTypeClick}
-            onSidebarPrivacyClick={navigation.handleSidebarPrivacyClick}
+            onSidebarAccountSettingsClick={navigation.handleSidebarAccountSettingsClick}
+            onSidebarPrivacyClick={handleSidebarPrivacyClick}
             isSearchOpen={isSearchOpen}
             isNotificationsPanelOpen={isNotificationsPanelOpen}
             onSidebarSearchClick={handleSidebarSearchClick}
@@ -1372,6 +1499,7 @@ export default function DashboardContent({
             onMobileMessagesBack={handleMobileMessagesBack}
             isMobileOfferDetailOpen={showMobileOfferDetailTopBar}
             currentUser={user}
+            mobileAccountSettingsView={mobileAccountSettingsView}
           >
             {moduleContent}
           </DashboardLayout>

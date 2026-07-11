@@ -181,6 +181,11 @@ export function ConversationsList({
       latestRequestIdRef.current = requestId;
 
       const request = (async () => {
+        // Čas začiatku fetchu: serverový snapshot je najviac takto starý. Store
+        // podľa neho ignoruje výsledok, ak medzičasom prišiel novší update
+        // (mark-read, WS) — inak by tento (deduplikovaný) request prepísal badge
+        // späť na starú hodnotu.
+        const snapshotAt = Date.now();
         const data =
           tab === 'requests'
             ? await listMessageRequests({ search })
@@ -193,7 +198,7 @@ export function ConversationsList({
             setItems(safeItems);
           }
           if (!search && tab === 'messages') {
-            syncMessageUnreadCountFromConversations(safeItems);
+            syncMessageUnreadCountFromConversations(safeItems, { snapshotAt });
           }
         }
         return safeItems;

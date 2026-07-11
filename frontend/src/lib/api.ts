@@ -758,6 +758,7 @@ export const endpoints = {
     favoriteUser: (id: number) => `/auth/dashboard/favorites/${id}/`,
     profile: '/auth/dashboard/profile/',
     userProfile: (id: number) => `/auth/dashboard/users/${id}/profile/`,
+    profileLike: (id: number) => `/auth/dashboard/users/${id}/profile/like/`,
     userSkills: (id: number) => `/auth/dashboard/users/${id}/skills/`,
     // Slug-based endpointy pre profily používateľov (musí podporovať backend)
     userProfileBySlug: (slug: string) => `/auth/dashboard/users/slug/${slug}/profile/`,
@@ -769,6 +770,7 @@ export const endpoints = {
     list: '/auth/portfolio/',
     reorder: '/auth/portfolio/reorder/',
     detail: (id: number) => `/auth/portfolio/${id}/`,
+    like: (id: number) => `/auth/portfolio/${id}/like/`,
     userList: (id: number) => `/auth/dashboard/users/${id}/portfolio/`,
     userListBySlug: (slug: string) => `/auth/dashboard/users/slug/${encodeURIComponent(slug)}/portfolio/`,
     imageUploadInit: (itemId: number) => `/auth/portfolio/${itemId}/images/upload-init/`,

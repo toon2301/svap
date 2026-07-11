@@ -8,6 +8,7 @@ import NotificationsModule from './modules/NotificationsModule';
 import NotificationSettingsModule from './modules/NotificationSettingsModule';
 import LanguageModule from './modules/LanguageModule';
 import AccountTypeModule from './modules/AccountTypeModule';
+import AccountSettingsModule, { type AccountSettingsMobileView } from './modules/AccountSettingsModule';
 import PrivacySettingsModule from './modules/PrivacySettingsModule';
 import PrivacySettingsMobileSection from './modules/PrivacySettingsMobileSection';
 import SkillsModuleRouter from './modules/skills/SkillsModuleRouter';
@@ -82,6 +83,8 @@ interface ModuleRouterProps {
   requestsRouteIntent?: RequestsRouteIntent | null;
   onEditOwnProfileOffer?: (offer: Offer) => void;
   onDeleteOwnProfileOffer?: (offer: Offer) => void;
+  mobileAccountSettingsView?: AccountSettingsMobileView;
+  onMobileAccountSettingsViewChange?: (view: AccountSettingsMobileView) => void;
 }
 
 export default function ModuleRouter({
@@ -136,15 +139,17 @@ export default function ModuleRouter({
   requestsRouteIntent,
   onEditOwnProfileOffer,
   onDeleteOwnProfileOffer,
+  mobileAccountSettingsView,
+  onMobileAccountSettingsViewChange,
 }: ModuleRouterProps) {
   const { t } = useLanguage();
 
   if (isRightSidebarOpen && activeRightItem === 'notifications') {
-    return <NotificationSettingsModule />;
+    return <NotificationSettingsModule onBack={closeOwnProfileEdit} />;
   }
 
   if (isRightSidebarOpen && activeRightItem === 'language') {
-    return <LanguageModule />;
+    return <LanguageModule onBack={closeOwnProfileEdit} />;
   }
 
   if (isRightSidebarOpen && activeRightItem === 'account-type') {
@@ -154,12 +159,24 @@ export default function ModuleRouter({
         setAccountType={setAccountType}
         setIsAccountTypeModalOpen={setIsAccountTypeModalOpen}
         setIsPersonalAccountModalOpen={setIsPersonalAccountModalOpen}
+        onBack={closeOwnProfileEdit}
       />
     );
   }
 
   if (isRightSidebarOpen && activeRightItem === 'privacy') {
-    return <PrivacySettingsModule user={user} onUserUpdate={onUserUpdate} />;
+    return <PrivacySettingsModule user={user} onUserUpdate={onUserUpdate} onBack={closeOwnProfileEdit} />;
+  }
+
+  if (isRightSidebarOpen && activeRightItem === 'account-settings') {
+    return (
+      <AccountSettingsModule
+        user={user}
+        onBack={closeOwnProfileEdit}
+        mobileView={mobileAccountSettingsView}
+        onMobileViewChange={onMobileAccountSettingsViewChange}
+      />
+    );
   }
 
   switch (activeModule) {
@@ -291,6 +308,14 @@ export default function ModuleRouter({
       return <NotificationsModule onNavigate={onNotificationNavigate} />;
     case 'notification-settings':
       return <NotificationSettingsModule />;
+    case 'account-settings':
+      return (
+        <AccountSettingsModule
+          user={user}
+          mobileView={mobileAccountSettingsView}
+          onMobileViewChange={onMobileAccountSettingsViewChange}
+        />
+      );
     case 'language':
       return <LanguageModule />;
     case 'skills':

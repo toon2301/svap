@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { ChevronRightIcon } from '@heroicons/react/24/outline';
+import SettingsDetailHeader from './settings/SettingsDetailHeader';
 
 // Falošná zmena pre push
 
@@ -11,9 +12,10 @@ interface AccountTypeModuleProps {
   setAccountType: (type: 'personal' | 'business') => void;
   setIsAccountTypeModalOpen: (open: boolean) => void;
   setIsPersonalAccountModalOpen: (open: boolean) => void;
+  onBack?: () => void;
 }
 
-export default function AccountTypeModule({ accountType, setAccountType, setIsAccountTypeModalOpen, setIsPersonalAccountModalOpen }: AccountTypeModuleProps) {
+export default function AccountTypeModule({ accountType, setIsAccountTypeModalOpen, setIsPersonalAccountModalOpen, onBack }: AccountTypeModuleProps) {
   const { t } = useLanguage();
   const [isMobileModalOpen, setIsMobileModalOpen] = useState(false);
 
@@ -23,9 +25,12 @@ export default function AccountTypeModule({ accountType, setAccountType, setIsAc
       <div className="hidden lg:flex items-start justify-center">
         <div className="flex flex-col items-start w-full profile-edit-column pt-4 pb-8">
           <div className="w-full">
-            <h2 className="text-2xl font-semibold text-gray-800 dark:text-white mb-2">
-              {t('rightSidebar.accountType', 'Typ účtu')}
-            </h2>
+            <SettingsDetailHeader
+              title={t('rightSidebar.accountType', 'Typ účtu')}
+              backLabel={t('common.back', 'Späť')}
+              onBack={onBack}
+              className="mb-2"
+            />
             <p className="text-gray-800 dark:text-white text-lg font-semibold mb-4">
               {t('accountType.selectAccountType', 'Zvoľ typ účtu')}
             </p>

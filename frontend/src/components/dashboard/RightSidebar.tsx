@@ -1,6 +1,5 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -9,6 +8,7 @@ import {
   LanguageIcon,
   UserGroupIcon,
   LockClosedIcon,
+  KeyIcon,
   XMarkIcon
 } from '@heroicons/react/24/outline';
 
@@ -46,6 +46,11 @@ const rightSidebarItems: RightSidebarItem[] = [
     id: 'account-type',
     label: 'Typ účtu',
     icon: UserGroupIcon,
+  },
+  {
+    id: 'account-settings',
+    label: 'Účet',
+    icon: KeyIcon,
   },
   {
     id: 'privacy',
@@ -150,6 +155,35 @@ export default function RightSidebar({
             })}
           </div>
         </div>
+
+        {!isMobile && (
+          <div>
+            <h3 className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2 px-3">
+              {t('rightSidebar.accountSettings', 'Nastavenia účtu')}
+            </h3>
+            <div className="space-y-2">
+              {rightSidebarItems.filter(item => item.id === 'account-settings').map((item) => {
+                const Icon = item.icon;
+                const isActive = activeItem === item.id;
+
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => handleItemClick(item.id)}
+                    className={`w-full flex items-center px-3 py-2.5 text-sm font-medium rounded-2xl transition-all duration-200 ${
+                      isActive
+                        ? 'bg-purple-100 text-purple-800 border border-purple-200'
+                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-900 hover:text-gray-900 dark:hover:text-white'
+                    }`}
+                  >
+                    <Icon className={`w-5 h-5 mr-3 ${isActive ? 'text-purple-600' : 'text-gray-500 dark:text-gray-400'}`} />
+                    {t('rightSidebar.account', item.label)}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </nav>
     </div>
   );

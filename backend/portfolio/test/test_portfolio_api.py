@@ -130,25 +130,26 @@ class PortfolioApiTests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         payload = response.data[0]["images"][0]
-        self.assertEqual(
-            payload["thumbnail_url"],
-            "http://testserver/media/portfolio/thumb.webp",
+        # BOD 3: URL smerujú na privátny proxy endpoint (nie priama S3/media URL).
+        proxy_base = "http://testserver" + reverse(
+            "accounts:portfolio_image_file", args=[item.id, image.id]
         )
-        self.assertEqual(
-            payload["medium_url"],
-            "http://testserver/media/portfolio/medium.webp",
-        )
-        self.assertEqual(
-            payload["large_url"],
-            "http://testserver/media/portfolio/large.webp",
-        )
-        self.assertEqual(
-            payload["image_url"],
-            "http://testserver/media/portfolio/medium.webp",
-        )
+        self.assertEqual(payload["thumbnail_url"], f"{proxy_base}?variant=thumbnail")
+        self.assertEqual(payload["medium_url"], f"{proxy_base}?variant=medium")
+        self.assertEqual(payload["large_url"], f"{proxy_base}?variant=large")
+        # image_url preferuje medium variant.
+        self.assertEqual(payload["image_url"], f"{proxy_base}?variant=medium")
+        # Interné S3 kľúče sa NIKDY neobjavia v odpovedi (ani v URL).
         self.assertNotIn("thumbnail_key", payload)
         self.assertNotIn("medium_key", payload)
         self.assertNotIn("large_key", payload)
+        for url in (
+            payload["thumbnail_url"],
+            payload["medium_url"],
+            payload["large_url"],
+            payload["image_url"],
+        ):
+            self.assertNotIn("media/portfolio", url)
 
     def test_visitor_list_only_returns_public_items_with_approved_cover_and_images(
         self,

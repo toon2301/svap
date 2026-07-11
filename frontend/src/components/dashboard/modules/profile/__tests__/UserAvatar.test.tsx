@@ -51,6 +51,13 @@ describe('UserAvatar', () => {
     expect(screen.getByText('JD').parentElement).toHaveClass('w-28', 'h-28', 'text-3xl');
   });
 
+  it('uses a larger verification badge on the large profile avatar', () => {
+    render(<UserAvatar user={mockUser} size="large" />);
+
+    const svg = screen.getByTestId('verified-badge').querySelector('svg');
+    expect(svg).toHaveClass('h-7', 'w-7');
+  });
+
   it('handles image load error by showing initials', async () => {
     const userWithAvatar = {
       ...mockUser,

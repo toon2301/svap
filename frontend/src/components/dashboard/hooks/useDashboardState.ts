@@ -73,7 +73,7 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
   }, [initialModule]);
   
   // Inicializácia sidebaru - ak initialModule je sidebar sekcia, otvor sidebar hneď
-  const rightSidebarItems = ['notifications', 'language', 'account-type', 'privacy'];
+  const rightSidebarItems = ['notifications', 'language', 'account-type', 'privacy', 'account-settings'];
   const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(() => {
     return initialModule ? rightSidebarItems.includes(initialModule) : false;
   });
@@ -220,6 +220,7 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
         'requests',
         'notifications',
         'notification-settings',
+        'account-settings',
         'language',
         'account-type',
         'skills',
@@ -319,9 +320,20 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
             // ignore
           }
         }
+      } else if (itemId === 'account-settings') {
+        setActiveModule('account-settings');
+        const url = '/dashboard/settings/account';
+        if (typeof window !== 'undefined') {
+          window.history.pushState(null, '', url);
+          try {
+            localStorage.setItem('activeModule', 'account-settings');
+          } catch {
+            // ignore
+          }
+        }
       }
     },
-    [openOwnProfileEdit, user]
+    [openOwnProfileEdit]
   );
 
   const handleUserUpdate = useCallback(
@@ -394,7 +406,7 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
           return prev;
         }
         // Ak sme v nastaveniach súkromia alebo iných, zachovať to
-        if (prev === 'privacy' || prev === 'language' || prev === 'account-type' || prev === 'notifications') {
+        if (prev === 'privacy' || prev === 'language' || prev === 'account-type' || prev === 'notifications' || prev === 'account-settings') {
           return prev;
         }
         // Inak nastaviť edit-profile
@@ -514,7 +526,7 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
           // ignore
         }
       }
-    } else if (activeRightItem === 'language' || activeRightItem === 'account-type' || activeRightItem === 'privacy') {
+    } else if (activeRightItem === 'language' || activeRightItem === 'account-type' || activeRightItem === 'privacy' || activeRightItem === 'account-settings') {
       setIsMobileMenuOpen(true);
     } else if (activeModule === 'notifications' || activeModule === 'notification-settings') {
       setActiveModule('');
@@ -540,7 +552,7 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
     }
     setIsRightSidebarOpen(false);
     setActiveRightItem('');
-  }, [activeModule, activeRightItem, closeOwnProfileEdit, router, user?.id, user?.slug]);
+  }, [activeModule, activeRightItem, closeOwnProfileEdit, router]);
 
   return {
     user,

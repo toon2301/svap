@@ -60,7 +60,8 @@
     "remove": "Entfernen",
     "saving": "Speichern...",
     "sending": "Odosielam...",
-    "submit": "Absenden"
+    "submit": "Absenden",
+    "verifiedAccount": "Verifiziertes Konto"
   },
   "requests": {
     "title": "Anfragen",
@@ -188,7 +189,7 @@
   },
   "homepage": {
     "welcome": "Willkommen bei",
-    "description": "Ein Ort, an dem Menschen mit dem Wunsch zu wachsen zusammenkommen – manche lehren, andere lernen, alle zusammen schaffen eine stärkere Gemeinschaft.",
+    "description": "Svaply ist ein Ort, an dem Menschen teilen, was sie anbieten, suchen, was sie brauchen, und Dienstleistungen, Fähigkeiten oder Hilfe in ihrer Umgebung entdecken.\n\nAuf der Pinnwand kannst du deine Arbeit zeigen, auf Gesuche reagieren, dir einen Namen machen, kommunizieren, Bewertungen sammeln und alles übersichtlich an einem Ort haben.",
     "redirectingToDashboard": "Weiterleitung zum Dashboard..."
   },
   "dashboard": {
@@ -1029,6 +1030,7 @@
     "language": "Sprache",
     "accountType": "Kontotyp",
     "account": "Konto",
+    "accountSettings": "Kontoeinstellungen",
     "privacy": "Datenschutzeinstellungen",
     "privacyShort": "Datenschutz",
     "close": "Schließen"
@@ -1136,6 +1138,11 @@
     "linkedinDescription": "Geben Sie die URL Ihres LinkedIn-Profils ein",
     "addToFavorites": "+ Zu Favoriten hinzufügen",
     "removeFromFavorites": "Aus Favoriten entfernen",
+    "likeProfile": "Profil liken",
+    "unlikeProfile": "Profil-Like entfernen",
+    "profileLikes": "Profil-Likes",
+    "thumbsUp": "Daumen hoch",
+    "profileLikeUpdateFailed": "Das Profil-Like konnte nicht aktualisiert werden.",
     "block": "Blockieren",
     "enterWhatsAppNumber": "+49 171 1234567 oder https://wa.me/491711234567",
     "enterYouTubeUrl": "https://youtube.com/@username oder https://youtube.com/channel/...",
@@ -1200,7 +1207,14 @@
     "whatsapp": "WhatsApp",
     "whatsappDescription": "Geben Sie Ihre WhatsApp-Nummer oder den Link ein.",
     "youtube": "YouTube",
-    "youtubeDescription": "Geben Sie die URL Ihrer YouTube-Seite oder Ihres Kanals ein."
+    "youtubeDescription": "Geben Sie die URL Ihrer YouTube-Seite oder Ihres Kanals ein.",
+    "verifyEmailTitle": "Bestätige deine E-Mail",
+    "verifyEmailDescription": "Bestätige deine E-Mail, um ein Verifizierungsabzeichen für dein Profil zu erhalten.",
+    "verifyEmailButton": "E-Mail bestätigen",
+    "verifyEmailSent": "Überprüfe deine E-Mails und klicke auf den Bestätigungslink.",
+    "verifyEmailError": "Die Bestätigungs-E-Mail konnte nicht gesendet werden. Bitte versuche es erneut.",
+    "verifyEmailResend": "Erneut senden",
+    "verifyEmailResendIn": "Erneut senden in {seconds}s"
   },
   "notifications": {
     "loadMore": "Mehr anzeigen",
@@ -1260,6 +1274,10 @@
     "reviewLikedBody": "{name} gefällt deine Bewertung.",
     "offerLikedTitle": "Jemandem gefällt dein Angebot",
     "offerLikedBody": "{name} gefällt dein Angebot.",
+    "portfolioLikedTitle": "Jemandem gefällt dein Portfolio",
+    "portfolioLikedBody": "{name} gefällt dein Portfolio.",
+    "profileLikedTitle": "Jemandem gefällt dein Profil",
+    "profileLikedBody": "{name} gefällt dein Profil.",
     "genericTitle": "Neue Benachrichtigung",
     "genericBody": "Öffnen Sie die Benachrichtigung für weitere Details.",
     "reasonUnknown": "nicht angegeben",
@@ -4086,6 +4104,8 @@
     "keepEditing": "Weiter bearbeiten",
     "discardCreate": "Verwerfen",
     "editAction": "Bearbeiten",
+    "editPortfolioTitle": "Portfolio bearbeiten",
+    "editPortfolioChooseField": "Wähle aus, was du bearbeiten möchtest.",
     "deleteAction": "Löschen",
     "deleteConfirmTitle": "Portfolioeintrag löschen?",
     "deleteConfirmBody": "Dieser Eintrag und seine Fotos werden dauerhaft gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.",
@@ -4132,6 +4152,7 @@
     "portfolioOrder": "Portfolio-Reihenfolge",
     "orderShort": "Reihenfolge",
     "dragPortfolio": "Portfolio verschieben",
+    "cancelOrder": "Schließen",
     "reorderAction": "Anordnen",
     "done": "Fertig",
     "featuredPortfolio": "Ausgewähltes Portfolio",
@@ -4139,7 +4160,9 @@
     "saveOrder": "Reihenfolge speichern",
     "orderSaveFailed": "Reihenfolge konnte nicht gespeichert werden",
     "photoDeleteFailed": "Foto konnte nicht gelöscht werden",
-    "coverSetFailed": "Titelbild konnte nicht festgelegt werden"
+    "coverSetFailed": "Titelbild konnte nicht festgelegt werden",
+    "likeAction": "Gefällt mir",
+    "likeUpdateFailed": "Das Like konnte nicht aktualisiert werden."
   },
   "reviews": {
     "addReview": "Bewertung hinzufügen",

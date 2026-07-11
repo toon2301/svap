@@ -9,6 +9,7 @@ ako predtým. Poradie importov nie je podstatné (registrácie sú nezávislé).
 from django.contrib import admin
 
 from . import (  # noqa: F401 — importované kvôli vedľajšiemu efektu (registrácia)
+    profile_likes,
     reports,
     reviews,
     skill_requests,

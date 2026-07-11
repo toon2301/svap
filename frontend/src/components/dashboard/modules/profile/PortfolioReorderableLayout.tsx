@@ -20,6 +20,8 @@ type PortfolioReorderableLayoutProps = {
   onOpenItem?: (item: PortfolioItem) => void;
   onPreviewOrder: (items: PortfolioItem[]) => void;
   onReordered: (items: PortfolioItem[]) => void;
+  onToggleLike?: (item: PortfolioItem) => void;
+  pendingLikeIds?: Set<number>;
   headerActions?: ReactNode;
 };
 
@@ -44,6 +46,8 @@ export function PortfolioReorderableLayout({
   onOpenItem,
   onPreviewOrder,
   onReordered,
+  onToggleLike,
+  pendingLikeIds,
   headerActions,
 }: PortfolioReorderableLayoutProps) {
   const { t } = useLanguage();
@@ -134,6 +138,8 @@ export function PortfolioReorderableLayout({
         featured={featured}
         loading={featured ? 'eager' : 'lazy'}
         onClick={!isReorderMode && onOpenItem ? () => onOpenItem(item) : undefined}
+        onToggleLike={!isReorderMode ? onToggleLike : undefined}
+        isLikePending={pendingLikeIds?.has(item.id) === true}
       />
     );
 

@@ -29,6 +29,7 @@ from .skill_requests import (
     SkillRequestTerminationReason,
 )
 from .notifications import Notification, NotificationType
+from .profile_likes import ProfileLike
 from .reviews import OfferedSkillLike, Review, ReviewLike
 from .reports import FavoriteUser, PhotoReport, ReviewReport, UserReport
 
@@ -58,6 +59,7 @@ __all__ = [
     "REVIEWABLE_SKILL_REQUEST_STATUSES",
     "Notification",
     "NotificationType",
+    "ProfileLike",
     "Review",
     "ReviewLike",
     "OfferedSkillLike",

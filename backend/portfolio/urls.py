@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import image_views, local_upload_views, views
+from . import image_file_views, image_views, local_upload_views, views
 
 urlpatterns = [
     path("portfolio/", views.my_portfolio_list_view, name="portfolio_list"),
@@ -13,6 +13,11 @@ urlpatterns = [
         "portfolio/<int:item_id>/",
         views.portfolio_item_detail_view,
         name="portfolio_detail",
+    ),
+    path(
+        "portfolio/<int:item_id>/like/",
+        views.portfolio_item_like_view,
+        name="portfolio_like",
     ),
     path(
         "portfolio/<int:item_id>/images/upload-init/",
@@ -38,6 +43,11 @@ urlpatterns = [
         "portfolio/<int:item_id>/images/<int:image_id>/cover/",
         image_views.portfolio_image_cover_view,
         name="portfolio_image_cover",
+    ),
+    path(
+        "portfolio/<int:item_id>/images/<int:image_id>/file/",
+        image_file_views.PortfolioImageFileView.as_view(),
+        name="portfolio_image_file",
     ),
     path(
         "dashboard/users/<int:user_id>/portfolio/",

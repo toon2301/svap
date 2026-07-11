@@ -232,7 +232,7 @@ WebSocket: `ws/notifications/` – JWT z cookie, notifikácie v reálnom čase.
 2. **Token refresh bez rate limitu** – `/api/token/refresh/` je AllowAny a nie je rate-limited; pri cookie theft možný vysoký počet refreshov (obmedzuje to hlavne rotácia a blacklist).
 3. **Init-db endpoint** – závisí od `MIGRATE_SECRET` a `MIGRATIONS_API_ENABLED`; ak niekto zapne a secret unikne, možnosť spúšťať migrácie. GET v DEBUG s secret v query môže byť v logoch.
 4. **ALLOW_UNVERIFIED_LOGIN = True** – prihlásenie bez overeného emailu je povolené (aj v prod ak sa nezmení); závisí od produktovej politiky.
-5. **CORS v produkcii** – v `settings_production.py` je fallback `CORS_ALLOWED_ORIGINS = ["https://antonchudjak.pythonanywhere.com"]` ak env je prázdny; doména by mala zodpovedať skutočnému frontendu (svaply.com / Railway).
+5. **CORS v produkcii** – v `settings_production.py` je fallback `CORS_ALLOWED_ORIGINS = ["https://svaply.com", "https://www.svaply.com"]` ak env je prázdny; doména zodpovedá skutočnému frontendu (svaply.com). V produkcii nastav `CORS_ALLOWED_ORIGINS` cez env explicitne.
 6. **IP pre rate limit** – bez spoľahlivého nastavenia X-Forwarded-For (napr. v proxy) sa používa REMOTE_ADDR; za spoločným NAT/proxy môžu používatelia zdieľať limit.
 7. **Objektová autorizácia** – je v views roztrúsená; ľahko pri novom endpointe zabudnúť na kontrolu vlastníctva. Odporúčanie: jednotná vrstva (napr. DRF permission classes) pre objekty.
 8. **Fail-open pri rate limit** – pri zlyhaní cache (Redis down) decorator povoľuje request; zámerné, ale znamená to dočasné vypnutie rate limitov.
@@ -243,7 +243,7 @@ WebSocket: `ws/notifications/` – JWT z cookie, notifikácie v reálnom čase.
 
 1. **Django Allauth** – zakomentované (INSTALLED_APPS, AUTHENTICATION_BACKENDS, allauth URLs); OAuth je riešený vlastným `google_oauth_simple` – údržba dvoch ciest ak sa allauth neskôr zapne.
 2. **Produkčné emaily** – `settings_production.py` má `EMAIL_BACKEND = console`; SMTP (SendGrid/Mailgun) je zakomentovaný – verifikácia a password reset v prod neodosielajú skutočné emaily (ak nie je nastavený iný backend cez env).
-3. **settings_production vs settings_split** – časť nastavení (CORS, ALLOWED_HOSTS) sa duplikuje alebo prepisuje v settings_production; CORS fallback na pythonanywhere doménu vyzerá ako starý default.
+3. **settings_production vs settings_split** – časť nastavení (CORS, ALLOWED_HOSTS) sa duplikuje alebo prepisuje v settings_production; fallbacky sú zosúladené na produkčnú doménu (svaply.com / Railway backend).
 4. **Gunicorn v requirements** – v Procfile beží len Daphne; gunicorn nie je použitý (žiadna strata, len mätúce).
 5. **Registrácia v DEBUG** – `RATE_LIMIT_ALLOW_PATHS` obsahuje `/api/auth/register/` v DEBUG, t.j. register v dev nemá rate limit – ak sa DEBUG omylom zapne v prod, register by bol bez limitu.
 6. **2FA (UserProfile.mfa_enabled, mfa_secret)** – model je pripravený; z kódu nie je zrejmé, či je 2FA plne implementované v login flow (pyotp je v requirements).

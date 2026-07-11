@@ -45,6 +45,8 @@ interface ProfileDesktopViewProps {
   onToggleFavorite?: () => void;
   isFavorited?: boolean;
   isFavoritePending?: boolean;
+  onToggleProfileLike?: () => void;
+  isProfileLikePending?: boolean;
   highlightedSkillId?: number | null;
   onEditOffer?: (offer: Offer) => void;
   onDeleteOffer?: (offer: Offer) => void;
@@ -77,6 +79,8 @@ export default function ProfileDesktopView({
   onToggleFavorite,
   isFavorited = false,
   isFavoritePending = false,
+  onToggleProfileLike,
+  isProfileLikePending = false,
   highlightedSkillId,
   onEditOffer,
   onDeleteOffer,
@@ -128,6 +132,8 @@ export default function ProfileDesktopView({
                   onToggleFavorite={onToggleFavorite}
                   isFavorited={isFavorited}
                   isFavoritePending={isFavoritePending}
+                  onToggleProfileLike={onToggleProfileLike}
+                  isProfileLikePending={isProfileLikePending}
                   onSkillsClick={onSkillsClick}
                   onHamburgerOpen={() => setIsHamburgerModalOpen(true)}
                 />

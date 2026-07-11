@@ -145,9 +145,23 @@ function galleryImageOrder(): string[] {
   ).map((element) => element.getAttribute('data-testid') || '');
 }
 
+function mockMobileViewport(isMobile: boolean) {
+  (window.matchMedia as jest.Mock).mockImplementation((query: string) => ({
+    matches: query === '(max-width: 1023px)' ? isMobile : false,
+    media: query,
+    onchange: null,
+    addListener: jest.fn(),
+    removeListener: jest.fn(),
+    addEventListener: jest.fn(),
+    removeEventListener: jest.fn(),
+    dispatchEvent: jest.fn(),
+  }));
+}
+
 describe('PortfolioDetailModule', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockMobileViewport(false);
     mockPush.mockClear();
     (api.post as jest.Mock).mockReset();
     (api.patch as jest.Mock).mockReset();
@@ -254,6 +268,86 @@ describe('PortfolioDetailModule', () => {
     expect((await screen.findAllByRole('button', { name: /Upravi/ })).length).toBeGreaterThan(0);
     fireEvent.click(screen.getByRole('button', { name: /Viac/ }));
     expect(screen.getByRole('menuitem', { name: /Vyma/ })).toBeInTheDocument();
+  });
+
+  it('shows a static like count between mobile owner actions', async () => {
+    mockMobileViewport(true);
+    (api.get as jest.Mock).mockResolvedValue({
+      data: manageablePortfolioItem({ likes_count: 12, is_liked_by_me: true }),
+    });
+
+    render(<PortfolioDetailModule itemId={7} ownerIdentifier="jane-doe" />);
+
+    expect(await screen.findByText('Portfolio Detail')).toBeInTheDocument();
+    const likeCount = screen.getByTestId('portfolio-mobile-like-count');
+
+    expect(likeCount).toHaveTextContent('12');
+    expect(likeCount.closest('button')).toBeNull();
+  });
+
+  it('opens mobile edit choices instead of the inline edit panel', async () => {
+    mockMobileViewport(true);
+    (api.get as jest.Mock).mockResolvedValue({ data: manageablePortfolioItem() });
+
+    render(<PortfolioDetailModule itemId={7} ownerIdentifier="jane-doe" />);
+
+    await clickPortfolioDetailEdit();
+
+    expect(screen.getByTestId('portfolio-mobile-edit-flow')).toBeInTheDocument();
+    expect(screen.getByTestId('portfolio-mobile-edit-option-title')).toBeInTheDocument();
+    expect(screen.getByTestId('portfolio-mobile-edit-option-category')).toBeInTheDocument();
+    expect(screen.getByTestId('portfolio-mobile-edit-option-description')).toBeInTheDocument();
+    expect(screen.getByTestId('portfolio-mobile-edit-option-photos')).toBeInTheDocument();
+    expect(screen.queryByTestId('portfolio-inline-edit-panel')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('portfolio-mobile-edit-left-action'));
+
+    expect(screen.queryByTestId('portfolio-mobile-edit-flow')).not.toBeInTheDocument();
+    expect(await screen.findByText('Portfolio Detail')).toBeInTheDocument();
+  });
+
+  it('saves a mobile title edit and returns to edit choices', async () => {
+    mockMobileViewport(true);
+    (api.get as jest.Mock).mockResolvedValue({ data: manageablePortfolioItem() });
+    (api.patch as jest.Mock).mockResolvedValue({
+      data: manageablePortfolioItem({ title: 'Updated Mobile Portfolio' }),
+    });
+
+    render(<PortfolioDetailModule itemId={7} ownerIdentifier="jane-doe" />);
+
+    await clickPortfolioDetailEdit();
+    fireEvent.click(screen.getByTestId('portfolio-mobile-edit-option-title'));
+    fireEvent.change(screen.getByTestId('portfolio-mobile-edit-title-input'), {
+      target: { value: ' Updated Mobile Portfolio ' },
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('portfolio-mobile-edit-left-action'));
+    });
+
+    await waitFor(() => {
+      expect(api.patch).toHaveBeenCalledWith('/auth/portfolio/7/', {
+        title: 'Updated Mobile Portfolio',
+        category: 'it-a-technologie',
+        description: 'Detail description',
+      });
+    });
+    expect(await screen.findByTestId('portfolio-mobile-edit-flow')).toBeInTheDocument();
+    expect(screen.getByText('Updated Mobile Portfolio')).toBeInTheDocument();
+  });
+
+  it('opens mobile photo editing with cover and delete actions', async () => {
+    mockMobileViewport(true);
+    (api.get as jest.Mock).mockResolvedValue({ data: manageablePortfolioItem() });
+
+    render(<PortfolioDetailModule itemId={7} ownerIdentifier="jane-doe" />);
+
+    await clickPortfolioDetailEdit();
+    fireEvent.click(screen.getByTestId('portfolio-mobile-edit-option-photos'));
+
+    expect(screen.getByTestId('portfolio-mobile-photo-editor')).toBeInTheDocument();
+    expect(screen.getByTestId('portfolio-mobile-edit-photo-upload')).toBeInTheDocument();
+    expect(screen.getByTestId('portfolio-gallery-cover-button-1')).toBeInTheDocument();
+    expect(screen.getByTestId('portfolio-gallery-delete-button-1')).toBeInTheDocument();
   });
   it('shows upload UI only to the portfolio owner', async () => {
     (api.get as jest.Mock).mockResolvedValue({ data: portfolioItem() });

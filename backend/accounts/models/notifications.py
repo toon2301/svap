@@ -8,6 +8,8 @@ from django.utils.translation import gettext_lazy as _
 
 class NotificationType(models.TextChoices):
     OFFER_LIKED = "offer_liked", _("Páči sa mi ponuka")
+    PORTFOLIO_LIKED = "portfolio_liked", _("Paci sa mi portfolio")
+    PROFILE_LIKED = "profile_liked", _("Paci sa mi profil")
     SKILL_REQUEST = "skill_request", _("Nová žiadosť")
     SKILL_REQUEST_ACCEPTED = "skill_request_accepted", _("Žiadosť prijatá")
     SKILL_REQUEST_COMPLETION_REQUESTED = (

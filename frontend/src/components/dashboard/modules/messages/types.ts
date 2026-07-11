@@ -4,6 +4,8 @@ export type MessagingUserBrief = {
   slug?: string | null;
   user_type?: string | null;
   avatar_url?: string | null;
+  /** Overený email cez Swaply – zobraz verifikačný badge pri avatári. */
+  is_verified?: boolean;
   /** Účet bol anonymizovaný (zmazaný) – zobraz "Zmazaný používateľ". */
   is_deleted?: boolean;
 };

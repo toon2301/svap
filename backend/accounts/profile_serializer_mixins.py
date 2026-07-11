@@ -30,6 +30,7 @@ from .models import (
     FavoriteUser,
     Notification,
     NotificationType,
+    ProfileLike,
     SkillRequest,
     SkillRequestStatus,
     UserType,
@@ -147,6 +148,33 @@ class ProfileComputedFieldsMixin:
             return None
         self._record_me_serializer_timing("me_serialize_avatar_url", t0)
         return None
+
+    def get_profile_likes_count(self, obj):
+        annotated_count = getattr(obj, "_profile_likes_count", None)
+        if annotated_count is not None:
+            return max(0, int(annotated_count))
+        return ProfileLike.objects.filter(profile_user_id=getattr(obj, "id", None)).count()
+
+    def get_is_profile_liked_by_me(self, obj):
+        request = (
+            self.context.get("request")
+            if isinstance(getattr(self, "context", None), dict)
+            else None
+        )
+        viewer = getattr(request, "user", None) if request is not None else None
+        if not getattr(viewer, "is_authenticated", False):
+            return False
+        if getattr(viewer, "id", None) == getattr(obj, "id", None):
+            return False
+
+        annotated = getattr(obj, "_is_profile_liked_by_me", None)
+        if annotated is not None:
+            return bool(annotated)
+
+        return ProfileLike.objects.filter(
+            profile_user_id=getattr(obj, "id", None),
+            user_id=getattr(viewer, "id", None),
+        ).exists()
 
     def get_is_favorited(self, obj):
         request = (

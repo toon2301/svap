@@ -56,6 +56,7 @@ const baseProps = {
   onMobileProfileClick: jest.fn(),
   onSidebarLanguageClick: jest.fn(),
   onSidebarAccountTypeClick: jest.fn(),
+  onSidebarAccountSettingsClick: jest.fn(),
 };
 
 describe('DashboardLayout messages mobile sizing', () => {
@@ -118,4 +119,49 @@ describe('DashboardLayout messages mobile sizing', () => {
 
     expect(useMobileViewportHeight).toHaveBeenCalledWith(false);
   });
+
+  it('temporarily hides the desktop right sidebar while the auxiliary search panel is open', () => {
+    const { rerender } = render(
+      <DashboardLayout
+        {...baseProps}
+        activeModule="profile"
+        activeRightItem="language"
+        isRightSidebarOpen
+      >
+        <div data-testid="layout-child">Profil</div>
+      </DashboardLayout>,
+    );
+
+    expect(screen.getByTestId('right-sidebar')).toBeInTheDocument();
+
+    rerender(
+      <DashboardLayout
+        {...baseProps}
+        activeModule="profile"
+        activeRightItem="language"
+        isRightSidebarOpen
+        isSearchOpen
+        searchOverlay={<div data-testid="search-overlay" />}
+      >
+        <div data-testid="layout-child">Profil</div>
+      </DashboardLayout>,
+    );
+
+    expect(screen.queryByTestId('right-sidebar')).not.toBeInTheDocument();
+    expect(screen.getByTestId('search-overlay')).toBeInTheDocument();
+
+    rerender(
+      <DashboardLayout
+        {...baseProps}
+        activeModule="profile"
+        activeRightItem="language"
+        isRightSidebarOpen
+      >
+        <div data-testid="layout-child">Profil</div>
+      </DashboardLayout>,
+    );
+
+    expect(screen.getByTestId('right-sidebar')).toBeInTheDocument();
+  });
+
 });

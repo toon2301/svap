@@ -29,13 +29,11 @@ export default function ProfileEditFormMobile({
   editableUser,
   onEditableUserUpdate,
   onUserUpdate,
-  onEditProfileClick,
   onEditCancel,
   onEditSave,
   onPhotoUpload,
   onRemoveAvatar,
   isUploading,
-  onAvatarClick,
   accountType = 'personal',
 }: ProfileEditFormMobileProps) {
   const { t } = useLanguage();
@@ -179,8 +177,8 @@ export default function ProfileEditFormMobile({
               : prev
           );
         setIsActionsOpen(false);
-      } catch (e: any) {
-        console.error('Error removing avatar:', e);
+      } catch (error: unknown) {
+        console.error('Error removing avatar:', error);
       }
     }
   };
@@ -201,8 +199,8 @@ export default function ProfileEditFormMobile({
               : prev
           );
         setIsActionsOpen(false);
-      } catch (e: any) {
-        console.error('Error uploading photo:', e);
+      } catch (error: unknown) {
+        console.error('Error uploading photo:', error);
       }
     }
   };

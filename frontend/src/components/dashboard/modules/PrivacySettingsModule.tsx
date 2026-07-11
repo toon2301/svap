@@ -5,14 +5,15 @@ import { createPortal } from 'react-dom';
 import type { User } from '../../../types';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { api } from '../../../lib/api';
-import DeleteAccountSection from './settings/DeleteAccountSection';
+import SettingsDetailHeader from './settings/SettingsDetailHeader';
 
 interface PrivacySettingsModuleProps {
   user: User;
   onUserUpdate: (updatedUser: User) => void;
+  onBack?: () => void;
 }
 
-export default function PrivacySettingsModule({ user, onUserUpdate }: PrivacySettingsModuleProps) {
+export default function PrivacySettingsModule({ user, onUserUpdate, onBack }: PrivacySettingsModuleProps) {
   const { t } = useLanguage();
   
   // Načítanie aktuálneho stavu z user.is_public
@@ -82,9 +83,11 @@ export default function PrivacySettingsModule({ user, onUserUpdate }: PrivacySet
       <div className="hidden lg:flex items-start justify-center">
         <div className="flex flex-col items-start w-full profile-edit-column pt-4 pb-8">
           <div className="w-full">
-            <h2 className="text-2xl font-semibold text-gray-800 dark:text-white mb-6">
-              {t('rightSidebar.privacy', 'Nastavenia súkromia')}
-            </h2>
+            <SettingsDetailHeader
+              title={t('rightSidebar.privacy', 'Nastavenia súkromia')}
+              backLabel={t('common.back', 'Späť')}
+              onBack={onBack}
+            />
           </div>
 
           {/* Divider */}
@@ -163,9 +166,6 @@ export default function PrivacySettingsModule({ user, onUserUpdate }: PrivacySet
               </div>
             </div>
           </div>
-
-          {/* GDPR – Danger zone: zmazanie účtu */}
-          <DeleteAccountSection user={user} />
         </div>
       </div>
 

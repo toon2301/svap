@@ -70,6 +70,18 @@ class NotificationSerializer(serializers.ModelSerializer):
             if skill_request is not None and obj.user_id == skill_request.requester_id:
                 tab = "sent"
             return f"/dashboard/requests?status=cancelled&tab={tab}"
+        if obj.type == NotificationType.PROFILE_LIKED:
+            actor = getattr(obj, "actor", None)
+            if actor is not None and getattr(actor, "is_active", True):
+                identifier = (getattr(actor, "slug", None) or "").strip() or str(actor.id)
+                return f"/dashboard/users/{identifier}"
+            data = obj.data if isinstance(obj.data, dict) else {}
+            try:
+                actor_id = int(data.get("from_user_id") or 0)
+            except (TypeError, ValueError):
+                actor_id = 0
+            if actor_id > 0:
+                return f"/dashboard/users/{actor_id}"
         if obj.type == NotificationType.OFFER_LIKED:
             data = obj.data if isinstance(obj.data, dict) else {}
             try:
@@ -78,6 +90,14 @@ class NotificationSerializer(serializers.ModelSerializer):
                 offer_id = 0
             if offer_id > 0:
                 return f"/dashboard/profile?highlight={offer_id}&side=back"
+        if obj.type == NotificationType.PORTFOLIO_LIKED:
+            data = obj.data if isinstance(obj.data, dict) else {}
+            try:
+                item_id = int(data.get("portfolio_item_id") or 0)
+            except (TypeError, ValueError):
+                item_id = 0
+            if item_id > 0:
+                return f"/dashboard/users/{obj.user_id}/portfolio/{item_id}"
         if obj.type in (
             NotificationType.REVIEW_CREATED,
             NotificationType.REVIEW_REPLY_CREATED,

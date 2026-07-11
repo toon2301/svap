@@ -7,6 +7,7 @@ import { getProfileDisplayName } from '@/lib/profileDisplayName';
 import UserAvatar from './UserAvatar';
 import WebsitesRow from './view/WebsitesRow';
 import { ProfileDesktopSocialLinks } from './ProfileDesktopSocialLinks';
+import { ProfileLikeButton } from './ProfileLikeButton';
 
 function useMediaQuery(query: string) {
   return useSyncExternalStore(
@@ -36,6 +37,8 @@ type Props = {
   onToggleFavorite?: () => void;
   isFavorited?: boolean;
   isFavoritePending?: boolean;
+  onToggleProfileLike?: () => void;
+  isProfileLikePending?: boolean;
   onSkillsClick?: () => void;
   onHamburgerOpen: () => void;
 };
@@ -54,6 +57,8 @@ export function ProfileDesktopHeader({
   onToggleFavorite,
   isFavorited = false,
   isFavoritePending = false,
+  onToggleProfileLike,
+  isProfileLikePending = false,
   onSkillsClick,
   onHamburgerOpen,
 }: Props) {
@@ -67,6 +72,9 @@ export function ProfileDesktopHeader({
   const favoriteActionLabel = isFavorited
     ? t('profile.removeFromFavorites', 'Odobrať z obľúbených')
     : t('profile.addToFavorites', '+ Pridať k obľúbeným');
+
+  const profileLikesCount = Math.max(0, Number(displayUser.profile_likes_count ?? 0));
+  const isProfileLiked = displayUser.is_profile_liked_by_me === true;
 
   const actionButtonClass =
     'flex min-w-0 items-center justify-center overflow-hidden whitespace-nowrap rounded-2xl border border-purple-200 bg-purple-100 px-4 py-2 text-center text-sm text-purple-800 transition-colors hover:bg-purple-200 disabled:cursor-not-allowed disabled:opacity-60';
@@ -88,10 +96,12 @@ export function ProfileDesktopHeader({
 
         <div className="flex flex-col flex-grow min-w-0">
           {/* Meno používateľa a sociálne siete v jednom riadku */}
-          <div className="flex items-center gap-20 mb-1 min-w-0">
-            <h2 className="text-[clamp(1.25rem,2vw,1.75rem)] font-semibold text-gray-900 dark:text-white truncate min-w-0">
-              {getProfileDisplayName(displayUser, accountType)}
-            </h2>
+          <div className="mb-1 flex min-w-0 items-center justify-between gap-5">
+            <div className="flex min-w-0 items-center gap-3">
+              <h2 className="min-w-0 truncate text-[clamp(1.25rem,2vw,1.75rem)] font-semibold text-gray-900 dark:text-white">
+                {getProfileDisplayName(displayUser, accountType)}
+              </h2>
+            </div>
             {!is1024to1190 && <ProfileDesktopSocialLinks user={displayUser} />}
           </div>
 
@@ -211,7 +221,38 @@ export function ProfileDesktopHeader({
       )}
 
       {/* Tlačidlá pod fotkou – 1024–1190px: celá šírka, rovnako veľké, vycentrované */}
-      <div className="mt-[clamp(0.75rem,1.5vw,0.75rem)] grid w-full max-w-[660px] grid-cols-[minmax(0,1fr)_minmax(0,1fr)_2.75rem] gap-2 lg:self-stretch xl:self-auto">
+      {!isOtherUserProfile && (
+        <div className="mt-[clamp(0.75rem,1.5vw,0.75rem)] flex w-full max-w-[660px] items-center gap-3 lg:self-stretch xl:self-auto">
+          <span
+            className="h-[1.5px] min-w-0 flex-1 rounded-full bg-gradient-to-r from-transparent via-gray-300 to-purple-300/80 dark:via-gray-700 dark:to-purple-800/70"
+            aria-hidden="true"
+          />
+          <ProfileLikeButton
+            showText
+            unstyled
+            icon="thumb"
+            tone="purple"
+            isLiked={profileLikesCount > 0}
+            likesCount={profileLikesCount}
+            label={t('profile.thumbsUp', 'Palec hore')}
+            staticLabel={t('profile.thumbsUp', 'Palec hore')}
+            className="h-auto gap-2 px-2 py-1 text-sm"
+          />
+          <span
+            className="h-[1.5px] min-w-0 flex-1 rounded-full bg-gradient-to-l from-transparent via-gray-300 to-purple-300/80 dark:via-gray-700 dark:to-purple-800/70"
+            aria-hidden="true"
+          />
+        </div>
+      )}
+
+      <div
+        className={[
+          'mt-[clamp(0.75rem,1.5vw,0.75rem)] grid w-full max-w-[660px] gap-2 lg:self-stretch xl:self-auto',
+          isOtherUserProfile
+            ? 'grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_2.75rem]'
+            : 'grid-cols-[minmax(0,1fr)_minmax(0,1fr)_2.75rem]',
+        ].join(' ')}
+      >
         <button
           data-onboarding={!isOtherUserProfile ? 'profile-edit-button' : undefined}
           type="button"
@@ -245,6 +286,23 @@ export function ProfileDesktopHeader({
             >
               {favoriteActionLabel}
             </button>
+            <ProfileLikeButton
+              showText
+              icon="thumb"
+              tone="purple"
+              isLiked={isProfileLiked}
+              likesCount={profileLikesCount}
+              label={t('profile.thumbsUp', 'Palec hore')}
+              staticLabel={t('profile.thumbsUp', 'Palec hore')}
+              onToggle={onToggleProfileLike}
+              isPending={isProfileLikePending}
+              className={[
+                '!h-10 !w-full !min-w-0 !rounded-2xl !border !px-4 !py-2 !text-sm !shadow-none',
+                isProfileLiked
+                  ? '!border-purple-300 !bg-purple-600 !text-white hover:!bg-purple-700 dark:!border-purple-200 dark:!bg-purple-100 dark:!text-purple-800 dark:hover:!bg-purple-200'
+                  : '!border-purple-200 !bg-purple-100 !text-purple-800 hover:!bg-purple-200 dark:!border-purple-200 dark:!bg-purple-100 dark:!text-purple-800 dark:hover:!bg-purple-200',
+              ].join(' ')}
+            />
             <button
               type="button"
               onClick={onHamburgerOpen}

@@ -19,6 +19,7 @@ export interface DashboardNavigationProps {
   handleMobileProfileClick: () => void;
   handleSidebarLanguageClick: () => void;
   handleSidebarAccountTypeClick: () => void;
+  handleSidebarAccountSettingsClick: () => void;
   handleSidebarPrivacyClick: () => void;
   handleRightSidebarClose: () => void;
 }
@@ -26,7 +27,6 @@ export interface DashboardNavigationProps {
 interface UseDashboardNavigationParams {
   user: User | null;
   dashboardState: UseDashboardStateResult;
-  isSearchOpen: boolean;
   setIsSearchOpen: (open: boolean | ((prev: boolean) => boolean)) => void;
   setViewedUserId: (userId: number | null) => void;
   setViewedUserSlug: (slug: string | null) => void;
@@ -41,7 +41,6 @@ interface UseDashboardNavigationParams {
 export function useDashboardNavigation({
   user,
   dashboardState,
-  isSearchOpen,
   setIsSearchOpen,
   setViewedUserId,
   setViewedUserSlug,
@@ -95,6 +94,8 @@ export function useDashboardNavigation({
       url = '/dashboard/notifications';
     } else if (moduleId === 'notification-settings') {
       url = '/dashboard/settings/notifications';
+    } else if (moduleId === 'account-settings') {
+      url = '/dashboard/settings/account';
     } else if (moduleId === 'language') {
       url = '/dashboard/language';
     } else if (moduleId === 'account-type') {
@@ -283,6 +284,12 @@ export function useDashboardNavigation({
     setActiveRightItem('account-type');
   }, [setActiveModule, setIsRightSidebarOpen, setActiveRightItem]);
 
+  const handleSidebarAccountSettingsClick = useCallback(() => {
+    setActiveModule('profile');
+    setIsRightSidebarOpen(true);
+    setActiveRightItem('account-settings');
+  }, [setActiveModule, setIsRightSidebarOpen, setActiveRightItem]);
+
   const handleSidebarPrivacyClick = useCallback(() => {
     if (typeof window !== 'undefined' && window.innerWidth < 1024) {
       setActiveModule('privacy');
@@ -322,6 +329,7 @@ export function useDashboardNavigation({
     handleMobileProfileClick,
     handleSidebarLanguageClick,
     handleSidebarAccountTypeClick,
+    handleSidebarAccountSettingsClick,
     handleSidebarPrivacyClick,
     handleRightSidebarClose,
   };

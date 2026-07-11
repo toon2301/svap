@@ -1,5 +1,9 @@
 'use client';
 
+import { loadSeenBaseline, saveSeenBaseline } from './seenBadgePersistence';
+
+const SEEN_SCOPE = 'notifications';
+
 export type NotificationUnreadCountListener = (count: number) => void;
 
 type NotificationUnreadCountSource = 'refresh' | 'realtime' | 'mutation';
@@ -114,6 +118,7 @@ export function publishNotificationUnreadCount(
     store.acknowledgeNextRefresh = false;
   }
 
+  saveSeenBaseline(SEEN_SCOPE, store.userId, store.acknowledgedUnreadBaseline);
   notifyNotificationUnreadCountListeners(store, getVisibleUnreadCount(store));
 }
 
@@ -121,6 +126,7 @@ export function acknowledgeNotificationUnreadCount(): void {
   const store = getNotificationUnreadCountStore();
   store.acknowledgedUnreadBaseline = store.rawUnreadCountKnown ? store.rawUnreadCount : 0;
   store.acknowledgeNextRefresh = true;
+  saveSeenBaseline(SEEN_SCOPE, store.userId, store.acknowledgedUnreadBaseline);
   notifyNotificationUnreadCountListeners(store, 0);
 }
 
@@ -133,10 +139,13 @@ export function bindNotificationUnreadCountStoreToUser(userId: number | null): b
   store.userId = userId;
   store.lastSuccessfulRefreshAt = 0;
   store.rawUnreadCount = 0;
-  store.acknowledgedUnreadBaseline = 0;
+  // Obnov „videný" baseline z localStorage (per-zariadenie), aby badge neožil po
+  // tvrdom refreshi. raw ostáva neznáme (0) – prvý server refresh ho zosúladí:
+  // ak vráti rovnaký/menší počet → visible 0; ak väčší (nové) → ukáže rozdiel.
+  store.acknowledgedUnreadBaseline = loadSeenBaseline(SEEN_SCOPE, userId) ?? 0;
   store.acknowledgeNextRefresh = false;
   store.rawUnreadCountKnown = false;
-  notifyNotificationUnreadCountListeners(store, 0);
+  notifyNotificationUnreadCountListeners(store, getVisibleUnreadCount(store));
   return true;
 }
 

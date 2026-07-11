@@ -207,12 +207,50 @@ def register_view(request):
 @email_verification_rate_limit
 def verify_email_view(request):
     """Overenie email adresy pomocou tokenu"""
-    # Podpora GET linku z emailu bez potreby CSRF (token v query stringu)
+    # Podpora GET linku z emailu bez potreby CSRF (token v query stringu).
+    # Token strip-ujeme: email klienty pri zalomení dlhého linku vedia do URL
+    # vniesť whitespace/nový riadok → UUID lookup by inak skončil "Neplatný token".
     if request.method == "GET":
-        token = request.query_params.get("token") or request.GET.get("token")
+        token = (request.query_params.get("token") or request.GET.get("token") or "").strip()
         data = {"token": token} if token else {}
     else:
         data = request.data
+        raw_token = data.get("token") if hasattr(data, "get") else None
+        if isinstance(raw_token, str) and raw_token != raw_token.strip():
+            data = {**data, "token": raw_token.strip()}
+
+    # Idempotencia: jednorazový token často spotrebuje PRVÝ request, ktorý nie je
+    # reálny klik používateľa – email klienty linky prefetchujú (Outlook SafeLinks,
+    # Gmail proxy) a React StrictMode v deve spúšťa verify efekt dvakrát. Ak token
+    # už bol úspešne použitý a účet JE overený, vráť success namiesto chyby
+    # „token už bol použitý" (bez opätovného vydania auth cookies – tie patria
+    # len prvému použitiu).
+    token_value = data.get("token")
+    if token_value:
+        from ..models import EmailVerification
+
+        try:
+            existing = EmailVerification.objects.select_related("user").get(
+                token=token_value
+            )
+        except Exception:
+            existing = None
+        if existing is not None and existing.is_used and existing.user.is_verified:
+            return Response(
+                {
+                    "message": "Email bol úspešne overený",
+                    "verified": True,
+                    "already_verified": True,
+                    "user": {
+                        "id": existing.user.id,
+                        "email": existing.user.email,
+                        "username": existing.user.username,
+                        "is_verified": existing.user.is_verified,
+                    },
+                },
+                status=status.HTTP_200_OK,
+            )
+
     serializer = EmailVerificationSerializer(data=data)
 
     if serializer.is_valid():

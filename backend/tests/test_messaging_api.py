@@ -1261,6 +1261,32 @@ class TestMessagingApi(APITestCase):
         assert results[0]["unread_count"] == 0
         assert all(item["id"] != empty_convo.id for item in results)
 
+    def test_conversation_list_exposes_other_user_verification_badge(self):
+        convo = self._create_direct_conversation(actor=self.u1, target=self.u3)
+        self.u3.is_verified = True
+        self.u3.save(update_fields=["is_verified"])
+
+        self.client.force_authenticate(user=self.u1)
+        send_url = reverse(
+            "accounts:messaging_send_message", kwargs={"conversation_id": convo.id}
+        )
+        assert (
+            self.client.post(send_url, {"text": "Ahoj"}, format="json").status_code
+            == status.HTTP_201_CREATED
+        )
+
+        response = self.client.get(reverse("accounts:messaging_list_conversations"))
+
+        assert response.status_code == status.HTTP_200_OK
+        results = response.data.get("results", [])
+        assert results[0]["other_user"]["is_verified"] is True
+
+        # Neoverený používateľ → badge flag False.
+        self.u3.is_verified = False
+        self.u3.save(update_fields=["is_verified"])
+        response = self.client.get(reverse("accounts:messaging_list_conversations"))
+        assert response.data["results"][0]["other_user"]["is_verified"] is False
+
     def test_message_list_includes_requestable_offers_for_empty_conversation(self):
         empty_convo = self._create_direct_conversation(actor=self.u1, target=self.u2)
         OfferedSkill.objects.create(

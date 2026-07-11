@@ -4,7 +4,6 @@ import React, { useState, useEffect } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { User } from '../../../types';
 import { api } from '../../../lib/api';
-import DeleteAccountSection from './settings/DeleteAccountSection';
 
 interface PrivacySettingsMobileSectionProps {
   user: User;
@@ -146,10 +145,6 @@ export default function PrivacySettingsMobileSection({
             </p>
           </div>
 
-          {/* GDPR – Danger zone: zmazanie účtu */}
-          <div className="px-4 pt-2">
-            <DeleteAccountSection user={user} />
-          </div>
         </div>
       </div>
 

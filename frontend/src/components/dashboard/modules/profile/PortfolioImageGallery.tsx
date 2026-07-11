@@ -127,7 +127,7 @@ export function PortfolioImageGallery({
 
   return (
     <section className="space-y-3" aria-label={t('portfolio.gallery')}>
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex items-start justify-between gap-3 sm:items-center">
         <div>
           <h2 className="text-sm font-semibold text-gray-900 dark:text-white">
             {t('portfolio.gallery')}
@@ -140,15 +140,17 @@ export function PortfolioImageGallery({
         </div>
 
         {canUpload && (
-          <div data-testid="portfolio-gallery-upload-controls" className="flex items-center gap-3">
+          <div data-testid="portfolio-gallery-upload-controls" className="flex shrink-0 items-center gap-2 sm:gap-3">
             {canManageGallery && (
               <button
                 type="button"
                 data-testid="portfolio-gallery-edit-button"
+                aria-label={isManaging ? t('portfolio.done') : t('portfolio.editAction')}
+                title={isManaging ? t('portfolio.done') : t('portfolio.editAction')}
                 aria-pressed={isManaging}
                 onClick={handleToggleManage}
                 className={[
-                  'inline-flex min-h-11 items-center justify-center gap-2 rounded-full border px-4 text-sm font-semibold shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-purple-400/60',
+                  'inline-flex h-11 w-11 items-center justify-center gap-2 rounded-full border text-sm font-semibold shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-purple-400/60 sm:w-auto sm:px-4',
                   isManaging
                     ? 'border-purple-300 bg-purple-600 text-white hover:bg-purple-700 dark:border-purple-600 dark:bg-purple-500 dark:hover:bg-purple-600'
                     : 'border-gray-200 bg-white/90 text-gray-700 hover:border-purple-200 hover:bg-purple-50 hover:text-purple-700 dark:border-gray-800 dark:bg-[#101011] dark:text-gray-100 dark:hover:border-purple-800/70 dark:hover:bg-purple-950/30 dark:hover:text-purple-200',
@@ -159,7 +161,9 @@ export function PortfolioImageGallery({
                 ) : (
                   <PencilSquareIcon className="h-4 w-4" />
                 )}
-                {isManaging ? t('portfolio.done') : t('portfolio.editAction')}
+                <span className="hidden sm:inline">
+                  {isManaging ? t('portfolio.done') : t('portfolio.editAction')}
+                </span>
               </button>
             )}
             <input
@@ -179,12 +183,14 @@ export function PortfolioImageGallery({
             <button
               type="button"
               data-testid="portfolio-upload-button"
+              aria-label={t('portfolio.selectPhotos')}
+              title={t('portfolio.selectPhotos')}
               disabled={limitReached}
               onClick={() => inputRef.current?.click()}
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-purple-200 bg-purple-50 px-4 text-sm font-semibold text-purple-700 shadow-sm transition hover:-translate-y-0.5 hover:border-purple-300 hover:bg-purple-100 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-purple-400/60 disabled:cursor-not-allowed disabled:border-gray-200 disabled:bg-gray-100 disabled:text-gray-500 disabled:shadow-none dark:border-purple-900/60 dark:bg-purple-950/20 dark:text-purple-200 dark:hover:bg-purple-950/40 dark:disabled:border-gray-800 dark:disabled:bg-gray-900 dark:disabled:text-gray-500"
+              className="inline-flex h-11 w-11 items-center justify-center gap-2 rounded-full border border-purple-200 bg-purple-50 text-sm font-semibold text-purple-700 shadow-sm transition hover:-translate-y-0.5 hover:border-purple-300 hover:bg-purple-100 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-purple-400/60 disabled:cursor-not-allowed disabled:border-gray-200 disabled:bg-gray-100 disabled:text-gray-500 disabled:shadow-none sm:w-auto sm:px-4 dark:border-purple-900/60 dark:bg-purple-950/20 dark:text-purple-200 dark:hover:bg-purple-950/40 dark:disabled:border-gray-800 dark:disabled:bg-gray-900 dark:disabled:text-gray-500"
             >
               <CloudArrowUpIcon className="h-4 w-4" />
-              {t('portfolio.selectPhotos')}
+              <span className="hidden sm:inline">{t('portfolio.selectPhotos')}</span>
             </button>
           </div>
         )}

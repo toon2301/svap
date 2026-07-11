@@ -2,6 +2,7 @@
 Produkčné nastavenia pre Swaply
 """
 
+import logging
 import os
 import sys
 from pathlib import Path
@@ -81,7 +82,6 @@ _PROD_ALLOWED_HOSTS = {
     "www.svaply.com",
     "api.svaply.com",
     "stunning-inspiration-svap.up.railway.app",
-    "exemplary-tranquility-svap.up.railway.app",  # backend Railway
 }
 
 
@@ -262,10 +262,27 @@ SECURE_SSL_REDIRECT = True
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
 
-# CORS settings - nastavte v .env súbore pre produkciu
-CORS_ALLOWED_ORIGINS = os.getenv("CORS_ALLOWED_ORIGINS", "").split(",")
-if not CORS_ALLOWED_ORIGINS or CORS_ALLOWED_ORIGINS == [""]:
-    CORS_ALLOWED_ORIGINS = ["https://antonchudjak.pythonanywhere.com"]
+# CORS / CSRF origins.
+# Base (settings_split/cors_csrf) ich už nastavil z env – vrátane FRONTEND_ORIGIN
+# append pre Railway cross-site a odvodenia CSRF_TRUSTED_ORIGINS z CORS. Preto
+# NEPREPISUJEME hodnotu keď je CORS_ALLOWED_ORIGINS v env (necháme base ako jediný
+# zdroj pravdy). Tu riešime IBA produkčný fallback: keď CORS_ALLOWED_ORIGINS nie je
+# v env, base nechá DEV localhost default, ktorý v produkcii nesmie ostať.
+# V produkcii CORS_ALLOWED_ORIGINS vždy nastav cez env (Railway); fallback je len
+# záchranná sieť. (Pozn.: lokálny .env s CORS_ALLOWED_ORIGINS tiež „nastaví" env,
+# takže pri prod-settings teste cez .env sa fallback zámerne nespustí.)
+if not os.getenv("CORS_ALLOWED_ORIGINS", "").strip():
+    CORS_ALLOWED_ORIGINS = ["https://svaply.com", "https://www.svaply.com"]
+    logging.getLogger("django").warning(
+        "CORS_ALLOWED_ORIGINS nie je nastavené v produkcii – používam fallback %s. "
+        "Nastav CORS_ALLOWED_ORIGINS (Railway env) na doménu frontendu.",
+        CORS_ALLOWED_ORIGINS,
+    )
+    # CSRF_TRUSTED_ORIGINS base odvodil z DEV localhost CORS defaultu; ak nie je
+    # explicitne v env, zosúlaď ho s produkčným CORS fallbackom – inak by POST
+    # z frontendu (login/register…) padal na CSRF 403.
+    if not os.getenv("CSRF_TRUSTED_ORIGINS", "").strip():
+        CSRF_TRUSTED_ORIGINS = list(CORS_ALLOWED_ORIGINS)
 
 # Email settings (production) - Resend HTTP API via django-anymail
 def _require_env(name: str) -> str:
@@ -288,15 +305,17 @@ FRONTEND_CALLBACK_URL = os.getenv("FRONTEND_CALLBACK_URL")
 BACKEND_CALLBACK_URL = os.getenv("BACKEND_CALLBACK_URL")
 
 if not FRONTEND_CALLBACK_URL or not BACKEND_CALLBACK_URL:
-    FRONTEND_CALLBACK_URL = "https://antonchudjak.pythonanywhere.com/auth/callback"
+    FRONTEND_CALLBACK_URL = "https://svaply.com/auth/callback"
     BACKEND_CALLBACK_URL = (
-        "https://antonchudjak.pythonanywhere.com/api/auth/oauth/google/callback/"
+        "https://backend-http-svap.up.railway.app/api/auth/oauth/google/callback/"
     )
 
-# Frontend URL
+# Frontend URL – používa sa v emailových linkoch (verifikácia emailu, potvrdenie
+# zmazania účtu). Fallback MUSÍ byť reálna produkčná doména – nesmerovať tokeny
+# na cudziu/mŕtvu doménu (riziko úniku tokenov + nefunkčné linky).
 FRONTEND_URL = os.getenv("FRONTEND_URL")
 if not FRONTEND_URL:
-    FRONTEND_URL = "https://antonchudjak.pythonanywhere.com"
+    FRONTEND_URL = "https://svaply.com"
 
 # Frontend Root nie je potrebný pri oddelenom hostingu frontendu (Next.js na Railway)
 FRONTEND_ROOT = os.getenv("FRONTEND_ROOT", "")
@@ -304,7 +323,7 @@ FRONTEND_ROOT = os.getenv("FRONTEND_ROOT", "")
 # Site Domain
 SITE_DOMAIN = os.getenv("SITE_DOMAIN")
 if not SITE_DOMAIN:
-    SITE_DOMAIN = "antonchudjak.pythonanywhere.com"
+    SITE_DOMAIN = "backend-http-svap.up.railway.app"
 
 # Logging configuration for production (Railway): log to stdout
 LOGGING = {

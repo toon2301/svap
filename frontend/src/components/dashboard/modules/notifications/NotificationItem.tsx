@@ -142,6 +142,10 @@ export default function NotificationItem({
           ? t('notifications.reviewLikedTitle', 'Páči sa mi tvoja recenzia')
         : notification.type === 'offer_liked'
           ? t('notifications.offerLikedTitle', 'Páči sa mi tvoja ponuka')
+        : notification.type === 'portfolio_liked'
+          ? t('notifications.portfolioLikedTitle', 'Paci sa mi tvoje portfolio')
+        : notification.type === 'profile_liked'
+          ? t('notifications.profileLikedTitle', 'Paci sa mi tvoj profil')
         : notification.type === 'skill_request'
           ? notification.title || t('notifications.skillRequestFeedTitle', 'Nová žiadosť')
           : notification.title || t('notifications.genericTitle', 'Nové upozornenie');
@@ -215,6 +219,16 @@ export default function NotificationItem({
           ? t(
               'notifications.offerLikedBody',
               '{name} označil tvoju ponuku ako páči sa mi.',
+            ).replace('{name}', actorName)
+        : notification.type === 'portfolio_liked'
+          ? t(
+              'notifications.portfolioLikedBody',
+              '{name} oznacil tvoje portfolio ako paci sa mi.',
+            ).replace('{name}', actorName)
+        : notification.type === 'profile_liked'
+          ? t(
+              'notifications.profileLikedBody',
+              '{name} oznacil tvoj profil ako paci sa mi.',
             ).replace('{name}', actorName)
         : notification.body ||
           t('notifications.genericBody', 'Otvorte upozornenie pre viac detailov.');

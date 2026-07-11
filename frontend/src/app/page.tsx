@@ -76,14 +76,14 @@ export default function Home() {
             />
           </motion.div>
           <motion.p
-            className="text-[clamp(0.75rem,1.5vw,1.25rem)] text-gray-600 dark:text-gray-300 text-center lg:text-left max-w-[clamp(300px,80%,700px)] leading-relaxed -mt-10 lg:-mt-12 xl:-mt-24 mx-auto lg:mx-0"
+            className="whitespace-pre-line text-[clamp(0.75rem,1.5vw,1.25rem)] text-gray-600 dark:text-gray-300 text-center lg:text-left max-w-[clamp(300px,80%,700px)] leading-relaxed -mt-10 lg:-mt-12 xl:-mt-24 mx-auto lg:mx-0"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.5, ease: 'easeOut' }}
           >
             {t(
               'homepage.description',
-              '„Miesto, kde sa stretávajú ľudia s túžbou rásť – jedni učia, druhí sa učia, všetci spolu tvoria silnejšiu komunitu."',
+              'Svaply je miesto, kde ľudia zdieľajú, čo ponúkajú, hľadajú, čo potrebujú, a objavujú služby, zručnosti či pomoc vo svojom okolí.\n\nNa nástenke môžeš ukázať svoju prácu, reagovať na dopyty, budovať si meno, komunikovať, zbierať recenzie a mať všetko prehľadne na jednom mieste.',
             )}
           </motion.p>
         </motion.div>

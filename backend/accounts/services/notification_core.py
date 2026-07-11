@@ -85,6 +85,33 @@ def _trim_managed_notifications(*, user_id: int) -> None:
     ).delete()
 
 
+def dispatch_unread_badge(
+    *, user_id: int, count_type: str, cache_type: str, ws_type: str, notification=None
+) -> int:
+    """
+    Zdieľaný badge dispatch: prepočíta unread `count_type`, uloží ho pod `cache_type`
+    a pošle WS event `ws_type` s `unread_count` (+ voliteľne serializovaná notifikácia).
+
+    Centralizuje opakovaný vzor compute→cache→notify (BOD 1.3 – používajú
+    _dispatch_created_notification aj _dispatch_skill_request_notification).
+    """
+    unread_count = get_unread_count(user_id=user_id, notif_type=count_type)
+    cache_unread_count(
+        user_id=user_id,
+        notif_type=cache_type,
+        count=unread_count,
+        ttl_seconds=UNREAD_COUNT_CACHE_TTL_SECONDS,
+    )
+    event = {"type": ws_type, "unread_count": unread_count}
+    if notification is not None:
+        try:
+            event["notification"] = NotificationSerializer(notification).data
+        except Exception:
+            pass
+    notify_user(user_id, event)
+    return unread_count
+
+
 def _dispatch_created_notification(notification_id: int, user_id: int) -> None:
     notification = (
         Notification.objects.select_related(
@@ -98,23 +125,12 @@ def _dispatch_created_notification(notification_id: int, user_id: int) -> None:
     )
     if notification is None:
         return
-    unread_count = get_unread_count(
+    dispatch_unread_badge(
         user_id=user_id,
-        notif_type=GENERAL_NOTIFICATION_UNREAD_TYPE,
-    )
-    cache_unread_count(
-        user_id=user_id,
-        notif_type=GENERAL_NOTIFICATION_UNREAD_TYPE,
-        count=unread_count,
-        ttl_seconds=UNREAD_COUNT_CACHE_TTL_SECONDS,
-    )
-    notify_user(
-        user_id,
-        {
-            "type": "notification_created",
-            "notification": NotificationSerializer(notification).data,
-            "unread_count": unread_count,
-        },
+        count_type=GENERAL_NOTIFICATION_UNREAD_TYPE,
+        cache_type=GENERAL_NOTIFICATION_UNREAD_TYPE,
+        ws_type="notification_created",
+        notification=notification,
     )
 
 

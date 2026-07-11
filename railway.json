@@ -7,18 +7,6 @@
       "ports": ["6379"]
     },
     {
-      "name": "backend",
-      "rootDirectory": "backend",
-      "startCommand": "./start.sh",
-      "buildCommand": "pip install -r requirements.txt && python manage.py migrate --noinput && python manage.py collectstatic --noinput",
-      "env": {
-        "DJANGO_SETTINGS_MODULE": "swaply.settings_production",
-        "REDIS_URL": "redis://redis:6379",
-        "APP_SERVER_MODE": "all"
-      },
-      "ports": ["$PORT"]
-    },
-    {
       "name": "worker",
       "rootDirectory": "backend",
       "buildCommand": "pip install -r requirements.txt",
@@ -48,7 +36,7 @@
       "startCommand": "npm run build && npm start",
       "env": {
         "NEXT_PUBLIC_API_URL": "/api",
-        "NEXT_PUBLIC_BACKEND_ORIGIN": "https://exemplary-tranquility-svap.up.railway.app",
+        "NEXT_PUBLIC_BACKEND_ORIGIN": "https://backend-http-svap.up.railway.app",
         "PORT": "3000"
       },
       "ports": ["$PORT"]

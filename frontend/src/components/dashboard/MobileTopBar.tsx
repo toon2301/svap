@@ -7,6 +7,7 @@ import { GroupConversationAvatar } from './modules/messages/GroupConversationAva
 import { requestOpenConversationActions } from './modules/messages/messagesEvents';
 import SkillsModeSwitchButton from './modules/skills/SkillsModeSwitchButton';
 import type { MessagingUserBrief } from './modules/messages/types';
+import type { AccountSettingsMobileView } from './modules/AccountSettingsModule';
 import { useOptionalMobileOnboarding } from './onboarding/MobileOnboardingContext';
 
 interface MobileTopBarProps {
@@ -28,6 +29,7 @@ interface MobileTopBarProps {
   messagePeerIdentifier?: string | null;
   isMessageConversationOpen?: boolean;
   onMessagesBackClick?: () => void;
+  accountSettingsView?: AccountSettingsMobileView;
 }
 
 export default function MobileTopBar({
@@ -39,7 +41,6 @@ export default function MobileTopBar({
   onSkillsModeToggle,
   activeModule,
   activeRightItem,
-  subcategory,
   onSaveClick,
   accountName,
   messagePeerName,
@@ -49,12 +50,20 @@ export default function MobileTopBar({
   messagePeerIdentifier,
   isMessageConversationOpen = false,
   onMessagesBackClick,
+  accountSettingsView = 'overview',
 }: MobileTopBarProps) {
   const { t } = useLanguage();
   const onboarding = useOptionalMobileOnboarding();
   const [describeMode, setDescribeMode] = React.useState<'offer' | 'search' | null>(null);
-  const isOpenMessagesConversation = activeModule === 'messages' && isMessageConversationOpen;
   const canOpenMessagePeerProfile = Boolean((messagePeerIdentifier || '').trim());
+  const accountSettingsTitle =
+    accountSettingsView === 'verify-email'
+      ? t('profile.verifyEmailButton', 'Overiť email')
+      : accountSettingsView === 'delete-account'
+        ? t('deleteAccount.sectionTitle', 'Zmazať účet')
+        : t('rightSidebar.account', 'Účet');
+  const topBarTitleClampClassName =
+    '[&_h1]:min-w-0 [&_h1]:max-w-full [&_h1]:truncate [&_h1]:whitespace-nowrap [&_h1]:leading-tight';
 
   React.useEffect(() => {
     if (activeModule === 'skills-describe') {
@@ -98,10 +107,14 @@ export default function MobileTopBar({
     activeModule !== 'requests' &&
     activeModule !== 'messages' &&
     activeModule !== 'offer-reviews' &&
+    activeModule !== 'portfolio-create' &&
+    activeModule !== 'portfolio-detail' &&
     activeModule !== 'notifications' &&
     activeModule !== 'notification-settings' &&
     activeModule !== 'account-type' &&
     activeRightItem !== 'account-type' &&
+    activeModule !== 'account-settings' &&
+    activeRightItem !== 'account-settings' &&
     activeModule !== 'privacy' &&
     activeRightItem !== 'privacy';
   const canShowQuickFavorites =
@@ -110,11 +123,7 @@ export default function MobileTopBar({
 
   return (
     <div className="lg:hidden fixed top-0 left-0 right-0 z-30 bg-white dark:bg-black border-b border-gray-200 dark:border-gray-800 shadow-sm">
-      <div
-        className={`grid items-center px-3 py-0 h-12 ${
-          activeModule === 'messages' ? 'grid-cols-[2.5rem_1fr_2.5rem]' : 'grid-cols-3'
-        }`}
-      >
+      <div className="grid h-12 grid-cols-[2.5rem_minmax(0,1fr)_2.5rem] items-center px-3 py-0">
         {/* Ľavá strana - Žiadosti (nadpis) alebo Šipka späť alebo prázdne */}
         <div className="flex items-center h-full justify-start">
           {activeModule === 'messages' && isMessageConversationOpen ? (
@@ -132,7 +141,7 @@ export default function MobileTopBar({
             <h1 className="text-base font-semibold text-gray-900 dark:text-white truncate">
               {t('requests.title', 'Spolupráce')}
             </h1>
-          ) : (isEditMode || activeRightItem === 'language' || activeRightItem === 'account-type' || activeRightItem === 'privacy' || activeModule === 'account-type' || activeModule === 'privacy' || activeModule === 'notification-settings' || activeModule === 'skills' || activeModule === 'skills-offer' || activeModule === 'skills-search' || activeModule === 'skills-select-category' || activeModule === 'user-profile' || activeModule === 'offer-reviews' || activeModule === 'favorites' || activeModule === 'portfolio-create') ? (
+          ) : (isEditMode || activeRightItem === 'language' || activeRightItem === 'account-type' || activeRightItem === 'account-settings' || activeRightItem === 'privacy' || activeModule === 'account-type' || activeModule === 'account-settings' || activeModule === 'privacy' || activeModule === 'notification-settings' || activeModule === 'skills' || activeModule === 'skills-offer' || activeModule === 'skills-search' || activeModule === 'skills-select-category' || activeModule === 'user-profile' || activeModule === 'offer-reviews' || activeModule === 'favorites' || activeModule === 'portfolio-detail') ? (
             <button
               onClick={onBackClick}
               className="p-2 -ml-2"
@@ -156,7 +165,7 @@ export default function MobileTopBar({
         </div>
         
         {/* Stred - Nadpis (pre requests je nadpis vľavo) */}
-        <div className="flex h-full min-w-0 items-center justify-center text-center">
+        <div className={`flex h-full min-w-0 items-center justify-center text-center ${topBarTitleClampClassName}`}>
           {activeModule === 'messages' && !isMessageConversationOpen ? (
             <h1 className="w-full min-w-0 truncate px-1 text-center text-xl font-semibold leading-tight text-gray-900 dark:text-white">
               {accountName || t('navigation.profile', 'Profil')}
@@ -204,7 +213,10 @@ export default function MobileTopBar({
             <h1 className="text-lg font-semibold text-gray-900 dark:text-white">{t('language.title', 'Jazyk')}</h1>
           )}
           {activeRightItem === 'account-type' && (
-            <h1 className="text-lg font-semibold text-gray-900 dark:text-white">Účet</h1>
+            <h1 className="text-lg font-semibold text-gray-900 dark:text-white">{t('rightSidebar.accountType', 'Typ účtu')}</h1>
+          )}
+          {(activeRightItem === 'account-settings' || activeModule === 'account-settings') && (
+            <h1 className="text-lg font-semibold text-gray-900 dark:text-white">{accountSettingsTitle}</h1>
           )}
           {(activeRightItem === 'privacy' || activeModule === 'privacy') && (
             <h1 className="text-base font-semibold text-gray-900 dark:text-white whitespace-nowrap">{t('privacy.mobileTitle', 'Súkromie účtu')}</h1>
@@ -231,7 +243,7 @@ export default function MobileTopBar({
             <h1 className="text-sm font-semibold text-gray-900 dark:text-white whitespace-nowrap">{t('skills.selectCategoryTitle', 'Vyber kategóriu')}</h1>
           )}
           {activeModule === 'skills-describe' && (
-            <h1 className="text-sm font-semibold text-gray-900 dark:text-white max-lg:whitespace-normal lg:whitespace-nowrap max-lg:leading-tight">
+            <h1 className="text-sm font-semibold text-gray-900 dark:text-white whitespace-nowrap">
               {describeMode === 'search'
                 ? t('skills.describeWhatYouSeek', 'Opíš čo presne hľadáš')
                 : t('skills.describeSkillTitle', 'Opíš svoju službu/zručnosť')}
@@ -337,14 +349,16 @@ export default function MobileTopBar({
             !isEditMode &&
             activeRightItem !== 'language' &&
             activeRightItem !== 'account-type' &&
+            activeRightItem !== 'account-settings' &&
             activeRightItem !== 'privacy' && (
               <button
                 onClick={() => {
                   if (activeModule === 'user-profile') {
                     // Na cudzom profile otvor modal cez window event
-                    if (typeof (window as any).__openUserProfileModal === 'function') {
-                      (window as any).__openUserProfileModal();
-                    }
+                    const profileModalWindow = window as Window & {
+                      __openUserProfileModal?: () => void;
+                    };
+                    profileModalWindow.__openUserProfileModal?.();
                   } else {
                     // Na vlastnom profile otvor normálne menu
                     onMenuClick();

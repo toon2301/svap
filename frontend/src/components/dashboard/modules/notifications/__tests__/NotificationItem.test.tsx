@@ -168,6 +168,57 @@ describe('NotificationItem', () => {
     expect(mockPush).toHaveBeenCalledWith('/dashboard/profile?highlight=12&side=back');
   });
 
+  it('renders portfolio like notifications and navigates to portfolio detail', () => {
+    const notification = makeNotification({
+      type: 'portfolio_liked',
+      title: '',
+      body: '',
+      target_url: '/dashboard/users/5/portfolio/44',
+      actor: {
+        id: 8,
+        display_name: 'Portfolio Fan',
+        slug: 'portfolio-fan',
+        user_type: 'individual',
+        avatar_url: null,
+      },
+    });
+
+    render(<NotificationItem notification={notification} />);
+
+    expect(screen.getByRole('button').querySelector('p')).toHaveTextContent(
+      'Portfolio Fan oznacil tvoje portfolio ako paci sa mi.',
+    );
+
+    fireEvent.click(screen.getByRole('button'));
+
+    expect(mockPush).toHaveBeenCalledWith('/dashboard/users/5/portfolio/44');
+  });
+  it('renders profile like notifications and navigates to actor profile', () => {
+    const notification = makeNotification({
+      type: 'profile_liked',
+      title: '',
+      body: '',
+      target_url: '/dashboard/users/profile-fan',
+      actor: {
+        id: 9,
+        display_name: 'Profile Fan',
+        slug: 'profile-fan',
+        user_type: 'individual',
+        avatar_url: null,
+      },
+    });
+
+    render(<NotificationItem notification={notification} />);
+
+    expect(screen.getByRole('button').querySelector('p')).toHaveTextContent(
+      'Profile Fan oznacil tvoj profil ako paci sa mi.',
+    );
+
+    fireEvent.click(screen.getByRole('button'));
+
+    expect(mockPush).toHaveBeenCalledWith('/dashboard/users/profile-fan');
+  });
+
   it('uses help-offer copy for accepted and rejected request decisions', () => {
     const actor = {
       id: 7,

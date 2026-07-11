@@ -16,7 +16,13 @@ import ProfileMobileHamburgerModal from './ProfileMobileHamburgerModal';
 import { ReportUserModal } from './ReportUserModal';
 import { ProfileShareModal } from './ProfileShareModal';
 import { buildProfileShareUrl, getProfileShareIdentifier } from './profileShareUrl';
-import { InformationCircleIcon, ClipboardIcon } from '@heroicons/react/24/outline';
+import {
+  ChatBubbleOvalLeftEllipsisIcon,
+  InformationCircleIcon,
+  ClipboardIcon,
+  UserPlusIcon,
+} from '@heroicons/react/24/outline';
+import { ProfileLikeButton } from './ProfileLikeButton';
 import toast from 'react-hot-toast';
 import { createPortal } from 'react-dom';
 
@@ -49,6 +55,8 @@ interface ProfileMobileViewProps {
   onToggleFavorite?: () => void;
   isFavorited?: boolean;
   isFavoritePending?: boolean;
+  onToggleProfileLike?: () => void;
+  isProfileLikePending?: boolean;
   highlightedSkillId?: number | null;
   onEditOffer?: (offer: Offer) => void;
   onDeleteOffer?: (offer: Offer) => void;
@@ -86,6 +94,8 @@ export default function ProfileMobileView({
   onToggleFavorite,
   isFavorited = false,
   isFavoritePending = false,
+  onToggleProfileLike,
+  isProfileLikePending = false,
   highlightedSkillId,
   onEditOffer,
   onDeleteOffer,
@@ -108,6 +118,9 @@ export default function ProfileMobileView({
   const favoriteActionLabel = isFavorited
     ? t('profile.removeFromFavorites', 'Odobrať z obľúbených')
     : t('profile.addToFavorites', '+ Pridať k obľúbeným');
+
+  const profileLikesCount = Math.max(0, Number(displayUser.profile_likes_count ?? 0));
+  const isProfileLiked = displayUser.is_profile_liked_by_me === true;
 
   // Skrátiť email ak je príliš dlhý (viac ako 20 znakov)
   const MAX_EMAIL_DISPLAY_LENGTH = 20;
@@ -182,7 +195,7 @@ export default function ProfileMobileView({
               </div>
               <div className="flex flex-col justify-center min-w-0 flex-1 overflow-hidden">
                 {/* Meno používateľa */}
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
+                <h2 className="mb-1 truncate text-lg font-semibold text-gray-900 dark:text-white">
                   {getProfileDisplayName(displayUser, accountType)}
                 </h2>
                 {(Number(displayUser.completed_cooperations_count) || 0) > 0 && (
@@ -373,24 +386,46 @@ export default function ProfileMobileView({
             {/* Sociálne siete - pod linky alebo na spodku ak nie sú linky */}
             <ProfileMobileSocialLinks user={displayUser} />
             {/* Tlačidlá POD webovou stránkou */}
-            <div className="flex gap-2 mt-2">
-              <button
-                data-onboarding={!isOtherUserProfile ? 'profile-edit-button' : undefined}
-                type="button"
-                onClick={() => {
-                  if (isOtherUserProfile && isOpeningConversation) return;
-                  if (isOtherUserProfile && onSendMessage) {
-                    onSendMessage();
-                  } else if (onEditProfileClick) {
-                    onEditProfileClick();
-                  }
-                }}
-                disabled={isOtherUserProfile && isOpeningConversation}
-                className="flex-1 px-3 py-1.5 text-xs bg-purple-100 text-purple-800 border border-purple-200 rounded-2xl transition-colors hover:bg-purple-200 whitespace-nowrap min-w-0 disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                {primaryActionLabel}
-              </button>
-              {isOtherUserProfile ? (
+            {!isOtherUserProfile && (
+              <div className="mt-2 flex w-full items-center gap-2 px-4">
+                <span
+                  className="h-[1.5px] min-w-0 flex-1 rounded-full bg-gradient-to-r from-transparent via-gray-300 to-purple-300/80 dark:via-gray-700 dark:to-purple-800/70"
+                  aria-hidden="true"
+                />
+                <ProfileLikeButton
+                  compact
+                  unstyled
+                  icon="thumb"
+                  tone="purple"
+                  isLiked={profileLikesCount > 0}
+                  likesCount={profileLikesCount}
+                  label={t('profile.profileLikes', 'Paci sa mi')}
+                  staticLabel={t('profile.profileLikes', 'Paci sa mi')}
+                  className="h-auto gap-1.5 px-1 py-0.5 text-[13px]"
+                />
+                <span
+                  className="h-[1.5px] min-w-0 flex-1 rounded-full bg-gradient-to-l from-transparent via-gray-300 to-purple-300/80 dark:via-gray-700 dark:to-purple-800/70"
+                  aria-hidden="true"
+                />
+              </div>
+            )}
+            {isOtherUserProfile ? (
+              <div className="mt-2 grid grid-cols-3 gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (isOpeningConversation) return;
+                    if (onSendMessage) {
+                      onSendMessage();
+                    }
+                  }}
+                  aria-label={primaryActionLabel}
+                  title={primaryActionLabel}
+                  disabled={isOpeningConversation}
+                  className="flex h-10 min-w-0 items-center justify-center rounded-2xl border border-purple-200 bg-purple-100 text-purple-800 shadow-sm transition-colors hover:bg-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-400/60 disabled:cursor-not-allowed disabled:opacity-60 dark:border-purple-900/60 dark:bg-purple-950/30 dark:text-purple-200 dark:hover:bg-purple-950/50"
+                >
+                  <ChatBubbleOvalLeftEllipsisIcon className="h-5 w-5" aria-hidden="true" />
+                </button>
                 <button
                   type="button"
                   onClick={() => {
@@ -398,16 +433,57 @@ export default function ProfileMobileView({
                       onToggleFavorite();
                     }
                   }}
+                  aria-label={favoriteActionLabel}
+                  title={favoriteActionLabel}
                   aria-pressed={isFavorited}
                   aria-busy={isFavoritePending}
                   disabled={isFavoritePending}
-                  className="flex-1 px-3 py-1.5 text-xs bg-purple-100 text-purple-800 border border-purple-200 rounded-2xl transition-colors hover:bg-purple-200 whitespace-nowrap min-w-0 disabled:opacity-60 disabled:cursor-not-allowed"
+                  className={[
+                    'flex h-10 min-w-0 items-center justify-center rounded-2xl border shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-purple-400/60 disabled:cursor-not-allowed disabled:opacity-60',
+                    isFavorited
+                      ? 'border-purple-300 bg-purple-600 text-white hover:bg-purple-700 dark:border-purple-700 dark:bg-purple-700 dark:hover:bg-purple-600'
+                      : 'border-purple-200 bg-purple-100 text-purple-800 hover:bg-purple-200 dark:border-purple-900/60 dark:bg-purple-950/30 dark:text-purple-200 dark:hover:bg-purple-950/50',
+                  ].join(' ')}
                 >
-                  {favoriteActionLabel}
+                  <UserPlusIcon className="h-5 w-5" aria-hidden="true" />
                 </button>
-              ) : (
+                <ProfileLikeButton
+                  icon="thumb"
+                  tone="purple"
+                  isLiked={isProfileLiked}
+                  likesCount={profileLikesCount}
+                  label={
+                    isProfileLiked
+                      ? t('profile.unlikeProfile', 'Odobrat like z profilu')
+                      : t('profile.likeProfile', 'Paci sa mi profil')
+                  }
+                  staticLabel={t('profile.profileLikes', 'Paci sa mi')}
+                  onToggle={onToggleProfileLike}
+                  isPending={isProfileLikePending}
+                  className={[
+                    '!h-10 !w-full !min-w-0 !rounded-2xl !border !px-2 !text-sm !shadow-sm',
+                    isProfileLiked
+                      ? '!border-purple-300 !bg-purple-600 !text-white hover:!bg-purple-700 dark:!border-purple-700 dark:!bg-purple-700 dark:hover:!bg-purple-600'
+                      : '!border-purple-200 !bg-purple-100 !text-purple-800 hover:!bg-purple-200 dark:!border-purple-900/60 dark:!bg-purple-950/30 dark:!text-purple-200 dark:hover:!bg-purple-950/50',
+                  ].join(' ')}
+                />
+              </div>
+            ) : (
+              <div className="flex gap-2 mt-2">
                 <button
-                  data-onboarding={!isOtherUserProfile ? 'profile-skills-button' : undefined}
+                  data-onboarding="profile-edit-button"
+                  type="button"
+                  onClick={() => {
+                    if (onEditProfileClick) {
+                      onEditProfileClick();
+                    }
+                  }}
+                  className="flex-1 px-3 py-1.5 text-xs bg-purple-100 text-purple-800 border border-purple-200 rounded-2xl transition-colors hover:bg-purple-200 whitespace-nowrap min-w-0"
+                >
+                  {primaryActionLabel}
+                </button>
+                <button
+                  data-onboarding="profile-skills-button"
                   type="button"
                   onClick={() => {
                     if (typeof onSkillsClick === 'function') {
@@ -416,10 +492,10 @@ export default function ProfileMobileView({
                   }}
                   className="flex-1 px-3 py-1.5 text-xs bg-purple-100 text-purple-800 border border-purple-200 rounded-2xl transition-colors hover:bg-purple-200 whitespace-nowrap min-w-0"
                 >
-                  {t('profile.skills', 'Ponúkam/Hľadám')}
+                  {t('profile.skills', 'Ponukam/Hladam')}
                 </button>
-              )}
-            </div>
+              </div>
+            )}
             {/* Ikonová navigácia sekcií profilu (mobile) */}
             <div className="mt-3 w-full">
               <div

@@ -31,6 +31,8 @@ export type PortfolioItem = {
   related_offer?: PortfolioRelatedOffer | null;
   cover_image?: PortfolioImage | null;
   images?: PortfolioImage[];
+  likes_count?: number;
+  is_liked_by_me?: boolean;
   created_at?: string;
   updated_at?: string;
 };
