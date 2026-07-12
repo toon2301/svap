@@ -5,7 +5,7 @@ from django.db import migrations
 # accent-insensitive `unaccent_lower__contains` (ILIKE) dotazy vo verejnom searchi.
 EXPRESSION_INDEX_SQL = (
     "CREATE INDEX CONCURRENTLY IF NOT EXISTS {name} "
-    "ON {table} USING gin (immutable_unaccent(lower({column})) gin_trgm_ops)"
+    "ON {table} USING gin (public.immutable_unaccent(lower({column})) public.gin_trgm_ops)"
 )
 
 # (index_name, table, column)
@@ -21,12 +21,19 @@ _EXPRESSION_INDEXES = [
 ]
 
 # IMMUTABLE wrapper nad unaccent: built-in unaccent(text) je len STABLE, a na STABLE
-# funkcii nemožno postaviť index. 2-argumentová forma unaccent('unaccent', $1) s
+# funkcii nemožno postaviť index. 2-argumentová forma unaccent(<slovník>, $1) s
 # explicitným slovníkom je deterministická, takže wrapper smie byť IMMUTABLE.
+#
+# Funkciu aj slovník schéma-kvalifikujeme na `public`. Pri stavbe expression indexu
+# PostgreSQL wrapper inlinuje a jeho telo rozhoduje podľa search_path v tom momente;
+# nekvalifikované `unaccent('unaccent', $1)` tak zlyhá na "function unaccent(unknown,
+# text) does not exist", ak public nie je (efektívne) na search_path. Kvalifikáciou
+# `public.unaccent(...)` + `'public.unaccent'::regdictionary` je výraz nezávislý od
+# search_path.
 CREATE_IMMUTABLE_UNACCENT_SQL = (
-    "CREATE OR REPLACE FUNCTION immutable_unaccent(text) RETURNS text "
+    "CREATE OR REPLACE FUNCTION public.immutable_unaccent(text) RETURNS text "
     "LANGUAGE sql IMMUTABLE PARALLEL SAFE STRICT "
-    "AS $$ SELECT unaccent('unaccent', $1) $$"
+    "AS $$ SELECT public.unaccent('public.unaccent'::regdictionary, $1) $$"
 )
 
 
@@ -35,8 +42,10 @@ def create_unaccent_search_indexes(apps, schema_editor):
         return
 
     with schema_editor.connection.cursor() as cursor:
-        cursor.execute("CREATE EXTENSION IF NOT EXISTS unaccent")
-        cursor.execute("CREATE EXTENSION IF NOT EXISTS pg_trgm")
+        # WITH SCHEMA public pripne objekty extenzie do public (kde ich telo wrappera
+        # referuje). Na existujúcej DB je CREATE EXTENSION IF NOT EXISTS no-op.
+        cursor.execute("CREATE EXTENSION IF NOT EXISTS unaccent WITH SCHEMA public")
+        cursor.execute("CREATE EXTENSION IF NOT EXISTS pg_trgm WITH SCHEMA public")
         cursor.execute(CREATE_IMMUTABLE_UNACCENT_SQL)
         for name, table, column in _EXPRESSION_INDEXES:
             cursor.execute(
@@ -53,7 +62,7 @@ def drop_unaccent_search_indexes(apps, schema_editor):
             cursor.execute(f"DROP INDEX CONCURRENTLY IF EXISTS {name}")
         # Wrapper dropneme až po indexoch (závisia od neho). Extension neodstraňujeme
         # – môže ju používať iný kód.
-        cursor.execute("DROP FUNCTION IF EXISTS immutable_unaccent(text)")
+        cursor.execute("DROP FUNCTION IF EXISTS public.immutable_unaccent(text)")
 
 
 class Migration(migrations.Migration):
