@@ -2,9 +2,9 @@
 Custom ORM transform pre accent- & case-insensitive vyhľadávanie na PostgreSQL.
 
 `field__unaccent_lower__contains=value` vyrendruje
-``immutable_unaccent(lower(<field>)) LIKE '%value%'``. Výraz presne zodpovedá
+``public.immutable_unaccent(lower(<field>)) LIKE '%value%'``. Výraz presne zodpovedá
 expression GIN trigram indexu z migrácie ``0086_search_unaccent_indexes`` (rovnaký
-``immutable_unaccent(lower(col))``), takže ho plánovač môže využiť.
+``public.immutable_unaccent(lower(col))``), takže ho plánovač môže využiť.
 
 `immutable_unaccent` je IMMUTABLE wrapper nad ``unaccent('unaccent', ...)`` – built-in
 ``unaccent`` je len STABLE, a na STABLE funkcii nemožno postaviť index. Transform sa
@@ -23,7 +23,10 @@ class UnaccentLower(Transform):
 
     def as_postgresql(self, compiler, connection):
         lhs_sql, lhs_params = compiler.compile(self.lhs)
-        return f"immutable_unaccent(lower({lhs_sql}))", lhs_params
+        # Schéma-kvalifikované `public.immutable_unaccent`, aby runtime SQL bolo
+        # textovo aj rezolučne zhodné s expression indexom z 0086 a nezáviselo od
+        # search_path app spojenia (rovnaký dôvod ako v migrácii).
+        return f"public.immutable_unaccent(lower({lhs_sql}))", lhs_params
 
 
 def register_search_lookups() -> None:
