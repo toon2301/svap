@@ -80,6 +80,36 @@ export function useDashboardUserProfile({
     [],
   );
 
+  // Zdieľané rozlíšenie slug -> viewedUserId: najprv cache, inak API (+ zápis do cache).
+  // Vracia cleanup, ktorý zruší prebiehajúci fetch (ochrana proti stale/po-unmount zápisu).
+  // Používajú ho oba efekty nižšie (mount-time podľa `initialProfileSlug` aj state-driven
+  // podľa `viewedUserSlug`), aby bola logika a 404/cancellation handling na jednom mieste.
+  const resolveViewedUserBySlug = useCallback(
+    (slug: string): (() => void) | undefined => {
+      const cachedId = getUserIdBySlug(slug);
+      if (cachedId) {
+        setViewedUserId(cachedId);
+        return undefined;
+      }
+
+      let cancelled = false;
+      void (async () => {
+        const data = await fetchProfileWithNotFound(
+          endpoints.dashboard.userProfileBySlug(slug),
+          () => cancelled,
+        );
+        if (!data) return; // 404 (not-found nastavený v helperi) alebo zrušené
+        setViewedUserId(data.id);
+        setUserProfileToCache(data.id, data);
+      })();
+
+      return () => {
+        cancelled = true;
+      };
+    },
+    [fetchProfileWithNotFound],
+  );
+
   // Inicializácia profilu podľa slug alebo ID
   useEffect(() => {
     // Nová navigácia → vyresetuj "not found" stav.
@@ -97,37 +127,46 @@ export function useDashboardUserProfile({
 
     setViewedUserSlug(initialProfileSlug);
 
-    // 1) Skús mapovanie slug -> userId z cache
-    const cachedId = getUserIdBySlug(initialProfileSlug);
-    if (cachedId) {
-      setViewedUserId(cachedId);
-      const cachedUser = getUserProfileFromCache(cachedId);
-      if (!cachedUser) {
-        // profil sa pri ďalšej interakcii dotiahne cez existujúce fetchy
-      }
+    // Slug -> id (cache, inak API); helper vracia cleanup prebiehajúceho fetchu.
+    return resolveViewedUserBySlug(initialProfileSlug);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialProfileSlug, initialViewedUserId, initialHighlightedSkillId, setHighlightedSkillId]);
+
+  // Rozlíšenie slug -> id aj pri state-driven navigácii (popstate, návrat z portfolia,
+  // notifikácie), nie len pri mount cez `initialProfileSlug`. Bez tohto ostane ModuleRouter
+  // trvalo na "Načítavam profil...", pretože `viewedUserId` je null a nič ho nedoplní:
+  // canonická URL vlastného profilu `/dashboard/users/[slug]` sa cez popstate vyhodnotí
+  // ako `user-profile` len so slugom (viewedUserSlug set, viewedUserId null). Tento efekt
+  // garantuje ukončenie loading stavu – buď doplní id, alebo (pri 404) nastaví not-found.
+  useEffect(() => {
+    if (activeModule !== 'user-profile') return;
+    // `viewedUserNotFound` zámerne NIE je v guarde ani v deps: stale not-found z
+    // predošlého profilu (napr. 404) nesmie zablokovať načítanie ĎALŠIEHO profilu pri
+    // popstate. Keďže nie je v deps, po 404 sa efekt pre ten istý slug znovu nespustí
+    // (žiadny refetch-loop) – znovu zbehne až pri skutočnej zmene slugu/id.
+    if (viewedUserId || !viewedUserSlug) return;
+
+    // Vlastný profil zobrazujeme cez plnohodnotný `profile` modul (edit, atď.) –
+    // rovnako ako mount-time konverzia nižšie.
+    if (user?.slug && user.slug === viewedUserSlug) {
+      setActiveModule('profile');
       return;
     }
 
-    // 2) Ak nemáme ID v cache, načítaj profil podľa slugu (vyžaduje slug endpoint na backende)
-    let cancelled = false;
+    // Nový slug → vyresetuj prípadný stale not-found z predošlého profilu, nech nový
+    // profil nezostane omylom na "not found". 404 pre tento slug ho nastaví znovu.
+    setViewedUserNotFound(false);
 
-    const loadBySlug = async () => {
-      const data = await fetchProfileWithNotFound(
-        endpoints.dashboard.userProfileBySlug(initialProfileSlug),
-        () => cancelled,
-      );
-      if (!data) return; // 404 (not-found nastavený v helperi) alebo zrušené
-      setViewedUserId(data.id);
-      setUserProfileToCache(data.id, data);
-    };
-
-    void loadBySlug();
-
-    return () => {
-      cancelled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialProfileSlug, initialViewedUserId, initialHighlightedSkillId, setHighlightedSkillId]);
+    // Slug -> id (cache, inak API); helper vracia cleanup prebiehajúceho fetchu.
+    return resolveViewedUserBySlug(viewedUserSlug);
+  }, [
+    activeModule,
+    viewedUserId,
+    viewedUserSlug,
+    user?.slug,
+    setActiveModule,
+    resolveViewedUserBySlug,
+  ]);
 
   // Vlastny slug prepina na ProfileModule iba pre bezny profil route.
   // Portfolio detail/create si musia zachovat vlastny aktivny modul aj po reloade.
