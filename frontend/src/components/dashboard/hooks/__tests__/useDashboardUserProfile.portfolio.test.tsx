@@ -122,4 +122,36 @@ describe('useDashboardUserProfile portfolio routing', () => {
     await waitFor(() => expect(state.setActiveModule).toHaveBeenCalledWith('profile'));
     expect(api.get).not.toHaveBeenCalled();
   });
+
+  // Regresia: 404 pre jeden profil nesmie zablokovať načítanie ĎALŠIEHO profilu pri
+  // popstate – stale `viewedUserNotFound` sa musí pri novom slugu vyresetovať.
+  it('resetuje stale not-found pri state-driven zmene slugu po 404', async () => {
+    const state = dashboardState();
+    (api.get as jest.Mock)
+      .mockRejectedValueOnce({ response: { status: 404 } })
+      .mockResolvedValueOnce({ data: { id: 5, slug: 'existuje' } });
+
+    const { result } = renderHook(() =>
+      useDashboardUserProfile({
+        user: { id: 99, slug: 'ja' } as unknown as User,
+        activeModule: 'user-profile',
+        dashboardState: state,
+        setHighlightedSkillId,
+      }),
+    );
+
+    act(() => {
+      result.current.setViewedUserSlug('neexistuje');
+    });
+    await waitFor(() => expect(result.current.viewedUserNotFound).toBe(true));
+    expect(result.current.viewedUserId).toBeNull();
+
+    act(() => {
+      result.current.setViewedUserSlug('existuje');
+    });
+    await waitFor(() => expect(result.current.viewedUserId).toBe(5));
+    expect(result.current.viewedUserNotFound).toBe(false);
+    expect(api.get).toHaveBeenNthCalledWith(1, '/profile/slug/neexistuje');
+    expect(api.get).toHaveBeenNthCalledWith(2, '/profile/slug/existuje');
+  });
 });
