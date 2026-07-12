@@ -129,6 +129,54 @@ export function useDashboardUserProfile({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialProfileSlug, initialViewedUserId, initialHighlightedSkillId, setHighlightedSkillId]);
 
+  // Rozlíšenie slug -> id aj pri state-driven navigácii (popstate, návrat z portfolia,
+  // notifikácie), nie len pri mount cez `initialProfileSlug`. Bez tohto ostane ModuleRouter
+  // trvalo na "Načítavam profil...", pretože `viewedUserId` je null a nič ho nedoplní:
+  // canonická URL vlastného profilu `/dashboard/users/[slug]` sa cez popstate vyhodnotí
+  // ako `user-profile` len so slugom (viewedUserSlug set, viewedUserId null). Tento efekt
+  // garantuje ukončenie loading stavu – buď doplní id, alebo (pri 404) nastaví not-found.
+  useEffect(() => {
+    if (activeModule !== 'user-profile') return;
+    if (viewedUserId || !viewedUserSlug || viewedUserNotFound) return;
+
+    // Vlastný profil zobrazujeme cez plnohodnotný `profile` modul (edit, atď.) –
+    // rovnako ako mount-time konverzia nižšie.
+    if (user?.slug && user.slug === viewedUserSlug) {
+      setActiveModule('profile');
+      return;
+    }
+
+    // 1) skús slug -> id z cache, 2) inak dotiahni z API (404 => not-found, nie loading).
+    const cachedId = getUserIdBySlug(viewedUserSlug);
+    if (cachedId) {
+      setViewedUserId(cachedId);
+      return;
+    }
+
+    let cancelled = false;
+    void (async () => {
+      const data = await fetchProfileWithNotFound(
+        endpoints.dashboard.userProfileBySlug(viewedUserSlug),
+        () => cancelled,
+      );
+      if (!data) return; // 404 (not-found nastavený v helperi) alebo zrušené
+      setViewedUserId(data.id);
+      setUserProfileToCache(data.id, data);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    activeModule,
+    viewedUserId,
+    viewedUserSlug,
+    viewedUserNotFound,
+    user?.slug,
+    setActiveModule,
+    fetchProfileWithNotFound,
+  ]);
+
   // Vlastny slug prepina na ProfileModule iba pre bezny profil route.
   // Portfolio detail/create si musia zachovat vlastny aktivny modul aj po reloade.
   useEffect(() => {
