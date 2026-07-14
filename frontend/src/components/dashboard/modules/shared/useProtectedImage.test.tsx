@@ -52,6 +52,20 @@ describe('useProtectedImage', () => {
     expect(createObjectURL).toHaveBeenCalledWith(blob);
   });
 
+  it('sets isError and keeps resolvedSrc null when the api request fails', async () => {
+    (api.get as jest.Mock).mockRejectedValue(new Error('network down'));
+
+    const { result } = renderHook(() => useProtectedImage(PROTECTED_URL));
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(result.current.isProtected).toBe(true);
+    expect(result.current.isLoading).toBe(false);
+    // Chránený obrázok zlyhal → žiadna object URL (neutrálny stav, req #10).
+    expect(result.current.resolvedSrc).toBeNull();
+    expect(createObjectURL).not.toHaveBeenCalled();
+    expect(revokeObjectURL).not.toHaveBeenCalled();
+  });
+
   it('revokes the object URL on unmount', async () => {
     const blob = new Blob(['x'], { type: 'image/webp' });
     (api.get as jest.Mock).mockResolvedValue({ data: blob });

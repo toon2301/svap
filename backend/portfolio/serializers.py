@@ -222,6 +222,14 @@ class PortfolioItemSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # List payload obrázky nenesie (grid číta len cover_image; detail má vlastný
+        # fetch). Pole úplne odstránime, keď je include_images vypnutý – tým sa ani
+        # neserializuje, ani nespustí DB dotaz cez get_images.
+        if not self.context.get("include_images", True):
+            self.fields.pop("images", None)
+
     def get_is_featured(self, obj):
         return obj.id == self.context.get("featured_item_id")
 
@@ -250,21 +258,10 @@ class PortfolioItemSerializer(serializers.ModelSerializer):
         return PortfolioImageSerializer(cover, context=self.context).data
 
     def get_images(self, obj):
-        # List payload obrázky nenesie (grid číta len cover_image; detail si ich
-        # fetchne samostatne) – early return bez DB prístupu, aby pri vypnutom
-        # include_images nevznikol N+1 cez obj.images.all().
-        if not self.context.get("include_images", True):
-            return []
         images = getattr(obj, "prefetched_portfolio_images", None)
         if images is None:
             images = obj.images.all()
         return PortfolioImageSerializer(images, many=True, context=self.context).data
-
-    def to_representation(self, instance):
-        data = super().to_representation(instance)
-        if not self.context.get("include_images", True):
-            data.pop("images", None)
-        return data
 
     def get_likes_count(self, obj):
         annotated_count = getattr(obj, "_likes_count", None)

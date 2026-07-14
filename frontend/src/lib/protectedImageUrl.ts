@@ -15,12 +15,23 @@
 
 import { getConfiguredApiUrl } from './apiUrl';
 
-// Iba presne tento tvar považujeme za chránený (req: /api/auth/portfolio/<id>/images/<id>/file/).
-const PORTFOLIO_IMAGE_FILE_PATH_RE =
-  /^\/api\/auth\/portfolio\/\d+\/images\/\d+\/file\/?$/;
-
 function normalizeBasePath(value: string): string {
   return value.replace(/\/+$/, '');
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * Regex pre chránenú portfolio file cestu voči danému API base path (napr. `/api`):
+ * `<base>/auth/portfolio/<id>/images/<id>/file/`. Base sa berie dynamicky (nie
+ * natvrdo `/api`), aby detekcia aj strip vychádzali z jedného zdroja (apiBasePath).
+ */
+function buildPortfolioImageFilePathRegExp(basePath: string): RegExp {
+  return new RegExp(
+    `^${escapeRegExp(basePath)}/auth/portfolio/\\d+/images/\\d+/file/?$`,
+  );
 }
 
 /** Base path klienta `api` (napr. `/api`) – z neho odvodíme axios-relatívnu cestu. */
@@ -61,9 +72,9 @@ export function resolveProtectedPortfolioImageRequestUrl(
     return null;
   }
 
-  if (!PORTFOLIO_IMAGE_FILE_PATH_RE.test(pathname)) return null;
-
   const base = apiBasePath();
+  if (!buildPortfolioImageFilePathRegExp(base).test(pathname)) return null;
+
   const relativePath =
     base && pathname.startsWith(`${base}/`) ? pathname.slice(base.length) : pathname;
   return `${relativePath}${search}`;

@@ -44,8 +44,9 @@ export function PortfolioLightbox({
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
   const activeImage = images[clampIndex(activeIndex, images.length)];
   const hasMultipleImages = images.length > 1;
-  // Chránený obrázok načítame cez axios (blob); verejný prejde priamo.
-  const { resolvedSrc } = useProtectedImage(activeImage?.largeSrc ?? null);
+  // Chránený obrázok načítame cez axios (blob); verejný prejde priamo. Sťahujeme
+  // len keď je lightbox otvorený – zatvorený nič nefetchuje (žiadny zbytočný blob).
+  const { resolvedSrc } = useProtectedImage(open ? activeImage?.largeSrc ?? null : null);
 
   const goToPrevious = useCallback(() => {
     if (!hasMultipleImages) return;

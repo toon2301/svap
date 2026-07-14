@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowsUpDownIcon, CheckIcon, PlusIcon } from '@heroicons/react/24/outline';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -57,6 +57,10 @@ export default function ProfilePortfolioSection({
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isOrderOpen, setIsOrderOpen] = useState(false);
   const loadedKeyRef = useRef<string | null>(null);
+  // Kľúč cieľa, ktorého dáta/chyba sú práve v state (nastaví sa až keď load pre
+  // daný cieľ doreší – úspech aj chyba). Slúži na detekciu "stale" stavu: po zmene
+  // currentTargetKey ešte držíme dáta predošlého cieľa (reset effect je passive).
+  const settledKeyRef = useRef<string | null>(null);
   const requestSeqRef = useRef(0);
   const currentTargetKey = useMemo(
     () => targetKey(isOwner, ownerUserId, ownerSlug),
@@ -132,9 +136,11 @@ export default function ProfilePortfolioSection({
       if (requestSeqRef.current !== seq) return;
       setItems(data);
       loadedKeyRef.current = currentTargetKey;
+      settledKeyRef.current = currentTargetKey;
     } catch {
       if (requestSeqRef.current !== seq) return;
       setLoadError(true);
+      settledKeyRef.current = currentTargetKey;
     } finally {
       if (requestSeqRef.current === seq) {
         setIsLoading(false);
@@ -153,10 +159,11 @@ export default function ProfilePortfolioSection({
 
   // "Latest ref" pre guard v event listeneri: closure-based guard mal okno,
   // v ktorom event dorazil pred re-registráciou listenera s čerstvými items
-  // (passive effect). useLayoutEffect synchronizuje ref už pri commite a
-  // listener sa registruje len raz (žiadny churn pri každej zmene items).
+  // (passive effect). Ref sa aktualizuje pri každej zmene items a listener sa
+  // registruje len raz (žiadny churn). Stačí useEffect (žiadne layout timing –
+  // ref čítame len v async event handleri, nie počas renderu) a nemá SSR warning.
   const itemsRef = useRef<PortfolioItem[]>([]);
-  useLayoutEffect(() => {
+  useEffect(() => {
     itemsRef.current = items;
   }, [items]);
 
@@ -207,14 +214,14 @@ export default function ProfilePortfolioSection({
 
   if (activeTab !== 'portfolio') return null;
 
-  // "Ešte nenačítané pre aktuálny cieľ" odvodené zo loadedKeyRef (nie len z
-  // isLoading): fetch štartuje až v passive effecte, takže samotné isLoading by
-  // na prvom frame ukázalo empty state (1-frame flash) namiesto skeletonu.
   const canLoad = isOwner || ownerUserId != null || Boolean(ownerSlug);
-  const isPendingLoad =
-    canLoad && !loadError && (isLoading || loadedKeyRef.current !== currentTargetKey);
+  // isStale = items/loadError v state ešte nezodpovedajú aktuálnemu cieľu: cieľ sa
+  // práve zmenil (reset effect je passive → 1-frame okno so starými dátami/chybou)
+  // alebo prebieha prvé načítanie. Vtedy renderuj skeleton OKAMŽITE, bez ohľadu na
+  // existujúce items alebo loadError predošlého cieľa.
+  const isStale = settledKeyRef.current !== currentTargetKey;
 
-  if (isPendingLoad && items.length === 0) {
+  if (canLoad && (isStale || (isLoading && items.length === 0))) {
     return <PortfolioSectionSkeleton />;
   }
 

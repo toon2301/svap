@@ -193,8 +193,11 @@ describe('ProfilePortfolioSection', () => {
       <ProfilePortfolioSection activeTab="portfolio" isOtherUserProfile={false} ownerUserId={1} />,
     );
     await screen.findByText('Liked work');
-    // Flush passive effects, nech je listener zaregistrovaný s načítanými items.
-    await act(async () => {});
+    // Flush passive effects (itemsRef sync beží v useEffect po commite) – macrotask
+    // boundary zaručí, že guard v listeneri uvidí načítané items.
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
     const listCallsBeforeEvent = (api.get as jest.Mock).mock.calls.filter(
       ([url]) => url === '/auth/portfolio/',
     ).length;
