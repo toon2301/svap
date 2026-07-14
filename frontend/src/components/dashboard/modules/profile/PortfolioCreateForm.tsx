@@ -1,44 +1,26 @@
 'use client';
 
-import { useCallback, useId, useMemo, useRef, useState } from 'react';
-import type { FormEvent } from 'react';
+import { useId, useMemo, useRef } from 'react';
 import {
   ArrowLeftIcon,
   ArrowRightIcon,
   CheckIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline';
-import toast from 'react-hot-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { createPortfolioItem } from './portfolioApi';
 import type { PortfolioItem } from './portfolioTypes';
 import { PortfolioCategoryPicker } from './PortfolioCategoryPicker';
 import { PortfolioCreateDiscardConfirm } from './PortfolioCreateDiscardConfirm';
 import { PortfolioCreatePhotoPicker } from './PortfolioCreatePhotoPicker';
-import { showPortfolioCreateErrors, uploadPortfolioFiles } from './portfolioCreateSubmit';
 import {
   PORTFOLIO_DESCRIPTION_MAX_LENGTH,
   PORTFOLIO_TITLE_MAX_LENGTH,
-  emptyPortfolioFormValues,
-  portfolioErrorMessageFromApi,
-  portfolioFormErrorsFromApi,
-  portfolioPayloadFromValues,
-  validatePortfolioFormValues,
-  type PortfolioFormErrors,
-  type PortfolioFormField,
-  type PortfolioFormValues,
 } from './portfolioFormUtils';
 import {
-  PORTFOLIO_CREATE_STEPS,
-  hasPortfolioCreateDraft,
-  portfolioCreateCategoryError,
-  portfolioCreateDescriptionError,
-  portfolioCreateErrorStep,
   portfolioCreateStepLabel,
-  portfolioCreateTitleError,
   requiredPortfolioLabel,
-  type PortfolioCreateStep,
 } from './portfolioCreateFlow';
+import { usePortfolioCreateStepper } from './usePortfolioCreateStepper';
 
 type PortfolioCreateFormProps = {
   onCancel: () => void;
@@ -98,131 +80,28 @@ export function PortfolioCreateForm({ onCancel, onCreated }: PortfolioCreateForm
   const categoryErrorId = `${fieldId}-portfolio-category-error`;
   const descriptionErrorId = `${fieldId}-portfolio-description-error`;
   const descriptionHelpId = `${fieldId}-portfolio-description-help`;
-  const [step, setStep] = useState<PortfolioCreateStep>('title');
-  const [values, setValues] = useState<PortfolioFormValues>(() => emptyPortfolioFormValues());
-  const [errors, setErrors] = useState<PortfolioFormErrors>({});
-  const [photoFiles, setPhotoFiles] = useState<File[]>([]);
-  const [submitError, setSubmitError] = useState<string | null>(null);
-  const [createdWithUploadIssue, setCreatedWithUploadIssue] = useState<PortfolioItem | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
+  const {
+    step,
+    values,
+    errors,
+    photoFiles,
+    submitError,
+    createdWithUploadIssue,
+    isSubmitting,
+    showDiscardConfirm,
+    setShowDiscardConfirm,
+    stepIndex,
+    isLastStep,
+    handleChange,
+    handlePhotosChange,
+    requestClose,
+    goBack,
+    handleSubmit,
+    primaryActionLabel: rightActionLabel,
+  } = usePortfolioCreateStepper({ onCancel, onCreated });
 
-  const stepIndex = PORTFOLIO_CREATE_STEPS.indexOf(step);
-  const isLastStep = step === 'photos';
-  const draftIsDirty = hasPortfolioCreateDraft(values, photoFiles);
   const stepLabel = useMemo(() => portfolioCreateStepLabel(step, t), [step, t]);
   const headerLabel = step === 'title' || step === 'category' ? requiredPortfolioLabel(stepLabel) : stepLabel;
-  const handleChange = useCallback((field: PortfolioFormField, value: string) => {
-    setValues((current) => ({ ...current, [field]: value }));
-    setErrors((current) => ({ ...current, [field]: undefined }));
-    setSubmitError(null);
-    setCreatedWithUploadIssue(null);
-  }, []);
-
-  const requestClose = useCallback(() => {
-    if (isSubmitting) return;
-    if (createdWithUploadIssue) {
-      onCreated(createdWithUploadIssue);
-      return;
-    }
-    if (draftIsDirty) {
-      setShowDiscardConfirm(true);
-      return;
-    }
-    onCancel();
-  }, [createdWithUploadIssue, draftIsDirty, isSubmitting, onCancel, onCreated]);
-
-  const validateCurrentStep = (): boolean => {
-    const nextErrors: PortfolioFormErrors = {};
-    if (step === 'title') nextErrors.title = portfolioCreateTitleError(values, t);
-    if (step === 'category') nextErrors.category = portfolioCreateCategoryError(values, t);
-    if (step === 'description') nextErrors.description = portfolioCreateDescriptionError(values, t);
-
-    const messages = Object.values(nextErrors).filter(Boolean);
-    setErrors((current) => ({ ...current, ...nextErrors }));
-    if (messages.length > 0) {
-      showPortfolioCreateErrors(messages);
-      return false;
-    }
-    return true;
-  };
-
-  const goNext = () => {
-    if (!validateCurrentStep()) return;
-    setSubmitError(null);
-    setShowDiscardConfirm(false);
-    setStep(PORTFOLIO_CREATE_STEPS[Math.min(stepIndex + 1, PORTFOLIO_CREATE_STEPS.length - 1)]);
-  };
-
-  const goBack = () => {
-    setSubmitError(null);
-    setShowDiscardConfirm(false);
-    setStep(PORTFOLIO_CREATE_STEPS[Math.max(stepIndex - 1, 0)]);
-  };
-
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (createdWithUploadIssue) {
-      onCreated(createdWithUploadIssue);
-      return;
-    }
-    if (isSubmitting) return;
-    if (!isLastStep) {
-      goNext();
-      return;
-    }
-
-    const nextErrors = validatePortfolioFormValues(values, t);
-    if (Object.keys(nextErrors).length > 0) {
-      setErrors(nextErrors);
-      setSubmitError(null);
-      setStep(portfolioCreateErrorStep(nextErrors));
-      showPortfolioCreateErrors(Object.values(nextErrors));
-      return;
-    }
-
-    setIsSubmitting(true);
-    setSubmitError(null);
-    setCreatedWithUploadIssue(null);
-
-    let created: PortfolioItem | null = null;
-    try {
-      created = await createPortfolioItem(portfolioPayloadFromValues(values));
-      if (photoFiles.length > 0) {
-        await uploadPortfolioFiles(created.id, photoFiles);
-      }
-      onCreated(created);
-    } catch (error) {
-      if (created) {
-        const message = portfolioErrorMessageFromApi(
-          error,
-          t('portfolio.photoUploadAfterCreateFailed'),
-        );
-        setCreatedWithUploadIssue(created);
-        setSubmitError(message);
-        toast.error(message);
-        return;
-      }
-      const fieldErrors = portfolioFormErrorsFromApi(error);
-      const message = portfolioErrorMessageFromApi(error, t('portfolio.createFailed'));
-      setErrors(fieldErrors);
-      setSubmitError(message);
-      if (Object.keys(fieldErrors).length > 0) setStep(portfolioCreateErrorStep(fieldErrors));
-      showPortfolioCreateErrors([...Object.values(fieldErrors), message]);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const rightActionLabel = createdWithUploadIssue
-    ? t('portfolio.openCreatedPortfolio')
-    : isSubmitting
-      ? photoFiles.length > 0
-        ? t('portfolio.savingWithPhotos')
-        : t('common.saving')
-      : isLastStep
-        ? t('portfolio.createAction')
-        : t('common.next', 'Next');
 
   if (showDiscardConfirm) {
     return (
@@ -359,11 +238,7 @@ export function PortfolioCreateForm({ onCancel, onCreated }: PortfolioCreateForm
             files={photoFiles}
             disabled={isSubmitting || Boolean(createdWithUploadIssue)}
             variant="panel"
-            onChange={(files) => {
-              setPhotoFiles(files);
-              setSubmitError(null);
-              setCreatedWithUploadIssue(null);
-            }}
+            onChange={handlePhotosChange}
           />
         )}
 

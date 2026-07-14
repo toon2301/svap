@@ -147,6 +147,23 @@ describe('ProfilePortfolioSection', () => {
     });
   });
 
+  it('shows the skeleton synchronously on first render instead of flashing the empty state', async () => {
+    const pending = deferred<{ data: PortfolioItem[] }>();
+    (api.get as jest.Mock).mockReturnValue(pending.promise);
+
+    render(<ProfilePortfolioSection activeTab="portfolio" isOtherUserProfile={false} ownerUserId={1} />);
+
+    // Synchronne (pred dobehnutím effectov/fetchu): skeleton, nie empty state.
+    expect(screen.getByTestId('portfolio-section-skeleton')).toBeInTheDocument();
+    expect(screen.queryByText(/Portf.lio je zatia/i)).not.toBeInTheDocument();
+
+    await act(async () => {
+      pending.resolve({ data: [] });
+    });
+    // Po dobehnutí loadu s prázdnym výsledkom sa zobrazí empty state.
+    expect(await screen.findByText(/Portf.lio je zatia/i)).toBeInTheDocument();
+  });
+
   it('shows owner empty state with a working desktop create action', async () => {
     (api.get as jest.Mock).mockResolvedValue({ data: [] });
 
@@ -158,6 +175,63 @@ describe('ProfilePortfolioSection', () => {
     expect(screen.getByTestId('portfolio-create-desktop-modal')).toBeInTheDocument();
     expect(screen.getByTestId('portfolio-create-form')).toBeInTheDocument();
     expect(screen.getByText('Krok 1 z 4')).toBeInTheDocument();
+  });
+
+  it('refreshes only the liked item via a per-item GET on the portfolio-liked event', async () => {
+    const item = portfolioItem({ id: 4, title: 'Liked work', likes_count: 1 });
+    (api.get as jest.Mock).mockImplementation((url: string) => {
+      if (url === '/auth/portfolio/') return Promise.resolve({ data: [item] });
+      if (url === '/auth/portfolio/4/') {
+        return Promise.resolve({
+          data: { ...item, likes_count: 2, is_liked_by_me: false },
+        });
+      }
+      return Promise.reject(new Error(`Unexpected GET ${url}`));
+    });
+
+    render(
+      <ProfilePortfolioSection activeTab="portfolio" isOtherUserProfile={false} ownerUserId={1} />,
+    );
+    await screen.findByText('Liked work');
+    // Flush passive effects, nech je listener zaregistrovaný s načítanými items.
+    await act(async () => {});
+    const listCallsBeforeEvent = (api.get as jest.Mock).mock.calls.filter(
+      ([url]) => url === '/auth/portfolio/',
+    ).length;
+
+    await act(async () => {
+      window.dispatchEvent(
+        new CustomEvent('profile:portfolio-liked', { detail: { portfolioItemId: 4 } }),
+      );
+    });
+
+    await waitFor(() => {
+      expect(api.get).toHaveBeenCalledWith('/auth/portfolio/4/');
+    });
+    // Celý zoznam sa kvôli like eventu znovu nefetchol.
+    const listCallsAfterEvent = (api.get as jest.Mock).mock.calls.filter(
+      ([url]) => url === '/auth/portfolio/',
+    ).length;
+    expect(listCallsAfterEvent).toBe(listCallsBeforeEvent);
+  });
+
+  it('disables the create action with a limit hint when the 15-item cap is reached', async () => {
+    const items = Array.from({ length: 15 }, (_, index) =>
+      portfolioItem({ id: index + 1, title: `Work ${index + 1}`, sort_order: index }),
+    );
+    (api.get as jest.Mock).mockResolvedValue({ data: items });
+
+    render(
+      <ProfilePortfolioSection activeTab="portfolio" isOtherUserProfile={false} ownerUserId={1} />,
+    );
+
+    const createButton = await screen.findByRole('button', {
+      name: /maxim.lny po.et polo.iek portf.lia \(15\)/i,
+    });
+    expect(createButton).toBeDisabled();
+
+    fireEvent.click(createButton);
+    expect(screen.queryByTestId('portfolio-create-desktop-modal')).not.toBeInTheDocument();
   });
 
   it('renders the desktop category list outside the scrollable modal body', async () => {

@@ -7,14 +7,16 @@ import { updatePortfolioItem } from './portfolioApi';
 import type { PortfolioItem } from './portfolioTypes';
 import { PortfolioFormFields } from './PortfolioFormFields';
 import {
-  portfolioErrorMessageFromApi,
-  portfolioFormErrorsFromApi,
   portfolioPayloadFromValues,
   validatePortfolioFormValues,
   type PortfolioFormErrors,
   type PortfolioFormField,
   type PortfolioFormValues,
 } from './portfolioFormUtils';
+import {
+  translatePortfolioApiError,
+  translatePortfolioFormErrors,
+} from './portfolioApiErrors';
 
 type PortfolioInlineEditPanelProps = {
   item: PortfolioItem;
@@ -74,8 +76,8 @@ export function PortfolioInlineEditPanel({
         const saved = await updatePortfolioItem(item.id, portfolioPayloadFromValues(values));
         onSaved(saved);
       } catch (error) {
-        setErrors(portfolioFormErrorsFromApi(error));
-        setSubmitError(portfolioErrorMessageFromApi(error, t('portfolio.saveFailed')));
+        setErrors(translatePortfolioFormErrors(t, error));
+        setSubmitError(translatePortfolioApiError(t, error, t('portfolio.saveFailed')));
       } finally {
         setIsSubmitting(false);
       }

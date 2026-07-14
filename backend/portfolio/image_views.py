@@ -14,6 +14,7 @@ from rest_framework.response import Response
 
 from swaply.rate_limiting import api_rate_limit
 
+from .api_responses import error_response as _api_error_response
 from .api_responses import portfolio_item_not_found as _portfolio_item_not_found
 from .image_storage import delete_storage_keys, image_storage_keys
 from .image_storage import get_s3_client as _get_s3_client
@@ -33,6 +34,14 @@ PROCESSING_ENQUEUE_ERROR = (
 )
 
 logger = logging.getLogger(__name__)
+
+
+def _images_limit_response():
+    return _api_error_response(
+        "Maximalny pocet fotiek portfolia je 8.",
+        code="portfolio_images_limit_reached",
+        status_code=status.HTTP_400_BAD_REQUEST,
+    )
 
 
 def _active_images_q():
@@ -129,10 +138,7 @@ def portfolio_image_upload_init_view(request, item_id: int):
         return _portfolio_item_not_found()
 
     if _active_images_count(item) >= MAX_PORTFOLIO_IMAGES:
-        return Response(
-            {"error": "Maximalny pocet fotiek portfolia je 8."},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
+        return _images_limit_response()
 
     filename, content_type, size_bytes, error_response = _validate_upload_metadata(
         request
@@ -285,10 +291,7 @@ def portfolio_image_upload_complete_view(request, item_id: int):
             return _portfolio_item_not_found()
         if _active_images_count(item) >= MAX_PORTFOLIO_IMAGES:
             transaction.on_commit(lambda: delete_storage_keys([key]))
-            return Response(
-                {"error": "Maximalny pocet fotiek portfolia je 8."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            return _images_limit_response()
 
         image = PortfolioImage.objects.create(
             item=item,

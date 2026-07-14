@@ -95,18 +95,27 @@ class PortfolioApiTests(APITestCase):
         self.assertEqual(
             payload["cover_image"]["status"], PortfolioImage.Status.APPROVED
         )
-        self.assertEqual(len(payload["images"]), 3)
+        # List obrázky nenesie (šetrí payload; detail má vlastný fetch).
+        self.assertNotIn("images", payload)
+
+        # Statusy + absencia interných kľúčov platia na detail endpointe.
+        detail = self.client.get(
+            reverse("accounts:portfolio_detail", args=[item.id])
+        )
+        self.assertEqual(detail.status_code, status.HTTP_200_OK)
+        detail_payload = detail.data
+        self.assertEqual(len(detail_payload["images"]), 3)
         self.assertEqual(
-            [image["status"] for image in payload["images"]],
+            [image["status"] for image in detail_payload["images"]],
             [
                 PortfolioImage.Status.APPROVED,
                 PortfolioImage.Status.PENDING,
                 PortfolioImage.Status.REJECTED,
             ],
         )
-        rejected = payload["images"][2]
+        rejected = detail_payload["images"][2]
         self.assertEqual(rejected["rejected_reason"], "Rejected by moderation")
-        for image in payload["images"]:
+        for image in detail_payload["images"]:
             self.assertNotIn("approved_key", image)
             self.assertNotIn("pending_key", image)
             self.assertNotIn("thumbnail_key", image)
@@ -126,10 +135,13 @@ class PortfolioApiTests(APITestCase):
         self._set_cover(item, image)
 
         self.client.force_authenticate(user=self.owner)
-        response = self.client.get(reverse("accounts:portfolio_list"))
+        # Obrázkové URL servíruje detail endpoint (list images nenesie).
+        response = self.client.get(
+            reverse("accounts:portfolio_detail", args=[item.id])
+        )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        payload = response.data[0]["images"][0]
+        payload = response.data["images"][0]
         # BOD 3: URL smerujú na privátny proxy endpoint (nie priama S3/media URL).
         proxy_base = "http://testserver" + reverse(
             "accounts:portfolio_image_file", args=[item.id, image.id]
@@ -191,9 +203,17 @@ class PortfolioApiTests(APITestCase):
         payload = response.data[0]
         self.assertEqual(payload["title"], "First")
         self.assertTrue(payload["is_featured"])
-        self.assertEqual(len(payload["images"]), 1)
+        self.assertNotIn("images", payload)
         self.assertNotIn("status", payload["cover_image"])
-        self.assertNotIn("rejected_reason", payload["images"][0])
+
+        # Visitor detail: len approved obrázky, bez owner-only polí.
+        detail = self.client.get(
+            reverse("accounts:portfolio_detail", args=[first.id])
+        )
+        self.assertEqual(detail.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(detail.data["images"]), 1)
+        self.assertNotIn("rejected_reason", detail.data["images"][0])
+        self.assertNotIn("status", detail.data["images"][0])
 
     def test_private_profile_portfolio_is_not_visible_to_visitor(self):
         self.owner.is_public = False

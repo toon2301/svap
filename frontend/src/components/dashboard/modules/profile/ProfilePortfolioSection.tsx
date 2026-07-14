@@ -1,16 +1,17 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { ArrowsUpDownIcon, CheckIcon, PlusIcon } from '@heroicons/react/24/outline';
 import { useRouter } from 'next/navigation';
-import toast from 'react-hot-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useIsMobile } from '@/hooks';
 import type { ProfileTab } from './profileTypes';
-import { listProfilePortfolio } from './portfolioApi';
-import { setPortfolioLikeState, type PortfolioLikeResponse } from './portfolioLikesApi';
+import { getPortfolioItem, listProfilePortfolio } from './portfolioApi';
+import { usePortfolioLikeToggle } from './usePortfolioLikeToggle';
 import type { PortfolioItem } from './portfolioTypes';
 import { getPortfolioCategoryLabel } from './portfolioDisplay';
+import { PORTFOLIO_ITEMS_MAX_COUNT } from './portfolioFormUtils';
+import { portfolioItemsLimitMessage } from './portfolioApiErrors';
 import {
   PROFILE_PORTFOLIO_LIKED_EVENT,
   PROFILE_PORTFOLIO_REFRESH_EVENT,
@@ -55,7 +56,6 @@ export default function ProfilePortfolioSection({
   const [loadError, setLoadError] = useState(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isOrderOpen, setIsOrderOpen] = useState(false);
-  const [pendingPortfolioLikeIds, setPendingPortfolioLikeIds] = useState<Set<number>>(() => new Set());
   const loadedKeyRef = useRef<string | null>(null);
   const requestSeqRef = useRef(0);
   const currentTargetKey = useMemo(
@@ -114,42 +114,8 @@ export default function ProfilePortfolioSection({
     [],
   );
 
-  const handleTogglePortfolioLike = useCallback(
-    async (item: PortfolioItem) => {
-      if (pendingPortfolioLikeIds.has(item.id)) return;
-
-      const previousLiked = item.is_liked_by_me === true;
-      const previousLikesCount = Math.max(0, Number(item.likes_count ?? 0));
-      const nextLiked = !previousLiked;
-      const optimisticLikesCount = Math.max(0, previousLikesCount + (nextLiked ? 1 : -1));
-
-      setPendingPortfolioLikeIds((current) => {
-        const next = new Set(current);
-        next.add(item.id);
-        return next;
-      });
-      updatePortfolioLikeInState(item.id, nextLiked, optimisticLikesCount);
-
-      try {
-        const data: PortfolioLikeResponse = await setPortfolioLikeState(item.id, nextLiked);
-        updatePortfolioLikeInState(
-          data.portfolio_item_id,
-          data.is_liked_by_me === true,
-          Number(data.likes_count ?? optimisticLikesCount),
-        );
-      } catch {
-        updatePortfolioLikeInState(item.id, previousLiked, previousLikesCount);
-        toast.error(t('portfolio.likeUpdateFailed'));
-      } finally {
-        setPendingPortfolioLikeIds((current) => {
-          const next = new Set(current);
-          next.delete(item.id);
-          return next;
-        });
-      }
-    },
-    [pendingPortfolioLikeIds, t, updatePortfolioLikeInState],
-  );
+  const { toggleLike: handleTogglePortfolioLike, pendingLikeIds: pendingPortfolioLikeIds } =
+    usePortfolioLikeToggle({ applyLike: updatePortfolioLikeInState });
 
   const loadPortfolio = useCallback(async () => {
     const seq = requestSeqRef.current + 1;
@@ -185,17 +151,40 @@ export default function ProfilePortfolioSection({
     loadedKeyRef.current = null;
   }, [currentTargetKey]);
 
+  // "Latest ref" pre guard v event listeneri: closure-based guard mal okno,
+  // v ktorom event dorazil pred re-registráciou listenera s čerstvými items
+  // (passive effect). useLayoutEffect synchronizuje ref už pri commite a
+  // listener sa registruje len raz (žiadny churn pri každej zmene items).
+  const itemsRef = useRef<PortfolioItem[]>([]);
+  useLayoutEffect(() => {
+    itemsRef.current = items;
+  }, [items]);
+
   useEffect(() => {
     const handlePortfolioLiked = (event: Event) => {
       const payload = readProfilePortfolioLikedEvent(event);
       if (!payload) return;
-      if (!items.some((item) => item.id === payload.portfolioItemId)) return;
-      void loadPortfolio();
+      if (!itemsRef.current.some((item) => item.id === payload.portfolioItemId)) return;
+      // Zmenil sa len likes_count jednej položky – stačí ľahký per-item GET a
+      // patch v state namiesto refetchu celého zoznamu.
+      void (async () => {
+        try {
+          const fresh = await getPortfolioItem(payload.portfolioItemId);
+          updatePortfolioLikeInState(
+            fresh.id,
+            fresh.is_liked_by_me === true,
+            Math.max(0, Number(fresh.likes_count ?? 0)),
+          );
+        } catch {
+          // Best-effort: pri zlyhaní ostane pôvodný count (zosynchronizuje sa
+          // pri najbližšom plnom načítaní zoznamu).
+        }
+      })();
     };
 
     window.addEventListener(PROFILE_PORTFOLIO_LIKED_EVENT, handlePortfolioLiked);
     return () => window.removeEventListener(PROFILE_PORTFOLIO_LIKED_EVENT, handlePortfolioLiked);
-  }, [items, loadPortfolio]);
+  }, [updatePortfolioLikeInState]);
 
   useEffect(() => {
     const handleRefresh = () => {
@@ -218,7 +207,14 @@ export default function ProfilePortfolioSection({
 
   if (activeTab !== 'portfolio') return null;
 
-  if (isLoading && items.length === 0) {
+  // "Ešte nenačítané pre aktuálny cieľ" odvodené zo loadedKeyRef (nie len z
+  // isLoading): fetch štartuje až v passive effecte, takže samotné isLoading by
+  // na prvom frame ukázalo empty state (1-frame flash) namiesto skeletonu.
+  const canLoad = isOwner || ownerUserId != null || Boolean(ownerSlug);
+  const isPendingLoad =
+    canLoad && !loadError && (isLoading || loadedKeyRef.current !== currentTargetKey);
+
+  if (isPendingLoad && items.length === 0) {
     return <PortfolioSectionSkeleton />;
   }
 
@@ -242,7 +238,14 @@ export default function ProfilePortfolioSection({
     );
   }
 
+  // Preventívny UX guard – BE limit ostáva zdroj pravdy (enforce pod zámkom).
+  // Bez guardu by užívateľ prešiel celý create wizard a chybu videl až na konci.
+  const isAtItemsLimit = isOwner && items.length >= PORTFOLIO_ITEMS_MAX_COUNT;
+  const itemsLimitHint = portfolioItemsLimitMessage(t);
+  const createActionTitle = isAtItemsLimit ? itemsLimitHint : t('portfolio.createAction');
+
   const handleCreateClick = () => {
+    if (isAtItemsLimit) return;
     setIsOrderOpen(false);
     if (onCreatePortfolio) {
       onCreatePortfolio();
@@ -304,10 +307,11 @@ export default function ProfilePortfolioSection({
           />
           <button
             type="button"
-            aria-label={t('portfolio.createAction')}
-            title={t('portfolio.createAction')}
+            aria-label={createActionTitle}
+            title={createActionTitle}
+            disabled={isAtItemsLimit}
             onClick={handleCreateClick}
-            className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-purple-100 bg-white/90 text-purple-600 shadow-sm transition hover:-translate-y-0.5 hover:border-purple-200 hover:bg-purple-50 focus:outline-none focus:ring-2 focus:ring-purple-400/50 dark:border-purple-900/50 dark:bg-[#101011] dark:text-purple-200 dark:hover:bg-purple-950/20"
+            className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-purple-100 bg-white/90 text-purple-600 shadow-sm transition hover:-translate-y-0.5 hover:border-purple-200 hover:bg-purple-50 focus:outline-none focus:ring-2 focus:ring-purple-400/50 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:border-purple-100 disabled:hover:bg-white/90 dark:border-purple-900/50 dark:bg-[#101011] dark:text-purple-200 dark:hover:bg-purple-950/20 dark:disabled:hover:bg-[#101011]"
           >
             <PlusIcon className="h-5 w-5" aria-hidden="true" />
           </button>
@@ -369,10 +373,11 @@ export default function ProfilePortfolioSection({
               </button>
               <button
                 type="button"
-                aria-label={t('portfolio.createAction')}
-                title={t('portfolio.createAction')}
+                aria-label={createActionTitle}
+                title={createActionTitle}
+                disabled={isAtItemsLimit}
                 onClick={handleCreateClick}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-purple-200 bg-purple-100 text-purple-600 transition hover:-translate-y-0.5 hover:bg-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-400/50 dark:border-purple-900/50 dark:bg-[#101011] dark:text-purple-200 dark:hover:border-purple-800/70 dark:hover:bg-purple-950/20"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-purple-200 bg-purple-100 text-purple-600 transition hover:-translate-y-0.5 hover:bg-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-400/50 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:bg-purple-100 dark:border-purple-900/50 dark:bg-[#101011] dark:text-purple-200 dark:hover:border-purple-800/70 dark:hover:bg-purple-950/20 dark:disabled:hover:border-purple-900/50 dark:disabled:hover:bg-[#101011]"
               >
                 <PlusIcon className="h-5 w-5" aria-hidden="true" />
               </button>

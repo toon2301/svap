@@ -12,6 +12,7 @@ import {
   PORTFOLIO_IMAGE_MAX_BYTES,
   PORTFOLIO_IMAGE_MAX_COUNT,
 } from './portfolioFormUtils';
+import { translatePortfolioApiError } from './portfolioApiErrors';
 import type { PortfolioImage } from './portfolioTypes';
 
 export type PortfolioUploadStatus = 'queued' | 'uploading' | 'completing' | 'pending' | 'failed';
@@ -206,7 +207,12 @@ export function usePortfolioImageUploadQueue({
       } catch (error) {
         updateQueueItem(queueItem.id, {
           status: 'failed',
-          error: extractApiErrorMessage(error, t('portfolio.photoUploadFailed')),
+          // Preklad podľa BE `code` (napr. limit fotiek); fallback na BE text.
+          error: translatePortfolioApiError(
+            t,
+            error,
+            extractApiErrorMessage(error, t('portfolio.photoUploadFailed')),
+          ),
         });
         return false;
       }

@@ -125,8 +125,45 @@ class PortfolioCrudApiTests(APITestCase):
 
         self.assertEqual(over.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("error", over.data)
+        # Stabilný kód pre FE preklady (text v `error` je len fallback).
+        self.assertEqual(over.data.get("code"), "portfolio_items_limit_reached")
         # Cudzí používateľ má vlastný strop (počet sa počíta per owner).
         self.assertEqual(PortfolioItem.objects.filter(owner=self.owner).count(), 2)
+
+    def test_create_portfolio_item_cap_recheck_runs_under_owner_lock(self):
+        """Regresia TOCTOU: súbežný create nesmie prekročiť strop.
+
+        Race simulujeme deterministicky – "konkurenčný" request commitne položku
+        medzi fail-fast checkom a získaním zámku. Re-check pod zámkom ju musí
+        vidieť a request odmietnuť (namiesto vytvorenia položky nad limit).
+        """
+        self.client.force_authenticate(user=self.owner)
+
+        from portfolio import views as portfolio_views
+
+        original_lock = portfolio_views.lock_portfolio_owner
+
+        def lock_then_simulate_concurrent_insert(user):
+            original_lock(user)
+            # Simulácia requestu, ktorý vyhral race (vložil položku skôr).
+            self._item(title="Concurrent winner", sort_order=50)
+
+        with patch("portfolio.views.MAX_PORTFOLIO_ITEMS", 1), patch(
+            "portfolio.views.lock_portfolio_owner",
+            side_effect=lock_then_simulate_concurrent_insert,
+        ):
+            response = self.client.post(
+                reverse("accounts:portfolio_list"),
+                data=self._payload(),
+                format="json",
+            )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("error", response.data)
+        # Limit ostal dodržaný – existuje len položka "konkurenčného" requestu.
+        self.assertEqual(
+            PortfolioItem.objects.filter(owner=self.owner).count(), 1
+        )
 
     def test_create_portfolio_item_cap_is_per_user(self):
         self.client.force_authenticate(user=self.owner)
@@ -146,6 +183,33 @@ class PortfolioCrudApiTests(APITestCase):
                 format="json",
             )
             self.assertEqual(other.status_code, status.HTTP_201_CREATED)
+
+    def test_error_responses_carry_stable_codes_for_fe_translation(self):
+        """`code`/`codes` sú additívne kľúče – pôvodný tvar odpovede sa nemení."""
+        self.client.force_authenticate(user=self.owner)
+
+        # Field validácia: kódy v additívnej mape `codes`, texty ostávajú.
+        invalid = self.client.post(
+            reverse("accounts:portfolio_list"),
+            data=self._payload(
+                title="<b>HTML</b>", category="not-a-real-category"
+            ),
+            format="json",
+        )
+        self.assertEqual(invalid.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(invalid.data["codes"]["title"], ["html_not_allowed"])
+        self.assertEqual(invalid.data["codes"]["category"], ["invalid_category"])
+        # Spätná kompatibilita: field -> [text] tvar nezmenený.
+        self.assertIsInstance(invalid.data["title"], list)
+        self.assertIn("HTML", str(invalid.data["title"][0]))
+
+        # 404 s kódom.
+        missing = self.client.get(
+            reverse("accounts:portfolio_detail", args=[999999])
+        )
+        self.assertEqual(missing.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(missing.data.get("code"), "portfolio_item_not_found")
+        self.assertIn("error", missing.data)
 
     def test_create_portfolio_item_rejects_description_over_500_chars(self):
         self.client.force_authenticate(user=self.owner)
@@ -596,7 +660,9 @@ class PortfolioCrudApiTests(APITestCase):
         self.assertEqual(len(response.data), 1)
         self.assertEqual(response.data[0]["title"], "No photos yet")
         self.assertIsNone(response.data[0]["cover_image"])
-        self.assertEqual(response.data[0]["images"], [])
+        # List payload obrázky nenesie (grid číta len cover_image; detail má
+        # vlastný fetch) – kľúč `images` v list odpovedi neexistuje.
+        self.assertNotIn("images", response.data[0])
 
     def test_visitor_list_hides_portfolio_item_without_approved_cover(self):
         self._item(title="No public cover")

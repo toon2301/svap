@@ -14,11 +14,14 @@ PORTFOLIO_WRITE_FIELDS = {"title", "category", "description", "related_offer"}
 
 
 def _validate_plain_text(value: str, *, allow_blank: bool) -> str:
+    # Explicitné `code` – FE prekladá chyby podľa stabilného kódu (text je fallback).
     value = (value or "").strip()
     if not allow_blank and not value:
-        raise serializers.ValidationError("Toto pole je povinne.")
+        raise serializers.ValidationError("Toto pole je povinne.", code="required")
     if value and HTML_TAG_RE.search(value):
-        raise serializers.ValidationError("HTML nie je povolene.")
+        raise serializers.ValidationError(
+            "HTML nie je povolene.", code="html_not_allowed"
+        )
     return value
 
 
@@ -171,7 +174,9 @@ class PortfolioItemWriteSerializer(serializers.ModelSerializer):
             _validate_plain_text(value, allow_blank=False)
         )
         if category not in PORTFOLIO_CATEGORY_CHOICES:
-            raise serializers.ValidationError("Neplatna kategoria portfolia.")
+            raise serializers.ValidationError(
+                "Neplatna kategoria portfolia.", code="invalid_category"
+            )
         return category
 
     def validate_description(self, value):
@@ -245,10 +250,21 @@ class PortfolioItemSerializer(serializers.ModelSerializer):
         return PortfolioImageSerializer(cover, context=self.context).data
 
     def get_images(self, obj):
+        # List payload obrázky nenesie (grid číta len cover_image; detail si ich
+        # fetchne samostatne) – early return bez DB prístupu, aby pri vypnutom
+        # include_images nevznikol N+1 cez obj.images.all().
+        if not self.context.get("include_images", True):
+            return []
         images = getattr(obj, "prefetched_portfolio_images", None)
         if images is None:
             images = obj.images.all()
         return PortfolioImageSerializer(images, many=True, context=self.context).data
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        if not self.context.get("include_images", True):
+            data.pop("images", None)
+        return data
 
     def get_likes_count(self, obj):
         annotated_count = getattr(obj, "_likes_count", None)

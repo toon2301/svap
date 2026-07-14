@@ -790,6 +790,41 @@ describe('PortfolioDetailModule', () => {
     expect(mockPush).toHaveBeenCalledWith('/dashboard/users/jane-doe/portfolio');
   });
 
+  it('treats delete 404 (already deleted in another tab) as success and navigates back', async () => {
+    (api.get as jest.Mock).mockResolvedValue({ data: manageablePortfolioItem() });
+    (api.delete as jest.Mock).mockRejectedValue({
+      response: { status: 404, data: { error: 'Polozka portfolia nebola najdena' } },
+    });
+
+    render(<PortfolioDetailModule itemId={7} ownerIdentifier="jane-doe" />);
+
+    fireEvent.click(await screen.findByRole('button', { name: /Viac/ }));
+    fireEvent.click(screen.getByRole('menuitem', { name: /Vyma/ }));
+    const dialog = await screen.findByRole('alertdialog');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Vymazať' }));
+
+    await waitFor(() => {
+      expect(mockPush).toHaveBeenCalledWith('/dashboard/users/jane-doe/portfolio');
+    });
+    // Žiadna "deleteFailed" chyba – položka už neexistuje, cieľ je splnený.
+    expect(screen.queryByText(/nepodarilo.*vymaza/i)).not.toBeInTheDocument();
+  });
+
+  it('shows the delete error for non-404 failures', async () => {
+    (api.get as jest.Mock).mockResolvedValue({ data: manageablePortfolioItem() });
+    (api.delete as jest.Mock).mockRejectedValue({ response: { status: 500 } });
+
+    render(<PortfolioDetailModule itemId={7} ownerIdentifier="jane-doe" />);
+
+    fireEvent.click(await screen.findByRole('button', { name: /Viac/ }));
+    fireEvent.click(screen.getByRole('menuitem', { name: /Vyma/ }));
+    const dialog = await screen.findByRole('alertdialog');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Vymazať' }));
+
+    expect(await screen.findByText(/nepodarilo.*vymaza/i)).toBeInTheDocument();
+    expect(mockPush).not.toHaveBeenCalled();
+  });
+
   it('focuses the delete dialog cancel button and closes the dialog with Escape', async () => {
     (api.get as jest.Mock).mockResolvedValue({ data: manageablePortfolioItem() });
 

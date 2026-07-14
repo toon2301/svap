@@ -2,12 +2,11 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import toast from 'react-hot-toast';
 import { ArrowLeftIcon, EllipsisHorizontalIcon, HeartIcon, PencilSquareIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useIsMobile } from '@/hooks';
 import { deletePortfolioItem, getPortfolioItem } from './portfolioApi';
-import { setPortfolioLikeState, type PortfolioLikeResponse } from './portfolioLikesApi';
+import { usePortfolioLikeToggle } from './usePortfolioLikeToggle';
 import type { PortfolioItem } from './portfolioTypes';
 import {
   getPortfolioCategoryLabel,
@@ -58,7 +57,6 @@ export default function PortfolioDetailModule({
   const [isDeleting, setIsDeleting] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [isActionsOpen, setIsActionsOpen] = useState(false);
-  const [isLikePending, setIsLikePending] = useState(false);
   const pendingPollStartedAtRef = useRef<number | null>(null);
   const actionsMenuRef = useRef<HTMLDivElement | null>(null);
   const requestSeqRef = useRef(0);
@@ -97,7 +95,10 @@ export default function PortfolioDetailModule({
         setLoadError(true);
       }
     } finally {
-      if (requestSeqRef.current === requestSeq && !preserveCurrent) {
+      // Reset vždy pri zhode sekvencie (aj pre preserveCurrent): keď preserve
+      // load (seq=2) predbehne non-preserve load (seq=1), guard seq=1 zlyhá a
+      // isLoading by inak ostalo visieť na true.
+      if (requestSeqRef.current === requestSeq) {
         setIsLoading(false);
       }
     }
@@ -212,31 +213,15 @@ export default function PortfolioDetailModule({
     [],
   );
 
-  const handleToggleLike = useCallback(async () => {
-    if (!item || isLikePending) return;
+  const { toggleLike, pendingLikeIds } = usePortfolioLikeToggle({
+    applyLike: updatePortfolioLike,
+  });
+  const isLikePending = item ? pendingLikeIds.has(item.id) : false;
 
-    const previousLiked = item.is_liked_by_me === true;
-    const previousLikesCount = Math.max(0, Number(item.likes_count ?? 0));
-    const nextLiked = !previousLiked;
-    const optimisticLikesCount = Math.max(0, previousLikesCount + (nextLiked ? 1 : -1));
-
-    setIsLikePending(true);
-    updatePortfolioLike(item.id, nextLiked, optimisticLikesCount);
-
-    try {
-      const data: PortfolioLikeResponse = await setPortfolioLikeState(item.id, nextLiked);
-      updatePortfolioLike(
-        data.portfolio_item_id,
-        data.is_liked_by_me === true,
-        Number(data.likes_count ?? optimisticLikesCount),
-      );
-    } catch {
-      updatePortfolioLike(item.id, previousLiked, previousLikesCount);
-      toast.error(t('portfolio.likeUpdateFailed'));
-    } finally {
-      setIsLikePending(false);
-    }
-  }, [isLikePending, item, t, updatePortfolioLike]);
+  const handleToggleLike = useCallback(() => {
+    if (!item) return;
+    void toggleLike(item);
+  }, [item, toggleLike]);
 
   const handleBack = useCallback(() => {
     router.push(backPath);
@@ -277,7 +262,16 @@ export default function PortfolioDetailModule({
       dispatchProfilePortfolioRefresh();
       setIsDeleteOpen(false);
       router.push(backPath);
-    } catch {
+    } catch (error) {
+      const status = (error as { response?: { status?: number } })?.response?.status;
+      if (status === 404) {
+        // Položka už neexistuje (zmazaná v inom tabe/relácii) → cieľ je splnený,
+        // správaj sa ako pri úspešnom zmazaní namiesto mätúcej chyby.
+        dispatchProfilePortfolioRefresh();
+        setIsDeleteOpen(false);
+        router.push(backPath);
+        return;
+      }
       setIsDeleteOpen(false);
       setActionError(t('portfolio.deleteFailed'));
     } finally {
