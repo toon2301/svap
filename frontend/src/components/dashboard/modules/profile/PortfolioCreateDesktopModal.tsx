@@ -1,40 +1,24 @@
 'use client';
 
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
-import type { FormEvent, MouseEvent } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import type { MouseEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { XMarkIcon } from '@heroicons/react/24/outline';
-import toast from 'react-hot-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { createPortfolioItem } from './portfolioApi';
 import { PortfolioCategoryPicker } from './PortfolioCategoryPicker';
 import { PortfolioCreateDiscardConfirm } from './PortfolioCreateDiscardConfirm';
 import { PortfolioCreatePhotoPicker } from './PortfolioCreatePhotoPicker';
 import { useModalFocusTrap } from './useModalFocusTrap';
-import { showPortfolioCreateErrors, uploadPortfolioFiles } from './portfolioCreateSubmit';
 import {
   PORTFOLIO_DESCRIPTION_MAX_LENGTH,
   PORTFOLIO_TITLE_MAX_LENGTH,
-  emptyPortfolioFormValues,
-  portfolioErrorMessageFromApi,
-  portfolioFormErrorsFromApi,
-  portfolioPayloadFromValues,
-  validatePortfolioFormValues,
-  type PortfolioFormErrors,
-  type PortfolioFormField,
-  type PortfolioFormValues,
 } from './portfolioFormUtils';
 import {
   PORTFOLIO_CREATE_STEPS,
-  hasPortfolioCreateDraft,
-  portfolioCreateCategoryError,
-  portfolioCreateDescriptionError,
-  portfolioCreateErrorStep,
   portfolioCreateProgressText,
-  portfolioCreateTitleError,
   requiredPortfolioLabel,
-  type PortfolioCreateStep,
 } from './portfolioCreateFlow';
+import { usePortfolioCreateStepper } from './usePortfolioCreateStepper';
 import type { PortfolioItem } from './portfolioTypes';
 
 type PortfolioCreateDesktopModalProps = {
@@ -60,14 +44,24 @@ export function PortfolioCreateDesktopModal({
   const titleInputRef = useRef<HTMLInputElement | null>(null);
   const modalRef = useRef<HTMLDivElement | null>(null);
   const [mounted, setMounted] = useState(false);
-  const [step, setStep] = useState<PortfolioCreateStep>('title');
-  const [values, setValues] = useState<PortfolioFormValues>(() => emptyPortfolioFormValues());
-  const [errors, setErrors] = useState<PortfolioFormErrors>({});
-  const [photoFiles, setPhotoFiles] = useState<File[]>([]);
-  const [submitError, setSubmitError] = useState<string | null>(null);
-  const [createdWithUploadIssue, setCreatedWithUploadIssue] = useState<PortfolioItem | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
+  const {
+    step,
+    values,
+    errors,
+    photoFiles,
+    submitError,
+    createdWithUploadIssue,
+    isSubmitting,
+    showDiscardConfirm,
+    setShowDiscardConfirm,
+    stepIndex,
+    handleChange,
+    handlePhotosChange,
+    requestClose,
+    goBack,
+    handleSubmit,
+    primaryActionLabel: primaryLabel,
+  } = usePortfolioCreateStepper({ onCancel, onCreated });
 
   const titleInputId = `${fieldId}-portfolio-desktop-title`;
   const categoryInputId = `${fieldId}-portfolio-desktop-category`;
@@ -76,9 +70,6 @@ export function PortfolioCreateDesktopModal({
   const categoryErrorId = `${fieldId}-portfolio-desktop-category-error`;
   const descriptionErrorId = `${fieldId}-portfolio-desktop-description-error`;
   const descriptionHelpId = `${fieldId}-portfolio-desktop-description-help`;
-  const stepIndex = PORTFOLIO_CREATE_STEPS.indexOf(step);
-  const isLastStep = step === 'photos';
-  const draftIsDirty = hasPortfolioCreateDraft(values, photoFiles);
 
   const stepCopy = useMemo(() => {
     if (step === 'title') {
@@ -116,19 +107,6 @@ export function PortfolioCreateDesktopModal({
     };
   }, [mounted]);
 
-  const requestClose = useCallback(() => {
-    if (isSubmitting) return;
-    if (createdWithUploadIssue) {
-      onCreated(createdWithUploadIssue);
-      return;
-    }
-    if (draftIsDirty) {
-      setShowDiscardConfirm(true);
-      return;
-    }
-    onCancel();
-  }, [createdWithUploadIssue, draftIsDirty, isSubmitting, onCancel, onCreated]);
-
   // Focus trap + uloženie/obnovenie fokusu (a11y) je vyčlenené do hooku.
   useModalFocusTrap(mounted, modalRef);
 
@@ -147,7 +125,7 @@ export function PortfolioCreateDesktopModal({
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [mounted, requestClose, showDiscardConfirm]);
+  }, [mounted, requestClose, setShowDiscardConfirm, showDiscardConfirm]);
 
   useEffect(() => {
     if (step === 'title') {
@@ -159,105 +137,7 @@ export function PortfolioCreateDesktopModal({
     if (event.target === event.currentTarget) requestClose();
   };
 
-  const handleChange = (field: PortfolioFormField, value: string) => {
-    setValues((current) => ({ ...current, [field]: value }));
-    setErrors((current) => ({ ...current, [field]: undefined }));
-    setSubmitError(null);
-    setCreatedWithUploadIssue(null);
-  };
-
-  const validateCurrentStep = (): boolean => {
-    const nextErrors: PortfolioFormErrors = {};
-    if (step === 'title') nextErrors.title = portfolioCreateTitleError(values, t);
-    if (step === 'category') nextErrors.category = portfolioCreateCategoryError(values, t);
-    if (step === 'description') nextErrors.description = portfolioCreateDescriptionError(values, t);
-
-    const messages = Object.values(nextErrors).filter(Boolean);
-    setErrors((current) => ({ ...current, ...nextErrors }));
-    if (messages.length > 0) {
-      showPortfolioCreateErrors(messages);
-      return false;
-    }
-    return true;
-  };
-
-  const goNext = () => {
-    if (!validateCurrentStep()) return;
-    setSubmitError(null);
-    setStep(PORTFOLIO_CREATE_STEPS[Math.min(stepIndex + 1, PORTFOLIO_CREATE_STEPS.length - 1)]);
-  };
-
-  const goBack = () => {
-    setSubmitError(null);
-    setShowDiscardConfirm(false);
-    setStep(PORTFOLIO_CREATE_STEPS[Math.max(stepIndex - 1, 0)]);
-  };
-
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (createdWithUploadIssue) {
-      onCreated(createdWithUploadIssue);
-      return;
-    }
-    if (isSubmitting) return;
-    if (!isLastStep) {
-      goNext();
-      return;
-    }
-
-    const nextErrors = validatePortfolioFormValues(values, t);
-    if (Object.keys(nextErrors).length > 0) {
-      setErrors(nextErrors);
-      setSubmitError(null);
-      setStep(portfolioCreateErrorStep(nextErrors));
-      showPortfolioCreateErrors(Object.values(nextErrors));
-      return;
-    }
-
-    setIsSubmitting(true);
-    setSubmitError(null);
-    setCreatedWithUploadIssue(null);
-
-    let created: PortfolioItem | null = null;
-    try {
-      created = await createPortfolioItem(portfolioPayloadFromValues(values));
-      if (photoFiles.length > 0) {
-        await uploadPortfolioFiles(created.id, photoFiles);
-      }
-      onCreated(created);
-    } catch (error) {
-      if (created) {
-        const message = portfolioErrorMessageFromApi(
-          error,
-          t('portfolio.photoUploadAfterCreateFailed'),
-        );
-        setCreatedWithUploadIssue(created);
-        setSubmitError(message);
-        toast.error(message);
-        return;
-      }
-      const fieldErrors = portfolioFormErrorsFromApi(error);
-      const message = portfolioErrorMessageFromApi(error, t('portfolio.createFailed'));
-      setErrors(fieldErrors);
-      setSubmitError(message);
-      if (Object.keys(fieldErrors).length > 0) setStep(portfolioCreateErrorStep(fieldErrors));
-      showPortfolioCreateErrors([...Object.values(fieldErrors), message]);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
   if (!mounted || typeof document === 'undefined') return null;
-
-  const primaryLabel = createdWithUploadIssue
-    ? t('portfolio.openCreatedPortfolio')
-    : isSubmitting
-      ? photoFiles.length > 0
-        ? t('portfolio.savingWithPhotos')
-        : t('common.saving')
-      : isLastStep
-        ? t('portfolio.createAction')
-        : t('common.next', 'Next');
 
   return createPortal(
     <div
@@ -422,11 +302,7 @@ export function PortfolioCreateDesktopModal({
                     files={photoFiles}
                     disabled={isSubmitting || Boolean(createdWithUploadIssue)}
                     variant="panel"
-                    onChange={(files) => {
-                      setPhotoFiles(files);
-                      setSubmitError(null);
-                      setCreatedWithUploadIssue(null);
-                    }}
+                    onChange={handlePhotosChange}
                   />
                 )}
 

@@ -29,13 +29,15 @@ import {
   PORTFOLIO_DESCRIPTION_MAX_LENGTH,
   PORTFOLIO_IMAGE_MAX_COUNT,
   PORTFOLIO_TITLE_MAX_LENGTH,
-  portfolioErrorMessageFromApi,
-  portfolioFormErrorsFromApi,
   portfolioPayloadFromValues,
   portfolioPhotosRemainingText,
   type PortfolioFormErrors,
   type PortfolioFormValues,
 } from './portfolioFormUtils';
+import {
+  translatePortfolioApiError,
+  translatePortfolioFormErrors,
+} from './portfolioApiErrors';
 import { isActivePortfolioImage, uniquePortfolioImages } from './portfolioImageUtils';
 import { PortfolioMobilePhotoEditor } from './PortfolioMobilePhotoEditor';
 import type { PortfolioItem } from './portfolioTypes';
@@ -290,8 +292,8 @@ export function PortfolioMobileEditFlow({
       setErrors({});
       setActiveField(null);
     } catch (error) {
-      const fieldErrors = portfolioFormErrorsFromApi(error);
-      const message = portfolioErrorMessageFromApi(error, t('portfolio.saveFailed'));
+      const fieldErrors = translatePortfolioFormErrors(t, error);
+      const message = translatePortfolioApiError(t, error, t('portfolio.saveFailed'));
       setErrors(fieldErrors);
       setSubmitError(message);
       toast.error(message);

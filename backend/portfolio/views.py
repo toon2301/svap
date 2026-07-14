@@ -12,7 +12,13 @@ from rest_framework.response import Response
 from swaply.rate_limiting import api_rate_limit
 
 from .api_responses import portfolio_item_not_found as _portfolio_item_not_found
+from .api_responses import serializer_error_response as _serializer_error_response
 from .api_responses import user_not_found as _not_found
+from .item_limits import (
+    lock_portfolio_owner,
+    portfolio_items_limit_response,
+    reached_portfolio_items_limit,
+)
 from .image_storage import delete_storage_keys, image_storage_keys
 from .models import PortfolioImage, PortfolioItem, PortfolioItemLike
 from .serializers import PortfolioItemSerializer, PortfolioItemWriteSerializer
@@ -65,14 +71,15 @@ def _prefetch_images(is_owner: bool):
     return Prefetch("images", queryset=images, to_attr="prefetched_portfolio_images")
 
 
-def _portfolio_queryset(user, *, is_owner: bool):
+def _portfolio_queryset(user, *, is_owner: bool, with_images: bool = True):
     queryset = (
         PortfolioItem.objects.filter(owner_id=user.id)
         .select_related("owner", "related_offer", "cover_image")
-        .prefetch_related(_prefetch_images(is_owner))
         .annotate(_likes_count=Count("portfolio_likes", distinct=True))
         .order_by("sort_order", "id")
     )
+    if with_images:
+        queryset = queryset.prefetch_related(_prefetch_images(is_owner))
     if not is_owner:
         queryset = queryset.filter(_visible_cover_q())
     return queryset
@@ -113,6 +120,9 @@ def _serialize_items(request, items, *, is_owner: bool, featured_item_id: int | 
             "is_owner": is_owner,
             "featured_item_id": featured_item_id,
             "liked_portfolio_item_ids": _liked_portfolio_item_ids(request, item_ids),
+            # List nenesie images (grid číta len cover_image; detail má vlastný
+            # fetch) – šetrí payload aj images prefetch.
+            "include_images": False,
         },
     ).data
 
@@ -142,6 +152,15 @@ def _next_sort_order(user) -> int:
         value=Max("sort_order")
     )["value"]
     return 0 if current_max is None else current_max + 1
+
+
+def _reached_portfolio_items_limit(user) -> bool:
+    # Limit sa odovzdáva z tohto modulu – testy patchujú portfolio.views.MAX_PORTFOLIO_ITEMS.
+    return reached_portfolio_items_limit(user, MAX_PORTFOLIO_ITEMS)
+
+
+def _portfolio_items_limit_response() -> Response:
+    return portfolio_items_limit_response(MAX_PORTFOLIO_ITEMS)
 
 
 def _compact_sort_order(user) -> None:
@@ -219,7 +238,7 @@ def _parse_id_list(value):
 
 def _portfolio_list_response(request, user):
     owner_view = _is_owner(request, user)
-    queryset = _portfolio_queryset(user, is_owner=owner_view)
+    queryset = _portfolio_queryset(user, is_owner=owner_view, with_images=False)
     items = list(queryset)
     featured_item_id = items[0].id if items else None
     return Response(
@@ -262,7 +281,9 @@ def portfolio_items_reorder_view(request):
             item_by_id[item_id].sort_order = index
         PortfolioItem.objects.bulk_update(items, ["sort_order"])
 
-    ordered_items = list(_portfolio_queryset(request.user, is_owner=True))
+    ordered_items = list(
+        _portfolio_queryset(request.user, is_owner=True, with_images=False)
+    )
     featured_item_id = ordered_items[0].id if ordered_items else None
     return Response(
         _serialize_items(
@@ -328,31 +349,29 @@ def portfolio_item_like_view(request, item_id: int):
 @api_rate_limit
 def my_portfolio_list_view(request):
     if request.method == "POST":
-        if (
-            PortfolioItem.objects.filter(owner=request.user).count()
-            >= MAX_PORTFOLIO_ITEMS
-        ):
-            return Response(
-                {
-                    "error": (
-                        "Dosiahol si maximalny pocet poloziek portfolia "
-                        f"({MAX_PORTFOLIO_ITEMS})."
-                    )
-                },
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        # Rýchly fail-fast check (bez zámku) – autoritatívny re-check beží nižšie
+        # pod zámkom, rovnaký vzor ako limit fotiek (upload-init vs upload-complete).
+        if _reached_portfolio_items_limit(request.user):
+            return _portfolio_items_limit_response()
 
         serializer = PortfolioItemWriteSerializer(
             data=request.data,
             context={"request": request},
         )
         if not serializer.is_valid():
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return _serializer_error_response(serializer.errors)
 
-        item = serializer.save(
-            owner=request.user,
-            sort_order=_next_sort_order(request.user),
-        )
+        with transaction.atomic():
+            lock_portfolio_owner(request.user)
+            # Re-check pod zámkom: dva paralelné create-y pri 14 položkách inak
+            # oba prejdú checkom vyššie a vznikne 16+ položiek (TOCTOU).
+            if _reached_portfolio_items_limit(request.user):
+                return _portfolio_items_limit_response()
+
+            item = serializer.save(
+                owner=request.user,
+                sort_order=_next_sort_order(request.user),
+            )
         return Response(
             _serialize_item(request, item, is_owner=True),
             status=status.HTTP_201_CREATED,
@@ -399,7 +418,7 @@ def portfolio_item_detail_view(request, item_id: int):
             context={"request": request},
         )
         if not serializer.is_valid():
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return _serializer_error_response(serializer.errors)
 
         item = serializer.save()
         return Response(

@@ -14,11 +14,14 @@ PORTFOLIO_WRITE_FIELDS = {"title", "category", "description", "related_offer"}
 
 
 def _validate_plain_text(value: str, *, allow_blank: bool) -> str:
+    # Explicitné `code` – FE prekladá chyby podľa stabilného kódu (text je fallback).
     value = (value or "").strip()
     if not allow_blank and not value:
-        raise serializers.ValidationError("Toto pole je povinne.")
+        raise serializers.ValidationError("Toto pole je povinne.", code="required")
     if value and HTML_TAG_RE.search(value):
-        raise serializers.ValidationError("HTML nie je povolene.")
+        raise serializers.ValidationError(
+            "HTML nie je povolene.", code="html_not_allowed"
+        )
     return value
 
 
@@ -171,7 +174,9 @@ class PortfolioItemWriteSerializer(serializers.ModelSerializer):
             _validate_plain_text(value, allow_blank=False)
         )
         if category not in PORTFOLIO_CATEGORY_CHOICES:
-            raise serializers.ValidationError("Neplatna kategoria portfolia.")
+            raise serializers.ValidationError(
+                "Neplatna kategoria portfolia.", code="invalid_category"
+            )
         return category
 
     def validate_description(self, value):
@@ -216,6 +221,14 @@ class PortfolioItemSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # List payload obrázky nenesie (grid číta len cover_image; detail má vlastný
+        # fetch). Pole úplne odstránime, keď je include_images vypnutý – tým sa ani
+        # neserializuje, ani nespustí DB dotaz cez get_images.
+        if not self.context.get("include_images", True):
+            self.fields.pop("images", None)
 
     def get_is_featured(self, obj):
         return obj.id == self.context.get("featured_item_id")

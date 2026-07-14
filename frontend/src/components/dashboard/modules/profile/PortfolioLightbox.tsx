@@ -10,6 +10,7 @@ import {
   XMarkIcon,
 } from '@heroicons/react/24/outline';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useProtectedImage } from '../shared/useProtectedImage';
 import type { PortfolioDisplayImage } from './portfolioDisplay';
 import { formatPortfolioPhotoCounter } from './portfolioDisplay';
 
@@ -43,6 +44,9 @@ export function PortfolioLightbox({
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
   const activeImage = images[clampIndex(activeIndex, images.length)];
   const hasMultipleImages = images.length > 1;
+  // Chránený obrázok načítame cez axios (blob); verejný prejde priamo. Sťahujeme
+  // len keď je lightbox otvorený – zatvorený nič nefetchuje (žiadny zbytočný blob).
+  const { resolvedSrc } = useProtectedImage(open ? activeImage?.largeSrc ?? null : null);
 
   const goToPrevious = useCallback(() => {
     if (!hasMultipleImages) return;
@@ -189,11 +193,19 @@ export function PortfolioLightbox({
           }
         }}
       >
-        <img
-          src={activeImage.largeSrc}
-          alt={alt}
-          className="max-h-[calc(100vh-2rem)] max-w-full rounded-2xl object-contain shadow-2xl"
-        />
+        {resolvedSrc ? (
+          <img
+            src={resolvedSrc}
+            alt={alt}
+            className="max-h-[calc(100vh-2rem)] max-w-full rounded-2xl object-contain shadow-2xl"
+          />
+        ) : (
+          // Neutrálny placeholder počas načítania/chyby (žiadna broken-image ikona).
+          <div
+            aria-hidden="true"
+            className="h-[70vh] max-h-[calc(100vh-2rem)] w-[70vw] max-w-full rounded-2xl bg-white/5"
+          />
+        )}
       </div>
 
       {hasMultipleImages && (

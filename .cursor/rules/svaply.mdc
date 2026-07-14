@@ -19,6 +19,7 @@ Dodrž a dbaj na:
 - rob malé, logicky oddelené zmeny, nech sa dajú jednotlivo overiť/revertnúť
 
 Po implementácii:
+- Ak vieš niečo navrhnuť lepšie a spoľahlivejšie tak návrh vypíš
 - skontroluj logiku
 - skontroluj edge cases
 - reálne otestuj (nielen vizuálnou kontrolou kódu)

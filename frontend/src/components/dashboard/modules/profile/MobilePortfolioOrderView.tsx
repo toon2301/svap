@@ -13,6 +13,7 @@ import {
 import { createPortal } from 'react-dom';
 import { Bars3Icon, CheckIcon, PhotoIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useProtectedImage } from '../shared/useProtectedImage';
 import { reorderPortfolioItems } from './portfolioApi';
 import type { PortfolioItem } from './portfolioTypes';
 
@@ -26,6 +27,31 @@ function itemImageSrc(item: PortfolioItem): string {
     String(item.cover_image?.thumbnail_url || '').trim() ||
     String(item.cover_image?.medium_url || '').trim() ||
     String(item.cover_image?.image_url || '').trim()
+  );
+}
+
+/**
+ * Náhľad cover fotky riadku. Chránený portfolio obrázok načíta cez axios (blob);
+ * počas načítania/chyby ostáva neutrálne pozadie (žiadna broken-image ikona).
+ * Vyčlenené do komponentu, lebo hook nesmie byť volaný vnútri `.map()`.
+ */
+function OrderRowThumbnail({ src }: { src: string }) {
+  const { resolvedSrc } = useProtectedImage(src);
+  if (!src) {
+    return <PhotoIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />;
+  }
+  if (!resolvedSrc) {
+    return null;
+  }
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={resolvedSrc}
+      alt=""
+      className="h-full w-full object-cover"
+      loading="lazy"
+      aria-hidden="true"
+    />
   );
 }
 
@@ -282,17 +308,7 @@ export function MobilePortfolioOrderView({ items, onSaved }: MobilePortfolioOrde
                 }`}
               >
                 <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gray-100 dark:bg-[#151517]">
-                  {src ? (
-                    <img
-                      src={src}
-                      alt=""
-                      className="h-full w-full object-cover"
-                      loading="lazy"
-                      aria-hidden="true"
-                    />
-                  ) : (
-                    <PhotoIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
-                  )}
+                  <OrderRowThumbnail src={src} />
                 </div>
                 <p
                   data-testid={`mobile-portfolio-order-title-${item.id}`}
