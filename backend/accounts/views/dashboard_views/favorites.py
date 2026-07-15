@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from django.db import transaction
 from rest_framework import serializers, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
@@ -6,6 +7,11 @@ from rest_framework.response import Response
 
 from accounts.models import FavoriteUser
 from accounts.name_normalization import get_canonical_display_name
+from accounts.services.user_blocks import (
+    exclude_blocked_users,
+    lock_user_pair_for_update,
+    user_block_exists_between,
+)
 from swaply.rate_limiting import api_rate_limit
 
 User = get_user_model()
@@ -53,7 +59,7 @@ class FavoriteUserListItemSerializer(serializers.ModelSerializer):
 
 
 def _favorite_users_queryset(owner):
-    return (
+    queryset = (
         FavoriteUser.objects.filter(
             user=owner,
             favorite_user__is_active=True,
@@ -74,6 +80,18 @@ def _favorite_users_queryset(owner):
             "favorite_user__username",
             "favorite_user__user_type",
         )
+    )
+    return exclude_blocked_users(
+        queryset,
+        viewer_user_id=owner.id,
+        user_id_field="favorite_user_id",
+    )
+
+
+def _favorite_user_not_found():
+    return Response(
+        {"error": "PouÅ¾Ã­vateÄ¾ nebol nÃ¡jdenÃ½."},
+        status=status.HTTP_404_NOT_FOUND,
     )
 
 
@@ -109,12 +127,16 @@ def dashboard_favorites_view(request):
         )
 
     try:
-        target_user = User.objects.only(
+        target_users = User.objects.only(
             "id",
             "is_active",
             "is_public",
             "is_staff",
             "is_superuser",
+        )
+        target_user = exclude_blocked_users(
+            target_users,
+            viewer_user_id=request.user.id,
         ).get(
             id=item_id,
             is_active=True,
@@ -123,16 +145,24 @@ def dashboard_favorites_view(request):
             is_superuser=False,
         )
     except User.DoesNotExist:
-        return Response(
-            {"error": "PouÅ¾Ã­vateÄ¾ nebol nÃ¡jdenÃ½."},
-            status=status.HTTP_404_NOT_FOUND,
-        )
+        return _favorite_user_not_found()
 
     if request.method == "POST":
-        _, created = FavoriteUser.objects.get_or_create(
-            user=request.user,
-            favorite_user=target_user,
-        )
+        with transaction.atomic():
+            lock_user_pair_for_update(
+                first_user_id=request.user.id,
+                second_user_id=target_user.id,
+            )
+            if user_block_exists_between(
+                first_user_id=request.user.id,
+                second_user_id=target_user.id,
+            ):
+                return _favorite_user_not_found()
+
+            _, created = FavoriteUser.objects.get_or_create(
+                user=request.user,
+                favorite_user=target_user,
+            )
         return Response(
             {
                 "message": "PouÅ¾Ã­vateÄ¾ bol pridanÃ½ do obÄ¾ÃºbenÃ½ch.",

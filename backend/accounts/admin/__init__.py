@@ -14,6 +14,7 @@ from . import (  # noqa: F401 — importované kvôli vedľajšiemu efektu (regi
     reviews,
     skill_requests,
     skills,
+    user_blocks,
     users,
     webpush,
 )

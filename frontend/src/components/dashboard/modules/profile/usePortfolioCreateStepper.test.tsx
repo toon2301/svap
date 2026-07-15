@@ -70,6 +70,7 @@ describe('usePortfolioCreateStepper', () => {
       expect.objectContaining({ title: 'My work', category: 'it-a-technologie' }),
     );
     expect(uploadPortfolioFiles).not.toHaveBeenCalled();
+    expect(toast.success).toHaveBeenCalledWith('portfolio.createSuccess');
     expect(onCreated).toHaveBeenCalledWith(created);
     expect(result.current.createdWithUploadIssue).toBeNull();
   });

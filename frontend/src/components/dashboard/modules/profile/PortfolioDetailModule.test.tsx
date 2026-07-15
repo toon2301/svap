@@ -1,8 +1,14 @@
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import PortfolioDetailModule from './PortfolioDetailModule';
 import axios from 'axios';
+import toast from 'react-hot-toast';
 import { api } from '@/lib/api';
 import type { PortfolioItem } from './portfolioTypes';
+
+jest.mock('react-hot-toast', () => ({
+  __esModule: true,
+  default: Object.assign(jest.fn(), { success: jest.fn(), error: jest.fn() }),
+}));
 
 const mockPush = jest.fn();
 
@@ -518,6 +524,10 @@ describe('PortfolioDetailModule', () => {
     });
     expect(await screen.findByText('Fotka čaká na kontrolu')).toBeInTheDocument();
     expect(api.get).toHaveBeenCalledTimes(2);
+    // Súhrnný success toast po nahratí dávky (1 fotka → singular).
+    await waitFor(() => expect(toast.success).toHaveBeenCalled());
+    expect((toast.success as jest.Mock).mock.calls.at(-1)?.[0]).toMatch(/nahran/i);
+    expect(toast.error).not.toHaveBeenCalled();
   });
 
   it('keeps uploading other files when one image fails', async () => {
@@ -547,6 +557,9 @@ describe('PortfolioDetailModule', () => {
         filename: 'second.jpg',
       });
     });
+    // Dávka: 1 zlyhala (failure toast) + 1 prešla (success toast); per-item inline chyba ostáva.
+    await waitFor(() => expect(toast.error).toHaveBeenCalled());
+    expect(toast.success).toHaveBeenCalled();
   });
 
   it('retries a failed image upload', async () => {
@@ -755,9 +768,12 @@ describe('PortfolioDetailModule', () => {
     });
     expect(await screen.findByText('Updated Portfolio')).toBeInTheDocument();
     expect(screen.getByText('Updated description')).toBeInTheDocument();
+    // Success toast po uložení úprav.
+    await waitFor(() => expect(toast.success).toHaveBeenCalled());
+    expect((toast.success as jest.Mock).mock.calls.at(-1)?.[0]).toMatch(/uložen/i);
   });
 
-  it('shows a safe edit error when the backend rejects the update', async () => {
+  it('shows an error toast when the backend rejects the update', async () => {
     (api.get as jest.Mock).mockResolvedValue({ data: manageablePortfolioItem() });
     (api.patch as jest.Mock).mockRejectedValue({
       response: { status: 404, data: { detail: 'Not found' } },
@@ -769,7 +785,9 @@ describe('PortfolioDetailModule', () => {
     fireEvent.change(screen.getByLabelText('Názov'), { target: { value: 'Updated Portfolio' } });
     fireEvent.submit(screen.getByTestId('portfolio-inline-edit-panel'));
 
-    expect(await screen.findByText('Not found')).toBeInTheDocument();
+    // Generický dôvod ide cez toast (nie inline banner); edit panel ostáva otvorený.
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Not found'));
+    expect(screen.getByTestId('portfolio-inline-edit-panel')).toBeInTheDocument();
   });
 
   it('opens delete confirmation and deletes the portfolio item', async () => {
@@ -788,6 +806,10 @@ describe('PortfolioDetailModule', () => {
       expect(api.delete).toHaveBeenCalledWith('/auth/portfolio/7/');
     });
     expect(mockPush).toHaveBeenCalledWith('/dashboard/users/jane-doe/portfolio');
+    // Success toast po zmazaní.
+    await waitFor(() => expect(toast.success).toHaveBeenCalled());
+    expect((toast.success as jest.Mock).mock.calls.at(-1)?.[0]).toMatch(/vymazan/i);
+    expect(toast.error).not.toHaveBeenCalled();
   });
 
   it('treats delete 404 (already deleted in another tab) as success and navigates back', async () => {
@@ -806,11 +828,12 @@ describe('PortfolioDetailModule', () => {
     await waitFor(() => {
       expect(mockPush).toHaveBeenCalledWith('/dashboard/users/jane-doe/portfolio');
     });
-    // Žiadna "deleteFailed" chyba – položka už neexistuje, cieľ je splnený.
-    expect(screen.queryByText(/nepodarilo.*vymaza/i)).not.toBeInTheDocument();
+    // 404 = tichý úspech: success toast, žiadny error toast.
+    await waitFor(() => expect(toast.success).toHaveBeenCalled());
+    expect(toast.error).not.toHaveBeenCalled();
   });
 
-  it('shows the delete error for non-404 failures', async () => {
+  it('shows an error toast for non-404 delete failures', async () => {
     (api.get as jest.Mock).mockResolvedValue({ data: manageablePortfolioItem() });
     (api.delete as jest.Mock).mockRejectedValue({ response: { status: 500 } });
 
@@ -821,8 +844,10 @@ describe('PortfolioDetailModule', () => {
     const dialog = await screen.findByRole('alertdialog');
     fireEvent.click(within(dialog).getByRole('button', { name: 'Vymazať' }));
 
-    expect(await screen.findByText(/nepodarilo.*vymaza/i)).toBeInTheDocument();
+    await waitFor(() => expect(toast.error).toHaveBeenCalled());
+    expect((toast.error as jest.Mock).mock.calls.at(-1)?.[0]).toMatch(/nepodarilo.*vymaza/i);
     expect(mockPush).not.toHaveBeenCalled();
+    expect(toast.success).not.toHaveBeenCalled();
   });
 
   it('focuses the delete dialog cancel button and closes the dialog with Escape', async () => {

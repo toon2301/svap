@@ -16,6 +16,7 @@ jest.mock('react-hot-toast', () => ({
   __esModule: true,
   default: {
     error: jest.fn(),
+    success: jest.fn(),
   },
 }));
 

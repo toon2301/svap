@@ -11,6 +11,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from accounts.services.user_blocks import exclude_blocked_users
 from swaply.rate_limiting import search_rate_limit
 
 from ...models import OfferedSkill
@@ -62,9 +63,12 @@ def _serialize_search_skills_page(request, page_skill_ids):
         *[When(pk=pk, then=position) for position, pk in enumerate(page_skill_ids)],
         output_field=IntegerField(),
     )
-    optimized_qs = _skills_list_queryset(
-        OfferedSkill.objects.filter(pk__in=page_skill_ids)
-    ).order_by(preserved_order)
+    visible_skills = exclude_blocked_users(
+        OfferedSkill.objects.filter(pk__in=page_skill_ids),
+        viewer_user_id=request.user.id,
+        user_id_field="user_id",
+    )
+    optimized_qs = _skills_list_queryset(visible_skills).order_by(preserved_order)
     optimized_skills = list(optimized_qs)
     t_qs1 = perf_counter()
 
@@ -228,6 +232,11 @@ def dashboard_search_view(request):
             projection_skill_loc_q=projection_skill_loc_q,
             only_my_location=only_my_location,
         )
+        projection_skills_page_qs = exclude_blocked_users(
+            projection_skills_page_qs,
+            viewer_user_id=request.user.id,
+            user_id_field="user_id",
+        )
         page_skill_ids, has_next_skills = _slice_page_ids(
             projection_skills_page_qs,
             page=page,
@@ -255,6 +264,11 @@ def dashboard_search_view(request):
             skill_loc_q=skill_loc_q,
             only_my_location=only_my_location,
         )
+        legacy_skills_page_qs = exclude_blocked_users(
+            legacy_skills_page_qs,
+            viewer_user_id=request.user.id,
+            user_id_field="user_id",
+        )
         page_skill_ids, has_next_skills = _slice_page_ids(
             legacy_skills_page_qs,
             page=page,
@@ -276,6 +290,10 @@ def dashboard_search_view(request):
     users_qs = User.objects.filter(is_active=True).filter(
         Q(pk=request.user.pk)
         | Q(is_public=True, is_staff=False, is_superuser=False)
+    )
+    users_qs = exclude_blocked_users(
+        users_qs,
+        viewer_user_id=request.user.id,
     )
 
     if user_terms:

@@ -288,6 +288,7 @@ export function PortfolioMobileEditFlow({
     try {
       const saved = await updatePortfolioItem(item.id, nextPayload);
       setValues(valuesFromItem(saved));
+      toast.success(t('portfolio.saveSuccess'));
       onSaved(saved);
       setErrors({});
       setActiveField(null);

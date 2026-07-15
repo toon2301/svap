@@ -9,6 +9,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from accounts.services.user_blocks import exclude_blocked_users
 from swaply.rate_limiting import api_rate_limit
 
 from ...models import OfferedSkill, ProfileLike
@@ -97,10 +98,11 @@ def _profile_detail_queryset(request):
         profile_user_id=OuterRef("pk"),
         user_id=viewer_id,
     )
-    return User.objects.annotate(
+    queryset = User.objects.annotate(
         _profile_likes_count=Count("profile_likes_received", distinct=True),
         _is_profile_liked_by_me=Exists(liked_by_viewer),
     )
+    return exclude_blocked_users(queryset, viewer_user_id=viewer_id)
 
 def _dashboard_target_user_by_id(request, user_id: int):
     current_user = getattr(request, "user", None)
@@ -108,9 +110,11 @@ def _dashboard_target_user_by_id(request, user_id: int):
         user_id
     ):
         return current_user
-    return User.objects.only("id", "is_active", "is_public").get(
-        id=user_id, is_active=True
-    )
+    queryset = User.objects.only("id", "is_active", "is_public")
+    return exclude_blocked_users(
+        queryset,
+        viewer_user_id=current_user.id,
+    ).get(id=user_id, is_active=True)
 
 
 def _optimized_skills_serialize(request, skills_qs):
@@ -250,9 +254,11 @@ def dashboard_user_skills_by_slug_view(request, slug: str):
     Read-only list of skills for another user by slug.
     """
     try:
-        user = User.objects.only("id", "is_active", "is_public").get(
-            slug=slug, is_active=True
-        )
+        queryset = User.objects.only("id", "is_active", "is_public")
+        user = exclude_blocked_users(
+            queryset,
+            viewer_user_id=request.user.id,
+        ).get(slug=slug, is_active=True)
     except User.DoesNotExist:
         return _not_found()
 
