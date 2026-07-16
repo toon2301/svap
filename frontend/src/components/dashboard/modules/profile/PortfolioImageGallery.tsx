@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import toast from 'react-hot-toast';
 import { CheckIcon, CloudArrowUpIcon, PencilSquareIcon } from '@heroicons/react/24/outline';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { preparePortfolioDisplayImages, type PortfolioDisplayImage } from './portfolioDisplay';
@@ -37,7 +38,6 @@ export function PortfolioImageGallery({
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [isManaging, setIsManaging] = useState(false);
   const [actionKey, setActionKey] = useState<string | null>(null);
-  const [galleryActionError, setGalleryActionError] = useState<string | null>(null);
   const serverImages = useMemo(() => uniquePortfolioImages(item), [item]);
   const activeImageCount = useMemo(
     () => serverImages.filter(isActivePortfolioImage).length,
@@ -70,13 +70,11 @@ export function PortfolioImageGallery({
   useEffect(() => {
     if (!canManageGallery) {
       setIsManaging(false);
-      setGalleryActionError(null);
     }
   }, [canManageGallery]);
 
   const handleToggleManage = useCallback(() => {
     setIsManaging((current) => !current);
-    setGalleryActionError(null);
   }, []);
 
   const handleSetCover = useCallback(
@@ -84,12 +82,12 @@ export function PortfolioImageGallery({
       if (typeof image.id !== 'number' || image.id < 1 || image.id === coverImageId) return;
 
       setActionKey(`cover:${image.id}`);
-      setGalleryActionError(null);
       try {
         await setPortfolioCoverImage(item.id, image.id);
+        toast.success(t('portfolio.coverSetSuccess'));
         await refreshUploads();
       } catch {
-        setGalleryActionError(t('portfolio.coverSetFailed'));
+        toast.error(t('portfolio.coverSetFailed'));
       } finally {
         setActionKey(null);
       }
@@ -102,12 +100,12 @@ export function PortfolioImageGallery({
       if (typeof image.id !== 'number' || image.id < 1) return;
 
       setActionKey(`delete:${image.id}`);
-      setGalleryActionError(null);
       try {
         await deletePortfolioImage(item.id, image.id);
+        toast.success(t('portfolio.photoDeleteSuccess'));
         await refreshUploads();
       } catch {
-        setGalleryActionError(t('portfolio.photoDeleteFailed'));
+        toast.error(t('portfolio.photoDeleteFailed'));
       } finally {
         setActionKey(null);
       }
@@ -199,11 +197,6 @@ export function PortfolioImageGallery({
       {canUpload && selectionError && (
         <p className="rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/20 dark:text-amber-200">
           {selectionError}
-        </p>
-      )}
-      {canUpload && galleryActionError && (
-        <p className="rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/20 dark:text-amber-200">
-          {galleryActionError}
         </p>
       )}
       {canUpload && <PortfolioImageUploadQueue items={items} onRetry={retryUpload} />}

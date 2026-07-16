@@ -209,7 +209,7 @@ def _get_likeable_portfolio_item(request, item_id: int):
     owner_view = _is_owner(request, owner)
     if not owner_view and not getattr(owner, "is_active", True):
         return None
-    if not owner_view and not getattr(owner, "is_public", True):
+    if _enforce_public_or_owner(request, owner) is not None:
         return None
     if not owner_view and not PortfolioItem.objects.filter(id=item.id).filter(
         _visible_cover_q()

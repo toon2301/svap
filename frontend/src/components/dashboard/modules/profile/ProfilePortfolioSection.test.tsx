@@ -425,6 +425,9 @@ describe('ProfilePortfolioSection', () => {
       });
     });
     expect(mockPush).toHaveBeenCalledWith('/dashboard/users/1/portfolio/9');
+    // Success toast po vytvorení portfólia.
+    await waitFor(() => expect(toast.success).toHaveBeenCalled());
+    expect((toast.success as jest.Mock).mock.calls.at(-1)?.[0]).toMatch(/vytvoren/i);
   });
 
   it('shows a safe create error when the backend rejects the request', async () => {

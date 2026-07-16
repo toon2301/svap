@@ -437,6 +437,25 @@ describe('PortfolioDetailModule', () => {
     ]);
     expect(screen.queryByRole('dialog', { name: /Gal/ })).not.toBeInTheDocument();
     expect(api.get).toHaveBeenCalledTimes(2);
+    // Success toast po nastavení titulnej fotky.
+    await waitFor(() => expect(toast.success).toHaveBeenCalled());
+    expect((toast.success as jest.Mock).mock.calls.at(-1)?.[0]).toMatch(/nastaven/i);
+  });
+
+  it('shows an error toast when setting the cover photo fails', async () => {
+    (api.get as jest.Mock).mockResolvedValue({ data: manageablePortfolioItem() });
+    (api.patch as jest.Mock).mockRejectedValue(new Error('cover failed'));
+
+    render(<PortfolioDetailModule itemId={7} ownerIdentifier="jane-doe" />);
+
+    fireEvent.click(await screen.findByTestId('portfolio-gallery-edit-button'));
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('portfolio-gallery-cover-button-2'));
+    });
+
+    await waitFor(() => expect(toast.error).toHaveBeenCalled());
+    expect((toast.error as jest.Mock).mock.calls.at(-1)?.[0]).toMatch(/nepodarilo.*nastavi/i);
+    expect(toast.success).not.toHaveBeenCalled();
   });
 
   it('deletes a photo from the desktop gallery edit controls without confirmation', async () => {
@@ -455,6 +474,25 @@ describe('PortfolioDetailModule', () => {
       expect(api.delete).toHaveBeenCalledWith('/auth/portfolio/7/images/2/');
     });
     expect(api.get).toHaveBeenCalledTimes(2);
+    // Success toast po zmazaní fotky.
+    await waitFor(() => expect(toast.success).toHaveBeenCalled());
+    expect((toast.success as jest.Mock).mock.calls.at(-1)?.[0]).toMatch(/vymazan/i);
+  });
+
+  it('shows an error toast when deleting a photo fails', async () => {
+    (api.get as jest.Mock).mockResolvedValue({ data: manageablePortfolioItem() });
+    (api.delete as jest.Mock).mockRejectedValue(new Error('delete photo failed'));
+
+    render(<PortfolioDetailModule itemId={7} ownerIdentifier="jane-doe" />);
+
+    fireEvent.click(await screen.findByTestId('portfolio-gallery-edit-button'));
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('portfolio-gallery-delete-button-2'));
+    });
+
+    await waitFor(() => expect(toast.error).toHaveBeenCalled());
+    expect((toast.error as jest.Mock).mock.calls.at(-1)?.[0]).toMatch(/nepodarilo.*vymaza/i);
+    expect(toast.success).not.toHaveBeenCalled();
   });
   it('disables new photo selection when the portfolio already has 8 active images', async () => {
     (api.get as jest.Mock).mockResolvedValue({

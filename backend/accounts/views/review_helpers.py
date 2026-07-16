@@ -10,6 +10,7 @@ from decimal import Decimal
 from django.db.models import Avg, Count, Exists, OuterRef, Q
 
 from ..models import Review, ReviewLike
+from ..services.offer_visibility import offer_hidden_from_user as _offer_hidden_from_user
 
 # Stránkovanie zoznamu recenzií (rovnaký vzor ako /search/).
 REVIEWS_DEFAULT_PAGE_SIZE = 10
@@ -77,13 +78,6 @@ def _reviews_with_like_state(queryset, user):
             )
         )
     return queryset
-
-
-def _offer_hidden_from_user(offer, user):
-    is_owner = offer.user_id == getattr(user, "id", None)
-    return not is_owner and (
-        offer.is_hidden or not getattr(offer.user, "is_public", True)
-    )
 
 
 def _review_like_payload(*, review_id: int, user_id: int) -> dict:

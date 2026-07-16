@@ -1,3 +1,6 @@
+import io
+from unittest.mock import patch
+
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
 from django.urls import reverse
@@ -10,9 +13,12 @@ from accounts.models import (
     OfferedSkill,
     OfferedSkillLike,
     ProfileLike,
+    Review,
+    ReviewLike,
+    SkillRequest,
     UserBlock,
 )
-from portfolio.models import PortfolioItem, PortfolioItemLike
+from portfolio.models import PortfolioImage, PortfolioItem, PortfolioItemLike
 
 User = get_user_model()
 
@@ -210,6 +216,89 @@ class UserBlockEnforcementTests(APITestCase):
         self.assertFalse(ProfileLike.objects.exists())
         self.assertFalse(Notification.objects.exists())
 
+    def test_blocked_pair_cannot_use_direct_offer_flows(self):
+        review = Review.objects.create(
+            reviewer=self.viewer,
+            offer=self.target_offer,
+            rating="5.0",
+            text="Existing review remains stored.",
+        )
+        UserBlock.objects.create(blocker=self.target, blocked_user=self.viewer)
+
+        responses = [
+            self.client.get(
+                reverse("accounts:skills_detail", args=[self.target_offer.id])
+            ),
+            self.client.post(
+                reverse("accounts:offer_like", args=[self.target_offer.id])
+            ),
+            self.client.get(
+                reverse("accounts:reviews_list", args=[self.target_offer.id])
+            ),
+            self.client.post(
+                reverse("accounts:reviews_list", args=[self.target_offer.id]),
+                {"rating": "5.0", "text": "Blocked review"},
+            ),
+            self.client.get(reverse("accounts:review_detail", args=[review.id])),
+            self.client.post(reverse("accounts:review_like", args=[review.id])),
+        ]
+        request_response = self.client.post(
+            reverse("accounts:skill_requests"),
+            {"offer_id": self.target_offer.id},
+        )
+
+        for response in responses:
+            self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(request_response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("offer_id", request_response.data)
+        self.assertFalse(OfferedSkillLike.objects.exists())
+        self.assertFalse(ReviewLike.objects.exists())
+        self.assertFalse(SkillRequest.objects.exists())
+        self.assertTrue(Review.objects.filter(pk=review.pk).exists())
+        self.assertFalse(Notification.objects.exists())
+
+    def test_blocked_pair_cannot_like_or_fetch_cached_portfolio_image(self):
+        item = PortfolioItem.objects.create(
+            owner=self.target,
+            title="Protected portfolio",
+            category="Services",
+        )
+        image = PortfolioImage.objects.create(
+            item=item,
+            status=PortfolioImage.Status.APPROVED,
+            order=0,
+            approved_key=f"media/portfolio/{item.id}/image-large.webp",
+            large_key=f"media/portfolio/{item.id}/image-large.webp",
+        )
+        item.cover_image = image
+        item.save(update_fields=["cover_image", "updated_at"])
+        image_url = reverse(
+            "accounts:portfolio_image_file",
+            args=[item.id, image.id],
+        )
+
+        with patch(
+            "portfolio.image_file_views.default_storage.open",
+            return_value=io.BytesIO(b"webp-bytes"),
+        ):
+            warm_response = self.client.get(image_url)
+        self.assertEqual(warm_response.status_code, status.HTTP_200_OK)
+
+        UserBlock.objects.create(blocker=self.target, blocked_user=self.viewer)
+        like_response = self.client.post(
+            reverse("accounts:portfolio_like", args=[item.id])
+        )
+        with patch("portfolio.image_file_views.default_storage.open") as open_mock:
+            blocked_image_response = self.client.get(image_url)
+
+        self.assertEqual(like_response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(
+            blocked_image_response.status_code,
+            status.HTTP_404_NOT_FOUND,
+        )
+        open_mock.assert_not_called()
+        self.assertFalse(PortfolioItemLike.objects.exists())
+        self.assertFalse(Notification.objects.exists())
     def test_stale_favorite_is_hidden_and_not_counted(self):
         UserBlock.objects.create(blocker=self.target, blocked_user=self.viewer)
         FavoriteUser.objects.create(user=self.viewer, favorite_user=self.target)

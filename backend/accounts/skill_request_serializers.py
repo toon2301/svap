@@ -1,5 +1,6 @@
 from rest_framework import serializers
 
+from .services.offer_visibility import offer_hidden_from_user
 from .models import (
     OfferedSkill,
     Review,
@@ -63,8 +64,7 @@ class SkillRequestCreateSerializer(serializers.Serializer):
 
         owner = offer.user
         if (
-            offer.is_hidden
-            or not getattr(owner, "is_public", True)
+            offer_hidden_from_user(offer, getattr(request, "user", None))
             or not getattr(owner, "is_active", True)
             or getattr(owner, "is_staff", False)
             or getattr(owner, "is_superuser", False)

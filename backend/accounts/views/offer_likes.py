@@ -12,17 +12,12 @@ from swaply.rate_limiting import api_rate_limit
 
 from ..models import OfferedSkill, OfferedSkillLike
 from ..services.notifications import create_offer_liked_notification
+from ..services.offer_visibility import offer_hidden_from_user as _offer_hidden_from_user
+from ..services.user_blocks import lock_user_pair_for_update
 from .dashboard_views.public_profiles import invalidate_dashboard_user_skills_cache
 from .skills import _skills_list_cache_invalidate
 
 logger = logging.getLogger(__name__)
-
-
-def _offer_hidden_from_user(offer, user) -> bool:
-    is_owner = offer.user_id == getattr(user, "id", None)
-    return not is_owner and (
-        offer.is_hidden or not getattr(offer.user, "is_public", True)
-    )
 
 
 def _offer_like_payload(*, offer_id: int, user_id: int) -> dict:
@@ -81,6 +76,15 @@ def offer_like_view(request, skill_id):
                 )
 
         with transaction.atomic():
+            lock_user_pair_for_update(
+                first_user_id=request.user.id,
+                second_user_id=offer.user_id,
+            )
+            if _offer_hidden_from_user(offer, request.user):
+                return Response(
+                    {"error": "Ponuka nebola najdena"},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
             _, created = OfferedSkillLike.objects.get_or_create(
                 offer=offer,
                 user=request.user,
