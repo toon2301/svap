@@ -46,6 +46,7 @@ from .reviews import (
 )
 from .offer_likes import offer_like_view
 from .profile_likes import profile_like_view
+from .user_blocks import blocked_users_view, user_block_detail_view
 from .notifications import (
     notifications_list_view,
     notifications_unread_count_view,
@@ -111,6 +112,8 @@ __all__ = [
     "review_like_view",
     "offer_like_view",
     "profile_like_view",
+    "blocked_users_view",
+    "user_block_detail_view",
     "notifications_list_view",
     "notifications_unread_count_view",
     "notifications_mark_all_read_view",

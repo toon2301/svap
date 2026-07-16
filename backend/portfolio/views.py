@@ -23,6 +23,7 @@ from .image_storage import delete_storage_keys, image_storage_keys
 from .models import PortfolioImage, PortfolioItem, PortfolioItemLike
 from .serializers import PortfolioItemSerializer, PortfolioItemWriteSerializer
 from accounts.services.notifications import create_portfolio_liked_notification
+from accounts.services.user_blocks import user_block_exists_between
 
 logger = logging.getLogger(__name__)
 User = get_user_model()
@@ -41,7 +42,10 @@ def _is_owner(request, user) -> bool:
 
 
 def _enforce_public_or_owner(request, user) -> Response | None:
-    if not _is_owner(request, user) and not getattr(user, "is_public", True):
+    if not _is_owner(request, user) and (
+        user_block_exists_between(first_user_id=request.user.id, second_user_id=user.id)
+        or not getattr(user, "is_public", True)
+    ):
         return _not_found()
     return None
 
@@ -205,7 +209,7 @@ def _get_likeable_portfolio_item(request, item_id: int):
     owner_view = _is_owner(request, owner)
     if not owner_view and not getattr(owner, "is_active", True):
         return None
-    if not owner_view and not getattr(owner, "is_public", True):
+    if _enforce_public_or_owner(request, owner) is not None:
         return None
     if not owner_view and not PortfolioItem.objects.filter(id=item.id).filter(
         _visible_cover_q()

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
+import toast from 'react-hot-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { updatePortfolioItem } from './portfolioApi';
 import type { PortfolioItem } from './portfolioTypes';
@@ -40,7 +41,6 @@ export function PortfolioInlineEditPanel({
   const { t } = useLanguage();
   const [values, setValues] = useState<PortfolioFormValues>(() => valuesFromItem(item));
   const [errors, setErrors] = useState<PortfolioFormErrors>({});
-  const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const initializedItemIdRef = useRef(item.id);
 
@@ -49,13 +49,11 @@ export function PortfolioInlineEditPanel({
     initializedItemIdRef.current = item.id;
     setValues(valuesFromItem(item));
     setErrors({});
-    setSubmitError(null);
   }, [item]);
 
   const handleChange = useCallback((field: PortfolioFormField, value: string) => {
     setValues((current) => ({ ...current, [field]: value }));
     setErrors((current) => ({ ...current, [field]: undefined }));
-    setSubmitError(null);
   }, []);
 
   const handleSubmit = useCallback(
@@ -66,18 +64,18 @@ export function PortfolioInlineEditPanel({
       const nextErrors = validatePortfolioFormValues(values, t);
       if (Object.keys(nextErrors).length > 0) {
         setErrors(nextErrors);
-        setSubmitError(null);
         return;
       }
 
       setIsSubmitting(true);
-      setSubmitError(null);
       try {
         const saved = await updatePortfolioItem(item.id, portfolioPayloadFromValues(values));
+        toast.success(t('portfolio.saveSuccess'));
         onSaved(saved);
       } catch (error) {
+        // Field validácia ostáva inline; generický dôvod ide cez toast (Variant C).
         setErrors(translatePortfolioFormErrors(t, error));
-        setSubmitError(translatePortfolioApiError(t, error, t('portfolio.saveFailed')));
+        toast.error(translatePortfolioApiError(t, error, t('portfolio.saveFailed')));
       } finally {
         setIsSubmitting(false);
       }
@@ -103,12 +101,6 @@ export function PortfolioInlineEditPanel({
         disabled={isSubmitting}
         onChange={handleChange}
       />
-
-      {submitError && (
-        <p className="mt-4 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700 dark:border-red-900/60 dark:bg-red-950/20 dark:text-red-300">
-          {submitError}
-        </p>
-      )}
 
       <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
         <button

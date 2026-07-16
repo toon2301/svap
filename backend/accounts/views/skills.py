@@ -22,6 +22,7 @@ from ..models import (
     SkillRequest,
 )
 from ..serializers import OfferedSkillSerializer
+from ..services.offer_visibility import offer_hidden_from_user
 from django.core.exceptions import ValidationError
 
 from .skill_helpers import (
@@ -187,9 +188,7 @@ def skills_detail_view(request, skill_id):
 
     if request.method == "GET":
         # Cudzí používateľ nesmie vidieť skrytú kartu ani kartu z privátneho profilu
-        if not is_owner and (
-            skill.is_hidden or not getattr(skill.user, "is_public", True)
-        ):
+        if offer_hidden_from_user(skill, request.user):
             return Response(
                 {"error": "Zručnosť nebola nájdená"}, status=status.HTTP_404_NOT_FOUND
             )

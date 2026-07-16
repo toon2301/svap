@@ -8,6 +8,7 @@ import {
   type DragEvent,
   type ReactNode,
 } from 'react';
+import toast from 'react-hot-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { reorderPortfolioItems } from './portfolioApi';
 import { PortfolioCard } from './PortfolioCard';
@@ -52,7 +53,6 @@ export function PortfolioReorderableLayout({
 }: PortfolioReorderableLayoutProps) {
   const { t } = useLanguage();
   const [draggedItemId, setDraggedItemId] = useState<number | null>(null);
-  const [actionError, setActionError] = useState<string | null>(null);
   const [isSavingOrder, setIsSavingOrder] = useState(false);
   const itemsRef = useRef(items);
   const originalItemsRef = useRef<PortfolioItem[] | null>(null);
@@ -64,7 +64,6 @@ export function PortfolioReorderableLayout({
   useEffect(() => {
     if (!isReorderMode) {
       setDraggedItemId(null);
-      setActionError(null);
       originalItemsRef.current = null;
     }
   }, [isReorderMode]);
@@ -77,13 +76,13 @@ export function PortfolioReorderableLayout({
     if (!originalItems || haveSameOrder(originalItems, currentItems)) return;
 
     setIsSavingOrder(true);
-    setActionError(null);
     try {
       const orderedItems = await reorderPortfolioItems(currentItems.map((item) => item.id));
+      toast.success(t('portfolio.orderSaveSuccess'));
       onReordered(orderedItems.length > 0 ? orderedItems : currentItems);
     } catch {
       onPreviewOrder(originalItems);
-      setActionError(t('portfolio.orderSaveFailed'));
+      toast.error(t('portfolio.orderSaveFailed'));
     } finally {
       setIsSavingOrder(false);
     }
@@ -98,7 +97,6 @@ export function PortfolioReorderableLayout({
 
       originalItemsRef.current = itemsRef.current;
       setDraggedItemId(item.id);
-      setActionError(null);
       event.dataTransfer.effectAllowed = 'move';
       event.dataTransfer.setData('text/plain', String(item.id));
     },
@@ -192,11 +190,6 @@ export function PortfolioReorderableLayout({
         <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
           {t('portfolio.featured')}
         </h3>
-      )}
-      {actionError && (
-        <p className="rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/20 dark:text-amber-200">
-          {actionError}
-        </p>
       )}
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
         {featured ? renderCard(featured, true) : null}

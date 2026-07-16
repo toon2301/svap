@@ -11,6 +11,11 @@ from rest_framework.response import Response
 
 from accounts.models import ProfileLike
 from accounts.services.notifications import create_profile_liked_notification
+from accounts.services.user_blocks import (
+    exclude_blocked_users,
+    lock_user_pair_for_update,
+    user_block_exists_between,
+)
 from swaply.rate_limiting import api_rate_limit
 
 from .dashboard_views.public_profiles import _enforce_public_or_owner, _not_found
@@ -43,7 +48,7 @@ def profile_like_view(request, user_id: int):
     like their own profile; this is enforced here and by a DB check constraint.
     """
     try:
-        profile_user = User.objects.only(
+        profile_users = User.objects.only(
             "id",
             "is_active",
             "is_public",
@@ -53,6 +58,10 @@ def profile_like_view(request, user_id: int):
             "company_name",
             "username",
             "user_type",
+        )
+        profile_user = exclude_blocked_users(
+            profile_users,
+            viewer_user_id=request.user.id,
         ).get(id=user_id, is_active=True)
     except User.DoesNotExist:
         return _not_found()
@@ -85,6 +94,15 @@ def profile_like_view(request, user_id: int):
                 )
 
         with transaction.atomic():
+            lock_user_pair_for_update(
+                first_user_id=request.user.id,
+                second_user_id=profile_user.id,
+            )
+            if user_block_exists_between(
+                first_user_id=request.user.id,
+                second_user_id=profile_user.id,
+            ):
+                return _not_found()
             _, created = ProfileLike.objects.get_or_create(
                 profile_user=profile_user,
                 user=request.user,

@@ -18,6 +18,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from accounts.services.user_blocks import user_block_exists_between
+
 from .image_storage import PORTFOLIO_IMAGE_VARIANTS
 from .image_storage import variant_storage_key as _variant_storage_key
 from .models import PortfolioImage, PortfolioItem
@@ -37,17 +39,32 @@ def _ensure_portfolio_image_access(request, item_id: int) -> bool:
     """
     cache_key = f"pf_img_access:{request.user.id}:{int(item_id)}"
     cached = cache.get(cache_key)
-    if cached is not None:
-        return bool(cached)
+    if isinstance(cached, dict):
+        owner_id = int(cached.get("owner_id") or 0)
+        if user_block_exists_between(
+            first_user_id=request.user.id,
+            second_user_id=owner_id,
+        ):
+            raise Http404
+        return bool(cached.get("is_owner"))
 
     item = get_object_or_404(PortfolioItem.objects.select_related("owner"), id=item_id)
     owner = item.owner
     is_owner = int(getattr(owner, "id", 0)) == int(request.user.id)
     if not is_owner and (
-        not getattr(owner, "is_active", True) or not getattr(owner, "is_public", True)
+        user_block_exists_between(
+            first_user_id=request.user.id,
+            second_user_id=owner.id,
+        )
+        or not getattr(owner, "is_active", True)
+        or not getattr(owner, "is_public", True)
     ):
         raise Http404
-    cache.set(cache_key, is_owner, timeout=_IMAGE_ACCESS_CACHE_TTL)
+    cache.set(
+        cache_key,
+        {"owner_id": owner.id, "is_owner": is_owner},
+        timeout=_IMAGE_ACCESS_CACHE_TTL,
+    )
     return is_owner
 
 

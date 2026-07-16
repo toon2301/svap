@@ -50,6 +50,8 @@ from .skill_request_helpers import (
     _skill_requests_cache_refresh_for_user,
 )
 from ..services.notifications import create_skill_request_notification
+from ..services.offer_visibility import offer_hidden_from_user
+from ..services.user_blocks import lock_user_pair_for_update
 # Re-export detail/completion views (presunuté do skill_requests_detail) pre
 # spätnú kompatibilitu (views/__init__ ich importuje z .skill_requests).
 from .skill_requests_detail import (  # noqa: F401
@@ -129,9 +131,21 @@ def skill_requests_view(request):
     created = False
     try:
         with transaction.atomic():
-            # Race-safe: lock requester + offer rows so two parallel POSTs can't both create.
-            list(User.objects.select_for_update().filter(id=request.user.id).values_list("id", flat=True))
-            list(OfferedSkill.objects.select_for_update().filter(id=offer.id).values_list("id", flat=True))
+            # Lock both users and the offer before the authoritative visibility re-check.
+            lock_user_pair_for_update(
+                first_user_id=request.user.id,
+                second_user_id=recipient.id,
+            )
+            list(
+                OfferedSkill.objects.select_for_update()
+                .filter(id=offer.id)
+                .values_list("id", flat=True)
+            )
+            if offer_hidden_from_user(offer, request.user):
+                return Response(
+                    {"offer_id": ["Karta neexistuje."]},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
 
             # Robustné aj keď už v DB existujú duplicity (legacy dáta):
             # nikdy nepoužívaj .get() na requester+offer.

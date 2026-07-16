@@ -143,6 +143,7 @@ export function usePortfolioCreateStepper({
       if (photoFiles.length > 0) {
         await uploadPortfolioFiles(created.id, photoFiles);
       }
+      toast.success(t('portfolio.createSuccess'));
       onCreated(created);
     } catch (error) {
       if (created) {

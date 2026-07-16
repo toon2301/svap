@@ -25,6 +25,8 @@ from ..models import (
     SkillRequest,
 )
 from ..serializers import ReviewSerializer
+from ..services.offer_visibility import offer_owner_blocked_from_user
+from ..services.user_blocks import lock_user_pair_for_update
 from ..services.notifications import (
     create_review_created_notification,
     create_review_liked_notification,
@@ -40,6 +42,12 @@ from .review_helpers import (
 from .skill_requests import _skill_requests_cache_invalidate_for_user
 
 logger = logging.getLogger(__name__)
+
+
+def _offer_not_found():
+    return Response(
+        {"error": "Ponuka nebola nájdená"}, status=status.HTTP_404_NOT_FOUND
+    )
 
 
 @api_view(["GET", "POST"])
@@ -68,6 +76,9 @@ def reviews_list_view(request, offer_id):
             return Response(
                 {"error": "Ponuka nebola nájdená"}, status=status.HTTP_404_NOT_FOUND
             )
+
+    elif offer_owner_blocked_from_user(offer, request.user):
+        return _offer_not_found()
 
     if request.method == "GET":
         # Stránkovaný zoznam recenzií pre túto ponuku (najnovšie prvé).
@@ -147,6 +158,12 @@ def reviews_list_view(request, offer_id):
         # Uloženie recenzie s reviewerom a ponukou
         try:
             with transaction.atomic():
+                lock_user_pair_for_update(
+                    first_user_id=request.user.id,
+                    second_user_id=offer.user_id,
+                )
+                if offer_owner_blocked_from_user(offer, request.user):
+                    return _offer_not_found()
                 review = serializer.save(reviewer=request.user, offer=offer)
         except IntegrityError:
             if Review.objects.filter(reviewer=request.user, offer=offer).exists():

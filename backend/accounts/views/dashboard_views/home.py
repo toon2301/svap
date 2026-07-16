@@ -7,6 +7,7 @@ from swaply.rate_limiting import api_rate_limit
 
 from ...models import FavoriteUser
 from ...serializers import UserProfileSerializer
+from ...services.user_blocks import exclude_blocked_users
 
 
 @api_view(["GET"])
@@ -15,7 +16,11 @@ from ...serializers import UserProfileSerializer
 def dashboard_home_view(request):
     """Dashboard home - zÃ¡kladnÃ© Å¡tatistiky a informÃ¡cie"""
     user = request.user
-    favorites_count = FavoriteUser.objects.filter(user=user).count()
+    favorites_count = exclude_blocked_users(
+        FavoriteUser.objects.filter(user=user),
+        viewer_user_id=user.id,
+        user_id_field="favorite_user_id",
+    ).count()
 
     stats = {
         "skills_count": 0,  # PoÄet zruÄnostÃ­ pouÅ¾Ã­vateÄ¾a

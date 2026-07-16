@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import toast from 'react-hot-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
 import {
   uploadPortfolioImageComplete,
@@ -11,6 +12,7 @@ import {
   PORTFOLIO_ALLOWED_IMAGE_EXTENSIONS,
   PORTFOLIO_IMAGE_MAX_BYTES,
   PORTFOLIO_IMAGE_MAX_COUNT,
+  portfolioPhotoUploadSuccessText,
 } from './portfolioFormUtils';
 import { translatePortfolioApiError } from './portfolioApiErrors';
 import type { PortfolioImage } from './portfolioTypes';
@@ -299,8 +301,15 @@ export function usePortfolioImageUploadQueue({
 
       void (async () => {
         const results = await Promise.all(uploadable.map((item) => uploadOne(item)));
-        if (results.some(Boolean)) {
+        const successCount = results.filter(Boolean).length;
+        // Jeden súhrnný toast na celú dávku (nie per-súbor). Per-item inline chyba
+        // v queue ostáva – nesie konkrétny dôvod + retry pre daný súbor.
+        if (successCount > 0) {
+          toast.success(portfolioPhotoUploadSuccessText(t, successCount));
           await refreshAfterSuccess();
+        }
+        if (results.some((ok) => !ok)) {
+          toast.error(t('portfolio.photoUploadFailed'));
         }
       })();
     },
@@ -325,7 +334,10 @@ export function usePortfolioImageUploadQueue({
       void (async () => {
         const success = await uploadOne(queueItem);
         if (success) {
+          toast.success(portfolioPhotoUploadSuccessText(t, 1));
           await refreshAfterSuccess();
+        } else {
+          toast.error(t('portfolio.photoUploadFailed'));
         }
       })();
     },

@@ -17,6 +17,7 @@ from swaply.rate_limiting import search_rate_limit
 
 from ..models import OfferedSkill
 from ..search_visibility import searchable_user_q
+from ..services.user_blocks import exclude_blocked_users
 from ..serializers import OfferedSkillSearchSerializer
 from .search_query_builders import capped_count
 from .dashboard_views.utils import (
@@ -132,6 +133,15 @@ def global_search_view(request):
     # Users search (public + active only)
     # =========================
     users_qs = User.objects.filter(searchable_user_q())
+    viewer_user_id = (
+        request.user.id
+        if getattr(request.user, "is_authenticated", False)
+        else None
+    )
+    users_qs = exclude_blocked_users(
+        users_qs,
+        viewer_user_id=viewer_user_id,
+    )
     if terms:
         uq = Q()
         for term in terms:
@@ -224,6 +234,11 @@ def global_search_view(request):
         ).order_by("-relevance_score", "-created_at")
         if request.user and request.user.is_authenticated:
             offers_qs = offers_qs.exclude(user_id=request.user.id)
+            offers_qs = exclude_blocked_users(
+                offers_qs,
+                viewer_user_id=request.user.id,
+                user_id_field="user_id",
+            )
         offers_count, offers_is_capped = capped_count(offers_qs)
         offers_total_pages = max(1, (offers_count + offers_page_size - 1) // offers_page_size)
         op = min(offers_page, offers_total_pages)

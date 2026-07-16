@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import toast from 'react-hot-toast';
 import { ArrowLeftIcon, EllipsisHorizontalIcon, HeartIcon, PencilSquareIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useIsMobile } from '@/hooks';
@@ -55,7 +56,6 @@ export default function PortfolioDetailModule({
   const [isEditing, setIsEditing] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [actionError, setActionError] = useState<string | null>(null);
   const [isActionsOpen, setIsActionsOpen] = useState(false);
   const pendingPollStartedAtRef = useRef<number | null>(null);
   const actionsMenuRef = useRef<HTMLDivElement | null>(null);
@@ -110,7 +110,6 @@ export default function PortfolioDetailModule({
     setIsEditing(false);
     setIsDeleteOpen(false);
     setIsActionsOpen(false);
-    setActionError(null);
     void loadItem();
   }, [loadItem]);
 
@@ -229,13 +228,11 @@ export default function PortfolioDetailModule({
 
   const handleEditClick = useCallback(() => {
     setIsEditing(true);
-    setActionError(null);
     setIsActionsOpen(false);
   }, []);
 
   const handleRequestDelete = useCallback(() => {
     setIsDeleteOpen(true);
-    setActionError(null);
     setIsActionsOpen(false);
   }, []);
 
@@ -243,37 +240,36 @@ export default function PortfolioDetailModule({
     requestSeqRef.current += 1;
     setItem(savedItem);
     setIsEditing(false);
-    setActionError(null);
   }, []);
 
   const handleMobileEditSaved = useCallback((savedItem: PortfolioItem) => {
     requestSeqRef.current += 1;
     setItem(savedItem);
-    setActionError(null);
   }, []);
 
   const handleDelete = useCallback(async () => {
     if (!item) return;
     setIsDeleting(true);
-    setActionError(null);
     setIsActionsOpen(false);
     try {
       await deletePortfolioItem(item.id);
       dispatchProfilePortfolioRefresh();
       setIsDeleteOpen(false);
+      toast.success(t('portfolio.deleteSuccess'));
       router.push(backPath);
     } catch (error) {
       const status = (error as { response?: { status?: number } })?.response?.status;
       if (status === 404) {
         // Položka už neexistuje (zmazaná v inom tabe/relácii) → cieľ je splnený,
-        // správaj sa ako pri úspešnom zmazaní namiesto mätúcej chyby.
+        // správaj sa ako pri úspešnom zmazaní (vrátane success toastu).
         dispatchProfilePortfolioRefresh();
         setIsDeleteOpen(false);
+        toast.success(t('portfolio.deleteSuccess'));
         router.push(backPath);
         return;
       }
       setIsDeleteOpen(false);
-      setActionError(t('portfolio.deleteFailed'));
+      toast.error(t('portfolio.deleteFailed'));
     } finally {
       setIsDeleting(false);
     }
@@ -285,7 +281,6 @@ export default function PortfolioDetailModule({
         item={item}
         onClose={() => {
           setIsEditing(false);
-          setActionError(null);
         }}
         onSaved={handleMobileEditSaved}
         onRefresh={() => loadItem({ preserveCurrent: true })}
@@ -392,17 +387,11 @@ export default function PortfolioDetailModule({
               </div>
             </div>
           )}
-          {actionError && (
-            <p className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700 dark:border-red-900/60 dark:bg-red-950/20 dark:text-red-300">
-              {actionError}
-            </p>
-          )}
           {isEditing ? (
             <PortfolioInlineEditPanel
               item={item}
               onCancel={() => {
                 setIsEditing(false);
-                setActionError(null);
               }}
               onSaved={handleSaved}
             />

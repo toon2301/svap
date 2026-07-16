@@ -124,6 +124,13 @@ export function portfolioPhotosRemainingText(t: Translator, count: number): stri
   return template.replace('{count}', String(count));
 }
 
+/** Súhrnná success hláška po nahratí dávky fotiek (pluralizácia podľa počtu). */
+export function portfolioPhotoUploadSuccessText(t: Translator, count: number): string {
+  return count === 1
+    ? t('portfolio.photoUploadSuccess_one')
+    : t('portfolio.photoUploadSuccess_other');
+}
+
 function firstErrorMessage(value: unknown): string | null {
   if (typeof value === 'string' && value.trim()) return value.trim();
   if (Array.isArray(value)) {

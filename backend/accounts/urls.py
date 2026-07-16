@@ -118,6 +118,16 @@ urlpatterns = [
         name="user_avatar_report",
     ),
     path(
+        "users/blocked/",
+        views.blocked_users_view,
+        name="blocked_users",
+    ),
+    path(
+        "users/<int:user_id>/block/",
+        views.user_block_detail_view,
+        name="user_block_detail",
+    ),
+    path(
         "dashboard/users/<int:user_id>/profile/",
         views.dashboard_user_profile_detail_view,
         name="dashboard_user_profile_detail",

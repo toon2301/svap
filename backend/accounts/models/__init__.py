@@ -30,6 +30,7 @@ from .skill_requests import (
 )
 from .notifications import Notification, NotificationType
 from .profile_likes import ProfileLike
+from .user_blocks import UserBlock
 from .reviews import OfferedSkillLike, Review, ReviewLike
 from .reports import FavoriteUser, PhotoReport, ReviewReport, UserReport
 
@@ -60,6 +61,7 @@ __all__ = [
     "Notification",
     "NotificationType",
     "ProfileLike",
+    "UserBlock",
     "Review",
     "ReviewLike",
     "OfferedSkillLike",

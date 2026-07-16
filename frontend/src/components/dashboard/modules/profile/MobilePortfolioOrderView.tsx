@@ -11,6 +11,7 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from 'react';
 import { createPortal } from 'react-dom';
+import toast from 'react-hot-toast';
 import { Bars3Icon, CheckIcon, PhotoIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useProtectedImage } from '../shared/useProtectedImage';
@@ -74,7 +75,6 @@ export function MobilePortfolioOrderView({ items, onSaved }: MobilePortfolioOrde
   const [draftItems, setDraftItems] = useState(items);
   const [draggedItemId, setDraggedItemId] = useState<number | null>(null);
   const [isSaving, setIsSaving] = useState(false);
-  const [actionError, setActionError] = useState<string | null>(null);
   const [portalNode, setPortalNode] = useState<HTMLElement | null>(null);
   const draggedItemIdRef = useRef<number | null>(null);
   const rowRefs = useRef(new Map<number, HTMLDivElement>());
@@ -173,7 +173,6 @@ export function MobilePortfolioOrderView({ items, onSaved }: MobilePortfolioOrde
     (itemId: number) => (event: ReactKeyboardEvent<HTMLButtonElement>) => {
       if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return;
       event.preventDefault();
-      setActionError(null);
       moveItemById(itemId, event.key === 'ArrowUp' ? -1 : 1);
     },
     [moveItemById],
@@ -181,7 +180,6 @@ export function MobilePortfolioOrderView({ items, onSaved }: MobilePortfolioOrde
 
   const handlePointerDown = useCallback(
     (itemId: number) => (event: ReactPointerEvent<HTMLDivElement>) => {
-      setActionError(null);
       draggedItemIdRef.current = itemId;
       setDraggedItemId(itemId);
       if (typeof event.currentTarget.setPointerCapture === 'function') {
@@ -218,12 +216,12 @@ export function MobilePortfolioOrderView({ items, onSaved }: MobilePortfolioOrde
     }
 
     setIsSaving(true);
-    setActionError(null);
     try {
       const orderedItems = await reorderPortfolioItems(draftItems.map((item) => item.id));
+      toast.success(t('portfolio.orderSaveSuccess'));
       onSaved(orderedItems.length > 0 ? orderedItems : draftItems);
     } catch {
-      setActionError(t('portfolio.orderSaveFailed'));
+      toast.error(t('portfolio.orderSaveFailed'));
     } finally {
       setIsSaving(false);
     }
@@ -281,11 +279,6 @@ export function MobilePortfolioOrderView({ items, onSaved }: MobilePortfolioOrde
         </button>
       </header>
 
-      {actionError && (
-        <p className="mx-4 mt-3 rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/20 dark:text-amber-200">
-          {actionError}
-        </p>
-      )}
 
       <div className="flex-1 overflow-y-auto px-4 py-3 pb-[calc(env(safe-area-inset-bottom)+1rem)]">
         <div className="space-y-2">

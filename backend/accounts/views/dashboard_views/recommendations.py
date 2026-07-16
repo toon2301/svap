@@ -11,6 +11,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from accounts.services.user_blocks import exclude_blocked_users
 from swaply.rate_limiting import api_rate_limit
 
 from ...models import DashboardSkillSearchProjection, OfferedSkill
@@ -410,6 +411,11 @@ def dashboard_recommendations_view(request):
             is_hidden=False,
             **searchable_projection_filters(),
         ).exclude(user_id=request.user.pk)
+        base_qs = exclude_blocked_users(
+            base_qs,
+            viewer_user_id=request.user.id,
+            user_id_field="user_id",
+        )
 
         ranked_qs = _ranked_recommendations_queryset(
             base_qs=base_qs,

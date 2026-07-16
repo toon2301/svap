@@ -13,6 +13,7 @@ from rest_framework.response import Response
 
 from ..models import OfferedSkill
 from ..search_visibility import searchable_user_q
+from ..services.user_blocks import exclude_blocked_users
 from ..serializers import OfferedSkillSearchSerializer
 from .dashboard_views.utils import (
     _build_accent_insensitive_pattern,
@@ -62,6 +63,11 @@ def search_view(request):
     )
     if request.user and request.user.is_authenticated:
         qs = qs.exclude(user_id=request.user.id)
+        qs = exclude_blocked_users(
+            qs,
+            viewer_user_id=request.user.id,
+            user_id_field="user_id",
+        )
 
     # q (max 100)
     q = (request.query_params.get("q") or "").strip()
