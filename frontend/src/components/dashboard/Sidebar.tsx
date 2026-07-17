@@ -293,7 +293,7 @@ export default function Sidebar({
         <div className="flex items-center justify-center py-1 border-b border-gray-200 dark:border-gray-800">
           <Image
             src="/svaply-logo-hero.png"
-            alt="Swaply"
+            alt="Svaply"
             width={1024}
             height={512}
             quality={80}

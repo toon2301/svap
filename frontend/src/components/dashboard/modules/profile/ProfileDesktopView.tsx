@@ -47,6 +47,7 @@ interface ProfileDesktopViewProps {
   isFavoritePending?: boolean;
   onToggleProfileLike?: () => void;
   isProfileLikePending?: boolean;
+  onBlockClick?: () => void;
   highlightedSkillId?: number | null;
   onEditOffer?: (offer: Offer) => void;
   onDeleteOffer?: (offer: Offer) => void;
@@ -81,6 +82,7 @@ export default function ProfileDesktopView({
   isFavoritePending = false,
   onToggleProfileLike,
   isProfileLikePending = false,
+  onBlockClick,
   highlightedSkillId,
   onEditOffer,
   onDeleteOffer,
@@ -173,6 +175,7 @@ export default function ProfileDesktopView({
           <ProfileDesktopHamburgerModal
             open={isHamburgerModalOpen}
             onClose={() => setIsHamburgerModalOpen(false)}
+            onBlockClick={onBlockClick}
             onReportClick={isOtherUserProfile ? () => setReportModalOpen(true) : undefined}
             onShareClick={() => setIsShareModalOpen(true)}
             isReported={reportedUserIds.has(displayUser.id)}

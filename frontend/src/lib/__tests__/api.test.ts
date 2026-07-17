@@ -205,7 +205,7 @@ describe('lib/api axios instance', () => {
     await fulfilled({
       status: 200,
       data: { ok: true },
-      headers: { 'x-swaply-access-expires-in': '900' },
+      headers: { 'x-svaply-access-expires-in': '900' },
       config: { url: '/auth/me/', method: 'get' },
     });
 
@@ -223,7 +223,7 @@ describe('lib/api axios instance', () => {
     await fulfilled({
       status: 200,
       data: { ok: true },
-      headers: { 'x-swaply-access-expires-in': '1' },
+      headers: { 'x-svaply-access-expires-in': '1' },
       config: { url: '/auth/me/', method: 'get' },
     });
 
@@ -233,7 +233,7 @@ describe('lib/api axios instance', () => {
 
     const postSpy = jest.spyOn(axios as any, 'post').mockResolvedValueOnce({
       status: 200,
-      headers: { 'x-swaply-access-expires-in': '900' },
+      headers: { 'x-svaply-access-expires-in': '900' },
     } as any);
 
     await expect(

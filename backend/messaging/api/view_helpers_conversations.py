@@ -25,6 +25,7 @@ from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404
 
 from accounts.models import OfferedSkill
+from accounts.services.user_blocks import user_block_exists_between
 from ..models import Conversation, ConversationParticipant, Message
 from ..services.conversations import SelfConversationNotAllowed, find_direct_conversation
 from .serializers import ConversationListItemSerializer, MessageSerializer
@@ -149,6 +150,11 @@ def _has_requestable_offers_for_user_id(user_id: int | None) -> bool:
 def _can_open_direct_target(*, actor, target) -> bool:
     if getattr(actor, "id", None) == getattr(target, "id", None):
         return True
+    if user_block_exists_between(
+        first_user_id=getattr(actor, "id", None),
+        second_user_id=getattr(target, "id", None),
+    ):
+        return False
     if getattr(target, "is_staff", False) or getattr(target, "is_superuser", False):
         return False
     if getattr(target, "is_public", False):

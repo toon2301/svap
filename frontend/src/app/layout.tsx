@@ -16,10 +16,10 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Swaply - Výmenná platforma zručností",
+  title: "Svaply - Výmenná platforma zručností",
   description: "Vymeň si zručnosti s ostatnými. Nauč sa niečo nové a nauč ostatných svoje zručnosti.",
   keywords: ["zručnosti", "výmena", "vzdelávanie", "mentoring", "učenie"],
-  authors: [{ name: "Swaply Team" }],
+  authors: [{ name: "Svaply Team" }],
   robots: "index, follow",
   icons: {
     icon: [{ url: "/favicon.png?v=20260402", type: "image/png", sizes: "any" }],
@@ -27,14 +27,14 @@ export const metadata: Metadata = {
     apple: "/favicon.png?v=20260402",
   },
   openGraph: {
-    title: "Swaply - Výmenná platforma zručností",
+    title: "Svaply - Výmenná platforma zručností",
     description: "Vymeň si zručnosti s ostatnými. Nauč sa niečo nové a nauč ostatných svoje zručnosti.",
     type: "website",
     locale: "sk_SK",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Swaply - Výmenná platforma zručností",
+    title: "Svaply - Výmenná platforma zručností",
     description: "Vymeň si zručnosti s ostatnými. Nauč sa niečo nové a nauč ostatných svoje zručnosti.",
   },
 };
@@ -64,7 +64,7 @@ export default function RootLayout({
         <meta name="theme-color" content="#9333EA" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <meta name="apple-mobile-web-app-title" content="Swaply" />
+        <meta name="apple-mobile-web-app-title" content="Svaply" />
         
         {/* Accessibility meta tagy */}
         <meta name="color-scheme" content="light dark" />
@@ -73,7 +73,7 @@ export default function RootLayout({
         {/* Performance a SEO */}
         <meta name="format-detection" content="telephone=no, email=no" />
         <meta name="mobile-web-app-capable" content="yes" />
-        <meta name="application-name" content="Swaply" />
+        <meta name="application-name" content="Svaply" />
         
         {/* Force zoom reset for email links */}
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />

@@ -49,12 +49,12 @@ describe('VerifyEmailSection', () => {
   });
 
   it('is hidden for an already verified account and clears persisted state', () => {
-    window.localStorage.setItem('swaply:verify-email-sent:1', String(Date.now()));
+    window.localStorage.setItem('svaply:verify-email-sent:1', String(Date.now()));
 
     render(<VerifyEmailSection user={makeUser({ is_verified: true })} />);
 
     expect(screen.queryByTestId('verify-email-section')).not.toBeInTheDocument();
-    expect(window.localStorage.getItem('swaply:verify-email-sent:1')).toBeNull();
+    expect(window.localStorage.getItem('svaply:verify-email-sent:1')).toBeNull();
   });
 
   it('sends the verification email and shows the "check your email" message', async () => {
@@ -69,13 +69,13 @@ describe('VerifyEmailSection', () => {
     });
     expect(screen.queryByRole('button', { name: 'Overiť email' })).not.toBeInTheDocument();
     // Persistované do localStorage (per user).
-    expect(window.localStorage.getItem('swaply:verify-email-sent:1')).not.toBeNull();
+    expect(window.localStorage.getItem('svaply:verify-email-sent:1')).not.toBeNull();
   });
 
   it('keeps the "check your email" state after remount (persisted, within TTL)', () => {
     // Simuluj nedávne odoslanie (pred navigáciou preč) → po opätovnom mounte
     // sa má zobraziť hláška, nie pôvodné tlačidlo.
-    window.localStorage.setItem('swaply:verify-email-sent:1', String(Date.now() - 5000));
+    window.localStorage.setItem('svaply:verify-email-sent:1', String(Date.now() - 5000));
 
     render(<VerifyEmailSection user={makeUser()} />);
 
@@ -87,7 +87,7 @@ describe('VerifyEmailSection', () => {
   it('reverts to the initial button after the 10-minute TTL expires', () => {
     // Starší než TTL (10 min) → loader ho vyčistí a zobrazí pôvodné tlačidlo.
     window.localStorage.setItem(
-      'swaply:verify-email-sent:1',
+      'svaply:verify-email-sent:1',
       String(Date.now() - 11 * 60 * 1000),
     );
 
@@ -95,14 +95,14 @@ describe('VerifyEmailSection', () => {
 
     expect(screen.queryByTestId('verify-email-sent')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Overiť email' })).toBeInTheDocument();
-    expect(window.localStorage.getItem('swaply:verify-email-sent:1')).toBeNull();
+    expect(window.localStorage.getItem('svaply:verify-email-sent:1')).toBeNull();
   });
 
   it('disables resend during the 60s cooldown and enables it afterwards', () => {
     jest.useFakeTimers();
     try {
       // Odoslané pred 5 s → cooldown beží, tlačidlo je zablokované s countdownom.
-      window.localStorage.setItem('swaply:verify-email-sent:1', String(Date.now() - 5000));
+      window.localStorage.setItem('svaply:verify-email-sent:1', String(Date.now() - 5000));
       render(<VerifyEmailSection user={makeUser()} />);
 
       const resend = screen.getByTestId('verify-email-resend');
@@ -132,6 +132,6 @@ describe('VerifyEmailSection', () => {
       expect(toast.error).toHaveBeenCalled();
     });
     expect(screen.getByRole('button', { name: 'Overiť email' })).toBeInTheDocument();
-    expect(window.localStorage.getItem('swaply:verify-email-sent:1')).toBeNull();
+    expect(window.localStorage.getItem('svaply:verify-email-sent:1')).toBeNull();
   });
 });

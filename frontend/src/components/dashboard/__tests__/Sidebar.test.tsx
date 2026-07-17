@@ -159,11 +159,11 @@ describe('Sidebar', () => {
     expect(screen.getByText('Odhlásiť sa')).toBeInTheDocument();
   });
 
-  it('shows Swaply logo', () => {
+  it('shows Svaply logo', () => {
     render(<ThemeProvider><Sidebar {...defaultProps} onLogout={() => {}} /></ThemeProvider>);
-    
+
     // Logo je obrázok s alt tagom
-    expect(screen.getByAltText('Swaply')).toBeInTheDocument();
+    expect(screen.getByAltText('Svaply')).toBeInTheDocument();
   });
   it('routes to messages when the messages item is clicked', () => {
     render(<ThemeProvider><Sidebar {...defaultProps} onLogout={() => {}} /></ThemeProvider>);

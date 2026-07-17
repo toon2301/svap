@@ -108,7 +108,7 @@ class TestEmailVerificationModel(TestCase):
 
         # Skontroluj argumenty
         call_args = mock_send_mail.call_args
-        self.assertIn("Potvrdenie registrácie - Swaply", call_args[1]["subject"])
+        self.assertIn("Potvrdenie registrácie - Svaply", call_args[1]["subject"])
         self.assertIn(self.user.email, call_args[1]["recipient_list"])
         self.assertIn(str(verification.token), call_args[1]["message"])
 

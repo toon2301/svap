@@ -68,8 +68,8 @@ let redirectedAfterInvalidation = false;
 let refreshAbortController: AbortController | null = null;
 const REFRESH_HINT_STORAGE_KEY = '__svaply_refresh_hint__';
 const ACCESS_EXPIRY_STORAGE_KEY = '__svaply_access_expiry__';
-const ACCESS_EXPIRY_HEADER = 'x-swaply-access-expires-at';
-const ACCESS_EXPIRY_IN_HEADER = 'x-swaply-access-expires-in';
+const ACCESS_EXPIRY_HEADER = 'x-svaply-access-expires-at';
+const ACCESS_EXPIRY_IN_HEADER = 'x-svaply-access-expires-in';
 const BACKGROUND_REFRESH_SKEW_MS = 30_000;
 
 function readAccessExpiryHint(): number | null {
@@ -812,6 +812,7 @@ export const endpoints = {
   users: {
     report: (userId: number) => `/auth/users/${userId}/report/`,
     reportAvatar: (userId: number) => `/auth/users/${userId}/avatar/report/`,
+    block: (userId: number) => `/auth/users/${userId}/block/`,
   },
   // Verejné vyhľadávanie (OfferedSkill)
   search: '/auth/search/',

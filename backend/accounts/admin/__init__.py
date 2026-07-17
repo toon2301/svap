@@ -19,6 +19,6 @@ from . import (  # noqa: F401 — importované kvôli vedľajšiemu efektu (regi
     webpush,
 )
 
-admin.site.site_header = "Swaply Admin"
-admin.site.site_title = "Swaply Admin"
-admin.site.index_title = "Sprava Swaply"
+admin.site.site_header = "Svaply Admin"
+admin.site.site_title = "Svaply Admin"
+admin.site.index_title = "Sprava Svaply"

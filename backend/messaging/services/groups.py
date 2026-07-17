@@ -9,6 +9,8 @@ from django.contrib.auth import get_user_model
 from django.db import transaction
 from django.utils import timezone
 
+from accounts.services.user_blocks import exclude_blocked_users
+
 from ..models import Conversation, ConversationParticipant, GroupInvitation
 from .group_common import (  # noqa: F401  (re-export verejného API)
     MAX_GROUP_PARTICIPANTS,
@@ -55,15 +57,20 @@ def create_group_conversation(
     if len(unique_invited_ids) + 1 > MAX_GROUP_PARTICIPANTS:
         raise GroupLimitExceeded("Group cannot have more than 50 participants.")
 
+    invited_users = User.objects.filter(
+        id__in=unique_invited_ids,
+        is_active=True,
+        is_public=True,
+        is_staff=False,
+        is_superuser=False,
+    )
+    invited_users = exclude_blocked_users(
+        invited_users,
+        viewer_user_id=actor.id,
+    )
     users_by_id = {
         user.id: user
-        for user in User.objects.filter(
-            id__in=unique_invited_ids,
-            is_active=True,
-            is_public=True,
-            is_staff=False,
-            is_superuser=False,
-        )
+        for user in invited_users
     }
 
     with transaction.atomic():

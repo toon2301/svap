@@ -200,7 +200,7 @@ export default function ModuleRouter({
       return (
         <div className="text-center py-20" data-onboarding="home-content">
           <h2 className="text-2xl font-semibold text-gray-600 dark:text-gray-400 mb-4">
-            {t('dashboard.welcomeToSwaply', 'Vitaj v Swaply!')}
+            {t('dashboard.welcomeToSwaply', 'Vitaj v Svaply!')}
           </h2>
           <p className="text-gray-500 dark:text-gray-500">
             {t('dashboard.selectSection', 'Vyber si sekciu z navigácie pre pokračovanie.')}
@@ -222,6 +222,7 @@ export default function ModuleRouter({
       return (
         <SearchUserProfileModule
           userId={viewedUserId}
+          currentUserId={user.id}
           initialSummary={viewedUserSummary ?? undefined}
           initialTab={initialProfileTab}
           highlightedSkillId={highlightedSkillId ?? null}
@@ -367,7 +368,7 @@ export default function ModuleRouter({
       return (
         <div className="text-center py-20">
           <h2 className="text-2xl font-semibold text-gray-600 mb-4">
-            {t('dashboard.welcomeToSwaply', 'Vitaj v Swaply!')}
+            {t('dashboard.welcomeToSwaply', 'Vitaj v Svaply!')}
           </h2>
           <p className="text-gray-500">
             {t('dashboard.selectSection', 'Vyber si sekciu z navigácie pre pokračovanie.')}

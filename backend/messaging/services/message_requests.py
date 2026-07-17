@@ -29,6 +29,35 @@ class MessageRequestMutationResult:
     total_unseen_count: int
 
 
+def close_pending_message_request_for_user_pair(
+    *, first_user_id: int, second_user_id: int
+) -> int:
+    """Close pending direct requests after a block without deleting history.
+
+    The caller must hold both user rows in stable order. This keeps block and
+    direct-message writes serialized without introducing a lock inversion.
+    """
+    if first_user_id == second_user_id:
+        return 0
+
+    now = timezone.now()
+    return int(
+        Conversation.objects.filter(
+            is_group=False,
+            request_status=Conversation.RequestStatus.PENDING,
+        )
+        .filter(
+            Q(requested_by_id=first_user_id, requested_to_id=second_user_id)
+            | Q(requested_by_id=second_user_id, requested_to_id=first_user_id)
+        )
+        .update(
+            request_status=Conversation.RequestStatus.DELETED,
+            request_seen_at=now,
+            updated_at=now,
+        )
+    )
+
+
 def is_pending_message_request(conversation: Conversation) -> bool:
     return (
         not conversation.is_group
@@ -75,7 +104,27 @@ def prepare_pending_request_for_message(
 def accept_message_request(
     *, conversation: Conversation, user
 ) -> MessageRequestMutationResult:
+    requested_by_id = conversation.requested_by_id
+    requested_to_id = conversation.requested_to_id
+    if not requested_by_id or not requested_to_id:
+        raise MessageRequestActionNotAllowed("Message request cannot be accepted.")
+
     with transaction.atomic():
+        from accounts.services.user_blocks import (
+            BlockedUserInteractionError,
+            lock_users_and_ensure_interaction_allowed,
+        )
+
+        try:
+            lock_users_and_ensure_interaction_allowed(
+                first_user_id=requested_by_id,
+                second_user_id=requested_to_id,
+            )
+        except BlockedUserInteractionError as exc:
+            raise MessageRequestActionNotAllowed(
+                "Message request cannot be accepted."
+            ) from exc
+
         convo = (
             Conversation.objects.select_for_update().filter(id=conversation.id).first()
         )

@@ -4,6 +4,8 @@ from dataclasses import dataclass
 
 from django.contrib.auth import get_user_model
 
+from accounts.services.user_blocks import BlockedUserInteractionError
+
 from ..models import Message
 from .conversations import (
     SelfConversationNotAllowed,
@@ -104,7 +106,7 @@ def send_offer_share_to_recipients(
                 message_type=Message.Type.OFFER_SHARE,
                 metadata=metadata,
             )
-        except SelfConversationNotAllowed:
+        except (SelfConversationNotAllowed, BlockedUserInteractionError):
             failed.append(
                 FailedOfferShareRecipient(
                     user_id=user_id, code="recipient_unavailable"

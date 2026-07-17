@@ -12,6 +12,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from accounts.models import FavoriteUser
+from accounts.services.user_blocks import exclude_blocked_users
 from swaply.rate_limiting import api_rate_limit
 
 from ..models import Conversation, ConversationParticipant
@@ -104,6 +105,7 @@ def _candidate_queryset_for_search(*, query: str, current_user_id: int, excluded
         .exclude(is_staff=True)
         .exclude(is_superuser=True)
     )
+    qs = exclude_blocked_users(qs, viewer_user_id=current_user_id)
 
     for term in query.split(" "):
         qs = qs.filter(
@@ -124,15 +126,17 @@ def _candidate_queryset_for_suggestions(*, user, excluded_ids: set[int]):
     if not candidate_ids:
         return []
 
+    candidates = User.objects.filter(
+        id__in=candidate_ids,
+        is_active=True,
+        is_public=True,
+        is_staff=False,
+        is_superuser=False,
+    )
+    candidates = exclude_blocked_users(candidates, viewer_user_id=user.id)
     users_by_id = {
         candidate.id: candidate
-        for candidate in User.objects.filter(
-            id__in=candidate_ids,
-            is_active=True,
-            is_public=True,
-            is_staff=False,
-            is_superuser=False,
-        ).only(
+        for candidate in candidates.only(
             "id",
             "first_name",
             "last_name",

@@ -123,7 +123,13 @@ export default function MobileTopBar({
 
   return (
     <div className="lg:hidden fixed top-0 left-0 right-0 z-30 bg-white dark:bg-black border-b border-gray-200 dark:border-gray-800 shadow-sm">
-      <div className="grid h-12 grid-cols-[2.5rem_minmax(0,1fr)_2.5rem] items-center px-3 py-0">
+      <div
+        className={`grid h-12 items-center px-3 py-0 ${
+          activeModule === 'requests'
+            ? 'grid-cols-[minmax(0,1fr)_0_auto] gap-2'
+            : 'grid-cols-[2.5rem_minmax(0,1fr)_2.5rem]'
+        }`}
+      >
         {/* Ľavá strana - Žiadosti (nadpis) alebo Šipka späť alebo prázdne */}
         <div className="flex items-center h-full justify-start">
           {activeModule === 'messages' && isMessageConversationOpen ? (
@@ -138,7 +144,7 @@ export default function MobileTopBar({
               </svg>
             </button>
           ) : activeModule === 'messages' && !isMessageConversationOpen ? null : activeModule === 'requests' ? (
-            <h1 className="text-base font-semibold text-gray-900 dark:text-white truncate">
+            <h1 className="whitespace-nowrap text-base font-semibold text-gray-900 dark:text-white">
               {t('requests.title', 'Spolupráce')}
             </h1>
           ) : (isEditMode || activeRightItem === 'language' || activeRightItem === 'account-type' || activeRightItem === 'account-settings' || activeRightItem === 'privacy' || activeModule === 'account-type' || activeModule === 'account-settings' || activeModule === 'privacy' || activeModule === 'notification-settings' || activeModule === 'skills' || activeModule === 'skills-offer' || activeModule === 'skills-search' || activeModule === 'skills-select-category' || activeModule === 'user-profile' || activeModule === 'offer-reviews' || activeModule === 'favorites' || activeModule === 'portfolio-detail') ? (

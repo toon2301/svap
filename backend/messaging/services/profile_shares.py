@@ -4,6 +4,8 @@ from dataclasses import dataclass
 
 from django.contrib.auth import get_user_model
 
+from accounts.services.user_blocks import BlockedUserInteractionError
+
 from ..models import Message
 from .conversations import (
     SelfConversationNotAllowed,
@@ -114,7 +116,7 @@ def send_profile_share_to_recipients(
                 message_type=Message.Type.PROFILE_SHARE,
                 metadata=metadata,
             )
-        except SelfConversationNotAllowed:
+        except (SelfConversationNotAllowed, BlockedUserInteractionError):
             failed.append(
                 FailedProfileShareRecipient(
                     user_id=user_id, code="recipient_unavailable"

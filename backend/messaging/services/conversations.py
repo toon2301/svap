@@ -7,6 +7,10 @@ from django.db import transaction
 from django.db.models import Count
 from django.utils import timezone
 
+from accounts.services.user_blocks import (
+    lock_users_and_ensure_interaction_allowed,
+)
+
 from ..models import Conversation, ConversationParticipant, Message
 from .message_requests import prepare_pending_request_for_message
 from .messages import _persist_message
@@ -34,21 +38,6 @@ class StartDirectMessageResult:
     created_conversation: bool
     message: Message
     recipient_user_ids: tuple[int, ...]
-
-
-def _lock_users_for_direct_conversation(*, user_a_id: int, user_b_id: int) -> None:
-    """
-    Transaction-scoped lock to prevent duplicate 1:1 conversations under race.
-
-    We lock user rows in a stable order to avoid deadlocks.
-    """
-    low, high = sorted([int(user_a_id), int(user_b_id)])
-    list(
-        User.objects.select_for_update()
-        .filter(id__in=[low, high])
-        .order_by("id")
-        .values_list("id", flat=True)
-    )
 
 
 def _direct_conversation_queryset_for_pair(
@@ -104,7 +93,10 @@ def open_or_create_direct_conversation(
         raise SelfConversationNotAllowed("Cannot open a conversation with self.")
 
     with transaction.atomic():
-        _lock_users_for_direct_conversation(user_a_id=actor.id, user_b_id=target.id)
+        lock_users_and_ensure_interaction_allowed(
+            first_user_id=actor.id,
+            second_user_id=target.id,
+        )
         existing = find_direct_conversation(
             actor=actor, target=target, require_started=False
         )
@@ -154,7 +146,10 @@ def send_direct_message(
 
     now = timezone.now()
     with transaction.atomic():
-        _lock_users_for_direct_conversation(user_a_id=actor.id, user_b_id=target.id)
+        lock_users_and_ensure_interaction_allowed(
+            first_user_id=actor.id,
+            second_user_id=target.id,
+        )
 
         convo = find_direct_conversation(
             actor=actor, target=target, require_started=False

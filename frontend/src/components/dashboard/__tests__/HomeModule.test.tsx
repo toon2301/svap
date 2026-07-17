@@ -28,7 +28,7 @@ describe('HomeModule', () => {
   it('renders welcome message with user name', () => {
     render(<HomeModule user={mockUser} />);
     
-    expect(screen.getByText('Vitaj v Swaply!')).toBeInTheDocument();
+    expect(screen.getByText('Vitaj v Svaply!')).toBeInTheDocument();
     expect(screen.getByText(/Toto je tvoj osobný dashboard/)).toBeInTheDocument();
   });
 

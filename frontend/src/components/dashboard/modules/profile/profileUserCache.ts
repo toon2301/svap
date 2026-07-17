@@ -63,6 +63,20 @@ export const patchUserProfileInCache = (
   return next;
 };
 
+export const invalidateUserProfileCache = (userId: number): void => {
+  const entry = userProfileCache.get(userId);
+  if (entry?.user?.slug) {
+    slugToUserIdCache.delete(entry.user.slug);
+  }
+
+  userProfileCache.delete(userId);
+  slugToUserIdCache.forEach((mappedUserId, slug) => {
+    if (mappedUserId === userId) {
+      slugToUserIdCache.delete(slug);
+    }
+  });
+};
+
 export const getUserIdBySlug = (slug: string): number | undefined => {
   return slugToUserIdCache.get(slug);
 };

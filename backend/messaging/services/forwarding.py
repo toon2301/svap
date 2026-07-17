@@ -7,6 +7,8 @@ from django.contrib.auth import get_user_model
 from django.core.files.base import ContentFile
 from django.db import transaction
 
+from accounts.services.user_blocks import BlockedUserInteractionError
+
 from ..models import Message
 from .conversations import (
     SelfConversationNotAllowed,
@@ -175,7 +177,7 @@ def forward_message_to_recipients(
                         image_payload=image_payload,
                     )
                 )
-        except SelfConversationNotAllowed:
+        except (SelfConversationNotAllowed, BlockedUserInteractionError):
             failed.append(FailedForwardRecipient(user_id=user_id, code="recipient_unavailable"))
         except MessageRequestLimitExceeded:
             failed.append(FailedForwardRecipient(user_id=user_id, code="message_request_pending"))

@@ -57,6 +57,7 @@ interface ProfileMobileViewProps {
   isFavoritePending?: boolean;
   onToggleProfileLike?: () => void;
   isProfileLikePending?: boolean;
+  onBlockClick?: () => void;
   highlightedSkillId?: number | null;
   onEditOffer?: (offer: Offer) => void;
   onDeleteOffer?: (offer: Offer) => void;
@@ -96,6 +97,7 @@ export default function ProfileMobileView({
   isFavoritePending = false,
   onToggleProfileLike,
   isProfileLikePending = false,
+  onBlockClick,
   highlightedSkillId,
   onEditOffer,
   onDeleteOffer,
@@ -666,6 +668,7 @@ export default function ProfileMobileView({
             isOpen={isHamburgerModalOpen}
             mounted={mounted}
             onClose={() => setIsHamburgerModalOpen(false)}
+            onBlockClick={onBlockClick}
             onReportClick={() => setReportModalOpen(true)}
             onShareClick={() => setIsShareModalOpen(true)}
             isReported={reportedUserIds.has(displayUser.id)}
