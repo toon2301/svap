@@ -8,6 +8,10 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from accounts.services.user_blocks import (
+    BlockedUserInteractionError,
+    exclude_blocked_users,
+)
 from swaply.rate_limiting import messaging_send_rate_limit
 from ..services.profile_shares import (
     MAX_PROFILE_SHARE_RECIPIENTS,
@@ -43,7 +47,7 @@ class ProfileShareSendView(APIView):
     def post(self, request):
         serializer = ProfileShareSendSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        shared_user = get_object_or_404(
+        shared_users = (
             User.objects.filter(
                 id=serializer.validated_data["shared_user_id"],
                 is_active=True,
@@ -51,14 +55,25 @@ class ProfileShareSendView(APIView):
             )
             .exclude(is_staff=True)
             .exclude(is_superuser=True)
-            .only("id", "is_active", "is_public", "is_staff", "is_superuser")
+        )
+        shared_user = get_object_or_404(
+            exclude_blocked_users(
+                shared_users,
+                viewer_user_id=request.user.id,
+            ).only("id", "is_active", "is_public", "is_staff", "is_superuser")
         )
 
-        result = send_profile_share_to_recipients(
-            actor=request.user,
-            shared_user=shared_user,
-            recipient_user_ids=serializer.validated_data["recipient_user_ids"],
-        )
+        try:
+            result = send_profile_share_to_recipients(
+                actor=request.user,
+                shared_user=shared_user,
+                recipient_user_ids=serializer.validated_data["recipient_user_ids"],
+            )
+        except BlockedUserInteractionError:
+            return Response(
+                {"detail": "Not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
 
         sent = []
         for delivery in result.sent:

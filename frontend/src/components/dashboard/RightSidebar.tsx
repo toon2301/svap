@@ -9,6 +9,7 @@ import {
   UserGroupIcon,
   LockClosedIcon,
   KeyIcon,
+  NoSymbolIcon,
   XMarkIcon
 } from '@heroicons/react/24/outline';
 
@@ -41,6 +42,11 @@ const rightSidebarItems: RightSidebarItem[] = [
     id: 'language',
     label: 'Jazyk',
     icon: LanguageIcon,
+  },
+  {
+    id: 'blocked-users',
+    label: 'Blokované',
+    icon: NoSymbolIcon,
   },
   {
     id: 'account-type',
@@ -134,7 +140,7 @@ export default function RightSidebar({
             {t('rightSidebar.appSettings', 'Nastavenia aplikácie')}
           </h3>
           <div className="space-y-2">
-            {rightSidebarItems.filter(item => item.id === 'language').map((item) => {
+            {rightSidebarItems.filter(item => item.id === 'language' || item.id === 'blocked-users').map((item) => {
               const Icon = item.icon;
               const isActive = activeItem === item.id;
               
@@ -149,7 +155,9 @@ export default function RightSidebar({
                   }`}
                 >
                   <Icon className={`w-5 h-5 mr-3 ${isActive ? 'text-purple-600' : 'text-gray-500 dark:text-gray-400'}`} />
-                  {t('rightSidebar.language', item.label)}
+                  {item.id === 'blocked-users'
+                    ? t('rightSidebar.blocked', item.label)
+                    : t('rightSidebar.language', item.label)}
                 </button>
               );
             })}

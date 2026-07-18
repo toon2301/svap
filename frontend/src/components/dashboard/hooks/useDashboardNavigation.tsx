@@ -96,6 +96,8 @@ export function useDashboardNavigation({
       url = '/dashboard/settings/notifications';
     } else if (moduleId === 'account-settings') {
       url = '/dashboard/settings/account';
+    } else if (moduleId === 'blocked-users') {
+      url = '/dashboard/settings/blocked';
     } else if (moduleId === 'language') {
       url = '/dashboard/language';
     } else if (moduleId === 'account-type') {

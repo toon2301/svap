@@ -3,6 +3,7 @@
 import React from 'react';
 import toast from 'react-hot-toast';
 import { ConversationDetail } from './ConversationDetail';
+import { blockUser } from '../userBlocksApi';
 import { resolveMessagingImageUrl } from './resolveMessagingImageUrl';
 import {
   deleteMessage,
@@ -83,6 +84,11 @@ jest.mock('../profile/ReportUserModal', () => ({
   __esModule: true,
   ReportUserModal: ({ open, userId }: { open: boolean; userId: number }) =>
     open ? <div data-testid="report-user-modal" data-user-id={userId} /> : null,
+}));
+
+jest.mock('../userBlocksApi', () => ({
+  __esModule: true,
+  blockUser: jest.fn(),
 }));
 
 jest.mock('./messagingApi', () => ({
@@ -271,6 +277,7 @@ export const { useIsMobile } = jest.requireMock('@/hooks') as {
 
 export {
   ConversationDetail,
+  blockUser,
   resolveMessagingImageUrl,
   deleteMessage,
   forwardMessage,
@@ -369,6 +376,11 @@ export function setupConversationDetailTestDefaults() {
       }),
     );
     (listGroupMemberCandidates as jest.Mock).mockResolvedValue([]);
+    (blockUser as jest.Mock).mockResolvedValue({
+      user_id: 77,
+      is_blocked: true,
+      created: true,
+    });
     (markConversationRead as jest.Mock).mockResolvedValue({
       conversation_id: 9,
       last_read_at: null,

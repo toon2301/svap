@@ -4,7 +4,10 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useMessagesNotifications } from '@/components/dashboard/contexts/RequestsNotificationsContext';
 import { useIsMobile } from '@/hooks';
+import { BlockUserConfirmDialog } from '../profile/BlockUserConfirmDialog';
 import { ReportUserModal } from '../profile/ReportUserModal';
+import { useBlockUserAction } from '../profile/useBlockUserAction';
+import { BlockedConversationNotice } from './BlockedConversationNotice';
 import { ConversationComposerSection } from './ConversationComposerSection';
 import { ConversationDetailHeader } from './ConversationDetailHeader';
 import { messagingUserName } from './messagingUserName';
@@ -81,15 +84,6 @@ export function ConversationDetail({
   const isMessageRequestRecipient =
     isPendingMessageRequest && thread.otherConversation?.message_request_role === 'recipient';
 
-  const composer = useConversationComposerController({
-    conversationId,
-    isMobile,
-    loading: thread.loading,
-    disabled: isCurrentUserInvitedGroup,
-    t,
-    refresh: thread.refresh,
-  });
-
   const actions = useConversationActionsController({
     conversationId,
     currentUserId,
@@ -116,8 +110,34 @@ export function ConversationDetail({
   const targetUserType = isGroupConversation ? null : thread.otherConversation?.other_user?.user_type ?? null;
   const isTargetDeleted =
     !isGroupConversation && thread.otherConversation?.other_user?.is_deleted === true;
+  const isBlockedByMe =
+    !isGroupConversation && thread.otherConversation?.is_blocked_by_me === true;
   const canCreateRequestFromOffer =
-    targetUserId !== null && thread.otherConversation?.has_requestable_offers === true;
+    targetUserId !== null &&
+    !isBlockedByMe &&
+    thread.otherConversation?.has_requestable_offers === true;
+  const closeConversationActions = actions.closeConversationActions;
+  const refreshConversation = thread.refresh;
+
+  const handleBlocked = useCallback(() => {
+    closeConversationActions();
+    void refreshConversation({ showError: false, syncConversations: true }).catch(() => undefined);
+    requestConversationsRefresh();
+  }, [closeConversationActions, refreshConversation]);
+
+  const blockAction = useBlockUserAction({
+    targetUserId: targetUserId ?? 0,
+    onBlocked: handleBlocked,
+  });
+
+  const composer = useConversationComposerController({
+    conversationId,
+    isMobile,
+    loading: thread.loading,
+    disabled: isCurrentUserInvitedGroup || isBlockedByMe || blockAction.isBlocking,
+    t,
+    refresh: thread.refresh,
+  });
 
   useConversationRealtimeSync({
     conversationId,
@@ -388,14 +408,18 @@ export function ConversationDetail({
         busyInvitationId={busyInvitationId}
       />
 
-      <ConversationComposerSection
-        isMobile={isMobile}
-        imageInputRef={composer.imageInputRef}
-        cameraInputRef={composer.cameraInputRef}
-        onPendingImageInputChange={composer.handlePendingImageInputChange}
-        mobileComposerProps={mobileComposerProps}
-        desktopComposerProps={desktopComposerProps}
-      />
+      {isBlockedByMe ? (
+        <BlockedConversationNotice />
+      ) : (
+        <ConversationComposerSection
+          isMobile={isMobile}
+          imageInputRef={composer.imageInputRef}
+          cameraInputRef={composer.cameraInputRef}
+          onPendingImageInputChange={composer.handlePendingImageInputChange}
+          mobileComposerProps={mobileComposerProps}
+          desktopComposerProps={desktopComposerProps}
+        />
+      )}
 
       <ConversationDetailOverlays
         isMobile={isMobile}
@@ -436,6 +460,14 @@ export function ConversationDetail({
               }
             : undefined
         }
+        onBlockUser={
+          !isGroupConversation && targetUserId !== null && !isTargetDeleted && !isBlockedByMe
+            ? () => {
+                actions.closeConversationActions();
+                blockAction.openConfirm();
+              }
+            : undefined
+        }
         onReportUser={
           isMobile && !isGroupConversation && targetUserId !== null
             ? () => {
@@ -452,6 +484,14 @@ export function ConversationDetail({
         onCloseDeleteMessageModal={actions.closeDeleteMessageModal}
         onConfirmDeleteMessage={() => {
           void actions.handleDeleteMessage();
+        }}
+      />
+      <BlockUserConfirmDialog
+        open={blockAction.isConfirmOpen}
+        isBlocking={blockAction.isBlocking}
+        onClose={blockAction.closeConfirm}
+        onConfirm={() => {
+          void blockAction.confirmBlock();
         }}
       />
       {targetUserId !== null ? (

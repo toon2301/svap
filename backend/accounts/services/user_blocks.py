@@ -105,10 +105,15 @@ def create_user_block(*, blocker, blocked_user) -> tuple[UserBlock, bool]:
 
 def delete_user_block(*, blocker, blocked_user_id: int) -> bool:
     """Delete only the caller's outgoing block and report whether it existed."""
-    deleted_count, _ = UserBlock.objects.filter(
-        blocker=blocker,
-        blocked_user_id=blocked_user_id,
-    ).delete()
+    with transaction.atomic():
+        lock_user_pair_for_update(
+            first_user_id=blocker.pk,
+            second_user_id=blocked_user_id,
+        )
+        deleted_count, _ = UserBlock.objects.filter(
+            blocker=blocker,
+            blocked_user_id=blocked_user_id,
+        ).delete()
     return deleted_count > 0
 
 

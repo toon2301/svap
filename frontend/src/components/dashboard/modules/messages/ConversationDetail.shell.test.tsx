@@ -12,6 +12,7 @@ import {
   MESSAGING_REALTIME_PINNED_MESSAGE_EVENT,
   MESSAGING_REALTIME_READ_EVENT,
   clipboardWriteTextMock,
+  blockUser,
   deferred,
   deleteMessage,
   execCommandMock,
@@ -251,9 +252,85 @@ describe('ConversationDetail shell and conversation actions', () => {
 
     expect(await screen.findByTestId('conversation-actions-menu')).toBeInTheDocument();
     expect(screen.getByTestId('conversation-delete-action')).toBeInTheDocument();
+    expect(screen.getByTestId('conversation-block-user-action')).toBeInTheDocument();
     fireEvent.click(screen.getByTestId('conversation-report-user-action'));
 
     expect(await screen.findByTestId('report-user-modal')).toHaveAttribute('data-user-id', '77');
     expect(screen.queryByTestId('conversation-actions-menu')).not.toBeInTheDocument();
+  });
+
+  it('blocks the direct peer and keeps history while replacing the composer', async () => {
+    const existingMessage = message({ text: 'Existing history' });
+    const unblockedConversation = {
+      id: 9,
+      has_requestable_offers: true,
+      is_blocked_by_me: false,
+      other_user: {
+        id: 77,
+        slug: 'tester-slug',
+        display_name: 'Tester',
+      },
+      last_message_preview: 'Existing history',
+      last_message_at: '2026-03-27T10:00:00Z',
+      last_read_at: null,
+      has_unread: false,
+      unread_count: 0,
+      updated_at: '2026-03-27T10:00:00Z',
+    };
+    const blockedConversation = {
+      ...unblockedConversation,
+      is_blocked_by_me: true,
+      has_requestable_offers: false,
+    };
+    (listMessages as jest.Mock)
+      .mockResolvedValueOnce(
+        messagePage([existingMessage], { conversation: unblockedConversation }),
+      )
+      .mockResolvedValue(
+        messagePage([existingMessage], { conversation: blockedConversation }),
+      );
+
+    render(<ConversationDetail conversationId={9} currentUserId={1} />);
+
+    fireEvent.click(await screen.findByTestId('conversation-actions-trigger'));
+    fireEvent.click(await screen.findByTestId('conversation-block-user-action'));
+    const dialog = await screen.findByTestId('block-user-confirm-dialog');
+    fireEvent.click(within(dialog).getByRole('button', { name: /zablokova/i }));
+
+    await waitFor(() => {
+      expect(blockUser).toHaveBeenCalledWith(77);
+      expect(screen.getByTestId('blocked-conversation-notice')).toBeInTheDocument();
+    });
+    expect(screen.getByText('Existing history')).toBeInTheDocument();
+    expect(screen.queryByTestId('conversation-composer')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('conversation-actions-trigger'));
+    expect(screen.queryByTestId('conversation-block-user-action')).not.toBeInTheDocument();
+  });
+
+  it('does not offer user blocking for a group conversation', async () => {
+    (listMessages as jest.Mock).mockResolvedValue(
+      messagePage([], {
+        conversation: {
+          id: 9,
+          is_group: true,
+          name: 'Project group',
+          other_user: null,
+          last_message_preview: null,
+          last_message_at: null,
+          last_read_at: null,
+          has_unread: false,
+          unread_count: 0,
+          updated_at: '2026-03-27T10:00:00Z',
+        },
+      }),
+    );
+
+    render(<ConversationDetail conversationId={9} currentUserId={1} />);
+
+    fireEvent.click(await screen.findByTestId('conversation-actions-trigger'));
+
+    expect(await screen.findByTestId('conversation-actions-menu')).toBeInTheDocument();
+    expect(screen.queryByTestId('conversation-block-user-action')).not.toBeInTheDocument();
   });
 });

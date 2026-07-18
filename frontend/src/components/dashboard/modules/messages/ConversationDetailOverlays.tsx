@@ -48,6 +48,7 @@ type ConversationDetailOverlaysProps = {
   onCloseMessageImageLightbox: () => void;
   onCloseConversationActions: () => void;
   onOpenGroupSettings?: () => void;
+  onBlockUser?: () => void;
   onReportUser?: () => void;
   onRequestDeleteConversation: () => void;
   onCloseDeleteConversationModal: () => void;
@@ -84,6 +85,7 @@ export function ConversationDetailOverlays({
   onCloseMessageImageLightbox,
   onCloseConversationActions,
   onOpenGroupSettings,
+  onBlockUser,
   onReportUser,
   onRequestDeleteConversation,
   onCloseDeleteConversationModal,
@@ -127,6 +129,7 @@ export function ConversationDetailOverlays({
         anchorRect={conversationActionsAnchorRect}
         onClose={onCloseConversationActions}
         onOpenGroupSettings={onOpenGroupSettings}
+        onBlockUser={onBlockUser}
         onReportUser={onReportUser}
         onDeleteConversation={onRequestDeleteConversation}
       />

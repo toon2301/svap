@@ -310,3 +310,122 @@ class UserBlockEnforcementTests(APITestCase):
         self.assertEqual(favorites.data["users"], [])
         self.assertEqual(home.status_code, status.HTTP_200_OK)
         self.assertEqual(home.data["stats"]["favorites_count"], 0)
+
+    def test_portfolio_like_rechecks_block_state_after_pair_lock(self):
+        item = PortfolioItem.objects.create(
+            owner=self.target,
+            title="Concurrent block portfolio",
+            category="Services",
+        )
+        image = PortfolioImage.objects.create(
+            item=item,
+            status=PortfolioImage.Status.APPROVED,
+            order=0,
+            approved_key=f"media/portfolio/{item.id}/cover.webp",
+        )
+        item.cover_image = image
+        item.save(update_fields=["cover_image", "updated_at"])
+
+        def create_block_after_lock(**_kwargs):
+            UserBlock.objects.create(blocker=self.target, blocked_user=self.viewer)
+
+        with patch(
+            "portfolio.views.lock_user_pair_for_update",
+            side_effect=create_block_after_lock,
+        ):
+            response = self.client.post(
+                reverse("accounts:portfolio_like", args=[item.id])
+            )
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertFalse(PortfolioItemLike.objects.exists())
+        self.assertFalse(Notification.objects.exists())
+
+    def test_review_like_rechecks_block_with_review_author(self):
+        reviewer = self.create_user("review-like-author", "Review Author")
+        review = Review.objects.create(
+            reviewer=reviewer,
+            offer=self.target_offer,
+            rating="5.0",
+            text="Public review on another user's offer.",
+        )
+
+        def create_block_after_lock(**_kwargs):
+            UserBlock.objects.create(blocker=reviewer, blocked_user=self.viewer)
+
+        with patch(
+            "accounts.views.reviews.lock_users_for_update",
+            side_effect=create_block_after_lock,
+        ):
+            response = self.client.post(
+                reverse("accounts:review_like", args=[review.id])
+            )
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertFalse(ReviewLike.objects.exists())
+        self.assertFalse(Notification.objects.exists())
+
+    def test_review_like_refreshes_cached_offer_after_user_lock(self):
+        review = Review.objects.create(
+            reviewer=self.viewer,
+            offer=self.target_offer,
+            rating="5.0",
+            text="Review whose offer becomes hidden.",
+        )
+
+        def hide_offer_after_lock(**_kwargs):
+            OfferedSkill.objects.filter(pk=self.target_offer.pk).update(is_hidden=True)
+
+        with patch(
+            "accounts.views.reviews.lock_users_for_update",
+            side_effect=hide_offer_after_lock,
+        ):
+            response = self.client.post(
+                reverse("accounts:review_like", args=[review.id])
+            )
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertFalse(ReviewLike.objects.exists())
+        self.assertFalse(Notification.objects.exists())
+
+    def test_review_unlike_rejects_blocked_review_author(self):
+        reviewer = self.create_user("review-unlike-author", "Review Unlike Author")
+        review = Review.objects.create(
+            reviewer=reviewer,
+            offer=self.target_offer,
+            rating="5.0",
+            text="Review with an existing like.",
+        )
+        review_like = ReviewLike.objects.create(review=review, user=self.viewer)
+        UserBlock.objects.create(blocker=reviewer, blocked_user=self.viewer)
+
+        response = self.client.delete(reverse("accounts:review_like", args=[review.id]))
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertTrue(ReviewLike.objects.filter(pk=review_like.pk).exists())
+
+    def test_review_reply_rechecks_block_with_reviewer(self):
+        review = Review.objects.create(
+            reviewer=self.viewer,
+            offer=self.target_offer,
+            rating="5.0",
+            text="Review awaiting an owner response.",
+        )
+        self.client.force_authenticate(user=self.target)
+
+        def create_block_after_lock(**_kwargs):
+            UserBlock.objects.create(blocker=self.viewer, blocked_user=self.target)
+
+        with patch(
+            "accounts.views.reviews.lock_user_pair_for_update",
+            side_effect=create_block_after_lock,
+        ):
+            response = self.client.post(
+                reverse("accounts:review_respond", args=[review.id]),
+                {"owner_response": "Must not be stored."},
+            )
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        review.refresh_from_db()
+        self.assertFalse(review.owner_response)
+        self.assertFalse(Notification.objects.exists())

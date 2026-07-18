@@ -24,7 +24,7 @@ from django.db.models import (
 from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404
 
-from accounts.models import OfferedSkill
+from accounts.models import OfferedSkill, UserBlock
 from accounts.services.user_blocks import user_block_exists_between
 from ..models import Conversation, ConversationParticipant, Message
 from ..services.conversations import SelfConversationNotAllowed, find_direct_conversation
@@ -272,6 +272,12 @@ def _conversation_annotated_queryset_for_user(user):
                     is_seeking=False,
                     user__is_active=True,
                     user__is_public=True,
+                )
+            ),
+            is_blocked_by_me=Exists(
+                UserBlock.objects.filter(
+                    blocker_id=user.id,
+                    blocked_user_id=OuterRef("other_user_id"),
                 )
             ),
             unread_count=_conversation_unread_count_expression_for_user(user),

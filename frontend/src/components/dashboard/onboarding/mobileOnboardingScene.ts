@@ -18,6 +18,7 @@ const ONBOARDING_BLOCKING_MODULES = new Set([
   'language',
   'account-type',
   'privacy',
+  'blocked-users',
 ]);
 
 export function getMobileOnboardingStepModule(

@@ -1035,6 +1035,22 @@
     "privacyShort": "Privacy",
     "close": "Close"
   },
+  "blockedUsers": {
+    "title": "Blocked users",
+    "emptyTitle": "You have not blocked anyone",
+    "emptyDescription": "Users you block will appear here.",
+    "unavailableUser": "Unavailable user",
+    "unblock": "Unblock",
+    "unblocking": "Unblocking...",
+    "confirmTitle": "Unblock this user?",
+    "confirmDescription": "This removes your block. Profile and messaging availability will still depend on privacy settings and whether the other user has blocked you.",
+    "unblockSuccess": "User unblocked.",
+    "unblockFailed": "The user could not be unblocked.",
+    "loadFailed": "Blocked users could not be loaded.",
+    "loadMore": "Show more",
+    "loading": "Loading blocked users...",
+    "retry": "Try again"
+  },
   "accountType": {
     "modalTitle": "Do you want to switch account?",
     "change": "Change",

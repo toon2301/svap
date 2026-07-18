@@ -109,11 +109,13 @@ export default function DashboardLayout({
     activeModule === 'account-type' ||
     activeModule === 'privacy' ||
     activeModule === 'account-settings' ||
+    activeModule === 'blocked-users' ||
     activeRightItem === 'notifications' ||
     activeRightItem === 'language' ||
     activeRightItem === 'account-type' ||
     activeRightItem === 'privacy' ||
-    activeRightItem === 'account-settings';
+    activeRightItem === 'account-settings' ||
+    activeRightItem === 'blocked-users';
 
   const isAuxiliaryPanelOpen = Boolean(isSearchOpen || isNotificationsPanelOpen);
   const activeSidebarItem = isNotificationsPanelOpen ? 'notifications' : isSearchOpen ? 'search' : activeModule;

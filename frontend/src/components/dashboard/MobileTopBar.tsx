@@ -10,6 +10,30 @@ import type { MessagingUserBrief } from './modules/messages/types';
 import type { AccountSettingsMobileView } from './modules/AccountSettingsModule';
 import { useOptionalMobileOnboarding } from './onboarding/MobileOnboardingContext';
 
+const BACK_NAV_RIGHT_ITEMS: readonly string[] = [
+  'language',
+  'account-type',
+  'account-settings',
+  'blocked-users',
+  'privacy',
+];
+
+const BACK_NAV_MODULES: readonly string[] = [
+  'account-type',
+  'account-settings',
+  'blocked-users',
+  'privacy',
+  'notification-settings',
+  'skills',
+  'skills-offer',
+  'skills-search',
+  'skills-select-category',
+  'user-profile',
+  'offer-reviews',
+  'favorites',
+  'portfolio-detail',
+];
+
 interface MobileTopBarProps {
   onMenuClick: () => void;
   isEditMode?: boolean;
@@ -111,15 +135,21 @@ export default function MobileTopBar({
     activeModule !== 'portfolio-detail' &&
     activeModule !== 'notifications' &&
     activeModule !== 'notification-settings' &&
+    activeModule !== 'blocked-users' &&
     activeModule !== 'account-type' &&
     activeRightItem !== 'account-type' &&
     activeModule !== 'account-settings' &&
     activeRightItem !== 'account-settings' &&
+    activeRightItem !== 'blocked-users' &&
     activeModule !== 'privacy' &&
     activeRightItem !== 'privacy';
   const canShowQuickFavorites =
     Boolean(onFavoritesClick) &&
     activeModule === 'home';
+  const canShowBackNavigation =
+    isEditMode ||
+    BACK_NAV_RIGHT_ITEMS.includes(activeRightItem || '') ||
+    BACK_NAV_MODULES.includes(activeModule || '');
 
   return (
     <div className="lg:hidden fixed top-0 left-0 right-0 z-30 bg-white dark:bg-black border-b border-gray-200 dark:border-gray-800 shadow-sm">
@@ -147,7 +177,7 @@ export default function MobileTopBar({
             <h1 className="whitespace-nowrap text-base font-semibold text-gray-900 dark:text-white">
               {t('requests.title', 'Spolupráce')}
             </h1>
-          ) : (isEditMode || activeRightItem === 'language' || activeRightItem === 'account-type' || activeRightItem === 'account-settings' || activeRightItem === 'privacy' || activeModule === 'account-type' || activeModule === 'account-settings' || activeModule === 'privacy' || activeModule === 'notification-settings' || activeModule === 'skills' || activeModule === 'skills-offer' || activeModule === 'skills-search' || activeModule === 'skills-select-category' || activeModule === 'user-profile' || activeModule === 'offer-reviews' || activeModule === 'favorites' || activeModule === 'portfolio-detail') ? (
+          ) : canShowBackNavigation ? (
             <button
               onClick={onBackClick}
               className="p-2 -ml-2"
@@ -220,6 +250,11 @@ export default function MobileTopBar({
           )}
           {activeRightItem === 'account-type' && (
             <h1 className="text-lg font-semibold text-gray-900 dark:text-white">{t('rightSidebar.accountType', 'Typ účtu')}</h1>
+          )}
+          {(activeRightItem === 'blocked-users' || activeModule === 'blocked-users') && (
+            <h1 className='whitespace-nowrap text-base font-semibold text-gray-900 dark:text-white'>
+              {t('blockedUsers.title', 'Blokovaní používatelia')}
+            </h1>
           )}
           {(activeRightItem === 'account-settings' || activeModule === 'account-settings') && (
             <h1 className="text-lg font-semibold text-gray-900 dark:text-white">{accountSettingsTitle}</h1>
@@ -356,6 +391,7 @@ export default function MobileTopBar({
             activeRightItem !== 'language' &&
             activeRightItem !== 'account-type' &&
             activeRightItem !== 'account-settings' &&
+            activeRightItem !== 'blocked-users' &&
             activeRightItem !== 'privacy' && (
               <button
                 onClick={() => {

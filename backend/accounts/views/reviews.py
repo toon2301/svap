@@ -26,7 +26,11 @@ from ..models import (
 )
 from ..serializers import ReviewSerializer
 from ..services.offer_visibility import offer_owner_blocked_from_user
-from ..services.user_blocks import lock_user_pair_for_update
+from ..services.user_blocks import (
+    lock_user_pair_for_update,
+    lock_users_for_update,
+    user_block_exists_between,
+)
 from ..services.notifications import (
     create_review_created_notification,
     create_review_liked_notification,
@@ -286,37 +290,61 @@ def review_like_view(request, review_id):
             {"error": "Recenzia nebola nájdená"}, status=status.HTTP_404_NOT_FOUND
         )
 
-    if request.method == "POST":
-        def notify_reviewer_about_like():
-            try:
-                create_review_liked_notification(review=review, actor=request.user)
-            except Exception:
-                logger.exception(
-                    "Review like notification dispatch failed",
-                    extra={
-                        "review_id": getattr(review, "id", None),
-                        "offer_id": getattr(review, "offer_id", None),
-                        "reviewer_id": getattr(review, "reviewer_id", None),
-                        "actor_id": getattr(request.user, "id", None),
-                    },
-                )
+    def notify_reviewer_about_like():
+        try:
+            create_review_liked_notification(review=review, actor=request.user)
+        except Exception:
+            logger.exception(
+                "Review like notification dispatch failed",
+                extra={
+                    "review_id": getattr(review, "id", None),
+                    "offer_id": getattr(review, "offer_id", None),
+                    "reviewer_id": getattr(review, "reviewer_id", None),
+                    "actor_id": getattr(request.user, "id", None),
+                },
+            )
 
-        with transaction.atomic():
+    with transaction.atomic():
+        lock_users_for_update(
+            user_ids=(
+                request.user.id,
+                review.offer.user_id,
+                review.reviewer_id,
+            )
+        )
+        try:
+            review.refresh_from_db()
+        except Review.DoesNotExist:
+            return Response(
+                {"error": "Recenzia nebola nájdená"}, status=status.HTTP_404_NOT_FOUND
+            )
+        if _offer_hidden_from_user(
+            review.offer, request.user
+        ) or user_block_exists_between(
+            first_user_id=request.user.id,
+            second_user_id=review.reviewer_id,
+        ):
+            return Response(
+                {"error": "Recenzia nebola nájdená"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        if request.method == "POST":
             _, created = ReviewLike.objects.get_or_create(
                 review=review,
                 user=request.user,
             )
             if created:
                 transaction.on_commit(notify_reviewer_about_like)
+        else:
+            ReviewLike.objects.filter(review=review, user=request.user).delete()
 
-        payload = _review_like_payload(review_id=review.id, user_id=request.user.id)
+    payload = _review_like_payload(review_id=review.id, user_id=request.user.id)
+    if request.method == "POST":
         return Response(
             payload,
             status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
         )
-
-    ReviewLike.objects.filter(review=review, user=request.user).delete()
-    payload = _review_like_payload(review_id=review.id, user_id=request.user.id)
     return Response(payload, status=status.HTTP_200_OK)
 
 
@@ -426,27 +454,47 @@ def review_respond_view(request, review_id):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    had_owner_response = bool((review.owner_response or "").strip())
-    review.owner_response = owner_response
-    review.owner_responded_at = timezone.now()
-    review.save(update_fields=["owner_response", "owner_responded_at", "updated_at"])
+    with transaction.atomic():
+        lock_user_pair_for_update(
+            first_user_id=request.user.id,
+            second_user_id=review.reviewer_id,
+        )
+        if user_block_exists_between(
+            first_user_id=request.user.id,
+            second_user_id=review.reviewer_id,
+        ):
+            return Response(
+                {"error": "Recenzia nebola nájdená"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
 
-    if not had_owner_response:
-        def notify_reviewer_about_reply():
-            try:
-                create_review_reply_notification(review=review, actor=request.user)
-            except Exception:
-                logger.exception(
-                    "Review reply notification dispatch failed",
-                    extra={
-                        "review_id": getattr(review, "id", None),
-                        "offer_id": getattr(review, "offer_id", None),
-                        "reviewer_id": getattr(review, "reviewer_id", None),
-                        "owner_id": getattr(request.user, "id", None),
-                    },
-                )
+        review.refresh_from_db(
+            fields=["owner_response", "owner_responded_at", "updated_at"]
+        )
+        had_owner_response = bool((review.owner_response or "").strip())
+        review.owner_response = owner_response
+        review.owner_responded_at = timezone.now()
+        review.save(
+            update_fields=["owner_response", "owner_responded_at", "updated_at"]
+        )
 
-        transaction.on_commit(notify_reviewer_about_reply)
+        if not had_owner_response:
+
+            def notify_reviewer_about_reply():
+                try:
+                    create_review_reply_notification(review=review, actor=request.user)
+                except Exception:
+                    logger.exception(
+                        "Review reply notification dispatch failed",
+                        extra={
+                            "review_id": getattr(review, "id", None),
+                            "offer_id": getattr(review, "offer_id", None),
+                            "reviewer_id": getattr(review, "reviewer_id", None),
+                            "owner_id": getattr(request.user, "id", None),
+                        },
+                    )
+
+            transaction.on_commit(notify_reviewer_about_reply)
 
     serializer = ReviewSerializer(review, context={"request": request})
     return Response(serializer.data, status=status.HTTP_200_OK)

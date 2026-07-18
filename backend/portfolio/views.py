@@ -23,7 +23,12 @@ from .image_storage import delete_storage_keys, image_storage_keys
 from .models import PortfolioImage, PortfolioItem, PortfolioItemLike
 from .serializers import PortfolioItemSerializer, PortfolioItemWriteSerializer
 from accounts.services.notifications import create_portfolio_liked_notification
-from accounts.services.user_blocks import user_block_exists_between
+from accounts.services.user_blocks import (
+    lock_user_pair_for_update,
+    user_block_exists_between,
+)
+
+from .request_parsing import parse_id_list as _parse_id_list
 
 logger = logging.getLogger(__name__)
 User = get_user_model()
@@ -218,28 +223,6 @@ def _get_likeable_portfolio_item(request, item_id: int):
     return item
 
 
-def _parse_id_list(value):
-    if not isinstance(value, list):
-        return None
-    parsed = []
-    for raw_id in value:
-        # bool je subclass int – odmietni ho explicitne.
-        if isinstance(raw_id, bool):
-            return None
-        # Prijmi LEN skutočný int alebo string zložený výhradne z číslic (bez
-        # desatinnej bodky) – `int(1.9)` by inak ticho skrátil na 1.
-        if isinstance(raw_id, int):
-            item_id = raw_id
-        elif isinstance(raw_id, str) and raw_id.isascii() and raw_id.isdigit():
-            item_id = int(raw_id)
-        else:
-            return None
-        if item_id < 1:
-            return None
-        parsed.append(item_id)
-    return parsed
-
-
 def _portfolio_list_response(request, user):
     owner_view = _is_owner(request, user)
     queryset = _portfolio_queryset(user, is_owner=owner_view, with_images=False)
@@ -330,6 +313,13 @@ def portfolio_item_like_view(request, item_id: int):
                 )
 
         with transaction.atomic():
+            lock_user_pair_for_update(
+                first_user_id=request.user.id,
+                second_user_id=item.owner_id,
+            )
+            item = _get_likeable_portfolio_item(request, item_id)
+            if item is None:
+                return _portfolio_item_not_found()
             _, created = PortfolioItemLike.objects.get_or_create(
                 item=item,
                 user=request.user,

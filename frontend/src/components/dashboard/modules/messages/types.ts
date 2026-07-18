@@ -41,6 +41,7 @@ export type ConversationListItem = {
   current_user_role?: 'owner' | 'member' | null;
   current_user_status?: 'invited' | 'active' | 'left' | 'removed' | null;
   has_requestable_offers?: boolean;
+  is_blocked_by_me?: boolean;
   request_status?: 'accepted' | 'pending' | 'deleted';
   message_request_role?: 'sender' | 'recipient' | null;
   requested_by_id?: number | null;

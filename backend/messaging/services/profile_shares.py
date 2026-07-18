@@ -3,8 +3,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from django.contrib.auth import get_user_model
+from django.db import transaction
 
-from accounts.services.user_blocks import BlockedUserInteractionError
+from accounts.services.user_blocks import (
+    BlockedUserInteractionError,
+    ensure_user_interaction_allowed,
+    lock_users_for_update,
+)
 
 from ..models import Message
 from .conversations import (
@@ -59,7 +64,12 @@ def normalize_profile_share_recipient_ids(values) -> list[int]:
 
 
 def _can_send_profile_share_to_target(*, actor, target) -> bool:
-    if target.id == actor.id or target.is_staff or target.is_superuser:
+    if (
+        target.id == actor.id
+        or not target.is_active
+        or target.is_staff
+        or target.is_superuser
+    ):
         return False
     if target.is_public:
         return True
@@ -70,6 +80,27 @@ def _can_send_profile_share_to_target(*, actor, target) -> bool:
         )
     except SelfConversationNotAllowed:
         return False
+
+
+def _load_share_users(user_ids) -> dict[int, User]:
+    return {
+        user.id: user
+        for user in User.objects.filter(id__in=user_ids).only(
+            "id",
+            "is_active",
+            "is_public",
+            "is_staff",
+            "is_superuser",
+            "first_name",
+            "last_name",
+            "company_name",
+            "username",
+            "slug",
+            "user_type",
+            "avatar",
+            "is_verified",
+        )
+    }
 
 
 def send_profile_share_to_recipients(
@@ -92,56 +123,90 @@ def send_profile_share_to_recipients(
         )
     }
 
-    sent: list[ProfileShareDelivery] = []
-    failed: list[FailedProfileShareRecipient] = []
-    metadata = {PROFILE_SHARE_METADATA_USER_ID: int(shared_user.id)}
+    with transaction.atomic():
+        actor_id = int(actor.id)
+        shared_user_id = int(shared_user.id)
+        locked_user_ids = {
+            actor_id,
+            shared_user_id,
+            *targets_by_id.keys(),
+        }
+        lock_users_for_update(user_ids=locked_user_ids)
 
-    for user_id in normalized_ids:
-        target = targets_by_id.get(user_id)
-        if target is None or not _can_send_profile_share_to_target(
-            actor=actor,
-            target=target,
+        users_by_id = _load_share_users(locked_user_ids)
+        current_actor = users_by_id.get(actor_id)
+        current_shared_user = users_by_id.get(shared_user_id)
+        targets_by_id = {
+            user_id: users_by_id[user_id]
+            for user_id in targets_by_id
+            if user_id in users_by_id
+        }
+        if (
+            current_actor is None
+            or not current_actor.is_active
+            or current_shared_user is None
+            or not current_shared_user.is_active
+            or not current_shared_user.is_public
+            or current_shared_user.is_staff
+            or current_shared_user.is_superuser
         ):
-            failed.append(
-                FailedProfileShareRecipient(
-                    user_id=user_id, code="recipient_unavailable"
-                )
-            )
-            continue
+            raise BlockedUserInteractionError("Shared profile is unavailable.")
 
-        try:
-            result = send_direct_message(
-                actor=actor,
+        ensure_user_interaction_allowed(
+            first_user_id=current_actor.id,
+            second_user_id=current_shared_user.id,
+        )
+
+        sent: list[ProfileShareDelivery] = []
+        failed: list[FailedProfileShareRecipient] = []
+        metadata = {PROFILE_SHARE_METADATA_USER_ID: int(current_shared_user.id)}
+
+        for user_id in normalized_ids:
+            target = targets_by_id.get(user_id)
+            if target is None or not _can_send_profile_share_to_target(
+                actor=current_actor,
                 target=target,
-                message_type=Message.Type.PROFILE_SHARE,
-                metadata=metadata,
-            )
-        except (SelfConversationNotAllowed, BlockedUserInteractionError):
-            failed.append(
-                FailedProfileShareRecipient(
-                    user_id=user_id, code="recipient_unavailable"
+            ):
+                failed.append(
+                    FailedProfileShareRecipient(
+                        user_id=user_id, code="recipient_unavailable"
+                    )
                 )
-            )
-        except MessageRequestLimitExceeded:
-            failed.append(
-                FailedProfileShareRecipient(
-                    user_id=user_id, code="message_request_pending"
-                )
-            )
-        except MessageRequestActionNotAllowed:
-            failed.append(
-                FailedProfileShareRecipient(
-                    user_id=user_id, code="recipient_unavailable"
-                )
-            )
-        else:
-            sent.append(
-                ProfileShareDelivery(
-                    user_id=int(target.id),
-                    conversation_id=int(result.conversation.id),
-                    message=result.message,
-                    recipient_user_ids=result.recipient_user_ids,
-                )
-            )
+                continue
 
-    return ProfileShareResult(sent=tuple(sent), failed=tuple(failed))
+            try:
+                result = send_direct_message(
+                    actor=current_actor,
+                    target=target,
+                    message_type=Message.Type.PROFILE_SHARE,
+                    metadata=metadata,
+                )
+            except (SelfConversationNotAllowed, BlockedUserInteractionError):
+                failed.append(
+                    FailedProfileShareRecipient(
+                        user_id=user_id, code="recipient_unavailable"
+                    )
+                )
+            except MessageRequestLimitExceeded:
+                failed.append(
+                    FailedProfileShareRecipient(
+                        user_id=user_id, code="message_request_pending"
+                    )
+                )
+            except MessageRequestActionNotAllowed:
+                failed.append(
+                    FailedProfileShareRecipient(
+                        user_id=user_id, code="recipient_unavailable"
+                    )
+                )
+            else:
+                sent.append(
+                    ProfileShareDelivery(
+                        user_id=int(target.id),
+                        conversation_id=int(result.conversation.id),
+                        message=result.message,
+                        recipient_user_ids=result.recipient_user_ids,
+                    )
+                )
+
+        return ProfileShareResult(sent=tuple(sent), failed=tuple(failed))
