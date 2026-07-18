@@ -52,7 +52,13 @@ describe('BlockedUsersModule', () => {
       nextCursor: null,
       results: [
         { id: 2, username: 'visible', display_name: 'Visible User', avatar_url: null, is_available: true },
-        { id: 3, username: null, display_name: null, avatar_url: null, is_available: false },
+        {
+          id: 3,
+          username: 'must-not-render',
+          display_name: 'Sensitive Hidden Name',
+          avatar_url: null,
+          is_available: false,
+        },
       ],
     });
     mockedUnblockUser.mockResolvedValueOnce({
@@ -65,6 +71,8 @@ describe('BlockedUsersModule', () => {
 
     await screen.findByText('Visible User');
     expect(screen.getByText('Nedostupný používateľ')).toBeInTheDocument();
+    expect(screen.queryByText('Sensitive Hidden Name')).not.toBeInTheDocument();
+    expect(screen.queryByText('must-not-render')).not.toBeInTheDocument();
     expect(screen.queryByRole('link')).not.toBeInTheDocument();
 
     fireEvent.click(screen.getAllByRole('button', { name: 'Odblokovať' })[0]);

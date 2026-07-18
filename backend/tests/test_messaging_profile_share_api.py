@@ -208,6 +208,58 @@ class TestMessagingProfileShareApi(APITestCase):
             message_type=Message.Type.PROFILE_SHARE
         ).exists()
 
+    def test_profile_share_rechecks_shared_profile_visibility_after_user_lock(self):
+        self.client.force_authenticate(user=self.sender)
+
+        def make_shared_profile_private(**_kwargs):
+            User.objects.filter(pk=self.shared_user.pk).update(is_public=False)
+
+        with patch(
+            "messaging.services.profile_shares.lock_users_for_update",
+            side_effect=make_shared_profile_private,
+        ):
+            response = self.client.post(
+                self._url(),
+                {
+                    "shared_user_id": self.shared_user.id,
+                    "recipient_user_ids": [self.recipient.id],
+                },
+                format="json",
+            )
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+        assert not Message.objects.filter(
+            message_type=Message.Type.PROFILE_SHARE
+        ).exists()
+
+    def test_profile_share_rechecks_recipient_state_after_user_lock(self):
+        self.client.force_authenticate(user=self.sender)
+
+        def deactivate_recipient(**_kwargs):
+            User.objects.filter(pk=self.recipient.pk).update(is_active=False)
+
+        with patch(
+            "messaging.services.profile_shares.lock_users_for_update",
+            side_effect=deactivate_recipient,
+        ):
+            response = self.client.post(
+                self._url(),
+                {
+                    "shared_user_id": self.shared_user.id,
+                    "recipient_user_ids": [self.recipient.id],
+                },
+                format="json",
+            )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["sent"] == []
+        assert response.data["failed"] == [
+            {"user_id": self.recipient.id, "code": "recipient_unavailable"}
+        ]
+        assert not Message.objects.filter(
+            message_type=Message.Type.PROFILE_SHARE
+        ).exists()
+
     def test_historical_profile_share_is_hidden_only_from_blocked_viewer(self):
         self.client.force_authenticate(user=self.sender)
         sent = self.client.post(

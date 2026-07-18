@@ -1,5 +1,5 @@
 import { api, endpoints } from '@/lib/api';
-import { fetchBlockedUsers, unblockUser } from './userBlocksApi';
+import { blockUser, fetchBlockedUsers, unblockUser } from './userBlocksApi';
 
 jest.mock('@/lib/api', () => ({
   api: {
@@ -20,6 +20,24 @@ const mockedApi = api as jest.Mocked<typeof api>;
 describe('userBlocksApi', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+  });
+
+  it('blocks a valid target with POST', async () => {
+    mockedApi.post.mockResolvedValueOnce({
+      data: { user_id: 8, is_blocked: true, created: true },
+    });
+
+    await expect(blockUser(8)).resolves.toEqual({
+      user_id: 8,
+      is_blocked: true,
+      created: true,
+    });
+    expect(mockedApi.post).toHaveBeenCalledWith(endpoints.users.block(8));
+  });
+
+  it('rejects an invalid block target without calling the API', async () => {
+    await expect(blockUser(0)).rejects.toThrow(TypeError);
+    expect(mockedApi.post).not.toHaveBeenCalled();
   });
 
   it('loads a fixed endpoint and extracts only the server cursor', async () => {

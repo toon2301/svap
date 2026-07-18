@@ -64,7 +64,12 @@ def normalize_profile_share_recipient_ids(values) -> list[int]:
 
 
 def _can_send_profile_share_to_target(*, actor, target) -> bool:
-    if target.id == actor.id or target.is_staff or target.is_superuser:
+    if (
+        target.id == actor.id
+        or not target.is_active
+        or target.is_staff
+        or target.is_superuser
+    ):
         return False
     if target.is_public:
         return True
@@ -75,6 +80,19 @@ def _can_send_profile_share_to_target(*, actor, target) -> bool:
         )
     except SelfConversationNotAllowed:
         return False
+
+
+def _load_share_users(user_ids) -> dict[int, User]:
+    return {
+        user.id: user
+        for user in User.objects.filter(id__in=user_ids).only(
+            "id",
+            "is_active",
+            "is_public",
+            "is_staff",
+            "is_superuser",
+        )
+    }
 
 
 def send_profile_share_to_recipients(
@@ -98,11 +116,36 @@ def send_profile_share_to_recipients(
     }
 
     with transaction.atomic():
-        lock_users_for_update(
-            user_ids=(actor.id, shared_user.id, *targets_by_id.keys())
-        )
+        actor_id = int(actor.id)
+        shared_user_id = int(shared_user.id)
+        locked_user_ids = {
+            actor_id,
+            shared_user_id,
+            *targets_by_id.keys(),
+        }
+        lock_users_for_update(user_ids=locked_user_ids)
+
+        users_by_id = _load_share_users(locked_user_ids)
+        current_actor = users_by_id.get(actor_id)
+        shared_user = users_by_id.get(shared_user_id)
+        targets_by_id = {
+            user_id: users_by_id[user_id]
+            for user_id in targets_by_id
+            if user_id in users_by_id
+        }
+        if (
+            current_actor is None
+            or not current_actor.is_active
+            or shared_user is None
+            or not shared_user.is_active
+            or not shared_user.is_public
+            or shared_user.is_staff
+            or shared_user.is_superuser
+        ):
+            raise BlockedUserInteractionError("Shared profile is unavailable.")
+
         ensure_user_interaction_allowed(
-            first_user_id=actor.id,
+            first_user_id=actor_id,
             second_user_id=shared_user.id,
         )
 

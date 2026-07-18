@@ -10,6 +10,30 @@ import type { MessagingUserBrief } from './modules/messages/types';
 import type { AccountSettingsMobileView } from './modules/AccountSettingsModule';
 import { useOptionalMobileOnboarding } from './onboarding/MobileOnboardingContext';
 
+const BACK_NAV_RIGHT_ITEMS: readonly string[] = [
+  'language',
+  'account-type',
+  'account-settings',
+  'blocked-users',
+  'privacy',
+];
+
+const BACK_NAV_MODULES: readonly string[] = [
+  'account-type',
+  'account-settings',
+  'blocked-users',
+  'privacy',
+  'notification-settings',
+  'skills',
+  'skills-offer',
+  'skills-search',
+  'skills-select-category',
+  'user-profile',
+  'offer-reviews',
+  'favorites',
+  'portfolio-detail',
+];
+
 interface MobileTopBarProps {
   onMenuClick: () => void;
   isEditMode?: boolean;
@@ -122,6 +146,10 @@ export default function MobileTopBar({
   const canShowQuickFavorites =
     Boolean(onFavoritesClick) &&
     activeModule === 'home';
+  const canShowBackNavigation =
+    isEditMode ||
+    BACK_NAV_RIGHT_ITEMS.includes(activeRightItem || '') ||
+    BACK_NAV_MODULES.includes(activeModule || '');
 
   return (
     <div className="lg:hidden fixed top-0 left-0 right-0 z-30 bg-white dark:bg-black border-b border-gray-200 dark:border-gray-800 shadow-sm">
@@ -149,7 +177,7 @@ export default function MobileTopBar({
             <h1 className="whitespace-nowrap text-base font-semibold text-gray-900 dark:text-white">
               {t('requests.title', 'Spolupráce')}
             </h1>
-          ) : (isEditMode || activeRightItem === 'language' || activeRightItem === 'account-type' || activeRightItem === 'account-settings' || activeRightItem === 'blocked-users' || activeRightItem === 'privacy' || activeModule === 'account-type' || activeModule === 'account-settings' || activeModule === 'blocked-users' || activeModule === 'privacy' || activeModule === 'notification-settings' || activeModule === 'skills' || activeModule === 'skills-offer' || activeModule === 'skills-search' || activeModule === 'skills-select-category' || activeModule === 'user-profile' || activeModule === 'offer-reviews' || activeModule === 'favorites' || activeModule === 'portfolio-detail') ? (
+          ) : canShowBackNavigation ? (
             <button
               onClick={onBackClick}
               className="p-2 -ml-2"

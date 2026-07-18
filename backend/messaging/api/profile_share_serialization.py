@@ -63,6 +63,8 @@ def _profile_share_cache(context, current_message, parent_instance):
         "slug",
         "user_type",
         "avatar",
+        "is_active",
+        "is_verified",
     )
     cache = {int(user.id): user for user in users}
     context["_profile_share_user_cache"] = cache

@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from django.contrib.auth import get_user_model
 from django.db import transaction
 
+from accounts.models import OfferedSkill
 from accounts.services.user_blocks import (
     BlockedUserInteractionError,
     ensure_user_interaction_allowed,
@@ -54,7 +55,12 @@ def normalize_offer_share_recipient_ids(values) -> list[int]:
 
 
 def _can_send_offer_share_to_target(*, actor, target) -> bool:
-    if target.id == actor.id or target.is_staff or target.is_superuser:
+    if (
+        target.id == actor.id
+        or not target.is_active
+        or target.is_staff
+        or target.is_superuser
+    ):
         return False
     if target.is_public:
         return True
@@ -65,6 +71,30 @@ def _can_send_offer_share_to_target(*, actor, target) -> bool:
         )
     except SelfConversationNotAllowed:
         return False
+
+
+def _load_share_users(user_ids) -> dict[int, User]:
+    return {
+        user.id: user
+        for user in User.objects.filter(id__in=user_ids).only(
+            "id",
+            "is_active",
+            "is_public",
+            "is_staff",
+            "is_superuser",
+        )
+    }
+
+
+def _shared_offer_is_available(*, shared_offer, owner) -> bool:
+    return bool(
+        not shared_offer.is_hidden
+        and owner
+        and owner.is_active
+        and owner.is_public
+        and not owner.is_staff
+        and not owner.is_superuser
+    )
 
 
 def send_offer_share_to_recipients(
@@ -88,12 +118,46 @@ def send_offer_share_to_recipients(
     }
 
     with transaction.atomic():
-        lock_users_for_update(
-            user_ids=(actor.id, shared_offer.user_id, *targets_by_id.keys())
-        )
+        actor_id = int(actor.id)
+        original_owner_id = int(shared_offer.user_id)
+        locked_user_ids = {
+            actor_id,
+            original_owner_id,
+            *targets_by_id.keys(),
+        }
+        lock_users_for_update(user_ids=locked_user_ids)
+
+        try:
+            shared_offer = (
+                OfferedSkill.objects.select_for_update()
+                .only("id", "user_id", "is_hidden")
+                .get(pk=shared_offer.id)
+            )
+        except OfferedSkill.DoesNotExist as exc:
+            raise BlockedUserInteractionError("Shared offer is unavailable.") from exc
+
+        users_by_id = _load_share_users(locked_user_ids)
+        current_actor = users_by_id.get(actor_id)
+        owner = users_by_id.get(int(shared_offer.user_id))
+        targets_by_id = {
+            user_id: users_by_id[user_id]
+            for user_id in targets_by_id
+            if user_id in users_by_id
+        }
+        if (
+            current_actor is None
+            or not current_actor.is_active
+            or shared_offer.user_id != original_owner_id
+            or not _shared_offer_is_available(
+                shared_offer=shared_offer,
+                owner=owner,
+            )
+        ):
+            raise BlockedUserInteractionError("Shared offer is unavailable.")
+
         ensure_user_interaction_allowed(
-            first_user_id=actor.id,
-            second_user_id=shared_offer.user_id,
+            first_user_id=actor_id,
+            second_user_id=owner.id,
         )
 
         sent: list[OfferShareDelivery] = []

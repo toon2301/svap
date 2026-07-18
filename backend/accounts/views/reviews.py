@@ -290,54 +290,55 @@ def review_like_view(request, review_id):
             {"error": "Recenzia nebola nájdená"}, status=status.HTTP_404_NOT_FOUND
         )
 
-    if request.method == "POST":
-        def notify_reviewer_about_like():
-            try:
-                create_review_liked_notification(review=review, actor=request.user)
-            except Exception:
-                logger.exception(
-                    "Review like notification dispatch failed",
-                    extra={
-                        "review_id": getattr(review, "id", None),
-                        "offer_id": getattr(review, "offer_id", None),
-                        "reviewer_id": getattr(review, "reviewer_id", None),
-                        "actor_id": getattr(request.user, "id", None),
-                    },
-                )
-
-        with transaction.atomic():
-            lock_users_for_update(
-                user_ids=(
-                    request.user.id,
-                    review.offer.user_id,
-                    review.reviewer_id,
-                )
+    def notify_reviewer_about_like():
+        try:
+            create_review_liked_notification(review=review, actor=request.user)
+        except Exception:
+            logger.exception(
+                "Review like notification dispatch failed",
+                extra={
+                    "review_id": getattr(review, "id", None),
+                    "offer_id": getattr(review, "offer_id", None),
+                    "reviewer_id": getattr(review, "reviewer_id", None),
+                    "actor_id": getattr(request.user, "id", None),
+                },
             )
-            if _offer_hidden_from_user(
-                review.offer, request.user
-            ) or user_block_exists_between(
-                first_user_id=request.user.id,
-                second_user_id=review.reviewer_id,
-            ):
-                return Response(
-                    {"error": "Recenzia nebola nájdená"},
-                    status=status.HTTP_404_NOT_FOUND,
-                )
+
+    with transaction.atomic():
+        lock_users_for_update(
+            user_ids=(
+                request.user.id,
+                review.offer.user_id,
+                review.reviewer_id,
+            )
+        )
+        if _offer_hidden_from_user(
+            review.offer, request.user
+        ) or user_block_exists_between(
+            first_user_id=request.user.id,
+            second_user_id=review.reviewer_id,
+        ):
+            return Response(
+                {"error": "Recenzia nebola nájdená"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        if request.method == "POST":
             _, created = ReviewLike.objects.get_or_create(
                 review=review,
                 user=request.user,
             )
             if created:
                 transaction.on_commit(notify_reviewer_about_like)
+        else:
+            ReviewLike.objects.filter(review=review, user=request.user).delete()
 
-        payload = _review_like_payload(review_id=review.id, user_id=request.user.id)
+    payload = _review_like_payload(review_id=review.id, user_id=request.user.id)
+    if request.method == "POST":
         return Response(
             payload,
             status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
         )
-
-    ReviewLike.objects.filter(review=review, user=request.user).delete()
-    payload = _review_like_payload(review_id=review.id, user_id=request.user.id)
     return Response(payload, status=status.HTTP_200_OK)
 
 

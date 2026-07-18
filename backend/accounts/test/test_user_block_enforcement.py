@@ -365,6 +365,22 @@ class UserBlockEnforcementTests(APITestCase):
         self.assertFalse(ReviewLike.objects.exists())
         self.assertFalse(Notification.objects.exists())
 
+    def test_review_unlike_rejects_blocked_review_author(self):
+        reviewer = self.create_user("review-unlike-author", "Review Unlike Author")
+        review = Review.objects.create(
+            reviewer=reviewer,
+            offer=self.target_offer,
+            rating="5.0",
+            text="Review with an existing like.",
+        )
+        review_like = ReviewLike.objects.create(review=review, user=self.viewer)
+        UserBlock.objects.create(blocker=reviewer, blocked_user=self.viewer)
+
+        response = self.client.delete(reverse("accounts:review_like", args=[review.id]))
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertTrue(ReviewLike.objects.filter(pk=review_like.pk).exists())
+
     def test_review_reply_rechecks_block_with_reviewer(self):
         review = Review.objects.create(
             reviewer=self.viewer,
