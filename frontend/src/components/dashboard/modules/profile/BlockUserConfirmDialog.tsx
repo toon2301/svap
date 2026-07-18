@@ -5,6 +5,7 @@ import type { MouseEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { NoSymbolIcon } from '@heroicons/react/24/outline';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useModalFocusTrap } from './useModalFocusTrap';
 
 type BlockUserConfirmDialogProps = {
   open: boolean;
@@ -22,6 +23,9 @@ export function BlockUserConfirmDialog({
   const { t } = useLanguage();
   const [mounted, setMounted] = useState(false);
   const cancelButtonRef = useRef<HTMLButtonElement | null>(null);
+  const dialogRef = useRef<HTMLDivElement | null>(null);
+
+  useModalFocusTrap(open, dialogRef);
 
   useEffect(() => setMounted(true), []);
 
@@ -38,7 +42,7 @@ export function BlockUserConfirmDialog({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isBlocking, onClose, open]);
+  }, [isBlocking, mounted, onClose, open]);
 
   const handleBackdropClick = (event: MouseEvent<HTMLDivElement>) => {
     if (event.target === event.currentTarget && !isBlocking) {
@@ -59,6 +63,7 @@ export function BlockUserConfirmDialog({
       data-testid="block-user-confirm-dialog"
     >
       <div
+        ref={dialogRef}
         className="w-full max-w-md overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl dark:border-gray-800 dark:bg-[#0f0f10]"
         onClick={(event) => event.stopPropagation()}
       >

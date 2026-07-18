@@ -43,4 +43,22 @@ describe('removeUserFromRecentSearches', () => {
 
     expect(window.localStorage.getItem('searchRecentResults_7')).toBeNull();
   });
+
+  it('does not fail when browser storage access is denied', () => {
+    const getItemSpy = jest
+      .spyOn(Storage.prototype, 'getItem')
+      .mockImplementation(() => {
+        throw new DOMException('Storage is unavailable', 'SecurityError');
+      });
+    const removeItemSpy = jest
+      .spyOn(Storage.prototype, 'removeItem')
+      .mockImplementation(() => {
+        throw new DOMException('Storage is unavailable', 'SecurityError');
+      });
+
+    expect(() => removeUserFromRecentSearches(7, 42)).not.toThrow();
+
+    getItemSpy.mockRestore();
+    removeItemSpy.mockRestore();
+  });
 });

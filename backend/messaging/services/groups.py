@@ -9,7 +9,7 @@ from django.contrib.auth import get_user_model
 from django.db import transaction
 from django.utils import timezone
 
-from accounts.services.user_blocks import exclude_blocked_users
+from accounts.services.user_blocks import exclude_blocked_users, lock_users_for_update
 
 from ..models import Conversation, ConversationParticipant, GroupInvitation
 from .group_common import (  # noqa: F401  (re-export verejného API)
@@ -74,6 +74,7 @@ def create_group_conversation(
     }
 
     with transaction.atomic():
+        lock_users_for_update(user_ids=(actor.id, *users_by_id.keys()))
         conversation = Conversation.objects.create(
             created_by=actor,
             is_group=True,

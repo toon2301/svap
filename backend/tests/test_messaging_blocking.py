@@ -1,16 +1,29 @@
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError
+from threading import Barrier, Event
 from unittest.mock import patch
 
 import pytest
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
+from django.db import close_old_connections, connection, transaction
 from django.urls import reverse
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from accounts.models import OfferedSkill, UserBlock
+from accounts.models import Notification, OfferedSkill, UserBlock
+from accounts.services.user_blocks import (
+    BlockedUserInteractionError,
+    create_user_block,
+    lock_users_and_ensure_interaction_allowed,
+)
 from messaging.models import Conversation, ConversationParticipant, Message
-from messaging.services.conversations import open_or_create_direct_conversation
+from messaging.services.conversations import (
+    open_or_create_direct_conversation,
+    send_direct_message,
+)
+from messaging.services.groups import create_group_conversation
+from messaging.services.group_invitations import invite_user_to_group
 
 
 User = get_user_model()
@@ -321,3 +334,242 @@ class TestMessagingBlockEnforcement(APITestCase):
             conversation_id=create_group_response.data["id"],
             user=self.u2,
         ).exists()
+
+
+@pytest.mark.django_db(transaction=True)
+class TestMessagingBlockConcurrency:
+    def setup_method(self):
+        cache.clear()
+        self.u1 = self._create_user("concurrent-block-one")
+        self.u2 = self._create_user("concurrent-block-two")
+        self.u3 = self._create_user("concurrent-block-three")
+
+    def teardown_method(self):
+        cache.clear()
+
+    @staticmethod
+    def _create_user(username: str):
+        return User.objects.create_user(
+            username=username,
+            email=f"{username}@example.com",
+            password="StrongPass123",
+            is_verified=True,
+            is_active=True,
+            is_public=True,
+        )
+
+    @staticmethod
+    def _require_row_locks() -> None:
+        if not connection.features.has_select_for_update:
+            pytest.skip("The configured database does not support row-level locks.")
+
+    def test_block_serializes_with_direct_message_send(self):
+        self._require_row_locks()
+        block_lock_held = Event()
+        send_lock_attempted = Event()
+        release_block = Event()
+
+        from accounts.services import user_blocks as user_blocks_service
+
+        original_cleanup = user_blocks_service.remove_blocked_social_connections
+
+        def hold_block_transaction(*, first_user_id: int, second_user_id: int):
+            block_lock_held.set()
+            if not release_block.wait(timeout=10):
+                raise TimeoutError("Timed out waiting to release the block transaction.")
+            return original_cleanup(
+                first_user_id=first_user_id,
+                second_user_id=second_user_id,
+            )
+
+        def signal_message_lock(*, first_user_id: int, second_user_id: int):
+            send_lock_attempted.set()
+            return lock_users_and_ensure_interaction_allowed(
+                first_user_id=first_user_id,
+                second_user_id=second_user_id,
+            )
+
+        def block_user():
+            close_old_connections()
+            try:
+                blocker = User.objects.get(pk=self.u1.pk)
+                blocked_user = User.objects.get(pk=self.u2.pk)
+                _, created = create_user_block(
+                    blocker=blocker,
+                    blocked_user=blocked_user,
+                )
+                return created
+            finally:
+                close_old_connections()
+
+        def send_message():
+            close_old_connections()
+            try:
+                actor = User.objects.get(pk=self.u2.pk)
+                target = User.objects.get(pk=self.u1.pk)
+                return send_direct_message(
+                    actor=actor,
+                    target=target,
+                    text="Must not survive the concurrent block",
+                )
+            finally:
+                close_old_connections()
+
+        with (
+            patch(
+                "accounts.services.user_blocks.remove_blocked_social_connections",
+                side_effect=hold_block_transaction,
+            ),
+            patch(
+                "messaging.services.conversations.lock_users_and_ensure_interaction_allowed",
+                side_effect=signal_message_lock,
+            ),
+            patch(
+                "messaging.services.push_enqueue.deliver_message_push_task.delay"
+            ) as push_delay_mock,
+            ThreadPoolExecutor(max_workers=2) as executor,
+        ):
+            block_future = executor.submit(block_user)
+            assert block_lock_held.wait(timeout=5)
+            send_future = executor.submit(send_message)
+            assert send_lock_attempted.wait(timeout=5)
+
+            try:
+                with pytest.raises(FutureTimeoutError):
+                    send_future.result(timeout=0.2)
+            finally:
+                release_block.set()
+
+            assert block_future.result(timeout=10) is True
+            with pytest.raises(BlockedUserInteractionError):
+                send_future.result(timeout=10)
+
+        assert UserBlock.objects.filter(
+            blocker=self.u1,
+            blocked_user=self.u2,
+        ).exists()
+        assert not Message.objects.filter(
+            text="Must not survive the concurrent block"
+        ).exists()
+        assert not Notification.objects.filter(user=self.u1).exists()
+        push_delay_mock.assert_not_called()
+
+    def test_group_creation_locks_all_users_once(self):
+        with (
+            patch("messaging.services.groups.lock_users_for_update") as lock_users,
+            patch(
+                "messaging.services.group_invitations.create_group_invitation_notification"
+            ),
+            patch(
+                "messaging.services.group_invitations.schedule_message_push_delivery"
+            ),
+        ):
+            result = create_group_conversation(
+                actor=self.u1,
+                name="Stable lock order",
+                invited_user_ids=[self.u3.id, self.u2.id],
+            )
+
+        lock_users.assert_called_once()
+        assert set(lock_users.call_args.kwargs["user_ids"]) == {
+            self.u1.id,
+            self.u2.id,
+            self.u3.id,
+        }
+        assert ConversationParticipant.objects.filter(
+            conversation=result.conversation
+        ).count() == 3
+
+    def test_prelocked_invitation_only_validates_block_state(self):
+        conversation = Conversation.objects.create(
+            created_by=self.u1,
+            is_group=True,
+            name="Prelocked group",
+        )
+        ConversationParticipant.objects.create(
+            conversation=conversation,
+            user=self.u1,
+            role=ConversationParticipant.Role.OWNER,
+            status=ConversationParticipant.Status.ACTIVE,
+        )
+
+        with (
+            transaction.atomic(),
+            patch(
+                "messaging.services.group_invitations.ensure_user_interaction_allowed"
+            ) as ensure_allowed,
+            patch(
+                "messaging.services.group_invitations.lock_users_and_ensure_interaction_allowed"
+            ) as lock_pair,
+            patch(
+                "messaging.services.group_invitations.create_group_invitation_notification"
+            ),
+            patch(
+                "messaging.services.group_invitations.schedule_message_push_delivery"
+            ),
+        ):
+            invite_user_to_group(
+                conversation=conversation,
+                actor=self.u1,
+                invited_user=self.u2,
+                already_locked=True,
+            )
+
+        ensure_allowed.assert_called_once_with(
+            first_user_id=self.u1.id,
+            second_user_id=self.u2.id,
+        )
+        lock_pair.assert_not_called()
+
+    def test_overlapping_group_creations_lock_users_without_deadlock(self):
+        self._require_row_locks()
+        start_barrier = Barrier(2)
+
+        def create_group(*, actor_id: int, invited_user_ids: list[int], name: str):
+            close_old_connections()
+            try:
+                actor = User.objects.get(pk=actor_id)
+                start_barrier.wait(timeout=5)
+                result = create_group_conversation(
+                    actor=actor,
+                    name=name,
+                    invited_user_ids=invited_user_ids,
+                )
+                return result.conversation.id
+            finally:
+                close_old_connections()
+
+        with (
+            patch(
+                "accounts.services.notification_core._dispatch_created_notification"
+            ),
+            patch(
+                "messaging.services.push_enqueue.deliver_message_push_task.delay"
+            ),
+            ThreadPoolExecutor(max_workers=2) as executor,
+        ):
+            first = executor.submit(
+                create_group,
+                actor_id=self.u1.id,
+                invited_user_ids=[self.u2.id, self.u3.id],
+                name="Concurrent group one",
+            )
+            second = executor.submit(
+                create_group,
+                actor_id=self.u3.id,
+                invited_user_ids=[self.u2.id, self.u1.id],
+                name="Concurrent group two",
+            )
+            conversation_ids = {
+                first.result(timeout=15),
+                second.result(timeout=15),
+            }
+
+        assert len(conversation_ids) == 2
+        for conversation_id in conversation_ids:
+            participant_ids = set(
+                ConversationParticipant.objects.filter(
+                    conversation_id=conversation_id,
+                ).values_list("user_id", flat=True)
+            )
+            assert participant_ids == {self.u1.id, self.u2.id, self.u3.id}

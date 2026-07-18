@@ -21,10 +21,10 @@ export function removeUserFromRecentSearches(
   }
 
   const storageKey = recentSearchStorageKey(viewerUserId);
-  const stored = window.localStorage.getItem(storageKey);
-  if (!stored) return;
-
   try {
+    const stored = window.localStorage.getItem(storageKey);
+    if (!stored) return;
+
     const parsed = JSON.parse(stored) as unknown;
     if (!Array.isArray(parsed)) {
       window.localStorage.removeItem(storageKey);
@@ -44,6 +44,10 @@ export function removeUserFromRecentSearches(
 
     window.localStorage.setItem(storageKey, JSON.stringify(filtered));
   } catch {
-    window.localStorage.removeItem(storageKey);
+    try {
+      window.localStorage.removeItem(storageKey);
+    } catch {
+      // Storage may be unavailable (for example, browser privacy restrictions).
+    }
   }
 }

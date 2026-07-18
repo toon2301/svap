@@ -1,5 +1,7 @@
 """Shared user-blocking operations and queries."""
 
+from collections.abc import Iterable
+
 from django.contrib.auth import get_user_model
 from django.db import transaction
 from django.db.models import Q, QuerySet
@@ -34,14 +36,23 @@ def exclude_blocked_users(
     )
 
 
-def lock_user_pair_for_update(*, first_user_id: int, second_user_id: int) -> None:
-    """Lock a user pair in stable order; caller must be inside transaction.atomic."""
+def lock_users_for_update(*, user_ids: Iterable[int]) -> None:
+    """Lock users in stable order; caller must be inside transaction.atomic."""
+    normalized_user_ids = sorted({int(user_id) for user_id in user_ids if user_id})
+    if not normalized_user_ids:
+        return
+
     list(
         User.objects.select_for_update()
-        .filter(pk__in=(first_user_id, second_user_id))
+        .filter(pk__in=normalized_user_ids)
         .order_by("pk")
         .values_list("pk", flat=True)
     )
+
+
+def lock_user_pair_for_update(*, first_user_id: int, second_user_id: int) -> None:
+    """Lock a user pair in stable order; caller must be inside transaction.atomic."""
+    lock_users_for_update(user_ids=(first_user_id, second_user_id))
 
 
 def remove_blocked_social_connections(
