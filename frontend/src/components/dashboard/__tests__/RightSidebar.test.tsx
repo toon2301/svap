@@ -24,6 +24,9 @@ describe('RightSidebar', () => {
 
     fireEvent.click(screen.getByText('Účet'));
     expect(onItemClick).toHaveBeenCalledWith('account-settings');
+
+    fireEvent.click(screen.getByText('Blokované'));
+    expect(onItemClick).toHaveBeenCalledWith('blocked-users');
   });
 
   it('closes on overlay click in mobile mode', () => {

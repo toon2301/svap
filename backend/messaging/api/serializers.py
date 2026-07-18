@@ -1,17 +1,13 @@
 from __future__ import annotations
 
 from django.core.exceptions import ValidationError as DjangoValidationError
-from django.contrib.auth import get_user_model
 from django.urls import reverse
 from rest_framework import serializers
 
 from swaply.validators import validate_image_file
 from ..models import GroupInvitation, Message
-from ..services.profile_shares import PROFILE_SHARE_METADATA_USER_ID
-from .offer_share_serialization import (
-    _positive_metadata_int,
-    serialize_offer_share_message,
-)
+from .offer_share_serialization import serialize_offer_share_message
+from .profile_share_serialization import serialize_profile_share_message
 
 # Re-export pre spätnú kompatibilitu (presunuté do samostatných modulov).
 from .user_serialization import (  # noqa: F401
@@ -21,9 +17,6 @@ from .user_serialization import (  # noqa: F401
     _avatar_url,
 )
 from .conversation_serializers import ConversationListItemSerializer  # noqa: F401
-
-User = get_user_model()
-
 
 def _validate_message_image(image):
     if not image:
@@ -212,40 +205,12 @@ class MessageSerializer(serializers.ModelSerializer):
         }
 
     def get_profile_share(self, obj: Message):
-        if obj.is_deleted or obj.message_type != Message.Type.PROFILE_SHARE:
-            return None
-        shared_user_id = _positive_metadata_int(
-            obj.metadata, PROFILE_SHARE_METADATA_USER_ID
+        return serialize_profile_share_message(
+            message=obj,
+            context=self.context,
+            parent_instance=getattr(getattr(self, "parent", None), "instance", None),
+            serialize_user_brief=serialize_user_brief,
         )
-        if shared_user_id is None:
-            return None
-
-        cache = self.context.setdefault("_profile_share_user_cache", {})
-        if shared_user_id not in cache:
-            cache[shared_user_id] = (
-                User.objects.filter(
-                    id=shared_user_id,
-                    is_active=True,
-                    is_public=True,
-                )
-                .exclude(is_staff=True)
-                .exclude(is_superuser=True)
-                .only(
-                    "id",
-                    "first_name",
-                    "last_name",
-                    "company_name",
-                    "username",
-                    "slug",
-                    "user_type",
-                    "avatar",
-                )
-                .first()
-            )
-        shared_user = cache.get(shared_user_id)
-        if shared_user is None:
-            return None
-        return serialize_user_brief(shared_user, self.context.get("request"))
 
     def get_offer_share(self, obj: Message):
         return serialize_offer_share_message(

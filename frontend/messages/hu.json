@@ -1035,6 +1035,22 @@
     "privacyShort": "Adatvédelem",
     "close": "Bezárás"
   },
+  "blockedUsers": {
+    "title": "Letiltott felhasználók",
+    "emptyTitle": "Még senkit sem tiltottál le",
+    "emptyDescription": "Az általad letiltott felhasználók itt jelennek meg.",
+    "unavailableUser": "Nem elérhető felhasználó",
+    "unblock": "Feloldás",
+    "unblocking": "Feloldás...",
+    "confirmTitle": "Feloldod a felhasználó tiltását?",
+    "confirmDescription": "Feloldod az általad beállított tiltást. A profil és a kommunikáció elérhetősége továbbra is az adatvédelmi beállításoktól és a másik fél esetleges tiltásától függ.",
+    "unblockSuccess": "A felhasználó tiltása feloldva.",
+    "unblockFailed": "Nem sikerült feloldani a felhasználó tiltását.",
+    "loadFailed": "Nem sikerült betölteni a letiltott felhasználókat.",
+    "loadMore": "Továbbiak megjelenítése",
+    "loading": "Letiltott felhasználók betöltése...",
+    "retry": "Újra"
+  },
   "accountType": {
     "modalTitle": "Szeretné átváltani a fiókot?",
     "change": "Módosítás",

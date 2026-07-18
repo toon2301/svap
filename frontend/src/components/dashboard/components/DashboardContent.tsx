@@ -84,6 +84,7 @@ function getDashboardModuleFromTarget(targetUrl: string): string | null {
     if (/^\/dashboard\/offers\/\d+\/reviews\/?$/.test(path)) return 'offer-reviews';
     if (/^\/dashboard\/settings\/notifications\/?$/.test(path)) return 'notification-settings';
     if (/^\/dashboard\/settings\/account\/?$/.test(path)) return 'account-settings';
+    if (/^\/dashboard\/settings\/blocked\/?$/.test(path)) return 'blocked-users';
     if (/^\/dashboard\/notifications\/?$/.test(path)) return 'notifications';
     if (/^\/dashboard\/favorites\/?$/.test(path)) return 'favorites';
     if (/^\/dashboard\/search\/?$/.test(path)) return 'search';
@@ -414,7 +415,11 @@ export default function DashboardContent({
 
   const rememberMobileSettingsReturn = useCallback(() => {
     if (!isMobile || !isMobileMenuOpen) return;
-    if (activeModule === 'notification-settings' || activeModule === 'privacy') return;
+    if (
+      activeModule === 'notification-settings' ||
+      activeModule === 'privacy' ||
+      activeModule === 'blocked-users'
+    ) return;
 
     const currentUrl =
       typeof window !== 'undefined'
@@ -447,7 +452,11 @@ export default function DashboardContent({
 
   const handleDashboardModuleChange = useCallback(
     (moduleId: string) => {
-      if (moduleId === 'notification-settings' || moduleId === 'privacy') {
+      if (
+        moduleId === 'notification-settings' ||
+        moduleId === 'privacy' ||
+        moduleId === 'blocked-users'
+      ) {
         rememberMobileSettingsReturn();
       }
       handleMainModuleChange(moduleId);
@@ -1036,6 +1045,8 @@ export default function DashboardContent({
         moduleId = 'notification-settings';
       } else if (p.match(/^\/dashboard\/settings\/account\/?$/)) {
         moduleId = 'account-settings';
+      } else if (p.match(/^\/dashboard\/settings\/blocked\/?$/)) {
+        moduleId = 'blocked-users';
       } else if (p === '/dashboard' || p === '/dashboard/') {
         moduleId = 'home';
       } else if (p.match(/^\/dashboard\/profile\/?$/)) {
@@ -1437,7 +1448,9 @@ export default function DashboardContent({
                     ? handleOfferReviewsBack
                     : activeModule === 'portfolio-detail'
                       ? handlePortfolioDetailBack
-                      : activeModule === 'notification-settings' || activeModule === 'privacy'
+                      : activeModule === 'notification-settings' ||
+                          activeModule === 'privacy' ||
+                          activeModule === 'blocked-users'
                         ? handleMobileSettingsDetailBack
                         : activeModule === 'account-settings' || activeRightItem === 'account-settings'
                         ? handleAccountSettingsMobileBack

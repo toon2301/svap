@@ -3,8 +3,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from django.contrib.auth import get_user_model
+from django.db import transaction
 
-from accounts.services.user_blocks import BlockedUserInteractionError
+from accounts.services.user_blocks import (
+    BlockedUserInteractionError,
+    ensure_user_interaction_allowed,
+    lock_users_for_update,
+)
 
 from ..models import Message
 from .conversations import (
@@ -82,56 +87,65 @@ def send_offer_share_to_recipients(
         )
     }
 
-    sent: list[OfferShareDelivery] = []
-    failed: list[FailedOfferShareRecipient] = []
-    metadata = {OFFER_SHARE_METADATA_OFFER_ID: int(shared_offer.id)}
+    with transaction.atomic():
+        lock_users_for_update(
+            user_ids=(actor.id, shared_offer.user_id, *targets_by_id.keys())
+        )
+        ensure_user_interaction_allowed(
+            first_user_id=actor.id,
+            second_user_id=shared_offer.user_id,
+        )
 
-    for user_id in normalized_ids:
-        target = targets_by_id.get(user_id)
-        if target is None or not _can_send_offer_share_to_target(
-            actor=actor,
-            target=target,
-        ):
-            failed.append(
-                FailedOfferShareRecipient(
-                    user_id=user_id, code="recipient_unavailable"
-                )
-            )
-            continue
+        sent: list[OfferShareDelivery] = []
+        failed: list[FailedOfferShareRecipient] = []
+        metadata = {OFFER_SHARE_METADATA_OFFER_ID: int(shared_offer.id)}
 
-        try:
-            result = send_direct_message(
+        for user_id in normalized_ids:
+            target = targets_by_id.get(user_id)
+            if target is None or not _can_send_offer_share_to_target(
                 actor=actor,
                 target=target,
-                message_type=Message.Type.OFFER_SHARE,
-                metadata=metadata,
-            )
-        except (SelfConversationNotAllowed, BlockedUserInteractionError):
-            failed.append(
-                FailedOfferShareRecipient(
-                    user_id=user_id, code="recipient_unavailable"
+            ):
+                failed.append(
+                    FailedOfferShareRecipient(
+                        user_id=user_id, code="recipient_unavailable"
+                    )
                 )
-            )
-        except MessageRequestLimitExceeded:
-            failed.append(
-                FailedOfferShareRecipient(
-                    user_id=user_id, code="message_request_pending"
-                )
-            )
-        except MessageRequestActionNotAllowed:
-            failed.append(
-                FailedOfferShareRecipient(
-                    user_id=user_id, code="recipient_unavailable"
-                )
-            )
-        else:
-            sent.append(
-                OfferShareDelivery(
-                    user_id=int(target.id),
-                    conversation_id=int(result.conversation.id),
-                    message=result.message,
-                    recipient_user_ids=result.recipient_user_ids,
-                )
-            )
+                continue
 
-    return OfferShareResult(sent=tuple(sent), failed=tuple(failed))
+            try:
+                result = send_direct_message(
+                    actor=actor,
+                    target=target,
+                    message_type=Message.Type.OFFER_SHARE,
+                    metadata=metadata,
+                )
+            except (SelfConversationNotAllowed, BlockedUserInteractionError):
+                failed.append(
+                    FailedOfferShareRecipient(
+                        user_id=user_id, code="recipient_unavailable"
+                    )
+                )
+            except MessageRequestLimitExceeded:
+                failed.append(
+                    FailedOfferShareRecipient(
+                        user_id=user_id, code="message_request_pending"
+                    )
+                )
+            except MessageRequestActionNotAllowed:
+                failed.append(
+                    FailedOfferShareRecipient(
+                        user_id=user_id, code="recipient_unavailable"
+                    )
+                )
+            else:
+                sent.append(
+                    OfferShareDelivery(
+                        user_id=int(target.id),
+                        conversation_id=int(result.conversation.id),
+                        message=result.message,
+                        recipient_user_ids=result.recipient_user_ids,
+                    )
+                )
+
+        return OfferShareResult(sent=tuple(sent), failed=tuple(failed))

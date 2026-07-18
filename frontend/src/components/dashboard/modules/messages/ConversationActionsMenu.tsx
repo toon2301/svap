@@ -1,7 +1,12 @@
 'use client';
 
 import React, { useMemo } from 'react';
-import { Cog6ToothIcon, ExclamationTriangleIcon, TrashIcon } from '@heroicons/react/24/outline';
+import {
+  Cog6ToothIcon,
+  ExclamationTriangleIcon,
+  NoSymbolIcon,
+  TrashIcon,
+} from '@heroicons/react/24/outline';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { MessagePinIcon } from './MessagePinIcon';
 
@@ -13,6 +18,7 @@ type ConversationActionsMenuProps = {
   onClose: () => void;
   onTogglePinned?: () => void;
   onOpenGroupSettings?: () => void;
+  onBlockUser?: () => void;
   onReportUser?: () => void;
   onDeleteConversation: () => void;
 };
@@ -25,6 +31,7 @@ export function ConversationActionsMenu({
   onClose,
   onTogglePinned,
   onOpenGroupSettings,
+  onBlockUser,
   onReportUser,
   onDeleteConversation,
 }: ConversationActionsMenuProps) {
@@ -90,6 +97,20 @@ export function ConversationActionsMenu({
               <span>{t('messages.reportUserAction', 'Nahlásiť užívateľa')}</span>
             </button>
           ) : null}
+          {onBlockUser ? (
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                onBlockUser();
+              }}
+              className="mt-2 flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left text-sm font-medium text-red-600 transition-colors hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
+              data-testid="conversation-block-user-action"
+            >
+              <NoSymbolIcon className="h-5 w-5" />
+              <span>{t('profile.block', 'Zablokovať')}</span>
+            </button>
+          ) : null}
           {onOpenGroupSettings ? (
             <button
               type="button"
@@ -153,6 +174,17 @@ export function ConversationActionsMenu({
             >
               <ExclamationTriangleIcon className="h-4 w-4" />
               <span>{t('messages.reportUserAction', 'Nahlásiť užívateľa')}</span>
+            </button>
+          ) : null}
+          {onBlockUser ? (
+            <button
+              type="button"
+              onClick={onBlockUser}
+              className="mt-1 flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-red-600 transition-colors hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
+              data-testid="conversation-block-user-action"
+            >
+              <NoSymbolIcon className="h-4 w-4" />
+              <span>{t('profile.block', 'Zablokovať')}</span>
             </button>
           ) : null}
           {onOpenGroupSettings ? (

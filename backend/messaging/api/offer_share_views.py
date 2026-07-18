@@ -8,6 +8,10 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from accounts.models import OfferedSkill
+from accounts.services.user_blocks import (
+    BlockedUserInteractionError,
+    exclude_blocked_users,
+)
 from swaply.rate_limiting import messaging_send_rate_limit
 from ..services.offer_shares import (
     MAX_OFFER_SHARE_RECIPIENTS,
@@ -41,7 +45,7 @@ class OfferShareSendView(APIView):
     def post(self, request):
         serializer = OfferShareSendSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        shared_offer = get_object_or_404(
+        shared_offers = (
             OfferedSkill.objects.filter(
                 id=serializer.validated_data["shared_offer_id"],
                 is_hidden=False,
@@ -61,12 +65,25 @@ class OfferShareSendView(APIView):
                 "user__is_superuser",
             )
         )
-
-        result = send_offer_share_to_recipients(
-            actor=request.user,
-            shared_offer=shared_offer,
-            recipient_user_ids=serializer.validated_data["recipient_user_ids"],
+        shared_offer = get_object_or_404(
+            exclude_blocked_users(
+                shared_offers,
+                viewer_user_id=request.user.id,
+                user_id_field="user_id",
+            )
         )
+
+        try:
+            result = send_offer_share_to_recipients(
+                actor=request.user,
+                shared_offer=shared_offer,
+                recipient_user_ids=serializer.validated_data["recipient_user_ids"],
+            )
+        except BlockedUserInteractionError:
+            return Response(
+                {"detail": "Not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
 
         sent = []
         for delivery in result.sent:

@@ -184,4 +184,20 @@ describe('MobileTopBar', () => {
     expect(screen.getByText(/Zmaza/i)).toBeInTheDocument();
   });
 
+  it('shows the blocked users title and back action', () => {
+    const onBackClick = jest.fn();
+
+    render(
+      <MobileTopBar
+        onMenuClick={jest.fn()}
+        activeModule='blocked-users'
+        onBackClick={onBackClick}
+      />,
+    );
+
+    expect(screen.getByText('Blokovaní používatelia')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Späť' }));
+    expect(onBackClick).toHaveBeenCalledTimes(1);
+  });
+
 });

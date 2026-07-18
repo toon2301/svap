@@ -18,6 +18,7 @@ class ConversationListItemSerializer(serializers.ModelSerializer):
     current_user_role = serializers.SerializerMethodField()
     current_user_status = serializers.SerializerMethodField()
     has_requestable_offers = serializers.SerializerMethodField()
+    is_blocked_by_me = serializers.SerializerMethodField()
     message_request_role = serializers.SerializerMethodField()
     request_unseen = serializers.SerializerMethodField()
     requested_by_id = serializers.IntegerField(read_only=True, allow_null=True)
@@ -52,6 +53,7 @@ class ConversationListItemSerializer(serializers.ModelSerializer):
             "current_user_role",
             "current_user_status",
             "has_requestable_offers",
+            "is_blocked_by_me",
             "request_status",
             "message_request_role",
             "requested_by_id",
@@ -298,6 +300,11 @@ class ConversationListItemSerializer(serializers.ModelSerializer):
 
     def get_has_requestable_offers(self, obj: Conversation) -> bool:
         return bool(getattr(obj, "has_requestable_offers", False))
+
+    def get_is_blocked_by_me(self, obj: Conversation) -> bool:
+        if getattr(obj, "is_group", False):
+            return False
+        return bool(getattr(obj, "is_blocked_by_me", False))
 
     def get_is_pinned(self, obj: Conversation) -> bool:
         return bool(getattr(obj, "is_pinned", False))

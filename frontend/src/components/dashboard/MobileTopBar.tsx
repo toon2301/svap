@@ -111,10 +111,12 @@ export default function MobileTopBar({
     activeModule !== 'portfolio-detail' &&
     activeModule !== 'notifications' &&
     activeModule !== 'notification-settings' &&
+    activeModule !== 'blocked-users' &&
     activeModule !== 'account-type' &&
     activeRightItem !== 'account-type' &&
     activeModule !== 'account-settings' &&
     activeRightItem !== 'account-settings' &&
+    activeRightItem !== 'blocked-users' &&
     activeModule !== 'privacy' &&
     activeRightItem !== 'privacy';
   const canShowQuickFavorites =
@@ -147,7 +149,7 @@ export default function MobileTopBar({
             <h1 className="whitespace-nowrap text-base font-semibold text-gray-900 dark:text-white">
               {t('requests.title', 'Spolupráce')}
             </h1>
-          ) : (isEditMode || activeRightItem === 'language' || activeRightItem === 'account-type' || activeRightItem === 'account-settings' || activeRightItem === 'privacy' || activeModule === 'account-type' || activeModule === 'account-settings' || activeModule === 'privacy' || activeModule === 'notification-settings' || activeModule === 'skills' || activeModule === 'skills-offer' || activeModule === 'skills-search' || activeModule === 'skills-select-category' || activeModule === 'user-profile' || activeModule === 'offer-reviews' || activeModule === 'favorites' || activeModule === 'portfolio-detail') ? (
+          ) : (isEditMode || activeRightItem === 'language' || activeRightItem === 'account-type' || activeRightItem === 'account-settings' || activeRightItem === 'blocked-users' || activeRightItem === 'privacy' || activeModule === 'account-type' || activeModule === 'account-settings' || activeModule === 'blocked-users' || activeModule === 'privacy' || activeModule === 'notification-settings' || activeModule === 'skills' || activeModule === 'skills-offer' || activeModule === 'skills-search' || activeModule === 'skills-select-category' || activeModule === 'user-profile' || activeModule === 'offer-reviews' || activeModule === 'favorites' || activeModule === 'portfolio-detail') ? (
             <button
               onClick={onBackClick}
               className="p-2 -ml-2"
@@ -220,6 +222,11 @@ export default function MobileTopBar({
           )}
           {activeRightItem === 'account-type' && (
             <h1 className="text-lg font-semibold text-gray-900 dark:text-white">{t('rightSidebar.accountType', 'Typ účtu')}</h1>
+          )}
+          {(activeRightItem === 'blocked-users' || activeModule === 'blocked-users') && (
+            <h1 className='whitespace-nowrap text-base font-semibold text-gray-900 dark:text-white'>
+              {t('blockedUsers.title', 'Blokovaní používatelia')}
+            </h1>
           )}
           {(activeRightItem === 'account-settings' || activeModule === 'account-settings') && (
             <h1 className="text-lg font-semibold text-gray-900 dark:text-white">{accountSettingsTitle}</h1>
@@ -356,6 +363,7 @@ export default function MobileTopBar({
             activeRightItem !== 'language' &&
             activeRightItem !== 'account-type' &&
             activeRightItem !== 'account-settings' &&
+            activeRightItem !== 'blocked-users' &&
             activeRightItem !== 'privacy' && (
               <button
                 onClick={() => {

@@ -6,6 +6,7 @@ from django.conf import settings
 from django.db.models import Prefetch
 
 from accounts.models import OfferedSkill, OfferedSkillImage
+from accounts.services.user_blocks import exclude_blocked_users
 from ..models import Message
 from ..services.offer_shares import OFFER_SHARE_METADATA_OFFER_ID
 
@@ -88,6 +89,15 @@ def _get_offer_share_cache(
         )
         .exclude(user__is_staff=True)
         .exclude(user__is_superuser=True)
+    )
+    request = context.get("request")
+    viewer_id = getattr(getattr(request, "user", None), "id", None)
+    offers = (
+        exclude_blocked_users(
+            offers,
+            viewer_user_id=viewer_id,
+            user_id_field="user_id",
+        )
         .select_related("user")
         .only(
             "id",

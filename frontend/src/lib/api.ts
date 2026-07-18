@@ -812,6 +812,7 @@ export const endpoints = {
   users: {
     report: (userId: number) => `/auth/users/${userId}/report/`,
     reportAvatar: (userId: number) => `/auth/users/${userId}/avatar/report/`,
+    blocked: '/auth/users/blocked/',
     block: (userId: number) => `/auth/users/${userId}/block/`,
   },
   // Verejné vyhľadávanie (OfferedSkill)

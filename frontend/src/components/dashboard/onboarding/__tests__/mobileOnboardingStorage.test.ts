@@ -242,6 +242,7 @@ describe('mobileOnboardingState helpers', () => {
     expect(isMobileOnboardingBlockedByUi({ activeModule: 'language' })).toBe(true);
     expect(isMobileOnboardingBlockedByUi({ activeModule: 'account-type' })).toBe(true);
     expect(isMobileOnboardingBlockedByUi({ activeModule: 'privacy' })).toBe(true);
+    expect(isMobileOnboardingBlockedByUi({ activeModule: 'blocked-users' })).toBe(true);
     expect(isMobileOnboardingBlockedByUi({
       activeModule: 'profile',
       activeRightItem: 'language',

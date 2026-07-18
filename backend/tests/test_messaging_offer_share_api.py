@@ -7,7 +7,7 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from accounts.models import OfferedSkill
+from accounts.models import OfferedSkill, UserBlock
 from messaging.models import Conversation, Message
 
 
@@ -160,3 +160,112 @@ class TestMessagingOfferShareApi(APITestCase):
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
         assert Message.objects.filter(message_type=Message.Type.OFFER_SHARE).count() == 0
+
+    def test_blocked_offer_owner_cannot_be_shared_by_known_id(self):
+        owner = User.objects.create_user(
+            username="third-owner",
+            email="third-owner@example.com",
+            password="StrongPass123",
+            is_active=True,
+            is_public=True,
+        )
+        offer = OfferedSkill.objects.create(
+            user=owner,
+            category="Repairs",
+            description="Third-party offer",
+        )
+        UserBlock.objects.create(blocker=owner, blocked_user=self.sender)
+        self.client.force_authenticate(user=self.sender)
+
+        response = self.client.post(
+            self._url(),
+            {
+                "shared_offer_id": offer.id,
+                "recipient_user_ids": [self.recipient.id],
+            },
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+        assert not Message.objects.filter(message_type=Message.Type.OFFER_SHARE).exists()
+
+    def test_offer_share_rechecks_block_state_after_lock(self):
+        owner = User.objects.create_user(
+            username="race-owner",
+            email="race-owner@example.com",
+            password="StrongPass123",
+            is_active=True,
+            is_public=True,
+        )
+        offer = OfferedSkill.objects.create(
+            user=owner,
+            category="Repairs",
+            description="Race-protected offer",
+        )
+        self.client.force_authenticate(user=self.sender)
+
+        def create_block_after_lock(**_kwargs):
+            UserBlock.objects.create(blocker=owner, blocked_user=self.sender)
+
+        with patch(
+            "messaging.services.offer_shares.lock_users_for_update",
+            side_effect=create_block_after_lock,
+        ):
+            response = self.client.post(
+                self._url(),
+                {
+                    "shared_offer_id": offer.id,
+                    "recipient_user_ids": [self.recipient.id],
+                },
+                format="json",
+            )
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+        assert not Message.objects.filter(message_type=Message.Type.OFFER_SHARE).exists()
+
+    def test_historical_offer_share_is_hidden_only_from_blocked_viewer(self):
+        owner = User.objects.create_user(
+            username="history-owner",
+            email="history-owner@example.com",
+            password="StrongPass123",
+            is_active=True,
+            is_public=True,
+        )
+        offer = OfferedSkill.objects.create(
+            user=owner,
+            category="Repairs",
+            description="Historical shared offer",
+        )
+        self.client.force_authenticate(user=self.sender)
+        sent = self.client.post(
+            self._url(),
+            {
+                "shared_offer_id": offer.id,
+                "recipient_user_ids": [self.recipient.id],
+            },
+            format="json",
+        )
+        conversation_id = sent.data["sent"][0]["conversation_id"]
+        message_id = sent.data["sent"][0]["message"]["id"]
+        history_url = reverse(
+            "accounts:messaging_list_messages",
+            kwargs={"conversation_id": conversation_id},
+        )
+        UserBlock.objects.create(blocker=owner, blocked_user=self.recipient)
+
+        self.client.force_authenticate(user=self.recipient)
+        recipient_history = self.client.get(history_url)
+        recipient_message = next(
+            item for item in recipient_history.data["results"] if item["id"] == message_id
+        )
+
+        self.client.force_authenticate(user=self.sender)
+        sender_history = self.client.get(history_url)
+        sender_message = next(
+            item for item in sender_history.data["results"] if item["id"] == message_id
+        )
+
+        assert recipient_history.status_code == status.HTTP_200_OK
+        assert recipient_message["offer_share"] is None
+        assert sender_history.status_code == status.HTTP_200_OK
+        assert sender_message["offer_share"]["id"] == offer.id

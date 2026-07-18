@@ -11,6 +11,7 @@ import AccountTypeModule from './modules/AccountTypeModule';
 import AccountSettingsModule, { type AccountSettingsMobileView } from './modules/AccountSettingsModule';
 import PrivacySettingsModule from './modules/PrivacySettingsModule';
 import PrivacySettingsMobileSection from './modules/PrivacySettingsMobileSection';
+import BlockedUsersModule from './modules/BlockedUsersModule';
 import SkillsModuleRouter from './modules/skills/SkillsModuleRouter';
 import SearchModule from './modules/SearchModule';
 import CreateModule from './modules/CreateModule';
@@ -179,6 +180,10 @@ export default function ModuleRouter({
     );
   }
 
+  if (isRightSidebarOpen && activeRightItem === 'blocked-users') {
+    return <BlockedUsersModule onBack={closeOwnProfileEdit} />;
+  }
+
   switch (activeModule) {
     case 'offer-reviews':
       return <OfferReviewsView offerId={offerIdForReviews ?? null} accountType={accountType} user={user} />;
@@ -317,6 +322,8 @@ export default function ModuleRouter({
           onMobileViewChange={onMobileAccountSettingsViewChange}
         />
       );
+    case 'blocked-users':
+      return <BlockedUsersModule />;
     case 'language':
       return <LanguageModule />;
     case 'skills':

@@ -1035,6 +1035,22 @@
     "privacyShort": "Datenschutz",
     "close": "Schließen"
   },
+  "blockedUsers": {
+    "title": "Blockierte Nutzer",
+    "emptyTitle": "Du hast niemanden blockiert",
+    "emptyDescription": "Nutzer, die du blockierst, werden hier angezeigt.",
+    "unavailableUser": "Nicht verfügbarer Nutzer",
+    "unblock": "Blockierung aufheben",
+    "unblocking": "Blockierung wird aufgehoben...",
+    "confirmTitle": "Blockierung aufheben?",
+    "confirmDescription": "Du hebst deine Blockierung auf. Ob Profil und Kommunikation verfügbar sind, hängt weiterhin von den Privatsphäre-Einstellungen und einer möglichen Blockierung durch die andere Person ab.",
+    "unblockSuccess": "Die Blockierung wurde aufgehoben.",
+    "unblockFailed": "Die Blockierung konnte nicht aufgehoben werden.",
+    "loadFailed": "Blockierte Nutzer konnten nicht geladen werden.",
+    "loadMore": "Mehr anzeigen",
+    "loading": "Blockierte Nutzer werden geladen...",
+    "retry": "Erneut versuchen"
+  },
   "accountType": {
     "modalTitle": "Möchten Sie das Konto wechseln?",
     "change": "Ändern",

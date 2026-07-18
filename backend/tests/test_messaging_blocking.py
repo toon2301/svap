@@ -15,6 +15,7 @@ from accounts.models import Notification, OfferedSkill, UserBlock
 from accounts.services.user_blocks import (
     BlockedUserInteractionError,
     create_user_block,
+    delete_user_block,
     lock_users_and_ensure_interaction_allowed,
 )
 from messaging.models import Conversation, ConversationParticipant, Message
@@ -124,11 +125,19 @@ class TestMessagingBlockEnforcement(APITestCase):
                     )
 
                 assert conversations_response.status_code == status.HTTP_200_OK
-                assert conversation.id in [
-                    item["id"] for item in conversations_response.data["results"]
-                ]
+                serialized_conversation = next(
+                    item
+                    for item in conversations_response.data["results"]
+                    if item["id"] == conversation.id
+                )
+                expected_outgoing_block = actor.id == self.u1.id
+                assert serialized_conversation["is_blocked_by_me"] is expected_outgoing_block
                 assert history_response.status_code == status.HTTP_200_OK
                 assert history_response.data["results"][0]["text"] == "Existing history"
+                assert (
+                    history_response.data["conversation"]["is_blocked_by_me"]
+                    is expected_outgoing_block
+                )
                 assert blocked_send.status_code == status.HTTP_403_FORBIDDEN
                 assert blocked_send.data["code"] == "recipient_unavailable"
                 notify_user_mock.assert_not_called()
@@ -453,6 +462,90 @@ class TestMessagingBlockConcurrency:
         ).exists()
         assert not Notification.objects.filter(user=self.u1).exists()
         push_delay_mock.assert_not_called()
+
+    def test_unblock_serializes_with_direct_message_send(self):
+        self._require_row_locks()
+        UserBlock.objects.create(blocker=self.u1, blocked_user=self.u2)
+        unblock_delete_reached = Event()
+        send_lock_attempted = Event()
+        release_unblock = Event()
+
+        from django.db.models.query import QuerySet
+
+        original_delete = QuerySet.delete
+
+        def hold_user_block_delete(queryset):
+            if queryset.model is UserBlock:
+                unblock_delete_reached.set()
+                if not release_unblock.wait(timeout=10):
+                    raise TimeoutError(
+                        "Timed out waiting to release the unblock transaction."
+                    )
+            return original_delete(queryset)
+
+        def signal_message_lock(*, first_user_id: int, second_user_id: int):
+            send_lock_attempted.set()
+            return lock_users_and_ensure_interaction_allowed(
+                first_user_id=first_user_id,
+                second_user_id=second_user_id,
+            )
+
+        def unblock_user():
+            close_old_connections()
+            try:
+                blocker = User.objects.get(pk=self.u1.pk)
+                return delete_user_block(
+                    blocker=blocker,
+                    blocked_user_id=self.u2.pk,
+                )
+            finally:
+                close_old_connections()
+
+        def send_message():
+            close_old_connections()
+            try:
+                actor = User.objects.get(pk=self.u2.pk)
+                target = User.objects.get(pk=self.u1.pk)
+                return send_direct_message(
+                    actor=actor,
+                    target=target,
+                    text="Allowed after serialized unblock",
+                )
+            finally:
+                close_old_connections()
+
+        with (
+            patch.object(QuerySet, "delete", new=hold_user_block_delete),
+            patch(
+                "messaging.services.conversations.lock_users_and_ensure_interaction_allowed",
+                side_effect=signal_message_lock,
+            ),
+            patch(
+                "messaging.services.push_enqueue.deliver_message_push_task.delay"
+            ),
+            ThreadPoolExecutor(max_workers=2) as executor,
+        ):
+            unblock_future = executor.submit(unblock_user)
+            assert unblock_delete_reached.wait(timeout=5)
+            send_future = executor.submit(send_message)
+            assert send_lock_attempted.wait(timeout=5)
+
+            try:
+                with pytest.raises(FutureTimeoutError):
+                    send_future.result(timeout=0.2)
+            finally:
+                release_unblock.set()
+
+            assert unblock_future.result(timeout=10) is True
+            send_future.result(timeout=10)
+
+        assert not UserBlock.objects.filter(
+            blocker=self.u1,
+            blocked_user=self.u2,
+        ).exists()
+        assert Message.objects.filter(
+            text="Allowed after serialized unblock"
+        ).exists()
 
     def test_group_creation_locks_all_users_once(self):
         with (

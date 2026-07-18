@@ -1035,6 +1035,22 @@
     "privacyShort": "Súkromie",
     "close": "Zatvoriť"
   },
+  "blockedUsers": {
+    "title": "Blokovaní používatelia",
+    "emptyTitle": "Nemáte nikoho zablokovaného",
+    "emptyDescription": "Používatelia, ktorých zablokujete, sa zobrazia tu.",
+    "unavailableUser": "Nedostupný používateľ",
+    "unblock": "Odblokovať",
+    "unblocking": "Odblokujem...",
+    "confirmTitle": "Odblokovať používateľa?",
+    "confirmDescription": "Odstránite svoje blokovanie. Dostupnosť profilu a komunikácie bude naďalej závisieť od nastavení súkromia a prípadného blokovania z druhej strany.",
+    "unblockSuccess": "Používateľ bol odblokovaný.",
+    "unblockFailed": "Používateľa sa nepodarilo odblokovať.",
+    "loadFailed": "Blokovaných používateľov sa nepodarilo načítať.",
+    "loadMore": "Zobraziť ďalších",
+    "loading": "Načítavam blokovaných používateľov...",
+    "retry": "Skúsiť znova"
+  },
   "accountType": {
     "modalTitle": "Prajete si prepnúť účet?",
     "change": "Zmeniť",

@@ -80,6 +80,19 @@ describe('Sidebar extra coverage', () => {
     expect(onClose).toHaveBeenCalled();
   });
 
+  it('mobile: blocked users row opens its module and closes', () => {
+    render(
+      <ThemeProvider>
+        <Sidebar {...baseProps} isMobile isOpen onClose={onClose} />
+      </ThemeProvider>
+    );
+
+    fireEvent.click(screen.getByText('Blokované').closest('button')!);
+
+    expect(onItemClick).toHaveBeenCalledWith('blocked-users');
+    expect(onClose).toHaveBeenCalled();
+  });
+
   it('mobile: account type row triggers onAccountTypeClick and closes', () => {
     render(
       <ThemeProvider>

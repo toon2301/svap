@@ -73,7 +73,14 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
   }, [initialModule]);
   
   // Inicializácia sidebaru - ak initialModule je sidebar sekcia, otvor sidebar hneď
-  const rightSidebarItems = ['notifications', 'language', 'account-type', 'privacy', 'account-settings'];
+  const rightSidebarItems = [
+    'notifications',
+    'language',
+    'account-type',
+    'privacy',
+    'account-settings',
+    'blocked-users',
+  ];
   const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(() => {
     return initialModule ? rightSidebarItems.includes(initialModule) : false;
   });
@@ -221,6 +228,7 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
         'notifications',
         'notification-settings',
         'account-settings',
+        'blocked-users',
         'language',
         'account-type',
         'skills',
@@ -327,6 +335,17 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
           window.history.pushState(null, '', url);
           try {
             localStorage.setItem('activeModule', 'account-settings');
+          } catch {
+            // ignore
+          }
+        }
+      } else if (itemId === 'blocked-users') {
+        setActiveModule('blocked-users');
+        const url = '/dashboard/settings/blocked';
+        if (typeof window !== 'undefined') {
+          window.history.pushState(null, '', url);
+          try {
+            localStorage.setItem('activeModule', 'blocked-users');
           } catch {
             // ignore
           }

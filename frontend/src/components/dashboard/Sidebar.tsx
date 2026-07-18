@@ -20,6 +20,7 @@ import {
   LockClosedIcon,
   ShareIcon,
   UserGroupIcon,
+  NoSymbolIcon,
 } from '@heroicons/react/24/outline';
 import { SunIcon, MoonIcon } from '@heroicons/react/24/outline';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -272,6 +273,11 @@ export default function Sidebar({
         icon={LanguageIcon}
         label={t('rightSidebar.language', 'Jazyk')}
         onClick={() => handleItemClick('language')}
+      />
+      <MobileSettingsRow
+        icon={NoSymbolIcon}
+        label={t('rightSidebar.blocked', 'Blokované')}
+        onClick={() => handleItemClick('blocked-users')}
       />
 
       <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-4">{t('rightSidebar.accountSettings', 'Nastavenia účtu')}</h3>

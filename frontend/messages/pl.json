@@ -1035,6 +1035,22 @@
     "privacyShort": "Prywatność",
     "close": "Zamknij"
   },
+  "blockedUsers": {
+    "title": "Zablokowani użytkownicy",
+    "emptyTitle": "Nie masz zablokowanych użytkowników",
+    "emptyDescription": "Zablokowani przez Ciebie użytkownicy pojawią się tutaj.",
+    "unavailableUser": "Niedostępny użytkownik",
+    "unblock": "Odblokuj",
+    "unblocking": "Odblokowywanie...",
+    "confirmTitle": "Odblokować użytkownika?",
+    "confirmDescription": "Usuniesz swoją blokadę. Dostępność profilu i komunikacji nadal będzie zależeć od ustawień prywatności oraz ewentualnej blokady ze strony drugiego użytkownika.",
+    "unblockSuccess": "Użytkownik został odblokowany.",
+    "unblockFailed": "Nie udało się odblokować użytkownika.",
+    "loadFailed": "Nie udało się wczytać zablokowanych użytkowników.",
+    "loadMore": "Pokaż więcej",
+    "loading": "Wczytywanie zablokowanych użytkowników...",
+    "retry": "Spróbuj ponownie"
+  },
   "accountType": {
     "modalTitle": "Czy chcesz przełączyć konto?",
     "change": "Zmień",

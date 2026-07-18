@@ -1,4 +1,5 @@
 from urllib.parse import urlsplit
+from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.db import IntegrityError, transaction
@@ -121,6 +122,22 @@ class UserBlocksApiTests(APITestCase):
         self.assertEqual(second.status_code, status.HTTP_200_OK)
         self.assertFalse(second.data["deleted"])
         self.assertTrue(UserBlock.objects.filter(pk=reverse_block.pk).exists())
+
+    def test_delete_locks_the_user_pair_before_unblocking(self):
+        UserBlock.objects.create(blocker=self.owner, blocked_user=self.target)
+        self.client.force_authenticate(user=self.owner)
+
+        with patch(
+            "accounts.services.user_blocks.lock_user_pair_for_update"
+        ) as lock_pair:
+            response = self.client.delete(self.detail_url(self.target))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        lock_pair.assert_called_once_with(
+            first_user_id=self.owner.id,
+            second_user_id=self.target.id,
+        )
+        self.assertFalse(UserBlock.objects.exists())
 
     def test_list_contains_only_callers_outgoing_blocks(self):
         UserBlock.objects.create(blocker=self.owner, blocked_user=self.target)
