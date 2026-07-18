@@ -312,6 +312,12 @@ def review_like_view(request, review_id):
                 review.reviewer_id,
             )
         )
+        try:
+            review.refresh_from_db()
+        except Review.DoesNotExist:
+            return Response(
+                {"error": "Recenzia nebola nájdená"}, status=status.HTTP_404_NOT_FOUND
+            )
         if _offer_hidden_from_user(
             review.offer, request.user
         ) or user_block_exists_between(

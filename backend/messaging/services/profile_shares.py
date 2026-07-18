@@ -91,6 +91,14 @@ def _load_share_users(user_ids) -> dict[int, User]:
             "is_public",
             "is_staff",
             "is_superuser",
+            "first_name",
+            "last_name",
+            "company_name",
+            "username",
+            "slug",
+            "user_type",
+            "avatar",
+            "is_verified",
         )
     }
 
@@ -127,7 +135,7 @@ def send_profile_share_to_recipients(
 
         users_by_id = _load_share_users(locked_user_ids)
         current_actor = users_by_id.get(actor_id)
-        shared_user = users_by_id.get(shared_user_id)
+        current_shared_user = users_by_id.get(shared_user_id)
         targets_by_id = {
             user_id: users_by_id[user_id]
             for user_id in targets_by_id
@@ -136,27 +144,27 @@ def send_profile_share_to_recipients(
         if (
             current_actor is None
             or not current_actor.is_active
-            or shared_user is None
-            or not shared_user.is_active
-            or not shared_user.is_public
-            or shared_user.is_staff
-            or shared_user.is_superuser
+            or current_shared_user is None
+            or not current_shared_user.is_active
+            or not current_shared_user.is_public
+            or current_shared_user.is_staff
+            or current_shared_user.is_superuser
         ):
             raise BlockedUserInteractionError("Shared profile is unavailable.")
 
         ensure_user_interaction_allowed(
-            first_user_id=actor_id,
-            second_user_id=shared_user.id,
+            first_user_id=current_actor.id,
+            second_user_id=current_shared_user.id,
         )
 
         sent: list[ProfileShareDelivery] = []
         failed: list[FailedProfileShareRecipient] = []
-        metadata = {PROFILE_SHARE_METADATA_USER_ID: int(shared_user.id)}
+        metadata = {PROFILE_SHARE_METADATA_USER_ID: int(current_shared_user.id)}
 
         for user_id in normalized_ids:
             target = targets_by_id.get(user_id)
             if target is None or not _can_send_profile_share_to_target(
-                actor=actor,
+                actor=current_actor,
                 target=target,
             ):
                 failed.append(
@@ -168,7 +176,7 @@ def send_profile_share_to_recipients(
 
             try:
                 result = send_direct_message(
-                    actor=actor,
+                    actor=current_actor,
                     target=target,
                     message_type=Message.Type.PROFILE_SHARE,
                     metadata=metadata,

@@ -365,6 +365,29 @@ class UserBlockEnforcementTests(APITestCase):
         self.assertFalse(ReviewLike.objects.exists())
         self.assertFalse(Notification.objects.exists())
 
+    def test_review_like_refreshes_cached_offer_after_user_lock(self):
+        review = Review.objects.create(
+            reviewer=self.viewer,
+            offer=self.target_offer,
+            rating="5.0",
+            text="Review whose offer becomes hidden.",
+        )
+
+        def hide_offer_after_lock(**_kwargs):
+            OfferedSkill.objects.filter(pk=self.target_offer.pk).update(is_hidden=True)
+
+        with patch(
+            "accounts.views.reviews.lock_users_for_update",
+            side_effect=hide_offer_after_lock,
+        ):
+            response = self.client.post(
+                reverse("accounts:review_like", args=[review.id])
+            )
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertFalse(ReviewLike.objects.exists())
+        self.assertFalse(Notification.objects.exists())
+
     def test_review_unlike_rejects_blocked_review_author(self):
         reviewer = self.create_user("review-unlike-author", "Review Unlike Author")
         review = Review.objects.create(
