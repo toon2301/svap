@@ -9,6 +9,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from swaply.rate_limiting import api_rate_limit
+from accounts.services.user_blocks import BlockedUserInteractionError
 from ..models import ConversationParticipant, GroupInvitation
 from ..services.groups import (
     CannotInviteSelf,
@@ -43,6 +44,11 @@ User = get_user_model()
 
 
 def _group_error_response(exc: Exception):
+    if isinstance(exc, BlockedUserInteractionError):
+        return Response(
+            {"code": "recipient_unavailable"},
+            status=status.HTTP_404_NOT_FOUND,
+        )
     if isinstance(exc, GroupNameRequired):
         return Response({"error": "Názov skupiny je povinný."}, status=status.HTTP_400_BAD_REQUEST)
     if isinstance(exc, GroupLimitExceeded):

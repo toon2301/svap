@@ -62,17 +62,17 @@ def password_reset_request_view(request):
         reset_url = f"{settings.FRONTEND_URL}/reset-password/{uid}/{token}/"
 
         # Vytvor email obsah
-        subject = "[Swaply] Reset hesla"
+        subject = "[Svaply] Reset hesla"
 
         html_message = f"""
         <html>
         <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
             <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-                <h2 style="color: #7C3AED;">Reset hesla - Swaply</h2>
+                <h2 style="color: #7C3AED;">Reset hesla - Svaply</h2>
                 
                 <p>Ahoj {user.first_name or 'používateľ'},</p>
                 
-                <p>Dostali sme požiadavku na reset hesla pre váš účet v Swaply.</p>
+                <p>Dostali sme požiadavku na reset hesla pre váš účet v Svaply.</p>
                 
                 <p>Ak ste túto požiadavku neposlali vy, ignorujte tento email.</p>
                 
@@ -96,7 +96,7 @@ def password_reset_request_view(request):
                 
                 <p style="font-size: 12px; color: #666;">
                     Tento email bol odoslaný automaticky, neodpovedajte naň.<br>
-                    Swaply - Výmenná platforma zručností
+                    Svaply - Výmenná platforma zručností
                 </p>
             </div>
         </body>
@@ -104,11 +104,11 @@ def password_reset_request_view(request):
         """
 
         text_message = f"""
-        Reset hesla - Swaply
-        
+        Reset hesla - Svaply
+
         Ahoj {user.first_name or 'používateľ'},
-        
-        Dostali sme požiadavku na reset hesla pre váš účet v Swaply.
+
+        Dostali sme požiadavku na reset hesla pre váš účet v Svaply.
         
         Ak ste túto požiadavku neposlali vy, ignorujte tento email.
         
@@ -119,7 +119,7 @@ def password_reset_request_view(request):
         
         --
         Tento email bol odoslaný automaticky, neodpovedajte naň.
-        Swaply - Výmenná platforma zručností
+        Svaply - Výmenná platforma zručností
         """
 
         # Pošli email

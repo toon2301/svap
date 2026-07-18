@@ -5,6 +5,10 @@ from django.db import transaction
 from django.utils import timezone
 
 from accounts.services.notifications import create_group_invitation_notification
+from accounts.services.user_blocks import (
+    ensure_user_interaction_allowed,
+    lock_users_and_ensure_interaction_allowed,
+)
 
 from ..models import Conversation, ConversationParticipant, GroupInvitation, Message
 from .group_common import (
@@ -124,8 +128,16 @@ def invite_user_to_group(
         )
 
     if already_locked:
+        ensure_user_interaction_allowed(
+            first_user_id=actor.id,
+            second_user_id=invited_user.id,
+        )
         return _perform()
     with transaction.atomic():
+        lock_users_and_ensure_interaction_allowed(
+            first_user_id=actor.id,
+            second_user_id=invited_user.id,
+        )
         conversation = (
             Conversation.objects.select_for_update()
             .filter(id=conversation.id)

@@ -8,8 +8,10 @@ import { SearchUserProfileModule } from './SearchUserProfileModule';
 import { setFavoriteUserState } from '../favoritesApi';
 import { api } from '@/lib/api';
 import { getMessagingErrorMessage } from '../messages/messagingApi';
+import { invalidateUserProfileCache } from '../profile/profileUserCache';
 
 const pushMock = jest.fn();
+const replaceMock = jest.fn();
 
 jest.mock('react-hot-toast', () => ({
   __esModule: true,
@@ -29,7 +31,7 @@ jest.mock('@/contexts/LanguageContext', () => ({
 jest.mock('next/navigation', () => ({
   useRouter: () => ({
     push: pushMock,
-    replace: jest.fn(),
+    replace: replaceMock,
     prefetch: jest.fn(),
     back: jest.fn(),
     forward: jest.fn(),
@@ -46,10 +48,14 @@ jest.mock('@/lib/api', () => ({
   __esModule: true,
   api: {
     get: jest.fn(),
+    post: jest.fn(),
   },
   endpoints: {
     dashboard: {
       userProfile: (id: number) => `/auth/dashboard/users/${id}/`,
+    },
+    users: {
+      block: (id: number) => `/auth/users/${id}/block/`,
     },
   },
 }));
@@ -73,6 +79,7 @@ jest.mock('../profile/ProfileDesktopView', () => ({
     onToggleFavorite,
     isFavorited,
     isFavoritePending,
+    onBlockClick,
   }: {
     onAvatarClick?: () => void;
     onSendMessage?: () => void;
@@ -80,6 +87,7 @@ jest.mock('../profile/ProfileDesktopView', () => ({
     onToggleFavorite?: () => void;
     isFavorited?: boolean;
     isFavoritePending?: boolean;
+    onBlockClick?: () => void;
   }) => (
     <div>
       <button type="button" onClick={onAvatarClick}>
@@ -91,6 +99,11 @@ jest.mock('../profile/ProfileDesktopView', () => ({
       <button type="button" onClick={onToggleFavorite} disabled={Boolean(isFavoritePending)}>
         {isFavorited ? 'remove favorite' : 'add favorite'}
       </button>
+      {onBlockClick && (
+        <button type="button" onClick={onBlockClick}>
+          block profile
+        </button>
+      )}
     </div>
   ),
 }));
@@ -131,7 +144,9 @@ jest.mock('../shared/OfferImageGalleryLightbox', () => ({
 describe('SearchUserProfileModule', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    invalidateUserProfileCache(42);
     pushMock.mockReset();
+    replaceMock.mockReset();
     (api.get as jest.Mock).mockResolvedValue({
       data: {
         id: 42,
@@ -142,6 +157,9 @@ describe('SearchUserProfileModule', () => {
       },
     });
     (setFavoriteUserState as jest.Mock).mockResolvedValue(undefined);
+    (api.post as jest.Mock).mockResolvedValue({
+      data: { user_id: 42, is_blocked: true, created: true },
+    });
     (getMessagingErrorMessage as jest.Mock).mockReturnValue('Friendly open error');
   });
 
@@ -150,7 +168,7 @@ describe('SearchUserProfileModule', () => {
       throw new Error('push failed');
     });
 
-    render(<SearchUserProfileModule userId={42} />);
+    render(<SearchUserProfileModule userId={42} currentUserId={7} />);
 
     const button = await screen.findByRole('button', { name: 'open message' });
     fireEvent.click(button);
@@ -163,7 +181,7 @@ describe('SearchUserProfileModule', () => {
   });
 
   it('navigates to the draft messages route with target user id', async () => {
-    render(<SearchUserProfileModule userId={42} />);
+    render(<SearchUserProfileModule userId={42} currentUserId={7} />);
 
     const button = await screen.findByRole('button', { name: 'open message' });
     fireEvent.click(button);
@@ -174,7 +192,7 @@ describe('SearchUserProfileModule', () => {
   });
 
   it('toggles the favorite state in the profile UI after a successful request', async () => {
-    render(<SearchUserProfileModule userId={42} />);
+    render(<SearchUserProfileModule userId={42} currentUserId={7} />);
 
     const favoriteButton = await screen.findByRole('button', { name: 'add favorite' });
     fireEvent.click(favoriteButton);
@@ -199,7 +217,7 @@ describe('SearchUserProfileModule', () => {
       },
     });
 
-    render(<SearchUserProfileModule userId={42} />);
+    render(<SearchUserProfileModule userId={42} currentUserId={7} />);
 
     fireEvent.click(await screen.findByRole('button', { name: 'open avatar' }));
 
@@ -211,10 +229,52 @@ describe('SearchUserProfileModule', () => {
   });
 
   it('does not open the avatar lightbox when the foreign profile has no avatar', async () => {
-    render(<SearchUserProfileModule userId={42} />);
+    render(<SearchUserProfileModule userId={42} currentUserId={7} />);
 
     fireEvent.click(await screen.findByRole('button', { name: 'open avatar' }));
 
     expect(screen.queryByRole('dialog', { name: 'mock avatar lightbox' })).not.toBeInTheDocument();
+  });
+
+  it('blocks a foreign profile only after confirmation and returns to search', async () => {
+    const onBack = jest.fn();
+    render(
+      <SearchUserProfileModule userId={42} currentUserId={7} onBack={onBack} />,
+    );
+
+    fireEvent.click(await screen.findByRole('button', { name: 'block profile' }));
+    expect(api.post).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Zablokovať' }));
+
+    await waitFor(() => {
+      expect(api.post).toHaveBeenCalledWith('/auth/users/42/block/');
+      expect(toast.success).toHaveBeenCalledWith('Používateľ bol zablokovaný.');
+      expect(onBack).toHaveBeenCalledTimes(1);
+      expect(replaceMock).toHaveBeenCalledWith('/dashboard/search');
+    });
+  });
+
+  it('does not expose the block action for the current user profile', async () => {
+    render(<SearchUserProfileModule userId={42} currentUserId={42} />);
+
+    await screen.findByRole('button', { name: 'open message' });
+    expect(screen.queryByRole('button', { name: 'block profile' })).not.toBeInTheDocument();
+  });
+
+  it('keeps the confirmation open and shows a localized toast when rate limited', async () => {
+    (api.post as jest.Mock).mockRejectedValueOnce({ response: { status: 429 } });
+    render(<SearchUserProfileModule userId={42} currentUserId={7} />);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'block profile' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Zablokovať' }));
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith(
+        'Blokovanie skúšate príliš často. Skúste to o chvíľu.',
+      );
+      expect(screen.getByTestId('block-user-confirm-dialog')).toBeInTheDocument();
+      expect(replaceMock).not.toHaveBeenCalled();
+    });
   });
 });

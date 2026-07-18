@@ -40,8 +40,8 @@ def _access_token_lifetime_seconds() -> int:
 def _set_auth_session_headers(response: Response) -> None:
     access_lifetime_seconds = _access_token_lifetime_seconds()
     access_expires_at = timezone.now() + timedelta(seconds=access_lifetime_seconds)
-    response["X-Swaply-Access-Expires-At"] = access_expires_at.isoformat()
-    response["X-Swaply-Access-Expires-In"] = str(access_lifetime_seconds)
+    response["X-Svaply-Access-Expires-At"] = access_expires_at.isoformat()
+    response["X-Svaply-Access-Expires-In"] = str(access_lifetime_seconds)
 
 
 def _me_user_queryset():

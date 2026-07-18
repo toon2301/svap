@@ -16,6 +16,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from swaply.rate_limiting import messaging_send_rate_limit
+from accounts.services.user_blocks import BlockedUserInteractionError
 from ..models import Conversation, ConversationParticipant, Message
 from ..services.conversations import SelfConversationNotAllowed, send_direct_message
 from ..services.message_requests import (
@@ -66,6 +67,17 @@ def _message_request_send_error_response(exc: Exception):
     if isinstance(exc, MessageRequestActionNotAllowed):
         return Response(status=status.HTTP_404_NOT_FOUND)
     raise exc
+
+
+def _recipient_unavailable_response(*, not_found: bool = False):
+    return Response(
+        {"code": "recipient_unavailable"},
+        status=(
+            status.HTTP_404_NOT_FOUND
+            if not_found
+            else status.HTTP_403_FORBIDDEN
+        ),
+    )
 
 
 class MessagePagination(PageNumberPagination):
@@ -248,6 +260,8 @@ class SendMessageView(APIView):
         except NotParticipant:
             # Do not leak existence; treat as not found
             return Response(status=status.HTTP_404_NOT_FOUND)
+        except BlockedUserInteractionError:
+            return _recipient_unavailable_response()
         except (MessageRequestLimitExceeded, MessageRequestActionNotAllowed) as exc:
             return _message_request_send_error_response(exc)
 
@@ -400,6 +414,8 @@ class StartDirectMessageView(APIView):
                 {"error": "Nemôžete začať konverzáciu sami so sebou."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+        except BlockedUserInteractionError:
+            return _recipient_unavailable_response(not_found=True)
         except (MessageRequestLimitExceeded, MessageRequestActionNotAllowed) as exc:
             return _message_request_send_error_response(exc)
 

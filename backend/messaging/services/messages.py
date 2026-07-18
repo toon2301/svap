@@ -6,6 +6,8 @@ from django.core.files.storage import default_storage
 from django.db import transaction
 from django.utils import timezone
 
+from accounts.services.user_blocks import lock_users_and_ensure_interaction_allowed
+
 from ..models import Conversation, ConversationParticipant, Message
 from .image_processing import strip_image_metadata
 from .image_thumbnails import attach_message_thumbnail
@@ -132,6 +134,22 @@ def send_message(
 
     now = timezone.now()
     with transaction.atomic():
+        if not conversation.is_group:
+            direct_user_ids = tuple(
+                ConversationParticipant.objects.filter(
+                    conversation_id=conversation.id,
+                    status=ConversationParticipant.Status.ACTIVE,
+                )
+                .order_by("user_id")
+                .values_list("user_id", flat=True)
+            )
+            if len(direct_user_ids) != 2 or sender.id not in direct_user_ids:
+                raise NotParticipant("Invalid direct conversation participants.")
+            lock_users_and_ensure_interaction_allowed(
+                first_user_id=direct_user_ids[0],
+                second_user_id=direct_user_ids[1],
+            )
+
         convo = (
             Conversation.objects.select_for_update()
             .filter(id=conversation.id)

@@ -104,7 +104,7 @@ describe('Dashboard', () => {
     renderDashboard(<ThemeProvider><Dashboard /></ThemeProvider>);
 
     await waitFor(() => {
-      expect(screen.getByText('Vitaj v Swaply!')).toBeInTheDocument();
+      expect(screen.getByText('Vitaj v Svaply!')).toBeInTheDocument();
     });
   });
 
@@ -117,7 +117,7 @@ describe('Dashboard', () => {
     
     // Počkaj na dokončenie useEffect a renderovanie obsahu
     await waitFor(() => {
-      expect(screen.getByText('Vitaj v Swaply!')).toBeInTheDocument();
+      expect(screen.getByText('Vitaj v Svaply!')).toBeInTheDocument();
     });
   });
 
@@ -258,6 +258,6 @@ describe('Dashboard', () => {
     
     renderDashboard(<ThemeProvider><Dashboard initialUser={mockUser} /></ThemeProvider>);
     
-    expect(screen.getAllByText('Vitaj v Swaply!').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Vitaj v Svaply!').length).toBeGreaterThan(0);
   });
 });

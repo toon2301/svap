@@ -7,6 +7,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 type Props = {
   open: boolean;
   onClose: () => void;
+  onBlockClick?: () => void;
   onReportClick?: () => void;
   onShareClick?: () => void;
   isReported?: boolean;
@@ -16,6 +17,7 @@ type Props = {
 export function ProfileDesktopHamburgerModal({
   open,
   onClose,
+  onBlockClick,
   onReportClick,
   onShareClick,
   isReported,
@@ -39,14 +41,18 @@ export function ProfileDesktopHamburgerModal({
           <div className="p-4 space-y-2">
             {showModerationActions && (
               <>
-                <button
-                  onClick={() => {
-                    // Zablokovať - TODO: implementovať funkcionalitu
-                  }}
-                  className="w-full text-center px-4 py-3 text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-                >
-                  {t('profile.block', 'Zablokovať')}
-                </button>
+                {onBlockClick && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onBlockClick();
+                      onClose();
+                    }}
+                    className="w-full text-center px-4 py-3 text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                  >
+                    {t('profile.block', 'Zablokovať')}
+                  </button>
+                )}
                 {onReportClick && (
                   isReported ? (
                     <div className="w-full text-center px-4 py-3 text-gray-500 dark:text-gray-400 rounded-lg bg-gray-50 dark:bg-gray-800/50 cursor-not-allowed">

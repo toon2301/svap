@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 MESSAGE_PUSH_TYPE = "message_push"
 MESSAGE_PUSH_TITLE = "Nova sprava"
-MESSAGE_PUSH_BODY = "Mas novu spravu v aplikacii Swaply."
+MESSAGE_PUSH_BODY = "Mas novu spravu v aplikacii Svaply."
 MESSAGE_PUSH_TTL_SECONDS = 60
 MESSAGE_PUSH_TAG_PREFIX = "messages-conversation-"
 TEMPORARY_PUSH_STATUS_CODES = {408, 425, 429, 500, 502, 503, 504}

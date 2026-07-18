@@ -13,7 +13,7 @@
  * badge v zozname, „bold" jednotlivé upozornenia ostávajú do otvorenia položky).
  */
 
-const KEY_PREFIX = 'swaply:seen-badge';
+const KEY_PREFIX = 'svaply:seen-badge';
 
 function storageKey(scope: string, userId: number | null): string | null {
   if (userId == null) return null;

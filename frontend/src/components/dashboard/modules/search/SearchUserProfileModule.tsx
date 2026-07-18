@@ -11,6 +11,7 @@ import type { SearchUserResult } from "./types";
 import { setFavoriteUserState } from "../favoritesApi";
 import {
   getUserProfileFromCache,
+  invalidateUserProfileCache,
   patchUserProfileInCache,
   setUserProfileToCache,
 } from "../profile/profileUserCache";
@@ -22,6 +23,12 @@ import OfferImageGalleryLightbox from "../shared/OfferImageGalleryLightbox";
 import type { ProfileTab } from "../profile/profileTypes";
 import { getMessagingErrorMessage } from "../messages/messagingApi";
 import { buildMessagesUrl } from "../messages/messagesRouting";
+
+import { invalidateOffersCache } from '../profile/profileOffersCache';
+import { BlockUserConfirmDialog } from '../profile/BlockUserConfirmDialog';
+import { useBlockUserAction } from '../profile/useBlockUserAction';
+import { invalidateSearchCacheForUser } from './hooks/useSearchApi';
+import { removeUserFromRecentSearches } from './recentSearchStorage';
 
 type SearchProfileApiError = {
   response?: {
@@ -36,6 +43,7 @@ type SearchProfileApiError = {
 
 interface SearchUserProfileModuleProps {
   userId: number;
+  currentUserId: number;
   onBack?: () => void;
   onSendMessage?: () => void;
   highlightedSkillId?: number | null;
@@ -58,6 +66,7 @@ function getProfileAvatarUrl(user: User): string | null {
 
 export function SearchUserProfileModule({
   userId,
+  currentUserId,
   onBack,
   highlightedSkillId = null,
   initialTab,
@@ -74,6 +83,24 @@ export function SearchUserProfileModule({
   const [isOpeningConversation, setIsOpeningConversation] = useState(false);
   const [isFavoritePending, setIsFavoritePending] = useState(false);
   const [isProfileLikePending, setIsProfileLikePending] = useState(false);
+
+  const removeTargetFromClientState = React.useCallback(() => {
+    invalidateUserProfileCache(userId);
+    invalidateOffersCache(userId);
+    invalidateSearchCacheForUser(userId);
+    removeUserFromRecentSearches(currentUserId, userId);
+  }, [currentUserId, userId]);
+
+  const handleBlocked = React.useCallback(() => {
+    removeTargetFromClientState();
+    onBack?.();
+    router.replace('/dashboard/search');
+  }, [onBack, removeTargetFromClientState, router]);
+
+  const blockAction = useBlockUserAction({
+    targetUserId: userId,
+    onBlocked: handleBlocked,
+  });
 
   const handleTabsKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
     const order: ProfileTab[] = ["offers", "portfolio", "posts", "tagged"];
@@ -100,7 +127,6 @@ export function SearchUserProfileModule({
       // Invalidovať cache ponúk pre cudzí profil, aby sa načítali čerstvé dáta
       // vrátane filtrovania skrytých kariet.
       // Toto zabezpečí, že skryté karty sa nezobrazia v profile iného používateľa.
-      const { invalidateOffersCache } = await import('../profile/profileOffersCache');
       invalidateOffersCache(userId);
 
       // Najprv skús cache profilu pre rýchle zobrazenie, ale vždy dotiahni
@@ -143,8 +169,14 @@ export function SearchUserProfileModule({
         if (cancelled) return;
         const apiError = error as SearchProfileApiError;
         const status = apiError.response?.status;
+        if (status === 404) {
+          removeTargetFromClientState();
+          setProfileUser(null);
+        }
         const msg =
-          status === 429
+          status === 404
+            ? t('search.userProfileNotFound', 'Profil používateľa sa nepodarilo načítať.')
+            : status === 429
             ? t(
                 "search.userProfileRateLimited",
                 "Príliš veľa požiadaviek pri načítavaní profilu, skúste to o chvíľu.",
@@ -169,7 +201,7 @@ export function SearchUserProfileModule({
     // Zámerne neuvádzame t v závislostiach, aby sa pri zmene jazyka nespúšťal
     // nový network request.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userId]);
+  }, [removeTargetFromClientState, userId]);
 
   const handleSendMessage = () => {
     const targetId = profileUser?.id;
@@ -341,6 +373,7 @@ export function SearchUserProfileModule({
     profileUser.username ||
     t('skills.photos', 'Fotky');
   const profileAvatarImages = profileAvatarUrl ? [{ image_url: profileAvatarUrl }] : [];
+  const canBlockUser = profileUser.id !== currentUserId;
   const handleAvatarClick = () => {
     if (!profileAvatarUrl) return;
     setIsAvatarLightboxOpen(true);
@@ -376,6 +409,7 @@ export function SearchUserProfileModule({
             isFavoritePending={isFavoritePending}
             onToggleProfileLike={handleToggleProfileLike}
             isProfileLikePending={isProfileLikePending}
+            onBlockClick={canBlockUser ? blockAction.openConfirm : undefined}
           />
         ) : (
           <ProfileDesktopView
@@ -404,6 +438,7 @@ export function SearchUserProfileModule({
             isFavoritePending={isFavoritePending}
             onToggleProfileLike={handleToggleProfileLike}
             isProfileLikePending={isProfileLikePending}
+            onBlockClick={canBlockUser ? blockAction.openConfirm : undefined}
           />
         )}
       </div>
@@ -420,6 +455,15 @@ export function SearchUserProfileModule({
         alt={profileDisplayName}
         onClose={() => setIsAvatarLightboxOpen(false)}
         reportTarget={{ type: 'user_avatar', userId: profileUser.id }}
+      />
+
+      <BlockUserConfirmDialog
+        open={blockAction.isConfirmOpen}
+        isBlocking={blockAction.isBlocking}
+        onClose={blockAction.closeConfirm}
+        onConfirm={() => {
+          void blockAction.confirmBlock();
+        }}
       />
     </>
   );

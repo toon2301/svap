@@ -103,8 +103,8 @@ class TestAuthViews(APITestCase):
         # Čistý cookie model: tokeny nie sú v body, musia byť v cookies
         self.assertIn("access_token", response.cookies)
         self.assertIn("refresh_token", response.cookies)
-        self.assertIn("X-Swaply-Access-Expires-At", response.headers)
-        self.assertIn("X-Swaply-Access-Expires-In", response.headers)
+        self.assertIn("X-Svaply-Access-Expires-At", response.headers)
+        self.assertIn("X-Svaply-Access-Expires-In", response.headers)
 
     def test_login_view_warms_auth_cache(self):
         self.user.is_verified = True
@@ -166,8 +166,8 @@ class TestAuthViews(APITestCase):
             False,
         )
         self.assertEqual(response.data["unread_skill_request_count"], 0)
-        self.assertIn("X-Swaply-Access-Expires-At", response.headers)
-        self.assertIn("X-Swaply-Access-Expires-In", response.headers)
+        self.assertIn("X-Svaply-Access-Expires-At", response.headers)
+        self.assertIn("X-Svaply-Access-Expires-In", response.headers)
 
     def test_me_view_includes_unread_skill_request_count(self):
         Notification.objects.create(

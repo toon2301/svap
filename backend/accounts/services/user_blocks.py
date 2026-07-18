@@ -1,5 +1,7 @@
 """Shared user-blocking operations and queries."""
 
+from collections.abc import Iterable
+
 from django.contrib.auth import get_user_model
 from django.db import transaction
 from django.db.models import Q, QuerySet
@@ -7,6 +9,10 @@ from django.db.models import Q, QuerySet
 from accounts.models import FavoriteUser, ProfileLike, UserBlock
 
 User = get_user_model()
+
+
+class BlockedUserInteractionError(Exception):
+    """Raised when a blocked user pair attempts a protected interaction."""
 
 
 def exclude_blocked_users(
@@ -30,14 +36,23 @@ def exclude_blocked_users(
     )
 
 
-def lock_user_pair_for_update(*, first_user_id: int, second_user_id: int) -> None:
-    """Lock a user pair in stable order; caller must be inside transaction.atomic."""
+def lock_users_for_update(*, user_ids: Iterable[int]) -> None:
+    """Lock users in stable order; caller must be inside transaction.atomic."""
+    normalized_user_ids = sorted({int(user_id) for user_id in user_ids if user_id})
+    if not normalized_user_ids:
+        return
+
     list(
         User.objects.select_for_update()
-        .filter(pk__in=(first_user_id, second_user_id))
+        .filter(pk__in=normalized_user_ids)
         .order_by("pk")
         .values_list("pk", flat=True)
     )
+
+
+def lock_user_pair_for_update(*, first_user_id: int, second_user_id: int) -> None:
+    """Lock a user pair in stable order; caller must be inside transaction.atomic."""
+    lock_users_for_update(user_ids=(first_user_id, second_user_id))
 
 
 def remove_blocked_social_connections(
@@ -75,6 +90,16 @@ def create_user_block(*, blocker, blocked_user) -> tuple[UserBlock, bool]:
             first_user_id=blocker.pk,
             second_user_id=blocked_user.pk,
         )
+        # Import locally to keep the accounts model/service layer independent
+        # from messaging during Django app initialization.
+        from messaging.services.message_requests import (
+            close_pending_message_request_for_user_pair,
+        )
+
+        close_pending_message_request_for_user_pair(
+            first_user_id=blocker.pk,
+            second_user_id=blocked_user.pk,
+        )
     return user_block, created
 
 
@@ -96,6 +121,31 @@ def user_block_exists_between(*, first_user_id: int, second_user_id: int) -> boo
         Q(blocker_id=first_user_id, blocked_user_id=second_user_id)
         | Q(blocker_id=second_user_id, blocked_user_id=first_user_id)
     ).exists()
+
+
+def ensure_user_interaction_allowed(
+    *, first_user_id: int, second_user_id: int
+) -> None:
+    """Reject an interaction when either user has blocked the other."""
+    if user_block_exists_between(
+        first_user_id=first_user_id,
+        second_user_id=second_user_id,
+    ):
+        raise BlockedUserInteractionError("User interaction is unavailable.")
+
+
+def lock_users_and_ensure_interaction_allowed(
+    *, first_user_id: int, second_user_id: int
+) -> None:
+    """Serialize block-sensitive writes and enforce the current block state."""
+    lock_user_pair_for_update(
+        first_user_id=first_user_id,
+        second_user_id=second_user_id,
+    )
+    ensure_user_interaction_allowed(
+        first_user_id=first_user_id,
+        second_user_id=second_user_id,
+    )
 
 
 def outgoing_user_blocks(*, blocker) -> QuerySet[UserBlock]:

@@ -12,7 +12,7 @@
  * istého timestampu.
  */
 
-const KEY_PREFIX = 'swaply:verify-email-sent';
+const KEY_PREFIX = 'svaply:verify-email-sent';
 
 export const VERIFY_EMAIL_SENT_TTL_MS = 10 * 60 * 1000;
 export const VERIFY_EMAIL_RESEND_COOLDOWN_MS = 60 * 1000;

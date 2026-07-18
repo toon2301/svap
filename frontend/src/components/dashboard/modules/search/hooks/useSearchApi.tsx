@@ -252,7 +252,13 @@ export function useSearchApi({ searchState, user }: UseSearchApiParams): SearchA
   };
 }
 
-export const invalidateSearchCacheForUser = (_userId: number): void => {
-  void _userId;
-  globalSearchResultsCache.clear();
+export const invalidateSearchCacheForUser = (userId: number): void => {
+  if (!Number.isInteger(userId) || userId <= 0) return;
+
+  globalSearchResultsCache.forEach((results, cacheKey) => {
+    globalSearchResultsCache.set(cacheKey, {
+      users: results.users.filter((user) => user.id !== userId),
+      skills: results.skills.filter((skill) => skill.user_id !== userId),
+    });
+  });
 };

@@ -41,19 +41,19 @@ class EmailVerification(models.Model):
 
         verification_url = self.get_verification_url(request)
 
-        subject = "Potvrdenie registrácie - Swaply"
+        subject = "Potvrdenie registrácie - Svaply"
         message = f"""
 Ahoj {self.user.display_name},
 
-Ďakujeme za registráciu na Swaply!
+Ďakujeme za registráciu na Svaply!
 
 Pre dokončenie registrácie kliknite na nasledujúci odkaz:
 {verification_url}
 
-Ak ste si nevytvorili účet na Swaply, môžete tento email ignorovať.
+Ak ste si nevytvorili účet na Svaply, môžete tento email ignorovať.
 
 S pozdravom,
-Tím Swaply
+Tím Svaply
         """
 
         try:
@@ -172,11 +172,11 @@ class AccountDeletionRequest(models.Model):
 
         logger = logging.getLogger(__name__)
         confirm_url = self.get_confirm_url()
-        subject = "Potvrdenie zmazania účtu - Swaply"
+        subject = "Potvrdenie zmazania účtu - Svaply"
         message = f"""
 Ahoj {self.user.display_name},
 
-Dostali sme požiadavku na ZMAZANIE tvojho účtu na Swaply.
+Dostali sme požiadavku na ZMAZANIE tvojho účtu na Svaply.
 
 POZOR: Toto je NEZVRATNÁ operácia. Po potvrdení budú tvoje osobné údaje
 anonymizované a tvoje ponuky, portfólio a hodnotenia odstránené.
@@ -187,7 +187,7 @@ Ak chceš účet naozaj zmazať, klikni na nasledujúci odkaz (platí 48 hodín)
 Ak si o zmazanie nepožiadal ty, tento email ignoruj – s účtom sa nič nestane.
 
 S pozdravom,
-Tím Swaply
+Tím Svaply
         """
         try:
             send_mail(
