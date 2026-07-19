@@ -37,9 +37,10 @@ class TestProfileUpdate(APITestCase):
         self.user.refresh_from_db()
         assert self.user.bio == "Updated bio"
         assert self.user.name_modified_by_user is False
-        # PATCH /profile/ vracia plnú "me" odpoveď: UPDATE bio + reload usera +
-        # offered skills + 2 agregačné counts (skill-requesty, notifikácie) = 5 dotazov.
+        # PATCH /profile/ vracia plnú "me" odpoveď: SAVEPOINT + UPDATE bio + RELEASE
+        # + 3 agregačné counts (dokončené skill-requesty, neprečítané notifikácie,
+        # profile likes) = 6 dotazov.
         # Rozpočet stráži, aby sa do write-cesty nepridali ďalšie reads (napr. N+1).
         assert (
-            len(ctx.captured_queries) <= 5
+            len(ctx.captured_queries) <= 6
         ), f"Expected lean bio-only patch, got {len(ctx.captured_queries)} queries"

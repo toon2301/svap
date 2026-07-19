@@ -172,16 +172,22 @@ class TestEmailVerification:
         self.user_profile = UserProfile.objects.create(user=self.user)
         self.verification = EmailVerification.objects.create(user=self.user)
 
-    @override_settings(RATE_LIMITING_ENABLED=False)
-    def test_unverified_user_can_login_temporarily(self):
-        """Dočasne: neoverený používateľ sa môže prihlásiť (verifikácia vypnutá pre testy)"""
+    @override_settings(
+        RATE_LIMITING_ENABLED=False,
+        EMAIL_VERIFICATION_REQUIRED=True,
+        ALLOW_UNVERIFIED_LOGIN=False,
+    )
+    def test_unverified_user_cannot_login(self):
+        """Neoverený používateľ sa neprihlási, kým nepotvrdí email (400 + verifikačná hláška)"""
         login_data = {"email": "test@example.com", "password": "TestPassword123"}
 
         response = self.client.post(self.login_url, login_data)
 
-        assert response.status_code == status.HTTP_200_OK
-        assert "access_token" in response.cookies
-        assert "refresh_token" in response.cookies
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "access_token" not in response.cookies
+        assert "refresh_token" not in response.cookies
+        errors = response.data["validation_errors"]["non_field_errors"]
+        assert any("nie je overený" in str(e) for e in errors)
 
     @override_settings(RATE_LIMITING_ENABLED=False)
     def test_email_verification_success(self):

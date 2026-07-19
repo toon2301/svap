@@ -12,6 +12,12 @@ jest.mock('next/navigation', () => ({
   useRouter: () => ({ push: jest.fn() }),
 }));
 
+// Mock AuthContext (stránka volá useAuth().refreshUser().catch() po úspešnej
+// verifikácii — mock musí vracať Promise)
+jest.mock('@/contexts/AuthContext', () => ({
+  useAuth: () => ({ refreshUser: jest.fn().mockResolvedValue(undefined) }),
+}));
+
 // Mock API
 jest.mock('@/lib/api', () => ({
   api: {

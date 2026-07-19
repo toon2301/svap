@@ -80,7 +80,24 @@ class TestUserRegistrationSerializer:
 
 @pytest.mark.django_db
 class TestUserLoginSerializer:
-    def test_unverified_user_allowed_temporarily(self):
+    def test_unverified_user_blocked(self, settings):
+        settings.EMAIL_VERIFICATION_REQUIRED = True
+        settings.ALLOW_UNVERIFIED_LOGIN = False
+        User.objects.create_user(
+            username="u",
+            email="u@example.com",
+            password="StrongPass123",
+            is_verified=False,
+        )
+        s = UserLoginSerializer(
+            data={"email": "u@example.com", "password": "StrongPass123"}
+        )
+        assert s.is_valid() is False
+        assert any("nie je overený" in str(e) for e in s.errors["non_field_errors"])
+
+    def test_unverified_user_allowed_when_flag_enabled(self, settings):
+        settings.EMAIL_VERIFICATION_REQUIRED = True
+        settings.ALLOW_UNVERIFIED_LOGIN = True
         User.objects.create_user(
             username="u",
             email="u@example.com",
