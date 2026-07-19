@@ -277,9 +277,31 @@ class TestRegistrationWithEmailVerification(APITestCase):
         # Skontroluj, že email bol odoslaný (thread beží synchronne vďaka mocku)
         mock_send_mail.assert_called_once()
 
-    def test_login_without_verification_allowed_temporarily(self):
-        """Dočasne: prihlásenie bez verifikácie je povolené (vypnutá kontrola)"""
-        user = User.objects.create_user(
+    @override_settings(EMAIL_VERIFICATION_REQUIRED=True, ALLOW_UNVERIFIED_LOGIN=False)
+    def test_login_without_verification_blocked(self):
+        """Neoverený účet sa heslom neprihlási — 400 s verifikačnou hláškou."""
+        User.objects.create_user(
+            username="testuser",
+            email="test@example.com",
+            password="testpass123",
+            is_verified=False,
+        )
+
+        url = reverse("accounts:login")
+        data = {"email": "test@example.com", "password": "testpass123"}
+
+        response = self.client.post(url, data, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertNotIn("access_token", response.cookies)
+        self.assertNotIn("refresh_token", response.cookies)
+        errors = response.data["validation_errors"]["non_field_errors"]
+        self.assertTrue(any("nie je overený" in str(e) for e in errors))
+
+    @override_settings(EMAIL_VERIFICATION_REQUIRED=True, ALLOW_UNVERIFIED_LOGIN=True)
+    def test_login_without_verification_allowed_when_flag_enabled(self):
+        """ALLOW_UNVERIFIED_LOGIN=True (prechodový režim) povolí login neoverenému účtu."""
+        User.objects.create_user(
             username="testuser",
             email="test@example.com",
             password="testpass123",
