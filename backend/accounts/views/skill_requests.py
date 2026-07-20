@@ -126,26 +126,57 @@ def skill_requests_view(request):
             {"error": "Karta neexistuje."}, status=status.HTTP_400_BAD_REQUEST
         )
 
-    recipient = offer.user
+    recipient_id = offer.user_id
 
     created = False
     try:
         with transaction.atomic():
-            # Lock both users and the offer before the authoritative visibility re-check.
+            # Global order: users, offers, then requests. Re-read every object
+            # validated before the transaction so the backend remains authoritative.
             lock_user_pair_for_update(
                 first_user_id=request.user.id,
-                second_user_id=recipient.id,
+                second_user_id=recipient_id,
             )
-            list(
-                OfferedSkill.objects.select_for_update()
-                .filter(id=offer.id)
-                .values_list("id", flat=True)
-            )
-            if offer_hidden_from_user(offer, request.user):
+            offer_ids = {offer.id}
+            if proposed_offer is not None:
+                offer_ids.add(proposed_offer.id)
+            locked_offers = {
+                current.id: current
+                for current in OfferedSkill.objects.select_for_update()
+                .select_related("user")
+                .filter(id__in=offer_ids)
+                .order_by("id")
+            }
+            offer = locked_offers.get(offer.id)
+            if offer is None or offer.user_id != recipient_id:
                 return Response(
                     {"offer_id": ["Karta neexistuje."]},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
+            recipient = offer.user
+            if (
+                offer_hidden_from_user(offer, request.user)
+                or not recipient.is_active
+                or recipient.is_staff
+                or recipient.is_superuser
+            ):
+                return Response(
+                    {"offer_id": ["Karta neexistuje."]},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            if proposed_offer is not None:
+                proposed_offer = locked_offers.get(proposed_offer.id)
+                if (
+                    proposed_offer is None
+                    or proposed_offer.user_id != request.user.id
+                    or proposed_offer.is_hidden
+                    or proposed_offer.is_seeking
+                ):
+                    return Response(
+                        {"proposed_offer_id": ["Vybraná karta neexistuje."]},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
 
             # Robustné aj keď už v DB existujú duplicity (legacy dáta):
             # nikdy nepoužívaj .get() na requester+offer.

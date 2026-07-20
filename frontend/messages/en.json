@@ -159,6 +159,7 @@
     "terminationReasonCommunicationIssue": "I am not satisfied with the communication",
     "terminationReasonMeetingNotHappened": "The meeting / delivery did not happen",
     "terminationReasonTrustConcerns": "I have trust concerns",
+    "terminationReasonInteractionUnavailable": "The interaction is no longer available",
     "terminationReasonOther": "Other",
     "writeReview": "Write review",
     "detailTitle": "Request details",
@@ -174,7 +175,8 @@
     "toastCancelFailed": "Failed to cancel request.",
     "toastCreateFailed": "Failed to send request.",
     "toastRequestCancelled": "The request was cancelled by the user.",
-    "toastRequestAlreadyProcessed": "The request has already been processed."
+    "toastRequestAlreadyProcessed": "The request has already been processed.",
+    "toastRequestUnavailable": "The request is no longer available."
   },
   "navigation": {
     "home": "Home",

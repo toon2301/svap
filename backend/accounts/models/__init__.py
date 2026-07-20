@@ -27,6 +27,9 @@ from .skill_requests import (
     SkillRequestStatus,
     SkillRequestTermination,
     SkillRequestTerminationReason,
+    USER_SKILL_REQUEST_TERMINATION_REASONS,
+    exclude_block_terminated_requests,
+    skill_request_is_reviewable,
 )
 from .notifications import Notification, NotificationType
 from .profile_likes import ProfileLike
@@ -57,7 +60,10 @@ __all__ = [
     "SkillRequestStatus",
     "SkillRequestTerminationReason",
     "SkillRequestTermination",
+    "USER_SKILL_REQUEST_TERMINATION_REASONS",
     "REVIEWABLE_SKILL_REQUEST_STATUSES",
+    "exclude_block_terminated_requests",
+    "skill_request_is_reviewable",
     "Notification",
     "NotificationType",
     "ProfileLike",

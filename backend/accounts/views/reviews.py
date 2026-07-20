@@ -23,6 +23,7 @@ from ..models import (
     ReviewReport,
     REVIEWABLE_SKILL_REQUEST_STATUSES,
     SkillRequest,
+    exclude_block_terminated_requests,
 )
 from ..serializers import ReviewSerializer
 from ..services.offer_visibility import offer_owner_blocked_from_user
@@ -127,10 +128,11 @@ def reviews_list_view(request, offer_id):
             )
 
         # Review is allowed only after the exchange has been closed.
-        has_reviewable_request = SkillRequest.objects.filter(
-            requester=request.user,
-            offer=offer,
-            status__in=REVIEWABLE_SKILL_REQUEST_STATUSES,
+        has_reviewable_request = exclude_block_terminated_requests(
+            SkillRequest.objects.filter(
+                requester=request.user, offer=offer,
+                status__in=REVIEWABLE_SKILL_REQUEST_STATUSES,
+            )
         ).exists()
         if not has_reviewable_request:
             return Response(

@@ -9,7 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRequestsNotifications } from '../../contexts/RequestsNotificationsContext';
 import {
   fetchSkillRequests,
-  getApiErrorMessage,
+  getSkillRequestActionErrorMessage,
   updateSkillRequest,
   requestCompletion,
   confirmCompletion,
@@ -241,7 +241,13 @@ export function RequestsMobile({ routeIntent }: RequestsMobileProps) {
               : action === 'reject'
                 ? t('requests.toastRequestAlreadyProcessed', 'Žiadosť už bola spracovaná.')
                 : t('common.error', 'Nastala chyba.');
-      toast.error(getApiErrorMessage(err, fallback));
+      toast.error(
+        getSkillRequestActionErrorMessage(
+          err,
+          t('requests.toastRequestUnavailable', 'Žiadosť už nie je dostupná.'),
+          fallback,
+        ),
+      );
       void load();
     } finally {
       setBusyId(null);
@@ -277,7 +283,13 @@ export function RequestsMobile({ routeIntent }: RequestsMobileProps) {
         void load();
       }
     } catch (err: unknown) {
-      toast.error(getApiErrorMessage(err, t('common.error', 'Nastala chyba.')));
+      toast.error(
+        getSkillRequestActionErrorMessage(
+          err,
+          t('requests.toastRequestUnavailable', 'Žiadosť už nie je dostupná.'),
+          t('common.error', 'Nastala chyba.'),
+        ),
+      );
       void load();
     } finally {
       setBusyId(null);
@@ -314,7 +326,13 @@ export function RequestsMobile({ routeIntent }: RequestsMobileProps) {
         void load();
       }
     } catch (err: unknown) {
-      toast.error(getApiErrorMessage(err, t('common.error', 'Nastala chyba.')));
+      toast.error(
+        getSkillRequestActionErrorMessage(
+          err,
+          t('requests.toastRequestUnavailable', 'Žiadosť už nie je dostupná.'),
+          t('common.error', 'Nastala chyba.'),
+        ),
+      );
       void load();
     } finally {
       setBusyId(null);
@@ -341,8 +359,9 @@ export function RequestsMobile({ routeIntent }: RequestsMobileProps) {
       void load();
     } catch (err: unknown) {
       setTerminationError(
-        getApiErrorMessage(
+        getSkillRequestActionErrorMessage(
           err,
+          t('requests.toastRequestUnavailable', 'Žiadosť už nie je dostupná.'),
           t('requests.terminateExchangeError', 'Výmenu sa nepodarilo predčasne ukončiť.'),
         ),
       );

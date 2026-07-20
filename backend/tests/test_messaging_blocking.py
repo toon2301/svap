@@ -18,13 +18,16 @@ from accounts.services.user_blocks import (
     delete_user_block,
     lock_users_and_ensure_interaction_allowed,
 )
-from messaging.models import Conversation, ConversationParticipant, Message
+from messaging.models import Conversation, ConversationParticipant, GroupInvitation, Message
 from messaging.services.conversations import (
     open_or_create_direct_conversation,
     send_direct_message,
 )
 from messaging.services.groups import create_group_conversation
-from messaging.services.group_invitations import invite_user_to_group
+from messaging.services.group_invitations import (
+    invite_user_to_group,
+    respond_to_group_invitation,
+)
 
 
 User = get_user_model()
@@ -344,6 +347,115 @@ class TestMessagingBlockEnforcement(APITestCase):
             user=self.u2,
         ).exists()
 
+    def _group_with_pending_invitation(self, *, owner, invited_user, other_active_member=None):
+        conversation = create_group_conversation(
+            actor=owner, name="Blocking regression group", invited_user_ids=[invited_user.id]
+        ).conversation
+        if other_active_member is not None:
+            invite_user_to_group(
+                conversation=conversation, actor=owner, invited_user=other_active_member
+            )
+            other_invitation = GroupInvitation.objects.get(
+                conversation=conversation, invited_user=other_active_member
+            )
+            respond_to_group_invitation(
+                invitation=other_invitation, actor=other_active_member, accept=True
+            )
+        invitation = GroupInvitation.objects.get(
+            conversation=conversation, invited_user=invited_user
+        )
+        return conversation, invitation
+
+    def test_block_by_invited_user_cancels_pending_group_invitation(self):
+        conversation, invitation = self._group_with_pending_invitation(
+            owner=self.u1, invited_user=self.u2, other_active_member=self.u3
+        )
+
+        self.client.force_authenticate(user=self.u2)
+        block_response = self.client.post(
+            reverse("accounts:user_block_detail", args=[self.u1.id])
+        )
+        assert block_response.status_code == status.HTTP_201_CREATED
+
+        invitation.refresh_from_db()
+        assert invitation.status == GroupInvitation.Status.CANCELLED
+        assert invitation.responded_at is not None
+        invited_participant = ConversationParticipant.objects.get(
+            conversation=conversation, user=self.u2
+        )
+        assert invited_participant.status == ConversationParticipant.Status.REMOVED
+        assert invited_participant.left_at is not None
+
+        # Existing active members are untouched by the block-driven cancellation.
+        owner_participant = ConversationParticipant.objects.get(
+            conversation=conversation, user=self.u1
+        )
+        assert owner_participant.status == ConversationParticipant.Status.ACTIVE
+        other_participant = ConversationParticipant.objects.get(
+            conversation=conversation, user=self.u3
+        )
+        assert other_participant.status == ConversationParticipant.Status.ACTIVE
+
+        respond_url = reverse(
+            "accounts:messaging_group_invitation_response",
+            args=[invitation.id, "accept"],
+        )
+        # Still blocked: the second guard in respond_to_group_invitation
+        # rejects it before even looking at the (already cancelled) status.
+        accept_while_blocked = self.client.post(respond_url, {}, format="json")
+        assert accept_while_blocked.status_code == status.HTTP_404_NOT_FOUND
+        assert accept_while_blocked.data["code"] == "recipient_unavailable"
+
+        unblock_response = self.client.delete(
+            reverse("accounts:user_block_detail", args=[self.u1.id])
+        )
+        assert unblock_response.status_code == status.HTTP_200_OK
+        invitation.refresh_from_db()
+        assert invitation.status == GroupInvitation.Status.CANCELLED
+        invited_participant.refresh_from_db()
+        assert invited_participant.status == ConversationParticipant.Status.REMOVED
+
+        # Unblocking does not resurrect the cancelled invitation.
+        accept_after_unblock = self.client.post(respond_url, {}, format="json")
+        assert accept_after_unblock.status_code == status.HTTP_400_BAD_REQUEST
+
+    def test_block_by_inviter_cancels_pending_group_invitation(self):
+        conversation, invitation = self._group_with_pending_invitation(
+            owner=self.u1, invited_user=self.u2
+        )
+
+        self.client.force_authenticate(user=self.u1)
+        block_response = self.client.post(
+            reverse("accounts:user_block_detail", args=[self.u2.id])
+        )
+        assert block_response.status_code == status.HTTP_201_CREATED
+
+        invitation.refresh_from_db()
+        assert invitation.status == GroupInvitation.Status.CANCELLED
+        invited_participant = ConversationParticipant.objects.get(
+            conversation=conversation, user=self.u2
+        )
+        assert invited_participant.status == ConversationParticipant.Status.REMOVED
+
+    def test_respond_to_invitation_rejects_when_pair_already_blocked(self):
+        """Second guard: even a pending invitation left over from a data edge
+        case (block existed before the row was created/reconciled) must not
+        be acceptable while the block stands."""
+        conversation, invitation = self._group_with_pending_invitation(
+            owner=self.u1, invited_user=self.u2
+        )
+        UserBlock.objects.create(blocker=self.u1, blocked_user=self.u2)
+
+        with pytest.raises(BlockedUserInteractionError):
+            respond_to_group_invitation(invitation=invitation, actor=self.u2, accept=True)
+
+        invitation.refresh_from_db()
+        assert invitation.status == GroupInvitation.Status.PENDING
+        invited_participant = ConversationParticipant.objects.get(
+            conversation=conversation, user=self.u2
+        )
+        assert invited_participant.status == ConversationParticipant.Status.INVITED
+
 
 @pytest.mark.django_db(transaction=True)
 class TestMessagingBlockConcurrency:
@@ -461,6 +573,100 @@ class TestMessagingBlockConcurrency:
             text="Must not survive the concurrent block"
         ).exists()
         assert not Notification.objects.filter(user=self.u1).exists()
+        push_delay_mock.assert_not_called()
+
+    def test_block_serializes_with_group_invitation_acceptance(self):
+        self._require_row_locks()
+        with patch("messaging.services.push_enqueue.deliver_message_push_task.delay"):
+            conversation = create_group_conversation(
+                actor=self.u1, name="Concurrent invitation group", invited_user_ids=[self.u2.id]
+            ).conversation
+        invitation = GroupInvitation.objects.get(
+            conversation=conversation, invited_user=self.u2
+        )
+
+        block_lock_held = Event()
+        accept_lock_attempted = Event()
+        release_block = Event()
+
+        from accounts.services import user_blocks as user_blocks_service
+
+        original_cleanup = user_blocks_service.remove_blocked_social_connections
+
+        def hold_block_transaction(*, first_user_id: int, second_user_id: int):
+            block_lock_held.set()
+            if not release_block.wait(timeout=10):
+                raise TimeoutError("Timed out waiting to release the block transaction.")
+            return original_cleanup(
+                first_user_id=first_user_id,
+                second_user_id=second_user_id,
+            )
+
+        def signal_accept_lock(*, first_user_id: int, second_user_id: int):
+            accept_lock_attempted.set()
+            return lock_users_and_ensure_interaction_allowed(
+                first_user_id=first_user_id,
+                second_user_id=second_user_id,
+            )
+
+        def block_user():
+            close_old_connections()
+            try:
+                blocker = User.objects.get(pk=self.u1.pk)
+                blocked_user = User.objects.get(pk=self.u2.pk)
+                _, created = create_user_block(
+                    blocker=blocker,
+                    blocked_user=blocked_user,
+                )
+                return created
+            finally:
+                close_old_connections()
+
+        def accept_invitation():
+            close_old_connections()
+            try:
+                actor = User.objects.get(pk=self.u2.pk)
+                return respond_to_group_invitation(
+                    invitation=invitation, actor=actor, accept=True
+                )
+            finally:
+                close_old_connections()
+
+        with (
+            patch(
+                "accounts.services.user_blocks.remove_blocked_social_connections",
+                side_effect=hold_block_transaction,
+            ),
+            patch(
+                "messaging.services.group_invitations.lock_users_and_ensure_interaction_allowed",
+                side_effect=signal_accept_lock,
+            ),
+            patch(
+                "messaging.services.push_enqueue.deliver_message_push_task.delay"
+            ) as push_delay_mock,
+            ThreadPoolExecutor(max_workers=2) as executor,
+        ):
+            block_future = executor.submit(block_user)
+            assert block_lock_held.wait(timeout=5)
+            accept_future = executor.submit(accept_invitation)
+            assert accept_lock_attempted.wait(timeout=5)
+
+            try:
+                with pytest.raises(FutureTimeoutError):
+                    accept_future.result(timeout=0.2)
+            finally:
+                release_block.set()
+
+            assert block_future.result(timeout=10) is True
+            with pytest.raises(BlockedUserInteractionError):
+                accept_future.result(timeout=10)
+
+        invitation.refresh_from_db()
+        assert invitation.status == GroupInvitation.Status.CANCELLED
+        assert UserBlock.objects.filter(
+            blocker=self.u1,
+            blocked_user=self.u2,
+        ).exists()
         push_delay_mock.assert_not_called()
 
     def test_unblock_serializes_with_direct_message_send(self):

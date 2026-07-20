@@ -15,6 +15,7 @@ from ..models import (
     REVIEWABLE_SKILL_REQUEST_STATUSES,
     Review,
     SkillRequest,
+    exclude_block_terminated_requests,
 )
 
 SKILLS_LIST_CACHE_TTL_SECONDS = int(
@@ -48,10 +49,12 @@ def _skills_list_context(request, offer_ids):
         )
     )
     can_review = set(
-        SkillRequest.objects.filter(
-            offer_id__in=offer_ids,
-            requester=user,
-            status__in=REVIEWABLE_SKILL_REQUEST_STATUSES,
+        exclude_block_terminated_requests(
+            SkillRequest.objects.filter(
+                offer_id__in=offer_ids,
+                requester=user,
+                status__in=REVIEWABLE_SKILL_REQUEST_STATUSES,
+            )
         ).values_list("offer_id", flat=True)
     )
     request_status_by_offer = dict(

@@ -13,6 +13,8 @@ from swaply.rate_limiting import api_rate_limit
 from ..models import SkillRequest, SkillRequestStatus, SkillRequestTermination
 from ..serializers import SkillRequestSerializer, SkillRequestTerminateSerializer
 from ..services.notifications import create_skill_request_terminated_notification
+from ..services.skill_request_transitions import lock_skill_request_for_transition
+from ..services.user_blocks import BlockedUserInteractionError
 from .skill_requests import _skill_requests_cache_invalidate_for_user
 
 logger = logging.getLogger(__name__)
@@ -38,12 +40,8 @@ def skill_request_terminate_view(request, request_id: int):
 
     with transaction.atomic():
         try:
-            obj = (
-                SkillRequest.objects.select_for_update(of=("self",))
-                .select_related("offer", "requester", "recipient", "proposed_offer", "proposed_offer__user")
-                .get(id=request_id)
-            )
-        except SkillRequest.DoesNotExist:
+            obj = lock_skill_request_for_transition(request_id=request_id)
+        except (SkillRequest.DoesNotExist, BlockedUserInteractionError):
             return Response(
                 {"error": "Žiadosť neexistuje."},
                 status=status.HTTP_404_NOT_FOUND,

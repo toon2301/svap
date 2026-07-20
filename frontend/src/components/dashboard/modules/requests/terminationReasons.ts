@@ -51,6 +51,12 @@ export function getTerminationReasonLabel(
   reason: unknown,
   t: (key: string, defaultValue?: string) => string,
 ): string {
+  if (reason === 'interaction_unavailable') {
+    return t(
+      'requests.terminationReasonInteractionUnavailable',
+      'Interakcia už nie je dostupná',
+    );
+  }
   const option = TERMINATION_REASON_OPTIONS.find((item) => item.value === reason);
   if (!option) return '';
   return t(option.labelKey, option.defaultLabel);

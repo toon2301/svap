@@ -72,6 +72,19 @@ def remove_blocked_social_connections(
     ProfileLike.objects.filter(likes_filter).delete()
 
 
+def blocked_user_ids_for(*, user_id: int | None) -> set[int]:
+    """Return all counterpart IDs blocked in either direction in one query."""
+    if not user_id:
+        return set()
+    rows = UserBlock.objects.filter(
+        Q(blocker_id=user_id) | Q(blocked_user_id=user_id)
+    ).values_list("blocker_id", "blocked_user_id")
+    return {
+        blocked_id if blocker_id == user_id else blocker_id
+        for blocker_id, blocked_id in rows
+    }
+
+
 def create_user_block(*, blocker, blocked_user) -> tuple[UserBlock, bool]:
     """Create a directional block, returning an existing row when repeated."""
     if blocker.pk == blocked_user.pk:
@@ -99,6 +112,36 @@ def create_user_block(*, blocker, blocked_user) -> tuple[UserBlock, bool]:
         close_pending_message_request_for_user_pair(
             first_user_id=blocker.pk,
             second_user_id=blocked_user.pk,
+        )
+        from accounts.services.skill_request_transitions import (
+            close_open_skill_requests_for_blocked_pair,
+        )
+
+        closed_skill_requests = close_open_skill_requests_for_blocked_pair(
+            blocker_id=blocker.pk,
+            blocked_user_id=blocked_user.pk,
+        )
+        if closed_skill_requests:
+
+            def invalidate_skill_request_caches():
+                from accounts.views.skill_request_helpers import (
+                    _skill_requests_cache_invalidate_for_user,
+                )
+
+                _skill_requests_cache_invalidate_for_user(blocker)
+                _skill_requests_cache_invalidate_for_user(blocked_user)
+
+            transaction.on_commit(invalidate_skill_request_caches)
+
+        # Import locally for the same reason as the message-request import
+        # above: keep accounts independent of messaging at Django app load.
+        from messaging.services.group_invitations import (
+            close_open_group_invitations_for_blocked_pair,
+        )
+
+        close_open_group_invitations_for_blocked_pair(
+            blocker_id=blocker.pk,
+            blocked_user_id=blocked_user.pk,
         )
     return user_block, created
 

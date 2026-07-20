@@ -92,10 +92,13 @@ export function SearchUserProfileModule({
   }, [currentUserId, userId]);
 
   const handleBlocked = React.useCallback(() => {
+    // Navigate to the main dashboard (same route as the sidebar logo/home
+    // link), not back to search — the blocked profile is no longer relevant
+    // to return to. This is a real route change (see app/dashboard/page.tsx),
+    // so the old module state does not need to be reset here.
     removeTargetFromClientState();
-    onBack?.();
-    router.replace('/dashboard/search');
-  }, [onBack, removeTargetFromClientState, router]);
+    router.replace('/dashboard');
+  }, [removeTargetFromClientState, router]);
 
   const blockAction = useBlockUserAction({
     targetUserId: userId,

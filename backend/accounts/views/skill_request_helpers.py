@@ -17,6 +17,7 @@ from ..models import (
     SkillRequestStatus,
 )
 from ..serializers import SkillRequestSerializer
+from ..services.user_blocks import blocked_user_ids_for
 
 logger = logging.getLogger(__name__)
 
@@ -101,11 +102,25 @@ def _compute_skill_requests_payload(*, viewer, request, status_param: str | None
             Review.objects.filter(reviewer=viewer, offer_id__in=offer_ids).values_list("offer_id", flat=True)
         )
 
+    blocked_user_ids = blocked_user_ids_for(user_id=viewer.id)
+
     received_ser = SkillRequestSerializer(
-        received_list, many=True, context={"request": request, "reviewed_offer_ids": reviewed_offer_ids}
+        received_list,
+        many=True,
+        context={
+            "request": request,
+            "reviewed_offer_ids": reviewed_offer_ids,
+            "blocked_user_ids": blocked_user_ids,
+        },
     )
     sent_ser = SkillRequestSerializer(
-        sent_list, many=True, context={"request": request, "reviewed_offer_ids": reviewed_offer_ids}
+        sent_list,
+        many=True,
+        context={
+            "request": request,
+            "reviewed_offer_ids": reviewed_offer_ids,
+            "blocked_user_ids": blocked_user_ids,
+        },
     )
     return {
         "received": list(received_ser.data),

@@ -159,6 +159,7 @@
     "terminationReasonCommunicationIssue": "Nie som spokojný s komunikáciou",
     "terminationReasonMeetingNotHappened": "Stretnutie / realizácia neprebehla",
     "terminationReasonTrustConcerns": "Mám obavy z dôveryhodnosti",
+    "terminationReasonInteractionUnavailable": "Interakcia už nie je dostupná",
     "terminationReasonOther": "Iné",
     "writeReview": "Napíš recenziu",
     "detailTitle": "Detail žiadosti",
@@ -174,7 +175,8 @@
     "toastCancelFailed": "Zrušenie žiadosti zlyhalo.",
     "toastCreateFailed": "Žiadosť sa nepodarilo odoslať.",
     "toastRequestCancelled": "Žiadosť bola zrušená používateľom.",
-    "toastRequestAlreadyProcessed": "Žiadosť už bola spracovaná."
+    "toastRequestAlreadyProcessed": "Žiadosť už bola spracovaná.",
+    "toastRequestUnavailable": "Žiadosť už nie je dostupná."
   },
   "navigation": {
     "home": "Nástenka",

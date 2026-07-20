@@ -15,6 +15,7 @@ export type SkillRequestTerminationReason =
   | 'communication_issue'
   | 'meeting_not_happened'
   | 'trust_concerns'
+  | 'interaction_unavailable'
   | 'other';
 
 export type SkillRequestUserSummary = {
