@@ -1,5 +1,5 @@
 import os
-from time import perf_counter, time_ns
+from time import perf_counter
 
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
@@ -9,6 +9,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from accounts.cache_versioning import next_cache_version_token
 from accounts.services.user_blocks import exclude_blocked_users
 from swaply.rate_limiting import api_rate_limit
 
@@ -83,7 +84,7 @@ def invalidate_dashboard_user_skills_cache(target_user_id: int | None) -> None:
     try:
         cache.set(
             _dashboard_user_skills_cache_version_key(int(target_user_id)),
-            str(time_ns()),
+            next_cache_version_token(),
             timeout=DASHBOARD_USER_SKILLS_CACHE_VERSION_TTL_SECONDS,
         )
     except Exception:

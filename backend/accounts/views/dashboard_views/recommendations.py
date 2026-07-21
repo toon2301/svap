@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import os
-from time import time_ns
 
 from django.core.cache import cache
 from django.db.models import Case, F, IntegerField, Q, Value, When
@@ -11,6 +10,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from accounts.cache_versioning import next_cache_version_token
 from accounts.services.user_blocks import exclude_blocked_users
 from swaply.rate_limiting import api_rate_limit
 
@@ -86,7 +86,7 @@ def invalidate_dashboard_recommendations_cache(viewer_user_id: int | None) -> No
     try:
         cache.set(
             _recommendations_cache_version_key(int(viewer_user_id)),
-            str(time_ns()),
+            next_cache_version_token(),
             timeout=RECOMMENDATIONS_CACHE_VERSION_TTL_SECONDS,
         )
     except Exception:

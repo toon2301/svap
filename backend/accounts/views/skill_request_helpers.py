@@ -136,13 +136,18 @@ def _skill_requests_cache_refresh_for_user(user, request) -> None:
         cache.set(_skill_requests_cache_key(user.id, key), payload, timeout=SKILL_REQUESTS_CACHE_TTL_SECONDS)
 
 
-def _skill_requests_cache_invalidate_for_user(user) -> None:
+def _skill_requests_cache_invalidate_for_user_id(user_id: int) -> None:
     """
-    Invaliduje cache žiadostí pre používateľa. Bezpečné pre produkciu – len mazanie
+    Invaliduje cache žiadostí pre user_id. Bezpečné pre produkciu – len mazanie
     kľúčov, žiadne DB dotazy. Ďalší GET znovu vybuduje cache.
     """
     for key in _SKILLREQ_STATUS_KEYS:
         try:
-            cache.delete(_skill_requests_cache_key(user.id, key))
+            cache.delete(_skill_requests_cache_key(user_id, key))
         except Exception:
             pass
+
+
+def _skill_requests_cache_invalidate_for_user(user) -> None:
+    """Object-based wrapper okolo _skill_requests_cache_invalidate_for_user_id."""
+    _skill_requests_cache_invalidate_for_user_id(user.id)

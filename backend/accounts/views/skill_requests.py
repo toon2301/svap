@@ -142,7 +142,7 @@ def skill_requests_view(request):
                 offer_ids.add(proposed_offer.id)
             locked_offers = {
                 current.id: current
-                for current in OfferedSkill.objects.select_for_update()
+                for current in OfferedSkill.objects.select_for_update(of=("self",))
                 .select_related("user")
                 .filter(id__in=offer_ids)
                 .order_by("id")

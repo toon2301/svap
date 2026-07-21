@@ -85,6 +85,54 @@ def blocked_user_ids_for(*, user_id: int | None) -> set[int]:
     }
 
 
+def _schedule_skill_request_cache_invalidation(
+    *, first_user_id: int, second_user_id: int
+) -> None:
+    """Drop cached skill-request payloads for a pair once the surrounding
+    block/unblock transaction commits.
+
+    The cached payload's ``can_review`` depends on the current block state, so
+    every block AND unblock must invalidate it — even when no open request
+    changed status. Registered as an ``on_commit`` hook so a concurrent read
+    cannot repopulate the cache from the not-yet-committed state.
+    """
+
+    def _invalidate() -> None:
+        from accounts.views.skill_request_helpers import (
+            _skill_requests_cache_invalidate_for_user_id,
+        )
+
+        _skill_requests_cache_invalidate_for_user_id(first_user_id)
+        _skill_requests_cache_invalidate_for_user_id(second_user_id)
+
+    transaction.on_commit(_invalidate)
+
+
+def _schedule_dashboard_user_skills_cache_invalidation(
+    *, first_user_id: int, second_user_id: int
+) -> None:
+    """Bump the public-profile offers cache version for a pair once the
+    block/unblock transaction commits.
+
+    That cache embeds ``can_review`` for the viewer against the profiled
+    owner's offers, which depends on the current block state. The cache is
+    versioned per profiled (target) user, so both users must be bumped — each
+    is the target when viewed by the other. ``on_commit`` mirrors
+    _schedule_skill_request_cache_invalidation so a concurrent read cannot
+    repopulate the new version from the not-yet-committed state.
+    """
+
+    def _invalidate() -> None:
+        from accounts.views.dashboard_views.public_profiles import (
+            invalidate_dashboard_user_skills_cache,
+        )
+
+        invalidate_dashboard_user_skills_cache(first_user_id)
+        invalidate_dashboard_user_skills_cache(second_user_id)
+
+    transaction.on_commit(_invalidate)
+
+
 def create_user_block(*, blocker, blocked_user) -> tuple[UserBlock, bool]:
     """Create a directional block, returning an existing row when repeated."""
     if blocker.pk == blocked_user.pk:
@@ -117,21 +165,10 @@ def create_user_block(*, blocker, blocked_user) -> tuple[UserBlock, bool]:
             close_open_skill_requests_for_blocked_pair,
         )
 
-        closed_skill_requests = close_open_skill_requests_for_blocked_pair(
+        close_open_skill_requests_for_blocked_pair(
             blocker_id=blocker.pk,
             blocked_user_id=blocked_user.pk,
         )
-        if closed_skill_requests:
-
-            def invalidate_skill_request_caches():
-                from accounts.views.skill_request_helpers import (
-                    _skill_requests_cache_invalidate_for_user,
-                )
-
-                _skill_requests_cache_invalidate_for_user(blocker)
-                _skill_requests_cache_invalidate_for_user(blocked_user)
-
-            transaction.on_commit(invalidate_skill_request_caches)
 
         # Import locally for the same reason as the message-request import
         # above: keep accounts independent of messaging at Django app load.
@@ -142,6 +179,17 @@ def create_user_block(*, blocker, blocked_user) -> tuple[UserBlock, bool]:
         close_open_group_invitations_for_blocked_pair(
             blocker_id=blocker.pk,
             blocked_user_id=blocked_user.pk,
+        )
+
+        # Always invalidate, not only when an open request was closed: the
+        # cached can_review flag depends on the block state itself.
+        _schedule_skill_request_cache_invalidation(
+            first_user_id=blocker.pk,
+            second_user_id=blocked_user.pk,
+        )
+        _schedule_dashboard_user_skills_cache_invalidation(
+            first_user_id=blocker.pk,
+            second_user_id=blocked_user.pk,
         )
     return user_block, created
 
@@ -157,6 +205,17 @@ def delete_user_block(*, blocker, blocked_user_id: int) -> bool:
             blocker=blocker,
             blocked_user_id=blocked_user_id,
         ).delete()
+        if deleted_count:
+            # Unblocking can turn can_review back on, so drop the cached
+            # payloads for both users the same way blocking does.
+            _schedule_skill_request_cache_invalidation(
+                first_user_id=blocker.pk,
+                second_user_id=blocked_user_id,
+            )
+            _schedule_dashboard_user_skills_cache_invalidation(
+                first_user_id=blocker.pk,
+                second_user_id=blocked_user_id,
+            )
     return deleted_count > 0
 
 

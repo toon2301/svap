@@ -17,6 +17,7 @@ from ..models import (
     SkillRequest,
     exclude_block_terminated_requests,
 )
+from ..services.user_blocks import blocked_user_ids_for
 
 SKILLS_LIST_CACHE_TTL_SECONDS = int(
     os.getenv("SKILLS_LIST_CACHE_TTL_SECONDS", "60") or "60"
@@ -48,15 +49,19 @@ def _skills_list_context(request, offer_ids):
             "offer_id", flat=True
         )
     )
-    can_review = set(
-        exclude_block_terminated_requests(
-            SkillRequest.objects.filter(
-                offer_id__in=offer_ids,
-                requester=user,
-                status__in=REVIEWABLE_SKILL_REQUEST_STATUSES,
-            )
-        ).values_list("offer_id", flat=True)
+    blocked_user_ids = blocked_user_ids_for(user_id=user.id)
+    can_review_qs = exclude_block_terminated_requests(
+        SkillRequest.objects.filter(
+            offer_id__in=offer_ids,
+            requester=user,
+            status__in=REVIEWABLE_SKILL_REQUEST_STATUSES,
+        )
     )
+    if blocked_user_ids:
+        # Exclude offers owned by a blocked counterpart before building the set,
+        # so can_review_offer_ids never carries a blocked-owner offer.
+        can_review_qs = can_review_qs.exclude(offer__user_id__in=blocked_user_ids)
+    can_review = set(can_review_qs.values_list("offer_id", flat=True))
     request_status_by_offer = dict(
         SkillRequest.objects.filter(
             requester=user, offer_id__in=offer_ids
@@ -73,6 +78,7 @@ def _skills_list_context(request, offer_ids):
         "can_review_offer_ids": can_review,
         "request_status_by_offer_id": request_status_by_offer,
         "liked_offer_ids": liked_offer_ids,
+        "blocked_user_ids": blocked_user_ids,
     }
 
 

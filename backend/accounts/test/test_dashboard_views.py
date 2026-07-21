@@ -732,6 +732,50 @@ class DashboardViewsTestCase(TestCase):
         self.assertEqual(response_b.status_code, status.HTTP_200_OK)
         self.assertIsNone(response_b.data[0]["my_request_status"])
 
+    def test_dashboard_user_skills_cache_updates_even_when_time_ns_collides(self):
+        # Deterministic reproduction of the former flake: pin time_ns so every
+        # cache-version bump in this scenario shares a clock tick (the worst
+        # case). The version token must still change between the offer's and the
+        # skill request's invalidations, otherwise the second GET serves a stale
+        # cache entry and my_request_status stays None.
+        owner = User.objects.create_user(
+            username="collisionowner",
+            email="collisionowner@example.com",
+            password="testpass123",
+            is_public=True,
+        )
+        viewer = User.objects.create_user(
+            username="collisionviewer",
+            email="collisionviewer@example.com",
+            password="testpass123",
+        )
+        url = reverse("accounts:dashboard_user_skills", args=[owner.id])
+        client = APIClient()
+        client.force_authenticate(user=viewer)
+
+        with patch("accounts.cache_versioning.time_ns", return_value=42):
+            skill = OfferedSkill.objects.create(
+                user=owner,
+                category="Collision Skill",
+                subcategory="Sub",
+                description="Description",
+                detailed_description="Details",
+            )
+            first = client.get(url)
+            self.assertEqual(first.status_code, status.HTTP_200_OK)
+            self.assertIsNone(first.data[0]["my_request_status"])
+
+            SkillRequest.objects.create(
+                requester=viewer,
+                recipient=owner,
+                offer=skill,
+                status=SkillRequestStatus.PENDING,
+            )
+
+            second = client.get(url)
+        self.assertEqual(second.status_code, status.HTTP_200_OK)
+        self.assertEqual(second.data[0]["my_request_status"], SkillRequestStatus.PENDING)
+
     def test_dashboard_favorites_get_success(self):
         """Test získania obľúbených"""
         FavoriteUser.objects.create(user=self.user, favorite_user=self.other_user)

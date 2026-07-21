@@ -10,7 +10,7 @@ from django.core.cache import cache
 from django.db import close_old_connections, connection, transaction
 from django.urls import reverse
 from rest_framework import status
-from rest_framework.test import APITestCase
+from rest_framework.test import APIRequestFactory, APITestCase
 
 from accounts.models import (
     Notification,
@@ -23,6 +23,7 @@ from accounts.models import (
     SkillRequestTerminationReason,
     UserBlock,
 )
+from accounts.offer_serializers import OfferedSkillSerializer
 from accounts.services.skill_request_transitions import (
     lock_skill_request_for_transition,
 )
@@ -30,6 +31,8 @@ from accounts.services.user_blocks import (
     BlockedUserInteractionError,
     create_user_block,
 )
+from accounts.views.skill_helpers import _skills_list_context
+from accounts.views.skill_request_helpers import _skill_requests_cache_key
 
 User = get_user_model()
 
@@ -238,6 +241,106 @@ class SkillRequestBlockingApiTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         item = next(row for row in response.data["sent"] if row["id"] == completed.id)
         self.assertFalse(item["offer_summary"]["can_review"])
+
+    def test_block_without_open_request_invalidates_cached_can_review(self):
+        # Only a COMPLETED exchange exists: blocking closes no open request,
+        # so under the old logic the cache was never invalidated.
+        completed = self._create_request(SkillRequestStatus.COMPLETED)
+        self.client.force_authenticate(user=self.requester)
+        warmed = self.client.get(
+            reverse("accounts:skill_requests"), {"status": "completed"}
+        )
+        item = next(row for row in warmed.data["sent"] if row["id"] == completed.id)
+        self.assertTrue(item["offer_summary"]["can_review"])
+        cache_key = _skill_requests_cache_key(self.requester.id, "completed")
+        self.assertIsNotNone(cache.get(cache_key))
+
+        with self.captureOnCommitCallbacks(execute=True):
+            blocked = self.client.post(
+                reverse("accounts:user_block_detail", args=[self.recipient.id])
+            )
+        self.assertEqual(blocked.status_code, status.HTTP_201_CREATED)
+        self.assertIsNone(cache.get(cache_key))
+
+    def test_unblock_without_open_request_invalidates_cached_can_review(self):
+        completed = self._create_request(SkillRequestStatus.COMPLETED)
+        UserBlock.objects.create(blocker=self.requester, blocked_user=self.recipient)
+        self.client.force_authenticate(user=self.requester)
+        warmed = self.client.get(
+            reverse("accounts:skill_requests"), {"status": "completed"}
+        )
+        item = next(row for row in warmed.data["sent"] if row["id"] == completed.id)
+        self.assertFalse(item["offer_summary"]["can_review"])
+        cache_key = _skill_requests_cache_key(self.requester.id, "completed")
+        self.assertIsNotNone(cache.get(cache_key))
+
+        with self.captureOnCommitCallbacks(execute=True):
+            unblocked = self.client.delete(
+                reverse("accounts:user_block_detail", args=[self.recipient.id])
+            )
+        self.assertEqual(unblocked.status_code, status.HTTP_200_OK)
+        self.assertIsNone(cache.get(cache_key))
+
+    def test_block_and_unblock_bump_dashboard_user_skills_cache_for_both(self):
+        from accounts.views.dashboard_views.public_profiles import (
+            _dashboard_user_skills_cache_version_key,
+        )
+
+        # No skill request exists at all: blocking changes no request status,
+        # so only the block itself can trigger this invalidation.
+        requester_key = _dashboard_user_skills_cache_version_key(self.requester.id)
+        recipient_key = _dashboard_user_skills_cache_version_key(self.recipient.id)
+        cache.set(requester_key, "seed-1")
+        cache.set(recipient_key, "seed-1")
+        self.client.force_authenticate(user=self.requester)
+
+        with self.captureOnCommitCallbacks(execute=True):
+            blocked = self.client.post(
+                reverse("accounts:user_block_detail", args=[self.recipient.id])
+            )
+        self.assertEqual(blocked.status_code, status.HTTP_201_CREATED)
+        self.assertNotEqual(cache.get(requester_key), "seed-1")
+        self.assertNotEqual(cache.get(recipient_key), "seed-1")
+
+        cache.set(requester_key, "seed-2")
+        cache.set(recipient_key, "seed-2")
+        with self.captureOnCommitCallbacks(execute=True):
+            unblocked = self.client.delete(
+                reverse("accounts:user_block_detail", args=[self.recipient.id])
+            )
+        self.assertEqual(unblocked.status_code, status.HTTP_200_OK)
+        self.assertNotEqual(cache.get(requester_key), "seed-2")
+        self.assertNotEqual(cache.get(recipient_key), "seed-2")
+
+    def _can_review_single_object_path(self, offer, viewer):
+        request = APIRequestFactory().get("/")
+        request.user = viewer
+        serializer = OfferedSkillSerializer(offer, context={"request": request})
+        return serializer.data["can_review"]
+
+    def _can_review_bulk_list_path(self, offer, viewer):
+        request = APIRequestFactory().get("/")
+        request.user = viewer
+        context = {"request": request, **_skills_list_context(request, [offer.id])}
+        serializer = OfferedSkillSerializer([offer], many=True, context=context)
+        return serializer.data[0]["can_review"]
+
+    def test_can_review_consistent_between_single_and_bulk_paths_on_block(self):
+        # Requester completed an exchange for the recipient's offer.
+        self._create_request(SkillRequestStatus.COMPLETED)
+
+        # No block: both serializer paths agree the offer is reviewable.
+        single_before = self._can_review_single_object_path(self.offer, self.requester)
+        bulk_before = self._can_review_bulk_list_path(self.offer, self.requester)
+        self.assertTrue(single_before)
+        self.assertEqual(single_before, bulk_before)
+
+        # An active block must switch both paths to False together.
+        UserBlock.objects.create(blocker=self.requester, blocked_user=self.recipient)
+        single_after = self._can_review_single_object_path(self.offer, self.requester)
+        bulk_after = self._can_review_bulk_list_path(self.offer, self.requester)
+        self.assertFalse(single_after)
+        self.assertEqual(single_after, bulk_after)
 
     def test_block_terminated_exchange_stays_not_reviewable_after_unblock(self):
         accepted = self._create_request(SkillRequestStatus.ACCEPTED)
