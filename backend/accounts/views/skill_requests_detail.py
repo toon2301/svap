@@ -24,6 +24,8 @@ from ..services.notifications import (
     create_skill_request_completion_requested_notification,
     create_skill_request_rejected_notification,
 )
+from ..services.skill_request_transitions import lock_skill_request_for_transition
+from ..services.user_blocks import BlockedUserInteractionError
 from .skill_request_helpers import _skill_requests_cache_invalidate_for_user
 
 logger = logging.getLogger(__name__)
@@ -37,12 +39,38 @@ def skill_request_detail_view(request, request_id: int):
     PATCH /skill-requests/<id>/
     Body: { action: 'accept'|'reject'|'cancel'|'hide' }
     """
+    raw_action = (
+        request.data.get("action")
+        if hasattr(request, "data") and request.data
+        else None
+    )
+    if raw_action is None and getattr(request, "_request", None):
+        try:
+            body = getattr(request._request, "body", b"")
+            if body:
+                data = json.loads(
+                    body.decode("utf-8") if isinstance(body, bytes) else body
+                )
+                raw_action = data.get("action")
+        except Exception:
+            pass
+    action = (
+        (raw_action or "").strip().lower()
+        if isinstance(raw_action, str)
+        else ""
+    )
+    if not raw_action or action not in {"accept", "reject", "cancel", "hide"}:
+        return Response(
+            {"error": "Neplatná akcia."}, status=status.HTTP_400_BAD_REQUEST
+        )
+
     with transaction.atomic():
         try:
-            obj = SkillRequest.objects.select_for_update(of=("self",)).select_related(
-                "offer", "requester", "recipient", "proposed_offer", "proposed_offer__user"
-            ).get(id=request_id)
-        except SkillRequest.DoesNotExist:
+            obj = lock_skill_request_for_transition(
+                request_id=request_id,
+                enforce_interaction=action != "hide",
+            )
+        except (SkillRequest.DoesNotExist, BlockedUserInteractionError):
             return Response(
                 {"error": "Žiadosť neexistuje."}, status=status.HTTP_404_NOT_FOUND
             )
@@ -51,31 +79,6 @@ def skill_request_detail_view(request, request_id: int):
         if request.user.id not in (obj.requester_id, obj.recipient_id):
             return Response(
                 {"error": "Nemáš prístup."}, status=status.HTTP_403_FORBIDDEN
-            )
-
-        raw_action = (
-            request.data.get("action")
-            if hasattr(request, "data") and request.data
-            else None
-        )
-        if raw_action is None and getattr(request, "_request", None):
-            try:
-                body = getattr(request._request, "body", b"")
-                if body:
-                    data = json.loads(
-                        body.decode("utf-8") if isinstance(body, bytes) else body
-                    )
-                    raw_action = data.get("action")
-            except Exception:
-                pass
-        action = (
-            (raw_action or "").strip().lower()
-            if isinstance(raw_action, str)
-            else ""
-        )
-        if not raw_action or action not in {"accept", "reject", "cancel", "hide"}:
-            return Response(
-                {"error": "Neplatná akcia."}, status=status.HTTP_400_BAD_REQUEST
             )
 
         # Recipient môže accept/reject, requester môže cancel
@@ -241,10 +244,8 @@ def skill_request_request_completion_view(request, request_id: int):
     """
     with transaction.atomic():
         try:
-            obj = SkillRequest.objects.select_for_update(of=("self",)).select_related(
-                "offer", "requester", "recipient", "proposed_offer", "proposed_offer__user"
-            ).get(id=request_id)
-        except SkillRequest.DoesNotExist:
+            obj = lock_skill_request_for_transition(request_id=request_id)
+        except (SkillRequest.DoesNotExist, BlockedUserInteractionError):
             return Response(
                 {"error": "Žiadosť neexistuje."}, status=status.HTTP_404_NOT_FOUND
             )
@@ -322,10 +323,8 @@ def skill_request_confirm_completion_view(request, request_id: int):
     """
     with transaction.atomic():
         try:
-            obj = SkillRequest.objects.select_for_update(of=("self",)).select_related(
-                "offer", "requester", "recipient", "proposed_offer", "proposed_offer__user"
-            ).get(id=request_id)
-        except SkillRequest.DoesNotExist:
+            obj = lock_skill_request_for_transition(request_id=request_id)
+        except (SkillRequest.DoesNotExist, BlockedUserInteractionError):
             return Response(
                 {"error": "Žiadosť neexistuje."}, status=status.HTTP_404_NOT_FOUND
             )

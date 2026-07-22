@@ -169,6 +169,12 @@ describe('PortfolioDetailModule', () => {
     jest.clearAllMocks();
     mockMobileViewport(false);
     mockPush.mockClear();
+    // Reset every request mock, not just their call records: clearAllMocks
+    // leaves mockResolvedValueOnce queues and implementations in place, so an
+    // unconsumed api.get once-value from one test could leak into the next and
+    // feed it the wrong portfolio. api.get was the only request mock missing
+    // this reset, unlike api.post/patch/delete/axios.post below.
+    (api.get as jest.Mock).mockReset();
     (api.post as jest.Mock).mockReset();
     (api.patch as jest.Mock).mockReset();
     (api.delete as jest.Mock).mockReset();
@@ -613,7 +619,10 @@ describe('PortfolioDetailModule', () => {
       target: { files: [imageFile()] },
     });
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Skúsiť znova' }));
+    // Scope to the upload queue: the failed-load reload button shares the
+    // "Skúsiť znova" label, so an unscoped query could match the wrong button.
+    const uploadQueue = await screen.findByTestId('portfolio-upload-queue');
+    fireEvent.click(await within(uploadQueue).findByRole('button', { name: 'Skúsiť znova' }));
 
     await waitFor(() => {
       expect(api.post).toHaveBeenCalledWith('/auth/portfolio/7/images/upload-complete/', {

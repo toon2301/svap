@@ -4,11 +4,13 @@ from .services.offer_visibility import offer_hidden_from_user
 from .models import (
     OfferedSkill,
     Review,
-    REVIEWABLE_SKILL_REQUEST_STATUSES,
     SkillRequest,
     SkillRequestTerminationReason,
+    USER_SKILL_REQUEST_TERMINATION_REASONS,
     User,
+    skill_request_is_reviewable,
 )
+from .services.user_blocks import user_block_exists_between
 
 
 class SkillRequestCreateSerializer(serializers.Serializer):
@@ -149,7 +151,7 @@ class SkillRequestCreateSerializer(serializers.Serializer):
 class SkillRequestTerminateSerializer(serializers.Serializer):
     """Payload na predčasné skončenie aktívnej výmeny."""
 
-    reason = serializers.ChoiceField(choices=SkillRequestTerminationReason.choices)
+    reason = serializers.ChoiceField(choices=USER_SKILL_REQUEST_TERMINATION_REASONS)
     description = serializers.CharField(
         allow_blank=True,
         max_length=1000,
@@ -241,11 +243,20 @@ class SkillRequestSerializer(serializers.ModelSerializer):
                 already_reviewed = Review.objects.filter(
                     reviewer=request.user, offer=offer
                 ).exists()
+            blocked_user_ids = self.context.get("blocked_user_ids")
+            if blocked_user_ids is None:
+                interaction_blocked = user_block_exists_between(
+                    first_user_id=request.user.id,
+                    second_user_id=obj.recipient_id,
+                )
+            else:
+                interaction_blocked = obj.recipient_id in blocked_user_ids
             can_review = (
                 obj.requester_id == request.user.id
                 and getattr(offer, "user_id", None) != request.user.id
-                and obj.status in REVIEWABLE_SKILL_REQUEST_STATUSES
+                and skill_request_is_reviewable(obj)
                 and not already_reviewed
+                and not interaction_blocked
             )
         price_negotiable = bool(getattr(offer, "price_negotiable", False))
         return {
@@ -308,7 +319,13 @@ class SkillRequestSerializer(serializers.ModelSerializer):
             termination = obj.termination
         except Exception:
             return None
-        terminated_by = getattr(termination, "terminated_by", None)
+        is_system_termination = (
+            termination.reason
+            == SkillRequestTerminationReason.INTERACTION_UNAVAILABLE
+        )
+        terminated_by = None if is_system_termination else getattr(
+            termination, "terminated_by", None
+        )
         return {
             "reason": termination.reason,
             "description": termination.description or "",

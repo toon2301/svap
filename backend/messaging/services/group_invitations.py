@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from django.db import transaction
+from django.db.models import Q
 from django.utils import timezone
 
 from accounts.services.notifications import create_group_invitation_notification
@@ -149,7 +150,22 @@ def invite_user_to_group(
 
 
 def respond_to_group_invitation(*, invitation: GroupInvitation, actor, accept: bool) -> GroupMutationResult:
+    # Participants are set at invitation creation and never reassigned, so the
+    # ids on the caller-provided instance are safe to use for the user lock
+    # taken below (same field access pattern as lock_skill_request_for_transition).
+    invited_by_id = invitation.invited_by_id
+    invited_user_id = invitation.invited_user_id
+
     with transaction.atomic():
+        # Lock the user pair before the invitation row, matching the lock
+        # order create_user_block uses, and re-check the block state as a
+        # second guard against a block created concurrently with this response
+        # (the invitation is already cancelled on block, so this mainly closes
+        # the race window between that cancellation and an in-flight accept).
+        lock_users_and_ensure_interaction_allowed(
+            first_user_id=invited_by_id,
+            second_user_id=invited_user_id,
+        )
         invitation = (
             GroupInvitation.objects.select_for_update()
             .select_related("conversation", "invited_user", "invited_by")
@@ -210,3 +226,44 @@ def respond_to_group_invitation(*, invitation: GroupInvitation, actor, accept: b
             conversation=conversation,
             participant_user_ids=recipient_user_ids,
         )
+
+
+def close_open_group_invitations_for_blocked_pair(
+    *, blocker_id: int, blocked_user_id: int
+) -> int:
+    """Cancel pending group invitations between a blocked pair.
+
+    Mirrors close_open_skill_requests_for_blocked_pair: the caller must hold
+    both user rows locked (create_user_block does this before calling here),
+    so this only needs to serialize against the invitation rows themselves.
+    Existing active members are untouched — only invitations still awaiting a
+    response are affected.
+    """
+    if blocker_id == blocked_user_id:
+        return 0
+
+    pair_filter = Q(invited_by_id=blocker_id, invited_user_id=blocked_user_id) | Q(
+        invited_by_id=blocked_user_id,
+        invited_user_id=blocker_id,
+    )
+    invitations = list(
+        GroupInvitation.objects.select_for_update(of=("self",))
+        .filter(pair_filter, status=GroupInvitation.Status.PENDING)
+        .order_by("pk")
+    )
+    if not invitations:
+        return 0
+
+    now = timezone.now()
+    for invitation in invitations:
+        invitation.status = GroupInvitation.Status.CANCELLED
+        invitation.responded_at = now
+        invitation.save(update_fields=["status", "responded_at", "updated_at"])
+
+        ConversationParticipant.objects.filter(
+            conversation_id=invitation.conversation_id,
+            user_id=invitation.invited_user_id,
+            status=ConversationParticipant.Status.INVITED,
+        ).update(status=ConversationParticipant.Status.REMOVED, left_at=now)
+
+    return len(invitations)

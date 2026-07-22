@@ -236,7 +236,7 @@ describe('SearchUserProfileModule', () => {
     expect(screen.queryByRole('dialog', { name: 'mock avatar lightbox' })).not.toBeInTheDocument();
   });
 
-  it('blocks a foreign profile only after confirmation and returns to search', async () => {
+  it('blocks a foreign profile only after confirmation and redirects to the dashboard home', async () => {
     const onBack = jest.fn();
     render(
       <SearchUserProfileModule userId={42} currentUserId={7} onBack={onBack} />,
@@ -250,9 +250,11 @@ describe('SearchUserProfileModule', () => {
     await waitFor(() => {
       expect(api.post).toHaveBeenCalledWith('/auth/users/42/block/');
       expect(toast.success).toHaveBeenCalledWith('Používateľ bol zablokovaný.');
-      expect(onBack).toHaveBeenCalledTimes(1);
-      expect(replaceMock).toHaveBeenCalledWith('/dashboard/search');
+      expect(replaceMock).toHaveBeenCalledWith('/dashboard');
     });
+    // Navigates to the dashboard home route directly rather than restoring
+    // the previous "back to search" module state.
+    expect(onBack).not.toHaveBeenCalled();
   });
 
   it('does not expose the block action for the current user profile', async () => {

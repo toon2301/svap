@@ -1,7 +1,9 @@
 import { api, endpoints } from '@/lib/api';
-// Zdieľaný error helper; re-export kvôli spätnej kompatibilite s existujúcimi importérmi.
-export { getApiErrorMessage } from '@/lib/apiError';
+import { getApiErrorMessage } from '@/lib/apiError';
 import type { SkillRequestTerminationReason, SkillRequestsResponse } from './types';
+
+// Re-export kvôli spätnej kompatibilite s existujúcimi importérmi.
+export { getApiErrorMessage } from '@/lib/apiError';
 
 export type SkillRequestCreatePayload = {
   offer_id: number;
@@ -22,6 +24,14 @@ function toPositiveInt(value: unknown): number | null {
   return i;
 }
 
+export function getSkillRequestActionErrorMessage(
+  error: unknown,
+  unavailableMessage: string,
+  fallback: string,
+): string {
+  const status = (error as { response?: { status?: unknown } })?.response?.status;
+  return status === 404 ? unavailableMessage : getApiErrorMessage(error, fallback);
+}
 
 export async function fetchSkillRequests(statusQuery?: string): Promise<SkillRequestsResponse> {
   const url = statusQuery

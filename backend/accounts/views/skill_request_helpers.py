@@ -17,6 +17,7 @@ from ..models import (
     SkillRequestStatus,
 )
 from ..serializers import SkillRequestSerializer
+from ..services.user_blocks import blocked_user_ids_for
 
 logger = logging.getLogger(__name__)
 
@@ -101,11 +102,25 @@ def _compute_skill_requests_payload(*, viewer, request, status_param: str | None
             Review.objects.filter(reviewer=viewer, offer_id__in=offer_ids).values_list("offer_id", flat=True)
         )
 
+    blocked_user_ids = blocked_user_ids_for(user_id=viewer.id)
+
     received_ser = SkillRequestSerializer(
-        received_list, many=True, context={"request": request, "reviewed_offer_ids": reviewed_offer_ids}
+        received_list,
+        many=True,
+        context={
+            "request": request,
+            "reviewed_offer_ids": reviewed_offer_ids,
+            "blocked_user_ids": blocked_user_ids,
+        },
     )
     sent_ser = SkillRequestSerializer(
-        sent_list, many=True, context={"request": request, "reviewed_offer_ids": reviewed_offer_ids}
+        sent_list,
+        many=True,
+        context={
+            "request": request,
+            "reviewed_offer_ids": reviewed_offer_ids,
+            "blocked_user_ids": blocked_user_ids,
+        },
     )
     return {
         "received": list(received_ser.data),
@@ -121,13 +136,18 @@ def _skill_requests_cache_refresh_for_user(user, request) -> None:
         cache.set(_skill_requests_cache_key(user.id, key), payload, timeout=SKILL_REQUESTS_CACHE_TTL_SECONDS)
 
 
-def _skill_requests_cache_invalidate_for_user(user) -> None:
+def _skill_requests_cache_invalidate_for_user_id(user_id: int) -> None:
     """
-    Invaliduje cache žiadostí pre používateľa. Bezpečné pre produkciu – len mazanie
+    Invaliduje cache žiadostí pre user_id. Bezpečné pre produkciu – len mazanie
     kľúčov, žiadne DB dotazy. Ďalší GET znovu vybuduje cache.
     """
     for key in _SKILLREQ_STATUS_KEYS:
         try:
-            cache.delete(_skill_requests_cache_key(user.id, key))
+            cache.delete(_skill_requests_cache_key(user_id, key))
         except Exception:
             pass
+
+
+def _skill_requests_cache_invalidate_for_user(user) -> None:
+    """Object-based wrapper okolo _skill_requests_cache_invalidate_for_user_id."""
+    _skill_requests_cache_invalidate_for_user_id(user.id)

@@ -159,6 +159,7 @@
     "terminationReasonCommunicationIssue": "Ich bin mit der Kommunikation nicht zufrieden",
     "terminationReasonMeetingNotHappened": "Treffen / Umsetzung hat nicht stattgefunden",
     "terminationReasonTrustConcerns": "Ich habe Bedenken wegen der Vertrauenswürdigkeit",
+    "terminationReasonInteractionUnavailable": "Die Interaktion ist nicht mehr verfügbar",
     "terminationReasonOther": "Andere",
     "writeReview": "Bewertung schreiben",
     "detailTitle": "Anfrage-Details",
@@ -174,7 +175,8 @@
     "toastCancelFailed": "Anfrage konnte nicht zurückgezogen werden.",
     "toastCreateFailed": "Anfrage konnte nicht gesendet werden.",
     "toastRequestCancelled": "Die Anfrage wurde vom Benutzer storniert.",
-    "toastRequestAlreadyProcessed": "Die Anfrage wurde bereits bearbeitet."
+    "toastRequestAlreadyProcessed": "Die Anfrage wurde bereits bearbeitet.",
+    "toastRequestUnavailable": "Die Anfrage ist nicht mehr verfügbar."
   },
   "navigation": {
     "home": "Startseite",

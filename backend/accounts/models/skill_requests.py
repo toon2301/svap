@@ -37,6 +37,46 @@ class SkillRequestTerminationReason(models.TextChoices):
     )
     TRUST_CONCERNS = "trust_concerns", _("Mám obavy z dôveryhodnosti")
     OTHER = "other", _("Iné")
+    INTERACTION_UNAVAILABLE = (
+        "interaction_unavailable",
+        _("Interakcia už nie je dostupná"),
+    )
+
+
+USER_SKILL_REQUEST_TERMINATION_REASONS = tuple(
+    (value, label)
+    for value, label in SkillRequestTerminationReason.choices
+    if value != SkillRequestTerminationReason.INTERACTION_UNAVAILABLE
+)
+
+
+def exclude_block_terminated_requests(queryset):
+    """Drop TERMINATED rows closed only because a block made interaction
+    unavailable.
+
+    Those never represented a real completed or user-discontinued exchange,
+    so they must stay excluded from reviewable-request queries even after the
+    block is later lifted. Apply on top of a status__in=REVIEWABLE_SKILL_
+    REQUEST_STATUSES filter (COMPLETED rows are never touched by this).
+    """
+    return queryset.exclude(
+        status=SkillRequestStatus.TERMINATED,
+        termination__reason=SkillRequestTerminationReason.INTERACTION_UNAVAILABLE,
+    )
+
+
+def skill_request_is_reviewable(skill_request) -> bool:
+    """Object-level equivalent of exclude_block_terminated_requests for an
+    already-loaded instance (e.g. in a listing serializer)."""
+    if skill_request.status not in REVIEWABLE_SKILL_REQUEST_STATUSES:
+        return False
+    if skill_request.status != SkillRequestStatus.TERMINATED:
+        return True
+    try:
+        termination = skill_request.termination
+    except SkillRequestTermination.DoesNotExist:
+        return True
+    return termination.reason != SkillRequestTerminationReason.INTERACTION_UNAVAILABLE
 
 
 class SkillRequest(models.Model):
@@ -177,5 +217,4 @@ class SkillRequestTermination(models.Model):
 
     def __str__(self):
         return f"Termination #{self.id}: request {self.skill_request_id} by {self.terminated_by_id}"
-
 

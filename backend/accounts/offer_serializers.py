@@ -10,6 +10,7 @@ from .models import (
     Review,
     REVIEWABLE_SKILL_REQUEST_STATUSES,
     SkillRequest,
+    exclude_block_terminated_requests,
 )
 from .district_registry import (
     get_offer_district_label,
@@ -17,6 +18,7 @@ from .district_registry import (
     normalize_offer_country_code,
     resolve_offer_district_code,
 )
+from .services.user_blocks import user_block_exists_between
 
 
 class OfferedSkillSerializer(serializers.ModelSerializer):
@@ -254,6 +256,20 @@ class OfferedSkillSerializer(serializers.ModelSerializer):
             return False
         if obj.user_id == request.user.id:
             return False
+        # An active block between the viewer and the offer owner removes the
+        # ability to review, mirroring SkillRequestSerializer.get_offer_summary
+        # so both serializers stay consistent. Prefer the bulk-precomputed set
+        # (O(1), no N+1); fall back to a single query for the object path.
+        blocked_user_ids = self.context.get("blocked_user_ids")
+        if blocked_user_ids is None:
+            interaction_blocked = user_block_exists_between(
+                first_user_id=request.user.id,
+                second_user_id=obj.user_id,
+            )
+        else:
+            interaction_blocked = obj.user_id in blocked_user_ids
+        if interaction_blocked:
+            return False
         reviewed_offer_ids = self.context.get("reviewed_offer_ids")
         if reviewed_offer_ids is not None:
             if obj.id in reviewed_offer_ids:
@@ -262,10 +278,12 @@ class OfferedSkillSerializer(serializers.ModelSerializer):
             return False
         if "can_review_offer_ids" in self.context:
             return obj.id in self.context["can_review_offer_ids"]
-        return SkillRequest.objects.filter(
-            requester=request.user,
-            offer=obj,
-            status__in=REVIEWABLE_SKILL_REQUEST_STATUSES,
+        return exclude_block_terminated_requests(
+            SkillRequest.objects.filter(
+                requester=request.user,
+                offer=obj,
+                status__in=REVIEWABLE_SKILL_REQUEST_STATUSES,
+            )
         ).exists()
 
     def get_already_reviewed(self, obj):
