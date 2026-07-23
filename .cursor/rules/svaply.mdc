@@ -7,7 +7,7 @@ alwaysApply: true
 
 Dodrž a dbaj na:
 - čistý, čitateľný a modulárny kód
-- produkčné súbory drž do 500 riadkov (okrem testovacích súborov a FE súborov); ak pri práci natrafiš na produkčný BE súbor ktorý má viac ako 500 riadkov, rozdeľ ho na menšie moduly pokiaľ je to bezpečné — ak nie je bezpečné, nahlás to ako nález a pokračuj
+- súbory drž do 500 riadkov (okrem testovacích súborov a FE súborov); ak pri práci natrafiš na produkčný BE súbor ktorý má viac ako 500 riadkov, rozdeľ ho na menšie moduly pokiaľ je to bezpečné — ak nie je bezpečné, nahlás to ako nález a pokračuj
 - zachovaj existujúcu funkcionalitu bez regresií — pred zmenou over, čo daná funkcia/endpoint presne robí a kde všade sa používa (vyhľadaj referencie v kóde)
 - backend musí byť zdroj pravdy
 - frontend nesmie obchádzať permissions

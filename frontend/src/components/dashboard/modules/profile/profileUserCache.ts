@@ -81,5 +81,15 @@ export const getUserIdBySlug = (slug: string): number | undefined => {
   return slugToUserIdCache.get(slug);
 };
 
+// Zapíše len mapovanie slug -> userId (bez plného profilu), keď ID už poznáme
+// (napr. z výsledku vyhľadávania). Vďaka tomu vie `resolveViewedUserBySlug`
+// po remounte Dashboardu (router.push na slug URL) vyriešiť slug -> id z cache
+// bez zbytočného `userProfileBySlug` API round-tripu. Zámerne NEplní
+// `userProfileCache`, aby sa čiastočný summary nezobrazil ako plný profil.
+export const primeUserSlugId = (slug: string | null | undefined, userId: number): void => {
+  if (!slug) return;
+  slugToUserIdCache.set(slug, userId);
+};
+
 
 

@@ -701,6 +701,37 @@ class TestMessagingApi(APITestCase):
         assert peer_event["reader_id"] == self.u1.id
         assert isinstance(peer_event["peer_last_read_at"], str)
 
+    def test_mark_read_clears_unread_for_pending_message_request(self):
+        # A PENDING message request must behave like an accepted conversation for
+        # the unread badge: opening it (mark-read) clears the count and it stays
+        # cleared on the next fetch (reload), until a new message arrives.
+        self.client.force_authenticate(user=self.u1)
+        send_response = self.client.post(
+            reverse("accounts:messaging_send_direct_message"),
+            {"target_user_id": self.u2.id, "text": "Ahoj"},
+            format="json",
+        )
+        assert send_response.status_code == status.HTTP_201_CREATED
+        conversation_id = send_response.data["conversation_id"]
+        assert (
+            Conversation.objects.get(id=conversation_id).request_status
+            == Conversation.RequestStatus.PENDING
+        )
+
+        self.client.force_authenticate(user=self.u2)
+        summary_url = reverse("accounts:messaging_unread_summary")
+        assert self.client.get(summary_url).data["count"] == 1
+
+        read_response = self.client.post(
+            reverse("accounts:messaging_mark_read", kwargs={"conversation_id": conversation_id}),
+            {},
+            format="json",
+        )
+        assert read_response.status_code == status.HTTP_200_OK
+        assert read_response.data["total_unread_count"] == 0
+        # "Reload": a fresh summary fetch keeps it at 0 (mark-read persisted).
+        assert self.client.get(summary_url).data["count"] == 0
+
     def test_mark_read_can_be_called_repeatedly_without_failing(self):
         convo = self._create_direct_conversation(actor=self.u1, target=self.u2)
 
@@ -1556,6 +1587,35 @@ class TestMessagingApi(APITestCase):
             conversation=conversation,
             message_type=Message.Type.GROUP_INVITATION,
         ).exists()
+
+    def test_single_group_invitation_counts_as_one_unread(self):
+        # Creating a group emits a SYSTEM "created the group" message plus the
+        # GROUP_INVITATION message. The invited user must see unread == 1 (only
+        # the invitation), not 2 — system messages do not drive the unread badge.
+        self.client.force_authenticate(user=self.u1)
+        create_response = self.client.post(
+            reverse("accounts:messaging_create_group_conversation"),
+            {"name": "Test skupina", "invited_user_ids": [self.u2.id]},
+            format="json",
+        )
+        assert create_response.status_code == status.HTTP_201_CREATED
+        conversation_id = create_response.data["id"]
+        # Sanity: both a system message and the invitation exist in the group.
+        assert Message.objects.filter(
+            conversation_id=conversation_id, message_type=Message.Type.SYSTEM
+        ).exists()
+
+        self.client.force_authenticate(user=self.u2)
+        list_response = self.client.get(reverse("accounts:messaging_list_conversations"))
+        assert list_response.status_code == status.HTTP_200_OK
+        item = next(
+            row for row in list_response.data["results"] if row["id"] == conversation_id
+        )
+        assert item["unread_count"] == 1
+
+        summary_response = self.client.get(reverse("accounts:messaging_unread_summary"))
+        assert summary_response.status_code == status.HTTP_200_OK
+        assert summary_response.data["count"] == 1
 
     def test_invited_user_can_accept_group_invitation(self):
         self.client.force_authenticate(user=self.u1)

@@ -25,6 +25,10 @@ import {
   parsePositivePortfolioItemId,
 } from '@/components/dashboard/modules/profile/portfolioEvents';
 import {
+  dispatchProfileLiked,
+  parseProfileLikedUserId,
+} from '@/components/dashboard/modules/profile/profileLikeEvents';
+import {
   acknowledgeMessageUnreadCount,
   applyIncomingMessageUnreadEvent,
   bindMessageUnreadCountStoreToUser,
@@ -763,6 +767,18 @@ export function RequestsNotificationsProvider({
           );
           if (portfolioItemId !== null) {
             dispatchProfilePortfolioLiked({ portfolioItemId });
+          }
+        }
+
+        if (
+          payload.type === 'notification_created' &&
+          payload.notification?.type === 'profile_liked'
+        ) {
+          const profileUserId = parseProfileLikedUserId(
+            payload.notification.data?.profile_user_id,
+          );
+          if (profileUserId !== null) {
+            dispatchProfileLiked({ profileUserId });
           }
         }
 

@@ -54,6 +54,7 @@ interface MobileTopBarProps {
   isMessageConversationOpen?: boolean;
   onMessagesBackClick?: () => void;
   accountSettingsView?: AccountSettingsMobileView;
+  viewedUserNotFound?: boolean;
 }
 
 export default function MobileTopBar({
@@ -75,6 +76,7 @@ export default function MobileTopBar({
   isMessageConversationOpen = false,
   onMessagesBackClick,
   accountSettingsView = 'overview',
+  viewedUserNotFound = false,
 }: MobileTopBarProps) {
   const { t } = useLanguage();
   const onboarding = useOptionalMobileOnboarding();
@@ -385,8 +387,12 @@ export default function MobileTopBar({
             </button>
           )}
 
-          {/* Hamburger menu - v profile module alebo na cudzom profile (user-profile), nie v edit móde ani v jazyk/account-type/prípadne privacy modale */}
+          {/* Hamburger menu - v profile module alebo na cudzom profile (user-profile), nie v edit móde ani v jazyk/account-type/prípadne privacy modale.
+              Na nedostupnom cudzom profile (napr. zablokovaný → 404) sa skrýva,
+              lebo jeho možnosti sa registrujú až keď sa profil načíta (inak by
+              tlačidlo nič nerobilo). */}
           {(activeModule === 'profile' || activeModule === 'user-profile') &&
+            !(activeModule === 'user-profile' && viewedUserNotFound) &&
             !isEditMode &&
             activeRightItem !== 'language' &&
             activeRightItem !== 'account-type' &&

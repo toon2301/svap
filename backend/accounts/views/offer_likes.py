@@ -80,7 +80,16 @@ def offer_like_view(request, skill_id):
                 first_user_id=request.user.id,
                 second_user_id=offer.user_id,
             )
-            if _offer_hidden_from_user(offer, request.user):
+            # Re-read the offer under the lock (global order: users, then offer)
+            # so the visibility re-check runs on current data, not the pre-lock
+            # snapshot loaded above.
+            offer = (
+                OfferedSkill.objects.select_for_update(of=("self",))
+                .select_related("user")
+                .filter(id=offer.id)
+                .first()
+            )
+            if offer is None or _offer_hidden_from_user(offer, request.user):
                 return Response(
                     {"error": "Ponuka nebola najdena"},
                     status=status.HTTP_404_NOT_FOUND,

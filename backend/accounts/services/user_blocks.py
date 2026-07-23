@@ -151,16 +151,15 @@ def create_user_block(*, blocker, blocked_user) -> tuple[UserBlock, bool]:
             first_user_id=blocker.pk,
             second_user_id=blocked_user.pk,
         )
-        # Import locally to keep the accounts model/service layer independent
-        # from messaging during Django app initialization.
-        from messaging.services.message_requests import (
-            close_pending_message_request_for_user_pair,
-        )
-
-        close_pending_message_request_for_user_pair(
-            first_user_id=blocker.pk,
-            second_user_id=blocked_user.pk,
-        )
+        # A PENDING direct message request is deliberately NOT closed on block
+        # (revised design 2026-07: previously it was set to DELETED, which made
+        # the conversation vanish from the open/detail query while lingering in
+        # the requester's list query — a "ghost" the blocker could see but not
+        # open). It now stays PENDING: the blocker keeps read-only access (banner
+        # instead of composer) and the blocked user still sees a message request
+        # whose accept/reply is refused by the existing interaction-block checks
+        # (accept_message_request / send-in-pending). Explicit request deletion
+        # (decline) is a separate flow and keeps setting DELETED.
         from accounts.services.skill_request_transitions import (
             close_open_skill_requests_for_blocked_pair,
         )

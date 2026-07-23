@@ -51,6 +51,7 @@ interface DashboardLayoutProps {
   isMobileOfferDetailOpen?: boolean;
   currentUser?: User | null;
   mobileAccountSettingsView?: AccountSettingsMobileView;
+  viewedUserNotFound?: boolean;
   children: React.ReactNode;
 }
 
@@ -94,6 +95,7 @@ export default function DashboardLayout({
   isMobileOfferDetailOpen = false,
   currentUser = null,
   mobileAccountSettingsView,
+  viewedUserNotFound = false,
   children,
 }: DashboardLayoutProps) {
   const isProfileEditMode =
@@ -249,6 +251,7 @@ export default function DashboardLayout({
           isMessageConversationOpen={isMobileMessageConversationOpen}
           onMessagesBackClick={onMobileMessagesBack}
           accountSettingsView={mobileAccountSettingsView}
+          viewedUserNotFound={viewedUserNotFound}
         />
       )}
 

@@ -1431,6 +1431,7 @@ export default function DashboardContent({
           <DashboardLayout
             activeModule={activeModule}
             activeRightItem={activeRightItem}
+            viewedUserNotFound={userProfile.viewedUserNotFound}
             isRightSidebarOpen={isRightSidebarOpen}
             isMobileMenuOpen={isMobileMenuOpen}
             onModuleChange={handleDashboardModuleChange}

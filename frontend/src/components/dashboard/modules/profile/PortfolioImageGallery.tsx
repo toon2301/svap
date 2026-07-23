@@ -104,8 +104,17 @@ export function PortfolioImageGallery({
         await deletePortfolioImage(item.id, image.id);
         toast.success(t('portfolio.photoDeleteSuccess'));
         await refreshUploads();
-      } catch {
-        toast.error(t('portfolio.photoDeleteFailed'));
+      } catch (error) {
+        const status = (error as { response?: { status?: number } })?.response?.status;
+        if (status === 404) {
+          // Fotka už neexistuje (zmazaná inde) → cieľ je splnený, správaj sa
+          // ako pri úspešnom zmazaní (refreshUploads ju odstráni z lokálneho
+          // stavu), rovnako ako pri mazaní celej položky v PortfolioDetailModule.
+          toast.success(t('portfolio.photoDeleteSuccess'));
+          await refreshUploads();
+        } else {
+          toast.error(t('portfolio.photoDeleteFailed'));
+        }
       } finally {
         setActionKey(null);
       }

@@ -146,5 +146,25 @@ describe('messageUnreadStore', () => {
       publishMessageUnreadCount(3, { source: 'refresh' });
       expect(getMessageUnreadCountStore().unreadCount).toBe(3);
     });
+
+    it('keeps an opened PENDING request cleared after reload until a new message arrives', () => {
+      // The summary count includes the received PENDING request (unread 1).
+      bindMessageUnreadCountStoreToUser(7);
+      publishMessageUnreadCount(1, { source: 'refresh' });
+      // Entering Messages acknowledges the count → badge hides, baseline saved.
+      acknowledgeMessageUnreadCount();
+      expect(getMessageUnreadCountStore().unreadCount).toBe(0);
+
+      // Hard reload: the same server count returns → badge stays cleared
+      // (previously it reappeared because the list sum undercounted the request).
+      delete (globalThis as { __SWAPLY_MSG_UNREAD_STORE__?: unknown }).__SWAPLY_MSG_UNREAD_STORE__;
+      bindMessageUnreadCountStoreToUser(7);
+      publishMessageUnreadCount(1, { source: 'refresh' });
+      expect(getMessageUnreadCountStore().unreadCount).toBe(0);
+
+      // A new message in that conversation pushes the count above the baseline.
+      publishMessageUnreadCount(2, { source: 'refresh' });
+      expect(getMessageUnreadCountStore().unreadCount).toBe(1);
+    });
   });
 });

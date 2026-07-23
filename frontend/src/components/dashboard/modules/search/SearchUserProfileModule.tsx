@@ -67,7 +67,9 @@ function getProfileAvatarUrl(user: User): string | null {
 export function SearchUserProfileModule({
   userId,
   currentUserId,
-  onBack,
+  // onBack is still accepted for API compatibility but no longer consumed:
+  // the block redirect and the unreachable-profile fallback both go to
+  // /dashboard rather than back to search.
   highlightedSkillId = null,
   initialTab,
 }: SearchUserProfileModuleProps) {
@@ -351,15 +353,15 @@ export function SearchUserProfileModule({
     return (
       <div className="w-full flex flex-col items-center justify-center py-16 text-center text-red-600 dark:text-red-400 px-4">
         <p className="text-sm mb-2">{error}</p>
-        {onBack && (
-          <button
-            type="button"
-            onClick={onBack}
-            className="mt-2 inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-          >
-            <span>{t("search.backToResults", "Späť na vyhľadávanie")}</span>
-          </button>
-        )}
+        {/* An unreachable profile (e.g. blocked) has no search context to return
+            to, so go to the main dashboard instead of the search results. */}
+        <button
+          type="button"
+          onClick={() => router.replace('/dashboard')}
+          className="mt-2 inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+        >
+          <span>{t("search.backToDashboard", "Späť na nástenku")}</span>
+        </button>
       </div>
     );
   }

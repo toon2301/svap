@@ -37,7 +37,10 @@ export function buildOfferReviewsReturnTo({
   if (parsedOfferId == null) return null;
 
   if (isOwnProfile) {
-    return `/dashboard/profile?highlight=${encodeURIComponent(String(parsedOfferId))}&side=back`;
+    // Return to the top of the own profile rather than scrolling to and
+    // reopening the offer (no highlight/side=back): the user was managing
+    // their profile, not browsing that single offer.
+    return '/dashboard/profile';
   }
 
   const identifier = String(ownerIdentifier ?? '').trim();

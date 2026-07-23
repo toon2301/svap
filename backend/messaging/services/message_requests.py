@@ -29,35 +29,6 @@ class MessageRequestMutationResult:
     total_unseen_count: int
 
 
-def close_pending_message_request_for_user_pair(
-    *, first_user_id: int, second_user_id: int
-) -> int:
-    """Close pending direct requests after a block without deleting history.
-
-    The caller must hold both user rows in stable order. This keeps block and
-    direct-message writes serialized without introducing a lock inversion.
-    """
-    if first_user_id == second_user_id:
-        return 0
-
-    now = timezone.now()
-    return int(
-        Conversation.objects.filter(
-            is_group=False,
-            request_status=Conversation.RequestStatus.PENDING,
-        )
-        .filter(
-            Q(requested_by_id=first_user_id, requested_to_id=second_user_id)
-            | Q(requested_by_id=second_user_id, requested_to_id=first_user_id)
-        )
-        .update(
-            request_status=Conversation.RequestStatus.DELETED,
-            request_seen_at=now,
-            updated_at=now,
-        )
-    )
-
-
 def is_pending_message_request(conversation: Conversation) -> bool:
     return (
         not conversation.is_group
@@ -111,19 +82,18 @@ def accept_message_request(
 
     with transaction.atomic():
         from accounts.services.user_blocks import (
-            BlockedUserInteractionError,
             lock_users_and_ensure_interaction_allowed,
         )
 
-        try:
-            lock_users_and_ensure_interaction_allowed(
-                first_user_id=requested_by_id,
-                second_user_id=requested_to_id,
-            )
-        except BlockedUserInteractionError as exc:
-            raise MessageRequestActionNotAllowed(
-                "Message request cannot be accepted."
-            ) from exc
+        # Let BlockedUserInteractionError propagate so the view can answer with
+        # the neutral `recipient_unavailable` code (mapped on the client to
+        # "you can't message this user"), instead of a bare 404 that surfaced as
+        # a raw status. Other invalid-accept cases still raise
+        # MessageRequestActionNotAllowed below.
+        lock_users_and_ensure_interaction_allowed(
+            first_user_id=requested_by_id,
+            second_user_id=requested_to_id,
+        )
 
         convo = (
             Conversation.objects.select_for_update().filter(id=conversation.id).first()

@@ -1,8 +1,9 @@
 'use client';
 
 import React from 'react';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
+import { syncMessageUnreadCountFromConversations } from '@/components/dashboard/contexts/messageUnreadStore';
 import { ConversationsList } from './ConversationsList';
 import {
   createGroupConversation,
@@ -105,5 +106,44 @@ describe('ConversationsList unread state', () => {
 
     expect(window.location.pathname + window.location.search).toBe('/dashboard/messages?conversationId=9');
     expect(screen.getByLabelText('2 unread messages')).toBeInTheDocument();
+  });
+
+  it('includes received message requests in the messages badge sync so PENDING requests are not undercounted', async () => {
+    (listConversations as jest.Mock).mockResolvedValue([
+      {
+        id: 9,
+        other_user: { id: 2, display_name: 'Accepted' },
+        last_message_at: '2026-03-27T10:00:00Z',
+        has_unread: false,
+        unread_count: 0,
+      },
+    ]);
+    // A received PENDING request is NOT in the main list (it lives in the
+    // Žiadosti tab) but its unread message must still count toward the badge.
+    (listMessageRequests as jest.Mock).mockResolvedValue([
+      {
+        id: 15,
+        other_user: { id: 3, display_name: 'Requester' },
+        last_message_at: '2026-03-27T11:00:00Z',
+        has_unread: true,
+        unread_count: 1,
+      },
+    ]);
+
+    render(<ConversationsList currentUserId={1} variant="rail" />);
+
+    await waitFor(() => {
+      expect(syncMessageUnreadCountFromConversations).toHaveBeenCalled();
+    });
+
+    const calls = (syncMessageUnreadCountFromConversations as jest.Mock).mock.calls;
+    const lastSyncedItems = calls[calls.length - 1][0] as Array<{
+      id: number;
+      unread_count?: number;
+    }>;
+    // The received request (id 15, unread 1) must be part of the badge sum, so
+    // it matches the summary endpoint and the acknowledge baseline stays intact.
+    expect(lastSyncedItems.some((item) => item.id === 15 && item.unread_count === 1)).toBe(true);
+    expect(lastSyncedItems.some((item) => item.id === 9)).toBe(true);
   });
 });

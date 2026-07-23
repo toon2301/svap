@@ -500,6 +500,24 @@ describe('PortfolioDetailModule', () => {
     expect((toast.error as jest.Mock).mock.calls.at(-1)?.[0]).toMatch(/nepodarilo.*vymaza/i);
     expect(toast.success).not.toHaveBeenCalled();
   });
+
+  it('treats a 404 when deleting a photo as a successful deletion', async () => {
+    (api.get as jest.Mock).mockResolvedValue({ data: manageablePortfolioItem() });
+    (api.delete as jest.Mock).mockRejectedValue({ response: { status: 404 } });
+
+    render(<PortfolioDetailModule itemId={7} ownerIdentifier="jane-doe" />);
+
+    fireEvent.click(await screen.findByTestId('portfolio-gallery-edit-button'));
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('portfolio-gallery-delete-button-2'));
+    });
+
+    await waitFor(() => expect(toast.success).toHaveBeenCalled());
+    expect((toast.success as jest.Mock).mock.calls.at(-1)?.[0]).toMatch(/vymazan/i);
+    // The gallery reloads to drop the already-gone photo and shows no failure.
+    expect(api.get).toHaveBeenCalledTimes(2);
+    expect(toast.error).not.toHaveBeenCalled();
+  });
   it('disables new photo selection when the portfolio already has 8 active images', async () => {
     (api.get as jest.Mock).mockResolvedValue({
       data: manageablePortfolioItem({

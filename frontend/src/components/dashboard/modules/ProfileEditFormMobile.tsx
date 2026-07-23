@@ -412,13 +412,6 @@ export default function ProfileEditFormMobile({
         </div>
       )}
 
-      {/* Overenie profilu - placeholder */}
-      <div className="mt-6 px-4">
-        <span className="text-sm text-purple-600 font-medium">
-          {t('profile.verifyProfile', 'Overenie profilu')}
-        </span>
-      </div>
-
       {/* Avatar actions modal */}
       <ProfileAvatarActionsModal
         open={isActionsOpen}

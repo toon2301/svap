@@ -148,7 +148,12 @@ class TestMessagingBlockEnforcement(APITestCase):
         assert Message.objects.filter(conversation=conversation).count() == 1
         self.push_delay_mock.assert_not_called()
 
-    def test_block_closes_pending_request_and_unblock_does_not_restore_it(self):
+    def test_block_keeps_pending_request_accessible_but_blocks_interaction(self):
+        # Revised design (2026-07): blocking no longer closes the PENDING request
+        # (previously it was set to DELETED, creating a "ghost" conversation the
+        # blocker saw in the list query but could not open). It now stays PENDING:
+        # both sides retain read access, the blocked accept/reply is refused by the
+        # existing interaction-block checks. See create_user_block for the rationale.
         self.client.force_authenticate(user=self.u1)
         first_send = self.client.post(
             reverse("accounts:messaging_send_direct_message"),
@@ -156,9 +161,10 @@ class TestMessagingBlockEnforcement(APITestCase):
             format="json",
         )
         assert first_send.status_code == status.HTTP_201_CREATED
-        old_conversation_id = first_send.data["conversation_id"]
+        conversation_id = first_send.data["conversation_id"]
         self.push_delay_mock.reset_mock()
 
+        # u2 (the recipient) blocks u1 (the sender) — blocker need not be the sender.
         self.client.force_authenticate(user=self.u2)
         block_response = self.client.post(
             reverse("accounts:user_block_detail", args=[self.u1.id]),
@@ -167,44 +173,133 @@ class TestMessagingBlockEnforcement(APITestCase):
         )
         assert block_response.status_code == status.HTTP_201_CREATED
 
-        old_conversation = Conversation.objects.get(id=old_conversation_id)
-        assert old_conversation.request_status == Conversation.RequestStatus.DELETED
-        assert old_conversation.request_seen_at is not None
-        assert Message.objects.filter(conversation=old_conversation).count() == 1
+        conversation = Conversation.objects.get(id=conversation_id)
+        assert conversation.request_status == Conversation.RequestStatus.PENDING
+        assert Message.objects.filter(conversation=conversation).count() == 1
 
+        # The blocker (u2, requested_to) still sees it in the message-requests list.
         request_list = self.client.get(
             reverse("accounts:messaging_list_message_requests")
         )
         assert request_list.status_code == status.HTTP_200_OK
-        assert request_list.data["results"] == []
+        assert any(
+            item["id"] == conversation_id for item in request_list.data["results"]
+        )
+        # ... but accepting it is refused by the interaction-block check.
         accept_response = self.client.post(
             reverse(
                 "accounts:messaging_accept_message_request",
-                kwargs={"conversation_id": old_conversation_id},
+                kwargs={"conversation_id": conversation_id},
             ),
             {},
             format="json",
         )
         assert accept_response.status_code == status.HTTP_404_NOT_FOUND
+        # Neutral code so the client shows a friendly "can't message" message.
+        assert accept_response.data["code"] == "recipient_unavailable"
 
+        # The blocked sender (u1) can still OPEN the conversation (no 404 ghost) ...
+        self.client.force_authenticate(user=self.u1)
+        history = self.client.get(
+            reverse(
+                "accounts:messaging_list_messages",
+                kwargs={"conversation_id": conversation_id},
+            )
+        )
+        assert history.status_code == status.HTTP_200_OK
+        assert history.data["results"][0]["text"] == "Pending request"
+        # ... but cannot send another message while the block stands.
+        blocked_send = self.client.post(
+            reverse(
+                "accounts:messaging_send_message",
+                kwargs={"conversation_id": conversation_id},
+            ),
+            {"text": "Must not be sent"},
+            format="json",
+        )
+        assert blocked_send.status_code == status.HTTP_403_FORBIDDEN
+        assert blocked_send.data["code"] == "recipient_unavailable"
+        assert Message.objects.filter(conversation=conversation).count() == 1
+
+        # Unblocking keeps the same PENDING request (never deleted) and lets the
+        # recipient accept it afterwards.
+        self.client.force_authenticate(user=self.u2)
         unblock_response = self.client.delete(
             reverse("accounts:user_block_detail", args=[self.u1.id])
         )
         assert unblock_response.status_code == status.HTTP_200_OK
-        old_conversation.refresh_from_db()
-        assert old_conversation.request_status == Conversation.RequestStatus.DELETED
-
-        self.client.force_authenticate(user=self.u1)
-        new_send = self.client.post(
-            reverse("accounts:messaging_send_direct_message"),
-            {"target_user_id": self.u2.id, "text": "New request"},
+        conversation.refresh_from_db()
+        assert conversation.request_status == Conversation.RequestStatus.PENDING
+        accept_after_unblock = self.client.post(
+            reverse(
+                "accounts:messaging_accept_message_request",
+                kwargs={"conversation_id": conversation_id},
+            ),
+            {},
             format="json",
         )
-        assert new_send.status_code == status.HTTP_201_CREATED
-        assert new_send.data["conversation_id"] != old_conversation_id
-        assert Conversation.objects.get(
-            id=new_send.data["conversation_id"]
-        ).request_status == Conversation.RequestStatus.PENDING
+        assert accept_after_unblock.status_code == status.HTTP_200_OK
+        conversation.refresh_from_db()
+        assert conversation.request_status == Conversation.RequestStatus.ACCEPTED
+
+    def test_block_by_sender_keeps_request_and_lets_blocker_open_it(self):
+        # Symmetric case: the sender blocks the recipient. The blocker (requested_by)
+        # keeps the conversation in their main list flagged is_blocked_by_me (drives
+        # the banner) and can open it; the blocked recipient still sees the request
+        # but cannot accept it.
+        self.client.force_authenticate(user=self.u1)
+        first_send = self.client.post(
+            reverse("accounts:messaging_send_direct_message"),
+            {"target_user_id": self.u2.id, "text": "Pending request"},
+            format="json",
+        )
+        assert first_send.status_code == status.HTTP_201_CREATED
+        conversation_id = first_send.data["conversation_id"]
+
+        block_response = self.client.post(
+            reverse("accounts:user_block_detail", args=[self.u2.id]), {}, format="json"
+        )
+        assert block_response.status_code == status.HTTP_201_CREATED
+        assert (
+            Conversation.objects.get(id=conversation_id).request_status
+            == Conversation.RequestStatus.PENDING
+        )
+
+        conversations = self.client.get(
+            reverse("accounts:messaging_list_conversations")
+        )
+        assert conversations.status_code == status.HTTP_200_OK
+        item = next(
+            row
+            for row in conversations.data["results"]
+            if row["id"] == conversation_id
+        )
+        assert item["is_blocked_by_me"] is True
+        history = self.client.get(
+            reverse(
+                "accounts:messaging_list_messages",
+                kwargs={"conversation_id": conversation_id},
+            )
+        )
+        assert history.status_code == status.HTTP_200_OK
+
+        # Blocked recipient still sees the request but cannot accept it.
+        self.client.force_authenticate(user=self.u2)
+        request_list = self.client.get(
+            reverse("accounts:messaging_list_message_requests")
+        )
+        assert any(
+            row["id"] == conversation_id for row in request_list.data["results"]
+        )
+        accept_response = self.client.post(
+            reverse(
+                "accounts:messaging_accept_message_request",
+                kwargs={"conversation_id": conversation_id},
+            ),
+            {},
+            format="json",
+        )
+        assert accept_response.status_code == status.HTTP_404_NOT_FOUND
 
     def test_blocked_recipient_rejects_forward_profile_and_offer_shares(self):
         source_conversation = self._create_started_direct_conversation(self.u1, self.u3)

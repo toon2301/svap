@@ -19,6 +19,7 @@ type ConversationActionsMenuProps = {
   onTogglePinned?: () => void;
   onOpenGroupSettings?: () => void;
   onBlockUser?: () => void;
+  onUnblockUser?: () => void;
   onReportUser?: () => void;
   onDeleteConversation: () => void;
 };
@@ -32,6 +33,7 @@ export function ConversationActionsMenu({
   onTogglePinned,
   onOpenGroupSettings,
   onBlockUser,
+  onUnblockUser,
   onReportUser,
   onDeleteConversation,
 }: ConversationActionsMenuProps) {
@@ -111,6 +113,20 @@ export function ConversationActionsMenu({
               <span>{t('profile.block', 'Zablokovať')}</span>
             </button>
           ) : null}
+          {onUnblockUser ? (
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                onUnblockUser();
+              }}
+              className="mt-2 flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-left text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800/60"
+              data-testid="conversation-unblock-user-action"
+            >
+              <NoSymbolIcon className="h-5 w-5" />
+              <span>{t('blockedUsers.unblock', 'Odblokovať')}</span>
+            </button>
+          ) : null}
           {onOpenGroupSettings ? (
             <button
               type="button"
@@ -185,6 +201,17 @@ export function ConversationActionsMenu({
             >
               <NoSymbolIcon className="h-4 w-4" />
               <span>{t('profile.block', 'Zablokovať')}</span>
+            </button>
+          ) : null}
+          {onUnblockUser ? (
+            <button
+              type="button"
+              onClick={onUnblockUser}
+              className="mt-1 flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800/60"
+              data-testid="conversation-unblock-user-action"
+            >
+              <NoSymbolIcon className="h-4 w-4" />
+              <span>{t('blockedUsers.unblock', 'Odblokovať')}</span>
             </button>
           ) : null}
           {onOpenGroupSettings ? (

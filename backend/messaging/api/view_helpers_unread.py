@@ -23,6 +23,10 @@ def _conversation_unread_count_expression_for_user(user):
             ]
         )
         & Q(messages__is_deleted=False)
+        # System messages (e.g. "X created the group") are informational and must
+        # not drive the unread badge — otherwise a group created with one invite
+        # counts the system line + the invitation as 2 unread. See Message.Type.
+        & ~Q(messages__message_type=Message.Type.SYSTEM)
         & ~Q(messages__sender_id=user.id)
         & (
             Q(participants__last_read_at__isnull=True)
@@ -50,8 +54,10 @@ def _conversation_unread_messages_count_for_user(*, conversation_id: int, user_i
         return 0
 
     last_read_at = participant.get("last_read_at")
-    qs = Message.objects.filter(conversation_id=conversation_id, is_deleted=False).exclude(
-        sender_id=user_id
+    qs = (
+        Message.objects.filter(conversation_id=conversation_id, is_deleted=False)
+        .exclude(message_type=Message.Type.SYSTEM)
+        .exclude(sender_id=user_id)
     )
     if last_read_at is not None:
         qs = qs.filter(created_at__gt=last_read_at)
@@ -82,6 +88,7 @@ def _total_unread_messages_count_for_user(user) -> int:
             total=Count(
                 "conversation__messages",
                 filter=Q(conversation__messages__is_deleted=False)
+                & ~Q(conversation__messages__message_type=Message.Type.SYSTEM)
                 & ~Q(conversation__messages__sender_id=user.id)
                 & (
                     Q(last_read_at__isnull=True)
@@ -120,6 +127,7 @@ def _total_unread_messages_count_for_user_id(user_id: int) -> int:
             total=Count(
                 "conversation__messages",
                 filter=Q(conversation__messages__is_deleted=False)
+                & ~Q(conversation__messages__message_type=Message.Type.SYSTEM)
                 & ~Q(conversation__messages__sender_id=user_id)
                 & (
                     Q(last_read_at__isnull=True)
@@ -168,6 +176,7 @@ def _total_unread_counts_for_users(user_ids) -> dict[int, int]:
             total=Count(
                 "conversation__messages",
                 filter=Q(conversation__messages__is_deleted=False)
+                & ~Q(conversation__messages__message_type=Message.Type.SYSTEM)
                 & ~Q(conversation__messages__sender_id=F("user_id"))
                 & (
                     Q(last_read_at__isnull=True)
@@ -204,6 +213,7 @@ def _conversation_unread_counts_for_users(*, conversation_id: int, user_ids) -> 
             unread=Count(
                 "conversation__messages",
                 filter=Q(conversation__messages__is_deleted=False)
+                & ~Q(conversation__messages__message_type=Message.Type.SYSTEM)
                 & ~Q(conversation__messages__sender_id=F("user_id"))
                 & (
                     Q(last_read_at__isnull=True)

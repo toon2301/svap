@@ -5,14 +5,14 @@ import {
 } from './offerReviewsRouting';
 
 describe('offerReviewsRouting', () => {
-  it('builds a return target for the current user profile', () => {
+  it('returns to the top of the own profile (no highlighted offer)', () => {
     expect(
       buildOfferReviewsReturnTo({
         offerId: 12,
         ownerIdentifier: 'ignored',
         isOwnProfile: true,
       }),
-    ).toBe('/dashboard/profile?highlight=12&side=back');
+    ).toBe('/dashboard/profile');
   });
 
   it('builds a return target for a foreign profile', () => {

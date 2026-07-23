@@ -49,6 +49,7 @@ type ConversationDetailOverlaysProps = {
   onCloseConversationActions: () => void;
   onOpenGroupSettings?: () => void;
   onBlockUser?: () => void;
+  onUnblockUser?: () => void;
   onReportUser?: () => void;
   onRequestDeleteConversation: () => void;
   onCloseDeleteConversationModal: () => void;
@@ -86,6 +87,7 @@ export function ConversationDetailOverlays({
   onCloseConversationActions,
   onOpenGroupSettings,
   onBlockUser,
+  onUnblockUser,
   onReportUser,
   onRequestDeleteConversation,
   onCloseDeleteConversationModal,
@@ -130,6 +132,7 @@ export function ConversationDetailOverlays({
         onClose={onCloseConversationActions}
         onOpenGroupSettings={onOpenGroupSettings}
         onBlockUser={onBlockUser}
+        onUnblockUser={onUnblockUser}
         onReportUser={onReportUser}
         onDeleteConversation={onRequestDeleteConversation}
       />
