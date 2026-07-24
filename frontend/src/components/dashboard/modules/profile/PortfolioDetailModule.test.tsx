@@ -410,6 +410,34 @@ describe('PortfolioDetailModule', () => {
     expect(toast.error).not.toHaveBeenCalled();
   });
 
+  it('mobile photo editor treats a 404 portfolio_image_not_found as a silent success (refresh, no error, no redirect)', async () => {
+    mockMobileViewport(true);
+    (api.get as jest.Mock).mockResolvedValue({ data: manageablePortfolioItem() });
+    (api.delete as jest.Mock).mockRejectedValue({
+      response: { status: 404, data: { code: 'portfolio_image_not_found' } },
+    });
+
+    render(<PortfolioDetailModule itemId={7} ownerIdentifier="jane-doe" />);
+
+    await clickPortfolioDetailEdit();
+    fireEvent.click(screen.getByTestId('portfolio-mobile-edit-option-photos'));
+
+    mockPush.mockClear();
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('portfolio-gallery-delete-button-2'));
+    });
+
+    await waitFor(() =>
+      expect(api.delete).toHaveBeenCalledWith('/auth/portfolio/7/images/2/'),
+    );
+    // Fotka už zmazaná v inom tabe → tichý úspech: refresh (druhé GET), žiadny
+    // chybový text, žiadne presmerovanie (ako desktop, nie photoDeleteFailed).
+    await waitFor(() => expect(api.get).toHaveBeenCalledTimes(2));
+    expect(mockPush).not.toHaveBeenCalled();
+    expect(toast.error).not.toHaveBeenCalled();
+    expect(screen.queryByText(/nepodarilo.*vymaza/i)).not.toBeInTheDocument();
+  });
+
   it('shows upload UI only to the portfolio owner', async () => {
     (api.get as jest.Mock).mockResolvedValue({ data: portfolioItem() });
 

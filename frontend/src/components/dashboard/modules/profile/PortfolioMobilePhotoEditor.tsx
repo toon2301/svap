@@ -90,14 +90,28 @@ export function PortfolioMobilePhotoEditor({
         await deletePortfolioImage(item.id, image.id);
         await refresh();
       } catch (error) {
-        const code = (
-          error as { response?: { data?: { code?: string } } }
-        )?.response?.data?.code;
-        if (code === 'portfolio_item_not_found') {
+        const response = (
+          error as { response?: { status?: number; data?: { code?: string } } }
+        )?.response;
+        const status = response?.status;
+        const code = response?.data?.code;
+        if (status === 404 && code === 'portfolio_item_not_found') {
           // CELÁ položka bola medzitým zmazaná (iný tab) – rovnaké správanie ako
           // desktop: jasný stav + návrat na zoznam, nie chybový toast bez
-          // presmerovania. Zmazanie samotnej fotky (photo-gone) ostáva nezmenené.
+          // presmerovania.
           onItemGone?.();
+          return;
+        }
+        if (status === 404) {
+          // Fotka už neexistuje (portfolio_image_not_found – zmazaná v inom tabe),
+          // ale položka existuje → tichý úspech ako na desktope: len refresh,
+          // žiadny chybový toast, žiadne presmerovanie. Refresh je best-effort –
+          // jeho zlyhanie (napr. network) nesmie spôsobiť tvrdý pád.
+          try {
+            await refresh();
+          } catch {
+            // ignore – tichý úspech ostáva úspechom aj keď sa refresh nepodarí
+          }
           return;
         }
         setActionError(t('portfolio.photoDeleteFailed'));
