@@ -361,6 +361,55 @@ describe('PortfolioDetailModule', () => {
     expect(screen.getByTestId('portfolio-gallery-cover-button-1')).toBeInTheDocument();
     expect(screen.getByTestId('portfolio-gallery-delete-button-1')).toBeInTheDocument();
   });
+
+  it('mobile photo editor treats a 404 portfolio_item_not_found as the item being gone (redirect + toast)', async () => {
+    mockMobileViewport(true);
+    (api.get as jest.Mock).mockResolvedValue({ data: manageablePortfolioItem() });
+    (api.delete as jest.Mock).mockRejectedValue({
+      response: { status: 404, data: { code: 'portfolio_item_not_found' } },
+    });
+
+    render(<PortfolioDetailModule itemId={7} ownerIdentifier="jane-doe" />);
+
+    await clickPortfolioDetailEdit();
+    fireEvent.click(screen.getByTestId('portfolio-mobile-edit-option-photos'));
+
+    // Izoluj efekt samotného mazania (vstup do edit módu môže volať router).
+    mockPush.mockClear();
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('portfolio-gallery-delete-button-2'));
+    });
+
+    // Rovnaké správanie ako desktop: jasný stav + návrat na zoznam.
+    await waitFor(() => expect(mockPush).toHaveBeenCalled());
+    expect(toast.error).toHaveBeenCalled();
+    expect((toast.error as jest.Mock).mock.calls.at(-1)?.[0]).toMatch(/neexistuje/i);
+  });
+
+  it('mobile photo editor deletes a single photo silently without redirect (unchanged)', async () => {
+    mockMobileViewport(true);
+    (api.get as jest.Mock).mockResolvedValue({ data: manageablePortfolioItem() });
+    (api.delete as jest.Mock).mockResolvedValue({});
+
+    render(<PortfolioDetailModule itemId={7} ownerIdentifier="jane-doe" />);
+
+    await clickPortfolioDetailEdit();
+    fireEvent.click(screen.getByTestId('portfolio-mobile-edit-option-photos'));
+
+    mockPush.mockClear();
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('portfolio-gallery-delete-button-2'));
+    });
+
+    await waitFor(() =>
+      expect(api.delete).toHaveBeenCalledWith('/auth/portfolio/7/images/2/'),
+    );
+    // Tichý úspech: reload bez presmerovania a bez chyby.
+    await waitFor(() => expect(api.get).toHaveBeenCalledTimes(2));
+    expect(mockPush).not.toHaveBeenCalled();
+    expect(toast.error).not.toHaveBeenCalled();
+  });
+
   it('shows upload UI only to the portfolio owner', async () => {
     (api.get as jest.Mock).mockResolvedValue({ data: portfolioItem() });
 
@@ -518,6 +567,49 @@ describe('PortfolioDetailModule', () => {
     expect(api.get).toHaveBeenCalledTimes(2);
     expect(toast.error).not.toHaveBeenCalled();
   });
+
+  it('treats a 404 with portfolio_item_not_found as the whole item being gone (redirect, not silent success)', async () => {
+    (api.get as jest.Mock).mockResolvedValue({ data: manageablePortfolioItem() });
+    (api.delete as jest.Mock).mockRejectedValue({
+      response: { status: 404, data: { code: 'portfolio_item_not_found' } },
+    });
+
+    render(<PortfolioDetailModule itemId={7} ownerIdentifier="jane-doe" />);
+
+    fireEvent.click(await screen.findByTestId('portfolio-gallery-edit-button'));
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('portfolio-gallery-delete-button-2'));
+    });
+
+    // Nie tichý úspech – používateľ dostane jasný stav a je vrátený na zoznam.
+    await waitFor(() => expect(mockPush).toHaveBeenCalled());
+    expect(toast.error).toHaveBeenCalled();
+    expect((toast.error as jest.Mock).mock.calls.at(-1)?.[0]).toMatch(/neexistuje/i);
+    expect(toast.success).not.toHaveBeenCalled();
+    // Žiadny preserveCurrent reload (žiadne druhé GET) – rovno redirect.
+    expect(api.get).toHaveBeenCalledTimes(1);
+  });
+
+  it('treats a 404 with portfolio_image_not_found as a silent successful photo deletion', async () => {
+    (api.get as jest.Mock).mockResolvedValue({ data: manageablePortfolioItem() });
+    (api.delete as jest.Mock).mockRejectedValue({
+      response: { status: 404, data: { code: 'portfolio_image_not_found' } },
+    });
+
+    render(<PortfolioDetailModule itemId={7} ownerIdentifier="jane-doe" />);
+
+    fireEvent.click(await screen.findByTestId('portfolio-gallery-edit-button'));
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('portfolio-gallery-delete-button-2'));
+    });
+
+    await waitFor(() => expect(toast.success).toHaveBeenCalled());
+    expect((toast.success as jest.Mock).mock.calls.at(-1)?.[0]).toMatch(/vymazan/i);
+    expect(api.get).toHaveBeenCalledTimes(2);
+    expect(toast.error).not.toHaveBeenCalled();
+    expect(mockPush).not.toHaveBeenCalled();
+  });
+
   it('disables new photo selection when the portfolio already has 8 active images', async () => {
     (api.get as jest.Mock).mockResolvedValue({
       data: manageablePortfolioItem({

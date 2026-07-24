@@ -4192,6 +4192,7 @@
     "saveOrder": "Reihenfolge speichern",
     "orderSaveFailed": "Reihenfolge konnte nicht gespeichert werden",
     "photoDeleteFailed": "Foto konnte nicht gelöscht werden",
+    "itemNoLongerExists": "Dieses Element existiert nicht mehr",
     "createSuccess": "Portfolio wurde erstellt",
     "saveSuccess": "Änderungen wurden gespeichert",
     "deleteSuccess": "Portfolio wurde gelöscht",

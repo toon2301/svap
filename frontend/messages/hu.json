@@ -4192,6 +4192,7 @@
     "saveOrder": "Sorrend mentése",
     "orderSaveFailed": "A sorrendet nem sikerült menteni",
     "photoDeleteFailed": "A fotót nem sikerült törölni",
+    "itemNoLongerExists": "Ez az elem már nem létezik",
     "createSuccess": "A portfólió létrehozva",
     "saveSuccess": "A módosítások mentve",
     "deleteSuccess": "A portfólió törölve",

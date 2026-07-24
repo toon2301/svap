@@ -275,6 +275,15 @@ export default function PortfolioDetailModule({
     }
   }, [backPath, item, router, t]);
 
+  // Server signalizoval, že CELÁ položka už neexistuje (zmazaná v inom tabe počas
+  // práce s fotkami). Nepohlcuj to ako preserveCurrent reload – zobraz jasný stav
+  // a vráť na zoznam portfólia (rovnaký L3 vzor ako pri zmazaní celej položky).
+  const handleItemGone = useCallback(() => {
+    dispatchProfilePortfolioRefresh();
+    toast.error(t('portfolio.itemNoLongerExists'));
+    router.push(backPath);
+  }, [backPath, router, t]);
+
   if (item && canManage && isMobile && isEditing) {
     return (
       <PortfolioMobileEditFlow
@@ -284,6 +293,7 @@ export default function PortfolioDetailModule({
         }}
         onSaved={handleMobileEditSaved}
         onRefresh={() => loadItem({ preserveCurrent: true })}
+        onItemGone={handleItemGone}
       />
     );
   }
@@ -411,6 +421,7 @@ export default function PortfolioDetailModule({
             canUpload={canManage}
             onOpenImage={openLightbox}
             onUploadRefresh={() => loadItem({ preserveCurrent: true })}
+            onItemGone={handleItemGone}
           />
           <PortfolioRelatedOfferCard offer={item.related_offer} />
         </div>

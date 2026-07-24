@@ -4192,6 +4192,7 @@
     "saveOrder": "Zapisz kolejność",
     "orderSaveFailed": "Nie udało się zapisać kolejności",
     "photoDeleteFailed": "Nie udało się usunąć zdjęcia",
+    "itemNoLongerExists": "Ten element już nie istnieje",
     "createSuccess": "Portfolio zostało utworzone",
     "saveSuccess": "Zmiany zostały zapisane",
     "deleteSuccess": "Portfolio zostało usunięte",

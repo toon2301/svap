@@ -322,6 +322,38 @@ class PortfolioImageUploadApiTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.assertTrue(PortfolioImage.objects.filter(id=image.id).exists())
 
+    def test_delete_photo_when_item_deleted_returns_item_not_found_code(self):
+        # Simuluj: CELÁ položka bola zmazaná v inom tabe → item už nie je v DB.
+        # DELETE fotky NIE je úspech – FE musí dostať `portfolio_item_not_found`,
+        # aby vedel používateľa vrátiť na zoznam (nie ho nechať na duchovi stránke).
+        image = self._image()
+        item_id = self.item.id
+        image_id = image.id
+        self.item.delete()  # cascade zmaže aj fotku
+        self.client.force_authenticate(user=self.owner)
+
+        response = self.client.delete(
+            reverse("accounts:portfolio_image_detail", args=[item_id, image_id])
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.data.get("code"), "portfolio_item_not_found")
+
+    def test_delete_photo_already_deleted_returns_image_not_found_code(self):
+        # Simuluj: len FOTKA bola zmazaná v inom tabe, položka stále existuje →
+        # `portfolio_image_not_found` (FE to berie ako tichý úspech).
+        image = self._image()
+        image_id = image.id
+        image.delete()
+        self.client.force_authenticate(user=self.owner)
+
+        response = self.client.delete(
+            reverse("accounts:portfolio_image_detail", args=[self.item.id, image_id])
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(response.data.get("code"), "portfolio_image_not_found")
+
     def test_delete_cover_image_sets_next_approved_cover_and_deletes_storage(self):
         first = self._image(order=0, large_key="media/portfolio/first.webp")
         second = self._image(order=1, large_key="media/portfolio/second.webp")

@@ -311,7 +311,38 @@ describe('RequestsNotificationsProvider', () => {
     }
   });
 
-  it('dispatches a profile liked event for realtime profile like notifications', async () => {
+  it('dispatches a profile liked event for realtime profile_like_changed events', async () => {
+    const profileLikedListener = jest.fn();
+    window.addEventListener(PROFILE_LIKED_EVENT, profileLikedListener as EventListener);
+
+    try {
+      render(
+        <RequestsNotificationsProvider>
+          <NotificationConsumer />
+        </RequestsNotificationsProvider>,
+      );
+      await flushAsyncEffects();
+
+      act(() => {
+        MockWebSocket.instances[0].emitMessage({
+          type: 'profile_like_changed',
+          profile_user_id: 99,
+          profile_likes_count: 5,
+        });
+      });
+
+      expect(profileLikedListener).toHaveBeenCalledTimes(1);
+      const event = profileLikedListener.mock.calls[0]?.[0] as CustomEvent<ProfileLikedPayload>;
+      expect(event.detail).toEqual({ profileUserId: 99 });
+    } finally {
+      window.removeEventListener(PROFILE_LIKED_EVENT, profileLikedListener as EventListener);
+    }
+  });
+
+  it('does NOT dispatch a profile liked event from a notification_created (profile_liked) event', async () => {
+    // Count-update je odteraz oddelený od notifikácie (rieši ho profile_like_changed).
+    // notification_created preto NESMIE spúšťať PROFILE_LIKED_EVENT – inak by pri
+    // prvom lajku so zapnutými notifikáciami vznikli dva count-update eventy.
     const profileLikedListener = jest.fn();
     window.addEventListener(PROFILE_LIKED_EVENT, profileLikedListener as EventListener);
 
@@ -334,9 +365,7 @@ describe('RequestsNotificationsProvider', () => {
         });
       });
 
-      expect(profileLikedListener).toHaveBeenCalledTimes(1);
-      const event = profileLikedListener.mock.calls[0]?.[0] as CustomEvent<ProfileLikedPayload>;
-      expect(event.detail).toEqual({ profileUserId: 99 });
+      expect(profileLikedListener).not.toHaveBeenCalled();
     } finally {
       window.removeEventListener(PROFILE_LIKED_EVENT, profileLikedListener as EventListener);
     }

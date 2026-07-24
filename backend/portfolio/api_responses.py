@@ -32,6 +32,19 @@ def portfolio_item_not_found() -> Response:
     )
 
 
+def portfolio_image_not_found() -> Response:
+    """404 keď fotka neexistuje, ALE rodičovská položka áno.
+
+    Odlišný `code` od `portfolio_item_not_found` umožňuje FE rozlíšiť „fotka už
+    zmazaná" (tichý úspech) od „celá položka zmazaná" (návrat na zoznam).
+    """
+    return error_response(
+        "Fotka portfolia nebola najdena.",
+        code="portfolio_image_not_found",
+        status_code=status.HTTP_404_NOT_FOUND,
+    )
+
+
 def serializer_error_response(errors) -> Response:
     """400 so serializer field errors + additívna mapa `codes` (field -> [code]).
 

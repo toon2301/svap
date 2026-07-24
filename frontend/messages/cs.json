@@ -4192,6 +4192,7 @@
     "saveOrder": "Uložit pořadí",
     "orderSaveFailed": "Pořadí se nepodařilo uložit",
     "photoDeleteFailed": "Fotku se nepodařilo smazat",
+    "itemNoLongerExists": "Tato položka již neexistuje",
     "createSuccess": "Portfolio bylo vytvořeno",
     "saveSuccess": "Změny byly uloženy",
     "deleteSuccess": "Portfolio bylo smazáno",

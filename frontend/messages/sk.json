@@ -4192,6 +4192,7 @@
     "saveOrder": "Uložiť poradie",
     "orderSaveFailed": "Poradie sa nepodarilo uložiť",
     "photoDeleteFailed": "Fotku sa nepodarilo vymazať",
+    "itemNoLongerExists": "Táto položka už neexistuje",
     "createSuccess": "Portfólio bolo vytvorené",
     "saveSuccess": "Zmeny boli uložené",
     "deleteSuccess": "Portfólio bolo vymazané",

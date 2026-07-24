@@ -4192,6 +4192,7 @@
     "saveOrder": "Save order",
     "orderSaveFailed": "Could not save the order",
     "photoDeleteFailed": "Could not delete the photo",
+    "itemNoLongerExists": "This item no longer exists",
     "createSuccess": "Portfolio created",
     "saveSuccess": "Changes saved",
     "deleteSuccess": "Portfolio deleted",

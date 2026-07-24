@@ -18,11 +18,15 @@ import { usePortfolioImageUploadQueue } from './usePortfolioImageUploadQueue';
 type PortfolioMobilePhotoEditorProps = {
   item: PortfolioItem;
   onRefresh: () => Promise<void> | void;
+  // Volané keď server signalizuje, že CELÁ položka už neexistuje (zmazaná v inom
+  // tabe) – nadradený modul zobrazí „položka neexistuje" a vráti na zoznam.
+  onItemGone?: () => void;
 };
 
 export function PortfolioMobilePhotoEditor({
   item,
   onRefresh,
+  onItemGone,
 }: PortfolioMobilePhotoEditorProps) {
   const { t } = useLanguage();
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -85,13 +89,23 @@ export function PortfolioMobilePhotoEditor({
       try {
         await deletePortfolioImage(item.id, image.id);
         await refresh();
-      } catch {
+      } catch (error) {
+        const code = (
+          error as { response?: { data?: { code?: string } } }
+        )?.response?.data?.code;
+        if (code === 'portfolio_item_not_found') {
+          // CELÁ položka bola medzitým zmazaná (iný tab) – rovnaké správanie ako
+          // desktop: jasný stav + návrat na zoznam, nie chybový toast bez
+          // presmerovania. Zmazanie samotnej fotky (photo-gone) ostáva nezmenené.
+          onItemGone?.();
+          return;
+        }
         setActionError(t('portfolio.photoDeleteFailed'));
       } finally {
         setActionKey(null);
       }
     },
-    [item.id, refresh, t],
+    [item.id, refresh, t, onItemGone],
   );
 
   return (
