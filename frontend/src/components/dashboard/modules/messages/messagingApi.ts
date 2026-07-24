@@ -132,12 +132,14 @@ export function getMessagingErrorMessage(
     fallback,
     rateLimitFallback,
     unavailableFallback,
+    recipientUnavailableFallback,
     requestPendingFallback,
     requestAcceptRequiredFallback,
   }: {
     fallback: string;
     rateLimitFallback?: string;
     unavailableFallback?: string;
+    recipientUnavailableFallback?: string;
     requestPendingFallback?: string;
     requestAcceptRequiredFallback?: string;
   },
@@ -161,6 +163,11 @@ export function getMessagingErrorMessage(
   }
   if (code === 'message_request_accept_required' && requestAcceptRequiredFallback) {
     return requestAcceptRequiredFallback;
+  }
+  // The backend returns this stable code (with 403 or 404) when the pair can no
+  // longer interact — kept deliberately neutral so it does not reveal a block.
+  if (code === 'recipient_unavailable') {
+    return recipientUnavailableFallback || unavailableFallback || fallback;
   }
   const responseMessage =
     (typeof error?.response?.data?.message === 'string' && error.response.data.message) ||

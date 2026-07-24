@@ -200,4 +200,28 @@ describe('MobileTopBar', () => {
     expect(onBackClick).toHaveBeenCalledTimes(1);
   });
 
+  it('shows the profile actions hamburger on a reachable foreign profile', () => {
+    render(
+      <MobileTopBar
+        onMenuClick={jest.fn()}
+        activeModule="user-profile"
+        viewedUserNotFound={false}
+      />,
+    );
+
+    expect(screen.getByRole('button', { name: 'Menu' })).toBeInTheDocument();
+  });
+
+  it('hides the hamburger on an unreachable foreign profile (e.g. blocked)', () => {
+    render(
+      <MobileTopBar
+        onMenuClick={jest.fn()}
+        activeModule="user-profile"
+        viewedUserNotFound
+      />,
+    );
+
+    expect(screen.queryByRole('button', { name: 'Menu' })).not.toBeInTheDocument();
+  });
+
 });

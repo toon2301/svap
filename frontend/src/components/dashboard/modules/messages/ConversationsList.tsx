@@ -198,7 +198,25 @@ export function ConversationsList({
             setItems(safeItems);
           }
           if (!search && tab === 'messages') {
-            syncMessageUnreadCountFromConversations(safeItems, { snapshotAt });
+            // Message requests you received live in the "Žiadosti" tab, not this
+            // main list, but their unread messages DO count in the total-unread
+            // summary. Include them here so the badge value matches the summary
+            // endpoint — otherwise it is undercounted, the acknowledge baseline
+            // is clamped too low, and the badge reappears after reload for a
+            // PENDING request that was already opened. Best-effort: fall back to
+            // the main list only if the request fetch fails.
+            let badgeItems = safeItems;
+            try {
+              const receivedRequests = await listMessageRequests({});
+              if (Array.isArray(receivedRequests) && receivedRequests.length > 0) {
+                badgeItems = [...safeItems, ...receivedRequests];
+              }
+            } catch {
+              // keep the main-list-only badge value
+            }
+            if (latestRequestIdRef.current === requestId) {
+              syncMessageUnreadCountFromConversations(badgeItems, { snapshotAt });
+            }
           }
         }
         return safeItems;
@@ -297,6 +315,10 @@ export function ConversationsList({
             fallback: t(
               'messages.messageRequestActionFailed',
               'Žiadosť sa nepodarilo spracovať. Skúste to znova.',
+            ),
+            recipientUnavailableFallback: t(
+              'messages.recipientUnavailable',
+              'Tomuto používateľovi momentálne nemôžete písať.',
             ),
           }),
         );

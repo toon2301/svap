@@ -173,7 +173,14 @@ export function useDashboardUserProfile({
   useEffect(() => {
     if (!user || !initialProfileSlug) return;
     if (activeModule !== 'user-profile') return;
-    if (user.slug && user.slug === initialProfileSlug) {
+    // `initialProfileSlug` je zamrznuty Next.js params prop – pri pushState navigacii
+    // (klik na ponuku/cudzi profil) sa NEaktualizuje a pri router.push zaostava za
+    // synchronnym `setActiveModule('user-profile')`. Bez tohto guardu by prepnutie na
+    // vlastny profil vyskocilo aj ked uz interaktivne prezerame INEHO pouzivatela.
+    // Prepiname preto len ked skutocne zobrazujeme vlastny profil: `viewedUserId` je
+    // este nevyriesene (null) alebo sa rovna vlastnemu id.
+    const viewingSelf = viewedUserId === null || viewedUserId === user.id;
+    if (viewingSelf && user.slug && user.slug === initialProfileSlug) {
       setActiveModule('profile');
       try {
         if (typeof window !== 'undefined') {
@@ -183,7 +190,7 @@ export function useDashboardUserProfile({
         // ignore
       }
     }
-  }, [activeModule, user, initialProfileSlug, setActiveModule]);
+  }, [activeModule, user, initialProfileSlug, viewedUserId, setActiveModule]);
 
   // Aplikuj počiatočný stav pravého sidebaru pre vlastný profil na základe URL (edit, account, privacy, language)
   useEffect(() => {

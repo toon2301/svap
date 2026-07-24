@@ -62,6 +62,10 @@ export function RequestMobileCard({ item, variant, onPress }: Props) {
   const { t } = useLanguage();
   const { user } = useAuth();
 
+  // A sent exchange in completion_requested state is waiting for THIS user to
+  // confirm completion (received = we requested it, so no pulse for us).
+  const awaitsMyConfirmation = variant === 'sent' && item.status === 'completion_requested';
+
   const who = variant === 'received' ? item.requester_summary : item.recipient_summary;
   const whoId = who?.id ?? (variant === 'received' ? item.requester : item.recipient);
   const whoName =
@@ -130,7 +134,11 @@ export function RequestMobileCard({ item, variant, onPress }: Props) {
   const profileAriaLabel = t('requests.openProfile', 'Otvoriť profil');
 
   return (
-    <div className="relative w-full bg-white dark:bg-[#0f0f10]">
+    <div
+      className={`relative w-full bg-white dark:bg-[#0f0f10]${
+        awaitsMyConfirmation ? ' awaiting-confirmation-pulse z-10' : ''
+      }`}
+    >
       <div
         role="button"
         tabIndex={0}
@@ -168,10 +176,13 @@ export function RequestMobileCard({ item, variant, onPress }: Props) {
 
           <div className="min-w-0 flex-1">
             <div className="min-w-0">
+              {/* Scoped to the name text only (max-w-full inline-block, not
+                  w-full) so the empty space beside a short name opens the
+                  request detail via the card's onPress, not the profile. */}
               <button
                 type="button"
                 onClick={handleProfileClick}
-                className="block w-full text-left text-sm font-semibold text-gray-900 dark:text-white truncate bg-transparent border-0 p-0 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 rounded focus-visible:ring-offset-1"
+                className="inline-block max-w-full text-left text-sm font-semibold text-gray-900 dark:text-white truncate bg-transparent border-0 p-0 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 rounded focus-visible:ring-offset-1"
                 aria-label={profileAriaLabel}
               >
                 {whoName}

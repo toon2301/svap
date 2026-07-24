@@ -1,7 +1,7 @@
 'use client';
 
 import { api } from '@/lib/api';
-import { listConversations } from './messagingApi';
+import { getMessagingErrorMessage, listConversations } from './messagingApi';
 
 jest.mock('@/lib/api', () => ({
   __esModule: true,
@@ -151,3 +151,33 @@ describe(
     );
   },
 );
+
+describe('getMessagingErrorMessage recipient_unavailable', () => {
+  const blockedError = (status: number) => ({
+    response: { status, data: { code: 'recipient_unavailable' } },
+  });
+
+  it('maps the recipient_unavailable code to its dedicated message (404 and 403)', () => {
+    for (const status of [404, 403]) {
+      expect(
+        getMessagingErrorMessage(blockedError(status), {
+          fallback: 'generic',
+          unavailableFallback: 'conversation gone',
+          recipientUnavailableFallback: 'cannot message user',
+        }),
+      ).toBe('cannot message user');
+    }
+  });
+
+  it('falls back to unavailableFallback, then fallback, when the dedicated message is absent', () => {
+    expect(
+      getMessagingErrorMessage(blockedError(404), {
+        fallback: 'generic',
+        unavailableFallback: 'conversation gone',
+      }),
+    ).toBe('conversation gone');
+    expect(
+      getMessagingErrorMessage(blockedError(404), { fallback: 'generic' }),
+    ).toBe('generic');
+  });
+});

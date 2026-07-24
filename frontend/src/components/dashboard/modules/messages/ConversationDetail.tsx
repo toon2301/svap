@@ -7,6 +7,8 @@ import { useIsMobile } from '@/hooks';
 import { BlockUserConfirmDialog } from '../profile/BlockUserConfirmDialog';
 import { ReportUserModal } from '../profile/ReportUserModal';
 import { useBlockUserAction } from '../profile/useBlockUserAction';
+import { useUnblockUserAction } from '../profile/useUnblockUserAction';
+import { UnblockUserConfirmDialog } from '../UnblockUserConfirmDialog';
 import { BlockedConversationNotice } from './BlockedConversationNotice';
 import { ConversationComposerSection } from './ConversationComposerSection';
 import { ConversationDetailHeader } from './ConversationDetailHeader';
@@ -128,6 +130,20 @@ export function ConversationDetail({
   const blockAction = useBlockUserAction({
     targetUserId: targetUserId ?? 0,
     onBlocked: handleBlocked,
+  });
+
+  // Inline unblock from the blocked-conversation banner/menu. On success the
+  // conversation refresh clears is_blocked_by_me, so the banner is replaced by
+  // the composer again without a reload.
+  const handleUnblocked = useCallback(() => {
+    closeConversationActions();
+    void refreshConversation({ showError: false, syncConversations: true }).catch(() => undefined);
+    requestConversationsRefresh();
+  }, [closeConversationActions, refreshConversation]);
+
+  const unblockAction = useUnblockUserAction({
+    targetUserId: targetUserId ?? 0,
+    onUnblocked: handleUnblocked,
   });
 
   const composer = useConversationComposerController({
@@ -409,7 +425,10 @@ export function ConversationDetail({
       />
 
       {isBlockedByMe ? (
-        <BlockedConversationNotice />
+        <BlockedConversationNotice
+          onUnblock={targetUserId !== null ? unblockAction.openConfirm : undefined}
+          isUnblocking={unblockAction.isUnblocking}
+        />
       ) : (
         <ConversationComposerSection
           isMobile={isMobile}
@@ -468,6 +487,14 @@ export function ConversationDetail({
               }
             : undefined
         }
+        onUnblockUser={
+          !isGroupConversation && targetUserId !== null && !isTargetDeleted && isBlockedByMe
+            ? () => {
+                actions.closeConversationActions();
+                unblockAction.openConfirm();
+              }
+            : undefined
+        }
         onReportUser={
           isMobile && !isGroupConversation && targetUserId !== null
             ? () => {
@@ -492,6 +519,14 @@ export function ConversationDetail({
         onClose={blockAction.closeConfirm}
         onConfirm={() => {
           void blockAction.confirmBlock();
+        }}
+      />
+      <UnblockUserConfirmDialog
+        open={unblockAction.isConfirmOpen}
+        isSubmitting={unblockAction.isUnblocking}
+        onClose={unblockAction.closeConfirm}
+        onConfirm={() => {
+          void unblockAction.confirmUnblock();
         }}
       />
       {targetUserId !== null ? (

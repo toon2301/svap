@@ -15,6 +15,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.utils.urls import remove_query_param, replace_query_param
 
+from accounts.services.user_blocks import BlockedUserInteractionError
 from swaply.rate_limiting import (
     messaging_mark_read_rate_limit,
     messaging_open_rate_limit,
@@ -461,6 +462,14 @@ class AcceptMessageRequestView(APIView):
         convo = _conversation_for_user_or_404(conversation_id=conversation_id, user=request.user)
         try:
             result = accept_message_request(conversation=convo, user=request.user)
+        except BlockedUserInteractionError:
+            # Neutral code so the client shows "you can't message this user"
+            # (same mapping as the direct-message send path) without disclosing
+            # the block.
+            return Response(
+                {"code": "recipient_unavailable"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
         except MessageRequestActionNotAllowed:
             return Response(status=status.HTTP_404_NOT_FOUND)
 

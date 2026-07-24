@@ -19,6 +19,10 @@ import {
   PROFILE_OFFER_LIKED_EVENT,
   type ProfileOfferLikedPayload,
 } from '@/components/dashboard/modules/profile/profileOfferEvents';
+import {
+  PROFILE_LIKED_EVENT,
+  type ProfileLikedPayload,
+} from '@/components/dashboard/modules/profile/profileLikeEvents';
 
 const mockApiGet = jest.fn();
 const mockApiPost = jest.fn();
@@ -304,6 +308,66 @@ describe('RequestsNotificationsProvider', () => {
       expect(event.detail).toEqual({ offerId: 42 });
     } finally {
       window.removeEventListener(PROFILE_OFFER_LIKED_EVENT, offerLikedListener as EventListener);
+    }
+  });
+
+  it('dispatches a profile liked event for realtime profile_like_changed events', async () => {
+    const profileLikedListener = jest.fn();
+    window.addEventListener(PROFILE_LIKED_EVENT, profileLikedListener as EventListener);
+
+    try {
+      render(
+        <RequestsNotificationsProvider>
+          <NotificationConsumer />
+        </RequestsNotificationsProvider>,
+      );
+      await flushAsyncEffects();
+
+      act(() => {
+        MockWebSocket.instances[0].emitMessage({
+          type: 'profile_like_changed',
+          profile_user_id: 99,
+          profile_likes_count: 5,
+        });
+      });
+
+      expect(profileLikedListener).toHaveBeenCalledTimes(1);
+      const event = profileLikedListener.mock.calls[0]?.[0] as CustomEvent<ProfileLikedPayload>;
+      expect(event.detail).toEqual({ profileUserId: 99 });
+    } finally {
+      window.removeEventListener(PROFILE_LIKED_EVENT, profileLikedListener as EventListener);
+    }
+  });
+
+  it('does NOT dispatch a profile liked event from a notification_created (profile_liked) event', async () => {
+    // Count-update je odteraz oddelený od notifikácie (rieši ho profile_like_changed).
+    // notification_created preto NESMIE spúšťať PROFILE_LIKED_EVENT – inak by pri
+    // prvom lajku so zapnutými notifikáciami vznikli dva count-update eventy.
+    const profileLikedListener = jest.fn();
+    window.addEventListener(PROFILE_LIKED_EVENT, profileLikedListener as EventListener);
+
+    try {
+      render(
+        <RequestsNotificationsProvider>
+          <NotificationConsumer />
+        </RequestsNotificationsProvider>,
+      );
+      await flushAsyncEffects();
+
+      act(() => {
+        MockWebSocket.instances[0].emitMessage({
+          type: 'notification_created',
+          unread_count: 3,
+          notification: {
+            type: 'profile_liked',
+            data: { profile_user_id: 99 },
+          },
+        });
+      });
+
+      expect(profileLikedListener).not.toHaveBeenCalled();
+    } finally {
+      window.removeEventListener(PROFILE_LIKED_EVENT, profileLikedListener as EventListener);
     }
   });
 

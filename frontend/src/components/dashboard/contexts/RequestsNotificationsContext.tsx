@@ -25,6 +25,10 @@ import {
   parsePositivePortfolioItemId,
 } from '@/components/dashboard/modules/profile/portfolioEvents';
 import {
+  dispatchProfileLiked,
+  parseProfileLikedUserId,
+} from '@/components/dashboard/modules/profile/profileLikeEvents';
+import {
   acknowledgeMessageUnreadCount,
   applyIncomingMessageUnreadEvent,
   bindMessageUnreadCountStoreToUser,
@@ -86,6 +90,8 @@ type WsNotificationPayload = {
   deleted_by_id?: number;
   actor_id?: number;
   pinned_message?: MessageItem | null;
+  profile_user_id?: number;
+  profile_likes_count?: number;
 };
 
 type WsListener = (payload: WsNotificationPayload) => void;
@@ -766,6 +772,19 @@ export function RequestsNotificationsProvider({
           }
         }
 
+        // Poznámka: profile-like count-update NEriešime cez notification_created,
+        // pretože ten event nepríde pri vypnutých notifikáciách, pri unlike ani pri
+        // opakovanom lajku. Rieši to samostatný `profile_like_changed` event nižšie,
+        // ktorý BE posiela pri KAŽDEJ like/unlike akcii (bez duplicity count-update).
+
+        return;
+      }
+
+      if (payload.type === 'profile_like_changed') {
+        const profileUserId = parseProfileLikedUserId(payload.profile_user_id);
+        if (profileUserId !== null) {
+          dispatchProfileLiked({ profileUserId });
+        }
         return;
       }
 

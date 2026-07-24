@@ -15,6 +15,7 @@ from rest_framework.response import Response
 from swaply.rate_limiting import api_rate_limit
 
 from .api_responses import error_response as _api_error_response
+from .api_responses import portfolio_image_not_found as _portfolio_image_not_found
 from .api_responses import portfolio_item_not_found as _portfolio_item_not_found
 from .image_storage import delete_storage_keys, image_storage_keys
 from .image_storage import get_s3_client as _get_s3_client
@@ -365,10 +366,7 @@ def portfolio_image_detail_view(request, item_id: int, image_id: int):
         try:
             image = item.images.select_for_update().get(id=image_id)
         except PortfolioImage.DoesNotExist:
-            return Response(
-                {"error": "Fotka portfolia nebola najdena."},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+            return _portfolio_image_not_found()
 
         keys = image_storage_keys(image)
         was_cover = item.cover_image_id == image.id
@@ -405,10 +403,7 @@ def portfolio_image_cover_view(request, item_id: int, image_id: int):
         try:
             image = item.images.select_for_update().get(id=image_id)
         except PortfolioImage.DoesNotExist:
-            return Response(
-                {"error": "Fotka portfolia nebola najdena."},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+            return _portfolio_image_not_found()
 
         if image.status != PortfolioImage.Status.APPROVED or not (
             image.large_key or image.approved_key or getattr(image.image, "name", "")

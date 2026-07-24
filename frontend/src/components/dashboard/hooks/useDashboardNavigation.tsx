@@ -4,6 +4,7 @@ import { useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { type User } from '@/types';
 import { type SearchUserResult } from '../modules/search/types';
+import { primeUserSlugId } from '../modules/profile/profileUserCache';
 import { type UseDashboardStateResult } from './useDashboardState';
 
 export interface DashboardNavigationProps {
@@ -214,7 +215,13 @@ export function useDashboardNavigation({
     // Použiť slug ak existuje, inak userId
     const identifier = slug || String(userId);
     const url = `/dashboard/users/${identifier}`;
-    
+
+    // router.push na slug URL remountuje Dashboard (users/[userId]/page.tsx), pričom
+    // sa stratí už známe `userId` z výsledku vyhľadávania. Naprimujeme slug -> id
+    // mapovanie, aby `resolveViewedUserBySlug` po remounte vyriešil profil z cache
+    // bez zbytočného `userProfileBySlug` API round-tripu.
+    primeUserSlugId(slug ?? null, userId);
+
     router.push(url);
   }, [
     user?.id,

@@ -40,6 +40,12 @@ function totalActiveCollaborations(res: SkillRequestsResponse): number {
   return res.received.length + sentLen;
 }
 
+// A sent exchange in completion_requested state awaits the current user's
+// confirmation — used to gently pulse the active-tab badge.
+function hasAwaitingConfirmation(res: SkillRequestsResponse): boolean {
+  return res.sent.some((x) => x.status === 'completion_requested');
+}
+
 export function RequestsDesktop({ routeIntent }: RequestsDesktopProps) {
   const { t } = useLanguage();
   const router = useRouter();
@@ -52,6 +58,8 @@ export function RequestsDesktop({ routeIntent }: RequestsDesktopProps) {
   const [tab, setTab] = useState<RequestsTab>(requestedRoute.tab);
   const [data, setData] = useState<SkillRequestsResponse>({ received: [], sent: [] });
   const [activeTabTotal, setActiveTabTotal] = useState<number | null>(null);
+  const [pendingTabTotal, setPendingTabTotal] = useState<number | null>(null);
+  const [awaitingActiveConfirmation, setAwaitingActiveConfirmation] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [busyId, setBusyId] = useState<number | null>(null);
   const [pendingConfirm, setPendingConfirm] = useState<{ action: 'reject' | 'cancel' | 'hide'; id: number } | null>(null);
@@ -87,20 +95,20 @@ export function RequestsDesktop({ routeIntent }: RequestsDesktopProps) {
     setIsLoading(true);
     try {
       const statusQuery = STATUS_PARAMS[statusTab];
-      if (statusTab === 'active') {
-        const res = await fetchSkillRequests(statusQuery);
-        if (loadSeqRef.current !== loadSeq) return;
-        setData(res);
-        setActiveTabTotal(totalActiveCollaborations(res));
-      } else {
-        const [res, activeRes] = await Promise.all([
-          fetchSkillRequests(statusQuery),
-          fetchSkillRequests(STATUS_PARAMS.active),
-        ]);
-        if (loadSeqRef.current !== loadSeq) return;
-        setData(res);
-        setActiveTabTotal(totalActiveCollaborations(activeRes));
-      }
+      // Always resolve the active AND pending badge counts (reusing the current
+      // tab's response when it already is that status) so both tab badges stay
+      // accurate regardless of which tab is open.
+      const [res, activeRes, pendingRes] = await Promise.all([
+        fetchSkillRequests(statusQuery),
+        statusTab === 'active' ? Promise.resolve(null) : fetchSkillRequests(STATUS_PARAMS.active),
+        statusTab === 'pending' ? Promise.resolve(null) : fetchSkillRequests(STATUS_PARAMS.pending),
+      ]);
+      if (loadSeqRef.current !== loadSeq) return;
+      const activeData = statusTab === 'active' ? res : activeRes!;
+      setData(res);
+      setActiveTabTotal(totalActiveCollaborations(activeData));
+      setPendingTabTotal(totalActiveCollaborations(statusTab === 'pending' ? res : pendingRes!));
+      setAwaitingActiveConfirmation(hasAwaitingConfirmation(activeData));
     } finally {
       if (loadSeqRef.current === loadSeq) {
         setIsLoading(false);
@@ -110,8 +118,13 @@ export function RequestsDesktop({ routeIntent }: RequestsDesktopProps) {
 
   const refreshActiveTabBadge = useCallback(async () => {
     try {
-      const activeRes = await fetchSkillRequests(STATUS_PARAMS.active);
+      const [activeRes, pendingRes] = await Promise.all([
+        fetchSkillRequests(STATUS_PARAMS.active),
+        fetchSkillRequests(STATUS_PARAMS.pending),
+      ]);
       setActiveTabTotal(totalActiveCollaborations(activeRes));
+      setPendingTabTotal(totalActiveCollaborations(pendingRes));
+      setAwaitingActiveConfirmation(hasAwaitingConfirmation(activeRes));
     } catch {
       /* odznak môže ostať z predchádzajúceho načítania */
     }
@@ -376,18 +389,29 @@ export function RequestsDesktop({ routeIntent }: RequestsDesktopProps) {
                   {key === 'active' && t('requests.tabActive', 'Aktívne')}
                   {key === 'completed' && t('requests.tabCompleted', 'Dokončené')}
                   {key === 'cancelled' && t('requests.tabCancelled', 'Zrušené')}
-                  {key === 'active' && activeTabTotal != null && activeTabTotal > 0 ? (
-                    <span
-                      className={[
-                        'min-w-6 px-1.5 py-0.5 rounded-full text-[10px] font-bold border tabular-nums',
-                        statusTab === key
-                          ? 'bg-white/80 border-purple-200 text-purple-700 dark:bg-white/70 dark:border-purple-300/40 dark:text-purple-900'
-                          : 'bg-white/60 border-gray-200 text-gray-700 dark:bg-black/30 dark:border-gray-800 dark:text-gray-200',
-                      ].join(' ')}
-                    >
-                      {activeTabTotal > 99 ? '99+' : activeTabTotal}
-                    </span>
-                  ) : null}
+                  {(() => {
+                    const tabTotal =
+                      key === 'active'
+                        ? activeTabTotal
+                        : key === 'pending'
+                          ? pendingTabTotal
+                          : null;
+                    return tabTotal != null && tabTotal > 0 ? (
+                      <span
+                        className={[
+                          'min-w-6 px-1.5 py-0.5 rounded-full text-[10px] font-bold border tabular-nums',
+                          statusTab === key
+                            ? 'bg-white/80 border-purple-200 text-purple-700 dark:bg-white/70 dark:border-purple-300/40 dark:text-purple-900'
+                            : 'bg-white/60 border-gray-200 text-gray-700 dark:bg-black/30 dark:border-gray-800 dark:text-gray-200',
+                          key === 'active' && awaitingActiveConfirmation
+                            ? 'awaiting-confirmation-badge-pulse'
+                            : '',
+                        ].join(' ')}
+                      >
+                        {tabTotal > 99 ? '99+' : tabTotal}
+                      </span>
+                    ) : null;
+                  })()}
                 </span>
               </button>
             ))}

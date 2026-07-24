@@ -25,6 +25,9 @@ type PortfolioImageGalleryProps = {
   canUpload?: boolean;
   onOpenImage: (index: number) => void;
   onUploadRefresh?: () => Promise<void> | void;
+  // Volané keď server signalizuje, že CELÁ položka už neexistuje (zmazaná v inom
+  // tabe) – nadradený modul zobrazí „položka neexistuje" a vráti na zoznam.
+  onItemGone?: () => void;
 };
 
 export function PortfolioImageGallery({
@@ -33,6 +36,7 @@ export function PortfolioImageGallery({
   canUpload = false,
   onOpenImage,
   onUploadRefresh,
+  onItemGone,
 }: PortfolioImageGalleryProps) {
   const { t } = useLanguage();
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -104,13 +108,30 @@ export function PortfolioImageGallery({
         await deletePortfolioImage(item.id, image.id);
         toast.success(t('portfolio.photoDeleteSuccess'));
         await refreshUploads();
-      } catch {
-        toast.error(t('portfolio.photoDeleteFailed'));
+      } catch (error) {
+        const response = (
+          error as { response?: { status?: number; data?: { code?: string } } }
+        )?.response;
+        const status = response?.status;
+        if (status === 404 && response?.data?.code === 'portfolio_item_not_found') {
+          // CELÁ položka bola medzitým zmazaná (iný tab) – NIE je to úspešné
+          // zmazanie fotky. Nadradený modul zobrazí „položka neexistuje" a vráti
+          // na zoznam (namiesto ponechania používateľa na duchovi stránke).
+          onItemGone?.();
+        } else if (status === 404) {
+          // Fotka už neexistuje (zmazaná inde), ale položka existuje → cieľ je
+          // splnený, správaj sa ako pri úspešnom zmazaní (refreshUploads ju
+          // odstráni z lokálneho stavu).
+          toast.success(t('portfolio.photoDeleteSuccess'));
+          await refreshUploads();
+        } else {
+          toast.error(t('portfolio.photoDeleteFailed'));
+        }
       } finally {
         setActionKey(null);
       }
     },
-    [item.id, refreshUploads, t],
+    [item.id, refreshUploads, t, onItemGone],
   );
 
   const handleOpenGalleryImage = useCallback(

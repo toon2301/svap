@@ -137,6 +137,10 @@ export function RequestSummaryCard({
   const { user } = useAuth();
   const { t } = useLanguage();
 
+  // A sent exchange in completion_requested state awaits THIS user's completion
+  // confirmation (received = we requested it), so only then does the card pulse.
+  const awaitsMyConfirmation = variant === 'sent' && item.status === 'completion_requested';
+
   const who = variant === 'received' ? item.requester_summary : item.recipient_summary;
   const whoId = who?.id ?? (variant === 'received' ? item.requester : item.recipient);
   const whoName = who?.display_name || (variant === 'received' ? item.requester_display_name : item.recipient_display_name) || '';
@@ -412,7 +416,11 @@ export function RequestSummaryCard({
 
   return (
     <>
-    <div className="group relative pt-4 pb-4">
+    <div
+      className={`group relative pt-4 pb-4${
+        awaitsMyConfirmation ? ' awaiting-confirmation-pulse rounded-2xl px-3 z-10' : ''
+      }`}
+    >
       {/* Pri skrytej karte: hláška o skrytí v pôvodnom mieste (v strede hore) */}
       {isOfferHidden && (
         <div className="w-full text-center pt-1 pb-1">

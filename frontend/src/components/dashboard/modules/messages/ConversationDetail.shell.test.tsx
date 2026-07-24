@@ -13,6 +13,7 @@ import {
   MESSAGING_REALTIME_READ_EVENT,
   clipboardWriteTextMock,
   blockUser,
+  unblockUser,
   deferred,
   deleteMessage,
   execCommandMock,
@@ -305,7 +306,58 @@ describe('ConversationDetail shell and conversation actions', () => {
     expect(screen.queryByTestId('conversation-composer')).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByTestId('conversation-actions-trigger'));
+    // The block action is replaced by an unblock action once blocked.
     expect(screen.queryByTestId('conversation-block-user-action')).not.toBeInTheDocument();
+    expect(screen.getByTestId('conversation-unblock-user-action')).toBeInTheDocument();
+  });
+
+  it('unblocks the peer from the banner and restores the composer', async () => {
+    const existingMessage = message({ text: 'Existing history' });
+    const blockedConversation = {
+      id: 9,
+      has_requestable_offers: false,
+      is_blocked_by_me: true,
+      other_user: {
+        id: 77,
+        slug: 'tester-slug',
+        display_name: 'Tester',
+      },
+      last_message_preview: 'Existing history',
+      last_message_at: '2026-03-27T10:00:00Z',
+      last_read_at: null,
+      has_unread: false,
+      unread_count: 0,
+      updated_at: '2026-03-27T10:00:00Z',
+    };
+    (listMessages as jest.Mock)
+      .mockResolvedValueOnce(
+        messagePage([existingMessage], { conversation: blockedConversation }),
+      )
+      .mockResolvedValue(
+        messagePage([existingMessage], {
+          conversation: {
+            ...blockedConversation,
+            is_blocked_by_me: false,
+            has_requestable_offers: true,
+          },
+        }),
+      );
+
+    render(<ConversationDetail conversationId={9} currentUserId={1} />);
+
+    // Blocked banner is shown with an inline unblock button (no composer).
+    expect(await screen.findByTestId('blocked-conversation-notice')).toBeInTheDocument();
+    expect(screen.queryByTestId('conversation-composer')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('conversation-unblock-action'));
+    const dialog = await screen.findByTestId('unblock-user-confirm-dialog');
+    fireEvent.click(within(dialog).getByRole('button', { name: /odblokova/i }));
+
+    await waitFor(() => {
+      expect(unblockUser).toHaveBeenCalledWith(77);
+      expect(screen.queryByTestId('blocked-conversation-notice')).not.toBeInTheDocument();
+    });
+    expect(screen.getByTestId('conversation-composer')).toBeInTheDocument();
   });
 
   it('does not offer user blocking for a group conversation', async () => {

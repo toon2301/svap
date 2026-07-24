@@ -7,7 +7,8 @@ import { useIsMobile } from '@/hooks';
 import { useOptionalDesktopOnboarding } from '../onboarding/DesktopOnboardingContext';
 import { useOptionalMobileOnboarding } from '../onboarding/MobileOnboardingContext';
 import toast from 'react-hot-toast';
-import { api } from '../../../lib/api';
+import { api, endpoints } from '../../../lib/api';
+import { PROFILE_LIKED_EVENT, readProfileLikedEvent } from './profile/profileLikeEvents';
 import ProfileMobileView from './profile/ProfileMobileView';
 import ProfileDesktopView from './profile/ProfileDesktopView';
 import ProfileAvatarActionsModal from './profile/ProfileAvatarActionsModal';
@@ -166,6 +167,36 @@ export default function ProfileModule({
       handleTabChange('offers');
     }
   }, [handleTabChange, highlightedSkillId]);
+
+  // Live-update the profile like count when someone likes this (own) profile.
+  // The realtime notification carries no count, so re-read it (the endpoint is
+  // light) and patch only that field, mirroring the offer/portfolio like flows.
+  useEffect(() => {
+    const currentUserId = user?.id;
+    if (!currentUserId || !onUserUpdate) return;
+
+    const handleProfileLiked = (event: Event) => {
+      const payload = readProfileLikedEvent(event);
+      if (!payload || payload.profileUserId !== currentUserId) return;
+      void (async () => {
+        try {
+          const { data } = await api.get<{ profile_likes_count?: number }>(
+            endpoints.dashboard.profile,
+          );
+          const nextCount = Math.max(0, Number(data?.profile_likes_count ?? 0));
+          if (!Number.isFinite(nextCount)) return;
+          onUserUpdate((prev) => (prev ? { ...prev, profile_likes_count: nextCount } : prev));
+        } catch {
+          // Best-effort live update; the count reconciles on the next full load.
+        }
+      })();
+    };
+
+    window.addEventListener(PROFILE_LIKED_EVENT, handleProfileLiked);
+    return () => {
+      window.removeEventListener(PROFILE_LIKED_EVENT, handleProfileLiked);
+    };
+  }, [user?.id, onUserUpdate]);
 
   // Keep latest user snapshot for deterministic rollback and to avoid stale closures.
   const latestUserRef = useRef<User>(user);

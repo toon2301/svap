@@ -47,6 +47,9 @@ type PortfolioMobileEditFlowProps = {
   onClose: () => void;
   onSaved: (item: PortfolioItem) => void;
   onRefresh: () => Promise<void> | void;
+  // Prepošle sa do foto-editora: keď server signalizuje, že celá položka už
+  // neexistuje, nadradený modul zobrazí „položka neexistuje" a vráti na zoznam.
+  onItemGone?: () => void;
 };
 
 type PortfolioEditField = PortfolioCreateStep;
@@ -157,6 +160,7 @@ export function PortfolioMobileEditFlow({
   onClose,
   onSaved,
   onRefresh,
+  onItemGone,
 }: PortfolioMobileEditFlowProps) {
   const { t } = useLanguage();
   const fieldId = useId();
@@ -453,7 +457,11 @@ export function PortfolioMobileEditFlow({
           )}
 
           {activeField === 'photos' && (
-            <PortfolioMobilePhotoEditor item={item} onRefresh={onRefresh} />
+            <PortfolioMobilePhotoEditor
+              item={item}
+              onRefresh={onRefresh}
+              onItemGone={onItemGone}
+            />
           )}
 
           {submitError && (

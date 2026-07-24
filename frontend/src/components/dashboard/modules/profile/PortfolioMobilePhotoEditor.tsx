@@ -18,11 +18,15 @@ import { usePortfolioImageUploadQueue } from './usePortfolioImageUploadQueue';
 type PortfolioMobilePhotoEditorProps = {
   item: PortfolioItem;
   onRefresh: () => Promise<void> | void;
+  // Volané keď server signalizuje, že CELÁ položka už neexistuje (zmazaná v inom
+  // tabe) – nadradený modul zobrazí „položka neexistuje" a vráti na zoznam.
+  onItemGone?: () => void;
 };
 
 export function PortfolioMobilePhotoEditor({
   item,
   onRefresh,
+  onItemGone,
 }: PortfolioMobilePhotoEditorProps) {
   const { t } = useLanguage();
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -85,13 +89,37 @@ export function PortfolioMobilePhotoEditor({
       try {
         await deletePortfolioImage(item.id, image.id);
         await refresh();
-      } catch {
+      } catch (error) {
+        const response = (
+          error as { response?: { status?: number; data?: { code?: string } } }
+        )?.response;
+        const status = response?.status;
+        const code = response?.data?.code;
+        if (status === 404 && code === 'portfolio_item_not_found') {
+          // CELÁ položka bola medzitým zmazaná (iný tab) – rovnaké správanie ako
+          // desktop: jasný stav + návrat na zoznam, nie chybový toast bez
+          // presmerovania.
+          onItemGone?.();
+          return;
+        }
+        if (status === 404) {
+          // Fotka už neexistuje (portfolio_image_not_found – zmazaná v inom tabe),
+          // ale položka existuje → tichý úspech ako na desktope: len refresh,
+          // žiadny chybový toast, žiadne presmerovanie. Refresh je best-effort –
+          // jeho zlyhanie (napr. network) nesmie spôsobiť tvrdý pád.
+          try {
+            await refresh();
+          } catch {
+            // ignore – tichý úspech ostáva úspechom aj keď sa refresh nepodarí
+          }
+          return;
+        }
         setActionError(t('portfolio.photoDeleteFailed'));
       } finally {
         setActionKey(null);
       }
     },
-    [item.id, refresh, t],
+    [item.id, refresh, t, onItemGone],
   );
 
   return (

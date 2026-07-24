@@ -574,7 +574,9 @@ button:focus-visible {
   
   .animate-fade-in,
   .animate-slide-up,
-  .animate-pulse {
+  .animate-pulse,
+  .awaiting-confirmation-pulse,
+  .awaiting-confirmation-badge-pulse {
     animation: none !important;
   }
 }
@@ -1083,6 +1085,44 @@ button:focus-visible {
               0 0 60px 10px rgba(167, 139, 250, 0.5),
               0 0 80px 15px rgba(196, 181, 253, 0.3) !important;
   transform: scale(1.02);
+}
+
+/* Subtle "awaiting your confirmation" pulse (completion_requested exchanges).
+   Intentionally gentle — a soft violet glow that breathes, not a flash. It is
+   fully disabled under prefers-reduced-motion (global block + explicit opt-out
+   above). Used on the active-exchanges tab badge and on the specific card. */
+@keyframes awaiting-confirmation-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(139, 92, 246, 0);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.4),
+                0 0 18px 4px rgba(139, 92, 246, 0.28);
+  }
+}
+
+.awaiting-confirmation-pulse {
+  animation: awaiting-confirmation-pulse 2s ease-in-out infinite;
+}
+
+@keyframes awaiting-confirmation-badge-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(139, 92, 246, 0);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.12);
+    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.55),
+                0 0 10px 2px rgba(139, 92, 246, 0.4);
+  }
+}
+
+.awaiting-confirmation-badge-pulse {
+  animation: awaiting-confirmation-badge-pulse 1.8s ease-in-out infinite;
 }
 
 /* Toast – modern container */

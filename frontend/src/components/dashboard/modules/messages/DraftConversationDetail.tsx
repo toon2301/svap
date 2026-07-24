@@ -270,6 +270,10 @@ export function DraftConversationDetail({
             'messages.sendUnavailable',
             'Konverzácia už nie je dostupná.',
           ),
+          recipientUnavailableFallback: t(
+            'messages.recipientUnavailable',
+            'Tomuto používateľovi momentálne nemôžete písať.',
+          ),
           requestPendingFallback: t(
             'messages.messageRequestPendingNotice',
             'Čakáte na prijatie konverzácie.',
