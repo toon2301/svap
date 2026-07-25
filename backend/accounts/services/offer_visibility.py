@@ -17,6 +17,10 @@ def offer_owner_blocked_from_user(offer, user) -> bool:
 
 def offer_hidden_from_user(offer, user) -> bool:
     """Apply direct offer visibility without restricting the owner."""
+    # Recenzia zmazanej ponuky (offer=None) nie je "skrytá kvôli ponuke" – ponuka
+    # už neexistuje, takže niet čo skrývať. Berieme ju ako viditeľnú.
+    if offer is None:
+        return False
     if getattr(offer, "user_id", None) == getattr(user, "id", None):
         return False
     return bool(

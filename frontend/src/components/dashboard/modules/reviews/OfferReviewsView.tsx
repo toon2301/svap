@@ -1,8 +1,10 @@
 'use client';
 
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
+import toast from 'react-hot-toast';
 import { api, endpoints } from '@/lib/api';
+import { getApiErrorMessage } from '@/lib/apiError';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { User } from '@/types';
@@ -160,6 +162,53 @@ export default function OfferReviewsView({
   const [reportedReviewIds, setReportedReviewIds] = useState<Set<number>>(() => new Set());
   const [pendingReviewLikeIds, setPendingReviewLikeIds] = useState<Set<number>>(() => new Set());
 
+  // Drží offerId, pre ktorý sme už vyriešili zmazanú ponuku → bráni dvojitému
+  // presmerovaniu aj keby sa efekt znovu spustil.
+  const handledDeletedOfferRef = useRef<number | null>(null);
+
+  // Notifikácia o recenzii vedie na /dashboard/offers/<offer_id>/reviews aj po
+  // zmazaní ponuky (offer_id je snapshot). Ak ponuka už neexistuje, ale recenzia
+  // áno (offer=null vo /reviews/<id>/ detaile), presmerujeme na profil
+  // recenzovaného používateľa (reviewed_user) a ukážeme toast. Skrytá/blokovaná
+  // ponuka vráti 404 aj na review detaile → v tom prípade nepresmerujeme.
+  const redirectToReviewedUserIfOfferDeleted = useCallback(
+    async (deletedOfferId: number, reviewId: number) => {
+      if (handledDeletedOfferRef.current === deletedOfferId) return;
+      handledDeletedOfferRef.current = deletedOfferId;
+      try {
+        const { data } = await api.get<{
+          offer: number | null;
+          reviewed_user_id: number | null;
+        }>(endpoints.reviews.detail(reviewId));
+        if (data?.offer === null && data?.reviewed_user_id) {
+          toast(
+            t(
+              'reviews.offerDeletedRedirect',
+              'Ponuka, ku ktorej patrila táto recenzia, už bola zmazaná.',
+            ),
+          );
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(
+              new CustomEvent('goToUserProfile', {
+                detail: { identifier: String(data.reviewed_user_id) },
+              }),
+            );
+          }
+        }
+      } catch {
+        // Recenzia nedostupná (skrytá/blokovaná/neexistuje) → ponechaj prázdny stav.
+      }
+    },
+    [t],
+  );
+
+  // Latest-ref: efekt načítania ponuky nesmie závisieť od identity handlera (ani
+  // od t), inak by nestabilné t spôsobilo re-render slučku (viď OfferReviewsRace).
+  const redirectRef = useRef(redirectToReviewedUserIfOfferDeleted);
+  useEffect(() => {
+    redirectRef.current = redirectToReviewedUserIfOfferDeleted;
+  }, [redirectToReviewedUserIfOfferDeleted]);
+
   useEffect(() => {
     if (offerId == null) {
       setOffer(null);
@@ -172,8 +221,14 @@ export default function OfferReviewsView({
       .then(({ data }) => {
         if (!cancelled) setOffer(data);
       })
-      .catch(() => {
-        if (!cancelled) setOffer(null);
+      .catch((error) => {
+        if (cancelled) return;
+        setOffer(null);
+        // Ponuka nenájdená + máme review_id z notifikácie → over zmazanú ponuku
+        // a prípadne presmeruj na profil recenzovaného používateľa.
+        if (error?.response?.status === 404 && targetReviewId != null) {
+          void redirectRef.current(offerId, targetReviewId);
+        }
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -181,7 +236,7 @@ export default function OfferReviewsView({
     return () => {
       cancelled = true;
     };
-  }, [offerId]);
+  }, [offerId, targetReviewId]);
 
   useEffect(() => {
     setLoadingMoreReviews(false);
@@ -237,13 +292,9 @@ export default function OfferReviewsView({
       setReviewsStats(normalizeReviewsStats(data));
       setReviewsPage(data.page || nextPage);
       setReviewsTotalPages(data.total_pages || reviewsTotalPages);
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (offerIdRef.current !== requestedOfferId) return;
-      alert(
-        error?.response?.data?.error ||
-          error?.message ||
-          t('reviews.loadMoreError', 'Nepodarilo sa načítať ďalšie recenzie.'),
-      );
+      alert(getApiErrorMessage(error, t('reviews.loadMoreError', 'Nepodarilo sa načítať ďalšie recenzie.')));
     } finally {
       if (offerIdRef.current === requestedOfferId) setLoadingMoreReviews(false);
     }
@@ -377,16 +428,11 @@ export default function OfferReviewsView({
             : item,
         ),
       );
-    } catch (error: any) {
+    } catch (error: unknown) {
       setReviews((prev) =>
         prev.map((item) => (item.id === review.id ? previousReview : item)),
       );
-      alert(
-        error?.response?.data?.error ||
-          error?.response?.data?.detail ||
-          error?.message ||
-          t('reviews.likeUpdateFailed', 'Nepodarilo sa aktualizovať páči sa mi.'),
-      );
+      alert(getApiErrorMessage(error, t('reviews.likeUpdateFailed', 'Nepodarilo sa aktualizovať páči sa mi.')));
     } finally {
       setPendingReviewLikeIds((prev) => {
         const next = new Set(prev);
@@ -515,9 +561,10 @@ export default function OfferReviewsView({
             if (typeof ownerUserIdForInvalidation === 'number') invalidateOffersCache(ownerUserIdForInvalidation);
 
             setReviewIdToDelete(null);
-          } catch (error: any) {
+          } catch (error: unknown) {
             console.error('Chyba pri vymazávaní recenzie:', error);
-            alert(error?.response?.data?.error || 'Nepodarilo sa vymazať recenziu.');
+            const data = (error as { response?: { data?: { error?: string } } })?.response?.data;
+            alert(data?.error || 'Nepodarilo sa vymazať recenziu.');
           } finally {
             setIsDeletingReview(false);
           }
@@ -580,15 +627,28 @@ export default function OfferReviewsView({
             setReviewToEdit(null);
             
             return { success: true };
-          } catch (error: any) {
+          } catch (error: unknown) {
             console.error('Chyba pri ukladaní recenzie:', error);
+            const data = (
+              error as {
+                response?: {
+                  data?: {
+                    error?: string;
+                    rating?: string[];
+                    pros?: string[];
+                    cons?: string[];
+                    text?: string[];
+                  };
+                };
+              }
+            )?.response?.data;
             const errorMessage =
-              error?.response?.data?.error ||
-              error?.response?.data?.rating?.[0] ||
-              error?.response?.data?.pros?.[0] ||
-              error?.response?.data?.cons?.[0] ||
-              error?.response?.data?.text?.[0] ||
-              error?.message ||
+              data?.error ||
+              data?.rating?.[0] ||
+              data?.pros?.[0] ||
+              data?.cons?.[0] ||
+              data?.text?.[0] ||
+              (error as { message?: string })?.message ||
               (reviewToEdit ? 'Nepodarilo sa upraviť recenziu.' : 'Nepodarilo sa pridať recenziu. Skús to znova.');
             throw new Error(errorMessage);
           }

@@ -4227,6 +4227,7 @@
     "nameOrTitle": "Name/Title",
     "noReviews": "No reviews yet.",
     "noReviewsYet": "No ratings yet.",
+    "offerDeletedRedirect": "The offer this review belonged to has already been deleted.",
     "offerDetails": "Detail ponuky",
     "openingHoursToday": "Opening hours today",
     "ownerResponseMaxLength": "Owner response can be a maximum of 500 characters.",

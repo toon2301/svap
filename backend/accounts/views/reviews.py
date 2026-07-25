@@ -310,7 +310,7 @@ def review_like_view(request, review_id):
         lock_users_for_update(
             user_ids=(
                 request.user.id,
-                review.offer.user_id,
+                review.reviewed_user_id,
                 review.reviewer_id,
             )
         )
@@ -424,7 +424,7 @@ def review_report_view(request, review_id):
 def review_respond_view(request, review_id):
     """
     POST: Vytvorenie alebo úprava odpovede vlastníka ponuky na recenziu.
-    Iba vlastník ponuky (review.offer.user == request.user) môže odpovedať.
+    Iba hodnotený používateľ (review.reviewed_user == request.user) môže odpovedať.
     """
     try:
         review = Review.objects.select_related("reviewer", "offer", "offer__user").get(
@@ -435,8 +435,9 @@ def review_respond_view(request, review_id):
             {"error": "Recenzia nebola nájdená"}, status=status.HTTP_404_NOT_FOUND
         )
 
-    # Iba vlastník ponuky môže odpovedať
-    if review.offer.user_id != request.user.id:
+    # Iba hodnotený používateľ (vlastník pôvodnej ponuky) môže odpovedať.
+    # Používame reviewed_user_id, aby odpoveď fungovala aj po zmazaní ponuky.
+    if review.reviewed_user_id != request.user.id:
         return Response(
             {"error": "Nemáš oprávnenie odpovedať na túto recenziu."},
             status=status.HTTP_403_FORBIDDEN,

@@ -4227,6 +4227,7 @@
     "nameOrTitle": "Titel/Name",
     "noReviews": "Noch keine Bewertungen.",
     "noReviewsYet": "Noch keine Bewertungen.",
+    "offerDeletedRedirect": "Das Angebot, zu dem diese Bewertung gehörte, wurde bereits gelöscht.",
     "offerDetails": "Angebots-Details",
     "openingHoursToday": "Öffnungszeiten heute",
     "ownerResponseMaxLength": "Die Antwort darf maximal 500 Zeichen haben.",
