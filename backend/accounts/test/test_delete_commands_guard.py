@@ -39,6 +39,21 @@ def test_delete_all_users_runs_in_debug():
     assert User.objects.count() == 0
 
 
+@override_settings(DEBUG=True)
+@pytest.mark.django_db
+def test_delete_all_users_clears_reviewed_user_protect():
+    """Review.reviewed_user je PROTECT → príkaz musí zmazať recenzie pred
+    User.delete(), inak spadne na ProtectedError a nič sa nezmaže."""
+    _seed_review()
+    assert Review.objects.exists()
+    assert User.objects.count() == 2
+
+    call_command("delete_all_users", "--confirm")
+
+    assert User.objects.count() == 0
+    assert Review.objects.count() == 0
+
+
 # --------------------------------------------------------------------------- #
 # delete_all_reviews
 # --------------------------------------------------------------------------- #

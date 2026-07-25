@@ -36,3 +36,33 @@ export function getApiErrorMessage(error: unknown, fallback: string): string {
     ) ?? fallback
   );
 }
+
+type FieldErrorData = {
+  error?: unknown;
+  rating?: unknown;
+  pros?: unknown;
+  cons?: unknown;
+  text?: unknown;
+};
+
+function firstListItem(value: unknown): unknown {
+  return Array.isArray(value) ? value[0] : undefined;
+}
+
+/**
+ * Chybová hláška pre formuláre s per-field DRF chybami (list per pole).
+ * Poradie: `data.error` → prvý prvok `rating`/`pros`/`cons`/`text` → fallback.
+ * Volajúci môže do `fallback` vložiť napr. `error.message` a tým rozšíriť reťazec.
+ */
+export function getFieldErrorMessage(error: unknown, fallback: string): string {
+  const data = (error as { response?: { data?: FieldErrorData } })?.response?.data;
+  return (
+    firstNonEmptyString(
+      data?.error,
+      firstListItem(data?.rating),
+      firstListItem(data?.pros),
+      firstListItem(data?.cons),
+      firstListItem(data?.text),
+    ) ?? fallback
+  );
+}

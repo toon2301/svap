@@ -49,6 +49,48 @@ class TestAnonymizeUser(APITestCase):
         # Vlastný obsah zmazaný.
         assert OfferedSkill.objects.filter(user=u).count() == 0
 
+    def test_reviews_written_and_received_are_deleted_foreign_kept(self):
+        """GDPR: recenzie napísané (reviewer) aj PRIJATÉ (reviewed_user)
+        anonymizovaným používateľom sa mažú; cudzie recenzie ostávajú.
+
+        Pred Fázou 1 zanikali prijaté recenzie cez CASCADE pri zmazaní ponúk;
+        po prechode na Review.offer=SET_NULL to musí zabezpečiť reviewed_user vetva.
+        """
+        from decimal import Decimal
+
+        from accounts.models import Review
+
+        alice = _make_user()
+        bob = _make_user(username="bob", email="bob@example.com")
+        carol = _make_user(username="carol", email="carol@example.com")
+
+        alice_offer = OfferedSkill.objects.create(
+            user=alice, category="IT", subcategory="Web"
+        )
+        bob_offer = OfferedSkill.objects.create(
+            user=bob, category="IT", subcategory="Design"
+        )
+        carol_offer = OfferedSkill.objects.create(
+            user=carol, category="IT", subcategory="SEO"
+        )
+
+        received = Review.objects.create(
+            reviewer=bob, offer=alice_offer, rating=Decimal("5.0"), text="prijata"
+        )
+        written = Review.objects.create(
+            reviewer=alice, offer=bob_offer, rating=Decimal("4.0"), text="napisana"
+        )
+        foreign = Review.objects.create(
+            reviewer=bob, offer=carol_offer, rating=Decimal("3.0"), text="cudzia"
+        )
+        assert received.reviewed_user_id == alice.id
+
+        anonymize_user(alice)
+
+        assert not Review.objects.filter(pk=received.pk).exists()
+        assert not Review.objects.filter(pk=written.pk).exists()
+        assert Review.objects.filter(pk=foreign.pk).exists()
+
     def test_actor_notifications_pii_scrubbed(self):
         # BOD 1 (GDPR): notifikácie INÝCH používateľov, kde je zmazaný user aktér,
         # majú jeho denormalizované meno v title/body prepísané na neutrálnu hodnotu.

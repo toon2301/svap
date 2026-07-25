@@ -270,6 +270,7 @@ def create_review_created_notification(*, review, actor) -> Notification | None:
         data={
             "review_id": review.id,
             "offer_id": review.offer_id,
+            "reviewed_user_id": review.reviewed_user_id,
             "from_user_id": actor.id,
         },
     )
@@ -302,6 +303,7 @@ def create_review_reply_notification(*, review, actor) -> Notification | None:
         data={
             "review_id": review.id,
             "offer_id": review.offer_id,
+            "reviewed_user_id": review.reviewed_user_id,
             "from_user_id": actor.id,
         },
     )
@@ -335,6 +337,7 @@ def create_review_liked_notification(*, review, actor) -> Notification | None:
         data={
             "review_id": review.id,
             "offer_id": review.offer_id,
+            "reviewed_user_id": review.reviewed_user_id,
             "from_user_id": actor.id,
         },
     )

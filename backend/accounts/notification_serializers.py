@@ -119,4 +119,13 @@ class NotificationSerializer(serializers.ModelSerializer):
                         return f"{target_url}&modal=owner_response"
                     return target_url
                 return f"/dashboard/offers/{offer_id}/reviews"
+            # Osirotená recenzia: ponuka bola zmazaná už pred vznikom notifikácie
+            # (offer_id v data je null/0). Bez fallbacku by notifikácia nemala
+            # klikateľný cieľ – nasmerujeme na profil recenzovaného používateľa.
+            try:
+                reviewed_user_id = int(data.get("reviewed_user_id") or 0)
+            except (TypeError, ValueError):
+                reviewed_user_id = 0
+            if review_id > 0 and reviewed_user_id > 0:
+                return f"/dashboard/users/{reviewed_user_id}"
         return None

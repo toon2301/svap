@@ -10,7 +10,10 @@ from decimal import Decimal
 from django.db.models import Avg, Count, Exists, OuterRef, Q
 
 from ..models import Review, ReviewLike
-from ..services.offer_visibility import offer_hidden_from_user as _offer_hidden_from_user
+from ..services.offer_visibility import (
+    offer_hidden_from_user as _offer_hidden_from_user,
+    review_hidden_from_user as _review_hidden_from_user,
+)
 
 # Stránkovanie zoznamu recenzií (rovnaký vzor ako /search/).
 REVIEWS_DEFAULT_PAGE_SIZE = 10

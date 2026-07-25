@@ -274,6 +274,45 @@ class UserBlockEnforcementTests(APITestCase):
                 self.assertTrue(Review.objects.filter(pk=review.pk).exists())
                 self.assertFalse(Notification.objects.exists())
 
+    def test_blocked_pair_cannot_use_orphaned_review_flows(self):
+        """A deleted offer (SET_NULL) must keep the orphaned review behind the
+        same block wall via reviewed_user, not silently expose it."""
+        review = Review.objects.create(
+            reviewer=self.viewer,
+            offer=self.target_offer,
+            rating="5.0",
+            text="Orphaned review stays block-protected.",
+        )
+        self.assertEqual(review.reviewed_user_id, self.target.id)
+
+        # Zmaž ponuku → review.offer=None (SET_NULL), reviewed_user ostáva target.
+        self.target_offer.delete()
+        review.refresh_from_db()
+        self.assertIsNone(review.offer_id)
+
+        # Symetricky: bez ohľadu na to, ktorá strana blok vytvorila.
+        for blocker, blocked in (
+            (self.target, self.viewer),
+            (self.viewer, self.target),
+        ):
+            with self.subTest(blocker=blocker.username):
+                UserBlock.objects.all().delete()
+                ReviewLike.objects.all().delete()
+                UserBlock.objects.create(blocker=blocker, blocked_user=blocked)
+
+                detail = self.client.get(
+                    reverse("accounts:review_detail", args=[review.id])
+                )
+                like = self.client.post(
+                    reverse("accounts:review_like", args=[review.id])
+                )
+
+                self.assertEqual(detail.status_code, status.HTTP_404_NOT_FOUND)
+                self.assertEqual(like.status_code, status.HTTP_404_NOT_FOUND)
+                self.assertFalse(ReviewLike.objects.exists())
+                self.assertFalse(Notification.objects.exists())
+                self.assertTrue(Review.objects.filter(pk=review.pk).exists())
+
     def test_blocked_pair_cannot_like_or_fetch_cached_portfolio_image(self):
         item = PortfolioItem.objects.create(
             owner=self.target,

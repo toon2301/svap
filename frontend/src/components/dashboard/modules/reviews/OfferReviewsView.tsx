@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { api, endpoints } from '@/lib/api';
-import { getApiErrorMessage } from '@/lib/apiError';
+import { getApiErrorMessage, getFieldErrorMessage } from '@/lib/apiError';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { User } from '@/types';
@@ -563,8 +563,7 @@ export default function OfferReviewsView({
             setReviewIdToDelete(null);
           } catch (error: unknown) {
             console.error('Chyba pri vymazávaní recenzie:', error);
-            const data = (error as { response?: { data?: { error?: string } } })?.response?.data;
-            alert(data?.error || 'Nepodarilo sa vymazať recenziu.');
+            alert(getFieldErrorMessage(error, 'Nepodarilo sa vymazať recenziu.'));
           } finally {
             setIsDeletingReview(false);
           }
@@ -629,28 +628,11 @@ export default function OfferReviewsView({
             return { success: true };
           } catch (error: unknown) {
             console.error('Chyba pri ukladaní recenzie:', error);
-            const data = (
-              error as {
-                response?: {
-                  data?: {
-                    error?: string;
-                    rating?: string[];
-                    pros?: string[];
-                    cons?: string[];
-                    text?: string[];
-                  };
-                };
-              }
-            )?.response?.data;
-            const errorMessage =
-              data?.error ||
-              data?.rating?.[0] ||
-              data?.pros?.[0] ||
-              data?.cons?.[0] ||
-              data?.text?.[0] ||
+            // Fallback zahŕňa error.message (zachované správanie) + lokalizovaný text.
+            const fallback =
               (error as { message?: string })?.message ||
               (reviewToEdit ? 'Nepodarilo sa upraviť recenziu.' : 'Nepodarilo sa pridať recenziu. Skús to znova.');
-            throw new Error(errorMessage);
+            throw new Error(getFieldErrorMessage(error, fallback));
           }
         }}
       />

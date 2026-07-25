@@ -644,6 +644,7 @@ class TestSkillRequestsAndNotifications(APITestCase):
         self.assertEqual(notification.actor_id, self.owner.id)
         self.assertEqual(notification.data.get("review_id"), review.id)
         self.assertEqual(notification.data.get("offer_id"), self.offer.id)
+        self.assertEqual(notification.data.get("reviewed_user_id"), self.owner.id)
         self.assertEqual(notification.data.get("from_user_id"), self.owner.id)
         self.assertNotIn("text", notification.data)
 
@@ -693,6 +694,42 @@ class TestSkillRequestsAndNotifications(APITestCase):
         self.assertFalse(
             ReviewLike.objects.filter(review=review, user=self.owner).exists()
         )
+
+    def test_orphaned_review_notification_targets_reviewed_user_profile(self):
+        """Notifikácia na recenziu, ktorej ponuka už bola zmazaná (offer_id=None
+        v data), musí mať klikateľný cieľ = profil recenzovaného používateľa,
+        nie neplatnú /offers/None/... cestu."""
+        from accounts.notification_serializers import NotificationSerializer
+
+        review = Review.objects.create(
+            reviewer=self.requester,
+            offer=self.offer,
+            rating="5.0",
+            text="Recenzia, ktorej ponuka zanikne.",
+        )
+        self.assertEqual(review.reviewed_user_id, self.owner.id)
+
+        # Ponuka zmizne → offer_id v data notifikácie je None (osirotená recenzia).
+        self.offer.delete()
+        review.refresh_from_db()
+        self.assertIsNone(review.offer_id)
+
+        liker = UserFactory()
+        notification = Notification.objects.create(
+            user=self.requester,
+            actor=liker,
+            type=NotificationType.REVIEW_LIKED,
+            title="Páči sa mi tvoja recenzia",
+            data={
+                "review_id": review.id,
+                "offer_id": review.offer_id,
+                "reviewed_user_id": review.reviewed_user_id,
+                "from_user_id": liker.id,
+            },
+        )
+
+        payload = NotificationSerializer(notification).data
+        self.assertEqual(payload["target_url"], f"/dashboard/users/{self.owner.id}")
 
     def test_offer_like_toggle_updates_counts_and_notifies_owner_once(self):
         self.client.force_authenticate(user=self.requester)
