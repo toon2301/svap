@@ -99,12 +99,15 @@ export default function DashboardLayout({
   children,
 }: DashboardLayoutProps) {
   const isProfileEditMode =
-    isRightSidebarOpen && activeModule === 'profile' && activeRightItem === 'edit-profile';
+    isRightSidebarOpen &&
+    (activeModule === 'profile' || activeModule === 'settings') &&
+    activeRightItem === 'edit-profile';
 
   const isSkillsModule =
     activeModule === 'skills-offer' || activeModule === 'skills-search';
 
-  const isMobileEditMode = isProfileEditMode;
+  const isMobileEditMode =
+    isRightSidebarOpen && activeModule === 'profile' && activeRightItem === 'edit-profile';
   const isMobileSettingsDetailOpen =
     activeModule === 'notification-settings' ||
     activeModule === 'language' ||

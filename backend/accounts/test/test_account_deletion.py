@@ -124,6 +124,40 @@ class TestAnonymizeUser(APITestCase):
         actor.refresh_from_db()
         assert actor.first_name == "" and actor.last_name == ""
 
+    def test_notification_serializer_marks_anonymized_actor_as_deleted(self):
+        """Serializovaný aktér anonymizovaného účtu má is_deleted=True a NEvracia
+        surové 'deleted-user-<uuid>' meno/slug/avatar – FE zobrazí preklad
+        'Zmazaný používateľ'. (Zdrojom zobrazeného mena je actor.display_name.)"""
+        from accounts.models import Notification, NotificationType
+        from accounts.notification_serializers import NotificationSerializer
+
+        actor = _make_user(username="seract", email="seract@example.com")
+        recipient = _make_user(username="serrec", email="serrec@example.com")
+        notif = Notification.objects.create(
+            user=recipient,
+            actor=actor,
+            type=NotificationType.REVIEW_CREATED,
+            title="Nová recenzia",
+            body="X napísal recenziu.",
+            data={"review_id": 1},
+        )
+
+        # Bežný aktér → skutočné meno, is_deleted False.
+        before = NotificationSerializer(notif).data
+        assert before["actor"]["is_deleted"] is False
+        assert before["actor"]["display_name"]
+        assert "deleted-user-" not in before["actor"]["display_name"]
+
+        anonymize_user(actor)
+        notif.refresh_from_db()
+
+        # Anonymizovaný aktér → is_deleted True, žiadne surové meno/slug/avatar.
+        after = NotificationSerializer(notif).data
+        assert after["actor"]["is_deleted"] is True
+        assert after["actor"]["display_name"] == ""
+        assert after["actor"]["slug"] is None
+        assert after["actor"]["avatar_url"] is None
+
     def test_avatar_deleted_after_successful_commit(self):
         # BOD 1: avatar súbor sa zmaže AŽ po úspešnom commite (cez on_commit).
         user = _make_user(username="ava", email="ava@example.com")

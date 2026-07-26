@@ -1,9 +1,10 @@
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 
 const mockApiGet = jest.fn();
 const mockToast = jest.fn();
+const mockRouterPush = jest.fn();
 
 jest.mock('@/lib/api', () => ({
   api: {
@@ -32,6 +33,7 @@ jest.mock('@/contexts/LanguageContext', () => {
 let mockSearch = 'review_id=5';
 jest.mock('next/navigation', () => ({
   useSearchParams: () => new URLSearchParams(mockSearch),
+  useRouter: () => ({ push: mockRouterPush }),
 }));
 jest.mock('react-hot-toast', () => ({ __esModule: true, default: (...a: any[]) => mockToast(...a) }));
 jest.mock('../../profile/profileOffersCache', () => ({ invalidateOffersCache: jest.fn() }));
@@ -75,6 +77,7 @@ describe('OfferReviewsView – notifikácia na recenziu so zmazanou ponukou', ()
   beforeEach(() => {
     mockApiGet.mockReset();
     mockToast.mockReset();
+    mockRouterPush.mockReset();
     mockSearch = 'review_id=5';
   });
 
@@ -131,6 +134,133 @@ describe('OfferReviewsView – notifikácia na recenziu so zmazanou ponukou', ()
     );
     expect(fetchedReviewDetail).toBe(false);
     expect(mockToast).not.toHaveBeenCalled();
+    expect(goToUserProfileIdentifiers(dispatchSpy)).toHaveLength(0);
+
+    dispatchSpy.mockRestore();
+  });
+
+  it('neskorá odpoveď po prepnutí ponuky → žiadny toast/redirect (stale)', async () => {
+    // review-detail necháme visieť; medzitým používateľ prejde na inú ponuku.
+    let resolveReviewDetail: ((v: unknown) => void) | null = null;
+    mockApiGet.mockImplementation((url: string) => {
+      if (url === 'skills/5') return Promise.reject({ response: { status: 404 } });
+      if (url === 'skills/7') {
+        return Promise.resolve({ data: { id: 7, user_id: 9, category_label: 'IT' } });
+      }
+      if (url.startsWith('review-detail/')) {
+        return new Promise((res) => {
+          resolveReviewDetail = res; // odložená odpoveď – dokončíme až po prepnutí
+        });
+      }
+      if (url.startsWith('reviews-list/')) return Promise.reject({ response: { status: 404 } });
+      return Promise.resolve({ data: {} });
+    });
+    const dispatchSpy = jest.spyOn(window, 'dispatchEvent');
+
+    const { rerender } = render(<OfferReviewsView offerId={5} />);
+
+    // Over, že review-detail request pre zmazanú ponuku 5 sa naozaj odoslal.
+    await waitFor(() => expect(resolveReviewDetail).not.toBeNull());
+
+    // Používateľ sa medzitým presunie na inú (platnú) ponuku 7.
+    rerender(<OfferReviewsView offerId={7} />);
+    await waitFor(() =>
+      expect(screen.getByTestId('offer-state')).toHaveTextContent('offer-loaded'),
+    );
+
+    // Až teraz dorazí neskorá odpoveď pre pôvodnú ponuku 5 (offer=null).
+    await act(async () => {
+      resolveReviewDetail!({ data: { offer: null, reviewed_user_id: 42 } });
+      await Promise.resolve();
+    });
+
+    // Kontext sa zmenil (offerId je už 7) → žiadny toast, žiadne presmerovanie.
+    expect(mockToast).not.toHaveBeenCalled();
+    expect(goToUserProfileIdentifiers(dispatchSpy)).toHaveLength(0);
+
+    dispatchSpy.mockRestore();
+  });
+
+  // Nedostupná recenzia (403/404) → neutrálna hláška + návrat na nástenku, NIE na profil.
+  it.each([404, 403])(
+    '%s z reviews.detail → toast "obsah nedostupný" + redirect na /dashboard (nie profil)',
+    async (statusCode) => {
+      mockApiGet.mockImplementation((url: string) => {
+        if (url.startsWith('skills/')) return Promise.reject({ response: { status: 404 } });
+        if (url.startsWith('review-detail/')) {
+          return Promise.reject({ response: { status: statusCode } });
+        }
+        if (url.startsWith('reviews-list/')) return Promise.reject({ response: { status: 404 } });
+        return Promise.resolve({ data: {} });
+      });
+      const dispatchSpy = jest.spyOn(window, 'dispatchEvent');
+
+      render(<OfferReviewsView offerId={5} />);
+
+      await waitFor(() => expect(mockRouterPush).toHaveBeenCalledWith('/dashboard'));
+      expect(mockToast).toHaveBeenCalledWith('Tento obsah už nie je dostupný.');
+      // Žiadne presmerovanie na profil recenzovaného.
+      expect(goToUserProfileIdentifiers(dispatchSpy)).toHaveLength(0);
+
+      dispatchSpy.mockRestore();
+    },
+  );
+
+  it('200 + offer=null bez reviewed_user_id → toast "obsah nedostupný" + /dashboard', async () => {
+    mockApiGet.mockImplementation((url: string) => {
+      if (url.startsWith('skills/')) return Promise.reject({ response: { status: 404 } });
+      if (url.startsWith('review-detail/')) {
+        return Promise.resolve({ data: { offer: null, reviewed_user_id: null } });
+      }
+      if (url.startsWith('reviews-list/')) return Promise.reject({ response: { status: 404 } });
+      return Promise.resolve({ data: {} });
+    });
+    const dispatchSpy = jest.spyOn(window, 'dispatchEvent');
+
+    render(<OfferReviewsView offerId={5} />);
+
+    await waitFor(() => expect(mockRouterPush).toHaveBeenCalledWith('/dashboard'));
+    expect(mockToast).toHaveBeenCalledWith('Tento obsah už nie je dostupný.');
+    expect(goToUserProfileIdentifiers(dispatchSpy)).toHaveLength(0);
+
+    dispatchSpy.mockRestore();
+  });
+
+  it('neskorá 404 odpoveď po prepnutí ponuky → žiadny toast/redirect (stale, nová vetva)', async () => {
+    let rejectReviewDetail: ((e: unknown) => void) | null = null;
+    mockApiGet.mockImplementation((url: string) => {
+      if (url === 'skills/5') return Promise.reject({ response: { status: 404 } });
+      if (url === 'skills/7') {
+        return Promise.resolve({ data: { id: 7, user_id: 9, category_label: 'IT' } });
+      }
+      if (url.startsWith('review-detail/')) {
+        return new Promise((_res, rej) => {
+          rejectReviewDetail = rej; // odložené 404 – zamietneme až po prepnutí
+        });
+      }
+      if (url.startsWith('reviews-list/')) return Promise.reject({ response: { status: 404 } });
+      return Promise.resolve({ data: {} });
+    });
+    const dispatchSpy = jest.spyOn(window, 'dispatchEvent');
+
+    const { rerender } = render(<OfferReviewsView offerId={5} />);
+    await waitFor(() => expect(rejectReviewDetail).not.toBeNull());
+
+    rerender(<OfferReviewsView offerId={7} />);
+    await waitFor(() =>
+      expect(screen.getByTestId('offer-state')).toHaveTextContent('offer-loaded'),
+    );
+
+    // Až teraz dorazí neskoré 404 pre pôvodnú ponuku 5.
+    await act(async () => {
+      rejectReviewDetail!({ response: { status: 404 } });
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    // Stale kontext → catch vetva nič nespraví.
+    expect(mockToast).not.toHaveBeenCalled();
+    expect(mockRouterPush).not.toHaveBeenCalled();
     expect(goToUserProfileIdentifiers(dispatchSpy)).toHaveLength(0);
 
     dispatchSpy.mockRestore();

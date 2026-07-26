@@ -145,6 +145,34 @@ export default function ModuleRouter({
 }: ModuleRouterProps) {
   const { t } = useLanguage();
 
+  const renderOwnProfile = (isEditMode: boolean) => (
+    <ProfileModule
+      user={user}
+      onUserUpdate={onUserUpdate}
+      onEditProfileClick={onEditProfileClick ?? handleRightSidebarToggle}
+      onEditCancel={closeOwnProfileEdit}
+      onSkillsClick={onSkillsClick || (() => {
+        setActiveModule('skills');
+        try {
+          localStorage.setItem('activeModule', 'skills');
+        } catch {
+          // ignore
+        }
+        if (typeof window !== 'undefined') {
+          window.history.pushState(null, '', '/dashboard/skills');
+        }
+      })}
+      isEditMode={isEditMode}
+      accountType={accountType}
+      highlightedSkillId={highlightedSkillId ?? null}
+      initialTab={ownProfileTab ?? initialProfileTab}
+      onTabChange={onOwnProfileTabChange}
+      onEditOffer={onEditOwnProfileOffer}
+      onDeleteOffer={onDeleteOwnProfileOffer}
+      onCreatePortfolio={onCreatePortfolio}
+    />
+  );
+
   if (isRightSidebarOpen && activeRightItem === 'notifications') {
     return <NotificationSettingsModule onBack={closeOwnProfileEdit} />;
   }
@@ -250,33 +278,7 @@ export default function ModuleRouter({
         />
       );
     case 'profile':
-      return (
-        <ProfileModule
-          user={user}
-          onUserUpdate={onUserUpdate}
-          onEditProfileClick={onEditProfileClick ?? handleRightSidebarToggle}
-          onEditCancel={closeOwnProfileEdit}
-          onSkillsClick={onSkillsClick || (() => {
-            setActiveModule('skills');
-            try {
-              localStorage.setItem('activeModule', 'skills');
-            } catch {
-              // ignore
-            }
-            if (typeof window !== 'undefined') {
-              window.history.pushState(null, '', '/dashboard/skills');
-            }
-          })}
-          isEditMode={isRightSidebarOpen && activeRightItem === 'edit-profile'}
-          accountType={accountType}
-          highlightedSkillId={highlightedSkillId ?? null}
-          initialTab={ownProfileTab ?? initialProfileTab}
-          onTabChange={onOwnProfileTabChange}
-          onEditOffer={onEditOwnProfileOffer}
-          onDeleteOffer={onDeleteOwnProfileOffer}
-          onCreatePortfolio={onCreatePortfolio}
-        />
-      );
+      return renderOwnProfile(isRightSidebarOpen && activeRightItem === 'edit-profile');
     case 'search':
       return (
         <SearchModule
@@ -289,13 +291,18 @@ export default function ModuleRouter({
       return <FavoritesModule />;
     case 'settings':
       return (
-        <div className="text-center py-20">
-          <h2 className="text-2xl font-semibold text-gray-600 mb-4">
-            {t('navigation.settings', 'Nastavenia')}
-          </h2>
-          <p className="text-gray-500">
-            {t('dashboard.selectSection', 'Vyber si sekciu z navigácie pre pokračovanie.')}
-          </p>
+        <div>
+          <div className="hidden lg:block">
+            {renderOwnProfile(true)}
+          </div>
+          <div className="text-center py-20 lg:hidden">
+            <h2 className="text-2xl font-semibold text-gray-600 mb-4">
+              {t('navigation.settings', 'Nastavenia')}
+            </h2>
+            <p className="text-gray-500">
+              {t('dashboard.selectSection', 'Vyber si sekciu z navigácie pre pokračovanie.')}
+            </p>
+          </div>
         </div>
       );
     case 'create':

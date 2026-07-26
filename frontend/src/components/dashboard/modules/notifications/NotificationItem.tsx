@@ -20,7 +20,14 @@ function safeInternalTarget(value: string | null): string | null {
   return value === '/dashboard' || value.startsWith('/dashboard/') ? value : null;
 }
 
-function getActorName(notification: DashboardNotification, fallback: string): string {
+function getActorName(
+  notification: DashboardNotification,
+  fallback: string,
+  deletedLabel: string,
+): string {
+  // Anonymizovaný/zmazaný účet → lokalizované "Zmazaný používateľ" namiesto
+  // technického "deleted-user-<uuid>" (BE vracia is_deleted + prázdne meno).
+  if (notification.actor?.is_deleted) return deletedLabel;
   return (notification.actor?.display_name || '').trim() || fallback;
 }
 
@@ -94,7 +101,11 @@ export default function NotificationItem({
 }: NotificationItemProps) {
   const router = useRouter();
   const { locale, t } = useLanguage();
-  const actorName = getActorName(notification, t('notifications.unknownActor', 'Používateľ'));
+  const actorName = getActorName(
+    notification,
+    t('notifications.unknownActor', 'Používateľ'),
+    t('notifications.deletedUser', 'Zmazaný používateľ'),
+  );
   const actorDisplayName = (notification.actor?.display_name || '').trim();
   const targetUrl = safeInternalTarget(notification.target_url);
   const terminationReasonLabel = getTerminationReasonLabel(

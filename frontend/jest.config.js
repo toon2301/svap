@@ -71,7 +71,6 @@ const customJestConfig = {
     '!src/components/dashboard/modules/profile/PhotoUpload.tsx',
     '!src/components/dashboard/modules/SocialMediaInputs.tsx',
     '!src/components/dashboard/modules/FavoritesModule.tsx',
-    '!src/components/dashboard/modules/SettingsModule.tsx',
     '!src/components/dashboard/MobileTopNav.tsx',
     '!src/components/ErrorBoundary.tsx',
   ],

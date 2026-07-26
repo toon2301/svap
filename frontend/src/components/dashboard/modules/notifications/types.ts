@@ -20,6 +20,8 @@ export interface NotificationActor {
   slug?: string | null;
   user_type?: string | null;
   avatar_url?: string | null;
+  /** Anonymizovaný/zmazaný účet – FE zobrazí lokalizované "Zmazaný používateľ". */
+  is_deleted?: boolean;
 }
 
 export interface DashboardNotification {

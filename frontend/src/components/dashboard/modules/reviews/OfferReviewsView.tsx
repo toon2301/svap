@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { api, endpoints } from '@/lib/api';
 import { getApiErrorMessage, getFieldErrorMessage } from '@/lib/apiError';
@@ -131,6 +131,7 @@ export default function OfferReviewsView({
   const { user: authUser } = useAuth();
   const user = dashboardUser ?? authUser;
   const viewerUserId = user?.id ?? null;
+  const router = useRouter();
   const searchParams = useSearchParams();
   const targetReviewId = useMemo(
     () => parsePositiveInteger(searchParams?.get('review_id') ?? null),
@@ -167,19 +168,31 @@ export default function OfferReviewsView({
   const handledDeletedOfferRef = useRef<number | null>(null);
 
   // Notifikácia o recenzii vedie na /dashboard/offers/<offer_id>/reviews aj po
-  // zmazaní ponuky (offer_id je snapshot). Ak ponuka už neexistuje, ale recenzia
-  // áno (offer=null vo /reviews/<id>/ detaile), presmerujeme na profil
-  // recenzovaného používateľa (reviewed_user) a ukážeme toast. Skrytá/blokovaná
-  // ponuka vráti 404 aj na review detaile → v tom prípade nepresmerujeme.
+  // zmazaní ponuky (offer_id je snapshot). Podľa výsledku /reviews/<id>/ reagujeme:
+  //  - 200 + offer=null + reviewed_user_id → presmeruj na profil recenzovaného + toast,
+  //  - 200 + offer=null bez reviewed_user_id (edge) → neutrálna hláška + nástenka,
+  //  - 403/404 (blokovanie, súkromný profil, neexistuje) → ROVNAKÁ neutrálna hláška
+  //    + nástenka (zámerne neprezradíme dôvod – bezpečnostná vlastnosť z Nálezu 1).
+  // Stale-response guard (offerIdRef) platí pre všetky vetvy.
   const redirectToReviewedUserIfOfferDeleted = useCallback(
     async (deletedOfferId: number, reviewId: number) => {
       if (handledDeletedOfferRef.current === deletedOfferId) return;
       handledDeletedOfferRef.current = deletedOfferId;
+
+      // Neutrálny fallback: hláška „obsah nedostupný" + návrat na nástenku.
+      const goToDashboardUnavailable = () => {
+        toast(t('reviews.contentUnavailable', 'Tento obsah už nie je dostupný.'));
+        router.push('/dashboard');
+      };
+
       try {
         const { data } = await api.get<{
           offer: number | null;
           reviewed_user_id: number | null;
         }>(endpoints.reviews.detail(reviewId));
+        // Stale-response guard: kým sme čakali na odpoveď, používateľ sa mohol
+        // presunúť na inú ponuku/recenziu → ticho skonči (nemätúci kontext).
+        if (offerIdRef.current !== deletedOfferId) return;
         if (data?.offer === null && data?.reviewed_user_id) {
           toast(
             t(
@@ -194,12 +207,18 @@ export default function OfferReviewsView({
               }),
             );
           }
+        } else {
+          // 200, ale bez použiteľného reviewed_user_id (starší/edge dátový prípad).
+          goToDashboardUnavailable();
         }
       } catch {
-        // Recenzia nedostupná (skrytá/blokovaná/neexistuje) → ponechaj prázdny stav.
+        // 403/404 – blokovanie, súkromný profil alebo recenzia neexistuje.
+        // Stale-response guard platí aj tu.
+        if (offerIdRef.current !== deletedOfferId) return;
+        goToDashboardUnavailable();
       }
     },
-    [t],
+    [router, t],
   );
 
   // Latest-ref: efekt načítania ponuky nesmie závisieť od identity handlera (ani

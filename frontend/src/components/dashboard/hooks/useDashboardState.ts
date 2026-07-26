@@ -11,6 +11,15 @@ import {
   getSkillsDescribeReturnModule,
 } from '../modules/skills/skillsDescribeReturnSession';
 import { useAuth } from '@/contexts/AuthContext';
+import {
+  getDesktopSettingsSectionFromModule,
+  getDesktopSettingsSectionFromPath,
+  getDesktopSettingsSectionPath,
+  readDesktopSettingsReturnTarget,
+  withDesktopSettingsHistory,
+  withoutDesktopSettingsHistory,
+  type DesktopSettingsReturnTarget,
+} from './desktopSettingsNavigation';
 
 type AccountType = 'personal' | 'business';
 
@@ -36,6 +45,7 @@ export interface UseDashboardStateResult {
   isPersonalAccountModalOpen: boolean;
   setIsPersonalAccountModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
   openOwnProfileEdit: () => void;
+  openDesktopSettings: (returnTarget: DesktopSettingsReturnTarget | null) => void;
   closeOwnProfileEdit: (targetUser?: Pick<User, 'id' | 'slug'> | null) => void;
   handleModuleChange: (moduleId: string) => void;
   handleRightSidebarToggle: () => void;
@@ -56,22 +66,6 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
   // Ak nie, použijeme 'home' (hydration fix)
   const [activeModule, setActiveModule] = useState<string>(initialModule || 'home');
 
-  // Pri client-side navigácii (router.push / zmena URL bez full reloadu) môže rovnaká inštancia
-  // Dashboardu dostať nové `initialModule`. Bez synchronizácie by UI ostalo na starom module.
-  useEffect(() => {
-    if (!initialModule) return;
-
-    setActiveModule(initialModule);
-
-    try {
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('activeModule', initialModule);
-      }
-    } catch {
-      // ignore
-    }
-  }, [initialModule]);
-  
   // Inicializácia sidebaru - ak initialModule je sidebar sekcia, otvor sidebar hneď
   const rightSidebarItems = [
     'notifications',
@@ -92,6 +86,39 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
   const [accountType, setAccountType] = useState<AccountType>(() => accountTypeFromUser(initialUser || authUser || null));
   const [isAccountTypeModalOpen, setIsAccountTypeModalOpen] = useState(false);
   const [isPersonalAccountModalOpen, setIsPersonalAccountModalOpen] = useState(false);
+
+  // Pri client-side navigácii môže rovnaká inštancia Dashboardu dostať nový
+  // `initialModule`. Desktopový settings marker navyše obnoví pravú sekciu po refreshi.
+  useEffect(() => {
+    if (!initialModule) return;
+
+    const settingsSection = getDesktopSettingsSectionFromModule(initialModule);
+    const hasSettingsReturnTarget =
+      typeof window !== 'undefined' &&
+      readDesktopSettingsReturnTarget(window.history.state) !== null;
+    const shouldRestoreDesktopSettings =
+      typeof window !== 'undefined' &&
+      window.innerWidth >= 1024 &&
+      settingsSection !== null &&
+      (initialModule === 'settings' || hasSettingsReturnTarget);
+    const nextModule = shouldRestoreDesktopSettings ? 'settings' : initialModule;
+
+    setActiveModule(nextModule);
+    if (shouldRestoreDesktopSettings) {
+      setIsRightSidebarOpen(true);
+      setActiveRightItem(settingsSection);
+      setIsMobileMenuOpen(false);
+    }
+
+    try {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('activeModule', nextModule);
+      }
+    } catch {
+      // ignore
+    }
+  }, [initialModule]);
+
   const getOwnProfileIdentifier = useCallback(
     (targetUser?: Pick<User, 'id' | 'slug'> | null) => {
       const slug = targetUser?.slug ?? userRef.current?.slug;
@@ -100,6 +127,93 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
       return id != null ? String(id) : null;
     },
     []
+  );
+
+  const getSettingsFallbackTarget = useCallback(
+    (targetUser?: Pick<User, 'id' | 'slug'> | null): DesktopSettingsReturnTarget => {
+      const identifier = getOwnProfileIdentifier(targetUser);
+      return {
+        moduleId: 'profile',
+        url: identifier ? `/dashboard/users/${identifier}` : '/dashboard/profile',
+      };
+    },
+    [getOwnProfileIdentifier]
+  );
+
+  const openDesktopSettings = useCallback(
+    (returnTarget: DesktopSettingsReturnTarget | null) => {
+      const existingTarget =
+        activeModule === 'settings' && typeof window !== 'undefined'
+          ? readDesktopSettingsReturnTarget(window.history.state)
+          : null;
+      const effectiveReturnTarget =
+        returnTarget ?? existingTarget ?? getSettingsFallbackTarget();
+
+      setActiveModule('settings');
+      setIsRightSidebarOpen(true);
+      setActiveRightItem('edit-profile');
+      setIsMobileMenuOpen(false);
+
+      try {
+        localStorage.setItem('activeModule', 'settings');
+      } catch {
+        // Navigation state is already updated; ignore storage failures.
+      }
+
+      if (typeof window !== 'undefined') {
+        const historyState = withDesktopSettingsHistory(
+          window.history.state,
+          effectiveReturnTarget,
+        );
+        const historyMethod = activeModule === 'settings' ? 'replaceState' : 'pushState';
+        window.history[historyMethod](historyState, '', '/dashboard/settings');
+      }
+    },
+    [activeModule, getSettingsFallbackTarget]
+  );
+
+  const closeDesktopSettings = useCallback(
+    (targetUser?: Pick<User, 'id' | 'slug'> | null) => {
+      const rememberedTarget =
+        typeof window !== 'undefined'
+          ? readDesktopSettingsReturnTarget(window.history.state)
+          : null;
+      const fallbackTarget = getSettingsFallbackTarget(targetUser);
+      const returnTarget = rememberedTarget
+        ? {
+            ...rememberedTarget,
+            url:
+              rememberedTarget.moduleId === 'profile' && targetUser
+                ? fallbackTarget.url
+                : rememberedTarget.url,
+          }
+        : fallbackTarget;
+
+      setActiveModule(returnTarget.moduleId);
+      setIsRightSidebarOpen(false);
+      setActiveRightItem('');
+      setIsMobileMenuOpen(false);
+
+      try {
+        localStorage.setItem('activeModule', returnTarget.moduleId);
+      } catch {
+        // Navigation state is already restored; ignore storage failures.
+      }
+
+      if (typeof window === 'undefined') return;
+
+      if (rememberedTarget) {
+        window.history.back();
+        return;
+      }
+
+      window.history.replaceState(
+        withoutDesktopSettingsHistory(window.history.state),
+        '',
+        returnTarget.url,
+      );
+    },
+    [getSettingsFallbackTarget]
   );
 
   const openOwnProfileEdit = useCallback(() => {
@@ -123,6 +237,11 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
 
   const closeOwnProfileEdit = useCallback(
     (targetUser?: Pick<User, 'id' | 'slug'> | null) => {
+      if (activeModule === 'settings') {
+        closeDesktopSettings(targetUser);
+        return;
+      }
+
       setActiveModule('profile');
       setIsRightSidebarOpen(false);
       setActiveRightItem('');
@@ -140,8 +259,41 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
         window.history.replaceState(null, '', `/dashboard/users/${identifier}`);
       }
     },
-    [getOwnProfileIdentifier]
+    [activeModule, closeDesktopSettings, getOwnProfileIdentifier]
   );
+
+  // Browser Forward môže znovu otvoriť settings položku s uloženým markerom.
+  // Obnovu odložíme o jeden tick, aby mala prednosť pred všeobecným popstate
+  // listenerom Dashboardu, ktorý nepozná desktopový settings kontext.
+  useEffect(() => {
+    let restoreTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const restoreDesktopSettingsFromHistory = () => {
+      if (window.innerWidth < 1024) return;
+      if (!readDesktopSettingsReturnTarget(window.history.state)) return;
+
+      const section = getDesktopSettingsSectionFromPath(window.location.pathname);
+      if (!section) return;
+
+      restoreTimer = setTimeout(() => {
+        setActiveModule('settings');
+        setIsRightSidebarOpen(true);
+        setActiveRightItem(section);
+        setIsMobileMenuOpen(false);
+        try {
+          localStorage.setItem('activeModule', 'settings');
+        } catch {
+          // ignore
+        }
+      }, 0);
+    };
+
+    window.addEventListener('popstate', restoreDesktopSettingsFromHistory);
+    return () => {
+      window.removeEventListener('popstate', restoreDesktopSettingsFromHistory);
+      if (restoreTimer) clearTimeout(restoreTimer);
+    };
+  }, []);
 
   // Synchronizácia accountType s user.user_type z databázy
   useEffect(() => {
@@ -256,7 +408,9 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
 
   const handleRightSidebarToggle = useCallback(() => {
     const isClosingOwnEdit =
-      activeModule === 'profile' && isRightSidebarOpen && activeRightItem === 'edit-profile';
+      (activeModule === 'profile' || activeModule === 'settings') &&
+      isRightSidebarOpen &&
+      activeRightItem === 'edit-profile';
     if (isClosingOwnEdit) {
       closeOwnProfileEdit();
       return;
@@ -274,6 +428,24 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
   const handleRightItemClick = useCallback(
     (itemId: string) => {
       setActiveRightItem(itemId);
+
+      if (activeModule === 'settings') {
+        const settingsPath = getDesktopSettingsSectionPath(itemId);
+        if (!settingsPath) return;
+
+        setIsRightSidebarOpen(true);
+        setActiveModule('settings');
+        if (typeof window !== 'undefined') {
+          window.history.replaceState(window.history.state, '', settingsPath);
+          try {
+            localStorage.setItem('activeModule', 'settings');
+          } catch {
+            // ignore
+          }
+        }
+        return;
+      }
+
       if (itemId === 'edit-profile') {
         openOwnProfileEdit();
         return;
@@ -352,7 +524,7 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
         }
       }
     },
-    [openOwnProfileEdit]
+    [activeModule, openOwnProfileEdit]
   );
 
   const handleUserUpdate = useCallback(
@@ -386,6 +558,18 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
       
       // Zachovať aktuálny stav - ak sme už v edit móde, zostaneme v ňom
       setActiveModule((prevModule) => {
+        if (prevModule === 'settings') {
+          if (typeof window !== 'undefined') {
+            try {
+              localStorage.setItem('activeModule', 'settings');
+            } catch {
+              // ignore
+            }
+          }
+          setIsRightSidebarOpen(true);
+          return 'settings';
+        }
+
         const isPrivacy = prevModule === 'privacy';
         if (isPrivacy) {
           if (typeof window !== 'undefined') {
@@ -592,6 +776,7 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
     isPersonalAccountModalOpen,
     setIsPersonalAccountModalOpen,
     openOwnProfileEdit,
+    openDesktopSettings,
     closeOwnProfileEdit,
     handleModuleChange,
     handleRightSidebarToggle,

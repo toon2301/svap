@@ -302,4 +302,49 @@ describe('NotificationItem', () => {
 
     expect(screen.getByText('?')).toBeInTheDocument();
   });
+
+  it('zobrazí "Zmazaný používateľ" pre anonymizovaného aktéra (is_deleted), nie surové meno', () => {
+    const notification = makeNotification({
+      type: 'review_created',
+      title: '',
+      body: '',
+      actor: {
+        id: 10,
+        display_name: '', // BE vracia prázdne meno pre zmazaný účet
+        slug: null,
+        user_type: 'individual',
+        avatar_url: null,
+        is_deleted: true,
+      },
+    });
+
+    render(<NotificationItem notification={notification} />);
+
+    const text = screen.getByRole('button').querySelector('p');
+    expect(text).toHaveTextContent('Zmazaný používateľ napísal recenziu na tvoju kartu.');
+    // Technický placeholder sa nikdy nezobrazí.
+    expect(text?.textContent ?? '').not.toContain('deleted-user-');
+  });
+
+  it('zobrazí skutočné meno bežného (nezmazaného) aktéra bez zmeny', () => {
+    const notification = makeNotification({
+      type: 'review_created',
+      title: '',
+      body: '',
+      actor: {
+        id: 11,
+        display_name: 'Real User',
+        slug: 'real-user',
+        user_type: 'individual',
+        avatar_url: null,
+        is_deleted: false,
+      },
+    });
+
+    render(<NotificationItem notification={notification} />);
+
+    expect(screen.getByRole('button').querySelector('p')).toHaveTextContent(
+      'Real User napísal recenziu na tvoju kartu.',
+    );
+  });
 });

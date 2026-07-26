@@ -31,24 +31,31 @@ class NotificationSerializer(serializers.ModelSerializer):
         if actor is None:
             return None
 
+        # Anonymizovaný/zmazaný účet (is_active=False): nevracaj meno/slug/avatar
+        # (sú anonymizované na "deleted-user-<uuid>"). Frontend zobrazí preložené
+        # "Zmazaný používateľ". Rovnaký vzor ako messaging serialize_user_brief.
+        is_deleted = not getattr(actor, "is_active", True)
+
         avatar_url = None
-        try:
-            if actor.avatar and hasattr(actor.avatar, "url"):
-                request = self.context.get("request")
-                avatar_url = (
-                    request.build_absolute_uri(actor.avatar.url)
-                    if request
-                    else actor.avatar.url
-                )
-        except Exception:
-            avatar_url = None
+        if not is_deleted:
+            try:
+                if actor.avatar and hasattr(actor.avatar, "url"):
+                    request = self.context.get("request")
+                    avatar_url = (
+                        request.build_absolute_uri(actor.avatar.url)
+                        if request
+                        else actor.avatar.url
+                    )
+            except Exception:
+                avatar_url = None
 
         return {
             "id": actor.id,
-            "display_name": getattr(actor, "display_name", "") or "",
-            "slug": getattr(actor, "slug", None),
+            "display_name": "" if is_deleted else (getattr(actor, "display_name", "") or ""),
+            "slug": None if is_deleted else getattr(actor, "slug", None),
             "user_type": getattr(actor, "user_type", None),
             "avatar_url": avatar_url,
+            "is_deleted": is_deleted,
         }
 
     def get_target_url(self, obj):

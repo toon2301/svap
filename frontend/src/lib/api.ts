@@ -763,7 +763,6 @@ export const endpoints = {
     // Slug-based endpointy pre profily používateľov (musí podporovať backend)
     userProfileBySlug: (slug: string) => `/auth/dashboard/users/slug/${slug}/profile/`,
     userSkillsBySlug: (slug: string) => `/auth/dashboard/users/slug/${slug}/skills/`,
-    settings: '/auth/dashboard/settings/',
   },
   // Portfolio
   portfolio: {
