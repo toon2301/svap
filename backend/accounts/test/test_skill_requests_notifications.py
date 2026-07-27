@@ -644,6 +644,7 @@ class TestSkillRequestsAndNotifications(APITestCase):
         self.assertEqual(notification.actor_id, self.owner.id)
         self.assertEqual(notification.data.get("review_id"), review.id)
         self.assertEqual(notification.data.get("offer_id"), self.offer.id)
+        self.assertEqual(notification.data.get("reviewed_user_id"), self.owner.id)
         self.assertEqual(notification.data.get("from_user_id"), self.owner.id)
         self.assertNotIn("text", notification.data)
 
@@ -693,6 +694,86 @@ class TestSkillRequestsAndNotifications(APITestCase):
         self.assertFalse(
             ReviewLike.objects.filter(review=review, user=self.owner).exists()
         )
+
+    def test_orphaned_review_notification_targets_reviewed_user_profile(self):
+        """Notifikácia na recenziu, ktorej ponuka už bola zmazaná (offer_id=None
+        v data), musí mať klikateľný cieľ = profil recenzovaného používateľa,
+        nie neplatnú /offers/None/... cestu."""
+        from accounts.notification_serializers import NotificationSerializer
+
+        review = Review.objects.create(
+            reviewer=self.requester,
+            offer=self.offer,
+            rating="5.0",
+            text="Recenzia, ktorej ponuka zanikne.",
+        )
+        self.assertEqual(review.reviewed_user_id, self.owner.id)
+
+        # Ponuka zmizne → offer_id v data notifikácie je None (osirotená recenzia).
+        self.offer.delete()
+        review.refresh_from_db()
+        self.assertIsNone(review.offer_id)
+
+        liker = UserFactory()
+        notification = Notification.objects.create(
+            user=self.requester,
+            actor=liker,
+            type=NotificationType.REVIEW_LIKED,
+            title="Páči sa mi tvoja recenzia",
+            data={
+                "review_id": review.id,
+                "offer_id": review.offer_id,
+                "reviewed_user_id": review.reviewed_user_id,
+                "from_user_id": liker.id,
+            },
+        )
+
+        payload = NotificationSerializer(notification).data
+        self.assertEqual(payload["target_url"], f"/dashboard/users/{self.owner.id}")
+
+    def test_review_notification_with_deleted_offer_falls_back_to_profile(self):
+        """Historicky kladné offer_id, ale ponuka bola odvtedy zmazaná → target_url
+        musí smerovať na profil recenzovaného, nie na neexistujúcu ponuku."""
+        from accounts.notification_serializers import (
+            NotificationSerializer,
+            existing_review_offer_ids,
+        )
+
+        review = Review.objects.create(
+            reviewer=self.requester, offer=self.offer, rating="5.0", text="rec"
+        )
+        liker = UserFactory()
+        notification = Notification.objects.create(
+            user=self.requester,
+            actor=liker,
+            type=NotificationType.REVIEW_LIKED,
+            title="Páči sa mi tvoja recenzia",
+            data={
+                "review_id": review.id,
+                "offer_id": self.offer.id,  # v čase vzniku platné, kladné
+                "reviewed_user_id": review.reviewed_user_id,
+                "from_user_id": liker.id,
+            },
+        )
+
+        # Kým ponuka existuje → cieľ vedie na jej recenzie.
+        ctx_before = {
+            "existing_review_offer_ids": existing_review_offer_ids([notification])
+        }
+        before = NotificationSerializer(notification, context=ctx_before).data
+        self.assertEqual(
+            before["target_url"],
+            f"/dashboard/offers/{self.offer.id}/reviews?review_id={review.id}",
+        )
+
+        # Ponuka sa zmaže → data.offer_id ostáva (snapshot), ale ponuka už neexistuje.
+        self.offer.delete()
+
+        ctx_after = {
+            "existing_review_offer_ids": existing_review_offer_ids([notification])
+        }
+        after = NotificationSerializer(notification, context=ctx_after).data
+        self.assertEqual(after["target_url"], f"/dashboard/users/{self.owner.id}")
 
     def test_offer_like_toggle_updates_counts_and_notifies_owner_once(self):
         self.client.force_authenticate(user=self.requester)

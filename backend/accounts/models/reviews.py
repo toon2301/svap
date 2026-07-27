@@ -23,9 +23,23 @@ class Review(models.Model):
     )
     offer = models.ForeignKey(
         "accounts.OfferedSkill",
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
         related_name="reviews",
+        null=True,
+        blank=True,
         verbose_name=_("Ponuka"),
+    )
+    # Denormalizovaný vlastník ponuky. Držíme ho priamo na recenzii, aby recenzia
+    # prežila zmazanie ponuky (offer sa cez SET_NULL vynuluje) a naďalej sa dala
+    # priradiť hodnotenému profilu. PROTECT bráni zmazaniu používateľa, na ktorého
+    # existujú recenzie. Zatiaľ null=True kvôli bezpečnému prechodu existujúcich dát.
+    reviewed_user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="reviews_received",
+        null=True,
+        blank=True,
+        verbose_name=_("Hodnotený používateľ"),
     )
     rating = models.DecimalField(
         _("Hodnotenie"),
@@ -79,10 +93,25 @@ class Review(models.Model):
             models.Index(fields=["offer", "created_at"]),
             models.Index(fields=["reviewer", "created_at"]),
             models.Index(fields=["rating", "created_at"]),
+            models.Index(fields=["reviewed_user", "created_at"]),
         ]
 
     def __str__(self):
         return f"Recenzia #{self.id}: {self.reviewer.display_name} -> {self.offer} ({self.rating}/5)"
+
+    def save(self, *args, **kwargs):
+        # Pri vzniku recenzie denormalizuj vlastníka ponuky do reviewed_user, aby
+        # väzba na hodnotený profil ostala zachovaná aj po zmazaní ponuky (SET_NULL).
+        # Nastavujeme len ak ešte nie je vyplnené a ponuka je dostupná – existujúce
+        # hodnoty (aj z dátovej migrácie) neprepisujeme.
+        if self.reviewed_user_id is None and self.offer_id is not None:
+            owner_id = getattr(self.offer, "user_id", None)
+            if owner_id is not None:
+                self.reviewed_user_id = owner_id
+                update_fields = kwargs.get("update_fields")
+                if update_fields is not None and "reviewed_user" not in update_fields:
+                    kwargs["update_fields"] = list(update_fields) + ["reviewed_user"]
+        super().save(*args, **kwargs)
 
     def clean(self):
         """Validácia dát pred uložením"""

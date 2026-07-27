@@ -40,6 +40,7 @@ from ..services.notifications import (
 from .review_helpers import (
     _offer_hidden_from_user,
     _parse_reviews_page_params,
+    _review_hidden_from_user,
     _review_like_payload,
     _reviews_rating_stats,
     _reviews_with_like_state,
@@ -214,9 +215,9 @@ def review_detail_view(request, review_id):
     """
     try:
         review = _reviews_with_like_state(
-            Review.objects.select_related("reviewer", "offer", "offer__user").filter(
-                id=review_id
-            ),
+            Review.objects.select_related(
+                "reviewer", "offer", "offer__user", "reviewed_user"
+            ).filter(id=review_id),
             request.user,
         ).get()
     except Review.DoesNotExist:
@@ -227,9 +228,9 @@ def review_detail_view(request, review_id):
     is_owner = review.reviewer_id == request.user.id
 
     if request.method == "GET":
-        # Kontrola, či ponuka nie je skrytá alebo z privátneho profilu
-        offer = review.offer
-        if _offer_hidden_from_user(offer, request.user):
+        # Viditeľnosť podľa ponuky; pri zmazanej ponuke (offer=None) podľa reviewed_user
+        # (blokovanie/súkromný profil), aby osirotená recenzia neobišla tieto pravidlá.
+        if _review_hidden_from_user(review, request.user):
             return Response(
                 {"error": "Recenzia nebola nájdená"}, status=status.HTTP_404_NOT_FOUND
             )
@@ -279,15 +280,15 @@ def review_like_view(request, review_id):
     opakovaný DELETE nechá like vypnutý.
     """
     try:
-        review = Review.objects.select_related("reviewer", "offer", "offer__user").get(
-            id=review_id
-        )
+        review = Review.objects.select_related(
+            "reviewer", "offer", "offer__user", "reviewed_user"
+        ).get(id=review_id)
     except Review.DoesNotExist:
         return Response(
             {"error": "Recenzia nebola nájdená"}, status=status.HTTP_404_NOT_FOUND
         )
 
-    if _offer_hidden_from_user(review.offer, request.user):
+    if _review_hidden_from_user(review, request.user):
         return Response(
             {"error": "Recenzia nebola nájdená"}, status=status.HTTP_404_NOT_FOUND
         )
@@ -310,7 +311,7 @@ def review_like_view(request, review_id):
         lock_users_for_update(
             user_ids=(
                 request.user.id,
-                review.offer.user_id,
+                review.reviewed_user_id,
                 review.reviewer_id,
             )
         )
@@ -320,8 +321,8 @@ def review_like_view(request, review_id):
             return Response(
                 {"error": "Recenzia nebola nájdená"}, status=status.HTTP_404_NOT_FOUND
             )
-        if _offer_hidden_from_user(
-            review.offer, request.user
+        if _review_hidden_from_user(
+            review, request.user
         ) or user_block_exists_between(
             first_user_id=request.user.id,
             second_user_id=review.reviewer_id,
@@ -424,7 +425,7 @@ def review_report_view(request, review_id):
 def review_respond_view(request, review_id):
     """
     POST: Vytvorenie alebo úprava odpovede vlastníka ponuky na recenziu.
-    Iba vlastník ponuky (review.offer.user == request.user) môže odpovedať.
+    Iba hodnotený používateľ (review.reviewed_user == request.user) môže odpovedať.
     """
     try:
         review = Review.objects.select_related("reviewer", "offer", "offer__user").get(
@@ -435,8 +436,9 @@ def review_respond_view(request, review_id):
             {"error": "Recenzia nebola nájdená"}, status=status.HTTP_404_NOT_FOUND
         )
 
-    # Iba vlastník ponuky môže odpovedať
-    if review.offer.user_id != request.user.id:
+    # Iba hodnotený používateľ (vlastník pôvodnej ponuky) môže odpovedať.
+    # Používame reviewed_user_id, aby odpoveď fungovala aj po zmazaní ponuky.
+    if review.reviewed_user_id != request.user.id:
         return Response(
             {"error": "Nemáš oprávnenie odpovedať na túto recenziu."},
             status=status.HTTP_403_FORBIDDEN,

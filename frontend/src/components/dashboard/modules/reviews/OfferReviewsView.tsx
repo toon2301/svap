@@ -1,8 +1,10 @@
 'use client';
 
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import toast from 'react-hot-toast';
 import { api, endpoints } from '@/lib/api';
+import { getApiErrorMessage, getFieldErrorMessage } from '@/lib/apiError';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { User } from '@/types';
@@ -129,6 +131,7 @@ export default function OfferReviewsView({
   const { user: authUser } = useAuth();
   const user = dashboardUser ?? authUser;
   const viewerUserId = user?.id ?? null;
+  const router = useRouter();
   const searchParams = useSearchParams();
   const targetReviewId = useMemo(
     () => parsePositiveInteger(searchParams?.get('review_id') ?? null),
@@ -160,6 +163,71 @@ export default function OfferReviewsView({
   const [reportedReviewIds, setReportedReviewIds] = useState<Set<number>>(() => new Set());
   const [pendingReviewLikeIds, setPendingReviewLikeIds] = useState<Set<number>>(() => new Set());
 
+  // Drží offerId, pre ktorý sme už vyriešili zmazanú ponuku → bráni dvojitému
+  // presmerovaniu aj keby sa efekt znovu spustil.
+  const handledDeletedOfferRef = useRef<number | null>(null);
+
+  // Notifikácia o recenzii vedie na /dashboard/offers/<offer_id>/reviews aj po
+  // zmazaní ponuky (offer_id je snapshot). Podľa výsledku /reviews/<id>/ reagujeme:
+  //  - 200 + offer=null + reviewed_user_id → presmeruj na profil recenzovaného + toast,
+  //  - 200 + offer=null bez reviewed_user_id (edge) → neutrálna hláška + nástenka,
+  //  - 403/404 (blokovanie, súkromný profil, neexistuje) → ROVNAKÁ neutrálna hláška
+  //    + nástenka (zámerne neprezradíme dôvod – bezpečnostná vlastnosť z Nálezu 1).
+  // Stale-response guard (offerIdRef) platí pre všetky vetvy.
+  const redirectToReviewedUserIfOfferDeleted = useCallback(
+    async (deletedOfferId: number, reviewId: number) => {
+      if (handledDeletedOfferRef.current === deletedOfferId) return;
+      handledDeletedOfferRef.current = deletedOfferId;
+
+      // Neutrálny fallback: hláška „obsah nedostupný" + návrat na nástenku.
+      const goToDashboardUnavailable = () => {
+        toast(t('reviews.contentUnavailable', 'Tento obsah už nie je dostupný.'));
+        router.push('/dashboard');
+      };
+
+      try {
+        const { data } = await api.get<{
+          offer: number | null;
+          reviewed_user_id: number | null;
+        }>(endpoints.reviews.detail(reviewId));
+        // Stale-response guard: kým sme čakali na odpoveď, používateľ sa mohol
+        // presunúť na inú ponuku/recenziu → ticho skonči (nemätúci kontext).
+        if (offerIdRef.current !== deletedOfferId) return;
+        if (data?.offer === null && data?.reviewed_user_id) {
+          toast(
+            t(
+              'reviews.offerDeletedRedirect',
+              'Ponuka, ku ktorej patrila táto recenzia, už bola zmazaná.',
+            ),
+          );
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(
+              new CustomEvent('goToUserProfile', {
+                detail: { identifier: String(data.reviewed_user_id) },
+              }),
+            );
+          }
+        } else {
+          // 200, ale bez použiteľného reviewed_user_id (starší/edge dátový prípad).
+          goToDashboardUnavailable();
+        }
+      } catch {
+        // 403/404 – blokovanie, súkromný profil alebo recenzia neexistuje.
+        // Stale-response guard platí aj tu.
+        if (offerIdRef.current !== deletedOfferId) return;
+        goToDashboardUnavailable();
+      }
+    },
+    [router, t],
+  );
+
+  // Latest-ref: efekt načítania ponuky nesmie závisieť od identity handlera (ani
+  // od t), inak by nestabilné t spôsobilo re-render slučku (viď OfferReviewsRace).
+  const redirectRef = useRef(redirectToReviewedUserIfOfferDeleted);
+  useEffect(() => {
+    redirectRef.current = redirectToReviewedUserIfOfferDeleted;
+  }, [redirectToReviewedUserIfOfferDeleted]);
+
   useEffect(() => {
     if (offerId == null) {
       setOffer(null);
@@ -172,8 +240,14 @@ export default function OfferReviewsView({
       .then(({ data }) => {
         if (!cancelled) setOffer(data);
       })
-      .catch(() => {
-        if (!cancelled) setOffer(null);
+      .catch((error) => {
+        if (cancelled) return;
+        setOffer(null);
+        // Ponuka nenájdená + máme review_id z notifikácie → over zmazanú ponuku
+        // a prípadne presmeruj na profil recenzovaného používateľa.
+        if (error?.response?.status === 404 && targetReviewId != null) {
+          void redirectRef.current(offerId, targetReviewId);
+        }
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -181,7 +255,7 @@ export default function OfferReviewsView({
     return () => {
       cancelled = true;
     };
-  }, [offerId]);
+  }, [offerId, targetReviewId]);
 
   useEffect(() => {
     setLoadingMoreReviews(false);
@@ -237,13 +311,9 @@ export default function OfferReviewsView({
       setReviewsStats(normalizeReviewsStats(data));
       setReviewsPage(data.page || nextPage);
       setReviewsTotalPages(data.total_pages || reviewsTotalPages);
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (offerIdRef.current !== requestedOfferId) return;
-      alert(
-        error?.response?.data?.error ||
-          error?.message ||
-          t('reviews.loadMoreError', 'Nepodarilo sa načítať ďalšie recenzie.'),
-      );
+      alert(getApiErrorMessage(error, t('reviews.loadMoreError', 'Nepodarilo sa načítať ďalšie recenzie.')));
     } finally {
       if (offerIdRef.current === requestedOfferId) setLoadingMoreReviews(false);
     }
@@ -377,16 +447,11 @@ export default function OfferReviewsView({
             : item,
         ),
       );
-    } catch (error: any) {
+    } catch (error: unknown) {
       setReviews((prev) =>
         prev.map((item) => (item.id === review.id ? previousReview : item)),
       );
-      alert(
-        error?.response?.data?.error ||
-          error?.response?.data?.detail ||
-          error?.message ||
-          t('reviews.likeUpdateFailed', 'Nepodarilo sa aktualizovať páči sa mi.'),
-      );
+      alert(getApiErrorMessage(error, t('reviews.likeUpdateFailed', 'Nepodarilo sa aktualizovať páči sa mi.')));
     } finally {
       setPendingReviewLikeIds((prev) => {
         const next = new Set(prev);
@@ -515,9 +580,9 @@ export default function OfferReviewsView({
             if (typeof ownerUserIdForInvalidation === 'number') invalidateOffersCache(ownerUserIdForInvalidation);
 
             setReviewIdToDelete(null);
-          } catch (error: any) {
+          } catch (error: unknown) {
             console.error('Chyba pri vymazávaní recenzie:', error);
-            alert(error?.response?.data?.error || 'Nepodarilo sa vymazať recenziu.');
+            alert(getFieldErrorMessage(error, 'Nepodarilo sa vymazať recenziu.'));
           } finally {
             setIsDeletingReview(false);
           }
@@ -580,17 +645,13 @@ export default function OfferReviewsView({
             setReviewToEdit(null);
             
             return { success: true };
-          } catch (error: any) {
+          } catch (error: unknown) {
             console.error('Chyba pri ukladaní recenzie:', error);
-            const errorMessage =
-              error?.response?.data?.error ||
-              error?.response?.data?.rating?.[0] ||
-              error?.response?.data?.pros?.[0] ||
-              error?.response?.data?.cons?.[0] ||
-              error?.response?.data?.text?.[0] ||
-              error?.message ||
+            // Fallback zahŕňa error.message (zachované správanie) + lokalizovaný text.
+            const fallback =
+              (error as { message?: string })?.message ||
               (reviewToEdit ? 'Nepodarilo sa upraviť recenziu.' : 'Nepodarilo sa pridať recenziu. Skús to znova.');
-            throw new Error(errorMessage);
+            throw new Error(getFieldErrorMessage(error, fallback));
           }
         }}
       />

@@ -49,6 +49,55 @@ class TestAnonymizeUser(APITestCase):
         # Vlastný obsah zmazaný.
         assert OfferedSkill.objects.filter(user=u).count() == 0
 
+    def test_reviews_written_and_received_are_deleted_foreign_kept(self):
+        """GDPR: recenzie napísané (reviewer) aj PRIJATÉ (reviewed_user)
+        anonymizovaným používateľom sa mažú; cudzie recenzie ostávajú.
+
+        Pred Fázou 1 zanikali prijaté recenzie cez CASCADE pri zmazaní ponúk;
+        po prechode na Review.offer=SET_NULL to musí zabezpečiť reviewed_user vetva.
+        """
+        from decimal import Decimal
+
+        from accounts.models import Review
+
+        alice = _make_user()
+        bob = _make_user(username="bob", email="bob@example.com")
+        carol = _make_user(username="carol", email="carol@example.com")
+
+        alice_offer = OfferedSkill.objects.create(
+            user=alice, category="IT", subcategory="Web"
+        )
+        bob_offer = OfferedSkill.objects.create(
+            user=bob, category="IT", subcategory="Design"
+        )
+        carol_offer = OfferedSkill.objects.create(
+            user=carol, category="IT", subcategory="SEO"
+        )
+
+        received = Review.objects.create(
+            reviewer=bob, offer=alice_offer, rating=Decimal("5.0"), text="prijata"
+        )
+        written = Review.objects.create(
+            reviewer=alice, offer=bob_offer, rating=Decimal("4.0"), text="napisana"
+        )
+        foreign = Review.objects.create(
+            reviewer=bob, offer=carol_offer, rating=Decimal("3.0"), text="cudzia"
+        )
+        assert received.reviewed_user_id == alice.id
+
+        # Reálny scenár: ponuka bola zmazaná ešte PRED anonymizáciou → SET_NULL
+        # osirotí prijatú recenziu (offer=None), väzba na alice ostáva cez
+        # reviewed_user. Anonymizácia ju musí zmazať práve cez reviewed_user vetvu.
+        alice_offer.delete()
+        received.refresh_from_db()
+        assert received.offer_id is None
+
+        anonymize_user(alice)
+
+        assert not Review.objects.filter(pk=received.pk).exists()
+        assert not Review.objects.filter(pk=written.pk).exists()
+        assert Review.objects.filter(pk=foreign.pk).exists()
+
     def test_actor_notifications_pii_scrubbed(self):
         # BOD 1 (GDPR): notifikácie INÝCH používateľov, kde je zmazaný user aktér,
         # majú jeho denormalizované meno v title/body prepísané na neutrálnu hodnotu.
@@ -81,6 +130,40 @@ class TestAnonymizeUser(APITestCase):
         # Cieľ actor FK je anonymizovaný (žiadne PII neuniká cez FK).
         actor.refresh_from_db()
         assert actor.first_name == "" and actor.last_name == ""
+
+    def test_notification_serializer_marks_anonymized_actor_as_deleted(self):
+        """Serializovaný aktér anonymizovaného účtu má is_deleted=True a NEvracia
+        surové 'deleted-user-<uuid>' meno/slug/avatar – FE zobrazí preklad
+        'Zmazaný používateľ'. (Zdrojom zobrazeného mena je actor.display_name.)"""
+        from accounts.models import Notification, NotificationType
+        from accounts.notification_serializers import NotificationSerializer
+
+        actor = _make_user(username="seract", email="seract@example.com")
+        recipient = _make_user(username="serrec", email="serrec@example.com")
+        notif = Notification.objects.create(
+            user=recipient,
+            actor=actor,
+            type=NotificationType.REVIEW_CREATED,
+            title="Nová recenzia",
+            body="X napísal recenziu.",
+            data={"review_id": 1},
+        )
+
+        # Bežný aktér → skutočné meno, is_deleted False.
+        before = NotificationSerializer(notif).data
+        assert before["actor"]["is_deleted"] is False
+        assert before["actor"]["display_name"]
+        assert "deleted-user-" not in before["actor"]["display_name"]
+
+        anonymize_user(actor)
+        notif.refresh_from_db()
+
+        # Anonymizovaný aktér → is_deleted True, žiadne surové meno/slug/avatar.
+        after = NotificationSerializer(notif).data
+        assert after["actor"]["is_deleted"] is True
+        assert after["actor"]["display_name"] == ""
+        assert after["actor"]["slug"] is None
+        assert after["actor"]["avatar_url"] is None
 
     def test_avatar_deleted_after_successful_commit(self):
         # BOD 1: avatar súbor sa zmaže AŽ po úspešnom commite (cez on_commit).

@@ -11,6 +11,10 @@ class ReviewSerializer(serializers.ModelSerializer):
         source="reviewer.display_name", read_only=True
     )
     reviewer_avatar_url = serializers.SerializerMethodField()
+    # Denormalizovaný vlastník pôvodnej ponuky. Číta priamo FK stĺpec (bez joinu),
+    # aby FE vedel presmerovať na profil recenzovaného aj keď bola ponuka zmazaná
+    # (offer=None). Pozri Fáza 1 – Review.reviewed_user.
+    reviewed_user_id = serializers.IntegerField(read_only=True)
     likes_count = serializers.SerializerMethodField()
     is_liked_by_me = serializers.SerializerMethodField()
 
@@ -21,6 +25,7 @@ class ReviewSerializer(serializers.ModelSerializer):
             "reviewer_id",
             "reviewer_display_name",
             "reviewer_avatar_url",
+            "reviewed_user_id",
             "offer",
             "rating",
             "text",
@@ -38,6 +43,7 @@ class ReviewSerializer(serializers.ModelSerializer):
             "reviewer_id",
             "reviewer_display_name",
             "reviewer_avatar_url",
+            "reviewed_user_id",
             "offer",
             "owner_responded_at",
             "likes_count",

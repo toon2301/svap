@@ -164,8 +164,10 @@ describe('Dashboard', () => {
     });
 
     fireEvent.click(screen.getByText('Nastavenia'));
-    // obsah nastaví nadpis Nastavenia, nemusíme čakať na animáciu
-    expect(screen.getAllByText('Nastavenia').length).toBeGreaterThan(0);
+    await waitFor(() => {
+      expect(screen.getAllByText('Upraviť profil').length).toBeGreaterThan(1);
+      expect(screen.getAllByText('Nastavenia').length).toBeGreaterThan(1);
+    });
   });
 
   it('clears tokens and redirects on API error', async () => {

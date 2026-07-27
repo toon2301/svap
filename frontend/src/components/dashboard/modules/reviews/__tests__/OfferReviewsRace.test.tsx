@@ -20,7 +20,10 @@ jest.mock('@/contexts/AuthContext', () => ({ useAuth: () => ({ user: { id: 1 } }
 jest.mock('@/contexts/LanguageContext', () => ({
   useLanguage: () => ({ t: (_k: string, fb: string) => fb }),
 }));
-jest.mock('next/navigation', () => ({ useSearchParams: () => new URLSearchParams() }));
+jest.mock('next/navigation', () => ({
+  useSearchParams: () => new URLSearchParams(),
+  useRouter: () => ({ push: jest.fn() }),
+}));
 jest.mock('../../profile/profileOffersCache', () => ({ invalidateOffersCache: jest.fn() }));
 
 // Ľahké mocky child komponentov: desktop vykreslí ID recenzií + load-more tlačidlo.

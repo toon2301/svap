@@ -1,6 +1,38 @@
 from rest_framework import serializers
 
-from .models import Notification, NotificationType
+from .models import Notification, NotificationType, OfferedSkill
+
+_REVIEW_NOTIFICATION_TYPES = (
+    NotificationType.REVIEW_CREATED,
+    NotificationType.REVIEW_REPLY_CREATED,
+    NotificationType.REVIEW_LIKED,
+)
+
+
+def existing_review_offer_ids(notifications) -> set[int]:
+    """Množina offer_id z review-notifikácií, ktorých ponuka v DB reálne existuje.
+
+    Slúži ako context pre ``NotificationSerializer`` pri serializácii ZOZNAMU:
+    historicky kladné offer_id, ktorého ponuka už bola zmazaná, nesmie viesť na
+    neexistujúcu ponuku – ``get_target_url`` použije fallback na profil. Jeden
+    dotaz (``id__in``) pre celú stránku → žiadny N+1.
+    """
+    offer_ids: set[int] = set()
+    for notification in notifications:
+        if getattr(notification, "type", None) not in _REVIEW_NOTIFICATION_TYPES:
+            continue
+        data = notification.data if isinstance(notification.data, dict) else {}
+        try:
+            offer_id = int(data.get("offer_id") or 0)
+        except (TypeError, ValueError):
+            offer_id = 0
+        if offer_id > 0:
+            offer_ids.add(offer_id)
+    if not offer_ids:
+        return set()
+    return set(
+        OfferedSkill.objects.filter(id__in=offer_ids).values_list("id", flat=True)
+    )
 
 
 class NotificationSerializer(serializers.ModelSerializer):
@@ -31,24 +63,31 @@ class NotificationSerializer(serializers.ModelSerializer):
         if actor is None:
             return None
 
+        # Anonymizovaný/zmazaný účet (is_active=False): nevracaj meno/slug/avatar
+        # (sú anonymizované na "deleted-user-<uuid>"). Frontend zobrazí preložené
+        # "Zmazaný používateľ". Rovnaký vzor ako messaging serialize_user_brief.
+        is_deleted = not getattr(actor, "is_active", True)
+
         avatar_url = None
-        try:
-            if actor.avatar and hasattr(actor.avatar, "url"):
-                request = self.context.get("request")
-                avatar_url = (
-                    request.build_absolute_uri(actor.avatar.url)
-                    if request
-                    else actor.avatar.url
-                )
-        except Exception:
-            avatar_url = None
+        if not is_deleted:
+            try:
+                if actor.avatar and hasattr(actor.avatar, "url"):
+                    request = self.context.get("request")
+                    avatar_url = (
+                        request.build_absolute_uri(actor.avatar.url)
+                        if request
+                        else actor.avatar.url
+                    )
+            except Exception:
+                avatar_url = None
 
         return {
             "id": actor.id,
-            "display_name": getattr(actor, "display_name", "") or "",
-            "slug": getattr(actor, "slug", None),
+            "display_name": "" if is_deleted else (getattr(actor, "display_name", "") or ""),
+            "slug": None if is_deleted else getattr(actor, "slug", None),
             "user_type": getattr(actor, "user_type", None),
             "avatar_url": avatar_url,
+            "is_deleted": is_deleted,
         }
 
     def get_target_url(self, obj):
@@ -112,11 +151,28 @@ class NotificationSerializer(serializers.ModelSerializer):
                 review_id = int(data.get("review_id") or 0)
             except (TypeError, ValueError):
                 review_id = 0
-            if offer_id > 0:
+            # Historicky kladné offer_id ešte neznamená, že ponuka existuje – mohla
+            # byť odvtedy zmazaná. Pri serializácii zoznamu dostaneme cez context
+            # množinu reálne existujúcich offer_id (jeden dotaz). Ak context chýba
+            # (napr. realtime push čerstvej notifikácie, kde je ponuka aktuálna),
+            # zachováme pôvodné správanie.
+            existing_offer_ids = self.context.get("existing_review_offer_ids")
+            offer_exists = offer_id > 0 and (
+                existing_offer_ids is None or offer_id in existing_offer_ids
+            )
+            if offer_exists:
                 if review_id > 0:
                     target_url = f"/dashboard/offers/{offer_id}/reviews?review_id={review_id}"
                     if obj.type == NotificationType.REVIEW_REPLY_CREATED:
                         return f"{target_url}&modal=owner_response"
                     return target_url
                 return f"/dashboard/offers/{offer_id}/reviews"
+            # Ponuka neexistuje (zmazaná) alebo offer_id v data chýba → nasmerujeme
+            # na profil recenzovaného používateľa (rovnaký fallback pre obe situácie).
+            try:
+                reviewed_user_id = int(data.get("reviewed_user_id") or 0)
+            except (TypeError, ValueError):
+                reviewed_user_id = 0
+            if review_id > 0 and reviewed_user_id > 0:
+                return f"/dashboard/users/{reviewed_user_id}"
         return None

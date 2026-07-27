@@ -82,11 +82,11 @@ class Command(BaseCommand):
     def _delete_accounts_protect_records(self):
         """Vymaže accounts záznamy s PROTECT FK na User (mimo messaging)."""
         try:
-            from accounts.models import SkillRequestTermination
+            from accounts.models import Review, SkillRequestTermination
         except ImportError as exc:
             self.stdout.write(
                 self.style.WARNING(
-                    f"Varovanie: SkillRequestTermination nie je dostupny ({exc}), preskakujem."
+                    f"Varovanie: PROTECT modely nie su dostupne ({exc}), preskakujem."
                 )
             )
             return
@@ -94,6 +94,12 @@ class Command(BaseCommand):
         self._safe_delete_step(
             "ukoncenia spoluprac (SkillRequestTermination)",
             SkillRequestTermination.objects.all(),
+        )
+        # Review.reviewed_user je PROTECT → recenzie treba zmazať pred User.delete(),
+        # inak celý príkaz spadne na ProtectedError. (ReviewLike sa zmaže cez CASCADE.)
+        self._safe_delete_step(
+            "recenzie (Review)",
+            Review.objects.all(),
         )
 
     def handle(self, *args, **options):

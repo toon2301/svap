@@ -6,6 +6,7 @@ import { type User } from '@/types';
 import { type SearchUserResult } from '../modules/search/types';
 import { primeUserSlugId } from '../modules/profile/profileUserCache';
 import { type UseDashboardStateResult } from './useDashboardState';
+import { createDesktopSettingsReturnTarget } from './desktopSettingsNavigation';
 
 export interface DashboardNavigationProps {
   handleMainModuleChange: (moduleId: string) => void;
@@ -58,6 +59,7 @@ export function useDashboardNavigation({
     setIsRightSidebarOpen,
     setActiveRightItem,
     openOwnProfileEdit,
+    openDesktopSettings,
     closeOwnProfileEdit,
     handleModuleChange,
     setIsMobileMenuOpen,
@@ -84,6 +86,18 @@ export function useDashboardNavigation({
 
     // Pri prepnutí hlavného modulu zatvor vyhľadávací panel
     setIsSearchOpen(false);
+
+    const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 1024;
+    if (moduleId === 'settings' && isDesktop) {
+      const currentUrl =
+        typeof window !== 'undefined'
+          ? `${window.location.pathname}${window.location.search}${window.location.hash}`
+          : '/dashboard';
+      openDesktopSettings(
+        createDesktopSettingsReturnTarget(activeModule, currentUrl),
+      );
+      return;
+    }
 
     // Synchronizuj URL s hlavnými sekciami dashboardu - použijeme window.history.pushState bez reloadu
     let url = '/dashboard';
@@ -131,7 +145,9 @@ export function useDashboardNavigation({
     setHighlightedSkillId,
     highlightTimeoutRef,
     setIsSearchOpen,
-    handleModuleChange
+    handleModuleChange,
+    activeModule,
+    openDesktopSettings,
   ]);
 
   // Edit profile navigácia
@@ -317,7 +333,10 @@ export function useDashboardNavigation({
   }, [setActiveModule, setIsRightSidebarOpen, setActiveRightItem]);
 
   const handleRightSidebarClose = useCallback(() => {
-    if (activeModule === 'profile' && activeRightItem === 'edit-profile') {
+    if (
+      (activeModule === 'profile' || activeModule === 'settings') &&
+      activeRightItem === 'edit-profile'
+    ) {
       closeOwnProfileEdit();
       return;
     }
