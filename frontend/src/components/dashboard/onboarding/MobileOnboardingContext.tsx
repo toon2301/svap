@@ -37,7 +37,7 @@ import {
 } from './profileEditTutorialLogic';
 
 export const ONBOARDING_TARGETS = {
-  home: '[data-onboarding="home-content"]',
+  home: '[data-onboarding="home-welcome"]',
   profileIcon: '[data-onboarding="profile-icon"]',
   profileEditButton: '[data-onboarding="profile-edit-button"]',
   profileSkillsButton: '[data-onboarding="profile-skills-button"]',
