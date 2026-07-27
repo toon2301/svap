@@ -3,12 +3,13 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from accounts.models import ProfileLike
 from accounts.services.settings import (
     apply_dashboard_settings_patch,
     build_dashboard_settings_payload,
 )
 from swaply.rate_limiting import api_rate_limit
+
+from .dashboard_stats import profile_likes_count
 
 
 @api_view(["GET", "PUT", "PATCH"])
@@ -38,7 +39,7 @@ def dashboard_profile_view(request):
             "instagram": user.instagram,
             "is_verified": user.is_verified,
             "is_public": user.is_public,
-            "profile_likes_count": ProfileLike.objects.filter(profile_user=user).count(),
+            "profile_likes_count": profile_likes_count(user),
             "is_profile_liked_by_me": False,
             "created_at": user.created_at,
             "updated_at": user.updated_at,

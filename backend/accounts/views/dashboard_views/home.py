@@ -8,13 +8,21 @@ from swaply.rate_limiting import api_rate_limit
 from ...models import FavoriteUser
 from ...serializers import UserProfileSerializer
 from ...services.user_blocks import exclude_blocked_users
+from .dashboard_stats import (
+    active_exchanges_count,
+    average_rating,
+    completed_exchanges_count,
+    profile_completion_rate,
+    profile_likes_count,
+    skills_count,
+)
 
 
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 @api_rate_limit
 def dashboard_home_view(request):
-    """Dashboard home - zÃ¡kladnÃ© Å¡tatistiky a informÃ¡cie"""
+    """Dashboard home - reálne štatistiky prihláseného používateľa."""
     user = request.user
     favorites_count = exclude_blocked_users(
         FavoriteUser.objects.filter(user=user),
@@ -23,21 +31,25 @@ def dashboard_home_view(request):
     ).count()
 
     stats = {
-        "skills_count": 0,  # PoÄet zruÄnostÃ­ pouÅ¾Ã­vateÄ¾a
-        "active_exchanges": 0,  # AktÃ­vne vÃ½meny
-        "completed_exchanges": 0,  # DokonÄenÃ© vÃ½meny
+        "skills_count": skills_count(user),  # počet vlastných ponúk
+        "active_exchanges": active_exchanges_count(user),  # neterminálne výmeny
+        "completed_exchanges": completed_exchanges_count(user),  # dokončené výmeny
+        # completion_rate/average_rating: None keď zatiaľ nie sú dáta (FE zobrazí "—").
+        "completion_rate": profile_completion_rate(user),
+        "average_rating": average_rating(user),
         "favorites_count": favorites_count,
+        "profile_likes_count": profile_likes_count(user),
         "profile_completeness": user.profile_completeness,
     }
 
-    # PoslednÃ© aktivity (zatiaÄ¾ prÃ¡zdne)
+    # Posledné aktivity (feed) – samostatná neskoršia fáza.
     recent_activities = []
 
-    # User pre dashboard SSR/initial state musÃ­ obsahovaÅ¥ aj privacy flagy (napr. contact_email_visible),
-    # inak sa po reloade UI prepÃ­naÄe resetujÃº na defaulty.
+    # User pre dashboard SSR/initial state musí obsahovať aj privacy flagy (napr.
+    # contact_email_visible), inak sa po reloade UI prepínače resetujú na defaulty.
     user_data = UserProfileSerializer(user, context={"request": request}).data
 
-    resp = Response(
+    return Response(
         {
             "stats": stats,
             "recent_activities": recent_activities,
@@ -45,4 +57,3 @@ def dashboard_home_view(request):
         },
         status=status.HTTP_200_OK,
     )
-    return resp

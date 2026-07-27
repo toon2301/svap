@@ -2,6 +2,8 @@
 Testy pre dashboard views
 """
 
+from decimal import Decimal
+
 from django.test import TestCase
 from django.db import connection
 from django.core.cache import cache
@@ -18,9 +20,12 @@ from accounts.models import (
     FavoriteUser,
     OfferedSkill,
     OfferedSkillImage,
+    ProfileLike,
     Review,
     SkillRequest,
     SkillRequestStatus,
+    SkillRequestTermination,
+    SkillRequestTerminationReason,
 )
 from accounts.viewer_location_cache import (
     _viewer_location_cache_key,
@@ -78,6 +83,96 @@ class DashboardViewsTestCase(TestCase):
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    # ── Dashboard home – reálne štatistiky (Fáza 2) ──────────────────────────
+    def _mk_offer(self, owner, sub):
+        return OfferedSkill.objects.create(user=owner, category="IT", subcategory=sub)
+
+    def _mk_request(self, requester, recipient, offer, status_value, reason=None):
+        req = SkillRequest.objects.create(
+            requester=requester,
+            recipient=recipient,
+            offer=offer,
+            status=status_value,
+        )
+        if reason is not None:
+            SkillRequestTermination.objects.create(
+                skill_request=req, terminated_by=requester, reason=reason
+            )
+        return req
+
+    def test_dashboard_home_view_returns_real_stats(self):
+        """Reálne hodnoty pre pripravený scenár (nie natvrdo nuly)."""
+        u, other = self.user, self.other_user
+
+        # 2 vlastné ponuky → skills_count=2; zároveň nesú recenzie na usera.
+        off_a = self._mk_offer(u, "A")
+        off_b = self._mk_offer(u, "B")
+        Review.objects.create(reviewer=other, offer=off_a, rating=Decimal("4.0"), text="x")
+        Review.objects.create(reviewer=other, offer=off_b, rating=Decimal("5.0"), text="y")
+        ProfileLike.objects.create(profile_user=u, user=other)
+
+        # Ponuky pre výmeny (owner nemá vplyv – filter je podľa requester/recipient).
+        e = [self._mk_offer(other, f"E{i}") for i in range(8)]
+        # Aktívne (3): user ako requester aj recipient.
+        self._mk_request(u, other, e[0], SkillRequestStatus.PENDING)
+        self._mk_request(other, u, e[1], SkillRequestStatus.ACCEPTED)
+        self._mk_request(u, other, e[2], SkillRequestStatus.COMPLETION_REQUESTED)
+        # Dokončené (2).
+        self._mk_request(u, other, e[3], SkillRequestStatus.COMPLETED)
+        self._mk_request(other, u, e[4], SkillRequestStatus.COMPLETED)
+        # Terminated (1, bežný dôvod) → do menovateľa completion_rate.
+        self._mk_request(
+            u, other, e[5], SkillRequestStatus.TERMINATED,
+            reason=SkillRequestTerminationReason.NO_TIME,
+        )
+        # Zamietnuté/zrušené → nikam sa nerátajú.
+        self._mk_request(u, other, e[6], SkillRequestStatus.REJECTED)
+        self._mk_request(u, other, e[7], SkillRequestStatus.CANCELLED)
+
+        response = self.client.get(reverse("accounts:dashboard_home"))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        stats = response.data["stats"]
+
+        self.assertEqual(stats["skills_count"], 2)
+        self.assertEqual(stats["active_exchanges"], 3)
+        self.assertEqual(stats["completed_exchanges"], 2)
+        self.assertAlmostEqual(stats["completion_rate"], 2 / 3)
+        self.assertEqual(stats["average_rating"], 4.5)
+        self.assertEqual(stats["profile_likes_count"], 1)
+        self.assertEqual(stats["favorites_count"], 0)
+
+    def test_dashboard_home_view_empty_user_none_stats(self):
+        """Používateľ bez aktivity → completion_rate/average_rating None, počty 0."""
+        response = self.client.get(reverse("accounts:dashboard_home"))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        stats = response.data["stats"]
+
+        self.assertEqual(stats["skills_count"], 0)
+        self.assertEqual(stats["active_exchanges"], 0)
+        self.assertEqual(stats["completed_exchanges"], 0)
+        self.assertIsNone(stats["completion_rate"])
+        self.assertIsNone(stats["average_rating"])
+        self.assertEqual(stats["profile_likes_count"], 0)
+
+    def test_dashboard_home_completion_rate_ignores_block_terminated(self):
+        """completion_rate vylučuje TERMINATED spôsobené blokovaním."""
+        u, other = self.user, self.other_user
+        e = [self._mk_offer(other, f"B{i}") for i in range(3)]
+
+        self._mk_request(u, other, e[0], SkillRequestStatus.COMPLETED)
+        self._mk_request(
+            u, other, e[1], SkillRequestStatus.TERMINATED,
+            reason=SkillRequestTerminationReason.NO_TIME,  # počíta sa
+        )
+        self._mk_request(
+            u, other, e[2], SkillRequestStatus.TERMINATED,
+            reason=SkillRequestTerminationReason.INTERACTION_UNAVAILABLE,  # vylúčené
+        )
+
+        response = self.client.get(reverse("accounts:dashboard_home"))
+        # completed=1, terminated(non-block)=1 → 1/2 = 0.5
+        self.assertEqual(response.data["stats"]["completion_rate"], 0.5)
 
     def test_dashboard_search_view_success(self):
         """Test úspešného vyhľadávania"""
