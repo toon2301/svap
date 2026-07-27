@@ -85,6 +85,13 @@ class TestAnonymizeUser(APITestCase):
         )
         assert received.reviewed_user_id == alice.id
 
+        # Reálny scenár: ponuka bola zmazaná ešte PRED anonymizáciou → SET_NULL
+        # osirotí prijatú recenziu (offer=None), väzba na alice ostáva cez
+        # reviewed_user. Anonymizácia ju musí zmazať práve cez reviewed_user vetvu.
+        alice_offer.delete()
+        received.refresh_from_db()
+        assert received.offer_id is None
+
         anonymize_user(alice)
 
         assert not Review.objects.filter(pk=received.pk).exists()

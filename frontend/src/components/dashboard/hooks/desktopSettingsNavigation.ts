@@ -138,7 +138,8 @@ export function readDesktopSettingsReturnTarget(
 }
 
 export function getDesktopSettingsSectionPath(section: string): string | null {
-  return section in SECTION_PATHS
+  // Object.hasOwn: nečítať zdedené properties (toString/constructor/valueOf…).
+  return Object.hasOwn(SECTION_PATHS, section)
     ? SECTION_PATHS[section as DesktopSettingsSection]
     : null;
 }
@@ -146,7 +147,8 @@ export function getDesktopSettingsSectionPath(section: string): string | null {
 export function getDesktopSettingsSectionFromModule(
   moduleId: string | null | undefined,
 ): DesktopSettingsSection | null {
-  return moduleId ? MODULE_SECTIONS[moduleId] ?? null : null;
+  if (!moduleId || !Object.hasOwn(MODULE_SECTIONS, moduleId)) return null;
+  return MODULE_SECTIONS[moduleId] ?? null;
 }
 
 export function getDesktopSettingsSectionFromPath(

@@ -23,6 +23,7 @@ import type { RequestsRouteIntent } from './modules/requests/requestsRouting';
 import type { DashboardSkill } from './hooks/useSkillsModals';
 import type { Offer } from './modules/profile/profileOffersTypes';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useIsMobile } from '@/hooks';
 import { SearchUserProfileModule } from './modules/search/SearchUserProfileModule';
 import OfferReviewsView from './modules/reviews/OfferReviewsView';
 import PortfolioDetailModule from './modules/profile/PortfolioDetailModule';
@@ -144,6 +145,7 @@ export default function ModuleRouter({
   onMobileAccountSettingsViewChange,
 }: ModuleRouterProps) {
   const { t } = useLanguage();
+  const isMobile = useIsMobile();
 
   const renderOwnProfile = (isEditMode: boolean) => (
     <ProfileModule
@@ -292,9 +294,13 @@ export default function ModuleRouter({
     case 'settings':
       return (
         <div>
-          <div className="hidden lg:block">
-            {renderOwnProfile(true)}
-          </div>
+          {/* Na mobile sa ProfileModule vôbec nemountuje (žiadne zbytočné efekty),
+              zobrazí sa len placeholder. Na desktope beží plnohodnotný settings. */}
+          {!isMobile && (
+            <div className="hidden lg:block">
+              {renderOwnProfile(true)}
+            </div>
+          )}
           <div className="text-center py-20 lg:hidden">
             <h2 className="text-2xl font-semibold text-gray-600 mb-4">
               {t('navigation.settings', 'Nastavenia')}

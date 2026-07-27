@@ -169,14 +169,17 @@ describe('OfferReviewsView – notifikácia na recenziu so zmazanou ponukou', ()
     );
 
     // Až teraz dorazí neskorá odpoveď pre pôvodnú ponuku 5 (offer=null).
+    // act(async) deterministicky spláchne async pokračovanie handlera – bez
+    // ručného počítania Promise tickov.
     await act(async () => {
       resolveReviewDetail!({ data: { offer: null, reviewed_user_id: 42 } });
-      await Promise.resolve();
     });
 
     // Kontext sa zmenil (offerId je už 7) → žiadny toast, žiadne presmerovanie.
-    expect(mockToast).not.toHaveBeenCalled();
-    expect(goToUserProfileIdentifiers(dispatchSpy)).toHaveLength(0);
+    await waitFor(() => {
+      expect(mockToast).not.toHaveBeenCalled();
+      expect(goToUserProfileIdentifiers(dispatchSpy)).toHaveLength(0);
+    });
 
     dispatchSpy.mockRestore();
   });
@@ -251,17 +254,18 @@ describe('OfferReviewsView – notifikácia na recenziu so zmazanou ponukou', ()
       expect(screen.getByTestId('offer-state')).toHaveTextContent('offer-loaded'),
     );
 
-    // Až teraz dorazí neskoré 404 pre pôvodnú ponuku 5.
+    // Až teraz dorazí neskoré 404 pre pôvodnú ponuku 5. act(async) deterministicky
+    // spláchne catch vetvu handlera – bez ručného počítania Promise tickov.
     await act(async () => {
       rejectReviewDetail!({ response: { status: 404 } });
-      await Promise.resolve();
-      await Promise.resolve();
     });
 
     // Stale kontext → catch vetva nič nespraví.
-    expect(mockToast).not.toHaveBeenCalled();
-    expect(mockRouterPush).not.toHaveBeenCalled();
-    expect(goToUserProfileIdentifiers(dispatchSpy)).toHaveLength(0);
+    await waitFor(() => {
+      expect(mockToast).not.toHaveBeenCalled();
+      expect(mockRouterPush).not.toHaveBeenCalled();
+      expect(goToUserProfileIdentifiers(dispatchSpy)).toHaveLength(0);
+    });
 
     dispatchSpy.mockRestore();
   });

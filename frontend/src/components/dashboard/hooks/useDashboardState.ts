@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useLayoutEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import type { User } from '../../../types';
 import { clearAuthState } from '../../../utils/auth';
@@ -20,6 +20,11 @@ import {
   withoutDesktopSettingsHistory,
   type DesktopSettingsReturnTarget,
 } from './desktopSettingsNavigation';
+
+// Izomorfný layout-effect: v prehliadači beží pred vykreslením (bez viditeľného
+// bliku pri obnove modulu), pri SSR degraduje na useEffect (žiadny React warning).
+const useIsomorphicLayoutEffect =
+  typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 
 type AccountType = 'personal' | 'business';
 
@@ -89,7 +94,8 @@ export function useDashboardState(initialUser?: User, initialModule?: string): U
 
   // Pri client-side navigácii môže rovnaká inštancia Dashboardu dostať nový
   // `initialModule`. Desktopový settings marker navyše obnoví pravú sekciu po refreshi.
-  useEffect(() => {
+  // Layout-effect (izomorfný) → synchronizácia pred vykreslením, bez bliku obsahu.
+  useIsomorphicLayoutEffect(() => {
     if (!initialModule) return;
 
     const settingsSection = getDesktopSettingsSectionFromModule(initialModule);

@@ -731,6 +731,50 @@ class TestSkillRequestsAndNotifications(APITestCase):
         payload = NotificationSerializer(notification).data
         self.assertEqual(payload["target_url"], f"/dashboard/users/{self.owner.id}")
 
+    def test_review_notification_with_deleted_offer_falls_back_to_profile(self):
+        """Historicky kladné offer_id, ale ponuka bola odvtedy zmazaná → target_url
+        musí smerovať na profil recenzovaného, nie na neexistujúcu ponuku."""
+        from accounts.notification_serializers import (
+            NotificationSerializer,
+            existing_review_offer_ids,
+        )
+
+        review = Review.objects.create(
+            reviewer=self.requester, offer=self.offer, rating="5.0", text="rec"
+        )
+        liker = UserFactory()
+        notification = Notification.objects.create(
+            user=self.requester,
+            actor=liker,
+            type=NotificationType.REVIEW_LIKED,
+            title="Páči sa mi tvoja recenzia",
+            data={
+                "review_id": review.id,
+                "offer_id": self.offer.id,  # v čase vzniku platné, kladné
+                "reviewed_user_id": review.reviewed_user_id,
+                "from_user_id": liker.id,
+            },
+        )
+
+        # Kým ponuka existuje → cieľ vedie na jej recenzie.
+        ctx_before = {
+            "existing_review_offer_ids": existing_review_offer_ids([notification])
+        }
+        before = NotificationSerializer(notification, context=ctx_before).data
+        self.assertEqual(
+            before["target_url"],
+            f"/dashboard/offers/{self.offer.id}/reviews?review_id={review.id}",
+        )
+
+        # Ponuka sa zmaže → data.offer_id ostáva (snapshot), ale ponuka už neexistuje.
+        self.offer.delete()
+
+        ctx_after = {
+            "existing_review_offer_ids": existing_review_offer_ids([notification])
+        }
+        after = NotificationSerializer(notification, context=ctx_after).data
+        self.assertEqual(after["target_url"], f"/dashboard/users/{self.owner.id}")
+
     def test_offer_like_toggle_updates_counts_and_notifies_owner_once(self):
         self.client.force_authenticate(user=self.requester)
         with self.captureOnCommitCallbacks(execute=True):
