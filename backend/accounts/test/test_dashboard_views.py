@@ -114,8 +114,9 @@ class DashboardViewsTestCase(TestCase):
 
         # Ponuky pre výmeny (owner nemá vplyv – filter je podľa requester/recipient).
         e = [self._mk_offer(other, f"E{i}") for i in range(8)]
-        # Aktívne (3): user ako requester aj recipient.
-        self._mk_request(u, other, e[0], SkillRequestStatus.PENDING)
+        # Aktívne = len ACCEPTED + COMPLETION_REQUESTED (2), user ako obe strany.
+        # PENDING sa NEzapočíta (zhodne s FE requestsRouting.ts – čaká sa na odpoveď).
+        self._mk_request(u, other, e[0], SkillRequestStatus.PENDING)  # NEráta sa
         self._mk_request(other, u, e[1], SkillRequestStatus.ACCEPTED)
         self._mk_request(u, other, e[2], SkillRequestStatus.COMPLETION_REQUESTED)
         # Dokončené (2).
@@ -135,7 +136,7 @@ class DashboardViewsTestCase(TestCase):
         stats = response.data["stats"]
 
         self.assertEqual(stats["skills_count"], 2)
-        self.assertEqual(stats["active_exchanges"], 3)
+        self.assertEqual(stats["active_exchanges"], 2)  # PENDING (e[0]) vylúčené
         self.assertEqual(stats["completed_exchanges"], 2)
         self.assertAlmostEqual(stats["completion_rate"], 2 / 3)
         self.assertEqual(stats["average_rating"], 4.5)

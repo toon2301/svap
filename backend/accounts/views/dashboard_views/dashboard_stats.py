@@ -15,9 +15,11 @@ from ...models import (
     exclude_block_terminated_requests,
 )
 
-# Neterminálne (aktívne) stavy výmeny.
-ACTIVE_SKILL_REQUEST_STATUSES = (
-    SkillRequestStatus.PENDING,
+# "Aktívna výmena" = zhodne s FE requestsRouting.ts (active tab:
+# accepted,completion_requested). PENDING sa NEráta – čaká sa na odpoveď, ešte to
+# nie je rozbehnutá výmena. (Odlišné od skill_request_helpers.ACTIVE_SKILL_REQUEST_STATUSES,
+# ktoré značí "otvorené/neterminálne" požiadavky vrátane PENDING.)
+ACTIVE_EXCHANGE_STATUSES = (
     SkillRequestStatus.ACCEPTED,
     SkillRequestStatus.COMPLETION_REQUESTED,
 )
@@ -36,10 +38,10 @@ def skills_count(user) -> int:
 
 
 def active_exchanges_count(user) -> int:
-    """Aktívne výmeny (PENDING/ACCEPTED/COMPLETION_REQUESTED), user ako ktorákoľvek strana."""
+    """Aktívne výmeny (ACCEPTED/COMPLETION_REQUESTED), user ako ktorákoľvek strana."""
     return SkillRequest.objects.filter(
         _as_participant(user),
-        status__in=ACTIVE_SKILL_REQUEST_STATUSES,
+        status__in=ACTIVE_EXCHANGE_STATUSES,
     ).count()
 
 
