@@ -195,6 +195,18 @@
     "redirectingToDashboard": "Redirecting to dashboard..."
   },
   "dashboard": {
+    "homeIntro": "This is your personal dashboard where you can manage your profile and share your skills.",
+    "profileCompleteness": "Profile completeness",
+    "profileCompletenessHint": "Complete your profile for better visibility",
+    "quickActions": "Quick actions",
+    "actionAddSkill": "Add a skill",
+    "actionAddSkillHint": "Share your expertise",
+    "actionSearch": "Search skills",
+    "actionSearchHint": "Find what you need",
+    "actionEditProfile": "Edit profile",
+    "actionEditProfileHint": "Update your details",
+    "actionMessages": "Messages",
+    "actionMessagesHint": "Communicate with others",
     "statSkills": "Offers",
     "statActiveExchanges": "Active exchanges",
     "statCompletedExchanges": "Completed exchanges",

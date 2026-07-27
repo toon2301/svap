@@ -1,5 +1,5 @@
 import type { HTMLAttributes, ReactNode } from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import HomeModule from '../modules/HomeModule';
 import { User } from '@/types';
@@ -151,5 +151,39 @@ describe('HomeModule', () => {
     expect(screen.getByText('Hľadať zručnosti')).toBeInTheDocument();
     expect(screen.getByText('Upraviť profil')).toBeInTheDocument();
     expect(screen.getByText('Správy')).toBeInTheDocument();
+  });
+
+  it('wires quick actions to real navigation', () => {
+    const setActiveModule = jest.fn();
+    const onEditProfileClick = jest.fn();
+    const onSkillsOfferClick = jest.fn();
+    render(
+      <HomeModule
+        user={mockUser}
+        setActiveModule={setActiveModule}
+        onEditProfileClick={onEditProfileClick}
+        onSkillsOfferClick={onSkillsOfferClick}
+      />,
+    );
+
+    fireEvent.click(screen.getByText('Pridať zručnosť'));
+    expect(onSkillsOfferClick).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByText('Upraviť profil'));
+    expect(onEditProfileClick).toHaveBeenCalledTimes(1);
+
+    fireEvent.click(screen.getByText('Hľadať zručnosti'));
+    expect(setActiveModule).toHaveBeenCalledWith('search');
+
+    fireEvent.click(screen.getByText('Správy'));
+    expect(setActiveModule).toHaveBeenCalledWith('messages');
+  });
+
+  it('welcome section carries the mobile-onboarding target (home-welcome)', () => {
+    render(<HomeModule user={mockUser} />);
+    const target = document.querySelector('[data-onboarding="home-welcome"]');
+    expect(target).toBeInTheDocument();
+    // Target je len uvítacia sekcia, nie celý komponent (obsahuje welcome text).
+    expect(target).toHaveTextContent('Vitaj v Svaply!');
   });
 });

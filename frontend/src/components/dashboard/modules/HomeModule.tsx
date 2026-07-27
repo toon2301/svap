@@ -8,6 +8,12 @@ import { api, endpoints } from '@/lib/api';
 
 interface HomeModuleProps {
   user: User;
+  /** Zmena aktívneho modulu (rovnaký vzor ako inde v ModuleRouteri). */
+  setActiveModule?: (moduleId: string) => void;
+  /** Otvorí editáciu profilu (handler z DashboardContent cez ModuleRouter). */
+  onEditProfileClick?: () => void;
+  /** Otvorí flow "ponúkam zručnosť" (handler z DashboardContent). */
+  onSkillsOfferClick?: () => void;
 }
 
 interface DashboardStats {
@@ -37,7 +43,12 @@ function formatRating(value: number | null | undefined): string {
   return typeof value === 'number' ? `${value.toFixed(1)} ★` : DASH;
 }
 
-export default function HomeModule({ user }: HomeModuleProps) {
+export default function HomeModule({
+  user,
+  setActiveModule,
+  onEditProfileClick,
+  onSkillsOfferClick,
+}: HomeModuleProps) {
   const { t } = useLanguage();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [statsLoading, setStatsLoading] = useState(true);
@@ -64,6 +75,16 @@ export default function HomeModule({ user }: HomeModuleProps) {
     };
   }, []);
 
+  // Prechod na iný modul – rovnaký vzor ako inde v ModuleRouteri (state + localStorage).
+  const goToModule = (moduleId: string) => {
+    setActiveModule?.(moduleId);
+    try {
+      localStorage.setItem('activeModule', moduleId);
+    } catch {
+      // ignore storage failures – navigácia stavom už prebehla
+    }
+  };
+
   const statCards: { key: string; label: string; value: string }[] = [
     { key: 'skills', label: t('dashboard.statSkills', 'Ponuky'), value: formatInt(stats?.skills_count) },
     { key: 'active', label: t('dashboard.statActiveExchanges', 'Aktívne výmeny'), value: formatInt(stats?.active_exchanges) },
@@ -73,6 +94,38 @@ export default function HomeModule({ user }: HomeModuleProps) {
     { key: 'likes', label: t('dashboard.statProfileLikes', 'Lajky profilu'), value: formatInt(stats?.profile_likes_count) },
   ];
 
+  const quickActions: {
+    key: string;
+    title: string;
+    hint: string;
+    onClick: () => void;
+  }[] = [
+    {
+      key: 'add-skill',
+      title: t('dashboard.actionAddSkill', 'Pridať zručnosť'),
+      hint: t('dashboard.actionAddSkillHint', 'Zdieľaj svoju expertízu'),
+      onClick: () => onSkillsOfferClick?.(),
+    },
+    {
+      key: 'search',
+      title: t('dashboard.actionSearch', 'Hľadať zručnosti'),
+      hint: t('dashboard.actionSearchHint', 'Nájdi čo potrebuješ'),
+      onClick: () => goToModule('search'),
+    },
+    {
+      key: 'edit-profile',
+      title: t('dashboard.actionEditProfile', 'Upraviť profil'),
+      hint: t('dashboard.actionEditProfileHint', 'Aktualizuj svoje údaje'),
+      onClick: () => onEditProfileClick?.(),
+    },
+    {
+      key: 'messages',
+      title: t('dashboard.actionMessages', 'Správy'),
+      hint: t('dashboard.actionMessagesHint', 'Komunikuj s ostatnými'),
+      onClick: () => goToModule('messages'),
+    },
+  ];
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -80,23 +133,26 @@ export default function HomeModule({ user }: HomeModuleProps) {
       transition={{ duration: 0.6 }}
       className="space-y-8"
     >
-      {/* Welcome section */}
+      {/* Welcome section – zároveň onboarding target "home-welcome" (mobilný onboarding). */}
       <div
         data-onboarding="home-welcome"
         className="bg-white rounded-lg shadow-sm border border-gray-200 p-6"
       >
         <h2 className="text-3xl font-bold text-gray-900 mb-4">
-          Vitaj v Svaply!
+          {t('dashboard.welcomeToSwaply', 'Vitaj v Svaply!')}
         </h2>
         <p className="text-gray-600 mb-6">
-          Toto je tvoj osobný dashboard, kde môžeš spravovať svoj profil a zdieľať svoje zručnosti.
+          {t(
+            'dashboard.homeIntro',
+            'Toto je tvoj osobný dashboard, kde môžeš spravovať svoj profil a zdieľať svoje zručnosti.',
+          )}
         </p>
 
         {/* Profile completeness */}
         <div className="bg-purple-50 rounded-lg p-4">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium text-purple-800">
-              Kompletnosť profilu
+              {t('dashboard.profileCompleteness', 'Kompletnosť profilu')}
             </span>
             <span className="text-sm text-purple-600">
               {user.profile_completeness}%
@@ -110,7 +166,7 @@ export default function HomeModule({ user }: HomeModuleProps) {
           </div>
           {user.profile_completeness < 100 && (
             <p className="text-xs text-purple-600 mt-2">
-              Dokončite svoj profil pre lepšiu viditeľnosť
+              {t('dashboard.profileCompletenessHint', 'Dokončite svoj profil pre lepšiu viditeľnosť')}
             </p>
           )}
         </div>
@@ -145,44 +201,22 @@ export default function HomeModule({ user }: HomeModuleProps) {
       {/* Quick actions */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">
-          Rýchle akcie
+          {t('dashboard.quickActions', 'Rýchle akcie')}
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <button className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-left">
-            <div className="text-sm font-medium text-gray-900 mb-1">
-              Pridať zručnosť
-            </div>
-            <div className="text-xs text-gray-500">
-              Zdieľaj svoju expertízu
-            </div>
-          </button>
-
-          <button className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-left">
-            <div className="text-sm font-medium text-gray-900 mb-1">
-              Hľadať zručnosti
-            </div>
-            <div className="text-xs text-gray-500">
-              Nájdi čo potrebuješ
-            </div>
-          </button>
-
-          <button className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-left">
-            <div className="text-sm font-medium text-gray-900 mb-1">
-              Upraviť profil
-            </div>
-            <div className="text-xs text-gray-500">
-              Aktualizuj svoje údaje
-            </div>
-          </button>
-
-          <button className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-left">
-            <div className="text-sm font-medium text-gray-900 mb-1">
-              Správy
-            </div>
-            <div className="text-xs text-gray-500">
-              Komunikuj s ostatnými
-            </div>
-          </button>
+          {quickActions.map((action) => (
+            <button
+              key={action.key}
+              type="button"
+              onClick={action.onClick}
+              className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-left focus:outline-none focus:ring-2 focus:ring-purple-400/60"
+            >
+              <div className="text-sm font-medium text-gray-900 mb-1">
+                {action.title}
+              </div>
+              <div className="text-xs text-gray-500">{action.hint}</div>
+            </button>
+          ))}
         </div>
       </div>
     </motion.div>

@@ -2,11 +2,22 @@ import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import type { User } from '@/types';
 
-// Stub HomeModule – overujeme len WIRING (že case 'home' ho renderuje), nie jeho vnútro.
+// Stub HomeModule – overujeme len WIRING (že case 'home' ho renderuje + dostáva
+// navigačné callbacky), nie jeho vnútro.
 jest.mock('../modules/HomeModule', () => ({
   __esModule: true,
-  default: ({ user }: { user: { id: number } }) => (
-    <div data-testid="home-module">HomeModule for {user.id}</div>
+  default: (props: {
+    user: { id: number };
+    setActiveModule?: unknown;
+    onEditProfileClick?: unknown;
+    onSkillsOfferClick?: unknown;
+  }) => (
+    <div
+      data-testid="home-module"
+      data-nav={`${typeof props.setActiveModule}|${typeof props.onEditProfileClick}|${typeof props.onSkillsOfferClick}`}
+    >
+      HomeModule for {props.user.id}
+    </div>
   ),
 }));
 jest.mock('@/contexts/LanguageContext', () => ({
@@ -55,23 +66,27 @@ function baseProps() {
     removeStandardCategory: jest.fn(),
     removeCustomCategory: jest.fn(),
     selectedSkillsCategory: null,
+    onEditProfileClick: jest.fn(),
+    onSkillsOfferClick: jest.fn(),
   };
 }
 
 describe('ModuleRouter – home', () => {
-  it('renders HomeModule for the "home" module, wrapped in the onboarding target', () => {
+  it('renders HomeModule for the "home" module and forwards navigation callbacks', () => {
     render(<ModuleRouter {...baseProps()} />);
 
     // HomeModule sa reálne renderuje (dostáva user prop).
     expect(screen.getByTestId('home-module')).toBeInTheDocument();
     expect(screen.getByText('HomeModule for 42')).toBeInTheDocument();
 
-    // Onboarding target ostáva zachovaný (mobilný onboarding sa naň viaže).
-    expect(
-      document.querySelector('[data-onboarding="home-content"]'),
-    ).toBeInTheDocument();
+    // Navigačné callbacky (N1) sa reálne posielajú do HomeModule.
+    expect(screen.getByTestId('home-module')).toHaveAttribute(
+      'data-nav',
+      'function|function|function',
+    );
 
-    // Pôvodný placeholder text sa už nezobrazuje.
+    // Pôvodný placeholder text sa už nezobrazuje (onboarding target "home-welcome"
+    // je teraz ohraničený vnútri HomeModule, nie na wrapperi).
     expect(
       screen.queryByText('Vyber si sekciu z navigácie pre pokračovanie.'),
     ).not.toBeInTheDocument();

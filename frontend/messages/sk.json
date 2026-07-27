@@ -195,6 +195,18 @@
     "redirectingToDashboard": "Presmerovávam na dashboard..."
   },
   "dashboard": {
+    "homeIntro": "Toto je tvoj osobný dashboard, kde môžeš spravovať svoj profil a zdieľať svoje zručnosti.",
+    "profileCompleteness": "Kompletnosť profilu",
+    "profileCompletenessHint": "Dokončite svoj profil pre lepšiu viditeľnosť",
+    "quickActions": "Rýchle akcie",
+    "actionAddSkill": "Pridať zručnosť",
+    "actionAddSkillHint": "Zdieľaj svoju expertízu",
+    "actionSearch": "Hľadať zručnosti",
+    "actionSearchHint": "Nájdi čo potrebuješ",
+    "actionEditProfile": "Upraviť profil",
+    "actionEditProfileHint": "Aktualizuj svoje údaje",
+    "actionMessages": "Správy",
+    "actionMessagesHint": "Komunikuj s ostatnými",
     "statSkills": "Ponuky",
     "statActiveExchanges": "Aktívne výmeny",
     "statCompletedExchanges": "Dokončené výmeny",

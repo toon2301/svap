@@ -195,6 +195,18 @@
     "redirectingToDashboard": "Przekierowuję do panelu..."
   },
   "dashboard": {
+    "homeIntro": "To jest twój osobisty pulpit, gdzie możesz zarządzać profilem i dzielić się umiejętnościami.",
+    "profileCompleteness": "Kompletność profilu",
+    "profileCompletenessHint": "Uzupełnij profil, aby zwiększyć widoczność",
+    "quickActions": "Szybkie akcje",
+    "actionAddSkill": "Dodaj umiejętność",
+    "actionAddSkillHint": "Podziel się swoją wiedzą",
+    "actionSearch": "Szukaj umiejętności",
+    "actionSearchHint": "Znajdź czego potrzebujesz",
+    "actionEditProfile": "Edytuj profil",
+    "actionEditProfileHint": "Zaktualizuj swoje dane",
+    "actionMessages": "Wiadomości",
+    "actionMessagesHint": "Komunikuj się z innymi",
     "statSkills": "Oferty",
     "statActiveExchanges": "Aktywne wymiany",
     "statCompletedExchanges": "Zakończone wymiany",

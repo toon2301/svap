@@ -233,13 +233,15 @@ export default function ModuleRouter({
         />
       );
     case 'home':
-      // data-onboarding="home-content" musí ostať – je to target mobilného
-      // onboardingu (MobileOnboardingContext ONBOARDING_TARGETS.home). Preto
-      // HomeModule obalíme wrapperom s týmto atribútom.
+      // Onboarding target ("home-welcome") je ohraničený na uvítaciu sekciu priamo
+      // vnútri HomeModule – preto tu už netreba wrapper s data-onboarding.
       return (
-        <div data-onboarding="home-content">
-          <HomeModule user={user} />
-        </div>
+        <HomeModule
+          user={user}
+          setActiveModule={setActiveModule}
+          onEditProfileClick={onEditProfileClick}
+          onSkillsOfferClick={onSkillsOfferClick}
+        />
       );
     case 'user-profile':
       if (!viewedUserId) {

@@ -195,6 +195,18 @@
     "redirectingToDashboard": "Átirányítás az irányítópultra..."
   },
   "dashboard": {
+    "homeIntro": "Ez a személyes irányítópultod, ahol kezelheted a profilodat és megoszthatod a készségeidet.",
+    "profileCompleteness": "Profil teljessége",
+    "profileCompletenessHint": "Töltsd ki a profilod a jobb láthatóságért",
+    "quickActions": "Gyors műveletek",
+    "actionAddSkill": "Készség hozzáadása",
+    "actionAddSkillHint": "Oszd meg a szakértelmed",
+    "actionSearch": "Készségek keresése",
+    "actionSearchHint": "Találd meg, amire szükséged van",
+    "actionEditProfile": "Profil szerkesztése",
+    "actionEditProfileHint": "Frissítsd az adataidat",
+    "actionMessages": "Üzenetek",
+    "actionMessagesHint": "Kommunikálj másokkal",
     "statSkills": "Ajánlatok",
     "statActiveExchanges": "Aktív cserék",
     "statCompletedExchanges": "Befejezett cserék",
