@@ -195,14 +195,14 @@
     "redirectingToDashboard": "Přesměrovávám na nástěnku..."
   },
   "dashboard": {
-    "homeIntro": "Toto je tvůj osobní dashboard, kde můžeš spravovat svůj profil a sdílet své dovednosti.",
+    "homeIntro": "Toto je tvá osobní nástěnka, kde můžeš spravovat svůj profil a sdílet své dovednosti.",
     "profileCompleteness": "Úplnost profilu",
     "profileCompletenessHint": "Dokonči svůj profil pro lepší viditelnost",
     "quickActions": "Rychlé akce",
     "actionAddSkill": "Přidat dovednost",
     "actionAddSkillHint": "Sdílej svou expertízu",
     "actionSearch": "Hledat dovednosti",
-    "actionSearchHint": "Najdi co potřebuješ",
+    "actionSearchHint": "Najdi, co potřebuješ",
     "actionEditProfile": "Upravit profil",
     "actionEditProfileHint": "Aktualizuj své údaje",
     "actionMessages": "Zprávy",

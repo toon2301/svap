@@ -197,7 +197,7 @@
   "dashboard": {
     "homeIntro": "Toto je tvoj osobný dashboard, kde môžeš spravovať svoj profil a zdieľať svoje zručnosti.",
     "profileCompleteness": "Kompletnosť profilu",
-    "profileCompletenessHint": "Dokončite svoj profil pre lepšiu viditeľnosť",
+    "profileCompletenessHint": "Dokonči svoj profil pre lepšiu viditeľnosť",
     "quickActions": "Rýchle akcie",
     "actionAddSkill": "Pridať zručnosť",
     "actionAddSkillHint": "Zdieľaj svoju expertízu",
