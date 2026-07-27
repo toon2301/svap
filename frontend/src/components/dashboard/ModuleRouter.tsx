@@ -4,6 +4,7 @@ import React from 'react';
 import type { User } from '../../types';
 import type { SearchUserResult } from './modules/search/types';
 import ProfileModule from './modules/ProfileModule';
+import HomeModule from './modules/HomeModule';
 import NotificationsModule from './modules/NotificationsModule';
 import NotificationSettingsModule from './modules/NotificationSettingsModule';
 import LanguageModule from './modules/LanguageModule';
@@ -232,14 +233,12 @@ export default function ModuleRouter({
         />
       );
     case 'home':
+      // data-onboarding="home-content" musí ostať – je to target mobilného
+      // onboardingu (MobileOnboardingContext ONBOARDING_TARGETS.home). Preto
+      // HomeModule obalíme wrapperom s týmto atribútom.
       return (
-        <div className="text-center py-20" data-onboarding="home-content">
-          <h2 className="text-2xl font-semibold text-gray-600 dark:text-gray-400 mb-4">
-            {t('dashboard.welcomeToSwaply', 'Vitaj v Svaply!')}
-          </h2>
-          <p className="text-gray-500 dark:text-gray-500">
-            {t('dashboard.selectSection', 'Vyber si sekciu z navigácie pre pokračovanie.')}
-          </p>
+        <div data-onboarding="home-content">
+          <HomeModule user={user} />
         </div>
       );
     case 'user-profile':

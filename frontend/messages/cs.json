@@ -195,6 +195,13 @@
     "redirectingToDashboard": "Přesměrovávám na nástěnku..."
   },
   "dashboard": {
+    "statSkills": "Nabídky",
+    "statActiveExchanges": "Aktivní výměny",
+    "statCompletedExchanges": "Dokončené výměny",
+    "statCompletionRate": "Úspěšnost",
+    "statAverageRating": "Průměrné hodnocení",
+    "statProfileLikes": "Líbí se profilu",
+    "statsError": "Nepodařilo se načíst statistiky.",
     "loadingDashboard": "Načítám nástěnku...",
     "welcomeToSwaply": "Vítejte na Svaply!",
     "selectSection": "Vyberte sekci z navigace pro pokračování.",

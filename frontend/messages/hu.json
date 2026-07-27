@@ -195,6 +195,13 @@
     "redirectingToDashboard": "Átirányítás az irányítópultra..."
   },
   "dashboard": {
+    "statSkills": "Ajánlatok",
+    "statActiveExchanges": "Aktív cserék",
+    "statCompletedExchanges": "Befejezett cserék",
+    "statCompletionRate": "Sikerráta",
+    "statAverageRating": "Átlagos értékelés",
+    "statProfileLikes": "Profil kedvelések",
+    "statsError": "A statisztikák betöltése nem sikerült.",
     "loadingDashboard": "Irányítópult betöltése...",
     "welcomeToSwaply": "Üdvözöljük a Svaply-ben!",
     "selectSection": "Válasszon egy szakaszt a navigációból a folytatáshoz.",

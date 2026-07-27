@@ -14,6 +14,15 @@ jest.mock('framer-motion', () => ({
   AnimatePresence: ({ children }: any) => <>{children}</>,
 }));
 
+// Stub HomeModule – toto je shell integračný test (sidebar/moduly/logout).
+// Reálny HomeModule (fetch dashboard/home) je testovaný v HomeModule.test.tsx,
+// wiring case 'home' → HomeModule v ModuleRouter.test.tsx. Stub renderuje welcome
+// text, ktorý niektoré testy overujú.
+jest.mock('../modules/HomeModule', () => ({
+  __esModule: true,
+  default: () => <div data-testid="home-module">Vitaj v Svaply!</div>,
+}));
+
 // Mock next/navigation s zdieľaným pushMock
 const pushMock = jest.fn();
 const replaceMock = jest.fn();
@@ -190,8 +199,9 @@ describe('Dashboard', () => {
     isAuthenticated.mockReturnValue(true);
     
     renderDashboard(<ThemeProvider><Dashboard initialUser={mockUser} /></ThemeProvider>);
-    // Home module welcome exists (fallback v t() zaručí text)
-    expect(screen.getByText('Vyber si sekciu z navigácie pre pokračovanie.')).toBeInTheDocument();
+    // Home modul teraz renderuje HomeModule (predtým inline placeholder s textom
+    // "Vyber si sekciu...", ktorý už neexistuje – preto overujeme HomeModule).
+    expect(screen.getByTestId('home-module')).toBeInTheDocument();
   });
 
   it('renders mobile menu button on mobile', () => {

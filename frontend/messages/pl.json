@@ -195,6 +195,13 @@
     "redirectingToDashboard": "Przekierowuję do panelu..."
   },
   "dashboard": {
+    "statSkills": "Oferty",
+    "statActiveExchanges": "Aktywne wymiany",
+    "statCompletedExchanges": "Zakończone wymiany",
+    "statCompletionRate": "Skuteczność",
+    "statAverageRating": "Średnia ocena",
+    "statProfileLikes": "Polubienia profilu",
+    "statsError": "Nie udało się załadować statystyk.",
     "loadingDashboard": "Ładuję panel...",
     "welcomeToSwaply": "Witaj w Svaply!",
     "selectSection": "Wybierz sekcję z nawigacji, aby kontynuować.",

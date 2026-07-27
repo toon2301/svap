@@ -195,6 +195,13 @@
     "redirectingToDashboard": "Redirecting to dashboard..."
   },
   "dashboard": {
+    "statSkills": "Offers",
+    "statActiveExchanges": "Active exchanges",
+    "statCompletedExchanges": "Completed exchanges",
+    "statCompletionRate": "Success rate",
+    "statAverageRating": "Average rating",
+    "statProfileLikes": "Profile likes",
+    "statsError": "Failed to load statistics.",
     "loadingDashboard": "Loading dashboard...",
     "welcomeToSwaply": "Welcome to Svaply!",
     "selectSection": "Select a section from the navigation to continue.",

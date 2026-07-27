@@ -1,13 +1,78 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { User } from '../../../types';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { api, endpoints } from '@/lib/api';
 
 interface HomeModuleProps {
   user: User;
 }
 
+interface DashboardStats {
+  skills_count: number;
+  active_exchanges: number;
+  completed_exchanges: number;
+  completion_rate: number | null;
+  average_rating: number | null;
+  profile_likes_count: number;
+  favorites_count: number;
+  profile_completeness: number;
+}
+
+const DASH = '—';
+
+function formatInt(value: number | null | undefined): string {
+  return typeof value === 'number' ? String(value) : DASH;
+}
+
+// completion_rate je 0..1 → percento; null/undefined → "—" (nie "0%"/"NaN%").
+function formatPercent(value: number | null | undefined): string {
+  return typeof value === 'number' ? `${Math.round(value * 100)}%` : DASH;
+}
+
+// average_rating s hviezdičkou; null/undefined → "—".
+function formatRating(value: number | null | undefined): string {
+  return typeof value === 'number' ? `${value.toFixed(1)} ★` : DASH;
+}
+
 export default function HomeModule({ user }: HomeModuleProps) {
+  const { t } = useLanguage();
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [statsLoading, setStatsLoading] = useState(true);
+  const [statsError, setStatsError] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    setStatsLoading(true);
+    setStatsError(false);
+    api
+      .get<{ stats: DashboardStats }>(endpoints.dashboard.home)
+      .then(({ data }) => {
+        if (!cancelled) setStats(data?.stats ?? null);
+      })
+      .catch(() => {
+        // Nezhoď nástenku kvôli neúspešnej štatistike – karty degradujú na "—".
+        if (!cancelled) setStatsError(true);
+      })
+      .finally(() => {
+        if (!cancelled) setStatsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const statCards: { key: string; label: string; value: string }[] = [
+    { key: 'skills', label: t('dashboard.statSkills', 'Ponuky'), value: formatInt(stats?.skills_count) },
+    { key: 'active', label: t('dashboard.statActiveExchanges', 'Aktívne výmeny'), value: formatInt(stats?.active_exchanges) },
+    { key: 'completed', label: t('dashboard.statCompletedExchanges', 'Dokončené výmeny'), value: formatInt(stats?.completed_exchanges) },
+    { key: 'completion', label: t('dashboard.statCompletionRate', 'Úspešnosť'), value: formatPercent(stats?.completion_rate) },
+    { key: 'rating', label: t('dashboard.statAverageRating', 'Priemerné hodnotenie'), value: formatRating(stats?.average_rating) },
+    { key: 'likes', label: t('dashboard.statProfileLikes', 'Lajky profilu'), value: formatInt(stats?.profile_likes_count) },
+  ];
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -26,7 +91,7 @@ export default function HomeModule({ user }: HomeModuleProps) {
         <p className="text-gray-600 mb-6">
           Toto je tvoj osobný dashboard, kde môžeš spravovať svoj profil a zdieľať svoje zručnosti.
         </p>
-        
+
         {/* Profile completeness */}
         <div className="bg-purple-50 rounded-lg p-4">
           <div className="flex items-center justify-between mb-2">
@@ -38,7 +103,7 @@ export default function HomeModule({ user }: HomeModuleProps) {
             </span>
           </div>
           <div className="w-full bg-purple-200 rounded-full h-2">
-            <div 
+            <div
               className="bg-purple-600 h-2 rounded-full transition-all duration-300"
               style={{ width: `${user.profile_completeness}%` }}
             ></div>
@@ -51,50 +116,31 @@ export default function HomeModule({ user }: HomeModuleProps) {
         </div>
       </div>
 
-      {/* Quick stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-              </svg>
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Moje zručnosti</p>
-              <p className="text-2xl font-semibold text-gray-900">0</p>
-            </div>
+      {/* Quick stats – reálne štatistiky z dashboard_home_view */}
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        {statCards.map((card) => (
+          <div
+            key={card.key}
+            className="bg-white rounded-lg shadow-sm border border-gray-200 p-6"
+          >
+            <p className="text-sm font-medium text-gray-600">{card.label}</p>
+            {statsLoading ? (
+              <div
+                data-testid="stat-loading"
+                className="mt-2 h-8 w-16 animate-pulse rounded bg-gray-200"
+                aria-hidden="true"
+              />
+            ) : (
+              <p className="mt-1 text-2xl font-semibold text-gray-900">{card.value}</p>
+            )}
           </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center">
-            <div className="p-2 bg-green-100 rounded-lg">
-              <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-              </svg>
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Aktívne výmeny</p>
-              <p className="text-2xl font-semibold text-gray-900">0</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center">
-            <div className="p-2 bg-yellow-100 rounded-lg">
-              <svg className="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <div className="ml-4">
-              <p className="text-sm font-medium text-gray-600">Dokončené</p>
-              <p className="text-2xl font-semibold text-gray-900">0</p>
-            </div>
-          </div>
-        </div>
+        ))}
       </div>
+      {statsError && (
+        <p className="text-sm text-gray-500" role="status">
+          {t('dashboard.statsError', 'Štatistiky sa nepodarilo načítať.')}
+        </p>
+      )}
 
       {/* Quick actions */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
@@ -110,7 +156,7 @@ export default function HomeModule({ user }: HomeModuleProps) {
               Zdieľaj svoju expertízu
             </div>
           </button>
-          
+
           <button className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-left">
             <div className="text-sm font-medium text-gray-900 mb-1">
               Hľadať zručnosti
@@ -119,7 +165,7 @@ export default function HomeModule({ user }: HomeModuleProps) {
               Nájdi čo potrebuješ
             </div>
           </button>
-          
+
           <button className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-left">
             <div className="text-sm font-medium text-gray-900 mb-1">
               Upraviť profil
@@ -128,7 +174,7 @@ export default function HomeModule({ user }: HomeModuleProps) {
               Aktualizuj svoje údaje
             </div>
           </button>
-          
+
           <button className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-left">
             <div className="text-sm font-medium text-gray-900 mb-1">
               Správy
