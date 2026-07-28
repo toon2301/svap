@@ -16,8 +16,9 @@ from accounts.views.dashboard_views.profile_visits import PROFILE_VISITS_TREND_D
 
 User = get_user_model()
 
-# Počet položiek v `daily`: okno + dnešok (oba hraničné dni vrátane).
-EXPECTED_DAILY_LEN = PROFILE_VISITS_TREND_DAYS + 1
+# Počet položiek v `daily`: presne PROFILE_VISITS_TREND_DAYS kalendárnych dní
+# (dnes + predchádzajúcich 89), zarovnané s 90-dňovou retenciou.
+EXPECTED_DAILY_LEN = PROFILE_VISITS_TREND_DAYS
 
 
 class ProfileVisitsTrendApiTests(APITestCase):
@@ -66,7 +67,8 @@ class ProfileVisitsTrendApiTests(APITestCase):
         self._visit(self.owner, v1, days_ago=0)  # dnes
         self._visit(self.owner, v2, days_ago=0)  # dnes (iný návštevník)
         self._visit(self.owner, v1, days_ago=5)  # pred 5 dňami
-        self._visit(self.owner, v3, days_ago=PROFILE_VISITS_TREND_DAYS)  # hranica -> in
+        # najstarší deň v okne (today − 89) -> ešte vnútri
+        self._visit(self.owner, v3, days_ago=PROFILE_VISITS_TREND_DAYS - 1)
 
         self.client.force_authenticate(user=self.owner)
         resp = self.client.get(self.url)
@@ -87,7 +89,9 @@ class ProfileVisitsTrendApiTests(APITestCase):
         )
         self.assertEqual(
             by_date[
-                (self.today - timedelta(days=PROFILE_VISITS_TREND_DAYS)).isoformat()
+                (
+                    self.today - timedelta(days=PROFILE_VISITS_TREND_DAYS - 1)
+                ).isoformat()
             ],
             1,
         )
@@ -103,16 +107,17 @@ class ProfileVisitsTrendApiTests(APITestCase):
         # Deň bez návštevy (napr. včera) je prítomný s count=0, nie preskočený.
         self.assertIn((self.today - timedelta(days=1)).isoformat(), by_date)
         self.assertEqual(by_date[(self.today - timedelta(days=1)).isoformat()], 0)
-        # Súvislý rad: prvý deň = pred 90 dňami, posledný = dnes.
+        # Súvislý rad: prvý deň = today − 89 (najstarší v 90-dňovom okne), posledný = dnes.
         self.assertEqual(
             data["daily"][0]["date"],
-            (self.today - timedelta(days=PROFILE_VISITS_TREND_DAYS)).isoformat(),
+            (self.today - timedelta(days=PROFILE_VISITS_TREND_DAYS - 1)).isoformat(),
         )
         self.assertEqual(data["daily"][-1]["date"], self.today.isoformat())
 
     def test_visits_older_than_window_excluded(self):
         v1 = self._visitor(1)
-        self._visit(self.owner, v1, days_ago=PROFILE_VISITS_TREND_DAYS + 1)  # mimo okna
+        # today − 90 je práve MIMO 90-dňového okna (najstarší v okne je today − 89).
+        self._visit(self.owner, v1, days_ago=PROFILE_VISITS_TREND_DAYS)
 
         self.client.force_authenticate(user=self.owner)
         data = self.client.get(self.url).json()
@@ -120,7 +125,7 @@ class ProfileVisitsTrendApiTests(APITestCase):
         self.assertEqual(data["total_visits_90d"], 0)
         # Deň mimo okna sa v rade vôbec nenachádza.
         old_day = (
-            self.today - timedelta(days=PROFILE_VISITS_TREND_DAYS + 1)
+            self.today - timedelta(days=PROFILE_VISITS_TREND_DAYS)
         ).isoformat()
         self.assertNotIn(old_day, self._daily_map(data))
 

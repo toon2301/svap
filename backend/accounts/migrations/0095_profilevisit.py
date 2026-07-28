@@ -26,7 +26,7 @@ class Migration(migrations.Migration):
                 'verbose_name_plural': 'Profile visits',
                 'ordering': ['-created_at', '-id'],
                 'indexes': [models.Index(fields=['profile_user', 'visit_date'], name='acc_pvisit_profile_date_idx')],
-                'constraints': [models.UniqueConstraint(fields=('profile_user', 'viewer', 'visit_date'), name='unique_profile_visit_per_day'), models.CheckConstraint(condition=models.Q(('profile_user', models.F('viewer')), _negated=True), name='profile_visit_cannot_point_to_self')],
+                'constraints': [models.UniqueConstraint(fields=('profile_user', 'viewer', 'visit_date'), name='unique_profile_visit_per_day'), models.CheckConstraint(check=~models.Q(profile_user=models.F('viewer')), name='profile_visit_cannot_point_to_self')],
             },
         ),
     ]

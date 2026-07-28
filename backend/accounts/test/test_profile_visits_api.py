@@ -79,6 +79,14 @@ class ProfileVisitApiTests(APITestCase):
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         self.assertEqual(ProfileVisit.objects.count(), 0)
 
+    def test_unauthenticated_visitor_records_nothing(self):
+        # Endpoint je IsAuthenticated → neprihlásený dostane 401 (očakávaná
+        # odpoveď, nie pád) a NEvytvorí sa žiadny záznam návštevy.
+        resp = self.client.get(self._detail_url_by_id(self.owner))
+
+        self.assertEqual(resp.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(ProfileVisit.objects.count(), 0)
+
     def test_visiting_private_foreign_profile_records_nothing(self):
         private = User.objects.create_user(
             username="pv-private",

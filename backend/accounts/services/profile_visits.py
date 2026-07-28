@@ -37,7 +37,10 @@ def purge_old_profile_visits(*, dry_run: bool = True) -> int:
 
     deleted_total = 0
     while True:
-        batch_ids = list(base_qs.values_list("id", flat=True)[:_PURGE_BATCH_SIZE])
+        # Explicitné order_by("id") – nezávisle od Meta.ordering (-created_at, -id).
+        batch_ids = list(
+            base_qs.order_by("id").values_list("id", flat=True)[:_PURGE_BATCH_SIZE]
+        )
         if not batch_ids:
             break
         deleted_total += ProfileVisit.objects.filter(id__in=batch_ids).delete()[0]

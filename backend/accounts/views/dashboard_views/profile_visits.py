@@ -13,9 +13,12 @@ from swaply.rate_limiting import api_rate_limit
 
 from ...models import ProfileVisit
 
-# Trend okno: posledných PROFILE_VISITS_TREND_DAYS dní + dnešok (oba hraničné dni
-# vrátane → PROFILE_VISITS_TREND_DAYS + 1 položiek v `daily`). visit_date je
-# lokálny deň (Europe/Bratislava), naplnený pri zápise cez timezone.localdate().
+# Trend okno: presne PROFILE_VISITS_TREND_DAYS kalendárnych dní vrátane dneška
+# (dnes + predchádzajúcich 89 → PROFILE_VISITS_TREND_DAYS položiek v `daily`).
+# Zarovnané s retenciou (PROFILE_VISIT_RETENTION_DAYS = 90 podľa created_at): 90-dňové
+# okno leží celé vnútri retenčného okna, takže najstarší deň (dnes − 89) nie je
+# čiastočne premazaný nočným purge behom. visit_date je lokálny deň
+# (Europe/Bratislava), naplnený pri zápise cez timezone.localdate().
 PROFILE_VISITS_TREND_DAYS = 90
 
 
@@ -41,7 +44,8 @@ def dashboard_profile_visits_trend_view(request):
     aby FE dostal súvislý rad (jednoduchý na vykreslenie grafu).
     """
     today = timezone.localdate()
-    start_date = today - timedelta(days=PROFILE_VISITS_TREND_DAYS)
+    # 90 kompletných dní vrátane dneška → najstarší deň je today − 89.
+    start_date = today - timedelta(days=PROFILE_VISITS_TREND_DAYS - 1)
 
     rows = (
         ProfileVisit.objects.filter(
@@ -57,7 +61,7 @@ def dashboard_profile_visits_trend_view(request):
     # Súvislý rad start_date..today (vrátane oboch hraníc) – chýbajúce dni na 0.
     daily = []
     total = 0
-    for offset in range(PROFILE_VISITS_TREND_DAYS + 1):
+    for offset in range(PROFILE_VISITS_TREND_DAYS):
         day = start_date + timedelta(days=offset)
         count = int(counts_by_date.get(day, 0))
         total += count

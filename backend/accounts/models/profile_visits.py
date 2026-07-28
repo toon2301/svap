@@ -50,6 +50,12 @@ class ProfileVisit(models.Model):
                 fields=["profile_user", "visit_date"],
                 name="acc_pvisit_profile_date_idx",
             ),
+            # Retencia filtruje podľa created_at (purge_old_profile_visits) –
+            # vlastný index bráni sekvenčnému skenu pri mazaní.
+            models.Index(
+                fields=["created_at"],
+                name="acc_pvisit_created_idx",
+            ),
         ]
 
     def __str__(self):

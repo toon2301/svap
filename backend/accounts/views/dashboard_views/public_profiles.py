@@ -77,6 +77,7 @@ def _record_profile_visit(request, profile_user) -> None:
     except Exception:
         logger.warning(
             "Profile visit recording failed",
+            exc_info=True,
             extra={
                 "profile_user_id": getattr(profile_user, "id", None),
                 "viewer_id": viewer_id,
