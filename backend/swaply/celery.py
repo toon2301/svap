@@ -23,6 +23,7 @@ app.conf.imports = tuple(
             "swaply.tasks.portfolio_images",
             "swaply.tasks.webpush",
             "swaply.tasks.notifications",
+            "swaply.tasks.profile_visits",
         )
     )
 )
@@ -33,5 +34,10 @@ app.conf.beat_schedule = {
     "purge-old-notifications-daily": {
         "task": "swaply.tasks.notifications.purge_old_notifications_task",
         "schedule": crontab(hour=3, minute=0),
+    },
+    # Iný minute než notifikácie, aby dve nočné údržby nebežali naraz.
+    "purge-old-profile-visits-daily": {
+        "task": "swaply.tasks.profile_visits.purge_old_profile_visits_task",
+        "schedule": crontab(hour=3, minute=15),
     },
 }

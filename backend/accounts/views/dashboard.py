@@ -16,6 +16,7 @@ from .dashboard_views.favorites import (
     dashboard_favorite_user_detail_view,
 )
 from .dashboard_views.profile import dashboard_profile_view, dashboard_settings_view
+from .dashboard_views.profile_visits import dashboard_profile_visits_trend_view
 from .dashboard_views.public_profiles import (
     dashboard_user_profile_detail_view,
     dashboard_user_profile_detail_by_slug_view,
