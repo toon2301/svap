@@ -8,6 +8,7 @@ from datetime import timedelta
 from django.contrib.auth import get_user_model
 from django.urls import reverse
 from django.utils import timezone
+from freezegun import freeze_time
 from rest_framework import status
 from rest_framework.test import APITestCase
 
@@ -23,6 +24,15 @@ EXPECTED_DAILY_LEN = PROFILE_VISITS_TREND_DAYS
 
 class ProfileVisitsTrendApiTests(APITestCase):
     def setUp(self):
+        # Zmraz čas na fixný okamih pre CELÝ životný cyklus testu (setUp,
+        # vytváranie návštev, request aj asserty). Bez toho by self.today
+        # (setUp) a timezone.localdate() vo view mohli spadnúť na dva rôzne dni
+        # pri prechode cez lokálnu polnoc → flaky boundary asserty. Poludnie
+        # volíme zámerne, aby lokálny deň (Europe/Bratislava) == deň fixného UTC.
+        self._freezer = freeze_time("2026-06-15 12:00:00")
+        self._freezer.start()
+        self.addCleanup(self._freezer.stop)
+
         self.owner = User.objects.create_user(
             username="pvt-owner",
             email="pvt-owner@example.com",
