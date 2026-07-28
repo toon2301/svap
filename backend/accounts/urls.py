@@ -89,6 +89,11 @@ urlpatterns = [
     # Dashboard
     path("dashboard/home/", views.dashboard_home_view, name="dashboard_home"),
     path(
+        "dashboard/profile-visits-trend/",
+        views.dashboard_profile_visits_trend_view,
+        name="dashboard_profile_visits_trend",
+    ),
+    path(
         "dashboard/search/recommendations/",
         views.dashboard_recommendations_view,
         name="dashboard_search_recommendations",

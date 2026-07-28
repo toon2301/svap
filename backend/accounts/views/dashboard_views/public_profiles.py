@@ -1,9 +1,12 @@
+import logging
 import os
 from time import perf_counter
 
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
+from django.db import IntegrityError, transaction
 from django.db.models import Count, Exists, OuterRef
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
@@ -13,9 +16,10 @@ from accounts.cache_versioning import next_cache_version_token
 from accounts.services.user_blocks import exclude_blocked_users
 from swaply.rate_limiting import api_rate_limit
 
-from ...models import OfferedSkill, ProfileLike
+from ...models import OfferedSkill, ProfileLike, ProfileVisit
 
 User = get_user_model()
+logger = logging.getLogger(__name__)
 
 DASHBOARD_USER_SKILLS_CACHE_TTL_SECONDS = int(
     os.getenv("DASHBOARD_USER_SKILLS_CACHE_TTL_SECONDS", "60") or "60"
@@ -41,6 +45,44 @@ def _enforce_public_or_owner(request, user) -> Response | None:
     if not is_owner and not getattr(user, "is_public", True):
         return _not_found()
     return None
+
+
+def _record_profile_visit(request, profile_user) -> None:
+    """Fáza 4.1 – fail-open zápis návštevy cudzieho profilu (len zber dát).
+
+    Volá sa až PO ``_enforce_public_or_owner`` (profil je pre viewera viditeľný,
+    blokovanie/súkromie je vyriešené). Vlastné prezretie sa nepočíta
+    (viewer == owner → skip). Idempotentné cez ``get_or_create`` +
+    unique(profile_user, viewer, visit_date); ``visit_date`` je lokálny deň
+    (``timezone.localdate()``), nie UTC. Súbežná návšteva v ten istý deň, ktorá
+    prehrá race na unique, je neškodná a ignoruje sa. Akékoľvek zlyhanie zápisu
+    NIKDY nezhodí načítanie profilu – len warning (fail-open).
+    """
+    viewer = getattr(request, "user", None)
+    viewer_id = int(getattr(viewer, "id", 0) or 0)
+    if viewer_id <= 0 or viewer_id == int(profile_user.id):
+        return  # neprihlásený alebo vlastný profil → nič nezapisujeme
+
+    try:
+        # Vlastný atomic (savepoint) izoluje prípadný IntegrityError z race, aby
+        # nerozbil spojenie; get_or_create ho aj tak zvládne idempotentne.
+        with transaction.atomic():
+            ProfileVisit.objects.get_or_create(
+                profile_user=profile_user,
+                viewer=viewer,
+                visit_date=timezone.localdate(),
+            )
+    except IntegrityError:
+        pass  # súbežná návšteva prehrala race na unique → OK, netreba nič
+    except Exception:
+        logger.warning(
+            "Profile visit recording failed",
+            exc_info=True,
+            extra={
+                "profile_user_id": getattr(profile_user, "id", None),
+                "viewer_id": viewer_id,
+            },
+        )
 
 
 def _record_dashboard_user_skills_timing(request, **entries) -> None:
@@ -200,6 +242,8 @@ def dashboard_user_profile_detail_view(request, user_id: int):
     if privacy_resp is not None:
         return privacy_resp
 
+    _record_profile_visit(request, user)
+
     from ...serializers import UserProfileSerializer
 
     serializer = UserProfileSerializer(user, context={"request": request})
@@ -221,6 +265,8 @@ def dashboard_user_profile_detail_by_slug_view(request, slug: str):
     privacy_resp = _enforce_public_or_owner(request, user)
     if privacy_resp is not None:
         return privacy_resp
+
+    _record_profile_visit(request, user)
 
     from ...serializers import UserProfileSerializer
 
