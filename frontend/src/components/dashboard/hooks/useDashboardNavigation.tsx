@@ -9,13 +9,16 @@ import { type UseDashboardStateResult } from './useDashboardState';
 import { createDesktopSettingsReturnTarget } from './desktopSettingsNavigation';
 
 /**
- * Bezpečný identifikátor profilu pre URL `/dashboard/users/{identifier}`.
- * Preferuje slug, potom číselné id; ak `user` chýba, vráti `'profile'` – tak
- * nikdy nevznikne URL s "undefined" (napr. keď sa profil otvorí skôr, než sa
- * `user` načíta).
+ * Identifikátor profilu pre URL `/dashboard/users/{identifier}`.
+ * Preferuje slug, potom číselné id. Ak `user` chýba (alebo nemá ani slug, ani
+ * použiteľné id), vráti `null` – volajúci má vtedy navigáciu ODLOŽIŤ (nič
+ * neposielať), kým dáta nie sú k dispozícii. Zámerne NEvraciame sentinel ako
+ * `'profile'`, ktorý by len vytvoril inú nefunkčnú URL.
  */
-function profileIdentifier(user: User | null | undefined): string {
-  return user?.slug || (user?.id != null ? String(user.id) : 'profile');
+export function profileIdentifier(user: User | null | undefined): string | null {
+  if (user?.slug) return user.slug;
+  if (user?.id != null) return String(user.id);
+  return null;
 }
 
 export interface DashboardNavigationProps {
@@ -128,6 +131,9 @@ export function useDashboardNavigation({
     }
 
     if (moduleId === 'profile' && activeModule === 'statistics' && !isDesktop) {
+      const identifier = profileIdentifier(user);
+      // Bez platného slug/id nemáme kam navigovať → odlož (nič nemeníme).
+      if (identifier == null) return;
       setActiveModule('profile');
       setIsRightSidebarOpen(false);
       setActiveRightItem('');
@@ -138,7 +144,7 @@ export function useDashboardNavigation({
         // UI state is already synchronized; ignore storage failures.
       }
       if (typeof window !== 'undefined') {
-        window.history.replaceState(null, '', `/dashboard/users/${profileIdentifier(user)}`);
+        window.history.replaceState(null, '', `/dashboard/users/${identifier}`);
       }
       return;
     }
@@ -164,7 +170,10 @@ export function useDashboardNavigation({
     } else if (moduleId === 'privacy') {
       url = '/dashboard/privacy';
     } else if (moduleId === 'profile') {
-      url = `/dashboard/users/${profileIdentifier(user)}`;
+      const identifier = profileIdentifier(user);
+      // Bez platného slug/id nemáme kam navigovať → odlož navigáciu.
+      if (identifier == null) return;
+      url = `/dashboard/users/${identifier}`;
     } else if (moduleId === 'favorites') {
       url = '/dashboard/favorites';
     } else if (moduleId === 'messages') {
@@ -324,6 +333,9 @@ export function useDashboardNavigation({
   // Mobile and sidebar handlers
   const handleMobileProfileClick = useCallback(() => {
     if (!user) return;
+    const identifier = profileIdentifier(user);
+    // Bez platného slug/id nemáme kam navigovať → odlož (nič nemeníme).
+    if (identifier == null) return;
     setActiveModule('profile');
     setIsRightSidebarOpen(false);
     setActiveRightItem('');
@@ -337,7 +349,7 @@ export function useDashboardNavigation({
       // ignore
     }
 
-    const url = `/dashboard/users/${profileIdentifier(user)}`;
+    const url = `/dashboard/users/${identifier}`;
 
     if (typeof window !== 'undefined') {
       window.history.pushState(null, '', url);
