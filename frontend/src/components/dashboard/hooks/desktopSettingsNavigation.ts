@@ -23,6 +23,7 @@ const HISTORY_KEY = '__svaplyDesktopSettings';
 
 const RETURNABLE_MODULES = new Set([
   'home',
+  'statistics',
   'profile',
   'user-profile',
   'portfolio-detail',

@@ -144,7 +144,6 @@ export default function ProfileModule({
   const desktopOnboarding = useOptionalDesktopOnboarding();
   const onboarding = isMobile ? mobileOnboarding : desktopOnboarding;
   const [isUploading, setIsUploading] = useState(false);
-  const [uploadError, setUploadError] = useState<string>('');
   const [isActionsOpen, setIsActionsOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [isAllWebsitesModalOpen, setIsAllWebsitesModalOpen] = useState(false);
@@ -215,7 +214,6 @@ export default function ProfileModule({
     busyRef.current = true;
     activeActionIdRef.current = id;
     setIsUploading(true);
-    setUploadError('');
     return id;
   }, []);
 
@@ -273,10 +271,8 @@ export default function ProfileModule({
   useEffect(() => {
     if (isEditMode) {
       if (!editableUser) setEditableUser(deepCloneUser(user));
-      setUploadError('');
     } else {
       setEditableUser(null);
-      setUploadError('');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- editableUser sa vytvára len pri vstupe
   }, [isEditMode]);
@@ -303,7 +299,6 @@ export default function ProfileModule({
       if (activeActionIdRef.current !== actionId) return;
       if (response.data?.user) {
         const responseUser = response.data.user as User;
-        setUploadError('');
         const touchedKeys = Object.keys(payload) as ProfilePatchKey[];
         const derivedKeys: (keyof User)[] = ['slug', 'profile_completeness', 'updated_at'];
         const nextPartial: Partial<User> = {};
@@ -343,14 +338,13 @@ export default function ProfileModule({
       const err = e as { response?: { data?: { validation_errors?: Record<string, string[]>; details?: Record<string, string[]> } } };
       const details = err?.response?.data?.validation_errors ?? err?.response?.data?.details;
       const firstMsg = details && Object.values(details).flat().find((m): m is string => typeof m === 'string');
-      setUploadError(firstMsg || 'Nepodarilo sa uložiť.');
+      toast.error(firstMsg || 'Nepodarilo sa uložiť.');
     } finally {
       endAction(actionId);
     }
   }, [editableUser, onUserUpdate, onEditCancel, beginAction, endAction, mergeUserIfChanged, onboarding]);
 
   const handleCancel = useCallback(() => {
-    setUploadError('');
     onEditCancel?.();
   }, [onEditCancel]);
 
@@ -557,13 +551,6 @@ export default function ProfileModule({
             onEditOffer={onEditOffer}
             onDeleteOffer={onDeleteOffer}
           />
-        )}
-
-        {/* Error message */}
-        {uploadError && (
-          <div className="mt-4 error-alert-modern">
-            {uploadError}
-          </div>
         )}
       </div>
 

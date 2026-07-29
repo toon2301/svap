@@ -14,13 +14,13 @@ jest.mock('framer-motion', () => ({
   AnimatePresence: ({ children }: any) => <>{children}</>,
 }));
 
-// Stub HomeModule – toto je shell integračný test (sidebar/moduly/logout).
-// Reálny HomeModule (fetch dashboard/home) je testovaný v HomeModule.test.tsx,
-// wiring case 'home' → HomeModule v ModuleRouter.test.tsx. Stub renderuje welcome
-// text, ktorý niektoré testy overujú.
 jest.mock('../modules/HomeModule', () => ({
   __esModule: true,
-  default: () => <div data-testid="home-module">Vitaj v Svaply!</div>,
+  default: () => <div data-testid="home-module">Nástenka</div>,
+}));
+jest.mock('../modules/StatisticsModule', () => ({
+  __esModule: true,
+  default: () => <div data-testid="statistics-module">Štatistiky</div>,
 }));
 
 // Mock next/navigation s zdieľaným pushMock
@@ -90,6 +90,10 @@ const renderDashboard = (ui: ReactElement) => render(<AuthProvider>{ui}</AuthPro
 describe('Dashboard', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    Object.defineProperty(window, 'innerWidth', {
+      configurable: true,
+      value: 1280,
+    });
     __resetAuthBootstrapSnapshotForTests();
   });
 
@@ -113,7 +117,7 @@ describe('Dashboard', () => {
     renderDashboard(<ThemeProvider><Dashboard /></ThemeProvider>);
 
     await waitFor(() => {
-      expect(screen.getByText('Vitaj v Svaply!')).toBeInTheDocument();
+      expect(screen.getByTestId('home-module')).toBeInTheDocument();
     });
   });
 
@@ -126,7 +130,7 @@ describe('Dashboard', () => {
     
     // Počkaj na dokončenie useEffect a renderovanie obsahu
     await waitFor(() => {
-      expect(screen.getByText('Vitaj v Svaply!')).toBeInTheDocument();
+      expect(screen.getByTestId('home-module')).toBeInTheDocument();
     });
   });
 
@@ -151,6 +155,7 @@ describe('Dashboard', () => {
     expect(screen.getAllByText('Nástenka').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Vyhľadávanie').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Obľúbené').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Štatistiky').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Profil').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Nastavenia').length).toBeGreaterThan(0);
   });
@@ -177,6 +182,36 @@ describe('Dashboard', () => {
       expect(screen.getAllByText('Upraviť profil').length).toBeGreaterThan(1);
       expect(screen.getAllByText('Nastavenia').length).toBeGreaterThan(1);
     });
+  });
+
+  it('opens the desktop Statistics window on its dedicated route', async () => {
+    const { isAuthenticated } = require('@/utils/auth');
+    isAuthenticated.mockReturnValue(true);
+
+    renderDashboard(<ThemeProvider><Dashboard initialUser={mockUser} /></ThemeProvider>);
+
+    fireEvent.click(screen.getByText('Štatistiky'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('statistics-module')).toBeInTheDocument();
+    });
+    expect(pushMock).toHaveBeenCalledWith('/dashboard/statistics');
+  });
+
+  it('restores Statistics directly from its dedicated route', async () => {
+    const { isAuthenticated } = require('@/utils/auth');
+    isAuthenticated.mockReturnValue(true);
+
+    renderDashboard(
+      <ThemeProvider>
+        <Dashboard initialUser={mockUser} initialRoute="statistics" />
+      </ThemeProvider>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('statistics-module')).toBeInTheDocument();
+    });
+    expect(screen.queryByTestId('home-module')).not.toBeInTheDocument();
   });
 
   it('clears tokens and redirects on API error', async () => {
@@ -264,12 +299,12 @@ describe('Dashboard', () => {
     });
   });
 
-  it('shows welcome message in home module', () => {
+  it('shows the clean home module', () => {
     const { isAuthenticated } = require('@/utils/auth');
     isAuthenticated.mockReturnValue(true);
     
     renderDashboard(<ThemeProvider><Dashboard initialUser={mockUser} /></ThemeProvider>);
     
-    expect(screen.getAllByText('Vitaj v Svaply!').length).toBeGreaterThan(0);
+    expect(screen.getByTestId('home-module')).toBeInTheDocument();
   });
 });

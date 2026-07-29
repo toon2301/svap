@@ -5,6 +5,7 @@ import type { User } from '../../types';
 import type { SearchUserResult } from './modules/search/types';
 import ProfileModule from './modules/ProfileModule';
 import HomeModule from './modules/HomeModule';
+import StatisticsModule from './modules/StatisticsModule';
 import NotificationsModule from './modules/NotificationsModule';
 import NotificationSettingsModule from './modules/NotificationSettingsModule';
 import LanguageModule from './modules/LanguageModule';
@@ -233,11 +234,12 @@ export default function ModuleRouter({
         />
       );
     case 'home':
-      // Onboarding target ("home-welcome") je ohraničený na uvítaciu sekciu priamo
-      // vnútri HomeModule – preto tu už netreba wrapper s data-onboarding.
+      return <HomeModule />;
+    case 'statistics':
       return (
-        <HomeModule
+        <StatisticsModule
           user={user}
+          variant={isMobile ? 'mobile-page' : 'desktop-page'}
           setActiveModule={setActiveModule}
           onEditProfileClick={onEditProfileClick}
           onSkillsOfferClick={onSkillsOfferClick}

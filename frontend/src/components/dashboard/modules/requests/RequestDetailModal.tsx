@@ -14,6 +14,7 @@ import {
   getRequesterProfileIdentifier,
   hasHelpProposal,
 } from './helpProposalUtils';
+import { requestUserName } from './requestUserName';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 type Props = {
@@ -147,10 +148,12 @@ export function RequestDetailModal({
   }, [offer?.price_currency, offer?.price_from, offer?.price_negotiable, t]);
 
   const who = variant === 'received' ? item?.requester_summary : item?.recipient_summary;
-  const whoName =
+  const rawWhoName =
     who?.display_name ||
     (variant === 'received' ? item?.requester_display_name : item?.recipient_display_name) ||
-    t('requests.userFallback');
+    '';
+  // Zmazaný účet → "Zmazaný používateľ" namiesto surového "deleted-user-<uuid>".
+  const whoName = requestUserName(rawWhoName, t);
 
   const intentText = useMemo(() => {
     if (isOfferHidden) {

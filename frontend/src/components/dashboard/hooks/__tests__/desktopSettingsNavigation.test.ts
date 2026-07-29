@@ -21,6 +21,13 @@ describe('desktop settings navigation helpers', () => {
       url: '/dashboard/messages/42?focus=latest',
     });
 
+    expect(
+      createDesktopSettingsReturnTarget('statistics', '/dashboard/statistics'),
+    ).toEqual({
+      moduleId: 'statistics',
+      url: '/dashboard/statistics',
+    });
+
     expect(createDesktopSettingsReturnTarget('search', '/dashboard/search')).toBeNull();
     expect(
       createDesktopSettingsReturnTarget('notifications', '/dashboard/notifications'),

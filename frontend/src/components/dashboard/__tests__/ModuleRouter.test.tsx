@@ -2,28 +2,37 @@ import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import type { User } from '@/types';
 
-// Stub HomeModule – overujeme len WIRING (že case 'home' ho renderuje + dostáva
-// navigačné callbacky), nie jeho vnútro.
+let mockIsMobile = false;
+
+jest.mock('@/hooks', () => ({
+  useIsMobile: () => mockIsMobile,
+}));
+
 jest.mock('../modules/HomeModule', () => ({
+  __esModule: true,
+  default: () => <div data-testid="home-module">HomeModule</div>,
+}));
+jest.mock('../modules/StatisticsModule', () => ({
   __esModule: true,
   default: (props: {
     user: { id: number };
+    variant?: string;
     setActiveModule?: unknown;
     onEditProfileClick?: unknown;
     onSkillsOfferClick?: unknown;
   }) => (
     <div
-      data-testid="home-module"
+      data-testid="statistics-module"
+      data-variant={props.variant}
       data-nav={`${typeof props.setActiveModule}|${typeof props.onEditProfileClick}|${typeof props.onSkillsOfferClick}`}
     >
-      HomeModule for {props.user.id}
+      StatisticsModule for {props.user.id}
     </div>
   ),
 }));
 jest.mock('@/contexts/LanguageContext', () => ({
   useLanguage: () => ({ t: (_key: string, fallback: string) => fallback }),
 }));
-jest.mock('@/hooks', () => ({ useIsMobile: () => false }));
 
 import ModuleRouter from '../ModuleRouter';
 
@@ -72,23 +81,48 @@ function baseProps() {
 }
 
 describe('ModuleRouter – home', () => {
-  it('renders HomeModule for the "home" module and forwards navigation callbacks', () => {
+  beforeEach(() => {
+    mockIsMobile = false;
+  });
+
+  it('renders the clean HomeModule for the "home" module', () => {
     render(<ModuleRouter {...baseProps()} />);
 
-    // HomeModule sa reálne renderuje (dostáva user prop).
     expect(screen.getByTestId('home-module')).toBeInTheDocument();
-    expect(screen.getByText('HomeModule for 42')).toBeInTheDocument();
+    expect(screen.queryByTestId('statistics-module')).not.toBeInTheDocument();
+  });
 
-    // Navigačné callbacky (N1) sa reálne posielajú do HomeModule.
-    expect(screen.getByTestId('home-module')).toHaveAttribute(
+  it('uses the clean HomeModule on mobile after moving Statistics to its own screen', () => {
+    mockIsMobile = true;
+
+    render(<ModuleRouter {...baseProps()} />);
+
+    expect(screen.getByTestId('home-module')).toBeInTheDocument();
+    expect(screen.queryByTestId('statistics-module')).not.toBeInTheDocument();
+  });
+
+  it('renders StatisticsModule and forwards its navigation callbacks', () => {
+    render(<ModuleRouter {...baseProps()} activeModule="statistics" />);
+
+    expect(screen.getByText('StatisticsModule for 42')).toBeInTheDocument();
+    expect(screen.getByTestId('statistics-module')).toHaveAttribute(
+      'data-variant',
+      'desktop-page',
+    );
+    expect(screen.getByTestId('statistics-module')).toHaveAttribute(
       'data-nav',
       'function|function|function',
     );
+  });
 
-    // Pôvodný placeholder text sa už nezobrazuje (onboarding target "home-welcome"
-    // je teraz ohraničený vnútri HomeModule, nie na wrapperi).
-    expect(
-      screen.queryByText('Vyber si sekciu z navigácie pre pokračovanie.'),
-    ).not.toBeInTheDocument();
+  it('renders the mobile Statistics page variant', () => {
+    mockIsMobile = true;
+
+    render(<ModuleRouter {...baseProps()} activeModule="statistics" />);
+
+    expect(screen.getByTestId('statistics-module')).toHaveAttribute(
+      'data-variant',
+      'mobile-page',
+    );
   });
 });

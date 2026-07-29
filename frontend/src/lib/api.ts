@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios, { type InternalAxiosRequestConfig } from 'axios';
 import { fetchCsrfToken, getCsrfToken } from '@/utils/csrf';
 import { buildApiUrl, getConfiguredApiUrl } from '@/lib/apiUrl';
 
@@ -8,6 +8,46 @@ type BackgroundSessionResult = 'ready' | RefreshResult;
 type AuthFailureKind = 'invalid_session' | 'transient_refresh_failure';
 type AuthTaggedError = Error & {
   __svaplyAuthFailure?: AuthFailureKind;
+};
+
+// --- Typové rozšírenia pre dev-only debug inštrumentáciu a auth retry flagy.
+// Čisto typové (žiadny runtime dopad) – nahrádzajú pôvodné `any` casty.
+type ApiDebugRequestInfo = {
+  time: number;
+  method: string;
+  url: string;
+  status?: number;
+};
+type ApiDebugStats = {
+  requests: Map<string, ApiDebugRequestInfo[]>;
+  startTime: number;
+};
+type ApiDebugConsole = {
+  print: () => void;
+  clear: () => void;
+  getStats: () => ApiDebugStats;
+};
+type OAuthTraceApi = {
+  log: (event: string, meta?: TraceMeta) => void;
+  dump: () => unknown;
+  clear: () => void;
+};
+type ApiDebugWindow = Window & {
+  __OAUTH_TRACE__?: OAuthTraceApi;
+  __API_DEBUG_STATS__?: ApiDebugStats;
+  __API_DEBUG__?: ApiDebugConsole;
+};
+// Axios request config s našimi rozšíreniami (debug tracking + auth retry flagy).
+type TrackedRequestConfig = InternalAxiosRequestConfig & {
+  __debugRequestInfo?: ApiDebugRequestInfo;
+  __debugKey?: string;
+  _csrfRetry?: boolean;
+  _retry?: boolean;
+};
+// Minimálny tvar axios chyby, ktorý čítame v retry logike.
+type RequestErrorLike = {
+  config?: TrackedRequestConfig;
+  response?: { status?: number; data?: unknown };
 };
 
 const OAUTH_TRACE_ENABLED =
@@ -33,7 +73,7 @@ function oauthTrace(event: string, meta?: TraceMeta): void {
 }
 
 if (typeof window !== 'undefined' && OAUTH_TRACE_ENABLED) {
-  (window as any).__OAUTH_TRACE__ = {
+  (window as ApiDebugWindow).__OAUTH_TRACE__ = {
     log: (event: string, meta?: TraceMeta) => oauthTrace(event, meta),
     dump: () => {
       try {
@@ -248,13 +288,14 @@ function extractResponseMessage(data: unknown): string {
   return '';
 }
 
-function shouldRetryWithFreshCsrf(error: any): boolean {
-  const originalRequest = error?.config;
-  if (!originalRequest || error?.response?.status !== 403) {
+function shouldRetryWithFreshCsrf(error: unknown): boolean {
+  const err = (error ?? {}) as RequestErrorLike;
+  const originalRequest = err.config;
+  if (!originalRequest || err.response?.status !== 403) {
     return false;
   }
 
-  if ((originalRequest as any)._csrfRetry === true) {
+  if (originalRequest._csrfRetry === true) {
     return false;
   }
 
@@ -267,7 +308,7 @@ function shouldRetryWithFreshCsrf(error: any): boolean {
     return false;
   }
 
-  return extractResponseMessage(error?.response?.data).toLowerCase().includes('csrf');
+  return extractResponseMessage(err.response?.data).toLowerCase().includes('csrf');
 }
 
 function dispatchSessionInvalid(): void {
@@ -369,8 +410,8 @@ export async function ensureSessionRefreshed(): Promise<RefreshResult> {
       refreshDisabledUntil = null;
       oauthTrace('refresh_success');
       return 'refreshed';
-    } catch (e: any) {
-      const status = e?.response?.status;
+    } catch (e: unknown) {
+      const status = (e as RequestErrorLike).response?.status;
       oauthTrace('refresh_failed', { status: status ?? null });
       if (status === 429) {
         // Cooldown 60s on rate-limit
@@ -439,10 +480,10 @@ if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
   };
 
   // Uložiť štatistiky do window pre prístup z konzoly
-  (window as any).__API_DEBUG_STATS__ = apiDebugStats;
+  (window as ApiDebugWindow).__API_DEBUG_STATS__ = apiDebugStats;
 
   // Funkcia na výpis štatistík (volateľná z konzoly: window.__API_DEBUG__.print())
-  (window as any).__API_DEBUG__ = {
+  (window as ApiDebugWindow).__API_DEBUG__ = {
     print: () => {
       const now = Date.now();
       const elapsed = now - apiDebugStats.startTime;
@@ -503,8 +544,11 @@ api.interceptors.request.use(
     }
 
     // DEBUGGING: Track request
-    if (typeof window !== 'undefined' && (window as any).__API_DEBUG_STATS__) {
-      const stats = (window as any).__API_DEBUG_STATS__;
+    const stats =
+      typeof window !== 'undefined'
+        ? (window as ApiDebugWindow).__API_DEBUG_STATS__
+        : undefined;
+    if (stats) {
       const url = config.url || '';
       const fullUrl = config.baseURL ? `${config.baseURL}${url}` : url;
       const method = (config.method || 'GET').toUpperCase();
@@ -526,8 +570,8 @@ api.interceptors.request.use(
       stats.requests.get(key)!.push(requestInfo);
       
       // Attach to config for response interceptor
-      (config as any).__debugRequestInfo = requestInfo;
-      (config as any).__debugKey = key;
+      (config as TrackedRequestConfig).__debugRequestInfo = requestInfo;
+      (config as TrackedRequestConfig).__debugKey = key;
     }
 
     // Ak posielame FormData (upload súboru), odstráň Content-Type, aby Axios pridal multipart boundary
@@ -535,14 +579,14 @@ api.interceptors.request.use(
     if (isFormData) {
       if (config.headers) {
         // Normalize to plain object to manipulate header keys
-        const headers: Record<string, any> = (config.headers as any);
+        const headers = config.headers as unknown as Record<string, string>;
         delete headers['Content-Type'];
         delete headers['content-type'];
       }
     } else {
       // Pre JSON požiadavky nastav Content-Type len ak nie je nastavený
       if (config.headers) {
-        const headers: Record<string, any> = (config.headers as any);
+        const headers = config.headers as unknown as Record<string, string>;
         if (!('Content-Type' in headers) && !('content-type' in headers)) {
           headers['Content-Type'] = 'application/json';
         }
@@ -583,13 +627,13 @@ api.interceptors.response.use(
     }
 
     // DEBUGGING: Update request info with status
-    if (typeof window !== 'undefined' && response.config && (response.config as any).__debugRequestInfo) {
-      const stats = (window as any).__API_DEBUG_STATS__;
-      const key = (response.config as any).__debugKey;
+    if (typeof window !== 'undefined' && response.config && (response.config as TrackedRequestConfig).__debugRequestInfo) {
+      const stats = (window as ApiDebugWindow).__API_DEBUG_STATS__;
+      const key = (response.config as TrackedRequestConfig).__debugKey;
       if (stats && key && stats.requests.has(key)) {
         const calls = stats.requests.get(key)!;
-        const requestInfo = (response.config as any).__debugRequestInfo;
-        const index = calls.findIndex((c: any) => c === requestInfo);
+        const requestInfo = (response.config as TrackedRequestConfig).__debugRequestInfo;
+        const index = calls.findIndex((c) => c === requestInfo);
         if (index !== -1) {
           calls[index].status = response.status;
         }
@@ -613,13 +657,13 @@ api.interceptors.response.use(
     }
 
     // DEBUGGING: Update request info with error status
-    if (typeof window !== 'undefined' && originalRequest && (originalRequest as any).__debugRequestInfo) {
-      const stats = (window as any).__API_DEBUG_STATS__;
-      const key = (originalRequest as any).__debugKey;
+    if (typeof window !== 'undefined' && originalRequest && (originalRequest as TrackedRequestConfig).__debugRequestInfo) {
+      const stats = (window as ApiDebugWindow).__API_DEBUG_STATS__;
+      const key = (originalRequest as TrackedRequestConfig).__debugKey;
       if (stats && key && stats.requests.has(key)) {
         const calls = stats.requests.get(key)!;
-        const requestInfo = (originalRequest as any).__debugRequestInfo;
-        const index = calls.findIndex((c: any) => c === requestInfo);
+        const requestInfo = (originalRequest as TrackedRequestConfig).__debugRequestInfo;
+        const index = calls.findIndex((c) => c === requestInfo);
         if (index !== -1) {
           calls[index].status = error.response?.status || 0;
         }
@@ -633,8 +677,9 @@ api.interceptors.response.use(
         });
         // Auto-print stats when 429 occurs
         setTimeout(() => {
-          if ((window as any).__API_DEBUG__) {
-            (window as any).__API_DEBUG__.print();
+          const debug = (window as ApiDebugWindow).__API_DEBUG__;
+          if (debug) {
+            debug.print();
           }
         }, 100);
       }
@@ -644,7 +689,7 @@ api.interceptors.response.use(
     const url = originalRequest?.url;
 
     if (shouldRetryWithFreshCsrf(error)) {
-      (originalRequest as any)._csrfRetry = true;
+      (originalRequest as TrackedRequestConfig)._csrfRetry = true;
       oauthTrace('csrf_retry_start', {
         method: String(originalRequest?.method || 'GET').toUpperCase(),
         url: String(url || ''),
@@ -683,7 +728,7 @@ api.interceptors.response.use(
       if (!originalRequest) return Promise.reject(error);
 
       // Never retry the same request more than once
-      if ((originalRequest as any)._retry === true) {
+      if ((originalRequest as TrackedRequestConfig)._retry === true) {
         return Promise.reject(error);
       }
 
@@ -708,7 +753,7 @@ api.interceptors.response.use(
       }
 
       // Try refresh exactly once per original request
-      (originalRequest as any)._retry = true;
+      (originalRequest as TrackedRequestConfig)._retry = true;
       const refreshed = await ensureSessionRefreshed();
 
       if (refreshed === 'refreshed') {
@@ -752,6 +797,7 @@ export const endpoints = {
   // Dashboard
   dashboard: {
     home: '/auth/dashboard/home/',
+    profileVisitsTrend: '/auth/dashboard/profile-visits-trend/',
     search: '/auth/dashboard/search/',
     searchRecommendations: '/auth/dashboard/search/recommendations/',
     favorites: '/auth/dashboard/favorites/',
