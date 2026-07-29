@@ -40,24 +40,30 @@ function formatInt(value: number | null | undefined): string {
   return typeof value === 'number' ? String(value) : DASH;
 }
 
-// completion_rate je 0..1 → percento; null/undefined → "—" (nie "0%"/"NaN%").
-function formatPercent(value: number | null | undefined): string {
-  return typeof value === 'number' ? `${Math.round(value * 100)}%` : DASH;
-}
-
-// average_rating s hviezdičkou; null/undefined → "—".
-function formatRating(value: number | null | undefined): string {
-  return typeof value === 'number' ? `${value.toFixed(1)} ★` : DASH;
-}
-
 export default function StatisticsModule({
   variant = 'mobile-page',
   setActiveModule,
   onEditProfileClick,
   onSkillsOfferClick,
 }: StatisticsModuleProps) {
-  const { t } = useLanguage();
+  const { locale, t } = useLanguage();
   const isDesktopPage = variant === 'desktop-page';
+
+  // Lokalizované formátovanie čísel (rovnaký vzor ako ProfileVisitsHeatmap).
+  const percentFormatter = new Intl.NumberFormat(locale, {
+    style: 'percent',
+    maximumFractionDigits: 0,
+  });
+  const ratingFormatter = new Intl.NumberFormat(locale, {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  });
+  // completion_rate je 0..1 → percento; null/undefined → "—" (nie "0%"/"NaN%").
+  const formatPercent = (value: number | null | undefined): string =>
+    typeof value === 'number' ? percentFormatter.format(value) : DASH;
+  // average_rating s hviezdičkou; null/undefined → "—".
+  const formatRating = (value: number | null | undefined): string =>
+    typeof value === 'number' ? `${ratingFormatter.format(value)} ★` : DASH;
   const openSearchPanel = useDashboardSearchPanel();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [statsLoading, setStatsLoading] = useState(true);

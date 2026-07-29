@@ -1,7 +1,10 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import type { User } from '@/types';
 import { useDashboardState } from '../useDashboardState';
-import { useDashboardNavigation } from '../useDashboardNavigation';
+import {
+  useDashboardNavigation,
+  profileIdentifier,
+} from '../useDashboardNavigation';
 import {
   readDesktopSettingsReturnTarget,
   withDesktopSettingsHistory,
@@ -487,5 +490,133 @@ describe('profile edit navigation flow', () => {
     expect(openDesktopSettings).not.toHaveBeenCalled();
     expect(handleModuleChange).toHaveBeenCalledWith('settings');
     expect(window.location.pathname).toBe('/dashboard/settings');
+  });
+
+  // --- Null-safe profil identifikátor (žiadny sentinel "profile"): navigáciu
+  //     odlož, kým nie je platný slug/id. ---
+
+  function navState(
+    overrides: Partial<ReturnType<typeof useDashboardState>> = {},
+  ) {
+    return {
+      activeModule: 'home',
+      activeRightItem: '',
+      setActiveModule: jest.fn(),
+      setIsRightSidebarOpen: jest.fn(),
+      setActiveRightItem: jest.fn(),
+      openOwnProfileEdit: jest.fn(),
+      openDesktopSettings: jest.fn(),
+      closeOwnProfileEdit: jest.fn(),
+      handleModuleChange: jest.fn(),
+      setIsMobileMenuOpen: jest.fn(),
+      ...overrides,
+    } as unknown as ReturnType<typeof useDashboardState>;
+  }
+
+  function renderNav(
+    user: User | null,
+    dashboardState: ReturnType<typeof useDashboardState>,
+  ) {
+    return renderHook(() =>
+      useDashboardNavigation({
+        user,
+        dashboardState,
+        setIsSearchOpen: jest.fn(),
+        setViewedUserId: jest.fn(),
+        setViewedUserSlug: jest.fn(),
+        setViewedUserSummary: jest.fn(),
+        setHighlightedSkillId: jest.fn(),
+        highlightTimeoutRef: { current: null },
+      }),
+    );
+  }
+
+  it('profileIdentifier returns null without a usable slug/id', () => {
+    expect(profileIdentifier(undefined)).toBeNull();
+    expect(profileIdentifier(null)).toBeNull();
+    expect(profileIdentifier({} as User)).toBeNull();
+    expect(
+      profileIdentifier({ slug: '', id: undefined } as unknown as User),
+    ).toBeNull();
+  });
+
+  it('profileIdentifier prefers slug, then numeric id (happy path)', () => {
+    expect(profileIdentifier(baseUser)).toBe('test-user');
+    expect(profileIdentifier({ ...baseUser, slug: null } as User)).toBe('7');
+  });
+
+  it('general profile branch defers navigation when identifier is null', () => {
+    const pushStateSpy = jest.spyOn(window.history, 'pushState');
+    const handleModuleChange = jest.fn();
+    const { result } = renderNav(null, navState({ handleModuleChange }));
+
+    act(() => {
+      result.current.handleMainModuleChange('profile');
+    });
+
+    // Bez platného slug/id → žiadna navigácia (ani URL, ani prepnutie modulu).
+    expect(pushStateSpy).not.toHaveBeenCalled();
+    expect(handleModuleChange).not.toHaveBeenCalled();
+    expect(mockPush).not.toHaveBeenCalled();
+    pushStateSpy.mockRestore();
+  });
+
+  it('statistics→profile branch defers navigation when identifier is null (mobile)', () => {
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 390 });
+    const replaceStateSpy = jest.spyOn(window.history, 'replaceState');
+    const setActiveModule = jest.fn();
+    const { result } = renderNav(
+      null,
+      navState({ activeModule: 'statistics', setActiveModule }),
+    );
+
+    act(() => {
+      result.current.handleMainModuleChange('profile');
+    });
+
+    expect(setActiveModule).not.toHaveBeenCalled();
+    expect(replaceStateSpy).not.toHaveBeenCalledWith(
+      null,
+      '',
+      expect.stringContaining('/dashboard/users/'),
+    );
+    replaceStateSpy.mockRestore();
+  });
+
+  it('handleMobileProfileClick defers navigation for a user without slug/id', () => {
+    const pushStateSpy = jest.spyOn(window.history, 'pushState');
+    const setActiveModule = jest.fn();
+    const userNoIdentity = { username: 'x' } as unknown as User; // bez slug aj id
+    const { result } = renderNav(userNoIdentity, navState({ setActiveModule }));
+
+    act(() => {
+      result.current.handleMobileProfileClick();
+    });
+
+    expect(setActiveModule).not.toHaveBeenCalled();
+    expect(pushStateSpy).not.toHaveBeenCalledWith(
+      null,
+      '',
+      expect.stringContaining('/dashboard/users/'),
+    );
+    pushStateSpy.mockRestore();
+  });
+
+  it('general profile branch still navigates for a valid user (happy path unchanged)', () => {
+    const pushStateSpy = jest.spyOn(window.history, 'pushState');
+    const handleModuleChange = jest.fn();
+    const { result } = renderNav(baseUser, navState({ handleModuleChange }));
+
+    act(() => {
+      result.current.handleMainModuleChange('profile');
+    });
+
+    expect(pushStateSpy).toHaveBeenLastCalledWith(
+      null,
+      '',
+      '/dashboard/users/test-user',
+    );
+    expect(handleModuleChange).toHaveBeenCalledWith('profile');
+    pushStateSpy.mockRestore();
   });
 });

@@ -166,8 +166,10 @@ describe('StatisticsModule', () => {
     await waitFor(() => expect(screen.getByText('5')).toBeInTheDocument()); // skills_count
     expect(screen.getByText('2')).toBeInTheDocument(); // active_exchanges
     expect(screen.getByText('3')).toBeInTheDocument(); // completed_exchanges
-    expect(screen.getByText('67%')).toBeInTheDocument(); // completion_rate 0.6666 → 67%
-    expect(screen.getByText('4.5 ★')).toBeInTheDocument(); // average_rating
+    // completion_rate 0.6666 → 67 %, formátované podľa locale (sk: nbsp pred %).
+    expect(screen.getByText(/^67\s*%$/)).toBeInTheDocument();
+    // average_rating 4.5 → lokalizované (sk: desatinná čiarka) + hviezdička.
+    expect(screen.getByText(/^4[.,]5\s*★$/)).toBeInTheDocument();
     expect(screen.getByText('7')).toBeInTheDocument(); // profile_likes_count
   });
 
@@ -347,6 +349,19 @@ describe('StatisticsModule', () => {
     expect(trendEl).toHaveAttribute('data-direction', 'flat');
     expect(trendEl.className).toContain('text-gray-500');
     expect(trendEl).toHaveTextContent('0%');
+  });
+
+  it('shows "nové" (up) when previous is 0 and recent > 0 (no Infinity/NaN)', async () => {
+    // Používateľ predtým nemal návštevy, teraz áno → „nové", nie delenie nulou.
+    routeApi(
+      trendResponse({ total_visits_recent_45d: 5, total_visits_previous_45d: 0 }),
+    );
+    render(<StatisticsModule user={mockUser} />);
+
+    const trendEl = await screen.findByTestId('visits-trend');
+    expect(trendEl).toHaveAttribute('data-direction', 'up');
+    expect(trendEl).toHaveTextContent('nové');
+    expect(trendEl.textContent).not.toMatch(/Infinity|NaN|%/);
   });
 
   it('renders the heatmap grid even with no activity (all zeros)', async () => {
