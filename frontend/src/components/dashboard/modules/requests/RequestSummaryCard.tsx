@@ -11,6 +11,7 @@ import {
   hasHelpProposal,
 } from './helpProposalUtils';
 import type { SkillRequest } from './types';
+import { isDeletedUserName, requestUserName } from './requestUserName';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { api } from '@/lib/api';
@@ -143,7 +144,10 @@ export function RequestSummaryCard({
 
   const who = variant === 'received' ? item.requester_summary : item.recipient_summary;
   const whoId = who?.id ?? (variant === 'received' ? item.requester : item.recipient);
-  const whoName = who?.display_name || (variant === 'received' ? item.requester_display_name : item.recipient_display_name) || '';
+  const rawWhoName = who?.display_name || (variant === 'received' ? item.requester_display_name : item.recipient_display_name) || '';
+  // Zmazaný účet → "Zmazaný používateľ" namiesto surového "deleted-user-<uuid>".
+  const whoName = requestUserName(rawWhoName, t);
+  const whoIsDeleted = isDeletedUserName(rawWhoName);
   const whoAvatar = who?.avatar_url || null;
   const [avatarError, setAvatarError] = useState(false);
   const [terminateMenuOpen, setTerminateMenuOpen] = useState(false);
@@ -450,7 +454,7 @@ export function RequestSummaryCard({
             ) : (
               <div className="h-full w-full grid place-items-center">
                 <span className="text-xs sm:text-sm font-bold text-gray-700 dark:text-gray-200">
-                  {initials(whoName)}
+                  {whoIsDeleted ? '?' : initials(whoName)}
                 </span>
               </div>
             )}
@@ -463,7 +467,7 @@ export function RequestSummaryCard({
                 className="font-semibold text-gray-900 dark:text-white bg-transparent border-0 p-0 cursor-pointer text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 rounded"
                 aria-label={t('requests.openProfile', 'Otvoriť profil')}
               >
-                {whoName || t('requests.userFallback')}
+                {whoName}
               </button>
             ) : (
               <>
@@ -473,7 +477,7 @@ export function RequestSummaryCard({
                   className="font-semibold text-gray-900 dark:text-white bg-transparent border-0 p-0 cursor-pointer text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 rounded"
                   aria-label={t('requests.openProfile', 'Otvoriť profil')}
                 >
-                  {whoName || t('requests.userFallback')}
+                  {whoName}
                 </button>
                 <span className="font-semibold text-purple-700 dark:text-purple-300">
                   {' '}{intentText}

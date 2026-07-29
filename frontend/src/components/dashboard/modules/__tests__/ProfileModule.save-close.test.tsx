@@ -3,8 +3,24 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import type { User } from '@/types';
 import ProfileModule from '../ProfileModule';
+import toast from 'react-hot-toast';
 
 const patchMock = jest.fn();
+
+interface MockProfileDesktopViewProps {
+  editableUser?: User | null;
+  isEditMode?: boolean;
+  onEditSave?: (user?: User) => void | Promise<void>;
+  onEditableUserUpdate?: (partial: Partial<User>) => void;
+}
+
+jest.mock('react-hot-toast', () => ({
+  __esModule: true,
+  default: {
+    error: jest.fn(),
+    success: jest.fn(),
+  },
+}));
 
 jest.mock('@/lib/api', () => ({
   api: {
@@ -14,7 +30,12 @@ jest.mock('@/lib/api', () => ({
 
 jest.mock('../profile/ProfileDesktopView', () => ({
   __esModule: true,
-  default: ({ editableUser, isEditMode, onEditSave, onEditableUserUpdate }: any) =>
+  default: ({
+    editableUser,
+    isEditMode,
+    onEditSave,
+    onEditableUserUpdate,
+  }: MockProfileDesktopViewProps) =>
     isEditMode && editableUser ? (
       <div>
         <span data-testid="editable-last-name">{editableUser.last_name || 'empty'}</span>
@@ -143,5 +164,35 @@ describe('ProfileModule save close flow', () => {
         expect.objectContaining({ last_name: '' })
       );
     });
+  });
+
+  it('shows a backend name validation error in a toast', async () => {
+    const onUserUpdate = jest.fn();
+    const onEditCancel = jest.fn();
+    const message = 'Meno musí mať aspoň 2 znaky';
+    patchMock.mockRejectedValue({
+      response: {
+        data: {
+          validation_errors: {
+            first_name: [message],
+          },
+        },
+      },
+    });
+
+    render(
+      <ProfileModule
+        user={baseUser}
+        isEditMode
+        onUserUpdate={onUserUpdate}
+        onEditCancel={onEditCancel}
+      />
+    );
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Save' }));
+
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith(message));
+    expect(screen.queryByText(message)).not.toBeInTheDocument();
+    expect(onEditCancel).not.toHaveBeenCalled();
   });
 });

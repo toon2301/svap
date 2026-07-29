@@ -12,6 +12,7 @@ import {
   InboxIcon,
   ChatBubbleLeftRightIcon,
   BellIcon,
+  ChartBarIcon,
   XMarkIcon,
   ArrowRightOnRectangleIcon,
   LanguageIcon,
@@ -86,6 +87,11 @@ const sidebarItems: SidebarItem[] = [
     id: 'notifications',
     label: 'Upozornenia',
     icon: BellIcon,
+  },
+  {
+    id: 'statistics',
+    label: 'Štatistiky',
+    icon: ChartBarIcon,
   },
   {
     id: 'profile',
@@ -377,6 +383,7 @@ export default function Sidebar({
                     if (item.id === 'favorites') return t('navigation.favorites', item.label);
                     if (item.id === 'requests') return t('navigation.requests', item.label);
                     if (item.id === 'notifications') return t('navigation.notifications', item.label);
+                    if (item.id === 'statistics') return t('dashboard.statistics', item.label);
                     if (item.id === 'messages') return t('messages.title', item.label);
                     if (item.id === 'profile') return t('navigation.profile', item.label);
                     if (item.id === 'settings') return t('navigation.settings', item.label);

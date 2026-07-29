@@ -10,6 +10,7 @@ import MobileTopBar from './MobileTopBar';
 import type { MessagingUserBrief } from './modules/messages/types';
 import type { AccountSettingsMobileView } from './modules/AccountSettingsModule';
 import type { User } from '@/types';
+import { DashboardSearchPanelProvider } from './contexts/DashboardSearchPanelContext';
 
 interface DashboardLayoutProps {
   activeModule: string;
@@ -239,6 +240,8 @@ export default function DashboardLayout({
           isEditMode={isMobileEditMode}
           onBackClick={onMobileBack}
           onProfileClick={onMobileProfileClick}
+          onStatisticsClick={() => onModuleChange('statistics')}
+          onStatisticsBackClick={() => onModuleChange('profile')}
           onFavoritesClick={() => onModuleChange('favorites')}
           onSkillsModeToggle={onSkillsModeToggle}
           activeModule={activeModule}
@@ -265,6 +268,7 @@ export default function DashboardLayout({
         activeModule !== 'skills-describe' &&
         activeModule !== 'user-profile' &&
         activeModule !== 'portfolio-create' &&
+        activeModule !== 'statistics' &&
         !(activeModule === 'messages' && isMobileMessageConversationOpen) &&
         !isMobileOfferDetailOpen && (
         <MobileTopNav activeItem={activeModule} onItemClick={onModuleChange} />
@@ -389,7 +393,9 @@ export default function DashboardLayout({
                     : 'max-w-4xl'
               } ${activeModule === 'messages' ? 'h-full min-h-0' : ''}`}
             >
-              {children}
+              <DashboardSearchPanelProvider onOpen={onSidebarSearchClick}>
+                {children}
+              </DashboardSearchPanelProvider>
             </div>
           </div>
         </main>

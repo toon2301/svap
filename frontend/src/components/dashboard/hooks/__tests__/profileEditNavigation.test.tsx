@@ -345,6 +345,111 @@ describe('profile edit navigation flow', () => {
     expect(handleModuleChange).not.toHaveBeenCalled();
   });
 
+  it('opens Statistics as a dedicated desktop window and route', () => {
+    const setActiveModule = jest.fn();
+    const setIsRightSidebarOpen = jest.fn();
+    const setActiveRightItem = jest.fn();
+    const setIsMobileMenuOpen = jest.fn();
+    const handleModuleChange = jest.fn();
+    const dashboardState = {
+      activeModule: 'home',
+      activeRightItem: '',
+      setActiveModule,
+      setIsRightSidebarOpen,
+      setActiveRightItem,
+      openOwnProfileEdit: jest.fn(),
+      openDesktopSettings: jest.fn(),
+      closeOwnProfileEdit: jest.fn(),
+      handleModuleChange,
+      setIsMobileMenuOpen,
+    } as unknown as ReturnType<typeof useDashboardState>;
+
+    const { result } = renderHook(() =>
+      useDashboardNavigation({
+        user: baseUser,
+        dashboardState,
+        setIsSearchOpen: jest.fn(),
+        setViewedUserId: jest.fn(),
+        setViewedUserSlug: jest.fn(),
+        setViewedUserSummary: jest.fn(),
+        setHighlightedSkillId: jest.fn(),
+        highlightTimeoutRef: { current: null },
+      }),
+    );
+
+    act(() => {
+      result.current.handleMainModuleChange('statistics');
+    });
+
+    expect(setActiveModule).toHaveBeenCalledWith('statistics');
+    expect(setIsRightSidebarOpen).toHaveBeenCalledWith(false);
+    expect(setActiveRightItem).toHaveBeenCalledWith('');
+    expect(setIsMobileMenuOpen).toHaveBeenCalledWith(false);
+    expect(localStorage.getItem('activeModule')).toBe('statistics');
+    expect(mockPush).toHaveBeenCalledWith('/dashboard/statistics');
+    expect(handleModuleChange).not.toHaveBeenCalled();
+  });
+
+  it('opens and closes the mobile Statistics screen without a full module fallback', () => {
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 390 });
+    const setActiveModule = jest.fn();
+    const setIsRightSidebarOpen = jest.fn();
+    const setActiveRightItem = jest.fn();
+    const setIsMobileMenuOpen = jest.fn();
+    const handleModuleChange = jest.fn();
+    const dashboardState = {
+      activeModule: 'profile',
+      activeRightItem: '',
+      setActiveModule,
+      setIsRightSidebarOpen,
+      setActiveRightItem,
+      openOwnProfileEdit: jest.fn(),
+      openDesktopSettings: jest.fn(),
+      closeOwnProfileEdit: jest.fn(),
+      handleModuleChange,
+      setIsMobileMenuOpen,
+    } as unknown as ReturnType<typeof useDashboardState>;
+
+    const { result, rerender } = renderHook(
+      ({ state }) =>
+        useDashboardNavigation({
+          user: baseUser,
+          dashboardState: state,
+          setIsSearchOpen: jest.fn(),
+          setViewedUserId: jest.fn(),
+          setViewedUserSlug: jest.fn(),
+          setViewedUserSummary: jest.fn(),
+          setHighlightedSkillId: jest.fn(),
+          highlightTimeoutRef: { current: null },
+        }),
+      { initialProps: { state: dashboardState } },
+    );
+
+    act(() => {
+      result.current.handleMainModuleChange('statistics');
+    });
+
+    expect(setActiveModule).toHaveBeenCalledWith('statistics');
+    expect(window.location.pathname).toBe('/dashboard/statistics');
+    expect(mockPush).not.toHaveBeenCalled();
+    expect(handleModuleChange).not.toHaveBeenCalled();
+
+    rerender({
+      state: {
+        ...dashboardState,
+        activeModule: 'statistics',
+      } as unknown as ReturnType<typeof useDashboardState>,
+    });
+
+    act(() => {
+      result.current.handleMainModuleChange('profile');
+    });
+
+    expect(setActiveModule).toHaveBeenCalledWith('profile');
+    expect(window.location.pathname).toBe('/dashboard/users/test-user');
+    expect(handleModuleChange).not.toHaveBeenCalled();
+  });
+
   it('keeps the existing settings navigation on mobile', () => {
     Object.defineProperty(window, 'innerWidth', { configurable: true, value: 390 });
     const openDesktopSettings = jest.fn();

@@ -1,7 +1,12 @@
 'use client';
 
 import React from 'react';
-import { Bars3Icon, HeartIcon, UserCircleIcon } from '@heroicons/react/24/outline';
+import {
+  Bars3Icon,
+  ChartBarIcon,
+  HeartIcon,
+  UserCircleIcon,
+} from '@heroicons/react/24/outline';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { GroupConversationAvatar } from './modules/messages/GroupConversationAvatar';
 import { requestOpenConversationActions } from './modules/messages/messagesEvents';
@@ -32,6 +37,7 @@ const BACK_NAV_MODULES: readonly string[] = [
   'offer-reviews',
   'favorites',
   'portfolio-detail',
+  'statistics',
 ];
 
 interface MobileTopBarProps {
@@ -39,6 +45,8 @@ interface MobileTopBarProps {
   isEditMode?: boolean;
   onBackClick?: () => void;
   onProfileClick?: () => void;
+  onStatisticsClick?: () => void;
+  onStatisticsBackClick?: () => void;
   onFavoritesClick?: () => void;
   onSkillsModeToggle?: () => void;
   activeModule?: string;
@@ -62,6 +70,8 @@ export default function MobileTopBar({
   isEditMode = false,
   onBackClick,
   onProfileClick,
+  onStatisticsClick,
+  onStatisticsBackClick,
   onFavoritesClick,
   onSkillsModeToggle,
   activeModule,
@@ -137,6 +147,7 @@ export default function MobileTopBar({
     activeModule !== 'portfolio-detail' &&
     activeModule !== 'notifications' &&
     activeModule !== 'notification-settings' &&
+    activeModule !== 'statistics' &&
     activeModule !== 'blocked-users' &&
     activeModule !== 'account-type' &&
     activeRightItem !== 'account-type' &&
@@ -148,6 +159,11 @@ export default function MobileTopBar({
   const canShowQuickFavorites =
     Boolean(onFavoritesClick) &&
     activeModule === 'home';
+  const canShowProfileStatistics =
+    Boolean(onStatisticsClick) &&
+    activeModule === 'profile' &&
+    !isEditMode &&
+    !activeRightItem;
   const canShowBackNavigation =
     isEditMode ||
     BACK_NAV_RIGHT_ITEMS.includes(activeRightItem || '') ||
@@ -179,11 +195,20 @@ export default function MobileTopBar({
             <h1 className="whitespace-nowrap text-base font-semibold text-gray-900 dark:text-white">
               {t('requests.title', 'Spolupráce')}
             </h1>
+          ) : canShowProfileStatistics ? (
+            <button
+              type="button"
+              onClick={onStatisticsClick}
+              className="p-1.5 rounded-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-black text-gray-600 dark:text-gray-300 shadow-sm hover:border-purple-400 hover:text-purple-600 hover:bg-gray-50 dark:hover:bg-gray-900 transition-all"
+              aria-label={t('dashboard.statistics', 'Štatistiky')}
+            >
+              <ChartBarIcon className="h-5 w-7" />
+            </button>
           ) : canShowBackNavigation ? (
             <button
-              onClick={onBackClick}
+              onClick={activeModule === 'statistics' ? onStatisticsBackClick : onBackClick}
               className="p-2 -ml-2"
-              aria-label="Späť"
+              aria-label={t('common.back', 'Späť')}
             >
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
@@ -269,6 +294,11 @@ export default function MobileTopBar({
           )}
           {activeModule === 'notification-settings' && (
             <h1 className="text-lg font-semibold text-gray-900 dark:text-white">{t('rightSidebar.notifications', 'Upozornenia')}</h1>
+          )}
+          {activeModule === 'statistics' && (
+            <h1 className="text-lg font-semibold text-gray-900 dark:text-white">
+              {t('dashboard.statistics', 'Štatistiky')}
+            </h1>
           )}
           {activeModule === 'account-type' && (
             <h1 className="text-lg font-semibold text-gray-900 dark:text-white">{t('rightSidebar.accountType', 'Typ účtu')}</h1>

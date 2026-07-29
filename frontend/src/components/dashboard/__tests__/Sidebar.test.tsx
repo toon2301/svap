@@ -58,6 +58,7 @@ describe('Sidebar', () => {
     expect(screen.getByText('Nástenka')).toBeInTheDocument();
     expect(screen.getByText('Vyhľadávanie')).toBeInTheDocument();
     expect(screen.getByText('Obľúbené')).toBeInTheDocument();
+    expect(screen.getByText('Štatistiky')).toBeInTheDocument();
     expect(screen.getByText('Profil')).toBeInTheDocument();
     expect(screen.getByText('Nastavenia')).toBeInTheDocument();
   });
@@ -76,6 +77,36 @@ describe('Sidebar', () => {
     fireEvent.click(searchButton);
     
     expect(mockOnItemClick).toHaveBeenCalledWith('search');
+  });
+
+  it('places Statistics after Notifications in the desktop navigation', () => {
+    render(<ThemeProvider><Sidebar {...defaultProps} onLogout={() => {}} /></ThemeProvider>);
+
+    const navItems = Array.from(document.querySelectorAll('[data-sidebar-nav-item]'));
+    const notificationsIndex = navItems.findIndex(
+      (item) => item.getAttribute('data-sidebar-nav-item') === 'notifications',
+    );
+    const statisticsIndex = navItems.findIndex(
+      (item) => item.getAttribute('data-sidebar-nav-item') === 'statistics',
+    );
+
+    expect(statisticsIndex).toBe(notificationsIndex + 1);
+  });
+
+  it('does not add Statistics to the mobile settings menu yet', () => {
+    render(
+      <ThemeProvider>
+        <Sidebar
+          {...defaultProps}
+          onLogout={() => {}}
+          isMobile
+          isOpen
+          onClose={mockOnClose}
+        />
+      </ThemeProvider>,
+    );
+
+    expect(screen.queryByText('Štatistiky')).not.toBeInTheDocument();
   });
 
   it('renders mobile overlay when isMobile and isOpen', () => {

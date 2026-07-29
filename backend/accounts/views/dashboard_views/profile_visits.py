@@ -42,6 +42,12 @@ def dashboard_profile_visits_trend_view(request):
 
     Dni bez návštevy ORM group-by preskočí → doplníme ich s ``count=0`` v Pythone,
     aby FE dostal súvislý rad (jednoduchý na vykreslenie grafu).
+
+    Trend (``*_recent_45d`` vs ``*_previous_45d``): 90-dňové okno delíme na dve
+    45-dňové polovice a porovnávame ich súčty. Obe polovice ležia VNÚTRI okna
+    (a teda vnútri 90-dňovej retencie), takže porovnanie je vždy dostupné –
+    porovnávať proti „predošlým 90 dňom" by nešlo, lebo tie dáta už purge zmazal.
+    Polovice sa počítajú zo súčtov v ``daily`` → žiadny ďalší DB dotaz.
     """
     today = timezone.localdate()
     # 90 kompletných dní vrátane dneška → najstarší deň je today − 89.
@@ -67,9 +73,17 @@ def dashboard_profile_visits_trend_view(request):
         total += count
         daily.append({"date": day.isoformat(), "count": count})
 
+    # daily je chronologické (index 0 = najstarší deň). Prvá polovica = staršia
+    # (predošlých 45 dní), druhá polovica = novšia (posledných 45 dní).
+    half = PROFILE_VISITS_TREND_DAYS // 2  # 45
+    previous_total = sum(d["count"] for d in daily[:half])
+    recent_total = sum(d["count"] for d in daily[half:])
+
     return Response(
         {
             "total_visits_90d": total,
+            "total_visits_recent_45d": recent_total,
+            "total_visits_previous_45d": previous_total,
             "daily": daily,
         },
         status=status.HTTP_200_OK,

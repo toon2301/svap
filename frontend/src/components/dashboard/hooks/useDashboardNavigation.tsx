@@ -99,6 +99,41 @@ export function useDashboardNavigation({
       return;
     }
 
+    if (moduleId === 'statistics') {
+      setActiveModule('statistics');
+      setIsRightSidebarOpen(false);
+      setActiveRightItem('');
+      setIsMobileMenuOpen(false);
+      try {
+        localStorage.setItem('activeModule', 'statistics');
+      } catch {
+        // UI state is already synchronized; ignore storage failures.
+      }
+      if (isDesktop) {
+        router.push('/dashboard/statistics');
+      } else if (typeof window !== 'undefined') {
+        window.history.replaceState(null, '', '/dashboard/statistics');
+      }
+      return;
+    }
+
+    if (moduleId === 'profile' && activeModule === 'statistics' && !isDesktop) {
+      setActiveModule('profile');
+      setIsRightSidebarOpen(false);
+      setActiveRightItem('');
+      setIsMobileMenuOpen(false);
+      try {
+        localStorage.setItem('activeModule', 'profile');
+      } catch {
+        // UI state is already synchronized; ignore storage failures.
+      }
+      if (typeof window !== 'undefined') {
+        const identifier = user?.slug || (user?.id != null ? String(user.id) : 'profile');
+        window.history.replaceState(null, '', `/dashboard/users/${identifier}`);
+      }
+      return;
+    }
+
     // Synchronizuj URL s hlavnými sekciami dashboardu - použijeme window.history.pushState bez reloadu
     let url = '/dashboard';
     if (moduleId === 'search') {
@@ -148,6 +183,11 @@ export function useDashboardNavigation({
     handleModuleChange,
     activeModule,
     openDesktopSettings,
+    router,
+    setActiveModule,
+    setActiveRightItem,
+    setIsMobileMenuOpen,
+    setIsRightSidebarOpen,
   ]);
 
   // Edit profile navigácia

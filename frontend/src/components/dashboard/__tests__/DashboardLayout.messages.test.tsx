@@ -120,6 +120,16 @@ describe('DashboardLayout messages mobile sizing', () => {
     expect(useMobileViewportHeight).toHaveBeenCalledWith(false);
   });
 
+  it('hides the mobile bottom navigation on the Statistics screen', () => {
+    render(
+      <DashboardLayout {...baseProps} activeModule="statistics">
+        <div>Štatistiky</div>
+      </DashboardLayout>,
+    );
+
+    expect(screen.queryByTestId('mobile-top-nav')).not.toBeInTheDocument();
+  });
+
   it('temporarily hides the desktop right sidebar while the auxiliary search panel is open', () => {
     const { rerender } = render(
       <DashboardLayout

@@ -159,6 +159,69 @@ describe('MobileTopBar', () => {
     expect(onBackClick).toHaveBeenCalledTimes(1);
   });
 
+  it('shows the Statistics icon on the left side of the own profile top bar', () => {
+    const onStatisticsClick = jest.fn();
+
+    render(
+      <MobileTopBar
+        onMenuClick={jest.fn()}
+        activeModule="profile"
+        onStatisticsClick={onStatisticsClick}
+      />,
+    );
+
+    const statisticsButton = screen.getByRole('button', { name: 'Štatistiky' });
+    expect(statisticsButton.querySelector('svg')).toHaveClass('h-5', 'w-7');
+    fireEvent.click(statisticsButton);
+
+    expect(onStatisticsClick).toHaveBeenCalledTimes(1);
+  });
+
+  it('hides the Statistics icon outside the normal own profile view', () => {
+    const { rerender } = render(
+      <MobileTopBar
+        onMenuClick={jest.fn()}
+        activeModule="user-profile"
+        onStatisticsClick={jest.fn()}
+      />,
+    );
+
+    expect(screen.queryByRole('button', { name: 'Štatistiky' })).not.toBeInTheDocument();
+
+    rerender(
+      <MobileTopBar
+        onMenuClick={jest.fn()}
+        activeModule="profile"
+        activeRightItem="language"
+        onStatisticsClick={jest.fn()}
+      />,
+    );
+
+    expect(screen.queryByRole('button', { name: 'Štatistiky' })).not.toBeInTheDocument();
+  });
+
+  it('shows the Statistics title and returns to the profile from its back action', () => {
+    const onBackClick = jest.fn();
+    const onStatisticsBackClick = jest.fn();
+
+    render(
+      <MobileTopBar
+        onMenuClick={jest.fn()}
+        activeModule="statistics"
+        onBackClick={onBackClick}
+        onStatisticsBackClick={onStatisticsBackClick}
+        onProfileClick={jest.fn()}
+      />,
+    );
+
+    expect(screen.getByRole('heading', { name: 'Štatistiky' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Späť' }));
+
+    expect(onStatisticsBackClick).toHaveBeenCalledTimes(1);
+    expect(onBackClick).not.toHaveBeenCalled();
+    expect(screen.queryByRole('button', { name: 'Profil' })).not.toBeInTheDocument();
+  });
+
 
   it('uses the selected mobile account settings detail title', () => {
     const { rerender } = render(

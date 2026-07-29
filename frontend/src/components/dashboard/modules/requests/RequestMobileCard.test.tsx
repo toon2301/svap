@@ -83,3 +83,37 @@ describe('RequestMobileCard click targets', () => {
     }
   });
 });
+
+describe('RequestMobileCard – zmazaný používateľ', () => {
+  const deletedItem = {
+    id: 6,
+    status: 'accepted',
+    recipient: 88,
+    recipient_display_name: 'deleted-user-abc123',
+    recipient_summary: {
+      id: 88,
+      display_name: 'deleted-user-abc123',
+      slug: 'deleted-user-abc123',
+      avatar_url: null,
+    },
+    requester: 1,
+    requester_display_name: 'Me',
+    offer_subcategory: 'Programovanie',
+  } as unknown as SkillRequest;
+
+  it('zobrazí lokalizovaný text namiesto surového "deleted-user-<uuid>"', () => {
+    render(
+      <RequestMobileCard item={deletedItem} variant="sent" onPress={jest.fn()} />,
+    );
+    expect(screen.getByText('Zmazaný používateľ')).toBeInTheDocument();
+    expect(screen.queryByText(/deleted-user-/)).not.toBeInTheDocument();
+  });
+
+  it('avatar má neutrálnu iniciálu "?" (nie "D" z deleted-user…)', () => {
+    render(
+      <RequestMobileCard item={deletedItem} variant="sent" onPress={jest.fn()} />,
+    );
+    expect(screen.getByText('?')).toBeInTheDocument();
+    expect(screen.queryByText('D')).not.toBeInTheDocument();
+  });
+});

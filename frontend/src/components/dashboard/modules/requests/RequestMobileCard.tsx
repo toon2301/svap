@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import type { SkillRequest } from './types';
+import { isDeletedUserName, requestUserName } from './requestUserName';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { api } from '@/lib/api';
@@ -68,10 +69,13 @@ export function RequestMobileCard({ item, variant, onPress }: Props) {
 
   const who = variant === 'received' ? item.requester_summary : item.recipient_summary;
   const whoId = who?.id ?? (variant === 'received' ? item.requester : item.recipient);
-  const whoName =
+  const rawWhoName =
     who?.display_name ||
     (variant === 'received' ? item.requester_display_name : item.recipient_display_name) ||
-    t('requests.userFallback');
+    '';
+  // Zmazaný účet → "Zmazaný používateľ" namiesto surového "deleted-user-<uuid>".
+  const whoName = requestUserName(rawWhoName, t);
+  const whoIsDeleted = isDeletedUserName(rawWhoName);
   const whoAvatar = who?.avatar_url || null;
   const [avatarError, setAvatarError] = useState(false);
 
@@ -169,7 +173,7 @@ export function RequestMobileCard({ item, variant, onPress }: Props) {
               />
             ) : (
               <div className="h-full w-full grid place-items-center">
-                <span className="text-sm font-bold text-gray-700 dark:text-gray-200">{initials(whoName)}</span>
+                <span className="text-sm font-bold text-gray-700 dark:text-gray-200">{whoIsDeleted ? '?' : initials(whoName)}</span>
               </div>
             )}
           </button>

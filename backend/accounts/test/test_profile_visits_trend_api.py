@@ -139,11 +139,40 @@ class ProfileVisitsTrendApiTests(APITestCase):
         ).isoformat()
         self.assertNotIn(old_day, self._daily_map(data))
 
+    def test_recent_and_previous_45d_halves(self):
+        # 90-dňové okno = predošlá polovica (days_ago 45..89) + posledná polovica
+        # (days_ago 0..44). Hranica: days_ago=44 patrí do "recent", days_ago=45
+        # do "previous".
+        v1, v2, v3, v4 = (
+            self._visitor(1),
+            self._visitor(2),
+            self._visitor(3),
+            self._visitor(4),
+        )
+        self._visit(self.owner, v1, days_ago=0)  # recent
+        self._visit(self.owner, v2, days_ago=44)  # recent (hranica)
+        self._visit(self.owner, v3, days_ago=45)  # previous (hranica)
+        self._visit(self.owner, v4, days_ago=89)  # previous (najstarší v okne)
+
+        self.client.force_authenticate(user=self.owner)
+        data = self.client.get(self.url).json()
+
+        self.assertEqual(data["total_visits_recent_45d"], 2)
+        self.assertEqual(data["total_visits_previous_45d"], 2)
+        # Polovice delia okno → ich súčet == total_90d.
+        self.assertEqual(
+            data["total_visits_90d"],
+            data["total_visits_recent_45d"] + data["total_visits_previous_45d"],
+        )
+        self.assertEqual(data["total_visits_90d"], 4)
+
     def test_user_without_visits_gets_full_zero_series(self):
         self.client.force_authenticate(user=self.owner)
         data = self.client.get(self.url).json()
 
         self.assertEqual(data["total_visits_90d"], 0)
+        self.assertEqual(data["total_visits_recent_45d"], 0)
+        self.assertEqual(data["total_visits_previous_45d"], 0)
         self.assertEqual(len(data["daily"]), EXPECTED_DAILY_LEN)  # nie prázdny zoznam
         self.assertTrue(all(r["count"] == 0 for r in data["daily"]))
 
