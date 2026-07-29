@@ -8,6 +8,16 @@ import { primeUserSlugId } from '../modules/profile/profileUserCache';
 import { type UseDashboardStateResult } from './useDashboardState';
 import { createDesktopSettingsReturnTarget } from './desktopSettingsNavigation';
 
+/**
+ * Bezpečný identifikátor profilu pre URL `/dashboard/users/{identifier}`.
+ * Preferuje slug, potom číselné id; ak `user` chýba, vráti `'profile'` – tak
+ * nikdy nevznikne URL s "undefined" (napr. keď sa profil otvorí skôr, než sa
+ * `user` načíta).
+ */
+function profileIdentifier(user: User | null | undefined): string {
+  return user?.slug || (user?.id != null ? String(user.id) : 'profile');
+}
+
 export interface DashboardNavigationProps {
   handleMainModuleChange: (moduleId: string) => void;
   handleEditProfileClick: () => void;
@@ -128,8 +138,7 @@ export function useDashboardNavigation({
         // UI state is already synchronized; ignore storage failures.
       }
       if (typeof window !== 'undefined') {
-        const identifier = user?.slug || (user?.id != null ? String(user.id) : 'profile');
-        window.history.replaceState(null, '', `/dashboard/users/${identifier}`);
+        window.history.replaceState(null, '', `/dashboard/users/${profileIdentifier(user)}`);
       }
       return;
     }
@@ -155,8 +164,7 @@ export function useDashboardNavigation({
     } else if (moduleId === 'privacy') {
       url = '/dashboard/privacy';
     } else if (moduleId === 'profile') {
-      const identifier = user?.slug || String(user?.id);
-      url = `/dashboard/users/${identifier}`;
+      url = `/dashboard/users/${profileIdentifier(user)}`;
     } else if (moduleId === 'favorites') {
       url = '/dashboard/favorites';
     } else if (moduleId === 'messages') {
@@ -329,9 +337,8 @@ export function useDashboardNavigation({
       // ignore
     }
 
-    const identifier = user.slug || String(user.id);
-    const url = `/dashboard/users/${identifier}`;
-    
+    const url = `/dashboard/users/${profileIdentifier(user)}`;
+
     if (typeof window !== 'undefined') {
       window.history.pushState(null, '', url);
     }
