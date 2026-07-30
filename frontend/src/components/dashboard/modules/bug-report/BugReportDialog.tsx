@@ -119,6 +119,7 @@ export default function BugReportDialog({ onClose }: BugReportDialogProps) {
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
+        aria-hidden={showDiscardConfirm || undefined}
         className="flex h-dvh w-full flex-col overflow-hidden border border-gray-200 bg-white text-gray-900 shadow-2xl dark:border-gray-800 dark:bg-black dark:text-white sm:h-auto sm:max-h-[min(90vh,850px)] sm:max-w-2xl sm:rounded-2xl"
       >
         <header className="flex shrink-0 items-start justify-between gap-4 border-b border-gray-200 px-4 py-4 dark:border-gray-800 sm:px-6">

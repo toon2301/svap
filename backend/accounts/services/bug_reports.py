@@ -8,7 +8,11 @@ import logging
 from django.db import transaction
 from django.utils import timezone
 
-from accounts.models import BugReport, BugReportStatus
+from accounts.models import (
+    BugReport,
+    BugReportNotificationOutbox,
+    BugReportStatus,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -20,6 +24,9 @@ def schedule_bug_report_notification(*, report_id: int) -> None:
     """Enqueue support notification only after the report transaction commits."""
 
     normalized_report_id = int(report_id)
+    BugReportNotificationOutbox.objects.get_or_create(
+        bug_report_id=normalized_report_id,
+    )
 
     def _enqueue() -> None:
         try:
@@ -28,7 +35,8 @@ def schedule_bug_report_notification(*, report_id: int) -> None:
             send_bug_report_notification_task.delay(report_id=normalized_report_id)
         except Exception:
             logger.warning(
-                "Bug report notification task could not be enqueued.",
+                "Bug report notification task could not be enqueued; "
+                "the durable notification intent remains pending.",
                 extra={"bug_report_id": normalized_report_id},
                 exc_info=True,
             )

@@ -45,6 +45,17 @@ describe('BugReportDialog', () => {
     expect(screen.getByText('Nahlásiť problém')).toBeInTheDocument();
   });
 
+  it('keeps form focus when the dialog host re-renders', () => {
+    const { rerender } = render(<BugReportDialogHost />);
+    act(() => requestBugReportDialog());
+    const titleInput = screen.getByLabelText('Krátky názov');
+    titleInput.focus();
+
+    rerender(<BugReportDialogHost />);
+
+    expect(titleInput).toHaveFocus();
+  });
+
   it('validates required fields before calling the backend', () => {
     render(<BugReportDialog onClose={jest.fn()} />);
 
@@ -125,6 +136,7 @@ describe('BugReportDialog', () => {
   it('asks before discarding entered content', () => {
     const onClose = jest.fn();
     render(<BugReportDialog onClose={onClose} />);
+    const mainDialog = screen.getByRole('dialog');
     fireEvent.change(screen.getByLabelText('Krátky názov'), {
       target: { value: 'Rozpísané hlásenie' },
     });
@@ -132,10 +144,12 @@ describe('BugReportDialog', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Zatvoriť' }));
 
     expect(screen.getByRole('alertdialog')).toBeInTheDocument();
+    expect(mainDialog).toHaveAttribute('aria-hidden', 'true');
     expect(onClose).not.toHaveBeenCalled();
 
     fireEvent.click(screen.getByRole('button', { name: 'Pokračovať v úprave' }));
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    expect(mainDialog).not.toHaveAttribute('aria-hidden');
 
     fireEvent.keyDown(document, { key: 'Escape' });
     fireEvent.click(screen.getByRole('button', { name: 'Zahodiť' }));

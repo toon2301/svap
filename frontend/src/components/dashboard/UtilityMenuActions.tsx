@@ -53,7 +53,6 @@ export default function UtilityMenuActions({
       <button
         ref={firstItemRef}
         type="button"
-        role="menuitem"
         onClick={openBugReport}
         className={`${ITEM_CLASS_NAME} text-gray-700 hover:bg-purple-50 hover:text-purple-700 dark:text-gray-200 dark:hover:bg-purple-950/40 dark:hover:text-purple-300`}
       >
@@ -66,7 +65,6 @@ export default function UtilityMenuActions({
 
       <button
         type="button"
-        role="menuitem"
         onClick={changeTheme}
         className={`${ITEM_CLASS_NAME} text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-900`}
       >
@@ -90,7 +88,6 @@ export default function UtilityMenuActions({
 
       <button
         type="button"
-        role="menuitem"
         onClick={logout}
         className={`${ITEM_CLASS_NAME} text-red-600 hover:bg-red-50 dark:text-red-500 dark:hover:bg-red-950/30`}
       >

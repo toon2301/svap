@@ -111,7 +111,7 @@ export default function MobileUtilityMenu({ onBugReportOpen, onLogout }: MobileU
                 <XMarkIcon className="h-6 w-6" aria-hidden="true" />
               </button>
             </div>
-            <div role="menu" aria-label={t('navigation.more', 'Viac')} className="space-y-1">
+            <div role="group" aria-label={t('navigation.more', 'Viac')} className="space-y-1">
               <UtilityMenuActions
                 firstItemRef={firstItemRef}
                 onActionComplete={close}

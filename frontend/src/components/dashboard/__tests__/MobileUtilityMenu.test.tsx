@@ -29,9 +29,9 @@ describe('MobileUtilityMenu', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Viac' }));
 
     expect(screen.getByRole('dialog', { name: 'Viac' })).toBeInTheDocument();
-    expect(screen.getByRole('menuitem', { name: 'Nahlásiť problém' })).toBeInTheDocument();
-    expect(screen.getByRole('menuitem', { name: 'Tmavý režim' })).toBeInTheDocument();
-    expect(screen.getByRole('menuitem', { name: 'Odhlásiť sa' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Nahlásiť problém' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Tmavý režim' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Odhlásiť sa' })).toBeInTheDocument();
   });
 
   it('closes the navigation and requests the bug report dialog', () => {
@@ -40,7 +40,7 @@ describe('MobileUtilityMenu', () => {
     const { onBugReportOpen } = renderMenu();
     fireEvent.click(screen.getByRole('button', { name: 'Viac' }));
 
-    fireEvent.click(screen.getByRole('menuitem', { name: 'Nahlásiť problém' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Nahlásiť problém' }));
 
     expect(onBugReportOpen).toHaveBeenCalledTimes(1);
     expect(onBugReportRequest).toHaveBeenCalledTimes(1);
@@ -69,16 +69,29 @@ describe('MobileUtilityMenu', () => {
     expect(screen.queryByRole('dialog', { name: 'Viac' })).not.toBeInTheDocument();
   });
 
+  it('closes on Escape and restores focus to the trigger', () => {
+    renderMenu();
+    const trigger = screen.getByRole('button', { name: 'Viac' });
+    fireEvent.click(trigger);
+
+    fireEvent.keyDown(screen.getByRole('dialog', { name: 'Viac' }), {
+      key: 'Escape',
+    });
+
+    expect(screen.queryByRole('dialog', { name: 'Viac' })).not.toBeInTheDocument();
+    expect(trigger).toHaveFocus();
+  });
+
   it('changes theme and delegates logout', () => {
     const { onLogout } = renderMenu();
     const trigger = screen.getByRole('button', { name: 'Viac' });
 
     fireEvent.click(trigger);
-    fireEvent.click(screen.getByRole('menuitem', { name: 'Tmavý režim' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Tmavý režim' }));
     expect(document.documentElement).toHaveClass('dark');
 
     fireEvent.click(trigger);
-    fireEvent.click(screen.getByRole('menuitem', { name: 'Odhlásiť sa' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Odhlásiť sa' }));
     expect(onLogout).toHaveBeenCalledTimes(1);
   });
 });

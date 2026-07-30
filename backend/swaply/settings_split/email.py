@@ -35,3 +35,18 @@ SUPPORT_EMAIL = os.getenv("SUPPORT_EMAIL", "info@svaply.com")
 
 # Hlásenia chýb – samostatne konfigurovateľné, s fallbackom na podporu.
 BUG_REPORT_EMAIL = os.getenv("BUG_REPORT_EMAIL", SUPPORT_EMAIL)
+
+_configured_bug_report_origin = (
+    os.getenv("BUG_REPORT_ADMIN_ORIGIN") or os.getenv("BACKEND_ORIGIN") or ""
+).strip()
+_site_domain = os.getenv("SITE_DOMAIN", "").strip()
+if _configured_bug_report_origin:
+    BUG_REPORT_ADMIN_ORIGIN = _configured_bug_report_origin.rstrip("/")
+elif _site_domain:
+    BUG_REPORT_ADMIN_ORIGIN = (
+        _site_domain if "://" in _site_domain else f"https://{_site_domain}"
+    ).rstrip("/")
+elif DEBUG:
+    BUG_REPORT_ADMIN_ORIGIN = "http://localhost:8000"
+else:
+    BUG_REPORT_ADMIN_ORIGIN = "https://api.svaply.com"

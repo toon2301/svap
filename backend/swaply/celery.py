@@ -31,6 +31,10 @@ app.conf.imports = tuple(
 # Periodické (beat) tasky. Celery beží v UTC (žiadny CELERY_TIMEZONE override),
 # takže crontab(hour=3) = 03:00 UTC – nízka záťaž.
 app.conf.beat_schedule = {
+    "recover-pending-bug-report-notifications": {
+        "task": "accounts.tasks.recover_pending_bug_report_notifications_task",
+        "schedule": crontab(minute="*/5"),
+    },
     "purge-old-bug-reports-daily": {
         "task": "accounts.tasks.purge_old_bug_reports_task",
         "schedule": crontab(hour=3, minute=30),

@@ -58,8 +58,13 @@ class BugReport(models.Model):
         _("Kategória"),
         max_length=20,
         choices=BugReportCategory.choices,
+        help_text=_("Druh problému zvolený používateľom."),
     )
-    title = models.CharField(_("Názov"), max_length=120)
+    title = models.CharField(
+        _("Názov"),
+        max_length=120,
+        help_text=_("Krátky názov problému zadaný používateľom."),
+    )
     description = models.TextField(_("Popis"), max_length=2000)
     reproduction_steps = models.TextField(
         _("Postup zopakovania"),
@@ -72,42 +77,49 @@ class BugReport(models.Model):
         max_length=64,
         blank=True,
         default="",
+        help_text=_("Obrazovka aplikácie, z ktorej bolo hlásenie odoslané."),
     )
     device_type = models.CharField(
         _("Typ zariadenia"),
         max_length=16,
         choices=BugReportDeviceType.choices,
         default=BugReportDeviceType.UNKNOWN,
+        help_text=_("Typ zariadenia určený klientskou aplikáciou."),
     )
     locale = models.CharField(
         _("Jazyk aplikácie"),
         max_length=10,
         blank=True,
         default="",
+        help_text=_("Jazyk aplikácie v čase odoslania hlásenia."),
     )
     app_version = models.CharField(
         _("Verzia aplikácie"),
         max_length=64,
         blank=True,
         default="",
+        help_text=_("Verzia aplikácie v čase odoslania hlásenia."),
     )
     browser = models.CharField(
         _("Prehliadač"),
         max_length=64,
         blank=True,
         default="",
+        help_text=_("Prehliadač určený klientskou aplikáciou."),
     )
     status = models.CharField(
         _("Stav"),
         max_length=20,
         choices=BugReportStatus.choices,
         default=BugReportStatus.NEW,
+        help_text=_("Aktuálny stav spracovania hlásenia."),
     )
     priority = models.CharField(
         _("Priorita"),
         max_length=16,
         choices=BugReportPriority.choices,
         default=BugReportPriority.NORMAL,
+        help_text=_("Interná priorita spracovania hlásenia."),
     )
     internal_note = models.TextField(
         _("Interná poznámka"),
@@ -164,9 +176,30 @@ class BugReport(models.Model):
             ),
         ]
 
+    def __str__(self) -> str:
+        return f"{self.reference}: {self.title}"
+
     @property
     def reference(self) -> str:
         return f"BR-{str(self.public_id).upper()}"
 
+
+class BugReportNotificationOutbox(models.Model):
+    """Durable intent to notify support about a bug report."""
+
+    bug_report = models.OneToOneField(
+        BugReport,
+        on_delete=models.CASCADE,
+        related_name="notification_outbox",
+    )
+    attempt_count = models.PositiveIntegerField(default=0)
+    last_attempt_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["id"]
+        verbose_name = _("Čakajúca notifikácia hlásenia chyby")
+        verbose_name_plural = _("Čakajúce notifikácie hlásení chýb")
+
     def __str__(self) -> str:
-        return f"{self.reference}: {self.title}"
+        return f"Bug report notification intent {self.bug_report_id}"

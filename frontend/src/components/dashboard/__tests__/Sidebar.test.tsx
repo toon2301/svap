@@ -126,7 +126,7 @@ describe('Sidebar', () => {
     );
 
     fireEvent.click(screen.getByRole('button', { name: 'Viac' }));
-    fireEvent.click(screen.getByRole('menuitem', { name: 'Nahlásiť problém' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Nahlásiť problém' }));
 
     expect(onBugReportRequest).toHaveBeenCalledTimes(1);
     expect(mockOnClose).toHaveBeenCalledTimes(1);
@@ -149,8 +149,8 @@ describe('Sidebar', () => {
     expect(screen.queryByText('Tmavý režim')).not.toBeInTheDocument();
     expect(screen.queryByText('Odhlásiť sa')).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Viac' }));
-    expect(screen.getByRole('menuitem', { name: 'Tmavý režim' })).toBeInTheDocument();
-    expect(screen.getByRole('menuitem', { name: 'Odhlásiť sa' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Tmavý režim' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Odhlásiť sa' })).toBeInTheDocument();
   });
 
   it('renders mobile overlay when isMobile and isOpen', () => {

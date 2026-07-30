@@ -54,7 +54,7 @@ export default function DesktopUtilityMenu({ onLogout }: DesktopUtilityMenuProps
       {isOpen && (
         <div
           id="desktop-utility-menu"
-          role="menu"
+          role="group"
           aria-label={t('navigation.more', 'Viac')}
           className="absolute bottom-full left-3 right-3 z-30 mb-2 space-y-1 rounded-2xl border border-gray-200 bg-white p-2 shadow-2xl dark:border-gray-800 dark:bg-gray-950 xl:left-4 xl:right-4"
         >
@@ -69,7 +69,6 @@ export default function DesktopUtilityMenu({ onLogout }: DesktopUtilityMenuProps
       <button
         ref={triggerRef}
         type="button"
-        aria-haspopup="menu"
         aria-expanded={isOpen}
         aria-controls="desktop-utility-menu"
         onClick={() => setIsOpen((current) => !current)}

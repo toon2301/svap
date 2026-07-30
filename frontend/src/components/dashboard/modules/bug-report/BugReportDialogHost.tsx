@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 import BugReportDialog from './BugReportDialog';
@@ -8,6 +8,7 @@ import { BUG_REPORT_DIALOG_REQUEST_EVENT } from './bugReportDialogEvents';
 
 export default function BugReportDialogHost() {
   const [isOpen, setIsOpen] = useState(false);
+  const closeDialog = useCallback(() => setIsOpen(false), []);
 
   useEffect(() => {
     const openDialog = () => setIsOpen(true);
@@ -18,7 +19,7 @@ export default function BugReportDialogHost() {
   if (!isOpen || typeof document === 'undefined') return null;
 
   return createPortal(
-    <BugReportDialog onClose={() => setIsOpen(false)} />,
+    <BugReportDialog onClose={closeDialog} />,
     document.getElementById('app-root') ?? document.body,
   );
 }

@@ -21,11 +21,15 @@ from accounts.admin.bug_reports import BugReportAdmin
 from accounts.models import (
     BugReport,
     BugReportCategory,
+    BugReportNotificationOutbox,
     BugReportPriority,
     BugReportStatus,
 )
 from accounts.services.bug_reports import purge_old_bug_reports
-from accounts.tasks import send_bug_report_notification_task
+from accounts.tasks import (
+    recover_pending_bug_report_notifications_task,
+    send_bug_report_notification_task,
+)
 
 User = get_user_model()
 
@@ -95,6 +99,11 @@ class BugReportApiTests(APITestCase):
             {"reference", "status", "created_at"},
         )
         self.assertEqual(response.data["reference"], report.reference)
+        self.assertTrue(
+            BugReportNotificationOutbox.objects.filter(
+                bug_report=report
+            ).exists()
+        )
         enqueue.assert_called_once_with(report_id=report.id)
 
     def test_workflow_and_unknown_fields_cannot_be_mass_assigned(self):
@@ -172,6 +181,7 @@ class BugReportApiTests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(BugReport.objects.count(), 1)
+        self.assertTrue(BugReportNotificationOutbox.objects.exists())
 
 
 class BugReportRateLimitTests(APITestCase):
@@ -211,6 +221,7 @@ class BugReportNotificationTaskTests(APITestCase):
 
     @override_settings(
         BUG_REPORT_EMAIL="bugs@example.com",
+        BUG_REPORT_ADMIN_ORIGIN="https://api.example.com",
         DEFAULT_FROM_EMAIL="no-reply@example.com",
     )
     def test_task_sends_minimal_email_and_is_idempotent_after_success(self):
@@ -230,9 +241,84 @@ class BugReportNotificationTaskTests(APITestCase):
         self.assertEqual(len(mail.outbox), 1)
         self.assertEqual(mail.outbox[0].to, ["bugs@example.com"])
         self.assertIn(report.reference, mail.outbox[0].body)
+        self.assertIn(
+            f"https://api.example.com/admin/accounts/bugreport/{report.id}/change/",
+            mail.outbox[0].body,
+        )
         self.assertNotIn(report.title, mail.outbox[0].body)
         self.assertNotIn(report.description, mail.outbox[0].body)
         self.assertNotIn(user.email, mail.outbox[0].body)
+
+    @override_settings(
+        BUG_REPORT_EMAIL="bugs@example.com",
+        BUG_REPORT_ADMIN_ORIGIN="https://api.example.com",
+        DEFAULT_FROM_EMAIL="no-reply@example.com",
+    )
+    def test_failed_send_releases_claim_and_preserves_retryable_intent(self):
+        user = _create_user("email-failure")
+        report = BugReport.objects.create(
+            reported_by=user,
+            category=BugReportCategory.OTHER,
+            title="Email failure",
+            description="Description",
+        )
+        intent = BugReportNotificationOutbox.objects.create(bug_report=report)
+
+        with patch(
+            "accounts.tasks.EmailMultiAlternatives.send",
+            side_effect=RuntimeError("email unavailable"),
+        ), self.assertRaises(Exception):
+            send_bug_report_notification_task.run(report_id=report.id)
+
+        report.refresh_from_db()
+        intent.refresh_from_db()
+        self.assertIsNone(report.support_notified_at)
+        self.assertEqual(intent.attempt_count, 1)
+        self.assertIsNotNone(intent.last_attempt_at)
+
+    def test_existing_claim_prevents_overlapping_delivery(self):
+        user = _create_user("email-claimed")
+        claimed_at = timezone.now()
+        report = BugReport.objects.create(
+            reported_by=user,
+            category=BugReportCategory.OTHER,
+            title="Claimed report",
+            description="Description",
+            support_notified_at=claimed_at,
+        )
+        BugReportNotificationOutbox.objects.create(bug_report=report)
+
+        send_bug_report_notification_task.run(report_id=report.id)
+
+        self.assertEqual(len(mail.outbox), 0)
+        report.refresh_from_db()
+        self.assertEqual(report.support_notified_at, claimed_at)
+
+    def test_recovery_requeues_only_unclaimed_durable_intents(self):
+        user = _create_user("email-recovery")
+        pending = BugReport.objects.create(
+            reported_by=user,
+            category=BugReportCategory.OTHER,
+            title="Pending report",
+            description="Description",
+        )
+        claimed = BugReport.objects.create(
+            reported_by=user,
+            category=BugReportCategory.OTHER,
+            title="Claimed report",
+            description="Description",
+            support_notified_at=timezone.now(),
+        )
+        BugReportNotificationOutbox.objects.create(bug_report=pending)
+        BugReportNotificationOutbox.objects.create(bug_report=claimed)
+
+        with patch(
+            "accounts.tasks.send_bug_report_notification_task.delay"
+        ) as enqueue:
+            recovered_count = recover_pending_bug_report_notifications_task.run()
+
+        self.assertEqual(recovered_count, 1)
+        enqueue.assert_called_once_with(report_id=pending.id)
 
 
 class BugReportAdminTests(APITestCase):

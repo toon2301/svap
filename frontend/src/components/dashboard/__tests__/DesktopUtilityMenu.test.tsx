@@ -21,13 +21,13 @@ describe('DesktopUtilityMenu', () => {
   it('opens upward utility actions from the More button', () => {
     renderMenu();
 
-    expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+    expect(screen.queryByRole('group', { name: 'Viac' })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Viac' }));
 
-    expect(screen.getByRole('menu')).toBeInTheDocument();
-    expect(screen.getByRole('menuitem', { name: 'Nahlásiť problém' })).toBeInTheDocument();
-    expect(screen.getByRole('menuitem', { name: 'Tmavý režim' })).toBeInTheDocument();
-    expect(screen.getByRole('menuitem', { name: 'Odhlásiť sa' })).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: 'Viac' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Nahlásiť problém' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Tmavý režim' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Odhlásiť sa' })).toBeInTheDocument();
   });
 
   it('opens the existing bug report dialog request and closes the menu', () => {
@@ -36,21 +36,21 @@ describe('DesktopUtilityMenu', () => {
     renderMenu();
     fireEvent.click(screen.getByRole('button', { name: 'Viac' }));
 
-    fireEvent.click(screen.getByRole('menuitem', { name: 'Nahlásiť problém' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Nahlásiť problém' }));
 
     expect(onBugReportRequest).toHaveBeenCalledTimes(1);
-    expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+    expect(screen.queryByRole('group', { name: 'Viac' })).not.toBeInTheDocument();
     window.removeEventListener('svaply:bug-report-dialog-request', onBugReportRequest);
   });
 
   it('changes theme and delegates logout', () => {
     const onLogout = renderMenu();
     fireEvent.click(screen.getByRole('button', { name: 'Viac' }));
-    fireEvent.click(screen.getByRole('menuitem', { name: 'Tmavý režim' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Tmavý režim' }));
     expect(document.documentElement).toHaveClass('dark');
 
     fireEvent.click(screen.getByRole('button', { name: 'Viac' }));
-    fireEvent.click(screen.getByRole('menuitem', { name: 'Odhlásiť sa' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Odhlásiť sa' }));
     expect(onLogout).toHaveBeenCalledTimes(1);
   });
 
@@ -61,7 +61,7 @@ describe('DesktopUtilityMenu', () => {
 
     fireEvent.keyDown(document, { key: 'Escape' });
 
-    expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+    expect(screen.queryByRole('group', { name: 'Viac' })).not.toBeInTheDocument();
     expect(trigger).toHaveFocus();
   });
 
@@ -71,6 +71,6 @@ describe('DesktopUtilityMenu', () => {
 
     fireEvent.mouseDown(document.body);
 
-    expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+    expect(screen.queryByRole('group', { name: 'Viac' })).not.toBeInTheDocument();
   });
 });

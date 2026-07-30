@@ -41,6 +41,7 @@ from .bug_reports import (
     BugReport,
     BugReportCategory,
     BugReportDeviceType,
+    BugReportNotificationOutbox,
     BugReportPriority,
     BugReportStatus,
 )
@@ -53,6 +54,7 @@ __all__ = [
     "BugReport",
     "BugReportCategory",
     "BugReportDeviceType",
+    "BugReportNotificationOutbox",
     "BugReportPriority",
     "BugReportStatus",
     "decrypt_mfa_secret",

@@ -50,14 +50,15 @@ describe('Sidebar extra coverage', () => {
       </ThemeProvider>
     );
 
-    // Initial light theme → shows "Tmavý režim" text, button is labeled by aria-label
-    const themeBtn = screen.getByRole('button', { name: /prepínač témy/i });
-    expect(screen.getByText(/tmavý režim/i)).toBeInTheDocument();
+    const moreButton = screen.getByRole('button', { name: 'Viac' });
+    fireEvent.click(moreButton);
+    const themeBtn = screen.getByRole('button', { name: /tmavý režim/i });
 
     fireEvent.click(themeBtn);
+    expect(document.documentElement).toHaveClass('dark');
 
-    // After toggle to dark → shows "Svetlý režim"
-    expect(screen.getByText(/svetlý režim/i)).toBeInTheDocument();
+    fireEvent.click(moreButton);
+    expect(screen.getByRole('button', { name: /svetlý režim/i })).toBeInTheDocument();
   });
 
   it('mobile: language row triggers onLanguageClick and closes', () => {
