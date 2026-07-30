@@ -19,6 +19,9 @@ EMAIL_HOST_USER=your-email@gmail.com
 EMAIL_HOST_PASSWORD=your-app-password
 DEFAULT_FROM_EMAIL=your-email@gmail.com
 SUPPORT_EMAIL=info@svaply.com
+BUG_REPORT_EMAIL=info@svaply.com
+BUG_REPORT_ADMIN_ORIGIN=https://api.yourdomain.com
+BUG_REPORT_NOTIFICATION_STALE_CLAIM_SECONDS=300
 
 # CAPTCHA
 CAPTCHA_ENABLED=True

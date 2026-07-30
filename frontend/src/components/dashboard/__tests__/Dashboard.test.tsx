@@ -276,8 +276,9 @@ describe('Dashboard', () => {
     isAuthenticated.mockReturnValue(true);
     
     renderDashboard(<ThemeProvider><Dashboard initialUser={mockUser} /></ThemeProvider>);
-    
-    expect(screen.getByText('Odhlásiť sa')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Viac' }));
+    expect(screen.getByRole('button', { name: 'Odhlásiť sa' })).toBeInTheDocument();
   });
 
   it('calls logout when logout button is clicked', async () => {
@@ -289,8 +290,9 @@ describe('Dashboard', () => {
     api.post.mockResolvedValue({});
     
     renderDashboard(<ThemeProvider><Dashboard initialUser={mockUser} /></ThemeProvider>);
-    
-    const logoutButton = screen.getByText('Odhlásiť sa');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Viac' }));
+    const logoutButton = screen.getByRole('button', { name: 'Odhlásiť sa' });
     fireEvent.click(logoutButton);
     
     await waitFor(() => {

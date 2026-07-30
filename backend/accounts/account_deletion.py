@@ -69,6 +69,7 @@ def _delete_owned_content(user) -> None:
     from portfolio.models import PortfolioItem, PortfolioItemLike
 
     from .models import (
+        BugReport,
         EmailVerification,
         FavoriteUser,
         Notification,
@@ -109,6 +110,7 @@ def _delete_owned_content(user) -> None:
     # confirm flow ho označuje is_used=True až PO anonymize_user ako audit +
     # reuse-guard; mazanie by rozbilo confirm view. Viď BOD 12 – čaká na rozhodnutie.)
     EmailVerification.objects.filter(user=user).delete()
+    BugReport.objects.filter(reported_by=user).delete()
 
 
 def _scrub_actor_notifications(user) -> None:

@@ -5,6 +5,7 @@ from .views import profile, password_reset, google_oauth_simple, account_deletio
 app_name = "accounts"
 
 urlpatterns = [
+    path("bug-reports/", views.bug_report_create_view, name="bug_report_create"),
     # Autentifikácia
     path("csrf-token/", views.get_csrf_token_view, name="get_csrf_token"),
     path("register/", views.register_view, name="register"),

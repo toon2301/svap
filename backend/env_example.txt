@@ -34,6 +34,9 @@ EMAIL_HOST_USER=your-email@gmail.com
 EMAIL_HOST_PASSWORD=your-app-password
 DEFAULT_FROM_EMAIL=your-email@gmail.com
 SUPPORT_EMAIL=info@svaply.com
+BUG_REPORT_EMAIL=info@svaply.com
+BUG_REPORT_ADMIN_ORIGIN=http://localhost:8000
+BUG_REPORT_NOTIFICATION_STALE_CLAIM_SECONDS=300
 
 # CORS settings
 CORS_ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
@@ -96,6 +99,7 @@ OFFER_IMAGE_WEBP_QUALITY=82
 #
 # Frontend proxy:
 #    BACKEND_ORIGIN=https://tvoj-http-backend.up.railway.app
+#    BUG_REPORT_ADMIN_ORIGIN=https://tvoj-http-backend.up.railway.app
 #    BACKEND_WS_ORIGIN=https://tvoj-ws-backend.up.railway.app
 #    NEXT_PUBLIC_BACKEND_ORIGIN=https://tvoj-http-backend.up.railway.app
 #    NEXT_PUBLIC_BACKEND_WS_ORIGIN=https://tvoj-ws-backend.up.railway.app

@@ -61,6 +61,7 @@ from .push import (
 )
 from .user_reports import user_report_view
 from .photo_reports import offer_image_report_view, user_avatar_report_view
+from .bug_reports import bug_report_create_view
 from .search import search_view
 from .search_global import global_search_view
 from .dashboard import (
@@ -79,6 +80,7 @@ from .dashboard import (
 )
 
 __all__ = [
+    "bug_report_create_view",
     "register_view",
     "login_view",
     "logout_view",
