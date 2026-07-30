@@ -193,6 +193,7 @@ class BugReportNotificationOutbox(models.Model):
         related_name="notification_outbox",
     )
     attempt_count = models.PositiveIntegerField(default=0)
+    claimed_at = models.DateTimeField(null=True, blank=True, db_index=True)
     last_attempt_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 

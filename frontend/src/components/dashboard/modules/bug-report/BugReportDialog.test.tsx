@@ -141,7 +141,8 @@ describe('BugReportDialog', () => {
       target: { value: 'Rozpísané hlásenie' },
     });
 
-    fireEvent.click(screen.getByRole('button', { name: 'Zatvoriť' }));
+    const closeButton = screen.getByRole('button', { name: 'Zatvoriť' });
+    fireEvent.click(closeButton);
 
     expect(screen.getByRole('alertdialog')).toBeInTheDocument();
     expect(mainDialog).toHaveAttribute('aria-hidden', 'true');
@@ -150,9 +151,27 @@ describe('BugReportDialog', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Pokračovať v úprave' }));
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
     expect(mainDialog).not.toHaveAttribute('aria-hidden');
+    expect(closeButton).toHaveFocus();
 
     fireEvent.keyDown(document, { key: 'Escape' });
     fireEvent.click(screen.getByRole('button', { name: 'Zahodiť' }));
     expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('restores focus to the form field after closing discard confirmation with Escape', () => {
+    render(<BugReportDialog onClose={jest.fn()} />);
+    const titleInput = screen.getByLabelText('Krátky názov');
+    fireEvent.change(titleInput, {
+      target: { value: 'Rozpísané hlásenie' },
+    });
+    titleInput.focus();
+
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(screen.getByRole('alertdialog')).toBeInTheDocument();
+
+    fireEvent.keyDown(document, { key: 'Escape' });
+
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    expect(titleInput).toHaveFocus();
   });
 });

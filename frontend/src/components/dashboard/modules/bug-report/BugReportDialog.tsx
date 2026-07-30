@@ -30,6 +30,7 @@ export default function BugReportDialog({ onClose }: BugReportDialogProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
   const discardDialogRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const discardTriggerRef = useRef<HTMLElement | null>(null);
   const isDirtyRef = useRef(false);
   const isSubmittingRef = useRef(false);
   const discardConfirmRef = useRef(false);
@@ -41,6 +42,10 @@ export default function BugReportDialog({ onClose }: BugReportDialogProps) {
   const requestClose = useCallback(() => {
     if (isSubmittingRef.current) return;
     if (isDirtyRef.current) {
+      discardTriggerRef.current =
+        document.activeElement instanceof HTMLElement
+          ? document.activeElement
+          : closeButtonRef.current;
       discardConfirmRef.current = true;
       setShowDiscardConfirm(true);
       return;
@@ -57,6 +62,13 @@ export default function BugReportDialog({ onClose }: BugReportDialogProps) {
     isSubmittingRef.current = submitting;
     setIsSubmitting(submitting);
   };
+
+  useEffect(() => {
+    if (showDiscardConfirm || !discardTriggerRef.current) return;
+    const trigger = discardTriggerRef.current;
+    discardTriggerRef.current = null;
+    if (trigger.isConnected) trigger.focus();
+  }, [showDiscardConfirm]);
 
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;

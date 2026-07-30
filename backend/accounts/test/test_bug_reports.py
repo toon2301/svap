@@ -2,7 +2,7 @@
 
 from datetime import timedelta
 from io import StringIO
-from unittest.mock import patch
+from unittest.mock import call, patch
 
 from django.contrib.admin.sites import AdminSite
 from django.contrib.auth import get_user_model
@@ -232,6 +232,7 @@ class BugReportNotificationTaskTests(APITestCase):
             title="Sensitive authored title",
             description="Sensitive authored description",
         )
+        BugReportNotificationOutbox.objects.create(bug_report=report)
 
         send_bug_report_notification_task.run(report_id=report.id)
         send_bug_report_notification_task.run(report_id=report.id)
@@ -248,6 +249,35 @@ class BugReportNotificationTaskTests(APITestCase):
         self.assertNotIn(report.title, mail.outbox[0].body)
         self.assertNotIn(report.description, mail.outbox[0].body)
         self.assertNotIn(user.email, mail.outbox[0].body)
+
+    @override_settings(
+        BUG_REPORT_EMAIL="bugs@example.com",
+        BUG_REPORT_ADMIN_ORIGIN="https://api.example.com",
+        DEFAULT_FROM_EMAIL="no-reply@example.com",
+    )
+    def test_notified_timestamp_is_written_only_after_email_send(self):
+        user = _create_user("email-timestamp")
+        report = BugReport.objects.create(
+            reported_by=user,
+            category=BugReportCategory.OTHER,
+            title="Timestamp contract",
+            description="Description",
+        )
+        BugReportNotificationOutbox.objects.create(bug_report=report)
+
+        def send_email(*args, **kwargs):
+            report.refresh_from_db()
+            self.assertIsNone(report.support_notified_at)
+            return 1
+
+        with patch(
+            "accounts.tasks.EmailMultiAlternatives.send",
+            side_effect=send_email,
+        ):
+            send_bug_report_notification_task.run(report_id=report.id)
+
+        report.refresh_from_db()
+        self.assertIsNotNone(report.support_notified_at)
 
     @override_settings(
         BUG_REPORT_EMAIL="bugs@example.com",
@@ -274,8 +304,10 @@ class BugReportNotificationTaskTests(APITestCase):
         intent.refresh_from_db()
         self.assertIsNone(report.support_notified_at)
         self.assertEqual(intent.attempt_count, 1)
+        self.assertIsNone(intent.claimed_at)
         self.assertIsNotNone(intent.last_attempt_at)
 
+    @override_settings(BUG_REPORT_NOTIFICATION_STALE_CLAIM_SECONDS=300)
     def test_existing_claim_prevents_overlapping_delivery(self):
         user = _create_user("email-claimed")
         claimed_at = timezone.now()
@@ -284,41 +316,87 @@ class BugReportNotificationTaskTests(APITestCase):
             category=BugReportCategory.OTHER,
             title="Claimed report",
             description="Description",
-            support_notified_at=claimed_at,
         )
-        BugReportNotificationOutbox.objects.create(bug_report=report)
+        intent = BugReportNotificationOutbox.objects.create(
+            bug_report=report,
+            claimed_at=claimed_at,
+        )
 
         send_bug_report_notification_task.run(report_id=report.id)
 
         self.assertEqual(len(mail.outbox), 0)
         report.refresh_from_db()
-        self.assertEqual(report.support_notified_at, claimed_at)
+        intent.refresh_from_db()
+        self.assertIsNone(report.support_notified_at)
+        self.assertEqual(intent.claimed_at, claimed_at)
 
-    def test_recovery_requeues_only_unclaimed_durable_intents(self):
+    @override_settings(BUG_REPORT_NOTIFICATION_STALE_CLAIM_SECONDS=300)
+    def test_stale_claim_is_reclaimed_and_delivered(self):
+        user = _create_user("email-stale")
+        report = BugReport.objects.create(
+            reported_by=user,
+            category=BugReportCategory.OTHER,
+            title="Stale report",
+            description="Description",
+        )
+        BugReportNotificationOutbox.objects.create(
+            bug_report=report,
+            claimed_at=timezone.now() - timedelta(seconds=301),
+            attempt_count=999,
+        )
+
+        send_bug_report_notification_task.run(report_id=report.id)
+
+        report.refresh_from_db()
+        self.assertIsNotNone(report.support_notified_at)
+        self.assertFalse(
+            BugReportNotificationOutbox.objects.filter(bug_report=report).exists()
+        )
+        self.assertEqual(len(mail.outbox), 1)
+
+    @override_settings(BUG_REPORT_NOTIFICATION_STALE_CLAIM_SECONDS=300)
+    def test_recovery_requeues_unclaimed_and_stale_intents(self):
         user = _create_user("email-recovery")
+        now = timezone.now()
         pending = BugReport.objects.create(
             reported_by=user,
             category=BugReportCategory.OTHER,
             title="Pending report",
             description="Description",
         )
-        claimed = BugReport.objects.create(
+        active = BugReport.objects.create(
             reported_by=user,
             category=BugReportCategory.OTHER,
-            title="Claimed report",
+            title="Active claim",
             description="Description",
-            support_notified_at=timezone.now(),
+        )
+        stale = BugReport.objects.create(
+            reported_by=user,
+            category=BugReportCategory.OTHER,
+            title="Stale claim",
+            description="Description",
         )
         BugReportNotificationOutbox.objects.create(bug_report=pending)
-        BugReportNotificationOutbox.objects.create(bug_report=claimed)
+        BugReportNotificationOutbox.objects.create(
+            bug_report=active,
+            claimed_at=now,
+        )
+        BugReportNotificationOutbox.objects.create(
+            bug_report=stale,
+            claimed_at=now - timedelta(seconds=301),
+            attempt_count=999,
+        )
 
         with patch(
             "accounts.tasks.send_bug_report_notification_task.delay"
         ) as enqueue:
             recovered_count = recover_pending_bug_report_notifications_task.run()
 
-        self.assertEqual(recovered_count, 1)
-        enqueue.assert_called_once_with(report_id=pending.id)
+        self.assertEqual(recovered_count, 2)
+        self.assertEqual(
+            enqueue.call_args_list,
+            [call(report_id=pending.id), call(report_id=stale.id)],
+        )
 
 
 class BugReportAdminTests(APITestCase):

@@ -168,6 +168,10 @@ class Migration(migrations.Migration):
                     ),
                 ),
                 ("attempt_count", models.PositiveIntegerField(default=0)),
+                (
+                    "claimed_at",
+                    models.DateTimeField(blank=True, db_index=True, null=True),
+                ),
                 ("last_attempt_at", models.DateTimeField(blank=True, null=True)),
                 ("created_at", models.DateTimeField(auto_now_add=True)),
                 (
