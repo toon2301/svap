@@ -32,3 +32,6 @@ else:
 
 # Kontaktný formulár – cieľová adresa podpory
 SUPPORT_EMAIL = os.getenv("SUPPORT_EMAIL", "info@svaply.com")
+
+# Hlásenia chýb – samostatne konfigurovateľné, s fallbackom na podporu.
+BUG_REPORT_EMAIL = os.getenv("BUG_REPORT_EMAIL", SUPPORT_EMAIL)

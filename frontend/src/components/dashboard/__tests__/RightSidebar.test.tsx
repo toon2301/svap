@@ -27,6 +27,7 @@ describe('RightSidebar', () => {
 
     fireEvent.click(screen.getByText('Blokované'));
     expect(onItemClick).toHaveBeenCalledWith('blocked-users');
+    expect(screen.queryByText('Nahlásiť problém')).not.toBeInTheDocument();
   });
 
   it('closes on overlay click in mobile mode', () => {

@@ -1,5 +1,6 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
+import type { HTMLAttributes, ReactNode } from 'react';
 import Sidebar from '../Sidebar';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 
@@ -31,9 +32,9 @@ jest.mock('../contexts/RequestsNotificationsContext', () => ({
 // Mock framer-motion
 jest.mock('framer-motion', () => ({
   motion: {
-    div: ({ children, ...props }: any) => <div {...props}>{children}</div>,
+    div: ({ children, ...props }: HTMLAttributes<HTMLDivElement> & { children?: ReactNode }) => <div {...props}>{children}</div>,
   },
-  AnimatePresence: ({ children }: any) => <>{children}</>,
+  AnimatePresence: ({ children }: { children?: ReactNode }) => <>{children}</>,
 }));
 
 describe('Sidebar', () => {
@@ -107,6 +108,49 @@ describe('Sidebar', () => {
     );
 
     expect(screen.queryByText('Štatistiky')).not.toBeInTheDocument();
+  });
+
+  it('opens the bug report dialog from mobile settings and closes the menu', () => {
+    const onBugReportRequest = jest.fn();
+    window.addEventListener('svaply:bug-report-dialog-request', onBugReportRequest);
+    render(
+      <ThemeProvider>
+        <Sidebar
+          {...defaultProps}
+          onLogout={() => {}}
+          isMobile
+          isOpen
+          onClose={mockOnClose}
+        />
+      </ThemeProvider>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Viac' }));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Nahlásiť problém' }));
+
+    expect(onBugReportRequest).toHaveBeenCalledTimes(1);
+    expect(mockOnClose).toHaveBeenCalledTimes(1);
+    window.removeEventListener('svaply:bug-report-dialog-request', onBugReportRequest);
+  });
+
+  it('moves theme and logout into the mobile More menu', () => {
+    render(
+      <ThemeProvider>
+        <Sidebar
+          {...defaultProps}
+          onLogout={() => {}}
+          isMobile
+          isOpen
+          onClose={mockOnClose}
+        />
+      </ThemeProvider>,
+    );
+
+    expect(screen.queryByText('Tmavý režim')).not.toBeInTheDocument();
+    expect(screen.queryByText('Odhlásiť sa')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Viac' }));
+    expect(screen.getByRole('menuitem', { name: 'Tmavý režim' })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: 'Odhlásiť sa' })).toBeInTheDocument();
   });
 
   it('renders mobile overlay when isMobile and isOpen', () => {
@@ -184,9 +228,11 @@ describe('Sidebar', () => {
     expect(mockOnClose).toHaveBeenCalled();
   });
 
-  it('renders logout button', () => {
+  it('shows logout inside the desktop More menu', () => {
     render(<ThemeProvider><Sidebar {...defaultProps} onLogout={() => {}} /></ThemeProvider>);
-    
+
+    expect(screen.queryByText('Odhlásiť sa')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Viac' }));
     expect(screen.getByText('Odhlásiť sa')).toBeInTheDocument();
   });
 

@@ -11,6 +11,7 @@ import type { MessagingUserBrief } from './modules/messages/types';
 import type { AccountSettingsMobileView } from './modules/AccountSettingsModule';
 import type { User } from '@/types';
 import { DashboardSearchPanelProvider } from './contexts/DashboardSearchPanelContext';
+import BugReportDialogHost from './modules/bug-report/BugReportDialogHost';
 
 interface DashboardLayoutProps {
   activeModule: string;
@@ -233,6 +234,7 @@ export default function DashboardLayout({
       className="h-screen bg-[var(--background)] text-[var(--foreground)] overflow-hidden"
       style={mobileMessagesViewportStyle}
     >
+      <BugReportDialogHost />
       {/* Mobile Top Bar - skryť pre search modul */}
       {activeModule !== 'search' && !isMobileOfferDetailOpen && (
         <MobileTopBar

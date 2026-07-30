@@ -340,6 +340,13 @@ contact_form_rate_limit = rate_limit(
     action="contact_form",
     message="Príliš veľa pokusov. Skúste to neskôr.",
 )
+bug_report_rate_limit = rate_limit(
+    max_attempts=5,
+    window_minutes=60,
+    block_minutes=60,
+    action="bug_report",
+    message="Príliš veľa hlásení. Skúste to prosím neskôr.",
+)
 messaging_open_rate_limit = rate_limit(
     max_attempts=30,
     window_minutes=5,

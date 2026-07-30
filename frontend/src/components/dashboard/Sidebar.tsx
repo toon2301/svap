@@ -14,7 +14,6 @@ import {
   BellIcon,
   ChartBarIcon,
   XMarkIcon,
-  ArrowRightOnRectangleIcon,
   LanguageIcon,
   ChevronRightIcon,
   KeyIcon,
@@ -23,10 +22,10 @@ import {
   UserGroupIcon,
   NoSymbolIcon,
 } from '@heroicons/react/24/outline';
-import { SunIcon, MoonIcon } from '@heroicons/react/24/outline';
-import { useTheme } from '@/contexts/ThemeContext';
 import toast from 'react-hot-toast';
 import type { User } from '@/types';
+import DesktopUtilityMenu from './DesktopUtilityMenu';
+import MobileUtilityMenu from './MobileUtilityMenu';
 import { shareOwnProfileLink } from './modules/profile/shareOwnProfileLink';
 import {
   useMessagesNotifications,
@@ -147,7 +146,6 @@ export default function Sidebar({
   currentUser = null,
 }: SidebarProps) {
   const { t } = useLanguage();
-  const { theme, toggleTheme } = useTheme();
   const { unreadCount, markAllRead } = useRequestsNotifications();
   const { unreadCount: messageUnreadCount } = useMessagesNotifications();
   const { unreadCount: notificationsUnreadCount } = useNotificationsUnread();
@@ -229,32 +227,6 @@ export default function Sidebar({
     }
   };
 
-  const themeLogoutActions = (
-    <>
-      <button
-        onClick={toggleTheme}
-        className="w-full flex items-center px-2 py-2 text-sm font-medium rounded-2xl transition-colors bg-gray-100 dark:bg-gray-900 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-800 lg:px-2 lg:py-2 xl:px-3 xl:py-2.5"
-        aria-label="Prepínač témy"
-      >
-        {theme === 'dark' ? (
-          <SunIcon className="w-4 h-4 mr-2 xl:w-5 xl:h-5 xl:mr-3" />
-        ) : (
-          <MoonIcon className="w-4 h-4 mr-2 xl:w-5 xl:h-5 xl:mr-3" />
-        )}
-        <span className="text-sm">
-          {theme === 'dark' ? t('common.lightMode', 'Svetlý režim') : t('common.darkMode', 'Tmavý režim')}
-        </span>
-      </button>
-      <button
-        onClick={onLogout}
-        className="w-full flex items-center px-2 py-2 text-sm font-medium text-red-600 rounded-2xl hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors lg:px-2 lg:py-2 xl:px-3 xl:py-2.5"
-      >
-        <ArrowRightOnRectangleIcon className="w-4 h-4 mr-2 text-red-500 xl:w-5 xl:h-5 xl:mr-3" />
-        <span className="text-sm">{t('navigation.logout', 'Odhlásiť sa')}</span>
-      </button>
-    </>
-  );
-
   const mobileSettingsItems = (
     <div className="px-6 py-4">
       <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-4">{t('rightSidebar.appUsage', 'Použitie aplikácie')}</h3>
@@ -285,7 +257,6 @@ export default function Sidebar({
         label={t('rightSidebar.blocked', 'Blokované')}
         onClick={() => handleItemClick('blocked-users')}
       />
-
       <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-4">{t('rightSidebar.accountSettings', 'Nastavenia účtu')}</h3>
       <MobileSettingsRow
         icon={KeyIcon}
@@ -418,18 +389,11 @@ export default function Sidebar({
           data-mobile-settings-scroll
         >
           {mobileSettingsItems}
-          <div className="border-t border-gray-200 dark:border-gray-800 space-y-1.5 p-6">
-            {themeLogoutActions}
-          </div>
+          <MobileUtilityMenu onBugReportOpen={onClose} onLogout={onLogout} />
         </div>
       )}
 
-      {/* Theme Toggle + Logout – desktop */}
-      {!isMobile && (
-        <div className="border-t border-gray-200 dark:border-gray-800 space-y-1.5 p-3 lg:p-3 xl:p-4 xl:space-y-2">
-          {themeLogoutActions}
-        </div>
-      )}
+      {!isMobile && <DesktopUtilityMenu onLogout={onLogout} />}
     </div>
   );
 

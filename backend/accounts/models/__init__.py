@@ -37,12 +37,24 @@ from .profile_visits import ProfileVisit
 from .user_blocks import UserBlock
 from .reviews import OfferedSkillLike, Review, ReviewLike
 from .reports import FavoriteUser, PhotoReport, ReviewReport, UserReport
+from .bug_reports import (
+    BugReport,
+    BugReportCategory,
+    BugReportDeviceType,
+    BugReportPriority,
+    BugReportStatus,
+)
 
 # WebPushSubscription žije v samostatnom module; re-export zachováva pôvodné
 # `from accounts.models import WebPushSubscription`.
 from ..webpush_models import WebPushSubscription
 
 __all__ = [
+    "BugReport",
+    "BugReportCategory",
+    "BugReportDeviceType",
+    "BugReportPriority",
+    "BugReportStatus",
     "decrypt_mfa_secret",
     "encrypt_mfa_secret",
     "UserType",
