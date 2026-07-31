@@ -24,6 +24,7 @@ app.conf.imports = tuple(
             "swaply.tasks.webpush",
             "swaply.tasks.notifications",
             "swaply.tasks.profile_visits",
+            "swaply.tasks.feed_images",
         )
     )
 )

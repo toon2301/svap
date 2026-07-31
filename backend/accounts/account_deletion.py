@@ -72,6 +72,9 @@ def _delete_owned_content(user) -> None:
         BugReport,
         EmailVerification,
         FavoriteUser,
+        FeedPost,
+        FeedPostComment,
+        FeedPostLike,
         Notification,
         OfferedSkill,
         OfferedSkillLike,
@@ -83,6 +86,15 @@ def _delete_owned_content(user) -> None:
     # Ponuky + portfólio (S3 obrázky rieši post_delete signál na *Image modeloch).
     OfferedSkill.objects.filter(user=user).delete()
     PortfolioItem.objects.filter(owner=user).delete()
+
+    # Feed príspevky autora (fotku v S3 upratuje post_delete signál na FeedPost;
+    # lajky/komentáre/nahlásenia NA týchto príspevkoch zaniknú cez CASCADE).
+    # Komentáre a lajky používateľa POD príspevkami iných sa mažú explicitne –
+    # rovnaká konvencia ako Review.reviewer/ReviewLike. Nahlásenia, ktoré user
+    # podal na cudzí obsah, sa NEmažú (moderačný audit – ako Photo/Review/UserReport).
+    FeedPost.objects.filter(author=user).delete()
+    FeedPostComment.objects.filter(author=user).delete()
+    FeedPostLike.objects.filter(user=user).delete()
 
     # Recenzie napísané používateľom o iných (rozhodnutie B – tvrdé zmazanie).
     Review.objects.filter(reviewer=user).delete()
@@ -111,6 +123,29 @@ def _delete_owned_content(user) -> None:
     # reuse-guard; mazanie by rozbilo confirm view. Viď BOD 12 – čaká na rozhodnutie.)
     EmailVerification.objects.filter(user=user).delete()
     BugReport.objects.filter(reported_by=user).delete()
+
+
+def _scrub_shared_owner_snapshots(user) -> None:
+    """
+    GDPR: anonymizuje meno zmazaného používateľa v CUDZÍCH feed príspevkoch,
+    ktoré zdieľajú jeho obsah.
+
+    Odkedy možno zdieľať aj cudzí obsah, môže ``FeedPost.shared_owner_display_name``
+    obsahovať meno INÉHO používateľa, než je autor príspevku – ten príspevok sa
+    teda pri anonymizácii vlastníka nemaže (patrí niekomu inému) a zmrazené meno
+    by v ňom zostalo natrvalo. Prepisujeme na neutrálnu hodnotu BEZ ohľadu na
+    (historické) meno – rovnaký dôvod a vzor ako ``_scrub_actor_notifications``.
+
+    ``shared_owner`` FK sa ZÁMERNE nemaže: nesie identitu potrebnú na vynútenie
+    blokovania/súkromného profilu aj po zmazaní originálu, a po scrube z nej už
+    nemožno prečítať žiadne PII (User riadok je anonymizovaný).
+    """
+    from .models import FeedPost
+
+    replacement = "Zmazaný používateľ"
+    FeedPost.objects.filter(shared_owner=user).exclude(
+        shared_owner_display_name=replacement
+    ).update(shared_owner_display_name=replacement)
 
 
 def _scrub_actor_notifications(user) -> None:
@@ -250,6 +285,9 @@ def anonymize_user(user) -> None:
     # PII zmazaného usera v notifikáciách iných (kde je aktér) – title/body scrub
     # na neutrálnu hodnotu (nezávisle od aktuálneho/historického mena).
     _scrub_actor_notifications(locked)
+    # Meno tohto usera zmrazené v cudzích feed príspevkoch, ktoré zdieľajú jeho
+    # obsah (jeho vlastné príspevky už zmazal _delete_owned_content vyššie).
+    _scrub_shared_owner_snapshots(locked)
     # Obsah odoslaných správ anonymizujeme (text + obrázky); riadky a sender FK
     # ostávajú, aby história protistrany bola neporušená (PROTECT dizajn).
     _scrub_user_messages(locked)

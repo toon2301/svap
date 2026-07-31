@@ -1,0 +1,516 @@
+"""Feed Fáza 1 – testy modelov (FeedPost, Like, Comment, Report)."""
+
+import pytest
+from django.core.exceptions import ValidationError
+from django.db import IntegrityError, transaction
+from django.contrib.auth import get_user_model
+
+from accounts.models import (
+    FeedPost,
+    FeedPostComment,
+    FeedPostLike,
+    FeedPostReport,
+    OfferedSkill,
+    UserBlock,
+)
+from accounts.services.feed_share_visibility import (
+    REASON_BLOCKED,
+    REASON_HIDDEN,
+    REASON_PRIVATE_OWNER,
+)
+from portfolio.models import PortfolioItem
+
+User = get_user_model()
+
+
+def _user(n):
+    return User.objects.create_user(f"feed-u{n}", f"feed-u{n}@e.com", "StrongPass123")
+
+
+def _offer(user, subcategory="Programovanie"):
+    return OfferedSkill.objects.create(
+        user=user,
+        category="it-a-technologie",
+        subcategory=subcategory,
+    )
+
+
+def _portfolio_item(owner, title="Moje dielo"):
+    return PortfolioItem.objects.create(
+        owner=owner,
+        title=title,
+        category="it-a-technologie",
+    )
+
+
+def _free_post(author, caption="Ahoj feed!"):
+    return FeedPost.objects.create(
+        author=author,
+        post_type=FeedPost.PostType.FREE_POST,
+        caption=caption,
+    )
+
+
+@pytest.mark.django_db
+class TestFeedPostModel:
+    def test_free_post_requires_caption(self):
+        u = _user(1)
+        with pytest.raises(IntegrityError):
+            with transaction.atomic():
+                FeedPost.objects.create(
+                    author=u,
+                    post_type=FeedPost.PostType.FREE_POST,
+                    caption="",
+                )
+
+    def test_shared_offer_snapshot_survives_offer_deletion(self):
+        u = _user(1)
+        offer = _offer(u)
+        post = FeedPost.objects.create(
+            author=u,
+            post_type=FeedPost.PostType.SHARED_OFFER,
+            shared_offer=offer,
+        )
+        # Snapshot naplnený pri vzniku (save() denormalizácia).
+        assert post.shared_title == "Programovanie"
+        assert post.shared_category == "it-a-technologie"
+
+        offer.delete()
+        post.refresh_from_db()
+
+        # Príspevok prežil, FK je None, snapshot zostáva.
+        assert post.shared_offer is None
+        assert post.shared_title == "Programovanie"
+        assert post.shared_category == "it-a-technologie"
+
+    def test_shared_portfolio_item_snapshot_survives_deletion(self):
+        u = _user(1)
+        item = _portfolio_item(u, title="Weby na mieru")
+        post = FeedPost.objects.create(
+            author=u,
+            post_type=FeedPost.PostType.SHARED_PORTFOLIO_ITEM,
+            shared_portfolio_item=item,
+        )
+        assert post.shared_title == "Weby na mieru"
+
+        item.delete()
+        post.refresh_from_db()
+
+        assert post.shared_portfolio_item is None
+        assert post.shared_title == "Weby na mieru"
+
+    def test_shared_post_cannot_carry_photo(self):
+        # Fotka je len pre FREE_POST – DB constraint zakáže image_status na zdieľaní.
+        u = _user(1)
+        offer = _offer(u)
+        with pytest.raises(IntegrityError):
+            with transaction.atomic():
+                FeedPost.objects.create(
+                    author=u,
+                    post_type=FeedPost.PostType.SHARED_OFFER,
+                    shared_offer=offer,
+                    image_status=FeedPost.ImageStatus.PENDING,
+                )
+
+    def test_free_post_with_photo_is_valid(self):
+        u = _user(1)
+        post = FeedPost.objects.create(
+            author=u,
+            post_type=FeedPost.PostType.FREE_POST,
+            caption="S fotkou",
+            image_status=FeedPost.ImageStatus.PENDING,
+            image_pending_key="uploads/feed/1/abc.jpg",
+        )
+        assert post.image_status == FeedPost.ImageStatus.PENDING
+
+
+@pytest.mark.django_db
+class TestSharingForeignContent:
+    """Zdieľať možno KTORÝKOĽVEK verejne viditeľný obsah, nie len vlastný.
+
+    Overuje sa viditeľnosť cieľa (skrytosť / súkromný profil vlastníka /
+    blokovanie), nie vlastníctvo.
+    """
+
+    def test_can_share_foreign_public_offer(self):
+        owner, other = _user(1), _user(2)
+        offer = _offer(owner)
+
+        post = FeedPost.objects.create(
+            author=other,
+            post_type=FeedPost.PostType.SHARED_OFFER,
+            shared_offer=offer,
+        )
+
+        assert post.pk is not None
+        assert post.author_id == other.id
+        assert post.shared_owner_id == owner.id  # autor != vlastník
+        assert post.shared_title == "Programovanie"
+
+    def test_can_share_foreign_public_portfolio_item(self):
+        owner, other = _user(1), _user(2)
+        item = _portfolio_item(owner, title="Weby na mieru")
+
+        post = FeedPost.objects.create(
+            author=other,
+            post_type=FeedPost.PostType.SHARED_PORTFOLIO_ITEM,
+            shared_portfolio_item=item,
+        )
+
+        assert post.shared_owner_id == owner.id
+        assert post.shared_title == "Weby na mieru"
+
+    def test_cannot_share_hidden_offer(self):
+        owner, other = _user(1), _user(2)
+        offer = _offer(owner)
+        offer.is_hidden = True
+        offer.save(update_fields=["is_hidden"])
+
+        with pytest.raises(ValidationError) as exc:
+            FeedPost.objects.create(
+                author=other,
+                post_type=FeedPost.PostType.SHARED_OFFER,
+                shared_offer=offer,
+            )
+        assert exc.value.code == REASON_HIDDEN
+
+    def test_cannot_share_offer_of_private_profile(self):
+        owner, other = _user(1), _user(2)
+        owner.is_public = False
+        owner.save(update_fields=["is_public"])
+        offer = _offer(owner)
+
+        with pytest.raises(ValidationError) as exc:
+            FeedPost.objects.create(
+                author=other,
+                post_type=FeedPost.PostType.SHARED_OFFER,
+                shared_offer=offer,
+            )
+        assert exc.value.code == REASON_PRIVATE_OWNER
+
+    def test_cannot_share_portfolio_item_of_private_profile(self):
+        owner, other = _user(1), _user(2)
+        owner.is_public = False
+        owner.save(update_fields=["is_public"])
+        item = _portfolio_item(owner)
+
+        with pytest.raises(ValidationError) as exc:
+            FeedPost.objects.create(
+                author=other,
+                post_type=FeedPost.PostType.SHARED_PORTFOLIO_ITEM,
+                shared_portfolio_item=item,
+            )
+        assert exc.value.code == REASON_PRIVATE_OWNER
+
+    @pytest.mark.parametrize("author_blocks_owner", [True, False])
+    def test_cannot_share_when_blocked_in_either_direction(self, author_blocks_owner):
+        owner, other = _user(1), _user(2)
+        offer = _offer(owner)
+        if author_blocks_owner:
+            UserBlock.objects.create(blocker=other, blocked_user=owner)
+        else:
+            UserBlock.objects.create(blocker=owner, blocked_user=other)
+
+        with pytest.raises(ValidationError) as exc:
+            FeedPost.objects.create(
+                author=other,
+                post_type=FeedPost.PostType.SHARED_OFFER,
+                shared_offer=offer,
+            )
+        assert exc.value.code == REASON_BLOCKED
+
+    def test_owner_can_share_own_hidden_offer(self):
+        # Vlastník vidí svoje aj skryté položky – rovnaká výnimka ako
+        # offer_hidden_from_user, takže zdieľanie vlastného obsahu nesmie padnúť.
+        owner = _user(1)
+        offer = _offer(owner)
+        offer.is_hidden = True
+        offer.save(update_fields=["is_hidden"])
+
+        post = FeedPost.objects.create(
+            author=owner,
+            post_type=FeedPost.PostType.SHARED_OFFER,
+            shared_offer=offer,
+        )
+        assert post.shared_owner_id == owner.id
+
+    def test_owner_with_private_profile_can_share_own_offer(self):
+        owner = _user(1)
+        owner.is_public = False
+        owner.save(update_fields=["is_public"])
+        offer = _offer(owner)
+
+        post = FeedPost.objects.create(
+            author=owner,
+            post_type=FeedPost.PostType.SHARED_OFFER,
+            shared_offer=offer,
+        )
+        assert post.shared_owner_id == owner.id
+
+
+@pytest.mark.django_db
+class TestSharedOwnerDisplayName:
+    """Snapshot mena pôvodného vlastníka – nezávislý od toho, či autor == vlastník."""
+
+    def test_display_name_snapshot_for_foreign_content(self):
+        owner, other = _user(1), _user(2)
+        owner.first_name = "Jana"
+        owner.last_name = "Nováková"
+        owner.save(update_fields=["first_name", "last_name"])
+        offer = _offer(owner)
+
+        post = FeedPost.objects.create(
+            author=other,
+            post_type=FeedPost.PostType.SHARED_OFFER,
+            shared_offer=offer,
+        )
+
+        assert post.shared_owner_display_name == owner.display_name
+        assert post.shared_owner_display_name == "Jana Nováková"
+
+    def test_display_name_snapshot_for_own_content(self):
+        owner = _user(1)
+        owner.first_name = "Peter"
+        owner.last_name = "Malý"
+        owner.save(update_fields=["first_name", "last_name"])
+        item = _portfolio_item(owner)
+
+        post = FeedPost.objects.create(
+            author=owner,
+            post_type=FeedPost.PostType.SHARED_PORTFOLIO_ITEM,
+            shared_portfolio_item=item,
+        )
+
+        assert post.shared_owner_display_name == "Peter Malý"
+        assert post.shared_owner_id == owner.id
+
+    def test_owner_fk_and_name_survive_offer_deletion(self):
+        owner, other = _user(1), _user(2)
+        owner.first_name = "Jana"
+        owner.last_name = "Nováková"
+        owner.save(update_fields=["first_name", "last_name"])
+        offer = _offer(owner)
+        post = FeedPost.objects.create(
+            author=other,
+            post_type=FeedPost.PostType.SHARED_OFFER,
+            shared_offer=offer,
+        )
+
+        offer.delete()
+        post.refresh_from_db()
+
+        # Osirelý príspevok si drží identitu vlastníka – Fáza 2 na nej vie ďalej
+        # vynútiť blokovanie/súkromný profil (vzor review_hidden_from_user).
+        assert post.shared_offer is None
+        assert post.shared_owner_id == owner.id
+        assert post.shared_owner_display_name == "Jana Nováková"
+
+    def test_gdpr_anonymization_scrubs_name_in_foreign_post(self):
+        """Meno anonymizovaného vlastníka nesmie prežiť v CUDZOM príspevku."""
+        from accounts.account_deletion import anonymize_user
+
+        owner, other = _user(1), _user(2)
+        owner.first_name = "Jana"
+        owner.last_name = "Nováková"
+        owner.save(update_fields=["first_name", "last_name"])
+        offer = _offer(owner)
+        post = FeedPost.objects.create(
+            author=other,
+            post_type=FeedPost.PostType.SHARED_OFFER,
+            shared_offer=offer,
+        )
+
+        anonymize_user(owner)
+        post.refresh_from_db()
+
+        # Príspevok patrí inému autorovi, takže sa nemaže – ale meno musí zmiznúť.
+        assert FeedPost.objects.filter(id=post.id).exists()
+        assert post.shared_owner_display_name == "Zmazaný používateľ"
+        assert "Nováková" not in post.shared_owner_display_name
+        # Vlastníkova ponuka zanikla s jeho účtom → snapshot ostáva, FK je NULL.
+        assert post.shared_offer is None
+
+
+@pytest.mark.django_db
+class TestSharedContentCurrentVisibility:
+    """ZMENA 3 – rozlíšenie zmazané / skryté / viditeľné pre Fázu 2."""
+
+    def test_visible_while_source_is_public(self):
+        owner, other = _user(1), _user(2)
+        offer = _offer(owner)
+        post = FeedPost.objects.create(
+            author=other,
+            post_type=FeedPost.PostType.SHARED_OFFER,
+            shared_offer=offer,
+        )
+        assert post.is_shared_content_currently_visible is True
+
+    def test_not_visible_when_source_hidden_after_sharing(self):
+        owner, other = _user(1), _user(2)
+        offer = _offer(owner)
+        post = FeedPost.objects.create(
+            author=other,
+            post_type=FeedPost.PostType.SHARED_OFFER,
+            shared_offer=offer,
+        )
+
+        offer.is_hidden = True
+        offer.save(update_fields=["is_hidden"])
+        post.refresh_from_db()
+
+        # FK STÁLE existuje (nezmazané), ale obsah je momentálne nedostupný.
+        assert post.shared_offer_id is not None
+        assert post.is_shared_content_currently_visible is False
+
+    def test_not_visible_when_owner_goes_private_after_sharing(self):
+        owner, other = _user(1), _user(2)
+        offer = _offer(owner)
+        post = FeedPost.objects.create(
+            author=other,
+            post_type=FeedPost.PostType.SHARED_OFFER,
+            shared_offer=offer,
+        )
+
+        owner.is_public = False
+        owner.save(update_fields=["is_public"])
+        post.refresh_from_db()
+
+        assert post.shared_offer_id is not None
+        assert post.is_shared_content_currently_visible is False
+
+    def test_not_visible_when_source_deleted(self):
+        owner, other = _user(1), _user(2)
+        offer = _offer(owner)
+        post = FeedPost.objects.create(
+            author=other,
+            post_type=FeedPost.PostType.SHARED_OFFER,
+            shared_offer=offer,
+        )
+
+        offer.delete()
+        post.refresh_from_db()
+
+        # Zmazané (FK None) sa od skrytého (FK != None) odlíši cez shared_offer_id.
+        assert post.shared_offer_id is None
+        assert post.is_shared_content_currently_visible is False
+
+    def test_portfolio_item_visibility_follows_owner(self):
+        owner, other = _user(1), _user(2)
+        item = _portfolio_item(owner)
+        post = FeedPost.objects.create(
+            author=other,
+            post_type=FeedPost.PostType.SHARED_PORTFOLIO_ITEM,
+            shared_portfolio_item=item,
+        )
+        assert post.is_shared_content_currently_visible is True
+
+        owner.is_public = False
+        owner.save(update_fields=["is_public"])
+        post.refresh_from_db()
+        assert post.is_shared_content_currently_visible is False
+
+    def test_free_post_has_nothing_shared_to_hide(self):
+        post = _free_post(_user(1))
+        assert post.is_shared_content_currently_visible is True
+
+
+@pytest.mark.django_db
+class TestFeedPostLike:
+    def test_unique_like_per_user(self):
+        u1, u2 = _user(1), _user(2)
+        post = _free_post(u1)
+        FeedPostLike.objects.create(post=post, user=u2)
+        with pytest.raises(IntegrityError):
+            with transaction.atomic():
+                FeedPostLike.objects.create(post=post, user=u2)
+
+    def test_self_like_is_allowed(self):
+        # Rovnaké rozhodnutie ako PortfolioItemLike (obsah, nie identita):
+        # self-like guard má len ProfileLike.
+        u = _user(1)
+        post = _free_post(u)
+        like = FeedPostLike.objects.create(post=post, user=u)
+        assert like.pk is not None
+
+    def test_likes_cascade_with_post(self):
+        u1, u2 = _user(1), _user(2)
+        post = _free_post(u1)
+        FeedPostLike.objects.create(post=post, user=u2)
+        post.delete()
+        assert FeedPostLike.objects.count() == 0
+
+
+@pytest.mark.django_db
+class TestFeedPostComment:
+    def test_comment_creation_and_cascade(self):
+        u1, u2 = _user(1), _user(2)
+        post = _free_post(u1)
+        FeedPostComment.objects.create(post=post, author=u2, text="Super!")
+        assert post.comments.count() == 1
+        post.delete()
+        assert FeedPostComment.objects.count() == 0
+
+
+@pytest.mark.django_db
+class TestFeedPostReport:
+    def test_unique_report_per_user(self):
+        u1, u2 = _user(1), _user(2)
+        post = _free_post(u1)
+        FeedPostReport.objects.create(post=post, reported_by=u2, reason="spam")
+        with pytest.raises(IntegrityError):
+            with transaction.atomic():
+                FeedPostReport.objects.create(
+                    post=post, reported_by=u2, reason="spam znova"
+                )
+
+    def test_default_unresolved(self):
+        u1, u2 = _user(1), _user(2)
+        post = _free_post(u1)
+        report = FeedPostReport.objects.create(
+            post=post, reported_by=u2, reason="spam"
+        )
+        assert report.is_resolved is False
+
+
+@pytest.mark.django_db
+class TestFeedAccountDeletion:
+    """GDPR zmazanie účtu – feed obsah podľa konvencie autorského obsahu.
+
+    Konvencia (viď account_deletion._delete_owned_content): User riadok sa
+    NEmaže (anonymizuje), takže CASCADE nevystrelí – autorský obsah sa
+    hard-deletuje explicitne (ako Review.reviewer/ponuky/portfólio). Nahlásenia
+    podané používateľom sa ponechávajú (moderačný audit, ako ReviewReport).
+    """
+
+    def test_feed_content_purged_on_account_deletion(self):
+        from accounts.account_deletion import anonymize_user
+
+        author, other = _user(1), _user(2)
+        own_post = _free_post(author)
+        other_post = _free_post(other, caption="Cudzí post")
+
+        # Autorov obsah + interakcie pod cudzím obsahom.
+        FeedPostComment.objects.create(post=other_post, author=author, text="Môj koment")
+        FeedPostLike.objects.create(post=other_post, user=author)
+        # Interakcie iných NA autorovom poste (zaniknú s postom cez CASCADE).
+        FeedPostComment.objects.create(post=own_post, author=other, text="Reakcia")
+        FeedPostLike.objects.create(post=own_post, user=other)
+        FeedPostReport.objects.create(post=own_post, reported_by=other, reason="spam")
+        # Nahlásenie, ktoré autor podal na cudzí post → PONECHAŤ (audit).
+        kept_report = FeedPostReport.objects.create(
+            post=other_post, reported_by=author, reason="spam"
+        )
+
+        anonymize_user(author)
+
+        # Autorove posty + jeho komenty/lajky preč; cudzí post žije.
+        assert not FeedPost.objects.filter(id=own_post.id).exists()
+        assert FeedPost.objects.filter(id=other_post.id).exists()
+        assert not FeedPostComment.objects.filter(author=author).exists()
+        assert not FeedPostLike.objects.filter(user=author).exists()
+        # Interakcie na zmazanom poste zanikli cez CASCADE.
+        assert not FeedPostComment.objects.filter(post_id=own_post.id).exists()
+        assert not FeedPostLike.objects.filter(post_id=own_post.id).exists()
+        assert not FeedPostReport.objects.filter(post_id=own_post.id).exists()
+        # Moderačný audit zostáva.
+        assert FeedPostReport.objects.filter(id=kept_report.id).exists()
