@@ -4,7 +4,14 @@ from django.db import DatabaseError, transaction
 from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
 
-from .models import OfferedSkill, OfferedSkillImage, OfferedSkillLike, Review, SkillRequest
+from .models import (
+    FeedPost,
+    OfferedSkill,
+    OfferedSkillImage,
+    OfferedSkillLike,
+    Review,
+    SkillRequest,
+)
 from .authentication import invalidate_user_auth_cache
 from .search_projection import (
     sync_dashboard_skill_search_projection,
@@ -240,6 +247,26 @@ def _delete_offer_image_storage(instance):
 @receiver(post_delete, sender=OfferedSkillImage)
 def delete_offer_image_files_after_delete(sender, instance, **kwargs):
     transaction.on_commit(lambda instance=instance: _delete_offer_image_storage(instance))
+
+
+@receiver(post_delete, sender=FeedPost)
+def delete_feed_post_image_files_after_delete(sender, instance, **kwargs):
+    """Po zmazaní FeedPost (aj cez purge pri zmazaní účtu) best-effort zmaž
+    storage kľúče jeho fotky – rovnaký vzor ako OfferedSkillImage/PortfolioImage
+    (orphaned súbory = náklady + GDPR)."""
+    keys = [k.strip() for k in instance.image_storage_keys() if k]
+
+    def _cleanup(keys=keys):
+        for key in dict.fromkeys(keys):
+            if not key:
+                continue
+            try:
+                default_storage.delete(key)
+            except Exception:
+                # Radšej osamotený súbor než spadnuté mazanie príspevku/účtu.
+                pass
+
+    transaction.on_commit(_cleanup)
 
 
 @receiver(post_save, sender=Review)

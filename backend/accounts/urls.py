@@ -163,6 +163,17 @@ urlpatterns = [
     path(
         "dashboard/settings/", views.dashboard_settings_view, name="dashboard_settings"
     ),
+    # Feed (Fáza 1 – len upload fotky; čítanie/CRUD príde vo Fáze 2)
+    path(
+        "feed/posts/<int:post_id>/image/upload-init/",
+        views.feed_post_image_upload_init_view,
+        name="feed_post_image_upload_init",
+    ),
+    path(
+        "feed/posts/<int:post_id>/image/upload-complete/",
+        views.feed_post_image_upload_complete_view,
+        name="feed_post_image_upload_complete",
+    ),
     # Skills
     path("skills/", views.skills_list_view, name="skills_list"),
     # Recenzie - MUSIA byť PRED skills/<int:skill_id>/ lebo sú špecifickejšie

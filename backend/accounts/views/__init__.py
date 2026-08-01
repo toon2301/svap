@@ -59,6 +59,10 @@ from .push import (
     push_subscription_current_view,
     push_preferences_view,
 )
+from .feed_uploads import (
+    feed_post_image_upload_complete_view,
+    feed_post_image_upload_init_view,
+)
 from .user_reports import user_report_view
 from .photo_reports import offer_image_report_view, user_avatar_report_view
 from .bug_reports import bug_report_create_view
@@ -142,4 +146,6 @@ __all__ = [
     "user_avatar_report_view",
     "search_view",
     "global_search_view",
+    "feed_post_image_upload_init_view",
+    "feed_post_image_upload_complete_view",
 ]

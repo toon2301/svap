@@ -32,6 +32,7 @@ from .skill_requests import (
     skill_request_is_reviewable,
 )
 from .notifications import Notification, NotificationType
+from .feed_posts import FeedPost, FeedPostComment, FeedPostLike, FeedPostReport
 from .profile_likes import ProfileLike
 from .profile_visits import ProfileVisit
 from .user_blocks import UserBlock
@@ -81,6 +82,10 @@ __all__ = [
     "skill_request_is_reviewable",
     "Notification",
     "NotificationType",
+    "FeedPost",
+    "FeedPostComment",
+    "FeedPostLike",
+    "FeedPostReport",
     "ProfileLike",
     "ProfileVisit",
     "UserBlock",
