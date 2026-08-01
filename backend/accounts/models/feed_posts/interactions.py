@@ -1,16 +1,27 @@
-"""Interakcie s príspevkom – lajky a komentáre.
+"""Interakcie s príspevkom – lajky, komentáre a označenia používateľov.
 
 FeedPostLike: dedikovaná tabuľka podľa ``PortfolioItemLike`` (unique + 2 indexy).
 Self-like je povolený – rovnaké rozhodnutie ako pri portfóliu (obsah, nie
 identita; self-like guard má len ProfileLike).
+
+FeedPostTag: označenie používateľa v príspevku. Zobrazenie je okamžité (žiadne
+schvaľovanie označeným); jediná tvrdá prekážka je blokovanie – pravidlá sú
+v ``accounts.services.feed_tagging``.
 """
 
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
+from accounts.services.feed_tagging import (
+    TAG_REASON_MESSAGES,
+    feed_post_tag_block_reason,
+)
+
 from .post import FeedPost
 from .text_limits import ensure_text_within_limit
+
 
 class FeedPostLike(models.Model):
     """Like príspevku – presne podľa vzoru PortfolioItemLike."""
@@ -94,4 +105,69 @@ class FeedPostComment(models.Model):
 
     def save(self, *args, **kwargs):
         ensure_text_within_limit(self.text, field_label="Komentár")
+        super().save(*args, **kwargs)
+
+
+class FeedPostTag(models.Model):
+    """Označenie používateľa v príspevku.
+
+    ``tagged_user`` je CASCADE, ale POZOR: pri GDPR zmazaní účtu sa User riadok
+    NEmaže (len anonymizuje), takže CASCADE sám nevystrelí – tagy označeného sa
+    mažú explicitne v ``account_deletion._delete_owned_content``, rovnako ako
+    ``FeedPostLike``/``FeedPostComment``. Tagy NA príspevkoch zmazaného autora
+    zaniknú s príspevkom (CASCADE cez ``post``).
+
+    Tag je len referencia, nie obsah – preto tu nie je „survival" vzor so
+    snapshotom ako pri zdieľaní ponuky. Keď označený zmizne, tag zmizne s ním.
+    """
+
+    post = models.ForeignKey(
+        FeedPost,
+        on_delete=models.CASCADE,
+        related_name="tags",
+        verbose_name=_("Príspevok"),
+    )
+    tagged_user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="feed_post_tags",
+        verbose_name=_("Označený používateľ"),
+    )
+    created_at = models.DateTimeField(_("Vytvorené"), auto_now_add=True)
+
+    class Meta:
+        verbose_name = _("Označenie v príspevku")
+        verbose_name_plural = _("Označenia v príspevkoch")
+        ordering = ["-created_at", "-id"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["post", "tagged_user"],
+                name="unique_feed_post_tag_per_user",
+            )
+        ]
+        indexes = [
+            # "Príspevky, kde som označený" na profile.
+            models.Index(
+                fields=["tagged_user", "created_at"],
+                name="acc_fptag_user_cr_idx",
+            ),
+        ]
+
+    def __str__(self):
+        return f"Označenie #{self.tagged_user_id} v príspevku #{self.post_id}"
+
+    def save(self, *args, **kwargs):
+        """Blokovanie bráni označeniu – vynútené na modeli, nie len v službe.
+
+        Je to cross-table pravidlo, ktoré DB constraint nevyjadrí, a rovnaká
+        poistka ako pri ``FeedPost`` zdieľaní: platí aj pre priamy ORM zápis,
+        ktorý obíde ``feed_tagging.apply_feed_post_tags``.
+        """
+        if self._state.adding:
+            reason = feed_post_tag_block_reason(
+                author_id=self.post.author_id,
+                tagged_user_id=self.tagged_user_id,
+            )
+            if reason is not None:
+                raise ValidationError(TAG_REASON_MESSAGES[reason], code=reason)
         super().save(*args, **kwargs)
