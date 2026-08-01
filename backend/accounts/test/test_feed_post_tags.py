@@ -1,9 +1,14 @@
 """Feed – označovanie používateľov v príspevkoch (FeedPostTag)."""
 
+from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import TimeoutError as FutureTimeoutError
+from threading import Event
+from unittest.mock import patch
+
 import pytest
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
-from django.db import IntegrityError, transaction
+from django.db import IntegrityError, close_old_connections, connection, transaction
 
 from accounts.models import FeedPost, FeedPostTag, UserBlock
 from accounts.services.feed_tagging import (
@@ -247,3 +252,190 @@ class TestTagsAndAccountDeletion:
         post.delete()
 
         assert FeedPostTag.objects.count() == 0
+
+
+@pytest.mark.django_db
+class TestLockingOrder:
+    """Deterministické overenie zámkov – beží aj na SQLite (na rozdiel od
+    vláknových testov nižšie), takže chráni pred regresiou všade."""
+
+    def test_locks_users_before_post(self):
+        from django.db.models.query import QuerySet
+
+        author, tagged = _user(1), _user(2)
+        post = _post(author)
+
+        order = []
+        original_select_for_update = QuerySet.select_for_update
+
+        def spy_select_for_update(self, *args, **kwargs):
+            order.append(f"lock:{self.model.__name__}")
+            return original_select_for_update(self, *args, **kwargs)
+
+        with patch.object(QuerySet, "select_for_update", spy_select_for_update):
+            apply_feed_post_tags(post, [tagged.id])
+
+        # Oba zámky musia padnúť, a to v poradí User → FeedPost. Opačné poradie
+        # by voči anonymize_user (User → obsah) vytvorilo inverziu = deadlock.
+        assert order == ["lock:User", "lock:FeedPost"]
+
+    def test_is_active_is_read_after_user_lock(self):
+        """NÁLEZ 1 deterministicky: deaktivácia „commitnutá" v momente zámku
+        musí byť viditeľná, inak by vznikol tag na anonymizovaný účet."""
+        author, tagged = _user(1), _user(2)
+        post = _post(author)
+
+        def deactivate_during_lock(*, user_ids):
+            User.objects.filter(pk=tagged.pk).update(is_active=False)
+
+        with patch(
+            "accounts.services.user_blocks.lock_users_for_update",
+            side_effect=deactivate_during_lock,
+        ):
+            created = apply_feed_post_tags(post, [tagged.id])
+
+        # Keby sa is_active čítalo PRED zámkom, tag by tu vznikol.
+        assert created == []
+        assert post.tags.count() == 0
+
+    def test_missing_post_is_handled(self):
+        author, tagged = _user(1), _user(2)
+        post = _post(author)
+        FeedPost.objects.filter(pk=post.pk).delete()
+
+        assert apply_feed_post_tags(post, [tagged.id]) == []
+
+
+@pytest.mark.django_db(transaction=True)
+class TestTaggingConcurrency:
+    """Súbežnosť cez ThreadPoolExecutor + Event – rovnaký vzor ako
+    ``test_skill_request_blocking.test_block_serializes_with_acceptance``.
+
+    Vyžaduje riadkové zámky, takže na SQLite sa preskakuje (rovnako ako obidva
+    existujúce race-condition testy v repozitári).
+    """
+
+    def _require_row_locks(self):
+        if not connection.features.has_select_for_update:
+            pytest.skip("The configured database does not support row-level locks.")
+
+    def test_tagging_does_not_outlive_concurrent_anonymization(self):
+        """NÁLEZ 1: tag sa nesmie vyrobiť na práve anonymizovaný účet."""
+        self._require_row_locks()
+
+        from accounts.account_deletion import anonymize_user
+
+        author = _user(1)
+        tagged = _user(2)
+        post = _post(author)
+
+        anonymize_lock_held = Event()
+        release_anonymize = Event()
+
+        from accounts import account_deletion as deletion_module
+
+        original_scrub = deletion_module._scrub_actor_notifications
+
+        def hold_anonymize_transaction(user):
+            # Sme vnútri anonymizačnej transakcie, tesne po zamknutí User riadku.
+            anonymize_lock_held.set()
+            if not release_anonymize.wait(timeout=10):
+                raise TimeoutError("Timed out waiting to release anonymize")
+            return original_scrub(user)
+
+        def anonymize():
+            close_old_connections()
+            try:
+                return anonymize_user(User.objects.get(pk=tagged.pk))
+            finally:
+                close_old_connections()
+
+        def tag():
+            close_old_connections()
+            try:
+                return apply_feed_post_tags(
+                    FeedPost.objects.get(pk=post.pk), [tagged.pk]
+                )
+            finally:
+                close_old_connections()
+
+        with (
+            patch(
+                "accounts.account_deletion._scrub_actor_notifications",
+                side_effect=hold_anonymize_transaction,
+            ),
+            ThreadPoolExecutor(max_workers=2) as executor,
+        ):
+            anonymize_future = executor.submit(anonymize)
+            assert anonymize_lock_held.wait(timeout=5)
+
+            tag_future = executor.submit(tag)
+            # Tagovanie musí čakať na zámok User riadku – nesmie prebehnúť teraz.
+            with pytest.raises(FutureTimeoutError):
+                tag_future.result(timeout=1)
+
+            release_anonymize.set()
+            anonymize_future.result(timeout=10)
+            tag_future.result(timeout=10)
+
+        # Jadro nálezu: po dobehnutí oboch nesmie ostať osirotený tag.
+        assert not FeedPostTag.objects.filter(tagged_user_id=tagged.pk).exists()
+
+    def test_concurrent_tagging_never_exceeds_limit(self):
+        """NÁLEZ 2: dve súbežné volania tesne pri limite ho neprekročia."""
+        self._require_row_locks()
+
+        author = _post_author = _user(1)
+        post = _post(author)
+        # Naplň príspevok na MAX-1, aby ostalo miesto presne pre JEDEN tag.
+        filler = [_user(10 + i) for i in range(MAX_FEED_POST_TAGS - 1)]
+        apply_feed_post_tags(post, [u.id for u in filler])
+        assert post.tags.count() == MAX_FEED_POST_TAGS - 1
+
+        first_candidate = _user(50)
+        second_candidate = _user(51)
+
+        first_locked = Event()
+        release_first = Event()
+
+        def hold_first(*args, **kwargs):
+            first_locked.set()
+            if not release_first.wait(timeout=10):
+                raise TimeoutError("Timed out waiting to release first tagging")
+            return None  # žiadne blokovanie
+
+        def tag_with(user_id, hold):
+            close_old_connections()
+            try:
+                target = FeedPost.objects.get(pk=post.pk)
+                if hold:
+                    with patch(
+                        "accounts.services.feed_tagging.feed_post_tag_block_reason",
+                        side_effect=hold_first,
+                    ):
+                        return apply_feed_post_tags(target, [user_id])
+                return apply_feed_post_tags(target, [user_id])
+            finally:
+                close_old_connections()
+
+        results = []
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            first_future = executor.submit(tag_with, first_candidate.pk, True)
+            assert first_locked.wait(timeout=5)
+
+            # Druhé volanie musí čakať na zámok príspevku, nie čítať staré počty.
+            second_future = executor.submit(tag_with, second_candidate.pk, False)
+            with pytest.raises(FutureTimeoutError):
+                second_future.result(timeout=1)
+
+            release_first.set()
+            for future in (first_future, second_future):
+                try:
+                    results.append(future.result(timeout=10))
+                except ValidationError as exc:
+                    results.append(exc)
+
+        post.refresh_from_db()
+        # Jedno volanie uspeje, druhé narazí na limit – nikdy nie 11 tagov.
+        assert post.tags.count() == MAX_FEED_POST_TAGS
+        assert sum(isinstance(r, ValidationError) for r in results) == 1

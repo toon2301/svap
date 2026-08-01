@@ -72,40 +72,64 @@ def apply_feed_post_tags(post, tagged_user_ids) -> list:
     z hromadného zoznamu nesmie zhodiť celé vytvorenie príspevku. Blokovanie
     a prekročenie limitu sú naopak tvrdé chyby (``ValidationError``): to nie sú
     zastarané dáta, ale explicitná akcia autora, ktorú treba nahlásiť.
+
+    Celé vyhodnotenie beží pod riadkovými zámkami (viď poradie nižšie), takže
+    súbežné volania nad tým istým príspevkom sa serializujú a nemôžu spolu
+    prekročiť ``MAX_FEED_POST_TAGS`` ani vyrobiť tag na práve anonymizovaný účet.
     """
     from django.contrib.auth import get_user_model
     from django.core.exceptions import ValidationError
     from django.db import transaction
 
-    from accounts.models import FeedPostTag
+    from accounts.models import FeedPost, FeedPostTag
+    from accounts.services.user_blocks import lock_users_for_update
 
     user_model = get_user_model()
     candidate_ids = normalize_tagged_user_ids(tagged_user_ids)
     if not candidate_ids:
         return []
 
-    active_ids = set(
-        user_model.objects.filter(id__in=candidate_ids, is_active=True).values_list(
-            "id", flat=True
-        )
-    )
-    # Poradie zo vstupu zachovávame, len odfiltrujeme neplatné.
-    valid_ids = [user_id for user_id in candidate_ids if user_id in active_ids]
-    if not valid_ids:
-        return []
-
     with transaction.atomic():
+        # Poradie zámkov je ZÁMERNE User → FeedPost, rovnako ako v
+        # ``anonymize_user`` (zamkne User a až potom maže jeho obsah). Opačné
+        # poradie by voči anonymizácii vytvorilo inverziu zámkov, a teda
+        # deadlock. ``lock_users_for_update`` navyše zamyká v zoradenom poradí,
+        # takže si neuzamknú cestu ani dve súbežné tagovania.
+        #
+        # Zámok na User MUSÍ byť pred čítaním is_active: inak by tagovanie
+        # prečítalo starú hodnotu (True), počkalo s insertom na commit
+        # anonymizácie a vyrobilo tag na už upratanom účte.
+        lock_users_for_update(user_ids=candidate_ids)
+
+        # Zámok na príspevku MUSÍ byť pred čítaním existujúcich tagov a limitu:
+        # bez neho by dve súbežné volania videli ten istý počet a obe pridali
+        # „posledný" tag (limit prekročený), prípadne by si vpadli do
+        # UniqueConstraint namiesto tichého preskočenia duplicity.
+        locked_post = FeedPost.objects.select_for_update().filter(pk=post.pk).first()
+        if locked_post is None:
+            return []  # príspevok medzitým zmizol
+
+        active_ids = set(
+            user_model.objects.filter(id__in=candidate_ids, is_active=True).values_list(
+                "id", flat=True
+            )
+        )
+        # Poradie zo vstupu zachovávame, len odfiltrujeme neplatné.
+        valid_ids = [user_id for user_id in candidate_ids if user_id in active_ids]
+        if not valid_ids:
+            return []
+
         # Blokovanie over PRED akýmkoľvek zápisom, nech nevzniknú polovičné tagy.
         for user_id in valid_ids:
             reason = feed_post_tag_block_reason(
-                author_id=post.author_id,
+                author_id=locked_post.author_id,
                 tagged_user_id=user_id,
             )
             if reason is not None:
                 raise ValidationError(TAG_REASON_MESSAGES[reason], code=reason)
 
         existing_ids = set(
-            FeedPostTag.objects.filter(post=post).values_list(
+            FeedPostTag.objects.filter(post=locked_post).values_list(
                 "tagged_user_id", flat=True
             )
         )
@@ -120,8 +144,9 @@ def apply_feed_post_tags(post, tagged_user_ids) -> list:
             )
 
         # Zámerne create() v cykle, nie bulk_create – bulk_create obchádza
-        # save(), a tým aj modelovú kontrolu blokovania.
+        # save(), a tým aj modelovú kontrolu blokovania. Odovzdávame zamknutý
+        # objekt, takže save() číta author_id z cache (žiadny dotaz navyše).
         return [
-            FeedPostTag.objects.create(post=post, tagged_user_id=user_id)
+            FeedPostTag.objects.create(post=locked_post, tagged_user_id=user_id)
             for user_id in new_ids
         ]
