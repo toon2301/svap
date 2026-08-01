@@ -2,7 +2,7 @@
 
 import pytest
 from django.core.exceptions import ValidationError
-from django.db import IntegrityError, transaction
+from django.db import DataError, IntegrityError, transaction
 from django.contrib.auth import get_user_model
 
 from accounts.models import (
@@ -246,6 +246,120 @@ class TestSharingForeignContent:
             shared_offer=offer,
         )
         assert post.shared_owner_id == owner.id
+
+
+@pytest.mark.django_db
+class TestSharedSourceIntegrity:
+    """Zdroj zdieľania musí pri vzniku reálne existovať a pri zmene sa prevaliduje."""
+
+    def test_shared_offer_post_requires_source_fk(self):
+        # Bez tejto kontroly by prešiel "falošný" zdieľací príspevok so
+        # snapshotom, ale bez zdroja – nerozoznateľný od osireného zdieľania,
+        # a s úplne obídenou kontrolou blokovania/viditeľnosti.
+        with pytest.raises(ValidationError) as exc:
+            FeedPost.objects.create(
+                author=_user(1),
+                post_type=FeedPost.PostType.SHARED_OFFER,
+                shared_title="Vymyslená ponuka",
+            )
+        assert exc.value.code == "shared_source_required"
+
+    def test_shared_portfolio_post_requires_source_fk(self):
+        with pytest.raises(ValidationError) as exc:
+            FeedPost.objects.create(
+                author=_user(1),
+                post_type=FeedPost.PostType.SHARED_PORTFOLIO_ITEM,
+                shared_title="Vymyslené dielo",
+            )
+        assert exc.value.code == "shared_source_required"
+
+    def test_validation_runs_with_force_insert_and_preset_pk(self):
+        # _state.adding (nie pk is None) – s prideleným id by sa inak preskočila.
+        with pytest.raises(ValidationError):
+            FeedPost(
+                id=987654,
+                author=_user(1),
+                post_type=FeedPost.PostType.SHARED_OFFER,
+                shared_title="Vymyslená ponuka",
+            ).save(force_insert=True)
+
+    def test_swapping_source_to_blocked_offer_is_rejected(self):
+        owner, other = _user(1), _user(2)
+        allowed_offer = _offer(other, subcategory="Vlastná")
+        post = FeedPost.objects.create(
+            author=other,
+            post_type=FeedPost.PostType.SHARED_OFFER,
+            shared_offer=allowed_offer,
+        )
+
+        blocked_offer = _offer(owner)
+        UserBlock.objects.create(blocker=owner, blocked_user=other)
+
+        post.shared_offer = blocked_offer
+        with pytest.raises(ValidationError) as exc:
+            post.save(update_fields=["shared_offer", "updated_at"])
+        assert exc.value.code == REASON_BLOCKED
+
+    def test_swapping_source_reassigns_shared_owner(self):
+        first, second, author = _user(1), _user(2), _user(3)
+        post = FeedPost.objects.create(
+            author=author,
+            post_type=FeedPost.PostType.SHARED_OFFER,
+            shared_offer=_offer(first),
+        )
+        assert post.shared_owner_id == first.id
+
+        post.shared_offer = _offer(second, subcategory="Grafika")
+        post.save(update_fields=["shared_offer", "updated_at"])
+
+        # Zastaraný vlastník by znamenal, že sa blok/súkromie vyhodnocuje voči
+        # nesprávnemu používateľovi.
+        assert post.shared_owner_id == second.id
+
+    def test_orphaning_source_is_not_revalidated(self):
+        # SET_NULL osirenie po zmazaní originálu musí ostať povolené.
+        owner, other = _user(1), _user(2)
+        offer = _offer(owner)
+        post = FeedPost.objects.create(
+            author=other,
+            post_type=FeedPost.PostType.SHARED_OFFER,
+            shared_offer=offer,
+        )
+        UserBlock.objects.create(blocker=owner, blocked_user=other)
+
+        offer.delete()
+        post.refresh_from_db()
+        assert post.shared_offer_id is None
+
+
+@pytest.mark.django_db
+class TestTextLengthLimits:
+    """500-znakový limit musí vynútiť DB, nielen form/serializer vrstva."""
+
+    def test_caption_over_limit_is_rejected(self):
+        with pytest.raises((DataError, ValidationError, IntegrityError)):
+            with transaction.atomic():
+                FeedPost.objects.create(
+                    author=_user(1),
+                    post_type=FeedPost.PostType.FREE_POST,
+                    caption="x" * 501,
+                )
+
+    def test_caption_at_limit_is_accepted(self):
+        post = FeedPost.objects.create(
+            author=_user(1),
+            post_type=FeedPost.PostType.FREE_POST,
+            caption="x" * 500,
+        )
+        assert len(post.caption) == 500
+
+    def test_comment_text_over_limit_is_rejected(self):
+        post = _free_post(_user(1))
+        with pytest.raises((DataError, ValidationError, IntegrityError)):
+            with transaction.atomic():
+                FeedPostComment.objects.create(
+                    post=post, author=_user(2), text="x" * 501
+                )
 
 
 @pytest.mark.django_db

@@ -5,6 +5,7 @@ from unittest.mock import Mock, patch
 from django.contrib.auth import get_user_model
 from django.test import override_settings
 from django.urls import reverse
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APITestCase
 
@@ -189,6 +190,145 @@ class FeedPostImageUploadApiTests(APITestCase):
         self.post.refresh_from_db()
         self.assertEqual(self.post.image_status, "")  # žiadna fotka nevznikla
         delete_mock.assert_called_once_with([key])
+
+    def test_upload_init_rejects_disallowed_extension(self):
+        self.client.force_authenticate(user=self.author)
+        response = self.client.post(
+            self._init_url(),
+            data={"filename": "malware.exe", "size_bytes": 1024},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_upload_init_rejects_oversized_file(self):
+        self.client.force_authenticate(user=self.author)
+        response = self.client.post(
+            self._init_url(),
+            data={"filename": "big.jpg", "size_bytes": 6 * 1024 * 1024},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_upload_complete_rejects_oversized_staged_file(self):
+        # Veľkosť z head_object je zdroj pravdy – klient mohol pri inite klamať.
+        self.client.force_authenticate(user=self.author)
+        key = f"uploads/feed/{self.post.id}/photo.jpg"
+        s3 = _s3_mock(head={"ContentLength": 6 * 1024 * 1024, "ContentType": "image/jpeg"})
+
+        with (
+            patch("accounts.views.feed_uploads._get_s3_client", return_value=s3),
+            patch("accounts.views.feed_uploads.delete_storage_keys") as delete_mock,
+        ):
+            response = self.client.post(
+                self._complete_url(),
+                data={"key": key, "filename": "photo.jpg"},
+                format="json",
+            )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.post.refresh_from_db()
+        self.assertEqual(self.post.image_status, "")
+        delete_mock.assert_called_once_with([key])
+
+    def test_upload_complete_enqueue_failure_marks_rejected_and_cleans_staging(self):
+        self.client.force_authenticate(user=self.author)
+        key = f"uploads/feed/{self.post.id}/photo.jpg"
+        s3 = _s3_mock(head={"ContentLength": 2048, "ContentType": "image/jpeg"})
+
+        with (
+            patch("accounts.views.feed_uploads._get_s3_client", return_value=s3),
+            patch(
+                "swaply.tasks.feed_images.process_feed_post_image.delay",
+                side_effect=RuntimeError("broker down"),
+            ),
+            patch("accounts.views.feed_uploads.delete_storage_keys") as delete_mock,
+            self.captureOnCommitCallbacks(execute=True),
+        ):
+            response = self.client.post(
+                self._complete_url(),
+                data={"key": key, "filename": "photo.jpg"},
+                format="json",
+            )
+
+        # Odpoveď je 200 (DB zápis prešiel), ale post nesmie ostať navždy PENDING.
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.post.refresh_from_db()
+        self.assertEqual(self.post.image_status, FeedPost.ImageStatus.REJECTED)
+        delete_mock.assert_called_once_with([key])
+
+    def test_upload_complete_truncates_overlong_filename(self):
+        self.client.force_authenticate(user=self.author)
+        key = f"uploads/feed/{self.post.id}/photo.jpg"
+        s3 = _s3_mock(head={"ContentLength": 2048, "ContentType": "image/jpeg"})
+        long_name = "a" * 400 + ".jpg"
+
+        with (
+            patch("accounts.views.feed_uploads._get_s3_client", return_value=s3),
+            patch("swaply.tasks.feed_images.process_feed_post_image"),
+            self.captureOnCommitCallbacks(execute=True),
+        ):
+            response = self.client.post(
+                self._complete_url(),
+                data={"key": key, "filename": long_name},
+                format="json",
+            )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.post.refresh_from_db()
+        self.assertLessEqual(len(self.post.image_original_filename), 255)
+
+    @override_settings(SAFESEARCH_ENABLED=True)
+    def test_upload_complete_moderation_outage_fails_closed(self):
+        # Výpadok moderácie: fotku neprijmeme a staging uprataeme (fail-closed).
+        self.client.force_authenticate(user=self.author)
+        key = f"uploads/feed/{self.post.id}/photo.jpg"
+        s3 = _s3_mock(head={"ContentLength": 2048, "ContentType": "image/jpeg"})
+
+        with (
+            patch("accounts.views.feed_uploads._get_s3_client", return_value=s3),
+            patch(
+                "swaply.staged_image_moderation.moderate_staged_s3_image",
+                side_effect=RuntimeError("vision api down"),
+            ),
+            patch("accounts.views.feed_uploads.delete_storage_keys") as delete_mock,
+        ):
+            response = self.client.post(
+                self._complete_url(),
+                data={"key": key, "filename": "photo.jpg"},
+                format="json",
+            )
+
+        self.assertEqual(response.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
+        self.post.refresh_from_db()
+        self.assertEqual(self.post.image_status, "")
+        delete_mock.assert_called_once_with([key])
+
+    def test_retry_upload_after_rejection_clears_stale_processed_at(self):
+        self.client.force_authenticate(user=self.author)
+        self.post.image_status = FeedPost.ImageStatus.REJECTED
+        self.post.image_rejected_reason = "Nevhodny obsah."
+        self.post.image_processed_at = timezone.now()
+        self.post.save()
+
+        key = f"uploads/feed/{self.post.id}/retry.jpg"
+        s3 = _s3_mock(head={"ContentLength": 2048, "ContentType": "image/jpeg"})
+
+        with (
+            patch("accounts.views.feed_uploads._get_s3_client", return_value=s3),
+            patch("swaply.tasks.feed_images.process_feed_post_image"),
+            self.captureOnCommitCallbacks(execute=True),
+        ):
+            response = self.client.post(
+                self._complete_url(),
+                data={"key": key, "filename": "retry.jpg"},
+                format="json",
+            )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.post.refresh_from_db()
+        self.assertEqual(self.post.image_status, FeedPost.ImageStatus.PENDING)
+        # Starý čas spracovania by tvrdil, že tento nový upload je už vybavený.
+        self.assertIsNone(self.post.image_processed_at)
 
     def test_upload_complete_requires_authentication(self):
         response = self.client.post(

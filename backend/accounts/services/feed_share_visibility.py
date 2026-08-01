@@ -14,6 +14,9 @@ PortfolioItem nemá ``is_hidden`` – jeho viditeľnosť určuje len vlastník
 REASON_MISSING_OWNER = "shared_content_owner_missing"
 REASON_HIDDEN = "shared_content_hidden"
 REASON_PRIVATE_OWNER = "shared_content_owner_private"
+# Oddelený od PRIVATE_OWNER zámerne – "zmazaný/deaktivovaný účet" a "súkromný
+# profil" si vo Fáze 2 vyžiadajú inú hlášku (druhý stav sa dá zmeniť, prvý nie).
+REASON_INACTIVE_OWNER = "shared_content_owner_inactive"
 REASON_BLOCKED = "shared_content_blocked"
 
 SHARE_REASON_MESSAGES = {
@@ -21,6 +24,9 @@ SHARE_REASON_MESSAGES = {
     REASON_HIDDEN: "Túto ponuku nemožno zdieľať, pretože je skrytá.",
     REASON_PRIVATE_OWNER: (
         "Tento obsah nemožno zdieľať, pretože jeho autor má súkromný profil."
+    ),
+    REASON_INACTIVE_OWNER: (
+        "Tento obsah nemožno zdieľať, pretože jeho autor už nie je dostupný."
     ),
     REASON_BLOCKED: (
         "Tento obsah nemožno zdieľať kvôli blokovaniu medzi vami a jeho autorom."
@@ -44,11 +50,14 @@ def shared_content_share_block_reason(*, owner, author_id, is_hidden=False):
 
     if is_hidden:
         return REASON_HIDDEN
-    if not getattr(owner, "is_public", True) or not getattr(owner, "is_active", True):
+    if not getattr(owner, "is_active", True):
+        return REASON_INACTIVE_OWNER
+    if not getattr(owner, "is_public", True):
         return REASON_PRIVATE_OWNER
 
-    # Lazy import – tento modul importuje model FeedPost, a user_blocks importuje
-    # accounts.models, takže import na úrovni modulu by uzavrel kruh.
+    # Lazy import – tento modul si importuje accounts.models.feed_posts, a
+    # user_blocks importuje accounts.models; import na úrovni modulu by teda
+    # uzavrel kruh models → feed_share_visibility → user_blocks → models.
     from accounts.services.user_blocks import user_block_exists_between
 
     if user_block_exists_between(first_user_id=author_id, second_user_id=owner_id):

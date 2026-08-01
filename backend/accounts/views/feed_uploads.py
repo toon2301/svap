@@ -31,6 +31,8 @@ from ..models import FeedPost
 logger = logging.getLogger(__name__)
 
 UPLOAD_EXPIRES_SECONDS = 600
+# Zhodné s FeedPost.image_original_filename.max_length.
+MAX_ORIGINAL_FILENAME_LENGTH = 255
 
 
 def _post_not_found():
@@ -130,6 +132,10 @@ def feed_post_image_upload_init_view(request, post_id: int):
             ExpiresIn=UPLOAD_EXPIRES_SECONDS,
         )
     except Exception:
+        logger.exception(
+            "Failed to generate feed image presigned upload",
+            extra={"feed_post_id": post_id},
+        )
         return Response(
             {"error": "Nepodarilo sa pripravit upload."},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -195,12 +201,14 @@ def feed_post_image_upload_complete_view(request, post_id: int):
 
     # Preflight SafeSearch moderácia pred zápisom do DB (vzor portfólia).
     if getattr(settings, "SAFESEARCH_ENABLED", False):
-        try:
-            from swaply.staged_image_moderation import (
-                ModerationRejectedError,
-                moderate_staged_s3_image,
-            )
+        # Import MIMO try – keby zlyhal vnútri, except vetva by odkazovala na
+        # nedefinovaný ModerationRejectedError (NameError namiesto čistej chyby).
+        from swaply.staged_image_moderation import (
+            ModerationRejectedError,
+            moderate_staged_s3_image,
+        )
 
+        try:
             moderate_staged_s3_image(bucket, key)
         except ModerationRejectedError as e:
             # Defense-in-depth orphan cleanup (rovnaký vzor ako portfólio).
@@ -208,6 +216,18 @@ def feed_post_image_upload_complete_view(request, post_id: int):
             return Response(
                 {"error": e.user_message, "code": e.code},
                 status=status.HTTP_400_BAD_REQUEST,
+            )
+        except Exception:
+            # Výpadok moderácie nesmie nechať staging objekt visieť ani vrátiť
+            # neošetrenú 500 – fotku neprijmeme (fail-closed, ako pri rejectnutí).
+            logger.exception(
+                "Feed image moderation failed",
+                extra={"feed_post_id": post_id},
+            )
+            delete_storage_keys([key])
+            return Response(
+                {"error": "Nepodarilo sa overit obrazok. Skuste to znova."},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
             )
 
     with transaction.atomic():
@@ -233,10 +253,15 @@ def feed_post_image_upload_complete_view(request, post_id: int):
 
         post.image_status = FeedPost.ImageStatus.PENDING
         post.image_pending_key = key
-        post.image_original_filename = filename
+        # Klientom poslaný názov orež na dĺžku poľa – inak by save() spadol na
+        # DataError (názov je len kozmetický údaj, nie dôvod odmietnuť upload).
+        post.image_original_filename = filename[:MAX_ORIGINAL_FILENAME_LENGTH]
         post.image_content_type = content_type
         post.image_size_bytes = size_bytes
         post.image_rejected_reason = ""
+        # Retry po zamietnutí: starý čas spracovania by inak ostal a tváril sa,
+        # že tento (ešte nespracovaný) PENDING upload je už vybavený.
+        post.image_processed_at = None
         post.save(
             update_fields=[
                 "image_status",
@@ -245,6 +270,7 @@ def feed_post_image_upload_complete_view(request, post_id: int):
                 "image_content_type",
                 "image_size_bytes",
                 "image_rejected_reason",
+                "image_processed_at",
                 "updated_at",
             ]
         )

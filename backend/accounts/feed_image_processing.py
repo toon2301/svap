@@ -44,11 +44,17 @@ PROCESSING_FAILED_REASON = "Spracovanie obrazka zlyhalo."
 def _reject_feed_image(
     feed_post_id: int, *, reason: str, pending_key: str, delete_key
 ) -> None:
+    def drop_staging():
+        # Prázdny kľúč by znamenal delete volanie nad "" (S3 vráti chybu, lokálne
+        # by sa cielilo na koreň storage) – mazať má zmysel len reálny kľúč.
+        if pending_key:
+            delete_key(pending_key)
+
     with transaction.atomic():
         try:
             post = FeedPost.objects.select_for_update().get(id=feed_post_id)
         except FeedPost.DoesNotExist:
-            delete_key(pending_key)
+            drop_staging()
             return
 
         if post.image_status == FeedPost.ImageStatus.APPROVED:
@@ -56,16 +62,20 @@ def _reject_feed_image(
         post.image_status = FeedPost.ImageStatus.REJECTED
         post.image_rejected_reason = reason
         post.image_processed_at = timezone.now()
+        # Staging objekt nižšie mažeme – kľúč už na nič neukazuje, nech pole
+        # nedrží mŕtvy odkaz (a retry upload začína z čistého stavu).
+        post.image_pending_key = ""
         post.save(
             update_fields=[
                 "image_status",
                 "image_rejected_reason",
                 "image_processed_at",
+                "image_pending_key",
                 "updated_at",
             ]
         )
 
-    delete_key(pending_key)
+    drop_staging()
 
 
 def mark_feed_image_processing_failed(feed_post_id: int) -> None:
@@ -126,14 +136,32 @@ def process_feed_post_image_record(feed_post_id: int) -> None:
             raise RuntimeError("image_pending_key missing")
 
     if use_local_storage:
-        raw_bytes = _read_local_key(pending_key)
         delete_key = _delete_local_key
     else:
         s3 = _s3_client()
-        raw_bytes = s3.get_object(Bucket=bucket, Key=pending_key)["Body"].read()
 
         def delete_key(key):
             return _delete_s3_key(s3, bucket, key)
+
+    try:
+        if use_local_storage:
+            raw_bytes = _read_local_key(pending_key)
+        else:
+            raw_bytes = s3.get_object(Bucket=bucket, Key=pending_key)["Body"].read()
+    except Exception:
+        # Chýbajúci staging objekt (expirovaný/zmazaný) sa opakovaním nespraví –
+        # retry by len 5× zopakoval to isté a post by ostal PENDING.
+        logger.warning(
+            "Feed image staging object unavailable",
+            extra={"feed_post_id": feed_post_id},
+        )
+        _reject_feed_image(
+            feed_post_id,
+            reason=PROCESSING_FAILED_REASON,
+            pending_key=pending_key,
+            delete_key=delete_key,
+        )
+        return
 
     try:
         decoded = _decode_image(raw_bytes)
@@ -190,44 +218,55 @@ def process_feed_post_image_record(feed_post_id: int) -> None:
             delete_key(key)
         raise
 
-    delete_key(pending_key)
+    try:
+        with transaction.atomic():
+            try:
+                post = FeedPost.objects.select_for_update().get(id=feed_post_id)
+            except FeedPost.DoesNotExist:
+                for key in uploaded_keys:
+                    delete_key(key)
+                return
 
-    with transaction.atomic():
-        try:
-            post = FeedPost.objects.select_for_update().get(id=feed_post_id)
-        except FeedPost.DoesNotExist:
-            for key in uploaded_keys:
-                delete_key(key)
-            return
+            if post.image_status in (
+                FeedPost.ImageStatus.APPROVED,
+                FeedPost.ImageStatus.REJECTED,
+            ):
+                for key in uploaded_keys:
+                    delete_key(key)
+                return
 
-        if post.image_status in (
-            FeedPost.ImageStatus.APPROVED,
-            FeedPost.ImageStatus.REJECTED,
-        ):
-            for key in uploaded_keys:
-                delete_key(key)
-            return
-
-        post.image_status = FeedPost.ImageStatus.APPROVED
-        post.image_thumbnail_key = thumbnail_key
-        post.image_approved_key = large_key
-        post.image_content_type = "image/webp"
-        post.image_size_bytes = len(large_bytes)
-        post.image_width = large_size[0]
-        post.image_height = large_size[1]
-        post.image_processed_at = timezone.now()
-        post.image_rejected_reason = ""
-        post.save(
-            update_fields=[
-                "image_status",
-                "image_thumbnail_key",
-                "image_approved_key",
-                "image_content_type",
-                "image_size_bytes",
-                "image_width",
-                "image_height",
-                "image_processed_at",
-                "image_rejected_reason",
-                "updated_at",
-            ]
-        )
+            post.image_status = FeedPost.ImageStatus.APPROVED
+            post.image_thumbnail_key = thumbnail_key
+            post.image_approved_key = large_key
+            post.image_content_type = "image/webp"
+            post.image_size_bytes = len(large_bytes)
+            post.image_width = large_size[0]
+            post.image_height = large_size[1]
+            post.image_processed_at = timezone.now()
+            post.image_rejected_reason = ""
+            post.image_pending_key = ""
+            post.save(
+                update_fields=[
+                    "image_status",
+                    "image_thumbnail_key",
+                    "image_approved_key",
+                    "image_content_type",
+                    "image_size_bytes",
+                    "image_width",
+                    "image_height",
+                    "image_processed_at",
+                    "image_rejected_reason",
+                    "image_pending_key",
+                    "updated_at",
+                ]
+            )
+            # Staging zmaž AŽ PO úspešnom commite APPROVED stavu. Keby sme mazali
+            # skôr a zápis by zlyhal, retry by už nemal z čoho spracovať (zdroj
+            # preč, post navždy PENDING).
+            if pending_key:
+                transaction.on_commit(lambda: delete_key(pending_key))
+    except Exception:
+        # Zápis zlyhal → varianty v storage by ostali ako orphan.
+        for key in uploaded_keys:
+            delete_key(key)
+        raise

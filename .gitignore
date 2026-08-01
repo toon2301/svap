@@ -77,3 +77,6 @@ docker-compose.override.yml
 "backend/google-credentials.json" 
 "backend/svaply-8ae1b49fa953.json" 
 backend/cloudflared.exe
+
+# Celery beat runtime state (shelve DB: .dat/.dir/.bak)
+celerybeat-schedule*
