@@ -312,9 +312,16 @@ class TestSharedSourceIntegrity:
         post.shared_offer = _offer(second, subcategory="Grafika")
         post.save(update_fields=["shared_offer", "updated_at"])
 
+        # refresh_from_db je tu podstatné: bez neho by test prešiel, aj keby sa
+        # prepísaný snapshot nikdy nedostal do DB (update_fields ho vynechá).
+        post.refresh_from_db()
+
         # Zastaraný vlastník by znamenal, že sa blok/súkromie vyhodnocuje voči
         # nesprávnemu používateľovi.
         assert post.shared_owner_id == second.id
+        # Aj odvodený snapshot musí sledovať nový zdroj, nie ostať po starom.
+        assert post.shared_title == "Grafika"
+        assert post.shared_owner_display_name == second.display_name
 
     def test_orphaning_source_is_not_revalidated(self):
         # SET_NULL osirenie po zmazaní originálu musí ostať povolené.

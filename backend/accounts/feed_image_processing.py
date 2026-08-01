@@ -41,6 +41,21 @@ PROCESSING_ENQUEUE_ERROR = "Spracovanie sa nepodarilo naplanovat."
 PROCESSING_FAILED_REASON = "Spracovanie obrazka zlyhalo."
 
 
+def _missing_object_errors(s3=None) -> tuple[type[BaseException], ...]:
+    """Výnimky znamenajúce „staging objekt neexistuje" = trvalé zlyhanie.
+
+    Všetko ostatné (timeout, S3 5xx, sieťová chyba) musí prebublať von, aby to
+    zopakoval Celery retry – preto sa tu chytá úzka množina, nie ``Exception``.
+    ``NoSuchKey`` sa berie z klienta (botocore ho generuje za behu); keď to
+    klient neponúka (napr. Mock v testoch), ostane len ``FileNotFoundError``.
+    """
+    errors: list[type[BaseException]] = [FileNotFoundError]
+    no_such_key = getattr(getattr(s3, "exceptions", None), "NoSuchKey", None)
+    if isinstance(no_such_key, type) and issubclass(no_such_key, BaseException):
+        errors.append(no_such_key)
+    return tuple(errors)
+
+
 def _reject_feed_image(
     feed_post_id: int, *, reason: str, pending_key: str, delete_key
 ) -> None:
@@ -143,16 +158,19 @@ def process_feed_post_image_record(feed_post_id: int) -> None:
         def delete_key(key):
             return _delete_s3_key(s3, bucket, key)
 
+    missing_object_errors = _missing_object_errors(None if use_local_storage else s3)
     try:
         if use_local_storage:
             raw_bytes = _read_local_key(pending_key)
         else:
             raw_bytes = s3.get_object(Bucket=bucket, Key=pending_key)["Body"].read()
-    except Exception:
-        # Chýbajúci staging objekt (expirovaný/zmazaný) sa opakovaním nespraví –
-        # retry by len 5× zopakoval to isté a post by ostal PENDING.
+    except missing_object_errors:
+        # Objekt naozaj neexistuje (expiroval/bol zmazaný) – opakovanie ho
+        # nevyrobí, takže rovno REJECTED. Prechodné chyby (timeout, 5xx, sieť)
+        # sem ZÁMERNE nepatria: tie musia prebublať Celery retry mechanizmu,
+        # inak by sme fotku zahodili pri krátkodobom výpadku storage.
         logger.warning(
-            "Feed image staging object unavailable",
+            "Feed image staging object missing",
             extra={"feed_post_id": feed_post_id},
         )
         _reject_feed_image(
