@@ -75,6 +75,7 @@ def _delete_owned_content(user) -> None:
         FeedPost,
         FeedPostComment,
         FeedPostLike,
+        FeedPostTag,
         Notification,
         OfferedSkill,
         OfferedSkillLike,
@@ -95,6 +96,11 @@ def _delete_owned_content(user) -> None:
     FeedPost.objects.filter(author=user).delete()
     FeedPostComment.objects.filter(author=user).delete()
     FeedPostLike.objects.filter(user=user).delete()
+    # Označenia tohto používateľa v CUDZÍCH príspevkoch. FeedPostTag.tagged_user
+    # je síce CASCADE, ale User riadok sa nemaže (len anonymizuje), takže CASCADE
+    # nevystrelí – bez tohto riadku by v cudzích príspevkoch ostalo označenie
+    # odkazujúce na zmazaný účet. Tagy na vlastných príspevkoch zanikli vyššie.
+    FeedPostTag.objects.filter(tagged_user=user).delete()
 
     # Recenzie napísané používateľom o iných (rozhodnutie B – tvrdé zmazanie).
     Review.objects.filter(reviewer=user).delete()

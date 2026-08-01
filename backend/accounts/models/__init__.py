@@ -32,7 +32,13 @@ from .skill_requests import (
     skill_request_is_reviewable,
 )
 from .notifications import Notification, NotificationType
-from .feed_posts import FeedPost, FeedPostComment, FeedPostLike, FeedPostReport
+from .feed_posts import (
+    FeedPost,
+    FeedPostComment,
+    FeedPostLike,
+    FeedPostReport,
+    FeedPostTag,
+)
 from .profile_likes import ProfileLike
 from .profile_visits import ProfileVisit
 from .user_blocks import UserBlock
@@ -86,6 +92,7 @@ __all__ = [
     "FeedPostComment",
     "FeedPostLike",
     "FeedPostReport",
+    "FeedPostTag",
     "ProfileLike",
     "ProfileVisit",
     "UserBlock",
