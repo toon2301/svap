@@ -275,9 +275,13 @@ class TestLockingOrder:
         with patch.object(QuerySet, "select_for_update", spy_select_for_update):
             apply_feed_post_tags(post, [tagged.id])
 
-        # Oba zámky musia padnúť, a to v poradí User → FeedPost. Opačné poradie
-        # by voči anonymize_user (User → obsah) vytvorilo inverziu = deadlock.
-        assert order == ["lock:User", "lock:FeedPost"]
+        # Overuje sa RELATÍVNE poradie, nie presný zoznam: podstatná vlastnosť je
+        # User → FeedPost (opačné poradie by voči anonymize_user, ktorý zamyká
+        # User a až potom obsah, vytvorilo inverziu = deadlock). Prípadné ďalšie
+        # zámky navyše sú v poriadku a nesmú test zhodiť.
+        assert "lock:User" in order
+        assert "lock:FeedPost" in order
+        assert order.index("lock:User") < order.index("lock:FeedPost")
 
     def test_is_active_is_read_after_user_lock(self):
         """NÁLEZ 1 deterministicky: deaktivácia „commitnutá" v momente zámku
@@ -385,7 +389,7 @@ class TestTaggingConcurrency:
         """NÁLEZ 2: dve súbežné volania tesne pri limite ho neprekročia."""
         self._require_row_locks()
 
-        author = _post_author = _user(1)
+        author = _user(1)
         post = _post(author)
         # Naplň príspevok na MAX-1, aby ostalo miesto presne pre JEDEN tag.
         filler = [_user(10 + i) for i in range(MAX_FEED_POST_TAGS - 1)]
@@ -404,6 +408,14 @@ class TestTaggingConcurrency:
                 raise TimeoutError("Timed out waiting to release first tagging")
             return None  # žiadne blokovanie
 
+        # POZOR na patch nižšie: patch() prepisuje atribút modulu, takže platí
+        # pre CELÝ proces – teda aj pre druhé vlákno, hoci ho spúšťame s
+        # hold=False. Test to napriek tomu nezablokuje: druhé vlákno uviazne
+        # už skôr, na zámku príspevku vnútri apply_feed_post_tags (prvé vlákno
+        # ho drží, kým čaká v hold_first), a k feed_post_tag_block_reason sa
+        # dostane až potom, čo release_first.set() prvé vlákno pustí ďalej.
+        # V tej chvíli je release_first už nastavený, takže hold_first vráti
+        # hodnotu okamžite a nečaká sa druhýkrát.
         def tag_with(user_id, hold):
             close_old_connections()
             try:
