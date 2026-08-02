@@ -59,6 +59,16 @@ from .push import (
     push_subscription_current_view,
     push_preferences_view,
 )
+from .feed_image_files import (
+    feed_post_image_file_view,
+    feed_post_shared_thumbnail_view,
+)
+from .feed_posts import (
+    feed_post_detail_view,
+    feed_posts_view,
+    feed_user_posts_view,
+    feed_user_tagged_posts_view,
+)
 from .feed_uploads import (
     feed_post_image_upload_complete_view,
     feed_post_image_upload_init_view,
@@ -148,4 +158,10 @@ __all__ = [
     "global_search_view",
     "feed_post_image_upload_init_view",
     "feed_post_image_upload_complete_view",
+    "feed_posts_view",
+    "feed_post_detail_view",
+    "feed_user_posts_view",
+    "feed_user_tagged_posts_view",
+    "feed_post_image_file_view",
+    "feed_post_shared_thumbnail_view",
 ]
