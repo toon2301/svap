@@ -17,7 +17,6 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 from accounts.models import FeedPost, OfferedSkill, UserBlock
-from accounts.services.feed_share_visibility import REASON_HIDDEN
 from accounts.services.feed_tagging import REASON_TAG_BLOCKED
 from portfolio.models import PortfolioItem
 
@@ -133,8 +132,62 @@ class FeedPostCreateApiTests(APITestCase):
             format="json",
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.data["code"], REASON_HIDDEN)
+        self.assertEqual(response.data["code"], "shared_source_missing")
         self.assertEqual(FeedPost.objects.count(), 0)
+
+    def test_hidden_and_nonexistent_sources_are_indistinguishable(self):
+        """Enumeration: „existuje, ale nevidíš" sa nesmie líšiť od „neexistuje"."""
+        hidden = _offer(self.other, is_hidden=True)
+        self.client.force_authenticate(user=self.author)
+
+        hidden_response = self.client.post(
+            self.url,
+            data={"post_type": "shared_offer", "shared_offer_id": hidden.id},
+            format="json",
+        )
+        missing_response = self.client.post(
+            self.url,
+            data={"post_type": "shared_offer", "shared_offer_id": 999999},
+            format="json",
+        )
+
+        self.assertEqual(hidden_response.status_code, missing_response.status_code)
+        self.assertEqual(hidden_response.data, missing_response.data)
+
+    def test_private_owner_source_is_indistinguishable_from_missing(self):
+        private_owner = _user("feed-create-private", is_public=False)
+        offer = _offer(private_owner)
+        self.client.force_authenticate(user=self.author)
+
+        response = self.client.post(
+            self.url,
+            data={"post_type": "shared_offer", "shared_offer_id": offer.id},
+            format="json",
+        )
+        self.assertEqual(response.data["code"], "shared_source_missing")
+
+    def test_own_hidden_offer_is_still_shareable(self):
+        """Zjednotenie chyby nesmie zabiť legitímne zdieľanie vlastného obsahu."""
+        offer = _offer(self.author, is_hidden=True)
+        self.client.force_authenticate(user=self.author)
+
+        response = self.client.post(
+            self.url,
+            data={"post_type": "shared_offer", "shared_offer_id": offer.id},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+    def test_boolean_shared_offer_id_is_rejected(self):
+        # bool je podtrieda int – True by sa inak stalo ID 1.
+        self.client.force_authenticate(user=self.author)
+        response = self.client.post(
+            self.url,
+            data={"post_type": "shared_offer", "shared_offer_id": True},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data["code"], "shared_source_required")
 
     def test_create_with_blocked_tag_returns_400_and_rolls_back(self):
         UserBlock.objects.create(blocker=self.other, blocked_user=self.author)
@@ -254,20 +307,29 @@ class FeedListApiTests(APITestCase):
         self.assertIn(own.id, self._result_ids(response))
 
     def test_authenticated_excludes_blocked_authors_both_directions(self):
-        blocked_author = _user("feed-list-blocked")
-        post_blocked = _free_post(blocked_author, caption="Od blokovaného")
+        # Autor blokuje diváka.
+        author_blocks = _user("feed-list-blocked-a")
+        post_author_blocks = _free_post(author_blocks, caption="Autor blokuje")
+        UserBlock.objects.create(blocker=author_blocks, blocked_user=self.viewer)
+        # Divák blokuje autora (opačný smer).
+        viewer_blocks = _user("feed-list-blocked-b")
+        post_viewer_blocks = _free_post(viewer_blocks, caption="Divák blokuje")
+        UserBlock.objects.create(blocker=self.viewer, blocked_user=viewer_blocks)
+
         post_ok = _free_post(self.public_author)
-        UserBlock.objects.create(blocker=blocked_author, blocked_user=self.viewer)
 
         self.client.force_authenticate(user=self.viewer)
-        response = self.client.get(self.url)
+        ids = self._result_ids(self.client.get(self.url))
 
-        ids = self._result_ids(response)
         self.assertIn(post_ok.id, ids)
-        self.assertNotIn(post_blocked.id, ids)
+        self.assertNotIn(post_author_blocks.id, ids)
+        self.assertNotIn(post_viewer_blocks.id, ids)
+
         # Anonym blokovanie nemá – vidí oba (anonym-safe no-op).
         self.client.force_authenticate(user=None)
-        self.assertIn(post_blocked.id, self._result_ids(self.client.get(self.url)))
+        anon_ids = self._result_ids(self.client.get(self.url))
+        self.assertIn(post_author_blocks.id, anon_ids)
+        self.assertIn(post_viewer_blocks.id, anon_ids)
 
     def test_authenticated_excludes_posts_sharing_blocked_owners_content(self):
         content_owner = _user("feed-list-content-owner")
@@ -358,6 +420,87 @@ class FeedListApiTests(APITestCase):
         self.assertEqual(ids, [shared.id, free.id])
 
 
+class FeedCountsApiTests(APITestCase):
+    """Počty lajkov/komentárov pri oboch reverse vzťahoch naraz (fan-out)."""
+
+    def test_likes_and_comments_counts_are_not_multiplied(self):
+        from accounts.models import FeedPostComment, FeedPostLike
+
+        author = _user("feed-counts-author")
+        post = _free_post(author)
+        likers = [_user(f"feed-counts-liker-{i}") for i in range(3)]
+        commenters = [_user(f"feed-counts-commenter-{i}") for i in range(2)]
+        for liker in likers:
+            FeedPostLike.objects.create(post=post, user=liker)
+        for commenter in commenters:
+            FeedPostComment.objects.create(post=post, author=commenter, text="Ahoj")
+
+        entry = self.client.get(reverse(LIST_URL_NAME)).data["results"][0]
+
+        # 3 lajky × 2 komentáre by pri naivnom Count() dalo 6 a 6.
+        self.assertEqual(entry["likes_count"], 3)
+        self.assertEqual(entry["comments_count"], 2)
+
+    def test_counts_are_zero_not_null_without_interactions(self):
+        author = _user("feed-counts-empty")
+        _free_post(author)
+
+        entry = self.client.get(reverse(LIST_URL_NAME)).data["results"][0]
+
+        self.assertEqual(entry["likes_count"], 0)
+        self.assertEqual(entry["comments_count"], 0)
+
+    def test_counts_are_correlated_per_post(self):
+        """Každý príspevok má vlastné čísla – zlá korelácia (OuterRef) by
+        rozliala počty jedného príspevku na ostatné."""
+        from accounts.models import FeedPostComment, FeedPostLike
+
+        author = _user("feed-counts-corr-author")
+        busy = _free_post(author, caption="Populárny")
+        quiet = _free_post(author, caption="Tichý")
+        empty = _free_post(author, caption="Prázdny")
+
+        for index in range(4):
+            liker = _user(f"feed-counts-corr-liker-{index}")
+            FeedPostLike.objects.create(post=busy, user=liker)
+            if index < 3:
+                FeedPostComment.objects.create(
+                    post=busy, author=liker, text="Ahoj"
+                )
+            if index < 1:
+                FeedPostLike.objects.create(post=quiet, user=liker)
+
+        results = self.client.get(reverse(LIST_URL_NAME)).data["results"]
+        by_id = {entry["id"]: entry for entry in results}
+
+        self.assertEqual(by_id[busy.id]["likes_count"], 4)
+        self.assertEqual(by_id[busy.id]["comments_count"], 3)
+        self.assertEqual(by_id[quiet.id]["likes_count"], 1)
+        self.assertEqual(by_id[quiet.id]["comments_count"], 0)
+        self.assertEqual(by_id[empty.id]["likes_count"], 0)
+        self.assertEqual(by_id[empty.id]["comments_count"], 0)
+
+    def test_counts_do_not_cross_join_like_and_comment_tables(self):
+        """Výkon: lajky/komentáre sa počítajú v subquery, nie krížovým joinom.
+
+        Krížový join by pred agregáciou vyrobil lajky × komentáre riadkov;
+        v subquery ostáva hlavný dotaz jeden riadok na príspevok.
+        """
+        import re
+
+        from accounts.views.feed_posts import _annotated_queryset
+
+        sql = str(_annotated_queryset().query)
+
+        for table in ("accounts_feedpostlike", "accounts_feedpostcomment"):
+            # Tabuľka sa v SQL musí vyskytovať (počítame ju), ale NIE ako JOIN.
+            self.assertIn(table, sql)
+            self.assertIsNone(
+                re.search(rf'JOIN\s+"?{table}"?', sql, flags=re.IGNORECASE),
+                f"{table} sa pripája cez JOIN – krížový súčin sa vrátil",
+            )
+
+
 class FeedDetailApiTests(APITestCase):
     def setUp(self):
         self.author = _user("feed-detail-author")
@@ -389,6 +532,225 @@ class FeedDetailApiTests(APITestCase):
         self.client.force_authenticate(user=self.viewer)
         response = self.client.get(self._url(post))
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+
+class FeedSharedContentSerializationTests(APITestCase):
+    """Živé dáta kým zdroj žije; snapshot výhradne pre nedostupný zdroj."""
+
+    def setUp(self):
+        self.owner = _user("feed-live-owner")
+        self.sharer = _user("feed-live-sharer")
+
+    def _shared_payload(self, post):
+        response = self.client.get(
+            reverse("accounts:feed_post_detail", args=[post.id])
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        return response.data
+
+    def test_visible_source_serializes_live_fields_not_snapshot(self):
+        offer = _offer(self.owner, subcategory="Programovanie")
+        post = FeedPost.objects.create(
+            author=self.sharer,
+            post_type=FeedPost.PostType.SHARED_OFFER,
+            shared_offer=offer,
+        )
+        # Zdroj sa po zdieľaní premenuje – snapshot ostáva starý.
+        offer.subcategory = "Grafika"
+        offer.category = "dizajn"
+        offer.save(update_fields=["subcategory", "category"])
+        post.refresh_from_db()
+        self.assertEqual(post.shared_title, "Programovanie")
+
+        shared = self._shared_payload(post)["shared_content"]
+
+        self.assertEqual(shared["title"], "Grafika")
+        self.assertEqual(shared["category"], "dizajn")
+
+    def test_unavailable_source_falls_back_to_snapshot(self):
+        offer = _offer(self.owner, subcategory="Programovanie")
+        post = FeedPost.objects.create(
+            author=self.sharer,
+            post_type=FeedPost.PostType.SHARED_OFFER,
+            shared_offer=offer,
+        )
+        offer.subcategory = "Grafika"
+        offer.is_hidden = True
+        offer.save(update_fields=["subcategory", "is_hidden"])
+
+        shared = self._shared_payload(post)["shared_content"]
+
+        # Skrytý zdroj → snapshot, žiadny únik aktuálneho názvu ani preklik.
+        self.assertEqual(shared["title"], "Programovanie")
+        self.assertIsNone(shared["id"])
+        self.assertIsNone(shared["owner"])
+
+    def test_deleted_source_falls_back_to_snapshot(self):
+        offer = _offer(self.owner, subcategory="Programovanie")
+        post = FeedPost.objects.create(
+            author=self.sharer,
+            post_type=FeedPost.PostType.SHARED_OFFER,
+            shared_offer=offer,
+        )
+        offer.delete()
+
+        payload = self._shared_payload(post)
+
+        self.assertTrue(payload["shared_content_unavailable"])
+        self.assertEqual(payload["shared_content"]["title"], "Programovanie")
+
+    def test_live_portfolio_item_serializes_current_title(self):
+        item = PortfolioItem.objects.create(
+            owner=self.owner, title="Weby", category="it-a-technologie"
+        )
+        post = FeedPost.objects.create(
+            author=self.sharer,
+            post_type=FeedPost.PostType.SHARED_PORTFOLIO_ITEM,
+            shared_portfolio_item=item,
+        )
+        item.title = "Weby na mieru"
+        item.save(update_fields=["title"])
+
+        shared = self._shared_payload(post)["shared_content"]
+
+        self.assertEqual(shared["title"], "Weby na mieru")
+
+
+class FeedImageFileApiTests(APITestCase):
+    """Obrázkové proxy endpointy – autorizácia musí sedieť s JSON API."""
+
+    def setUp(self):
+        self.author = _user("feed-img-author")
+        self.viewer = _user("feed-img-viewer")
+        self.owner = _user("feed-img-owner")
+
+    def _image_url(self, post):
+        return reverse("accounts:feed_post_image_file", args=[post.id])
+
+    def _shared_thumb_url(self, post):
+        return reverse("accounts:feed_post_shared_thumbnail", args=[post.id])
+
+    def _shared_post(self, offer):
+        post = FeedPost.objects.create(
+            author=self.author,
+            post_type=FeedPost.PostType.SHARED_OFFER,
+            shared_offer=offer,
+        )
+        # Snapshot kľúč simulujeme priamo (upload flow tu netestujeme).
+        FeedPost.objects.filter(pk=post.pk).update(
+            shared_thumbnail_key="media/offers/1/thumb.webp"
+        )
+        post.refresh_from_db()
+        return post
+
+    def test_shared_thumbnail_404_when_source_hidden(self):
+        """NÁLEZ 1: keď JSON hlási nedostupné, nesmie ísť von ani obrázok."""
+        offer = _offer(self.owner)
+        post = self._shared_post(offer)
+        offer.is_hidden = True
+        offer.save(update_fields=["is_hidden"])
+
+        response = self.client.get(self._shared_thumb_url(post))
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_shared_thumbnail_404_when_owner_goes_private(self):
+        offer = _offer(self.owner)
+        post = self._shared_post(offer)
+        self.owner.is_public = False
+        self.owner.save(update_fields=["is_public"])
+
+        response = self.client.get(self._shared_thumb_url(post))
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_shared_thumbnail_404_for_free_post(self):
+        post = _free_post(self.author)
+        response = self.client.get(self._shared_thumb_url(post))
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_image_404_for_unapproved_photo_of_other_user(self):
+        post = _free_post(self.author)
+        FeedPost.objects.filter(pk=post.pk).update(
+            image_status=FeedPost.ImageStatus.PENDING,
+            image_pending_key="uploads/feed/1/x.jpg",
+        )
+
+        self.client.force_authenticate(user=self.viewer)
+        response = self.client.get(self._image_url(post))
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_image_404_when_author_is_private_for_other_viewer(self):
+        private_author = _user("feed-img-private", is_public=False)
+        post = _free_post(private_author)
+        FeedPost.objects.filter(pk=post.pk).update(
+            image_status=FeedPost.ImageStatus.APPROVED,
+            image_approved_key="media/feed/1/large.webp",
+        )
+
+        response = self.client.get(self._image_url(post))
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+
+class FeedImageSerializationTests(APITestCase):
+    """get_image: verejne len APPROVED, autor vidí aj stav spracovania."""
+
+    def setUp(self):
+        self.author = _user("feed-imgser-author")
+        self.viewer = _user("feed-imgser-viewer")
+        self.post = _free_post(self.author)
+
+    def _set_image(self, **fields):
+        FeedPost.objects.filter(pk=self.post.pk).update(**fields)
+
+    def _detail(self):
+        return self.client.get(
+            reverse("accounts:feed_post_detail", args=[self.post.id])
+        ).data
+
+    def test_approved_image_exposes_absolute_urls(self):
+        self._set_image(
+            image_status=FeedPost.ImageStatus.APPROVED,
+            image_approved_key="media/feed/1/large.webp",
+            image_thumbnail_key="media/feed/1/thumb.webp",
+            image_width=800,
+            image_height=600,
+        )
+
+        image = self._detail()["image"]
+
+        self.assertTrue(image["large_url"].startswith("http"))
+        self.assertIn("variant=thumbnail", image["thumbnail_url"])
+        self.assertEqual(image["width"], 800)
+        # Cudzí divák stav spracovania nepotrebuje.
+        self.assertNotIn("status", image)
+
+    def test_pending_image_hidden_from_others_visible_to_author(self):
+        self._set_image(
+            image_status=FeedPost.ImageStatus.PENDING,
+            image_pending_key="uploads/feed/1/x.jpg",
+        )
+
+        self.assertIsNone(self._detail()["image"])
+
+        self.client.force_authenticate(user=self.author)
+        image = self._detail()["image"]
+        self.assertEqual(image["status"], FeedPost.ImageStatus.PENDING)
+
+    def test_rejected_image_shows_reason_to_author_only(self):
+        self._set_image(
+            image_status=FeedPost.ImageStatus.REJECTED,
+            image_rejected_reason="Nevhodny obsah.",
+        )
+
+        self.assertIsNone(self._detail()["image"])
+
+        self.client.force_authenticate(user=self.author)
+        image = self._detail()["image"]
+        self.assertEqual(image["status"], FeedPost.ImageStatus.REJECTED)
+        self.assertEqual(image["rejected_reason"], "Nevhodny obsah.")
 
 
 class FeedProfileListsApiTests(APITestCase):
@@ -450,24 +812,76 @@ class FeedProfileListsApiTests(APITestCase):
         # Chronologicky (najnovší prvý), len otagované.
         self.assertEqual(self._result_ids(response), [second.id, first.id])
 
+    def test_tagged_posts_hidden_when_target_user_is_private(self):
+        """NÁLEZ 2: história označení súkromného používateľa nesmie unikať."""
+        from accounts.services.feed_tagging import apply_feed_post_tags
+
+        private_target = _user("feed-tagged-private", is_public=False)
+        post = _free_post(self.owner, caption="Verejný autor")
+        apply_feed_post_tags(post, [private_target.id])
+
+        # Autor príspevku je verejný, ale označený nie → anonym nevidí nič.
+        self.assertEqual(
+            self._result_ids(self.client.get(self._tagged_url(private_target))), []
+        )
+        # Sám označený svoju sekciu vidí.
+        self.client.force_authenticate(user=private_target)
+        self.assertEqual(
+            self._result_ids(self.client.get(self._tagged_url(private_target))),
+            [post.id],
+        )
+
+    def test_tagged_posts_hidden_when_target_user_blocks_viewer(self):
+        from accounts.services.feed_tagging import apply_feed_post_tags
+
+        target = _user("feed-tagged-blocker")
+        post = _free_post(self.owner, caption="Verejný autor")
+        apply_feed_post_tags(post, [target.id])
+        UserBlock.objects.create(blocker=target, blocked_user=self.viewer)
+
+        self.client.force_authenticate(user=self.viewer)
+        self.assertEqual(
+            self._result_ids(self.client.get(self._tagged_url(target))), []
+        )
+
+    def test_tagged_posts_empty_for_nonexistent_user(self):
+        response = self.client.get(
+            reverse("accounts:feed_user_tagged_posts", args=[999999])
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(self._result_ids(response), [])
+
     def test_tagged_endpoint_has_no_n_plus_one(self):
         from accounts.services.feed_tagging import apply_feed_post_tags
 
         extra_users = [_user(f"feed-nplus-{i}") for i in range(3)]
+        content_owner = _user("feed-nplus-owner")
 
-        def make_tagged_post(caption):
-            post = _free_post(self.owner, caption=caption)
+        def make_tagged_post(caption, *, shared=False):
+            if shared:
+                post = FeedPost.objects.create(
+                    author=self.owner,
+                    post_type=FeedPost.PostType.SHARED_OFFER,
+                    shared_offer=_offer(content_owner, subcategory=caption),
+                )
+            else:
+                post = _free_post(self.owner, caption=caption)
             apply_feed_post_tags(
                 post, [self.viewer.id] + [u.id for u in extra_users]
             )
             return post
 
+        # Autentifikovaný divák: zapne aj is_liked_by_me dotaz a shared vetvu.
+        self.client.force_authenticate(user=self.viewer)
+
         make_tagged_post("Prvý")
+        make_tagged_post("PrvýShared", shared=True)
         with CaptureQueriesContext(connection) as small:
             self.client.get(self._tagged_url(self.viewer))
 
         for index in range(4):
             make_tagged_post(f"Ďalší {index}")
+            make_tagged_post(f"ĎalšíShared {index}", shared=True)
         with CaptureQueriesContext(connection) as large:
             self.client.get(self._tagged_url(self.viewer))
 

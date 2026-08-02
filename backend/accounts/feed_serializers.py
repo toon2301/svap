@@ -121,17 +121,34 @@ class FeedPostSerializer(serializers.ModelSerializer):
             payload["rejected_reason"] = obj.image_rejected_reason
         return payload
 
-    def get_shared_content(self, obj):
-        """Zdieľaný obsah: živé dáta len keď je zdroj práve teraz viditeľný.
+    def _shared_available(self, obj) -> bool:
+        """Cache na inštancii – čítajú to get_shared_content aj *_unavailable."""
+        cached = getattr(obj, "_shared_available_cache", None)
+        if cached is None:
+            cached = bool(obj.is_shared_content_currently_visible)
+            obj._shared_available_cache = cached
+        return cached
 
-        Nedostupný zdroj (skrytý / súkromný vlastník / zmazaný) → LEN snapshot
-        (title/category/meno vlastníka + thumbnail placeholder), bez živého id
-        (žiadny preklik) a bez profilového payloadu vlastníka.
+    @staticmethod
+    def _live_title_and_category(post_type, source):
+        """Aktuálne polia zo živého zdroja – zhodné odvodenie ako snapshot."""
+        if post_type == FeedPost.PostType.SHARED_OFFER:
+            return (source.subcategory or source.category), source.category
+        return source.title, source.category
+
+    def get_shared_content(self, obj):
+        """Zdieľaný obsah: živé dáta kým zdroj existuje a je viditeľný.
+
+        Kým zdroj žije, serializujú sa jeho AKTUÁLNE polia – premenovanie či
+        zmena kategórie po zdieľaní sa tak prejaví. Snapshot slúži VÝHRADNE ako
+        záloha pre nedostupný zdroj (zmazaný/skrytý/súkromný vlastník): vtedy
+        ide von len snapshot, bez živého id (žiadny preklik) a bez profilového
+        payloadu vlastníka.
         """
         if obj.post_type == FeedPost.PostType.FREE_POST:
             return None
 
-        available = obj.is_shared_content_currently_visible
+        available = self._shared_available(obj)
         source = obj.shared_source
         owner = obj.shared_owner
 
@@ -157,7 +174,12 @@ class FeedPostSerializer(serializers.ModelSerializer):
         if obj.shared_thumbnail_key:
             path = reverse("accounts:feed_post_shared_thumbnail", args=[obj.id])
             payload["thumbnail_url"] = self._absolute(path)
-        if available:
+        # source je non-None vždy, keď available (property to garantuje), ale
+        # guard drží serializér bezpečný aj pri budúcej zmene tej property.
+        if available and source is not None:
+            payload["title"], payload["category"] = self._live_title_and_category(
+                obj.post_type, source
+            )
             payload["id"] = source.pk
             payload["owner"] = FeedUserSummarySerializer(
                 owner, context=self.context
@@ -167,7 +189,7 @@ class FeedPostSerializer(serializers.ModelSerializer):
     def get_shared_content_unavailable(self, obj):
         if obj.post_type == FeedPost.PostType.FREE_POST:
             return False
-        return not obj.is_shared_content_currently_visible
+        return not self._shared_available(obj)
 
     def get_tagged_users(self, obj):
         # tags sú prefetchnuté so select_related("tagged_user") – žiadne N+1.

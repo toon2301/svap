@@ -6,6 +6,7 @@ takže prístupová kontrola je anonym-safe: verejný autor + APPROVED fotka;
 autor vidí vlastné vždy; blokovanie sa vyhodnocuje len pre prihláseného.
 """
 
+import logging
 import mimetypes
 
 from django.core.files.storage import default_storage
@@ -18,35 +19,26 @@ from rest_framework.response import Response
 from swaply.rate_limiting import api_rate_limit
 
 from ..models import FeedPost
-from ..services.user_blocks import user_block_exists_between
+from .feed_posts import visible_feed_posts
+
+logger = logging.getLogger(__name__)
 
 
 def _visible_post_or_404(request, post_id: int) -> FeedPost:
-    """Rovnaké pravidlá ako feed queryset, pre jeden riadok (viď feed_posts)."""
-    try:
-        post = FeedPost.objects.select_related("author").get(pk=post_id)
-    except FeedPost.DoesNotExist:
-        raise Http404
+    """Jeden riadok cez ten istý filter viditeľnosti ako feed zoznam.
 
-    viewer = request.user
-    viewer_id = viewer.id if getattr(viewer, "is_authenticated", False) else None
-    author = post.author
-    if viewer_id == post.author_id:
-        return post
-
-    if not (author.is_public and author.is_active):
-        raise Http404
-    if viewer_id and (
-        user_block_exists_between(
-            first_user_id=viewer_id, second_user_id=post.author_id
+    Podávame vlastný ľahký queryset – anotácie počtov ani prefetch tagov sa na
+    streamovanie súboru nepoužijú.
+    """
+    post = (
+        visible_feed_posts(
+            request.user,
+            queryset=FeedPost.objects.select_related("author"),
         )
-        or (
-            post.shared_owner_id
-            and user_block_exists_between(
-                first_user_id=viewer_id, second_user_id=post.shared_owner_id
-            )
-        )
-    ):
+        .filter(pk=post_id)
+        .first()
+    )
+    if post is None:
         raise Http404
     return post
 
@@ -60,6 +52,8 @@ def _stream_key(key: str):
     except Exception:
         # Súbor už v storage nie je (napr. zmazaný originál zdieľania) – FE
         # zobrazí placeholder; presne dokumentovaný fallback snapshot kľúča.
+        # Kľúč zámerne NElogujeme (interná cesta v storage).
+        logger.warning("Feed image unavailable in storage", exc_info=True)
         return Response(status=status.HTTP_404_NOT_FOUND)
 
     content_type = mimetypes.guess_type(key)[0]
@@ -95,8 +89,15 @@ def feed_post_image_file_view(request, post_id: int):
 @permission_classes([AllowAny])
 @api_rate_limit
 def feed_post_shared_thumbnail_view(request, post_id: int):
-    """Snapshot náhľad zdieľaného obsahu (placeholder aj po zmazaní zdroja)."""
+    """Snapshot náhľad zdieľaného obsahu.
+
+    Keď JSON hlási ``shared_content_unavailable``, nesmie ísť von ani obrázok –
+    inak by sa skrytím ponuky / sprivátnením profilu obsah schoval len naoko
+    a uložený zdrojový obrázok by sa dal ďalej sťahovať.
+    """
     post = _visible_post_or_404(request, post_id)
     if post.post_type == FeedPost.PostType.FREE_POST:
+        raise Http404
+    if not post.is_shared_content_currently_visible:
         raise Http404
     return _stream_key(post.shared_thumbnail_key)

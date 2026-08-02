@@ -17,9 +17,11 @@ voliteľná – validný stav), fotka sa naň pripája existujúcim upload flow
 z Fázy 1 (upload-init/upload-complete berú post_id) – žiadny draft mechanizmus.
 """
 
+from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.db import transaction
-from django.db.models import Count, Prefetch, Q
+from django.db.models import Count, IntegerField, OuterRef, Prefetch, Q, Subquery, Value
+from django.db.models.functions import Coalesce
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.pagination import CursorPagination
@@ -29,9 +31,16 @@ from rest_framework.response import Response
 from swaply.rate_limiting import api_rate_limit
 
 from ..feed_serializers import FeedPostSerializer
-from ..models import FeedPost, FeedPostLike, FeedPostTag, OfferedSkill
+from ..models import (
+    FeedPost,
+    FeedPostComment,
+    FeedPostLike,
+    FeedPostTag,
+    OfferedSkill,
+)
+from ..services.feed_share_visibility import SHARE_REASON_MESSAGES
 from ..services.feed_tagging import apply_feed_post_tags
-from ..services.user_blocks import exclude_blocked_users
+from ..services.user_blocks import exclude_blocked_users, user_block_exists_between
 
 
 class FeedCursorPagination(CursorPagination):
@@ -40,6 +49,33 @@ class FeedCursorPagination(CursorPagination):
     max_page_size = 50
     # Sekundárny -id rieši zhodné created_at (deterministické poradie).
     ordering = ("-created_at", "-id")
+
+
+def _related_count_subquery(model):
+    """Korelovaný COUNT väzieb jedného príspevku.
+
+    Prečo nie ``Count("likes", distinct=True)``: dva nezávislé „many" vzťahy
+    v jednom dotaze sa spoja krížom, takže DB najprv vyrobí lajky × komentáre
+    riadkov a až potom ich deduplikuje. Čísla sú síce správne (to zabezpečí
+    ``distinct``), ale pri populárnom príspevku (1000 lajkov × 100 komentárov)
+    je to 100k riadkov na jeden príspevok. Subquery počíta každý vzťah zvlášť,
+    takže hlavný dotaz ostáva jeden riadok na príspevok.
+
+    ``order_by()`` je nutné: modely majú Meta.ordering a tie stĺpce by inak
+    pribudli do GROUP BY a rozbili agregáciu na jeden riadok.
+    ``Coalesce`` drží 0 pre príspevky bez väzieb (subquery by vrátila NULL).
+    """
+    return Coalesce(
+        Subquery(
+            model.objects.filter(post=OuterRef("pk"))
+            .order_by()
+            .values("post")
+            .annotate(count=Count("pk"))
+            .values("count"),
+            output_field=IntegerField(),
+        ),
+        Value(0),
+    )
 
 
 def _annotated_queryset():
@@ -60,17 +96,22 @@ def _annotated_queryset():
             )
         )
         .annotate(
-            _likes_count=Count("likes", distinct=True),
-            _comments_count=Count("comments", distinct=True),
+            _likes_count=_related_count_subquery(FeedPostLike),
+            _comments_count=_related_count_subquery(FeedPostComment),
         )
     )
 
 
-def _visible_queryset(viewer):
-    """Feed viditeľnosť: verejní autori (+ vlastné posty), bez blokovaných."""
+def visible_feed_posts(viewer, *, queryset=None):
+    """Feed viditeľnosť: verejní autori (+ vlastné posty), bez blokovaných.
+
+    Jediný zdroj pravdy pre viditeľnosť príspevku – používa ho zoznam, detail,
+    profilové zoznamy aj obrázkové proxy views (tie si podávajú vlastný ľahký
+    queryset bez anotácií a prefetchov, ktoré na streamovanie súboru netreba).
+    """
     viewer_id = viewer.id if getattr(viewer, "is_authenticated", False) else None
 
-    qs = _annotated_queryset()
+    qs = _annotated_queryset() if queryset is None else queryset
     author_visible = Q(author__is_public=True, author__is_active=True)
     if viewer_id:
         author_visible |= Q(author_id=viewer_id)
@@ -112,9 +153,30 @@ def _paginated_response(request, queryset):
     return paginator.get_paginated_response(serializer.data)
 
 
+def _validation_error_code(exc: ValidationError):
+    """Kód z ValidationError – aj keď je zabalená do error_dict (per-pole)."""
+    code = getattr(exc, "code", None)
+    if code:
+        return code
+    error_dict = getattr(exc, "error_dict", None)
+    if error_dict:
+        for errors in error_dict.values():
+            for error in errors:
+                nested = getattr(error, "code", None)
+                if nested:
+                    return nested
+    return None
+
+
 def _validation_error_response(exc: ValidationError) -> Response:
+    code = _validation_error_code(exc)
+    # Neviditeľný CUDZÍ zdroj zdieľania musí vyzerať rovnako ako neexistujúci –
+    # inak by sa dalo z rozdielu v odpovedi vyčítať, ktoré ID existujú
+    # (enumeration). Vlastný obsah sem nespadne: self-share kontrolu obchádza.
+    if code in SHARE_REASON_MESSAGES:
+        return _shared_source_missing_response()
     return Response(
-        {"error": " ".join(exc.messages), "code": getattr(exc, "code", None)},
+        {"error": " ".join(exc.messages), "code": code},
         status=status.HTTP_400_BAD_REQUEST,
     )
 
@@ -125,9 +187,17 @@ def _bad_request(message: str, code: str) -> Response:
     )
 
 
+def _shared_source_missing_response() -> Response:
+    """Jednotná odpoveď pre „zdroj neexistuje ALEBO naň nemáš prístup"."""
+    return _bad_request(
+        "Zdielany obsah nie je dostupny.", "shared_source_missing"
+    )
+
+
 def _parse_optional_id(value):
     """None pre chýbajúce/nevalidné, inak kladný int."""
-    if value in (None, ""):
+    # bool je podtrieda int – bez tejto vetvy by sa True ticho stalo ID 1.
+    if value in (None, "") or isinstance(value, bool):
         return None
     try:
         parsed = int(value)
@@ -180,15 +250,13 @@ def _create_feed_post(request) -> Response:
     if offer_id:
         shared_offer = OfferedSkill.objects.filter(pk=offer_id).first()
         if shared_offer is None:
-            return _bad_request("Zdielana ponuka neexistuje.", "shared_source_missing")
+            return _shared_source_missing_response()
     if item_id:
         from portfolio.models import PortfolioItem
 
         shared_item = PortfolioItem.objects.filter(pk=item_id).first()
         if shared_item is None:
-            return _bad_request(
-                "Zdielana polozka portfolia neexistuje.", "shared_source_missing"
-            )
+            return _shared_source_missing_response()
 
     tagged_user_ids = request.data.get("tagged_user_ids") or []
     if not isinstance(tagged_user_ids, (list, tuple)):
@@ -233,7 +301,7 @@ def feed_posts_view(request):
             )
         return _create_feed_post(request)
 
-    return _paginated_response(request, _visible_queryset(request.user))
+    return _paginated_response(request, visible_feed_posts(request.user))
 
 
 @api_view(["GET"])
@@ -241,13 +309,40 @@ def feed_posts_view(request):
 @api_rate_limit
 def feed_post_detail_view(request, post_id: int):
     """Permalink na príspevok – rovnaké pravidlá viditeľnosti ako zoznam."""
-    post = _visible_queryset(request.user).filter(pk=post_id).first()
+    post = visible_feed_posts(request.user).filter(pk=post_id).first()
     if post is None:
         return Response(
             {"error": "Prispevok nebol najdeny."}, status=status.HTTP_404_NOT_FOUND
         )
     serializer = FeedPostSerializer(post, context=_serializer_context(request, [post]))
     return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+def _profile_user_visible(viewer, user_id: int) -> bool:
+    """Smie viewer vôbec vidieť profilové zoznamy tohto používateľa?
+
+    Pri „moje príspevky" to zabezpečí filter na autora, ale pri „označený" je
+    cieľový používateľ INÝ než autori príspevkov – bez tejto kontroly by sa
+    dala vyčítať história označení súkromného alebo blokujúceho používateľa
+    cez príspevky verejných autorov.
+    """
+    viewer_id = viewer.id if getattr(viewer, "is_authenticated", False) else None
+    if viewer_id == int(user_id):
+        return True
+
+    target = (
+        get_user_model()
+        .objects.filter(pk=user_id)
+        .only("id", "is_public", "is_active")
+        .first()
+    )
+    if target is None or not target.is_public or not target.is_active:
+        return False
+    if viewer_id and user_block_exists_between(
+        first_user_id=viewer_id, second_user_id=int(user_id)
+    ):
+        return False
+    return True
 
 
 def _profile_posts_queryset(request, user_id: int, *, tagged: bool):
@@ -260,14 +355,18 @@ def _profile_posts_queryset(request, user_id: int, *, tagged: bool):
     viewer = request.user
     viewer_id = viewer.id if getattr(viewer, "is_authenticated", False) else None
 
+    # Nedostupný profil vracia prázdny zoznam – rovnako ako neexistujúce ID,
+    # aby sa z odpovede nedal odvodiť dôvod (súkromie/blok/neexistencia).
+    if not _profile_user_visible(viewer, user_id):
+        return FeedPost.objects.none()
+
     if tagged:
-        qs = _visible_queryset(viewer).filter(tags__tagged_user_id=user_id)
         # unique(post, tagged_user) ⇒ join vyrobí max 1 riadok na príspevok.
-        return qs
+        return visible_feed_posts(viewer).filter(tags__tagged_user_id=user_id)
 
     if viewer_id == int(user_id):
         return _annotated_queryset().filter(author_id=user_id)
-    return _visible_queryset(viewer).filter(author_id=user_id)
+    return visible_feed_posts(viewer).filter(author_id=user_id)
 
 
 @api_view(["GET"])
