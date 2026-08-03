@@ -155,16 +155,25 @@ class FeedPostCreateApiTests(APITestCase):
         self.assertEqual(hidden_response.data, missing_response.data)
 
     def test_private_owner_source_is_indistinguishable_from_missing(self):
+        """Rovnaký enumeration guard aj pre súkromný profil vlastníka."""
         private_owner = _user("feed-create-private", is_public=False)
         offer = _offer(private_owner)
         self.client.force_authenticate(user=self.author)
 
-        response = self.client.post(
+        private_response = self.client.post(
             self.url,
             data={"post_type": "shared_offer", "shared_offer_id": offer.id},
             format="json",
         )
-        self.assertEqual(response.data["code"], "shared_source_missing")
+        missing_response = self.client.post(
+            self.url,
+            data={"post_type": "shared_offer", "shared_offer_id": 999999},
+            format="json",
+        )
+
+        self.assertEqual(private_response.status_code, missing_response.status_code)
+        self.assertEqual(private_response.data, missing_response.data)
+        self.assertEqual(private_response.data["code"], "shared_source_missing")
 
     def test_own_hidden_offer_is_still_shareable(self):
         """Zjednotenie chyby nesmie zabiť legitímne zdieľanie vlastného obsahu."""

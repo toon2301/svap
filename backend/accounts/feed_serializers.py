@@ -12,7 +12,7 @@ from django.contrib.auth import get_user_model
 from django.urls import reverse
 from rest_framework import serializers
 
-from accounts.models import FeedPost
+from accounts.models import FeedPost, FeedPostComment
 
 User = get_user_model()
 
@@ -37,6 +37,29 @@ class FeedUserSummarySerializer(serializers.ModelSerializer):
         except Exception:
             return None
         return None
+
+
+class FeedPostCommentSerializer(serializers.ModelSerializer):
+    """Komentár k príspevku – autor ako mini payload, can_delete pre FE.
+
+    can_delete: autor komentára ALEBO autor príspevku (moderácia vlastnej
+    nástenky) – rovnaká logika ako DELETE endpoint, nech FE nemusí duplikovať.
+    """
+
+    author = FeedUserSummarySerializer(read_only=True)
+    can_delete = serializers.SerializerMethodField()
+
+    class Meta:
+        model = FeedPostComment
+        fields = ["id", "text", "author", "can_delete", "created_at"]
+
+    def get_can_delete(self, obj):
+        request = self.context.get("request")
+        user = getattr(request, "user", None)
+        if user is None or not getattr(user, "is_authenticated", False):
+            return False
+        post_author_id = self.context.get("post_author_id")
+        return user.id == obj.author_id or user.id == post_author_id
 
 
 class FeedPostSerializer(serializers.ModelSerializer):

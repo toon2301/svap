@@ -191,6 +191,26 @@ urlpatterns = [
         name="feed_user_tagged_posts",
     ),
     path(
+        "feed/posts/<int:post_id>/like/",
+        views.feed_post_like_view,
+        name="feed_post_like",
+    ),
+    path(
+        "feed/posts/<int:post_id>/comments/",
+        views.feed_post_comments_view,
+        name="feed_post_comments",
+    ),
+    path(
+        "feed/posts/<int:post_id>/comments/<int:comment_id>/",
+        views.feed_post_comment_delete_view,
+        name="feed_post_comment_delete",
+    ),
+    path(
+        "feed/posts/<int:post_id>/report/",
+        views.feed_post_report_view,
+        name="feed_post_report",
+    ),
+    path(
         "feed/posts/<int:post_id>/image/upload-init/",
         views.feed_post_image_upload_init_view,
         name="feed_post_image_upload_init",

@@ -30,6 +30,8 @@ class NotificationType(models.TextChoices):
         _("Výmena skončila"),
     )
     GROUP_INVITATION = "group_invitation", _("Pozvánka do skupiny")
+    FEED_POST_LIKED = "feed_post_liked", _("Páči sa mi príspevok")
+    FEED_POST_COMMENTED = "feed_post_commented", _("Komentár k príspevku")
 
 
 class Notification(models.Model):
