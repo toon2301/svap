@@ -1,7 +1,6 @@
 """Feed Fáza 2b – API testy interakcií: lajk, komentáre, nahlásenie."""
 
 from django.contrib.auth import get_user_model
-from django.test import override_settings
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
@@ -188,6 +187,18 @@ class FeedPostCommentsApiTests(APITestCase):
         self.assertEqual(response.data["code"], "max_length")
         self.assertEqual(FeedPostComment.objects.count(), 0)
 
+    def test_create_comment_accepts_exactly_500_chars(self):
+        # Hranica musí PREJSŤ – limit je „najviac 500", nie „menej ako 500".
+        self.client.force_authenticate(user=self.commenter)
+        with self.captureOnCommitCallbacks(execute=True):
+            response = self.client.post(
+                self._url(), data={"text": "x" * 500}, format="json"
+            )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(len(response.data["text"]), 500)
+        self.assertEqual(FeedPostComment.objects.count(), 1)
+
     def test_create_comment_requires_authentication(self):
         response = self.client.post(self._url(), data={"text": "X"}, format="json")
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
@@ -200,6 +211,19 @@ class FeedPostCommentsApiTests(APITestCase):
             self._url(hidden_post), data={"text": "X"}, format="json"
         )
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_comment_on_post_of_blocking_author_returns_404(self):
+        blocked_author = _user("feed-comm-blocker")
+        blocked_post = _free_post(blocked_author)
+        UserBlock.objects.create(blocker=blocked_author, blocked_user=self.commenter)
+        self.client.force_authenticate(user=self.commenter)
+
+        response = self.client.post(
+            self._url(blocked_post), data={"text": "X"}, format="json"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(FeedPostComment.objects.count(), 0)
 
     def test_list_comments_chronologically_with_cursor(self):
         for index in range(3):
@@ -350,13 +374,25 @@ class FeedPostReportApiTests(APITestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
+    def test_report_post_of_blocking_author_returns_404(self):
+        blocked_author = _user("feed-report-blocker")
+        blocked_post = _free_post(blocked_author)
+        UserBlock.objects.create(blocker=blocked_author, blocked_user=self.reporter)
+        self.client.force_authenticate(user=self.reporter)
+
+        response = self.client.post(
+            self._url(blocked_post), data={"reason": "spam"}, format="json"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(FeedPostReport.objects.count(), 0)
+
     def test_report_creates_no_notification(self):
         self.client.force_authenticate(user=self.reporter)
         self.client.post(self._url(), data={"reason": "spam"}, format="json")
         self.assertEqual(Notification.objects.count(), 0)
 
 
-@override_settings(RATE_LIMIT_DISABLED=True)
 class FeedInteractionsAccountDeletionTests(APITestCase):
     """Konzistencia s existujúcim GDPR flow (rozhodnutia z Fázy 1)."""
 
