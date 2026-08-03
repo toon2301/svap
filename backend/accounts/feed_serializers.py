@@ -167,6 +167,10 @@ class FeedPostSerializer(serializers.ModelSerializer):
         záloha pre nedostupný zdroj (zmazaný/skrytý/súkromný vlastník): vtedy
         ide von len snapshot, bez živého id (žiadny preklik) a bez profilového
         payloadu vlastníka.
+
+        Zdroj je pre VŠETKY polia jednotný – buď celý živý, alebo celý snapshot.
+        Žiadne pole sa nesmie odvodzovať mimo vetvy podľa ``available``, inak by
+        sa zo skrytého obsahu dalo vyčítať niečo aktuálne.
         """
         if obj.post_type == FeedPost.PostType.FREE_POST:
             return None
@@ -194,9 +198,6 @@ class FeedPostSerializer(serializers.ModelSerializer):
             ),
             "thumbnail_url": None,
         }
-        if obj.shared_thumbnail_key:
-            path = reverse("accounts:feed_post_shared_thumbnail", args=[obj.id])
-            payload["thumbnail_url"] = self._absolute(path)
         # source je non-None vždy, keď available (property to garantuje), ale
         # guard drží serializér bezpečný aj pri budúcej zmene tej property.
         if available and source is not None:
@@ -207,6 +208,12 @@ class FeedPostSerializer(serializers.ModelSerializer):
             payload["owner"] = FeedUserSummarySerializer(
                 owner, context=self.context
             ).data
+            # Náhľad patrí k živému zdroju – proxy endpoint ho pri nedostupnom
+            # obsahu aj tak 404-uje, takže URL mimo tejto vetvy by len sľubovala
+            # obrázok, ktorý nikdy nepríde (rozbitý <img> namiesto placeholderu).
+            if obj.shared_thumbnail_key:
+                path = reverse("accounts:feed_post_shared_thumbnail", args=[obj.id])
+                payload["thumbnail_url"] = self._absolute(path)
         return payload
 
     def get_shared_content_unavailable(self, obj):

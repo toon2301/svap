@@ -594,6 +594,71 @@ class FeedSharedContentSerializationTests(APITestCase):
         self.assertIsNone(shared["id"])
         self.assertIsNone(shared["owner"])
 
+    def test_hiding_source_switches_every_field_to_snapshot(self):
+        """Všetky polia idú z jedného zdroja – žiadna zmiešaná cesta.
+
+        Po skrytí sa nesmie objaviť NIČ aktuálne zo zdroja: ani názov, ani
+        kategória, ani URL náhľadu (endpoint ju aj tak 404-uje).
+        """
+        offer = _offer(self.owner, subcategory="Programovanie")
+        post = FeedPost.objects.create(
+            author=self.sharer,
+            post_type=FeedPost.PostType.SHARED_OFFER,
+            shared_offer=offer,
+        )
+        # Snapshot náhľadu z času zdieľania (upload flow tu netestujeme).
+        FeedPost.objects.filter(pk=post.pk).update(
+            shared_thumbnail_key="media/offers/1/thumb.webp"
+        )
+        post.refresh_from_db()
+
+        # Kým je zdroj viditeľný: živé polia + funkčná URL náhľadu.
+        live = self._shared_payload(post)["shared_content"]
+        self.assertEqual(live["title"], "Programovanie")
+        self.assertEqual(live["category"], "it-a-technologie")
+        self.assertIsNotNone(live["thumbnail_url"])
+
+        # Zdroj sa premenuje NA NIEČO INÉ a zároveň skryje.
+        offer.subcategory = "Tajna Grafika"
+        offer.category = "tajna-kategoria"
+        offer.is_hidden = True
+        offer.save(update_fields=["subcategory", "category", "is_hidden"])
+
+        hidden = self._shared_payload(post)["shared_content"]
+
+        self.assertEqual(hidden["title"], "Programovanie")
+        self.assertEqual(hidden["category"], "it-a-technologie")
+        self.assertIsNone(hidden["id"])
+        self.assertIsNone(hidden["owner"])
+        # URL náhľadu zmizne – FE má renderovať placeholder, nie rozbitý obrázok.
+        self.assertIsNone(hidden["thumbnail_url"])
+        # Nič z aktuálneho stavu skrytého zdroja sa nesmie objaviť v payloade.
+        self.assertNotIn("Tajna Grafika", str(hidden))
+        self.assertNotIn("tajna-kategoria", str(hidden))
+
+    def test_private_owner_switches_every_field_to_snapshot(self):
+        offer = _offer(self.owner, subcategory="Programovanie")
+        post = FeedPost.objects.create(
+            author=self.sharer,
+            post_type=FeedPost.PostType.SHARED_OFFER,
+            shared_offer=offer,
+        )
+        FeedPost.objects.filter(pk=post.pk).update(
+            shared_thumbnail_key="media/offers/1/thumb.webp"
+        )
+        post.refresh_from_db()
+
+        offer.subcategory = "Tajna Grafika"
+        offer.save(update_fields=["subcategory"])
+        self.owner.is_public = False
+        self.owner.save(update_fields=["is_public"])
+
+        shared = self._shared_payload(post)["shared_content"]
+
+        self.assertEqual(shared["title"], "Programovanie")
+        self.assertIsNone(shared["thumbnail_url"])
+        self.assertNotIn("Tajna Grafika", str(shared))
+
     def test_deleted_source_falls_back_to_snapshot(self):
         offer = _offer(self.owner, subcategory="Programovanie")
         post = FeedPost.objects.create(
