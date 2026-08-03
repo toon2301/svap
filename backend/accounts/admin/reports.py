@@ -1,8 +1,40 @@
 from django.contrib import admin
 from django.utils.translation import gettext_lazy as _
 
-from ..models import PhotoReport, ReviewReport, UserReport
+from ..models import FeedPostReport, PhotoReport, ReviewReport, UserReport
 from .base import ReportDescriptionPreviewMixin
+
+
+@admin.register(FeedPostReport)
+class FeedPostReportAdmin(ReportDescriptionPreviewMixin, admin.ModelAdmin):
+    """Admin interface for feed post reports."""
+
+    list_display = [
+        "id",
+        "post",
+        "reported_by",
+        "reason",
+        "description_preview",
+        "is_resolved",
+        "created_at",
+    ]
+    list_filter = ["is_resolved", "created_at"]
+    search_fields = [
+        "reason",
+        "description",
+        "post__id",
+        "reported_by__username",
+        "reported_by__email",
+    ]
+    ordering = ["-created_at"]
+    readonly_fields = ["created_at"]
+
+    fieldsets = (
+        (_("Prispevok a nahlasil"), {"fields": ("post", "reported_by")}),
+        (_("Nahlasenie"), {"fields": ("reason", "description")}),
+        (_("Stav"), {"fields": ("is_resolved",)}),
+        (_("Dolezite datumy"), {"fields": ("created_at",), "classes": ("collapse",)}),
+    )
 
 
 @admin.register(ReviewReport)

@@ -431,3 +431,57 @@ def create_profile_liked_notification(*, profile_user, actor) -> Notification | 
             "from_user_id": actor.id,
         },
     )
+
+
+def create_feed_post_liked_notification(*, post, actor) -> Notification | None:
+    """Lajk príspevku – presne vzor create_portfolio_liked_notification:
+    self-like bez notifikácie, dedup cez data__post_id + actor (unlike+like
+    nespamuje autora)."""
+    author = getattr(post, "author", None)
+    if author is None or getattr(author, "id", None) == getattr(actor, "id", None):
+        return None
+
+    existing = (
+        Notification.objects.filter(
+            user=author,
+            type=NotificationType.FEED_POST_LIKED,
+            data__post_id=post.id,
+            actor=actor,
+        )
+        .order_by("-created_at", "-id")
+        .first()
+    )
+    if existing is not None:
+        return existing
+
+    return create_notification(
+        user=author,
+        notif_type=NotificationType.FEED_POST_LIKED,
+        title="Páči sa mi tvoj príspevok",
+        body="",
+        actor=actor,
+        data={
+            "post_id": post.id,
+        },
+    )
+
+
+def create_feed_post_commented_notification(*, post, actor) -> Notification | None:
+    """Komentár k príspevku – ZÁMERNE bez dedupu (na rozdiel od lajku):
+    každý komentár nesie nový obsah, takže autor má dostať notifikáciu vždy.
+    Self-comment notifikáciu nevytvára (konvencia všetkých sociálnych typov)."""
+    author = getattr(post, "author", None)
+    if author is None or getattr(author, "id", None) == getattr(actor, "id", None):
+        return None
+
+    actor_name = (getattr(actor, "display_name", "") or "").strip() or "Používateľ"
+    return create_notification(
+        user=author,
+        notif_type=NotificationType.FEED_POST_COMMENTED,
+        title="Komentár k príspevku",
+        body=f"{actor_name} komentoval tvoj príspevok.",
+        actor=actor,
+        data={
+            "post_id": post.id,
+        },
+    )

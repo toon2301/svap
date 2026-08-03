@@ -163,7 +163,53 @@ urlpatterns = [
     path(
         "dashboard/settings/", views.dashboard_settings_view, name="dashboard_settings"
     ),
-    # Feed (Fáza 1 – len upload fotky; čítanie/CRUD príde vo Fáze 2)
+    # Feed (Fáza 2a – vytvorenie + čítanie; lajky/komentáre/nahlásenie = 2b)
+    path("feed/posts/", views.feed_posts_view, name="feed_posts"),
+    path(
+        "feed/posts/<int:post_id>/",
+        views.feed_post_detail_view,
+        name="feed_post_detail",
+    ),
+    path(
+        "feed/posts/<int:post_id>/image/",
+        views.feed_post_image_file_view,
+        name="feed_post_image_file",
+    ),
+    path(
+        "feed/posts/<int:post_id>/shared-thumbnail/",
+        views.feed_post_shared_thumbnail_view,
+        name="feed_post_shared_thumbnail",
+    ),
+    path(
+        "feed/users/<int:user_id>/posts/",
+        views.feed_user_posts_view,
+        name="feed_user_posts",
+    ),
+    path(
+        "feed/users/<int:user_id>/tagged/",
+        views.feed_user_tagged_posts_view,
+        name="feed_user_tagged_posts",
+    ),
+    path(
+        "feed/posts/<int:post_id>/like/",
+        views.feed_post_like_view,
+        name="feed_post_like",
+    ),
+    path(
+        "feed/posts/<int:post_id>/comments/",
+        views.feed_post_comments_view,
+        name="feed_post_comments",
+    ),
+    path(
+        "feed/posts/<int:post_id>/comments/<int:comment_id>/",
+        views.feed_post_comment_delete_view,
+        name="feed_post_comment_delete",
+    ),
+    path(
+        "feed/posts/<int:post_id>/report/",
+        views.feed_post_report_view,
+        name="feed_post_report",
+    ),
     path(
         "feed/posts/<int:post_id>/image/upload-init/",
         views.feed_post_image_upload_init_view,
