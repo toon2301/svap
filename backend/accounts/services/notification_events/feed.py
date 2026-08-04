@@ -1,0 +1,96 @@
+"""Notifikácie k nástenke (feed): lajk, komentár, označenie.
+
+Dedup má zmysel len pri lajku (unlike+like sa dá opakovať donekonečna).
+Komentár nesie zakaždým nový obsah a označenie je z podstaty jednorazové
+(``UniqueConstraint(post, tagged_user)`` + žiadny untag endpoint), takže tie
+dedup nepotrebujú.
+"""
+
+from __future__ import annotations
+
+from accounts.models import Notification, NotificationType
+
+from ..notification_core import create_notification
+
+
+def create_feed_post_liked_notification(*, post, actor) -> Notification | None:
+    """Lajk príspevku – presne vzor create_portfolio_liked_notification:
+    self-like bez notifikácie, dedup cez data__post_id + actor (unlike+like
+    nespamuje autora)."""
+    author = getattr(post, "author", None)
+    if author is None or getattr(author, "id", None) == getattr(actor, "id", None):
+        return None
+
+    existing = (
+        Notification.objects.filter(
+            user=author,
+            type=NotificationType.FEED_POST_LIKED,
+            data__post_id=post.id,
+            actor=actor,
+        )
+        .order_by("-created_at", "-id")
+        .first()
+    )
+    if existing is not None:
+        return existing
+
+    return create_notification(
+        user=author,
+        notif_type=NotificationType.FEED_POST_LIKED,
+        title="Páči sa mi tvoj príspevok",
+        body="",
+        actor=actor,
+        data={
+            "post_id": post.id,
+        },
+    )
+
+
+def create_feed_post_commented_notification(*, post, actor) -> Notification | None:
+    """Komentár k príspevku – ZÁMERNE bez dedupu (na rozdiel od lajku):
+    každý komentár nesie nový obsah, takže autor má dostať notifikáciu vždy.
+    Self-comment notifikáciu nevytvára (konvencia všetkých sociálnych typov)."""
+    author = getattr(post, "author", None)
+    if author is None or getattr(author, "id", None) == getattr(actor, "id", None):
+        return None
+
+    actor_name = (getattr(actor, "display_name", "") or "").strip() or "Používateľ"
+    return create_notification(
+        user=author,
+        notif_type=NotificationType.FEED_POST_COMMENTED,
+        title="Komentár k príspevku",
+        body=f"{actor_name} komentoval tvoj príspevok.",
+        actor=actor,
+        data={
+            "post_id": post.id,
+        },
+    )
+
+
+def create_feed_post_tagged_notification(*, post, tagged_user, actor):
+    """Označenie v príspevku – notifikácia označenému.
+
+    BEZ dedupu, a to bezpečne: ``UniqueConstraint(post, tagged_user)`` pripúšťa
+    jeden tag na dvojicu, ``apply_feed_post_tags`` už existujúce preskakuje a
+    appka nemá untag endpoint – jeden tag teda znamená práve jednu notifikáciu
+    a duplicitu nemožno vyrobiť ani opakovaným volaním.
+
+    Self-tag (autor označí sám seba – v appke povolené) notifikáciu nevytvára,
+    rovnaký vzor ako self-like.
+    """
+    if tagged_user is None or getattr(tagged_user, "id", None) == getattr(
+        actor, "id", None
+    ):
+        return None
+
+    actor_name = (getattr(actor, "display_name", "") or "").strip() or "Používateľ"
+    return create_notification(
+        user=tagged_user,
+        notif_type=NotificationType.FEED_POST_TAGGED,
+        title="Označenie v príspevku",
+        body=f"{actor_name} ťa označil v príspevku.",
+        actor=actor,
+        data={
+            "post_id": post.id,
+        },
+    )

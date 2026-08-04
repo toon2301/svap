@@ -138,6 +138,20 @@ class NotificationSerializer(serializers.ModelSerializer):
             if item_id > 0:
                 return f"/dashboard/users/{obj.user_id}/portfolio/{item_id}"
         if obj.type in (
+            NotificationType.FEED_POST_LIKED,
+            NotificationType.FEED_POST_COMMENTED,
+            NotificationType.FEED_POST_TAGGED,
+        ):
+            # Všetky tri feed typy vedú na permalink príspevku – identifikátor
+            # nesie data.post_id (rovnaký vzor ako OFFER_LIKED/PORTFOLIO_LIKED).
+            data = obj.data if isinstance(obj.data, dict) else {}
+            try:
+                post_id = int(data.get("post_id") or 0)
+            except (TypeError, ValueError):
+                post_id = 0
+            if post_id > 0:
+                return f"/dashboard/feed/{post_id}"
+        if obj.type in (
             NotificationType.REVIEW_CREATED,
             NotificationType.REVIEW_REPLY_CREATED,
             NotificationType.REVIEW_LIKED,

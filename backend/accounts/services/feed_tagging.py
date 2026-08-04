@@ -10,6 +10,10 @@ blokovanie: rovnako ako pri zdieľaní ponuky nesmie zablokovaný ťahať druhú
 stranu do svojho obsahu (a naopak).
 """
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 # Kódy dôvodov – API vrstva ich mapuje na preložené hlášky.
 REASON_TAG_BLOCKED = "feed_tag_blocked"
 REASON_TAG_LIMIT = "feed_tag_limit_reached"
@@ -146,7 +150,51 @@ def apply_feed_post_tags(post, tagged_user_ids) -> list:
         # Zámerne create() v cykle, nie bulk_create – bulk_create obchádza
         # save(), a tým aj modelovú kontrolu blokovania. Odovzdávame zamknutý
         # objekt, takže save() číta author_id z cache (žiadny dotaz navyše).
-        return [
+        created = [
             FeedPostTag.objects.create(post=locked_post, tagged_user_id=user_id)
             for user_id in new_ids
         ]
+
+        if created:
+            # Notifikuj až po commite – pri rollbacku (napr. zlyhanie ďalej vo
+            # vytváraní príspevku) sa on_commit zahodí a nikomu nepríde
+            # notifikácia na neexistujúce označenie.
+            transaction.on_commit(
+                lambda: _notify_tagged_users(
+                    post=locked_post,
+                    actor=locked_post.author,
+                    tagged_user_ids=[tag.tagged_user_id for tag in created],
+                )
+            )
+        return created
+
+
+def _notify_tagged_users(*, post, actor, tagged_user_ids) -> None:
+    """Po commite pošli každému označenému VLASTNÚ notifikáciu.
+
+    Zlyhanie notifikácie nesmie zhodiť už uložené označenia (rovnaký vzor ako
+    notify_*_about_like vo feed views) – logujeme a pokračujeme ďalším.
+    """
+    from django.contrib.auth import get_user_model
+
+    from accounts.services.notifications import (
+        create_feed_post_tagged_notification,
+    )
+
+    tagged_users = get_user_model().objects.filter(id__in=tagged_user_ids)
+    for tagged_user in tagged_users:
+        try:
+            create_feed_post_tagged_notification(
+                post=post,
+                tagged_user=tagged_user,
+                actor=actor,
+            )
+        except Exception:
+            logger.exception(
+                "Feed post tag notification dispatch failed",
+                extra={
+                    "post_id": getattr(post, "id", None),
+                    "tagged_user_id": getattr(tagged_user, "id", None),
+                    "actor_id": getattr(actor, "id", None),
+                },
+            )
