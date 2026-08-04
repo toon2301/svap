@@ -309,10 +309,11 @@ describe('FeedList', () => {
 
   it('stops the observer after a failed load-more but keeps the button usable', async () => {
     const observer = installIntersectionObserverMock();
+    const nextCursorUrl = 'http://api.test/api/auth/feed/posts/?cursor=abc';
     mockedListFeedPosts
       .mockResolvedValueOnce({
         results: [makePost({ id: 1 })],
-        next: 'http://api.test/api/auth/feed/posts/?cursor=abc',
+        next: nextCursorUrl,
         previous: null,
       })
       // Donačítanie zlyhá – sentinel ostáva vo viewporte, takže bez !error
@@ -343,6 +344,9 @@ describe('FeedList', () => {
       ).toBeInTheDocument();
     });
     expect(mockedListFeedPosts).toHaveBeenCalledTimes(2);
+    expect(mockedListFeedPosts).toHaveBeenLastCalledWith({
+      cursorUrl: nextCursorUrl,
+    });
 
     // Ďalšie vystrelenie observera už NESMIE spustiť request.
     await act(async () => {
@@ -361,6 +365,11 @@ describe('FeedList', () => {
       expect(screen.getAllByTestId('feed-post-card')).toHaveLength(2);
     });
     expect(mockedListFeedPosts).toHaveBeenCalledTimes(3);
+    // Jadro veci: zlyhanie kurzor neposunulo, takže retry pokračuje z toho
+    // istého miesta – žiadna stránka sa nepreskočí ani nezopakuje.
+    expect(mockedListFeedPosts).toHaveBeenLastCalledWith({
+      cursorUrl: nextCursorUrl,
+    });
   });
 
   it('shows a retry action when the initial load fails', async () => {
