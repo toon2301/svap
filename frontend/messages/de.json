@@ -4127,7 +4127,7 @@
     "title": "Portfolio",
     "coverImage": "Titelbild",
     "relatedOffer": "Zugehöriges Angebot",
-    "itemNotFound": "Portfolioelement wurde nicht gefunden.",
+    "itemNotFound": "Portfolio-Eintrag wurde nicht gefunden.",
     "profileNotFound": "Benutzer wurde nicht gefunden.",
     "featured": "Hervorgehoben",
     "moreWork": "Weitere Arbeiten",
@@ -4198,7 +4198,6 @@
     "photoTooLarge": "Das Foto ist zu groß",
     "maxPhotosLimit": "Du kannst maximal 8 Fotos hinzufügen",
     "itemsLimitReached": "Du hast die maximale Anzahl an Portfolio-Einträgen erreicht ({max}).",
-    "itemNotFound": "Portfolio-Eintrag wurde nicht gefunden.",
     "ownerNotFound": "Benutzer wurde nicht gefunden.",
     "htmlNotAllowed": "HTML ist nicht erlaubt.",
     "invalidCategory": "Ungültige Portfolio-Kategorie.",
@@ -4330,5 +4329,25 @@
     "shortDescription": "Kurze Beschreibung",
     "submit": "Hinzufügen",
     "viewOwnerResponse": "Antwort anzeigen"
+  },
+  "feed": {
+    "comments": "Kommentare",
+    "emptyCta": "Beitrag erstellen",
+    "emptySubtitle": "Sei der Erste, der hier etwas teilt!",
+    "emptyTitle": "Die Pinnwand ist noch still",
+    "imageRejected": "Das Foto wurde abgelehnt",
+    "likes": "Gefällt mir",
+    "loadError": "Die Pinnwand konnte nicht geladen werden.",
+    "loadMore": "Mehr anzeigen",
+    "loadMoreError": "Weitere Beiträge konnten nicht geladen werden.",
+    "offersExchangeOnward": "{name} gibt einen Tausch weiter",
+    "retry": "Erneut versuchen",
+    "sharedOfferUnavailable": "Dieses Angebot ist nicht mehr verfügbar",
+    "sharedPortfolioUnavailable": "Dieses Portfolio ist nicht mehr verfügbar",
+    "sharesPortfolioOnward": "{name} teilt ein Portfolio weiter",
+    "timeDaysShort": "T.",
+    "timeHoursShort": "Std.",
+    "timeJustNow": "gerade eben",
+    "timeMinutesShort": "Min."
   }
 }

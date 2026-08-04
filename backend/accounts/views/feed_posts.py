@@ -17,10 +17,24 @@ voliteľná – validný stav), fotka sa naň pripája existujúcim upload flow
 z Fázy 1 (upload-init/upload-complete berú post_id) – žiadny draft mechanizmus.
 """
 
+from datetime import timedelta
+
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.db import transaction
-from django.db.models import Count, IntegerField, OuterRef, Prefetch, Q, Subquery, Value
+from django.db.models import (
+    Case,
+    Count,
+    DateTimeField,
+    F,
+    IntegerField,
+    OuterRef,
+    Prefetch,
+    Q,
+    Subquery,
+    Value,
+    When,
+)
 from django.db.models.functions import Coalesce
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
@@ -49,6 +63,51 @@ class FeedCursorPagination(CursorPagination):
     max_page_size = 50
     # Sekundárny -id rieši zhodné created_at (deterministické poradie).
     ordering = ("-created_at", "-id")
+
+
+class FeedLocalityCursorPagination(FeedCursorPagination):
+    """Hlavný feed: najprv rovnaký okres, potom chronologicky zvyšok.
+
+    Zoradenie ide cez JEDNO pole ``feed_rank`` zámerne. DRF CursorPagination
+    filtruje kurzor len podľa ``ordering[0]`` (pagination.py: ``order =
+    self.ordering[0]`` → ``__lt``/``__gt``), takže dvojica ``("-is_local",
+    "-created_at")`` by kurzor postavila na boolean s dvoma hodnotami a
+    stránkovanie by sa rozsypalo (duplicity/preskoky). ``feed_rank`` je
+    monotónny datetime, ktorý obe úrovne spája do jednej – kurzor tak ostáva
+    stabilný a poradie je pritom dvojúrovňové.
+    """
+
+    ordering = ("-feed_rank", "-id")
+
+
+# Posun „do budúcnosti" pre lokálne príspevky. 100 rokov je bezpečne viac než
+# rozptyl reálnych created_at, takže každý lokálny príspevok je nad každým
+# nelokálnym, a vnútri oboch skupín ostáva chronológia nedotknutá.
+LOCAL_FEED_RANK_BOOST = timedelta(days=36500)
+
+
+def _feed_rank_expression(viewer):
+    """Zoraďovací kľúč: created_at, lokálnym príspevkom pripočítaný boost.
+
+    Anonym aj prihlásený bez vyplneného okresu dostanú čistý ``created_at`` –
+    teda presne pôvodné chronologické poradie, žiadne uprednostňovanie.
+    Okres sa berie z AUTORA príspevku (``author__district``) pre všetky typy
+    vrátane zdieľaní – rozhoduje, kto zdieľal, nie odkiaľ je pôvodná ponuka.
+    """
+    district = ""
+    if getattr(viewer, "is_authenticated", False):
+        district = (getattr(viewer, "district", "") or "").strip()
+    if not district:
+        return F("created_at")
+
+    return Case(
+        When(
+            author__district=district,
+            then=F("created_at") + Value(LOCAL_FEED_RANK_BOOST),
+        ),
+        default=F("created_at"),
+        output_field=DateTimeField(),
+    )
 
 
 def _related_count_subquery(model):
@@ -144,8 +203,8 @@ def _serializer_context(request, posts):
     }
 
 
-def _paginated_response(request, queryset):
-    paginator = FeedCursorPagination()
+def _paginated_response(request, queryset, *, paginator=None):
+    paginator = paginator or FeedCursorPagination()
     page = paginator.paginate_queryset(queryset, request)
     serializer = FeedPostSerializer(
         page, many=True, context=_serializer_context(request, page)
@@ -292,7 +351,11 @@ def _create_feed_post(request) -> Response:
 @permission_classes([AllowAny])
 @api_rate_limit
 def feed_posts_view(request):
-    """GET: verejný chronologický feed. POST: vytvorenie príspevku (len auth)."""
+    """GET: verejný feed (lokálne prvé, potom chronologicky). POST: nový príspevok.
+
+    Uprednostnenie okresu platí LEN pre hlavný feed – profilové zoznamy ostávajú
+    čisto chronologické (tam je autor jeden, takže lokalita nič nerozlišuje).
+    """
     if request.method == "POST":
         if not request.user.is_authenticated:
             return Response(
@@ -301,7 +364,12 @@ def feed_posts_view(request):
             )
         return _create_feed_post(request)
 
-    return _paginated_response(request, visible_feed_posts(request.user))
+    queryset = visible_feed_posts(request.user).annotate(
+        feed_rank=_feed_rank_expression(request.user)
+    )
+    return _paginated_response(
+        request, queryset, paginator=FeedLocalityCursorPagination()
+    )
 
 
 @api_view(["GET"])

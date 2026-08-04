@@ -811,6 +811,12 @@ export const endpoints = {
     userSkillsBySlug: (slug: string) => `/auth/dashboard/users/slug/${slug}/skills/`,
   },
   // Portfolio
+  feed: {
+    posts: '/auth/feed/posts/',
+    postDetail: (id: number) => `/auth/feed/posts/${id}/`,
+    userPosts: (userId: number) => `/auth/feed/users/${userId}/posts/`,
+    userTaggedPosts: (userId: number) => `/auth/feed/users/${userId}/tagged/`,
+  },
   portfolio: {
     list: '/auth/portfolio/',
     reorder: '/auth/portfolio/reorder/',

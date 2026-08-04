@@ -4127,7 +4127,7 @@
     "title": "Portfolio",
     "coverImage": "Zdjęcie główne",
     "relatedOffer": "Powiązana oferta",
-    "itemNotFound": "Element portfolio nie został znaleziony.",
+    "itemNotFound": "Nie znaleziono pozycji portfolio.",
     "profileNotFound": "Użytkownik nie został znaleziony.",
     "featured": "Wyróżnione",
     "moreWork": "Więcej prac",
@@ -4198,7 +4198,6 @@
     "photoTooLarge": "Zdjęcie jest zbyt duże",
     "maxPhotosLimit": "Możesz dodać maksymalnie 8 zdjęć",
     "itemsLimitReached": "Osiągnąłeś maksymalną liczbę pozycji portfolio ({max}).",
-    "itemNotFound": "Nie znaleziono pozycji portfolio.",
     "ownerNotFound": "Nie znaleziono użytkownika.",
     "htmlNotAllowed": "HTML jest niedozwolony.",
     "invalidCategory": "Nieprawidłowa kategoria portfolio.",
@@ -4330,5 +4329,25 @@
     "shortDescription": "Krótki opis",
     "submit": "Dodaj",
     "viewOwnerResponse": "Zobacz odpowiedź właściciela"
+  },
+  "feed": {
+    "comments": "Komentarze",
+    "emptyCta": "Utwórz post",
+    "emptySubtitle": "Bądź pierwszy, kto coś tu udostępni!",
+    "emptyTitle": "Tablica jest na razie cicha",
+    "imageRejected": "Zdjęcie zostało odrzucone",
+    "likes": "Polubienia",
+    "loadError": "Nie udało się załadować tablicy.",
+    "loadMore": "Pokaż więcej",
+    "loadMoreError": "Nie udało się załadować kolejnych postów.",
+    "offersExchangeOnward": "{name} przekazuje wymianę dalej",
+    "retry": "Spróbuj ponownie",
+    "sharedOfferUnavailable": "Ta oferta nie jest już dostępna",
+    "sharedPortfolioUnavailable": "To portfolio nie jest już dostępne",
+    "sharesPortfolioOnward": "{name} udostępnia portfolio dalej",
+    "timeDaysShort": "dn.",
+    "timeHoursShort": "godz.",
+    "timeJustNow": "przed chwilą",
+    "timeMinutesShort": "min"
   }
 }

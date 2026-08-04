@@ -4198,7 +4198,6 @@
     "photoTooLarge": "Fotka je príliš veľká",
     "maxPhotosLimit": "Môžeš pridať maximálne 8 fotiek",
     "itemsLimitReached": "Dosiahol si maximálny počet položiek portfólia ({max}).",
-    "itemNotFound": "Položka portfólia nebola nájdená.",
     "ownerNotFound": "Používateľ nebol nájdený.",
     "htmlNotAllowed": "HTML nie je povolené.",
     "invalidCategory": "Neplatná kategória portfólia.",
@@ -4330,5 +4329,25 @@
     "shortDescription": "Krátky popis",
     "submit": "Pridať",
     "viewOwnerResponse": "Zobraziť odpoveď majiteľa"
+  },
+  "feed": {
+    "comments": "Komentáre",
+    "emptyCta": "Vytvoriť príspevok",
+    "emptySubtitle": "Buď prvý, kto tu niečo zdieľa!",
+    "emptyTitle": "Nástenka je zatiaľ tichá",
+    "imageRejected": "Fotka bola zamietnutá",
+    "likes": "Páči sa mi",
+    "loadError": "Nástenku sa nepodarilo načítať.",
+    "loadMore": "Zobraziť ďalšie",
+    "loadMoreError": "Ďalšie príspevky sa nepodarilo načítať.",
+    "offersExchangeOnward": "{name} ponúka výmenu ďalej",
+    "retry": "Skúsiť znova",
+    "sharedOfferUnavailable": "Táto ponuka už nie je dostupná",
+    "sharedPortfolioUnavailable": "Toto portfólio už nie je dostupné",
+    "sharesPortfolioOnward": "{name} zdieľa portfólio ďalej",
+    "timeDaysShort": "d",
+    "timeHoursShort": "h",
+    "timeJustNow": "práve teraz",
+    "timeMinutesShort": "min"
   }
 }

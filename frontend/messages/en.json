@@ -4198,7 +4198,6 @@
     "photoTooLarge": "Photo is too large",
     "maxPhotosLimit": "You can add up to 8 photos",
     "itemsLimitReached": "You have reached the maximum number of portfolio items ({max}).",
-    "itemNotFound": "Portfolio item was not found.",
     "ownerNotFound": "User was not found.",
     "htmlNotAllowed": "HTML is not allowed.",
     "invalidCategory": "Invalid portfolio category.",
@@ -4330,5 +4329,25 @@
     "shortDescription": "Short description",
     "submit": "Add",
     "viewOwnerResponse": "View owner response"
+  },
+  "feed": {
+    "comments": "Comments",
+    "emptyCta": "Create a post",
+    "emptySubtitle": "Be the first to share something!",
+    "emptyTitle": "The board is quiet so far",
+    "imageRejected": "The photo was rejected",
+    "likes": "Likes",
+    "loadError": "The board could not be loaded.",
+    "loadMore": "Show more",
+    "loadMoreError": "More posts could not be loaded.",
+    "offersExchangeOnward": "{name} is passing an exchange along",
+    "retry": "Try again",
+    "sharedOfferUnavailable": "This offer is no longer available",
+    "sharedPortfolioUnavailable": "This portfolio is no longer available",
+    "sharesPortfolioOnward": "{name} is sharing a portfolio along",
+    "timeDaysShort": "d",
+    "timeHoursShort": "h",
+    "timeJustNow": "just now",
+    "timeMinutesShort": "min"
   }
 }
