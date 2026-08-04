@@ -65,8 +65,15 @@ describe('HomeModule', () => {
     await waitFor(() => {
       expect(screen.getByTestId('feed-empty-state')).toBeInTheDocument();
     });
-    expect(screen.getByTestId('home-feed-root')).toContainElement(
-      screen.getByTestId('feed-empty-state'),
-    );
+
+    const root = screen.getByTestId('home-feed-root');
+    const heading = screen.getByRole('heading', { name: 'Nástenka' });
+    const feed = screen.getByTestId('feed-empty-state');
+
+    expect(root).toContainElement(feed);
+    // Skutočné poradie v DOM, nie len vnorenie: nadpis musí predchádzať feedu.
+    expect(
+      heading.compareDocumentPosition(feed) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
   });
 });

@@ -51,6 +51,12 @@ function makePost(overrides: Partial<FeedPost> = {}): FeedPost {
   };
 }
 
+// jest.setup.js definuje globálny IntersectionObserver (observe() je no-op).
+// Testy, ktoré potrebujú callback spustiť, ho dočasne nahradia – po teste sa
+// MUSÍ vrátiť pôvodný, nie zmazať, inak by ostatné testy v súbore bežali bez
+// neho a správali sa inak než v ostrej prevádzke.
+const originalIntersectionObserver = global.IntersectionObserver;
+
 /** Zachytí callback observera, aby ho test vedel spustiť ručne. */
 function installIntersectionObserverMock() {
   const triggers: Array<() => void> = [];
@@ -81,10 +87,16 @@ function installIntersectionObserverMock() {
 }
 
 describe('FeedList', () => {
+  beforeEach(() => {
+    // mockReset (nie clearAllMocks): clear nechá v mocku zvyšnú frontu
+    // mockResolvedValueOnce aj perzistentnú implementáciu z predošlého testu,
+    // takže by si testy medzi sebou požičiavali odpovede.
+    mockedListFeedPosts.mockReset();
+  });
+
   afterEach(() => {
-    jest.clearAllMocks();
-    delete (global as unknown as { IntersectionObserver?: unknown })
-      .IntersectionObserver;
+    (global as unknown as { IntersectionObserver: unknown }).IntersectionObserver =
+      originalIntersectionObserver;
   });
 
   it('renders a card for every post type', async () => {
@@ -129,6 +141,36 @@ describe('FeedList', () => {
     });
     expect(screen.getByText('Programovanie')).toBeInTheDocument();
     expect(screen.getByText('Weby na mieru')).toBeInTheDocument();
+  });
+
+  it('gives shared cards a dark: background variant so text stays readable', async () => {
+    mockedListFeedPosts.mockResolvedValue({
+      results: [
+        makePost({
+          id: 2,
+          post_type: 'shared_offer',
+          shared_content: {
+            type: 'offer',
+            title: 'Programovanie',
+            category: 'it',
+            id: 5,
+            owner: null,
+            owner_display_name: 'Peter',
+            thumbnail_url: null,
+          },
+        }),
+      ],
+      next: null,
+      previous: null,
+    });
+
+    render(<FeedList />);
+
+    const card = await screen.findByTestId('feed-post-card');
+    // Pozadie musí byť trieda s dark: variantom, nie inline style – inline
+    // farba sa neprepína a v tmavom režime by ostal svetlý text na svetlom.
+    expect(card.className).toContain('dark:bg-');
+    expect(card.getAttribute('style')).toBeNull();
   });
 
   it('shows the inviting empty state with a CTA when there are no posts', async () => {
@@ -193,11 +235,20 @@ describe('FeedList', () => {
         results: [makePost({ id: 2 })],
         next: null,
         previous: null,
-      });
+      })
+      // Poistka: keby observer vystrelil ešte raz, nech to nevytiahne dáta
+      // z fronty iného testu – prázdna odpoveď je neutrálna.
+      .mockResolvedValue({ results: [], next: null, previous: null });
 
     render(<FeedList />);
     await waitFor(() => {
       expect(screen.getAllByTestId('feed-post-card')).toHaveLength(1);
+    });
+
+    // Sentinel efekt beží až po tom, čo hasMore prejde na true – bez tohto
+    // čakania by sme pri záťaži strieľali do prázdnej fronty triggerov.
+    await waitFor(() => {
+      expect(observer.triggers.length).toBeGreaterThan(0);
     });
 
     // Jeden scroll môže observer vystreliť viackrát – loadMore smie prejsť raz.
@@ -227,14 +278,17 @@ describe('FeedList', () => {
         results: [makePost({ id: 2 }), makePost({ id: 3 })],
         next: null,
         previous: null,
-      });
+      })
+      .mockResolvedValue({ results: [], next: null, previous: null });
 
     render(<FeedList />);
     await waitFor(() => {
       expect(screen.getAllByTestId('feed-post-card')).toHaveLength(2);
     });
 
-    await userEvent.click(screen.getByRole('button', { name: 'Zobraziť ďalšie' }));
+    await act(async () => {
+      await userEvent.click(screen.getByRole('button', { name: 'Zobraziť ďalšie' }));
+    });
 
     await waitFor(() => {
       expect(screen.getAllByTestId('feed-post-card')).toHaveLength(3);

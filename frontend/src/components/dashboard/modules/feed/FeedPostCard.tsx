@@ -15,11 +15,21 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import InitialsAvatar from '@/components/shared/InitialsAvatar';
 import type { FeedPost } from '@/lib/feedApi';
 
-const SHARED_BG = '#EEEDFE';
+/**
+ * Pozadie zdieľanej karty. Svetlý odtieň je presne #EEEDFE zo zadania (preto
+ * arbitrary hodnota, nie purple-50 – to je iný, ružovejší tón), tmavý variant
+ * ide podľa zavedeného vzoru appky pre fialové plochy (`dark:bg-purple-950/30`,
+ * viď AboutPage). Zámerne ako TRIEDA, nie inline style: inline farba sa
+ * neprepína podľa režimu, takže by v tmavom režime ostal svetlý podklad pod
+ * svetlým textom.
+ */
+const SHARED_CARD_SURFACE =
+  'bg-[#EEEDFE] dark:bg-purple-950/30 border-purple-200 dark:border-purple-800/60';
 
 function formatRelativeTime(
   iso: string,
   t: (key: string, fallback?: string) => string,
+  locale: string,
 ): string {
   const created = new Date(iso);
   if (Number.isNaN(created.getTime())) return '';
@@ -31,7 +41,9 @@ function formatRelativeTime(
   if (hours < 24) return `${hours} ${t('feed.timeHoursShort', 'h')}`;
   const days = Math.floor(hours / 24);
   if (days < 7) return `${days} ${t('feed.timeDaysShort', 'd')}`;
-  return created.toLocaleDateString();
+  // Staršie príspevky ukazujú absolútny dátum – ten musí sledovať jazyk appky,
+  // nie locale prehliadača (tie sa bežne líšia).
+  return created.toLocaleDateString(locale || undefined);
 }
 
 /** Ikona výmeny (ti-arrows-exchange) v kruhu – marker zdieľaného príspevku. */
@@ -144,7 +156,7 @@ function SharedContentPreview({ post }: { post: FeedPost }) {
 }
 
 export default function FeedPostCard({ post }: { post: FeedPost }) {
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const isShared = post.post_type !== 'free_post';
   const authorName = post.author?.display_name || '';
   const approvedImage =
@@ -168,10 +180,9 @@ export default function FeedPostCard({ post }: { post: FeedPost }) {
       className={[
         'overflow-hidden rounded-2xl border shadow-sm',
         isShared
-          ? 'border-purple-200 dark:border-purple-800/60'
+          ? SHARED_CARD_SURFACE
           : 'border-gray-200 bg-white dark:border-gray-700 dark:bg-[#202223]',
       ].join(' ')}
-      style={isShared ? { backgroundColor: SHARED_BG } : undefined}
     >
       {isShared ? (
         <div className="flex items-center gap-2 px-4 pt-3 text-xs font-medium text-purple-700 dark:text-purple-200">
@@ -198,7 +209,7 @@ export default function FeedPostCard({ post }: { post: FeedPost }) {
             dateTime={post.created_at}
             className="text-xs text-gray-500 dark:text-gray-400"
           >
-            {formatRelativeTime(post.created_at, t)}
+            {formatRelativeTime(post.created_at, t, locale)}
           </time>
         </div>
       </header>

@@ -124,17 +124,23 @@ export type ListFeedPostsParams = {
   cursorUrl?: string | null;
 };
 
+/**
+ * Cesta pre daný request: pokračovanie cez `cursorUrl` má prednosť (nesie si
+ * vlastné query vrátane page_size), inak sa page_size doplní na základnú URL.
+ */
+function resolveFeedRequestUrl(
+  baseEndpoint: string,
+  { pageSize, cursorUrl }: ListFeedPostsParams,
+): string {
+  if (cursorUrl) return toRelativeApiPath(cursorUrl);
+  if (!pageSize) return baseEndpoint;
+  return `${baseEndpoint}?page_size=${encodeURIComponent(String(pageSize))}`;
+}
+
 export async function listFeedPosts(
   params: ListFeedPostsParams = {},
 ): Promise<FeedPage> {
-  const { pageSize, cursorUrl } = params;
-  const url = cursorUrl
-    ? toRelativeApiPath(cursorUrl)
-    : pageSize
-      ? `${endpoints.feed.posts}?page_size=${encodeURIComponent(String(pageSize))}`
-      : endpoints.feed.posts;
-
-  const { data } = await api.get(url);
+  const { data } = await api.get(resolveFeedRequestUrl(endpoints.feed.posts, params));
   return normalizeFeedPage(data);
 }
 
@@ -150,10 +156,9 @@ export async function listUserFeedPosts(
   userId: number,
   params: ListFeedPostsParams = {},
 ): Promise<FeedPage> {
-  const url = params.cursorUrl
-    ? toRelativeApiPath(params.cursorUrl)
-    : endpoints.feed.userPosts(userId);
-  const { data } = await api.get(url);
+  const { data } = await api.get(
+    resolveFeedRequestUrl(endpoints.feed.userPosts(userId), params),
+  );
   return normalizeFeedPage(data);
 }
 
@@ -161,9 +166,8 @@ export async function listUserTaggedFeedPosts(
   userId: number,
   params: ListFeedPostsParams = {},
 ): Promise<FeedPage> {
-  const url = params.cursorUrl
-    ? toRelativeApiPath(params.cursorUrl)
-    : endpoints.feed.userTaggedPosts(userId);
-  const { data } = await api.get(url);
+  const { data } = await api.get(
+    resolveFeedRequestUrl(endpoints.feed.userTaggedPosts(userId), params),
+  );
   return normalizeFeedPage(data);
 }

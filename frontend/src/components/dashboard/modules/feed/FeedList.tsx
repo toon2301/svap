@@ -102,7 +102,10 @@ export default function FeedList() {
 
   const sentinelRef = useInfiniteScrollSentinel({
     onIntersect: loadMore,
-    enabled: hasMore && !loading && !loadingMore,
+    // Po zlyhaní donačítania observer vypneme – sentinel ostáva vo viewporte,
+    // takže by sa inak pokúšal o request v slučke. Manuálne tlačidlo nižšie
+    // ostáva dostupné, takže sa používateľ vie pohnúť ďalej.
+    enabled: hasMore && !loading && !loadingMore && !error,
   });
 
   if (loading) {
