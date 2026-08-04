@@ -57,23 +57,35 @@ function makePost(overrides: Partial<FeedPost> = {}): FeedPost {
 // neho a správali sa inak než v ostrej prevádzke.
 const originalIntersectionObserver = global.IntersectionObserver;
 
-/** Zachytí callback observera, aby ho test vedel spustiť ručne. */
+/**
+ * Zachytí callback observera, aby ho test vedel spustiť ručne.
+ *
+ * Odpojený observer prestane strieľať – bez toho by ručne volaný callback
+ * bežal aj po `disconnect()` a test by nevedel rozlíšiť aktívny observer od
+ * vypnutého (prehliadač po odpojení callback nezavolá).
+ */
 function installIntersectionObserverMock() {
   const triggers: Array<() => void> = [];
   const observe = jest.fn();
   const disconnect = jest.fn();
 
   class MockIntersectionObserver {
+    private disconnected = false;
+
     constructor(callback: IntersectionObserverCallback) {
-      triggers.push(() =>
+      triggers.push(() => {
+        if (this.disconnected) return;
         callback(
           [{ isIntersecting: true } as IntersectionObserverEntry],
           this as unknown as IntersectionObserver,
-        ),
-      );
+        );
+      });
     }
     observe = observe;
-    disconnect = disconnect;
+    disconnect = () => {
+      this.disconnected = true;
+      disconnect();
+    };
     unobserve = jest.fn();
     takeRecords = jest.fn();
     root = null;
@@ -293,6 +305,62 @@ describe('FeedList', () => {
     await waitFor(() => {
       expect(screen.getAllByTestId('feed-post-card')).toHaveLength(3);
     });
+  });
+
+  it('stops the observer after a failed load-more but keeps the button usable', async () => {
+    const observer = installIntersectionObserverMock();
+    mockedListFeedPosts
+      .mockResolvedValueOnce({
+        results: [makePost({ id: 1 })],
+        next: 'http://api.test/api/auth/feed/posts/?cursor=abc',
+        previous: null,
+      })
+      // Donačítanie zlyhá – sentinel ostáva vo viewporte, takže bez !error
+      // guardu by observer strieľal request v slučke.
+      .mockRejectedValueOnce(new Error('boom'))
+      .mockResolvedValue({
+        results: [makePost({ id: 2 })],
+        next: null,
+        previous: null,
+      });
+
+    render(<FeedList />);
+    await waitFor(() => {
+      expect(screen.getAllByTestId('feed-post-card')).toHaveLength(1);
+    });
+
+    await waitFor(() => {
+      expect(observer.triggers.length).toBeGreaterThan(0);
+    });
+    await act(async () => {
+      observer.triggers.forEach((trigger) => trigger());
+    });
+
+    // Zlyhanie sa ohlási a hasMore/cursor ostávajú zachované.
+    await waitFor(() => {
+      expect(
+        screen.getByText('Ďalšie príspevky sa nepodarilo načítať.'),
+      ).toBeInTheDocument();
+    });
+    expect(mockedListFeedPosts).toHaveBeenCalledTimes(2);
+
+    // Ďalšie vystrelenie observera už NESMIE spustiť request.
+    await act(async () => {
+      observer.triggers.forEach((trigger) => trigger());
+      observer.triggers.forEach((trigger) => trigger());
+    });
+    expect(mockedListFeedPosts).toHaveBeenCalledTimes(2);
+    expect(screen.getAllByTestId('feed-post-card')).toHaveLength(1);
+
+    // Manuálne tlačidlo ostáva dostupné a funkčné.
+    const retryButton = screen.getByRole('button', { name: 'Zobraziť ďalšie' });
+    await act(async () => {
+      await userEvent.click(retryButton);
+    });
+    await waitFor(() => {
+      expect(screen.getAllByTestId('feed-post-card')).toHaveLength(2);
+    });
+    expect(mockedListFeedPosts).toHaveBeenCalledTimes(3);
   });
 
   it('shows a retry action when the initial load fails', async () => {
