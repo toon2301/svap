@@ -4198,7 +4198,6 @@
     "photoTooLarge": "A fotó túl nagy",
     "maxPhotosLimit": "Legfeljebb 8 fotót adhatsz hozzá",
     "itemsLimitReached": "Elérted a portfólióelemek maximális számát ({max}).",
-    "itemNotFound": "A portfólióelem nem található.",
     "ownerNotFound": "A felhasználó nem található.",
     "htmlNotAllowed": "HTML nem engedélyezett.",
     "invalidCategory": "Érvénytelen portfóliókategória.",
@@ -4330,5 +4329,25 @@
     "shortDescription": "Rövid leírás",
     "submit": "Küldés",
     "viewOwnerResponse": "Válasz megtekintése"
+  },
+  "feed": {
+    "comments": "Hozzászólások",
+    "emptyCta": "Bejegyzés létrehozása",
+    "emptySubtitle": "Legyél te az első, aki megoszt itt valamit!",
+    "emptyTitle": "A faliújság még csendes",
+    "imageRejected": "A fotót elutasították",
+    "likes": "Tetszik",
+    "loadError": "A faliújságot nem sikerült betölteni.",
+    "loadMore": "Továbbiak megjelenítése",
+    "loadMoreError": "A további bejegyzéseket nem sikerült betölteni.",
+    "offersExchangeOnward": "{name} továbbadja a cserét",
+    "retry": "Újrapróbálom",
+    "sharedOfferUnavailable": "Ez az ajánlat már nem érhető el",
+    "sharedPortfolioUnavailable": "Ez a portfólió már nem érhető el",
+    "sharesPortfolioOnward": "{name} továbbosztja a portfóliót",
+    "timeDaysShort": "n",
+    "timeHoursShort": "ó",
+    "timeJustNow": "az imént",
+    "timeMinutesShort": "p"
   }
 }

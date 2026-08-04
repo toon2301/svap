@@ -510,6 +510,129 @@ class FeedCountsApiTests(APITestCase):
             )
 
 
+class FeedLocalityOrderingTests(APITestCase):
+    """Lokálne príspevky prvé, potom chronologicky zvyšok – jeden zoznam."""
+
+    def setUp(self):
+        self.url = reverse(LIST_URL_NAME)
+        self.local_author = _user("feed-loc-local")
+        self.local_author.district = "Bratislava I"
+        self.local_author.save(update_fields=["district"])
+        self.remote_author = _user("feed-loc-remote")
+        self.remote_author.district = "Košice II"
+        self.remote_author.save(update_fields=["district"])
+
+        base = timezone.now()
+        # Vzdialené sú NOVŠIE – bez uprednostnenia by boli prvé.
+        self.old_local = _free_post(self.local_author, caption="Lokálny starší")
+        self.older_local = _free_post(self.local_author, caption="Lokálny najstarší")
+        self.new_remote = _free_post(self.remote_author, caption="Vzdialený nový")
+        self.newest_remote = _free_post(
+            self.remote_author, caption="Vzdialený najnovší"
+        )
+        for post, minutes in (
+            (self.older_local, 40),
+            (self.old_local, 30),
+            (self.new_remote, 20),
+            (self.newest_remote, 10),
+        ):
+            FeedPost.objects.filter(pk=post.pk).update(
+                created_at=base - timedelta(minutes=minutes)
+            )
+
+    def _ids(self, response):
+        return [item["id"] for item in response.data["results"]]
+
+    def test_viewer_with_district_sees_local_posts_first(self):
+        viewer = _user("feed-loc-viewer")
+        viewer.district = "Bratislava I"
+        viewer.save(update_fields=["district"])
+        self.client.force_authenticate(user=viewer)
+
+        ids = self._ids(self.client.get(self.url))
+
+        # Lokálne (chronologicky medzi sebou), až potom vzdialené (tiež chronologicky).
+        self.assertEqual(
+            ids,
+            [
+                self.old_local.id,
+                self.older_local.id,
+                self.newest_remote.id,
+                self.new_remote.id,
+            ],
+        )
+
+    def test_anonymous_viewer_gets_pure_chronological_order(self):
+        ids = self._ids(self.client.get(self.url))
+
+        self.assertEqual(
+            ids,
+            [
+                self.newest_remote.id,
+                self.new_remote.id,
+                self.old_local.id,
+                self.older_local.id,
+            ],
+        )
+
+    def test_viewer_without_district_gets_pure_chronological_order(self):
+        viewer = _user("feed-loc-nodistrict")
+        self.assertFalse((viewer.district or "").strip())
+        self.client.force_authenticate(user=viewer)
+
+        ids = self._ids(self.client.get(self.url))
+
+        self.assertEqual(ids[0], self.newest_remote.id)
+        self.assertEqual(ids[-1], self.older_local.id)
+
+    def test_shared_posts_use_sharer_district_not_source_owner(self):
+        # Zdieľa LOKÁLNY autor cudziu ponuku vzdialeného vlastníka → lokálne.
+        offer = _offer(self.remote_author)
+        shared = FeedPost.objects.create(
+            author=self.local_author,
+            post_type=FeedPost.PostType.SHARED_OFFER,
+            shared_offer=offer,
+        )
+        viewer = _user("feed-loc-viewer2")
+        viewer.district = "Bratislava I"
+        viewer.save(update_fields=["district"])
+        self.client.force_authenticate(user=viewer)
+
+        ids = self._ids(self.client.get(self.url))
+
+        # Zdieľanie je najnovšie a zároveň lokálne → úplne prvé.
+        self.assertEqual(ids[0], shared.id)
+
+    def test_cursor_pagination_stays_consistent_with_locality_ordering(self):
+        viewer = _user("feed-loc-viewer3")
+        viewer.district = "Bratislava I"
+        viewer.save(update_fields=["district"])
+        self.client.force_authenticate(user=viewer)
+
+        collected = []
+        url = f"{self.url}?page_size=1"
+        for _ in range(4):
+            response = self.client.get(url)
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            collected.extend(self._ids(response))
+            url = response.data["next"]
+            if not url:
+                break
+
+        # Prejdeme celý feed po jednom: žiadne duplicity, žiadne preskoky,
+        # a poradie zhodné s jednostránkovým výsledkom.
+        self.assertEqual(len(collected), len(set(collected)))
+        self.assertEqual(
+            collected,
+            [
+                self.old_local.id,
+                self.older_local.id,
+                self.newest_remote.id,
+                self.new_remote.id,
+            ],
+        )
+
+
 class FeedDetailApiTests(APITestCase):
     def setUp(self):
         self.author = _user("feed-detail-author")
