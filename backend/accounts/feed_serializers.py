@@ -157,6 +157,9 @@ class FeedPostSerializer(serializers.ModelSerializer):
         """Aktuálne polia zo živého zdroja – zhodné odvodenie ako snapshot."""
         if post_type == FeedPost.PostType.SHARED_OFFER:
             return (source.subcategory or source.category), source.category
+        if post_type == FeedPost.PostType.SHARED_FEED_POST:
+            # Voľný príspevok nemá názov ani kategóriu – nesie text.
+            return "", ""
         return source.title, source.category
 
     def get_shared_content(self, obj):
@@ -180,13 +183,15 @@ class FeedPostSerializer(serializers.ModelSerializer):
         owner = obj.shared_owner
 
         payload = {
-            "type": (
-                "offer"
-                if obj.post_type == FeedPost.PostType.SHARED_OFFER
-                else "portfolio_item"
-            ),
+            "type": {
+                FeedPost.PostType.SHARED_OFFER: "offer",
+                FeedPost.PostType.SHARED_PORTFOLIO_ITEM: "portfolio_item",
+                FeedPost.PostType.SHARED_FEED_POST: "feed_post",
+            }[obj.post_type],
             "title": obj.shared_title,
             "category": obj.shared_category,
+            # Text zdieľaného voľného príspevku (ostatné typy majú prázdny).
+            "caption": obj.shared_post_caption,
             "id": None,
             "owner": None,
             # Meno vlastníka: naživo kým sa dá (sleduje premenovanie), snapshot
@@ -204,6 +209,8 @@ class FeedPostSerializer(serializers.ModelSerializer):
             payload["title"], payload["category"] = self._live_title_and_category(
                 obj.post_type, source
             )
+            if obj.post_type == FeedPost.PostType.SHARED_FEED_POST:
+                payload["caption"] = source.caption
             payload["id"] = source.pk
             payload["owner"] = FeedUserSummarySerializer(
                 owner, context=self.context

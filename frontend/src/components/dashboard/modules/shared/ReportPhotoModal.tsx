@@ -104,23 +104,21 @@ export function ReportPhotoModal({
       return;
     }
 
-    const selectedReason = REPORT_REASONS.find((item) => item.value === reason);
-    const reasonLabel = selectedReason
-      ? t(selectedReason.labelKey, selectedReason.defaultLabel)
-      : reason;
-
     setIsSubmitting(true);
     setError(null);
 
     try {
+      // Stabilný kód, nie preložený text: reason ide do moderačnej fronty,
+      // kde sa musí dať filtrovať a zoskupovať rovnako naprieč jazykmi appky.
+      // labelKey/defaultLabel zostávajú len na zobrazenie v UI.
       if (target.type === 'offer_image') {
         await api.post(endpoints.skills.reportImage(target.skillId, target.imageId), {
-          reason: reasonLabel,
+          reason,
           description: description.trim() || undefined,
         });
       } else {
         await api.post(endpoints.users.reportAvatar(target.userId), {
-          reason: reasonLabel,
+          reason,
           description: description.trim() || undefined,
         });
       }

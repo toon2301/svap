@@ -46,6 +46,8 @@ NOTIFICATION_RETENTION_DAYS: dict[str, int] = {
     # Označenie je jednorazová sociálna udalosť bez obsahu (ako lajk), nie
     # prebiehajúca konverzácia → 30 dní, nie review-tier 60.
     NotificationType.FEED_POST_TAGGED: 30,
+    # Zdieľanie je jednorazová sociálna udalosť ako lajk/označenie → 30 dní.
+    NotificationType.FEED_POST_SHARED: 30,
     # Komentár nesie obsah (ako odpoveď na recenziu) → dôležitejší tier.
     NotificationType.FEED_POST_COMMENTED: 60,
     # Dôležité (status výmeny / recenzie)
@@ -100,6 +102,7 @@ def purge_old_notifications(*, dry_run: bool = True) -> dict[str, int]:
 from .notification_events import (  # noqa: E402, F401
     create_feed_post_commented_notification,
     create_feed_post_liked_notification,
+    create_feed_post_shared_notification,
     create_feed_post_tagged_notification,
     create_group_invitation_notification,
     create_offer_liked_notification,

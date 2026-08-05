@@ -141,6 +141,7 @@ class NotificationSerializer(serializers.ModelSerializer):
             NotificationType.FEED_POST_LIKED,
             NotificationType.FEED_POST_COMMENTED,
             NotificationType.FEED_POST_TAGGED,
+            NotificationType.FEED_POST_SHARED,
         ):
             # Všetky tri feed typy vedú na permalink príspevku – identifikátor
             # nesie data.post_id (rovnaký vzor ako OFFER_LIKED/PORTFOLIO_LIKED).

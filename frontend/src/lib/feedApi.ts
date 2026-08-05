@@ -32,9 +32,11 @@ export type FeedPostImage = {
 };
 
 export type FeedSharedContent = {
-  type: 'offer' | 'portfolio_item';
+  type: 'offer' | 'portfolio_item' | 'feed_post';
   title: string;
   category: string;
+  /** Text zdieľaného voľného príspevku (ostatné typy majú prázdny). */
+  caption: string;
   /** null keď je zdroj nedostupný – vtedy sa nedá preklikať. */
   id: number | null;
   owner: FeedUserSummary | null;
@@ -142,6 +144,103 @@ export async function listFeedPosts(
 ): Promise<FeedPage> {
   const { data } = await api.get(resolveFeedRequestUrl(endpoints.feed.posts, params));
   return normalizeFeedPage(data);
+}
+
+// --- Interakcie (Fáza 4.2) -------------------------------------------------
+
+export type FeedPostComment = {
+  id: number;
+  text: string;
+  author: FeedUserSummary;
+  can_delete: boolean;
+  created_at: string;
+};
+
+export type FeedCommentPage = {
+  results: FeedPostComment[];
+  next: string | null;
+  previous: string | null;
+};
+
+export type FeedLikePayload = {
+  post_id: number;
+  is_liked_by_me: boolean;
+  likes_count: number;
+};
+
+/** Maximálna dĺžka komentára – zhodné s modelovým limitom na backende. */
+export const FEED_COMMENT_MAX_LENGTH = 500;
+
+export async function likeFeedPost(postId: number): Promise<FeedLikePayload> {
+  const { data } = await api.post<FeedLikePayload>(endpoints.feed.postLike(postId));
+  return data;
+}
+
+export async function unlikeFeedPost(postId: number): Promise<FeedLikePayload> {
+  const { data } = await api.delete<FeedLikePayload>(endpoints.feed.postLike(postId));
+  return data;
+}
+
+export async function listFeedPostComments(
+  postId: number,
+  params: { pageSize?: number; cursorUrl?: string | null } = {},
+): Promise<FeedCommentPage> {
+  const { data } = await api.get(
+    resolveFeedRequestUrl(endpoints.feed.postComments(postId), params),
+  );
+  const payload = (data ?? {}) as Partial<FeedCommentPage>;
+  return {
+    results: Array.isArray(payload.results) ? payload.results : [],
+    next: typeof payload.next === 'string' ? payload.next : null,
+    previous: typeof payload.previous === 'string' ? payload.previous : null,
+  };
+}
+
+export async function createFeedPostComment(
+  postId: number,
+  text: string,
+): Promise<FeedPostComment> {
+  const { data } = await api.post<FeedPostComment>(
+    endpoints.feed.postComments(postId),
+    { text },
+  );
+  return data;
+}
+
+export async function deleteFeedPostComment(
+  postId: number,
+  commentId: number,
+): Promise<void> {
+  await api.delete(endpoints.feed.postCommentDetail(postId, commentId));
+}
+
+export async function reportFeedPost(
+  postId: number,
+  payload: { reason: string; description?: string },
+): Promise<void> {
+  await api.post(endpoints.feed.postReport(postId), {
+    reason: payload.reason,
+    description: payload.description?.trim() || undefined,
+  });
+}
+
+/**
+ * Zdieľanie príspevku ďalej.
+ *
+ * POZOR na názvy polí: vlastný sprievodný komentár ide do `caption` (je to
+ * text NOVÉHO príspevku). `shared_post_caption` je snapshot textu PÔVODNÉHO
+ * príspevku, ktorý si backend dopĺňa sám – klient ho neposiela.
+ */
+export async function shareFeedPost(
+  postId: number,
+  caption = '',
+): Promise<FeedPost> {
+  const { data } = await api.post<FeedPost>(endpoints.feed.posts, {
+    post_type: 'shared_feed_post',
+    shared_feed_post_id: postId,
+    caption,
+  });
+  return data;
 }
 
 export async function getFeedPost(postId: number): Promise<FeedPost> {

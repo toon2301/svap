@@ -149,9 +149,13 @@ def _scrub_shared_owner_snapshots(user) -> None:
     from .models import FeedPost
 
     replacement = "Zmazaný používateľ"
+    # shared_post_caption je zmrazená kópia TEXTU zmazaného používateľa (jeho
+    # voľný príspevok zdieľaný ďalej), takže s menom scrubujeme aj ten – inak by
+    # jeho obsah žil ďalej v cudzom zdieľaní. Prázdny reťazec, nie náhradný
+    # text: pri zdieľaní ponuky/portfólia je pole aj tak prázdne.
     FeedPost.objects.filter(shared_owner=user).exclude(
-        shared_owner_display_name=replacement
-    ).update(shared_owner_display_name=replacement)
+        shared_owner_display_name=replacement, shared_post_caption=""
+    ).update(shared_owner_display_name=replacement, shared_post_caption="")
 
 
 def _scrub_actor_notifications(user) -> None:
