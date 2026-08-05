@@ -31,6 +31,17 @@ SHARED_SNAPSHOT_FIELDS = (
 class FeedPostSharingMixin:
     """Validácia, sploštenie a denormalizácia zdieľaného obsahu."""
 
+    def _truncate_for_field(self, value, field_name: str) -> str:
+        """Orež text na ``max_length`` cieľového stĺpca.
+
+        Limit sa číta z modelu, nie z konštanty v kóde: snapshot polia majú
+        každé vlastnú dĺžku a natvrdo zapísané číslo by sa pri zmene poľa ticho
+        rozišlo. Prejaviť by sa to stihlo až v produkcii – Postgres by spadol na
+        DataError, kým SQLite v testoch dĺžku varchar-u nevynucuje.
+        """
+        max_length = self._meta.get_field(field_name).max_length
+        return (value or "")[:max_length]
+
     def _apply_shared_source(self) -> None:
         """Vyžaduj zdrojový FK pre SHARED_* typy, over viditeľnosť a naplň snapshot.
 
@@ -167,7 +178,9 @@ class FeedPostSharingMixin:
         """
         self._apply_shared_owner(post.author, is_hidden=False, overwrite=overwrite)
         if overwrite or not self.shared_post_caption:
-            self.shared_post_caption = (post.caption or "")[:500]
+            self.shared_post_caption = self._truncate_for_field(
+                post.caption, "shared_post_caption"
+            )
         if overwrite or not self.shared_thumbnail_key:
             # Len schválená fotka – pending/rejected sa navonok nezobrazuje.
             self.shared_thumbnail_key = (
@@ -307,8 +320,11 @@ class FeedPostSharingMixin:
 
         self.shared_owner_id = owner.pk
         if overwrite or not self.shared_owner_display_name:
-            # max_length=200 – display_name skladá first+last name (2×150), preto orež.
-            self.shared_owner_display_name = (owner.display_name or "")[:200]
+            # display_name skladá first+last name (2×150), takže sa do stĺpca
+            # nemusí zmestiť – orež podľa jeho skutočného max_length.
+            self.shared_owner_display_name = self._truncate_for_field(
+                owner.display_name, "shared_owner_display_name"
+            )
 
     @property
     def shared_source(self):
