@@ -4340,6 +4340,7 @@
     "commentPlaceholder": "Írj hozzászólást...",
     "commentSubmit": "Hozzáadás",
     "comments": "Hozzászólások",
+    "commentsEmpty": "Még nincsenek hozzászólások.",
     "commentsLoadError": "A hozzászólásokat nem sikerült betölteni.",
     "emptyCta": "Bejegyzés létrehozása",
     "emptySubtitle": "Legyél te az első, aki megoszt itt valamit!",

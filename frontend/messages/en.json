@@ -4340,6 +4340,7 @@
     "commentPlaceholder": "Write a comment...",
     "commentSubmit": "Add",
     "comments": "Comments",
+    "commentsEmpty": "No comments yet.",
     "commentsLoadError": "Comments could not be loaded.",
     "emptyCta": "Create a post",
     "emptySubtitle": "Be the first to share something!",

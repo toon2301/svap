@@ -140,6 +140,52 @@ class TestReshareRootResolution:
         assert second_share.shared_title == "Programovanie"
         assert second_share.shared_owner_id == owner.id
 
+    def test_updating_shared_feed_post_also_flattens_to_root(self):
+        """UPDATE musí sploštiť rovnako ako vznik – inak by tadiaľ vznikol reťazec."""
+        origin_author = _user("rs-upd-origin")
+        origin = _free_post(origin_author, caption="Koreň")
+        middle = _reshare(_user("rs-upd-middle"), origin)
+
+        other_author = _user("rs-upd-other")
+        other = _free_post(other_author, caption="Iný koreň")
+        reshare = _reshare(_user("rs-upd-sharer"), other)
+        assert reshare.shared_feed_post_id == other.id
+
+        # Prepneme zdroj na MEDZIČLÁNOK (zdieľanie), nie na voľný príspevok.
+        reshare.shared_feed_post = middle
+        reshare.save(update_fields=["shared_feed_post", "updated_at"])
+        reshare.refresh_from_db()
+
+        # Musí ukazovať na koreň, nie na medzičlánok, a snapshot musí patriť
+        # vlastníkovi koreňa.
+        assert reshare.shared_feed_post_id == origin.id
+        assert reshare.shared_feed_post_id != middle.id
+        assert reshare.shared_owner_id == origin_author.id
+        assert reshare.shared_post_caption == "Koreň"
+
+    def test_updating_shared_feed_post_to_shared_offer_inherits_offer(self):
+        owner = _user("rs-upd2-owner")
+        offer = OfferedSkill.objects.create(
+            user=owner, category="it-a-technologie", subcategory="Programovanie"
+        )
+        middle = FeedPost.objects.create(
+            author=_user("rs-upd2-middle"),
+            post_type=FeedPost.PostType.SHARED_OFFER,
+            shared_offer=offer,
+        )
+        origin = _free_post(_user("rs-upd2-origin"))
+        reshare = _reshare(_user("rs-upd2-sharer"), origin)
+
+        reshare.shared_feed_post = middle
+        reshare.save(update_fields=["shared_feed_post", "updated_at"])
+        reshare.refresh_from_db()
+
+        # Typ aj zdroj sa prevzali z medzičlánku → priamo ponuka.
+        assert reshare.post_type == FeedPost.PostType.SHARED_OFFER
+        assert reshare.shared_offer_id == offer.id
+        assert reshare.shared_feed_post_id is None
+        assert reshare.shared_owner_id == owner.id
+
     def test_reshare_requires_source(self):
         with pytest.raises(ValidationError) as exc:
             FeedPost.objects.create(
@@ -337,7 +383,11 @@ class FeedReshareNotificationTests(APITestCase):
         self.assertEqual(notification.data["post_id"], response.data["id"])
 
     def test_self_share_creates_no_notification(self):
-        self._share(self.origin.id, self.origin_author)
+        response = self._share(self.origin.id, self.origin_author)
+
+        # Status najprv: bez neho by test prešiel aj vtedy, keby zdieľanie
+        # zlyhalo z úplne iného dôvodu a notifikácia nevznikla „správne".
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(Notification.objects.count(), 0)
 
     def test_repeated_shares_create_separate_notifications(self):

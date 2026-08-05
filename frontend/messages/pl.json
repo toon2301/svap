@@ -4340,6 +4340,7 @@
     "commentPlaceholder": "Napisz komentarz...",
     "commentSubmit": "Dodaj",
     "comments": "Komentarze",
+    "commentsEmpty": "Brak komentarzy.",
     "commentsLoadError": "Nie udało się załadować komentarzy.",
     "emptyCta": "Utwórz post",
     "emptySubtitle": "Bądź pierwszy, kto coś tu udostępni!",

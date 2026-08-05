@@ -142,6 +142,13 @@ export default function FeedPostComments({
         <p className="py-2 text-sm text-gray-500 dark:text-gray-400">
           {t('feed.commentsLoadError', 'Komentáre sa nepodarilo načítať.')}
         </p>
+      ) : comments.length === 0 ? (
+        <p
+          data-testid="feed-comments-empty"
+          className="py-2 text-sm text-gray-500 dark:text-gray-400"
+        >
+          {t('feed.commentsEmpty', 'Zatiaľ žiadne komentáre.')}
+        </p>
       ) : (
         <ul className="space-y-3">
           {comments.map((comment) => (

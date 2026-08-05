@@ -61,12 +61,14 @@ export function ReportReviewModal({
   };
 
   const handleSubmit = async () => {
-    const reasonLabel = REPORT_REASONS.find((r) => r.value === reason)?.label ?? reason;
     setIsSubmitting(true);
     setError(null);
     try {
+      // Stabilný kód, nie zobrazovaný text: reason ide do moderačnej fronty,
+      // kde sa musí dať filtrovať a zoskupovať rovnako naprieč jazykmi appky.
+      // Labely zostávajú len na zobrazenie v UI.
       await api.post(endpoints.reviews.report(reviewId), {
-        reason: reasonLabel,
+        reason,
         description: description.trim() || undefined,
       });
       await onSuccess?.();

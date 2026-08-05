@@ -104,6 +104,12 @@ beforeEach(() => {
   mockedListComments.mockResolvedValue({ results: [], next: null, previous: null });
 });
 
+afterEach(() => {
+  // Appka nemá globálne restoreMocks – spy na window.confirm by inak pretiekol
+  // do ďalších testov a tie by potvrdzovali dialógy bez toho, aby o tom vedeli.
+  jest.restoreAllMocks();
+});
+
 describe('FeedPostCard – lajk', () => {
   it('updates optimistically before the request resolves', async () => {
     let resolveLike: (value: unknown) => void = () => {};
@@ -227,6 +233,16 @@ describe('FeedPostCard – komentáre', () => {
     expect(mockedDeleteComment).toHaveBeenCalledWith(1, 6);
   });
 
+  it('shows an empty-state message when there are no comments', async () => {
+    render(<FeedPostCard post={makePost()} />);
+    await userEvent.click(screen.getByTestId('feed-comments-button'));
+
+    const section = await screen.findByTestId('feed-post-comments');
+    expect(
+      await within(section).findByTestId('feed-comments-empty'),
+    ).toHaveTextContent('Zatiaľ žiadne komentáre.');
+  });
+
   it('blocks submitting over the 500 character limit', async () => {
     render(<FeedPostCard post={makePost()} />);
     await userEvent.click(screen.getByTestId('feed-comments-button'));
@@ -255,6 +271,19 @@ describe('FeedPostCard – nahlásenie', () => {
     return screen.getByTestId('feed-report-modal');
   }
 
+  it('closes the menu on Escape and returns focus to the trigger', async () => {
+    render(<FeedPostCard post={makePost()} />);
+    const trigger = screen.getByTestId('feed-post-menu-trigger');
+
+    await userEvent.click(trigger);
+    expect(screen.getByTestId('feed-post-menu')).toBeInTheDocument();
+
+    await userEvent.keyboard('{Escape}');
+
+    expect(screen.queryByTestId('feed-post-menu')).not.toBeInTheDocument();
+    expect(trigger).toHaveFocus();
+  });
+
   it('submits a report and confirms with a toast', async () => {
     mockedReport.mockResolvedValue(undefined);
     render(<FeedPostCard post={makePost()} />);
@@ -264,8 +293,9 @@ describe('FeedPostCard – nahlásenie', () => {
       await userEvent.click(within(modal).getByRole('button', { name: 'Odoslať' }));
     });
 
+    // Stabilný kód, nie preložený text – moderačná fronta musí byť filtrovateľná.
     expect(mockedReport).toHaveBeenCalledWith(1, {
-      reason: 'Nevhodný obsah',
+      reason: 'inappropriate',
       description: '',
     });
     expect(toastSuccess).toHaveBeenCalled();
@@ -310,7 +340,7 @@ describe('FeedPostCard – zdieľanie ďalej', () => {
     expect(toastSuccess).toHaveBeenCalled();
   });
 
-  it('allows sharing your own post', async () => {
+  it('shares with an empty caption when the user adds no comment', async () => {
     mockedShare.mockResolvedValue(makePost({ id: 100 }));
     render(<FeedPostCard post={makePost({ can_manage: true })} />);
 

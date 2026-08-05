@@ -12,6 +12,7 @@ import { createPortal } from 'react-dom';
 import toast from 'react-hot-toast';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useFeedDialog } from './useFeedDialog';
 import InitialsAvatar from '@/components/shared/InitialsAvatar';
 import { shareFeedPost, type FeedPost } from '@/lib/feedApi';
 
@@ -39,6 +40,8 @@ export default function FeedPostShareModal({
   useEffect(() => {
     if (open) setCaption('');
   }, [open]);
+
+  const dialogRef = useFeedDialog({ open, onClose, canClose: !submitting });
 
   if (!open || !mounted || typeof document === 'undefined') return null;
 
@@ -84,6 +87,8 @@ export default function FeedPostShareModal({
       }}
     >
       <div
+        ref={dialogRef}
+        tabIndex={-1}
         className="relative flex max-h-[90vh] w-full max-w-md flex-col overflow-hidden rounded-t-2xl border border-gray-200 bg-white shadow-xl sm:max-h-[85vh] sm:rounded-2xl dark:border-gray-800 dark:bg-[#0f0f10]"
         onClick={(event) => event.stopPropagation()}
       >

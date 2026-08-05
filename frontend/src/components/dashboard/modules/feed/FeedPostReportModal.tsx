@@ -10,6 +10,7 @@ import { createPortal } from 'react-dom';
 import toast from 'react-hot-toast';
 import { ExclamationTriangleIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useFeedDialog } from './useFeedDialog';
 import { reportFeedPost } from '@/lib/feedApi';
 
 // Zhodné hodnoty ako ReportReviewModal/ReportPhotoModal; „falošná recenzia"
@@ -49,14 +50,17 @@ export default function FeedPostReportModal({
     }
   }, [open]);
 
+  const dialogRef = useFeedDialog({ open, onClose, canClose: !submitting });
+
   if (!open || !mounted || typeof document === 'undefined') return null;
 
   const handleSubmit = async () => {
-    const selected = REPORT_REASONS.find((item) => item.value === reason);
-    const reasonLabel = selected ? t(selected.labelKey, selected.fallback) : reason;
     setSubmitting(true);
     try {
-      await reportFeedPost(postId, { reason: reasonLabel, description });
+      // Posiela sa STABILNÁ hodnota, nie preložený text: reason končí
+      // v moderačnej fronte, kde by lokalizovaná hláška znamenala, že sa
+      // rovnaký dôvod nedá filtrovať ani zoskupiť naprieč jazykmi.
+      await reportFeedPost(postId, { reason, description });
       toast.success(t('feed.reportSuccess', 'Príspevok bol nahlásený.'));
       onReported?.();
       onClose();
@@ -85,6 +89,8 @@ export default function FeedPostReportModal({
       }}
     >
       <div
+        ref={dialogRef}
+        tabIndex={-1}
         className="relative flex max-h-[90vh] w-full max-w-md flex-col overflow-hidden rounded-t-2xl border border-gray-200 bg-white shadow-xl sm:max-h-[85vh] sm:rounded-2xl dark:border-gray-800 dark:bg-[#0f0f10]"
         onClick={(event) => event.stopPropagation()}
       >

@@ -4340,6 +4340,7 @@
     "commentPlaceholder": "Napíš komentár...",
     "commentSubmit": "Pridať",
     "comments": "Komentáre",
+    "commentsEmpty": "Zatiaľ žiadne komentáre.",
     "commentsLoadError": "Komentáre sa nepodarilo načítať.",
     "emptyCta": "Vytvoriť príspevok",
     "emptySubtitle": "Buď prvý, kto tu niečo zdieľa!",

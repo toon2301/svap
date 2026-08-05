@@ -234,6 +234,7 @@ export default function FeedPostCard({ post }: { post: FeedPost }) {
   const [reported, setReported] = useState(false);
   const likePendingRef = useRef(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
+  const menuTriggerRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -242,8 +243,19 @@ export default function FeedPostCard({ post }: { post: FeedPost }) {
         setMenuOpen(false);
       }
     };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      setMenuOpen(false);
+      // Fokus späť na spúšťacie tlačidlo – inak by po zatvorení skončil na
+      // <body> a klávesnicová navigácia by začínala odznova.
+      menuTriggerRef.current?.focus();
+    };
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
   }, [menuOpen]);
 
   const handleToggleLike = async () => {
@@ -330,6 +342,7 @@ export default function FeedPostCard({ post }: { post: FeedPost }) {
         <div className="relative shrink-0" ref={menuRef}>
           <button
             type="button"
+            ref={menuTriggerRef}
             onClick={() => setMenuOpen((open) => !open)}
             aria-label={t('feed.postMenu', 'Možnosti príspevku')}
             aria-haspopup="menu"

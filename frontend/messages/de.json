@@ -4340,6 +4340,7 @@
     "commentPlaceholder": "Kommentar schreiben...",
     "commentSubmit": "Hinzufügen",
     "comments": "Kommentare",
+    "commentsEmpty": "Noch keine Kommentare.",
     "commentsLoadError": "Kommentare konnten nicht geladen werden.",
     "emptyCta": "Beitrag erstellen",
     "emptySubtitle": "Sei der Erste, der hier etwas teilt!",
