@@ -814,6 +814,11 @@ export const endpoints = {
   feed: {
     posts: '/auth/feed/posts/',
     postDetail: (id: number) => `/auth/feed/posts/${id}/`,
+    postLike: (id: number) => `/auth/feed/posts/${id}/like/`,
+    postComments: (id: number) => `/auth/feed/posts/${id}/comments/`,
+    postCommentDetail: (postId: number, commentId: number) =>
+      `/auth/feed/posts/${postId}/comments/${commentId}/`,
+    postReport: (id: number) => `/auth/feed/posts/${id}/report/`,
     userPosts: (userId: number) => `/auth/feed/users/${userId}/posts/`,
     userTaggedPosts: (userId: number) => `/auth/feed/users/${userId}/tagged/`,
   },

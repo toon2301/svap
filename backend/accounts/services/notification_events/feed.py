@@ -67,6 +67,36 @@ def create_feed_post_commented_notification(*, post, actor) -> Notification | No
     )
 
 
+def create_feed_post_shared_notification(*, post, actor):
+    """Niekto zdieľal obsah ďalej – notifikácia pôvodnému vlastníkovi.
+
+    ZÁMERNE bez dedupu (ako komentár, nie ako lajk): zdieľanie je opakovateľná
+    akcia s vlastným obsahom – ten istý človek môže ten istý koreň zdieľať
+    viackrát s iným sprievodným textom, a každé také zdieľanie je samostatná
+    udalosť, o ktorej má vlastník vedieť. Dedup by druhé a ďalšie zdieľanie
+    ticho zahodil.
+
+    ``post`` je NOVÉ zdieľanie; príjemcom je jeho ``shared_owner`` (vlastník
+    koreňového obsahu), takže funguje rovnako pre ponuku, portfólio aj príspevok.
+    Self-share notifikáciu nevytvára.
+    """
+    owner = getattr(post, "shared_owner", None)
+    if owner is None or getattr(owner, "id", None) == getattr(actor, "id", None):
+        return None
+
+    actor_name = (getattr(actor, "display_name", "") or "").strip() or "Používateľ"
+    return create_notification(
+        user=owner,
+        notif_type=NotificationType.FEED_POST_SHARED,
+        title="Zdieľanie tvojho obsahu",
+        body=f"{actor_name} zdieľal tvoj obsah ďalej.",
+        actor=actor,
+        data={
+            "post_id": post.id,
+        },
+    )
+
+
 def create_feed_post_tagged_notification(*, post, tagged_user, actor):
     """Označenie v príspevku – notifikácia označenému.
 

@@ -33,6 +33,7 @@ class NotificationType(models.TextChoices):
     FEED_POST_LIKED = "feed_post_liked", _("Páči sa mi príspevok")
     FEED_POST_COMMENTED = "feed_post_commented", _("Komentár k príspevku")
     FEED_POST_TAGGED = "feed_post_tagged", _("Označenie v príspevku")
+    FEED_POST_SHARED = "feed_post_shared", _("Zdieľanie príspevku")
 
 
 class Notification(models.Model):

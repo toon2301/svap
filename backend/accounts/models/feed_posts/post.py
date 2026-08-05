@@ -38,6 +38,7 @@ SHARED_SNAPSHOT_FIELDS = (
     "shared_title",
     "shared_category",
     "shared_thumbnail_key",
+    "shared_post_caption",
 )
 
 class FeedPost(models.Model):
@@ -48,6 +49,7 @@ class FeedPost(models.Model):
         FREE_POST = "free_post", _("Voľný príspevok")
         SHARED_OFFER = "shared_offer", _("Zdieľaná ponuka")
         SHARED_PORTFOLIO_ITEM = "shared_portfolio_item", _("Zdieľané portfólio")
+        SHARED_FEED_POST = "shared_feed_post", _("Zdieľaný príspevok")
 
     class ImageStatus(models.TextChoices):
         PENDING = "pending", _("Čaká na spracovanie")
@@ -127,6 +129,17 @@ class FeedPost(models.Model):
         blank=True,
         verbose_name=_("Zdieľaná položka portfólia"),
     )
+    # Zdieľaný VOĽNÝ príspevok. Ukazuje VŽDY na koreňový free_post, nikdy na iné
+    # zdieľanie – ``_flatten_reshare`` reťazec pri vzniku sploští na jeden krok,
+    # takže tu nemôže vzniknúť rekurzia ani neobmedzené vnorenie.
+    shared_feed_post = models.ForeignKey(
+        "self",
+        on_delete=models.SET_NULL,
+        related_name="reshares",
+        null=True,
+        blank=True,
+        verbose_name=_("Zdieľaný príspevok"),
+    )
     # Pôvodný vlastník zdieľaného obsahu. Od chvíle, keď možno zdieľať aj CUDZÍ
     # obsah, sa NEROVNÁ ``author``. SET_NULL len formálne – User riadok sa pri GDPR
     # zmazaní nemaže (len anonymizuje), takže FK v praxi prežije vždy.
@@ -167,6 +180,15 @@ class FeedPost(models.Model):
     shared_thumbnail_key = models.CharField(
         _("Snapshot: S3 kľúč náhľadu"), max_length=1024, blank=True, default=""
     )
+    # Snapshot textu zdieľaného voľného príspevku. Vlastné pole (nie
+    # ``shared_title``): caption má 500 znakov, title 200 – zdieľanie by tak
+    # obsah orezalo. Ponuka/portfólio ho nechávajú prázdny.
+    # POZOR (GDPR): je to zmrazená kópia textu INÉHO používateľa, takže ju
+    # anonymizácia účtu musí prepísať – rovnako ako ``shared_owner_display_name``
+    # (viď ``account_deletion._scrub_shared_owner_snapshots``).
+    shared_post_caption = models.CharField(
+        _("Snapshot: text príspevku"), max_length=500, blank=True, default=""
+    )
 
     created_at = models.DateTimeField(_("Vytvorené"), auto_now_add=True)
     updated_at = models.DateTimeField(_("Upravené"), auto_now=True)
@@ -186,6 +208,7 @@ class FeedPost(models.Model):
                         post_type="free_post",
                         shared_offer__isnull=True,
                         shared_portfolio_item__isnull=True,
+                        shared_feed_post__isnull=True,
                     )
                     & ~models.Q(caption="")
                 )
@@ -193,6 +216,7 @@ class FeedPost(models.Model):
                     models.Q(
                         post_type="shared_offer",
                         shared_portfolio_item__isnull=True,
+                        shared_feed_post__isnull=True,
                         image_status="",
                     )
                     & ~models.Q(shared_title="")
@@ -201,9 +225,28 @@ class FeedPost(models.Model):
                     models.Q(
                         post_type="shared_portfolio_item",
                         shared_offer__isnull=True,
+                        shared_feed_post__isnull=True,
                         image_status="",
                     )
                     & ~models.Q(shared_title="")
+                )
+                | (
+                    # SHARED_FEED_POST: ostatné zdroje NULL, fotka zakázaná.
+                    # Na rozdiel od ponuky/portfólia tu ZÁMERNE NIE JE podmienka
+                    # „snapshot musí byť neprázdny": shared_post_caption je text
+                    # iného používateľa, ktorý GDPR anonymizácia legitímne maže
+                    # na prázdny (viď account_deletion._scrub_shared_owner_snapshots).
+                    # shared_title pri ponuke je názov kategórie, nie osobný
+                    # obsah, preto tam podmienka konfliktu nerobí. Prítomnosť
+                    # zdroja pri VZNIKU vynucuje model (shared_source_required) –
+                    # DB constraint ju vyjadriť nevie tak či tak (FK musí ostať
+                    # nullable kvôli SET_NULL survival vzoru).
+                    models.Q(
+                        post_type="shared_feed_post",
+                        shared_offer__isnull=True,
+                        shared_portfolio_item__isnull=True,
+                        image_status="",
+                    )
                 ),
                 name="feed_post_type_consistency",
             ),
@@ -258,6 +301,17 @@ class FeedPost(models.Model):
         celá kontrola viditeľnosti/blokovania by sa obišla – a výsledok by bol
         nerozoznateľný od legitímneho osireného zdieľania.
         """
+        if self.post_type == self.PostType.SHARED_FEED_POST:
+            if self.shared_feed_post_id is None:
+                raise ValidationError(
+                    "Zdieľanie príspevku vyžaduje existujúci príspevok.",
+                    code="shared_source_required",
+                )
+            if self._flatten_reshare(self.shared_feed_post):
+                # Koreň bol už zmazaný – prevzali sme snapshot medzičlánku,
+                # živý zdroj neexistuje, takže nie je čo ďalej validovať.
+                return
+
         if self.post_type == self.PostType.SHARED_OFFER:
             if self.shared_offer_id is None:
                 raise ValidationError(
@@ -273,6 +327,99 @@ class FeedPost(models.Model):
                 )
             self._snapshot_from_portfolio_item(
                 self.shared_portfolio_item, overwrite=False
+            )
+        elif self.post_type == self.PostType.SHARED_FEED_POST:
+            self._snapshot_from_feed_post(self.shared_feed_post, overwrite=False)
+
+    def _flatten_reshare(self, source) -> bool:
+        """Vyrieš zdieľanie priamo na KOREŇOVÝ zdroj – nikdy na medzičlánok.
+
+        Reťazec zdieľaní sa neukladá: keď zdieľaš zdieľanie, nový príspevok
+        preberie zdroj z medzičlánku, takže hĺbka je vždy najviac 1 krok, aj po
+        desiatom preposlaní. Podľa typu medzičlánku:
+
+        - free_post            -> ostáva ako je (už je koreň)
+        - shared_offer         -> preberie jeho ``shared_offer``
+        - shared_portfolio_item-> preberie jeho ``shared_portfolio_item``
+        - shared_feed_post     -> preberie jeho ``shared_feed_post`` (pôvodný
+          voľný príspevok), NIE odkaz na medzičlánok
+
+        Viditeľnosť samotného medzičlánku sa overuje vždy – zdieľať sa dá len
+        to, čo divák reálne vidí – a až potom sa validuje prevzatý koreň.
+
+        Vracia True, keď bol koreň medzičlánku už zmazaný (jeho FK je None):
+        vtedy preberáme denormalizovaný snapshot medzičlánku a živá validácia
+        by nemala čo overiť.
+        """
+        # Medzičlánok musí byť pre zdieľajúceho viditeľný (autor verejný,
+        # aktívny, bez blokovania) – rovnaké pravidlo ako pri ponuke/portfóliu.
+        reason = shared_content_share_block_reason(
+            owner=source.author,
+            author_id=self.author_id,
+            is_hidden=False,
+        )
+        if reason is not None:
+            raise ValidationError(SHARE_REASON_MESSAGES[reason], code=reason)
+
+        if source.post_type == self.PostType.FREE_POST:
+            return False  # zdroj je už koreň
+
+        inherited_id = {
+            self.PostType.SHARED_OFFER: source.shared_offer_id,
+            self.PostType.SHARED_PORTFOLIO_ITEM: source.shared_portfolio_item_id,
+            self.PostType.SHARED_FEED_POST: source.shared_feed_post_id,
+        }[source.post_type]
+
+        self.post_type = source.post_type
+        self.shared_feed_post = None
+        if source.post_type == self.PostType.SHARED_OFFER:
+            self.shared_offer_id = inherited_id
+        elif source.post_type == self.PostType.SHARED_PORTFOLIO_ITEM:
+            self.shared_portfolio_item_id = inherited_id
+        else:
+            self.shared_feed_post_id = inherited_id
+
+        if inherited_id is not None:
+            return False  # koreň žije – doValiduje ho bežná vetva
+
+        self._inherit_orphan_snapshot(source)
+        return True
+
+    def _inherit_orphan_snapshot(self, source) -> None:
+        """Prevezmi snapshot z už osirelého medzičlánku (jeho koreň je zmazaný).
+
+        Blokovanie sa aj tu overuje voči pôvodnému vlastníkovi zo snapshotu –
+        bez toho by sa dal obsah blokovaného človeka vyniesť späť do feedu cez
+        zdieľanie osirelého príspevku (rovnaký dôvod ako
+        ``review_hidden_from_user``).
+        """
+        owner = source.shared_owner
+        if owner is not None:
+            self._apply_shared_owner(owner, is_hidden=False, overwrite=True)
+        else:
+            self.shared_owner_id = None
+            self.shared_owner_display_name = source.shared_owner_display_name
+
+        self.shared_title = source.shared_title
+        self.shared_category = source.shared_category
+        self.shared_thumbnail_key = source.shared_thumbnail_key
+        self.shared_post_caption = source.shared_post_caption
+
+    def _snapshot_from_feed_post(self, post, *, overwrite: bool) -> None:
+        """Snapshot zdieľaného VOĽNÉHO príspevku (vždy koreň, viď _flatten_reshare).
+
+        Vlastníkom je autor pôvodného príspevku – rovnaký koncept „komu obsah
+        patrí" ako ``offer.user`` / ``item.owner``.
+        """
+        self._apply_shared_owner(post.author, is_hidden=False, overwrite=overwrite)
+        if overwrite or not self.shared_post_caption:
+            self.shared_post_caption = (post.caption or "")[:500]
+        if overwrite or not self.shared_thumbnail_key:
+            # Len schválená fotka – pending/rejected sa navonok nezobrazuje.
+            self.shared_thumbnail_key = (
+                post.image_thumbnail_key
+                if post.image_status == self.ImageStatus.APPROVED
+                else ""
             )
 
     def _snapshot_from_offer(self, offer, *, overwrite: bool) -> None:
@@ -333,7 +480,7 @@ class FeedPost(models.Model):
         Vracia mená polí, ktoré prepísal, aby ich ``save()`` vedelo doplniť do
         ``update_fields``.
         """
-        source_fields = ("shared_offer", "shared_portfolio_item")
+        source_fields = ("shared_offer", "shared_portfolio_item", "shared_feed_post")
         if update_fields is not None and not any(
             field in update_fields for field in source_fields
         ):
@@ -341,7 +488,11 @@ class FeedPost(models.Model):
 
         previous = (
             FeedPost.objects.filter(pk=self.pk)
-            .values("shared_offer_id", "shared_portfolio_item_id")
+            .values(
+                "shared_offer_id",
+                "shared_portfolio_item_id",
+                "shared_feed_post_id",
+            )
             .first()
         )
         if previous is None:
@@ -361,6 +512,12 @@ class FeedPost(models.Model):
             self._snapshot_from_portfolio_item(
                 self.shared_portfolio_item, overwrite=True
             )
+            changed = True
+        if (
+            self.shared_feed_post_id is not None
+            and self.shared_feed_post_id != previous["shared_feed_post_id"]
+        ):
+            self._snapshot_from_feed_post(self.shared_feed_post, overwrite=True)
             changed = True
 
         return list(SHARED_SNAPSHOT_FIELDS) if changed else []
@@ -382,11 +539,13 @@ class FeedPost(models.Model):
 
     @property
     def shared_source(self):
-        """Živý zdroj zdieľania (ponuka alebo portfólio položka), alebo None."""
+        """Živý zdroj zdieľania (ponuka, portfólio položka, príspevok) alebo None."""
         if self.post_type == self.PostType.SHARED_OFFER:
             return self.shared_offer
         if self.post_type == self.PostType.SHARED_PORTFOLIO_ITEM:
             return self.shared_portfolio_item
+        if self.post_type == self.PostType.SHARED_FEED_POST:
+            return self.shared_feed_post
         return None
 
     @property

@@ -17,6 +17,7 @@ voliteľná – validný stav), fotka sa naň pripája existujúcim upload flow
 z Fázy 1 (upload-init/upload-complete berú post_id) – žiadny draft mechanizmus.
 """
 
+import logging
 from datetime import timedelta
 
 from django.contrib.auth import get_user_model
@@ -54,7 +55,11 @@ from ..models import (
 )
 from ..services.feed_share_visibility import SHARE_REASON_MESSAGES
 from ..services.feed_tagging import apply_feed_post_tags
+from ..services.notifications import create_feed_post_shared_notification
 from ..services.user_blocks import exclude_blocked_users, user_block_exists_between
+
+
+logger = logging.getLogger(__name__)
 
 
 class FeedCursorPagination(CursorPagination):
@@ -144,6 +149,7 @@ def _annotated_queryset():
             "author",
             "shared_offer",
             "shared_portfolio_item",
+            "shared_feed_post",
             "shared_owner",
         )
         .prefetch_related(
@@ -265,6 +271,25 @@ def _parse_optional_id(value):
     return parsed if parsed > 0 else None
 
 
+def _notify_shared_owner(post, actor) -> None:
+    """Notifikuj vlastníka koreňového obsahu, že ho niekto zdieľal ďalej.
+
+    Zlyhanie notifikácie nesmie zhodiť už vytvorený príspevok – rovnaký vzor
+    ako notify_*_about_like vo feed_interactions.
+    """
+    try:
+        create_feed_post_shared_notification(post=post, actor=actor)
+    except Exception:
+        logger.exception(
+            "Feed post share notification dispatch failed",
+            extra={
+                "post_id": getattr(post, "id", None),
+                "shared_owner_id": getattr(post, "shared_owner_id", None),
+                "actor_id": getattr(actor, "id", None),
+            },
+        )
+
+
 def _create_feed_post(request) -> Response:
     post_type = str(request.data.get("post_type") or "").strip()
     if post_type not in FeedPost.PostType.values:
@@ -273,11 +298,17 @@ def _create_feed_post(request) -> Response:
     caption = str(request.data.get("caption") or "").strip()
     offer_id = _parse_optional_id(request.data.get("shared_offer_id"))
     item_id = _parse_optional_id(request.data.get("shared_portfolio_item_id"))
+    post_id = _parse_optional_id(request.data.get("shared_feed_post_id"))
+    provided_sources = [value for value in (offer_id, item_id, post_id) if value]
 
     # Kombinácie typ ↔ zdroj odmietni skôr, než by ich zrazil DB constraint
     # (IntegrityError by bola nič nehovoriaca 500-ka).
+    if len(provided_sources) > 1:
+        return _bad_request(
+            "Zdielat mozno len jeden zdroj naraz.", "unexpected_shared_source"
+        )
     if post_type == FeedPost.PostType.FREE_POST:
-        if offer_id or item_id:
+        if provided_sources:
             return _bad_request(
                 "Volny prispevok nemoze zdielat obsah.", "unexpected_shared_source"
             )
@@ -286,26 +317,24 @@ def _create_feed_post(request) -> Response:
                 "Volny prispevok musi mat text.", "caption_required"
             )
     elif post_type == FeedPost.PostType.SHARED_OFFER:
-        if item_id:
-            return _bad_request(
-                "Zdielanie ponuky nemoze niest portfolio.", "unexpected_shared_source"
-            )
         if not offer_id:
             return _bad_request(
                 "Chyba shared_offer_id.", "shared_source_required"
             )
-    else:  # SHARED_PORTFOLIO_ITEM
-        if offer_id:
-            return _bad_request(
-                "Zdielanie portfolia nemoze niest ponuku.", "unexpected_shared_source"
-            )
+    elif post_type == FeedPost.PostType.SHARED_PORTFOLIO_ITEM:
         if not item_id:
             return _bad_request(
                 "Chyba shared_portfolio_item_id.", "shared_source_required"
             )
+    else:  # SHARED_FEED_POST
+        if not post_id:
+            return _bad_request(
+                "Chyba shared_feed_post_id.", "shared_source_required"
+            )
 
     shared_offer = None
     shared_item = None
+    shared_post = None
     if offer_id:
         shared_offer = OfferedSkill.objects.filter(pk=offer_id).first()
         if shared_offer is None:
@@ -315,6 +344,19 @@ def _create_feed_post(request) -> Response:
 
         shared_item = PortfolioItem.objects.filter(pk=item_id).first()
         if shared_item is None:
+            return _shared_source_missing_response()
+    if post_id:
+        # Zdroj musí byť pre zdieľajúceho viditeľný – neviditeľný príspevok
+        # vráti rovnakú hlášku ako neexistujúci (ochrana proti enumeration).
+        shared_post = (
+            visible_feed_posts(
+                request.user,
+                queryset=FeedPost.objects.select_related("author", "shared_owner"),
+            )
+            .filter(pk=post_id)
+            .first()
+        )
+        if shared_post is None:
             return _shared_source_missing_response()
 
     tagged_user_ids = request.data.get("tagged_user_ids") or []
@@ -333,8 +375,15 @@ def _create_feed_post(request) -> Response:
                 caption=caption,
                 shared_offer=shared_offer,
                 shared_portfolio_item=shared_item,
+                shared_feed_post=shared_post,
             )
             apply_feed_post_tags(post, tagged_user_ids)
+            if post.post_type != FeedPost.PostType.FREE_POST:
+                transaction.on_commit(
+                    lambda created_post=post: _notify_shared_owner(
+                        created_post, request.user
+                    )
+                )
     except ValidationError as exc:
         # Modelová validácia (viditeľnosť zdieľania, dĺžka textu) a tagovanie
         # (blokovanie, limit) – zrozumiteľná 400-ka s kódom, nie 500.
