@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import toast from 'react-hot-toast';
 import { XMarkIcon, ExclamationTriangleIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { api, endpoints } from '@/lib/api';
@@ -56,6 +57,11 @@ export function ReportUserModal({
     }
   }, [open]);
 
+  // Dôvod „iné" nenesie sám o sebe informáciu – bez popisu nemá moderátor
+  // z čoho vychádzať, preto je popis pri ňom povinný (rovnako vynucuje BE).
+  const descriptionRequired = reason === 'other';
+  const descriptionMissing = descriptionRequired && !description.trim();
+
   const handleBackdropClick = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget && !isSubmitting) onClose();
   };
@@ -71,6 +77,7 @@ export function ReportUserModal({
         reason,
         description: description.trim() || undefined,
       });
+      toast.success(t('reports.submitSuccess', 'Nahlásenie bolo úspešne odoslané.'));
       await onSuccess?.();
       onClose();
     } catch (err: unknown) {
@@ -169,7 +176,10 @@ export function ReportUserModal({
                 htmlFor="report-description"
                 className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
               >
-                {t('reviews.reportDescription', 'Popis')} ({t('common.optional', 'nepovinné')})
+                {t('reviews.reportDescription', 'Popis')}{' '}
+                {descriptionRequired
+                  ? '*'
+                  : `(${t('common.optional', 'nepovinné')})`}
               </label>
               <textarea
                 id="report-description"
@@ -199,7 +209,7 @@ export function ReportUserModal({
             <button
               type="button"
               onClick={handleSubmit}
-              disabled={isSubmitting}
+              disabled={isSubmitting || descriptionMissing}
               className="px-4 py-2.5 rounded-lg bg-purple-600 text-white font-medium hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
             >
               {isSubmitting ? (

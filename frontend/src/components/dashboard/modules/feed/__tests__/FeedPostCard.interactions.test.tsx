@@ -38,6 +38,36 @@ jest.mock('@/contexts/LanguageContext', () => ({
   useLanguage: () => ({ t: (_k: string, fallback: string) => fallback, locale: 'sk' }),
 }));
 
+jest.mock('../../messages/DesktopEmojiPickerButton', () => ({
+  DesktopEmojiPickerButton: ({
+    ariaLabel,
+    onSelect,
+  }: {
+    ariaLabel: string;
+    onSelect: (emoji: string) => void;
+  }) => (
+    <button type="button" aria-label={ariaLabel} onClick={() => onSelect('🙂')}>
+      emoji
+    </button>
+  ),
+}));
+
+jest.mock('../../messages/GroupUserPicker', () => ({
+  GroupUserPicker: ({
+    onSelectedUsersChange,
+  }: {
+    onSelectedUsersChange?: (users: Array<{ id: number }>) => void;
+  }) => (
+    <button
+      type="button"
+      data-testid="mock-user-picker"
+      onClick={() => onSelectedUsersChange?.([{ id: 77 }])}
+    >
+      pick
+    </button>
+  ),
+}));
+
 jest.mock('framer-motion', () => ({
   motion: {
     article: ({ children, ...props }: React.ComponentProps<'article'>) => (
@@ -217,7 +247,6 @@ describe('FeedPostCard – komentáre', () => {
       previous: null,
     });
     mockedDeleteComment.mockResolvedValue(undefined);
-    jest.spyOn(window, 'confirm').mockReturnValue(true);
 
     render(<FeedPostCard post={makePost()} />);
     await userEvent.click(screen.getByTestId('feed-comments-button'));
@@ -230,6 +259,12 @@ describe('FeedPostCard – komentáre', () => {
     expect(deleteButtons).toHaveLength(1);
 
     await userEvent.click(deleteButtons[0]);
+
+    // Natívny confirm nahradený appkovým dialógom (vzor DeleteMessageConfirmModal).
+    const dialog = await screen.findByTestId('feed-comment-delete-confirm');
+    await userEvent.click(
+      within(dialog).getByTestId('feed-comment-delete-confirm-action'),
+    );
     expect(mockedDeleteComment).toHaveBeenCalledWith(1, 6);
   });
 
@@ -284,6 +319,20 @@ describe('FeedPostCard – nahlásenie', () => {
     expect(trigger).toHaveFocus();
   });
 
+  it('requires a description when the reason is "other"', async () => {
+    render(<FeedPostCard post={makePost()} />);
+    const modal = await openReport();
+
+    await userEvent.click(within(modal).getByRole('radio', { name: 'Iné' }));
+
+    const submit = within(modal).getByRole('button', { name: 'Odoslať' });
+    expect(submit).toBeDisabled();
+    expect(within(modal).getByText(/Popis\s*\*/)).toBeInTheDocument();
+
+    await userEvent.type(within(modal).getByRole('textbox'), 'Podvod');
+    expect(submit).toBeEnabled();
+  });
+
   it('submits a report and confirms with a toast', async () => {
     mockedReport.mockResolvedValue(undefined);
     render(<FeedPostCard post={makePost()} />);
@@ -336,7 +385,7 @@ describe('FeedPostCard – zdieľanie ďalej', () => {
       await userEvent.click(within(modal).getByRole('button', { name: 'Zdieľať' }));
     });
 
-    expect(mockedShare).toHaveBeenCalledWith(1, 'Pozrite');
+    expect(mockedShare).toHaveBeenCalledWith(1, 'Pozrite', []);
     expect(toastSuccess).toHaveBeenCalled();
   });
 
@@ -352,7 +401,94 @@ describe('FeedPostCard – zdieľanie ďalej', () => {
       await userEvent.click(within(modal).getByRole('button', { name: 'Zdieľať' }));
     });
 
-    expect(mockedShare).toHaveBeenCalledWith(1, '');
+    expect(mockedShare).toHaveBeenCalledWith(1, '', []);
+  });
+});
+
+describe('FeedPostCard – kompaktný náhľad ponuky', () => {
+  const offerPost = makePost({
+    id: 11,
+    post_type: 'shared_offer',
+    shared_content: {
+      type: 'offer',
+      title: 'Programovanie',
+      category: 'it-a-technologie',
+      caption: '',
+      id: 42,
+      owner: { ...author, id: 30, display_name: 'Peter Malý', slug: 'peter' },
+      owner_display_name: 'Peter Malý',
+      thumbnail_url: null,
+      is_seeking: false,
+      price_negotiable: false,
+      price_from: '25',
+      price_currency: '€',
+    },
+  });
+
+  it('shows type, title, owner and price in one compact row', () => {
+    render(<FeedPostCard post={offerPost} />);
+
+    const preview = screen.getByTestId('feed-shared-compact-preview');
+    expect(within(preview).getByText('Ponúkam')).toBeInTheDocument();
+    expect(within(preview).getByText('Programovanie')).toBeInTheDocument();
+    expect(within(preview).getByText('Peter Malý')).toBeInTheDocument();
+    expect(within(preview).getByText(/25/)).toBeInTheDocument();
+  });
+
+  it('renders the seeking label and negotiable price', () => {
+    render(
+      <FeedPostCard
+        post={makePost({
+          ...offerPost,
+          shared_content: {
+            ...offerPost.shared_content!,
+            is_seeking: true,
+            price_negotiable: true,
+            price_from: null,
+          },
+        })}
+      />,
+    );
+
+    const preview = screen.getByTestId('feed-shared-compact-preview');
+    expect(within(preview).getByText('Hľadám')).toBeInTheDocument();
+    expect(within(preview).getByText('Dohodou')).toBeInTheDocument();
+  });
+
+  it('opens the source when the preview is clicked', async () => {
+    const listener = jest.fn();
+    window.addEventListener('goToUserProfile', listener);
+    render(<FeedPostCard post={offerPost} />);
+
+    await userEvent.click(screen.getByTestId('feed-shared-compact-preview'));
+
+    expect(listener).toHaveBeenCalled();
+    window.removeEventListener('goToUserProfile', listener);
+  });
+});
+
+describe('FeedPostCard – self-share', () => {
+  it('shows a single neutral header instead of repeating the author', () => {
+    const selfShared = makePost({
+      id: 8,
+      post_type: 'shared_feed_post',
+      shared_content: {
+        type: 'feed_post',
+        title: '',
+        category: '',
+        caption: 'Môj pôvodný text',
+        id: 4,
+        owner: author,
+        owner_display_name: author.display_name,
+        thumbnail_url: null,
+      },
+    });
+
+    render(<FeedPostCard post={selfShared} />);
+
+    expect(screen.getByText('Znovu zdieľané')).toBeInTheDocument();
+    // Meno sa objaví raz (hlavička karty), nie druhýkrát vo vnorenom náhľade.
+    expect(screen.getAllByText(author.display_name)).toHaveLength(1);
   });
 });
 

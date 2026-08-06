@@ -50,6 +50,11 @@ export default function FeedPostReportModal({
     }
   }, [open]);
 
+  // Dôvod „iné" nenesie sám o sebe informáciu – bez popisu nemá moderátor
+  // z čoho vychádzať, preto je popis pri ňom povinný (rovnako vynucuje BE).
+  const descriptionRequired = reason === 'other';
+  const descriptionMissing = descriptionRequired && !description.trim();
+
   const dialogRef = useFeedDialog({ open, onClose, canClose: !submitting });
 
   if (!open || !mounted || typeof document === 'undefined') return null;
@@ -150,7 +155,10 @@ export default function FeedPostReportModal({
               htmlFor="feed-report-description"
               className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
             >
-              {t('feed.reportDescription', 'Popis')} ({t('common.optional', 'nepovinné')})
+              {t('feed.reportDescription', 'Popis')}{' '}
+              {descriptionRequired
+                ? '*'
+                : `(${t('common.optional', 'nepovinné')})`}
             </label>
             <textarea
               id="feed-report-description"
@@ -175,7 +183,7 @@ export default function FeedPostReportModal({
             <button
               type="button"
               onClick={() => void handleSubmit()}
-              disabled={submitting}
+              disabled={submitting || descriptionMissing}
               className="rounded-lg bg-purple-600 px-4 py-2.5 font-medium text-white transition-colors hover:bg-purple-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {submitting

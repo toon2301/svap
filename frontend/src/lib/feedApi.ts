@@ -10,7 +10,11 @@
 import { api, endpoints } from '@/lib/api';
 import { getConfiguredApiUrl } from '@/lib/apiUrl';
 
-export type FeedPostType = 'free_post' | 'shared_offer' | 'shared_portfolio_item';
+export type FeedPostType =
+  | 'free_post'
+  | 'shared_offer'
+  | 'shared_portfolio_item'
+  | 'shared_feed_post';
 export type FeedImageStatus = 'pending' | 'approved' | 'rejected' | '';
 
 export type FeedUserSummary = {
@@ -42,6 +46,11 @@ export type FeedSharedContent = {
   owner: FeedUserSummary | null;
   owner_display_name: string;
   thumbnail_url: string | null;
+  /** Len pre živú zdieľanú ponuku (kompaktný náhľad); inak null. */
+  is_seeking: boolean | null;
+  price_negotiable: boolean | null;
+  price_from: string | null;
+  price_currency: string;
 };
 
 export type FeedPost = {
@@ -234,11 +243,13 @@ export async function reportFeedPost(
 export async function shareFeedPost(
   postId: number,
   caption = '',
+  taggedUserIds: number[] = [],
 ): Promise<FeedPost> {
   const { data } = await api.post<FeedPost>(endpoints.feed.posts, {
     post_type: 'shared_feed_post',
     shared_feed_post_id: postId,
     caption,
+    tagged_user_ids: taggedUserIds,
   });
   return data;
 }

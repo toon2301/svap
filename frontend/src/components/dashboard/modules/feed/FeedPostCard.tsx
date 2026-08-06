@@ -109,7 +109,15 @@ function ActionButton({
   );
 }
 
-function SharedContentPreview({ post }: { post: FeedPost }) {
+function SharedContentPreview({
+  post,
+  hideOwner = false,
+  onOpenSource,
+}: {
+  post: FeedPost;
+  hideOwner?: boolean;
+  onOpenSource?: () => void;
+}) {
   const { t } = useLanguage();
   const shared = post.shared_content;
   if (!shared) return null;
@@ -159,16 +167,18 @@ function SharedContentPreview({ post }: { post: FeedPost }) {
         data-testid="feed-shared-post-preview"
         className="rounded-xl border border-purple-200/70 bg-white/80 p-3 dark:border-purple-800/40 dark:bg-black/20"
       >
-        <div className="flex items-center gap-2">
-          <InitialsAvatar
-            name={shared.owner_display_name}
-            avatarUrl={shared.owner?.avatar_url}
-            size="xs"
-          />
-          <span className="truncate text-sm font-semibold text-gray-900 dark:text-white">
-            {shared.owner_display_name}
-          </span>
-        </div>
+        {hideOwner ? null : (
+          <div className="flex items-center gap-2">
+            <InitialsAvatar
+              name={shared.owner_display_name}
+              avatarUrl={shared.owner?.avatar_url}
+              size="xs"
+            />
+            <span className="truncate text-sm font-semibold text-gray-900 dark:text-white">
+              {shared.owner_display_name}
+            </span>
+          </div>
+        )}
         {shared.caption ? (
           <p className="mt-2 line-clamp-4 whitespace-pre-wrap break-words text-sm text-gray-700 dark:text-gray-200">
             {shared.caption}
@@ -186,35 +196,71 @@ function SharedContentPreview({ post }: { post: FeedPost }) {
     );
   }
 
+  // Kompaktný náhľad podľa vzoru OfferShareMessageCard z messages: nízky
+  // horizontálny riadok s malým obrázkom, celý klikateľný. Fialový obal karty
+  // aj „výmena ďalej" hlavička ostávajú – mení sa len tento vnútorný náhľad.
+  const isOffer = shared.type === 'offer';
+  const priceLabel = shared.price_negotiable
+    ? t('skills.priceNegotiable', 'Dohodou')
+    : shared.price_from
+      ? `${Number(shared.price_from).toLocaleString('sk-SK', {
+          minimumFractionDigits: 0,
+          maximumFractionDigits: 2,
+        })} ${shared.price_currency || '€'}`
+      : null;
+
   return (
-    <div className="flex items-center gap-3 rounded-xl border border-purple-200/70 bg-white/80 p-3 dark:border-purple-800/40 dark:bg-black/20">
+    <button
+      type="button"
+      onClick={onOpenSource}
+      disabled={!onOpenSource}
+      data-testid="feed-shared-compact-preview"
+      className="flex w-full items-center gap-3 rounded-xl border border-purple-200/70 bg-white/80 p-2.5 text-left transition-colors hover:bg-white disabled:cursor-default dark:border-purple-800/40 dark:bg-black/20 dark:hover:bg-black/30"
+    >
       {shared.thumbnail_url ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={shared.thumbnail_url}
-          alt={shared.title}
-          className="h-14 w-14 shrink-0 rounded-lg object-cover"
+          alt=""
+          className="h-12 w-12 shrink-0 rounded-lg object-cover"
         />
       ) : (
-        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-purple-100 text-purple-500 dark:bg-purple-900/40 dark:text-purple-300">
+        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-purple-100 text-purple-500 dark:bg-purple-900/40 dark:text-purple-300">
           <ExchangeIcon />
-        </div>
+        </span>
       )}
-      <div className="min-w-0">
-        <p className="truncate text-sm font-semibold text-gray-900 dark:text-white">
-          {shared.title}
-        </p>
-        {shared.owner_display_name ? (
-          <p className="truncate text-xs text-gray-500 dark:text-gray-400">
-            {shared.owner_display_name}
-          </p>
+      <span className="min-w-0 flex-1">
+        {isOffer && shared.is_seeking !== null ? (
+          <span className="block text-[10px] font-black uppercase tracking-[0.12em] text-purple-600 dark:text-purple-300">
+            {shared.is_seeking
+              ? t('skills.search', 'Hľadám')
+              : t('skills.offering', 'Ponúkam')}
+          </span>
         ) : null}
-      </div>
-    </div>
+        <span className="block truncate text-sm font-semibold text-gray-900 dark:text-white">
+          {shared.title}
+        </span>
+        <span className="block truncate text-xs text-gray-500 dark:text-gray-400">
+          {shared.owner_display_name}
+        </span>
+      </span>
+      {priceLabel ? (
+        <span className="shrink-0 rounded-md border border-purple-100 bg-purple-50 px-1.5 py-0.5 text-xs font-bold tabular-nums text-purple-700 dark:border-purple-800/30 dark:bg-purple-900/20 dark:text-purple-300">
+          {priceLabel}
+        </span>
+      ) : null}
+    </button>
   );
 }
 
-export default function FeedPostCard({ post }: { post: FeedPost }) {
+export default function FeedPostCard({
+  post,
+  initialCommentsOpen = false,
+}: {
+  post: FeedPost;
+  /** Permalink detail otvára komentáre rovno (viď FeedPostDetailModule). */
+  initialCommentsOpen?: boolean;
+}) {
   const { t, locale } = useLanguage();
   const isShared = post.post_type !== 'free_post';
   const authorName = post.author?.display_name || '';
@@ -227,7 +273,7 @@ export default function FeedPostCard({ post }: { post: FeedPost }) {
   const [isLiked, setIsLiked] = useState(post.is_liked_by_me);
   const [likesCount, setLikesCount] = useState(post.likes_count);
   const [commentsCount, setCommentsCount] = useState(post.comments_count);
-  const [commentsOpen, setCommentsOpen] = useState(false);
+  const [commentsOpen, setCommentsOpen] = useState(initialCommentsOpen);
   const [menuOpen, setMenuOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
@@ -285,6 +331,33 @@ export default function FeedPostCard({ post }: { post: FeedPost }) {
     }
   };
 
+  // Self-share: zdieľajúci JE pôvodný autor. Bez tejto vetvy sa to isté meno
+  // zobrazí dvakrát pod sebou (hlavička + vnorený náhľad), čo pôsobí ako chyba.
+  const isSelfShare =
+    isShared &&
+    post.shared_content?.owner?.id != null &&
+    post.shared_content.owner.id === post.author?.id;
+
+  // Preklik na zdroj – rovnaký mechanizmus, aký používa OfferShareMessageCard
+  // v správach (globálny event, ktorý Dashboard preloží na navigáciu).
+  const sharedOwnerIdentifier =
+    (post.shared_content?.owner?.slug || '').trim() ||
+    String(post.shared_content?.owner?.id || '');
+  const handleOpenSharedSource =
+    post.shared_content?.id && sharedOwnerIdentifier
+      ? () => {
+          if (typeof window === 'undefined') return;
+          window.dispatchEvent(
+            new CustomEvent('goToUserProfile', {
+              detail: {
+                identifier: sharedOwnerIdentifier,
+                offerId: post.shared_content?.id,
+              },
+            }),
+          );
+        }
+      : undefined;
+
   const sharedHeadline =
     post.shared_content?.type === 'portfolio_item'
       ? t('feed.sharesPortfolioOnward', '{name} zdieľa portfólio ďalej')
@@ -312,7 +385,9 @@ export default function FeedPostCard({ post }: { post: FeedPost }) {
             <ExchangeIcon />
           </span>
           <span className="truncate">
-            {sharedHeadline.replace('{name}', authorName)}
+            {isSelfShare
+              ? t('feed.resharedOwn', 'Znovu zdieľané')
+              : sharedHeadline.replace('{name}', authorName)}
           </span>
         </div>
       ) : null}
@@ -421,7 +496,13 @@ export default function FeedPostCard({ post }: { post: FeedPost }) {
       ) : null}
 
       <div className="space-y-3 px-4 py-3">
-        {isShared ? <SharedContentPreview post={post} /> : null}
+        {isShared ? (
+          <SharedContentPreview
+            post={post}
+            hideOwner={isSelfShare}
+            onOpenSource={handleOpenSharedSource}
+          />
+        ) : null}
 
         {post.caption ? (
           <p className="whitespace-pre-wrap break-words text-sm text-gray-800 dark:text-gray-100">

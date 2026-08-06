@@ -241,6 +241,26 @@ export default function NotificationItem({
               'notifications.profileLikedBody',
               '{name} oznacil tvoj profil ako paci sa mi.',
             ).replace('{name}', actorName)
+        // Feed typy majú vetu tu, nie z BE: notification.body sa ukladá v čase
+        // vzniku v jednom jazyku, takže by príjemcovi prišla vždy po slovensky.
+        : notification.type === 'feed_post_liked'
+          ? t('notifications.feedPostLikedBody', '{name} lajkol tvoj príspevok.')
+              .replace('{name}', actorName)
+        : notification.type === 'feed_post_commented'
+          ? t(
+              'notifications.feedPostCommentedBody',
+              '{name} komentoval tvoj príspevok.',
+            ).replace('{name}', actorName)
+        : notification.type === 'feed_post_tagged'
+          ? t(
+              'notifications.feedPostTaggedBody',
+              '{name} ťa označil v príspevku.',
+            ).replace('{name}', actorName)
+        : notification.type === 'feed_post_shared'
+          ? t(
+              'notifications.feedPostSharedBody',
+              '{name} zdieľal tvoj obsah ďalej.',
+            ).replace('{name}', actorName)
         : notification.body ||
           t('notifications.genericBody', 'Otvorte upozornenie pre viac detailov.');
   const highlightedBody = highlightActorName(body, actorName);

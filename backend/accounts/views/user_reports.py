@@ -12,6 +12,10 @@ from django.contrib.auth import get_user_model
 from swaply.rate_limiting import api_rate_limit
 
 from ..models import UserReport
+from ..services.report_validation import (
+    description_required_response,
+    requires_description,
+)
 
 User = get_user_model()
 
@@ -72,6 +76,9 @@ def user_report_view(request, user_id: int):
             {"error": "Popis môže mať maximálne 2000 znakov."},
             status=status.HTTP_400_BAD_REQUEST,
         )
+
+    if requires_description(reason) and not description:
+        return description_required_response()
 
     UserReport.objects.create(
         reported_user=reported_user,

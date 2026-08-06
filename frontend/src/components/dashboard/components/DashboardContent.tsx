@@ -69,6 +69,7 @@ interface DashboardContentProps {
   /** ID karty (ponuky) pre view recenziÃ­ (/dashboard/offers/[offerId]/reviews). */
   initialOfferId?: number | null;
   initialPortfolioItemId?: number | null;
+  initialFeedPostId?: number | null;
 }
 
 function getDashboardModuleFromTarget(targetUrl: string): string | null {
@@ -185,6 +186,7 @@ export default function DashboardContent({
   initialRightItem,
   initialOfferId,
   initialPortfolioItemId,
+  initialFeedPostId,
 }: DashboardContentProps) {
   const router = useRouter();
   const { t } = useLanguage();
@@ -195,6 +197,11 @@ export default function DashboardContent({
   // OdvodiÅ¥ offerId pre recenzie z URL (fix: client-side navigÃ¡cia bez full reloadu)
   const offerIdFromReviewsPath = React.useMemo(() => {
     const m = pathname?.match(/^\/dashboard\/offers\/(\d+)\/reviews\/?$/);
+    return m ? Number(m[1]) : null;
+  }, [pathname]);
+
+  const feedPostIdFromPath = React.useMemo(() => {
+    const m = pathname?.match(/^\/dashboard\/feed\/(\d+)\/?$/);
     return m ? Number(m[1]) : null;
   }, [pathname]);
 
@@ -859,6 +866,7 @@ export default function DashboardContent({
 
   // Sync modulu a offerId pri URL /dashboard/offers/[id]/reviews (client-side navigÃ¡cia bez reloadu)
   const effectiveOfferIdForReviews = initialOfferId ?? offerIdFromReviewsPath ?? null;
+  const effectiveFeedPostId = initialFeedPostId ?? feedPostIdFromPath ?? null;
   const effectivePortfolioItemId =
     initialPortfolioItemId ?? portfolioItemIdFromPath ?? null;
   const effectivePortfolioOwnerIdentifier =
@@ -940,6 +948,12 @@ export default function DashboardContent({
       setActiveModule('portfolio-detail');
     }
   }, [portfolioItemIdFromPath, setActiveModule]);
+
+  useEffect(() => {
+    if (feedPostIdFromPath != null && Number.isFinite(feedPostIdFromPath)) {
+      setActiveModule('feed-post-detail');
+    }
+  }, [feedPostIdFromPath, setActiveModule]);
 
   useEffect(() => {
     if (portfolioCreateMatch) {
@@ -1330,6 +1344,7 @@ export default function DashboardContent({
       onSkillsSearchClick={navigation.handleSkillsSearchClick}
       onSkillsModeToggle={handleSkillsModeToggle}
       offerIdForReviews={effectiveOfferIdForReviews}
+      feedPostIdForDetail={effectiveFeedPostId}
       portfolioItemIdForDetail={
         effectivePortfolioItemId != null && Number.isFinite(effectivePortfolioItemId)
           ? effectivePortfolioItemId

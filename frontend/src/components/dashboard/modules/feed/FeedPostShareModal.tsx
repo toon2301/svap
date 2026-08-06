@@ -14,9 +14,15 @@ import { XMarkIcon } from '@heroicons/react/24/outline';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useFeedDialog } from './useFeedDialog';
 import InitialsAvatar from '@/components/shared/InitialsAvatar';
+import { DesktopEmojiPickerButton } from '../messages/DesktopEmojiPickerButton';
+import { GroupUserPicker } from '../messages/GroupUserPicker';
+import type { GroupMemberCandidate } from '../messages/types';
+import { useEmojiInsertion } from './useEmojiInsertion';
 import { shareFeedPost, type FeedPost } from '@/lib/feedApi';
 
 const SHARE_CAPTION_MAX_LENGTH = 500;
+/** Zhodné s MAX_FEED_POST_TAGS na backende – limit validuje aj BE. */
+const MAX_FEED_POST_TAGS = 10;
 
 type FeedPostShareModalProps = {
   open: boolean;
@@ -34,11 +40,15 @@ export default function FeedPostShareModal({
   const { t } = useLanguage();
   const [mounted, setMounted] = useState(false);
   const [caption, setCaption] = useState('');
+  const [taggedUsers, setTaggedUsers] = useState<GroupMemberCandidate[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const { textareaRef, insertEmoji } = useEmojiInsertion(caption, setCaption);
 
   useEffect(() => setMounted(true), []);
   useEffect(() => {
-    if (open) setCaption('');
+    if (!open) return;
+    setCaption('');
+    setTaggedUsers([]);
   }, [open]);
 
   const dialogRef = useFeedDialog({ open, onClose, canClose: !submitting });
@@ -61,7 +71,11 @@ export default function FeedPostShareModal({
     if (tooLong || submitting) return;
     setSubmitting(true);
     try {
-      const created = await shareFeedPost(post.id, caption.trim());
+      const created = await shareFeedPost(
+        post.id,
+        caption.trim(),
+        taggedUsers.map((user) => user.id),
+      );
       toast.success(t('feed.shareSuccess', 'Príspevok bol zdieľaný.'));
       onShared?.(created);
       onClose();
@@ -112,6 +126,7 @@ export default function FeedPostShareModal({
           </div>
 
           <textarea
+            ref={textareaRef}
             value={caption}
             onChange={(event) => setCaption(event.target.value)}
             rows={3}
@@ -120,10 +135,36 @@ export default function FeedPostShareModal({
             aria-label={t('feed.shareCaptionPlaceholder', 'Pridaj vlastný komentár...')}
             className="w-full resize-y rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-400/60 disabled:opacity-50 dark:border-gray-600 dark:bg-gray-900/50 dark:text-white dark:placeholder-gray-500"
           />
-          <div className="mt-1 text-right text-xs tabular-nums text-gray-400 dark:text-gray-500">
-            <span className={tooLong ? 'font-semibold text-red-600 dark:text-red-400' : ''}>
-              {caption.length}/{SHARE_CAPTION_MAX_LENGTH}
+          <div className="mt-1 flex items-center justify-between gap-3">
+            <DesktopEmojiPickerButton
+              ariaLabel={t('feed.emojiPicker', 'Pridať emoji')}
+              disabled={submitting}
+              onSelect={insertEmoji}
+              className="rounded-full p-1.5 text-gray-400 hover:bg-gray-100 hover:text-purple-600 dark:hover:bg-gray-800 dark:hover:text-purple-300"
+            />
+            <span className="text-xs tabular-nums text-gray-400 dark:text-gray-500">
+              <span className={tooLong ? 'font-semibold text-red-600 dark:text-red-400' : ''}>
+                {caption.length}/{SHARE_CAPTION_MAX_LENGTH}
+              </span>
             </span>
+          </div>
+
+          {/* Označenie ľudí – rovnaký picker, aký používa zdieľanie ponuky do
+              správ (OfferShareModal). Voliteľné; limit aj blokovanie validuje BE. */}
+          <div className="mt-3" data-testid="feed-share-tag-picker">
+            <p className="mb-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">
+              {t('feed.shareTagPeople', 'Označiť ľudí')}{' '}
+              <span className="font-normal text-gray-400 dark:text-gray-500">
+                ({t('common.optional', 'nepovinné')})
+              </span>
+            </p>
+            <GroupUserPicker
+              selectedUsers={taggedUsers}
+              maxSelected={MAX_FEED_POST_TAGS}
+              disabled={submitting}
+              placeholder={t('feed.shareTagPlaceholder', 'Hľadať používateľov...')}
+              onSelectedUsersChange={setTaggedUsers}
+            />
           </div>
 
           {/* Náhľad zdieľaného obsahu – rovnaký fialový obal ako na karte. */}
