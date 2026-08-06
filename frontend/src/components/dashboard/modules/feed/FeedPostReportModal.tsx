@@ -12,6 +12,7 @@ import { ExclamationTriangleIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useFeedDialog } from './useFeedDialog';
 import { reportFeedPost } from '@/lib/feedApi';
+import { translateReportError } from '@/lib/reportErrors';
 
 // Zhodné hodnoty ako ReportReviewModal/ReportPhotoModal; „falošná recenzia"
 // na príspevok nesedí, preto je namiesto nej obťažovanie.
@@ -72,10 +73,9 @@ export default function FeedPostReportModal({
     } catch (err) {
       // Duplicitné nahlásenie vracia BE ako friendly 400 – ukáž ho ako toast,
       // nie ako neošetrenú chybu.
-      const message =
-        (err as { response?: { data?: { error?: string } } })?.response?.data
-          ?.error || t('feed.reportError', 'Nahlásenie sa nepodarilo.');
-      toast.error(message);
+      toast.error(
+        translateReportError(t, err, t('feed.reportError', 'Nahlásenie sa nepodarilo.')),
+      );
       onClose();
     } finally {
       setSubmitting(false);
@@ -162,6 +162,7 @@ export default function FeedPostReportModal({
             </label>
             <textarea
               id="feed-report-description"
+              aria-required={descriptionRequired}
               value={description}
               onChange={(event) => setDescription(event.target.value)}
               rows={3}

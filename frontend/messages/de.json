@@ -4391,6 +4391,7 @@
     "timeMinutesShort": "Min."
   },
   "reports": {
+    "descriptionRequired": "Bei „Sonstiges“ ist eine Beschreibung erforderlich.",
     "submitSuccess": "Deine Meldung wurde gesendet."
   }
 }

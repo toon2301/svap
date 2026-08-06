@@ -68,6 +68,11 @@ jest.mock('../../messages/GroupUserPicker', () => ({
   ),
 }));
 
+const mockRouterPush = jest.fn();
+jest.mock('next/navigation', () => ({
+  useRouter: () => ({ push: mockRouterPush }),
+}));
+
 jest.mock('framer-motion', () => ({
   motion: {
     article: ({ children, ...props }: React.ComponentProps<'article'>) => (
@@ -131,6 +136,7 @@ beforeEach(() => {
   ].forEach((mock) => mock.mockReset());
   toastError.mockReset();
   toastSuccess.mockReset();
+  mockRouterPush.mockReset();
   mockedListComments.mockResolvedValue({ results: [], next: null, previous: null });
 });
 
@@ -386,6 +392,27 @@ describe('FeedPostCard – zdieľanie ďalej', () => {
     });
 
     expect(mockedShare).toHaveBeenCalledWith(1, 'Pozrite', []);
+  });
+
+  it('sends selected tagged users with the share', async () => {
+    mockedShare.mockResolvedValue(makePost({ id: 98 }));
+    render(<FeedPostCard post={makePost()} />);
+
+    await act(async () => {
+      await userEvent.click(screen.getByTestId('feed-share-button'));
+    });
+    const modal = screen.getByTestId('feed-share-modal');
+
+    await userEvent.type(within(modal).getByRole('textbox'), 'Pozrite');
+    // Samostatné act-y: výber musí byť commitnutý skôr, než handler prečíta stav.
+    await act(async () => {
+      await userEvent.click(within(modal).getByTestId('mock-user-picker'));
+    });
+    await act(async () => {
+      await userEvent.click(within(modal).getByRole('button', { name: 'Zdieľať' }));
+    });
+
+    expect(mockedShare).toHaveBeenCalledWith(1, 'Pozrite', [77]);
     expect(toastSuccess).toHaveBeenCalled();
   });
 
@@ -453,6 +480,38 @@ describe('FeedPostCard – kompaktný náhľad ponuky', () => {
     const preview = screen.getByTestId('feed-shared-compact-preview');
     expect(within(preview).getByText('Hľadám')).toBeInTheDocument();
     expect(within(preview).getByText('Dohodou')).toBeInTheDocument();
+  });
+
+  it('routes a shared portfolio item to the portfolio detail, not an offer', async () => {
+    const listener = jest.fn();
+    window.addEventListener('goToUserProfile', listener);
+
+    render(
+      <FeedPostCard
+        post={makePost({
+          id: 12,
+          post_type: 'shared_portfolio_item',
+          shared_content: {
+            ...offerPost.shared_content!,
+            type: 'portfolio_item',
+            title: 'Weby',
+            id: 42,
+            is_seeking: null,
+            price_negotiable: null,
+            price_from: null,
+            price_currency: '',
+          },
+        })}
+      />,
+    );
+
+    await userEvent.click(screen.getByTestId('feed-shared-compact-preview'));
+
+    // Ponuky a portfólio majú nezávislé číslovanie – id 42 nesmie skončiť
+    // ako offerId, inak by sa otvorila cudzia ponuka s rovnakým číslom.
+    expect(listener).not.toHaveBeenCalled();
+    expect(mockRouterPush).toHaveBeenCalledWith('/dashboard/users/peter/portfolio/42');
+    window.removeEventListener('goToUserProfile', listener);
   });
 
   it('opens the source when the preview is clicked', async () => {

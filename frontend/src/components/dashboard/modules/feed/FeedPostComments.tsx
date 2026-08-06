@@ -46,6 +46,12 @@ export default function FeedPostComments({
   const [failed, setFailed] = useState(false);
   const nextUrlRef = useRef<string | null>(null);
   const [hasMore, setHasMore] = useState(false);
+  // Guard cez REF, nie cez state: sentinel vie vystreliť dvakrát skôr, než
+  // React commitne setLoadingMore(true) – obe volania by potom videli
+  // loadingMore === false, vyžiadali ten istý cursor a pomalšia odpoveď by
+  // prepísala nextUrlRef späť (opakované requesty / preskočená stránka).
+  // Rovnaký vzor ako loadingMoreRef v useFeedInfiniteScroll.
+  const loadingMoreRef = useRef(false);
   const [pendingDelete, setPendingDelete] = useState<FeedPostComment | null>(null);
   const [deleting, setDeleting] = useState(false);
   const { textareaRef, insertEmoji } = useEmojiInsertion(text, setText);
@@ -58,6 +64,7 @@ export default function FeedPostComments({
   const load = useCallback(async () => {
     setLoading(true);
     setFailed(false);
+    loadingMoreRef.current = false;
     try {
       const page = await listFeedPostComments(postId, {
         pageSize: COMMENTS_PAGE_SIZE,
@@ -77,7 +84,8 @@ export default function FeedPostComments({
   }, [load]);
 
   const loadMore = useCallback(async () => {
-    if (loadingMore || !nextUrlRef.current) return;
+    if (loadingMoreRef.current || !nextUrlRef.current) return;
+    loadingMoreRef.current = true;
     setLoadingMore(true);
     try {
       const page = await listFeedPostComments(postId, {
@@ -94,9 +102,10 @@ export default function FeedPostComments({
         tRef.current('feed.commentsLoadError', 'Komentáre sa nepodarilo načítať.'),
       );
     } finally {
+      loadingMoreRef.current = false;
       setLoadingMore(false);
     }
-  }, [loadingMore, postId]);
+  }, [postId]);
 
   const sentinelRef = useInfiniteScrollSentinel({
     onIntersect: loadMore,

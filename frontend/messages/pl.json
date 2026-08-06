@@ -4391,6 +4391,7 @@
     "timeMinutesShort": "min"
   },
   "reports": {
+    "descriptionRequired": "Przy powodzie „inne” opis jest wymagany.",
     "submitSuccess": "Zgłoszenie zostało wysłane."
   }
 }

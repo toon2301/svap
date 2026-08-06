@@ -8,6 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useIsMobile } from '@/hooks';
 import type { User } from '@/types';
 import { api, endpoints } from '@/lib/api';
+import { parseFeedPostId } from '@/lib/feedApi';
 import type { ProfileTab } from '../modules/profile/profileTypes';
 import type { Offer } from '../modules/profile/profileOffersTypes';
 import DashboardLayout from '../DashboardLayout';
@@ -202,7 +203,7 @@ export default function DashboardContent({
 
   const feedPostIdFromPath = React.useMemo(() => {
     const m = pathname?.match(/^\/dashboard\/feed\/(\d+)\/?$/);
-    return m ? Number(m[1]) : null;
+    return m ? parseFeedPostId(m[1]) : null;
   }, [pathname]);
 
   const conversationIdFromMessagesPath = React.useMemo(() => {
@@ -950,7 +951,7 @@ export default function DashboardContent({
   }, [portfolioItemIdFromPath, setActiveModule]);
 
   useEffect(() => {
-    if (feedPostIdFromPath != null && Number.isFinite(feedPostIdFromPath)) {
+    if (feedPostIdFromPath != null) {
       setActiveModule('feed-post-detail');
     }
   }, [feedPostIdFromPath, setActiveModule]);

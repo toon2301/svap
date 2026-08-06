@@ -4391,6 +4391,7 @@
     "timeMinutesShort": "min"
   },
   "reports": {
+    "descriptionRequired": "A description is required when the reason is “other”.",
     "submitSuccess": "Your report was sent."
   }
 }

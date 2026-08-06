@@ -6,6 +6,7 @@ import toast from 'react-hot-toast';
 import { XMarkIcon, ExclamationTriangleIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { api, endpoints } from '@/lib/api';
+import { translateReportError } from '@/lib/reportErrors';
 
 const REPORT_REASONS = [
   { value: 'inappropriate', label: 'Nevhodný obsah' },
@@ -69,6 +70,7 @@ export function ReportReviewModal({
   const handleSubmit = async () => {
     setIsSubmitting(true);
     setError(null);
+    let submitted = false;
     try {
       // Stabilný kód, nie zobrazovaný text: reason ide do moderačnej fronty,
       // kde sa musí dať filtrovať a zoskupovať rovnako naprieč jazykmi appky.
@@ -77,17 +79,26 @@ export function ReportReviewModal({
         reason,
         description: description.trim() || undefined,
       });
-      toast.success(t('reports.submitSuccess', 'Nahlásenie bolo úspešne odoslané.'));
-      await onSuccess?.();
-      onClose();
+      submitted = true;
     } catch (err: unknown) {
-      const msg =
-        (err as { response?: { data?: { error?: string } } })?.response?.data?.error ||
-        (err instanceof Error ? err.message : t('reviews.reportError', 'Chyba pri nahlásení.'));
-      setError(msg);
+      setError(
+        translateReportError(t, err, t('reviews.reportError', 'Chyba pri nahlásení.')),
+      );
     } finally {
       setIsSubmitting(false);
     }
+
+    if (!submitted) return;
+    // Report je uložený – od tejto chvíle sa už nesmie tváriť ako zlyhaný.
+    // Prípadná chyba v onSuccess (refresh zoznamu) je vec volajúceho, nie
+    // dôvod ukázať chybu alebo nechať dialóg otvorený na opakovanie.
+    toast.success(t('reports.submitSuccess', 'Nahlásenie bolo úspešne odoslané.'));
+    try {
+      await onSuccess?.();
+    } catch {
+      // ignorujeme – zápis prebehol
+    }
+    onClose();
   };
 
   if (!open || !mounted || typeof document === 'undefined') return null;
@@ -183,6 +194,7 @@ export function ReportReviewModal({
               </label>
               <textarea
                 id="report-description"
+                aria-required={descriptionRequired}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder={t('reviews.reportDescriptionPlaceholder', 'Doplňujúce informácie...')}

@@ -13,11 +13,13 @@
  */
 
 import { useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { EllipsisHorizontalIcon, FlagIcon } from '@heroicons/react/24/outline';
 import { useLanguage } from '@/contexts/LanguageContext';
 import InitialsAvatar from '@/components/shared/InitialsAvatar';
+import { buildPortfolioDetailPath } from '../profile/portfolioRouting';
 import { likeFeedPost, unlikeFeedPost, type FeedPost } from '@/lib/feedApi';
 import FeedPostComments from './FeedPostComments';
 import FeedPostReportModal from './FeedPostReportModal';
@@ -118,7 +120,7 @@ function SharedContentPreview({
   hideOwner?: boolean;
   onOpenSource?: () => void;
 }) {
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const shared = post.shared_content;
   if (!shared) return null;
 
@@ -203,7 +205,7 @@ function SharedContentPreview({
   const priceLabel = shared.price_negotiable
     ? t('skills.priceNegotiable', 'Dohodou')
     : shared.price_from
-      ? `${Number(shared.price_from).toLocaleString('sk-SK', {
+      ? `${Number(shared.price_from).toLocaleString(locale || undefined, {
           minimumFractionDigits: 0,
           maximumFractionDigits: 2,
         })} ${shared.price_currency || '€'}`
@@ -262,6 +264,7 @@ export default function FeedPostCard({
   initialCommentsOpen?: boolean;
 }) {
   const { t, locale } = useLanguage();
+  const router = useRouter();
   const isShared = post.post_type !== 'free_post';
   const authorName = post.author?.display_name || '';
   const approvedImage =
@@ -338,20 +341,35 @@ export default function FeedPostCard({
     post.shared_content?.owner?.id != null &&
     post.shared_content.owner.id === post.author?.id;
 
-  // Preklik na zdroj – rovnaký mechanizmus, aký používa OfferShareMessageCard
-  // v správach (globálny event, ktorý Dashboard preloží na navigáciu).
+  // Preklik na zdroj MUSÍ rozlišovať typ: ponuky, portfólio položky aj
+  // príspevky majú nezávislé číslovanie, takže poslať portfolio id ako offerId
+  // by otvorilo cudziu ponuku s rovnakým číslom.
   const sharedOwnerIdentifier =
     (post.shared_content?.owner?.slug || '').trim() ||
     String(post.shared_content?.owner?.id || '');
+  const sharedSourceId = post.shared_content?.id ?? null;
+  const sharedType = post.shared_content?.type;
+
   const handleOpenSharedSource =
-    post.shared_content?.id && sharedOwnerIdentifier
+    sharedSourceId && (sharedType === 'feed_post' || sharedOwnerIdentifier)
       ? () => {
+          if (sharedType === 'portfolio_item') {
+            router.push(
+              buildPortfolioDetailPath(sharedOwnerIdentifier, sharedSourceId),
+            );
+            return;
+          }
+          if (sharedType === 'feed_post') {
+            router.push(`/dashboard/feed/${sharedSourceId}`);
+            return;
+          }
+          // Ponuka – globálny event, rovnako ako OfferShareMessageCard v správach.
           if (typeof window === 'undefined') return;
           window.dispatchEvent(
             new CustomEvent('goToUserProfile', {
               detail: {
                 identifier: sharedOwnerIdentifier,
-                offerId: post.shared_content?.id,
+                offerId: sharedSourceId,
               },
             }),
           );

@@ -32,6 +32,7 @@ export default function FeedPostDetailModule({
   const router = useRouter();
   const [post, setPost] = useState<FeedPost | null>(null);
   const [loading, setLoading] = useState(true);
+  const [failed, setFailed] = useState(false);
   // `t`, router a callback cez ref – inak by sa efekt reštartoval pri každom
   // rendri rodiča a príspevok by sa načítaval dokola.
   const goneRef = useRef<() => void>(() => {});
@@ -47,13 +48,21 @@ export default function FeedPostDetailModule({
       return;
     }
     setLoading(true);
+    setFailed(false);
     try {
       setPost(await getFeedPost(postId));
-    } catch {
-      // 404 (zmazaný / neviditeľný) aj sieťová chyba končia rovnako – bez
-      // príspevku nie je čo zobraziť a používateľ nemá kde uviaznuť.
+    } catch (err) {
+      const status = (err as { response?: { status?: number } })?.response?.status;
+      // Presmerovať sa smie LEN pri potvrdenej neexistencii/nedostupnosti.
+      // Výpadok siete či 5xx je dočasný – vtedy ponúkni opakovanie, inak by
+      // používateľa vyhodilo z permalinku pri chvíľkovom probléme.
+      const gone = status === 404 || status === 403 || status === 410;
       setPost(null);
-      goneRef.current();
+      if (gone) {
+        goneRef.current();
+      } else {
+        setFailed(true);
+      }
     } finally {
       setLoading(false);
     }
@@ -70,6 +79,26 @@ export default function FeedPostDetailModule({
         className="mx-auto max-w-2xl animate-pulse space-y-4 py-6"
       >
         <div className="h-64 rounded-2xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-[#202223]" />
+      </div>
+    );
+  }
+
+  if (failed) {
+    return (
+      <div
+        data-testid="feed-detail-error"
+        className="mx-auto max-w-2xl rounded-2xl border border-gray-200 bg-white px-6 py-10 text-center dark:border-gray-700 dark:bg-[#202223]"
+      >
+        <p className="mb-4 text-sm text-gray-600 dark:text-gray-300">
+          {t('feed.loadError', 'Nástenku sa nepodarilo načítať.')}
+        </p>
+        <button
+          type="button"
+          onClick={() => void load()}
+          className="rounded-xl border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-900"
+        >
+          {t('feed.retry', 'Skúsiť znova')}
+        </button>
       </div>
     );
   }

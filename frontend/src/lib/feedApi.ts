@@ -254,8 +254,17 @@ export async function shareFeedPost(
   return data;
 }
 
+/**
+ * Jediné miesto, kde sa rozhoduje, či je ID príspevku použiteľné – routa aj
+ * DashboardContent ho volajú, aby sa validácia nerozišla na troch miestach.
+ */
+export function parseFeedPostId(value: unknown): number | null {
+  const parsed = typeof value === 'number' ? value : Number(value);
+  return Number.isSafeInteger(parsed) && parsed >= 1 ? parsed : null;
+}
+
 export async function getFeedPost(postId: number): Promise<FeedPost> {
-  if (!Number.isInteger(postId) || postId < 1) {
+  if (parseFeedPostId(postId) === null) {
     throw new Error('Invalid feed post id.');
   }
   const { data } = await api.get<FeedPost>(endpoints.feed.postDetail(postId));

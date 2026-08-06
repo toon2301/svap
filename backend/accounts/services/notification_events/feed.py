@@ -38,9 +38,9 @@ def create_feed_post_liked_notification(*, post, actor) -> Notification | None:
         user=author,
         notif_type=NotificationType.FEED_POST_LIKED,
         title="Páči sa mi tvoj príspevok",
-        # Neprázdny body zámerne: prázdny by vo FE spadol do generickej hlášky
-        # („Otvorte upozornenie pre viac detailov"). FE má pre feed typy vlastné
-        # preložené vety, toto je fallback pre konzumentov mimo neho (push).
+        # Body si drží text aj tu, hoci FE feedové typy prekladá sám – slúži
+        # konzumentom mimo neho (push notifikácie), ktorí prekladovú vrstvu
+        # appky nemajú.
         body=f"{(getattr(actor, 'display_name', '') or '').strip() or 'Používateľ'}"
         " lajkol tvoj príspevok.",
         actor=actor,

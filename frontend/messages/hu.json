@@ -4391,6 +4391,7 @@
     "timeMinutesShort": "p"
   },
   "reports": {
+    "descriptionRequired": "Az „egyéb” ok esetén a leírás kötelező.",
     "submitSuccess": "A jelentést elküldtük."
   }
 }

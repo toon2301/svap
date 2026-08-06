@@ -6,6 +6,7 @@ import toast from 'react-hot-toast';
 import { ChevronDownIcon, ExclamationTriangleIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { api, endpoints } from '@/lib/api';
+import { translateReportError } from '@/lib/reportErrors';
 
 export type ReportPhotoTarget =
   | { type: 'offer_image'; skillId: number; imageId: number }
@@ -112,6 +113,7 @@ export function ReportPhotoModal({
 
     setIsSubmitting(true);
     setError(null);
+    let submitted = false;
 
     try {
       // Stabilný kód, nie preložený text: reason ide do moderačnej fronty,
@@ -129,19 +131,28 @@ export function ReportPhotoModal({
         });
       }
 
-      toast.success(t('reports.submitSuccess', 'Nahlásenie bolo úspešne odoslané.'));
-      await onSuccess?.(target);
-      onClose();
+      submitted = true;
     } catch (err: unknown) {
-      const message =
-        (err as { response?: { data?: { error?: string } } })?.response?.data?.error ||
-        (err instanceof Error
-          ? err.message
-          : t('skills.reportPhotoError', 'Chyba pri nahlaseni fotky.'));
-      setError(message);
+      setError(
+        translateReportError(
+          t,
+          err,
+          t('skills.reportPhotoError', 'Chyba pri nahlaseni fotky.'),
+        ),
+      );
     } finally {
       setIsSubmitting(false);
     }
+
+    if (!submitted) return;
+    // Report je uložený – chyba v onSuccess ho nesmie označiť za zlyhaný.
+    toast.success(t('reports.submitSuccess', 'Nahlásenie bolo úspešne odoslané.'));
+    try {
+      await onSuccess?.(target);
+    } catch {
+      // ignorujeme – zápis prebehol
+    }
+    onClose();
   };
 
   if (!open || !mounted || typeof document === 'undefined') {
@@ -249,6 +260,8 @@ export function ReportPhotoModal({
               </label>
               <textarea
                 id="report-photo-description"
+                required={descriptionRequired}
+                aria-required={descriptionRequired}
                 value={description}
                 onChange={(event) => setDescription(event.target.value)}
                 placeholder={t('reviews.reportDescriptionPlaceholder', 'Popiste dovod nahlasenia...')}

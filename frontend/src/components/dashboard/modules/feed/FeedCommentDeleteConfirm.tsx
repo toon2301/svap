@@ -12,6 +12,7 @@ import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useFeedDialog } from './useFeedDialog';
 
 type FeedCommentDeleteConfirmProps = {
   open: boolean;
@@ -31,14 +32,9 @@ export default function FeedCommentDeleteConfirm({
 
   useEffect(() => setMounted(true), []);
 
-  useEffect(() => {
-    if (!open) return;
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && !isDeleting) onClose();
-    };
-    document.addEventListener('keydown', handleEscape);
-    return () => document.removeEventListener('keydown', handleEscape);
-  }, [open, isDeleting, onClose]);
+  // Escape + fokus dovnútra + Tab trap + návrat fokusu na spúšťač – rovnaký
+  // hook ako feedové dialógy, nie vlastná kópia.
+  const dialogRef = useFeedDialog({ open, onClose, canClose: !isDeleting });
 
   if (!open || !mounted || typeof document === 'undefined') return null;
 
@@ -54,6 +50,8 @@ export default function FeedCommentDeleteConfirm({
       }}
     >
       <div
+        ref={dialogRef}
+        tabIndex={-1}
         className="relative w-full max-w-md overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl dark:border-gray-800 dark:bg-[#0f0f10]"
         onClick={(event) => event.stopPropagation()}
       >

@@ -1,4 +1,5 @@
 import Dashboard from '@/components/dashboard/Dashboard';
+import { parseFeedPostId } from '@/lib/feedApi';
 
 interface FeedPostPageProps {
   params: {
@@ -7,9 +8,7 @@ interface FeedPostPageProps {
 }
 
 export default function FeedPostPage({ params }: FeedPostPageProps) {
-  const raw = params?.postId;
-  const parsed = raw != null ? Number(raw) : NaN;
-  const postId = Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+  const postId = parseFeedPostId(params?.postId);
 
   return <Dashboard initialRoute="feed-post-detail" initialFeedPostId={postId} />;
 }
