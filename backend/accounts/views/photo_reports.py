@@ -10,6 +10,10 @@ from rest_framework.response import Response
 from swaply.rate_limiting import api_rate_limit
 
 from ..models import OfferedSkillImage, PhotoReport
+from ..services.report_validation import (
+    description_required_response,
+    requires_description,
+)
 
 User = get_user_model()
 
@@ -43,6 +47,9 @@ def _validate_report_payload(request):
             {"error": "Popis moze mat maximalne 2000 znakov."},
             status=status.HTTP_400_BAD_REQUEST,
         )
+
+    if requires_description(reason) and not description:
+        return None, None, description_required_response()
 
     return reason, description, None
 

@@ -194,6 +194,11 @@ class FeedPostSerializer(serializers.ModelSerializer):
             "caption": obj.shared_post_caption,
             "id": None,
             "owner": None,
+            # Len pre zdieľanú ponuku a len keď je zdroj živý (viď nižšie).
+            "is_seeking": None,
+            "price_negotiable": None,
+            "price_from": None,
+            "price_currency": "",
             # Meno vlastníka: naživo kým sa dá (sleduje premenovanie), snapshot
             # ako fallback (po GDPR scrube je neutralizovaný).
             "owner_display_name": (
@@ -211,6 +216,16 @@ class FeedPostSerializer(serializers.ModelSerializer):
             )
             if obj.post_type == FeedPost.PostType.SHARED_FEED_POST:
                 payload["caption"] = source.caption
+            if obj.post_type == FeedPost.PostType.SHARED_OFFER:
+                # Kompaktný náhľad ponuky vo feede potrebuje typ a cenu; berú sa
+                # zo ŽIVÉHO zdroja (snapshot ich nedrží – po zmazaní ponuky sa
+                # aj tak nezobrazuje živý náhľad, ale placeholder).
+                payload["is_seeking"] = bool(source.is_seeking)
+                payload["price_negotiable"] = bool(source.price_negotiable)
+                payload["price_from"] = (
+                    str(source.price_from) if source.price_from is not None else None
+                )
+                payload["price_currency"] = source.price_currency or ""
             payload["id"] = source.pk
             payload["owner"] = FeedUserSummarySerializer(
                 owner, context=self.context

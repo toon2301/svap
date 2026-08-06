@@ -38,7 +38,11 @@ def create_feed_post_liked_notification(*, post, actor) -> Notification | None:
         user=author,
         notif_type=NotificationType.FEED_POST_LIKED,
         title="Páči sa mi tvoj príspevok",
-        body="",
+        # Body si drží text aj tu, hoci FE feedové typy prekladá sám – slúži
+        # konzumentom mimo neho (push notifikácie), ktorí prekladovú vrstvu
+        # appky nemajú.
+        body=f"{(getattr(actor, 'display_name', '') or '').strip() or 'Používateľ'}"
+        " lajkol tvoj príspevok.",
         actor=actor,
         data={
             "post_id": post.id,

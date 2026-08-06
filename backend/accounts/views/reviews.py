@@ -37,6 +37,10 @@ from ..services.notifications import (
     create_review_liked_notification,
     create_review_reply_notification,
 )
+from ..services.report_validation import (
+    description_required_response,
+    requires_description,
+)
 from .review_helpers import (
     _offer_hidden_from_user,
     _parse_reviews_page_params,
@@ -405,6 +409,9 @@ def review_report_view(request, review_id):
             {"error": "Popis môže mať maximálne 2000 znakov."},
             status=status.HTTP_400_BAD_REQUEST,
         )
+
+    if requires_description(reason) and not description:
+        return description_required_response()
 
     ReviewReport.objects.create(
         review=review,

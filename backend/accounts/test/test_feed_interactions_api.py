@@ -360,6 +360,39 @@ class FeedPostReportApiTests(APITestCase):
         self.assertIn("uz nahlasil", response.data["error"])
         self.assertEqual(FeedPostReport.objects.count(), 1)
 
+    def test_report_with_other_reason_requires_description(self):
+        """Dôvod „iné" bez popisu nenesie moderátorovi žiadnu informáciu."""
+        self.client.force_authenticate(user=self.reporter)
+
+        response = self.client.post(
+            self._url(), data={"reason": "other", "description": "   "}, format="json"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data["code"], "description_required")
+        self.assertEqual(FeedPostReport.objects.count(), 0)
+
+    def test_report_with_other_reason_and_description_succeeds(self):
+        self.client.force_authenticate(user=self.reporter)
+
+        response = self.client.post(
+            self._url(),
+            data={"reason": "other", "description": "Podvodná ponuka"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(FeedPostReport.objects.get().description, "Podvodná ponuka")
+
+    def test_other_reasons_do_not_require_description(self):
+        self.client.force_authenticate(user=self.reporter)
+
+        response = self.client.post(
+            self._url(), data={"reason": "spam"}, format="json"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
     def test_report_requires_reason(self):
         self.client.force_authenticate(user=self.reporter)
         response = self.client.post(self._url(), data={}, format="json")

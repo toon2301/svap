@@ -166,7 +166,7 @@ export default function NotificationItem({
       ? t(
           'notifications.groupInvitationBody',
           '{name} vás pozýva do skupinového chatu.',
-        ).replace('{name}', actorName)
+        ).replace('{name}', () => actorName)
       : notification.type === 'skill_request_accepted'
         ? (
             isHelpOfferDecision
@@ -178,7 +178,7 @@ export default function NotificationItem({
                   'notifications.skillRequestAcceptedBody',
                   '{name} prijal tvoju žiadosť.',
                 )
-          ).replace('{name}', actorName)
+          ).replace('{name}', () => actorName)
         : notification.type === 'skill_request_rejected'
           ? (
               isHelpOfferDecision
@@ -190,23 +190,23 @@ export default function NotificationItem({
                     'notifications.skillRequestRejectedBody',
                     '{name} odmietol tvoju žiadosť.',
                   )
-            ).replace('{name}', actorName)
+            ).replace('{name}', () => actorName)
         : notification.type === 'skill_request_completion_requested'
           ? t(
               'notifications.skillRequestCompletionRequestedBody',
               '{name} označil výmenu ako dokončenú.',
-            ).replace('{name}', actorName)
+            ).replace('{name}', () => actorName)
         : notification.type === 'skill_request_completed'
           ? t(
               'notifications.skillRequestCompletedBody',
               '{name} potvrdil dokončenie výmeny.',
-            ).replace('{name}', actorName)
+            ).replace('{name}', () => actorName)
         : notification.type === 'skill_request_terminated'
           ? t(
               'notifications.skillRequestTerminatedBody',
               '{name} skončil výmenu. Dôvod: {reason}.',
             )
-              .replace('{name}', actorName)
+              .replace('{name}', () => actorName)
               .replace(
                 '{reason}',
                 terminationReasonLabel || t('notifications.reasonUnknown', 'neuvedený'),
@@ -215,32 +215,52 @@ export default function NotificationItem({
           ? t(
               'notifications.reviewCreatedBody',
               '{name} napísal recenziu na tvoju kartu.',
-            ).replace('{name}', actorName)
+            ).replace('{name}', () => actorName)
         : notification.type === 'review_reply_created'
           ? t(
               'notifications.reviewReplyCreatedBody',
               '{name} odpovedal na tvoju recenziu.',
-            ).replace('{name}', actorName)
+            ).replace('{name}', () => actorName)
         : notification.type === 'review_liked'
           ? t(
               'notifications.reviewLikedBody',
               '{name} označil tvoju recenziu ako páči sa mi.',
-            ).replace('{name}', actorName)
+            ).replace('{name}', () => actorName)
         : notification.type === 'offer_liked'
           ? t(
               'notifications.offerLikedBody',
               '{name} označil tvoju ponuku ako páči sa mi.',
-            ).replace('{name}', actorName)
+            ).replace('{name}', () => actorName)
         : notification.type === 'portfolio_liked'
           ? t(
               'notifications.portfolioLikedBody',
               '{name} oznacil tvoje portfolio ako paci sa mi.',
-            ).replace('{name}', actorName)
+            ).replace('{name}', () => actorName)
         : notification.type === 'profile_liked'
           ? t(
               'notifications.profileLikedBody',
               '{name} oznacil tvoj profil ako paci sa mi.',
-            ).replace('{name}', actorName)
+            ).replace('{name}', () => actorName)
+        // Feed typy majú vetu tu, nie z BE: notification.body sa ukladá v čase
+        // vzniku v jednom jazyku, takže by príjemcovi prišla vždy po slovensky.
+        : notification.type === 'feed_post_liked'
+          ? t('notifications.feedPostLikedBody', '{name} lajkol tvoj príspevok.')
+              .replace('{name}', () => actorName)
+        : notification.type === 'feed_post_commented'
+          ? t(
+              'notifications.feedPostCommentedBody',
+              '{name} komentoval tvoj príspevok.',
+            ).replace('{name}', () => actorName)
+        : notification.type === 'feed_post_tagged'
+          ? t(
+              'notifications.feedPostTaggedBody',
+              '{name} ťa označil v príspevku.',
+            ).replace('{name}', () => actorName)
+        : notification.type === 'feed_post_shared'
+          ? t(
+              'notifications.feedPostSharedBody',
+              '{name} zdieľal tvoj obsah ďalej.',
+            ).replace('{name}', () => actorName)
         : notification.body ||
           t('notifications.genericBody', 'Otvorte upozornenie pre viac detailov.');
   const highlightedBody = highlightActorName(body, actorName);

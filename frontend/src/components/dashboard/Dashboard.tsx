@@ -18,6 +18,8 @@ export interface DashboardProps {
   /** ID karty (ponuky) pre view recenzií (/dashboard/offers/[offerId]/reviews). */
   initialOfferId?: number | null;
   initialPortfolioItemId?: number | null;
+  /** ID príspevku pre permalink (/dashboard/feed/[postId]). */
+  initialFeedPostId?: number | null;
 }
 
 // Hlavný komponent - wrapped v Suspense pre useSearchParams()

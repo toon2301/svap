@@ -30,6 +30,7 @@ import { SearchUserProfileModule } from './modules/search/SearchUserProfileModul
 import OfferReviewsView from './modules/reviews/OfferReviewsView';
 import PortfolioDetailModule from './modules/profile/PortfolioDetailModule';
 import { PortfolioCreateScreen } from './modules/profile/PortfolioCreateScreen';
+import FeedPostDetailModule from './modules/feed/FeedPostDetailModule';
 
 interface ModuleRouterProps {
   user: User;
@@ -75,6 +76,8 @@ interface ModuleRouterProps {
   onSkillsModeToggle?: () => void;
   /** ID karty (ponuky) pre view recenzií. */
   offerIdForReviews?: number | null;
+  /** ID príspevku pre permalink detail (/dashboard/feed/[postId]). */
+  feedPostIdForDetail?: number | null;
   portfolioItemIdForDetail?: number | null;
   portfolioOwnerIdentifier?: string | null;
   portfolioCreateOwnerIdentifier?: string | null;
@@ -133,6 +136,7 @@ export default function ModuleRouter({
   onSkillsSearchClick,
   onSkillsModeToggle,
   offerIdForReviews,
+  feedPostIdForDetail,
   portfolioItemIdForDetail,
   portfolioOwnerIdentifier,
   portfolioCreateOwnerIdentifier,
@@ -235,6 +239,13 @@ export default function ModuleRouter({
       );
     case 'home':
       return <HomeModule />;
+    case 'feed-post-detail':
+      return (
+        <FeedPostDetailModule
+          postId={feedPostIdForDetail ?? null}
+          onNavigateToFeed={() => setActiveModule('home')}
+        />
+      );
     case 'statistics':
       return (
         <StatisticsModule

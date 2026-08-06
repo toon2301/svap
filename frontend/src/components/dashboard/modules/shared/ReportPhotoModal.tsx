@@ -2,9 +2,11 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import toast from 'react-hot-toast';
 import { ChevronDownIcon, ExclamationTriangleIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { api, endpoints } from '@/lib/api';
+import { translateReportError } from '@/lib/reportErrors';
 
 export type ReportPhotoTarget =
   | { type: 'offer_image'; skillId: number; imageId: number }
@@ -96,6 +98,11 @@ export function ReportPhotoModal({
     }
   };
 
+  // Dôvod „iné" nenesie sám o sebe informáciu – bez popisu nemá moderátor
+  // z čoho vychádzať, preto je popis pri ňom povinný (rovnako vynucuje BE).
+  const descriptionRequired = reason === 'other';
+  const descriptionMissing = descriptionRequired && !description.trim();
+
   const submitReport = async (event: React.FormEvent) => {
     event.preventDefault();
 
@@ -106,6 +113,7 @@ export function ReportPhotoModal({
 
     setIsSubmitting(true);
     setError(null);
+    let submitted = false;
 
     try {
       // Stabilný kód, nie preložený text: reason ide do moderačnej fronty,
@@ -123,18 +131,28 @@ export function ReportPhotoModal({
         });
       }
 
-      await onSuccess?.(target);
-      onClose();
+      submitted = true;
     } catch (err: unknown) {
-      const message =
-        (err as { response?: { data?: { error?: string } } })?.response?.data?.error ||
-        (err instanceof Error
-          ? err.message
-          : t('skills.reportPhotoError', 'Chyba pri nahlaseni fotky.'));
-      setError(message);
+      setError(
+        translateReportError(
+          t,
+          err,
+          t('skills.reportPhotoError', 'Chyba pri nahlaseni fotky.'),
+        ),
+      );
     } finally {
       setIsSubmitting(false);
     }
+
+    if (!submitted) return;
+    // Report je uložený – chyba v onSuccess ho nesmie označiť za zlyhaný.
+    toast.success(t('reports.submitSuccess', 'Nahlásenie bolo úspešne odoslané.'));
+    try {
+      await onSuccess?.(target);
+    } catch {
+      // ignorujeme – zápis prebehol
+    }
+    onClose();
   };
 
   if (!open || !mounted || typeof document === 'undefined') {
@@ -235,10 +253,15 @@ export function ReportPhotoModal({
                 htmlFor="report-photo-description"
                 className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
               >
-                {t('reviews.reportDescription', 'Popis nahlasenia')} ({t('common.optional', 'nepovinne')})
+                {t('reviews.reportDescription', 'Popis nahlasenia')}{' '}
+                {descriptionRequired
+                  ? '*'
+                  : `(${t('common.optional', 'nepovinne')})`}
               </label>
               <textarea
                 id="report-photo-description"
+                required={descriptionRequired}
+                aria-required={descriptionRequired}
                 value={description}
                 onChange={(event) => setDescription(event.target.value)}
                 placeholder={t('reviews.reportDescriptionPlaceholder', 'Popiste dovod nahlasenia...')}
@@ -262,7 +285,7 @@ export function ReportPhotoModal({
             </button>
             <button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || descriptionMissing}
               className="flex items-center gap-2 rounded-lg bg-purple-600 px-4 py-2.5 font-medium text-white transition-colors hover:bg-purple-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isSubmitting ? (
