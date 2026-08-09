@@ -12,7 +12,7 @@ from django.contrib.auth import get_user_model
 from django.urls import reverse
 from rest_framework import serializers
 
-from accounts.models import FeedPost, FeedPostComment
+from accounts.models import FeedPost, FeedPostComment, FeedPostImage
 
 User = get_user_model()
 
@@ -98,7 +98,7 @@ class FeedPostSerializer(serializers.ModelSerializer):
     """
 
     author = FeedUserSummarySerializer(read_only=True)
-    image = serializers.SerializerMethodField()
+    images = serializers.SerializerMethodField()
     shared_content = serializers.SerializerMethodField()
     shared_content_unavailable = serializers.SerializerMethodField()
     tagged_users = serializers.SerializerMethodField()
@@ -114,7 +114,7 @@ class FeedPostSerializer(serializers.ModelSerializer):
             "post_type",
             "caption",
             "author",
-            "image",
+            "images",
             "shared_content",
             "shared_content_unavailable",
             "tagged_users",
@@ -140,35 +140,46 @@ class FeedPostSerializer(serializers.ModelSerializer):
 
     # --- fields ------------------------------------------------------------
 
-    def get_image(self, obj):
-        """Fotka voľného príspevku – URL na proxy view, nie S3 kľúč.
+    def get_images(self, obj):
+        """Fotky voľného príspevku (0–5) – URL na proxy view, nie S3 kľúče.
 
-        Verejne existuje len APPROVED fotka; autor navyše vidí stav
-        PENDING/REJECTED (aby FE vedelo ukázať „spracováva sa"/dôvod
-        zamietnutia) – rovnaká filozofia ako portfolio to_representation.
+        Verejne existujú len APPROVED fotky; autor navyše vidí PENDING/REJECTED
+        (aby FE vedelo ukázať „spracováva sa"/dôvod zamietnutia) – rovnaká
+        filozofia ako pri jednej fotke do Fázy 4.3.
+
+        Poradie určuje ``FeedPostImage.Meta.ordering`` (order, id).
         """
-        if obj.post_type != FeedPost.PostType.FREE_POST or not obj.image_status:
-            return None
+        if obj.post_type != FeedPost.PostType.FREE_POST:
+            return []
         is_author = self._viewer_id() == obj.author_id
 
-        if obj.image_status == FeedPost.ImageStatus.APPROVED:
-            base = reverse("accounts:feed_post_image_file", args=[obj.id])
-            payload = {
-                "thumbnail_url": self._absolute(f"{base}?variant=thumbnail"),
-                "large_url": self._absolute(f"{base}?variant=large"),
-                "width": obj.image_width,
-                "height": obj.image_height,
-            }
-            if is_author:
-                payload["status"] = obj.image_status
-            return payload
+        payloads = []
+        # `images` je prefetchnuté v _annotated_queryset – .all() teda nerobí
+        # dotaz na príspevok (žiadne N+1).
+        for image in obj.images.all():
+            approved = image.status == FeedPostImage.Status.APPROVED
+            if not approved and not is_author:
+                continue
 
-        if not is_author:
-            return None
-        payload = {"status": obj.image_status}
-        if obj.image_status == FeedPost.ImageStatus.REJECTED:
-            payload["rejected_reason"] = obj.image_rejected_reason
-        return payload
+            payload = {"id": image.id}
+            if approved:
+                base = reverse(
+                    "accounts:feed_post_image_file", args=[obj.id, image.id]
+                )
+                payload.update(
+                    {
+                        "thumbnail_url": self._absolute(f"{base}?variant=thumbnail"),
+                        "large_url": self._absolute(f"{base}?variant=large"),
+                        "width": image.width,
+                        "height": image.height,
+                    }
+                )
+            if is_author:
+                payload["status"] = image.status
+                if image.status == FeedPostImage.Status.REJECTED:
+                    payload["rejected_reason"] = image.rejected_reason
+            payloads.append(payload)
+        return payloads
 
     def _shared_available(self, obj) -> bool:
         """Cache na inštancii – čítajú to get_shared_content aj *_unavailable."""

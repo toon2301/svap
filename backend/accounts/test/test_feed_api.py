@@ -16,7 +16,7 @@ from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from accounts.models import FeedPost, OfferedSkill, UserBlock
+from accounts.models import FeedPost, FeedPostImage, OfferedSkill, UserBlock
 from accounts.services.feed_tagging import REASON_TAG_BLOCKED
 from portfolio.models import PortfolioItem
 
@@ -62,7 +62,7 @@ class FeedPostCreateApiTests(APITestCase):
         self.assertEqual(response.data["post_type"], "free_post")
         self.assertEqual(response.data["caption"], "Môj prvý post")
         self.assertEqual(response.data["author"]["id"], self.author.id)
-        self.assertIsNone(response.data["image"])
+        self.assertEqual(response.data["images"], [])
         self.assertIsNone(response.data["shared_content"])
         self.assertFalse(response.data["shared_content_unavailable"])
         self.assertTrue(response.data["can_manage"])
@@ -821,8 +821,10 @@ class FeedImageFileApiTests(APITestCase):
         self.viewer = _user("feed-img-viewer")
         self.owner = _user("feed-img-owner")
 
-    def _image_url(self, post):
-        return reverse("accounts:feed_post_image_file", args=[post.id])
+    def _image_url(self, post, image):
+        return reverse(
+            "accounts:feed_post_image_file", args=[post.id, image.id]
+        )
 
     def _shared_thumb_url(self, post):
         return reverse("accounts:feed_post_shared_thumbnail", args=[post.id])
@@ -868,39 +870,56 @@ class FeedImageFileApiTests(APITestCase):
 
     def test_image_404_for_unapproved_photo_of_other_user(self):
         post = _free_post(self.author)
-        FeedPost.objects.filter(pk=post.pk).update(
-            image_status=FeedPost.ImageStatus.PENDING,
-            image_pending_key="uploads/feed/1/x.jpg",
+        image = FeedPostImage.objects.create(
+            post=post,
+            status=FeedPostImage.Status.PENDING,
+            pending_key="uploads/feed/1/1/x.jpg",
         )
 
         self.client.force_authenticate(user=self.viewer)
-        response = self.client.get(self._image_url(post))
+        response = self.client.get(self._image_url(post, image))
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_image_404_when_author_is_private_for_other_viewer(self):
         private_author = _user("feed-img-private", is_public=False)
         post = _free_post(private_author)
-        FeedPost.objects.filter(pk=post.pk).update(
-            image_status=FeedPost.ImageStatus.APPROVED,
-            image_approved_key="media/feed/1/large.webp",
+        image = FeedPostImage.objects.create(
+            post=post,
+            status=FeedPostImage.Status.APPROVED,
+            approved_key="media/feed/1/large.webp",
         )
 
-        response = self.client.get(self._image_url(post))
+        response = self.client.get(self._image_url(post, image))
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_image_404_when_image_belongs_to_another_post(self):
+        """image_id sa musí viazať na post_id z URL – inak by sa cez
+        viditeľný príspevok dal streamovať obrázok zo skrytého."""
+        post = _free_post(self.author)
+        other = _free_post(self.author)
+        foreign = FeedPostImage.objects.create(
+            post=other,
+            status=FeedPostImage.Status.APPROVED,
+            approved_key="media/feed/2/large.webp",
+        )
+
+        response = self.client.get(self._image_url(post, foreign))
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
 
 class FeedImageSerializationTests(APITestCase):
-    """get_image: verejne len APPROVED, autor vidí aj stav spracovania."""
+    """get_images: verejne len APPROVED, autor vidí aj stav spracovania."""
 
     def setUp(self):
         self.author = _user("feed-imgser-author")
         self.viewer = _user("feed-imgser-viewer")
         self.post = _free_post(self.author)
 
-    def _set_image(self, **fields):
-        FeedPost.objects.filter(pk=self.post.pk).update(**fields)
+    def _add_image(self, **fields):
+        return FeedPostImage.objects.create(post=self.post, **fields)
 
     def _detail(self):
         return self.client.get(
@@ -908,46 +927,80 @@ class FeedImageSerializationTests(APITestCase):
         ).data
 
     def test_approved_image_exposes_absolute_urls(self):
-        self._set_image(
-            image_status=FeedPost.ImageStatus.APPROVED,
-            image_approved_key="media/feed/1/large.webp",
-            image_thumbnail_key="media/feed/1/thumb.webp",
-            image_width=800,
-            image_height=600,
+        self._add_image(
+            status=FeedPostImage.Status.APPROVED,
+            approved_key="media/feed/1/large.webp",
+            thumbnail_key="media/feed/1/thumb.webp",
+            width=800,
+            height=600,
         )
 
-        image = self._detail()["image"]
+        images = self._detail()["images"]
 
-        self.assertTrue(image["large_url"].startswith("http"))
-        self.assertIn("variant=thumbnail", image["thumbnail_url"])
-        self.assertEqual(image["width"], 800)
+        self.assertEqual(len(images), 1)
+        self.assertTrue(images[0]["large_url"].startswith("http"))
+        self.assertIn("variant=thumbnail", images[0]["thumbnail_url"])
+        self.assertEqual(images[0]["width"], 800)
         # Cudzí divák stav spracovania nepotrebuje.
-        self.assertNotIn("status", image)
+        self.assertNotIn("status", images[0])
 
     def test_pending_image_hidden_from_others_visible_to_author(self):
-        self._set_image(
-            image_status=FeedPost.ImageStatus.PENDING,
-            image_pending_key="uploads/feed/1/x.jpg",
+        self._add_image(
+            status=FeedPostImage.Status.PENDING,
+            pending_key="uploads/feed/1/1/x.jpg",
         )
 
-        self.assertIsNone(self._detail()["image"])
+        self.assertEqual(self._detail()["images"], [])
 
         self.client.force_authenticate(user=self.author)
-        image = self._detail()["image"]
-        self.assertEqual(image["status"], FeedPost.ImageStatus.PENDING)
+        images = self._detail()["images"]
+        self.assertEqual(images[0]["status"], FeedPostImage.Status.PENDING)
 
     def test_rejected_image_shows_reason_to_author_only(self):
-        self._set_image(
-            image_status=FeedPost.ImageStatus.REJECTED,
-            image_rejected_reason="Nevhodny obsah.",
+        self._add_image(
+            status=FeedPostImage.Status.REJECTED,
+            rejected_reason="Nevhodny obsah.",
         )
 
-        self.assertIsNone(self._detail()["image"])
+        self.assertEqual(self._detail()["images"], [])
 
         self.client.force_authenticate(user=self.author)
-        image = self._detail()["image"]
-        self.assertEqual(image["status"], FeedPost.ImageStatus.REJECTED)
-        self.assertEqual(image["rejected_reason"], "Nevhodny obsah.")
+        images = self._detail()["images"]
+        self.assertEqual(images[0]["status"], FeedPostImage.Status.REJECTED)
+        self.assertEqual(images[0]["rejected_reason"], "Nevhodny obsah.")
+
+    def test_images_keep_their_order_and_hide_unapproved_from_others(self):
+        """Viac fotiek: poradie podľa `order`, cudziemu divákovi len APPROVED."""
+        approved = [
+            self._add_image(
+                order=index,
+                status=FeedPostImage.Status.APPROVED,
+                approved_key=f"media/feed/1/large-{index}.webp",
+                thumbnail_key=f"media/feed/1/thumb-{index}.webp",
+            )
+            # ZÁMERNE od najvyššieho order po najnižší – keby serializér
+            # poradie nedržal, vrátil by ich v poradí vzniku.
+            for index in (2, 1, 0)
+        ]
+        pending = self._add_image(
+            order=3,
+            status=FeedPostImage.Status.PENDING,
+            pending_key="uploads/feed/1/9/x.jpg",
+        )
+
+        images = self._detail()["images"]
+        self.assertEqual(len(images), 3)
+        self.assertNotIn(pending.id, [item["id"] for item in images])
+        self.assertEqual(
+            [item["id"] for item in images],
+            [image.id for image in sorted(approved, key=lambda i: i.order)],
+        )
+
+        self.client.force_authenticate(user=self.author)
+        author_images = self._detail()["images"]
+        # Autor vidí aj rozpracovanú, a to na konci (order=3).
+        self.assertEqual(len(author_images), 4)
+        self.assertEqual(author_images[-1]["id"], pending.id)
 
 
 class FeedProfileListsApiTests(APITestCase):

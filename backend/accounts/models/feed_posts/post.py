@@ -36,11 +36,6 @@ class FeedPost(FeedPostSharingMixin, models.Model):
         SHARED_PORTFOLIO_ITEM = "shared_portfolio_item", _("Zdieľané portfólio")
         SHARED_FEED_POST = "shared_feed_post", _("Zdieľaný príspevok")
 
-    class ImageStatus(models.TextChoices):
-        PENDING = "pending", _("Čaká na spracovanie")
-        APPROVED = "approved", _("Schválené")
-        REJECTED = "rejected", _("Zamietnuté")
-
     author = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -59,42 +54,8 @@ class FeedPost(FeedPostSharingMixin, models.Model):
     # čiže limit vynúti aj priamy ORM zápis (backend = zdroj pravdy).
     caption = models.CharField(_("Text"), max_length=500, blank=True, default="")
 
-    # --- Fotka (len FREE_POST, max 1) – rovnaká štruktúra ako PortfolioImage,
-    # ale priamo na tomto modeli (1 fotka → netreba child tabuľku).
-    # image_status = "" (blank) znamená "príspevok bez fotky".
-    image_status = models.CharField(
-        _("Stav fotky"),
-        max_length=20,
-        choices=ImageStatus.choices,
-        blank=True,
-        default="",
-    )
-    image_pending_key = models.CharField(
-        _("S3 kľúč (pending)"), max_length=1024, blank=True, default=""
-    )
-    image_approved_key = models.CharField(
-        _("S3 kľúč (approved)"), max_length=1024, blank=True, default=""
-    )
-    image_thumbnail_key = models.CharField(
-        _("S3 kľúč (thumbnail)"), max_length=1024, blank=True, default=""
-    )
-    image_original_filename = models.CharField(
-        _("Pôvodný názov súboru"), max_length=255, blank=True, default=""
-    )
-    image_content_type = models.CharField(
-        _("Content-Type"), max_length=100, blank=True, default=""
-    )
-    image_size_bytes = models.BigIntegerField(
-        _("Veľkosť (bytes)"), null=True, blank=True
-    )
-    image_width = models.IntegerField(_("Šírka"), null=True, blank=True)
-    image_height = models.IntegerField(_("Výška"), null=True, blank=True)
-    image_rejected_reason = models.CharField(
-        _("Dôvod zamietnutia"), max_length=255, blank=True, default=""
-    )
-    image_processed_at = models.DateTimeField(
-        _("Spracované o"), null=True, blank=True
-    )
+    # Fotky žijú v samostatnej tabuľke ``FeedPostImage`` (Fáza 4.4, limit 5).
+    # Do Fázy 4.3 boli polia ``image_*`` priamo tu – pri jednej fotke to stačilo.
 
     # --- Zdieľanie (SET_NULL → príspevok prežije zmazanie originálu; obsah
     # zostáva v snapshot poliach nižšie – vzor Review.offer + reviewed_user).
@@ -183,10 +144,14 @@ class FeedPost(FeedPostSharingMixin, models.Model):
         verbose_name_plural = _("Príspevky na nástenke")
         ordering = ["-created_at", "-id"]
         constraints = [
-            # FREE_POST: caption povinný, žiadne zdieľanie, fotka voliteľná.
+            # FREE_POST: caption povinný, žiadne zdieľanie, fotky voliteľné.
             # SHARED_*: snapshot title povinný (FK je nullable kvôli SET_NULL
-            # survival vzoru – NEsmie byť v constraints!), druhé zdieľanie NULL
-            # a fotka zakázaná (image_status = "").
+            # survival vzoru – NEsmie byť v constraints!), druhé zdieľanie NULL.
+            #
+            # „Zdieľanie nesmie mať fotku" tu od Fázy 4.4 NIE JE: fotky sú riadky
+            # v ``FeedPostImage``, a počet riadkov v child tabuľke CheckConstraint
+            # vyjadriť nevie. Vynucuje sa pri upload-init (``_get_own_free_post``
+            # prepustí len FREE_POST) – rovnako ako limit MAX_FEED_POST_IMAGES.
             models.CheckConstraint(
                 check=(
                     models.Q(
@@ -202,7 +167,6 @@ class FeedPost(FeedPostSharingMixin, models.Model):
                         post_type="shared_offer",
                         shared_portfolio_item__isnull=True,
                         shared_feed_post__isnull=True,
-                        image_status="",
                     )
                     & ~models.Q(shared_title="")
                 )
@@ -211,12 +175,11 @@ class FeedPost(FeedPostSharingMixin, models.Model):
                         post_type="shared_portfolio_item",
                         shared_offer__isnull=True,
                         shared_feed_post__isnull=True,
-                        image_status="",
                     )
                     & ~models.Q(shared_title="")
                 )
                 | (
-                    # SHARED_FEED_POST: ostatné zdroje NULL, fotka zakázaná.
+                    # SHARED_FEED_POST: ostatné zdroje NULL.
                     # Na rozdiel od ponuky/portfólia tu ZÁMERNE NIE JE podmienka
                     # „snapshot musí byť neprázdny": shared_post_caption je text
                     # iného používateľa, ktorý GDPR anonymizácia legitímne maže
@@ -230,7 +193,6 @@ class FeedPost(FeedPostSharingMixin, models.Model):
                         post_type="shared_feed_post",
                         shared_offer__isnull=True,
                         shared_portfolio_item__isnull=True,
-                        image_status="",
                     )
                 ),
                 name="feed_post_type_consistency",
@@ -277,10 +239,3 @@ class FeedPost(FeedPostSharingMixin, models.Model):
                 )
         super().save(*args, **kwargs)
 
-    def image_storage_keys(self) -> list[str]:
-        """Všetky S3/storage kľúče fotky – pre cleanup po zmazaní príspevku."""
-        return [
-            self.image_pending_key,
-            self.image_approved_key,
-            self.image_thumbnail_key,
-        ]

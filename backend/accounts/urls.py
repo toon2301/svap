@@ -171,7 +171,7 @@ urlpatterns = [
         name="feed_post_detail",
     ),
     path(
-        "feed/posts/<int:post_id>/image/",
+        "feed/posts/<int:post_id>/images/<int:image_id>/file/",
         views.feed_post_image_file_view,
         name="feed_post_image_file",
     ),
@@ -216,12 +216,12 @@ urlpatterns = [
         name="feed_post_report",
     ),
     path(
-        "feed/posts/<int:post_id>/image/upload-init/",
+        "feed/posts/<int:post_id>/images/upload-init/",
         views.feed_post_image_upload_init_view,
         name="feed_post_image_upload_init",
     ),
     path(
-        "feed/posts/<int:post_id>/image/upload-complete/",
+        "feed/posts/<int:post_id>/images/<int:image_id>/upload-complete/",
         views.feed_post_image_upload_complete_view,
         name="feed_post_image_upload_complete",
     ),

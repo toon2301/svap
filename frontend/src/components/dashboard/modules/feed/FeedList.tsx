@@ -107,14 +107,19 @@ function PullIndicator({
   ready: boolean;
 }) {
   const { t } = useLanguage();
-  if (distance <= 0 && !refreshing) return null;
+  const active = distance > 0 || refreshing;
 
-  const label = refreshing
-    ? t('feed.refreshing', 'Obnovujem...')
-    : ready
-      ? t('feed.releaseToRefresh', 'Pusti pre obnovenie')
-      : t('feed.pullToRefresh', 'Potiahni pre obnovenie');
+  const label = !active
+    ? ''
+    : refreshing
+      ? t('feed.refreshing', 'Obnovujem...')
+      : ready
+        ? t('feed.releaseToRefresh', 'Pusti pre obnovenie')
+        : t('feed.pullToRefresh', 'Potiahni pre obnovenie');
 
+  // Kontajner ostáva v DOM aj v pokoji – mení sa len výška a obsah. aria-live
+  // ohlasuje zmeny iba v prvku, ktorý čítačka sledovala UŽ PREDTÝM; keby sa
+  // mountoval až počas ťahania, oznámenie by zaniklo.
   return (
     <div
       data-testid="feed-pull-indicator"
@@ -122,22 +127,28 @@ function PullIndicator({
       style={{ height: distance }}
       aria-live="polite"
     >
-      <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        className={`h-5 w-5 ${refreshing ? 'animate-spin' : ''}`}
-        style={refreshing ? undefined : { transform: `rotate(${distance * 3}deg)` }}
-        aria-hidden="true"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M4 4v6h6M20 20v-6h-6M20 9A8 8 0 0 0 5.6 6.6M4 15a8 8 0 0 0 14.4 2.4"
-        />
-      </svg>
-      <span className="mt-1 text-xs font-medium">{label}</span>
+      {active ? (
+        <>
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            className={`h-5 w-5 ${refreshing ? 'animate-spin' : ''}`}
+            style={
+              refreshing ? undefined : { transform: `rotate(${distance * 3}deg)` }
+            }
+            aria-hidden="true"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M4 4v6h6M20 20v-6h-6M20 9A8 8 0 0 0 5.6 6.6M4 15a8 8 0 0 0 14.4 2.4"
+            />
+          </svg>
+          <span className="mt-1 text-xs font-medium">{label}</span>
+        </>
+      ) : null}
     </div>
   );
 }

@@ -10,7 +10,8 @@
  *
  * Keď zlyhá až upload, príspevok už existuje – nemažeme ho (appka nemá delete
  * endpoint a text je platný obsah), ale povieme to samostatným varovaním, nech
- * to nevyzerá, že sa nestalo nič.
+ * to nevyzerá, že sa nestalo nič. Pri viacerých fotkách varovanie MENUJE tie,
+ * ktoré neprešli – „niečo zlyhalo" by používateľa nechalo hádať.
  */
 
 import { useEffect, useRef, useState } from 'react';
@@ -28,7 +29,9 @@ import {
   FEED_IMAGE_ACCEPT,
   FEED_IMAGE_MAX_BYTES,
   FEED_IMAGE_MAX_MB,
-  uploadFeedPostImage,
+  MAX_FEED_POST_IMAGES,
+  isAllowedFeedImageName,
+  uploadFeedPostImages,
 } from '@/lib/feedImageUpload';
 
 const CAPTION_MAX_LENGTH = 500;
@@ -50,12 +53,14 @@ export default function FeedPostComposerModal({
   const [mounted, setMounted] = useState(false);
   const [caption, setCaption] = useState('');
   const [taggedUsers, setTaggedUsers] = useState<GroupMemberCandidate[]>([]);
-  const [file, setFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
+  const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
-  // Rozlišuje text na tlačidle: vytváranie vs. nahrávanie fotky. Používateľ
-  // tak vidí, že sa niečo deje, aj keď upload trvá dlhšie než samotný zápis.
-  const [uploadingImage, setUploadingImage] = useState(false);
+  // Rozlišuje text na tlačidle: vytváranie vs. nahrávanie fotiek, a pri
+  // viacerých ukazuje priebeh („nahrávam 2 z 4").
+  const [uploadProgress, setUploadProgress] = useState<
+    { current: number; total: number } | null
+  >(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const { textareaRef, insertEmoji } = useEmojiInsertion(caption, setCaption);
 
@@ -65,21 +70,21 @@ export default function FeedPostComposerModal({
     if (!open) return;
     setCaption('');
     setTaggedUsers([]);
-    setFile(null);
-    setPreviewUrl(null);
-    setUploadingImage(false);
+    setFiles([]);
+    setPreviewUrls([]);
+    setUploadProgress(null);
   }, [open]);
 
-  // Náhľad cez object URL – vždy uvoľniť, inak Blob visí v pamäti do reloadu.
+  // Náhľady cez object URL – vždy uvoľniť, inak Blob visí v pamäti do reloadu.
   useEffect(() => {
-    if (!file || typeof URL.createObjectURL !== 'function') {
-      setPreviewUrl(null);
+    if (!files.length || typeof URL.createObjectURL !== 'function') {
+      setPreviewUrls([]);
       return;
     }
-    const url = URL.createObjectURL(file);
-    setPreviewUrl(url);
-    return () => URL.revokeObjectURL(url);
-  }, [file]);
+    const urls = files.map((item) => URL.createObjectURL(item));
+    setPreviewUrls(urls);
+    return () => urls.forEach((url) => URL.revokeObjectURL(url));
+  }, [files]);
 
   const dialogRef = useFeedDialog({ open, onClose, canClose: !submitting });
 
@@ -90,20 +95,48 @@ export default function FeedPostComposerModal({
   // Presne BE validácia pre free_post: text je povinný, fotka nie.
   const canSubmit = Boolean(trimmed) && !tooLong && !submitting;
 
-  const handlePickFile = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const selected = event.target.files?.[0] ?? null;
-    // Reset hodnoty: bez neho by sa výber TOHO ISTÉHO súboru po odstránení
+  const remainingSlots = MAX_FEED_POST_IMAGES - files.length;
+
+  const handlePickFiles = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const selected = Array.from(event.target.files ?? []);
+    // Reset hodnoty: bez neho by sa výber TÝCH ISTÝCH súborov po odobratí
     // nespustil znova (change sa nevystrelí, keď sa hodnota nezmení).
     event.target.value = '';
-    if (!selected) return;
-    if (selected.size > FEED_IMAGE_MAX_BYTES) {
-      toast.error(
-        t('feed.composerImageTooLarge', 'Fotka je príliš veľká. Maximum je {max} MB.')
-          .replace('{max}', () => String(FEED_IMAGE_MAX_MB)),
-      );
-      return;
+    if (!selected.length) return;
+
+    const accepted: File[] = [];
+    for (const candidate of selected) {
+      // Formát aj veľkosť overíme TU – po vytvorení príspevku by odmietnutie
+      // zo servera nechalo používateľa s príspevkom bez očakávanej fotky.
+      if (!isAllowedFeedImageName(candidate.name)) {
+        toast.error(
+          t('feed.composerImageBadType', 'Tento formát fotky nie je podporovaný.'),
+        );
+        continue;
+      }
+      if (candidate.size > FEED_IMAGE_MAX_BYTES) {
+        toast.error(
+          t('feed.composerImageTooLarge', 'Fotka je príliš veľká. Maximum je {max} MB.')
+            .replace('{max}', String(FEED_IMAGE_MAX_MB)),
+        );
+        continue;
+      }
+      accepted.push(candidate);
     }
-    setFile(selected);
+    if (!accepted.length) return;
+
+    // Limit sa vynucuje priebežne: nadbytočné sa zahodia a povie sa to.
+    if (accepted.length > remainingSlots) {
+      toast.error(
+        t('feed.composerImagesLimit', 'Príspevok môže mať najviac {max} fotiek.')
+          .replace('{max}', String(MAX_FEED_POST_IMAGES)),
+      );
+    }
+    setFiles((current) => [...current, ...accepted].slice(0, MAX_FEED_POST_IMAGES));
+  };
+
+  const handleRemoveFile = (index: number) => {
+    setFiles((current) => current.filter((_, position) => position !== index));
   };
 
   const handleSubmit = async () => {
@@ -124,41 +157,59 @@ export default function FeedPostComposerModal({
       return;
     }
 
-    // Fotka je voliteľná – bez nej je hotovo hneď.
+    // Fotky sú voliteľné – bez nich je hotovo hneď.
     let result = created;
-    if (file) {
-      setUploadingImage(true);
+    let imageFailed = false;
+    if (files.length) {
       try {
-        await uploadFeedPostImage(created.id, file);
+        // Postupne, nie paralelne – priebeh sa dá hlásiť a chyba priradiť
+        // ku konkrétnemu súboru.
+        const failures = await uploadFeedPostImages(
+          created.id,
+          files,
+          (current, total) => setUploadProgress({ current, total }),
+        );
+        if (failures.length) {
+          imageFailed = true;
+          // Menovite, nie generické „niečo zlyhalo" – používateľ inak nevie,
+          // ktorú fotku má skúsiť znova.
+          toast.error(
+            t(
+              'feed.composerImagesError',
+              'Príspevok bol uverejnený, ale tieto fotky sa nepodarilo nahrať: {names}',
+            ).replace(
+              '{names}',
+              failures.map((failure) => failure.file.name).join(', '),
+            ),
+          );
+        }
         // Načítaj príspevok znova, nech karta rovno ukáže stav spracovania
-        // fotky. Zlyhanie refetchu nie je dôvod na chybu – text už existuje.
+        // fotiek. Zlyhanie refetchu nie je dôvod na chybu – text už existuje.
         try {
           result = await getFeedPost(created.id);
         } catch {
           result = created;
         }
-      } catch (err) {
-        const message =
-          (err as { response?: { data?: { error?: string } } })?.response?.data
-            ?.error ||
-          t(
-            'feed.composerImageError',
-            'Príspevok bol uverejnený, ale fotku sa nepodarilo nahrať.',
-          );
-        toast.error(message);
       } finally {
-        setUploadingImage(false);
+        setUploadProgress(null);
       }
     }
 
-    toast.success(t('feed.composerSuccess', 'Príspevok bol uverejnený.'));
+    // Úspech hlásime len keď naozaj prešlo VŠETKO – pri zlyhanom uploade už
+    // odišiel vysvetľujúci error toast a dva protichodné hlášky vedľa seba
+    // by len mýlili.
+    if (!imageFailed) {
+      toast.success(t('feed.composerSuccess', 'Príspevok bol uverejnený.'));
+    }
     onCreated?.(result);
     setSubmitting(false);
     onClose();
   };
 
-  const submitLabel = uploadingImage
-    ? t('feed.composerUploading', 'Nahrávam fotku...')
+  const submitLabel = uploadProgress
+    ? t('feed.composerUploadingProgress', 'Nahrávam fotku {current} z {total}...')
+        .replace('{current}', String(uploadProgress.current))
+        .replace('{total}', String(uploadProgress.total))
     : submitting
       ? t('common.sending', 'Odosielam...')
       : t('feed.composerSubmit', 'Zdieľať');
@@ -229,55 +280,61 @@ export default function FeedPostComposerModal({
             </span>
           </div>
 
-          {/* Fotka – jedna na príspevok (backendový limit), takže po výbere
-              sa ponuka „pridať" mení na náhľad s výmenou/odstránením. */}
+          {/* Fotky – až MAX_FEED_POST_IMAGES. Tlačidlo „pridať" ostáva
+              dostupné, kým sú voľné miesta, a hlási, koľko ich ešte je. */}
           <div className="mt-3">
             <input
               ref={fileInputRef}
               type="file"
+              multiple
               accept={FEED_IMAGE_ACCEPT}
-              onChange={handlePickFile}
+              onChange={handlePickFiles}
               className="hidden"
               data-testid="feed-composer-file-input"
             />
-            {file ? (
-              <div
-                data-testid="feed-composer-image-preview"
-                className="relative overflow-hidden rounded-xl border border-gray-200 dark:border-gray-700"
+
+            {files.length ? (
+              <ul
+                data-testid="feed-composer-image-previews"
+                className="mb-2 grid grid-cols-3 gap-2"
               >
-                {previewUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={previewUrl}
-                    alt={t('feed.composerImageAlt', 'Náhľad vybranej fotky')}
-                    className="max-h-56 w-full object-cover"
-                  />
-                ) : null}
-                <div className="flex items-center justify-between gap-2 px-3 py-2">
-                  <span className="truncate text-xs text-gray-500 dark:text-gray-400">
-                    {file.name}
-                  </span>
-                  <div className="flex shrink-0 gap-1">
+                {files.map((item, index) => (
+                  <li
+                    key={`${item.name}-${index}`}
+                    data-testid="feed-composer-image-preview"
+                    className="relative overflow-hidden rounded-xl border border-gray-200 dark:border-gray-700"
+                  >
+                    {previewUrls[index] ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={previewUrls[index]}
+                        alt={t('feed.composerImageAlt', 'Náhľad vybranej fotky')}
+                        className="h-24 w-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-24 w-full items-center justify-center bg-gray-100 dark:bg-gray-800">
+                        <PhotoIcon className="h-5 w-5 text-gray-400" />
+                      </div>
+                    )}
                     <button
                       type="button"
-                      onClick={() => fileInputRef.current?.click()}
+                      onClick={() => handleRemoveFile(index)}
                       disabled={submitting}
-                      className="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-purple-600 transition-colors hover:bg-purple-50 disabled:opacity-50 dark:text-purple-300 dark:hover:bg-purple-900/30"
+                      aria-label={t('feed.composerImageRemove', 'Odstrániť')
+                        .concat(': ', item.name)}
+                      className="absolute right-1 top-1 rounded-full bg-black/55 p-1 text-white transition-colors hover:bg-black/75 disabled:opacity-50"
                     >
-                      {t('feed.composerImageReplace', 'Vymeniť')}
+                      <XMarkIcon className="h-3.5 w-3.5" />
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => setFile(null)}
-                      disabled={submitting}
-                      className="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-red-600 transition-colors hover:bg-red-50 disabled:opacity-50 dark:text-red-400 dark:hover:bg-red-900/20"
-                    >
-                      {t('feed.composerImageRemove', 'Odstrániť')}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ) : (
+                    <span className="block truncate px-2 py-1 text-[11px] text-gray-500 dark:text-gray-400">
+                      {item.name}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+
+            {remainingSlots > 0 ? (
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
@@ -286,8 +343,22 @@ export default function FeedPostComposerModal({
                 className="inline-flex items-center gap-2 rounded-xl border border-dashed border-gray-300 px-3 py-2 text-sm font-medium text-gray-600 transition-colors hover:border-purple-400 hover:text-purple-700 disabled:opacity-50 dark:border-gray-600 dark:text-gray-300 dark:hover:border-purple-500 dark:hover:text-purple-300"
               >
                 <PhotoIcon className="h-4 w-4" />
-                {t('feed.composerAddImage', 'Pridať fotku')}
+                {t('feed.composerAddImages', 'Pridať fotky')}
+                <span className="text-xs font-normal text-gray-400 dark:text-gray-500">
+                  {t('feed.composerImagesRemaining', 'ešte {n}').replace(
+                    '{n}',
+                    String(remainingSlots),
+                  )}
+                </span>
               </button>
+            ) : (
+              <p
+                data-testid="feed-composer-images-full"
+                className="text-xs text-gray-500 dark:text-gray-400"
+              >
+                {t('feed.composerImagesLimit', 'Príspevok môže mať najviac {max} fotiek.')
+                  .replace('{max}', String(MAX_FEED_POST_IMAGES))}
+              </p>
             )}
           </div>
 

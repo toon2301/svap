@@ -20,6 +20,8 @@ jest.mock('@/lib/feedApi', () => ({
   listFeedPostComments: jest.fn(),
   createFeedPostComment: jest.fn(),
   deleteFeedPostComment: jest.fn(),
+  likeFeedPostComment: jest.fn(),
+  unlikeFeedPostComment: jest.fn(),
 }));
 
 jest.mock('react-hot-toast', () => ({

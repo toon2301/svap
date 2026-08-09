@@ -1,10 +1,16 @@
-"""Upload fotky pre FeedPost (Fáza 1) – rovnaký reťazec ako portfólio:
+"""Upload fotiek pre FeedPost (Fáza 4.4) – rovnaký reťazec ako portfólio:
 init (presigned S3 POST) → klient nahrá do stagingu → complete (head_object +
 SafeSearch moderácia) → Celery WEBP varianty.
 
-Rozdiely oproti portfóliu: max 1 fotka (polia žijú priamo na FeedPost),
-len pre FREE_POST, bez local-upload presign fallbacku (dev-only vetva
-portfólia je naviazaná na portfolio kľúče; spracovanie local storage podporuje).
+Od Fázy 4.4 je limit 5 fotiek na príspevok a každá žije vo vlastnom
+``FeedPostImage`` riadku (predtým 1 fotka v poliach na FeedPost). Endpointy sú
+preto per-obrázok, presne ako portfolio ``image_views``:
+  - ``POST .../images/upload-init/``            → vytvorí záznam, vráti presigned
+  - ``POST .../images/<image_id>/upload-complete/`` → moderácia + spracovanie
+
+Každá fotka prechádza moderáciou NEZÁVISLE – zamietnutie jednej ostatné
+neovplyvní. Stále bez local-upload presign fallbacku (dev-only vetva portfólia
+je naviazaná na portfolio kľúče; spracovanie local storage podporuje).
 """
 
 import logging
@@ -13,6 +19,7 @@ import uuid
 
 from django.conf import settings
 from django.db import transaction
+from django.db.models import Max, Q
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
@@ -26,12 +33,12 @@ from portfolio.upload_constraints import allowed_image_extensions, max_image_byt
 from swaply.rate_limiting import api_rate_limit
 
 from ..feed_image_processing import PROCESSING_ENQUEUE_ERROR
-from ..models import FeedPost
+from ..models import MAX_FEED_POST_IMAGES, FeedPost, FeedPostImage
 
 logger = logging.getLogger(__name__)
 
 UPLOAD_EXPIRES_SECONDS = 600
-# Zhodné s FeedPost.image_original_filename.max_length.
+# Zhodné s FeedPostImage.original_filename.max_length.
 MAX_ORIGINAL_FILENAME_LENGTH = 255
 
 
@@ -42,7 +49,30 @@ def _post_not_found():
     )
 
 
+def _image_not_found():
+    return Response(
+        {"error": "Fotka nebola najdena."},
+        status=status.HTTP_404_NOT_FOUND,
+    )
+
+
+def _images_limit_response():
+    return Response(
+        {
+            "error": f"Maximalny pocet fotiek prispevku je {MAX_FEED_POST_IMAGES}.",
+            "code": "feed_post_images_limit_reached",
+        },
+        status=status.HTTP_400_BAD_REQUEST,
+    )
+
+
 def _get_own_free_post(request, post_id: int) -> FeedPost | None:
+    """Fotky smie mať len VLASTNÝ voľný príspevok.
+
+    Zdieľania fotku nemajú – od Fázy 4.4 to už nevynucuje DB CheckConstraint
+    (počet riadkov v child tabuľke sa constraintom vyjadriť nedá), takže je to
+    jediné miesto, kde sa to kontroluje.
+    """
     try:
         return FeedPost.objects.get(
             id=post_id,
@@ -51,6 +81,19 @@ def _get_own_free_post(request, post_id: int) -> FeedPost | None:
         )
     except FeedPost.DoesNotExist:
         return None
+
+
+def _active_images_q():
+    """Miesto v limite zaberá aj rozpracovaná fotka – inak by sa dalo cez
+    opakovaný init nahrať viac než MAX_FEED_POST_IMAGES."""
+    return Q(status=FeedPostImage.Status.PENDING) | Q(
+        status=FeedPostImage.Status.APPROVED
+    )
+
+
+def _next_image_order(post: FeedPost) -> int:
+    current_max = post.images.aggregate(value=Max("order"))["value"]
+    return 0 if current_max is None else current_max + 1
 
 
 def _validate_upload_metadata(request):
@@ -92,20 +135,10 @@ def _validate_upload_metadata(request):
 @permission_classes([IsAuthenticated])
 @api_rate_limit
 def feed_post_image_upload_init_view(request, post_id: int):
+    """Vytvorí FeedPostImage záznam a vráti presigned POST pre TÚTO fotku."""
     post = _get_own_free_post(request, post_id)
     if post is None:
         return _post_not_found()
-
-    # Max 1 fotka: nový upload je možný, len ak post fotku nemá alebo bola
-    # zamietnutá (retry). PENDING/APPROVED blokuje druhý upload.
-    if post.image_status in (
-        FeedPost.ImageStatus.PENDING,
-        FeedPost.ImageStatus.APPROVED,
-    ):
-        return Response(
-            {"error": "Prispevok uz fotku ma.", "code": "feed_post_image_exists"},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
 
     filename, content_type, size_bytes, error_response = _validate_upload_metadata(
         request
@@ -121,7 +154,26 @@ def feed_post_image_upload_init_view(request, post_id: int):
         )
 
     ext = os.path.splitext(filename)[1].lower()
-    key = f"uploads/feed/{post_id}/{uuid.uuid4().hex}{ext}"
+
+    # Limit aj vytvorenie záznamu pod zámkom príspevku – dva súbežné inity by
+    # inak obe videli count() < MAX a limit by sa dal prekročiť.
+    with transaction.atomic():
+        locked = FeedPost.objects.select_for_update().filter(pk=post.pk).first()
+        if locked is None:
+            return _post_not_found()
+        if locked.images.filter(_active_images_q()).count() >= MAX_FEED_POST_IMAGES:
+            return _images_limit_response()
+
+        image = FeedPostImage.objects.create(
+            post=locked,
+            order=_next_image_order(locked),
+            status=FeedPostImage.Status.PENDING,
+            original_filename=filename[:MAX_ORIGINAL_FILENAME_LENGTH],
+            content_type=content_type or "",
+            size_bytes=size_bytes,
+        )
+
+    key = f"uploads/feed/{post_id}/{image.id}/{uuid.uuid4().hex}{ext}"
     try:
         presigned = _get_s3_client().generate_presigned_post(
             Bucket=bucket,
@@ -134,8 +186,11 @@ def feed_post_image_upload_init_view(request, post_id: int):
     except Exception:
         logger.exception(
             "Failed to generate feed image presigned upload",
-            extra={"feed_post_id": post_id},
+            extra={"feed_post_id": post_id, "feed_post_image_id": image.id},
         )
+        # Bez presigned URL sa fotka nikdy nenahrá – prázdny PENDING záznam by
+        # navždy zaberal miesto v limite.
+        image.delete()
         return Response(
             {"error": "Nepodarilo sa pripravit upload."},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -143,6 +198,7 @@ def feed_post_image_upload_init_view(request, post_id: int):
 
     return Response(
         {
+            "image_id": image.id,
             "url": presigned.get("url"),
             "fields": presigned.get("fields", {}),
             "key": key,
@@ -156,16 +212,23 @@ def feed_post_image_upload_init_view(request, post_id: int):
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 @api_rate_limit
-def feed_post_image_upload_complete_view(request, post_id: int):
-    if _get_own_free_post(request, post_id) is None:
+def feed_post_image_upload_complete_view(request, post_id: int, image_id: int):
+    """Overí staging objekt, prejde moderáciou a naplánuje spracovanie."""
+    post = _get_own_free_post(request, post_id)
+    if post is None:
         return _post_not_found()
+
+    if not FeedPostImage.objects.filter(pk=image_id, post_id=post.id).exists():
+        return _image_not_found()
 
     filename = str(request.data.get("filename") or "").strip()
     key = str(request.data.get("key") or "").strip()
     if not key:
         return Response({"error": "Chyba key."}, status=status.HTTP_400_BAD_REQUEST)
 
-    expected_prefix = f"uploads/feed/{post_id}/"
+    # Kľúč musí patriť TEJTO fotke tohto príspevku – inak by sa dal podstrčiť
+    # staging objekt z cudzieho uploadu.
+    expected_prefix = f"uploads/feed/{post_id}/{image_id}/"
     if not key.startswith(expected_prefix):
         return Response(
             {"error": "Neplatny key."}, status=status.HTTP_400_BAD_REQUEST
@@ -200,6 +263,7 @@ def feed_post_image_upload_complete_view(request, post_id: int):
         )
 
     # Preflight SafeSearch moderácia pred zápisom do DB (vzor portfólia).
+    # Beží pre KAŽDÚ fotku zvlášť – rovnaký bezpečnostný štandard ako pri jednej.
     if getattr(settings, "SAFESEARCH_ENABLED", False):
         # Import MIMO try – keby zlyhal vnútri, except vetva by odkazovala na
         # nedefinovaný ModerationRejectedError (NameError namiesto čistej chyby).
@@ -222,7 +286,7 @@ def feed_post_image_upload_complete_view(request, post_id: int):
             # neošetrenú 500 – fotku neprijmeme (fail-closed, ako pri rejectnutí).
             logger.exception(
                 "Feed image moderation failed",
-                extra={"feed_post_id": post_id},
+                extra={"feed_post_id": post_id, "feed_post_image_id": image_id},
             )
             delete_storage_keys([key])
             return Response(
@@ -231,85 +295,83 @@ def feed_post_image_upload_complete_view(request, post_id: int):
             )
 
     with transaction.atomic():
-        try:
-            post = FeedPost.objects.select_for_update().get(
-                id=post_id,
-                author=request.user,
-                post_type=FeedPost.PostType.FREE_POST,
-            )
-        except FeedPost.DoesNotExist:
+        image = (
+            FeedPostImage.objects.select_for_update()
+            .filter(pk=image_id, post_id=post.id)
+            .first()
+        )
+        if image is None:
             transaction.on_commit(lambda: delete_storage_keys([key]))
-            return _post_not_found()
+            return _image_not_found()
 
-        if post.image_status in (
-            FeedPost.ImageStatus.PENDING,
-            FeedPost.ImageStatus.APPROVED,
-        ):
+        if image.status == FeedPostImage.Status.APPROVED:
             transaction.on_commit(lambda: delete_storage_keys([key]))
             return Response(
-                {"error": "Prispevok uz fotku ma.", "code": "feed_post_image_exists"},
+                {"error": "Fotka uz bola spracovana.", "code": "feed_image_exists"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        post.image_status = FeedPost.ImageStatus.PENDING
-        post.image_pending_key = key
+        image.status = FeedPostImage.Status.PENDING
+        image.pending_key = key
         # Klientom poslaný názov orež na dĺžku poľa – inak by save() spadol na
         # DataError (názov je len kozmetický údaj, nie dôvod odmietnuť upload).
-        post.image_original_filename = filename[:MAX_ORIGINAL_FILENAME_LENGTH]
-        post.image_content_type = content_type
-        post.image_size_bytes = size_bytes
-        post.image_rejected_reason = ""
+        image.original_filename = (
+            filename[:MAX_ORIGINAL_FILENAME_LENGTH] or image.original_filename
+        )
+        image.content_type = content_type
+        image.size_bytes = size_bytes
+        image.rejected_reason = ""
         # Retry po zamietnutí: starý čas spracovania by inak ostal a tváril sa,
         # že tento (ešte nespracovaný) PENDING upload je už vybavený.
-        post.image_processed_at = None
-        post.save(
+        image.processed_at = None
+        image.save(
             update_fields=[
-                "image_status",
-                "image_pending_key",
-                "image_original_filename",
-                "image_content_type",
-                "image_size_bytes",
-                "image_rejected_reason",
-                "image_processed_at",
-                "updated_at",
+                "status",
+                "pending_key",
+                "original_filename",
+                "content_type",
+                "size_bytes",
+                "rejected_reason",
+                "processed_at",
             ]
         )
 
-        def enqueue_processing(post_id=post.id, key=key):
+        def enqueue_processing(image_id=image.id, key=key):
             try:
                 if local_portfolio_upload_enabled():
                     from accounts.feed_image_processing import (
                         process_feed_post_image_record,
                     )
 
-                    process_feed_post_image_record(post_id)
+                    process_feed_post_image_record(image_id)
                 else:
                     from swaply.tasks.feed_images import process_feed_post_image
 
-                    process_feed_post_image.delay(post_id)
+                    process_feed_post_image.delay(image_id)
             except Exception as exc:
                 logger.exception(
                     "Failed to enqueue feed post image processing",
-                    extra={"feed_post_id": post_id, "error": str(exc)},
+                    extra={"feed_post_image_id": image_id, "error": str(exc)},
                 )
                 processed_at = timezone.now()
-                FeedPost.objects.filter(
-                    id=post_id,
-                    image_status=FeedPost.ImageStatus.PENDING,
+                FeedPostImage.objects.filter(
+                    id=image_id,
+                    status=FeedPostImage.Status.PENDING,
                 ).update(
-                    image_status=FeedPost.ImageStatus.REJECTED,
-                    image_rejected_reason=PROCESSING_ENQUEUE_ERROR,
-                    image_processed_at=processed_at,
+                    status=FeedPostImage.Status.REJECTED,
+                    rejected_reason=PROCESSING_ENQUEUE_ERROR,
+                    processed_at=processed_at,
                 )
                 delete_storage_keys([key])
 
         transaction.on_commit(enqueue_processing)
 
-    post.refresh_from_db()
+    image.refresh_from_db()
     return Response(
         {
-            "id": post.id,
-            "image_status": post.image_status,
+            "id": image.id,
+            "post_id": post.id,
+            "status": image.status,
         },
         status=status.HTTP_200_OK,
     )

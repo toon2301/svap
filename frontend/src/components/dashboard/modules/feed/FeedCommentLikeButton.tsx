@@ -10,7 +10,7 @@
  * neprerenderuje celý zoznam.
  */
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
 import {
@@ -32,6 +32,16 @@ export default function FeedCommentLikeButton({
   const [isLiked, setIsLiked] = useState(Boolean(comment.is_liked_by_me));
   const [likesCount, setLikesCount] = useState(comment.likes_count ?? 0);
   const pendingRef = useRef(false);
+
+  // Zoznam môže komentár nahradiť čerstvejšou verziou (obnovenie feedu) –
+  // pri rovnakom id ostane inštancia komponentu tá istá, takže bez tejto
+  // synchronizácie by karta ďalej ukazovala staré čísla. Počas prebiehajúcej
+  // požiadavky sa nepreberá, nech optimistická zmena neprebliká späť.
+  useEffect(() => {
+    if (pendingRef.current) return;
+    setIsLiked(Boolean(comment.is_liked_by_me));
+    setLikesCount(comment.likes_count ?? 0);
+  }, [comment.is_liked_by_me, comment.likes_count]);
 
   const handleToggle = async () => {
     if (pendingRef.current) return;

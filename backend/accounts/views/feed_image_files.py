@@ -18,7 +18,7 @@ from rest_framework.response import Response
 
 from swaply.rate_limiting import api_rate_limit
 
-from ..models import FeedPost
+from ..models import FeedPost, FeedPostImage
 from .feed_posts import visible_feed_posts
 
 logger = logging.getLogger(__name__)
@@ -68,20 +68,28 @@ def _stream_key(key: str):
 @api_view(["GET"])
 @permission_classes([AllowAny])
 @api_rate_limit
-def feed_post_image_file_view(request, post_id: int):
-    """Fotka voľného príspevku (?variant=thumbnail|large)."""
+def feed_post_image_file_view(request, post_id: int, image_id: int):
+    """Jedna fotka voľného príspevku (?variant=thumbnail|large).
+
+    Viditeľnosť sa vyhodnocuje cez RODIČOVSKÝ príspevok (rovnaký
+    ``visible_feed_posts`` filter ako zoznam), a fotka sa navyše musí
+    viazať práve naň – inak by sa cez cudzie post_id dal streamovať
+    obrázok zo skrytého príspevku.
+    """
     post = _visible_post_or_404(request, post_id)
+    image = FeedPostImage.objects.filter(pk=image_id, post_id=post.id).first()
+    if image is None:
+        raise Http404
+
     is_author = (
         getattr(request.user, "is_authenticated", False)
         and request.user.id == post.author_id
     )
-    if post.image_status != FeedPost.ImageStatus.APPROVED and not is_author:
+    if image.status != FeedPostImage.Status.APPROVED and not is_author:
         raise Http404
 
     variant = str(request.query_params.get("variant") or "large").strip().lower()
-    key = (
-        post.image_thumbnail_key if variant == "thumbnail" else post.image_approved_key
-    )
+    key = image.thumbnail_key if variant == "thumbnail" else image.approved_key
     return _stream_key(key)
 
 

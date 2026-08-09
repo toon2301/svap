@@ -49,6 +49,7 @@ from ..feed_serializers import FeedPostSerializer
 from ..models import (
     FeedPost,
     FeedPostComment,
+    FeedPostImage,
     FeedPostLike,
     FeedPostTag,
     OfferedSkill,
@@ -158,7 +159,12 @@ def _annotated_queryset():
                 queryset=FeedPostTag.objects.select_related("tagged_user").order_by(
                     "created_at", "id"
                 ),
-            )
+            ),
+            # Fotky serializuje get_images – bez prefetchu by to bolo N+1.
+            Prefetch(
+                "images",
+                queryset=FeedPostImage.objects.order_by("order", "id"),
+            ),
         )
         .annotate(
             _likes_count=_related_count_subquery(FeedPostLike),

@@ -42,7 +42,11 @@ from ..services.notifications import (
     create_feed_post_commented_notification,
     create_feed_post_liked_notification,
 )
-from ..services.user_blocks import lock_user_pair_for_update
+from ..services.user_blocks import (
+    BlockedUserInteractionError,
+    lock_user_pair_for_update,
+    lock_users_and_ensure_interaction_allowed,
+)
 from .feed_posts import visible_feed_posts
 from .photo_reports import _validate_report_payload
 
@@ -213,15 +217,35 @@ def feed_post_comment_like_view(request, post_id: int, comment_id: int):
                 )
 
         with transaction.atomic():
-            lock_user_pair_for_update(
-                first_user_id=request.user.id,
-                second_user_id=comment.author_id,
-            )
-            # Re-check pod zámkom – blok/sprivátnenie tesne pred lajkom.
+            # Blok voči AUTOROVI KOMENTÁRA – viditeľnosť príspevku ho nepokrýva:
+            # príspevok môže patriť tretej strane, s ktorou blok neexistuje,
+            # takže `visible_feed_posts` ho prepustí. Bez tejto kontroly by
+            # vzájomne blokovaní vedeli lajkovať (a notifikovať) cez cudziu
+            # nástenku. Rovnaký helper ako messaging.
+            try:
+                lock_users_and_ensure_interaction_allowed(
+                    first_user_id=request.user.id,
+                    second_user_id=comment.author_id,
+                )
+            except BlockedUserInteractionError:
+                return _comment_not_found()
+
+            # Re-check pod zámkom – sprivátnenie tesne pred lajkom.
             if _get_visible_post(request, post_id) is None:
                 return _post_not_found()
-            if not FeedPostComment.objects.filter(pk=comment_id, post_id=post_id).exists():
+
+            # Zamknutý riadok komentára, a ďalej sa pracuje UŽ S NÍM: medzi
+            # prvým načítaním a zápisom ho autor mohol zmazať. `notify_...`
+            # číta `comment` z tohto scope, takže dostane rovnakú inštanciu.
+            comment = (
+                FeedPostComment.objects.select_for_update()
+                .select_related("author")
+                .filter(pk=comment_id, post_id=post_id)
+                .first()
+            )
+            if comment is None:
                 return _comment_not_found()
+
             _, created = FeedPostCommentLike.objects.get_or_create(
                 comment=comment,
                 user=request.user,

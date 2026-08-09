@@ -33,7 +33,15 @@ function getScrollParent(node: HTMLElement | null): HTMLElement | null {
   let current = node?.parentElement ?? null;
   while (current) {
     const overflowY = window.getComputedStyle(current).overflowY;
-    if (/(auto|scroll|overlay)/.test(overflowY)) return current;
+    // Samotné `overflow-y: auto` nestačí – taký predok sa nemusí vôbec
+    // scrollovať (obsah sa doň zmestí) a jeho scrollTop by bol navždy 0,
+    // takže by sme gesto povolili aj uprostred reálne scrollovaného rodiča.
+    if (
+      /(auto|scroll|overlay)/.test(overflowY) &&
+      current.scrollHeight > current.clientHeight
+    ) {
+      return current;
+    }
     current = current.parentElement;
   }
   return null;
@@ -54,6 +62,8 @@ export function useFeedPullToRefresh({
   const [refreshing, setRefreshing] = useState(false);
 
   const startYRef = useRef<number | null>(null);
+  /** Scrollovací predok, vyhľadaný raz za gesto (viď handleTouchStart). */
+  const scrollerRef = useRef<HTMLElement | null>(null);
   const distanceRef = useRef(0);
   const refreshingRef = useRef(false);
   const enabledRef = useRef(enabled);
@@ -71,14 +81,18 @@ export function useFeedPullToRefresh({
     const node = containerRef.current;
     if (!node) return;
 
+    // Scroller sa hľadá RAZ za gesto (pri touchstart) a drží sa v ref –
+    // prechádzať DOM pri každom touchmove by bola zbytočná práca v tom
+    // najcitlivejšom mieste.
     const isAtTop = () => {
-      const scroller = getScrollParent(node);
+      const scroller = scrollerRef.current;
       return (scroller ? scroller.scrollTop : window.scrollY) <= 0;
     };
 
     const handleTouchStart = (event: TouchEvent) => {
       if (!enabledRef.current || refreshingRef.current) return;
       if (event.touches.length !== 1) return;
+      scrollerRef.current = getScrollParent(node);
       // Gesto sa smie začať len úplne hore – inak ide o bežné scrollovanie.
       if (!isAtTop()) return;
       startYRef.current = event.touches[0].clientY;

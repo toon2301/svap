@@ -823,10 +823,10 @@ export const endpoints = {
     postReport: (id: number) => `/auth/feed/posts/${id}/report/`,
     userPosts: (userId: number) => `/auth/feed/users/${userId}/posts/`,
     userTaggedPosts: (userId: number) => `/auth/feed/users/${userId}/tagged/`,
-    postImageUploadInit: (postId: number) =>
-      `/auth/feed/posts/${postId}/image/upload-init/`,
-    postImageUploadComplete: (postId: number) =>
-      `/auth/feed/posts/${postId}/image/upload-complete/`,
+    postImagesUploadInit: (postId: number) =>
+      `/auth/feed/posts/${postId}/images/upload-init/`,
+    postImageUploadComplete: (postId: number, imageId: number) =>
+      `/auth/feed/posts/${postId}/images/${imageId}/upload-complete/`,
   },
   portfolio: {
     list: '/auth/portfolio/',

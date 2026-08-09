@@ -63,7 +63,9 @@ export default function FeedPostShareModal({
     ? post.shared_content.caption || post.shared_content.title
     : post.caption;
   const previewThumbnail =
-    post.shared_content?.thumbnail_url || post.image?.thumbnail_url || null;
+    post.shared_content?.thumbnail_url ||
+    post.images?.[0]?.thumbnail_url ||
+    null;
 
   const tooLong = caption.length > SHARE_CAPTION_MAX_LENGTH;
 

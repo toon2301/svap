@@ -11,6 +11,14 @@ jest.mock('@/lib/feedApi', () => ({
   getFeedPost: jest.fn(),
 }));
 
+jest.mock('@/lib/feedImageUpload', () => ({
+  uploadFeedPostImage: jest.fn(),
+  isAllowedFeedImageName: () => true,
+  FEED_IMAGE_MAX_MB: 5,
+  FEED_IMAGE_MAX_BYTES: 5 * 1024 * 1024,
+  FEED_IMAGE_ACCEPT: '.jpg,.png',
+}));
+
 jest.mock('react-hot-toast', () => ({
   __esModule: true,
   default: { error: jest.fn(), success: jest.fn() },

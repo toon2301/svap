@@ -16,6 +16,8 @@ jest.mock('@/lib/feedApi', () => ({
   listFeedPostComments: jest.fn(),
   createFeedPostComment: jest.fn(),
   deleteFeedPostComment: jest.fn(),
+  likeFeedPostComment: jest.fn(),
+  unlikeFeedPostComment: jest.fn(),
   likeFeedPost: jest.fn(),
   unlikeFeedPost: jest.fn(),
   parseFeedPostId: (v: unknown) => (Number(v) >= 1 ? Number(v) : null),

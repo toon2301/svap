@@ -159,6 +159,20 @@ export default function NotificationItem({
           ? t('notifications.profileLikedTitle', 'Paci sa mi tvoj profil')
         : notification.type === 'skill_request'
           ? notification.title || t('notifications.skillRequestFeedTitle', 'Nová žiadosť')
+        // Feed typy: BE ukladá `title` v jednom jazyku v čase vzniku, takže by
+        // prišiel vždy po slovensky – rovnaký dôvod, pre aký sa tu prekladá aj
+        // `body`. Titulok číta screen reader (sr-only), preto musí byť v
+        // aktívnom jazyku.
+        : notification.type === 'feed_post_liked'
+          ? t('notifications.feedPostLikedTitle', 'Páči sa mi tvoj príspevok')
+        : notification.type === 'feed_post_commented'
+          ? t('notifications.feedPostCommentedTitle', 'Komentár k príspevku')
+        : notification.type === 'feed_post_tagged'
+          ? t('notifications.feedPostTaggedTitle', 'Označenie v príspevku')
+        : notification.type === 'feed_post_shared'
+          ? t('notifications.feedPostSharedTitle', 'Zdieľanie tvojho obsahu')
+        : notification.type === 'feed_post_comment_liked'
+          ? t('notifications.feedPostCommentLikedTitle', 'Páči sa mi tvoj komentár')
           : notification.title || t('notifications.genericTitle', 'Nové upozornenie');
 
   const body =

@@ -8,6 +8,7 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
+import toast from 'react-hot-toast';
 import FeedList from '../FeedList';
 import { createFeedPost, listFeedPosts, type FeedPost } from '@/lib/feedApi';
 import { PULL_TO_REFRESH_THRESHOLD } from '../useFeedPullToRefresh';
@@ -20,6 +21,7 @@ jest.mock('@/lib/feedApi', () => ({
 
 jest.mock('@/lib/feedImageUpload', () => ({
   uploadFeedPostImage: jest.fn(),
+  isAllowedFeedImageName: () => true,
   FEED_IMAGE_MAX_MB: 5,
   FEED_IMAGE_MAX_BYTES: 5 * 1024 * 1024,
   FEED_IMAGE_ACCEPT: 'image/*',
@@ -59,6 +61,8 @@ jest.mock('framer-motion', () => ({
 
 const mockedList = listFeedPosts as jest.MockedFunction<typeof listFeedPosts>;
 const mockedCreate = createFeedPost as jest.MockedFunction<typeof createFeedPost>;
+const mockedToastSuccess = toast.success as jest.MockedFunction<typeof toast.success>;
+const mockedToastError = toast.error as jest.MockedFunction<typeof toast.error>;
 
 function makePost(id: number, caption: string): FeedPost {
   return {
@@ -109,6 +113,8 @@ describe('FeedList – vkladanie nových príspevkov na vrch', () => {
   beforeEach(() => {
     mockedList.mockReset();
     mockedCreate.mockReset();
+    mockedToastSuccess.mockReset();
+    mockedToastError.mockReset();
     setScrollY(0);
     mockedList.mockResolvedValue({
       results: [makePost(1, 'Starý')],
@@ -166,6 +172,51 @@ describe('FeedList – vkladanie nových príspevkov na vrch', () => {
     expect(mockedList).toHaveBeenCalledTimes(2);
   });
 
+  it('refreshes the data of posts that are already displayed', async () => {
+    render(<FeedList />);
+    await screen.findByTestId('feed-list');
+    expect(screen.getByTestId('feed-like-button')).toHaveTextContent('0');
+
+    // Ten istý príspevok, ale medzitým pribudli lajky.
+    const updated = makePost(1, 'Starý');
+    updated.likes_count = 12;
+    mockedList.mockResolvedValue({
+      results: [updated],
+      next: null,
+      previous: null,
+    });
+
+    await userEvent.click(screen.getByTestId('feed-check-new'));
+
+    // Prekrývajúce sa id sa NAHRADIA čerstvou verziou, nezahodia sa.
+    await waitFor(() =>
+      expect(screen.getByTestId('feed-like-button')).toHaveTextContent('12'),
+    );
+  });
+
+  it('says so when the refresh finds nothing new', async () => {
+    render(<FeedList />);
+    await screen.findByTestId('feed-list');
+
+    await userEvent.click(screen.getByTestId('feed-check-new'));
+
+    await waitFor(() =>
+      expect(mockedToastSuccess).toHaveBeenCalledWith('Žiadne nové príspevky.'),
+    );
+  });
+
+  it('reports a failed refresh', async () => {
+    render(<FeedList />);
+    await screen.findByTestId('feed-list');
+
+    mockedList.mockRejectedValue(new Error('offline'));
+    await userEvent.click(screen.getByTestId('feed-check-new'));
+
+    await waitFor(() =>
+      expect(mockedToastError).toHaveBeenCalledWith('Obnovenie sa nepodarilo.'),
+    );
+  });
+
   it('ignores the gesture when the feed is scrolled down', async () => {
     render(<FeedList />);
     await screen.findByTestId('feed-list');
@@ -175,7 +226,8 @@ describe('FeedList – vkladanie nových príspevkov na vrch', () => {
     pull(OVER_THRESHOLD);
 
     await waitFor(() => expect(mockedList).toHaveBeenCalledTimes(1));
-    expect(screen.queryByTestId('feed-pull-indicator')).not.toBeInTheDocument();
+    // Kontajner ostáva kvôli aria-live namountovaný, len prázdny.
+    expect(screen.getByTestId('feed-pull-indicator')).toBeEmptyDOMElement();
   });
 
   it('ignores a pull that stops short of the threshold', async () => {
@@ -228,9 +280,17 @@ describe('FeedList – vkladanie nových príspevkov na vrch', () => {
 
     fireEvent.touchEnd(container, { touches: [] });
 
-    // Bežné scrollovanie (nie sme hore) sa naopak brzdiť NESMIE.
-    setScrollY(300);
+    // Gesto začne hore (inicializuje sa), ale obsah sa medzitým odscrolluje –
+    // ďalší pohyb už patrí bežnému scrollovaniu a brzdiť sa NESMIE.
+    setScrollY(0);
     fireEvent.touchStart(container, { touches: [{ clientY: 0 }] });
+    const initial = new TouchEvent('touchmove', { cancelable: true, bubbles: true });
+    Object.defineProperty(initial, 'touches', { value: [{ clientY: 30 }] });
+    container.dispatchEvent(initial);
+    // Kontrola, že gesto naozaj bežalo – inak by test nedokazoval nič.
+    expect(initial.defaultPrevented).toBe(true);
+
+    setScrollY(300);
     const scrolling = new TouchEvent('touchmove', { cancelable: true, bubbles: true });
     Object.defineProperty(scrolling, 'touches', { value: [{ clientY: 60 }] });
     container.dispatchEvent(scrolling);

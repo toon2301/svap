@@ -9,7 +9,7 @@ import '@testing-library/jest-dom';
 import toast from 'react-hot-toast';
 import FeedPostComposerModal from '../FeedPostComposerModal';
 import { createFeedPost, getFeedPost, type FeedPost } from '@/lib/feedApi';
-import { uploadFeedPostImage } from '@/lib/feedImageUpload';
+import { uploadFeedPostImages } from '@/lib/feedImageUpload';
 
 jest.mock('@/lib/feedApi', () => ({
   createFeedPost: jest.fn(),
@@ -17,10 +17,13 @@ jest.mock('@/lib/feedApi', () => ({
 }));
 
 jest.mock('@/lib/feedImageUpload', () => ({
-  uploadFeedPostImage: jest.fn(),
+  uploadFeedPostImages: jest.fn(),
+  isAllowedFeedImageName: (name: string) =>
+    /\.(jpg|jpeg|png|gif|webp|heic|heif)$/i.test(name),
+  MAX_FEED_POST_IMAGES: 5,
   FEED_IMAGE_MAX_MB: 5,
   FEED_IMAGE_MAX_BYTES: 5 * 1024 * 1024,
-  FEED_IMAGE_ACCEPT: 'image/*',
+  FEED_IMAGE_ACCEPT: '.jpg,.png',
 }));
 
 jest.mock('react-hot-toast', () => ({
@@ -64,8 +67,8 @@ jest.mock('../../messages/GroupUserPicker', () => ({
 
 const mockedCreate = createFeedPost as jest.MockedFunction<typeof createFeedPost>;
 const mockedGet = getFeedPost as jest.MockedFunction<typeof getFeedPost>;
-const mockedUpload = uploadFeedPostImage as jest.MockedFunction<
-  typeof uploadFeedPostImage
+const mockedUpload = uploadFeedPostImages as jest.MockedFunction<
+  typeof uploadFeedPostImages
 >;
 const mockedToastError = toast.error as jest.MockedFunction<typeof toast.error>;
 const mockedToastSuccess = toast.success as jest.MockedFunction<typeof toast.success>;
@@ -113,6 +116,7 @@ describe('FeedPostComposerModal', () => {
     mockedToastError.mockReset();
     mockedToastSuccess.mockReset();
     mockedCreate.mockResolvedValue(created);
+    mockedUpload.mockResolvedValue([]);
   });
 
   it('keeps the submit button disabled until there is text', async () => {
@@ -140,26 +144,30 @@ describe('FeedPostComposerModal', () => {
     expect(mockedToastSuccess).toHaveBeenCalled();
   });
 
-  it('creates the post first, then uploads the photo, on a single click', async () => {
-    const withImage = { ...created, image: { status: 'pending' } } as FeedPost;
-    mockedUpload.mockResolvedValue({ id: 77, image_status: 'pending' });
-    mockedGet.mockResolvedValue(withImage);
+  it('creates the post first, then uploads the photos, on a single click', async () => {
+    const withImages = {
+      ...created,
+      images: [{ id: 1, status: 'pending' }],
+    } as FeedPost;
+    mockedGet.mockResolvedValue(withImages);
     const onCreated = renderComposer();
 
-    await userEvent.type(screen.getByRole('textbox'), 'S fotkou');
-    await userEvent.upload(
-      screen.getByTestId('feed-composer-file-input'),
-      imageFile(),
-    );
+    await userEvent.type(screen.getByRole('textbox'), 'S fotkami');
+    await userEvent.upload(screen.getByTestId('feed-composer-file-input'), [
+      imageFile('a.jpg'),
+      imageFile('b.jpg'),
+    ]);
     await userEvent.click(screen.getByTestId('feed-composer-submit'));
 
     await waitFor(() => expect(onCreated).toHaveBeenCalled());
     // Poradie je podstatné: upload potrebuje id príspevku, ktorý musí
     // existovať skôr – používateľ o tom nevie, klikol raz.
     expect(mockedCreate).toHaveBeenCalledTimes(1);
-    expect(mockedUpload).toHaveBeenCalledWith(77, expect.any(File));
-    // Po uploade sa príspevok načíta znova, nech karta ukáže stav fotky.
-    expect(onCreated).toHaveBeenCalledWith(withImage);
+    const [postId, sentFiles] = mockedUpload.mock.calls[0];
+    expect(postId).toBe(77);
+    expect(sentFiles.map((file) => file.name)).toEqual(['a.jpg', 'b.jpg']);
+    // Po uploade sa príspevok načíta znova, nech karta ukáže stav fotiek.
+    expect(onCreated).toHaveBeenCalledWith(withImages);
   });
 
   it('sends tagged users along with the post', async () => {
@@ -176,22 +184,49 @@ describe('FeedPostComposerModal', () => {
     });
   });
 
-  it('keeps the post when only the upload fails, and says so', async () => {
-    mockedUpload.mockRejectedValue(new Error('S3 down'));
+  it('names the photos that failed and keeps the post', async () => {
+    mockedUpload.mockResolvedValue([
+      { file: imageFile('zla.jpg'), error: new Error('S3 down') },
+    ]);
+    mockedGet.mockRejectedValue(new Error('offline'));
     const onCreated = renderComposer();
 
     await userEvent.type(screen.getByRole('textbox'), 'Text ostáva');
-    await userEvent.upload(
-      screen.getByTestId('feed-composer-file-input'),
-      imageFile(),
-    );
+    await userEvent.upload(screen.getByTestId('feed-composer-file-input'), [
+      imageFile('dobra.jpg'),
+      imageFile('zla.jpg'),
+    ]);
     await userEvent.click(screen.getByTestId('feed-composer-submit'));
 
     // Príspevok vznikol, takže sa musí objaviť vo feede – zmizol by len text.
     await waitFor(() => expect(onCreated).toHaveBeenCalledWith(created));
+    // Varovanie MENUJE konkrétnu fotku, nie „niečo zlyhalo".
     expect(mockedToastError).toHaveBeenCalledWith(
-      'Príspevok bol uverejnený, ale fotku sa nepodarilo nahrať.',
+      'Príspevok bol uverejnený, ale tieto fotky sa nepodarilo nahrať: zla.jpg',
     );
+    // Dva protichodné toasty vedľa seba by mýlili – úspech sa hlási len keď
+    // prešlo naozaj všetko.
+    expect(mockedToastSuccess).not.toHaveBeenCalled();
+  });
+
+  it('rejects an unsupported photo format before any request', async () => {
+    renderComposer();
+
+    // applyAccept: false modeluje presne to, čo test overuje – používateľ
+    // v dialógu prepne na „všetky súbory" a `accept` obíde.
+    await userEvent.upload(
+      screen.getByTestId('feed-composer-file-input'),
+      new File(['x'], 'obrazok.bmp', { type: 'image/bmp' }),
+      { applyAccept: false },
+    );
+
+    expect(mockedToastError).toHaveBeenCalledWith(
+      'Tento formát fotky nie je podporovaný.',
+    );
+    expect(
+      screen.queryByTestId('feed-composer-image-preview'),
+    ).not.toBeInTheDocument();
+    expect(mockedCreate).not.toHaveBeenCalled();
   });
 
   it('does not create anything when the post request fails', async () => {
@@ -210,23 +245,56 @@ describe('FeedPostComposerModal', () => {
     expect(screen.getByTestId('feed-composer-modal')).toBeInTheDocument();
   });
 
-  it('previews the chosen photo and allows removing it', async () => {
+  it('previews several photos and removes just one of them', async () => {
+    renderComposer();
+
+    await userEvent.upload(screen.getByTestId('feed-composer-file-input'), [
+      imageFile('more.jpg'),
+      imageFile('hory.jpg'),
+    ]);
+
+    const previews = await screen.findAllByTestId('feed-composer-image-preview');
+    expect(previews).toHaveLength(2);
+    expect(within(previews[0]).getByText('more.jpg')).toBeInTheDocument();
+
+    await userEvent.click(
+      within(previews[0]).getByRole('button', { name: /more\.jpg/ }),
+    );
+
+    const left = screen.getAllByTestId('feed-composer-image-preview');
+    expect(left).toHaveLength(1);
+    expect(within(left[0]).getByText('hory.jpg')).toBeInTheDocument();
+  });
+
+  it('enforces the image limit while picking', async () => {
     renderComposer();
 
     await userEvent.upload(
       screen.getByTestId('feed-composer-file-input'),
-      imageFile('dovolenka.jpg'),
+      Array.from({ length: 7 }, (_, index) => imageFile(`f${index}.jpg`)),
     );
 
-    const preview = await screen.findByTestId('feed-composer-image-preview');
-    expect(within(preview).getByText('dovolenka.jpg')).toBeInTheDocument();
+    // Nadbytočné sa zahodia a povie sa to.
+    expect(screen.getAllByTestId('feed-composer-image-preview')).toHaveLength(5);
+    expect(mockedToastError).toHaveBeenCalledWith(
+      'Príspevok môže mať najviac 5 fotiek.',
+    );
+    // Pri plnom limite už nie je čo pridať.
+    expect(screen.queryByTestId('feed-composer-add-image')).not.toBeInTheDocument();
+    expect(screen.getByTestId('feed-composer-images-full')).toBeInTheDocument();
+  });
 
-    await userEvent.click(within(preview).getByRole('button', { name: 'Odstrániť' }));
+  it('shows how many slots are left', async () => {
+    renderComposer();
 
-    expect(
-      screen.queryByTestId('feed-composer-image-preview'),
-    ).not.toBeInTheDocument();
-    expect(screen.getByTestId('feed-composer-add-image')).toBeInTheDocument();
+    expect(screen.getByTestId('feed-composer-add-image')).toHaveTextContent('ešte 5');
+
+    await userEvent.upload(
+      screen.getByTestId('feed-composer-file-input'),
+      [imageFile('a.jpg'), imageFile('b.jpg')],
+    );
+
+    expect(screen.getByTestId('feed-composer-add-image')).toHaveTextContent('ešte 3');
   });
 
   it('rejects a photo over the size limit before any request', async () => {

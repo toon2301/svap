@@ -22,6 +22,7 @@ import InitialsAvatar from '@/components/shared/InitialsAvatar';
 import { buildPortfolioDetailPath } from '../profile/portfolioRouting';
 import { likeFeedPost, unlikeFeedPost, type FeedPost } from '@/lib/feedApi';
 import FeedPostComments from './FeedPostComments';
+import FeedPostImageCarousel from './FeedPostImageCarousel';
 import FeedPostReportModal from './FeedPostReportModal';
 import FeedPostShareModal from './FeedPostShareModal';
 
@@ -267,11 +268,9 @@ export default function FeedPostCard({
   const router = useRouter();
   const isShared = post.post_type !== 'free_post';
   const authorName = post.author?.display_name || '';
-  const approvedImage =
-    post.image && (post.image.thumbnail_url || post.image.large_url)
-      ? post.image
-      : null;
-  const processingStatus = post.image?.status;
+  // Backend posiela cudziemu divákovi len APPROVED fotky; autor dostane aj
+  // pending/rejected, ktoré karusel vykreslí ako stav spracovania.
+  const images = post.images ?? [];
 
   const [isLiked, setIsLiked] = useState(post.is_liked_by_me);
   const [likesCount, setLikesCount] = useState(post.likes_count);
@@ -284,6 +283,20 @@ export default function FeedPostCard({
   const likePendingRef = useRef(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const menuTriggerRef = useRef<HTMLButtonElement | null>(null);
+
+  // Obnovenie feedu nahradí príspevok čerstvejšou verziou, ale `key` ostáva
+  // rovnaké – React teda inštanciu recykluje a bez tejto synchronizácie by
+  // karta ďalej ukazovala počty z prvého načítania. Počas prebiehajúceho
+  // lajku sa nepreberá, nech optimistická zmena neprebliká späť.
+  useEffect(() => {
+    if (likePendingRef.current) return;
+    setIsLiked(post.is_liked_by_me);
+    setLikesCount(post.likes_count);
+  }, [post.is_liked_by_me, post.likes_count]);
+
+  useEffect(() => {
+    setCommentsCount(post.comments_count);
+  }, [post.comments_count]);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -471,46 +484,11 @@ export default function FeedPostCard({
         </div>
       </header>
 
-      {approvedImage ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={approvedImage.large_url || approvedImage.thumbnail_url || ''}
-          alt=""
-          data-testid="feed-post-image"
-          className="max-h-[28rem] w-full object-cover"
+      {images.length > 0 ? (
+        <FeedPostImageCarousel
+          images={images}
+          alt={t('feed.imageAlt', 'Fotka príspevku')}
         />
-      ) : processingStatus === 'pending' || processingStatus === 'rejected' ? (
-        // Vidí len autor (backend cudzím fotku neposiela) – vzor
-        // ImageWithStatusOverlay, ale bez samotného obrázka.
-        <div className="flex h-40 w-full flex-col items-center justify-center gap-1 bg-gray-100 text-sm font-medium text-gray-700 dark:bg-gray-900/40 dark:text-gray-200">
-          {processingStatus === 'pending' ? (
-            <>
-              <svg
-                className="h-5 w-5 animate-spin"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                aria-hidden="true"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 12a8 8 0 018-8"
-                />
-              </svg>
-              <span>{t('skills.imageProcessing', 'Spracúva sa…')}</span>
-            </>
-          ) : (
-            <>
-              <span className="font-bold text-red-600 dark:text-red-300">!</span>
-              <span>
-                {post.image?.rejected_reason ||
-                  t('feed.imageRejected', 'Fotka bola zamietnutá')}
-              </span>
-            </>
-          )}
-        </div>
       ) : null}
 
       <div className="space-y-3 px-4 py-3">

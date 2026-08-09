@@ -123,9 +123,13 @@ export function useFeedInfiniteScroll(options: UseFeedInfiniteScrollOptions = {}
     // zobrazenie počtu dosť presné a proti duplicitám aj tak chráni dedup
     // vnútri prependPosts (funkcionálny update nad aktuálnym stavom).
     const seen = new Set(postsRef.current.map((post) => post.id));
-    const fresh = page.results.filter((post) => !seen.has(post.id));
-    prependPosts(fresh);
-    return fresh.length;
+    const added = page.results.filter((post) => !seen.has(post.id)).length;
+    // Vkladá sa CELÁ stránka, nie len chýbajúce id: prekrývajúce sa príspevky
+    // tak dostanú čerstvú verziu (lajky/komentáre, ktoré medzitým pribudli).
+    // Keby sa posielali len nové, karta by ostala visieť na starých počtoch.
+    // Príspevky hlbšie v zozname (mimo prvej stránky) ostávajú nedotknuté.
+    prependPosts(page.results);
+    return added;
   }, [fetchPage, pageSize, prependPosts]);
 
   useEffect(() => {

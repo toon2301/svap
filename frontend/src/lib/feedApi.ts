@@ -26,6 +26,8 @@ export type FeedUserSummary = {
 };
 
 export type FeedPostImage = {
+  id: number;
+  /** Prítomné len pri APPROVED fotke – inak ju vidí iba autor ako stav. */
   thumbnail_url?: string | null;
   large_url?: string | null;
   width?: number | null;
@@ -58,7 +60,8 @@ export type FeedPost = {
   post_type: FeedPostType;
   caption: string;
   author: FeedUserSummary;
-  image: FeedPostImage | null;
+  /** 0–5 fotiek, zoradené podľa `order` z backendu (od Fázy 4.4). */
+  images: FeedPostImage[];
   shared_content: FeedSharedContent | null;
   shared_content_unavailable: boolean;
   tagged_users: FeedUserSummary[];
@@ -264,9 +267,9 @@ export async function reportFeedPost(
 /**
  * Nový voľný príspevok (Fáza 4.3 composer).
  *
- * Fotka sa sem NEposiela: príspevok musí v DB existovať skôr, než sa naň dá
+ * Fotky sa sem NEposielajú: príspevok musí v DB existovať skôr, než sa naň dá
  * naviazať upload (kľúč v S3 obsahuje post_id) – volajúci preto po úspechu
- * spustí `uploadFeedPostImage`.
+ * spustí `uploadFeedPostImages`.
  */
 export async function createFeedPost(payload: {
   caption: string;

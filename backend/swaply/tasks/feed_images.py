@@ -29,13 +29,17 @@ def _is_final_attempt(task) -> bool:
     soft_time_limit=120,
     time_limit=150,
 )
-def process_feed_post_image(self, feed_post_id: int) -> None:
-    """Asynchrónne spracovanie fotky FeedPost-u (vzor process_portfolio_image)."""
+def process_feed_post_image(self, image_id: int) -> None:
+    """Asynchrónne spracovanie JEDNEJ fotky príspevku (FeedPostImage).
+
+    Od Fázy 4.4 sa enqueue-uje raz na každú nahranú fotku – zlyhanie jednej
+    tak nezablokuje ostatné.
+    """
     try:
-        process_feed_post_image_record(feed_post_id)
+        process_feed_post_image_record(image_id)
     except Exception:
         # Po vyčerpaní retries by fotka ostala navždy PENDING a staging súbor
         # ako orphan – na poslednom pokuse označ REJECTED a uprac staging.
         if _is_final_attempt(self):
-            mark_feed_image_processing_failed(feed_post_id)
+            mark_feed_image_processing_failed(image_id)
         raise

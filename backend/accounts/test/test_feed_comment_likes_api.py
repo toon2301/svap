@@ -137,6 +137,74 @@ class FeedCommentLikeApiTests(APITestCase):
         self.assertEqual(FeedPostCommentLike.objects.count(), 0)
 
 
+class FeedCommentLikeBlockingTests(APITestCase):
+    """Blokovanie medzi LAJKUJÚCIM a AUTOROM KOMENTÁRA.
+
+    Viditeľnosť príspevku tento pár nepokrýva: príspevok patrí tretej strane,
+    voči ktorej blok neexistuje, takže `visible_feed_posts` ho prepustí.
+    """
+
+    def setUp(self):
+        self.owner = _user("fclb-owner")       # tretia strana, verejný príspevok
+        self.commenter = _user("fclb-commenter")
+        self.liker = _user("fclb-liker")
+        self.post = FeedPost.objects.create(
+            author=self.owner,
+            post_type=FeedPost.PostType.FREE_POST,
+            caption="Verejný príspevok",
+        )
+        self.comment = FeedPostComment.objects.create(
+            post=self.post, author=self.commenter, text="Komentár"
+        )
+        self.url = reverse(
+            "accounts:feed_post_comment_like",
+            args=[self.post.id, self.comment.id],
+        )
+
+    def _block(self, blocker, blocked):
+        from accounts.services.user_blocks import create_user_block
+
+        create_user_block(blocker=blocker, blocked_user=blocked)
+
+    def test_liker_blocked_by_comment_author_is_rejected(self):
+        self._block(self.commenter, self.liker)
+        self.client.force_authenticate(user=self.liker)
+
+        with self.captureOnCommitCallbacks(execute=True):
+            response = self.client.post(self.url)
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(FeedPostCommentLike.objects.count(), 0)
+        self.assertEqual(
+            Notification.objects.filter(
+                type=NotificationType.FEED_POST_COMMENT_LIKED
+            ).count(),
+            0,
+        )
+
+    def test_liker_who_blocked_the_comment_author_is_rejected(self):
+        """Blok platí obojsmerne – rovnako ako pri ostatných interakciách."""
+        self._block(self.liker, self.commenter)
+        self.client.force_authenticate(user=self.liker)
+
+        with self.captureOnCommitCallbacks(execute=True):
+            response = self.client.post(self.url)
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(FeedPostCommentLike.objects.count(), 0)
+
+    def test_unrelated_block_does_not_affect_liking(self):
+        """Blok voči NIEKOMU INÉMU lajk komentára blokovať nesmie."""
+        stranger = _user("fclb-stranger")
+        self._block(self.liker, stranger)
+        self.client.force_authenticate(user=self.liker)
+
+        response = self.client.post(self.url)
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(FeedPostCommentLike.objects.count(), 1)
+
+
 class FeedCommentLikeSerializationTests(APITestCase):
     def setUp(self):
         self.author = _user("fcls-author")
