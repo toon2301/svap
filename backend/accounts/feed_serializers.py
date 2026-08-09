@@ -12,7 +12,7 @@ from django.contrib.auth import get_user_model
 from django.urls import reverse
 from rest_framework import serializers
 
-from accounts.models import FeedPost, FeedPostComment
+from accounts.models import FeedPost, FeedPostComment, FeedPostImage
 
 User = get_user_model()
 
@@ -48,10 +48,20 @@ class FeedPostCommentSerializer(serializers.ModelSerializer):
 
     author = FeedUserSummarySerializer(read_only=True)
     can_delete = serializers.SerializerMethodField()
+    likes_count = serializers.SerializerMethodField()
+    is_liked_by_me = serializers.SerializerMethodField()
 
     class Meta:
         model = FeedPostComment
-        fields = ["id", "text", "author", "can_delete", "created_at"]
+        fields = [
+            "id",
+            "text",
+            "author",
+            "can_delete",
+            "likes_count",
+            "is_liked_by_me",
+            "created_at",
+        ]
 
     def get_can_delete(self, obj):
         request = self.context.get("request")
@@ -60,6 +70,22 @@ class FeedPostCommentSerializer(serializers.ModelSerializer):
             return False
         post_author_id = self.context.get("post_author_id")
         return user.id == obj.author_id or user.id == post_author_id
+
+    def get_likes_count(self, obj):
+        # Anotácia zo zoznamu; fallback pre jednotlivo serializovaný komentár
+        # (napr. čerstvo vytvorený) – rovnaký vzor ako FeedPostSerializer.
+        annotated = getattr(obj, "_likes_count", None)
+        if annotated is not None:
+            return int(annotated)
+        return obj.likes.count()
+
+    def get_is_liked_by_me(self, obj):
+        # Anonym-guard: chýbajúci kľúč v kontexte → False (nikdy nie dotaz
+        # na používateľa, ktorý nie je prihlásený).
+        liked_ids = self.context.get("liked_feed_comment_ids")
+        if liked_ids is None:
+            return False
+        return obj.id in liked_ids
 
 
 class FeedPostSerializer(serializers.ModelSerializer):
@@ -72,7 +98,7 @@ class FeedPostSerializer(serializers.ModelSerializer):
     """
 
     author = FeedUserSummarySerializer(read_only=True)
-    image = serializers.SerializerMethodField()
+    images = serializers.SerializerMethodField()
     shared_content = serializers.SerializerMethodField()
     shared_content_unavailable = serializers.SerializerMethodField()
     tagged_users = serializers.SerializerMethodField()
@@ -88,7 +114,7 @@ class FeedPostSerializer(serializers.ModelSerializer):
             "post_type",
             "caption",
             "author",
-            "image",
+            "images",
             "shared_content",
             "shared_content_unavailable",
             "tagged_users",
@@ -114,35 +140,46 @@ class FeedPostSerializer(serializers.ModelSerializer):
 
     # --- fields ------------------------------------------------------------
 
-    def get_image(self, obj):
-        """Fotka voľného príspevku – URL na proxy view, nie S3 kľúč.
+    def get_images(self, obj):
+        """Fotky voľného príspevku (0–5) – URL na proxy view, nie S3 kľúče.
 
-        Verejne existuje len APPROVED fotka; autor navyše vidí stav
-        PENDING/REJECTED (aby FE vedelo ukázať „spracováva sa"/dôvod
-        zamietnutia) – rovnaká filozofia ako portfolio to_representation.
+        Verejne existujú len APPROVED fotky; autor navyše vidí PENDING/REJECTED
+        (aby FE vedelo ukázať „spracováva sa"/dôvod zamietnutia) – rovnaká
+        filozofia ako pri jednej fotke do Fázy 4.3.
+
+        Poradie určuje ``FeedPostImage.Meta.ordering`` (order, id).
         """
-        if obj.post_type != FeedPost.PostType.FREE_POST or not obj.image_status:
-            return None
+        if obj.post_type != FeedPost.PostType.FREE_POST:
+            return []
         is_author = self._viewer_id() == obj.author_id
 
-        if obj.image_status == FeedPost.ImageStatus.APPROVED:
-            base = reverse("accounts:feed_post_image_file", args=[obj.id])
-            payload = {
-                "thumbnail_url": self._absolute(f"{base}?variant=thumbnail"),
-                "large_url": self._absolute(f"{base}?variant=large"),
-                "width": obj.image_width,
-                "height": obj.image_height,
-            }
-            if is_author:
-                payload["status"] = obj.image_status
-            return payload
+        payloads = []
+        # `images` je prefetchnuté v _annotated_queryset – .all() teda nerobí
+        # dotaz na príspevok (žiadne N+1).
+        for image in obj.images.all():
+            approved = image.status == FeedPostImage.Status.APPROVED
+            if not approved and not is_author:
+                continue
 
-        if not is_author:
-            return None
-        payload = {"status": obj.image_status}
-        if obj.image_status == FeedPost.ImageStatus.REJECTED:
-            payload["rejected_reason"] = obj.image_rejected_reason
-        return payload
+            payload = {"id": image.id}
+            if approved:
+                base = reverse(
+                    "accounts:feed_post_image_file", args=[obj.id, image.id]
+                )
+                payload.update(
+                    {
+                        "thumbnail_url": self._absolute(f"{base}?variant=thumbnail"),
+                        "large_url": self._absolute(f"{base}?variant=large"),
+                        "width": image.width,
+                        "height": image.height,
+                    }
+                )
+            if is_author:
+                payload["status"] = image.status
+                if image.status == FeedPostImage.Status.REJECTED:
+                    payload["rejected_reason"] = image.rejected_reason
+            payloads.append(payload)
+        return payloads
 
     def _shared_available(self, obj) -> bool:
         """Cache na inštancii – čítajú to get_shared_content aj *_unavailable."""

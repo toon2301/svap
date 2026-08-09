@@ -142,9 +142,12 @@ class NotificationSerializer(serializers.ModelSerializer):
             NotificationType.FEED_POST_COMMENTED,
             NotificationType.FEED_POST_TAGGED,
             NotificationType.FEED_POST_SHARED,
+            NotificationType.FEED_POST_COMMENT_LIKED,
         ):
-            # Všetky tri feed typy vedú na permalink príspevku – identifikátor
+            # Všetky feed typy vedú na permalink príspevku – identifikátor
             # nesie data.post_id (rovnaký vzor ako OFFER_LIKED/PORTFOLIO_LIKED).
+            # Platí to aj pre lajk komentára: komentáre sú na permalinku
+            # rozbalené, takže príjemcu to dovedie rovno k nim.
             data = obj.data if isinstance(obj.data, dict) else {}
             try:
                 post_id = int(data.get("post_id") or 0)

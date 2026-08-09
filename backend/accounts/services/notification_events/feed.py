@@ -50,6 +50,49 @@ def create_feed_post_liked_notification(*, post, actor) -> Notification | None:
     )
 
 
+def create_feed_post_comment_liked_notification(*, comment, actor) -> Notification | None:
+    """Lajk komentára – presne vzor create_feed_post_liked_notification.
+
+    DEDUP (cez ``data__comment_id`` + actor) je tu správny z rovnakého dôvodu
+    ako pri lajku príspevku: lajk je idempotentný STAV, ktorý sa dá odlajkovať
+    a znova lajkovať donekonečna – bez dedupu by sa tým dal autor komentára
+    spamovať. Komentár/zdieľanie dedup nemajú, lebo sú to opakovateľné akcie
+    s vlastným novým obsahom.
+
+    Príjemcom je autor komentára; self-like notifikáciu nevytvára.
+    """
+    author = getattr(comment, "author", None)
+    if author is None or getattr(author, "id", None) == getattr(actor, "id", None):
+        return None
+
+    existing = (
+        Notification.objects.filter(
+            user=author,
+            type=NotificationType.FEED_POST_COMMENT_LIKED,
+            data__comment_id=comment.id,
+            actor=actor,
+        )
+        .order_by("-created_at", "-id")
+        .first()
+    )
+    if existing is not None:
+        return existing
+
+    actor_name = (getattr(actor, "display_name", "") or "").strip() or "Používateľ"
+    return create_notification(
+        user=author,
+        notif_type=NotificationType.FEED_POST_COMMENT_LIKED,
+        title="Páči sa mi tvoj komentár",
+        body=f"{actor_name} lajkol tvoj komentár.",
+        actor=actor,
+        data={
+            # post_id nesie preklik (permalink príspevku), comment_id dedup.
+            "post_id": comment.post_id,
+            "comment_id": comment.id,
+        },
+    )
+
+
 def create_feed_post_commented_notification(*, post, actor) -> Notification | None:
     """Komentár k príspevku – ZÁMERNE bez dedupu (na rozdiel od lajku):
     každý komentár nesie nový obsah, takže autor má dostať notifikáciu vždy.

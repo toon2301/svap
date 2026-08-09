@@ -47,7 +47,7 @@ const author = {
 };
 
 function comment(id: number, text: string): FeedPostComment {
-  return { id, text, author, can_delete: false, created_at: '2026-01-01' };
+  return { id, text, author, can_delete: false, likes_count: 0, is_liked_by_me: false, created_at: '2026-01-01' };
 }
 
 /**

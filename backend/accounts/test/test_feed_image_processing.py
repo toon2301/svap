@@ -12,7 +12,7 @@ from django.contrib.auth import get_user_model
 from django.test import override_settings
 
 from accounts.feed_image_processing import process_feed_post_image_record
-from accounts.models import FeedPost
+from accounts.models import FeedPost, FeedPostImage
 
 User = get_user_model()
 
@@ -23,7 +23,8 @@ class _NoSuchKey(Exception):
     """Náhrada za botocore-generovanú ``s3.exceptions.NoSuchKey``."""
 
 
-def _pending_post():
+def _pending_image():
+    """Rozpracovaná fotka na vlastnom FeedPostImage zázname (od Fázy 4.4)."""
     user = User.objects.create_user(
         "feed-proc", "feed-proc@example.com", "StrongPass123"
     )
@@ -32,12 +33,11 @@ def _pending_post():
         post_type=FeedPost.PostType.FREE_POST,
         caption="Post s fotkou",
     )
-    FeedPost.objects.filter(id=post.id).update(
-        image_status=FeedPost.ImageStatus.PENDING,
-        image_pending_key=PENDING_KEY,
+    return FeedPostImage.objects.create(
+        post=post,
+        status=FeedPostImage.Status.PENDING,
+        pending_key=PENDING_KEY,
     )
-    post.refresh_from_db()
-    return post
 
 
 def _s3_raising(error, *, no_such_key=_NoSuchKey):
@@ -58,19 +58,19 @@ class TestStagingReadFailures:
                 return_value=False,
             ),
         ):
-            process_feed_post_image_record(self.post.id)
+            process_feed_post_image_record(self.image.id)
 
     def test_missing_object_rejects_without_retry(self):
-        self.post = _pending_post()
+        self.image = _pending_image()
         self._run(_s3_raising(_NoSuchKey("gone")))
 
-        self.post.refresh_from_db()
+        self.image.refresh_from_db()
         # Opakovanie by objekt nevyrobilo – rovno trvalé zlyhanie.
-        assert self.post.image_status == FeedPost.ImageStatus.REJECTED
-        assert self.post.image_pending_key == ""
+        assert self.image.status == FeedPostImage.Status.REJECTED
+        assert self.image.pending_key == ""
 
     def test_local_missing_file_rejects_without_retry(self):
-        self.post = _pending_post()
+        self.image = _pending_image()
         with (
             patch(
                 "accounts.feed_image_processing.local_portfolio_upload_enabled",
@@ -82,17 +82,17 @@ class TestStagingReadFailures:
             ),
             patch("accounts.feed_image_processing._delete_local_key"),
         ):
-            process_feed_post_image_record(self.post.id)
+            process_feed_post_image_record(self.image.id)
 
-        self.post.refresh_from_db()
-        assert self.post.image_status == FeedPost.ImageStatus.REJECTED
+        self.image.refresh_from_db()
+        assert self.image.status == FeedPostImage.Status.REJECTED
 
     @pytest.mark.parametrize(
         "error",
         [TimeoutError("read timed out"), RuntimeError("S3 500"), OSError("network")],
     )
     def test_transient_error_propagates_for_celery_retry(self, error):
-        self.post = _pending_post()
+        self.image = _pending_image()
 
         # Musí vyletieť von: Celery task ju zachytí a naplánuje retry. Keby sme
         # ju spracovali ako trvalé zlyhanie, používateľ by prišiel o fotku pri
@@ -100,7 +100,7 @@ class TestStagingReadFailures:
         with pytest.raises(type(error)):
             self._run(_s3_raising(error))
 
-        self.post.refresh_from_db()
+        self.image.refresh_from_db()
         # Stav ostáva PENDING, aby malo čo opakovať.
-        assert self.post.image_status == FeedPost.ImageStatus.PENDING
-        assert self.post.image_pending_key == PENDING_KEY
+        assert self.image.status == FeedPostImage.Status.PENDING
+        assert self.image.pending_key == PENDING_KEY

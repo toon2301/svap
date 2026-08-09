@@ -4,8 +4,11 @@ ZÁMERNE znovupoužíva low-level helpery z ``portfolio.image_processing``
 (decode + EXIF/GPS strip + WEBP varianty + storage upload/delete). Sú to čisté
 funkcie bez väzby na PortfolioImage model – kópia by časom rozišla GDPR logiku
 (EXIF strip) a moderáciu. Record-handling (select_for_update, status prechody)
-je feed-špecifický, lebo fotka žije priamo na FeedPost (max 1), nie v child
-tabuľke ako PortfolioImage.
+ostáva feed-špecifický.
+
+Od Fázy 4.4 pracuje nad ``FeedPostImage`` (limit 5 fotiek), nie nad poľami
+príspevku. Každý obrázok sa spracúva a moderuje NEZÁVISLE – zamietnutie
+jednej fotky ostatné neovplyvní.
 """
 
 from __future__ import annotations
@@ -33,7 +36,7 @@ from portfolio.image_storage import get_s3_client as _s3_client
 from portfolio.local_upload import local_portfolio_upload_enabled
 from swaply.image_moderation import check_image_safety
 
-from accounts.models import FeedPost
+from accounts.models import FeedPostImage
 
 logger = logging.getLogger(__name__)
 
@@ -57,7 +60,7 @@ def _missing_object_errors(s3=None) -> tuple[type[BaseException], ...]:
 
 
 def _reject_feed_image(
-    feed_post_id: int, *, reason: str, pending_key: str, delete_key
+    image_id: int, *, reason: str, pending_key: str, delete_key
 ) -> None:
     def drop_staging():
         # Prázdny kľúč by znamenal delete volanie nad "" (S3 vráti chybu, lokálne
@@ -67,41 +70,40 @@ def _reject_feed_image(
 
     with transaction.atomic():
         try:
-            post = FeedPost.objects.select_for_update().get(id=feed_post_id)
-        except FeedPost.DoesNotExist:
+            image = FeedPostImage.objects.select_for_update().get(id=image_id)
+        except FeedPostImage.DoesNotExist:
             drop_staging()
             return
 
-        if post.image_status == FeedPost.ImageStatus.APPROVED:
+        if image.status == FeedPostImage.Status.APPROVED:
             return
-        post.image_status = FeedPost.ImageStatus.REJECTED
-        post.image_rejected_reason = reason
-        post.image_processed_at = timezone.now()
+        image.status = FeedPostImage.Status.REJECTED
+        image.rejected_reason = reason
+        image.processed_at = timezone.now()
         # Staging objekt nižšie mažeme – kľúč už na nič neukazuje, nech pole
         # nedrží mŕtvy odkaz (a retry upload začína z čistého stavu).
-        post.image_pending_key = ""
-        post.save(
+        image.pending_key = ""
+        image.save(
             update_fields=[
-                "image_status",
-                "image_rejected_reason",
-                "image_processed_at",
-                "image_pending_key",
-                "updated_at",
+                "status",
+                "rejected_reason",
+                "processed_at",
+                "pending_key",
             ]
         )
 
     drop_staging()
 
 
-def mark_feed_image_processing_failed(feed_post_id: int) -> None:
-    """Po vyčerpaní retries označ fotku REJECTED a uprac staging (inak by post
-    ostal navždy PENDING a staging súbor ako orphan)."""
+def mark_feed_image_processing_failed(image_id: int) -> None:
+    """Po vyčerpaní retries označ fotku REJECTED a uprac staging (inak by
+    ostala navždy PENDING a staging súbor ako orphan)."""
     try:
-        post = FeedPost.objects.only("id", "image_pending_key").get(id=feed_post_id)
-    except FeedPost.DoesNotExist:
+        image = FeedPostImage.objects.only("id", "pending_key").get(id=image_id)
+    except FeedPostImage.DoesNotExist:
         return
 
-    pending_key = (post.image_pending_key or "").strip()
+    pending_key = (image.pending_key or "").strip()
     bucket = getattr(settings, "AWS_STORAGE_BUCKET_NAME", None)
     if local_portfolio_upload_enabled():
         delete_key = _delete_local_key
@@ -116,18 +118,18 @@ def mark_feed_image_processing_failed(feed_post_id: int) -> None:
             return None
 
     _reject_feed_image(
-        feed_post_id,
+        image_id,
         reason=PROCESSING_FAILED_REASON,
         pending_key=pending_key,
         delete_key=delete_key,
     )
 
 
-def process_feed_post_image_record(feed_post_id: int) -> None:
+def process_feed_post_image_record(image_id: int) -> None:
     """Staging → decode → WEBP varianty (thumbnail + large) → APPROVED.
 
     Zrkadlí ``process_portfolio_image_record`` (vrátane druhej content-safety
-    kontroly), len nad poľami FeedPost-u.
+    kontroly), len nad jedným ``FeedPostImage`` záznamom.
     """
     bucket = getattr(settings, "AWS_STORAGE_BUCKET_NAME", None)
     use_local_storage = local_portfolio_upload_enabled()
@@ -136,19 +138,20 @@ def process_feed_post_image_record(feed_post_id: int) -> None:
 
     with transaction.atomic():
         try:
-            post = FeedPost.objects.select_for_update().get(id=feed_post_id)
-        except FeedPost.DoesNotExist:
+            image = FeedPostImage.objects.select_for_update().get(id=image_id)
+        except FeedPostImage.DoesNotExist:
             return
 
-        if post.image_status in (
-            FeedPost.ImageStatus.APPROVED,
-            FeedPost.ImageStatus.REJECTED,
+        if image.status in (
+            FeedPostImage.Status.APPROVED,
+            FeedPostImage.Status.REJECTED,
         ):
             return
 
-        pending_key = (post.image_pending_key or "").strip()
+        post_id = image.post_id
+        pending_key = (image.pending_key or "").strip()
         if not pending_key:
-            raise RuntimeError("image_pending_key missing")
+            raise RuntimeError("pending_key missing")
 
     if use_local_storage:
         delete_key = _delete_local_key
@@ -171,10 +174,10 @@ def process_feed_post_image_record(feed_post_id: int) -> None:
         # inak by sme fotku zahodili pri krátkodobom výpadku storage.
         logger.warning(
             "Feed image staging object missing",
-            extra={"feed_post_id": feed_post_id},
+            extra={"feed_post_image_id": image_id},
         )
         _reject_feed_image(
-            feed_post_id,
+            image_id,
             reason=PROCESSING_FAILED_REASON,
             pending_key=pending_key,
             delete_key=delete_key,
@@ -185,7 +188,7 @@ def process_feed_post_image_record(feed_post_id: int) -> None:
         decoded = _decode_image(raw_bytes)
     except Exception:
         _reject_feed_image(
-            feed_post_id,
+            image_id,
             reason="Neplatny alebo nepodporovany format obrazka.",
             pending_key=pending_key,
             delete_key=delete_key,
@@ -208,7 +211,7 @@ def process_feed_post_image_record(feed_post_id: int) -> None:
         check_image_safety(io.BytesIO(large_bytes))
     except ValidationError:
         _reject_feed_image(
-            feed_post_id,
+            image_id,
             reason="Obrazok bol zamietnuty kvoli nevhodnemu obsahu.",
             pending_key=pending_key,
             delete_key=delete_key,
@@ -216,7 +219,7 @@ def process_feed_post_image_record(feed_post_id: int) -> None:
         return
 
     storage_prefix = "feed" if use_local_storage else "media/feed"
-    key_prefix = f"{storage_prefix}/{feed_post_id}/{os.urandom(16).hex()}"
+    key_prefix = f"{storage_prefix}/{post_id}/{os.urandom(16).hex()}"
     thumbnail_key = f"{key_prefix}-thumbnail.webp"
     large_key = f"{key_prefix}-large.webp"
     uploaded_keys: list[str] = []
@@ -239,43 +242,42 @@ def process_feed_post_image_record(feed_post_id: int) -> None:
     try:
         with transaction.atomic():
             try:
-                post = FeedPost.objects.select_for_update().get(id=feed_post_id)
-            except FeedPost.DoesNotExist:
+                image = FeedPostImage.objects.select_for_update().get(id=image_id)
+            except FeedPostImage.DoesNotExist:
                 for key in uploaded_keys:
                     delete_key(key)
                 return
 
-            if post.image_status in (
-                FeedPost.ImageStatus.APPROVED,
-                FeedPost.ImageStatus.REJECTED,
+            if image.status in (
+                FeedPostImage.Status.APPROVED,
+                FeedPostImage.Status.REJECTED,
             ):
                 for key in uploaded_keys:
                     delete_key(key)
                 return
 
-            post.image_status = FeedPost.ImageStatus.APPROVED
-            post.image_thumbnail_key = thumbnail_key
-            post.image_approved_key = large_key
-            post.image_content_type = "image/webp"
-            post.image_size_bytes = len(large_bytes)
-            post.image_width = large_size[0]
-            post.image_height = large_size[1]
-            post.image_processed_at = timezone.now()
-            post.image_rejected_reason = ""
-            post.image_pending_key = ""
-            post.save(
+            image.status = FeedPostImage.Status.APPROVED
+            image.thumbnail_key = thumbnail_key
+            image.approved_key = large_key
+            image.content_type = "image/webp"
+            image.size_bytes = len(large_bytes)
+            image.width = large_size[0]
+            image.height = large_size[1]
+            image.processed_at = timezone.now()
+            image.rejected_reason = ""
+            image.pending_key = ""
+            image.save(
                 update_fields=[
-                    "image_status",
-                    "image_thumbnail_key",
-                    "image_approved_key",
-                    "image_content_type",
-                    "image_size_bytes",
-                    "image_width",
-                    "image_height",
-                    "image_processed_at",
-                    "image_rejected_reason",
-                    "image_pending_key",
-                    "updated_at",
+                    "status",
+                    "thumbnail_key",
+                    "approved_key",
+                    "content_type",
+                    "size_bytes",
+                    "width",
+                    "height",
+                    "processed_at",
+                    "rejected_reason",
+                    "pending_key",
                 ]
             )
             # Staging zmaž AŽ PO úspešnom commite APPROVED stavu. Keby sme mazali

@@ -213,6 +213,8 @@ describe('FeedPostCard – komentáre', () => {
           text: 'Pekné!',
           author,
           can_delete: false,
+          likes_count: 0,
+          is_liked_by_me: false,
           created_at: new Date().toISOString(),
         },
       ],
@@ -224,6 +226,8 @@ describe('FeedPostCard – komentáre', () => {
       text: 'Môj komentár',
       author,
       can_delete: true,
+      likes_count: 0,
+      is_liked_by_me: false,
       created_at: new Date().toISOString(),
     });
 
@@ -246,8 +250,8 @@ describe('FeedPostCard – komentáre', () => {
   it('shows the delete action only when can_delete is true', async () => {
     mockedListComments.mockResolvedValue({
       results: [
-        { id: 5, text: 'Cudzí', author, can_delete: false, created_at: '2026-01-01' },
-        { id: 6, text: 'Môj', author, can_delete: true, created_at: '2026-01-01' },
+        { id: 5, text: 'Cudzí', author, can_delete: false, likes_count: 0, is_liked_by_me: false, created_at: '2026-01-01' },
+        { id: 6, text: 'Môj', author, can_delete: true, likes_count: 0, is_liked_by_me: false, created_at: '2026-01-01' },
       ],
       next: null,
       previous: null,

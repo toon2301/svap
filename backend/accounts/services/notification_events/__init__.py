@@ -11,6 +11,7 @@ importy (``from accounts.services.notification_events import ...`` aj
 """
 
 from .feed import (
+    create_feed_post_comment_liked_notification,
     create_feed_post_commented_notification,
     create_feed_post_liked_notification,
     create_feed_post_shared_notification,
@@ -37,6 +38,7 @@ from .skill_requests import (
 )
 
 __all__ = [
+    "create_feed_post_comment_liked_notification",
     "create_feed_post_commented_notification",
     "create_feed_post_liked_notification",
     "create_feed_post_shared_notification",

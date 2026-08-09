@@ -9,7 +9,7 @@
  * teda samotná existencia `next`, nie porovnanie čísel strán.
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
 import { listFeedPosts, type FeedPost, type ListFeedPostsParams } from '@/lib/feedApi';
 
 export type FeedLoader = (params: ListFeedPostsParams) => Promise<{
@@ -33,6 +33,11 @@ export function useFeedInfiniteScroll(options: UseFeedInfiniteScrollOptions = {}
 
   const nextUrlRef = useRef<string | null>(null);
   const loadingMoreRef = useRef(false);
+  // Zrkadlo zoznamu pre výpočty mimo setState updatera (viď refreshLatest).
+  const postsRef = useRef<FeedPost[]>(posts);
+  useEffect(() => {
+    postsRef.current = posts;
+  }, [posts]);
   // Loader drží ref, aby sa efekt prvého načítania nereštartoval pri každom
   // rendri rodiča (inline funkcia by inak menila identitu).
   const loaderRef = useRef<FeedLoader | undefined>(loader);
@@ -87,6 +92,46 @@ export function useFeedInfiniteScroll(options: UseFeedInfiniteScrollOptions = {}
     }
   }, [fetchPage]);
 
+  /**
+   * Vloží príspevky na VRCH zoznamu (composer, pull-to-refresh, „skontrolovať
+   * nové"). Zámerne bez refetchu celého feedu: kurzor v `nextUrlRef` by sa tým
+   * zahodil a používateľ by prišiel o už donačítané stránky.
+   *
+   * Dedup podľa id je nutný, nie kozmetický – „skontrolovať nové" načíta prvú
+   * stránku, ktorá sa s už zobrazeným obsahom takmer vždy prekrýva. Nové
+   * poradie vyhráva (čerstvejšie počty lajkov/komentárov), ale položka ostáva
+   * na svojom pôvodnom mieste dole len raz.
+   */
+  const prependPosts = useCallback((incoming: FeedPost[]) => {
+    if (!incoming.length) return;
+    setPosts((current) => {
+      const incomingIds = new Set(incoming.map((post) => post.id));
+      return [...incoming, ...current.filter((post) => !incomingIds.has(post.id))];
+    });
+  }, []);
+
+  /**
+   * Načíta PRVÚ stránku a zlúči ju na vrch. Spoločný mechanizmus pre
+   * pull-to-refresh (mobil) aj tlačidlo „skontrolovať nové" (desktop), aby sa
+   * ich správanie nemohlo rozísť. Vracia počet skutočne pribudnutých
+   * príspevkov – volajúci podľa toho vie povedať „žiadne nové".
+   */
+  const refreshLatest = useCallback(async (): Promise<number> => {
+    const page = await fetchPage({ pageSize });
+    // Počet sa NEsmie počítať vnútri setPosts updatera – ten beží až pri
+    // ďalšom rendri, takže by volajúci dostal vždy 0. Ref-zrkadlo je pre
+    // zobrazenie počtu dosť presné a proti duplicitám aj tak chráni dedup
+    // vnútri prependPosts (funkcionálny update nad aktuálnym stavom).
+    const seen = new Set(postsRef.current.map((post) => post.id));
+    const added = page.results.filter((post) => !seen.has(post.id)).length;
+    // Vkladá sa CELÁ stránka, nie len chýbajúce id: prekrývajúce sa príspevky
+    // tak dostanú čerstvú verziu (lajky/komentáre, ktoré medzitým pribudli).
+    // Keby sa posielali len nové, karta by ostala visieť na starých počtoch.
+    // Príspevky hlbšie v zozname (mimo prvej stránky) ostávajú nedotknuté.
+    prependPosts(page.results);
+    return added;
+  }, [fetchPage, pageSize, prependPosts]);
+
   useEffect(() => {
     void load();
   }, [load]);
@@ -98,6 +143,8 @@ export function useFeedInfiniteScroll(options: UseFeedInfiniteScrollOptions = {}
     hasMore,
     error,
     loadMore,
+    prependPosts,
+    refreshLatest,
     reload: load,
     isEmpty: !loading && !error && posts.length === 0,
   };
@@ -108,6 +155,13 @@ type UseInfiniteScrollSentinelOptions = {
   enabled: boolean;
   /** Načítaj ešte pred koncom zoznamu, nech scroll nezasekne. */
   rootMargin?: string;
+  /**
+   * Vlastný scrollovateľný kontajner (ohraničený box s `overflow-y-auto`).
+   * Bez neho je rootom viewport – to pre vnorený scroller nestačí: sentinel
+   * ostáva orezaný boxom, takže by sa `rootMargin` počítal voči obrazovke
+   * a nie voči tomu, kde sa používateľ v zozname naozaj nachádza.
+   */
+  root?: RefObject<Element | null>;
 };
 
 /**
@@ -122,6 +176,7 @@ export function useInfiniteScrollSentinel({
   onIntersect,
   enabled,
   rootMargin = '400px',
+  root,
 }: UseInfiniteScrollSentinelOptions) {
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const onIntersectRef = useRef(onIntersect);
@@ -139,11 +194,11 @@ export function useInfiniteScrollSentinel({
           onIntersectRef.current();
         }
       },
-      { rootMargin },
+      { root: root?.current ?? null, rootMargin },
     );
     observer.observe(node);
     return () => observer.disconnect();
-  }, [enabled, rootMargin]);
+  }, [enabled, rootMargin, root]);
 
   return sentinelRef;
 }

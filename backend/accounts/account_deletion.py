@@ -74,6 +74,7 @@ def _delete_owned_content(user) -> None:
         FavoriteUser,
         FeedPost,
         FeedPostComment,
+        FeedPostCommentLike,
         FeedPostLike,
         FeedPostTag,
         Notification,
@@ -96,6 +97,11 @@ def _delete_owned_content(user) -> None:
     FeedPost.objects.filter(author=user).delete()
     FeedPostComment.objects.filter(author=user).delete()
     FeedPostLike.objects.filter(user=user).delete()
+    # Lajky komentárov: tie POD vlastnými komentármi aj tie na vlastných
+    # príspevkoch už zanikli cez CASCADE vyššie; tento riadok maže lajky, ktoré
+    # používateľ rozdal pod CUDZÍMI komentármi – rovnaká konvencia ako
+    # FeedPostLike (CASCADE cez `user` nevystrelí, User riadok sa neruší).
+    FeedPostCommentLike.objects.filter(user=user).delete()
     # Označenia tohto používateľa v CUDZÍCH príspevkoch. FeedPostTag.tagged_user
     # je síce CASCADE, ale User riadok sa nemaže (len anonymizuje), takže CASCADE
     # nevystrelí – bez tohto riadku by v cudzích príspevkoch ostalo označenie

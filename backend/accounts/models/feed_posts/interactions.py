@@ -108,6 +108,58 @@ class FeedPostComment(models.Model):
         super().save(*args, **kwargs)
 
 
+class FeedPostCommentLike(models.Model):
+    """Like komentára – šiesty Like model, rovnaká šablóna ako FeedPostLike.
+
+    Self-like povolený: rovnaké rozhodnutie ako pri FeedPostLike/PortfolioItemLike
+    (komentár je obsah, nie identita – self-like guard má len ProfileLike).
+
+    Väzba ide na komentár, nie na príspevok: komentár už príspevok pozná a
+    duplicitný FK by musel byť držaný v konzistencii navyše. Lajky zanikajú
+    s komentárom cez CASCADE; lajky POUŽÍVATEĽA pod cudzími komentármi maže
+    explicitne ``account_deletion._delete_owned_content`` (User riadok sa pri
+    GDPR zmazaní len anonymizuje, takže CASCADE cez ``user`` nevystrelí).
+    """
+
+    comment = models.ForeignKey(
+        FeedPostComment,
+        on_delete=models.CASCADE,
+        related_name="likes",
+        verbose_name=_("Komentár"),
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="feed_post_comment_likes",
+        verbose_name=_("Používateľ"),
+    )
+    created_at = models.DateTimeField(_("Vytvorené"), auto_now_add=True)
+
+    class Meta:
+        verbose_name = _("Páči sa mi komentár")
+        verbose_name_plural = _("Páči sa mi komentáre")
+        ordering = ["-created_at", "-id"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["comment", "user"],
+                name="unique_feed_comment_like_per_user",
+            )
+        ]
+        indexes = [
+            models.Index(
+                fields=["comment", "created_at"],
+                name="acc_fpclike_comm_cr_idx",
+            ),
+            models.Index(
+                fields=["user", "created_at"],
+                name="acc_fpclike_user_cr_idx",
+            ),
+        ]
+
+    def __str__(self):
+        return f"Like komentára #{self.comment_id} od používateľa {self.user_id}"
+
+
 class FeedPostTag(models.Model):
     """Označenie používateľa v príspevku.
 

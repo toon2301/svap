@@ -6,6 +6,7 @@ from django.db import DataError, IntegrityError, transaction
 from django.contrib.auth import get_user_model
 
 from accounts.models import (
+    FeedPostImage,
     FeedPost,
     FeedPostComment,
     FeedPostLike,
@@ -100,28 +101,109 @@ class TestFeedPostModel:
         assert post.shared_title == "Weby na mieru"
 
     def test_shared_post_cannot_carry_photo(self):
-        # Fotka je len pre FREE_POST – DB constraint zakáže image_status na zdieľaní.
+        """Fotka je len pre FREE_POST.
+
+        Od Fázy 4.4 to nedrží DB constraint (počet riadkov v child tabuľke sa
+        ním vyjadriť nedá), ale ``FeedPostImage.save()`` – vzor FeedPostTag.
+        """
         u = _user(1)
         offer = _offer(u)
-        with pytest.raises(IntegrityError):
-            with transaction.atomic():
-                FeedPost.objects.create(
-                    author=u,
-                    post_type=FeedPost.PostType.SHARED_OFFER,
-                    shared_offer=offer,
-                    image_status=FeedPost.ImageStatus.PENDING,
-                )
+        shared = FeedPost.objects.create(
+            author=u,
+            post_type=FeedPost.PostType.SHARED_OFFER,
+            shared_offer=offer,
+        )
+        with pytest.raises(ValidationError) as exc_info:
+            FeedPostImage.objects.create(post=shared)
+        assert exc_info.value.code == "feed_image_on_shared_post"
 
-    def test_free_post_with_photo_is_valid(self):
+        assert shared.images.count() == 0
+
+    def test_existing_photo_cannot_be_moved_under_a_shared_post(self):
+        """Presun EXISTUJÚCEJ fotky pod zdieľanie – `_state.adding` je vtedy
+        False, takže guard pri vzniku na to nestačí."""
         u = _user(1)
+        offer = _offer(u)
+        free = FeedPost.objects.create(
+            author=u,
+            post_type=FeedPost.PostType.FREE_POST,
+            caption="S fotkou",
+        )
+        shared = FeedPost.objects.create(
+            author=u,
+            post_type=FeedPost.PostType.SHARED_OFFER,
+            shared_offer=offer,
+        )
+        image = FeedPostImage.objects.create(post=free)
+
+        image.post = shared
+        with pytest.raises(ValidationError):
+            image.save()
+
+        image.refresh_from_db()
+        assert image.post_id == free.id
+        assert shared.images.count() == 0
+
+    def test_post_with_photos_cannot_be_retyped_to_a_share(self):
+        """Zmena typu FREE_POST → SHARED_* by fotky ticho „prepašovala"
+        pod zdieľanie bez toho, aby ktorýkoľvek guard na FeedPostImage vystrelil."""
+        u = _user(1)
+        offer = _offer(u)
         post = FeedPost.objects.create(
             author=u,
             post_type=FeedPost.PostType.FREE_POST,
             caption="S fotkou",
-            image_status=FeedPost.ImageStatus.PENDING,
-            image_pending_key="uploads/feed/1/abc.jpg",
         )
-        assert post.image_status == FeedPost.ImageStatus.PENDING
+        FeedPostImage.objects.create(post=post)
+
+        post.post_type = FeedPost.PostType.SHARED_OFFER
+        post.shared_offer = offer
+        # Kód overujeme zámerne: `post.save()` pri SHARED_* spúšťa aj
+        # `_revalidate_changed_shared_source()`, ktorá vie vyhodiť
+        # ValidationError z úplne iného dôvodu (viditeľnosť zdroja) – bez
+        # kódu by test mohol prejsť aj keby photo guard vôbec nebežal.
+        with pytest.raises(ValidationError) as exc_info:
+            post.save()
+        assert exc_info.value.code == "feed_images_on_shared_post"
+
+        post.refresh_from_db()
+        assert post.post_type == FeedPost.PostType.FREE_POST
+
+    def test_post_without_photos_can_still_be_retyped(self):
+        """Bez fotiek retyping ostáva povolený – guard nesmie byť širší, než treba."""
+        u = _user(1)
+        offer = _offer(u)
+        post = FeedPost.objects.create(
+            author=u,
+            post_type=FeedPost.PostType.FREE_POST,
+            caption="Bez fotky",
+        )
+
+        post.post_type = FeedPost.PostType.SHARED_OFFER
+        post.shared_offer = offer
+        post.save()
+
+        post.refresh_from_db()
+        assert post.post_type == FeedPost.PostType.SHARED_OFFER
+
+    def test_free_post_with_photos_is_valid(self):
+        u = _user(1)
+        post = FeedPost.objects.create(
+            author=u,
+            post_type=FeedPost.PostType.FREE_POST,
+            caption="S fotkami",
+        )
+        # ZÁMERNE od najvyššieho order po najnižší – pri vkladaní vzostupne
+        # by test prešiel aj bez Meta.ordering (poradie vzniku = poradie id).
+        for index in (2, 1, 0):
+            FeedPostImage.objects.create(
+                post=post,
+                order=index,
+                status=FeedPostImage.Status.PENDING,
+                pending_key=f"uploads/feed/{post.id}/{index}/abc.jpg",
+            )
+
+        assert [image.order for image in post.images.all()] == [0, 1, 2]
 
 
 @pytest.mark.django_db

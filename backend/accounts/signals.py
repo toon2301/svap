@@ -6,6 +6,7 @@ from django.dispatch import receiver
 
 from .models import (
     FeedPost,
+    FeedPostImage,
     OfferedSkill,
     OfferedSkillImage,
     OfferedSkillLike,
@@ -249,12 +250,16 @@ def delete_offer_image_files_after_delete(sender, instance, **kwargs):
     transaction.on_commit(lambda instance=instance: _delete_offer_image_storage(instance))
 
 
-@receiver(post_delete, sender=FeedPost)
+@receiver(post_delete, sender=FeedPostImage)
 def delete_feed_post_image_files_after_delete(sender, instance, **kwargs):
-    """Po zmazaní FeedPost (aj cez purge pri zmazaní účtu) best-effort zmaž
-    storage kľúče jeho fotky – rovnaký vzor ako OfferedSkillImage/PortfolioImage
-    (orphaned súbory = náklady + GDPR)."""
-    keys = [k.strip() for k in instance.image_storage_keys() if k]
+    """Best-effort zmazanie storage kľúčov fotky – vzor OfferedSkillImage/
+    PortfolioImage (orphaned súbory = náklady + GDPR).
+
+    Django posiela post_delete aj pre kaskádovo mazané objekty, takže tento
+    receiver pokrýva zmazanie samotnej fotky AJ zmazanie celého príspevku
+    (vrátane GDPR purge účtu) – netreba druhý receiver na FeedPost.
+    """
+    keys = [k.strip() for k in instance.storage_keys() if k]
 
     def _cleanup(keys=keys):
         for key in dict.fromkeys(keys):

@@ -182,11 +182,18 @@ class FeedPostSharingMixin:
                 post.caption, "shared_post_caption"
             )
         if overwrite or not self.shared_thumbnail_key:
-            # Len schválená fotka – pending/rejected sa navonok nezobrazuje.
+            # Náhľad = PRVÁ schválená fotka (od Fázy 4.4 ich môže byť až 5);
+            # pending/rejected sa navonok nezobrazuje. Import je lokálny –
+            # images.py importuje post.py, takže na module-level by vznikol cyklus.
+            from .images import FeedPostImage
+
+            first_approved = (
+                post.images.filter(status=FeedPostImage.Status.APPROVED)
+                .order_by("order", "id")
+                .first()
+            )
             self.shared_thumbnail_key = (
-                post.image_thumbnail_key
-                if post.image_status == self.ImageStatus.APPROVED
-                else ""
+                first_approved.thumbnail_key if first_approved is not None else ""
             )
 
     def _snapshot_from_offer(self, offer, *, overwrite: bool) -> None:

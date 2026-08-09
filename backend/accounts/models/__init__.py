@@ -33,8 +33,11 @@ from .skill_requests import (
 )
 from .notifications import Notification, NotificationType
 from .feed_posts import (
+    MAX_FEED_POST_IMAGES,
     FeedPost,
     FeedPostComment,
+    FeedPostCommentLike,
+    FeedPostImage,
     FeedPostLike,
     FeedPostReport,
     FeedPostTag,
@@ -58,6 +61,7 @@ from .bug_reports import (
 from ..webpush_models import WebPushSubscription
 
 __all__ = [
+    "MAX_FEED_POST_IMAGES",
     "BugReport",
     "BugReportCategory",
     "BugReportDeviceType",
@@ -90,6 +94,8 @@ __all__ = [
     "NotificationType",
     "FeedPost",
     "FeedPostComment",
+    "FeedPostCommentLike",
+    "FeedPostImage",
     "FeedPostLike",
     "FeedPostReport",
     "FeedPostTag",
