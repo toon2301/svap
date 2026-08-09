@@ -260,6 +260,10 @@ class FeedPostImageUploadApiTests(APITestCase):
         # Moderácia beží PRED zápisom – záznam ostáva bez staging kľúča.
         self.assertEqual(image.pending_key, "")
         delete_mock.assert_called_once_with([key])
+        # Zlyhanie musí uvoľniť miesto v limite, inak by päť zamietnutí
+        # používateľa natrvalo zablokovalo na falošnom limite.
+        self.assertEqual(image.status, FeedPostImage.Status.REJECTED)
+        self.assertEqual(self._active_count(), 0)
 
     def test_upload_init_rejects_disallowed_extension(self):
         self.client.force_authenticate(user=self.author)
@@ -300,6 +304,8 @@ class FeedPostImageUploadApiTests(APITestCase):
         image.refresh_from_db()
         self.assertEqual(image.pending_key, "")
         delete_mock.assert_called_once_with([key])
+        self.assertEqual(image.status, FeedPostImage.Status.REJECTED)
+        self.assertEqual(self._active_count(), 0)
 
     def test_upload_complete_enqueue_failure_marks_rejected_and_cleans_staging(self):
         self.client.force_authenticate(user=self.author)
@@ -343,7 +349,7 @@ class FeedPostImageUploadApiTests(APITestCase):
         zablokovalo na falošnom limite."""
         self.client.force_authenticate(user=self.author)
         image = self._image()
-        assert self._active_count() == 1
+        self.assertEqual(self._active_count(), 1)
 
         response = self.client.post(
             self._complete_url(image),
@@ -357,82 +363,8 @@ class FeedPostImageUploadApiTests(APITestCase):
         self.assertEqual(image.pending_key, "")
         self.assertEqual(self._active_count(), 0)
 
-    @override_settings(SAFESEARCH_ENABLED=True)
-    def test_moderation_rejection_frees_the_slot(self):
-        from swaply.staged_image_moderation import ModerationRejectedError
 
-        self.client.force_authenticate(user=self.author)
-        image = self._image()
-        key = self._staging_key(image)
-        s3 = _s3_mock(head={"ContentLength": 2048, "ContentType": "image/jpeg"})
 
-        with (
-            patch("accounts.views.feed_uploads._get_s3_client", return_value=s3),
-            patch(
-                "swaply.staged_image_moderation.moderate_staged_s3_image",
-                side_effect=ModerationRejectedError("Nevhodny obsah."),
-            ),
-            patch("accounts.views.feed_uploads.delete_storage_keys"),
-        ):
-            response = self.client.post(
-                self._complete_url(image),
-                data={"key": key, "filename": "photo.jpg"},
-                format="json",
-            )
-
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        image.refresh_from_db()
-        self.assertEqual(image.status, FeedPostImage.Status.REJECTED)
-        self.assertEqual(self._active_count(), 0)
-
-    @override_settings(SAFESEARCH_ENABLED=True)
-    def test_moderation_outage_frees_the_slot(self):
-        self.client.force_authenticate(user=self.author)
-        image = self._image()
-        key = self._staging_key(image)
-        s3 = _s3_mock(head={"ContentLength": 2048, "ContentType": "image/jpeg"})
-
-        with (
-            patch("accounts.views.feed_uploads._get_s3_client", return_value=s3),
-            patch(
-                "swaply.staged_image_moderation.moderate_staged_s3_image",
-                side_effect=RuntimeError("vision down"),
-            ),
-            patch("accounts.views.feed_uploads.delete_storage_keys"),
-        ):
-            response = self.client.post(
-                self._complete_url(image),
-                data={"key": key, "filename": "photo.jpg"},
-                format="json",
-            )
-
-        self.assertEqual(response.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
-        image.refresh_from_db()
-        self.assertEqual(image.status, FeedPostImage.Status.REJECTED)
-        self.assertEqual(self._active_count(), 0)
-
-    def test_oversized_staged_file_frees_the_slot(self):
-        self.client.force_authenticate(user=self.author)
-        image = self._image()
-        key = self._staging_key(image)
-        s3 = _s3_mock(
-            head={"ContentLength": 6 * 1024 * 1024, "ContentType": "image/jpeg"}
-        )
-
-        with (
-            patch("accounts.views.feed_uploads._get_s3_client", return_value=s3),
-            patch("accounts.views.feed_uploads.delete_storage_keys"),
-        ):
-            response = self.client.post(
-                self._complete_url(image),
-                data={"key": key, "filename": "photo.jpg"},
-                format="json",
-            )
-
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        image.refresh_from_db()
-        self.assertEqual(image.status, FeedPostImage.Status.REJECTED)
-        self.assertEqual(self._active_count(), 0)
 
     def test_five_failed_uploads_do_not_lock_the_user_out(self):
         """Regresia na podstatu nálezu: po piatich zlyhaniach musí ďalší init
@@ -505,6 +437,8 @@ class FeedPostImageUploadApiTests(APITestCase):
         image.refresh_from_db()
         self.assertEqual(image.pending_key, "")
         delete_mock.assert_called_once_with([key])
+        self.assertEqual(image.status, FeedPostImage.Status.REJECTED)
+        self.assertEqual(self._active_count(), 0)
 
     def test_retry_upload_after_rejection_clears_stale_processed_at(self):
         self.client.force_authenticate(user=self.author)

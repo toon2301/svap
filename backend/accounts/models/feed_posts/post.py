@@ -251,7 +251,11 @@ class FeedPost(FeedPostSharingMixin, models.Model):
         # kontrolu a UPDATE nevmestí. Poradie zámkov (FeedPost, potom
         # FeedPostImage) je zhodné s FeedPostImage.save().
         with transaction.atomic():
-            type(self).objects.select_for_update().filter(pk=self.pk).exists()
+            # Výsledok netreba – ide o zámok na tomto riadku. Rovnaký idióm
+            # ako FeedPostImage.save(), nech sa obe cesty čítajú zhodne.
+            type(self).objects.select_for_update().filter(pk=self.pk).values_list(
+                "pk", flat=True
+            ).first()
             if self.images.exists():
                 raise ValidationError(
                     _("Príspevok s fotkami nemožno zmeniť na zdieľanie."),

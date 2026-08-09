@@ -260,6 +260,9 @@ def feed_post_image_upload_complete_view(request, post_id: int, image_id: int):
 
     ext = os.path.splitext(key)[1].lower()
     if ext not in allowed_image_extensions():
+        # Kľúč už prešiel kontrolou prefixu, takže patrí TEJTO fotke –
+        # zmazať ho je bezpečné a inak by staging objekt ostal ako orphan.
+        delete_storage_keys([key])
         _reject_pending_image(image_id, "Neplatny typ suboru.")
         return Response(
             {"error": "Neplatny typ suboru."}, status=status.HTTP_400_BAD_REQUEST
@@ -276,6 +279,9 @@ def feed_post_image_upload_complete_view(request, post_id: int, image_id: int):
     try:
         head = _get_s3_client().head_object(Bucket=bucket, Key=key)
     except Exception:
+        # head_object mohol zlyhať aj inak než „objekt neexistuje" (timeout,
+        # 5xx) – vtedy objekt visí v stagingu, takže sa maže best-effort.
+        delete_storage_keys([key])
         _reject_pending_image(image_id, "Upload nebol najdeny.")
         return Response(
             {"error": "Upload nebol najdeny."}, status=status.HTTP_400_BAD_REQUEST

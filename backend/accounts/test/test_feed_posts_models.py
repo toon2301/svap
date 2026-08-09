@@ -113,8 +113,9 @@ class TestFeedPostModel:
             post_type=FeedPost.PostType.SHARED_OFFER,
             shared_offer=offer,
         )
-        with pytest.raises(ValidationError):
+        with pytest.raises(ValidationError) as exc_info:
             FeedPostImage.objects.create(post=shared)
+        assert exc_info.value.code == "feed_image_on_shared_post"
 
         assert shared.images.count() == 0
 
@@ -157,8 +158,13 @@ class TestFeedPostModel:
 
         post.post_type = FeedPost.PostType.SHARED_OFFER
         post.shared_offer = offer
-        with pytest.raises(ValidationError):
+        # Kód overujeme zámerne: `post.save()` pri SHARED_* spúšťa aj
+        # `_revalidate_changed_shared_source()`, ktorá vie vyhodiť
+        # ValidationError z úplne iného dôvodu (viditeľnosť zdroja) – bez
+        # kódu by test mohol prejsť aj keby photo guard vôbec nebežal.
+        with pytest.raises(ValidationError) as exc_info:
             post.save()
+        assert exc_info.value.code == "feed_images_on_shared_post"
 
         post.refresh_from_db()
         assert post.post_type == FeedPost.PostType.FREE_POST
