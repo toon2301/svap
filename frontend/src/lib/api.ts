@@ -815,12 +815,18 @@ export const endpoints = {
     posts: '/auth/feed/posts/',
     postDetail: (id: number) => `/auth/feed/posts/${id}/`,
     postLike: (id: number) => `/auth/feed/posts/${id}/like/`,
+    postCommentLike: (postId: number, commentId: number) =>
+      `/auth/feed/posts/${postId}/comments/${commentId}/like/`,
     postComments: (id: number) => `/auth/feed/posts/${id}/comments/`,
     postCommentDetail: (postId: number, commentId: number) =>
       `/auth/feed/posts/${postId}/comments/${commentId}/`,
     postReport: (id: number) => `/auth/feed/posts/${id}/report/`,
     userPosts: (userId: number) => `/auth/feed/users/${userId}/posts/`,
     userTaggedPosts: (userId: number) => `/auth/feed/users/${userId}/tagged/`,
+    postImageUploadInit: (postId: number) =>
+      `/auth/feed/posts/${postId}/image/upload-init/`,
+    postImageUploadComplete: (postId: number) =>
+      `/auth/feed/posts/${postId}/image/upload-complete/`,
   },
   portfolio: {
     list: '/auth/portfolio/',

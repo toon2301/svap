@@ -16,6 +16,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import InitialsAvatar from '@/components/shared/InitialsAvatar';
 import { DesktopEmojiPickerButton } from '../messages/DesktopEmojiPickerButton';
 import FeedCommentDeleteConfirm from './FeedCommentDeleteConfirm';
+import FeedCommentLikeButton from './FeedCommentLikeButton';
 import { useEmojiInsertion } from './useEmojiInsertion';
 import { useInfiniteScrollSentinel } from './useFeedInfiniteScroll';
 import {
@@ -54,6 +55,11 @@ export default function FeedPostComments({
   const loadingMoreRef = useRef(false);
   const [pendingDelete, setPendingDelete] = useState<FeedPostComment | null>(null);
   const [deleting, setDeleting] = useState(false);
+  // Ohraničený scrollovateľný zoznam + príznak "po commite doscrolluj dole".
+  // Nový komentár ide na koniec, takže by inak pribudol pod zlomom boxu a
+  // pôsobil by, akoby sa vôbec nepridal.
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const scrollToBottomRef = useRef(false);
   const { textareaRef, insertEmoji } = useEmojiInsertion(text, setText);
   // `t` drží ref, aby nebolo v závislostiach callbackov: rodič sa pri zmene
   // počtu komentárov prerenderuje a keby `t` menilo identitu, `load` by sa
@@ -107,10 +113,25 @@ export default function FeedPostComments({
     }
   }, [postId]);
 
+  // Rootom observera je ohraničený box, nie viewport – donačítanie tak reaguje
+  // na scroll VNÚTRI zoznamu. Menší rootMargin než v hlavnom feede: predsávka
+  // 400px by v ~26rem vysokom boxe znamenala, že sentinel je "blízko" vždy.
   const sentinelRef = useInfiniteScrollSentinel({
     onIntersect: loadMore,
     enabled: hasMore && !loading && !loadingMore,
+    root: scrollRef,
+    rootMargin: '80px',
   });
+
+  // Beží až po commite DOM, takže scrollHeight už zahŕňa nový komentár.
+  // Gate cez ref: donačítanie staršej stránky pridáva komentáre tiež, ale
+  // vtedy pozíciu scrollu meniť nechceme.
+  useEffect(() => {
+    if (!scrollToBottomRef.current) return;
+    scrollToBottomRef.current = false;
+    const node = scrollRef.current;
+    if (node) node.scrollTop = node.scrollHeight;
+  }, [comments]);
 
   const trimmed = text.trim();
   const tooLong = text.length > FEED_COMMENT_MAX_LENGTH;
@@ -122,6 +143,7 @@ export default function FeedPostComments({
     try {
       const created = await createFeedPostComment(postId, trimmed);
       // Najstarší prvý (poradie z BE) → nový ide na koniec.
+      scrollToBottomRef.current = true;
       setComments((current) => [...current, created]);
       setText('');
       onCountChange?.(1);
@@ -157,72 +179,92 @@ export default function FeedPostComments({
       data-testid="feed-post-comments"
       className="border-t border-gray-200/70 px-4 py-3 dark:border-gray-700/60"
     >
-      {loading ? (
-        <p className="py-2 text-sm text-gray-500 dark:text-gray-400">
-          {t('common.loading', 'Načítavam...')}
-        </p>
-      ) : failed ? (
-        <p className="py-2 text-sm text-gray-500 dark:text-gray-400">
-          {t('feed.commentsLoadError', 'Komentáre sa nepodarilo načítať.')}
-        </p>
-      ) : comments.length === 0 ? (
-        <p
-          data-testid="feed-comments-empty"
-          className="py-2 text-sm text-gray-500 dark:text-gray-400"
-        >
-          {t('feed.commentsEmpty', 'Zatiaľ žiadne komentáre.')}
-        </p>
-      ) : (
-        <ul className="space-y-3">
-          {comments.map((comment) => (
-            <li key={comment.id} className="flex items-start gap-2.5">
-              <InitialsAvatar
-                name={comment.author?.display_name}
-                avatarUrl={comment.author?.avatar_url}
-                size="xs"
-              />
-              <div className="min-w-0 flex-1 rounded-2xl bg-gray-100 px-3 py-2 dark:bg-gray-800/60">
-                <p className="text-xs font-semibold text-gray-900 dark:text-white">
-                  {comment.author?.display_name}
-                </p>
-                <p className="whitespace-pre-wrap break-words text-sm text-gray-800 dark:text-gray-100">
-                  {comment.text}
-                </p>
-              </div>
-              {comment.can_delete ? (
-                <button
-                  type="button"
-                  onClick={() => setPendingDelete(comment)}
-                  aria-label={t('feed.commentDelete', 'Zmazať komentár')}
-                  title={t('feed.commentDelete', 'Zmazať komentár')}
-                  className="rounded-full p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-red-600 dark:hover:bg-gray-800 dark:hover:text-red-400"
-                >
-                  <TrashIcon className="h-4 w-4" />
-                </button>
-              ) : null}
-            </li>
-          ))}
-        </ul>
-      )}
+      {/* Ohraničený box s vlastným scrollom: stovky komentárov nenaťahujú
+          stránku do nekonečna. `overscroll-contain` zastaví reťazenie scrollu
+          na stránku pri dosiahnutí konca (podstatné hlavne na mobile).
+          tabIndex robí oblasť dostupnou aj z klávesnice (WCAG 2.1.1). */}
+      <div
+        ref={scrollRef}
+        data-testid="feed-comments-scroll"
+        role="region"
+        aria-label={t('feed.commentsList', 'Komentáre')}
+        tabIndex={0}
+        className="max-h-[min(26rem,60dvh)] overflow-y-auto overscroll-contain pr-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60"
+      >
+        {loading ? (
+          <p className="py-2 text-sm text-gray-500 dark:text-gray-400">
+            {t('common.loading', 'Načítavam...')}
+          </p>
+        ) : failed ? (
+          <p className="py-2 text-sm text-gray-500 dark:text-gray-400">
+            {t('feed.commentsLoadError', 'Komentáre sa nepodarilo načítať.')}
+          </p>
+        ) : comments.length === 0 ? (
+          <p
+            data-testid="feed-comments-empty"
+            className="py-2 text-sm text-gray-500 dark:text-gray-400"
+          >
+            {t('feed.commentsEmpty', 'Zatiaľ žiadne komentáre.')}
+          </p>
+        ) : (
+          <ul className="space-y-3">
+            {comments.map((comment) => (
+              <li key={comment.id} className="flex items-start gap-2.5">
+                <InitialsAvatar
+                  name={comment.author?.display_name}
+                  avatarUrl={comment.author?.avatar_url}
+                  size="xs"
+                />
+                <div className="min-w-0 flex-1 rounded-2xl bg-gray-100 px-3 py-2 dark:bg-gray-800/60">
+                  <p className="text-xs font-semibold text-gray-900 dark:text-white">
+                    {comment.author?.display_name}
+                  </p>
+                  <p className="whitespace-pre-wrap break-words text-sm text-gray-800 dark:text-gray-100">
+                    {comment.text}
+                  </p>
+                  <div className="mt-1 flex items-center">
+                    <FeedCommentLikeButton postId={postId} comment={comment} />
+                  </div>
+                </div>
+                {comment.can_delete ? (
+                  <button
+                    type="button"
+                    onClick={() => setPendingDelete(comment)}
+                    aria-label={t('feed.commentDelete', 'Zmazať komentár')}
+                    title={t('feed.commentDelete', 'Zmazať komentár')}
+                    className="rounded-full p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-red-600 dark:hover:bg-gray-800 dark:hover:text-red-400"
+                  >
+                    <TrashIcon className="h-4 w-4" />
+                  </button>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        )}
 
-      {loadingMore ? (
-        <ul className="mt-3 space-y-3" data-testid="feed-comments-loading-more">
-          {[0, 1].map((key) => (
-            <li key={key} className="flex animate-pulse items-start gap-2.5">
-              <div className="h-7 w-7 shrink-0 rounded-full bg-gray-200 dark:bg-gray-700" />
-              <div className="flex-1 space-y-1.5 rounded-2xl bg-gray-100 px-3 py-2 dark:bg-gray-800/60">
-                <div className="h-2.5 w-24 rounded bg-gray-200 dark:bg-gray-700" />
-                <div className="h-3 w-2/3 rounded bg-gray-200 dark:bg-gray-700" />
-              </div>
-            </li>
-          ))}
-        </ul>
-      ) : null}
+        {loadingMore ? (
+          <ul className="mt-3 space-y-3" data-testid="feed-comments-loading-more">
+            {[0, 1].map((key) => (
+              <li key={key} className="flex animate-pulse items-start gap-2.5">
+                <div className="h-7 w-7 shrink-0 rounded-full bg-gray-200 dark:bg-gray-700" />
+                <div className="flex-1 space-y-1.5 rounded-2xl bg-gray-100 px-3 py-2 dark:bg-gray-800/60">
+                  <div className="h-2.5 w-24 rounded bg-gray-200 dark:bg-gray-700" />
+                  <div className="h-3 w-2/3 rounded bg-gray-200 dark:bg-gray-700" />
+                </div>
+              </li>
+            ))}
+          </ul>
+        ) : null}
 
-      {/* Sentinel patrí TEJTO karte – observer je per-inštancia, takže dve
-          naraz rozbalené karty si donačítavanie navzájom nespúšťajú. */}
-      <div ref={sentinelRef} aria-hidden="true" data-testid="feed-comments-sentinel" />
+        {/* Sentinel patrí TEJTO karte – observer je per-inštancia, takže dve
+            naraz rozbalené karty si donačítavanie navzájom nespúšťajú.
+            Musí byť VNÚTRI scrollovateľného boxu, inak by ho scroll v zozname
+            nikdy neposunul do zorného poľa a donačítavanie by sa nespustilo. */}
+        <div ref={sentinelRef} aria-hidden="true" data-testid="feed-comments-sentinel" />
+      </div>
 
+      {/* Composer je MIMO scrollovateľnej časti – ostáva viditeľný bez ohľadu
+          na to, kde v zozname používateľ je. */}
       <div className="mt-3">
         <textarea
           ref={textareaRef}

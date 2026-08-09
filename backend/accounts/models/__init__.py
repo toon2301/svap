@@ -35,6 +35,7 @@ from .notifications import Notification, NotificationType
 from .feed_posts import (
     FeedPost,
     FeedPostComment,
+    FeedPostCommentLike,
     FeedPostLike,
     FeedPostReport,
     FeedPostTag,
@@ -90,6 +91,7 @@ __all__ = [
     "NotificationType",
     "FeedPost",
     "FeedPostComment",
+    "FeedPostCommentLike",
     "FeedPostLike",
     "FeedPostReport",
     "FeedPostTag",

@@ -1,0 +1,94 @@
+'use client';
+
+/**
+ * Srdiečko pri komentári – zmenšená obdoba lajku na príspevku.
+ *
+ * Optimistické správanie je presne vzor `FeedPostCard.handleToggleLike`:
+ * okamžitá zmena, dorovnanie podľa odpovede servera (iný divák mohol medzitým
+ * lajknúť tiež), revert + toast pri zlyhaní a ref guard proti dvojkliku.
+ * Stav si drží komponent sám, takže preklikanie jedného komentára
+ * neprerenderuje celý zoznam.
+ */
+
+import { useRef, useState } from 'react';
+import toast from 'react-hot-toast';
+import { useLanguage } from '@/contexts/LanguageContext';
+import {
+  likeFeedPostComment,
+  unlikeFeedPostComment,
+  type FeedPostComment,
+} from '@/lib/feedApi';
+
+type FeedCommentLikeButtonProps = {
+  postId: number;
+  comment: FeedPostComment;
+};
+
+export default function FeedCommentLikeButton({
+  postId,
+  comment,
+}: FeedCommentLikeButtonProps) {
+  const { t } = useLanguage();
+  const [isLiked, setIsLiked] = useState(Boolean(comment.is_liked_by_me));
+  const [likesCount, setLikesCount] = useState(comment.likes_count ?? 0);
+  const pendingRef = useRef(false);
+
+  const handleToggle = async () => {
+    if (pendingRef.current) return;
+    pendingRef.current = true;
+
+    const previousLiked = isLiked;
+    const previousCount = likesCount;
+    const nextLiked = !previousLiked;
+    setIsLiked(nextLiked);
+    setLikesCount((count) => Math.max(0, count + (nextLiked ? 1 : -1)));
+
+    try {
+      const payload = nextLiked
+        ? await likeFeedPostComment(postId, comment.id)
+        : await unlikeFeedPostComment(postId, comment.id);
+      setIsLiked(payload.is_liked_by_me);
+      setLikesCount(payload.likes_count);
+    } catch {
+      setIsLiked(previousLiked);
+      setLikesCount(previousCount);
+      toast.error(t('feed.likeError', 'Akciu sa nepodarilo uložiť.'));
+    } finally {
+      pendingRef.current = false;
+    }
+  };
+
+  const label = t('feed.commentLike', 'Páči sa mi komentár');
+
+  return (
+    // Menšie než lajk príspevku (h-3.5 vs h-4), ale p-1.5 + záporný margin
+    // držia dotykový cieľ použiteľný aj na mobile.
+    <button
+      type="button"
+      onClick={() => void handleToggle()}
+      data-testid={`feed-comment-like-${comment.id}`}
+      aria-label={`${label}: ${likesCount}`}
+      aria-pressed={isLiked}
+      title={label}
+      className={`-m-1 inline-flex shrink-0 items-center gap-1 rounded-full p-1.5 text-xs transition-colors hover:bg-black/5 dark:hover:bg-white/10 ${
+        isLiked
+          ? 'text-purple-600 dark:text-purple-300'
+          : 'text-gray-400 dark:text-gray-500'
+      }`}
+    >
+      <svg
+        viewBox="0 0 24 24"
+        fill={isLiked ? 'currentColor' : 'none'}
+        stroke="currentColor"
+        strokeWidth="2"
+        className="h-3.5 w-3.5"
+        aria-hidden="true"
+      >
+        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+      </svg>
+      {likesCount > 0 ? (
+        <span className="tabular-nums">{likesCount}</span>
+      ) : null}
+    </button>
+  );
+}

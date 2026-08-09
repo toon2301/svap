@@ -20,6 +20,7 @@ import logging
 
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
+from django.db.models import Count
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.pagination import CursorPagination
@@ -29,8 +30,15 @@ from rest_framework.response import Response
 from swaply.rate_limiting import api_rate_limit
 
 from ..feed_serializers import FeedPostCommentSerializer
-from ..models import FeedPost, FeedPostComment, FeedPostLike, FeedPostReport
+from ..models import (
+    FeedPost,
+    FeedPostComment,
+    FeedPostCommentLike,
+    FeedPostLike,
+    FeedPostReport,
+)
 from ..services.notifications import (
+    create_feed_post_comment_liked_notification,
     create_feed_post_commented_notification,
     create_feed_post_liked_notification,
 )
@@ -49,6 +57,20 @@ class FeedCommentCursorPagination(CursorPagination):
     page_size_query_param = "page_size"
     max_page_size = 50
     ordering = ("created_at", "id")
+
+
+def _liked_comment_ids(viewer, comments) -> set[int]:
+    """ID komentárov lajknutých viewerom – 1 dotaz na stránku, anonym → set().
+
+    Rovnaký vzor ako _liked_post_ids vo feed_posts (žiadne N+1).
+    """
+    if not getattr(viewer, "is_authenticated", False) or not comments:
+        return set()
+    return set(
+        FeedPostCommentLike.objects.filter(
+            user=viewer, comment_id__in=[comment.id for comment in comments]
+        ).values_list("comment_id", flat=True)
+    )
 
 
 def _get_visible_post(request, post_id: int) -> FeedPost | None:
@@ -129,6 +151,97 @@ def feed_post_like_view(request, post_id: int):
     return Response(payload, status=status.HTTP_200_OK)
 
 
+def _comment_like_payload(*, comment_id: int, user_id: int) -> dict:
+    return {
+        "comment_id": comment_id,
+        "is_liked_by_me": FeedPostCommentLike.objects.filter(
+            comment_id=comment_id, user_id=user_id
+        ).exists(),
+        "likes_count": FeedPostCommentLike.objects.filter(
+            comment_id=comment_id
+        ).count(),
+    }
+
+
+def _comment_not_found() -> Response:
+    return Response(
+        {"error": "Komentar nebol najdeny."}, status=status.HTTP_404_NOT_FOUND
+    )
+
+
+@api_view(["POST", "DELETE"])
+@permission_classes([IsAuthenticated])
+@api_rate_limit
+def feed_post_comment_like_view(request, post_id: int, comment_id: int):
+    """POST: lajk komentára (idempotentné). DELETE: odlajkovanie.
+
+    Presne vzor feed_post_like_view: komentár musí byť na VIDITEĽNOM príspevku
+    (inak 404 bez prezradenia existencie), get_or_create pod zámkom dvojice
+    (blok-vs-lajk race), notifikácia až cez transaction.on_commit.
+
+    Zamyká sa dvojica s AUTOROM KOMENTÁRA – on je príjemcom notifikácie a jeho
+    blok je to, čo lajk zablokuje; autor príspevku tu rolu nehrá.
+    """
+    post = _get_visible_post(request, post_id)
+    if post is None:
+        return _post_not_found()
+
+    comment = (
+        FeedPostComment.objects.select_related("author")
+        .filter(pk=comment_id, post=post)
+        .first()
+    )
+    if comment is None:
+        return _comment_not_found()
+
+    if request.method == "POST":
+
+        def notify_author_about_like():
+            try:
+                create_feed_post_comment_liked_notification(
+                    comment=comment, actor=request.user
+                )
+            except Exception:
+                logger.exception(
+                    "Feed comment like notification dispatch failed",
+                    extra={
+                        "post_id": getattr(post, "id", None),
+                        "comment_id": getattr(comment, "id", None),
+                        "author_id": getattr(comment, "author_id", None),
+                        "actor_id": getattr(request.user, "id", None),
+                    },
+                )
+
+        with transaction.atomic():
+            lock_user_pair_for_update(
+                first_user_id=request.user.id,
+                second_user_id=comment.author_id,
+            )
+            # Re-check pod zámkom – blok/sprivátnenie tesne pred lajkom.
+            if _get_visible_post(request, post_id) is None:
+                return _post_not_found()
+            if not FeedPostComment.objects.filter(pk=comment_id, post_id=post_id).exists():
+                return _comment_not_found()
+            _, created = FeedPostCommentLike.objects.get_or_create(
+                comment=comment,
+                user=request.user,
+            )
+            if created:
+                transaction.on_commit(notify_author_about_like)
+
+        payload = _comment_like_payload(
+            comment_id=comment.id, user_id=request.user.id
+        )
+        return Response(
+            payload,
+            status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
+        )
+
+    FeedPostCommentLike.objects.filter(comment=comment, user=request.user).delete()
+    payload = _comment_like_payload(comment_id=comment.id, user_id=request.user.id)
+    return Response(payload, status=status.HTTP_200_OK)
+
+
 def _create_comment(request, post: FeedPost) -> Response:
     text = str(request.data.get("text") or "").strip()
     if not text:
@@ -187,13 +300,23 @@ def feed_post_comments_view(request, post_id: int):
             )
         return _create_comment(request, post)
 
-    queryset = FeedPostComment.objects.filter(post=post).select_related("author")
+    # Count bez distinct je tu bezpečný: v dotaze je JEDINÝ „many" vzťah, takže
+    # nevzniká krížový join ako pri lajkoch × komentároch vo feede.
+    queryset = (
+        FeedPostComment.objects.filter(post=post)
+        .select_related("author")
+        .annotate(_likes_count=Count("likes"))
+    )
     paginator = FeedCommentCursorPagination()
     page = paginator.paginate_queryset(queryset, request)
     serializer = FeedPostCommentSerializer(
         page,
         many=True,
-        context={"request": request, "post_author_id": post.author_id},
+        context={
+            "request": request,
+            "post_author_id": post.author_id,
+            "liked_feed_comment_ids": _liked_comment_ids(request.user, page),
+        },
     )
     return paginator.get_paginated_response(serializer.data)
 

@@ -206,6 +206,11 @@ urlpatterns = [
         name="feed_post_comment_delete",
     ),
     path(
+        "feed/posts/<int:post_id>/comments/<int:comment_id>/like/",
+        views.feed_post_comment_like_view,
+        name="feed_post_comment_like",
+    ),
+    path(
         "feed/posts/<int:post_id>/report/",
         views.feed_post_report_view,
         name="feed_post_report",

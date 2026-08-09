@@ -7,6 +7,13 @@ import type { FeedPost } from '@/lib/feedApi';
 
 jest.mock('@/lib/feedApi', () => ({
   listFeedPosts: jest.fn(),
+  createFeedPost: jest.fn(),
+  getFeedPost: jest.fn(),
+}));
+
+jest.mock('react-hot-toast', () => ({
+  __esModule: true,
+  default: { error: jest.fn(), success: jest.fn() },
 }));
 
 jest.mock('@/contexts/LanguageContext', () => ({
@@ -198,7 +205,12 @@ describe('FeedList', () => {
       expect(screen.getByTestId('feed-empty-state')).toBeInTheDocument();
     });
     expect(screen.getByText('Nástenka je zatiaľ tichá')).toBeInTheDocument();
-    expect(screen.getByTestId('feed-empty-cta')).toBeDisabled();
+
+    // Fáza 4.3: CTA je funkčné a otvára composer (predtým natvrdo disabled).
+    const cta = screen.getByTestId('feed-empty-cta');
+    expect(cta).toBeEnabled();
+    await userEvent.click(cta);
+    expect(await screen.findByTestId('feed-composer-modal')).toBeInTheDocument();
   });
 
   it('renders a placeholder when shared content is unavailable', async () => {

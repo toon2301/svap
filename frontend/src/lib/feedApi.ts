@@ -162,6 +162,8 @@ export type FeedPostComment = {
   text: string;
   author: FeedUserSummary;
   can_delete: boolean;
+  likes_count: number;
+  is_liked_by_me: boolean;
   created_at: string;
 };
 
@@ -177,6 +179,12 @@ export type FeedLikePayload = {
   likes_count: number;
 };
 
+export type FeedCommentLikePayload = {
+  comment_id: number;
+  is_liked_by_me: boolean;
+  likes_count: number;
+};
+
 /** Maximálna dĺžka komentára – zhodné s modelovým limitom na backende. */
 export const FEED_COMMENT_MAX_LENGTH = 500;
 
@@ -187,6 +195,26 @@ export async function likeFeedPost(postId: number): Promise<FeedLikePayload> {
 
 export async function unlikeFeedPost(postId: number): Promise<FeedLikePayload> {
   const { data } = await api.delete<FeedLikePayload>(endpoints.feed.postLike(postId));
+  return data;
+}
+
+export async function likeFeedPostComment(
+  postId: number,
+  commentId: number,
+): Promise<FeedCommentLikePayload> {
+  const { data } = await api.post<FeedCommentLikePayload>(
+    endpoints.feed.postCommentLike(postId, commentId),
+  );
+  return data;
+}
+
+export async function unlikeFeedPostComment(
+  postId: number,
+  commentId: number,
+): Promise<FeedCommentLikePayload> {
+  const { data } = await api.delete<FeedCommentLikePayload>(
+    endpoints.feed.postCommentLike(postId, commentId),
+  );
   return data;
 }
 
@@ -231,6 +259,25 @@ export async function reportFeedPost(
     reason: payload.reason,
     description: payload.description?.trim() || undefined,
   });
+}
+
+/**
+ * Nový voľný príspevok (Fáza 4.3 composer).
+ *
+ * Fotka sa sem NEposiela: príspevok musí v DB existovať skôr, než sa naň dá
+ * naviazať upload (kľúč v S3 obsahuje post_id) – volajúci preto po úspechu
+ * spustí `uploadFeedPostImage`.
+ */
+export async function createFeedPost(payload: {
+  caption: string;
+  taggedUserIds?: number[];
+}): Promise<FeedPost> {
+  const { data } = await api.post<FeedPost>(endpoints.feed.posts, {
+    post_type: 'free_post',
+    caption: payload.caption,
+    tagged_user_ids: payload.taggedUserIds ?? [],
+  });
+  return data;
 }
 
 /**

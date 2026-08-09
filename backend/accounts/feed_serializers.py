@@ -48,10 +48,20 @@ class FeedPostCommentSerializer(serializers.ModelSerializer):
 
     author = FeedUserSummarySerializer(read_only=True)
     can_delete = serializers.SerializerMethodField()
+    likes_count = serializers.SerializerMethodField()
+    is_liked_by_me = serializers.SerializerMethodField()
 
     class Meta:
         model = FeedPostComment
-        fields = ["id", "text", "author", "can_delete", "created_at"]
+        fields = [
+            "id",
+            "text",
+            "author",
+            "can_delete",
+            "likes_count",
+            "is_liked_by_me",
+            "created_at",
+        ]
 
     def get_can_delete(self, obj):
         request = self.context.get("request")
@@ -60,6 +70,22 @@ class FeedPostCommentSerializer(serializers.ModelSerializer):
             return False
         post_author_id = self.context.get("post_author_id")
         return user.id == obj.author_id or user.id == post_author_id
+
+    def get_likes_count(self, obj):
+        # Anotácia zo zoznamu; fallback pre jednotlivo serializovaný komentár
+        # (napr. čerstvo vytvorený) – rovnaký vzor ako FeedPostSerializer.
+        annotated = getattr(obj, "_likes_count", None)
+        if annotated is not None:
+            return int(annotated)
+        return obj.likes.count()
+
+    def get_is_liked_by_me(self, obj):
+        # Anonym-guard: chýbajúci kľúč v kontexte → False (nikdy nie dotaz
+        # na používateľa, ktorý nie je prihlásený).
+        liked_ids = self.context.get("liked_feed_comment_ids")
+        if liked_ids is None:
+            return False
+        return obj.id in liked_ids
 
 
 class FeedPostSerializer(serializers.ModelSerializer):

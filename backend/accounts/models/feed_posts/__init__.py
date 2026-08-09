@@ -6,7 +6,12 @@ sem, takže pôvodné importy (``from accounts.models.feed_posts import FeedPost
 aj ``from accounts.models import FeedPost``) fungujú bez úpravy.
 """
 
-from .interactions import FeedPostComment, FeedPostLike, FeedPostTag
+from .interactions import (
+    FeedPostComment,
+    FeedPostCommentLike,
+    FeedPostLike,
+    FeedPostTag,
+)
 from .post import SHARED_SNAPSHOT_FIELDS, FeedPost
 from .reports import FeedPostReport
 from .text_limits import (
@@ -20,6 +25,7 @@ __all__ = [
     "SHARED_SNAPSHOT_FIELDS",
     "FeedPost",
     "FeedPostComment",
+    "FeedPostCommentLike",
     "FeedPostLike",
     "FeedPostReport",
     "FeedPostTag",

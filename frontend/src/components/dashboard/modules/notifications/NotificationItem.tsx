@@ -261,6 +261,11 @@ export default function NotificationItem({
               'notifications.feedPostSharedBody',
               '{name} zdieľal tvoj obsah ďalej.',
             ).replace('{name}', () => actorName)
+        : notification.type === 'feed_post_comment_liked'
+          ? t(
+              'notifications.feedPostCommentLikedBody',
+              '{name} lajkol tvoj komentár.',
+            ).replace('{name}', () => actorName)
         : notification.body ||
           t('notifications.genericBody', 'Otvorte upozornenie pre viac detailov.');
   const highlightedBody = highlightActorName(body, actorName);

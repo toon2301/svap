@@ -43,6 +43,9 @@ NOTIFICATION_RETENTION_DAYS: dict[str, int] = {
     NotificationType.PROFILE_LIKED: 30,
     NotificationType.REVIEW_LIKED: 30,
     NotificationType.FEED_POST_LIKED: 30,
+    # Lajk komentára je rovnaká jednorazová sociálna udalosť ako lajk
+    # príspevku – NIE 60 ako FEED_POST_COMMENTED (ten nesie obsah).
+    NotificationType.FEED_POST_COMMENT_LIKED: 30,
     # Označenie je jednorazová sociálna udalosť bez obsahu (ako lajk), nie
     # prebiehajúca konverzácia → 30 dní, nie review-tier 60.
     NotificationType.FEED_POST_TAGGED: 30,
@@ -100,6 +103,7 @@ def purge_old_notifications(*, dry_run: bool = True) -> dict[str, int]:
 # Doménové create_*_notification funkcie žijú v notification_events (importuje
 # notification_core, NIE tento hub -> žiadny cyklus). Re-export pre kompatibilitu.
 from .notification_events import (  # noqa: E402, F401
+    create_feed_post_comment_liked_notification,
     create_feed_post_commented_notification,
     create_feed_post_liked_notification,
     create_feed_post_shared_notification,
