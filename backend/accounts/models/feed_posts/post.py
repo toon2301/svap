@@ -19,7 +19,7 @@ FK štruktúra to ničím nesťažuje.
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
-from django.db import models
+from django.db import models, transaction
 from django.utils.translation import gettext_lazy as _
 
 from .sharing import SHARED_SNAPSHOT_FIELDS, FeedPostSharingMixin
@@ -226,16 +226,36 @@ class FeedPost(FeedPostSharingMixin, models.Model):
         ensure_text_within_limit(self.caption, field_label="Text príspevku")
         if self._state.adding:
             self._apply_shared_source()
-        else:
-            refreshed = self._revalidate_changed_shared_source(
-                kwargs.get("update_fields")
+            super().save(*args, **kwargs)
+            return
+
+        refreshed = self._revalidate_changed_shared_source(
+            kwargs.get("update_fields")
+        )
+        # Bez tohto zlúčenia by prevalidovaný snapshot (nový vlastník, názov,
+        # kategória, náhľad) ostal len v pamäti a do DB by sa nezapísal –
+        # v riadku by ostal starý vlastník pri novom zdroji.
+        if refreshed and kwargs.get("update_fields") is not None:
+            kwargs["update_fields"] = list(
+                dict.fromkeys([*kwargs["update_fields"], *refreshed])
             )
-            # Bez tohto zlúčenia by prevalidovaný snapshot (nový vlastník, názov,
-            # kategória, náhľad) ostal len v pamäti a do DB by sa nezapísal –
-            # v riadku by ostal starý vlastník pri novom zdroji.
-            if refreshed and kwargs.get("update_fields") is not None:
-                kwargs["update_fields"] = list(
-                    dict.fromkeys([*kwargs["update_fields"], *refreshed])
+
+        if self.post_type == self.PostType.FREE_POST:
+            super().save(*args, **kwargs)
+            return
+
+        # Retyping FREE_POST → SHARED_* by fotky ticho „prepašoval" pod
+        # zdieľanie: guard na FeedPostImage vtedy nevystrelí (žiadna fotka sa
+        # nezapisuje, mení sa rodič). Kontrola beží pod zámkom vlastného riadku
+        # v jednej transakcii so zápisom, takže súbežne pridaná fotka sa medzi
+        # kontrolu a UPDATE nevmestí. Poradie zámkov (FeedPost, potom
+        # FeedPostImage) je zhodné s FeedPostImage.save().
+        with transaction.atomic():
+            type(self).objects.select_for_update().filter(pk=self.pk).exists()
+            if self.images.exists():
+                raise ValidationError(
+                    _("Príspevok s fotkami nemožno zmeniť na zdieľanie."),
+                    code="feed_images_on_shared_post",
                 )
-        super().save(*args, **kwargs)
+            super().save(*args, **kwargs)
 

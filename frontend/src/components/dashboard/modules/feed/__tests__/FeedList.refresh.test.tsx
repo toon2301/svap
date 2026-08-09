@@ -20,8 +20,9 @@ jest.mock('@/lib/feedApi', () => ({
 }));
 
 jest.mock('@/lib/feedImageUpload', () => ({
-  uploadFeedPostImage: jest.fn(),
+  uploadFeedPostImages: jest.fn(),
   isAllowedFeedImageName: () => true,
+  MAX_FEED_POST_IMAGES: 5,
   FEED_IMAGE_MAX_MB: 5,
   FEED_IMAGE_MAX_BYTES: 5 * 1024 * 1024,
   FEED_IMAGE_ACCEPT: 'image/*',

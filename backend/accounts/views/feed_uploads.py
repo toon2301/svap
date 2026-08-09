@@ -66,6 +66,28 @@ def _images_limit_response():
     )
 
 
+def _reject_pending_image(image_id: int, reason: str) -> None:
+    """Uvoľní miesto v limite po neúspešnom uploade.
+
+    Záznam vzniká už pri INITE, takže keď complete zlyhá, nesmie ostať PENDING:
+    ``_active_images_q()`` by ho počítal naveky a používateľ by po piatich
+    neúspešných pokusoch narazil na falošný limit bez možnosti nahrať náhradu.
+    ``pending_key`` sa zároveň čistí – staging objekt je vtedy už zmazaný,
+    takže by kľúč držal mŕtvy odkaz.
+
+    Filter na PENDING drží idempotenciu: hotovú APPROVED fotku (opakovaný
+    complete) to nesmie zhodiť.
+    """
+    FeedPostImage.objects.filter(
+        id=image_id, status=FeedPostImage.Status.PENDING
+    ).update(
+        status=FeedPostImage.Status.REJECTED,
+        rejected_reason=reason[:255],
+        pending_key="",
+        processed_at=timezone.now(),
+    )
+
+
 def _get_own_free_post(request, post_id: int) -> FeedPost | None:
     """Fotky smie mať len VLASTNÝ voľný príspevok.
 
@@ -224,24 +246,28 @@ def feed_post_image_upload_complete_view(request, post_id: int, image_id: int):
     filename = str(request.data.get("filename") or "").strip()
     key = str(request.data.get("key") or "").strip()
     if not key:
+        _reject_pending_image(image_id, "Upload sa nedokoncil.")
         return Response({"error": "Chyba key."}, status=status.HTTP_400_BAD_REQUEST)
 
     # Kľúč musí patriť TEJTO fotke tohto príspevku – inak by sa dal podstrčiť
     # staging objekt z cudzieho uploadu.
     expected_prefix = f"uploads/feed/{post_id}/{image_id}/"
     if not key.startswith(expected_prefix):
+        _reject_pending_image(image_id, "Upload sa nedokoncil.")
         return Response(
             {"error": "Neplatny key."}, status=status.HTTP_400_BAD_REQUEST
         )
 
     ext = os.path.splitext(key)[1].lower()
     if ext not in allowed_image_extensions():
+        _reject_pending_image(image_id, "Neplatny typ suboru.")
         return Response(
             {"error": "Neplatny typ suboru."}, status=status.HTTP_400_BAD_REQUEST
         )
 
     bucket = getattr(settings, "AWS_STORAGE_BUCKET_NAME", None)
     if not bucket:
+        _reject_pending_image(image_id, "Storage nie je dostupne.")
         return Response(
             {"error": "Storage nie je nakonfigurovane."},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -250,6 +276,7 @@ def feed_post_image_upload_complete_view(request, post_id: int, image_id: int):
     try:
         head = _get_s3_client().head_object(Bucket=bucket, Key=key)
     except Exception:
+        _reject_pending_image(image_id, "Upload nebol najdeny.")
         return Response(
             {"error": "Upload nebol najdeny."}, status=status.HTTP_400_BAD_REQUEST
         )
@@ -258,6 +285,7 @@ def feed_post_image_upload_complete_view(request, post_id: int, image_id: int):
 
     if size_bytes <= 0 or size_bytes > max_image_bytes():
         delete_storage_keys([key])
+        _reject_pending_image(image_id, "Neplatny subor.")
         return Response(
             {"error": "Neplatny subor."}, status=status.HTTP_400_BAD_REQUEST
         )
@@ -277,6 +305,7 @@ def feed_post_image_upload_complete_view(request, post_id: int, image_id: int):
         except ModerationRejectedError as e:
             # Defense-in-depth orphan cleanup (rovnaký vzor ako portfólio).
             delete_storage_keys([key])
+            _reject_pending_image(image_id, e.user_message)
             return Response(
                 {"error": e.user_message, "code": e.code},
                 status=status.HTTP_400_BAD_REQUEST,
@@ -289,6 +318,7 @@ def feed_post_image_upload_complete_view(request, post_id: int, image_id: int):
                 extra={"feed_post_id": post_id, "feed_post_image_id": image_id},
             )
             delete_storage_keys([key])
+            _reject_pending_image(image_id, "Overenie obrazka zlyhalo.")
             return Response(
                 {"error": "Nepodarilo sa overit obrazok. Skuste to znova."},
                 status=status.HTTP_503_SERVICE_UNAVAILABLE,

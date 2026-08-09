@@ -118,6 +118,68 @@ class TestFeedPostModel:
 
         assert shared.images.count() == 0
 
+    def test_existing_photo_cannot_be_moved_under_a_shared_post(self):
+        """Presun EXISTUJÚCEJ fotky pod zdieľanie – `_state.adding` je vtedy
+        False, takže guard pri vzniku na to nestačí."""
+        u = _user(1)
+        offer = _offer(u)
+        free = FeedPost.objects.create(
+            author=u,
+            post_type=FeedPost.PostType.FREE_POST,
+            caption="S fotkou",
+        )
+        shared = FeedPost.objects.create(
+            author=u,
+            post_type=FeedPost.PostType.SHARED_OFFER,
+            shared_offer=offer,
+        )
+        image = FeedPostImage.objects.create(post=free)
+
+        image.post = shared
+        with pytest.raises(ValidationError):
+            image.save()
+
+        image.refresh_from_db()
+        assert image.post_id == free.id
+        assert shared.images.count() == 0
+
+    def test_post_with_photos_cannot_be_retyped_to_a_share(self):
+        """Zmena typu FREE_POST → SHARED_* by fotky ticho „prepašovala"
+        pod zdieľanie bez toho, aby ktorýkoľvek guard na FeedPostImage vystrelil."""
+        u = _user(1)
+        offer = _offer(u)
+        post = FeedPost.objects.create(
+            author=u,
+            post_type=FeedPost.PostType.FREE_POST,
+            caption="S fotkou",
+        )
+        FeedPostImage.objects.create(post=post)
+
+        post.post_type = FeedPost.PostType.SHARED_OFFER
+        post.shared_offer = offer
+        with pytest.raises(ValidationError):
+            post.save()
+
+        post.refresh_from_db()
+        assert post.post_type == FeedPost.PostType.FREE_POST
+
+    def test_post_without_photos_can_still_be_retyped(self):
+        """Bez fotiek retyping ostáva povolený – guard nesmie byť širší, než treba."""
+        u = _user(1)
+        offer = _offer(u)
+        post = FeedPost.objects.create(
+            author=u,
+            post_type=FeedPost.PostType.FREE_POST,
+            caption="Bez fotky",
+        )
+
+        post.post_type = FeedPost.PostType.SHARED_OFFER
+        post.shared_offer = offer
+        post.save()
+
+        post.refresh_from_db()
+        assert post.post_type == FeedPost.PostType.SHARED_OFFER
+
     def test_free_post_with_photos_is_valid(self):
         u = _user(1)
         post = FeedPost.objects.create(
@@ -125,7 +187,9 @@ class TestFeedPostModel:
             post_type=FeedPost.PostType.FREE_POST,
             caption="S fotkami",
         )
-        for index in range(3):
+        # ZÁMERNE od najvyššieho order po najnižší – pri vkladaní vzostupne
+        # by test prešiel aj bez Meta.ordering (poradie vzniku = poradie id).
+        for index in (2, 1, 0):
             FeedPostImage.objects.create(
                 post=post,
                 order=index,
@@ -133,7 +197,6 @@ class TestFeedPostModel:
                 pending_key=f"uploads/feed/{post.id}/{index}/abc.jpg",
             )
 
-        # Poradie drží Meta.ordering, nie poradie vzniku.
         assert [image.order for image in post.images.all()] == [0, 1, 2]
 
 

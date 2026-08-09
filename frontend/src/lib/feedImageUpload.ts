@@ -115,7 +115,7 @@ export type FeedImageUploadFailure = { file: File; error: unknown };
 export async function uploadFeedPostImages(
   postId: number,
   files: File[],
-  onProgress?: (uploaded: number, total: number) => void,
+  onProgress?: (current: number, total: number) => void,
 ): Promise<FeedImageUploadFailure[]> {
   const failures: FeedImageUploadFailure[] = [];
   for (let index = 0; index < files.length; index += 1) {

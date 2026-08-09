@@ -11,7 +11,7 @@ na príspevok.
 """
 
 from django.core.exceptions import ValidationError
-from django.db import models
+from django.db import models, transaction
 from django.utils.translation import gettext_lazy as _
 
 from .post import FeedPost
@@ -92,13 +92,30 @@ class FeedPostImage(models.Model):
         zdieľaniach). Nad child tabuľkou sa to constraintom vyjadriť nedá, tak
         pravidlo drží model – rovnaký vzor ako ``FeedPostTag.save()``. Platí
         teda aj pre priamy ORM zápis, ktorý obíde upload endpoint.
+
+        Kontroluje sa pri KAŽDOM zápise, nie len pri vzniku: presun existujúcej
+        fotky (``image.post = shared; image.save()``) má ``_state.adding``
+        False, takže guard len na vznik by ho prepustil.
+
+        Zámok na príspevku drží invariant aj proti súbežnej zmene typu –
+        ``FeedPost.save()`` zamyká ten istý riadok, takže obe cesty berú zámky
+        v rovnakom poradí a nemôžu sa navzájom obísť ani zablokovať.
         """
-        if self._state.adding and self.post.post_type != FeedPost.PostType.FREE_POST:
-            raise ValidationError(
-                _("Zdieľaný príspevok nemôže mať vlastnú fotku."),
-                code="feed_image_on_shared_post",
+        with transaction.atomic():
+            post_type = (
+                FeedPost.objects.select_for_update()
+                .filter(pk=self.post_id)
+                .values_list("post_type", flat=True)
+                .first()
             )
-        super().save(*args, **kwargs)
+            # None = príspevok neexistuje; to odmietne FK constraint nižšie,
+            # nemá zmysel to prekrývať vlastnou (mätúcou) hláškou.
+            if post_type is not None and post_type != FeedPost.PostType.FREE_POST:
+                raise ValidationError(
+                    _("Zdieľaný príspevok nemôže mať vlastnú fotku."),
+                    code="feed_image_on_shared_post",
+                )
+            super().save(*args, **kwargs)
 
     def storage_keys(self) -> list[str]:
         """Všetky storage kľúče tejto fotky – pre cleanup po zmazaní."""
