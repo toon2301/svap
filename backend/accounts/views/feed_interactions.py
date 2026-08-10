@@ -62,6 +62,19 @@ class FeedCommentCursorPagination(CursorPagination):
     max_page_size = 50
     ordering = ("created_at", "id")
 
+    def paginate_queryset(self, queryset, request, view=None):
+        # CursorPagination count ZÁMERNE nepočíta (pri veľkých zoznamoch je
+        # drahý). Tu je to jeden COUNT nad indexom (post_id, created_at) pre
+        # jeden príspevok, a FE ho potrebuje: číslo pri ikone komentárov musí
+        # vychádzať z toho istého načítania ako zoznam, inak sa rozídu.
+        self.total_count = queryset.count()
+        return super().paginate_queryset(queryset, request, view=view)
+
+    def get_paginated_response(self, data):
+        response = super().get_paginated_response(data)
+        response.data["count"] = getattr(self, "total_count", None)
+        return response
+
 
 def _liked_comment_ids(viewer, comments) -> set[int]:
     """ID komentárov lajknutých viewerom – 1 dotaz na stránku, anonym → set().

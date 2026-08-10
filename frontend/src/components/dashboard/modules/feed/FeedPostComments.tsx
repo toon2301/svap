@@ -32,11 +32,14 @@ const COMMENTS_PAGE_SIZE = 10;
 type FeedPostCommentsProps = {
   postId: number;
   onCountChange?: (delta: number) => void;
+  /** Skutočný počet zo servera – drží číslo pri ikone v súlade so zoznamom. */
+  onTotalChange?: (total: number) => void;
 };
 
 export default function FeedPostComments({
   postId,
   onCountChange,
+  onTotalChange,
 }: FeedPostCommentsProps) {
   const { t } = useLanguage();
   const [comments, setComments] = useState<FeedPostComment[]>([]);
@@ -66,6 +69,10 @@ export default function FeedPostComments({
   // reštartoval a prepísal práve pridaný komentár späť na serverový stav.
   const tRef = useRef(t);
   tRef.current = t;
+  // Cez ref, aby callback nemusel byť v závislostiach `load`/`loadMore` –
+  // inak by sa zoznam pri každom rendri rodiča načítaval odznova.
+  const onTotalChangeRef = useRef(onTotalChange);
+  onTotalChangeRef.current = onTotalChange;
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -78,6 +85,12 @@ export default function FeedPostComments({
       setComments(page.results);
       nextUrlRef.current = page.next;
       setHasMore(Boolean(page.next));
+      // Počet pri ikone musí vychádzať z TOHO ISTÉHO načítania ako zoznam,
+      // inak by po realtime obnovení ukazoval staré číslo. `count` z BE
+      // je celkový, nie len veľkosť stránky.
+      if (typeof page.count === 'number') {
+        onTotalChangeRef.current?.(page.count);
+      }
     } catch {
       setFailed(true);
     } finally {

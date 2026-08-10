@@ -10,12 +10,13 @@
  * vzor appky ako dostupnú alternatívu ku scrollu.
  */
 
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
 import FeedPostCard from './FeedPostCard';
 import FeedPostComposerModal from './FeedPostComposerModal';
+import { onFeedPostCreated } from './feedShareEvents';
 import { useFeedPullToRefresh } from './useFeedPullToRefresh';
 import {
   useFeedInfiniteScroll,
@@ -170,6 +171,13 @@ export default function FeedList() {
   const [composerOpen, setComposerOpen] = useState(false);
   const [checking, setChecking] = useState(false);
 
+  // Zdieľanie z profilu (ponuka/portfólio) beží mimo tohto stromu, takže
+  // nový príspevok príde eventom, nie callbackom. Ten istý prependPosts
+  // ako composer – žiadny refetch.
+  useEffect(() => onFeedPostCreated((created) => prependPosts([created])), [
+    prependPosts,
+  ]);
+
   const sentinelRef = useInfiniteScrollSentinel({
     onIntersect: loadMore,
     // Po zlyhaní donačítania observer vypneme – sentinel ostáva vo viewporte,
@@ -251,7 +259,10 @@ export default function FeedList() {
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.25 }}
           >
-            <FeedPostCard post={post} />
+            <FeedPostCard
+              post={post}
+              onShared={(created) => prependPosts([created])}
+            />
           </motion.div>
         ))}
 

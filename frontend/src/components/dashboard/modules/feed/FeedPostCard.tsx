@@ -18,9 +18,15 @@ import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { EllipsisHorizontalIcon, FlagIcon } from '@heroicons/react/24/outline';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { translateFeedActionError } from './feedActionErrors';
 import InitialsAvatar from '@/components/shared/InitialsAvatar';
 import { buildPortfolioDetailPath } from '../profile/portfolioRouting';
-import { likeFeedPost, unlikeFeedPost, type FeedPost } from '@/lib/feedApi';
+import {
+  getFeedPost,
+  likeFeedPost,
+  unlikeFeedPost,
+  type FeedPost,
+} from '@/lib/feedApi';
 import FeedPostComments from './FeedPostComments';
 import FeedPostImageCarousel from './FeedPostImageCarousel';
 import FeedPostReportModal from './FeedPostReportModal';
@@ -34,6 +40,15 @@ import FeedPostShareModal from './FeedPostShareModal';
  * neprepína podľa režimu, takže by v tmavom režime ostal svetlý podklad pod
  * svetlým textom.
  */
+/**
+ * Fotky sa spracúvajú na pozadí (Celery), takže PENDING → APPROVED/REJECTED
+ * príde bez akcie používateľa. Appka na to nemá realtime kanál – rovnaký
+ * scenár rieši `PortfolioDetailModule` krátkym pollingom, tak sa preberá aj
+ * sem vrátane hodnôt aj poistky proti nekonečnému behu.
+ */
+const PENDING_IMAGE_POLL_INTERVAL_MS = 2500;
+const PENDING_IMAGE_POLL_TIMEOUT_MS = 45000;
+
 const SHARED_CARD_SURFACE =
   'bg-[#EEEDFE] dark:bg-purple-950/30 border-purple-200 dark:border-purple-800/60';
 
@@ -259,18 +274,21 @@ function SharedContentPreview({
 export default function FeedPostCard({
   post,
   initialCommentsOpen = false,
+  onShared,
 }: {
   post: FeedPost;
   /** Permalink detail otvára komentáre rovno (viď FeedPostDetailModule). */
   initialCommentsOpen?: boolean;
+  /** Zdieľanie ďalej vloží nový príspevok na vrch feedu (ako composer). */
+  onShared?: (created: FeedPost) => void;
 }) {
   const { t, locale } = useLanguage();
   const router = useRouter();
   const isShared = post.post_type !== 'free_post';
   const authorName = post.author?.display_name || '';
   // Backend posiela cudziemu divákovi len APPROVED fotky; autor dostane aj
-  // pending/rejected, ktoré karusel vykreslí ako stav spracovania.
-  const images = post.images ?? [];
+  // pending/rejected. Stav (nie priamo props), aby ho vedel obnoviť polling.
+  const [images, setImages] = useState(post.images ?? []);
 
   const [isLiked, setIsLiked] = useState(post.is_liked_by_me);
   const [likesCount, setLikesCount] = useState(post.likes_count);
@@ -283,6 +301,7 @@ export default function FeedPostCard({
   const likePendingRef = useRef(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const menuTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const pendingPollStartedAtRef = useRef<number | null>(null);
 
   // Obnovenie feedu nahradí príspevok čerstvejšou verziou, ale `key` ostáva
   // rovnaké – React teda inštanciu recykluje a bez tejto synchronizácie by
@@ -297,6 +316,44 @@ export default function FeedPostCard({
   useEffect(() => {
     setCommentsCount(post.comments_count);
   }, [post.comments_count]);
+
+  useEffect(() => {
+    setImages(post.images ?? []);
+  }, [post.images]);
+
+  // Polling LEN kým je aspoň jedna fotka rozpracovaná, a len pre autora –
+  // cudziemu divákovi backend PENDING fotky vôbec neposiela, takže by
+  // podmienka nikdy nenastala. Timeout je poistka proti večnému behu, keby
+  // spracovanie na pozadí uviazlo.
+  const hasPendingImages = images.some((image) => image.status === 'pending');
+
+  useEffect(() => {
+    if (!post.can_manage || !hasPendingImages) {
+      pendingPollStartedAtRef.current = null;
+      return;
+    }
+    if (pendingPollStartedAtRef.current == null) {
+      pendingPollStartedAtRef.current = Date.now();
+    }
+
+    const intervalId = window.setInterval(() => {
+      const startedAt = pendingPollStartedAtRef.current;
+      if (
+        startedAt == null ||
+        Date.now() - startedAt >= PENDING_IMAGE_POLL_TIMEOUT_MS
+      ) {
+        pendingPollStartedAtRef.current = null;
+        window.clearInterval(intervalId);
+        return;
+      }
+      void getFeedPost(post.id)
+        .then((fresh) => setImages(fresh.images ?? []))
+        // Výpadok siete nie je dôvod nič hlásiť – ďalší tik to skúsi znova.
+        .catch(() => undefined);
+    }, PENDING_IMAGE_POLL_INTERVAL_MS);
+
+    return () => window.clearInterval(intervalId);
+  }, [hasPendingImages, post.can_manage, post.id]);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -338,10 +395,10 @@ export default function FeedPostCard({
       // Zosúlaď s pravdou zo servera (iný divák mohol medzitým lajknúť tiež).
       setIsLiked(payload.is_liked_by_me);
       setLikesCount(payload.likes_count);
-    } catch {
+    } catch (err) {
       setIsLiked(previousLiked);
       setLikesCount(previousCount);
-      toast.error(t('feed.likeError', 'Akciu sa nepodarilo uložiť.'));
+      toast.error(translateFeedActionError(t, err));
     } finally {
       likePendingRef.current = false;
     }
@@ -589,6 +646,9 @@ export default function FeedPostCard({
           onCountChange={(delta) =>
             setCommentsCount((count) => Math.max(0, count + delta))
           }
+          // Číslo pri ikone vychádza z toho istého načítania ako zoznam,
+          // takže sa nemôže rozísť s tým, čo používateľ reálne vidí.
+          onTotalChange={setCommentsCount}
         />
       ) : null}
 
@@ -602,6 +662,7 @@ export default function FeedPostCard({
         open={shareOpen}
         onClose={() => setShareOpen(false)}
         post={post}
+        onShared={onShared}
       />
     </motion.article>
   );

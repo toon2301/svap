@@ -13,6 +13,7 @@
 import { useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { translateFeedActionError } from './feedActionErrors';
 import {
   likeFeedPostComment,
   unlikeFeedPostComment,
@@ -59,10 +60,10 @@ export default function FeedCommentLikeButton({
         : await unlikeFeedPostComment(postId, comment.id);
       setIsLiked(payload.is_liked_by_me);
       setLikesCount(payload.likes_count);
-    } catch {
+    } catch (err) {
       setIsLiked(previousLiked);
       setLikesCount(previousCount);
-      toast.error(t('feed.likeError', 'Akciu sa nepodarilo uložiť.'));
+      toast.error(translateFeedActionError(t, err));
     } finally {
       pendingRef.current = false;
     }

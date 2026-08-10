@@ -174,6 +174,8 @@ export type FeedCommentPage = {
   results: FeedPostComment[];
   next: string | null;
   previous: string | null;
+  /** Celkový počet komentárov príspevku (nie veľkosť stránky). */
+  count?: number;
 };
 
 export type FeedLikePayload = {
@@ -233,6 +235,7 @@ export async function listFeedPostComments(
     results: Array.isArray(payload.results) ? payload.results : [],
     next: typeof payload.next === 'string' ? payload.next : null,
     previous: typeof payload.previous === 'string' ? payload.previous : null,
+    count: typeof payload.count === 'number' ? payload.count : undefined,
   };
 }
 
@@ -298,6 +301,36 @@ export async function shareFeedPost(
   const { data } = await api.post<FeedPost>(endpoints.feed.posts, {
     post_type: 'shared_feed_post',
     shared_feed_post_id: postId,
+    caption,
+    tagged_user_ids: taggedUserIds,
+  });
+  return data;
+}
+
+/** Zdieľanie PONUKY na Nástenku (Fáza 4.5). */
+export async function shareOfferToFeed(
+  offerId: number,
+  caption = '',
+  taggedUserIds: number[] = [],
+): Promise<FeedPost> {
+  const { data } = await api.post<FeedPost>(endpoints.feed.posts, {
+    post_type: 'shared_offer',
+    shared_offer_id: offerId,
+    caption,
+    tagged_user_ids: taggedUserIds,
+  });
+  return data;
+}
+
+/** Zdieľanie POLOŽKY PORTFÓLIA na Nástenku (Fáza 4.5). */
+export async function sharePortfolioItemToFeed(
+  itemId: number,
+  caption = '',
+  taggedUserIds: number[] = [],
+): Promise<FeedPost> {
+  const { data } = await api.post<FeedPost>(endpoints.feed.posts, {
+    post_type: 'shared_portfolio_item',
+    shared_portfolio_item_id: itemId,
     caption,
     tagged_user_ids: taggedUserIds,
   });
