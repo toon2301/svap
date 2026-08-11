@@ -9,6 +9,7 @@ komentárov a lajkov – opakovať ho pri každej stránke je zbytočne drahé.
 from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
+from django.db.models import QuerySet
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
@@ -67,14 +68,37 @@ class FeedCommentCountTests(APITestCase):
 
         from accounts.views.feed_interactions import FeedCommentCursorPagination
 
-        with patch.object(
-            FeedCommentCursorPagination,
-            "paginate_queryset",
-            autospec=True,
-            side_effect=FeedCommentCursorPagination.paginate_queryset,
-        ) as spy:
-            self.client.get(next_url)
+        # Patch priamo na QuerySet.count – `total_count is None` sa dá dosiahnuť
+        # aj tak, že sa count zavolá a výsledok zahodí; toto overuje, že dotaz
+        # naozaj NEPADNE (o to pri kvadratickej práci ide).
+        with (
+            patch.object(
+                QuerySet, "count", autospec=True, side_effect=QuerySet.count
+            ) as count_spy,
+            patch.object(
+                FeedCommentCursorPagination,
+                "paginate_queryset",
+                autospec=True,
+                side_effect=FeedCommentCursorPagination.paginate_queryset,
+            ) as spy,
+        ):
+            response = self.client.get(next_url)
 
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        count_spy.assert_not_called()
         paginator = spy.call_args.args[0]
         # Agregácia sa pri pokračovaní vôbec nespustí.
         self.assertIsNone(paginator.total_count)
+
+    def test_first_page_does_run_the_count_query(self):
+        """Protipól predošlého testu – bez neho by `assert_not_called` prešiel
+        aj vtedy, keby sa count nevolal NIKDY (teda ani na prvej stránke)."""
+        from django.db.models import QuerySet as _QuerySet
+
+        with patch.object(
+            _QuerySet, "count", autospec=True, side_effect=_QuerySet.count
+        ) as count_spy:
+            response = self.client.get(self.url, {"page_size": 3})
+
+        self.assertEqual(response.data["count"], 7)
+        self.assertTrue(count_spy.called)

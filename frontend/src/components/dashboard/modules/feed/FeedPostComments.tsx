@@ -113,10 +113,16 @@ export default function FeedPostComments({
     if (loadingMoreRef.current || !nextUrlRef.current) return;
     loadingMoreRef.current = true;
     setLoadingMore(true);
+    // Rovnaká ochrana ako v `load()`: mutácia počas donačítavania zvýši
+    // sekvenciu, takže táto stránka je už postavená na neplatnom kurzore.
+    // `nextUrlRef` sa vtedy ZÁMERNE neposúva – ďalší scroll si tú istú
+    // stránku vyžiada znova, už nad aktuálnym stavom.
+    const seq = loadSeqRef.current;
     try {
       const page = await listFeedPostComments(postId, {
         cursorUrl: nextUrlRef.current,
       });
+      if (seq !== loadSeqRef.current) return;
       setComments((current) => {
         const seen = new Set(current.map((comment) => comment.id));
         return [...current, ...page.results.filter((c) => !seen.has(c.id))];

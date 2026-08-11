@@ -179,6 +179,53 @@ describe('FeedPostComments – scoped infinite scroll', () => {
     expect(within(cardNine).getByText('Deväť-prvý')).toBeInTheDocument();
   });
 
+  it('discards a load-more page that a mutation made stale', async () => {
+    const mockedCreate = jest.requireMock('@/lib/feedApi')
+      .createFeedPostComment as jest.Mock;
+
+    let resolveSecondPage: (value: unknown) => void = () => {};
+    mockedList
+      .mockResolvedValueOnce({
+        results: [comment(1, 'Prvý')],
+        next: 'http://api.test/api/auth/feed/posts/5/comments/?cursor=a',
+        previous: null,
+      })
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveSecondPage = resolve;
+          }) as never,
+      );
+    mockedCreate.mockResolvedValue(comment(99, 'Môj nový'));
+
+    render(<FeedPostComments postId={5} />);
+    await screen.findByText('Prvý');
+
+    // Spusti donačítanie a NECHAJ ho visieť.
+    await waitFor(() => expect(observer.registry.length).toBeGreaterThan(0));
+    await act(async () => {
+      observer.registry.forEach((entry) => entry.fire());
+    });
+
+    // Medzitým pridaj komentár – mutácia zneplatní prebiehajúcu stránku.
+    await userEvent.type(screen.getByRole('textbox'), 'Môj nový');
+    await userEvent.click(screen.getByRole('button', { name: 'Pridať' }));
+    expect(await screen.findByText('Môj nový')).toBeInTheDocument();
+
+    // Až teraz dobehne stará odpoveď – musí sa zahodiť.
+    await act(async () => {
+      resolveSecondPage({
+        results: [comment(2, 'Zastaraný')],
+        next: null,
+        previous: null,
+      });
+    });
+
+    expect(screen.queryByText('Zastaraný')).not.toBeInTheDocument();
+    expect(screen.getByText('Môj nový')).toBeInTheDocument();
+    expect(screen.getByText('Prvý')).toBeInTheDocument();
+  });
+
   it('inserts an emoji into the comment field', async () => {
     mockedList.mockResolvedValue({ results: [], next: null, previous: null });
 
