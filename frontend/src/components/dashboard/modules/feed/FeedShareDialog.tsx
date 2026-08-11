@@ -23,6 +23,7 @@ import { DesktopEmojiPickerButton } from '../messages/DesktopEmojiPickerButton';
 import { GroupUserPicker } from '../messages/GroupUserPicker';
 import type { GroupMemberCandidate } from '../messages/types';
 import { useEmojiInsertion } from './useEmojiInsertion';
+import { translateFeedActionError } from './feedActionErrors';
 import { emitFeedPostCreated } from './feedShareEvents';
 import type { FeedPost } from '@/lib/feedApi';
 
@@ -95,11 +96,17 @@ export default function FeedShareDialog({
       onClose();
     } catch (err) {
       // Skrytá/nedostupná ponuka či portfólio vracia z BE zrozumiteľnú hlášku –
-      // FE ju len zobrazí, validáciu neduplikuje.
-      const message =
-        (err as { response?: { data?: { error?: string } } })?.response?.data
-          ?.error || t('feed.shareError', 'Zdieľanie sa nepodarilo.');
-      toast.error(message);
+      // FE ju len zobrazí, validáciu neduplikuje. Sieťové a rate-limit chyby
+      // idú cez spoločný helper, nech sa správajú ako inde vo feede.
+      const serverMessage = (
+        err as { response?: { data?: { error?: string } } }
+      )?.response?.data?.error;
+      toast.error(
+        serverMessage ||
+          translateFeedActionError(t, err, () =>
+            t('feed.shareError', 'Zdieľanie sa nepodarilo.'),
+          ),
+      );
     } finally {
       setSubmitting(false);
     }

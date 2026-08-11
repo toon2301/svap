@@ -4366,6 +4366,7 @@
     "imageRejectedGeneric": "Nie udało się przesłać tego zdjęcia.",
     "imageRejectedContent": "To zdjęcie nie spełnia zasad dotyczących treści.",
     "imageRejectedFormat": "Nie udało się przetworzyć tego formatu zdjęcia.",
+    "imageRejectedProcessing": "Nie udało się dokończyć przetwarzania tego zdjęcia.",
     "imagePrev": "Poprzednie zdjęcie",
     "imageNext": "Następne zdjęcie",
     "imageGoTo": "Pokaż zdjęcie {n}",

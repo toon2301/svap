@@ -63,16 +63,28 @@ class FeedCommentCursorPagination(CursorPagination):
     ordering = ("created_at", "id")
 
     def paginate_queryset(self, queryset, request, view=None):
-        # CursorPagination count ZÁMERNE nepočíta (pri veľkých zoznamoch je
-        # drahý). Tu je to jeden COUNT nad indexom (post_id, created_at) pre
-        # jeden príspevok, a FE ho potrebuje: číslo pri ikone komentárov musí
-        # vychádzať z toho istého načítania ako zoznam, inak sa rozídu.
-        self.total_count = queryset.count()
+        """Count počíta LEN pri prvom načítaní (request bez cursoru).
+
+        CursorPagination count zámerne nepočíta – tu ho FE potrebuje, aby číslo
+        pri ikone komentárov vychádzalo z toho istého načítania ako zoznam.
+        Pri pokračovacích stránkach je však zbytočný a DRAHÝ: queryset je
+        anotovaný ``Count("likes")``, takže `.count()` sa zabalí do subquery
+        nad joinom komentárov a lajkov (nie prostý index count). Počítať ho pri
+        každom „načítaj ďalšie" znamená opakovane skenovať celé vlákno –
+        práca rastie s počtom stránok, teda kvadraticky s veľkosťou vlákna.
+        FE ho pri donačítavaní aj tak zahadzuje.
+        """
+        self.total_count = None
+        if request.query_params.get(self.cursor_query_param) is None:
+            self.total_count = queryset.count()
         return super().paginate_queryset(queryset, request, view=view)
 
     def get_paginated_response(self, data):
         response = super().get_paginated_response(data)
-        response.data["count"] = getattr(self, "total_count", None)
+        # Pri cursor requestoch pole ZÁMERNE chýba (nie None) – klient si tak
+        # nemôže omylom prepísať správny počet nulou.
+        if self.total_count is not None:
+            response.data["count"] = self.total_count
         return response
 
 

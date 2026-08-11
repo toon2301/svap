@@ -4366,6 +4366,7 @@
     "imageRejectedGeneric": "Ezt a fotót nem sikerült feltölteni.",
     "imageRejectedContent": "Ez a fotó nem felel meg a tartalmi szabályoknak.",
     "imageRejectedFormat": "Ezt a fotóformátumot nem sikerült feldolgozni.",
+    "imageRejectedProcessing": "Ennek a fotónak a feldolgozása nem fejeződött be.",
     "imagePrev": "Előző fotó",
     "imageNext": "Következő fotó",
     "imageGoTo": "{n}. fotó megjelenítése",

@@ -102,6 +102,7 @@ export default function ProfilePortfolioSection({
       });
       setIsCreateOpen(false);
       setIsOrderOpen(false);
+    setSharedItem(null);
       if (ownerIdentifier) {
         router.push(buildPortfolioDetailPath(ownerIdentifier, createdItem.id));
       }

@@ -1,6 +1,12 @@
 'use client';
 
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import {
+  useEffect,
+  useMemo,
+  useState,
+  type FormEvent,
+  type MouseEvent as ReactMouseEvent,
+} from 'react';
 import { createPortal } from 'react-dom';
 import QRCode from 'qrcode';
 import toast from 'react-hot-toast';
@@ -157,6 +163,16 @@ export function OfferShareModal({
     onClose();
   };
 
+  /**
+   * Zavrieť smie LEN klik priamo na pozadie. Bez tejto kontroly modal zavrie
+   * čokoľvek, čo k nemu prebublá – vrátane vnorených portálov, ktoré bublajú
+   * cez REACT strom bez ohľadu na to, kde sedia v DOM. Rovnaký vzor ako
+   * BlockUserConfirmDialog / PortfolioDeleteConfirmDialog / ReportUserModal.
+   */
+  const handleBackdropClick = (event: ReactMouseEvent<HTMLDivElement>) => {
+    if (event.target === event.currentTarget) handleClose();
+  };
+
   const handleCopy = async () => {
     try {
       await copyTextToClipboard(offerUrl);
@@ -234,7 +250,7 @@ export function OfferShareModal({
       role="dialog"
       aria-modal="true"
       aria-labelledby="offer-share-modal-title"
-      onClick={handleClose}
+      onClick={handleBackdropClick}
     >
       <div
         className="relative flex max-h-[90vh] w-full max-w-md flex-col overflow-hidden rounded-t-2xl border border-gray-200 bg-white shadow-xl dark:border-gray-800 dark:bg-[#0f0f10] sm:max-h-[85vh] sm:rounded-2xl"
@@ -446,7 +462,11 @@ export function OfferShareModal({
         )}
       </div>
 
-      {/* Vnorený jednokrokový dialóg – po úspechu zavrie SEBA aj tento modal. */}
+      {/* Vnorený jednokrokový dialóg – po úspechu zavrie SEBA aj tento modal.
+
+          Obal so stopPropagation tu ZÁMERNE nie je: `handleBackdropClick`
+          porovnáva target s currentTarget, takže klik z tohto portálu (bubláva
+          cez REACT strom) sa k zatvoreniu vonkajšieho modalu nedostane. */}
       <FeedShareDialog
         open={boardShareOpen}
         onClose={() => setBoardShareOpen(false)}

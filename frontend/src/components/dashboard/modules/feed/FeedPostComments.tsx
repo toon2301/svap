@@ -73,15 +73,22 @@ export default function FeedPostComments({
   // inak by sa zoznam pri každom rendri rodiča načítaval odznova.
   const onTotalChangeRef = useRef(onTotalChange);
   onTotalChangeRef.current = onTotalChange;
+  // Poradové číslo načítania. Pridanie/zmazanie komentára ho zvýši, takže
+  // odpoveď staršieho `load()`, ktorá dobehne až potom, sa zahodí – inak by
+  // prepísala čerstvo pridaný komentár serverovým stavom spred mutácie.
+  const loadSeqRef = useRef(0);
 
   const load = useCallback(async () => {
     setLoading(true);
     setFailed(false);
     loadingMoreRef.current = false;
+    const seq = (loadSeqRef.current += 1);
     try {
       const page = await listFeedPostComments(postId, {
         pageSize: COMMENTS_PAGE_SIZE,
       });
+      // Medzitým pribudol/ubudol komentár → táto odpoveď je zastaraná.
+      if (seq !== loadSeqRef.current) return;
       setComments(page.results);
       nextUrlRef.current = page.next;
       setHasMore(Boolean(page.next));
@@ -92,9 +99,9 @@ export default function FeedPostComments({
         onTotalChangeRef.current?.(page.count);
       }
     } catch {
-      setFailed(true);
+      if (seq === loadSeqRef.current) setFailed(true);
     } finally {
-      setLoading(false);
+      if (seq === loadSeqRef.current) setLoading(false);
     }
   }, [postId]);
 
@@ -155,6 +162,9 @@ export default function FeedPostComments({
     setSubmitting(true);
     try {
       const created = await createFeedPostComment(postId, trimmed);
+      // Zneplatní prebiehajúci load() – jeho odpoveď by tento komentár
+      // prepísala stavom spred vytvorenia.
+      loadSeqRef.current += 1;
       // Najstarší prvý (poradie z BE) → nový ide na koniec.
       scrollToBottomRef.current = true;
       setComments((current) => [...current, created]);
@@ -176,6 +186,7 @@ export default function FeedPostComments({
     setDeleting(true);
     try {
       await deleteFeedPostComment(postId, comment.id);
+      loadSeqRef.current += 1;
       setComments((current) => current.filter((item) => item.id !== comment.id));
       onCountChange?.(-1);
       toast.success(t('feed.commentDeleted', 'Komentár bol zmazaný.'));

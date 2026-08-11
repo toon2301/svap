@@ -4366,6 +4366,7 @@
     "imageRejectedGeneric": "This photo could not be uploaded.",
     "imageRejectedContent": "This photo does not meet the content rules.",
     "imageRejectedFormat": "This photo format could not be processed.",
+    "imageRejectedProcessing": "This photo could not be processed.",
     "imagePrev": "Previous photo",
     "imageNext": "Next photo",
     "imageGoTo": "Show photo {n}",

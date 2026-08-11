@@ -4366,6 +4366,7 @@
     "imageRejectedGeneric": "Tuto fotku se nepodařilo nahrát.",
     "imageRejectedContent": "Tato fotka nesplňuje pravidla obsahu.",
     "imageRejectedFormat": "Tento formát fotky se nepodařilo zpracovat.",
+    "imageRejectedProcessing": "Zpracování této fotky se nepodařilo dokončit.",
     "imagePrev": "Předchozí fotka",
     "imageNext": "Další fotka",
     "imageGoTo": "Zobrazit fotku {n}",

@@ -154,6 +154,9 @@ describe('Zdieľanie ponuky a portfólia na Nástenku', () => {
     const preview = screen.getByTestId('feed-share-preview');
     expect(preview).toHaveTextContent('Moja ponuka');
     expect(preview).toHaveTextContent('Bratislava');
+    // Názov ponuky nie je meno človeka – avatar by pôsobil ako cudzí profil.
+    expect(preview.querySelector('[data-testid="initials-avatar"]')).toBeNull();
+    expect(preview.querySelector('img')).toBeNull();
   });
 
   it('ignores a malformed event payload', () => {
