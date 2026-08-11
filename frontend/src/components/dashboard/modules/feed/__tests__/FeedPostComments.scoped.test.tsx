@@ -226,6 +226,78 @@ describe('FeedPostComments – scoped infinite scroll', () => {
     expect(screen.getByText('Prvý')).toBeInTheDocument();
   });
 
+  it('stays quiet when a load-more failure was already invalidated', async () => {
+    const mockedCreate = jest.requireMock('@/lib/feedApi')
+      .createFeedPostComment as jest.Mock;
+    const mockedToastError = jest.requireMock('react-hot-toast').default
+      .error as jest.Mock;
+    mockedToastError.mockReset();
+
+    let rejectSecondPage: (reason?: unknown) => void = () => {};
+    mockedList
+      .mockResolvedValueOnce({
+        results: [comment(1, 'Prvý')],
+        next: 'http://api.test/api/auth/feed/posts/5/comments/?cursor=a',
+        previous: null,
+      })
+      .mockImplementationOnce(
+        () =>
+          new Promise((_resolve, reject) => {
+            rejectSecondPage = reject;
+          }) as never,
+      );
+    mockedCreate.mockResolvedValue(comment(99, 'Môj nový'));
+
+    render(<FeedPostComments postId={5} />);
+    await screen.findByText('Prvý');
+
+    await waitFor(() => expect(observer.registry.length).toBeGreaterThan(0));
+    await act(async () => {
+      observer.registry.forEach((entry) => entry.fire());
+    });
+
+    // Mutácia zneplatní prebiehajúce donačítanie…
+    await userEvent.type(screen.getByRole('textbox'), 'Môj nový');
+    await userEvent.click(screen.getByRole('button', { name: 'Pridať' }));
+    expect(await screen.findByText('Môj nový')).toBeInTheDocument();
+
+    // …a až potom zlyhá. Hláška o nenačítaní komentárov by tesne po úspešnom
+    // pridaní komentára len mýlila.
+    await act(async () => {
+      rejectSecondPage(new Error('offline'));
+    });
+
+    expect(mockedToastError).not.toHaveBeenCalled();
+  });
+
+  it('still reports a load-more failure that nothing invalidated', async () => {
+    const mockedToastError = jest.requireMock('react-hot-toast').default
+      .error as jest.Mock;
+    mockedToastError.mockReset();
+
+    mockedList
+      .mockResolvedValueOnce({
+        results: [comment(1, 'Prvý')],
+        next: 'http://api.test/api/auth/feed/posts/5/comments/?cursor=a',
+        previous: null,
+      })
+      .mockRejectedValueOnce(new Error('offline'));
+
+    render(<FeedPostComments postId={5} />);
+    await screen.findByText('Prvý');
+
+    await waitFor(() => expect(observer.registry.length).toBeGreaterThan(0));
+    await act(async () => {
+      observer.registry.forEach((entry) => entry.fire());
+    });
+
+    await waitFor(() =>
+      expect(mockedToastError).toHaveBeenCalledWith(
+        'Komentáre sa nepodarilo načítať.',
+      ),
+    );
+  });
+
   it('inserts an emoji into the comment field', async () => {
     mockedList.mockResolvedValue({ results: [], next: null, previous: null });
 

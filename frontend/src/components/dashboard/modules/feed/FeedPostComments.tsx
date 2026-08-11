@@ -130,9 +130,15 @@ export default function FeedPostComments({
       nextUrlRef.current = page.next;
       setHasMore(Boolean(page.next));
     } catch {
-      toast.error(
-        tRef.current('feed.commentsLoadError', 'Komentáre sa nepodarilo načítať.'),
-      );
+      // Chybu hlás len za AKTUÁLNY pokus. Keď medzitým prebehla mutácia, tento
+      // request je už zneplatnený a jeho zlyhanie nemá čo riešiť – hláška
+      // „komentáre sa nepodarilo načítať" hneď po úspešnom pridaní komentára
+      // by len mýlila. Ďalší scroll si stránku vyžiada znova.
+      if (seq === loadSeqRef.current) {
+        toast.error(
+          tRef.current('feed.commentsLoadError', 'Komentáre sa nepodarilo načítať.'),
+        );
+      }
     } finally {
       loadingMoreRef.current = false;
       setLoadingMore(false);
