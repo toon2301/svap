@@ -1,11 +1,11 @@
 'use client';
 
 import type React from 'react';
-import { RectangleGroupIcon } from '@heroicons/react/24/outline';
 import { useLanguage } from '@/contexts/LanguageContext';
 import BlurredContainImage from '../shared/BlurredContainImage';
 import type { PortfolioItem } from './portfolioTypes';
 import { PortfolioLikeButton } from './PortfolioLikeButton';
+import ShareIcon from '../feed/ShareIcon';
 
 type PortfolioCardProps = {
   item: PortfolioItem;
@@ -73,7 +73,7 @@ function PortfolioShareButton({
       title={label}
       className={`p-1 rounded-full inline-flex items-center justify-center leading-none bg-purple-50 dark:bg-purple-900/80 dark:backdrop-blur-sm border border-purple-200 dark:border-purple-800/60 text-purple-700 dark:text-white hover:bg-purple-100 dark:hover:bg-purple-900/90 transition-colors ${className}`}
     >
-      <RectangleGroupIcon className="h-4 w-4" />
+      <ShareIcon />
     </button>
   );
 }

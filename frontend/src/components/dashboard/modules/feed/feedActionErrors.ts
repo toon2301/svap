@@ -17,7 +17,10 @@ export function translateFeedActionError(
 ): string {
   const status = (error as { response?: { status?: number } })?.response?.status;
   if (status === 404 || status === 403 || status === 410) {
-    return t('feed.contentUnavailable', 'Tento obsah už nie je dostupný.');
+    return t(
+      'feed.contentUnavailable',
+      'Na tento obsah momentálne nie je možné reagovať.',
+    );
   }
   return fallback ? fallback() : t('feed.likeError', 'Akciu sa nepodarilo uložiť.');
 }

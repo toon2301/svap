@@ -18,6 +18,7 @@ import { DesktopEmojiPickerButton } from '../messages/DesktopEmojiPickerButton';
 import FeedCommentDeleteConfirm from './FeedCommentDeleteConfirm';
 import FeedCommentLikeButton from './FeedCommentLikeButton';
 import { useEmojiInsertion } from './useEmojiInsertion';
+import { useFeedCommentsPolling } from './useFeedCommentsPolling';
 import { useInfiniteScrollSentinel } from './useFeedInfiniteScroll';
 import {
   FEED_COMMENT_MAX_LENGTH,
@@ -28,6 +29,27 @@ import {
 } from '@/lib/feedApi';
 
 const COMMENTS_PAGE_SIZE = 10;
+
+/**
+ * Zlúči čerstvú stránku zo servera do lokálneho zoznamu.
+ *
+ * Rovnaký princíp ako `prependPosts` v hlavnom feede: prekrývajúce sa id
+ * NAHRADÍ serverová verzia (čerstvé počty lajkov), položky mimo tejto stránky
+ * ostávajú nedotknuté. Vďaka tomu polling neprepíše vlastný práve pridaný
+ * komentár ani donačítané staršie stránky.
+ *
+ * Radí sa podľa id: komentáre chodia z BE chronologicky vzostupne a id je
+ * monotónne, takže poradie sedí bez ďalšieho porovnávania dátumov.
+ */
+function mergeComments(
+  current: FeedPostComment[],
+  incoming: FeedPostComment[],
+): FeedPostComment[] {
+  if (!incoming.length) return current;
+  const byId = new Map(current.map((comment) => [comment.id, comment]));
+  incoming.forEach((comment) => byId.set(comment.id, comment));
+  return [...byId.values()].sort((a, b) => a.id - b.id);
+}
 
 type FeedPostCommentsProps = {
   postId: number;
@@ -77,6 +99,16 @@ export default function FeedPostComments({
   // odpoveď staršieho `load()`, ktorá dobehne až potom, sa zahodí – inak by
   // prepísala čerstvo pridaný komentár serverovým stavom spred mutácie.
   const loadSeqRef = useRef(0);
+  /**
+   * Kurzor stránky, ktorú používateľ videl ako POSLEDNÚ (null = prvá stránka).
+   *
+   * Komentáre chodia vzostupne, takže NOVÉ pribúdajú na KONCI vlákna – polling
+   * prvej stránky by ich pri vlákne dlhšom než COMMENTS_PAGE_SIZE nikdy
+   * neuvidel. Znovupoužitie tohto kurzora vráti tú istú pozíciu vrátane toho,
+   * čo odvtedy pribudlo. Zároveň sa tým NEpreskočia stránky, ktoré si
+   * používateľ ešte nedonačítal (inak by v zozname vznikla diera).
+   */
+  const lastCursorRef = useRef<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -91,6 +123,7 @@ export default function FeedPostComments({
       if (seq !== loadSeqRef.current) return;
       setComments(page.results);
       nextUrlRef.current = page.next;
+      lastCursorRef.current = null;
       setHasMore(Boolean(page.next));
       // Počet pri ikone musí vychádzať z TOHO ISTÉHO načítania ako zoznam,
       // inak by po realtime obnovení ukazoval staré číslo. `count` z BE
@@ -118,11 +151,13 @@ export default function FeedPostComments({
     // `nextUrlRef` sa vtedy ZÁMERNE neposúva – ďalší scroll si tú istú
     // stránku vyžiada znova, už nad aktuálnym stavom.
     const seq = loadSeqRef.current;
+    const requestedCursor = nextUrlRef.current;
     try {
       const page = await listFeedPostComments(postId, {
-        cursorUrl: nextUrlRef.current,
+        cursorUrl: requestedCursor,
       });
       if (seq !== loadSeqRef.current) return;
+      lastCursorRef.current = requestedCursor;
       setComments((current) => {
         const seen = new Set(current.map((comment) => comment.id));
         return [...current, ...page.results.filter((c) => !seen.has(c.id))];
@@ -144,6 +179,33 @@ export default function FeedPostComments({
       setLoadingMore(false);
     }
   }, [postId]);
+
+  /**
+   * Tichá obnova na pozadí – ten istý endpoint aj tá istá ochrana proti
+   * zastaraným odpovediam ako `load()`, len bez loading stavu a s MERGE
+   * namiesto prepísania zoznamu.
+   */
+  const refresh = useCallback(async () => {
+    const seq = loadSeqRef.current;
+    const cursor = lastCursorRef.current;
+    const page = await listFeedPostComments(
+      postId,
+      cursor ? { cursorUrl: cursor } : { pageSize: COMMENTS_PAGE_SIZE },
+    );
+    // Medzitým prebehla mutácia → táto odpoveď je spred nej, zahoď ju.
+    if (seq !== loadSeqRef.current) return;
+
+    setComments((current) => mergeComments(current, page.results));
+    // Počet pri ikone drží krok so zoznamom aj vtedy, keď nové komentáre
+    // pribudli za hranicou toho, čo má používateľ načítané.
+    if (typeof page.count === 'number') {
+      onTotalChangeRef.current?.(page.count);
+    }
+  }, [postId]);
+
+  // Sekcia sa mountuje až pri rozbalení, takže „namountovaná" = „otvorená".
+  // Každá otvorená karta má vlastnú inštanciu, teda aj vlastný polling.
+  useFeedCommentsPolling({ enabled: !loading && !failed, onPoll: refresh });
 
   // Rootom observera je ohraničený box, nie viewport – donačítanie tak reaguje
   // na scroll VNÚTRI zoznamu. Menší rootMargin než v hlavnom feede: predsávka
@@ -309,7 +371,7 @@ export default function FeedPostComments({
           rows={2}
           placeholder={t('feed.commentPlaceholder', 'Napíš komentár...')}
           aria-label={t('feed.commentPlaceholder', 'Napíš komentár...')}
-          className="w-full resize-y rounded-xl border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-400/60 dark:border-gray-600 dark:bg-gray-900/50 dark:text-white dark:placeholder-gray-500"
+          className="w-full resize-y rounded-xl border border-gray-300 px-3 py-2 text-sm text-gray-900 bg-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-400/60 dark:border-gray-600 dark:bg-gray-900/50 dark:text-white dark:placeholder-gray-500"
         />
         <div className="mt-2 flex items-center justify-between gap-3">
           <DesktopEmojiPickerButton

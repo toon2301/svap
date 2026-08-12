@@ -19,6 +19,7 @@ import { XMarkIcon } from '@heroicons/react/24/outline';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useFeedDialog } from './useFeedDialog';
 import InitialsAvatar from '@/components/shared/InitialsAvatar';
+import BlurredContainImage from '../shared/BlurredContainImage';
 import { DesktopEmojiPickerButton } from '../messages/DesktopEmojiPickerButton';
 import { GroupUserPicker } from '../messages/GroupUserPicker';
 import type { GroupMemberCandidate } from '../messages/types';
@@ -41,6 +42,8 @@ export type FeedSharePreview = {
   thumbnailUrl?: string | null;
   /** Avatar dáva zmysel len keď je `heading` meno človeka. */
   showAvatar?: boolean;
+  /** Hotový text ceny (viď formatOfferPriceLabel) - len pri ponuke. */
+  priceLabel?: string;
 };
 
 type FeedShareDialogProps = {
@@ -156,7 +159,7 @@ export default function FeedShareDialog({
             disabled={submitting}
             placeholder={t('feed.shareCaptionPlaceholder', 'Pridaj vlastný komentár...')}
             aria-label={t('feed.shareCaptionPlaceholder', 'Pridaj vlastný komentár...')}
-            className="w-full resize-y rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-400/60 disabled:opacity-50 dark:border-gray-600 dark:bg-gray-900/50 dark:text-white dark:placeholder-gray-500"
+            className="w-full resize-y rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-gray-900 bg-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-400/60 disabled:opacity-50 dark:border-gray-600 dark:bg-gray-900/50 dark:text-white dark:placeholder-gray-500"
           />
           <div className="mt-1 flex items-center justify-between gap-3">
             <DesktopEmojiPickerButton
@@ -208,13 +211,20 @@ export default function FeedShareDialog({
                 {preview.text}
               </p>
             ) : null}
+            {preview.priceLabel ? (
+              <span
+                data-testid="feed-share-preview-price"
+                className="mt-2 inline-block rounded-md border border-purple-100 bg-purple-50 px-1.5 py-0.5 text-xs font-bold tabular-nums text-purple-700 dark:border-purple-800/30 dark:bg-purple-900/20 dark:text-purple-300"
+              >
+                {preview.priceLabel}
+              </span>
+            ) : null}
             {preview.thumbnailUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={preview.thumbnailUrl}
-                alt=""
-                className="mt-2 max-h-40 w-full rounded-lg object-cover"
-              />
+              // Rovnaké letterbox ošetrenie ako karta vo feede - náhľad tu
+              // musí vyzerať tak, ako bude vyzerať po zdieľaní.
+              <div className="mt-2 h-40 w-full overflow-hidden rounded-lg">
+                <BlurredContainImage src={preview.thumbnailUrl} alt="" />
+              </div>
             ) : null}
           </div>
 

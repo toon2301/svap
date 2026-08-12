@@ -26,6 +26,8 @@ import FeedPostComments from './FeedPostComments';
 import FeedPostImageCarousel from './FeedPostImageCarousel';
 import FeedPostReportModal from './FeedPostReportModal';
 import FeedPostShareModal from './FeedPostShareModal';
+import ShareIcon from './ShareIcon';
+import { formatOfferPriceLabel } from './offerPriceLabel';
 import { usePendingFeedImages } from './usePendingFeedImages';
 
 /**
@@ -205,14 +207,9 @@ function SharedContentPreview({
   // horizontálny riadok s malým obrázkom, celý klikateľný. Fialový obal karty
   // aj „výmena ďalej" hlavička ostávajú – mení sa len tento vnútorný náhľad.
   const isOffer = shared.type === 'offer';
-  const priceLabel = shared.price_negotiable
-    ? t('skills.priceNegotiable', 'Dohodou')
-    : shared.price_from
-      ? `${Number(shared.price_from).toLocaleString(locale || undefined, {
-          minimumFractionDigits: 0,
-          maximumFractionDigits: 2,
-        })} ${shared.price_currency || '€'}`
-      : null;
+  // Spoločný helper s náhľadom v zdieľacom dialógu – inak by používateľ pri
+  // zdieľaní videl inú cenu než tú, čo o chvíľu pristane vo feede.
+  const priceLabel = formatOfferPriceLabel(t, locale, shared);
 
   return (
     <button
@@ -358,6 +355,10 @@ export default function FeedPostCard({
     isShared &&
     post.shared_content?.owner?.id != null &&
     post.shared_content.owner.id === post.author?.id;
+  // Duplicitné meno hrozí LEN pri zdieľanom PRÍSPEVKU. Náhľad ponuky a
+  // portfólia ukazuje názov, nie meno vlastníka, takže tam sa nič neduplikuje
+  // a hlásiť re-share pri PRVOM zdieľaní vlastnej ponuky by bolo mätúce.
+  const isOwnReshare = isSelfShare && post.post_type === 'shared_feed_post';
 
   // Preklik na zdroj MUSÍ rozlišovať typ: ponuky, portfólio položky aj
   // príspevky majú nezávislé číslovanie, takže poslať portfolio id ako offerId
@@ -421,7 +422,7 @@ export default function FeedPostCard({
             <ExchangeIcon />
           </span>
           <span className="truncate">
-            {isSelfShare
+            {isOwnReshare
               ? t('feed.resharedOwn', 'Znovu zdieľané')
               : sharedHeadline.replace('{name}', authorName)}
           </span>
@@ -569,22 +570,7 @@ export default function FeedPostCard({
           onClick={() => setShareOpen(true)}
           testId="feed-share-button"
         >
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="h-4 w-4"
-            aria-hidden="true"
-          >
-            <circle cx="18" cy="5" r="3" />
-            <circle cx="6" cy="12" r="3" />
-            <circle cx="18" cy="19" r="3" />
-            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
-            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
-          </svg>
+          <ShareIcon />
         </ActionButton>
       </footer>
 
