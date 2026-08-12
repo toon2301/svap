@@ -183,7 +183,10 @@ describe('FeedPostComments – scoped infinite scroll', () => {
     const mockedCreate = jest.requireMock('@/lib/feedApi')
       .createFeedPostComment as jest.Mock;
 
-    let resolveSecondPage: (value: unknown) => void = () => {};
+    // Bez predvolenej no-op implementácie: keby sa druhý request nikdy
+    // nespustil, callback ostane null a test padne namiesto toho, aby
+    // prešiel naprázdno.
+    let resolveSecondPage: ((value: unknown) => void) | null = null;
     mockedList
       .mockResolvedValueOnce({
         results: [comment(1, 'Prvý')],
@@ -212,9 +215,13 @@ describe('FeedPostComments – scoped infinite scroll', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Pridať' }));
     expect(await screen.findByText('Môj nový')).toBeInTheDocument();
 
+    // Druhý request musel REÁLNE vzniknúť – inak nie je čo zahadzovať.
+    await waitFor(() => expect(mockedList).toHaveBeenCalledTimes(2));
+    expect(resolveSecondPage).not.toBeNull();
+
     // Až teraz dobehne stará odpoveď – musí sa zahodiť.
     await act(async () => {
-      resolveSecondPage({
+      resolveSecondPage!({
         results: [comment(2, 'Zastaraný')],
         next: null,
         previous: null,
@@ -233,7 +240,9 @@ describe('FeedPostComments – scoped infinite scroll', () => {
       .error as jest.Mock;
     mockedToastError.mockReset();
 
-    let rejectSecondPage: (reason?: unknown) => void = () => {};
+    // Rovnako ako vyššie – žiadna no-op náhrada, nech test nemôže prejsť
+    // bez toho, aby druhý request skutočne prebehol.
+    let rejectSecondPage: ((reason?: unknown) => void) | null = null;
     mockedList
       .mockResolvedValueOnce({
         results: [comment(1, 'Prvý')],
@@ -261,10 +270,14 @@ describe('FeedPostComments – scoped infinite scroll', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Pridať' }));
     expect(await screen.findByText('Môj nový')).toBeInTheDocument();
 
+    // Druhý request musel REÁLNE vzniknúť a odovzdať svoj reject callback.
+    await waitFor(() => expect(mockedList).toHaveBeenCalledTimes(2));
+    expect(rejectSecondPage).not.toBeNull();
+
     // …a až potom zlyhá. Hláška o nenačítaní komentárov by tesne po úspešnom
     // pridaní komentára len mýlila.
     await act(async () => {
-      rejectSecondPage(new Error('offline'));
+      rejectSecondPage!(new Error('offline'));
     });
 
     expect(mockedToastError).not.toHaveBeenCalled();
