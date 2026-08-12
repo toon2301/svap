@@ -32,11 +32,14 @@ const COMMENTS_PAGE_SIZE = 10;
 type FeedPostCommentsProps = {
   postId: number;
   onCountChange?: (delta: number) => void;
+  /** Skutočný počet zo servera – drží číslo pri ikone v súlade so zoznamom. */
+  onTotalChange?: (total: number) => void;
 };
 
 export default function FeedPostComments({
   postId,
   onCountChange,
+  onTotalChange,
 }: FeedPostCommentsProps) {
   const { t } = useLanguage();
   const [comments, setComments] = useState<FeedPostComment[]>([]);
@@ -66,22 +69,39 @@ export default function FeedPostComments({
   // reštartoval a prepísal práve pridaný komentár späť na serverový stav.
   const tRef = useRef(t);
   tRef.current = t;
+  // Cez ref, aby callback nemusel byť v závislostiach `load`/`loadMore` –
+  // inak by sa zoznam pri každom rendri rodiča načítaval odznova.
+  const onTotalChangeRef = useRef(onTotalChange);
+  onTotalChangeRef.current = onTotalChange;
+  // Poradové číslo načítania. Pridanie/zmazanie komentára ho zvýši, takže
+  // odpoveď staršieho `load()`, ktorá dobehne až potom, sa zahodí – inak by
+  // prepísala čerstvo pridaný komentár serverovým stavom spred mutácie.
+  const loadSeqRef = useRef(0);
 
   const load = useCallback(async () => {
     setLoading(true);
     setFailed(false);
     loadingMoreRef.current = false;
+    const seq = (loadSeqRef.current += 1);
     try {
       const page = await listFeedPostComments(postId, {
         pageSize: COMMENTS_PAGE_SIZE,
       });
+      // Medzitým pribudol/ubudol komentár → táto odpoveď je zastaraná.
+      if (seq !== loadSeqRef.current) return;
       setComments(page.results);
       nextUrlRef.current = page.next;
       setHasMore(Boolean(page.next));
+      // Počet pri ikone musí vychádzať z TOHO ISTÉHO načítania ako zoznam,
+      // inak by po realtime obnovení ukazoval staré číslo. `count` z BE
+      // je celkový, nie len veľkosť stránky.
+      if (typeof page.count === 'number') {
+        onTotalChangeRef.current?.(page.count);
+      }
     } catch {
-      setFailed(true);
+      if (seq === loadSeqRef.current) setFailed(true);
     } finally {
-      setLoading(false);
+      if (seq === loadSeqRef.current) setLoading(false);
     }
   }, [postId]);
 
@@ -93,10 +113,16 @@ export default function FeedPostComments({
     if (loadingMoreRef.current || !nextUrlRef.current) return;
     loadingMoreRef.current = true;
     setLoadingMore(true);
+    // Rovnaká ochrana ako v `load()`: mutácia počas donačítavania zvýši
+    // sekvenciu, takže táto stránka je už postavená na neplatnom kurzore.
+    // `nextUrlRef` sa vtedy ZÁMERNE neposúva – ďalší scroll si tú istú
+    // stránku vyžiada znova, už nad aktuálnym stavom.
+    const seq = loadSeqRef.current;
     try {
       const page = await listFeedPostComments(postId, {
         cursorUrl: nextUrlRef.current,
       });
+      if (seq !== loadSeqRef.current) return;
       setComments((current) => {
         const seen = new Set(current.map((comment) => comment.id));
         return [...current, ...page.results.filter((c) => !seen.has(c.id))];
@@ -104,9 +130,15 @@ export default function FeedPostComments({
       nextUrlRef.current = page.next;
       setHasMore(Boolean(page.next));
     } catch {
-      toast.error(
-        tRef.current('feed.commentsLoadError', 'Komentáre sa nepodarilo načítať.'),
-      );
+      // Chybu hlás len za AKTUÁLNY pokus. Keď medzitým prebehla mutácia, tento
+      // request je už zneplatnený a jeho zlyhanie nemá čo riešiť – hláška
+      // „komentáre sa nepodarilo načítať" hneď po úspešnom pridaní komentára
+      // by len mýlila. Ďalší scroll si stránku vyžiada znova.
+      if (seq === loadSeqRef.current) {
+        toast.error(
+          tRef.current('feed.commentsLoadError', 'Komentáre sa nepodarilo načítať.'),
+        );
+      }
     } finally {
       loadingMoreRef.current = false;
       setLoadingMore(false);
@@ -142,6 +174,9 @@ export default function FeedPostComments({
     setSubmitting(true);
     try {
       const created = await createFeedPostComment(postId, trimmed);
+      // Zneplatní prebiehajúci load() – jeho odpoveď by tento komentár
+      // prepísala stavom spred vytvorenia.
+      loadSeqRef.current += 1;
       // Najstarší prvý (poradie z BE) → nový ide na koniec.
       scrollToBottomRef.current = true;
       setComments((current) => [...current, created]);
@@ -163,6 +198,7 @@ export default function FeedPostComments({
     setDeleting(true);
     try {
       await deleteFeedPostComment(postId, comment.id);
+      loadSeqRef.current += 1;
       setComments((current) => current.filter((item) => item.id !== comment.id));
       onCountChange?.(-1);
       toast.success(t('feed.commentDeleted', 'Komentár bol zmazaný.'));

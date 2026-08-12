@@ -108,17 +108,68 @@ describe('FeedPostImageCarousel', () => {
     expect(screen.getByTestId('feed-image-status')).toHaveTextContent('Spracúva sa…');
   });
 
-  it('shows the rejection reason to the author', () => {
+  it('never shows a rejected photo, only a discreet note', () => {
     render(
       <FeedPostImageCarousel
-        images={[{ id: 9, status: 'rejected', rejected_reason: 'Nevhodný obsah.' }]}
+        images={[
+          approved(1),
+          {
+            id: 9,
+            status: 'rejected',
+            rejected_reason: 'Obrazok bol zamietnuty kvoli nevhodnemu obsahu.',
+          },
+        ]}
         alt="Fotka"
       />,
     );
 
-    const status = screen.getByTestId('feed-image-status');
-    expect(status).toHaveTextContent('Fotka zamietnutá');
-    expect(status).toHaveTextContent('Nevhodný obsah.');
+    // Jedna zobraziteľná fotka → žiadne ovládanie karuselu.
+    expect(screen.queryByTestId('feed-image-dots')).not.toBeInTheDocument();
+    // Technický text z backendu sa NESMIE dostať von.
+    const note = screen.getByTestId('feed-image-rejected-note');
+    expect(note).toHaveTextContent('Táto fotka nespĺňa pravidlá obsahu.');
+    expect(note).not.toHaveTextContent('Obrazok bol zamietnuty');
+  });
+
+  it('renders no media area when every photo was rejected', () => {
+    render(
+      <FeedPostImageCarousel
+        images={[
+          { id: 8, status: 'rejected', rejected_reason: 'x' },
+          { id: 9, status: 'rejected', rejected_reason: 'y' },
+        ]}
+        alt="Fotka"
+      />,
+    );
+
+    // Príspevok sa má tváriť ako čisto textový – žiadna prázdna galéria.
+    expect(screen.queryByTestId('feed-post-image')).not.toBeInTheDocument();
+    expect(screen.getByTestId('feed-image-rejected-note')).toBeInTheDocument();
+  });
+
+  it('falls back to a generic message for an unknown backend reason', () => {
+    render(
+      <FeedPostImageCarousel
+        images={[{ id: 9, status: 'rejected', rejected_reason: 'Nieco uplne ine.' }]}
+        alt="Fotka"
+      />,
+    );
+
+    const note = screen.getByTestId('feed-image-rejected-note');
+    expect(note).toHaveTextContent('Túto fotku sa nepodarilo nahrať.');
+    expect(note).not.toHaveTextContent('Nieco uplne ine.');
+  });
+
+  it('letterboxes photos into one fixed-height area', () => {
+    render(<FeedPostImageCarousel images={[approved(1)]} alt="Fotka" />);
+
+    const media = screen.getByTestId('feed-post-image');
+    // Jednotná výška pre všetky fotky…
+    expect(media.className).toContain('h-80');
+    // …a obrázok sa do nej vkladá celý (contain), nie orezaný.
+    expect(media.querySelector('img.object-contain')).not.toBeNull();
+    // Prázdne miesto vypĺňa rozmazaná kópia tej istej fotky.
+    expect(media.querySelector('img.blur-xl')).not.toBeNull();
   });
 
   it('recovers when the photo list shrinks under the active index', async () => {

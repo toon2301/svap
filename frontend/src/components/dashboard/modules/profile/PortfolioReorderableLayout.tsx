@@ -22,6 +22,7 @@ type PortfolioReorderableLayoutProps = {
   onPreviewOrder: (items: PortfolioItem[]) => void;
   onReordered: (items: PortfolioItem[]) => void;
   onToggleLike?: (item: PortfolioItem) => void;
+  onShareToBoard?: (item: PortfolioItem) => void;
   pendingLikeIds?: Set<number>;
   headerActions?: ReactNode;
 };
@@ -48,6 +49,7 @@ export function PortfolioReorderableLayout({
   onPreviewOrder,
   onReordered,
   onToggleLike,
+  onShareToBoard,
   pendingLikeIds,
   headerActions,
 }: PortfolioReorderableLayoutProps) {
@@ -137,6 +139,9 @@ export function PortfolioReorderableLayout({
         loading={featured ? 'eager' : 'lazy'}
         onClick={!isReorderMode && onOpenItem ? () => onOpenItem(item) : undefined}
         onToggleLike={!isReorderMode ? onToggleLike : undefined}
+        // V režime preusporiadania sú akcie vypnuté rovnako ako lajk –
+        // ťahanie kariet a otváranie dialógu by si liezli do cesty.
+        onShareToBoard={!isReorderMode ? onShareToBoard : undefined}
         isLikePending={pendingLikeIds?.has(item.id) === true}
       />
     );

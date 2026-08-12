@@ -179,6 +179,138 @@ describe('FeedPostComments – scoped infinite scroll', () => {
     expect(within(cardNine).getByText('Deväť-prvý')).toBeInTheDocument();
   });
 
+  it('discards a load-more page that a mutation made stale', async () => {
+    const mockedCreate = jest.requireMock('@/lib/feedApi')
+      .createFeedPostComment as jest.Mock;
+
+    // Bez predvolenej no-op implementácie: keby sa druhý request nikdy
+    // nespustil, callback ostane null a test padne namiesto toho, aby
+    // prešiel naprázdno.
+    let resolveSecondPage: ((value: unknown) => void) | null = null;
+    mockedList
+      .mockResolvedValueOnce({
+        results: [comment(1, 'Prvý')],
+        next: 'http://api.test/api/auth/feed/posts/5/comments/?cursor=a',
+        previous: null,
+      })
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveSecondPage = resolve;
+          }) as never,
+      );
+    mockedCreate.mockResolvedValue(comment(99, 'Môj nový'));
+
+    render(<FeedPostComments postId={5} />);
+    await screen.findByText('Prvý');
+
+    // Spusti donačítanie a NECHAJ ho visieť.
+    await waitFor(() => expect(observer.registry.length).toBeGreaterThan(0));
+    await act(async () => {
+      observer.registry.forEach((entry) => entry.fire());
+    });
+
+    // Medzitým pridaj komentár – mutácia zneplatní prebiehajúcu stránku.
+    await userEvent.type(screen.getByRole('textbox'), 'Môj nový');
+    await userEvent.click(screen.getByRole('button', { name: 'Pridať' }));
+    expect(await screen.findByText('Môj nový')).toBeInTheDocument();
+
+    // Druhý request musel REÁLNE vzniknúť – inak nie je čo zahadzovať.
+    await waitFor(() => expect(mockedList).toHaveBeenCalledTimes(2));
+    expect(resolveSecondPage).not.toBeNull();
+
+    // Až teraz dobehne stará odpoveď – musí sa zahodiť.
+    await act(async () => {
+      resolveSecondPage!({
+        results: [comment(2, 'Zastaraný')],
+        next: null,
+        previous: null,
+      });
+    });
+
+    expect(screen.queryByText('Zastaraný')).not.toBeInTheDocument();
+    expect(screen.getByText('Môj nový')).toBeInTheDocument();
+    expect(screen.getByText('Prvý')).toBeInTheDocument();
+  });
+
+  it('stays quiet when a load-more failure was already invalidated', async () => {
+    const mockedCreate = jest.requireMock('@/lib/feedApi')
+      .createFeedPostComment as jest.Mock;
+    const mockedToastError = jest.requireMock('react-hot-toast').default
+      .error as jest.Mock;
+    mockedToastError.mockReset();
+
+    // Rovnako ako vyššie – žiadna no-op náhrada, nech test nemôže prejsť
+    // bez toho, aby druhý request skutočne prebehol.
+    let rejectSecondPage: ((reason?: unknown) => void) | null = null;
+    mockedList
+      .mockResolvedValueOnce({
+        results: [comment(1, 'Prvý')],
+        next: 'http://api.test/api/auth/feed/posts/5/comments/?cursor=a',
+        previous: null,
+      })
+      .mockImplementationOnce(
+        () =>
+          new Promise((_resolve, reject) => {
+            rejectSecondPage = reject;
+          }) as never,
+      );
+    mockedCreate.mockResolvedValue(comment(99, 'Môj nový'));
+
+    render(<FeedPostComments postId={5} />);
+    await screen.findByText('Prvý');
+
+    await waitFor(() => expect(observer.registry.length).toBeGreaterThan(0));
+    await act(async () => {
+      observer.registry.forEach((entry) => entry.fire());
+    });
+
+    // Mutácia zneplatní prebiehajúce donačítanie…
+    await userEvent.type(screen.getByRole('textbox'), 'Môj nový');
+    await userEvent.click(screen.getByRole('button', { name: 'Pridať' }));
+    expect(await screen.findByText('Môj nový')).toBeInTheDocument();
+
+    // Druhý request musel REÁLNE vzniknúť a odovzdať svoj reject callback.
+    await waitFor(() => expect(mockedList).toHaveBeenCalledTimes(2));
+    expect(rejectSecondPage).not.toBeNull();
+
+    // …a až potom zlyhá. Hláška o nenačítaní komentárov by tesne po úspešnom
+    // pridaní komentára len mýlila.
+    await act(async () => {
+      rejectSecondPage!(new Error('offline'));
+    });
+
+    expect(mockedToastError).not.toHaveBeenCalled();
+  });
+
+  it('still reports a load-more failure that nothing invalidated', async () => {
+    const mockedToastError = jest.requireMock('react-hot-toast').default
+      .error as jest.Mock;
+    mockedToastError.mockReset();
+
+    mockedList
+      .mockResolvedValueOnce({
+        results: [comment(1, 'Prvý')],
+        next: 'http://api.test/api/auth/feed/posts/5/comments/?cursor=a',
+        previous: null,
+      })
+      .mockRejectedValueOnce(new Error('offline'));
+
+    render(<FeedPostComments postId={5} />);
+    await screen.findByText('Prvý');
+
+    await waitFor(() => expect(observer.registry.length).toBeGreaterThan(0));
+    await act(async () => {
+      observer.registry.forEach((entry) => entry.fire());
+    });
+
+    await waitFor(() =>
+      expect(mockedToastError).toHaveBeenCalledWith(
+        'Komentáre sa nepodarilo načítať.',
+      ),
+    );
+  });
+
   it('inserts an emoji into the comment field', async () => {
     mockedList.mockResolvedValue({ results: [], next: null, previous: null });
 

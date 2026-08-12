@@ -1,6 +1,7 @@
 'use client';
 
 import type React from 'react';
+import { RectangleGroupIcon } from '@heroicons/react/24/outline';
 import { useLanguage } from '@/contexts/LanguageContext';
 import BlurredContainImage from '../shared/BlurredContainImage';
 import type { PortfolioItem } from './portfolioTypes';
@@ -14,6 +15,8 @@ type PortfolioCardProps = {
   onClick?: () => void;
   onToggleLike?: (item: PortfolioItem) => void;
   isLikePending?: boolean;
+  /** Zdieľanie na Nástenku – dialóg vlastní rodič (ako pri ponukách). */
+  onShareToBoard?: (item: PortfolioItem) => void;
 };
 
 function PortfolioImageSlot({
@@ -45,6 +48,36 @@ function PortfolioImageSlot({
   );
 }
 
+function PortfolioShareButton({
+  onShare,
+  label,
+  className = '',
+}: {
+  onShare: () => void;
+  label: string;
+  className?: string;
+}) {
+  return (
+    // Rovnaký fialový štýl ako ikony na OfferCardFront – jeden vizuálny jazyk
+    // pre akcie na kartách naprieč appkou.
+    <button
+      type="button"
+      data-testid="portfolio-share-button"
+      onClick={(event) => {
+        // Karta je klikateľná (otvára detail) – bez zastavenia by klik na
+        // ikonu otvoril aj položku.
+        event.stopPropagation();
+        onShare();
+      }}
+      aria-label={label}
+      title={label}
+      className={`p-1 rounded-full inline-flex items-center justify-center leading-none bg-purple-50 dark:bg-purple-900/80 dark:backdrop-blur-sm border border-purple-200 dark:border-purple-800/60 text-purple-700 dark:text-white hover:bg-purple-100 dark:hover:bg-purple-900/90 transition-colors ${className}`}
+    >
+      <RectangleGroupIcon className="h-4 w-4" />
+    </button>
+  );
+}
+
 export function PortfolioCard({
   item,
   categoryLabel,
@@ -53,6 +86,7 @@ export function PortfolioCard({
   onClick,
   onToggleLike,
   isLikePending = false,
+  onShareToBoard,
 }: PortfolioCardProps) {
   const { t } = useLanguage();
   const className = [
@@ -75,17 +109,30 @@ export function PortfolioCard({
     </>
   );
 
-  const likeButton = onToggleLike ? (
-    <PortfolioLikeButton
-      isLiked={item.is_liked_by_me === true}
-      likesCount={Math.max(0, Number(item.likes_count ?? 0))}
-      label={t('portfolio.likeAction')}
-      isPending={isLikePending}
-      compact
-      onToggle={() => onToggleLike(item)}
-      className="absolute right-3 top-3 z-10 backdrop-blur"
-    />
-  ) : null;
+  // Akcie v jednom rohu (rovnaký vzor ako OfferCardFront) – lajk si drží
+  // pôvodné miesto, zdieľanie pribúda vedľa neho.
+  const actions =
+    onToggleLike || onShareToBoard ? (
+      <div className="absolute right-3 top-3 z-10 flex items-center gap-2">
+        {onShareToBoard ? (
+          <PortfolioShareButton
+            label={t('feed.shareToBoard', 'Zdieľať na Nástenku')}
+            onShare={() => onShareToBoard(item)}
+          />
+        ) : null}
+        {onToggleLike ? (
+          <PortfolioLikeButton
+            isLiked={item.is_liked_by_me === true}
+            likesCount={Math.max(0, Number(item.likes_count ?? 0))}
+            label={t('portfolio.likeAction')}
+            isPending={isLikePending}
+            compact
+            onToggle={() => onToggleLike(item)}
+            className="backdrop-blur"
+          />
+        ) : null}
+      </div>
+    ) : null;
 
   if (onClick) {
     return (
@@ -101,7 +148,7 @@ export function PortfolioCard({
         >
           {content}
         </button>
-        {likeButton}
+        {actions}
       </article>
     );
   }
@@ -112,7 +159,7 @@ export function PortfolioCard({
       className={`relative ${className}`}
     >
       {content}
-      {likeButton}
+      {actions}
     </article>
   );
 }

@@ -1,6 +1,12 @@
 'use client';
 
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import {
+  useEffect,
+  useMemo,
+  useState,
+  type FormEvent,
+  type MouseEvent as ReactMouseEvent,
+} from 'react';
 import { createPortal } from 'react-dom';
 import QRCode from 'qrcode';
 import toast from 'react-hot-toast';
@@ -16,6 +22,8 @@ import {
   XMarkIcon,
 } from '@heroicons/react/24/outline';
 import { useLanguage } from '@/contexts/LanguageContext';
+import FeedShareDialog from '../feed/FeedShareDialog';
+import { shareOfferToFeed } from '@/lib/feedApi';
 import { GroupUserPicker } from '../messages/GroupUserPicker';
 import {
   getMessagingErrorMessage,
@@ -87,6 +95,7 @@ export function OfferShareModal({
 }: OfferShareModalProps) {
   const { t } = useLanguage();
   const [mode, setMode] = useState<'share' | 'message'>('share');
+  const [boardShareOpen, setBoardShareOpen] = useState(false);
   const [selectedRecipients, setSelectedRecipients] = useState<GroupMemberCandidate[]>([]);
   const [isSubmittingOfferShare, setIsSubmittingOfferShare] = useState(false);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
@@ -152,6 +161,16 @@ export function OfferShareModal({
     setMode('share');
     setSelectedRecipients([]);
     onClose();
+  };
+
+  /**
+   * Zavrieť smie LEN klik priamo na pozadie. Bez tejto kontroly modal zavrie
+   * čokoľvek, čo k nemu prebublá – vrátane vnorených portálov, ktoré bublajú
+   * cez REACT strom bez ohľadu na to, kde sedia v DOM. Rovnaký vzor ako
+   * BlockUserConfirmDialog / PortfolioDeleteConfirmDialog / ReportUserModal.
+   */
+  const handleBackdropClick = (event: ReactMouseEvent<HTMLDivElement>) => {
+    if (event.target === event.currentTarget) handleClose();
   };
 
   const handleCopy = async () => {
@@ -231,7 +250,7 @@ export function OfferShareModal({
       role="dialog"
       aria-modal="true"
       aria-labelledby="offer-share-modal-title"
-      onClick={handleClose}
+      onClick={handleBackdropClick}
     >
       <div
         className="relative flex max-h-[90vh] w-full max-w-md flex-col overflow-hidden rounded-t-2xl border border-gray-200 bg-white shadow-xl dark:border-gray-800 dark:bg-[#0f0f10] sm:max-h-[85vh] sm:rounded-2xl"
@@ -341,13 +360,16 @@ export function OfferShareModal({
             <div className="grid gap-2">
               <button
                 type="button"
-                disabled
-                className="flex cursor-not-allowed items-center gap-3 rounded-xl border border-gray-200 px-4 py-3 text-left text-sm font-medium text-gray-500 opacity-75 dark:border-gray-800 dark:text-gray-400"
+                onClick={() => setBoardShareOpen(true)}
+                data-testid="offer-share-to-board"
+                className="flex items-center gap-3 rounded-xl border border-gray-200 px-4 py-3 text-left text-sm font-medium text-gray-900 transition-colors hover:bg-gray-50 dark:border-gray-800 dark:text-white dark:hover:bg-gray-900"
               >
-                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-100 text-gray-500 dark:bg-gray-900 dark:text-gray-400">
+                {/* Fialová = značková farba appky aj vizuálny jazyk Nástenky;
+                    ostatné položky v tomto zozname majú vlastnú farbu rovnako. */}
+                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">
                   <RectangleGroupIcon className="h-5 w-5" />
                 </span>
-                {t('profile.shareToBoard', 'Share to board')}
+                {t('profile.shareToBoard', 'Zdieľať na Nástenku')}
               </button>
 
               <button
@@ -439,6 +461,28 @@ export function OfferShareModal({
           </div>
         )}
       </div>
+
+      {/* Vnorený jednokrokový dialóg – po úspechu zavrie SEBA aj tento modal.
+
+          Obal so stopPropagation tu ZÁMERNE nie je: `handleBackdropClick`
+          porovnáva target s currentTarget, takže klik z tohto portálu (bubláva
+          cez REACT strom) sa k zatvoreniu vonkajšieho modalu nedostane. */}
+      <FeedShareDialog
+        open={boardShareOpen}
+        onClose={() => setBoardShareOpen(false)}
+        preview={{
+          heading: offer.title,
+          text: offer.location,
+          thumbnailUrl: offer.imageUrl,
+        }}
+        onShare={(caption, taggedUserIds) =>
+          shareOfferToFeed(offer.id, caption, taggedUserIds)
+        }
+        onShared={() => {
+          setBoardShareOpen(false);
+          onClose();
+        }}
+      />
     </div>,
     document.body,
   );

@@ -17,6 +17,14 @@ jest.mock('@/lib/feedApi', () => ({
   listFeedPosts: jest.fn(),
   createFeedPost: jest.fn(),
   getFeedPost: jest.fn(),
+  shareFeedPost: jest.fn(),
+  likeFeedPost: jest.fn(),
+  unlikeFeedPost: jest.fn(),
+  reportFeedPost: jest.fn(),
+  listFeedPostComments: jest.fn(),
+  createFeedPostComment: jest.fn(),
+  deleteFeedPostComment: jest.fn(),
+  FEED_COMMENT_MAX_LENGTH: 500,
 }));
 
 jest.mock('@/lib/feedImageUpload', () => ({
@@ -137,6 +145,27 @@ describe('FeedList – vkladanie nových príspevkov na vrch', () => {
 
     await waitFor(() => expect(renderedCaptions().map((text) => text?.includes('Môj nový'))).toEqual([true, false]));
     // Kľúčové: zoznam sa NEnačítal znova, len sa doň vložilo.
+    expect(mockedList).toHaveBeenCalledTimes(1);
+  });
+
+  it('puts a shared post on top, the same way the composer does', async () => {
+    const { shareFeedPost } = jest.requireMock('@/lib/feedApi');
+    shareFeedPost.mockResolvedValue(makePost(9, 'Zdieľané ďalej'));
+
+    render(<FeedList />);
+    await screen.findByTestId('feed-list');
+    expect(mockedList).toHaveBeenCalledTimes(1);
+
+    await userEvent.click(screen.getByTestId('feed-share-button'));
+    await userEvent.click(await screen.findByRole('button', { name: 'Zdieľať' }));
+
+    await waitFor(() =>
+      expect(renderedCaptions().map((text) => text?.includes('Zdieľané ďalej'))).toEqual([
+        true,
+        false,
+      ]),
+    );
+    // Rovnako ako composer – vloženie, nie refetch celého feedu.
     expect(mockedList).toHaveBeenCalledTimes(1);
   });
 

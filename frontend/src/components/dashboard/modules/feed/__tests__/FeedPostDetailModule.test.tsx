@@ -158,6 +158,17 @@ describe('FeedPostDetailModule', () => {
     });
   });
 
+  it('caps the comments height on the detail page too', async () => {
+    // Detail renderuje ten istý FeedPostComments ako karta vo feede, takže
+    // ohraničenie výšky platí aj tu – tento test to drží, keby sa detail
+    // niekedy odklonil na vlastnú implementáciu.
+    render(<FeedPostDetailModule postId={5} />);
+
+    const box = await screen.findByTestId('feed-comments-scroll');
+    expect(box.className).toContain('overflow-y-auto');
+    expect(box.className).toMatch(/max-h-\[min\(/);
+  });
+
   it('redirects when the post is gone', async () => {
     mockedGetPost.mockRejectedValue({ response: { status: 404 } });
 

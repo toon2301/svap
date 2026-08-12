@@ -23,6 +23,8 @@ import { PortfolioEmptyState } from './PortfolioEmptyState';
 import { MobilePortfolioOrderView } from './MobilePortfolioOrderView';
 import { PortfolioReorderableLayout } from './PortfolioReorderableLayout';
 import { PortfolioSectionSkeleton } from './PortfolioSectionSkeleton';
+import FeedShareDialog from '../feed/FeedShareDialog';
+import { sharePortfolioItemToFeed } from '@/lib/feedApi';
 import { buildPortfolioDetailPath, getPortfolioOwnerIdentifier } from './portfolioRouting';
 
 type ProfilePortfolioSectionProps = {
@@ -56,6 +58,9 @@ export default function ProfilePortfolioSection({
   const [loadError, setLoadError] = useState(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isOrderOpen, setIsOrderOpen] = useState(false);
+  // Dialóg vlastní sekcia, nie jednotlivá karta – inak by v DOM viselo
+  // toľko dialógov, koľko je položiek.
+  const [sharedItem, setSharedItem] = useState<PortfolioItem | null>(null);
   const loadedKeyRef = useRef<string | null>(null);
   // Kľúč cieľa, ktorého dáta/chyba sú práve v state (nastaví sa až keď load pre
   // daný cieľ doreší – úspech aj chyba). Slúži na detekciu "stale" stavu: po zmene
@@ -97,6 +102,7 @@ export default function ProfilePortfolioSection({
       });
       setIsCreateOpen(false);
       setIsOrderOpen(false);
+    setSharedItem(null);
       if (ownerIdentifier) {
         router.push(buildPortfolioDetailPath(ownerIdentifier, createdItem.id));
       }
@@ -354,6 +360,7 @@ export default function ProfilePortfolioSection({
         onPreviewOrder={setItems}
         onReordered={handleReordered}
         onToggleLike={handleTogglePortfolioLike}
+        onShareToBoard={setSharedItem}
         pendingLikeIds={pendingPortfolioLikeIds}
         headerActions={
           isOwner && !isMobile ? (
@@ -392,6 +399,22 @@ export default function ProfilePortfolioSection({
           ) : undefined
         }
       />
+
+      {sharedItem ? (
+        <FeedShareDialog
+          open
+          onClose={() => setSharedItem(null)}
+          preview={{
+            heading: sharedItem.title,
+            text: getCategoryLabel(sharedItem.category),
+            thumbnailUrl: sharedItem.cover_image?.thumbnail_url ?? null,
+          }}
+          onShare={(caption, taggedUserIds) =>
+            sharePortfolioItemToFeed(sharedItem.id, caption, taggedUserIds)
+          }
+          onShared={() => setSharedItem(null)}
+        />
+      ) : null}
     </div>
   );
 }
