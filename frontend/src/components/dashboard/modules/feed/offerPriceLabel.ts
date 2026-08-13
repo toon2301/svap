@@ -26,7 +26,12 @@ export function formatOfferPriceLabel(
   if (price.price_negotiable) return t('skills.priceNegotiable', 'Dohodou');
   if (price.price_from === null || price.price_from === undefined) return '';
 
-  const amount = Number(price.price_from);
+  // Number('') aj Number('   ') je 0, takže bez orezania a kontroly prázdneho
+  // vstupu by sa z chýbajúcej ceny stalo „0 €".
+  const raw = String(price.price_from).trim();
+  if (!raw) return '';
+
+  const amount = Number(raw);
   if (!Number.isFinite(amount)) return '';
 
   // Absolútny dátum/číslo sleduje jazyk appky, nie locale prehliadača.

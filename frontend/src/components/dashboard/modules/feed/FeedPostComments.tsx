@@ -46,7 +46,30 @@ function mergeComments(
   incoming: FeedPostComment[],
 ): FeedPostComment[] {
   if (!incoming.length) return current;
-  const byId = new Map(current.map((comment) => [comment.id, comment]));
+
+  // Rozsah, ktorý prichádzajúca stránka pokrýva. Čo doň spadá a v odpovedi
+  // NIE JE, medzitým niekto zmazal – inak by taký komentár ostal visieť
+  // navždy a interakcie s ním by zlyhávali.
+  const ids = incoming.map((comment) => comment.id);
+  const lowest = Math.min(...ids);
+  // Horná hranica závisí od toho, či je stránka PLNÁ:
+  //  - plná → za ňou môžu byť ďalšie komentáre, ktoré sme nevideli, takže
+  //    sa končí na poslednom známom id (konzervatívne),
+  //  - neplná → server vrátil všetko od tejto pozície ďalej, takže čokoľvek
+  //    s vyšším id bolo zmazané. Bez tejto vetvy by sa nezachytilo zmazanie
+  //    POSLEDNÉHO komentára – a práve ten sa maže najčastejšie.
+  const highest =
+    incoming.length >= COMMENTS_PAGE_SIZE
+      ? Math.max(...ids)
+      : Number.POSITIVE_INFINITY;
+
+  const byId = new Map(
+    current
+      // Mimo rozsahu = staršie načítané stránky (nižšie id) alebo obsah za
+      // plnou stránkou, ktorý táto odpoveď nepokrýva.
+      .filter((comment) => comment.id < lowest || comment.id > highest)
+      .map((comment) => [comment.id, comment]),
+  );
   incoming.forEach((comment) => byId.set(comment.id, comment));
   return [...byId.values()].sort((a, b) => a.id - b.id);
 }
@@ -200,6 +223,24 @@ export default function FeedPostComments({
     // pribudli za hranicou toho, čo má používateľ načítané.
     if (typeof page.count === 'number') {
       onTotalChangeRef.current?.(page.count);
+    }
+
+    // Kurzorová stránka je FIXNÁ: keď bola plná, komentár pridaný za ňou sa
+    // v nej nikdy neobjaví a bez tohto by polling donekonečna sťahoval tú istú
+    // desiatku. Odpoveď však nesie nový `next` – prevezmeme ho, čím sa zapne
+    // `hasMore` a sentinel si ďalšiu stránku dotiahne bežnou cestou.
+    //
+    // Prepisujeme len keď sa medzičasom nič nezmenilo: `lastCursorRef` je stále
+    // ten, s ktorým sme sa pýtali, a nebeží súbežné donačítavanie – inak by
+    // táto odpoveď prepísala novší stránkovací stav.
+    if (
+      lastCursorRef.current === cursor &&
+      !loadingMoreRef.current &&
+      page.next &&
+      page.next !== nextUrlRef.current
+    ) {
+      nextUrlRef.current = page.next;
+      setHasMore(true);
     }
   }, [postId]);
 

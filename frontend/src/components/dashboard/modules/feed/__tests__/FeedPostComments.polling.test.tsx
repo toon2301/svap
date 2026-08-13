@@ -226,8 +226,9 @@ describe('FeedPostComments – polling', () => {
     const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
     mockedList
       .mockResolvedValueOnce(page([comment(1, 'Prvý')]))
-      // Server o novom komentári ešte nevie (odpoveď spred mutácie).
-      .mockResolvedValue(page([comment(1, 'Prvý')], 1));
+      // Po vytvorení je komentár v DB, takže ho ďalší poll vráti – merge ho
+      // nesmie zduplikovať ani stratiť.
+      .mockResolvedValue(page([comment(1, 'Prvý'), comment(99, 'Môj vlastný')], 2));
     mockedCreate.mockResolvedValue(comment(99, 'Môj vlastný'));
 
     render(<FeedPostComments postId={5} />);
@@ -239,8 +240,8 @@ describe('FeedPostComments – polling', () => {
 
     await tick(2);
 
-    // Optimistický komentár prežije aj opakované obnovenie.
-    expect(screen.getByText('Môj vlastný')).toBeInTheDocument();
+    // Optimistický komentár prežije aj opakované obnovenie, a to práve raz.
+    expect(screen.getAllByText('Môj vlastný')).toHaveLength(1);
     expect(screen.getByText('Prvý')).toBeInTheDocument();
   });
 
@@ -270,6 +271,100 @@ describe('FeedPostComments – polling', () => {
     const polledIds = mockedList.mock.calls.map((call) => call[0]).sort();
     // Každá sekcia si pýta VLASTNÝ príspevok.
     expect(polledIds).toEqual([5, 9]);
+  });
+
+  it('follows a fresh next cursor instead of re-polling a full page', async () => {
+    // Prvá stránka je PLNÁ – komentár pridaný za ňou sa v nej nikdy neobjaví,
+    // takže polling musí prevziať nový `next` a dotiahnuť ďalšiu stránku.
+    const fullPage = Array.from({ length: 10 }, (_, i) => comment(i + 1, `K${i + 1}`));
+    const observer = installFiringObserver();
+    try {
+      mockedList
+        .mockResolvedValueOnce({
+          results: fullPage,
+          next: null,
+          previous: null,
+          count: 10,
+        })
+        // Poll: tá istá plná stránka, ale server už hlási ďalšiu.
+        .mockResolvedValueOnce({
+          results: fullPage,
+          next: 'http://api.test/comments/?cursor=b',
+          previous: null,
+          count: 11,
+        })
+        // Donačítanie cez sentinel prinesie 11. komentár.
+        .mockResolvedValue({
+          results: [comment(11, 'Jedenásty')],
+          next: null,
+          previous: null,
+          count: 11,
+        });
+
+      render(<FeedPostComments postId={5} />);
+      await screen.findByText('K1');
+      expect(screen.queryByTestId('feed-comments-sentinel')).toBeInTheDocument();
+
+      await tick();
+
+      // Poll prevzal nový kurzor → sentinel sa zapol a donačítal.
+      await waitFor(() => expect(observer.registry.length).toBeGreaterThan(0));
+      await act(async () => {
+        observer.registry.forEach((fire) => fire());
+      });
+
+      expect(await screen.findByText('Jedenásty')).toBeInTheDocument();
+      const cursors = mockedList.mock.calls
+        .map((call) => call[1]?.cursorUrl)
+        .filter(Boolean);
+      expect(cursors).toContain('http://api.test/comments/?cursor=b');
+    } finally {
+      observer.restore();
+    }
+  });
+
+  it('drops a comment that someone else deleted', async () => {
+    mockedList
+      .mockResolvedValueOnce(page([comment(1, 'Ostáva'), comment(2, 'Zmazaný')], 2))
+      // Server už druhý nevracia – v rozsahu stránky teda zmizol.
+      .mockResolvedValue(page([comment(1, 'Ostáva')], 1));
+
+    render(<FeedPostComments postId={5} />);
+    await screen.findByText('Zmazaný');
+
+    await tick();
+
+    await waitFor(() =>
+      expect(screen.queryByText('Zmazaný')).not.toBeInTheDocument(),
+    );
+    expect(screen.getByText('Ostáva')).toBeInTheDocument();
+  });
+
+  it('does not treat content beyond a full page as deleted', async () => {
+    // Plná stránka znamená, že za ňou MÔŽU byť ďalšie komentáre, ktoré táto
+    // odpoveď nepokrýva – odstraňovanie zmazaných sa tam nesmie siahať.
+    const fullPage = Array.from({ length: 10 }, (_, i) => comment(i + 1, `K${i + 1}`));
+    mockedList
+      .mockResolvedValueOnce({
+        results: [...fullPage, comment(11, 'Za stránkou')],
+        next: null,
+        previous: null,
+        count: 11,
+      })
+      // Poll vidí len prvú (plnú) stránku.
+      .mockResolvedValue({
+        results: fullPage,
+        next: 'http://api.test/comments/?cursor=b',
+        previous: null,
+        count: 11,
+      });
+
+    render(<FeedPostComments postId={5} />);
+    await screen.findByText('Za stránkou');
+
+    await tick();
+
+    expect(screen.getByText('Za stránkou')).toBeInTheDocument();
   });
 
   it('stops polling once the section is closed', async () => {
