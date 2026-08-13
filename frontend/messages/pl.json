@@ -674,7 +674,9 @@
     "detailedDescriptionHint": "Opisz szczegóły usługi – proces, co jest wliczone, oczekiwania i wynik.",
     "detailedDescriptionHintSeeking": "Opisz szczegółowo, czego szukasz – proces, co jest wliczone, oczekiwania i rezultat.",
     "descriptionRequired": "Opis umiejętności jest wymagany",
-    "descriptionTooLong": "Opis umiejętności może mieć maksymalnie 100 znaków",
+    "descriptionTooLong": "Krótki opis może zawierać maksymalnie 150 znaków.",
+    "duplicateCard": "Masz już utworzoną taką ofertę lub zapytanie.",
+    "validationFailed": "Sprawdź wprowadzone dane i spróbuj ponownie.",
     "experiencePositive": "Doświadczenie musi być liczbą dodatnią",
     "experienceTooLarge": "Doświadczenie nie może być większe niż 100",
     "priceNonNegative": "Cena musi być nieujemną liczbą",
@@ -1122,6 +1124,12 @@
     "hungarian": "Węgierski"
   },
   "profile": {
+    "portfolioTab": "Portfolio",
+    "postsTab": "Posty",
+    "taggedTab": "Oznaczenia",
+    "postsEmpty": "Brak postów.",
+    "taggedEmptyOwn": "Nikt jeszcze nie oznaczył Cię w poście.",
+    "taggedEmptyOther": "Nikt jeszcze nie oznaczył tego użytkownika w poście.",
     "editProfile": "Edytuj profil",
     "verifyProfile": "Weryfikacja profilu",
     "skills": "Oferuję/Szukam",
@@ -4341,6 +4349,9 @@
     "viewOwnerResponse": "Zobacz odpowiedź właściciela"
   },
   "feed": {
+    "newCommentsOne": "nowy komentarz",
+    "newCommentsFew": "nowe komentarze",
+    "newCommentsMany": "nowych komentarzy",
     "alreadyReported": "Już zgłoszone",
     "commentCreateError": "Nie udało się dodać komentarza.",
     "commentDelete": "Usuń komentarz",

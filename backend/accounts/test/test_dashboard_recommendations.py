@@ -280,5 +280,34 @@ class DashboardRecommendationsTestCase(TestCase):
         self.assertEqual(second_response.status_code, status.HTTP_200_OK)
         self.assertEqual(second_response.data["skills"][0]["id"], hot_skill.id)
 
+    def test_cached_recommendation_does_not_expose_offer_hidden_after_cache_fill(self):
+        owner = User.objects.create_user(
+            username="hidden-after-cache",
+            email="hidden-after-cache@example.com",
+            password="testpass123",
+            first_name="Hidden",
+            last_name="Offer",
+            user_type="individual",
+            is_public=True,
+        )
+        offer = OfferedSkill.objects.create(
+            user=owner,
+            category="Remeslá",
+            subcategory="Maliar",
+            description="Maľovanie",
+            is_hidden=False,
+            is_seeking=False,
+        )
+        url = reverse("accounts:dashboard_search_recommendations")
+
+        first_response = self.client.get(url, {"limit": "5"})
+        self.assertIn(offer.id, [item["id"] for item in first_response.data["skills"]])
+
+        offer.is_hidden = True
+        offer.save(update_fields=["is_hidden"])
+
+        second_response = self.client.get(url, {"limit": "5"})
+        self.assertNotIn(offer.id, [item["id"] for item in second_response.data["skills"]])
+
     def tearDown(self):
         cache.clear()

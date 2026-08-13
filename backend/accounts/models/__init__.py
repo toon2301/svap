@@ -32,6 +32,11 @@ from .skill_requests import (
     skill_request_is_reviewable,
 )
 from .notifications import Notification, NotificationType
+from .offer_watches import (
+    MAX_OFFER_WATCHES_PER_USER,
+    OfferWatch,
+    OfferWatchNotification,
+)
 from .feed_posts import (
     MAX_FEED_POST_IMAGES,
     FeedPost,
@@ -92,6 +97,9 @@ __all__ = [
     "skill_request_is_reviewable",
     "Notification",
     "NotificationType",
+    "MAX_OFFER_WATCHES_PER_USER",
+    "OfferWatch",
+    "OfferWatchNotification",
     "FeedPost",
     "FeedPostComment",
     "FeedPostCommentLike",

@@ -683,7 +683,9 @@
     "detailedDescriptionHint": "Describe the details of the service – process, what's included, expectations and result.",
     "detailedDescriptionHintSeeking": "Describe in detail what you are looking for – process, what is included, expectations and result.",
     "descriptionRequired": "Skill description is required",
-    "descriptionTooLong": "Skill description can have at most 100 characters",
+    "descriptionTooLong": "The short description can contain at most 150 characters.",
+    "duplicateCard": "You have already created this offer or request.",
+    "validationFailed": "Check the entered information and try again.",
     "experiencePositive": "Experience must be a positive number",
     "experienceTooLarge": "Experience cannot be greater than 100",
     "priceNonNegative": "Price must be a non-negative number",
@@ -1122,6 +1124,12 @@
     "hungarian": "Hungarian"
   },
   "profile": {
+    "portfolioTab": "Portfolio",
+    "postsTab": "Posts",
+    "taggedTab": "Tagged",
+    "postsEmpty": "No posts yet.",
+    "taggedEmptyOwn": "Nobody has tagged you in a post yet.",
+    "taggedEmptyOther": "Nobody has tagged this user in a post yet.",
     "editProfile": "Edit profile",
     "verifyProfile": "Profile verification",
     "skills": "Offers / Looking for",
@@ -4341,6 +4349,9 @@
     "viewOwnerResponse": "View owner response"
   },
   "feed": {
+    "newCommentsOne": "new comment",
+    "newCommentsFew": "new comments",
+    "newCommentsMany": "new comments",
     "alreadyReported": "Already reported",
     "commentCreateError": "The comment could not be added.",
     "commentDelete": "Delete comment",

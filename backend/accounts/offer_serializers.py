@@ -320,8 +320,11 @@ class OfferedSkillSerializer(serializers.ModelSerializer):
         """Validácia popisu"""
         if value:
             value = HtmlSanitizer.sanitize_html(value)
-            if len(value) > 100:
-                raise serializers.ValidationError("Popis môže mať maximálne 100 znakov")
+            if len(value) > 150:
+                raise serializers.ValidationError(
+                    "Krátky opis môže obsahovať maximálne 150 znakov",
+                    code="max_length",
+                )
         return value
 
     def validate_detailed_description(self, value):

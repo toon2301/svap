@@ -15,6 +15,7 @@ from accounts.services.user_blocks import exclude_blocked_users
 from swaply.rate_limiting import search_rate_limit
 
 from ...models import OfferedSkill
+from ...search_visibility import searchable_user_q
 from ...serializers import OfferedSkillSerializer
 from ...viewer_location_cache import get_viewer_location_snapshot
 from ..search_query_builders import (
@@ -64,18 +65,21 @@ def _serialize_search_skills_page(request, page_skill_ids):
         output_field=IntegerField(),
     )
     visible_skills = exclude_blocked_users(
-        OfferedSkill.objects.filter(pk__in=page_skill_ids),
+        OfferedSkill.objects.filter(pk__in=page_skill_ids, is_hidden=False).filter(
+            searchable_user_q("user__")
+        ),
         viewer_user_id=request.user.id,
         user_id_field="user_id",
     )
     optimized_qs = _skills_list_queryset(visible_skills).order_by(preserved_order)
     optimized_skills = list(optimized_qs)
+    visible_skill_ids = [skill.id for skill in optimized_skills]
     t_qs1 = perf_counter()
 
     t_ctx0 = perf_counter()
     serializer_context = {
         "request": request,
-        **_skills_list_context(request, page_skill_ids),
+        **_skills_list_context(request, visible_skill_ids),
     }
     t_ctx1 = perf_counter()
 

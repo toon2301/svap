@@ -4,6 +4,10 @@ import React, { useEffect, useRef, useState } from 'react';
 import data from '@emoji-mart/data';
 import Picker from '@emoji-mart/react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import {
+  limitSkillDescription,
+  SKILL_DESCRIPTION_MAX_LENGTH,
+} from '../skillDescriptionLimits';
 
 interface DescriptionSectionProps {
   description: string;
@@ -15,12 +19,16 @@ interface DescriptionSectionProps {
   showEmojiButton?: boolean;
 }
 
+interface EmojiSelection {
+  native?: string;
+  skins?: Array<{ native?: string }>;
+}
+
 export default function DescriptionSection({
   description,
   onChange,
   error,
   onErrorChange,
-  isOpen,
   isSeeking = false,
   showEmojiButton = true,
 }: DescriptionSectionProps) {
@@ -30,10 +38,8 @@ export default function DescriptionSection({
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
   const handleChange = (value: string) => {
-    if (value.length <= 100) {
-      onChange(value);
-      onErrorChange('');
-    }
+    onChange(limitSkillDescription(value));
+    onErrorChange('');
   };
 
   const insertAtCursor = (text: string) => {
@@ -47,7 +53,7 @@ export default function DescriptionSection({
     const before = current.slice(0, start);
     const after = current.slice(end);
 
-    const maxExtra = 100 - current.length + (end - start);
+    const maxExtra = SKILL_DESCRIPTION_MAX_LENGTH - current.length + (end - start);
     if (maxExtra <= 0) return;
 
     const toInsert = text.slice(0, maxExtra);
@@ -62,7 +68,7 @@ export default function DescriptionSection({
     });
   };
 
-  const handleEmojiSelect = (emoji: any) => {
+  const handleEmojiSelect = (emoji: EmojiSelection) => {
     const native = (emoji && (emoji.native || (emoji.skins && emoji.skins[0] && emoji.skins[0].native))) || '';
     if (!native) return;
     insertAtCursor(native);
@@ -81,7 +87,7 @@ export default function DescriptionSection({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showEmojiPicker]);
 
-  const remainingChars = 100 - description.length;
+  const remainingChars = SKILL_DESCRIPTION_MAX_LENGTH - description.length;
 
   return (
     <div className="mb-2 relative">
@@ -95,7 +101,7 @@ export default function DescriptionSection({
             showEmojiButton ? 'pr-16' : 'pr-3'
           }`}
           rows={2}
-          maxLength={100}
+          maxLength={SKILL_DESCRIPTION_MAX_LENGTH}
           autoFocus
         />
         {showEmojiButton ? (
@@ -124,7 +130,7 @@ export default function DescriptionSection({
             aria-atomic="true"
             title={t('skills.charsSuffix', 'znakov')}
           >
-            {remainingChars}
+            {description.length} / {SKILL_DESCRIPTION_MAX_LENGTH}
           </span>
         </div>
 
@@ -159,5 +165,3 @@ export default function DescriptionSection({
     </div>
   );
 }
-
- 

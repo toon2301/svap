@@ -674,7 +674,9 @@
     "detailedDescriptionHint": "Popište detaily služby – postup, co je zahrnuto, očekávání a výsledek.",
     "detailedDescriptionHintSeeking": "Popište detailně, co hledáte – postup, co je zahrnuto, očekávání a výsledek.",
     "descriptionRequired": "Popis dovednosti je povinný",
-    "descriptionTooLong": "Popis dovednosti může mít maximálně 100 znaků",
+    "descriptionTooLong": "Krátký popis může obsahovat maximálně 150 znaků.",
+    "duplicateCard": "Takovou nabídku nebo poptávku už máš vytvořenou.",
+    "validationFailed": "Zkontroluj vyplněné údaje a zkus to znovu.",
     "experiencePositive": "Délka praxe musí být kladné číslo",
     "experienceTooLarge": "Délka praxe nemůže být větší než 100",
     "priceNonNegative": "Cena musí být nezáporné číslo",
@@ -1122,6 +1124,12 @@
     "hungarian": "Maďarština"
   },
   "profile": {
+    "portfolioTab": "Portfolio",
+    "postsTab": "Příspěvky",
+    "taggedTab": "Označeno",
+    "postsEmpty": "Zatím žádné příspěvky.",
+    "taggedEmptyOwn": "Zatím tě nikdo neoznačil v příspěvku.",
+    "taggedEmptyOther": "Tohoto uživatele zatím nikdo neoznačil v příspěvku.",
     "editProfile": "Upravit profil",
     "verifyProfile": "Ověření profilu",
     "skills": "Nabízím/Hledám",
@@ -4341,6 +4349,9 @@
     "viewOwnerResponse": "Zobraziť odpoveď majiteľa"
   },
   "feed": {
+    "newCommentsOne": "nový komentář",
+    "newCommentsFew": "nové komentáře",
+    "newCommentsMany": "nových komentářů",
     "alreadyReported": "Už nahlášeno",
     "commentCreateError": "Komentář se nepodařilo přidat.",
     "commentDelete": "Smazat komentář",

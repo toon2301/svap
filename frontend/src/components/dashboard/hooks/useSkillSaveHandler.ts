@@ -13,6 +13,7 @@ import {
 import type { DashboardSkill } from './useSkillsModals';
 import { startBoundedImageRefresh } from './offerImageRefresh';
 import { getApiErrorMessage } from '@/lib/apiError';
+import { getOfferSaveErrorMessage } from '../modules/skills/offerSaveErrors';
 
 type Translator = (key: string, fallback: string) => string;
 
@@ -97,7 +98,7 @@ export function useSkillSaveHandler({
         districtLabel: trimmedDistrict,
       })
     ) {
-      alert(t('skills.invalidDistrict', 'Neplatný okres. Vyber z navrhovaných možností.'));
+      toast.error(t('skills.invalidDistrict', 'Neplatný okres. Vyber z navrhovaných možností.'));
       return;
     }
 
@@ -263,11 +264,8 @@ export function useSkillSaveHandler({
         onCreatedSkillSaved?.();
       }
     } catch (error: unknown) {
-      const message = getApiErrorMessage(
-        error,
-        t('dashboard.skillSaveError', 'Nepodarilo sa uložiť zručnosť'),
-      );
-      alert(message);
+      const message = getOfferSaveErrorMessage(error, t);
+      toast.error(message);
       try {
         if (typeof window !== 'undefined') {
           window.dispatchEvent(

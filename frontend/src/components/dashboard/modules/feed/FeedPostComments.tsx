@@ -29,14 +29,31 @@ import {
 } from '@/lib/feedApi';
 
 const COMMENTS_PAGE_SIZE = 10;
+/**
+ * Strop pre jeden pollovací dopyt – zhodný s `max_page_size` vo
+ * `FeedCommentCursorPagination`. BE väčšiu hodnotu ticho oreže, takže sa
+ * orezáva rovno tu, nech je zrejmé, čo odpoveď pokrýva.
+ */
+const COMMENTS_MAX_POLL_SIZE = 50;
+/** Do tejto vzdialenosti od spodku sa nový komentár doscrolluje sám. */
+const NEAR_BOTTOM_PX = 100;
 
 /**
- * Zlúči čerstvú stránku zo servera do lokálneho zoznamu.
+ * Zlúči čerstvú odpoveď servera do lokálneho zoznamu.
  *
- * Rovnaký princíp ako `prependPosts` v hlavnom feede: prekrývajúce sa id
- * NAHRADÍ serverová verzia (čerstvé počty lajkov), položky mimo tejto stránky
- * ostávajú nedotknuté. Vďaka tomu polling neprepíše vlastný práve pridaný
- * komentár ani donačítané staršie stránky.
+ * Kľúčový predpoklad: odpoveď VŽDY začína od začiatku vlákna (polling sa pýta
+ * bez cursoru – viď `refresh`). Preto má server posledné slovo o všetkom až po
+ * posledné vrátené id:
+ *  - čo v odpovedi je → nahradí sa serverovou verziou (čerstvé počty lajkov,
+ *    nové komentáre),
+ *  - čo v nej chýba a spadá do jej dosahu → medzitým to niekto zmazal,
+ *  - čo je NAD jej dosahom → odpoveď o tom nič nehovorí, ostáva nedotknuté.
+ *    Nastáva len pri okne dlhšom než COMMENTS_MAX_POLL_SIZE.
+ *
+ * Dosah určuje `hasNext`, nie počet položiek: keď ďalšia stránka neexistuje,
+ * server vrátil celé vlákno, takže dosah je neohraničený. Tým je pravidlo
+ * odolné aj voči orezaniu veľkosti stránky na strane BE – dĺžky sa
+ * neporovnávajú.
  *
  * Radí sa podľa id: komentáre chodia z BE chronologicky vzostupne a id je
  * monotónne, takže poradie sedí bez ďalšieho porovnávania dátumov.
@@ -44,30 +61,18 @@ const COMMENTS_PAGE_SIZE = 10;
 function mergeComments(
   current: FeedPostComment[],
   incoming: FeedPostComment[],
+  hasNext: boolean,
 ): FeedPostComment[] {
-  if (!incoming.length) return current;
+  // Prázdna odpoveď bez ďalšej stránky = vlákno je prázdne (zmazalo sa všetko).
+  if (!incoming.length) return hasNext ? current : [];
 
-  // Rozsah, ktorý prichádzajúca stránka pokrýva. Čo doň spadá a v odpovedi
-  // NIE JE, medzitým niekto zmazal – inak by taký komentár ostal visieť
-  // navždy a interakcie s ním by zlyhávali.
-  const ids = incoming.map((comment) => comment.id);
-  const lowest = Math.min(...ids);
-  // Horná hranica závisí od toho, či je stránka PLNÁ:
-  //  - plná → za ňou môžu byť ďalšie komentáre, ktoré sme nevideli, takže
-  //    sa končí na poslednom známom id (konzervatívne),
-  //  - neplná → server vrátil všetko od tejto pozície ďalej, takže čokoľvek
-  //    s vyšším id bolo zmazané. Bez tejto vetvy by sa nezachytilo zmazanie
-  //    POSLEDNÉHO komentára – a práve ten sa maže najčastejšie.
-  const highest =
-    incoming.length >= COMMENTS_PAGE_SIZE
-      ? Math.max(...ids)
-      : Number.POSITIVE_INFINITY;
+  const highest = hasNext
+    ? Math.max(...incoming.map((comment) => comment.id))
+    : Number.POSITIVE_INFINITY;
 
   const byId = new Map(
     current
-      // Mimo rozsahu = staršie načítané stránky (nižšie id) alebo obsah za
-      // plnou stránkou, ktorý táto odpoveď nepokrýva.
-      .filter((comment) => comment.id < lowest || comment.id > highest)
+      .filter((comment) => comment.id > highest)
       .map((comment) => [comment.id, comment]),
   );
   incoming.forEach((comment) => byId.set(comment.id, comment));
@@ -103,11 +108,14 @@ export default function FeedPostComments({
   const loadingMoreRef = useRef(false);
   const [pendingDelete, setPendingDelete] = useState<FeedPostComment | null>(null);
   const [deleting, setDeleting] = useState(false);
-  // Ohraničený scrollovateľný zoznam + príznak "po commite doscrolluj dole".
-  // Nový komentár ide na koniec, takže by inak pribudol pod zlomom boxu a
-  // pôsobil by, akoby sa vôbec nepridal.
+  // Ohraničený scrollovateľný zoznam + požadované správanie doscrollovania po
+  // commite (null = nescrollovať). Nový komentár ide na koniec, takže by inak
+  // pribudol pod zlomom boxu a pôsobil by, akoby sa vôbec nepridal.
+  // 'auto' = vlastný komentár (okamžite), 'smooth' = cudzí z pollingu.
   const scrollRef = useRef<HTMLDivElement | null>(null);
-  const scrollToBottomRef = useRef(false);
+  const scrollToBottomRef = useRef<ScrollBehavior | null>(null);
+  /** Počet komentárov, ktoré prišli, kým používateľ čítal vyššie v zozname. */
+  const [newCommentsCount, setNewCommentsCount] = useState(0);
   const { textareaRef, insertEmoji } = useEmojiInsertion(text, setText);
   // `t` drží ref, aby nebolo v závislostiach callbackov: rodič sa pri zmene
   // počtu komentárov prerenderuje a keby `t` menilo identitu, `load` by sa
@@ -122,16 +130,10 @@ export default function FeedPostComments({
   // odpoveď staršieho `load()`, ktorá dobehne až potom, sa zahodí – inak by
   // prepísala čerstvo pridaný komentár serverovým stavom spred mutácie.
   const loadSeqRef = useRef(0);
-  /**
-   * Kurzor stránky, ktorú používateľ videl ako POSLEDNÚ (null = prvá stránka).
-   *
-   * Komentáre chodia vzostupne, takže NOVÉ pribúdajú na KONCI vlákna – polling
-   * prvej stránky by ich pri vlákne dlhšom než COMMENTS_PAGE_SIZE nikdy
-   * neuvidel. Znovupoužitie tohto kurzora vráti tú istú pozíciu vrátane toho,
-   * čo odvtedy pribudlo. Zároveň sa tým NEpreskočia stránky, ktoré si
-   * používateľ ešte nedonačítal (inak by v zozname vznikla diera).
-   */
-  const lastCursorRef = useRef<string | null>(null);
+  // Aktuálne načítané okno pre `refresh` – cez ref (nie závislosť), aby sa
+  // pollovací callback pri každom novom komentári nepreskladal.
+  const commentsRef = useRef(comments);
+  commentsRef.current = comments;
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -146,7 +148,6 @@ export default function FeedPostComments({
       if (seq !== loadSeqRef.current) return;
       setComments(page.results);
       nextUrlRef.current = page.next;
-      lastCursorRef.current = null;
       setHasMore(Boolean(page.next));
       // Počet pri ikone musí vychádzať z TOHO ISTÉHO načítania ako zoznam,
       // inak by po realtime obnovení ukazoval staré číslo. `count` z BE
@@ -174,13 +175,11 @@ export default function FeedPostComments({
     // `nextUrlRef` sa vtedy ZÁMERNE neposúva – ďalší scroll si tú istú
     // stránku vyžiada znova, už nad aktuálnym stavom.
     const seq = loadSeqRef.current;
-    const requestedCursor = nextUrlRef.current;
     try {
       const page = await listFeedPostComments(postId, {
-        cursorUrl: requestedCursor,
+        cursorUrl: nextUrlRef.current,
       });
       if (seq !== loadSeqRef.current) return;
-      lastCursorRef.current = requestedCursor;
       setComments((current) => {
         const seen = new Set(current.map((comment) => comment.id));
         return [...current, ...page.results.filter((c) => !seen.has(c.id))];
@@ -203,46 +202,80 @@ export default function FeedPostComments({
     }
   }, [postId]);
 
+  /** Doscrolluje zoznam na koniec; `scrollTo` jsdom nemá, preto fallback. */
+  const scrollListToBottom = useCallback((behavior: ScrollBehavior) => {
+    const node = scrollRef.current;
+    if (!node) return;
+    if (typeof node.scrollTo === 'function') {
+      node.scrollTo({ top: node.scrollHeight, behavior });
+    } else {
+      node.scrollTop = node.scrollHeight;
+    }
+  }, []);
+
   /**
-   * Tichá obnova na pozadí – ten istý endpoint aj tá istá ochrana proti
-   * zastaraným odpovediam ako `load()`, len bez loading stavu a s MERGE
-   * namiesto prepísania zoznamu.
+   * Reakcia na komentáre, ktoré priniesol polling – podľa toho, kde
+   * používateľ práve je. Volá sa PRED commitom nového zoznamu, takže rozmery
+   * uzla ešte popisujú stav spred pridania; presne to nás zaujíma.
+   */
+  const announceNewComments = useCallback((added: number) => {
+    const node = scrollRef.current;
+    // Bez uzla (alebo pri zozname, ktorý sa ešte nescrolluje) je koniec na
+    // obrazovke – indikátor by len prekážal.
+    const distanceToBottom = node
+      ? node.scrollHeight - node.scrollTop - node.clientHeight
+      : 0;
+    if (distanceToBottom <= NEAR_BOTTOM_PX) {
+      scrollToBottomRef.current = 'smooth';
+      return;
+    }
+    // Číta niečo vyššie → pohľad mu neposúvame, len ho upozorníme.
+    setNewCommentsCount((current) => current + added);
+  }, []);
+
+  /**
+   * Tichá obnova na pozadí – bez loading stavu a s MERGE namiesto prepísania.
+   *
+   * Pýta sa ZÁMERNE bez cursoru, na celé načítané okno naraz (+ priestor pre
+   * nové komentáre). Uložený kurzor by bol lacnejší, ale nesie pozíciu vo
+   * vlákne a o ničom PRED sebou nevypovedá: zmazanie na skoršej stránke by
+   * ostalo navždy neviditeľné a `count` BE pri cursor requestoch nevracia
+   * vôbec. Dopyt od začiatku dá jednu konzistentnú pravdu o celom okne.
    */
   const refresh = useCallback(async () => {
     const seq = loadSeqRef.current;
-    const cursor = lastCursorRef.current;
-    const page = await listFeedPostComments(
-      postId,
-      cursor ? { cursorUrl: cursor } : { pageSize: COMMENTS_PAGE_SIZE },
+    const loaded = commentsRef.current;
+    const pageSize = Math.min(
+      loaded.length + COMMENTS_PAGE_SIZE,
+      COMMENTS_MAX_POLL_SIZE,
     );
+    const page = await listFeedPostComments(postId, { pageSize });
     // Medzitým prebehla mutácia → táto odpoveď je spred nej, zahoď ju.
     if (seq !== loadSeqRef.current) return;
 
-    setComments((current) => mergeComments(current, page.results));
+    const hasNext = Boolean(page.next);
+    // Nové = to, čo je za všetkým, čo používateľ dosiaľ videl. Zoznam je
+    // zoradený vzostupne, takže stačí posledné id.
+    const highestSeen = loaded.length ? loaded[loaded.length - 1].id : 0;
+    const added = page.results.filter((comment) => comment.id > highestSeen).length;
+
+    setComments((current) => mergeComments(current, page.results, hasNext));
     // Počet pri ikone drží krok so zoznamom aj vtedy, keď nové komentáre
     // pribudli za hranicou toho, čo má používateľ načítané.
     if (typeof page.count === 'number') {
       onTotalChangeRef.current?.(page.count);
     }
 
-    // Kurzorová stránka je FIXNÁ: keď bola plná, komentár pridaný za ňou sa
-    // v nej nikdy neobjaví a bez tohto by polling donekonečna sťahoval tú istú
-    // desiatku. Odpoveď však nesie nový `next` – prevezmeme ho, čím sa zapne
-    // `hasMore` a sentinel si ďalšiu stránku dotiahne bežnou cestou.
-    //
-    // Prepisujeme len keď sa medzičasom nič nezmenilo: `lastCursorRef` je stále
-    // ten, s ktorým sme sa pýtali, a nebeží súbežné donačítavanie – inak by
-    // táto odpoveď prepísala novší stránkovací stav.
-    if (
-      lastCursorRef.current === cursor &&
-      !loadingMoreRef.current &&
-      page.next &&
-      page.next !== nextUrlRef.current
-    ) {
+    // Stránkovací stav preberáme len keď dopyt pokryl CELÉ okno. Pri dlhšom
+    // okne (nad stropom) by `next` ukazoval doprostred už načítaného a
+    // donačítavanie by sa vrátilo späť. Súbežné `loadMore` má prednosť.
+    if (pageSize >= loaded.length && !loadingMoreRef.current) {
       nextUrlRef.current = page.next;
-      setHasMore(true);
+      setHasMore(hasNext);
     }
-  }, [postId]);
+
+    if (added > 0) announceNewComments(added);
+  }, [postId, announceNewComments]);
 
   // Sekcia sa mountuje až pri rozbalení, takže „namountovaná" = „otvorená".
   // Každá otvorená karta má vlastnú inštanciu, teda aj vlastný polling.
@@ -262,15 +295,44 @@ export default function FeedPostComments({
   // Gate cez ref: donačítanie staršej stránky pridáva komentáre tiež, ale
   // vtedy pozíciu scrollu meniť nechceme.
   useEffect(() => {
-    if (!scrollToBottomRef.current) return;
-    scrollToBottomRef.current = false;
+    const behavior = scrollToBottomRef.current;
+    if (!behavior) return;
+    scrollToBottomRef.current = null;
+    scrollListToBottom(behavior);
+    // Doscrollovaním sa upozornenie vyčerpalo.
+    setNewCommentsCount((current) => (current === 0 ? current : 0));
+  }, [comments, scrollListToBottom]);
+
+  // Keď sa používateľ dostane na koniec sám, indikátor už nemá čo hlásiť.
+  const handleListScroll = useCallback(() => {
     const node = scrollRef.current;
-    if (node) node.scrollTop = node.scrollHeight;
-  }, [comments]);
+    if (!node) return;
+    const distanceToBottom = node.scrollHeight - node.scrollTop - node.clientHeight;
+    if (distanceToBottom <= NEAR_BOTTOM_PX) {
+      setNewCommentsCount((current) => (current === 0 ? current : 0));
+    }
+  }, []);
+
+  const handleNewCommentsClick = useCallback(() => {
+    scrollToBottomRef.current = null;
+    scrollListToBottom('smooth');
+    setNewCommentsCount(0);
+  }, [scrollListToBottom]);
 
   const trimmed = text.trim();
   const tooLong = text.length > FEED_COMMENT_MAX_LENGTH;
   const canSubmit = Boolean(trimmed) && !tooLong && !submitting;
+
+  // Skloňovanie: 1 / 2–4 / 5+ pokrýva sk, cs aj pl. V en, de a hu, kde sa
+  // tvary 2–4 a 5+ nelíšia, majú oba kľúče rovnaký text, takže rovnaká vetva
+  // funguje pre všetkých šesť jazykov bez ďalšej logiky.
+  const newCommentsLabel = `${newCommentsCount} ${
+    newCommentsCount === 1
+      ? t('feed.newCommentsOne', 'nový komentár')
+      : newCommentsCount < 5
+        ? t('feed.newCommentsFew', 'nové komentáre')
+        : t('feed.newCommentsMany', 'nových komentárov')
+  }`;
 
   const handleSubmit = async () => {
     if (!canSubmit) return;
@@ -280,8 +342,9 @@ export default function FeedPostComments({
       // Zneplatní prebiehajúci load() – jeho odpoveď by tento komentár
       // prepísala stavom spred vytvorenia.
       loadSeqRef.current += 1;
-      // Najstarší prvý (poradie z BE) → nový ide na koniec.
-      scrollToBottomRef.current = true;
+      // Najstarší prvý (poradie z BE) → nový ide na koniec. Vlastný komentár
+      // bez animácie: používateľ práve odoslal, čakať na dojazd nemá zmysel.
+      scrollToBottomRef.current = 'auto';
       setComments((current) => [...current, created]);
       setText('');
       onCountChange?.(1);
@@ -322,84 +385,117 @@ export default function FeedPostComments({
           stránku do nekonečna. `overscroll-contain` zastaví reťazenie scrollu
           na stránku pri dosiahnutí konca (podstatné hlavne na mobile).
           tabIndex robí oblasť dostupnou aj z klávesnice (WCAG 2.1.1). */}
-      <div
-        ref={scrollRef}
-        data-testid="feed-comments-scroll"
-        role="region"
-        aria-label={t('feed.commentsList', 'Komentáre')}
-        tabIndex={0}
-        className="max-h-[min(26rem,60dvh)] overflow-y-auto overscroll-contain pr-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60"
-      >
-        {loading ? (
-          <p className="py-2 text-sm text-gray-500 dark:text-gray-400">
-            {t('common.loading', 'Načítavam...')}
-          </p>
-        ) : failed ? (
-          <p className="py-2 text-sm text-gray-500 dark:text-gray-400">
-            {t('feed.commentsLoadError', 'Komentáre sa nepodarilo načítať.')}
-          </p>
-        ) : comments.length === 0 ? (
-          <p
-            data-testid="feed-comments-empty"
-            className="py-2 text-sm text-gray-500 dark:text-gray-400"
-          >
-            {t('feed.commentsEmpty', 'Zatiaľ žiadne komentáre.')}
-          </p>
-        ) : (
-          <ul className="space-y-3">
-            {comments.map((comment) => (
-              <li key={comment.id} className="flex items-start gap-2.5">
-                <InitialsAvatar
-                  name={comment.author?.display_name}
-                  avatarUrl={comment.author?.avatar_url}
-                  size="xs"
-                />
-                <div className="min-w-0 flex-1 rounded-2xl bg-gray-100 px-3 py-2 dark:bg-gray-800/60">
-                  <p className="text-xs font-semibold text-gray-900 dark:text-white">
-                    {comment.author?.display_name}
-                  </p>
-                  <p className="whitespace-pre-wrap break-words text-sm text-gray-800 dark:text-gray-100">
-                    {comment.text}
-                  </p>
-                  <div className="mt-1 flex items-center">
-                    <FeedCommentLikeButton postId={postId} comment={comment} />
+      {/* `relative` kvôli indikátoru nových komentárov, ktorý pláva nad
+          spodným okrajom zoznamu. */}
+      <div className="relative">
+        <div
+          ref={scrollRef}
+          onScroll={handleListScroll}
+          data-testid="feed-comments-scroll"
+          role="region"
+          aria-label={t('feed.commentsList', 'Komentáre')}
+          tabIndex={0}
+          className="max-h-[min(26rem,60dvh)] overflow-y-auto overscroll-contain pr-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60"
+        >
+          {loading ? (
+            <p className="py-2 text-sm text-gray-500 dark:text-gray-400">
+              {t('common.loading', 'Načítavam...')}
+            </p>
+          ) : failed ? (
+            <p className="py-2 text-sm text-gray-500 dark:text-gray-400">
+              {t('feed.commentsLoadError', 'Komentáre sa nepodarilo načítať.')}
+            </p>
+          ) : comments.length === 0 ? (
+            <p
+              data-testid="feed-comments-empty"
+              className="py-2 text-sm text-gray-500 dark:text-gray-400"
+            >
+              {t('feed.commentsEmpty', 'Zatiaľ žiadne komentáre.')}
+            </p>
+          ) : (
+            <ul className="space-y-3">
+              {comments.map((comment) => (
+                <li key={comment.id} className="flex items-start gap-2.5">
+                  <InitialsAvatar
+                    name={comment.author?.display_name}
+                    avatarUrl={comment.author?.avatar_url}
+                    size="xs"
+                  />
+                  <div className="min-w-0 flex-1 rounded-2xl bg-gray-100 px-3 py-2 dark:bg-gray-800/60">
+                    <p className="text-xs font-semibold text-gray-900 dark:text-white">
+                      {comment.author?.display_name}
+                    </p>
+                    <p className="whitespace-pre-wrap break-words text-sm text-gray-800 dark:text-gray-100">
+                      {comment.text}
+                    </p>
+                    <div className="mt-1 flex items-center">
+                      <FeedCommentLikeButton postId={postId} comment={comment} />
+                    </div>
                   </div>
-                </div>
-                {comment.can_delete ? (
-                  <button
-                    type="button"
-                    onClick={() => setPendingDelete(comment)}
-                    aria-label={t('feed.commentDelete', 'Zmazať komentár')}
-                    title={t('feed.commentDelete', 'Zmazať komentár')}
-                    className="rounded-full p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-red-600 dark:hover:bg-gray-800 dark:hover:text-red-400"
-                  >
-                    <TrashIcon className="h-4 w-4" />
-                  </button>
-                ) : null}
-              </li>
-            ))}
-          </ul>
-        )}
+                  {comment.can_delete ? (
+                    <button
+                      type="button"
+                      onClick={() => setPendingDelete(comment)}
+                      aria-label={t('feed.commentDelete', 'Zmazať komentár')}
+                      title={t('feed.commentDelete', 'Zmazať komentár')}
+                      className="rounded-full p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-red-600 dark:hover:bg-gray-800 dark:hover:text-red-400"
+                    >
+                      <TrashIcon className="h-4 w-4" />
+                    </button>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          )}
 
-        {loadingMore ? (
-          <ul className="mt-3 space-y-3" data-testid="feed-comments-loading-more">
-            {[0, 1].map((key) => (
-              <li key={key} className="flex animate-pulse items-start gap-2.5">
-                <div className="h-7 w-7 shrink-0 rounded-full bg-gray-200 dark:bg-gray-700" />
-                <div className="flex-1 space-y-1.5 rounded-2xl bg-gray-100 px-3 py-2 dark:bg-gray-800/60">
-                  <div className="h-2.5 w-24 rounded bg-gray-200 dark:bg-gray-700" />
-                  <div className="h-3 w-2/3 rounded bg-gray-200 dark:bg-gray-700" />
-                </div>
-              </li>
-            ))}
-          </ul>
+          {loadingMore ? (
+            <ul className="mt-3 space-y-3" data-testid="feed-comments-loading-more">
+              {[0, 1].map((key) => (
+                <li key={key} className="flex animate-pulse items-start gap-2.5">
+                  <div className="h-7 w-7 shrink-0 rounded-full bg-gray-200 dark:bg-gray-700" />
+                  <div className="flex-1 space-y-1.5 rounded-2xl bg-gray-100 px-3 py-2 dark:bg-gray-800/60">
+                    <div className="h-2.5 w-24 rounded bg-gray-200 dark:bg-gray-700" />
+                    <div className="h-3 w-2/3 rounded bg-gray-200 dark:bg-gray-700" />
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+
+          {/* Sentinel patrí TEJTO karte – observer je per-inštancia, takže dve
+              naraz rozbalené karty si donačítavanie navzájom nespúšťajú.
+              Musí byť VNÚTRI scrollovateľného boxu, inak by ho scroll v zozname
+              nikdy neposunul do zorného poľa a donačítavanie by sa nespustilo. */}
+          <div ref={sentinelRef} aria-hidden="true" data-testid="feed-comments-sentinel" />
+        </div>
+
+        {/* Nenápadné upozornenie namiesto vynúteného posunu pohľadu – ukáže sa
+            len vtedy, keď používateľ číta vyššie v zozname. `aria-live` ho
+            oznámi aj čítačke, ktorá o zmene v zozname inak nevie. */}
+        {newCommentsCount > 0 ? (
+          <button
+            type="button"
+            onClick={handleNewCommentsClick}
+            data-testid="feed-comments-new-indicator"
+            aria-live="polite"
+            className="absolute inset-x-0 bottom-2 mx-auto flex w-max items-center gap-1.5 rounded-full bg-purple-600 px-3 py-1.5 text-xs font-semibold text-white shadow-lg transition-colors hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-400/60"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="h-3.5 w-3.5"
+              aria-hidden="true"
+            >
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <polyline points="19 12 12 19 5 12" />
+            </svg>
+            {newCommentsLabel}
+          </button>
         ) : null}
-
-        {/* Sentinel patrí TEJTO karte – observer je per-inštancia, takže dve
-            naraz rozbalené karty si donačítavanie navzájom nespúšťajú.
-            Musí byť VNÚTRI scrollovateľného boxu, inak by ho scroll v zozname
-            nikdy neposunul do zorného poľa a donačítavanie by sa nespustilo. */}
-        <div ref={sentinelRef} aria-hidden="true" data-testid="feed-comments-sentinel" />
       </div>
 
       {/* Composer je MIMO scrollovateľnej časti – ostáva viditeľný bez ohľadu

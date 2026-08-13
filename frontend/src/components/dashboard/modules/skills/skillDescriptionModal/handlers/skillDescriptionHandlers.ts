@@ -12,6 +12,7 @@ import {
   isValidDistrictSelection,
   scrollToDistrictInput,
 } from '../validation/districtValidation';
+import { SKILL_DESCRIPTION_MAX_LENGTH } from '../skillDescriptionLimits';
 
 interface HandleSaveParams {
   description: string;
@@ -124,8 +125,8 @@ export const handleSave = async ({
     return false;
   }
 
-  if (trimmed && trimmed.length > 100) {
-    setError(t('skills.descriptionTooLong', 'Popis zručnosti môže mať maximálne 100 znakov'));
+  if (trimmed && trimmed.length > SKILL_DESCRIPTION_MAX_LENGTH) {
+    setError(t('skills.descriptionTooLong', 'Krátky opis môže obsahovať maximálne 150 znakov.'));
     return false;
   }
 
@@ -200,9 +201,10 @@ export const handleSave = async ({
       ),
     );
     return true;
-  } catch (e: any) {
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : '';
     setError(
-      e?.message ||
+      message ||
         t('skills.saveFailed', 'Nepodarilo sa uložiť kartu. Skús to znova.'),
     );
     return false;
@@ -263,8 +265,16 @@ export const handleLocationBlur = async ({
     await onLocationSave(trimmed);
     lastSavedLocationRef.current = trimmed;
     setLocation(trimmed);
-  } catch (err: any) {
-    const apiMessage = err?.response?.data?.error || err?.response?.data?.detail;
+  } catch (err: unknown) {
+    const responseData = (
+      err as { response?: { data?: { error?: unknown; detail?: unknown } } }
+    )?.response?.data;
+    const apiMessage =
+      typeof responseData?.error === 'string'
+        ? responseData.error
+        : typeof responseData?.detail === 'string'
+          ? responseData.detail
+          : '';
     const fallback = t('skills.locationSaveError', 'Miesto sa nepodarilo uložiť. Skús to znova.');
     setLocationError(apiMessage || fallback);
     setLocation(lastSavedLocationRef.current);

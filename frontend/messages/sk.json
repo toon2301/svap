@@ -683,7 +683,9 @@
     "detailedDescriptionHint": "Opíš detaily služby – postup, čo je zahrnuté, očakávania a výsledok.",
     "detailedDescriptionHintSeeking": "Opíš detailne čo hľadáš – postup, čo je zahrnuté, očakávania a výsledok.",
     "descriptionRequired": "Popis zručnosti je povinný",
-    "descriptionTooLong": "Popis zručnosti môže mať maximálne 100 znakov",
+    "descriptionTooLong": "Krátky opis môže obsahovať maximálne 150 znakov.",
+    "duplicateCard": "Takúto ponuku alebo dopyt už máš vytvorený.",
+    "validationFailed": "Skontroluj vyplnené údaje a skús to znova.",
     "experiencePositive": "Dĺžka praxe musí byť kladné číslo",
     "experienceTooLarge": "Dĺžka praxe nemôže byť väčšia ako 100",
     "priceNonNegative": "Cena musí byť nezáporné číslo",
@@ -1122,6 +1124,12 @@
     "hungarian": "Maďarčina"
   },
   "profile": {
+    "portfolioTab": "Portfólio",
+    "postsTab": "Príspevky",
+    "taggedTab": "Označený",
+    "postsEmpty": "Zatiaľ žiadne príspevky.",
+    "taggedEmptyOwn": "Zatiaľ ťa nikto neoznačil v príspevku.",
+    "taggedEmptyOther": "Tohto používateľa zatiaľ nikto neoznačil v príspevku.",
     "editProfile": "Upraviť profil",
     "verifyProfile": "Overenie profilu",
     "skills": "Ponúkam/Hľadám",
@@ -4341,6 +4349,9 @@
     "viewOwnerResponse": "Zobraziť odpoveď majiteľa"
   },
   "feed": {
+    "newCommentsOne": "nový komentár",
+    "newCommentsFew": "nové komentáre",
+    "newCommentsMany": "nových komentárov",
     "alreadyReported": "Už nahlásené",
     "commentCreateError": "Komentár sa nepodarilo pridať.",
     "commentDelete": "Zmazať komentár",

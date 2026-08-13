@@ -10,6 +10,7 @@ from django.contrib import admin
 
 from . import (  # noqa: F401 — importované kvôli vedľajšiemu efektu (registrácia)
     bug_reports,
+    offer_watches,
     profile_likes,
     reports,
     reviews,

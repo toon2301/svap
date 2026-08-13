@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { api, endpoints } from '@/lib/api';
 import { type User } from '@/types';
 import { type SearchSkill } from '../types';
@@ -30,24 +30,18 @@ export function useSuggestions({
 }: UseSuggestionsParams): SuggestionsProps {
   const [suggestedSkills, setSuggestedSkills] = useState<SearchSkill[]>([]);
 
-  // Cache je per-user, aby sa navrhy medzi pouzivatelmi nemiesali.
-  const suggestionsCacheRef = useRef<Map<number, SearchSkill[]>>(new Map());
-
   const { setResults, setHasSearched, setIsFromRecentSearch, setError } = searchState;
 
   useEffect(() => {
-    if (!enabled || !user?.id) return;
+    if (!enabled || !user?.id) {
+      setSuggestedSkills([]);
+      return;
+    }
 
     let cancelled = false;
 
     const loadSuggestions = async () => {
       try {
-        const cachedSuggestions = suggestionsCacheRef.current.get(user.id);
-        if (cachedSuggestions) {
-          setSuggestedSkills(cachedSuggestions);
-          return;
-        }
-
         const response = await api.get(
           endpoints.dashboard.searchRecommendations ?? endpoints.dashboard.search,
           {
@@ -60,7 +54,6 @@ export function useSuggestions({
         const data = response.data || {};
         const skills = Array.isArray(data.skills) ? (data.skills as SearchSkill[]) : [];
         setSuggestedSkills(skills);
-        suggestionsCacheRef.current.set(user.id, skills);
       } catch {
         if (!cancelled) {
           setSuggestedSkills([]);

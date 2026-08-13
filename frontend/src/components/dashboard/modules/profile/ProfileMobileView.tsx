@@ -8,6 +8,7 @@ import UserAvatar from './UserAvatar';
 import UserInfo from './UserInfo';
 import ProfileEditFormMobile from '../ProfileEditFormMobile';
 import ProfileOffersMobileSection from './ProfileOffersMobileSection';
+import ProfileFeedSection from './ProfileFeedSection';
 import ProfilePortfolioSection from './ProfilePortfolioSection';
 import type { Offer } from './profileOffersTypes';
 import type { ProfileTab } from './profileTypes';
@@ -106,6 +107,10 @@ export default function ProfileMobileView({
   const displayUser = displayUserProp ?? user;
   const { t } = useLanguage();
   const offersTabLabel = t('profile.skills', 'Ponúkam/Hľadám').replace('/', ' / ');
+  // Popisky boli natvrdo po slovensky – rovnaká oprava ako v ProfileDesktopTabs.
+  const portfolioTabLabel = t('profile.portfolioTab', 'Portfólio');
+  const postsTabLabel = t('profile.postsTab', 'Príspevky');
+  const taggedTabLabel = t('profile.taggedTab', 'Označený');
   const [isHamburgerModalOpen, setIsHamburgerModalOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [reportModalOpen, setReportModalOpen] = useState(false);
@@ -543,8 +548,8 @@ export default function ProfileMobileView({
                     role="tab"
                     aria-selected={activeTab === 'portfolio'}
                     onClick={() => onChangeTab('portfolio')}
-                    aria-label="Portfólio"
-                    title="Portfólio"
+                    aria-label={portfolioTabLabel}
+                    title={portfolioTabLabel}
                     className={[
                       'relative group flex-1 py-1 transition-all flex items-center justify-center min-w-[56px]',
                       'border-l border-gray-200 dark:border-gray-800',
@@ -574,8 +579,8 @@ export default function ProfileMobileView({
                     role="tab"
                     aria-selected={activeTab === 'posts'}
                     onClick={() => onChangeTab('posts')}
-                    aria-label="Príspevky"
-                    title="Príspevky"
+                    aria-label={postsTabLabel}
+                    title={postsTabLabel}
                     className={[
                       'relative group flex-1 py-1 transition-all flex items-center justify-center min-w-[56px]',
                       'border-l border-gray-200 dark:border-gray-800',
@@ -605,8 +610,8 @@ export default function ProfileMobileView({
                     role="tab"
                     aria-selected={activeTab === 'tagged'}
                     onClick={() => onChangeTab('tagged')}
-                    aria-label="Označený"
-                    title="Označený"
+                    aria-label={taggedTabLabel}
+                    title={taggedTabLabel}
                     className={[
                       'relative group flex-1 py-1 transition-all flex items-center justify-center min-w-[56px]',
                       'border-l border-gray-200 dark:border-gray-800',
@@ -656,6 +661,19 @@ export default function ProfileMobileView({
             ownerSlug={ownerSlug ?? displayUser.slug}
             isOtherUserProfile={isOtherUserProfile}
             onCreatePortfolio={!isOtherUserProfile ? onCreatePortfolio : undefined}
+          />
+
+          <ProfileFeedSection
+            activeTab={activeTab}
+            tab="posts"
+            ownerUserId={offersOwnerId ?? displayUser.id}
+            isOtherUserProfile={isOtherUserProfile}
+          />
+          <ProfileFeedSection
+            activeTab={activeTab}
+            tab="tagged"
+            ownerUserId={offersOwnerId ?? displayUser.id}
+            isOtherUserProfile={isOtherUserProfile}
           />
 
           <UserInfo user={displayUser} />
