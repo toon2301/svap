@@ -4403,6 +4403,7 @@
     "postDetail": "Post detail",
     "postMenu": "Post options",
     "postUnavailable": "This post is no longer available.",
+    "contentUnavailable": "You cannot interact with this content right now.",
     "reportDescription": "Description",
     "reportDescriptionPlaceholder": "Additional details...",
     "reportError": "The report could not be sent.",

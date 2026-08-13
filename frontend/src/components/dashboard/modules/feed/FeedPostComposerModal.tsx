@@ -259,7 +259,7 @@ export default function FeedPostComposerModal({
             disabled={submitting}
             placeholder={t('feed.composerPlaceholder', 'Napíš niečo...')}
             aria-label={t('feed.composerPlaceholder', 'Napíš niečo...')}
-            className="w-full resize-y rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-400/60 disabled:opacity-50 dark:border-gray-600 dark:bg-gray-900/50 dark:text-white dark:placeholder-gray-500"
+            className="w-full resize-y rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-gray-900 bg-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-400/60 disabled:opacity-50 dark:border-gray-600 dark:bg-gray-900/50 dark:text-white dark:placeholder-gray-500"
           />
           <div className="mt-1 flex items-center justify-between gap-3">
             <DesktopEmojiPickerButton

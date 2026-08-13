@@ -886,6 +886,9 @@ export default function ProfileOffersMobileSection({
               title,
               imageUrl: getOfferShareImageUrl(shareOffer),
               location: getOfferShareLocation(shareOffer),
+              price_negotiable: shareOffer.price_negotiable,
+              price_from: shareOffer.price_from,
+              price_currency: shareOffer.price_currency,
             }}
           />
         );

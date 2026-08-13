@@ -152,7 +152,7 @@ describe('FeedPostCard – spracovanie fotiek a chybové hlášky', () => {
     expect(mockedGet).not.toHaveBeenCalled();
   });
 
-  it('reports a blocked interaction as unavailable content, not as a save failure', async () => {
+  it('reports a blocked interaction as not-reactable, not as a save failure', async () => {
     jest.useRealTimers();
     mockedLike.mockRejectedValue({ response: { status: 404 } });
 
@@ -162,9 +162,81 @@ describe('FeedPostCard – spracovanie fotiek a chybové hlášky', () => {
     // Neutrálne a zámerne neprezrádzajúce, že ide o blokovanie.
     await waitFor(() =>
       expect(mockedToastError).toHaveBeenCalledWith(
-        'Tento obsah už nie je dostupný.',
+        'Na tento obsah momentálne nie je možné reagovať.',
       ),
     );
+  });
+
+  it('does not call a first-time share of an own offer a re-share', async () => {
+    jest.useRealTimers();
+    // Vlastná ponuka: owner === author. Náhľad ponuky ukazuje NÁZOV, nie meno,
+    // takže sa nič neduplikuje a „Znovu zdieľané" by tu bolo mätúce.
+    render(
+      <FeedPostCard
+        post={makePost({
+          post_type: 'shared_offer',
+          shared_content: {
+            type: 'offer',
+            id: 3,
+            title: 'Moja ponuka',
+            category: 'it',
+            caption: '',
+            owner: { id: 10, display_name: 'Jana', slug: 'jana' },
+            owner_display_name: 'Jana',
+            price_negotiable: true,
+          },
+        } as Partial<FeedPost>)}
+      />,
+    );
+
+    expect(screen.queryByText('Znovu zdieľané')).not.toBeInTheDocument();
+  });
+
+  it('still calls a re-share of an own feed post a re-share', async () => {
+    jest.useRealTimers();
+    render(
+      <FeedPostCard
+        post={makePost({
+          post_type: 'shared_feed_post',
+          shared_content: {
+            type: 'feed_post',
+            id: 3,
+            title: '',
+            category: '',
+            caption: 'Pôvodný text',
+            owner: { id: 10, display_name: 'Jana', slug: 'jana' },
+            owner_display_name: 'Jana',
+          },
+        } as Partial<FeedPost>)}
+      />,
+    );
+
+    expect(screen.getByText('Znovu zdieľané')).toBeInTheDocument();
+  });
+
+  it('shows a negotiable price as an agreement label', async () => {
+    jest.useRealTimers();
+    render(
+      <FeedPostCard
+        post={makePost({
+          post_type: 'shared_offer',
+          shared_content: {
+            type: 'offer',
+            id: 3,
+            title: 'Moja ponuka',
+            category: 'it',
+            caption: '',
+            owner: { id: 99, display_name: 'Peter', slug: 'peter' },
+            owner_display_name: 'Peter',
+            price_negotiable: true,
+            price_from: null,
+          },
+        } as Partial<FeedPost>)}
+      />,
+    );
+
+    // Bez pevnej ceny nesmie ostať prázdne miesto.
+    expect(screen.getByText('Dohodou')).toBeInTheDocument();
   });
 
   it('keeps the generic message for a plain network failure', async () => {

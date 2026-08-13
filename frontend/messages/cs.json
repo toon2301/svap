@@ -4403,6 +4403,7 @@
     "postDetail": "Detail příspěvku",
     "postMenu": "Možnosti příspěvku",
     "postUnavailable": "Tento příspěvek už není dostupný.",
+    "contentUnavailable": "Na tento obsah momentálně nelze reagovat.",
     "reportDescription": "Popis",
     "reportDescriptionPlaceholder": "Doplňující informace...",
     "reportError": "Nahlášení se nezdařilo.",
