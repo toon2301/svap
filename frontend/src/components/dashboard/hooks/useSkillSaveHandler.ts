@@ -234,10 +234,22 @@ export function useSkillSaveHandler({
         // opakované uloženie poslalo druhý POST a vrátilo duplicate_offer,
         // z čoho sa používateľ nevie pohnúť. So zapísaným id ide vyššie
         // vetvou (PATCH) a zopakuje sa len to, čo naozaj zlyhalo.
+        //
+        // Zapisuje sa LEN ak je v stave stále TÁ ISTÁ karta. POST beží na
+        // pozadí a používateľ medzitým mohol otvoriť inú, tiež ešte neuloženú
+        // kartu – tej by sa priradilo cudzie id a jej ďalšie uloženie by
+        // PATCH-lo ponuku, ktorú vôbec needituje. Identitou je dvojica
+        // kategória + podkategória: presne ňou server kartu rozlišuje
+        // (unique constraint) a prežije aj to, že sa objekt draftu medzitým
+        // nahradil novým (úprava polí).
         if (savedSkill.id) {
-          setSelectedSkillsCategory?.((prev) =>
-            prev && !prev.id ? { ...prev, id: savedSkill.id } : prev,
-          );
+          setSelectedSkillsCategory?.((prev) => {
+            if (!prev || prev.id) return prev;
+            const isSameDraft =
+              prev.category === draftSkill.category &&
+              prev.subcategory === draftSkill.subcategory;
+            return isSameDraft ? { ...prev, id: savedSkill.id } : prev;
+          });
         }
 
         // UI: zobraz novú kartu hneď, upload nech beží potom

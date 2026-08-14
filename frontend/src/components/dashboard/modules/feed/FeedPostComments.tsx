@@ -134,6 +134,23 @@ export default function FeedPostComments({
   // pollovací callback pri každom novom komentári nepreskladal.
   const commentsRef = useRef(comments);
   commentsRef.current = comments;
+  /**
+   * Najvyššie id, ktoré používateľ UŽ mal na obrazovke.
+   *
+   * Posúvajú ho OBE cesty – polling aj donačítavanie – preto ref, nie
+   * odvodenie zo snapshotu zoznamu: ten je v momente výpočtu zastaraný a
+   * komentáre, ktoré si používateľ práve sám doscrolloval, by sa počítali
+   * ako „nové". Monotónnosť je zámer: zmazanie najnovšieho komentára nesmie
+   * hranicu znížiť, inak by poll staršie komentáre ohlásil znova.
+   */
+  const highestSeenIdRef = useRef(0);
+  const markSeen = useCallback((seen: FeedPostComment[]) => {
+    seen.forEach((comment) => {
+      if (comment.id > highestSeenIdRef.current) {
+        highestSeenIdRef.current = comment.id;
+      }
+    });
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -147,6 +164,9 @@ export default function FeedPostComments({
       // Medzitým pribudol/ubudol komentár → táto odpoveď je zastaraná.
       if (seq !== loadSeqRef.current) return;
       setComments(page.results);
+      // Iný príspevok = iné vlákno, hranica sa počíta odznova.
+      highestSeenIdRef.current = 0;
+      markSeen(page.results);
       nextUrlRef.current = page.next;
       setHasMore(Boolean(page.next));
       // Počet pri ikone musí vychádzať z TOHO ISTÉHO načítania ako zoznam,
@@ -160,7 +180,7 @@ export default function FeedPostComments({
     } finally {
       if (seq === loadSeqRef.current) setLoading(false);
     }
-  }, [postId]);
+  }, [postId, markSeen]);
 
   useEffect(() => {
     void load();
@@ -184,6 +204,10 @@ export default function FeedPostComments({
         const seen = new Set(current.map((comment) => comment.id));
         return [...current, ...page.results.filter((c) => !seen.has(c.id))];
       });
+      // Používateľ si ich doscrolloval sám – polling ich už nesmie ohlásiť
+      // ako nové. Zapisuje sa synchrónne, nie až po prekreslení, lebo poll
+      // môže dobehnúť skôr, než React zoznam commitne.
+      markSeen(page.results);
       nextUrlRef.current = page.next;
       setHasMore(Boolean(page.next));
     } catch {
@@ -200,7 +224,7 @@ export default function FeedPostComments({
       loadingMoreRef.current = false;
       setLoadingMore(false);
     }
-  }, [postId]);
+  }, [postId, markSeen]);
 
   /** Doscrolluje zoznam na koniec; `scrollTo` jsdom nemá, preto fallback. */
   const scrollListToBottom = useCallback((behavior: ScrollBehavior) => {
@@ -264,12 +288,15 @@ export default function FeedPostComments({
     const paginationUntouched = nextUrlRef.current === cursorAtStart;
 
     const hasNext = Boolean(page.next);
-    // Nové = to, čo je za všetkým, čo používateľ dosiaľ videl. Zoznam je
-    // zoradený vzostupne, takže stačí posledné id.
-    const highestSeen = loaded.length ? loaded[loaded.length - 1].id : 0;
+    // Hranicu prepočítaj z AKTUÁLNEHO okna, nie zo snapshotu spred awaitu:
+    // keby loadMore medzitým dotiahol ďalšiu stránku, jej komentáre už
+    // používateľ na obrazovke má a nesmú sa počítať ako nové.
+    markSeen(commentsRef.current);
+    const highestSeen = highestSeenIdRef.current;
     const added = page.results.filter((comment) => comment.id > highestSeen).length;
 
     setComments((current) => mergeComments(current, page.results, hasNext));
+    markSeen(page.results);
     // Počet pri ikone drží krok so zoznamom aj vtedy, keď nové komentáre
     // pribudli za hranicou toho, čo má používateľ načítané.
     if (typeof page.count === 'number') {
@@ -285,7 +312,7 @@ export default function FeedPostComments({
     }
 
     if (added > 0) announceNewComments(added);
-  }, [postId, announceNewComments]);
+  }, [postId, announceNewComments, markSeen]);
 
   // Sekcia sa mountuje až pri rozbalení, takže „namountovaná" = „otvorená".
   // Každá otvorená karta má vlastnú inštanciu, teda aj vlastný polling.
@@ -356,6 +383,8 @@ export default function FeedPostComments({
       // bez animácie: používateľ práve odoslal, čakať na dojazd nemá zmysel.
       scrollToBottomRef.current = 'auto';
       setComments((current) => [...current, created]);
+      // Vlastný komentár sa nesmie vrátiť ako „nový" v najbližšom polle.
+      markSeen([created]);
       setText('');
       onCountChange?.(1);
     } catch (err) {

@@ -707,6 +707,85 @@ describe('FeedPostComments – polling', () => {
     }
   });
 
+  it('does not announce comments the user scrolled in during the poll', async () => {
+    // Kým poll čaká na odpoveď, používateľ si sám doscrolluje ďalšiu stránku.
+    // Tie isté komentáre potom prídu aj v odpovedi pollu – ale videl ich už
+    // na obrazovke, takže sa nesmú ohlásiť ako nové.
+    const server = createFakeCommentServer(
+      Array.from({ length: 20 }, (_, i) => comment(i + 1, `K${i + 1}`)),
+    );
+    const releasePoll: Array<() => void> = [];
+    let requestsWithoutCursor = 0;
+    mockedList.mockImplementation((postId: number, params = {}) => {
+      const response = server.impl(postId, params);
+      if (!params.cursorUrl) {
+        requestsWithoutCursor += 1;
+        if (requestsWithoutCursor === 2) {
+          return new Promise((resolve) => releasePoll.push(() => resolve(response)));
+        }
+      }
+      return response;
+    });
+
+    const observer = installFiringObserver();
+    try {
+      render(<FeedPostComments postId={5} />);
+      await screen.findByText('K1');
+      // Číta hore – keby čokoľvek pribudlo ako „nové", indikátor by sa ukázal.
+      setScrollPosition({ scrollTop: 0 });
+
+      await tick();
+      expect(releasePoll).toHaveLength(1);
+
+      // Používateľ si K11–K20 dotiahne sám.
+      await act(async () => {
+        observer.registry.forEach((fire) => fire());
+      });
+      await screen.findByText('K20');
+
+      await act(async () => {
+        releasePoll[0]();
+      });
+
+      // Odpoveď pollu obsahuje K11–K20, ale tie už používateľ videl.
+      expect(
+        screen.queryByTestId('feed-comments-new-indicator'),
+      ).not.toBeInTheDocument();
+      expect(screen.getByTestId('feed-comments-new-announcer')).toBeEmptyDOMElement();
+    } finally {
+      observer.restore();
+    }
+  });
+
+  it('still announces a genuinely new comment after a loadMore', async () => {
+    // Náprotivok predošlého testu: watermark nesmie umlčať skutočnú novinku.
+    const server = createFakeCommentServer(
+      Array.from({ length: 20 }, (_, i) => comment(i + 1, `K${i + 1}`)),
+    );
+    mockedList.mockImplementation(server.impl);
+
+    const observer = installFiringObserver();
+    try {
+      render(<FeedPostComments postId={5} />);
+      await screen.findByText('K1');
+      setScrollPosition({ scrollTop: 0 });
+
+      await act(async () => {
+        observer.registry.forEach((fire) => fire());
+      });
+      await screen.findByText('K20');
+
+      server.add(comment(21, 'K21'));
+      await tick();
+
+      expect(
+        await screen.findByTestId('feed-comments-new-indicator'),
+      ).toHaveTextContent('1 nový komentár');
+    } finally {
+      observer.restore();
+    }
+  });
+
   it('stops polling once the section is closed', async () => {
     mockedList.mockResolvedValue(page([comment(1, 'Prvý')]));
 
