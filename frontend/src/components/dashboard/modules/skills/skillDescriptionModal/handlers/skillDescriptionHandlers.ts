@@ -12,7 +12,10 @@ import {
   isValidDistrictSelection,
   scrollToDistrictInput,
 } from '../validation/districtValidation';
-import { SKILL_DESCRIPTION_MAX_LENGTH } from '../skillDescriptionLimits';
+import {
+  countSkillDescriptionLength,
+  SKILL_DESCRIPTION_MAX_LENGTH,
+} from '../skillDescriptionLimits';
 
 interface HandleSaveParams {
   description: string;
@@ -125,7 +128,8 @@ export const handleSave = async ({
     return false;
   }
 
-  if (trimmed && trimmed.length > SKILL_DESCRIPTION_MAX_LENGTH) {
+  // Rovnaka miera ako v poli aj na backende – code-pointy, nie UTF-16.
+  if (trimmed && countSkillDescriptionLength(trimmed) > SKILL_DESCRIPTION_MAX_LENGTH) {
     setError(t('skills.descriptionTooLong', 'Krátky opis môže obsahovať maximálne 150 znakov.'));
     return false;
   }

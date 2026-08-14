@@ -33,8 +33,12 @@ export function useSuggestions({
   const { setResults, setHasSearched, setIsFromRecentSearch, setError } = searchState;
 
   useEffect(() => {
+    // Vyčistiť PRED načítaním, nie až v odpovedi: pri prepnutí používateľa
+    // (alebo pri vypnutí) by inak do dobehnutia nového requestu svietili
+    // návrhy toho predošlého – cudzie dáta v cudzom kontexte.
+    setSuggestedSkills([]);
+
     if (!enabled || !user?.id) {
-      setSuggestedSkills([]);
       return;
     }
 

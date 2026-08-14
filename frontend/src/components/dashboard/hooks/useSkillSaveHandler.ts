@@ -28,6 +28,12 @@ type SkillSaveHandlerParams = {
   t: Translator;
   ownerUserIdForOffersCache?: number;
   onCreatedSkillSaved?: () => void;
+  /**
+   * Zapíše späť do rozpracovanej karty, že už má svoje id na serveri.
+   * Bez toho by opakované uloženie po zlyhaní pomocného kroku poslalo ĎALŠÍ
+   * POST na ponuku, ktorá v DB už existuje – a vrátilo by duplicate_offer.
+   */
+  setSelectedSkillsCategory?: (updater: (prev: DashboardSkill | null) => DashboardSkill | null) => void;
 };
 
 type ApiErrorLike = {
@@ -62,6 +68,7 @@ export function useSkillSaveHandler({
   t,
   ownerUserIdForOffersCache,
   onCreatedSkillSaved,
+  setSelectedSkillsCategory,
 }: SkillSaveHandlerParams) {
   return useCallback(async () => {
     if (!selectedSkillsCategory) return;
@@ -222,6 +229,17 @@ export function useSkillSaveHandler({
         savedSkill = toLocalSkill(data);
         didCreateSkill = true;
 
+        // Ponuka od tejto chvíle v DB EXISTUJE. Zapíš jej id do rozpracovanej
+        // karty ešte predtým, než sa čokoľvek ďalšie môže pokaziť – inak by
+        // opakované uloženie poslalo druhý POST a vrátilo duplicate_offer,
+        // z čoho sa používateľ nevie pohnúť. So zapísaným id ide vyššie
+        // vetvou (PATCH) a zopakuje sa len to, čo naozaj zlyhalo.
+        if (savedSkill.id) {
+          setSelectedSkillsCategory?.((prev) =>
+            prev && !prev.id ? { ...prev, id: savedSkill.id } : prev,
+          );
+        }
+
         // UI: zobraz novú kartu hneď, upload nech beží potom
         applySkillUpdate(savedSkill);
 
@@ -250,16 +268,28 @@ export function useSkillSaveHandler({
         }
       }
 
-      // Invalidovať cache ponúk, aby sa pri návrate na profil načítali nové dáta
-      const { invalidateOffersCache } = await import('../modules/profile/profileOffersCache');
-      invalidateOffersCache(ownerUserIdForOffersCache);
-      dispatchProfileOffersRefresh({
-        ownerUserId: ownerUserIdForOffersCache,
-        offerId: savedSkill.id,
-      });
+      // Odtiaľto sú to už len POMOCNÉ kroky – karta je uložená. Ich zlyhanie
+      // sa nesmie hlásiť ako neúspešné uloženie: používateľ by ponuku
+      // vytváral znova a narazil na duplicate_offer.
+      try {
+        // Invalidovať cache ponúk, aby sa pri návrate na profil načítali nové dáta
+        const { invalidateOffersCache } = await import('../modules/profile/profileOffersCache');
+        invalidateOffersCache(ownerUserIdForOffersCache);
+        dispatchProfileOffersRefresh({
+          ownerUserId: ownerUserIdForOffersCache,
+          offerId: savedSkill.id,
+        });
 
-      // Po úspešnom uložení, refresh skills pre aktívnu kategóriu
-      await loadSkills();
+        // Po úspešnom uložení, refresh skills pre aktívnu kategóriu
+        await loadSkills();
+      } catch {
+        toast.error(
+          t(
+            'skills.savedButRefreshFailed',
+            'Karta je uložená, no zoznam sa nepodarilo obnoviť. Obnov stránku.',
+          ),
+        );
+      }
       if (didCreateSkill) {
         onCreatedSkillSaved?.();
       }
@@ -297,6 +327,7 @@ export function useSkillSaveHandler({
     t,
     ownerUserIdForOffersCache,
     onCreatedSkillSaved,
+    setSelectedSkillsCategory,
   ]);
 }
 

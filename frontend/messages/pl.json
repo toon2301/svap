@@ -561,6 +561,7 @@
     "closePanel": "Zamknij panel wyszukiwania"
   },
   "skills": {
+    "savedButRefreshFailed": "Karta została zapisana, ale nie udało się odświeżyć listy. Odśwież stronę.",
     "offer": "Oferuję",
     "offerCta": "Oferujesz umiejętność? Dodaj ją na Svaply klikając tutaj.",
     "search": "Szukam",

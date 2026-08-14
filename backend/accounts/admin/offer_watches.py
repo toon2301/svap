@@ -22,6 +22,10 @@ class OfferWatchAdmin(admin.ModelAdmin):
         "category",
         "subcategory",
     ]
+    # Bez autocomplete vykreslí admin pri FK na usera <select> so VSETKYMI
+    # pouzivatelmi – neunosne pri raste tabulky. UserAdmin ma search_fields,
+    # takze widget ma podla coho hladat.
+    autocomplete_fields = ["user"]
     ordering = ["-created_at", "-id"]
     readonly_fields = ["created_at", "updated_at"]
 
@@ -43,5 +47,6 @@ class OfferWatchNotificationAdmin(admin.ModelAdmin):
         "offer__category",
         "offer__subcategory",
     ]
+    autocomplete_fields = ["user", "watch", "offer"]
     ordering = ["-matched_at", "-id"]
     readonly_fields = ["matched_at"]

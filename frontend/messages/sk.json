@@ -561,6 +561,7 @@
     "pageTitle": "Vyhľadávanie"
   },
   "skills": {
+    "savedButRefreshFailed": "Karta je uložená, no zoznam sa nepodarilo obnoviť. Obnov stránku.",
     "offer": "Ponúkam",
     "offerCta": "Ponúkaš zručnosť? Pridaj ju na Svaply kliknutím sem.",
     "search": "Hľadám",

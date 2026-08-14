@@ -153,7 +153,12 @@ function createFakeCommentServer(initial: FeedPostComment[]) {
   };
   return {
     impl,
-    remove: (id: number) => store.splice(store.findIndex((c) => c.id === id), 1),
+    remove: (id: number) => {
+      // Bez kontroly by findIndex === -1 poslal splice(-1, 1), čo odstráni
+      // POSLEDNÝ prvok – neznáme id by ticho zmazalo niečo iné.
+      const index = store.findIndex((comment) => comment.id === id);
+      if (index >= 0) store.splice(index, 1);
+    },
     add: (item: FeedPostComment) => store.push(item),
   };
 }
@@ -621,6 +626,85 @@ describe('FeedPostComments – polling', () => {
         screen.queryByTestId('feed-comments-new-indicator'),
       ).not.toBeInTheDocument(),
     );
+  });
+
+  it('keeps the live region mounted so screen readers can hear the update', async () => {
+    mockedList
+      .mockResolvedValueOnce(page([comment(1, 'Prvý')]))
+      .mockResolvedValue(page([comment(1, 'Prvý'), comment(2, 'Nový')], 2));
+
+    render(<FeedPostComments postId={5} />);
+    await screen.findByText('Prvý');
+    setScrollPosition({ scrollTop: 0 });
+
+    // Región musí existovať UŽ PRED zmenou – aria-live na uzle, ktorý sa
+    // objaví až s oznámením, čítačka spoľahlivo neohlási.
+    const announcer = screen.getByTestId('feed-comments-new-announcer');
+    expect(announcer).toHaveAttribute('aria-live', 'polite');
+    expect(announcer).toBeEmptyDOMElement();
+
+    await tick();
+
+    await waitFor(() => expect(announcer).toHaveTextContent('1 nový komentár'));
+    // Ten istý uzol, nie novo vložený.
+    expect(screen.getByTestId('feed-comments-new-announcer')).toBe(announcer);
+  });
+
+  it('does not rewind pagination when loadMore finished during a poll', async () => {
+    // Kým poll čaká na odpoveď, používateľ si donačíta ďalšie dve stránky.
+    // Odpoveď pollu je postavená na kratšom okne, takže jej `next` ukazuje
+    // dozadu – prevziať ho by znamenalo stiahnuť už načítanú stránku znova.
+    const server = createFakeCommentServer(
+      Array.from({ length: 40 }, (_, i) => comment(i + 1, `K${i + 1}`)),
+    );
+    const releasePoll: Array<() => void> = [];
+    let requestsWithoutCursor = 0;
+    mockedList.mockImplementation((postId: number, params = {}) => {
+      const response = server.impl(postId, params);
+      if (!params.cursorUrl) {
+        requestsWithoutCursor += 1;
+        // 1. = počiatočné načítanie, 2. = poll → ten podržíme.
+        if (requestsWithoutCursor === 2) {
+          return new Promise((resolve) => releasePoll.push(() => resolve(response)));
+        }
+      }
+      return response;
+    });
+
+    const observer = installFiringObserver();
+    try {
+      render(<FeedPostComments postId={5} />);
+      await screen.findByText('K1');
+
+      await tick();
+      expect(releasePoll).toHaveLength(1);
+
+      await act(async () => {
+        observer.registry.forEach((fire) => fire());
+      });
+      await screen.findByText('K20');
+      await act(async () => {
+        observer.registry.forEach((fire) => fire());
+      });
+      await screen.findByText('K30');
+
+      await act(async () => {
+        releasePoll[0]();
+      });
+
+      mockedList.mockClear();
+      await act(async () => {
+        observer.registry.forEach((fire) => fire());
+      });
+
+      const cursors = mockedList.mock.calls
+        .map((call) => call[1]?.cursorUrl)
+        .filter(Boolean) as string[];
+      expect(cursors[0]).toContain('after=30');
+      expect(cursors[0]).not.toContain('after=20');
+    } finally {
+      observer.restore();
+    }
   });
 
   it('stops polling once the section is closed', async () => {

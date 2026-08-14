@@ -561,6 +561,7 @@
     "closePanel": "Zavrit vyhledavaci panel"
   },
   "skills": {
+    "savedButRefreshFailed": "Karta je uložená, ale seznam se nepodařilo obnovit. Obnov stránku.",
     "offer": "Nabízím",
     "offerCta": "Nabízíte dovednost? Přidejte ji na Svaply kliknutím sem.",
     "search": "Hledám",

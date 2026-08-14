@@ -561,6 +561,7 @@
     "pageTitle": "Suche"
   },
   "skills": {
+    "savedButRefreshFailed": "Die Karte ist gespeichert, die Liste konnte aber nicht aktualisiert werden. Lade die Seite neu.",
     "offer": "Anbieten",
     "offerCta": "Bieten Sie eine Fähigkeit an? Fügen Sie sie auf Svaply hinzu, indem Sie hier klicken.",
     "search": "Suche",

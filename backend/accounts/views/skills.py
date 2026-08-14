@@ -24,6 +24,7 @@ from ..models import (
 )
 from ..serializers import OfferedSkillSerializer
 from ..services.offer_visibility import offer_hidden_from_user
+from ..services.user_blocks import lock_users_for_update
 from django.core.exceptions import ValidationError
 
 from .skill_helpers import (
@@ -149,22 +150,30 @@ def skills_list_view(request):
         subcategory = serializer.validated_data.get("subcategory")
         is_seeking = serializer.validated_data.get("is_seeking", False)
 
-        if OfferedSkill.objects.filter(
-            user=request.user, category=category, subcategory=subcategory
-        ).exists():
-            return duplicate_offer_response()
-
-        # Kontrola limitu 3 karty pre každý typ samostatne (Ponúkam vs Hľadám)
-        count_by_type = OfferedSkill.objects.filter(
-            user=request.user, is_seeking=is_seeking
-        ).count()
-
-        if count_by_type >= 3:
-            skill_type = "Hľadám" if is_seeking else "Ponúkam"
-            return offer_limit_reached_response(skill_type=skill_type)
-
         try:
             with transaction.atomic():
+                # Zámok na riadku používateľa serializuje jeho súbežné POSTy.
+                # Bez neho obidva requesty prečítajú count() naraz, obidva
+                # uvidia 2 a obidva uložia – vznikne štvrtá karta. Duplicitu
+                # ešte podchytí UniqueConstraint, limit troch kariet však
+                # žiadny DB constraint nekryje, takže musí platiť pod zámkom.
+                # Rovnaký helper ako pri blokovaní používateľov.
+                lock_users_for_update(user_ids=(request.user.id,))
+
+                if OfferedSkill.objects.filter(
+                    user=request.user, category=category, subcategory=subcategory
+                ).exists():
+                    return duplicate_offer_response()
+
+                # Limit 3 karty pre každý typ samostatne (Ponúkam vs Hľadám)
+                count_by_type = OfferedSkill.objects.filter(
+                    user=request.user, is_seeking=is_seeking
+                ).count()
+
+                if count_by_type >= 3:
+                    skill_type = "Hľadám" if is_seeking else "Ponúkam"
+                    return offer_limit_reached_response(skill_type=skill_type)
+
                 serializer.save(user=request.user)
         except IntegrityError:
             # The unique constraint remains authoritative when POST requests race.

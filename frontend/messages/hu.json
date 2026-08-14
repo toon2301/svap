@@ -561,6 +561,7 @@
     "closePanel": "Keresopanel bezarasa"
   },
   "skills": {
+    "savedButRefreshFailed": "A kártya mentve, de a listát nem sikerült frissíteni. Töltsd újra az oldalt.",
     "offer": "Kínálok",
     "offerCta": "Készséget kínál? Kattintson, hogy hozzáadja a Svaply-hoz.",
     "search": "Keresek",

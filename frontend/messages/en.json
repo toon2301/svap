@@ -561,6 +561,7 @@
     "pageTitle": "Search"
   },
   "skills": {
+    "savedButRefreshFailed": "The card is saved, but the list could not be refreshed. Reload the page.",
     "offer": "Offer",
     "offerCta": "Do you offer a skill? Add it on Svaply by clicking here.",
     "search": "Looking for",

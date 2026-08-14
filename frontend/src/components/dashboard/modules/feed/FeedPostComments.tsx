@@ -245,6 +245,12 @@ export default function FeedPostComments({
   const refresh = useCallback(async () => {
     const seq = loadSeqRef.current;
     const loaded = commentsRef.current;
+    // Stránkovací stav pri ODOSLANÍ requestu. `loadingMoreRef` sám nestačí:
+    // pokrýva len donačítavanie, ktoré ešte beží. Keby loadMore stihol počas
+    // tohto awaitu celý dobehnúť, príznak je opäť false a odpoveď postavená
+    // na kratšom okne by mu prepísala už posunutý kurzor – stránkovanie by sa
+    // vrátilo späť a stránka by sa načítala druhýkrát.
+    const cursorAtStart = nextUrlRef.current;
     const pageSize = Math.min(
       loaded.length + COMMENTS_PAGE_SIZE,
       COMMENTS_MAX_POLL_SIZE,
@@ -252,6 +258,10 @@ export default function FeedPostComments({
     const page = await listFeedPostComments(postId, { pageSize });
     // Medzitým prebehla mutácia → táto odpoveď je spred nej, zahoď ju.
     if (seq !== loadSeqRef.current) return;
+    // Odčítané hneď po awaite: `loadMore` posúva `nextUrlRef` synchrónne, ešte
+    // pred prekreslením, takže je to spoľahlivejší ukazovateľ než dĺžka
+    // zoznamu (tú drží ref zosynchronizovaný až pri rendri).
+    const paginationUntouched = nextUrlRef.current === cursorAtStart;
 
     const hasNext = Boolean(page.next);
     // Nové = to, čo je za všetkým, čo používateľ dosiaľ videl. Zoznam je
@@ -269,7 +279,7 @@ export default function FeedPostComments({
     // Stránkovací stav preberáme len keď dopyt pokryl CELÉ okno. Pri dlhšom
     // okne (nad stropom) by `next` ukazoval doprostred už načítaného a
     // donačítavanie by sa vrátilo späť. Súbežné `loadMore` má prednosť.
-    if (pageSize >= loaded.length && !loadingMoreRef.current) {
+    if (pageSize >= loaded.length && !loadingMoreRef.current && paginationUntouched) {
       nextUrlRef.current = page.next;
       setHasMore(hasNext);
     }
@@ -469,15 +479,26 @@ export default function FeedPostComments({
           <div ref={sentinelRef} aria-hidden="true" data-testid="feed-comments-sentinel" />
         </div>
 
+        {/* Hlásič pre čítačky. Musí byť v DOM STÁLE a meniť sa len jeho obsah:
+            aria-live oznamuje zmeny výhradne v prvku, ktorý čítačka sledovala
+            UŽ PREDTÝM, takže na regióne, ktorý sa spolu s tlačidlom objaví a
+            zmizne, sa oznámenie nespoľahlivo stratí. Vizuálnu rolu má tlačidlo
+            nižšie, tento uzol je len pre asistenčné technológie. */}
+        <p
+          data-testid="feed-comments-new-announcer"
+          aria-live="polite"
+          className="sr-only"
+        >
+          {newCommentsCount > 0 ? newCommentsLabel : ''}
+        </p>
+
         {/* Nenápadné upozornenie namiesto vynúteného posunu pohľadu – ukáže sa
-            len vtedy, keď používateľ číta vyššie v zozname. `aria-live` ho
-            oznámi aj čítačke, ktorá o zmene v zozname inak nevie. */}
+            len vtedy, keď používateľ číta vyššie v zozname. */}
         {newCommentsCount > 0 ? (
           <button
             type="button"
             onClick={handleNewCommentsClick}
             data-testid="feed-comments-new-indicator"
-            aria-live="polite"
             className="absolute inset-x-0 bottom-2 mx-auto flex w-max items-center gap-1.5 rounded-full bg-purple-600 px-3 py-1.5 text-xs font-semibold text-white shadow-lg transition-colors hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-400/60"
           >
             <svg
