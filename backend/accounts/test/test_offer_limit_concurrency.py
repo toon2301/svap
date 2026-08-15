@@ -154,3 +154,50 @@ class OfferLimitConcurrencyTests(TransactionTestCase):
         )
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED, response.data)
+
+    def test_type_change_rechecks_target_limit_after_taking_the_lock(self):
+        source = OfferedSkill.objects.create(
+            user=self.user,
+            category="Remeslá",
+            subcategory="Maliar",
+            description="Ponuka",
+            is_seeking=False,
+        )
+        for index in range(2):
+            OfferedSkill.objects.create(
+                user=self.user,
+                category="IT",
+                subcategory=f"Existujúci dopyt {index}",
+                description="Dopyt",
+                is_seeking=True,
+            )
+
+        def lock_and_fill_target_section(**kwargs):
+            OfferedSkill.objects.create(
+                user=self.user,
+                category="IT",
+                subcategory="Súbežný dopyt",
+                description="Dopyt",
+                is_seeking=True,
+            )
+
+        client = APIClient()
+        client.force_authenticate(user=self.user)
+        with mock.patch(
+            "accounts.views.skills.lock_users_for_update",
+            side_effect=lock_and_fill_target_section,
+        ) as locked:
+            response = client.patch(
+                reverse("accounts:skills_detail", args=[source.id]),
+                {"is_seeking": True},
+                format="json",
+            )
+
+        locked.assert_called_once_with(user_ids=(self.user.id,))
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data["code"], "offer_limit_reached")
+        source.refresh_from_db()
+        self.assertFalse(source.is_seeking)
+        self.assertEqual(
+            OfferedSkill.objects.filter(user=self.user, is_seeking=True).count(), 3
+        )

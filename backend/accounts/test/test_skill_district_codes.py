@@ -61,6 +61,84 @@ class SkillDistrictCodeApiTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("district_code", response.data)
 
+    def test_create_skill_accepts_restored_current_czech_district(self):
+        response = self.client.post(
+            self.list_url,
+            {
+                "category": "Služby",
+                "subcategory": "Sprievodca",
+                "description": "Prehliadka mesta",
+                "country_code": "CZ",
+                "district_code": "praha",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data["district_code"], "praha")
+        self.assertEqual(response.data["district_label"], "Praha")
+
+    def test_create_skill_rejects_inactive_legacy_czech_value(self):
+        response = self.client.post(
+            self.list_url,
+            {
+                "category": "Služby",
+                "subcategory": "Sprievodca",
+                "description": "Prehliadka mesta",
+                "country_code": "CZ",
+                "district_code": "valasske-mezirici",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("district_code", response.data)
+
+    def test_unrelated_patch_preserves_and_displays_existing_inactive_district(self):
+        skill = OfferedSkill.objects.create(
+            user=self.user,
+            category="Služby",
+            subcategory="Sprievodca",
+            description="Pôvodný opis",
+            country_code="CZ",
+            district_code="valasske-mezirici",
+            district="Valašské Meziříčí",
+        )
+
+        response = self.client.patch(
+            reverse("accounts:skills_detail", args=[skill.id]),
+            {"description": "Upravený opis"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["district_code"], "valasske-mezirici")
+        self.assertEqual(response.data["district_label"], "Valašské Meziříčí")
+
+    def test_touching_inactive_district_requires_current_reselection(self):
+        skill = OfferedSkill.objects.create(
+            user=self.user,
+            category="Služby",
+            subcategory="Sprievodca",
+            description="Pôvodný opis",
+            country_code="CZ",
+            district_code="valasske-mezirici",
+            district="Valašské Meziříčí",
+        )
+
+        response = self.client.patch(
+            reverse("accounts:skills_detail", args=[skill.id]),
+            {
+                "country_code": "CZ",
+                "district_code": "valasske-mezirici",
+                "district": "Valašské Meziříčí",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("district_code", response.data)
+
     def test_partial_patch_keeps_legacy_skill_editable_without_country_codes(self):
         skill = OfferedSkill.objects.create(
             user=self.user,

@@ -8,11 +8,21 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { api, endpoints } from '@/lib/api';
 import { translateReportError } from '@/lib/reportErrors';
 
+// Zobrazovaný text ide cez t(); do backendu sa posiela `value` (stabilný
+// kód pre moderačnú frontu), takže preklad neovplyvňuje uložené dáta.
 const REPORT_REASONS = [
-  { value: 'inappropriate', label: 'Nevhodný obsah' },
-  { value: 'spam', label: 'Spam' },
-  { value: 'fake', label: 'Falošná recenzia' },
-  { value: 'other', label: 'Iné' },
+  {
+    value: 'inappropriate',
+    labelKey: 'reviews.reportReasonInappropriate',
+    fallback: 'Nevhodný obsah',
+  },
+  { value: 'spam', labelKey: 'reviews.reportReasonSpam', fallback: 'Spam' },
+  {
+    value: 'fake',
+    labelKey: 'reviews.reportReasonFake',
+    fallback: 'Falošná recenzia',
+  },
+  { value: 'other', labelKey: 'reviews.reportReasonOther', fallback: 'Iné' },
 ] as const;
 
 export type ReportReviewModalProps = {
@@ -61,6 +71,11 @@ export function ReportReviewModal({
   // Dôvod „iné" nenesie sám o sebe informáciu – bez popisu nemá moderátor
   // z čoho vychádzať, preto je popis pri ňom povinný (rovnako vynucuje BE).
   const descriptionRequired = reason === 'other';
+  const selectedReason = REPORT_REASONS.find((r) => r.value === reason);
+  // Neznámy kód (dáta z inej verzie) radšej ukáž tak, ako prišiel, než prázdno.
+  const selectedReasonLabel = selectedReason
+    ? t(selectedReason.labelKey, selectedReason.fallback)
+    : reason;
   const descriptionMissing = descriptionRequired && !description.trim();
 
   const handleBackdropClick = (e: React.MouseEvent) => {
@@ -154,7 +169,7 @@ export function ReportReviewModal({
                 disabled={isSubmitting}
                 className="w-full flex items-center justify-between gap-2 pl-3 pr-3 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900/50 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-400/60 disabled:opacity-50 text-left"
               >
-                <span>{REPORT_REASONS.find((r) => r.value === reason)?.label ?? reason}</span>
+                <span>{selectedReasonLabel}</span>
                 <ChevronDownIcon
                   className={`w-5 h-5 shrink-0 text-gray-500 dark:text-gray-400 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`}
                 />
@@ -175,7 +190,7 @@ export function ReportReviewModal({
                           : 'bg-white dark:bg-[#0f0f10] text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-800'
                       }`}
                     >
-                      {r.label}
+                      {t(r.labelKey, r.fallback)}
                     </button>
                   ))}
                 </div>

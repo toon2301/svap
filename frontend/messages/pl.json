@@ -746,6 +746,11 @@
     "message": "Správa",
     "ratings": "Hodnotenia",
     "countryTitle": "Kraj",
+    "countryPlaceholder": "Wybierz kraj",
+    "countrySearchPlaceholder": "Wyszukaj kraj",
+    "countryNoResults": "Nie znaleziono kraju.",
+    "districtUnavailableForCountry": "Dla tego kraju nie udostępniamy jeszcze listy powiatów. Możesz wpisać miasto lub miejscowość.",
+    "inactiveDistrictError": "Zapisany powiat nie jest już aktualny. Wybierz nowy powiat z listy.",
     "offerCountries": {
       "SK": "Słowacja",
       "CZ": "Czechy",
@@ -1125,6 +1130,10 @@
     "hungarian": "Węgierski"
   },
   "profile": {
+    "reportReasonInappropriate": "Nieodpowiednie zachowanie",
+    "reportReasonSpam": "Spam",
+    "reportReasonFake": "Fałszywy profil",
+    "reportReasonOther": "Inne",
     "portfolioTab": "Portfolio",
     "postsTab": "Posty",
     "taggedTab": "Oznaczenia",
@@ -4299,6 +4308,10 @@
     "discard": "Odrzuć"
   },
   "reviews": {
+    "reportReasonInappropriate": "Nieodpowiednia treść",
+    "reportReasonSpam": "Spam",
+    "reportReasonFake": "Fałszywa opinia",
+    "reportReasonOther": "Inne",
     "addReview": "Dodaj opinię",
     "addOwnerResponse": "Dodaj odpowiedź właściciela",
     "addedOn": "dodano",
@@ -4350,6 +4363,12 @@
     "viewOwnerResponse": "Zobacz odpowiedź właściciela"
   },
   "feed": {
+    "tagRemoveAction": "Usuń oznaczenie",
+    "tagRemoveConfirm": "Na pewno chcesz usunąć swoje oznaczenie z tego posta?",
+    "tagRemoveHint": "Post pozostanie opublikowany, zniknie tylko Twoje oznaczenie.",
+    "tagRemoving": "Usuwam...",
+    "tagRemoved": "Oznaczenie zostało usunięte.",
+    "tagRemoveError": "Nie udało się usunąć oznaczenia.",
     "newCommentsOne": "nowy komentarz",
     "newCommentsFew": "nowe komentarze",
     "newCommentsMany": "nowych komentarzy",

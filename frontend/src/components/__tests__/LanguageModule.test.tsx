@@ -21,7 +21,10 @@ jest.mock('@/contexts/LanguageContext', () => ({
 }));
 
 describe('LanguageModule', () => {
-  beforeEach(() => setLocaleMock.mockClear());
+  beforeEach(() => {
+    setLocaleMock.mockClear();
+    setCountryMock.mockClear();
+  });
 
   it('renders and toggles language to German', () => {
     render(<LanguageModule />);
@@ -33,11 +36,12 @@ describe('LanguageModule', () => {
     let btn = row?.querySelector('button');
     if (!btn) {
       // Mobile layout: entire row is a button, find inner circle by role
-      const mobileRow = german.closest('button');
-      btn = mobileRow || undefined as any;
+      const mobileRow = german.closest('button') as HTMLButtonElement | null;
+      btn = mobileRow ?? undefined;
     }
     fireEvent.click(btn!);
     expect(setLocaleMock).toHaveBeenCalledWith('de');
+    expect(setCountryMock).not.toHaveBeenCalled();
   });
 });
 

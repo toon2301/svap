@@ -90,8 +90,17 @@ function ProfileFeedList({
     [tab, ownerUserId],
   );
 
-  const { posts, loading, loadingMore, hasMore, error, loadMore, reload, isEmpty } =
-    useFeedInfiniteScroll({ loader });
+  const {
+    posts,
+    loading,
+    loadingMore,
+    hasMore,
+    error,
+    loadMore,
+    reload,
+    removePost,
+    isEmpty,
+  } = useFeedInfiniteScroll({ loader });
 
   const sentinelRef = useInfiniteScrollSentinel({
     onIntersect: loadMore,
@@ -135,7 +144,14 @@ function ProfileFeedList({
   return (
     <div className="mt-4 space-y-4" data-testid={`profile-feed-list-${tab}`}>
       {posts.map((post) => (
-        <FeedPostCard key={post.id} post={post} />
+        <FeedPostCard
+          key={post.id}
+          post={post}
+          // Len v tabe „Označený": zoznam je filtrovaný na „kde som označený",
+          // takže po odstránení vlastného označenia tam príspevok už nepatrí.
+          // V tabe „Príspevky" zmizne iba chip – príspevok je stále môj.
+          onSelfTagRemoved={tab === 'tagged' ? removePost : undefined}
+        />
       ))}
 
       {loadingMore ? <FeedCardSkeleton /> : null}

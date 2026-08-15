@@ -1,4 +1,19 @@
 {
+  "_meta": {
+    "schema_version": 2,
+    "sources": {
+      "SK": {
+        "active_count": 79,
+        "as_of": "2026-01-01",
+        "url": "https://susr.statistics.sk/PortalTraffic/fileServlet?Dokument=7c06b60f-f085-4845-a36d-562356589f13"
+      },
+      "CZ": {
+        "active_count": 77,
+        "as_of": "2026-01-01",
+        "url": "https://csu.gov.cz/ciselnik_okresu_-okres_lau-"
+      }
+    }
+  },
   "SK": [
     {
       "code": "banovce-nad-bebravou",
@@ -463,6 +478,11 @@
       "label": "Mladá Boleslav"
     },
     {
+      "code": "most",
+      "label": "Most",
+      "official_code": "CZ0425"
+    },
+    {
       "code": "nachod",
       "label": "Náchod"
     },
@@ -511,12 +531,25 @@
       "label": "Plzeň-sever"
     },
     {
+      "code": "praha",
+      "label": "Praha",
+      "official_code": "CZ0100",
+      "aliases": [
+        "Hlavní město Praha"
+      ]
+    },
+    {
       "code": "praha-zapad",
       "label": "Praha-západ"
     },
     {
       "code": "praha-vychod",
       "label": "Praha-východ"
+    },
+    {
+      "code": "prachatice",
+      "label": "Prachatice",
+      "official_code": "CZ0315"
     },
     {
       "code": "pribram",
@@ -537,6 +570,16 @@
     {
       "code": "rokycany",
       "label": "Rokycany"
+    },
+    {
+      "code": "rychnov-nad-kneznou",
+      "label": "Rychnov nad Kněžnou",
+      "official_code": "CZ0524"
+    },
+    {
+      "code": "semily",
+      "label": "Semily",
+      "official_code": "CZ0514"
     },
     {
       "code": "sokolov",
@@ -563,12 +606,22 @@
       "label": "Tábor"
     },
     {
+      "code": "teplice",
+      "label": "Teplice",
+      "official_code": "CZ0426"
+    },
+    {
       "code": "trutnov",
       "label": "Trutnov"
     },
     {
       "code": "trebic",
       "label": "Třebíč"
+    },
+    {
+      "code": "uherske-hradiste",
+      "label": "Uherské Hradiště",
+      "official_code": "CZ0722"
     },
     {
       "code": "usti-nad-labem",
@@ -580,7 +633,8 @@
     },
     {
       "code": "valasske-mezirici",
-      "label": "Valašské Meziříčí"
+      "label": "Valašské Meziříčí",
+      "active": false
     },
     {
       "code": "vsetin",

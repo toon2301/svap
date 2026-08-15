@@ -1,7 +1,13 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 
-import { LanguageProvider, useLanguage } from '../LanguageContext';
+jest.unmock('@/contexts/LanguageContext');
+
+import {
+  isSupportedCountryCode,
+  LanguageProvider,
+  useLanguage,
+} from '../LanguageContext';
 
 const originalFetch = global.fetch;
 const originalWindowFetch = window.fetch;
@@ -43,7 +49,7 @@ describe('LanguageContext', () => {
 
   it('uses a fresh cached geo detection result without calling ipapi again', async () => {
     localStorage.setItem(
-      'appGeoDetectionCacheV1',
+      'appGeoDetectionCacheV2',
       JSON.stringify({
         country: 'SK',
         detectedAt: Date.now(),
@@ -59,6 +65,7 @@ describe('LanguageContext', () => {
 
     await waitFor(() => {
       expect(screen.getByTestId('locale')).toHaveTextContent('sk');
+      expect(screen.getByTestId('country')).toHaveTextContent('SK');
     });
     expect(global.fetch).not.toHaveBeenCalled();
   });
@@ -66,7 +73,7 @@ describe('LanguageContext', () => {
   it('uses a fresh failed geo cache cooldown and falls back to browser locale', async () => {
     setNavigatorLanguage('de-DE');
     localStorage.setItem(
-      'appGeoDetectionCacheV1',
+      'appGeoDetectionCacheV2',
       JSON.stringify({
         country: null,
         detectedAt: Date.now(),
@@ -81,9 +88,29 @@ describe('LanguageContext', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByTestId('locale')).toHaveTextContent('sk');
+      expect(screen.getByTestId('locale')).toHaveTextContent('de');
+      expect(screen.getByTestId('country')).toHaveTextContent('-');
     });
     expect(global.fetch).not.toHaveBeenCalled();
+  });
+
+  it('accepts an IP-detected country outside the district registry', async () => {
+    (global.fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      json: async () => ({ country_code: 'IT' }),
+    });
+
+    render(
+      <LanguageProvider>
+        <Consumer />
+      </LanguageProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('country')).toHaveTextContent('IT');
+    });
+    expect(isSupportedCountryCode('IT')).toBe(true);
+    expect(isSupportedCountryCode('ZZ')).toBe(false);
   });
 
 });

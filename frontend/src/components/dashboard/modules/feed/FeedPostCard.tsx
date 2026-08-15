@@ -21,7 +21,13 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { translateFeedActionError } from './feedActionErrors';
 import InitialsAvatar from '@/components/shared/InitialsAvatar';
 import { buildPortfolioDetailPath } from '../profile/portfolioRouting';
-import { likeFeedPost, unlikeFeedPost, type FeedPost } from '@/lib/feedApi';
+import {
+  likeFeedPost,
+  removeOwnFeedPostTag,
+  unlikeFeedPost,
+  type FeedPost,
+} from '@/lib/feedApi';
+import FeedDestructiveConfirm from './FeedDestructiveConfirm';
 import FeedPostComments from './FeedPostComments';
 import FeedPostImageCarousel from './FeedPostImageCarousel';
 import FeedPostReportModal from './FeedPostReportModal';
@@ -259,17 +265,46 @@ export default function FeedPostCard({
   post,
   initialCommentsOpen = false,
   onShared,
+  onSelfTagRemoved,
 }: {
   post: FeedPost;
   /** Permalink detail otvára komentáre rovno (viď FeedPostDetailModule). */
   initialCommentsOpen?: boolean;
   /** Zdieľanie ďalej vloží nový príspevok na vrch feedu (ako composer). */
   onShared?: (created: FeedPost) => void;
+  /**
+   * Používateľ odstránil svoje označenie. Zoznamy filtrované na „kde som
+   * označený" (profilový tab) tam príspevok už nemajú prečo držať.
+   */
+  onSelfTagRemoved?: (postId: number) => void;
 }) {
   const { t, locale } = useLanguage();
   const router = useRouter();
   const isShared = post.post_type !== 'free_post';
   const authorName = post.author?.display_name || '';
+  // Odstránenie sa premietne AŽ po potvrdení serverom – rovnako ako mazanie
+  // komentára. Optimistický vzor je vo feede vyhradený lajku, kde je zlyhanie
+  // bezvýznamné; tu by zmiznutý a späť vrátený chip pôsobil ako chyba.
+  const handleRemoveOwnTag = async () => {
+    if (removingTag) return;
+    setRemovingTag(true);
+    try {
+      await removeOwnFeedPostTag(post.id);
+      setTaggedUsers((current) => current.filter((tag) => !tag.can_remove_tag));
+      setTagRemoveOpen(false);
+      toast.success(t('feed.tagRemoved', 'Označenie bolo odstránené.'));
+      onSelfTagRemoved?.(post.id);
+    } catch (error) {
+      toast.error(
+        translateFeedActionError(t, error, () =>
+          t('feed.tagRemoveError', 'Označenie sa nepodarilo odstrániť.'),
+        ),
+      );
+    } finally {
+      setRemovingTag(false);
+    }
+  };
+
   // Backend posiela cudziemu divákovi len APPROVED fotky; autor dostane aj
   // pending/rejected – hook ich dosleduje, kým sa spracovanie nedokončí.
   const images = usePendingFeedImages(post);
@@ -282,6 +317,11 @@ export default function FeedPostCard({
   const [reportOpen, setReportOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [reported, setReported] = useState(false);
+  // Označenia sú lokálne, aby chip po odstránení zmizol bez čakania na
+  // obnovenie celého feedu. Prop-sync nižšie ich vráti do súladu so serverom.
+  const [taggedUsers, setTaggedUsers] = useState(post.tagged_users ?? []);
+  const [tagRemoveOpen, setTagRemoveOpen] = useState(false);
+  const [removingTag, setRemovingTag] = useState(false);
   const likePendingRef = useRef(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const menuTriggerRef = useRef<HTMLButtonElement | null>(null);
@@ -299,6 +339,10 @@ export default function FeedPostCard({
   useEffect(() => {
     setCommentsCount(post.comments_count);
   }, [post.comments_count]);
+
+  useEffect(() => {
+    setTaggedUsers(post.tagged_users ?? []);
+  }, [post.tagged_users]);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -512,16 +556,45 @@ export default function FeedPostCard({
           </p>
         ) : null}
 
-        {post.tagged_users?.length ? (
+        {taggedUsers.length ? (
           <ul className="flex flex-wrap gap-1.5" data-testid="feed-post-tags">
-            {post.tagged_users.map((tagged) => (
-              <li
-                key={tagged.id}
-                className="rounded-full bg-purple-100 px-2.5 py-0.5 text-xs font-medium text-purple-700 dark:bg-purple-900/40 dark:text-purple-200"
-              >
-                @{tagged.display_name}
-              </li>
-            ))}
+            {taggedUsers.map((tagged) => {
+              // „x" patrí VÝHRADNE vlastnému označeniu; príznak dáva backend,
+              // ktorý je aj tak jediný, kto o tom rozhoduje.
+              const isOwnTag = tagged.can_remove_tag === true;
+              return (
+                <li
+                  key={tagged.id}
+                  data-testid={`feed-post-tag-${tagged.id}`}
+                  className="inline-flex items-center gap-1 rounded-full bg-purple-100 px-2.5 py-0.5 text-xs font-medium text-purple-700 dark:bg-purple-900/40 dark:text-purple-200"
+                >
+                  @{tagged.display_name}
+                  {isOwnTag ? (
+                    <button
+                      type="button"
+                      onClick={() => setTagRemoveOpen(true)}
+                      data-testid="feed-post-tag-remove"
+                      aria-label={t('feed.tagRemoveAction', 'Odstrániť označenie')}
+                      title={t('feed.tagRemoveAction', 'Odstrániť označenie')}
+                      className="-mr-1 rounded-full p-0.5 text-purple-500 transition-colors hover:bg-purple-200 hover:text-purple-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-400/60 dark:text-purple-300 dark:hover:bg-purple-800/60 dark:hover:text-white"
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                        className="h-3 w-3"
+                        aria-hidden="true"
+                      >
+                        <line x1="6" y1="6" x2="18" y2="18" />
+                        <line x1="18" y1="6" x2="6" y2="18" />
+                      </svg>
+                    </button>
+                  ) : null}
+                </li>
+              );
+            })}
           </ul>
         ) : null}
       </div>
@@ -585,6 +658,24 @@ export default function FeedPostCard({
           onTotalChange={setCommentsCount}
         />
       ) : null}
+
+      <FeedDestructiveConfirm
+        open={tagRemoveOpen}
+        isDeleting={removingTag}
+        onClose={() => setTagRemoveOpen(false)}
+        onConfirm={handleRemoveOwnTag}
+        testId="feed-tag-remove-confirm"
+        title={t(
+          'feed.tagRemoveConfirm',
+          'Naozaj chceš odstrániť svoje označenie z tohto príspevku?',
+        )}
+        hint={t(
+          'feed.tagRemoveHint',
+          'Príspevok ostane zverejnený, zmizne len tvoje označenie.',
+        )}
+        confirmLabel={t('feed.tagRemoveAction', 'Odstrániť označenie')}
+        busyLabel={t('feed.tagRemoving', 'Odstraňujem...')}
+      />
 
       <FeedPostReportModal
         open={reportOpen}

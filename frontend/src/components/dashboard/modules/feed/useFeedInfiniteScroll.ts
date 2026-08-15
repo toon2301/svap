@@ -132,12 +132,22 @@ export function useFeedInfiniteScroll(options: UseFeedInfiniteScrollOptions = {}
     return added;
   }, [fetchPage, pageSize, prependPosts]);
 
+  /**
+   * Vyhodí príspevok zo zoznamu bez refetchu – kurzor ani donačítané stránky
+   * sa tým nezahodia. Používa to profilový tab „Označený", kde príspevok po
+   * odstránení vlastného označenia prestáva spadať pod filter zoznamu.
+   */
+  const removePost = useCallback((postId: number) => {
+    setPosts((current) => current.filter((post) => post.id !== postId));
+  }, []);
+
   useEffect(() => {
     void load();
   }, [load]);
 
   return {
     posts,
+    removePost,
     loading,
     loadingMore,
     hasMore,

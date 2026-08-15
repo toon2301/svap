@@ -654,6 +654,11 @@
     "maxPhotosReached": "You have reached the maximum of 6 photos.",
     "district": "District",
     "countryTitle": "Country",
+    "countryPlaceholder": "Select a country",
+    "countrySearchPlaceholder": "Search for a country",
+    "countryNoResults": "No country was found.",
+    "districtUnavailableForCountry": "Districts are not available for this country yet. You can enter a city or municipality.",
+    "inactiveDistrictError": "The saved district is no longer current. Select a new district from the list.",
     "offerCountries": {
       "SK": "Slovakia",
       "CZ": "Czechia",
@@ -1125,6 +1130,10 @@
     "hungarian": "Hungarian"
   },
   "profile": {
+    "reportReasonInappropriate": "Inappropriate behaviour",
+    "reportReasonSpam": "Spam",
+    "reportReasonFake": "Fake profile",
+    "reportReasonOther": "Other",
     "portfolioTab": "Portfolio",
     "postsTab": "Posts",
     "taggedTab": "Tagged",
@@ -4299,6 +4308,10 @@
     "discard": "Discard"
   },
   "reviews": {
+    "reportReasonInappropriate": "Inappropriate content",
+    "reportReasonSpam": "Spam",
+    "reportReasonFake": "Fake review",
+    "reportReasonOther": "Other",
     "addReview": "Add review",
     "addOwnerResponse": "Add owner response",
     "addedOn": "added on",
@@ -4350,6 +4363,12 @@
     "viewOwnerResponse": "View owner response"
   },
   "feed": {
+    "tagRemoveAction": "Remove tag",
+    "tagRemoveConfirm": "Remove your tag from this post?",
+    "tagRemoveHint": "The post stays published, only your tag disappears.",
+    "tagRemoving": "Removing...",
+    "tagRemoved": "Your tag was removed.",
+    "tagRemoveError": "The tag could not be removed.",
     "newCommentsOne": "new comment",
     "newCommentsFew": "new comments",
     "newCommentsMany": "new comments",

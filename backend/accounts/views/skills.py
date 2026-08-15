@@ -48,6 +48,30 @@ from .skills_upload import (  # noqa: F401
 )
 
 
+MAX_SKILLS_PER_TYPE = 3
+
+
+def _matching_offer_identity(
+    *, user, category, subcategory, is_seeking, exclude_id=None
+):
+    queryset = OfferedSkill.objects.filter(
+        user=user,
+        category=category,
+        subcategory=subcategory,
+        is_seeking=is_seeking,
+    )
+    if exclude_id is not None:
+        queryset = queryset.exclude(id=exclude_id)
+    return queryset
+
+
+def _has_reached_card_limit(*, user, is_seeking, exclude_id=None) -> bool:
+    queryset = OfferedSkill.objects.filter(user=user, is_seeking=is_seeking)
+    if exclude_id is not None:
+        queryset = queryset.exclude(id=exclude_id)
+    return queryset.count() >= MAX_SKILLS_PER_TYPE
+
+
 @api_view(["GET", "POST"])
 @permission_classes([IsAuthenticated])
 @api_rate_limit
@@ -160,25 +184,29 @@ def skills_list_view(request):
                 # Rovnaký helper ako pri blokovaní používateľov.
                 lock_users_for_update(user_ids=(request.user.id,))
 
-                if OfferedSkill.objects.filter(
-                    user=request.user, category=category, subcategory=subcategory
+                if _matching_offer_identity(
+                    user=request.user,
+                    category=category,
+                    subcategory=subcategory,
+                    is_seeking=is_seeking,
                 ).exists():
                     return duplicate_offer_response()
 
                 # Limit 3 karty pre každý typ samostatne (Ponúkam vs Hľadám)
-                count_by_type = OfferedSkill.objects.filter(
+                if _has_reached_card_limit(
                     user=request.user, is_seeking=is_seeking
-                ).count()
-
-                if count_by_type >= 3:
+                ):
                     skill_type = "Hľadám" if is_seeking else "Ponúkam"
                     return offer_limit_reached_response(skill_type=skill_type)
 
                 serializer.save(user=request.user)
         except IntegrityError:
             # The unique constraint remains authoritative when POST requests race.
-            if OfferedSkill.objects.filter(
-                user=request.user, category=category, subcategory=subcategory
+            if _matching_offer_identity(
+                user=request.user,
+                category=category,
+                subcategory=subcategory,
+                is_seeking=is_seeking,
             ).exists():
                 return duplicate_offer_response()
             raise
@@ -227,33 +255,46 @@ def skills_detail_view(request, skill_id):
             context={"request": request},
         )
         if serializer.is_valid():
-            # Kontrola duplikátov pri update (ak sa mení category/subcategory)
+            # Cieľová identita zahŕňa aj typ karty (Ponúkam/Hľadám).
             category = serializer.validated_data.get("category", skill.category)
             subcategory = serializer.validated_data.get(
                 "subcategory", skill.subcategory
             )
-
-            if category != skill.category or subcategory != skill.subcategory:
-                if (
-                    OfferedSkill.objects.filter(
-                        user=request.user, category=category, subcategory=subcategory
-                    )
-                    .exclude(id=skill_id)
-                    .exists()
-                ):
-                    return duplicate_offer_response()
+            is_seeking = serializer.validated_data.get(
+                "is_seeking", skill.is_seeking
+            )
+            type_changed = is_seeking != skill.is_seeking
 
             try:
                 with transaction.atomic():
+                    lock_users_for_update(user_ids=(request.user.id,))
+
+                    if _matching_offer_identity(
+                        user=request.user,
+                        category=category,
+                        subcategory=subcategory,
+                        is_seeking=is_seeking,
+                        exclude_id=skill_id,
+                    ).exists():
+                        return duplicate_offer_response()
+
+                    if type_changed and _has_reached_card_limit(
+                        user=request.user,
+                        is_seeking=is_seeking,
+                        exclude_id=skill_id,
+                    ):
+                        skill_type = "Hľadám" if is_seeking else "Ponúkam"
+                        return offer_limit_reached_response(skill_type=skill_type)
+
                     serializer.save()
             except IntegrityError:
-                if (
-                    OfferedSkill.objects.filter(
-                        user=request.user, category=category, subcategory=subcategory
-                    )
-                    .exclude(id=skill_id)
-                    .exists()
-                ):
+                if _matching_offer_identity(
+                    user=request.user,
+                    category=category,
+                    subcategory=subcategory,
+                    is_seeking=is_seeking,
+                    exclude_id=skill_id,
+                ).exists():
                     return duplicate_offer_response()
                 raise
             _skills_list_cache_invalidate(request.user.id)

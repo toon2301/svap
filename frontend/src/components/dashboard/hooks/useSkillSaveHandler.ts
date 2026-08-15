@@ -109,6 +109,15 @@ export function useSkillSaveHandler({
       return;
     }
 
+    // Nové drafty historicky typ nemali uložený priamo v objekte. Pred
+    // asynchrónnym POSTom ho zafixuj, aby sa rovnaká kategória v opačnej
+    // sekcii nemohla pomýliť s práve ukladanou kartou.
+    if (!draftSkill.id && draftSkill.is_seeking !== isSeeking) {
+      setSelectedSkillsCategory?.((prev) =>
+        prev === draftSkill ? { ...prev, is_seeking: isSeeking } : prev,
+      );
+    }
+
     // Globálne UX (najmä mobile): zobraz stav aj po presmerovaní.
     try {
       if (typeof window !== 'undefined') {
@@ -238,16 +247,17 @@ export function useSkillSaveHandler({
         // Zapisuje sa LEN ak je v stave stále TÁ ISTÁ karta. POST beží na
         // pozadí a používateľ medzitým mohol otvoriť inú, tiež ešte neuloženú
         // kartu – tej by sa priradilo cudzie id a jej ďalšie uloženie by
-        // PATCH-lo ponuku, ktorú vôbec needituje. Identitou je dvojica
-        // kategória + podkategória: presne ňou server kartu rozlišuje
-        // (unique constraint) a prežije aj to, že sa objekt draftu medzitým
-        // nahradil novým (úprava polí).
+        // PATCH-lo ponuku, ktorú vôbec needituje. Identitou je kategória,
+        // podkategória a typ karty – rovnako ako v databázovom constrainte.
+        // Explicitný typ prežije aj nahradenie objektu draftu pri úprave polí.
         if (savedSkill.id) {
           setSelectedSkillsCategory?.((prev) => {
             if (!prev || prev.id) return prev;
             const isSameDraft =
               prev.category === draftSkill.category &&
-              prev.subcategory === draftSkill.subcategory;
+              prev.subcategory === draftSkill.subcategory &&
+              typeof prev.is_seeking === 'boolean' &&
+              prev.is_seeking === isSeeking;
             return isSameDraft ? { ...prev, id: savedSkill.id } : prev;
           });
         }

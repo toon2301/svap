@@ -15,7 +15,7 @@ import { TrashIcon } from '@heroicons/react/24/outline';
 import { useLanguage } from '@/contexts/LanguageContext';
 import InitialsAvatar from '@/components/shared/InitialsAvatar';
 import { DesktopEmojiPickerButton } from '../messages/DesktopEmojiPickerButton';
-import FeedCommentDeleteConfirm from './FeedCommentDeleteConfirm';
+import FeedDestructiveConfirm from './FeedDestructiveConfirm';
 import FeedCommentLikeButton from './FeedCommentLikeButton';
 import { useEmojiInsertion } from './useEmojiInsertion';
 import { useFeedCommentsPolling } from './useFeedCommentsPolling';
@@ -590,7 +590,7 @@ export default function FeedPostComments({
         </div>
       </div>
 
-      <FeedCommentDeleteConfirm
+      <FeedDestructiveConfirm
         open={pendingDelete !== null}
         isDeleting={deleting}
         onClose={() => setPendingDelete(null)}

@@ -211,6 +211,11 @@ urlpatterns = [
         name="feed_post_comment_like",
     ),
     path(
+        "feed/posts/<int:post_id>/tags/me/",
+        views.feed_post_self_tag_view,
+        name="feed_post_self_tag",
+    ),
+    path(
         "feed/posts/<int:post_id>/report/",
         views.feed_post_report_view,
         name="feed_post_report",

@@ -4,6 +4,7 @@ from rest_framework import serializers
 
 from swaply.validators import HtmlSanitizer
 
+from .country_registry import normalize_offer_country_code
 from .models import (
     OfferedSkill,
     OfferedSkillLike,
@@ -15,7 +16,6 @@ from .models import (
 from .district_registry import (
     get_offer_district_label,
     is_valid_offer_district_code,
-    normalize_offer_country_code,
     resolve_offer_district_code,
 )
 from .services.user_blocks import user_block_exists_between
@@ -201,7 +201,11 @@ class OfferedSkillSerializer(serializers.ModelSerializer):
     def get_district_label(self, obj):
         country_code = normalize_offer_country_code(getattr(obj, "country_code", ""))
         district_code = getattr(obj, "district_code", "") or ""
-        label = get_offer_district_label(country_code, district_code)
+        label = get_offer_district_label(
+            country_code,
+            district_code,
+            include_inactive=True,
+        )
         if label:
             return label
         return (getattr(obj, "district", "") or "").strip() or None

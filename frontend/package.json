@@ -9,6 +9,7 @@
     "lint": "next lint",
     "check:missing-translations": "tsx scripts/check-missing-translations.ts",
     "check:used-translation-keys": "tsx scripts/validate-used-translation-keys.ts",
+    "sync:offer-registries": "node scripts/sync-offer-registries.js",
     "sync:translations": "tsx scripts/sync-translations.ts",
     "test": "jest",
     "test:watch": "jest --watch",

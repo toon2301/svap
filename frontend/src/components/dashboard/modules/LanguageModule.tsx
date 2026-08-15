@@ -9,7 +9,7 @@ type LanguageModuleProps = {
 };
 
 export default function LanguageModule({ onBack }: LanguageModuleProps = {}) {
-  const { locale, setLocale, t, setCountry } = useLanguage();
+  const { locale, setLocale, t } = useLanguage();
   const [selectedLanguage, setSelectedLanguage] = useState(
     locale === 'en' ? 'angličtina' : locale === 'pl' ? 'poľština' : locale === 'cs' ? 'čeština' : locale === 'de' ? 'nemčina' : locale === 'hu' ? 'maďarčina' : 'slovenčina'
   );
@@ -22,19 +22,6 @@ export default function LanguageModule({ onBack }: LanguageModuleProps = {}) {
     'poľština',
     'maďarčina'
   ];
-
-  // Funkcia pre mapovanie jazyka na krajinu
-  const getCountryByLanguage = (language: string) => {
-    switch (language) {
-      case 'slovenčina': return 'SK';
-      case 'čeština': return 'CZ';
-      case 'poľština': return 'PL';
-      case 'nemčina': return 'DE';
-      case 'maďarčina': return 'HU';
-      case 'angličtina': return null; // Angličtina nemení krajinu
-      default: return null;
-    }
-  };
 
   return (
     <>
@@ -87,12 +74,6 @@ export default function LanguageModule({ onBack }: LanguageModuleProps = {}) {
                       if (next === 'čeština') setLocale('cs');
                       if (next === 'nemčina') setLocale('de');
                       if (next === 'maďarčina') setLocale('hu');
-                      
-                      // Automaticky zmeniť krajinu podľa jazyka
-                      const newCountry = getCountryByLanguage(next);
-                      if (newCountry) {
-                        setCountry(newCountry as 'SK' | 'CZ' | 'PL' | 'HU' | 'AT' | 'DE');
-                      }
                     }}
                     onPointerDown={(e) => { e.preventDefault(); }}
                     className={`w-5 h-5 rounded-full flex items-center justify-center ${
@@ -145,12 +126,6 @@ export default function LanguageModule({ onBack }: LanguageModuleProps = {}) {
                   if (next === 'čeština') setLocale('cs');
                   if (next === 'nemčina') setLocale('de');
                   if (next === 'maďarčina') setLocale('hu');
-                  
-                  // Automaticky zmeniť krajinu podľa jazyka
-                  const newCountry = getCountryByLanguage(next);
-                  if (newCountry) {
-                    setCountry(newCountry as 'SK' | 'CZ' | 'PL' | 'HU' | 'AT' | 'DE');
-                  }
                 }}
                 onPointerDown={(e) => { e.preventDefault(); }}
                 className="w-full flex items-center justify-between p-4 transition-all duration-200 focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 ring-0"

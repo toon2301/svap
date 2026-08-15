@@ -654,6 +654,11 @@
     "maxPhotosReached": "Dosiahol si maximálny počet 6 fotiek.",
     "district": "Okres",
     "countryTitle": "Krajina",
+    "countryPlaceholder": "Vyber krajinu",
+    "countrySearchPlaceholder": "Vyhľadaj krajinu",
+    "countryNoResults": "Nenašla sa žiadna krajina.",
+    "districtUnavailableForCountry": "Pre túto krajinu zatiaľ okresy nevyberáme. Môžeš zadať mesto alebo obec.",
+    "inactiveDistrictError": "Uložený okres už nie je aktuálny. Vyber nový okres zo zoznamu.",
     "offerCountries": {
       "SK": "Slovensko",
       "CZ": "Česko",
@@ -1125,6 +1130,10 @@
     "hungarian": "Maďarčina"
   },
   "profile": {
+    "reportReasonInappropriate": "Nevhodné správanie",
+    "reportReasonSpam": "Spam",
+    "reportReasonFake": "Falošný profil",
+    "reportReasonOther": "Iné",
     "portfolioTab": "Portfólio",
     "postsTab": "Príspevky",
     "taggedTab": "Označený",
@@ -4299,6 +4308,10 @@
     "discard": "Zahodiť"
   },
   "reviews": {
+    "reportReasonInappropriate": "Nevhodný obsah",
+    "reportReasonSpam": "Spam",
+    "reportReasonFake": "Falošná recenzia",
+    "reportReasonOther": "Iné",
     "addReview": "Pridať recenziu",
     "addOwnerResponse": "Pridať odpoveď majiteľa",
     "addedOn": "pridané",
@@ -4350,6 +4363,12 @@
     "viewOwnerResponse": "Zobraziť odpoveď majiteľa"
   },
   "feed": {
+    "tagRemoveAction": "Odstrániť označenie",
+    "tagRemoveConfirm": "Naozaj chceš odstrániť svoje označenie z tohto príspevku?",
+    "tagRemoveHint": "Príspevok ostane zverejnený, zmizne len tvoje označenie.",
+    "tagRemoving": "Odstraňujem...",
+    "tagRemoved": "Označenie bolo odstránené.",
+    "tagRemoveError": "Označenie sa nepodarilo odstrániť.",
     "newCommentsOne": "nový komentár",
     "newCommentsFew": "nové komentáre",
     "newCommentsMany": "nových komentárov",

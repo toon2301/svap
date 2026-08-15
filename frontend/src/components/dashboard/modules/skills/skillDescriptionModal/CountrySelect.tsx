@@ -4,9 +4,10 @@ import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from 
 import { createPortal } from 'react-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import {
-  getSupportedOfferCountries,
+  getOfferCountryEntries,
+  getOfferCountryFallbackName,
   type OfferCountryCode,
-} from '@/shared/districtRegistry';
+} from '@/shared/countryRegistry';
 
 interface CountrySelectProps {
   value: OfferCountryCode;
@@ -14,150 +15,168 @@ interface CountrySelectProps {
   id?: string;
 }
 
-const COUNTRY_LABEL_FALLBACKS: Record<OfferCountryCode, string> = {
-  SK: 'Slovensko',
-  CZ: 'Česko',
-  PL: 'Poľsko',
-  HU: 'Maďarsko',
-  AT: 'Rakúsko',
-  DE: 'Nemecko',
+type DisplayCountry = {
+  code: OfferCountryCode;
+  label: string;
+  fallbackName: string;
 };
 
+const normalizeSearchText = (value: string) =>
+  value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLocaleLowerCase()
+    .trim();
+
 export default function CountrySelect({ value, onChange, id }: CountrySelectProps) {
-  const { t } = useLanguage();
+  const { locale, t } = useLanguage();
   const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
   const [activeIndex, setActiveIndex] = useState(0);
   const listboxId = useId();
   const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const searchRef = useRef<HTMLInputElement | null>(null);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const [portalRoot, setPortalRoot] = useState<HTMLElement | null>(null);
   const [pos, setPos] = useState<{ left: number; top: number; width: number } | null>(null);
 
-  const countries = useMemo(() => getSupportedOfferCountries(), []);
+  const countries = useMemo<DisplayCountry[]>(() => {
+    let displayNames: Intl.DisplayNames | null = null;
+    try {
+      displayNames = new Intl.DisplayNames([locale], { type: 'region' });
+    } catch {
+      displayNames = null;
+    }
 
-  const labelFor = (code: OfferCountryCode) =>
-    t(`skills.offerCountries.${code}`, COUNTRY_LABEL_FALLBACKS[code]);
+    return getOfferCountryEntries()
+      .map((entry) => ({
+        code: entry.code,
+        fallbackName: entry.name,
+        label: displayNames?.of(entry.code) || entry.name,
+      }))
+      .sort((first, second) => first.label.localeCompare(second.label, locale));
+  }, [locale]);
 
-  const selectedIndex = Math.max(0, countries.indexOf(value));
-  const activeCode = countries[activeIndex] ?? countries[0];
+  const filteredCountries = useMemo(() => {
+    const normalizedQuery = normalizeSearchText(query);
+    if (!normalizedQuery) return countries;
+    const exactCodeMatch = countries.find(
+      (country) => country.code.toLocaleLowerCase() === normalizedQuery,
+    );
+    if (exactCodeMatch) return [exactCodeMatch];
+    return countries.filter((country) =>
+      [country.label, country.fallbackName, country.code].some((candidate) =>
+        normalizeSearchText(candidate).includes(normalizedQuery),
+      ),
+    );
+  }, [countries, query]);
+
+  const selectedLabel =
+    countries.find((country) => country.code === value)?.label ||
+    getOfferCountryFallbackName(value) ||
+    t('skills.countryPlaceholder', 'Vyber krajinu');
+  const activeCountry = filteredCountries[activeIndex];
   const optionIdFor = useCallback(
     (code: OfferCountryCode) => `${listboxId}-option-${code}`,
     [listboxId],
   );
 
   const updatePosition = useCallback(() => {
-    const el = triggerRef.current;
-    if (!el) return;
-    const rect = el.getBoundingClientRect();
-    const width = rect.width;
-    const estimatedMenuH = countries.length * 40 + 12;
+    const trigger = triggerRef.current;
+    if (!trigger) return;
+    const rect = trigger.getBoundingClientRect();
+    const menuHeight = Math.min(336, Math.max(144, window.innerHeight - 16));
     const gap = 6;
-    const canOpenDown = rect.bottom + gap + estimatedMenuH <= window.innerHeight;
-    const top = canOpenDown ? rect.bottom + gap : Math.max(8, rect.top - gap - estimatedMenuH);
-    setPos({ left: rect.left, top, width });
-  }, [countries.length]);
+    const canOpenDown = rect.bottom + gap + menuHeight <= window.innerHeight;
+    const top = canOpenDown ? rect.bottom + gap : Math.max(8, rect.top - gap - menuHeight);
+    setPos({ left: rect.left, top, width: rect.width });
+  }, []);
 
-  const focusListbox = useCallback(() => {
+  const focusSearch = useCallback(() => {
     requestAnimationFrame(() => {
       updatePosition();
-      menuRef.current?.focus();
+      searchRef.current?.focus();
     });
   }, [updatePosition]);
 
-  const openListbox = useCallback((nextActiveIndex = selectedIndex) => {
-    setActiveIndex(nextActiveIndex);
+  const openListbox = useCallback(() => {
+    const selectedIndex = countries.findIndex((country) => country.code === value);
+    setQuery('');
+    setActiveIndex(Math.max(0, selectedIndex));
     setOpen(true);
-    focusListbox();
-  }, [focusListbox, selectedIndex]);
+    focusSearch();
+  }, [countries, focusSearch, value]);
 
-  useEffect(() => {
-    if (typeof window === 'undefined' || typeof document === 'undefined') return;
-    const target = document.getElementById('app-root') ?? document.body;
-    setPortalRoot(target);
+  const closeListbox = useCallback((restoreFocus: boolean) => {
+    setOpen(false);
+    setQuery('');
+    if (restoreFocus) {
+      requestAnimationFrame(() => triggerRef.current?.focus());
+    }
   }, []);
 
   useEffect(() => {
-    if (!open) return;
+    if (typeof document === 'undefined') return;
+    setPortalRoot(document.getElementById('app-root') ?? document.body);
+  }, []);
+
+  useEffect(() => {
+    if (!open) return undefined;
     updatePosition();
-    requestAnimationFrame(() => {
-      menuRef.current?.focus();
-    });
+    requestAnimationFrame(() => searchRef.current?.focus());
     const handleOutside = (event: MouseEvent) => {
       const target = event.target as Node | null;
       if (triggerRef.current?.contains(target) || menuRef.current?.contains(target)) return;
-      setOpen(false);
-    };
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setOpen(false);
-        triggerRef.current?.focus();
-      }
+      closeListbox(false);
     };
     const handleReflow = () => updatePosition();
     document.addEventListener('mousedown', handleOutside);
-    document.addEventListener('keydown', handleEscape);
     window.addEventListener('resize', handleReflow);
     window.addEventListener('scroll', handleReflow, true);
     return () => {
       document.removeEventListener('mousedown', handleOutside);
-      document.removeEventListener('keydown', handleEscape);
       window.removeEventListener('resize', handleReflow);
       window.removeEventListener('scroll', handleReflow, true);
     };
-  }, [open, countries.length, updatePosition]);
+  }, [closeListbox, open, updatePosition]);
 
   useEffect(() => {
-    setActiveIndex((current) => Math.min(current, countries.length - 1));
-  }, [countries.length]);
+    setActiveIndex((current) => Math.min(current, Math.max(0, filteredCountries.length - 1)));
+  }, [filteredCountries.length]);
 
   useEffect(() => {
-    if (!open || !activeCode) return;
-    document.getElementById(optionIdFor(activeCode))?.scrollIntoView?.({ block: 'nearest' });
-  }, [activeCode, open, optionIdFor]);
+    if (!open || !activeCountry) return;
+    document.getElementById(optionIdFor(activeCountry.code))?.scrollIntoView?.({ block: 'nearest' });
+  }, [activeCountry, open, optionIdFor]);
 
   const handleSelect = (code: OfferCountryCode) => {
     onChange(code);
-    setOpen(false);
-    triggerRef.current?.focus();
+    closeListbox(true);
   };
 
-  const handleListboxKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+  const handleSearchKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'ArrowDown') {
       event.preventDefault();
-      setActiveIndex((current) => (current + 1) % countries.length);
-      return;
-    }
-
-    if (event.key === 'ArrowUp') {
+      if (filteredCountries.length) {
+        setActiveIndex((current) => (current + 1) % filteredCountries.length);
+      }
+    } else if (event.key === 'ArrowUp') {
       event.preventDefault();
-      setActiveIndex((current) => (current - 1 + countries.length) % countries.length);
-      return;
-    }
-
-    if (event.key === 'Home') {
+      if (filteredCountries.length) {
+        setActiveIndex((current) => (current - 1 + filteredCountries.length) % filteredCountries.length);
+      }
+    } else if (event.key === 'Home') {
       event.preventDefault();
       setActiveIndex(0);
-      return;
-    }
-
-    if (event.key === 'End') {
+    } else if (event.key === 'End') {
       event.preventDefault();
-      setActiveIndex(countries.length - 1);
-      return;
-    }
-
-    if (event.key === 'Enter' || event.key === ' ') {
+      setActiveIndex(Math.max(0, filteredCountries.length - 1));
+    } else if (event.key === 'Enter' && activeCountry) {
       event.preventDefault();
-      if (activeCode) {
-        handleSelect(activeCode);
-      }
-      return;
-    }
-
-    if (event.key === 'Escape') {
+      handleSelect(activeCountry.code);
+    } else if (event.key === 'Escape') {
       event.preventDefault();
-      setOpen(false);
-      triggerRef.current?.focus();
+      closeListbox(true);
     }
   };
 
@@ -171,26 +190,18 @@ export default function CountrySelect({ value, onChange, id }: CountrySelectProp
         aria-expanded={open}
         aria-controls={open ? listboxId : undefined}
         aria-label={t('skills.countryTitle', 'Krajina ponuky')}
-        onClick={() => {
-          if (open) {
-            setOpen(false);
-          } else {
-            openListbox(selectedIndex);
-          }
-        }}
+        onClick={() => (open ? closeListbox(false) : openListbox())}
         onKeyDown={(event) => {
-          if (event.key === 'ArrowDown') {
+          if (event.key === 'ArrowDown' || event.key === 'Enter' || event.key === ' ') {
             event.preventDefault();
-            openListbox(0);
+            if (!open) openListbox();
           }
         }}
         className="w-full flex items-center justify-between gap-3 px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white text-left focus:outline-none focus:ring-1 focus:ring-purple-300 focus:border-transparent"
       >
-        <span className="text-sm font-medium">{labelFor(value)}</span>
+        <span className="text-sm font-medium truncate">{selectedLabel}</span>
         <svg
-          className={`w-4 h-4 shrink-0 text-gray-400 dark:text-gray-400 transition-transform duration-200 ${
-            open ? 'rotate-180' : ''
-          }`}
+          className={`w-4 h-4 shrink-0 text-gray-400 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
@@ -201,55 +212,71 @@ export default function CountrySelect({ value, onChange, id }: CountrySelectProp
         </svg>
       </button>
 
-      {open &&
-        portalRoot &&
-        pos &&
-        createPortal(
+      {open && portalRoot && pos && createPortal(
+        <div
+          ref={menuRef}
+          style={{ position: 'fixed', left: pos.left, top: pos.top, width: pos.width }}
+          className="z-[9999] bg-white dark:bg-[#0f0f10] border border-gray-200 dark:border-gray-700 rounded-xl shadow-2xl overflow-hidden"
+        >
+          <div className="p-2 border-b border-gray-200 dark:border-gray-700">
+            <input
+              ref={searchRef}
+              type="search"
+              role="combobox"
+              aria-expanded="true"
+              aria-controls={listboxId}
+              aria-activedescendant={activeCountry ? optionIdFor(activeCountry.code) : undefined}
+              aria-autocomplete="list"
+              value={query}
+              onChange={(event) => {
+                setQuery(event.target.value);
+                setActiveIndex(0);
+              }}
+              onKeyDown={handleSearchKeyDown}
+              placeholder={t('skills.countrySearchPlaceholder', 'Vyhľadaj krajinu')}
+              className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-black text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-purple-300"
+            />
+          </div>
           <div
-            ref={menuRef}
             id={listboxId}
             role="listbox"
-            tabIndex={-1}
             aria-label={t('skills.countryTitle', 'Krajina ponuky')}
-            aria-activedescendant={activeCode ? optionIdFor(activeCode) : undefined}
-            onKeyDown={handleListboxKeyDown}
-            style={{ position: 'fixed', left: pos.left, top: pos.top, width: pos.width }}
-            className="z-[9999] bg-white dark:bg-[#0f0f10] border border-gray-200 dark:border-gray-700 rounded-xl shadow-2xl max-h-64 overflow-y-auto overflow-x-hidden district-dropdown-scrollbar"
+            className="max-h-64 overflow-y-auto overflow-x-hidden district-dropdown-scrollbar py-1"
           >
-            <div className="py-1">
-              {countries.map((code, index) => {
-                const isSelected = value === code;
-                const isActive = activeIndex === index;
-
-                return (
-                  <button
-                    key={code}
-                    id={optionIdFor(code)}
-                    type="button"
-                    role="option"
-                    tabIndex={-1}
-                    aria-selected={isSelected}
-                    onMouseEnter={() => setActiveIndex(index)}
-                    onMouseDown={(event) => {
-                      event.preventDefault();
-                    }}
-                    onClick={() => handleSelect(code)}
-                    className={`w-full text-left px-4 py-2.5 text-sm font-medium transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-300 dark:focus-visible:ring-purple-600 ${
-                      isSelected || isActive
-                        ? 'bg-purple-100 dark:bg-purple-900/40 text-purple-900 dark:text-purple-200'
-                        : 'text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800/50'
-                    } ${index === 0 ? 'rounded-t-lg' : ''} ${
-                      index === countries.length - 1 ? 'rounded-b-lg' : ''
-                    }`}
-                  >
-                    {labelFor(code)}
-                  </button>
-                );
-              })}
-            </div>
-          </div>,
-          portalRoot,
-        )}
+            {filteredCountries.map((country, index) => {
+              const isSelected = value === country.code;
+              const isActive = activeIndex === index;
+              return (
+                <button
+                  key={country.code}
+                  id={optionIdFor(country.code)}
+                  type="button"
+                  role="option"
+                  tabIndex={-1}
+                  aria-selected={isSelected}
+                  onMouseEnter={() => setActiveIndex(index)}
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => handleSelect(country.code)}
+                  className={`w-full flex items-center justify-between gap-3 px-4 py-2.5 text-sm font-medium text-left transition-colors focus:outline-none ${
+                    isSelected || isActive
+                      ? 'bg-purple-100 dark:bg-purple-900/40 text-purple-900 dark:text-purple-200'
+                      : 'text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800/50'
+                  }`}
+                >
+                  <span className="truncate">{country.label}</span>
+                  <span className="text-xs text-gray-400 dark:text-gray-500">{country.code}</span>
+                </button>
+              );
+            })}
+            {filteredCountries.length === 0 && (
+              <p className="px-4 py-5 text-sm text-center text-gray-500 dark:text-gray-400" role="status">
+                {t('skills.countryNoResults', 'Nenašla sa žiadna krajina.')}
+              </p>
+            )}
+          </div>
+        </div>,
+        portalRoot,
+      )}
     </div>
   );
 }

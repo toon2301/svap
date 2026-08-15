@@ -24,8 +24,24 @@ jest.mock('@/contexts/LanguageContext', () => ({
 // Karta má vlastné testy; tu ide o zoznam, nie o jej vnútro.
 jest.mock('../feed/FeedPostCard', () => ({
   __esModule: true,
-  default: ({ post }: { post: { id: number; caption?: string } }) => (
-    <article data-testid={`post-${post.id}`}>{post.caption}</article>
+  default: ({
+    post,
+    onSelfTagRemoved,
+  }: {
+    post: { id: number; caption?: string };
+    onSelfTagRemoved?: (postId: number) => void;
+  }) => (
+    <article data-testid={`post-${post.id}`}>
+      {post.caption}
+      <button
+        type="button"
+        data-testid={`remove-tag-${post.id}`}
+        disabled={!onSelfTagRemoved}
+        onClick={() => onSelfTagRemoved?.(post.id)}
+      >
+        remove tag
+      </button>
+    </article>
   ),
 }));
 
@@ -155,4 +171,32 @@ it('reloads when the profile changes under the same tab', async () => {
     expect(screen.queryByTestId('post-1')).not.toBeInTheDocument(),
   );
   expect(mockedPosts).toHaveBeenLastCalledWith(8, expect.anything());
+});
+
+it('drops the post from the tagged tab once the user removes their tag', async () => {
+  mockedTagged.mockResolvedValue(page([post(1, 'Prvý'), post(2, 'Druhý')]));
+
+  render(<ProfileFeedSection activeTab="tagged" tab="tagged" ownerUserId={7} />);
+  await screen.findByTestId('post-1');
+
+  await userEvent.click(screen.getByTestId('remove-tag-1'));
+
+  // Zoznam je filtrovaný na „kde som označený" – bez označenia tam už nepatrí.
+  await waitFor(() =>
+    expect(screen.queryByTestId('post-1')).not.toBeInTheDocument(),
+  );
+  expect(screen.getByTestId('post-2')).toBeInTheDocument();
+  // Žiadny refetch – zoznam sa upravil lokálne.
+  expect(mockedTagged).toHaveBeenCalledTimes(1);
+});
+
+it('leaves the post in place in the posts tab', async () => {
+  mockedPosts.mockResolvedValue(page([post(1, 'Prvý')]));
+
+  render(<ProfileFeedSection activeTab="posts" tab="posts" ownerUserId={7} />);
+  await screen.findByTestId('post-1');
+
+  // Tab „Príspevky" nefiltruje podľa označenia, takže tam callback nechodí –
+  // zmizne iba chip na karte.
+  expect(screen.getByTestId('remove-tag-1')).toBeDisabled();
 });
